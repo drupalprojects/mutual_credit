@@ -131,7 +131,7 @@ function cc_currencies_form_alter(&$form, $form_state, $form_id) {
       //until the currency form can can show or hide the quarters of an our field according to currency selection, with ajax
       unset ($form['division']['#options']['quarters']);
       break;
-    case 'transaction_start_node_form':
+    case 'transaction_start_form':
     case 'transaction_node_form':
     case 'cc_mass_pay_payout_form':
     case 'cc_mass_pay_collect_form':

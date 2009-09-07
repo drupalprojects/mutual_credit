@@ -3,10 +3,10 @@ span.currency img{
   top:3px;
 }
 
-/*transaction form*/
+/* transaction form */
 input.form-autocomplete,
-#transaction-start-node-form #edit-title,
-#transaction-start-node-form-1 #edit-title-1{
+#transaction-start-node-form .form-text,
+#transaction-start-node-form-1 .form-text{
 	width:12em;
 }
 
@@ -33,6 +33,7 @@ input.form-autocomplete,
   float:right;
   }
 
+/* node view */
 #transaction-buttons form,
 #transaction-buttons form div,
 div.view-content form,
@@ -46,24 +47,13 @@ input.transaction_button{
   margin:0;
 }
 
-#edit-next-1.form-submit,
-#edit-next.form-submit,
-#edit-non-payers-wrapper,
-#edit-payees-wrapper{
+#transaction-start-node-form .form-item,
+#transaction-start-node-form-1 .form-item{
 	display:block;
 	clear:both;
 	}
-
-
-#edit-state-wrapper,
-#edit-quality-wrapper,
-#edit-state-1-wrapper,
-#edit-quality-1-wrapper{
-clear:both;
-}
-
 	
-/*user profile*/
+/* user profile */
 table.profile-balances td{
 	text-align:right;
 	}
@@ -75,7 +65,7 @@ table.user-balances td{
 	text-align:center;
 	}
 
-/*statement page*/
+/* statement page */
 div.view table caption{
 	text-align:left;
 	}

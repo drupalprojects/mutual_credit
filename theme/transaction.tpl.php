@@ -17,7 +17,8 @@
     $rich_text => TRUE or FALSE
 )
 */ 
-if ($rich_text) $amount = $transaction->quantity . ' ' . $transaction->currency->title
+if ($rich_text) $amount = $transaction->quantity . ' ' . $transaction->currency->title;
+$replacements = array('!starter' => $starter, '!completer'=> $completer, '!amount'=>$amount, '!transaction_url'=>$transaction_url, '!payer'=>$payer, '!payee'=>$payee, '@submitted'=>$submitted);
 ?>
 
 <div id="transactions<?php if ($state == TRANSACTION_STATE_PENDING) print '-pending'; ?>">
@@ -26,16 +27,16 @@ if ($teaser) { // this is a one liner
   switch($state) {
     case TRANSACTION_STATE_PENDING:
       if (substr($transaction->transaction_type, 0, 8) == 'outgoing') {
-        print "$starter will give $completer $amount for '$transaction_url'";
+        print t("!starter will give !completer !amount for '!transaction_url'", $replacements);
       } else {
-        print "$starter will receive $amount from $completer for '$transaction_url'";
+        print "!starter will receive !amount from !completer for '!transaction_url'";
       }
       break;
     case TRANSACTION_STATE_COMPLETED: 
-      print "On $submitted, $payer gave $payee $amount for '$transaction_url'";
+      print t("On @submitted, !payer gave !payee !amount for '!transaction_url'", $replacements);
       break;
     case TRANSACTION_STATE_DELETED: 
-      print "On $submitted, $payer did not give $payee $amount for '$transaction_url'. (DELETED)'";
+      print t("On @submitted, !payer did not give !payee !amount for '!transaction_url'. (DELETED)'", $replacements);
   }
 
 } else { ?>

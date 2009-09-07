@@ -51,6 +51,12 @@
       print "<td>" . theme('money', $bals['gross_income'], $cid) . '</td>';
     }?>
   </tr>
+  <tr>
+    <th> <?php print t('Gross expenditure') ?> </th>
+    <?php foreach ($balances as $cid=>$bals) {
+      print "<td>" . theme('money', $bals['gross_expenditure'], $cid) . '</td>';
+    }?>
+  </tr>
   <?php if ($rating) { ?>
   <tr>
     <th><?php print t('Rating'); ?> </th>

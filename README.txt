@@ -1,9 +1,8 @@
-This document is three documents in one:
+This document is 4 documents in one:
 
 ** How to set up the Complementary currencies package **
-
 ** Generalised architecture of this mutual credit system **
-
+** For advanced users **
 ** Testing procedure **
 
 
