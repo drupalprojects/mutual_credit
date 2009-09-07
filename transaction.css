@@ -1,0 +1,93 @@
+span.currency img{
+  position:relative;
+  top:3px;
+}
+
+/*transaction form*/
+input.form-autocomplete,
+#transaction-start-node-form #edit-title,
+#transaction-start-node-form-1 #edit-title-1{
+	width:12em;
+}
+
+#edit-quantity-1-wrapper,
+#edit-quantity-wrapper,
+#edit-minutes-1-wrapper,
+#edit-minutes-wrapper,
+#edit-cid-1-wrapper,
+#edit-cid-wrapper{
+  float:left;
+  margin-right:1.5em;
+}
+
+.block #edit-title, 
+.block #edit-title-2 {
+  width:100%;
+  }
+.block #edit-completer-uid,
+.block #edit-starter-uid{
+  font-size:85%;
+  }
+
+.block #edit-next-1.form-submit{
+  float:right;
+  }
+
+#transaction-buttons form,
+#transaction-buttons form div,
+div.view-content form,
+div.view-content form div,
+div.views-field-quantity,
+.profile form,
+.profile form div,
+.profile form div input,
+input.transaction_button{
+  display:inline;
+  margin:0;
+}
+
+#edit-next-1.form-submit,
+#edit-next.form-submit,
+#edit-non-payers-wrapper,
+#edit-payees-wrapper{
+	display:block;
+	clear:both;
+	}
+
+
+#edit-state-wrapper,
+#edit-quality-wrapper,
+#edit-state-1-wrapper,
+#edit-quality-1-wrapper{
+clear:both;
+}
+
+	
+/*user profile*/
+table.profile-balances td{
+	text-align:right;
+	}
+div.balances {
+  float:left;
+  margin-left:1em;
+}
+table.user-balances td{
+	text-align:center;
+	}
+
+/*statement page*/
+div.view table caption{
+	text-align:left;
+	}
+span.cc-previous{float:left;}
+span.cc-next{float:right;}
+span.cc-previous:before{content:'<<';}
+span.cc-next:after{content:'>>';}
+
+/* currency properties form */
+#edit-comparative-value, 
+#edit-zero-offset,
+#edit-max-balance,
+#edit-min-balance {
+  width:5em;
+}

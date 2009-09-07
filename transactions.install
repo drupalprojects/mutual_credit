@@ -1,0 +1,286 @@
+<?php
+// $Id$
+
+//First time ever this file is loaded, installt he default currency so the cc_currencies can access it as well
+if (!variable_get('cc_default_currency', NULL)) {
+  variable_set('cc_default_currency', (object)array(
+    'title' => 'units',
+    'division' => 'integer',
+    'max_balance' => '500',
+    'min_balance' => '-500',
+    'comparative_value' => 0,
+    'zero_offset' => 0,
+    'cid' => 0,
+    'icon' => drupal_get_path('module', 'transactions') . '/default_currency.png',
+    )
+  );
+}
+/**
+ * Implementation of hook_install().
+ */
+function transactions_install() {
+  drupal_install_schema('transactions');
+  variable_set('comment_transactions', '0');
+  variable_set('cc_description_min_words', 1);
+  variable_set('cc_stats_period', '1 month');
+  variable_set('cc_transaction_list', 'statement');
+  $names = variable_get('cc_transaction_types', array());
+  $names['transactions'] = array(
+    'incoming_confirm' => t('invoice'),
+    'outgoing_confirm' => t('payment'),
+    'incoming_direct' => t('claim'),
+    'outgoing_direct' => t('gift'),
+  );
+  variable_set('cc_transaction_types', $names);
+  variable_set('cc_transaction_qualities', array(
+    '-2'=>'unacceptable',
+    '0'=>'acceptable',
+    '1'=>'good',
+    '2'=>'outstanding'
+  ));
+  variable_set('cc_select_user_show', array('name'));
+  variable_set('cc_select_user_orderby', 'uid');
+  variable_set('cc_balancing_account_num', 1);
+  variable_get('cforge_report', TRUE);
+  drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
+    array('!link'=>l('admin/settings/marketplace', 'admin/marketplace', array('attributes'=>array('target'=> '_blank')))))
+  );
+  drupal_http_request('http://www.communityforge.net/registration.php?from=' . $_SERVER["HTTP_HOST"]);
+}
+
+function transactions_enable(){
+  //this doesn't work
+  /*
+  $item = array(
+    'link_path' => 'my_statement', 
+    'router_path' => 'user/%/statement', 
+    'link_title' => 'My statement',
+    'module' => 'transactions',
+    'menu_name' => 'navigation',
+  );
+menu_link_save($item);
+*/
+  }
+
+/**
+ * Implementation of hook_uninstall().
+ * http://api.drupal.org/api/function/hook_uninstall/6
+ * Remove any tables or variables that the module sets.
+ */
+function transactions_uninstall() {
+  drupal_uninstall_schema('transactions');
+  //this also deletes the transactions from the node table.
+  db_query('DELETE FROM {node} WHERE type = "%s"', 'transaction');
+  db_query("DELETE FROM {blocks} WHERE module = 'transactions'");
+  //find all the views provided by the module, which are now broken, and remove them and their displays
+  $view_ids = db_query ("SELECT vid FROM {views_view} WHERE name LIKE 'cc_%'");
+  while ($vid = db_result($view_ids)) {
+    db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
+    db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
+  }
+  variable_del ('comment_transactions');
+  variable_del ('cc_transaction_types');
+  variable_del ('cc_transaction_qualities');
+  variable_del ('cc_transaction_list');
+  variable_del ('cc_currencies');
+  variable_del ('cc_stats_period');
+  variable_del ('cc_select_user_show');
+  variable_del ('cc_select_user_orderby');
+  variable_del ('cc_balancing_account_num');
+}
+
+function transactions_disable() {
+}
+
+/**
+ * Implementation of hook_schema)().
+ * http://api.drupal.org/api/function/hook_schema/6
+ * You don't have to deal with the different SQL dialects for table creation and alteration of the supported database engines.
+ */
+//TODO what about storing all this info in the user table instead?
+function transactions_schema () {
+  $schema['cc_transactions'] = array(
+    'description'=>'currency exchanges between users',
+    'fields'=> array(
+      'nid'=> array (
+        'description' => t('the node to which this entry is attached'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'payer_uid'=> array(
+        'description' => t('the user id of the payer'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'payee_uid' => array(
+        'description' => t('the user id of the payee'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'starter_uid' => array(
+        'description' => t('the uid of the subject of the transaction, the starter'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'completer_uid'=> array(
+        'description' => t('uid of the object of the transaction'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'cid' =>array(
+        'description' => t('the nid of the currency used'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'quantity' => array(
+        'description' => t('the number of units transferred, (@type)', array('@type'=>'integer')),
+        'type' => 'int',
+        'size' => 'normal'
+      ),
+      'transaction_type' =>array(
+        'description' => t('The type of transaction, types are provided by modules'),
+        'type' => 'varchar',
+        'length' => 32,
+      ),
+      'quality' => array(
+        'description' => t('the quality of the work done, expressed as a quantity'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'state' => array(
+        'description' => t("State of the transaction - completed, pending, disputed, etc"),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'depends_on' => array(
+        'description' => t('nid of parent transaction'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+    ),
+  );
+  /*
+   * This table cointains one row for every user/currency
+   * The rows are deleted and recreated when updated, instead of INSERTED
+   * Multiple currency module deletes rows when it is disabled
+   * We should really be using drupal cache instead of this
+   */
+  $schema['cc_balance_cache'] = array(
+    'description' => t('cached balances, turnovers and pending balances, for exposure to views'), 
+    'fields'=> array(
+      'uid'=> array(
+        'description' => t('the node to which this entry is attached'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'cid' => array(
+        'description' => t('the currency id, where there is more than one currency'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'balance' => array(
+        'description' => 'balance including pending transactions, (integer)',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'pending_difference' => array(
+        'description' => 'sum of all pending transactions, (integer)',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'pending_balance' => array(
+        'description' => 'forecast balance after pending transactions are completed for this user in this currency, (integer)',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'gross_income' => array(
+        'description' => "sum of all this user's income in this currency, (integer)",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'quality_mean' => array(
+        'description' => "average transaction rating for this user in this currency",
+        'type' => 'float',
+        'size' => 'normal',
+      ),
+  	)
+  );
+  return $schema;
+}
+
+function transactions_update_1(){
+  $ret=array();
+  db_change_field($ret, 'cc_transactions', 'from_uid', 'payer_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
+  db_change_field($ret, 'cc_transactions', 'to_uid', 'payee_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
+  db_change_field($ret, 'cc_transactions', 'transaction_type', 'transaction_type', array(
+    'description' => t('The type of transaction, types are provided by modules'),
+    'type' => 'varchar',
+    'length' => 32,
+    'not null' => TRUE,
+  ));
+  db_query("UPDATE {cc_transactions} SET transaction_type = 'incoming_confirmed' WHERE transaction_type = 1");
+  db_query("UPDATE {cc_transactions} SET transaction_type = 'outgoing_confirmed' WHERE transaction_type = 2");
+  db_query("UPDATE {cc_transactions} SET transaction_type = 'incoming_direct' WHERE transaction_type = 3");
+  db_query("UPDATE {cc_transactions} SET transaction_type = 'outgoing_direct' WHERE transaction_type = 4");
+  return $ret;
+}
+
+function transactions_update_5() {
+  $ret = array();
+  db_add_field($ret, 'cc_balance_cache', 'quality_mean', array(
+    'description' => "The average transaction rating for this user in this currency",
+    'type' => 'float',
+    'size' => 'normal',
+    )
+  );
+  db_add_field($ret, 'cc_balance_cache', 'pending_balance', array(
+    'description' => "The balance including pending transactions, (integer)",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
+  db_change_field($ret, 'cc_balance_cache', 'pending', 'pending_difference', array(
+    'description' => 'The sum of all pending transactions, (integer)',
+    'type'=>'int',
+    'size'=>'normal'
+    )
+  );
+  db_change_field($ret, 'cc_balance_cache', 'turnover', 'gross_income', array(
+    'description' => "sum of all this user's income in this currency, (integer)",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
+  return $ret;
+}
+
+function transactions_update_6() {
+  $ret = array();
+  db_add_field($ret, 'cc_transactions', 'state', array(
+    'description' => "State of the transaction - completed, pending, disputed, etc",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
+  db_query("UPDATE cc_transactions t LEFT join node n ON t.nid = n.nid SET t.state = NOT(n.status)");
+  if ($def = variable_get('cc_currencies', NULL)) {
+    variable_set('cc_default_currency', $def[0]);
+    variable_del('cc_currencies');
+  }
+  return $ret;
+}
+
+
+function transactions_update_6007() {
+  $ret = array();
+  db_query("DELETE FROM {menu_custom} WHERE menu_name = 'complementary-currencies'");
+  $def = variable_get('cc_default_currency', (object)array());
+  if (is_array($def))$def = $def[0];
+  $def->title = $def->title or $def->title = $def->name or $def->title = 'units';
+  $def->icon = drupal_get_path('module', 'transactions') . '/default_currency.png';
+  variable_set('cc_default_currency', $def);
+  require_once(drupal_get_path('module', 'transactions').'/transactions.admin.inc');
+  cc_balances_refresh();
+  drupal_set_message ("The default currency icon has changed, along with theme_money. You can upload your icon at admin/marketplace/currency, or make a new theme_money function");
+  return $ret;
+}

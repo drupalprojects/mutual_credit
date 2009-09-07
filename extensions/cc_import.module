@@ -1,0 +1,254 @@
+<?php
+
+function cc_import_help() {
+    switch ($section) {
+    case 'admin/help#cc_import':
+      return t('Provides advice and a simple text box to paste csv style data from your existing spreadsheets. ') .
+      t('Assumes user 1 is the balancing account.');
+  }
+}
+
+/**
+ * Implementation of hook_menu)().
+ * http://api.drupal.org/api/function/hook_menu/6
+ */
+function cc_import_menu() {
+  $items['admin/marketplace/import'] = array (
+    'title' => 'Import Tools',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('import_balances_form'),
+    'access arguments' => array('configure currencies'),
+    'weight' => 5
+  );
+  $items['admin/marketplace/import/balances'] = array(
+    'title' => 'Import Balances',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10
+  );
+  $items['admin/marketplace/import/offers'] = array(
+    'title' => 'Import Offers',
+    'page callback' => 'drupal_get_form',
+      'page arguments' => array('import_offers_form'),
+    'access arguments' => array('configure currencies'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/marketplace/import/wants'] = array(
+    'title' => 'Import Wants',
+    'page callback' => 'drupal_get_form',
+      'page arguments' => array('import_wants_form'),
+    'access arguments' => array('configure currencies'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+
+function import_balances_form(&$form_state) {
+  //check that no transactions have already taken place
+  if (db_result(db_query("SELECT * FROM {cc_transactions}"))) {
+    return array('#prefix' => 'You can only import "carried forward" balances before any transactions have been entered on the system.');
+  }
+
+  $form['#prefix'] = '<p>' . t("This page allows you to import users' balances and gross incomes for users already on the system. To import users, see the !import_user module.",
+    array(
+      '!import_user'=>l('import_user', 'http://drupal.org/project/import_user')
+    )
+  )  . '</p>';
+  $form['#prefix'] .= "\n<p>".t("Paste paste 2 or 3 comma separated columns into the field below, the first column should be the uid or username, the second column the current balance, and optionally the third column should be the user's gross income until now (turnover).");
+  $form['#prefix'] .= "\n<p>".t("This tools assumes there is only one currency in the system. The second column SHOULD add up to 0 for LETS and other zero balance systems, but this will not be checked." ) . '</p>';
+  $form['#prefix'] .= "\n<p>".t("The first line of the field should read (third column is optional): !code", array('!code' => '<blockquote>"UserID","Balance","GrossIncome"</blockquote>"')) . '</p>';
+  
+  $form['data'] = array (
+    '#type' => 'textarea',
+    '#title' => 'paste data',
+    '#default_value' => $form_state['values']['data'],
+    '#required' => TRUE  
+  );
+  $form['import_balances'] = array (
+    '#type' => 'submit',
+    '#value' => 'import',
+  );
+  $form['#redirect'] = 'user/'.variable_get('cc_balancing_account_num', NULL).'/statement';
+  return $form;
+}
+
+function import_balances_form_validate($form, &$form_state) {
+  if (!(variable_get('cc_balancing_account_num', NULL))) {
+    form_set_error('', t('to import balances you need a balancing account. Specify the account number at !admin/marketplace', array('!admin/marketplace'=> l('admin/marketplace','admin/marketplace'))));
+  }
+
+  $rows = str_getcsv($form_state['values']['data'], ",", '"');
+  check_users($rows);
+
+  foreach ($rows as $rownum => $row) {
+    //check integrity of balances, the second field
+    if (!intval($row['Balance'])) {
+      form_set_error('data', t("balance (second item) on row @num is not an integer", array('@num'=>$key+1)));
+    }
+  
+    //check integrity of gross income, the optional third field
+    if (isset($row['GrossIncome'])){
+      if (!intval($row['GrossIncome'])) {
+        form_set_error('data', t("gross income (third item) on row @rownum must be a positive integer", array('@rownum'=>$rownum+1)));
+      } elseif ($row['GrossIncome'] < 0) {
+        form_set_error('data', t("gross income (third item) on row @rownum cannot be less than 0", array('@rownum'=>$rownum+1)));
+      }
+    }
+  }
+}
+
+function import_balances_form_submit($form, &$form_state) {
+  require_once(drupal_get_path('module', 'transactions').'/transactions.inc');
+  $rows = str_getcsv($form_state['values']['data']);
+
+  foreach ($rows as $key=>$row) {
+    $stats=explode(',',$row);
+    $uid = $stats['UserID'];
+    $balance = $stats['Balance'];
+    if (isset($stats['GrossIncome'])) {
+      $gross_income=$stats['GrossIncome'];
+    }
+    //if there is a gross income(turnover), we make two transactions, +turnover, then -turnover+balance
+    cc_import_balances_member($uid, $balance, $gross_income);
+  }
+}
+function cc_import_balances_member($uid, $balance, $gross_income=NULL) {
+  $bal_acc = variable_get('cc_balancing_account_num');
+  $options = array(
+    'type' => 'import_module',
+    'starter_uid' => $bal_acc,
+  );
+  if ($gross_income) {
+    generate_transaction_node(t("Gross income"), $bal_acc,  $uid, $gross_income, $options, $cid);
+    generate_transaction_node(t("Gross expenditure"), $uid, $bal_acc, $gross_income-$balance, $options, $cid);
+    
+  } else {//if there is only balance, we do one transaction, which is simply + balance
+    if (intval($balance) > 0) {
+      $payer_uid = $bal_acc;
+      $payee_uid = $uid;
+    } else {
+      $balance = abs($balance);
+      $payee_uid = $bal_acc;
+      $payer_uid = $uid;
+    }
+    $transaction=generate_transaction_node(t("Carried Forward"), $payer_uid,  $payee_uid, $balance, $options, $cid);
+  }
+}
+
+function import_offers_form(&$form_state) {
+  $form['#prefix'] = import_prefix('offers');
+  $form['data'] = array (
+    '#type' => 'textarea',
+    '#title' => 'paste data',
+    '#default_value' => $form_state['values']['data'],
+    '#required' => TRUE  
+  );
+  $form['import_balances'] = array (
+    '#type' => 'submit',
+    '#value' => 'import',
+  );
+  $form['#redirect'] = 'directory/recent_offers';
+  $form['#validate'][] = 'import_offers_wants_form_validate';
+  return $form;
+}
+
+function import_offers_form_submit ($form, &$form_state) {
+  $rows = str_getcsv($form_state['values']['data']);
+  foreach ($rows as $row) {
+    generate_offer_want_node('offer', $row['UserID'], $row['Description']);
+  }
+}
+
+function import_wants_form(&$form_state) {
+  $form['#prefix'] = import_prefix('wants');
+  $form['data'] = array (
+    '#type' => 'textarea',
+    '#title' => 'paste data',
+    '#default_value' => $form_state['values']['data'],
+    '#required' => TRUE  
+  );
+  $form['import_balances'] = array (
+    '#type' => 'submit',
+    '#value' => 'import',
+  );
+  $form['#redirect'] = 'directory/recent_wants';
+  $form['#validate'][] = 'import_offers_wants_form_validate';
+  return $form;
+}
+
+function import_wants_form_submit ($form, &$form_state) {
+  $rows = str_getcsv($form_state['values']['data']);
+  foreach ($rows as $row) {
+    generate_offer_want_node('want', $row['UserID'], $row['Description']);
+  }
+}
+
+function import_offers_wants_form_validate($form, &$form_state) {
+  $rows = str_getcsv($form_state['values']['data']);
+  check_users($rows);
+  foreach ($rows as $rownum => $row) {
+    //we've checked the users (field1) already, so now check the description
+    if (strlen($row['Description'] > 128)) {
+      form_set_error('data', t('The description on row @rownum is more than 128 characters', array('rownum' => $rownum)));
+    }
+    //now check the taxonomy term exists, and flag an error if it doesn't
+    check_terms($rows);
+  }
+  
+}
+
+/*
+ * Helper Functions
+*/
+
+function import_prefix($type) {
+  return t("This page allows you to import users' @type for users already on the system.", array('@type' => $type)) . 
+  t("There are other ways of doing this, but this is simple and maintained along with the rest of the marketplace module.") . '<br />' .
+  //t("If you have 'goods & services' enabled or 'local vs offical' money then it assumes this is a service in local money.") . '<br />' .
+  t("Use a spreadsheet tool to prepare a list of user ids, or names, and their @type in one line. ") . 
+  t("For aesthetic reasons, there is a 128 character limit on each description. ") . 
+  t("Each line should look like this (you must include the header row): !code", array('!code' => '<blockquote><strong>"UserID","Description"</strong></blockquote>')) .
+  t("Try importing one or two first.");
+}
+
+//check that the user ids or names actually correspond to a user on the system
+//coming from the csv all keys and values will be strings, surrounded by quotes
+function check_users($rows) {
+  foreach ($rows as $rownum => $row){
+    $id = $row['UserID'];
+    if (is_numeric($id)){
+      $member = user_load($id);
+    } else {
+      $member = user_load($id);
+    }
+    if (!$member->name) {
+      form_set_error('data', t("'UserID' on row @rownum is not a user:@data", array('@rownum'=>$rownum+1, '@data'=>$id)));
+    }
+  }
+}
+
+function check_terms($fields) {
+  if ($fields[2]){
+    drupal_set_message("importing categories hasn't been coded yet", "warning");
+  }
+  //TODO
+  return;
+}
+
+if (!function_exists('str_getcsv')) { 
+function str_getcsv($input, $delimiter = ",", $enclosure = '"', $escape = "\\") {
+  $rows = explode("\n", $input);
+  $headers = explode($delimiter, array_shift($rows));
+  $all = array();
+  while ($row = array_shift($rows)){
+    $entry=array();
+    $values = explode($delimiter, $row);
+    $i=0;
+    foreach($values as $v){
+      if ($i < count($headers)) $entry[trim($headers[$i], "\"\r")] = trim($v, "\"\r");
+      $i++;
+    }
+    $data[] = $entry;
+  }
+  return $data;
+}}

@@ -1,0 +1,863 @@
+<?php
+// $Id$
+
+/*
+ * Transactions are stored in the database and balances are cached.
+ * Permitted users can initiate transactions as another user.
+ * The buyer rates the transaction if any ratings are configured.
+ * A hook is implemented for dependent modules to declare their own transaction types.
+ * Transaction types are named in config rather than creating a new po file for every community.
+ * Transactions are creating using a pre_transaction_form which feeds into the node/add/transaction form
+ * Note the action to mail participants in pending transactions.
+ * 
+ * if the multiple currencies module is not installed, the default currency id is 0
+ * multiple currencies should not all be loaded every query, so they live in a db table, although views doesn't need to see them.
+ */
+define (TRANSACTION_STATE_COMPLETED, 0);
+define (TRANSACTION_STATE_PENDING, 1);
+define (TRANSACTION_STATE_ERASED, -1);
+define (DEFAULT_CURRENCY_ICON, 'default_currency.png');
+
+/** 
+ * http://api.drupal.org/api/function/hook_help/6
+ */
+function transactions_help($section) {
+  switch ($section) {
+    case 'admin/help#transaction':
+      return t('Defines a contentType called transactions, manages them and does the accounting.');
+  }
+}
+/** 
+ * http://api.drupal.org/api/function/hook_init/6
+ *
+ */
+function transactions_cron () {
+  //this is for the voluntary reporting function
+  if (variable_get('cforge_report', 1)) {
+    module_load_include('admin.inc', 'transactions');
+    marketplace_report();
+  }
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_init/6
+ */
+function transactions_init() {
+  drupal_add_css(drupal_get_path('module', 'transactions') .'/transaction.css');
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_node_info/6
+ * This hook is required for modules to define one or more node types.
+ */
+function transactions_node_info() {
+  return array(
+    'transaction' => array(
+      'name' => t('transaction'),
+      'module' => 'transactions',
+      'description' => t('A movement of a quantity of a currency between two users.'),
+      'has_title' => TRUE,
+      'title_label' => t('Description of entity traded'),
+      'has_body' => FALSE,
+    )
+  );
+}
+
+/*
+ * Needed for the views 2 module
+ */
+function transactions_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'transactions') .'/views',
+  );
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_menu/6
+ */
+function transactions_menu() {
+  module_load_include('inc', 'transactions');
+  $items['admin/marketplace'] = array(
+    'title' => 'Complementary Currencies',
+    'description' => 'General complementary currency options',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cc_options'),
+    'access callback' => 'user_access',
+    'access arguments' => array('configure marketplace'),
+    'file' => 'transactions.admin.inc',
+  );
+  $items['admin/marketplace/currency'] = array(
+    'title' => 'Default Currency',
+    'description' => 'Default currency, transaction ratings and directory settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('default_currency_config'),
+    'access arguments' => array('configure marketplace'),
+    'file' => 'transactions.admin.inc',
+  );
+  $items['admin/marketplace/ratings'] = array(
+    'title' => 'Transaction ratings',
+    'description' => 'Transaction satisfaction ratings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_quality_config'),
+    'access arguments' => array('configure marketplace'),
+    'file' => 'transactions.admin.inc',
+  );
+  $items['marketplace/report'] = array (
+    'page callback' => 'marketplace_report',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'transactions.admin.inc',
+  );
+  $items['transaction/complete/%'] = array(
+    'title' => 'Sign this transaction to finalise it',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transactions_complete_form', 2),
+    'access callback' => 'transactions_access',
+    'access arguments' => array('complete', NULL, NULL, 2),
+    'type' => MENU_CALLBACK,
+    'file' => 'transactions.inc',
+  );
+
+  $items['user/%/bureau'] = array(
+    'title' => 'Bureau',
+    'description' => "All transaction information for this user",
+    'page callback' => 'transactions_bureau',
+    'page arguments' => array(1),
+    'access callback' => 'transactions_access',
+    'access arguments' => array('bureau', 'transaction', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+    'file' => 'transactions.inc',
+  );
+  
+  if (_get_trader_roles()) {
+    $items['transaction/add'] = array(
+      'title' => 'Start new transaction',
+      'description' => 'The new transaction form, with nothing pre-filled',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('transaction_start_node_form'),
+      'access callback' => 'transactions_access',
+      'access arguments' => array('create'),
+      'file' => 'transactions.inc',
+      'type' => MENU_NORMAL_ITEM,
+      'weight' => 20,
+    );
+  }
+  $items['stats'] = array(
+    'title' => '30 day stats',
+    'description' => 'Analysis of the last 30 days of trading.',
+    'page callback' => 'stats_page',
+    'page arguments' => array('30 days'),
+    'access arguments' => array('access content'),
+    'menu_name' => 'complementary-currencies',
+    'file' => 'transactions.inc',
+    'type' => MENU_NORMAL_ITEM, 
+    'weight' => 20,
+  );
+  return $items;
+}
+
+function transactions_menu_alter(&$items) {
+  //because we use the custom form transaction/add
+  $items['node/add/transaction']['type'] = MENU_CALLBACK;  }
+
+/** 
+ * http://api.drupal.org/api/function/hook_access/6
+ * this function is called by node_access, and others in this module
+ */
+function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
+  global $user;
+  if (user_access('edit all transactions')) {
+    return TRUE;
+  }
+  $uid = $account->uid or $uid = $account or $uid = $user->uid;
+
+  if (!$transaction)$transaction = node_load(arg(1));//only used in node/%/edit
+  switch($op) {
+    case 'view'://users can always view their own pages
+      return user_access('view all transactions') 
+      || $uid == $transaction->payee_uid //transactions the present user was involved in
+      || $uid == $transaction->payer_uid;
+    case 'create':
+      foreach (_active_transaction_types() as $type=>$name) {
+        if (user_access('start ' . $type)) return TRUE;
+      }
+      break;
+    case 'update': //this is the permission used by node_access
+      return $uid == $transaction->starter_uid || $uid == $transaction->completer_uid;
+    case 'edit':
+      return $uid == $transaction->starter_uid && $transaction->state == TRANSACTION_STATE_PENDING;
+    case 'complete':
+      return $uid == $transaction->completer_uid;
+    case 'delete':
+      return $uid == $transaction->starter_uid && $transaction->state == TRANSACTION_STATE_PENDING;
+    case 'bureau': 
+      return $GLOBALS['user']->uid == $uid || user_access('view all balances');
+    default:
+      drupal_set_message('transaction_access given unknown op: ' . $op);
+  }
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_perm/6
+ * This hook can supply permissions that the module defines,
+ */
+function transactions_perm() {
+  module_load_include('inc', 'transactions');
+  $perms = array(
+    'view all transactions',
+    'view all balances',
+    'edit all transactions',
+    'configure marketplace');
+  foreach(_named_transaction_types() as $machine_name =>$name) {
+    $perms[] = 'start ' . $machine_name;
+  }
+  return $perms;
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_load/6
+ */
+function transactions_load($node) {
+  module_load_include('inc', 'transactions');
+  $result = db_query(
+    'SELECT payer_uid, payee_uid, starter_uid, completer_uid, cid, quantity, transaction_type, quality, n.title, t.state
+      FROM {cc_transactions} AS t
+      LEFT JOIN {node} AS n ON n.nid = t.nid
+      WHERE n.nid = %d',
+    array(':nid' => $node->nid)
+  );
+  //join the passed node with the transaction fields
+  foreach (db_fetch_array($result) as $key => $value){
+    $node->{$key} = $value;
+  }
+  return _transaction_load_objects($node);
+}
+
+
+/** 
+ * http://api.drupal.org/api/function/hook_block/6
+ */
+function transactions_block($op = 'list', $delta = 0, $edit = array()) {
+  switch($op) {
+    case 'list':
+      //context sensitive to user being displayed
+      $blocks['cc_new_transaction']= array(
+        'info' => 'Cc ' . t('Start transaction'),
+        'visibility' => 0,
+        'pages' => 'transaction*
+        admin*',
+      );
+      $blocks['cc_user_balances'] = array(
+        'info' => 'Cc ' . t('User Balances'),
+        'cache' => BLOCK_CACHE_PER_USER,
+      );
+      $blocks['cc_stat_summary'] = array(
+        'info' => 'Cc ' . t("Statistics for period"),
+        'cache' => BLOCK_CACHE_GLOBAL,
+      );
+      /*
+      $types = variable_get('cc_transaction_types', array());
+      foreach ($types['transactions'] as $type=>$name) {
+        //transaction forms pre-filled with the starter and type
+        $blocks['cc_new_' . $type] = array(
+          'info' => 'Cc ' . t("Start") . ' ' . $name,
+        'visibility' => 0,
+        'pages' => 'transaction*
+        admin*',
+        );
+      }
+      */
+      return $blocks;
+    case 'view':
+      module_load_include('inc', 'transactions');
+      global $user;
+      switch ($delta) {
+        case 'cc_user_balances':
+          if (user_access('view all transactions') && arg(0) == 'user' && $uid = arg(1)){
+            $this_user = user_load($uid);
+            $balances = transactions_user_balances($this_user->uid);
+            return array(
+              'subject' => t("@user's balances", array('@user' => $this_user->name)),
+              'content' => theme('balances', $balances),
+            );
+          }
+        case 'cc_stat_summary':
+          return array(
+            'subject' => t('Recent Activity'),
+            'content' => stats_summary(variable_get('cc_stat_summary', '30 days')),
+          );
+        case 'cc_new_transaction':
+          if (transactions_access('create')) {
+            $subject = t("Start @transaction_type", array('@transaction_type' => t('transaction')));//later we might use other transaction types
+            $transaction = (object)array('starter_uid' => $user->uid);
+            if (arg(0) == 'user' && arg(1) && $user->uid != arg(1)) {
+              $otherperson = user_load(arg(1));
+              $subject = t('Start @transaction_type with @name', array('@transaction_type' => t('transaction'), '@name' => $otherperson->name));
+              $transaction->completer_uid = $otherperson->uid;
+            }
+            return array(
+              'subject' => $subject,
+              'content' => drupal_get_form('transaction_start_node_form', $transaction),
+            );
+          }
+          /*
+        default:
+          $type = substr($delta, 7);
+          if (user_access('start ' . $type)) {
+            $types = variable_get('cc_transaction_types', array());
+            $subject = t("New @transaction_type", array('@transaction_type' => $types['transactions'][$type]));
+            $transaction = (object)array('starter_uid' => $user->uid);
+            $transaction->transaction_type = $type;
+            if (arg(0) == 'user' && arg(1) && $user->uid != arg(1)) {
+              $otherperson = user_load(arg(1));
+              $subject = t('New @transaction_type to @name', array('@transaction_type' => $types['transactions'][$type], '@name' => $otherperson->name));
+              $transaction->completer_uid = $otherperson->uid;
+            }
+            return array(
+              'subject' => $subject,
+              'content' => drupal_get_form('transaction_start_node_form', $transaction),
+            );
+          }
+          */
+      }
+    case 'configure':
+      if ($delta == 'cc_stat_summary') { // choose the reporting period
+        $form = array(
+          'period' => array(
+            '#type' => 'textfield',
+            '#title' => t('Period of time covered backwards from now'),
+            '#description' => t('Example: "7 days", "6 months". For syntax see examples on http://php.net/strtotime.'),
+            '#default_value' => variable_get('cc_stats_period', '1 month'),
+            '#maxlength' => 15,
+            '#required' => TRUE,
+          ),
+        );
+        return $form;
+      }
+    case 'save':
+      if ($delta == 'cc_stat_summary') {
+        variable_set('cc_stats_period', $edit['period']);
+      }
+  }
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_form/6
+ * Because we have a special multistep form creating the transactions, this hook_form is only editing
+ */
+function transactions_form(&$node, $form_state) {
+  module_load_include('inc', 'transactions');
+  //reload the whole transaction, which will include all the other fields
+  $transaction=node_load($node->nid);
+  switch ($_POST['op']) {
+    default:
+    case t('Change') ://typically from the 'full edit' link
+      drupal_set_title (t('Editing transaction'));
+      $form=transaction_base_form($transaction, 'edit');   
+      break;
+  }
+
+  return $form;
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_form_alter/6
+ */
+function transactions_form_alter(&$form, $form_state, $form_id) {
+  switch($form_id) {
+    case 'transaction_node_form':
+    case 'transaction_start_node_form':
+      $form['comment_settings']['#type'] = 'value';
+      $form['options']['#access'] = FALSE;
+      $form['buttons']['preview']['#access'] = FALSE;
+      $form['attachments']['#access'] = FALSE;
+      $form['path']['#access'] = FALSE;
+      $form['revision_information']['#access'] = FALSE;
+      $form['author']['#access'] = FALSE;
+      $form['menu']['#access'] = FALSE;
+      break;
+    case 'user_admin_perm':
+      $form['#submit'][] = 'menu_rebuild';
+      break;
+    case 'node_delete_confirm':
+      if ($form['#parameters'][2]->type == 'transaction'){
+        drupal_set_title (t('Are you sure you want to delete this transaction?'));
+        $form['#prefix'] ='<blockquote>' . $form['#parameters'][2]->title . '</blockquote>';
+        if ($form['#parameters'][2]->state == TRANSACTION_STATE_PENDING) {
+          $form['description']['#value'] = t('The transation had not been confirmed');
+        } elseif ($form['#parameters'][2]->state == TRANSACTION_STATE_COMPLETED) {
+          $form['description']['#value'] = t('This transaction was confirmed, so the balances of both users will be affected');
+        }
+      }
+    case 'cc_options':
+      //this is here because it must go after the system_settings_form submit handler
+      $form['#submit'][] = 'menu_rebuild';
+      $form['#submit'][] = 'views_invalidate_cache';
+  }
+}
+
+/*
+ * http://api.drupal.org/api/function/hook_form_alter/6
+ * The so called node here, comes directly from the POST, and hasn't passed through node_load, and loaded up the sub_objects
+ * That's why we're also using _conjoin_minutes
+*/
+function transactions_validate($node, &$form) {
+  module_load_include('inc', 'transactions');
+  //generate the transaction object, regardless of how the data is coming in
+  $submitted_values = $form['title']['#post'];
+  if ($submitted_values['minutes']) {print_r($form);drupal_set_message('Minutes validation has not yet been tested');}
+  if ($form['nid']['#value']) {
+    $submitted_values['nid'] = $form['nid']['#value'];
+    //attach the minutes to the quantity for validation
+    //shouldn't need to do this in fact because of _conjoin_minutes
+    $form['#node']->quantity .= '.' . $form['minutes']['#value'];
+  }
+  $transaction = _infer_transaction_from_array($submitted_values);
+  transaction_fields_validate($transaction);
+}
+function transactions_start_node_validate($form, &$form_state) {
+  module_load_include('inc', 'transactions');
+  //generate the transaction object, regardless of how the data is coming in
+  if ($form_state['values']['minutes']) {print_r($form);drupal_set_message('Minutes validation has not yet been tested');}
+  if ($form_state['values']['nid']) {
+    //attach the minutes to the quantity for validation
+    //shouldn't need to do this in fact because of _conjoin_minutes
+    $form_state->quantity .= '.' . $form_state['values']['minutes'];
+  }
+  $transaction = _infer_transaction_from_array($form_state['values']);
+  transaction_fields_validate($transaction);
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_insert/6
+ */
+function transactions_insert($node) {
+  module_load_include('inc', 'transactions');
+  $result = db_query('INSERT INTO {cc_transactions} (
+    nid, payer_uid, payee_uid, starter_uid, completer_uid, quantity, cid, transaction_type, quality, state, depends_on
+  ) VALUES (%d, %d, %d, %d, %d, %s, %d, "%s", %d, %d, %d)',
+    $node->nid, $node->payer_uid, $node->payee_uid, $node->starter_uid, $node->completer_uid, $node->quantity, $node->cid, $node->transaction_type, $node->quality, $node->state, 0);
+
+  _recalculate_balances(array($node->payer_uid, $node->payee_uid), $node->cid);
+
+  //gets rid of any status messages (and any others)
+  drupal_get_messages('status', TRUE);
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_update/6
+ */
+function transactions_update($node) {
+  module_load_include('inc', 'transactions');
+  db_query("UPDATE {cc_transactions} SET
+    payer_uid = '%d', payee_uid = '%d', starter_uid = '%d', completer_uid = '%d', quantity = '%f', cid = '%d', transaction_type = '%s', quality = '%d', state = %d, depends_on = '%d' WHERE nid = '%d' ",
+    $node->payer_uid, $node->payee_uid, $node->starter_uid,$node->completer_uid, $node->quantity, $node->cid, $node->transaction_type, $node->quality, $node->state, 0, $node->nid
+  );
+  _recalculate_balances(array($node->payer_uid, $node->payee_uid),$node->cid);
+
+  //gets rid of any status messages (and any others)
+  drupal_get_messages('status', TRUE);
+  drupal_goto('user/' . $GLOBALS['user']->uid . '/bureau');
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_delete/6
+ */
+function transactions_delete($node) {
+  module_load_include('inc', 'transactions');
+  //the node is deleted, but it leaves this trace in the cc_transactions table
+  db_query("UPDATE {cc_transactions} set state  = %d WHERE nid = %d", TRANSACTION_STATE_ERASED, $node->nid);
+  _recalculate_balances(array($node->payer_uid, $node->payee_uid), $node->cid);
+}
+
+function transactions_view($node, $teaser = FALSE, $page = FALSE) {
+  $node->content['body'] = array(
+    '#value' => theme('transaction', $node, $teaser),
+  );
+  return $node;
+} 
+
+/** 
+ * http://api.drupal.org/api/function/hook_action_info/6
+ * This hook is required for modules to define one or more node types.
+ */
+function transactions_action_info() {
+  module_load_include('inc', 'transactions');
+  $actions['transactions_email_completer_action'] = array(
+    'description' => t('Mail anyone who needs to complete a transaction'),
+    'type' => 'node',
+    'configurable' => TRUE,
+    'hooks' => array(
+      'nodeapi' => array('presave'),
+    )
+  );
+  $actions['transactions_email_starter_action'] = array(
+    'description' => t('Mail the person who just started a transaction'),
+    'type' => 'node',
+    'configurable' => TRUE,
+    'hooks' => array(
+      'nodeapi' => array('presave'),
+    )
+  );
+  return $actions;
+}
+
+function transactions_email_completer_action_form($context) {
+  $vars = _transaction_email_replacements();
+  $form['message'] = array (
+    '#type' => 'textarea',
+    '#title' => t('Email template'),
+    '#default_value' => $context['template'],
+    '#description' => t("This email will be sent to members when someone initiates a transaction with them which needs confirming. ") . 
+    t("Don't forget to enable the trigger module and set up the trigger at !url. ", array('!url' => l('admin/build/trigger', 'admin/build/trigger'))) .
+    t("You can use the following strings as variables:")
+  );
+  if (module_exists('mime_mail')) {
+    $form['message']['#description'] .= t('You can use html in your message. ');
+  } else {
+    $form['message']['#description'] .= t('Use only plain text ');
+  }
+  foreach ($vars as $var=>$exp) {
+    $form['message']['#description'] .= "\n<br /><strong>$var</strong>: $exp";
+  }
+  return $form;
+}
+function transactions_email_starter_action_form($context) {
+  $vars = _transaction_email_replacements();
+  $form['message'] = array (
+    '#type' => 'textarea',
+    '#title' => t('Email template'),
+    '#default_value' => $context['template'],
+    '#description' => t("This email will be sent to members who initiate a transaction. ") . 
+    t("Don't forget to enable the trigger module and set up the trigger at !url. ", array('!url' => l('admin/build/trigger', 'admin/build/trigger'))) .
+    t("You can use the following strings as variables:")
+  );
+  if (module_exists('mime_mail')) {
+    $form['message']['#description'] .= t('You can use html in your message. ');
+  } else {
+    $form['message']['#description'] .= t('Use only plain text ');
+  }
+  foreach ($vars as $var=>$exp) {
+    $form['message']['#description'] .= "\n<br /><strong>$var</strong>: $exp";
+  }
+  return $form;
+}
+function transactions_email_completer_action_validate($form, &$form_state) {
+  if (!strlen ($form_state['values']['message'])) {
+    form_set_error('message', t("You can't send an empty email"));
+  }
+}
+function transactions_email_starter_action_validate($form, &$form_state) {
+  if (!strlen ($form_state['values']['message'])) {
+    form_set_error('message', t("You can't send an empty email"));
+  }
+}
+function transactions_email_completer_action_submit($form, &$form_state) {
+  return array('template' => $form_state['values']['message']);
+}
+function transactions_email_starter_action_submit($form, &$form_state) {
+  return array('template' => $form_state['values']['message']);
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_theme/6
+ * This hook is required for modules to define one or more node types.
+ */
+function transactions_theme($existing, $type, $theme, $path) {
+  return array(
+    'transaction' => array(
+      'template' => 'transaction',
+      'arguments' => array(
+        'transaction' => NULL,
+        'teaser' => FALSE,
+        'rich_text' => TRUE,
+      )
+    ),
+    'bureau' => array (
+      'template' => 'bureau',
+      'arguments' => array(
+        'balances' => NULL,
+        'chart' => NULL,
+        'pending' => NULL,
+        'history' => NULL
+      )
+    ),
+    'pending' => array (
+      'template' => 'pending',
+      'arguments' => array (
+        'this_user' => NULL,
+        'waiting_on_user' => array(),
+        'waiting_on_other' => array(),
+      )
+    ),
+    'money'=>array(
+      'arguments' => array(
+        'amount' => 0,
+        'cid' => 0,
+      )
+    ),
+    'balances' => array(
+      'template' => 'balances',
+      'arguments' => array(
+        'balances'=> array(),
+      )
+    ),
+    'stats_summary' => array(
+      'arguments' => array(
+        'stats' => array(),
+      )
+    ),
+    'stats_page' => array(
+      'arguments' => array(
+        'stats' => array(),
+      )
+    ),
+    'statement' => array(
+      'function' => 'theme_statement',
+      'arguments' => array(
+        'data' => array(),
+        'uid' => NULL,
+        'rows' => NULL,
+      )
+    ),
+    'rating' => array (
+      'arguments' => array (
+        'quality' => NULL,
+        'cid' => array(),
+      )
+    ),
+  );
+}
+
+
+function template_preprocess_transaction(&$vars) {
+  $transaction = $vars['transaction'];
+  $qualities = variable_get('cc_transaction_qualities', array());
+  $vars['description'] = $transaction->title;
+  if (!$transaction->created) $transaction->created = time();
+  $vars['submitted'] = date('d M, Y', $transaction->created);
+  $vars['created'] = $transaction->created;
+  $vars['starter'] = theme('username', user_load($transaction->starter_uid));
+  $vars['completer'] = theme('username', user_load($transaction->completer_uid));
+  $vars['rating'] = $qualities[$transaction->quality];
+  $vars['amount'] = theme('money', $transaction->quantity, $transaction->currency);
+  $vars['quantity'] = $transaction->quantity;
+  $vars['currency'] = $transaction->currency->title;
+  $vars['state'] = $transaction->state;
+  $vars['transaction_url'] = l($transaction->title, 'node/' . $transaction->nid);
+  $vars['title'] = $transaction->title;
+  if ($transaction->starter_uid == $transaction->payer_uid) {
+    $vars['payer'] = $vars['starter'];
+    $vars['payee'] = $vars['completer'];
+  } else {
+    $vars['payee'] = $vars['starter'];
+    $vars['payer'] = $vars['completer'];
+  }
+  if ($transaction->nid) {
+    $vars['actions'] = '<span id="transaction-buttons">' . implode('', _transaction_get_buttons($transaction)) . '</span>';
+  }
+}
+
+/** 
+ * http://api.drupal.org/api/function/hook_user/6
+ * This hook is required for modules to define one or more node types.
+ */
+function transactions_user($op, &$edit, &$account, $category = NULL) {
+  module_load_include('inc', 'transactions');
+  switch ($op) {
+    case 'form':
+      if ($category != 'account') return;
+      $options['contact']['pending_notification'] = array(
+        '#type' => 'radios',
+        '#prefix' => '<a name="notifications"></a>',
+        '#title' => t('Receive email notification when someone initiates a transaction with you'),
+        '#default_value' => intval($account->pending_notification),
+        '#options' => array (0=>t('no'), 1=>t('yes')),
+        '#weight' => 2,
+      );
+      $options['contact']['starting_notification'] = array(
+        '#type' => 'radios',
+        '#prefix' => '<a name="notifications"></a>',
+        '#title' => t('Receive email notification when you start a transaction'),
+        '#default_value' => intval($account->pending_notification),
+        '#options' => array (0=>t('no'), 1=>t('yes')),
+        '#weight' => 2,
+      );
+      return $options;
+    case 'insert':
+      //user preference to be sent emails about pending transactions
+      $edit['pending_notification']=TRUE; 
+      //this creates an empty row in {cc_balance_cache} for the first currency on the system
+      $def_cur = currency_load();
+      _recalculate_balances(array($edit['uid']), $def_cur->nid);
+    case 'view':// put all the pending transactions on the user's front page, where they c an be seen by the other participants in them
+      $account->content['transactions'] = array (
+        '#type' => user_profile_item,
+        '#title' => t('Pending Transactions'), 
+        '#value' => transactions_pending($account->uid),
+        '#weight' => 5,
+      );
+  }
+}
+
+//theming for Views fields
+//This function is named after phptemplate because it doesn't work when called as a theme_ function
+//this is ok as long as these theme callbacks don't clash with core
+function phptemplate_views_view_field__quantity($view, $field, $row) {
+  return theme('money', $row->cc_transactions_quantity, $row->cc_transactions_cid);
+}
+function phptemplate_views_view_field__balance($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_balance, $row->cc_transactions_cid);
+}
+function phptemplate_views_view_field__pending_difference($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_pending_difference, $row->cc_transactions_cid);
+}
+function phptemplate_views_view_field__pending_balance($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_pending_balance, $row->cc_transactions_cid);
+}
+function phptemplate_views_view_field__gross_income($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_gross_income, $row->cc_transactions_cid);
+}
+
+function theme_money($quantity, $currency, $richtext=TRUE) {
+  //converts numberstrings to numbers, leaving strings as they are
+  if (is_numeric($quantity)) {
+    //seperate the sign, positive or negative
+    $quantity = $quantity+0;
+    if ($quantity <0) {
+      $sign = '-';
+      $quantity = abs($quantity);
+    }
+    //convert decimals to minutes
+    if ($currency->division == 'quarters' && !is_int($quantity)) {
+      $minutes= 60*($quantity - intval($quantity));
+      $quantity =  intval($quantity) .':'. $minutes;
+    }
+  }
+  if (!is_object($currency)) $currency = currency_load($currency);
+  if ($richtext && strlen($currency->icon)) {
+    $icon .= '<img src="' . url($currency->icon) . '" border ="0" />';
+    if (module_exists('cc_currencies')) {
+      $icon = l($icon, 'node/' . $currency->nid, array('html' => TRUE, 'attributes' => array('title'=> $currency->title . ' - ' . $currency->body)));
+    }
+    //Consider using css instead of html to place the image. HMTL is used here because it's easier to control than css when we have multiple currencies
+    return $sign.'<span class="currency">'. $icon . $quantity. '</span>';
+  }
+  return $sign . $quantity . ' ' . $currency->title; 
+}
+
+//returns a single currency object, or an array if parameters are passed
+function currency_load($cid=NULL) {
+  if (module_exists('cc_currencies')) {
+    $all_currencies = get_currencies();
+    if ($cid) {
+      return $all_currencies[$cid];
+    } else {
+      return array_shift($all_currencies);
+    }
+  } 
+  return variable_get('cc_default_currency', NULL);
+}
+
+//always returns an array 
+function currencies_load($options=array()) {
+  if (module_exists('cc_currencies')) {
+    return get_currencies($options);
+  }
+  return array(0 => variable_get('cc_default_currency', NULL));
+}
+
+
+/*
+ * This validates both the default currency and subsequent ones in the cc_multiple module
+ */
+function currency_validate($form, &$form_state) {
+  $currency = (object)$form_state['values'];
+  //check that the title is unique amongst currencies
+  
+  //check that the objective value is blank or numeric
+  if ($currency->objective_value != NULL && !is_numeric ($currency->objective_value)){
+    form_set_error('objective_value', t("This must be an number: @value", array('@value' => $currency->objective_value)));
+  }
+   else $form_state_['values']['objective_value'] = intval($currency->objective_value); //sets blank to zero
+  
+  $divisions = array('integer','quarters','decimal');
+  if (!in_array($currency->division, $divisions)) {
+    form_set_error('division', t("This must be an integer: @value", array('@value' => $currency->division)));
+  }
+  
+  if ($currency->zero_offset != NULL && !is_numeric($currency->zero_offset)) {
+    form_set_error('zero_offset', t("This must be an integer: @value", array('@value' => $currency->zero_offset)));
+  } 
+  else $form_state_['values']['zero_offset'] = intval($currency->zero_offset); //sets blank to zero
+  
+  if ($currency->max_balance < 0 || $currency->max_balance < $currency->min_balance){
+    form_set_error('max_balance', t('Maximum balance must be an integer larger than zero and minimum balance'));
+  }
+  
+  if ($currency->min_balance > 0 ) {
+    form_set_error('min_balance', t('Minimum balance must not be larger than 0'));
+  }
+  
+  //check the icon upload
+  //does this mean the file is known to the files table? I think not
+  $dest = file_directory_path() . '/currencies';
+  file_check_directory($dest, TRUE, 'icon_upload');
+  if ($file = file_save_upload('icon_upload', NULL, $dest, FALSE)) {
+    if ($err = array_pop (file_validate_is_image($file))){
+      form_set_error('icon_upload', $err);
+    }
+    file_validate_image_resolution($file, "16x16", "12x12");
+    //TODO need to make sure that this creates a new directory within files/
+    //file_move($file->filepath, $dest, TRUE);
+    //save using the original filename, in case of duplicate
+    $form_state['values']['icon'] = $file->filepath;
+  }
+  
+  //if any currency on the system is float then the db fields should be floats too.
+  //if the division of this currency has changed...
+  $all_currencies = currencies_load();
+  if ($currency->division != $all_currencies[$currency->{nid}]->division) {
+    //check to see if any currencies are floats and set the db fields accordingly
+    $all_currencies[$currency->{nid}] = $currency; //because the settings haven't been saved yet
+    $div = 'int';
+    foreach ($all_currencies as $curr) {
+      //three possible values for division, the last two require float fields. integer, hours, decimal
+      if ($curr->division != 'integer') $div='float';
+    }
+    module_load_include('admin.inc', 'transactions');
+    alter_quantity_field_types($div);
+    drupal_set_message(t("Quantitative fields in database is set to type '@type'", array('@type' => $div)));
+  }
+}
+
+/*
+ * Returns an array of transaction_types belonging to this module which the user is permitted to initiate
+ */
+function _active_transaction_types() {
+  static $active_types;
+  if ($active_types) return $active_types;
+  
+  $type_names = _named_transaction_types();
+  if (!count($type_names)) {
+    drupal_set_message(t('There are no transaction types declared on the system. Please go to admin/marketplace and name some transaction types')); 
+  } 
+  $active_types = array();
+  //Only the types with names, and the types which the user has permission for
+  foreach ($type_names as $machine_name => $name) {
+    if (strlen($name) && user_access('start ' . $machine_name)) {
+      $active_types[$machine_name] = $name;
+    }
+  }
+  return $active_types;
+}
+
+/*
+ * Returns an array of transaction_types belonging to this module which have been named
+ */
+function _named_transaction_types() {
+  $names = variable_get('cc_transaction_types', array());
+  return $names['transactions'];
+}

@@ -1,0 +1,14 @@
+; $Id:
+name = Cc Multiple Currencies v0.5
+description =  Experimental module allowing arbitrary creation of currencies by users.
+core = 6.x
+package = Complementary Currencies
+dependencies[] = transactions
+files[] = cc_currencies.module
+files[] = cc_currencies.install
+; Information added by drupal.org packaging script on 2009-08-28
+version = "6.x-1.0-rc3"
+core = "6.x"
+project = "marketplace"
+datestamp = "1251465945"
+

@@ -1,0 +1,170 @@
+<?php
+
+/* Provides a form for administrators to create a set of transactions
+ * Intended to tax members to the balancing account and pay salaries
+ * Users cannot change their names (because I can't get around the Drupal duplicate name check)
+ * Usernames are not unique in the Database
+*/
+
+function cc_mass_pay_menu() {
+  $items['admin/marketplace/mass_payment'] = array (
+    'title' => 'Mass Payments',
+    'description' => 'Create mass transactions to and from one account',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cc_mass_pay_collect_form'),
+    'access arguments' => array('edit all transactions'),
+    'menu_name' => 'complementary-currencies',
+    'type' => MENU_NORMAL_ITEM,
+   
+  );
+  $items['admin/marketplace/mass_payment/collect'] = array (
+    'title' => 'Many-to-one',
+    'description' => 'collect an arbitrary amount from most accounts',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/marketplace/mass_payment/salaries'] = array (
+    'title' => 'One-to-many',
+    'description' => 'payout an arbitary amount to a few people',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cc_mass_pay_payout_form'),
+    'access arguments' => array('edit all transactions'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+//This form is built from transaction_base_form then modified
+function cc_mass_pay_collect_form() {
+  require_once(drupal_get_path('module', 'transactions').'/transactions.inc');
+  //putting an empty object in there makes the transaction form show payer_uid and payee_uid instead of starter_uid and completer_uid
+  $form = transaction_base_form((object)NULL);
+  unset($form ['transaction_type']);
+  unset($form ['payer_uid']);
+  unset($form ['completer_uid']);
+  unset($form ['starter_uid']);
+  $payers = _get_all_trading_accounts(FALSE);
+  if (!$payers) return;
+
+  $form['non_payers'] = array (
+    '#type' => 'select', 
+    '#title' => t('Payer exceptions'),
+    '#options' => $payers,
+    '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
+    '#multiple' => TRUE,
+    '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
+  );
+  $form['payee_uid']['#description'] = t("Select the one account to which all the transactions will flow.");
+  $form['quantity']['#description']  = t('How much should be taken from each account?');
+  $form['submit'] = array (
+    '#type' => 'submit',
+    '#value' => t('Generate transactions'),
+    '#weight' => 10,
+  );
+  $form['#redirect'] = 'admin/reports/dblog';
+  return $form;
+}
+
+function cc_mass_pay_collect_form_validate($form, &$form_state) {
+  //validation is not very strong here, but only accountants should be allowed here anyway
+  //Ultimately this should tap into, or combine with the transactions_validate function, which currency validates a single transaction form
+  if (!is_numeric($form_state['values']['quantity'])) {
+    form_set_error('quantity', t('You must enter a number'));
+  }
+  if (!check_plain($form_state['values']['title'])) {
+    form_set_error('title', t('Plain text only in transaction descriptions.'));
+  }
+}
+
+//function _transactions_convert_name_uid(&$transaction_array, $validate_only = FALSE) {
+
+function cc_mass_pay_collect_form_submit($form, $form_state) {
+  require_once(drupal_get_path('module', 'transactions').'/transactions.admin.inc');
+  variable_set('cc_mass_pay_collect_nonpayers', $form_state['values']['non_payers']);
+  $transaction = _infer_transaction_from_array($form_state['values']);
+  //get a list of all users subtract from them the payee and the other exceptions
+  $payers = array_diff(array_keys(_get_all_trading_accounts()), $form_state['values']['non_payers'], array($form_state['values']['payee_uid']));
+  if ($form_state['values']['state'] == TRANSACTION_TYPE_COMPLETED) $type .= 'incoming_mass_direct';
+  else $type .= 'incoming_mass_confirmed';
+  // make the payments
+  foreach ($payers as $payer_uid) {
+    $options = array(
+      'type'=> $type,
+      'starter_uid' => $form_state['values']['payee_uid'],
+      'owner' => 1,
+      'state' => $form_state['values']['state'],
+    );
+    //N.B. Because the node already stores the uid of its creator, and the transaction stores the reported starter of the node, and the function below defaults to the payer as the starter, I'm saying here that the recipient account was the starter.
+    generate_transaction_node($transaction->title, $payer_uid, $transaction->payee_uid, $transaction->quantity, $options, $transaction->cid);
+  }  
+  cc_balances_refresh();
+  $currencies = variable_get('cc_currencies', array());
+  $currency = currency_load($form_state['values']['cid']);
+  $message = t("Many-to-one mass payment of @amount for @description", array('@amount' => $form_state['values']['quantity'] .' ' . $currency->title, $form_state['values']['title']));
+  //this seems to be the only way to get translated strings to watchdog, as the the first 2 parameters must be literal strings
+  watchdog('transactions', '@message', array('@message' => $message));
+}
+
+
+function cc_mass_pay_payout_form() {
+  require_once(drupal_get_path('module', 'transactions').'/transactions.inc');
+  //putting an empty object in there makes the transaction form show payer_uid and payee_uid instead of starter_uid and completer_uid
+  $form = transaction_base_form((object)NULL);
+  unset($form ['transaction_type']);
+  unset($form ['payee_uid']);
+  unset($form ['completer_uid']);
+  unset($form ['starter_uid']);
+  $payees = _get_all_trading_accounts(TRUE);
+  if (!$payees) return;
+
+  $form['payees'] = array (
+    '#type' => 'select', 
+    '#title' => t('Payees'),
+    '#options' => $payees,
+    '#default_value' => variable_get('cc_mass_pay_payees', NULL),
+    '#multiple' => TRUE,
+    '#description' => t("Select the accounts you want to be paid. Use CTRL click to select more than one."),
+  );
+  $form['payer_uid']['title']['#description'] = t("Select the one account from which all the transactions will flow.");
+  $form['quantity']['#description']  = t('How much should be paid into each account?');
+  $form['submit'] = array (
+    '#type' => 'submit',
+    '#value' => t('Generate transactions'),
+    '#weight' => 10,
+  );
+  $form['#redirect'] = 'admin/reports/dblog';
+  return $form;
+}
+
+function cc_mass_pay_payout_form_validate($form, &$form_state) {
+  //validation is not very strong here, but only accountants should be allowed here anyway
+  //Ultimately this should tap into, or combine with the transactions_validate function, which currency validates a single transaction form
+  if (!is_numeric($form_state['values']['quantity'])) {
+    form_set_error('quantity', t('You must enter a number'));
+  }
+  if (!check_plain($form_state['values']['title'])) {
+    form_set_error('title', t('Plain text only in transaction descriptions.'));
+  }
+}
+
+function cc_mass_pay_payout_form_submit($form, $form_state) {
+  require_once(drupal_get_path('module', 'transactions').'/transactions.admin.inc');
+  variable_set('cc_mass_pay_payees', $form_state['values']['payees']);
+  $transaction = _infer_transaction_from_array($form_state['values']);
+  if ($form_state['values']['state'] == TRANSACTION_TYPE_COMPLETED) $type .= 'outgoing_mass_direct';
+  else $type .= 'outgoing_mass_confirmed';
+  //make payments one by one.
+  foreach ($form_state['values']['payees'] as $payee => $display) {
+    $options = array(
+      'type'=> $type,
+      'starter_uid' => $form_state['values']['payer_uid'],
+      'owner' => 1,
+      'state' => $form_state['values']['state'],
+    );
+    //N.B. Because the node already stores the uid of its creator, and the transaction stores the reported starter of the node, and the function below defaults to the payer as the starter, I'm saying here that the recipient account was the starter.
+    generate_transaction_node($transaction->title, $transaction->payer_uid, $payee, $transaction->quantity, $options, $transaction->cid);
+  }
+  cc_balances_refresh();
+  $currencies = variable_get('cc_currencies', array());
+  $message = t("One-to-many multipay of @amount: @description", array('@amount' => theme('money', $form_state['values']['quantity'], 'mass_payment', $currencies[$cid]), $form_state['values']['title']));
+  watchdog('transactions', '@message', array('@message' => $message));
+}
