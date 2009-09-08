@@ -455,7 +455,7 @@ function transactions_view($node, $teaser = FALSE, $page = FALSE) {
 function transactions_action_info() {
   module_load_include('inc', 'transactions');
   $actions['transactions_email_completer_action'] = array(
-    'description' => t('Mail anyone who needs to complete a transaction'),
+    'description' => t('Mail the completer of the transaction'),
     'type' => 'node',
     'configurable' => TRUE,
     'hooks' => array(
@@ -463,7 +463,7 @@ function transactions_action_info() {
     )
   );
   $actions['transactions_email_starter_action'] = array(
-    'description' => t('Mail the person who just started a transaction'),
+    'description' => t('Mail the starter of the transaction'),
     'type' => 'node',
     'configurable' => TRUE,
     'hooks' => array(
@@ -648,9 +648,12 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'load':
       //put the user stats into the user object, where the theming layer can see them
-      $account->stats = db_fetch_array(db_query("SELECT * FROM {cc_balance_cache} WHERE uid = %d AND cid = %d",
+      $result = db_query("SELECT * FROM {cc_balance_cache} WHERE uid = %d AND cid = %d",
         array(':uid' => $account->uid, ':cid' => KAIROS_CURRENCY_CID)
-      ));
+      );
+      while ($balance = db_fetch_array($result)){
+        $account->balances[$balance['cid']] = $balance;
+      }
       break;
     case 'form':
       if ($category != 'account') return;

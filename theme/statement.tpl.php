@@ -9,7 +9,7 @@
  * values $class and $notme are preprocessing is preprocessing is specific to who's statement it is.
  * From the preprocessor, isi sent a $transactions array, where each transaction looks like
  * 
- stdClass Object (
+  stdClass Object (
     [title] => gift from darren to edward
     [url] => <a href="/node/45">gift from darren to edward</a>
     [nid] => 45
@@ -18,16 +18,17 @@
     [starter_uid] => 4
     [completer_uid] => 5
     [other_user] => stdClass Object USER OBJ...
+    [notme] => <a href="/user/4" title="View user profile.">darren</a>
     [cid] => 0
-    [quantity] => <span class="currency"><img src="/sites/marketplace.drupal6/files/currencies/gold.jpg" border ="0" />8</span>
+    [amount] => <span class="currency"><img src="/sites/marketplace.drupal6/files/currencies/gold.jpg" border ="0" />8</span>
+    [quantity] => 8
     [quality] => 0
     [state] => 0
     [created] => 31/08/09
     [transaction_type] => outgoing_direct
     [balance] => -<span class="currency"><img src="/sites/marketplace.drupal6/files/currencies/gold.jpg" border ="0" />3</span>
-    [notme] => <a href="/user/4" title="View user profile.">darren</a>
-    [outgoing] => <span class="currency"><img src="/sites/marketplace.drupal6/files/currencies/gold.jpg" border ="0" />0</span>
-OR  [incoming] => <span class="currency"><img src="/sites/marketplace.drupal6/files/currencies/gold.jpg" border ="0" />0</span>
+    [expenditure] => <span class="currency"><img src="/sites/marketplace.drupal6/files/currencies/gold.jpg" border ="0" />0</span>
+OR  [income] => <span class="currency"><img src="/sites/marketplace.drupal6/files/currencies/gold.jpg" border ="0" />0</span>
     [class] => 'credit' OR 'debit'
     [actions] => SOME HTML...
 )

@@ -21,7 +21,6 @@
  */
   //get the original array to determine if ratings are being used
   $rating = variable_get('cc_transaction_qualities', NULL);
-
 ?>
 <table class = "user-balances"><thead>
   <tr>

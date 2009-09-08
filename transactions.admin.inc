@@ -341,13 +341,13 @@ function validate_limits($minmax) {
       form_set_error($fieldnames[$key], t("This must be an integer: @value", array('@value' => $value)));
     }
   }
+  if ($limits['0'] > 0) {
+    form_set_error($fieldnames[0], t('Minimum balance must not be larger than 0'));
+  }
   if ($limits['1'] < 0 || $limits['1'] < $limits['0']) {
     form_set_error($fieldnames[1], t('Maximum balance must be an integer larger than zero and minimum balance'));
   }
   
-  if ($currency->min_balance > 0) {
-    form_set_error($fieldnames[0], t('Minimum balance must not be larger than 0'));
-  }
 }
 
 //options might equal array('state'=> TRANSACTION_STATE_COMPLETED, 'type'=>'auto', 'rating' => '4', 'starter_uid' => 55)

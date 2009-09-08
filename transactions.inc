@@ -30,11 +30,11 @@ function transactions_bureau ($uid) {
 
 //this is intended for user profile tabs only, and shows the last x completed transactions
 //options only apply to the statement theme, not to the view
-function transactions_list($account, $options=array()) {
+function transactions_list($account=NULL, $options=array()) {
   if (!$account){
     $account = $GLOBALS['user'];
   }
-
+  $options['running_balance']=TRUE;
   if (variable_get('cc_transaction_list', 'statement') == 'statement') {
     //from the year and the month we deduce the time limits for the query
     $transactions = _get_transactions_for_user($account->uid, $options);
@@ -175,8 +175,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
     '#type' => 'hidden',
     '#default_value' => $completer,
   );
-  
-  //need to decide whether to show the starter/completer selector set or the payeer/payee selector set
+  //the selector_set is whether we are using starter/completer or payee/payer
   //if we know only one of the payer and payee, we show that set, otherwise show the other set
   if ($mode == 'fulledit')$selector_set = 'both';
   elseif ((bool)$payer != (bool)$payee) $selector_set = 'payer_payee';
@@ -408,6 +407,21 @@ function transaction_start_node_form($form_state, $transaction=NULL, $presets = 
   return $form;
 }
 
+/*
+WHY DOES DRUPAL REBUILD THE FORM IN STEP1?
+drupal_get_form( )  ../common.inc(1655) : eval()'d code:7
+20  0.4797  9917200 call_user_func_array ( )  ../form.inc:102
+21  0.4797  9917248 drupal_retrieve_form( ) ../form.inc:0
+22  0.4798  9918264 call_user_func_array ( )  ../form.inc:366
+23  0.4798  9918312 transaction_start_node_form( )
+
+drupal_get_form( )  ../common.inc(1655) : eval()'d code:7
+20  0.5474  9957376 drupal_rebuild_form( )  ../form.inc:143
+21  0.5474  9957912 call_user_func_array ( )  ../form.inc:195
+22  0.5474  9957912 drupal_retrieve_form( ) ../form.inc:0
+23  0.5475  9958952 call_user_func_array ( )  ../form.inc:366
+24  0.5475  9959072 transaction_start_node_form( )
+ */
 
 function transaction_start_node_form_submit($form, &$form_state) {
   module_load_include('admin.inc', 'transactions');
@@ -507,7 +521,7 @@ function validate_quantity($element, $form_state) {
  * email notification
 */
 function transactions_email_completer_action($transaction, $context = array()) {
-  if ($node->type != 'transaction' || $node->state == TRANSACTION_STATE_COMPLETED) return;
+  if ($node->type != 'transaction') return;
   //load the user and continue only if the completer wants notification
   $recipient = user_load($node->completer_uid);
   if ($recipient->pending_notification = FALSE) return;
@@ -776,7 +790,7 @@ function chart_user_gross_recent_volumes($account, $options=array()) {
     }
   }
   
-  $max_ever = max(array($account->stats['gross_income'], $account->stats['gross_expenditure']));
+  $max_ever = max(array($account->balances['gross_income'], $account->balances['gross_expenditure']));
   $max_recent = max(array($periodic_income, $periodic_expenditure));
   $data=array();
   $data['cht']= 'bvg';
@@ -785,7 +799,7 @@ function chart_user_gross_recent_volumes($account, $options=array()) {
   $data['chbh'] = 'a,2,10'; //chbh=<bar width>,<space between bars>,<space between groups>
   $data['chco'] = '4D89D9,C6D9FD';
   $data['chf'] =  'bg,s,EFEFEF00';
-  $data['chd'] = 't:' . intval($account->stats['gross_income']) . ',' . intval($periodic_income) . '|' . intval($account->stats['gross_expenditure']) . ',' . intval($periodic_expenditure);
+  $data['chd'] = 't:' . intval($account->balances[$currency->cid]['gross_income']) . ',' . intval($periodic_income) . '|' . intval($account->balances[$currency->cid]['gross_expenditure']) . ',' . intval($periodic_expenditure);
   //axis labels
   $data['chxt'] = 'x,y,x,r';
   $data['chxl'] = '0:|in,out|in,out|1:||'. $max_ever/2 . '|'. $max_ever . '|2:|ever|recent|3:||'. $max_recent/2 . '|'. $max_recent;
@@ -808,12 +822,12 @@ function chart_balance_limits($account, $options=array()) {
   $data=array();
   $data['cht']= 'gom';
   $data['chs']= $dimensions; //chs=<width in pixels>x<height in pixels>
-  $data['chd'] = 't:' . $account->stats['balance'];
+  $data['chd'] = 't:' . $account->balances[$currency->cid]['balance'];
   $data['chds'] = $limits['min']. ',' . $limits['max'];
   $data['chco'] = '3366FF,FFFFFF,33CC00';
   $data['chf'] =  'bg,s,FFFFFF00';
   $data['chtt'] = $labels[0] . '  ->  ' . $labels[1];
-;  return '<img src="http://chart.apis.google.com/chart?' . charts_build_query($data) . '" class="gchart" />';
+  return '<img src="http://chart.apis.google.com/chart?' . charts_build_query($data) . '" class="gchart" />';
 }
 
 //like http_build_query, but makes less mess - google understands anyway
@@ -832,41 +846,36 @@ function charts_build_query($data) {
 function template_preprocess_statement(&$vars) {
   $qualities = count(variable_get('cc_transaction_qualities', null));
   $currencies = currencies_load(array('uids'=>array($uid)));
-  $transactions = $vars['transactions'];
-  while(list($key, $transaction) = each($transactions)) {
+  while(list($key, $transaction) = each($vars['transactions'])) {
     //add a field to identify the user who isn't me
-    if ($transaction->starter_uid == $account->uid) {
-      $transactions[$key]->other_uid =user_load($transaction->completer_uid);
+    if ($transaction->starter_uid == $vars['account']->uid) {
+      $vars['transactions'][$key]->other_user = user_load($transaction->completer_uid);
     } else {
-      $transactions[$key]->other_uid = user_load($transaction->starter_uid);  
-    }
-    //change the sign on the money to negative
-    if ($transaction->payer_uid == $account->uid){
-      $transactions[$key]->quantity = - $transaction->quantity;
+      $vars['transactions'][$key]->other_user = user_load($transaction->starter_uid);
     }
     $cid = $transaction->cid;
-    $transactions[$key]->url = l($transaction->title, 'node/' . $transaction->nid);
-    $transactions[$key]->notme = theme('username', $transaction->other_uid, 'profile');
-    $transactions[$key]->created = date('d/m/y', $transaction->created);
-    $transactions[$key]->quantity = theme('money', $transaction->quantity, $currencies[$cid]);
-    $transactions[$key]->balance = theme('money', $transaction->balance, $currencies[$cid]);
-    if ($transaction->quantity > 0) {
-      $transactions[$key]->income = theme('money', $transaction->quantity, $currencies[$cid]);
-      $transactions[$key]->class = 'credit';
+    $vars['transactions'][$key]->url = l($transaction->title, 'node/' . $transaction->nid);
+    $vars['transactions'][$key]->created = date('d/m/y', $transaction->created);
+    $vars['transactions'][$key]->notme = theme('username', $transaction->other_user);
+    $vars['transactions'][$key]->amount = theme('money', $transaction->quantity, $currencies[$transaction->cid]);
+    $vars['transactions'][$key]->balance = theme('money', $transaction->balance, $currencies[$transaction->cid]);
+    if ($transaction->payee_uid == $vars['account']->uid){
+      //change the sign on the money to negative
+      $vars['transactions'][$key]->income = theme('money', $transaction->quantity, $currencies[$transaction->cid]);
+      $vars['transactions'][$key]->quantity = - $transaction->quantity;
+      $vars['transactions'][$key]->class = 'credit';
     } else {
-      $transactions[$key]->outgoing = theme('money', abs($transaction->quantity), $currencies[$cid]);
-      $transactions[$key]->class = 'debit';
+      $vars['transactions'][$key]->expenditure = theme('money', $transaction->quantity, $currencies[$transaction->cid]);
+      $vars['transactions'][$key]->class = 'debit';
     }
-    
     $actions=array();
     $actions = _transaction_get_buttons_form($transaction);
     if ($transaction->state == TRANSACTION_STATE_COMPLETED) {
       $actions[] = '<div style="font-size:2.5em;color:green">&#x2713;</div>';//tick
     }
-    $transactions[$key]->actions = implode("\n",$actions);
-    if (!$qualities) unset($transactions[$key]->quality);
+    $vars['transactions'][$key]->actions = implode("\n",$actions);
+    if (!$qualities) unset($vars['transactions'][$key]->quality);
   }
-  $vars['transactions'] = $transactions;
 }
 
 /*
@@ -989,7 +998,7 @@ function _recalculate_balances($ids, $cid) {
  *   'until' => time() +1,
  *   'since' => 0,
  *   'cid' => all,
- *   'in_out' => both, (can be in or out)
+ *   'direction' => both, (can be in or out)
  *   'pager_limit' => 10 all transaction module transaction queries (not views) will share the same pager $element id
  *   'running_balance' = FALSE
  *   'order_by' = ASC
@@ -997,9 +1006,9 @@ function _recalculate_balances($ids, $cid) {
  */
 function _get_transactions_for_user($uid, $options){
   extract ($options);
-  if ($in_out == 'in') {
+  if ($direction == 'in') {
     $filters[] = '(payee_uid = '.$uid.')';
-  } elseif ($in_out == 'out') {
+  } elseif ($direction == 'out') {
     $filters[] = '(payer_uid = '.$uid.')';
   } else {
     $filters[] = '(payee_uid = ' . $uid . ' OR payer_uid = ' . $uid . ')';
@@ -1026,7 +1035,6 @@ function _get_transactions_for_user($uid, $options){
   if ($cid) {
     $filters[] = " t.cid = $cid ";
   }
-  
   $query = 'SELECT n.title, n.nid, t.payer_uid, t.payee_uid, t.starter_uid, t.completer_uid, t.cid, t.quantity, t.quality, t.state, n.created, t.transaction_type
       FROM {node} n
       LEFT JOIN {cc_transactions} t ON t.nid = n.nid
@@ -1276,14 +1284,14 @@ function _transaction_limit_check($transaction){
   
   $messages=array();
   $cid = $transaction->cid;
-  if ($payer->stats[$cid]['balance'] - $transaction->quantity < $payer->limits[$cid]['min']) {
+  if ($payer->balances[$cid]['balance'] - $transaction->quantity < $payer->limits[$cid]['min']) {
     $messages[] = t('Transaction would take !username below the minimum balance of !quantity', 
       array('!username' => theme('username', $payer),
         '!quantity' => theme('money', $payer->limits[$cid]['min'], $transaction->currency)
       )
     );
   }
-  if ($payee->stats[$cid]['balance'] + $transaction->quantity > $payer->limits[$cid]['max']) {
+  if ($payee->balances[$cid]['balance'] + $transaction->quantity > $payer->limits[$cid]['max']) {
     $messages[] = t('Transaction would take !username above the maximum balance of !quantity', 
       array('!username' => theme('username', $payee),
         '!quantity' => theme('money', $payer->limits[$cid]['max'], $transaction->currency)
