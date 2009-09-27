@@ -88,9 +88,9 @@ function cc_mass_pay_collect_form_submit($form, $form_state) {
   // make the payments
   foreach ($payers as $payer_uid) {
     $options = array(
-      'type'=> $type,
+      'transaction_type'=> $type,
       'starter_uid' => $form_state['values']['payee_uid'],
-      'owner' => 1,
+      'uid' => 1,
       'state' => $form_state['values']['state'],
     );
     //N.B. Because the node already stores the uid of its creator, and the transaction stores the reported starter of the node, and the function below defaults to the payer as the starter, I'm saying here that the recipient account was the starter.
@@ -155,9 +155,9 @@ function cc_mass_pay_payout_form_submit($form, $form_state) {
   //make payments one by one.
   foreach ($form_state['values']['payees'] as $payee => $display) {
     $options = array(
-      'type'=> $type,
+      'transaction_type'=> $type,
       'starter_uid' => $form_state['values']['payer_uid'],
-      'owner' => 1,
+      'uid' => 1,
       'state' => $form_state['values']['state'],
     );
     //N.B. Because the node already stores the uid of its creator, and the transaction stores the reported starter of the node, and the function below defaults to the payer as the starter, I'm saying here that the recipient account was the starter.

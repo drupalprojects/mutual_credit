@@ -131,7 +131,7 @@ function cc_currencies_form_alter(&$form, $form_state, $form_id) {
       //until the currency form can can show or hide the quarters of an our field according to currency selection, with ajax
       unset ($form['division']['#options']['quarters']);
       break;
-    case 'transaction_start_node_form':
+    case 'transaction_start_form':
     case 'transaction_node_form':
     case 'cc_mass_pay_payout_form':
     case 'cc_mass_pay_collect_form':
@@ -282,7 +282,7 @@ function eliminate_transactions(){
 
 //identify and return some currency objects, filtered according to options $nids, $uids and names_only
 //always returns an array
-function get_currencies($options=array()) {
+function get_currencies($options=array()) {//print_r($options);
   extract ($options);
   if ($cid) {
     return array($cid => node_load($cid));
@@ -312,10 +312,9 @@ function identify_currencies($uids = array()) {
   $ors2 = array('1=1');
   //need to get all the global (sticky) currencies, all these users created, all the ones they traded in.
   if (count($uids)) {
-    foreach ($uids as $uid) {
-      $ors1[] = " uid = " . $uid;
-      $ors2[] = " payer_uid = $uid OR payee_uid = $uid ";
-    }
+    $uid_string = '(' . implode(',',$uids) . ')';
+    $ors1[] = " uid IN " . $uid_string;
+    $ors2[] = " payer_uid IN $uid_string OR payee_uid IN $uid_string ";
   }
   //gets all the universal currencies and the ones owed by named users
   $results = db_query("SELECT nid from {node} WHERE type = 'currency' AND (sticky = TRUE OR ( %s ))", implode(" OR ", $ors1));

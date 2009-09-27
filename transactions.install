@@ -15,6 +15,7 @@ if (!variable_get('cc_default_currency', NULL)) {
     )
   );
 }
+
 /**
  * Implementation of hook_install().
  */
@@ -22,8 +23,8 @@ function transactions_install() {
   drupal_install_schema('transactions');
   variable_set('comment_transactions', '0');
   variable_set('cc_description_min_words', 1);
-  variable_set('cc_stats_period', '1 month');
   variable_set('cc_transaction_list', 'statement');
+  variable_set('cc_stats_periods', array("1 month", "1 year"));
   $names = variable_get('cc_transaction_types', array());
   $names['transactions'] = array(
     'incoming_confirm' => t('invoice'),
@@ -43,23 +44,13 @@ function transactions_install() {
   variable_set('cc_balancing_account_num', 1);
   variable_get('cforge_report', TRUE);
   drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
-    array('!link'=>l('admin/settings/marketplace', 'admin/marketplace', array('attributes'=>array('target'=> '_blank')))))
+    array('!link'=>l('admin/marketplace', 'admin/marketplace', array('attributes'=>array('target'=> '_blank')))))
   );
   drupal_http_request('http://www.communityforge.net/registration.php?from=' . $_SERVER["HTTP_HOST"]);
 }
 
 function transactions_enable(){
-  //this doesn't work
-  /*
-  $item = array(
-    'link_path' => 'my_statement', 
-    'router_path' => 'user/%/statement', 
-    'link_title' => 'My statement',
-    'module' => 'transactions',
-    'menu_name' => 'navigation',
-  );
-menu_link_save($item);
-*/
+
   }
 
 /**
@@ -83,10 +74,10 @@ function transactions_uninstall() {
   variable_del ('cc_transaction_qualities');
   variable_del ('cc_transaction_list');
   variable_del ('cc_currencies');
-  variable_del ('cc_stats_period');
   variable_del ('cc_select_user_show');
   variable_del ('cc_select_user_orderby');
   variable_del ('cc_balancing_account_num');
+  variable_del ('cc_stats_periods');
 }
 
 function transactions_disable() {
@@ -198,6 +189,11 @@ function transactions_schema () {
         'type' => 'int',
         'size' => 'normal',
       ),
+      'gross_expenditure' => array(
+        'description' => "sum of all this user's ougoings in this currency, (integer)",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
       'quality_mean' => array(
         'description' => "average transaction rating for this user in this currency",
         'type' => 'float',
@@ -284,3 +280,23 @@ function transactions_update_6007() {
   drupal_set_message ("The default currency icon has changed, along with theme_money. You can upload your icon at admin/marketplace/currency, or make a new theme_money function");
   return $ret;
 }
+
+function transactions_update_6008() {
+  $ret = array();
+  db_add_field($ret, 'cc_balance_cache', 'gross_expenditure', array(
+    'description' => "State of the transaction - completed, pending, disputed, etc",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
+  module_load_include('admin.inc', 'transactions');
+  cc_balances_refresh();
+  return $ret;
+}
+//correction because generate_transaction_node wasn't specifying uid
+function transactions_update_6009() {
+  $ret = array();
+  db_query ("UPDATE {node} n LEFT JOIN {cc_transactions} t ON n.nid = t.nid SET n.uid = t.starter_uid WHERE n.type = 'transaction' AND n.uid = 0");
+  return $ret;
+}
+

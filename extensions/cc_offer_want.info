@@ -7,9 +7,3 @@ dependencies[] = views
 dependencies[] = taxonomy
 files[] = cc_offer_want.module
 files[] = cc_offer_want.install
-; Information added by drupal.org packaging script on 2009-08-28
-version = "6.x-1.0-rc3"
-core = "6.x"
-project = "marketplace"
-datestamp = "1251465945"
-

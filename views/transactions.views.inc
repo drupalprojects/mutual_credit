@@ -164,14 +164,14 @@ function transactions_views_data() {
   );
 //this belongs with the cc_currencies module, but breaks nothing if module ins't installed
   $data['cc_transactions']['cid'] = array(
-    'title' => t('Currency'), 
+    'title' => t('Currency ID'), 
     'field' => array(
       'help' => t('The currency that the transaction was conducted in'),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     ),
     'argument' => array(
-      'help' => t('The currency id'),
+      'help' => t('Currency id'),
       'handler' => 'views_handler_argument'
     ),
   );
@@ -196,13 +196,13 @@ function transactions_views_data() {
     )
   );
   $data['cc_balance_cache']['cid']=array(
-    'title' => t('Currency'),
+    'title' => t('Currency ID'),
     'argument' => array(
-      'help' => t("The currency id"),
+      'help' => t("Currency id"),
       'handler' => 'views_handler_argument',
     ),
     'field' => array(
-      'help' => t("The currency id"),
+      'help' => t("Currency id"),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     )
@@ -234,7 +234,15 @@ function transactions_views_data() {
   $data['cc_balance_cache']['gross_income']=array(
     'title' => t('Gross Income'),
     'field' => array(
-      'help' => t("The user's total cleared income ever"),
+      'help' => t("The user's total completed income ever"),
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE,
+    )
+  );
+  $data['cc_balance_cache']['gross_expenditure']=array(
+    'title' => t('Gross Expenditure'),
+    'field' => array(
+      'help' => t("The user's total completed expenditure ever"),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     )
@@ -265,354 +273,391 @@ function transactions_views_default_views() {
 
 function cc_ins_and_outs_view() {
   $view = new view;
-$view->name = 'cc_ins_and_outs';
-$view->description = 'show transactions from and to a user';
-$view->tag = 'transactions';
-$view->view_php = '';
-$view->base_table = 'node';
-$view->is_cacheable = FALSE;
-$view->api_version = 2;
-$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-$handler = $view->new_display('default', 'Defaults', 'default');
-$handler->override_option('fields', array(
-  'created' => array(
-    'label' => t('Date'),
-    'date_format' => 'custom',
-    'custom_date_format' => 'd/m/y',
-    'exclude' => 0,
-    'id' => 'created',
-    'table' => 'node',
-    'field' => 'created',
-    'relationship' => 'none',
-  ),
-  'payee_uid' => array(
-    'label' => t('Payee'),
-    'link_to_seller' => 1,
-    'exclude' => 0,
-    'id' => 'payee_uid',
-    'table' => 'cc_transactions',
-    'field' => 'payee_uid',
-    'relationship' => 'none',
-  ),
-  'title' => array(
-    'label' => t('Description'),
-    'link_to_node' => 0,
-    'exclude' => 0,
-    'id' => 'title',
-    'table' => 'node',
-    'field' => 'title',
-    'relationship' => 'none',
-  ),
-  'quantity' => array(
-    'label' => t('Amount'),
-    'exclude' => 0,
-    'id' => 'quantity',
-    'table' => 'cc_transactions',
-    'field' => 'quantity',
-    'relationship' => 'none',
-  ),
-));
-$handler->override_option('sorts', array(
-  'created' => array(
-    'order' => 'DESC',
-    'granularity' => 'minute',
-    'id' => 'created',
-    'table' => 'node',
-    'field' => 'created',
-    'relationship' => 'none',
-  ),
-));
-$handler->override_option('arguments', array(
-  'payer_uid' => array(
-    'default_action' => 'default',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
-    'title' => '',
-    'breadcrumb' => '',
-    'default_argument_type' => 'current_user',
-    'default_argument' => '',
-    'validate_type' => 'user',
-    'validate_fail' => 'not found',
-    'id' => 'payer_uid',
-    'table' => 'cc_transactions',
-    'field' => 'payer_uid',
-    'relationship' => 'none',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'community_task' => 0,
-      'transaction' => 0,
-      'offer' => 0,
-      'page' => 0,
-      'story' => 0,
+  $view->name = 'cc_ins_and_outs';
+  $view->description = 'show transactions from and to a user';
+  $view->tag = 'transactions';
+  $view->view_php = '';
+  $view->base_table = 'node';
+  $view->is_cacheable = FALSE;
+  $view->api_version = 2;
+  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+  $handler = $view->new_display('default', 'Defaults', 'default');
+  $handler->override_option('fields', array(
+    'created' => array(
+      'label' => t('Date'),
+      'date_format' => 'custom',
+      'custom_date_format' => 'd/m/y',
+      'exclude' => 0,
+      'id' => 'created',
+      'table' => 'node',
+      'field' => 'created',
+      'relationship' => 'none',
     ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '1' => 0,
+    'payee_uid' => array(
+      'label' => t('Payee'),
+      'link_to_seller' => 1,
+      'exclude' => 0,
+      'id' => 'payee_uid',
+      'table' => 'cc_transactions',
+      'field' => 'payee_uid',
+      'relationship' => 'none',
     ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_php' => '',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
+    'title' => array(
+      'label' => 'Description',
+      'alter' => array(
+        'alter_text' => 0,
+        'text' => '',
+        'make_link' => 0,
+        'path' => '',
+        'link_class' => '',
+        'alt' => '',
+        'prefix' => '',
+        'suffix' => '',
+        'help' => '',
+        'trim' => 0,
+        'max_length' => '',
+        'word_boundary' => 1,
+        'ellipsis' => 1,
+        'strip_tags' => 0,
+        'html' => 0,
+      ),
+      'link_to_node' => 1,
+      'exclude' => 0,
+      'id' => 'title',
+      'table' => 'node',
+      'field' => 'title',
+      'relationship' => 'none',
     ),
-    'override' => array(
-      'button' => 'Override',
+    'quantity' => array(
+      'label' => t('Amount'),
+      'exclude' => 0,
+      'id' => 'quantity',
+      'table' => 'cc_transactions',
+      'field' => 'quantity',
+      'relationship' => 'none',
     ),
-    'default_options_div_prefix' => '',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-  ),
-  'date_argument' => array(
-    'default_action' => 'default',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
-    'title' => '',
-    'breadcrumb' => '',
-    'default_argument_type' => 'date',
-    'default_argument' => '',
-    'validate_type' => 'none',
-    'validate_fail' => 'not found',
-    'date_fields' => array(
-      'node.created' => 'node.created',
+  ));
+  $handler->override_option('sorts', array(
+    'created' => array(
+      'order' => 'DESC',
+      'granularity' => 'minute',
+      'id' => 'created',
+      'table' => 'node',
+      'field' => 'created',
+      'relationship' => 'none',
     ),
-    'year_range' => '-3:+3',
-    'date_method' => 'OR',
-    'granularity' => 'month',
-    'id' => 'date_argument',
-    'table' => 'node',
-    'field' => 'date_argument',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
+  ));
+  $handler->override_option('arguments', array(
+    'payer_uid' => array(
+      'default_action' => 'default',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'breadcrumb' => '',
+      'default_argument_type' => 'current_user',
+      'default_argument' => '',
+      'validate_type' => 'user',
+      'validate_fail' => 'not found',
+      'id' => 'payer_uid',
+      'table' => 'cc_transactions',
+      'field' => 'payer_uid',
+      'relationship' => 'none',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'community_task' => 0,
+        'transaction' => 0,
+        'offer' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '1' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_php' => '',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+      ),
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'default_options_div_prefix' => '',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
     ),
-    'relationship' => 'none',
-    'default_options_div_prefix' => '',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'community_task' => 0,
-      'transaction' => 0,
-      'offer' => 0,
-      'page' => 0,
-      'story' => 0,
+    'date_argument' => array(
+      'default_action' => 'default',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'breadcrumb' => '',
+      'default_argument_type' => 'date',
+      'default_argument' => '',
+      'validate_type' => 'none',
+      'validate_fail' => 'not found',
+      'date_fields' => array(
+        'node.created' => 'node.created',
+      ),
+      'year_range' => '-3:+3',
+      'date_method' => 'OR',
+      'granularity' => 'month',
+      'id' => 'date_argument',
+      'table' => 'node',
+      'field' => 'date_argument',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'community_task' => 0,
+        'transaction' => 0,
+        'offer' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '1' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
     ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '1' => 0,
+  ));
+  $handler->override_option('filters', array(
+    'type' => array(
+      'operator' => 'in',
+      'value' => array(
+        'transaction' => 'transaction',
+      ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'type',
+      'table' => 'node',
+      'field' => 'type',
+      'relationship' => 'none',
     ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-    'validate_argument_php' => '',
-  ),
-));
-$handler->override_option('filters', array(
-  'type' => array(
-    'operator' => 'in',
-    'value' => array(
-      'transaction' => 'transaction',
+    'state' => array(
+      'operator' => '=',
+      'value' => '0',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'state',
+      'table' => 'cc_transactions',
+      'field' => 'state',
+      'relationship' => 'none',
     ),
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
+  ));
+  $handler->override_option('access', array(
+    'type' => 'none',
+  ));
+  $handler->override_option('cache', array(
+    'type' => 'none',
+  ));
+  $handler->override_option('title', 'payments');
+  $handler->override_option('footer_format', '1');
+  $handler->override_option('footer_empty', 0);
+  $handler->override_option('empty', t('There were no payments in this period'));
+  $handler->override_option('empty_format', '1');
+  $handler->override_option('items_per_page', 0);
+  $handler->override_option('use_pager', '0');
+  $handler->override_option('style_plugin', 'table');
+  $handler = $view->new_display('attachment', 'incoming', 'attachment_1');
+  $handler->override_option('fields', array(
+    'created' => array(
+      'label' => 'Date',
+      'date_format' => 'custom',
+      'custom_date_format' => 'd/m/y',
+      'exclude' => 0,
+      'id' => 'created',
+      'table' => 'node',
+      'field' => 'created',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
     ),
-    'id' => 'type',
-    'table' => 'node',
-    'field' => 'type',
-    'relationship' => 'none',
-  ),
-));
-$handler->override_option('access', array(
-  'type' => 'none',
-));
-$handler->override_option('cache', array(
-  'type' => 'none',
-));
-$handler->override_option('title', 'payments');
-$handler->override_option('footer_format', '1');
-$handler->override_option('footer_empty', 0);
-$handler->override_option('empty', t('There were no payments in this period'));
-$handler->override_option('empty_format', '1');
-$handler->override_option('items_per_page', 0);
-$handler->override_option('use_pager', '0');
-$handler->override_option('style_plugin', 'table');
-$handler = $view->new_display('attachment', 'incoming', 'attachment_1');
-$handler->override_option('fields', array(
-  'created' => array(
-    'label' => 'Date',
-    'date_format' => 'custom',
-    'custom_date_format' => 'd/m/y',
-    'exclude' => 0,
-    'id' => 'created',
-    'table' => 'node',
-    'field' => 'created',
-    'override' => array(
-      'button' => 'Use default',
+    'name_1' => array(
+      'label' => 'Payer',
+      'link_to_user' => 1,
+      'exclude' => 0,
+      'id' => 'name_1',
+      'table' => 'users',
+      'field' => 'name',
+      'relationship' => 'payer_uid',
     ),
-    'relationship' => 'none',
-  ),
-  'name_1' => array(
-    'label' => 'Payer',
-    'link_to_user' => 1,
-    'exclude' => 0,
-    'id' => 'name_1',
-    'table' => 'users',
-    'field' => 'name',
-    'relationship' => 'payer_uid',
-  ),
-  'title' => array(
-    'label' => 'Description',
-    'link_to_node' => 0,
-    'exclude' => 0,
-    'id' => 'title',
-    'table' => 'node',
-    'field' => 'title',
-    'relationship' => 'none',
-    'override' => array(
-      'button' => 'Use default',
+    'title' => array(
+      'label' => 'Description',
+      'alter' => array(
+        'alter_text' => 0,
+        'text' => '',
+        'make_link' => 0,
+        'path' => '',
+        'link_class' => '',
+        'alt' => '',
+        'prefix' => '',
+        'suffix' => '',
+        'help' => '',
+        'trim' => 0,
+        'max_length' => '',
+        'word_boundary' => 1,
+        'ellipsis' => 1,
+        'strip_tags' => 0,
+        'html' => 0,
+      ),
+      'link_to_node' => 1,
+      'exclude' => 0,
+      'id' => 'title',
+      'table' => 'node',
+      'field' => 'title',
+      'relationship' => 'none',
     ),
-  ),
-  'quantity' => array(
-    'label' => 'Amount',
-    'exclude' => 0,
-    'id' => 'quantity',
-    'table' => 'cc_transactions',
-    'field' => 'quantity',
-    'relationship' => 'none',
-  ),
-  'cid' => array(
-    'label' => 'Currency',
-    'exclude' => 1,
-    'id' => 'cid',
-    'table' => 'cc_transactions',
-    'field' => 'cid',
-    'relationship' => 'none',
-  ),
-));
-$handler->override_option('arguments', array(
-  'payee_uid' => array(
-    'default_action' => 'default',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
-    'title' => '',
-    'breadcrumb' => '',
-    'default_argument_type' => 'current_user',
-    'default_argument' => '',
-    'validate_type' => 'user',
-    'validate_fail' => 'not found',
-    'id' => 'payee_uid',
-    'table' => 'cc_transactions',
-    'field' => 'payee_uid',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
+    'quantity' => array(
+      'label' => 'Amount',
+      'exclude' => 0,
+      'id' => 'quantity',
+      'table' => 'cc_transactions',
+      'field' => 'quantity',
+      'relationship' => 'none',
     ),
-    'override' => array(
-      'button' => 'Use default',
+  ));
+  $handler->override_option('arguments', array(
+    'payee_uid' => array(
+      'default_action' => 'default',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'breadcrumb' => '',
+      'default_argument_type' => 'current_user',
+      'default_argument' => '',
+      'validate_type' => 'user',
+      'validate_fail' => 'not found',
+      'id' => 'payee_uid',
+      'table' => 'cc_transactions',
+      'field' => 'payee_uid',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+      ),
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'community_task' => 0,
+        'transaction' => 0,
+        'offer' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '1' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
     ),
-    'relationship' => 'none',
-    'default_options_div_prefix' => '',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'community_task' => 0,
-      'transaction' => 0,
-      'offer' => 0,
-      'page' => 0,
-      'story' => 0,
+    'date_argument' => array(
+      'default_action' => 'default',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'breadcrumb' => '',
+      'default_argument_type' => 'date',
+      'default_argument' => '',
+      'validate_type' => 'none',
+      'validate_fail' => 'not found',
+      'date_fields' => array(
+        'node.created' => 'node.created',
+      ),
+      'year_range' => '-3:+3',
+      'date_method' => 'OR',
+      'granularity' => 'month',
+      'id' => 'date_argument',
+      'table' => 'node',
+      'field' => 'date_argument',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'community_task' => 0,
+        'transaction' => 0,
+        'offer' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '1' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
     ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '1' => 0,
-    ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-    'validate_argument_php' => '',
-  ),
-  'date_argument' => array(
-    'default_action' => 'default',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
-    'title' => '',
-    'breadcrumb' => '',
-    'default_argument_type' => 'date',
-    'default_argument' => '',
-    'validate_type' => 'none',
-    'validate_fail' => 'not found',
-    'date_fields' => array(
-      'node.created' => 'node.created',
-    ),
-    'year_range' => '-3:+3',
-    'date_method' => 'OR',
-    'granularity' => 'month',
-    'id' => 'date_argument',
-    'table' => 'node',
-    'field' => 'date_argument',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
-    ),
-    'relationship' => 'none',
-    'default_options_div_prefix' => '',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'community_task' => 0,
-      'transaction' => 0,
-      'offer' => 0,
-      'page' => 0,
-      'story' => 0,
-    ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '1' => 0,
-    ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-    'validate_argument_php' => '',
-  ),
-));
-$handler->override_option('title', t('Receipts'));
-$handler->override_option('footer_format', '3');
-$handler->override_option('empty', t('There were no receipts in this period'));
-$handler->override_option('attachment_position', 'after');
-$handler->override_option('inherit_arguments', TRUE);
-$handler->override_option('inherit_exposed_filters', 1);
-$handler->override_option('displays', array(
-  'default' => 'default',
-  'page_1' => 0,
-));
-$handler = $view->new_display('date_nav', 'Date browser', 'date_nav_1');
-$handler->override_option('fields', array());
-$handler->override_option('style_plugin', 'date_nav');
-$handler->override_option('style_options', NULL);
-$handler->override_option('attachment_position', 'before');
-$handler->override_option('inherit_arguments', TRUE);
-$handler->override_option('inherit_exposed_filters', 1);
-$handler->override_option('displays', array(
-  'default' => 'default',
-));
+  ));
+  $handler->override_option('title', t('Receipts'));
+  $handler->override_option('footer_format', '3');
+  $handler->override_option('empty', t('There were no receipts in this period'));
+  $handler->override_option('attachment_position', 'after');
+  $handler->override_option('inherit_arguments', TRUE);
+  $handler->override_option('inherit_exposed_filters', 1);
+  $handler->override_option('displays', array(
+    'default' => 'default',
+    'page_1' => 0,
+  ));
+  $handler = $view->new_display('date_nav', 'Date browser', 'date_nav_1');
+  $handler->override_option('fields', array());
+  $handler->override_option('style_plugin', 'date_nav');
+  $handler->override_option('style_options', NULL);
+  $handler->override_option('attachment_position', 'before');
+  $handler->override_option('inherit_arguments', TRUE);
+  $handler->override_option('inherit_exposed_filters', 1);
+  $handler->override_option('displays', array(
+    'default' => 'default',
+  ));
   
   return $view;
 }
@@ -726,7 +771,7 @@ function cc_transaction_list_view() {
       'relationship' => 'none',
     ),
      'cid' => array(
-      'label' => 'Currency',
+      'label' => t('Currency ID'),
       'alter' => array(
         'alter_text' => 0,
         'text' => '',
@@ -1305,8 +1350,6 @@ $handler->override_option('arguments', array(
 ));
 $handler->override_option('block_description', '');
 $handler->override_option('block_caching', -1);
-   
-    
   return $view;
 }
 
@@ -1320,27 +1363,3 @@ function transactions_views_query_alter($view, &$query) {
     $query->where[0]['type']= 'OR';
   }
 }
-
-/** 
- * Implementation of hook_views_pre_render
-*/
-function transactions_views_pre_render(&$view) { 
-  if ($view->name == 'statement') {
-    foreach ($view->result as $key=>$transaction){
-      if ($transaction->cc_transactions_payer_uid == $view->payer_uid->argument) {
-        $running_balance -= $transaction->cc_transactions_quantity;
-        $view->result[$key]->expenditure = $transaction->cc_transactions_quantity;
-        $view->result[$key]->income = NULL;
-      } else {
-        $running_balance += $transaction->cc_transactions_quantity;
-        //we are repurposing the field payer_uid to mean other_person
-        $view->result[$key]->cc_transactions_payer_uid = $transaction->cc_transactions_payer_uid;
-        $view->result[$key]->income = $transaction->cc_transactions_quantity;
-        $view->result[$key]->expenditure = NULL;
-      }
-    $view->result[$key]->running_balance = $running_balance;
-    }
-  }
-}
-//this seems to be expected if pre_render is present
-function transactions_views_pre_view(){}

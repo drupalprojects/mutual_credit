@@ -17,11 +17,12 @@
                 [quality_mean] => REAL_NUMBER
             )
     )
+ * 
   Where ratings are options.
  */
+
   //get the original array to determine if ratings are being used
   $rating = variable_get('cc_transaction_qualities', NULL);
-
 ?>
 <table class = "user-balances"><thead>
   <tr>
@@ -34,28 +35,34 @@
   </tr>
   </thead><tbody>
   <tr>
-    <th><?php  print t('Balance'); ?></th>
+    <th><?php print t('Balance'); ?></th>
     <?php foreach ($balances as $cid=>$bals) { 
-      print "<td>" . theme('money', $bals['balance'], $cid) . '</td>';
+      print "<td>" . $bals['balance'] . '</td>';
     }?>
   </tr>
   <tr>
     <th><?php print t('Unconfirmed total'); ?></th>
      <?php foreach ($balances as $cid=>$bals) {
-        print "<td>" . theme('money', $bals['pending_difference'], $cid) . '</td>';
+        print "<td>" .$bals['pending_difference'] . '</td>';
       }?>
   </tr>
   <tr>
     <th> <?php print t('Gross income') ?> </th>
     <?php foreach ($balances as $cid=>$bals) {
-      print "<td>" . theme('money', $bals['gross_income'], $cid) . '</td>';
+      print "<td>" .$bals['gross_income'] . '</td>';
+    }?>
+  </tr>
+  <tr>
+    <th> <?php print t('Gross expenditure') ?> </th>
+    <?php foreach ($balances as $cid=>$bals) {
+      print "<td>" .$bals['gross_expenditure']. '</td>';
     }?>
   </tr>
   <?php if ($rating) { ?>
   <tr>
     <th><?php print t('Rating'); ?> </th>
     <?php foreach ($balances as $cid=>$bals) {
-       print "<td>" . theme('rating', $bals['quality_mean'], $cid) . '</td>';
+       print "<td>" . $bals['quality_mean'] . '</td>';
       }
     }?>
   </tr>

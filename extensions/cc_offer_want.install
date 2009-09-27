@@ -5,9 +5,6 @@
  * Implementation of hook_install().
  */
 function cc_offer_want_install() {
-  variable_set('cc_non_cc', FALSE);
-  variable_set('cc_goodsandservices', FALSE);
-  variable_set('cc_offers_wants_block_show_all', 0);
   $names = variable_get('cc_transaction_types', array());
   $names['offers_wants'] = array(
     'offer' => 'Offers',
@@ -51,14 +48,11 @@ function cc_offer_want_enable(){
  * Implementation of hook_uninstall().
  */
 function cc_offer_want_uninstall() {
-  variable_del('cc_non_cc');
-  variable_del('cc_goodsandservices');
-  variable_del('cc_offers_wants_block_show_all');
   $names = variable_get('cc_transaction_types', array());
   unset ($names['offers_wants']);
   variable_set('cc_transaction_types', $names);
   drupal_uninstall_schema('cc_offer_want');
-  db_query("DELETE FROM {node} WHERE type = '%s' OR type = '%s'", 'offer', 'want');
+  //db_query("DELETE FROM {node} WHERE type IN ('offer','want')");
   db_query("DELETE FROM {blocks} WHERE module = 'offers_wants'"); 
   $view_ids = db_query ("SELECT vid from views_view WHERE name LIKE 'cc_directory%'");
   while  ($vid = db_fetch_array($view_ids)) {

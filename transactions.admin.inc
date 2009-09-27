@@ -1,5 +1,8 @@
 <?php 
 
+/*
+ * This file contains admin pages and also some function which only happen when a transaction is modified
+ */
 
 function cc_options() {
   $form['cforge_report'] = array(
@@ -29,33 +32,18 @@ function cc_options() {
     '#weight' => -4,
     '#description' => t("The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank."), 
   );
-  $form['cc_transaction_list'] = array (
-    '#type' => 'radios',
-    '#title' => t('Preferred transaction view'),
-    '#default_value' => variable_get('cc_transaction_list', 1),
-    '#weight' => -4,
-    '#options' => array (
-      'statement' => t('A table of all transactions Full access control; cannot be click-sorted; uses drupal pager; configure using THEME_statement()'),
-      'ins_and_outs' => t('Seperate tables of incoming and outgoing transactions. Cruder access control; configure using views module.'),
-    ),
-    '#description' => t("Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."), 
-  );
-  //warning of calendar module dependency
-  if (!(module_exists('calendar'))) {
-    $form['cc_transaction_list']['#options']['ins_and_outs'] .= ' <font color="red">' . t("Pager requires cck, date & calendar modules") . '</font>';
-  }
   
   $form['maintenance'] = array(
     '#type' => 'fieldset',
     '#title' => t('Maintenance'),
     '#weight' => -3,
     '#description' => t('In case the balances get out of sync with the transactions.') . ' ' . 
-      t('Please use this and report an issue at !url', array('!url' => l('drupal.org', 'http://drupal.org/project/marketplace', array('absolute' => TRUE)))),
+      t('Please use this and report an issue at !url', array('!url' => l('drupal.org', 'http://drupal.org/project/mutual_credit', array('absolute' => TRUE)))),
     '#collapsible' => FALSE,
   );
   $form['maintenance']['refresh'] = array (
     '#type' => 'submit',
-    '#value' => t('Flush balances cache'),
+    '#value' => t("Recalulate balances & stats"),
     '#submit' => array('cc_balances_refresh'),
   );
   
@@ -85,9 +73,52 @@ function cc_options() {
   $form['user_selection']['cc_autocomplete_user_select_threshold'] = array(
     '#type' => 'textfield',
     '#title' => t('Threshold at which to use autocomplete widget on the user selection'),
-    '#default_value' => variable_get('cc_autocomplete_user_select_threshold', 140),
+    '#default_value' => variable_get('cc_autocomplete_user_select_threshold', 100),
     '#description' => t("When you have more users than can fit in a dropdown box, you should probably use an autocomplete field instead."),
   );
+  $form['visualisation'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Statistics & visualisation'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['visualisation']['cc_stats_periods'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Periods for which stats are available',
+    '#default_value' => implode("\n",variable_get('cc_stats_periods', array("1 month","3 months"))),
+    '#description' => t('On each line write a period using php !strtotime syntax, for which stats will be cached. ', array('!strtotime' => l('strtotime', 'http://php.net/strtotime'))) . 
+      t('For each period there is a tab on the !stats page, and a block.', array('!stats' => l('stats', 'stats'))),
+  );
+  $form['visualisation']['cc_count_pending'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Count pending transactions'),
+    '#description' => t('Should transactions which have not yet been confirmed be included in transaction listings and in stats?'),
+    '#default_value' => variable_get('cc_count_pending', FALSE),
+  );
+  $form['visualisation']['cc_history_chart_limits'] = array(
+    '#type' => 'radios',
+    '#title' => t("How to determine the extent of the balance history chart"),
+    '#default_value' => variable_get('cc_history_chart_limits', 'trading'),
+    '#options' => array(
+      'trading' => t("The user's minimum and maximum ever balances"),
+      'limits' => t("The user's minimum and maximum balance limits"),
+    ),
+    '#description' => t("The balance history chart can have its upper and lower limits set by the users hisoty, or by the user's balance limits", array('!stats' => l('stats', 'stats'))),
+  );
+  $form['visualisation']['cc_transaction_list'] = array (
+    '#type' => 'radios',
+    '#title' => t('Preferred transaction view'),
+    '#default_value' => variable_get('cc_transaction_list', 1),
+    '#options' => array (
+      'statement' => t('A table of all transactions Full access control; cannot be click-sorted; uses drupal pager; configure using THEME_statement()'),
+      'ins_and_outs' => t('Seperate tables of incoming and outgoing transactions. Cruder access control; configure using views module.'),
+    ),
+    '#description' => t("Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."), 
+  );
+  //warning of calendar module dependency
+  if (!(module_exists('calendar'))) {
+    $form['cc_transaction_list']['#options']['ins_and_outs'] .= ' <font color="red">' . t("Pager requires cck, date & calendar modules") . '</font>';
+  }
   
   $names = variable_get ('cc_transaction_types', array());
   $form['transactions'] = array(
@@ -123,6 +154,8 @@ function cc_options() {
     '#size' => 15,
     '#default_value' => $names['transactions']['incoming_direct'],
   );
+  $form['#submit'][] = 'menu_rebuild';
+  $form['#submit'][] = 'stats_refresh';
 
   return system_settings_form($form);
 }
@@ -140,6 +173,13 @@ function cc_options_validate(&$form, &$form_state) {
   } else {
     $form_state['values']['cc_autocomplete_user_select_threshold'] = abs(intval($form_state['values']['cc_autocomplete_user_select_threshold']));
   }
+  foreach (explode("\n", $form_state['values']['cc_stats_periods'])as $period) {
+    if (!is_integer(strtotime($period))) {
+      form_set_error('cc_stats_periods', t("'@period' is not a valid strtotime string", array('@period' => $period)));
+    }
+    $periods[]= trim($period);
+  }
+  $form_state['values']['cc_stats_periods'] = $periods;
   //we want to work on all the keyes which have __
   foreach($form_state['values'] as $key => $value){
     //the module names was preserved as a prefix in the field name
@@ -167,7 +207,7 @@ function default_currency_config(){
     '#weight' =>-10,
     '#size' => 10,
   );
-  $form['#prefix'] = t("If there is more than one currency on the system, this currency will never be seen or used. the marketplace module does not use a default currency name, but you can use theme_money and/or the stylesheet, class 'currency-0'");
+  $form['#prefix'] = t("If there is more than one currency on the system, this currency will never be seen or used. There is a default currency name, but you can use theme_money and/or the stylesheet, class 'currency-0'");
   $form['#validate'][] = 'currency_validate';// this must go before default_currency_config_validate
   $form['submit']=array (
     '#type' => 'submit',
@@ -190,25 +230,53 @@ function currency_form_fields($currency) {
     ),
     '#description' => t('Many LETS currencies are not divisible, while hours might be divisible into quarters.'),
   );
-  $form['max_balance'] = array(
+  $form['limits'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Balance limits'),
+    '#description' => t("Balance limits are calculated AFTER the offset.") . t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") . t("Those users can also edit individual balance limits on users' account pages"),
+    '#weight' => 5,
+  );
+  $form['limits']['max_balance'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum Balance'),
     '#default_value' => $currency->max_balance,
     '#size' => 4,
     '#maxlength' => 6,
+    '#weight' => 0,
     '#description' => t("Transactions will be declined by the system if the payee balance would go above this number. Up to !num digits.", array('!num'=>6)) . ' ' .
     t("Leave blank for no limit (not reccomended)") . ' ' . 
     t('Maximum balance must be an integer larger than zero.'),
   );
-  $form['min_balance'] = array(
+  $form['limits']['min_balance'] = array(
     '#type' => 'textfield',
     '#title' => t('Minimum Balance'),
     '#default_value' => $currency->min_balance,
     '#size' => 4,
     '#maxlength' => 6,
+    '#weight' => 1,
     '#description' => t("The system will prevent transactions if the payer balance would go below this number. Up to !num digits.", array('!num'=>7)) . 
     t("Leave blank for no limit (not reccomended)") . ' ' . 
     t('Minimum balance must not be larger than 0'),
+  );
+    $form['limits']['zero_offset'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Offset all balances by'),
+    '#default_value' => $currency->zero_offset,
+    '#size' => 4,
+    '#maxlength' => 6,
+    '#weight' => 2,
+    '#description' => t("Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0. This could give the impression that users are starting with a positive or negative balance. Members start with x units 'free' but also need to restore their balance to x when they leave. Instead of this consider gifting new members fromt the central account, and storing all debt in the central account"),
+  );
+  $form['upload'] = array (
+    '#type' => 'fieldset',
+    '#title' => t('Icon'),
+  );
+  $form['upload']['icon_upload'] = array(
+    '#type' => 'file',
+    '#title' => t('Upload icon'),// array('!icon' => theme('1', $currency))),
+    '#prefix' => '<img src="' . url($currency->icon) . '" />',
+    '#description' => t("Should be between 12px square and 16px square, preferably with a transparent background"),
+    '#weight' => -10,
   );
   $form['comparative_value'] = array(
     '#type' => 'textfield',
@@ -219,20 +287,6 @@ function currency_form_fields($currency) {
     '#weight' => 10,
     '#description' => t("If this currency is part of a larger trading network, it will have a value within that network (not yet operational)")
   );
-    $form['zero_offset'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Offset all balances by'),
-    '#default_value' => $currency->zero_offset,
-    '#size' => 4,
-    '#maxlength' => 6,
-    '#description' => t("Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0. This could give the impression that users are starting with a positive or negative balance. Members start with x units 'free' but also need to restore their balance to x when they leave. Instead of this consider gifting new members fromt the central account, and storing all debt in the central account"),
-  );
-  $form['icon_upload'] = array(
-    '#type' => 'file',
-    '#title' => t('Upload currency icon'),// array('!icon' => theme('1', $currency))),
-    '#prefix' => '<img src="' . url($currency->icon) . '" />',
-    '#description' => t("Should be between 12px square and 16px square, preferably with a transparent background"),
-  );
 return $form;
 }
 
@@ -242,6 +296,7 @@ return $form;
 function default_currency_config_submit($form, &$form_state) {
   $cc_default_currency = variable_get('cc_default_currency', (object)array());
   $cc_default_currency->nid = 0;
+  $cc_default_currency->cid = 0;
   $cc_default_currency->title = $form_state['values']['title'];
   $cc_default_currency->max_balance = $form_state['values']['max_balance'];
   $cc_default_currency->min_balance = $form_state['values']['min_balance'];
@@ -288,32 +343,53 @@ function transaction_quality_config_validate($form, &$form_state) {
   $form_state['values']['cc_transaction_qualities']=$save;
 }
 
-//options might equal array('state'=> TRANSACTION_STATE_COMPLETED, 'type'=>'auto', 'rating' => '4', 'starter_uid' => 55)
+function validate_limits($minmax, $required = FALSE) {
+  $fieldnames = array_keys($minmax);
+  $limits = array_values($minmax);
+  foreach ($limits as $key=>$value){
+    if (!is_numeric($value) && ($required || strlen($value))) {
+      form_set_error($fieldnames[$key], t("This must be an integer: @value", array('@value' => $value)));
+    }
+  }
+  if ($limits['0'] > 0) {
+    form_set_error($fieldnames[0], t('Minimum balance must not be larger than 0'));
+  }
+  if ($limits['1'] < 0 || $limits['1'] < $limits['0']) {
+    form_set_error($fieldnames[1], t('Maximum balance must be an integer larger than zero and minimum balance'));
+  }
+  
+}
+
+//options might equal 
 function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0){
+  global $user;
   if ($quantity < 0) {
     drupal_set_message(t('@function was asked to create a transaction with negative value: @value', array('@function' => 'generate_transaction_node', '@value' => $quantity)));
     return;
   } elseif ($quantity <= 0) return;
   
-  global $user;
-  $node = new stdClass();
-  $node->title = $title;
-  $node->type = 'transaction';
-  $node->uid = $options['owner'] or $node->uid = $user->uid;
-  $node->created = $options['created'];
-  $node->status = 0; //this adds protection against anonymous users seeing transactions
-
-  //transaction properties
-  $node->cid = $cid;
-  $node->payee_uid = $payee_uid;
-  $node->payer_uid = $payer_uid;
-  $node->quantity = $quantity;
-  $node->quality = $options['rating']; //NULL if not specified
-  $node->state = $options['state'] or $node->state = TRANSACTION_STATE_COMPLETED;
-  $node->transaction_type = $options['type'] or $node->transaction_type = 'api';
-  
+  $node = $options + array(
+   //default options
+    'state'=> TRANSACTION_STATE_COMPLETED, 
+    'transaction_type'=>'api unspecified', 
+    'quality' => NULL, 
+    'starter_uid' => $user->uid,
+    'uid' => $user->uid,
+    'created' => time(),
+   //other incoming arguments
+    'cid' => $cid,
+    'payee_uid' => $payee_uid,
+    'payer_uid' => $payer_uid,
+    'quantity' => $quantity,
+    'quality' => $quality,
+    'state' => $state,
+    'title' => $title,
+   //some basic node properties
+    'type' => 'transaction',
+    'status' => 0, //this adds protection against anonymous users seeing transactions
+  );
+  $node=(object)$node;
   //starter and completer can be either way around if the transaction is complete and starter not provided
-  $node->starter_uid = $options['starter_uid'] or $node->starter_uid = $node->payee_uid;
   if ($node->starter_uid == $node->payee_uid) {
     $node->completer_uid = $node->payer_uid;
   } else {
@@ -323,22 +399,6 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
   return $node;
 }
 
-function cc_balances_refresh(){
-  module_load_include('inc', 'transactions');
-  db_query("TRUNCATE table {cc_balance_cache}");
-  //get a list of all the users and all the currencies they have traded in 
-  $result = db_query('SELECT uid FROM {users}');
-  while ($account = db_fetch_array($result)) {
-    $members[] = $account['uid'];
-  }
-  foreach ($members as $uid) {
-    $currencies = currencies_load(array('uids'=>array($uid)));
-    foreach (array_keys($currencies) as $cid) {
-      _recalculate_balances(array($uid), $cid);
-    }
-  }
-  drupal_set_message(t('Flushed balance cache'));
-}
 
 /*
  * if even one currency has float values, we need to change the whole database, and back again
@@ -360,9 +420,12 @@ function alter_quantity_field_types($type) {
     
   $newfield['description'] = "the sum of all this user's income in this currency, ($type)";
   db_change_field($ret, 'cc_balance_cache', 'gross_income', 'gross_income', $newfield);
+  
+  $newfield['description'] = "the sum of all this user's expenditure in this currency, ($type)";
+  db_change_field($ret, 'cc_balance_cache', 'gross_expenditure', 'gross_expenditure', $newfield);
 }
 
-function marketplace_report() {
+function cforge_report() {
   $data = array(
     'server' => $_SERVER["HTTP_HOST"],
     'site_name' => variable_get('site_name', 'site_name'),
@@ -415,4 +478,168 @@ function generate_transactions($howmany){
     generate_transaction_node('autogenerated transaction', $all_users[rand(0,$usercount-1)], $all_users[rand(0,$usercount-1)], rand(1, 50), $options, $all_currencies[rand(0,$currencycount-1)]);
   }
   cc_balances_refresh();
+}
+
+
+function cc_balances_refresh(){
+  module_load_include('inc', 'transactions');
+  db_query("TRUNCATE table {cc_balance_cache}");
+  //get a list of all the users and all the currencies they have traded in 
+  $result = db_query('SELECT uid FROM {users}');
+  while ($account = db_fetch_array($result)) {
+    $members[] = $account['uid'];
+  }
+  foreach ($members as $uid) {
+    $currencies = currencies_load(array('uids'=>array($uid)));
+    foreach (array_keys($currencies) as $cid) {
+      _recalculate_balances(array($uid), $cid);
+    }
+  }
+  drupal_set_message(t('Flushed balance cache'));
+}
+//for each user id passed, go through all their transactions and calculate balance, gross_income and pending amounts in their profile
+//TODO need to make this work better with multiple currencies
+//Could more of this be done by SQL?
+function _recalculate_balances($ids, $cid) {
+  module_load_include('inc', 'transactions');
+  $currency = currency_load($cid);
+  $cc_count_pending =  (variable_get('cc_count_pending', FALSE));
+  $options =  array (
+    'states'=>array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING),
+    'cid' => $cid,
+   );
+  while ($uid = array_pop($ids)){
+    $gross_income=0;
+    $outgoings=0;
+    $pending_dif=0;
+    $pending_balance=0;
+    $transactions=NULL;
+    //we don't get the running balance because we're going to iterate through everything anyway
+    $transactions = _get_transactions_for_user($uid, $options);
+    if (count($transactions)){
+    //so we work out out the balance, pending and gross_income again in more detail
+      foreach($transactions as $t) {
+        if ($t->state == TRANSACTION_STATE_COMPLETED){ //completed transactions
+          if ($t->payer_uid == $uid){
+            $gross_expenditure += $t->quantity;
+          } else {
+            $qualities[] = $t->quality;
+            $gross_income += $t->quantity;
+          }
+        } elseif ($t->state == TRANSACTION_STATE_PENDING) { //unpublished transactions are pending
+          if ($t->payer_uid == $uid){
+            $pending_dif -= $t->quantity;
+            if ($count_pending) {
+              $gross_expenditure += $t->quantity;
+            }
+          } else {
+            $pending_dif += $t->quantity;
+            if ($count_pending) {
+              $gross_income += $t->quantity;
+            }
+          }
+        }
+      }
+    }
+    $balance = $gross_income-$gross_expenditure + $currency->zero_offset;
+    $pending_balance = $balance + $pending_dif;
+
+    //gross_income must not be affected by the carried forward
+    if ($transactions[0]->title == t("Carried forward") && $transactions[0]->payer_uid ==0) {
+      $gross_income -= $transactions[0]->quantity;
+    }
+    $quality_mean = count($qualities) ? array_sum($qualities) / count($qualities) : 0;
+    
+    db_query('UPDATE {cc_balance_cache} 
+      SET balance = %f, pending_balance = %f, pending_difference = %f, gross_income = %f, gross_expenditure = %f, quality_mean = %f
+      WHERE uid = %d AND cid = %d', 
+      $balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean, $uid, $cid);
+    if (!db_affected_rows()) {
+      @db_query("INSERT INTO {cc_balance_cache}
+        (uid, cid, balance, pending_balance, pending_difference, gross_income, gross_expenditure, quality_mean)
+        VALUES (%d, %d, %f, %f, %f, %f, %f, %f)",
+        $uid, $cid, $balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean);
+    }
+  }
+  stats_refresh($cid);
+  //TODO Need to update the cache of the block showing pending transactions, which is cached by user
+}
+
+ /*
+  * Stats generator
+  * caches an array of common stats for one currency
+  * $timestring is a positive number of days or months e.g. '3 months'
+  * 
+  */
+function stats_refresh($cid = 0){
+  $periods = variable_get('cc_stats_periods', array("1 month"));
+  foreach ($periods as $period) {
+    $period = trim($period);
+    //this excludes transactions with the balancing account
+    //Anything involving a member count includes only the active members
+    $all_transactions=array();
+    $balancing = variable_get('cc_balancing_account_num', 1);
+    $stats = array();
+    $earned = array();
+    $spent = array();
+    $trades = array();
+    $volume = array();
+    $states = variable_get('cc_count_pending',FALSE) ? array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING) : array(TRANSACTION_STATE_COMPLETED);
+    $result = db_query("SELECT * FROM {cc_transactions} AS t 
+      LEFT JOIN {node} AS n ON t.nid = n.nid
+      WHERE n.created > '%d'
+      AND t.cid = %d
+      AND state in (%d)
+      AND t.payer_uid <> %d AND t.payee_uid <> %d", 
+      array(
+        ':since' => strtotime('-'.$period),
+        ':cid' => $cid,
+        ':states' => implode(',',$states),
+        ':payer_uid' => $balancing,
+        ':payee_uid' => $balancing
+      )
+    );
+      
+    //iterate through the transactions, adding stuff up
+    while ($t = db_fetch_object($result)){
+      $earned[$t->payee_uid] = $earned[$t->payee_uid] + $t->quantity;
+      $spent[$t->payer_uid] = $spent[$t->payer_uid] + $t->quantity;
+      $trades[$t->payee_uid] ++;
+      $trades[$t->payer_uid] ++;
+      $count ++;
+      //print_r($t);
+    }
+    if (!$count) continue;
+    $active_members = count($trades);
+    foreach ($trades as $uid=>$val) {
+      $volume[$uid] = $earned[$uid] + $spent[$uid];
+    }
+    asort($earned);
+    asort($spent);
+    asort($volume);
+    asort($trades);
+    $stats['highest_incomes'] = array_reverse($earned, TRUE);
+    $stats['highest_expenditures'] = array_reverse($spent, TRUE);
+    $stats['highest_volumes'] = array_reverse($volume, TRUE);
+    $stats['trades_per_user'] = array_reverse($trades, TRUE);
+    $stats['misc']['active_members'] = $active_members;
+    $stats['misc']['total_volume'] = array_sum($stats['highest_volumes'])/2;
+    $stats['misc']['mean_volume_active'] = 2*intval(array_sum($stats['highest_volumes'])/$active_members);
+    $stats['misc']['transaction_count'] = $count;
+    //we might not need this one, since it is obtained by simple division of the above
+    $stats['misc']['mean_transaction_count_active'] = $count/floatval($active_members);
+    foreach ($stats as $key => $stat) {
+      cache_set($cid . '-' . $period . '-' . $key, $stat);
+    }
+  }
+}
+/*
+  * TO CALL THIS FROM ANYWHERE, COPY THIS
+  * module_load_include('admin.inc', 'transactions');
+  * stats_refresh_all();
+  */
+function stats_refresh_all () {
+  foreach (currencies_load() as $currency){
+    stats_refresh($currency->cid);
+  }
 }

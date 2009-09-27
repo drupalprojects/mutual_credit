@@ -208,6 +208,7 @@ $handler->override_option('footer', '<?php   if (user_access(\'create global cur
 $handler->override_option('footer_format', '1');
 $handler->override_option('footer_empty', 0);
 $handler->override_option('items_per_page', 25);
+$handler->override_option('distinct', 1);
 $handler->override_option('style_plugin', 'table');
 $handler->override_option('style_options', array(
   'grouping' => '',

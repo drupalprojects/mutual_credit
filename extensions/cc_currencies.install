@@ -13,7 +13,9 @@ function cc_currencies_install() {
  * Implementation of hook_enable().
  */
 function cc_currencies_enable(){
-  if (!count(get_currencies())) {
+  //if this is the first time we are installing we need to creat the first currency node as a copy of the default currency
+  $nid = db_result(db_query("SELECT nid FROM {node} where type = 'currency'"));
+  if (!$nid) {
     $node = variable_get('cc_default_currency', NULL);
     $node->type = 'currency';
     $node->body = t('This currency was the system default but is now one of many possible currencies.');
@@ -25,37 +27,31 @@ function cc_currencies_enable(){
     node_save($node);
     //and because the hoook isn't registered yet
     cc_currencies_insert($node);
-    //need to alter all the database tables with currency ids, and transfer all 0 cids to the first cid.
-    //get the first and only node curency id
-    $cid = db_result(db_query("SELECT nid from node where type = 'currency' ORDER BY nid LIMIT 0,1"));
-    drupal_set_message('first currency is ' .$cid);
-    db_query("UPDATE {cc_transactions} SET cid = %d WHERE cid = 0", $cid);
-    db_query("UPDATE {cc_balance_cache} SET cid = %d WHERE cid = 0", $cid);
   }
+  //need to alter all the data based on currency, and transfer all 0 cids to the first cid.
+  //get the first and only node curency id
+  $cid = db_result(db_query("SELECT nid from {node} where type = 'currency' ORDER BY nid LIMIT 0,1"));
+  //drupal_set_message('first currency is ' .$cid);
+  db_query("UPDATE {cc_transactions} SET cid = %d WHERE cid = 0", $cid);
+  db_query("UPDATE {cc_balance_cache} SET cid = %d WHERE cid = 0", $cid);
+  //finally, and yukkily, we need to run through all the users personal balance limits
+  update_user_balance_keys(0, $cid);
 }
+
 
 /**
  * Implementation of hook_disable().
  */
 function cc_currencies_disable(){
   //get the first currency, which we will set to become the default
-  $def_cur_properties = db_fetch_array(db_query("SELECT * FROM {node} n LEFT JOIN {cc_multiple} m ON n.nid = m.nid WHERE n.type ='currency' ORDER BY n.nid ASC LIMIT 0,1"));
-  $currency = (object)array(
-    'title' => $def_cur_properties['title'],
-    'division' => $def_cur_properties['division'],
-    'max_balance' => $def_cur_properties['max_balance'],
-    'min_balance' => $def_cur_properties['min_balance'],
-    'comparative_value' => $def_cur_properties['comparative_value'],
-    'zero_offset' => $def_cur_properties['zero_offset'],
-    'cid' => $def_cur_properties['cid'],
-    'cid' => 1,
-    'icon' => $def_cur_properties['icon'],
-  );
-  variable_set('cc_default_currency', $currency);
-  db_query("UPDATE {cc_transactions} SET cid = 0 WHERE cid = %d", $def_cur_properties['nid']);
-  db_query("UPDATE {cc_balance_cache} SET cid = 0 WHERE cid = %d", $def_cur_properties['nid']);
+  $first_currency = currency_load();
+  $first_currency->cid = 0;
+  $first_currency->nid = 0;
+  variable_set('cc_default_currency', $first_currency);
+  db_query("UPDATE {cc_transactions} SET cid = 0 WHERE cid = %d", $first_currency->nid);
+  db_query("UPDATE {cc_balance_cache} SET cid = 0 WHERE cid = %d", $first_currency->nid);
   db_query("DELETE from {cc_balance_cache} WHERE cid != 0");
-  
+  update_user_balance_keys($first_currency->nid, 0);
 }
 
 /**
@@ -65,6 +61,19 @@ function cc_currencies_uninstall() {
   //foreach currency, delete all the transaction, all the pending balances, and all the currencies
   db_query("DELETE FROM {node} WHERE type = 'currency'");
   drupal_uninstall_schema('cc_currencies');
+}
+
+//the yukky business of updating the key of the users' specific balance limits
+function update_user_balance_keys($from_cid, $to_cid) {
+  $results = db_query("SELECT uid, data from {users}");
+  while ($result = db_fetch_array($results)) {
+    $data = unserialize($result['data']);
+    if ($data['limits']) {
+      $data['limits'][$to_cid] = $data['limits'][$from_cid];
+      unset ($data['$limits'][$from_cid]);
+      db_query("UPDATE {users} SET data = '%s' WHERE uid = %d", array(':data'=>serialize($data), ':uid' => $result['uid']));
+    }
+  }
 }
 
 function cc_currencies_schema() {

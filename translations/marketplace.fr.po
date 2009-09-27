@@ -6,7 +6,7 @@ msgstr ""
 "Last-Translator: Tim Anderson <timcarouge@gmail.com>\n"
 "Language-Team: French <EMAIL@ADDRESS>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: balances.tpl.php:37
@@ -16,7 +16,7 @@ msgstr "Solde"
 
 #: balances.tpl.php:43
 msgid "Unconfirmed total"
-msgstr "Total des �changes en cours de confirmation"
+msgstr "Total des échanges en cours de confirmation"
 
 #: balances.tpl.php:49
 #: extensions/cc_import.module:122
@@ -27,11 +27,11 @@ msgstr "Cumul"
 #: transactions.inc:844
 #: views/transactions.views.inc:130;243
 msgid "Rating"
-msgstr "Appr�ciation"
+msgstr "Appréciation"
 
 #: pending.tpl.php:14
 msgid "Transactions for !user to sign off"
-msgstr "Echanges � confirmer par !user"
+msgstr "Echanges à confirmer par !user"
 
 #: pending.tpl.php:21
 msgid "Transactions !user started"
@@ -39,11 +39,11 @@ msgstr "Echanges saisis par !user"
 
 #: transactions.admin.inc:7
 msgid "Tell Community Forge about this community."
-msgstr "Anonncer cette communaut� � Community Forge."
+msgstr "Anonncer cette communauté à Community Forge."
 
 #: transactions.admin.inc:12
 msgid "Become part of a wider community by allowing a coordinating to know a few things about this site. Such as url, contact details, number of active traders. No personal information will be shared."
-msgstr "Participez � une communaut� plus large en laissant quelques informations sur ce site, telles que url, adresses de contact, nombre de membres actifs, etc. Aucune information personnelle ne sera partag�e."
+msgstr "Participez à une communauté plus large en laissant quelques informations sur ce site, telles que url, adresses de contact, nombre de membres actifs, etc. Aucune information personnelle ne sera partagée."
 
 #: transactions.admin.inc:16
 msgid "Minimum number of words to describe a transaction"
@@ -51,31 +51,31 @@ msgstr "Nombre de mots minimum pour la description"
 
 #: transactions.admin.inc:21
 msgid "This site could be better if you can get members to take a few seconds more to describe the transaction in more detail. It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4."
-msgstr "Si vos membres prennent quelques minutes pour bien d�crire leurs �changes, ce site sera mieux aliment�. Ceci rend la cat�gorisation des �changes plus pr�cise, et plus facile � se rappeler. Nous sugg�rons 4 mots."
+msgstr "Si vos membres prennent quelques minutes pour bien décrire leurs échanges, ce site sera mieux alimenté. Ceci rend la catégorisation des échanges plus précise, et plus facile à se rappeler. Nous suggérons 4 mots."
 
 #: transactions.admin.inc:25
 msgid "Number of the balancing account"
-msgstr "Num�ro du compte d'�quilibre"
+msgstr "Numéro du compte d'équilibre"
 
 #: transactions.admin.inc:30
 msgid "The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank."
-msgstr "Le compte d'�quilibre est important, mais n'est pas obligatoire. Il est utilis� comme pot commun."
+msgstr "Le compte d'équilibre est important, mais n'est pas obligatoire. Il est utilisé comme pot commun."
 
 #: transactions.admin.inc:34
 msgid "Preferred transaction view"
-msgstr "Votre affichage pref�rr�"
+msgstr "Votre affichage preférré"
 
 #: transactions.admin.inc:38
 msgid "One list of all transactions, with many possible columns. Canot be click-sorted"
-msgstr "Une liste de toutes les �changes, avec de nombreuses colonnes. Ne peut pas �tre tri� par clique"
+msgstr "Une liste de toutes les échanges, avec de nombreuses colonnes. Ne peut pas être trié par clique"
 
 #: transactions.admin.inc:39
 msgid "Seperate lists of incoming and outgoing transactions (uses Views)"
-msgstr "Des listes d'�changes"
+msgstr "Des listes d'échanges"
 
 #: transactions.admin.inc:41
 msgid "Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."
-msgstr "Les �changes mensuels peuvent �tre affich�s en 2 formats. Les deux sont param�trable par \"theming\"."
+msgstr "Les échanges mensuels peuvent être affichés en 2 formats. Les deux sont paramétrable par \"theming\"."
 
 #: transactions.admin.inc:46
 #, fuzzy
@@ -84,11 +84,11 @@ msgstr "Maintenance"
 
 #: transactions.admin.inc:48
 msgid "In case the balances get out of sync with the transactions."
-msgstr "Au cas o� les soldes se d�-synchronisent avec les �changes."
+msgstr "Au cas où les soldes se dé-synchronisent avec les échanges."
 
 #: transactions.admin.inc:49
 msgid "Please use this and report an issue at !url"
-msgstr "Veuillez utiliser ce rapport, � envoyer � !url"
+msgstr "Veuillez utiliser ce rapport, à envoyer à !url"
 
 #: transactions.admin.inc:54
 msgid "Flush balances cache"
@@ -96,15 +96,15 @@ msgstr "Vider le cache des soldes"
 
 #: transactions.admin.inc:60
 msgid "Selecting other users"
-msgstr "S�lectionner d'autres membres"
+msgstr "Sélectionner d'autres membres"
 
 #: transactions.admin.inc:67
 msgid "User dropdown order"
-msgstr "L'ordre dans lequel la liste d�roulante va afficher les membres"
+msgstr "L'ordre dans lequel la liste déroulante va afficher les membres"
 
 #: transactions.admin.inc:69
 msgid "On the new transaction form, in what order should the members be listed?"
-msgstr "Dans quel ordre voulez-vous afficher les membres sur la liste des �changes ?"
+msgstr "Dans quel ordre voulez-vous afficher les membres sur la liste des échanges ?"
 
 #: transactions.admin.inc:70;79
 msgid "User ID"
@@ -116,11 +116,11 @@ msgstr "Nom du membre"
 
 #: transactions.admin.inc:74
 msgid "User dropdown field(s)"
-msgstr "Liste d�roulante des membres"
+msgstr "Liste déroulante des membres"
 
 #: transactions.admin.inc:77
 msgid "On the new transaction form, what fields should be used to identify members in the dropdown. Field order nor the spacer character can be configured. Would be great if you choose a view for this, like a cck field."
-msgstr "Sur le formulaire Saisir un �change, quels champs voulez-vous utiliser pour identifier les membres dans une liste d�roulante? Ni l'ordre, ni l'espace ne peuvent �tre configur�s. Ce serait mieux si vous pouviez choisir un view, comme un champ cck. "
+msgstr "Sur le formulaire Saisir un échange, quels champs voulez-vous utiliser pour identifier les membres dans une liste déroulante? Ni l'ordre, ni l'espace ne peuvent être configurés. Ce serait mieux si vous pouviez choisir un view, comme un champ cck. "
 
 #: transactions.admin.inc:79
 msgid "Email"
@@ -132,15 +132,15 @@ msgstr "A partir de combien de noms est-ce que le widget autocomplete se met en 
 
 #: transactions.admin.inc:85
 msgid "When you have more users than can fit in a dropdown box, you should probably use an autocomplete field instead."
-msgstr "Quand vous avez plus de membres que d'espace dans le menu d�roulant, nous conseillons un champ autocomplete."
+msgstr "Quand vous avez plus de membres que d'espace dans le menu déroulant, nous conseillons un champ autocomplete."
 
 #: transactions.admin.inc:91
 msgid "Names of transaction types"
-msgstr "Les noms des types d'�changes"
+msgstr "Les noms des types d'échanges"
 
 #: transactions.admin.inc:95
 msgid "These are the names of the transaction types. Unnamed types will be unavailable. You must name at least one. "
-msgstr "Voici les noms des types d'�changes. Les types sans noms seront non-affich�s. Vous devez en cr�er au moins un. "
+msgstr "Voici les noms des types d'échanges. Les types sans noms seront non-affichés. Vous devez en créer au moins un. "
 
 #: transactions.admin.inc:96
 msgid "For each type there is a block, a menu link (coming soon) and a permission"
@@ -152,15 +152,15 @@ msgstr "Le nom d'un flux @direction accomplie @when"
 
 #: transactions.admin.inc:100;112
 msgid "outgoing"
-msgstr "donn�s"
+msgstr "donnés"
 
 #: transactions.admin.inc:100;106
 msgid "by the other party"
-msgstr "par le partenaire dans l'�change"
+msgstr "par le partenaire dans l'échange"
 
 #: transactions.admin.inc:106;118
 msgid "incoming"
-msgstr "demand�s"
+msgstr "demandés"
 
 #: transactions.admin.inc:112;118
 msgid "instantly"
@@ -168,21 +168,21 @@ msgstr "de suite"
 
 #: transactions.admin.inc:128
 msgid "Minimum number of words must be a positive integer"
-msgstr "Le nombre de mots doit �tre un chiffre entier positif"
+msgstr "Le nombre de mots doit être un chiffre entier positif"
 
 #: transactions.admin.inc:131
 msgid "Balancing account must be an integer."
-msgstr "Le compte d'�quilibre doit avoir un nombre entier"
+msgstr "Le compte d'équilibre doit avoir un nombre entier"
 
 #: transactions.admin.inc:135
 #: transactions.module:793;797
 msgid "This must be an integer: @value"
-msgstr "Ceci doit �tre un nombre entier: @value"
+msgstr "Ceci doit être un nombre entier: @value"
 
 #: transactions.admin.inc:159
 #: extensions/cc_currencies.module:92
 msgid "Currency name"
-msgstr "Nom de l'unit� d'�change"
+msgstr "Nom de l'unité d'échange"
 
 #: transactions.admin.inc:161
 msgid "Use the plural"
@@ -190,7 +190,7 @@ msgstr "Utiliser la forme plurielle"
 
 #: transactions.admin.inc:166
 msgid "If there is more than one currency on the system, this currency will never be seen or used. the marketplace module does not use a default currency name, but you can use theme_money and/or the stylesheet, class 'currency-0'"
-msgstr "Si vous avez plus d'une unit� d'�change dans le syst�me, cette unit� d'�change ne seras pas vue, ni utilis�e. Le module Marketplace n'utilise pas d'unit� d'�change par d�faut, mais vous pouvez utiliser theme_money et/ou le stylesheet, class 'currency-0'"
+msgstr "Si vous avez plus d'une unité d'échange dans le système, cette unité d'échange ne seras pas vue, ni utilisée. Le module Marketplace n'utilise pas d'unité d'échange par défaut, mais vous pouvez utiliser theme_money et/ou le stylesheet, class 'currency-0'"
 
 #: transactions.admin.inc:170
 #: views/cc_offer_want.views.inc:320
@@ -199,7 +199,7 @@ msgstr "Modifier"
 
 #: transactions.admin.inc:180
 msgid "Currency subdivision"
-msgstr "Sous division de l'unit� d'�change"
+msgstr "Sous division de l'unité d'échange"
 
 #: transactions.admin.inc:183
 msgid "integer"
@@ -211,40 +211,40 @@ msgstr "quarts (d'heure)"
 
 #: transactions.admin.inc:185
 msgid "hundredths (two decimal places)"
-msgstr "centi�mes (0.00)"
+msgstr "centièmes (0.00)"
 
 #: transactions.admin.inc:187
 msgid "Many LETS currencies are not divisible, while hours might be divisible into quarters."
-msgstr "De nombreuses unit� d'�change ne sont pas divisible, tandis que les heures sont divisible par quarts. "
+msgstr "De nombreuses unité d'échange ne sont pas divisible, tandis que les heures sont divisible par quarts. "
 
 #: transactions.admin.inc:191
 msgid "Maximum Balance"
-msgstr "Solde maximum tol�r�"
+msgstr "Solde maximum toléré"
 
 #: transactions.admin.inc:195
 msgid "Transactions will be declined by the system if the payee balance would go above this number. Up to !num digits."
-msgstr "Le syst�me va refuser un �change qui provoque le d�passement de ce solde. Jusqu'au !num chiffres."
+msgstr "Le système va refuser un échange qui provoque le dépassement de ce solde. Jusqu'au !num chiffres."
 
 #: transactions.admin.inc:196;206
 msgid "Leave blank for no limit (not reccomended)"
-msgstr "Laissez en blanc pour ne pas mettre une limite (d�conseill�)"
+msgstr "Laissez en blanc pour ne pas mettre une limite (déconseillé)"
 
 #: transactions.admin.inc:197
 msgid "Maximum balance must be an integer larger than zero."
-msgstr "Le solde maximal doit �tre un nom entier plus grand que z�ro."
+msgstr "Le solde maximal doit être un nom entier plus grand que zéro."
 
 #: transactions.admin.inc:201
 msgid "Minimum Balance"
-msgstr "Solde minimum tol�r�"
+msgstr "Solde minimum toléré"
 
 #: transactions.admin.inc:205
 msgid "The system will prevent transactions if the payer balance would go below this number. Up to !num digits."
-msgstr "Le syst�me vas refuser un �change qui provoque le d�passement de ce solde n�gatif. Jusqu'a !num chiffres."
+msgstr "Le système vas refuser un échange qui provoque le dépassement de ce solde négatif. Jusqu'a !num chiffres."
 
 #: transactions.admin.inc:207
 #: transactions.module:806
 msgid "Minimum balance must not be larger than 0"
-msgstr "Le solde minimum ne doit pas �tre plus que 0"
+msgstr "Le solde minimum ne doit pas être plus que 0"
 
 #: transactions.admin.inc:211
 msgid "Comparative value"
@@ -252,67 +252,67 @@ msgstr "Valeur comparative"
 
 #: transactions.admin.inc:216
 msgid "If this currency is part of a larger trading network, it will have a value within that network (not yet operational)"
-msgstr "Si cette unit� d'�change est employ�e par un r�seau d'�change plus large, il aura une valeur dans ce r�seau (ne fonctionne pas encore)"
+msgstr "Si cette unité d'échange est employée par un réseau d'échange plus large, il aura une valeur dans ce réseau (ne fonctionne pas encore)"
 
 #: transactions.admin.inc:220
 msgid "Offset all balances by"
-msgstr "D�placer toutes les soldes de "
+msgstr "Déplacer toutes les soldes de "
 
 #: transactions.admin.inc:224
 msgid "Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0. This could give the impression that users are starting with a positive or negative balance. Members start with x units 'free' but also need to restore their balance to x when they leave. Instead of this consider gifting new members fromt the central account, and storing all debt in the central account"
-msgstr "Bien que chaque unit� d'�change soit dans un syst�me ferm� avec un compte d'�quilibrage, le solde peut-�tre d�plac�. Ceci pourrait donner l'impression que les membres d�butent avec un solde positif, ou n�gatif. Les membres ont x unit�s \"gratis\" mais doivent remettre le solde � x quand ils quittent. Au lieu de ce syst�me, un don � chaque nouveau membre pourrait venir du compte d'�quilibre, o� la dette est stock�e."
+msgstr "Bien que chaque unité d'échange soit dans un système fermé avec un compte d'équilibrage, le solde peut-être déplacé. Ceci pourrait donner l'impression que les membres débutent avec un solde positif, ou négatif. Les membres ont x unités \"gratis\" mais doivent remettre le solde à x quand ils quittent. Au lieu de ce système, un don à chaque nouveau membre pourrait venir du compte d'équilibre, où la dette est stockée."
 
 #: transactions.admin.inc:228
 msgid "Upload currency icon"
-msgstr "T�l�charger l'ic�ne pour votre unit� d'�change"
+msgstr "Télécharger l'icône pour votre unité d'échange"
 
 #: transactions.admin.inc:230
 msgid "Should be between 12px square and 16px square, preferably with a transparent background"
-msgstr "Devrait �tre entre 12 pixels et 16 pixels carr�, de pr�f�rence avec un fond transparent"
+msgstr "Devrait être entre 12 pixels et 16 pixels carré, de préférence avec un fond transparent"
 
 #: transactions.admin.inc:263
 msgid "Traders can earn a reputation when their customers rate them highly. Use this field to list the words used to describe the quality of transactions, from worst to best, one on each line."
-msgstr "Les membres pourraient donner des appr�ciations des �changes. Veuillez lister les mots � utiliser pour d�crire la qualit� des �changes. Commencez avec le pire, jusqu'au meuilleur. Un mot par ligne."
+msgstr "Les membres pourraient donner des appréciations des échanges. Veuillez lister les mots à utiliser pour décrire la qualité des échanges. Commencez avec le pire, jusqu'au meuilleur. Un mot par ligne."
 
 #: transactions.admin.inc:264
 msgid "Example:<br />-1|Bad<br />0|As expected<br />1|Great!<br />  Leave blank to disable this feature. Note that in automated transactions, 0 will be be used, so 0 should be a neutral value."
-msgstr "Exemple:<br />-1|Mauvais<br />0|Conforme � mes attentes <br />1|Excellent!<br />  Laisser en blanc pour d�sactiver cette fonction. Veuillez noter que, dans les transactions automatis�es, 0 sera utilis�, donc 0 devrait �tre une valeur neutre."
+msgstr "Exemple:<br />-1|Mauvais<br />0|Conforme à mes attentes <br />1|Excellent!<br />  Laisser en blanc pour désactiver cette fonction. Veuillez noter que, dans les transactions automatisées, 0 sera utilisé, donc 0 devrait être une valeur neutre."
 
 #: transactions.admin.inc:265
 msgid "Beware that changing the number of rating options after transactions have been entered will distort the averages."
-msgstr "NB : si vous changez les options des appr�ciations une fois les �changes entr�s, les moyens vont �tre fauss�s."
+msgstr "NB : si vous changez les options des appréciations une fois les échanges entrés, les moyens vont être faussés."
 
 #: transactions.admin.inc:266
 msgid "This feature could use a lot more work to integrate into views and stats"
-msgstr "Cette fonctionnalit� pourrait b�n�ficier d'un travail important pour l'int�grer dans les views et les statistiques"
+msgstr "Cette fonctionnalité pourrait bénéficier d'un travail important pour l'intégrer dans les views et les statistiques"
 
 #: transactions.admin.inc:276
 msgid "You must have more than one rating, or leave the field blank to disable the rating system"
-msgstr "Vous devez avoir plus d'une appr�ciation, ou laisser le champ vide afin de rendre le syst�me d'appr�ciation caduc"
+msgstr "Vous devez avoir plus d'une appréciation, ou laisser le champ vide afin de rendre le système d'appréciation caduc"
 
 #: transactions.admin.inc:290
 msgid "@function was asked to create a transaction with negative value: @value"
-msgstr "@function �tait appel� � cr�er un �change avec une valeur n�gative : @value"
+msgstr "@function était appelé à créer un échange avec une valeur négative : @value"
 
 #: transactions.admin.inc:336
 msgid "Flushed balance cache"
-msgstr "Le cache des soldes est vid�"
+msgstr "Le cache des soldes est vidé"
 
 #: transactions.inc:125
 msgid "Full Edit mode. Beware not to enter contradictory information"
-msgstr "Modification compl�te. Veillez au donn�s contradictoires. "
+msgstr "Modification complète. Veillez au donnés contradictoires. "
 
 #: transactions.inc:126
 msgid "The starter and the completer must be the same two users as the payer and the payee."
-msgstr "La personne qui a saisi l'�change et la personne qui doit confirmer l'�change doivent �tre les m�mes que la personne qui donne des unit�s, et la personne qui en demande."
+msgstr "La personne qui a saisi l'échange et la personne qui doit confirmer l'échange doivent être les mêmes que la personne qui donne des unités, et la personne qui en demande."
 
 #: transactions.inc:142
 msgid "What is being paid for?"
-msgstr "Qu'avez vous �chang� ?"
+msgstr "Qu'avez vous échangé ?"
 
 #: transactions.inc:146
 msgid "What goods or services were exchanged? "
-msgstr "Quels Biens ou Services �taient �chang�s ?"
+msgstr "Quels Biens ou Services étaient échangés ?"
 
 #: transactions.inc:149
 msgid "Minimum @num words"
@@ -328,7 +328,7 @@ msgstr "La personne qui va donner des grains"
 
 #: transactions.inc:205
 msgid "Initiator, if not you"
-msgstr "Si ce n'est pas vous-m�me"
+msgstr "Si ce n'est pas vous-même"
 
 #: transactions.inc:219
 msgid "With whom did you transact?"
@@ -340,7 +340,7 @@ msgstr "avec ce membre..."
 
 #: transactions.inc:231
 msgid "Transaction type"
-msgstr "Type d'�change"
+msgstr "Type d'échange"
 
 #: transactions.inc:252
 msgid "Transaction is waiting to be confirmed)."
@@ -356,11 +356,11 @@ msgstr "Quarts"
 
 #: transactions.inc:308
 msgid "Rate the quality of what was paid for"
-msgstr "Appr�ciation de la qualit� de l'�change"
+msgstr "Appréciation de la qualité de l'échange"
 
 #: transactions.inc:364
 msgid "Do you want to start this transaction?"
-msgstr "Voulez-vous saisir cet �change ?"
+msgstr "Voulez-vous saisir cet échange ?"
 
 #: transactions.inc:368
 msgid "Go back"
@@ -372,7 +372,7 @@ msgstr "Envoyer"
 
 #: transactions.inc:393
 msgid "Are you sure you want to complete the transaction \"@description\""
-msgstr "Et�s-vous certains de vouloir confirmer l'�change suivant: \"@description\""
+msgstr "Etês-vous certains de vouloir confirmer l'échange suivant: \"@description\""
 
 #: transactions.inc:396
 msgid "Complete"
@@ -384,16 +384,16 @@ msgstr "Annuler"
 
 #: transactions.inc:406
 msgid "Transaction with @starter completed"
-msgstr "L'�change avec @starter est confirm�"
+msgstr "L'échange avec @starter est confirmé"
 
 #: transactions.inc:413
 #: extensions/cc_mass_pay.module:74;145
 msgid "Plain text only in transaction descriptions."
-msgstr "Veuillez utiliser du texte seul dans les descriptions d'�change."
+msgstr "Veuillez utiliser du texte seul dans les descriptions d'échange."
 
 #: transactions.inc:416
 msgid "Please describe the transaction in more detail"
-msgstr "Veuillez d�crire l'�change en d�tail (@int mots minimum)"
+msgstr "Veuillez décrire l'échange en détail (@int mots minimum)"
 
 #: transactions.inc:422
 #: extensions/cc_mass_pay.module:71;142
@@ -402,27 +402,27 @@ msgstr "Veuillez saisir un chiffre"
 
 #: transactions.inc:426;430
 msgid "You must enter a whole number"
-msgstr "Veuillez saisir un num�ro entier"
+msgstr "Veuillez saisir un numéro entier"
 
 #: transactions.inc:433
 msgid "Who are you transacting with?"
-msgstr "Vous avez �chang� avec..."
+msgstr "Vous avez échangé avec..."
 
 #: transactions.inc:449
 msgid "Negative numbers not allowed. You may be able to change the direction of the transaction"
-msgstr "Des chiffres n�gatifs ne sont pas permis. Veuillez changer le sens du flux de la transaction."
+msgstr "Des chiffres négatifs ne sont pas permis. Veuillez changer le sens du flux de la transaction."
 
 #: transactions.inc:525
 msgid "You have a transaction to confirm"
-msgstr "Vous avez un �change � confirmer"
+msgstr "Vous avez un échange à confirmer"
 
 #: transactions.inc:685
 msgid "Literal"
-msgstr "Litt�ral"
+msgstr "Littéral"
 
 #: transactions.inc:699
 msgid "Sampled"
-msgstr "Echantillonn�"
+msgstr "Echantillonné"
 
 #: transactions.inc:726
 msgid "Spot"
@@ -446,23 +446,23 @@ msgstr "Evolution du solde"
 
 #: transactions.inc:798;806
 msgid "No statistics will be available until some transactions have happened"
-msgstr "Les statistiques seront disponibles quand il y aura des �changes confirm�s"
+msgstr "Les statistiques seront disponibles quand il y aura des échanges confirmés"
 
 #: transactions.inc:799;807
 msgid "Number of transactions: @num"
-msgstr "Nombre d'�changes : @num"
+msgstr "Nombre d'échanges : @num"
 
 #: transactions.inc:800;808
 msgid "Total volume traded: @num"
-msgstr "Cumul des �changes : @num"
+msgstr "Cumul des échanges : @num"
 
 #: transactions.inc:801;809
 msgid "Number of trading members: @num"
-msgstr "Nombre de membres ayant �chang�s : @num"
+msgstr "Nombre de membres ayant échangés : @num"
 
 #: transactions.inc:815
 msgid "Most trades:"
-msgstr "Le plus d'�changes :"
+msgstr "Le plus d'échanges :"
 
 #: transactions.inc:820
 msgid "Largest incomes:"
@@ -470,7 +470,7 @@ msgstr "Les cumuls importants :"
 
 #: transactions.inc:825
 msgid "Largest expenditure:"
-msgstr "Le plus gros �change :"
+msgstr "Le plus gros échange :"
 
 #: transactions.inc:832
 #: extensions/cc_currencies.module:272
@@ -479,7 +479,7 @@ msgstr "Le solde de @username's pour le mois de @month"
 
 #: transactions.inc:834
 msgid "This person has no completed transactions this month. Navigate to another month using the pager below"
-msgstr "Ce membre n'a pas d'�change confirm� pour le mois affich�. Veuillez naviguer � un autre mois ci-dessous"
+msgstr "Ce membre n'a pas d'échange confirmé pour le mois affiché. Veuillez naviguer à un autre mois ci-dessous"
 
 #: transactions.inc:840
 #: extensions/cc_currencies.module:230
@@ -502,17 +502,17 @@ msgstr "avec"
 #: transactions.inc:843
 #: views/transactions.views.inc:138;307;498;735
 msgid "Amount"
-msgstr "Unit�s"
+msgstr "Unités"
 
 #: transactions.inc:845;1096
 #: extensions/cc_currencies.module:233
 msgid "Income"
-msgstr "Unit�s re�ues"
+msgstr "Unités reçues"
 
 #: transactions.inc:846;1093
 #: extensions/cc_currencies.module:234
 msgid "Expenditure"
-msgstr "Unit�s donn�es"
+msgstr "Unités données"
 
 #: transactions.inc:847
 msgid "Running Total"
@@ -520,11 +520,11 @@ msgstr "Total courant"
 
 #: transactions.inc:935
 msgid "Carried forward"
-msgstr "solde report�"
+msgstr "solde reporté"
 
 #: transactions.inc:1078
 msgid "No roles have permission to start any transactions."
-msgstr "Aucun r�le n'a le droit de saisir un �change."
+msgstr "Aucun rôle n'a le droit de saisir un échange."
 
 #: transactions.inc:1165
 msgid "Please enter a member's username or email in this field: @nonuser"
@@ -532,47 +532,47 @@ msgstr "Veuillez saisir le nom du membre ou son email dans ce champ: @nonuser"
 
 #: transactions.inc:1219
 msgid "Transaction has been rejected as it would take !username below the minimum balance of !quantity"
-msgstr " Cet �change est refus� car le membre !username sera en-dessous du solde minimal de !quantity"
+msgstr " Cet échange est refusé car le membre !username sera en-dessous du solde minimal de !quantity"
 
 #: transactions.inc:1225
 msgid "Transaction has been rejected as it would take !username above the maximum balance of !quantity"
-msgstr "Cet �change est refus� car le membre !username sera au-dessus du solde maximal de !quantity"
+msgstr "Cet échange est refusé car le membre !username sera au-dessus du solde maximal de !quantity"
 
 #: transactions.inc:1236
 msgid "the username of the recipient"
-msgstr "le nom d'utilisateur de la personne qui as re�u les unit�s"
+msgstr "le nom d'utilisateur de la personne qui as reçu les unités"
 
 #: transactions.inc:1237
 msgid "the username of the person who started the transaction"
-msgstr "le nom d'utilisateur de la personne qui a saisi l'�change"
+msgstr "le nom d'utilisateur de la personne qui a saisi l'échange"
 
 #: transactions.inc:1238
 msgid "a summary of the whole transaction"
-msgstr "un r�sum� des �changes"
+msgstr "un résumé des échanges"
 
 #: transactions.inc:1239
 msgid "description of the transaction by the starter"
-msgstr "descriptif de l'�change par la personne qui a saisi l'�change"
+msgstr "descriptif de l'échange par la personne qui a saisi l'échange"
 
 #: transactions.inc:1240
 msgid "web address of pending transactions page"
-msgstr "l'adresse internet de la page des �changes en cours de confirmation"
+msgstr "l'adresse internet de la page des échanges en cours de confirmation"
 
 #: transactions.inc:1241
 msgid "web address of profile page with subscription checkbox"
-msgstr "l'adresse internet de la page du profil avec la possibilit� de se d�sinscrire"
+msgstr "l'adresse internet de la page du profil avec la possibilité de se désinscrire"
 
 #: transactions.inc:1242
 msgid "web address of 'bureau' page of this user"
-msgstr "adresse internet de l'aper�u de ce membre"
+msgstr "adresse internet de l'aperçu de ce membre"
 
 #: transactions.inc:1243
 msgid "web address of recipient's profile page"
-msgstr "l'adresse internet de la page profil de la personne qui va recevoir des unit�s"
+msgstr "l'adresse internet de la page profil de la personne qui va recevoir des unités"
 
 #: transactions.inc:1269
 msgid "Sign"
-msgstr "Confirmer l'�change"
+msgstr "Confirmer l'échange"
 
 #: transactions.inc:1281
 #: transactions.module:353
@@ -585,37 +585,37 @@ msgstr "Effacer"
 
 #: transactions.inc:1307
 msgid "Must be a whole number of hours"
-msgstr "Veuillez entrer une heure enti�re"
+msgstr "Veuillez entrer une heure entière"
 
 #: transactions.inc:763
 #: transactions.module:213
 #: extensions/cc_mass_pay.module:104;169
 msgid "transactions"
-msgstr "�changes"
+msgstr "échanges"
 
 #: transactions.inc:763
 msgid "Error creating balance chart: url to google charts exceeded 2048 charts."
-msgstr "Erreur lors de la cr�ation du graphique : l'url de google charts a depass� 2048 graphiques"
+msgstr "Erreur lors de la création du graphique : l'url de google charts a depassé 2048 graphiques"
 
 #: transactions.module:27
 msgid "Defines a contentType called transactions, manages them and does the accounting."
-msgstr "Ceci d�finit un type de contenu appel� �changes, les g�re, et fait la comptabilit�."
+msgstr "Ceci définit un type de contenu appelé échanges, les gére, et fait la comptabilité."
 
 #: transactions.module:56;292;296
 msgid "transaction"
-msgstr "�change"
+msgstr "échange"
 
 #: transactions.module:58
 msgid "A movement of a quantity of a currency between two users."
-msgstr "Le flux entre deux membres d'une quantit� d'unit�s d'�change"
+msgstr "Le flux entre deux membres d'une quantité d'unités d'échange"
 
 #: transactions.module:60
 msgid "Description of entity traded"
-msgstr "Description de l'Unit�"
+msgstr "Description de l'Unité"
 
 #: transactions.module:248
 msgid "Start transaction"
-msgstr "Saisir un �change"
+msgstr "Saisir un échange"
 
 #: transactions.module:254
 msgid "User Balances"
@@ -623,7 +623,7 @@ msgstr "Soldes des membres"
 
 #: transactions.module:258
 msgid "Statistics for period"
-msgstr "Statistiques pour la p�riode"
+msgstr "Statistiques pour la période"
 
 #: transactions.module:265
 msgid "Start"
@@ -635,13 +635,14 @@ msgstr "solde de @user "
 
 #: transactions.module:287
 msgid "Recent Activity"
-msgstr "Activit�s r�centes"
+msgstr "Activités récentes"
 
 #: transactions.module:292
 msgid "Start @transaction_type"
 msgstr "Saisir un @transaction_type"
 
 #: transactions.module:296
+#, fuzzy
 msgid "Start @transaction_type with @name"
 msgstr "Saisir un @transaction_type avec @name"
 
@@ -651,11 +652,11 @@ msgstr "Saisir un @transaction_type"
 
 #: transactions.module:313
 msgid "New @transaction_type to @name"
-msgstr "Saisir un @transaction_type � @name"
+msgstr "Saisir un @transaction_type à @name"
 
 #: transactions.module:327
 msgid "Period of time covered backwards from now"
-msgstr "Depuis aujourdh'ui, la p�riode remont�e est de"
+msgstr "Depuis aujourdh'ui, la période remontée est de"
 
 #: transactions.module:328
 msgid "Example: \"7 days\", \"6 months\". For syntax see examples on http://php.net/strtotime."
@@ -663,35 +664,35 @@ msgstr "Exemple: \"7 jours\", \"6 mois\". Voir exemples de syntaxe ici http://ph
 
 #: transactions.module:354
 msgid "Editing transaction"
-msgstr "Vous pouvez modifier l'�change"
+msgstr "Vous pouvez modifier l'échange"
 
 #: transactions.module:383
 msgid "Are you sure you want to delete this transaction?"
-msgstr "Etes-vous sur de vouloir effacer cet �change ?"
+msgstr "Etes-vous sur de vouloir effacer cet échange ?"
 
 #: transactions.module:386
 msgid "The transation had not been confirmed"
-msgstr "L'�change n'a pas �t� confirm�"
+msgstr "L'échange n'a pas été confirmé"
 
 #: transactions.module:388
 msgid "This transaction was confirmed, so the balances of both users will be affected"
-msgstr "L'�change a �t� confirm�, donc les soldes des 2 membres seront chang�s"
+msgstr "L'échange a été confirmé, donc les soldes des 2 membres seront changés"
 
 #: transactions.module:486
 msgid "Mail anyone who needs to complete a transaction"
-msgstr "Envoyer � quelq'un qui a besoin de confirmer un �change"
+msgstr "Envoyer à quelq'un qui a besoin de confirmer un échange"
 
 #: transactions.module:494
 msgid "Mail the person who just started a transaction"
-msgstr "Envoyer un email � la personne qui a saisi l'�change"
+msgstr "Envoyer un email à la personne qui a saisi l'échange"
 
 #: transactions.module:508;528
 msgid "Email template"
-msgstr "Mod�le d'email"
+msgstr "Modèle d'email"
 
 #: transactions.module:510
 msgid "This email will be sent to members when someone initiates a transaction with them which needs confirming. "
-msgstr "Le courriel suivant vas �tre envoy� � le/la partenaire dans l'�change afin de demander confirmation."
+msgstr "Le courriel suivant vas être envoyé à le/la partenaire dans l'échange afin de demander confirmation."
 
 #: transactions.module:511;531
 msgid "Don't forget to enable the trigger module and set up the trigger at !url. "
@@ -711,7 +712,7 @@ msgstr "Utilisez que du texte brut"
 
 #: transactions.module:530
 msgid "This email will be sent to members who initiate a transaction. "
-msgstr "Cet email sera envoy� aux membres qui saisissent un �change."
+msgstr "Cet email sera envoyé aux membres qui saisissent un échange."
 
 #: transactions.module:546;551
 msgid "You can't send an empty email"
@@ -719,7 +720,7 @@ msgstr "Vous ne pouvez pas envoyer un courriel vide"
 
 #: transactions.module:675
 msgid "Receive email notification when someone initiates a transaction with you"
-msgstr "Recevoir un email quand un-e membre saisit un �change avec vous"
+msgstr "Recevoir un email quand un-e membre saisit un échange avec vous"
 
 #: transactions.module:677;685
 msgid "no"
@@ -731,23 +732,23 @@ msgstr "oui"
 
 #: transactions.module:683
 msgid "Receive email notification when you start a transaction"
-msgstr "Recevoir un email quand vous saisissez un �change"
+msgstr "Recevoir un email quand vous saisissez un échange"
 
 #: transactions.module:787
 msgid "This must be an number: @value"
-msgstr "Ceci doit �tre un chiffre: @value"
+msgstr "Ceci doit être un chiffre: @value"
 
 #: transactions.module:802
 msgid "Maximum balance must be an integer larger than zero and minimum balance"
-msgstr "Le solde maximal doit �tre un chiffre plus grand que z�ro ainsi que le solde minimal"
+msgstr "Le solde maximal doit être un chiffre plus grand que zéro ainsi que le solde minimal"
 
 #: transactions.module:838
 msgid "Quantitative fields in database is set to type '@type'"
-msgstr "Les champs quantitatifs dans la base de donn�es sont param�tr�s � '@type'"
+msgstr "Les champs quantitatifs dans la base de données sont paramétrés à '@type'"
 
 #: transactions.module:878
 msgid "There are no transaction types declared on the system. Please go to admin/marketplace and name some transaction types"
-msgstr "Il n'y a pas le type d'�changes d�clar� dans le syst�me. Veuillez vous rendre � admin/marketplace et en donner des noms"
+msgstr "Il n'y a pas le type d'échanges déclaré dans le système. Veuillez vous rendre à admin/marketplace et en donner des noms"
 
 #: transactions.module:213
 msgid "inc"
@@ -755,15 +756,15 @@ msgstr "inc"
 
 #: transactions.module:214
 msgid "view all transactions"
-msgstr "voir les �changes"
+msgstr "voir les échanges"
 
 #: transactions.module:214
 msgid "edit all transactions"
-msgstr "modifier tous les �changes"
+msgstr "modifier tous les échanges"
 
 #: transactions.module:214
 msgid "configure marketplace"
-msgstr "param�trer marketplace "
+msgstr "paramétrer marketplace "
 
 #: transactions.module:216
 msgid "start "
@@ -776,31 +777,31 @@ msgstr "saisir"
 #: extensions/cc_mass_pay.info:0
 #: extensions/cc_offer_want.info:0
 msgid "Complementary Currencies"
-msgstr "Unit�s d'�changes"
+msgstr "Unités d'échanges"
 
 #: transactions.module:83
 msgid "General complementary currency options"
-msgstr "Options des monnaies compl�mentaires"
+msgstr "Options des monnaies complémentaires"
 
 #: transactions.module:91
 msgid "Default Currency"
-msgstr "Unit� d'�change par d�fault"
+msgstr "Unité d'échange par défault"
 
 #: transactions.module:92
 msgid "Default currency, transaction ratings and directory settings"
-msgstr "Unit� d'�change, appr�ciation des �changes et les param�trages des listes"
+msgstr "Unité d'échange, appréciation des échanges et les paramétrages des listes"
 
 #: transactions.module:99
 msgid "Transaction ratings"
-msgstr "Valeurs de l'appr�ciation"
+msgstr "Valeurs de l'appréciation"
 
 #: transactions.module:100
 msgid "Transaction satisfaction ratings"
-msgstr "Valeurs d'appr�ciation des �changes"
+msgstr "Valeurs d'appréciation des échanges"
 
 #: transactions.module:113
 msgid "Sign this transaction to finalise it"
-msgstr "Confirmer cet �change afin de le comptabiliser"
+msgstr "Confirmer cet échange afin de le comptabiliser"
 
 #: transactions.module:124
 #: transactions.info:0
@@ -814,11 +815,11 @@ msgstr "Vue d'ensemble"
 
 #: transactions.module:147
 msgid "Start new transaction"
-msgstr "Saisir un �change"
+msgstr "Saisir un échange"
 
 #: transactions.module:148
 msgid "The new transaction form, with nothing pre-filled"
-msgstr "Le formulaire d'�change, sans donn�es"
+msgstr "Le formulaire d'échange, sans données"
 
 #: transactions.module:159
 msgid "30 day stats"
@@ -826,7 +827,7 @@ msgstr "Statistiques des 30 derniers jours"
 
 #: transactions.module:160
 msgid "Analysis of the last 30 days of trading."
-msgstr "Analyse des �changes des 30 derniers jours."
+msgstr "Analyse des échanges des 30 derniers jours."
 
 #: transactions.install:29
 msgid "invoice"
@@ -846,97 +847,97 @@ msgstr "don"
 
 #: transactions.install:45
 msgid "Transaction module is installed. Set the default currency at !link"
-msgstr "Le module Echange est install�. D�finir l'unit� d'�change ici  !link"
+msgstr "Le module Echange est installé. Définir l'unité d'échange ici  !link"
 
 #: transactions.install:106;172
 #: extensions/cc_offer_want.install:79
 msgid "the node to which this entry is attached"
-msgstr "cette item est attach� � ce node"
+msgstr "cette item est attaché à ce node"
 
 #: transactions.install:111
 msgid "the user id of the payer"
-msgstr "Le num�ro de membre de la personne qui donne des unit�s d'�change"
+msgstr "Le numéro de membre de la personne qui donne des unités d'échange"
 
 #: transactions.install:116
 msgid "the user id of the payee"
-msgstr "Le num�ro de membre de la personne qui re�oit des unit�s d'�change"
+msgstr "Le numéro de membre de la personne qui reçoit des unités d'échange"
 
 #: transactions.install:121
 msgid "the uid of the subject of the transaction, the starter"
-msgstr "Le num�ro de membre de la personne qui as saisi l'�change"
+msgstr "Le numéro de membre de la personne qui as saisi l'échange"
 
 #: transactions.install:126
 msgid "uid of the object of the transaction"
-msgstr "uid de l'objet de l'�change"
+msgstr "uid de l'objet de l'échange"
 
 #: transactions.install:131
 msgid "the nid of the currency used"
-msgstr "l'unit� d'�change utilis�"
+msgstr "l'unité d'échange utilisé"
 
 #: transactions.install:136
 msgid "the number of units transferred, (@type)"
-msgstr "le nombre d'unit� d'�change transf�r�, (@type)"
+msgstr "le nombre d'unité d'échange transféré, (@type)"
 
 #: transactions.install:141;216
 msgid "The type of transaction, types are provided by modules"
-msgstr "Le type d'�change, qui est fourni par les modules"
+msgstr "Le type d'échange, qui est fourni par les modules"
 
 #: transactions.install:146
 msgid "the quality of the work done, expressed as a quantity"
-msgstr "la qualit� du travail accompli, exprim� en quantit�"
+msgstr "la qualité du travail accompli, exprimé en quantité"
 
 #: transactions.install:151
 msgid "State of the transaction - completed, pending, disputed, etc"
-msgstr "Etat de l'�change - confirm�, en cours, en litige, etc"
+msgstr "Etat de l'échange - confirmé, en cours, en litige, etc"
 
 #: transactions.install:156
 msgid "nid of parent transaction"
-msgstr "nid de l'�change apparent�"
+msgstr "nid de l'échange apparenté"
 
 #: transactions.install:169
 msgid "cached balances, turnovers and pending balances, for exposure to views"
-msgstr "soldes, cumul et �changes en cours de confirmation, pour �tre affich� dans views"
+msgstr "soldes, cumul et échanges en cours de confirmation, pour être affiché dans views"
 
 #: transactions.install:177
 msgid "the currency id, where there is more than one currency"
-msgstr "Le nom de l'unit� d'�change quand vous utilisez plus d'une unit�"
+msgstr "Le nom de l'unité d'échange quand vous utilisez plus d'une unité"
 
 #: transactions.info:0
 msgid "Makes a contentType called transactions and manages the way that users create and view this content."
-msgstr "Cr�e a contentType Echanges et g�re comment les membres cr�ent des  �changes et les affichent"
+msgstr "Crée a contentType Echanges et gère comment les membres créent des  échanges et les affichent"
 
 #: extensions/cc_currencies.module:53
 msgid "A complementary currency"
-msgstr "Une unit� d'�change compl�mentaire"
+msgstr "Une unité d'échange complémentaire"
 
 #: extensions/cc_currencies.module:55
 msgid "Currency Name"
-msgstr "Nom de l'unit� d'�change"
+msgstr "Nom de l'unité d'échange"
 
 #: extensions/cc_currencies.module:57;100
 msgid "Currency purpose, ethos, values and rules"
-msgstr "Les r�gles, le but, l'ethos et les valeurs de votre unit� d'�change"
+msgstr "Les règles, le but, l'ethos et les valeurs de votre unité d'échange"
 
 #: extensions/cc_currencies.module:95
 msgid "Write the full title, like this: 'Loaves,bread' or 'pounds, sterling silver' or 'chickens'"
-msgstr "Veuillez �crire le titre en entier, par exemple 'Panier de l�gumes' ou 'Peinture de mon salon' ou 'Plat marocain avec boissons non-alcoolis�es'"
+msgstr "Veuillez écrire le titre en entier, par exemple 'Panier de légumes' ou 'Peinture de mon salon' ou 'Plat marocain avec boissons non-alcoolisées'"
 
 #: extensions/cc_currencies.module:103
 msgid "Write about the purpose and value of your currency. If your currency is \"hearts\", what is a heart for, how would I earn or spend one? In particular, is it intended to be redeemable or is it purely a unit of account? That means would you redeem 5 virtual loaves of bread for real ones or tell me to go back online where I came from? Remember you may not be able to edit your currency once someone has traded in it."
-msgstr "Ecrivez sur le but et la valeur de votre unit� d'�change. Si votre unit� est \"coeurs\", � quoi servent ces coeurs, comment un-e membre pourrait en avoir ou en utiliser? Plus particuli�rement, est-ce rachetable, ou simplement une unit� d'�change entre membres? Rappel: vous ne pouvez probablement pas changer l'unit� apr�s des �changes comptabilis�s par des membres. "
+msgstr "Ecrivez sur le but et la valeur de votre unité d'échange. Si votre unité est \"coeurs\", à quoi servent ces coeurs, comment un-e membre pourrait en avoir ou en utiliser? Plus particulièrement, est-ce rachetable, ou simplement une unité d'échange entre membres? Rappel: vous ne pouvez probablement pas changer l'unité après des échanges comptabilisés par des membres. "
 
 #: extensions/cc_currencies.module:122
 msgid "visible to all"
-msgstr "Affich� � tous"
+msgstr "Affiché à tous"
 
 #: extensions/cc_currencies.module:145
 #: views/transactions.views.inc:167;199;315;506
 msgid "Currency"
-msgstr "Unit�"
+msgstr "Unité"
 
 #: extensions/cc_currencies.module:227
 msgid "This user has no completed transactions"
-msgstr "Ce membre n'a pas d'�changes comptabilis�s"
+msgstr "Ce membre n'a pas d'échanges comptabilisés"
 
 #: extensions/cc_currencies.module:232
 msgid "With Whom?"
@@ -944,83 +945,83 @@ msgstr "Avec"
 
 #: extensions/cc_currencies.module:31
 msgid "create meme currencies"
-msgstr "cr�er des unit�s d'�changes meme"
+msgstr "créer des unités d'échanges meme"
 
 #: extensions/cc_currencies.module:31
 msgid "create global currencies"
-msgstr "cr�er des unit�s d'�changes globaux"
+msgstr "créer des unités d'échanges globaux"
 
 #: extensions/cc_import.module:6
 msgid "Provides advice and a simple text box to paste csv style data from your existing spreadsheets. "
-msgstr "Vous donne des conseils ainsi qu'un champ texte pour coller des donn�es csv de votre logiciel tableur (comme Excel). "
+msgstr "Vous donne des conseils ainsi qu'un champ texte pour coller des données csv de votre logiciel tableur (comme Excel). "
 
 #: extensions/cc_import.module:7
 msgid "Assumes user 1 is the balancing account."
-msgstr "Le compte 1 est employ� comme compte d'�quilibre. "
+msgstr "Le compte 1 est employé comme compte d'équilibre. "
 
 #: extensions/cc_import.module:52
 msgid "This page allows you to import users' balances and gross incomes for users already on the system. To import users, see the !import_user module."
-msgstr "Cette page vous permet d'importer les soldes des membres et leurs cumuls pour les utilisateurs qui sont d�j� dans le syst�me.  Pour importer les membres,voir le module  !import_user."
+msgstr "Cette page vous permet d'importer les soldes des membres et leurs cumuls pour les utilisateurs qui sont déjà dans le système.  Pour importer les membres,voir le module  !import_user."
 
 #: extensions/cc_import.module:57
 msgid "Paste paste 2 or 3 comma separated columns into the field below, the first column should be the uid or username, the second column the current balance, and optionally the third column should be the user's gross income until now (turnover)."
-msgstr "Coller 2 ou 3 csv colonnes dans le champ ci-dessous. La premi�re colonne devrait contenir le uid ou num�ro de membre, le 2e son solde actuel, et le 3e son cumul (en option). "
+msgstr "Coller 2 ou 3 csv colonnes dans le champ ci-dessous. La première colonne devrait contenir le uid ou numéro de membre, le 2e son solde actuel, et le 3e son cumul (en option). "
 
 #: extensions/cc_import.module:58
 msgid "This tools assumes there is only one currency in the system. The second column SHOULD add up to 0 for LETS and other zero balance systems, but this will not be checked."
-msgstr "Cet outil d'importation n'est pr�vu que pour une seule unit� d'�change. Le total de la 2e colonne DEVRAIT �tre 0 pour les SELs et autres syst�mes avec un compte d'�quilibrage, mais l'outil ne le contr�le pas. "
+msgstr "Cet outil d'importation n'est prévu que pour une seule unité d'échange. Le total de la 2e colonne DEVRAIT être 0 pour les SELs et autres systèmes avec un compte d'équilibrage, mais l'outil ne le contrôle pas. "
 
 #: extensions/cc_import.module:59
 msgid "The first line of the field should read (third column is optional): !code"
-msgstr "La premi�re ligne du champ devrait afficher (3e colonne en option): !code"
+msgstr "La première ligne du champ devrait afficher (3e colonne en option): !code"
 
 #: extensions/cc_import.module:77
 msgid "to import balances you need a balancing account. Specify the account number at !admin/marketplace"
-msgstr "Afin d'importer les soldes des membres, vous avez besoin d'un compte �quilibre. Veuillez sp�cifier le num�ro de compte ici !admin/marketplace"
+msgstr "Afin d'importer les soldes des membres, vous avez besoin d'un compte équilibre. Veuillez spécifier le numéro de compte ici !admin/marketplace"
 
 #: extensions/cc_import.module:86
 msgid "balance (second item) on row @num is not an integer"
-msgstr "soldes (2e item) sur rang� @num n'est pas un nombre entier"
+msgstr "soldes (2e item) sur rangé @num n'est pas un nombre entier"
 
 #: extensions/cc_import.module:92
 msgid "gross income (third item) on row @rownum must be a positive integer"
-msgstr "cumul (3e item) sur rang�e @rownum doit �tre un nombre entier positif"
+msgstr "cumul (3e item) sur rangée @rownum doit être un nombre entier positif"
 
 #: extensions/cc_import.module:94
 msgid "gross income (third item) on row @rownum cannot be less than 0"
-msgstr "cumul (3e item) sur rang�e @rownum ne doit pas �tre moins que 0"
+msgstr "cumul (3e item) sur rangée @rownum ne doit pas être moins que 0"
 
 #: extensions/cc_import.module:123
 msgid "Gross expenditure"
-msgstr "D�penses brutes"
+msgstr "Dépenses brutes"
 
 #: extensions/cc_import.module:134
 msgid "Carried Forward"
-msgstr "Solde report�"
+msgstr "Solde reporté"
 
 #: extensions/cc_import.module:192
 msgid "The description on row @rownum is more than 128 characters"
-msgstr "Le descriptif d�passe 128 caract�res, veuillez r�duire le texte"
+msgstr "Le descriptif dépasse 128 caractères, veuillez réduire le texte"
 
 #: extensions/cc_import.module:205
 msgid "This page allows you to import users' @type for users already on the system."
-msgstr "Cette page vous permet d'importer membres @type pour les membres qui sont d�j� dans le syst�me."
+msgstr "Cette page vous permet d'importer membres @type pour les membres qui sont déjà dans le système."
 
 #: extensions/cc_import.module:206
 msgid "There are other ways of doing this, but this is simple and maintained along with the rest of the marketplace module."
-msgstr "Il y a d'autres fa�ons de le faire, mais c'est simple et entretenu avec le module marketplace."
+msgstr "Il y a d'autres façons de le faire, mais c'est simple et entretenu avec le module marketplace."
 
 #: extensions/cc_import.module:208
 msgid "Use a spreadsheet tool to prepare a list of user ids, or names, and their @type in one line. "
-msgstr "Utilisez un logiciel tableur pour pr�parer une liste de membre id, ou noms, et leur @type en une ligne. "
+msgstr "Utilisez un logiciel tableur pour préparer une liste de membre id, ou noms, et leur @type en une ligne. "
 
 #: extensions/cc_import.module:209
 msgid "For aesthetic reasons, there is a 128 character limit on each description. "
-msgstr "Pour des raisons d'esth�tique, il y a une limite de 128 caract�res � chaque description."
+msgstr "Pour des raisons d'esthétique, il y a une limite de 128 caractères à chaque description."
 
 #: extensions/cc_import.module:210
 msgid "Each line should look like this (you must include the header row): !code"
-msgstr "Chaque ligne devrait s'afficher comme ceci (vous devez inclure le rang�e d'en-t�te) : !code"
+msgstr "Chaque ligne devrait s'afficher comme ceci (vous devez inclure le rangée d'en-tête) : !code"
 
 #: extensions/cc_import.module:211
 msgid "Try importing one or two first."
@@ -1028,7 +1029,7 @@ msgstr "Faire des essais avec 1 ou 2 pour commencer."
 
 #: extensions/cc_import.module:225
 msgid "'UserID' on row @rownum is not a user:@data"
-msgstr "'UserID' sur rang�e @rownum n'est pas un-e membre:@data"
+msgstr "'UserID' sur rangée @rownum n'est pas un-e membre:@data"
 
 #: extensions/cc_import.module:17
 msgid "Import Tools"
@@ -1048,47 +1049,47 @@ msgstr "Importer des demandes"
 
 #: extensions/cc_mass_pay.module:50
 msgid "Payer exceptions"
-msgstr "Exceptions par rapport � ce membre"
+msgstr "Exceptions par rapport à ce membre"
 
 #: extensions/cc_mass_pay.module:54
 msgid "Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."
-msgstr "S�l�ctionnez les comptes qui NE vont PAS �tre cr�dit�s. Utilisez CTRL clic pour faire une multi-s�lection"
+msgstr "Séléctionnez les comptes qui NE vont PAS être crédités. Utilisez CTRL clic pour faire une multi-sélection"
 
 #: extensions/cc_mass_pay.module:56
 msgid "Select the one account to which all the transactions will flow."
-msgstr "S�l�ctionnez le compte vers lequel la transaction va �tre faite."
+msgstr "Séléctionnez le compte vers lequel la transaction va être faite."
 
 #: extensions/cc_mass_pay.module:57
 msgid "How much should be taken from each account?"
-msgstr "De combien voulez-vous d�biter chaque compte ?"
+msgstr "De combien voulez-vous débiter chaque compte ?"
 
 #: extensions/cc_mass_pay.module:60;131
 msgid "Generate transactions"
-msgstr "Cr�er des �changes"
+msgstr "Créer des échanges"
 
 #: extensions/cc_mass_pay.module:102
 msgid "Many-to-one mass payment of @amount for @description"
-msgstr "paiement en masse de plusieurs-�-un pour @description de @amount"
+msgstr "paiement en masse de plusieurs-à-un pour @description de @amount"
 
 #: extensions/cc_mass_pay.module:121
 msgid "Payees"
-msgstr "La personne qui va recevoir des unit�s d'�changes"
+msgstr "La personne qui va recevoir des unités d'échanges"
 
 #: extensions/cc_mass_pay.module:125
 msgid "Select the accounts you want to be paid. Use CTRL click to select more than one."
-msgstr "S�l�ctionnez les comptes qui vont �tre cr�dit�s. Utilisez CTRL clic pour faire une multi-s�lection"
+msgstr "Séléctionnez les comptes qui vont être crédités. Utilisez CTRL clic pour faire une multi-sélection"
 
 #: extensions/cc_mass_pay.module:127
 msgid "Select the one account from which all the transactions will flow."
-msgstr "S�lectionnez le compte � partir duquel la transaction vas �tre faite."
+msgstr "Sélectionnez le compte à partir duquel la transaction vas être faite."
 
 #: extensions/cc_mass_pay.module:128
 msgid "How much should be paid into each account?"
-msgstr "De combien voulez-vous cr�diter chaque compte ?"
+msgstr "De combien voulez-vous créditer chaque compte ?"
 
 #: extensions/cc_mass_pay.module:168
 msgid "One-to-many multipay of @amount: @description"
-msgstr "D'un compte � plusieurs paiements regroup�s de @amount: @description"
+msgstr "D'un compte à plusieurs paiements regroupés de @amount: @description"
 
 #: extensions/cc_mass_pay.module:104;169
 msgid "@message"
@@ -1100,27 +1101,27 @@ msgstr "Paiement en masse"
 
 #: extensions/cc_mass_pay.module:12
 msgid "Create mass transactions to and from one account"
-msgstr "Cr�er des paiements en masse de et � partir d'un compte"
+msgstr "Créer des paiements en masse de et à partir d'un compte"
 
 #: extensions/cc_mass_pay.module:21
 msgid "Many-to-one"
-msgstr "De plusieurs-�-un"
+msgstr "De plusieurs-à-un"
 
 #: extensions/cc_mass_pay.module:22
 msgid "collect an arbitrary amount from most accounts"
-msgstr "prel�ve un montant de la majorit� des comptes"
+msgstr "prelève un montant de la majorité des comptes"
 
 #: extensions/cc_mass_pay.module:26
 msgid "One-to-many"
-msgstr "D'un-�-plusieurs"
+msgstr "D'un-à-plusieurs"
 
 #: extensions/cc_mass_pay.module:27
 msgid "payout an arbitary amount to a few people"
-msgstr "verser un montant arbitraire � quelques personnes"
+msgstr "verser un montant arbitraire à quelques personnes"
 
 #: extensions/cc_offer_want.module:10
 msgid "Defines two contentTypes which are created and edited by each user and which are presented as a directory categorised using taxonomy."
-msgstr "Ceci d�finit deux types de contenu qui sont cr��s et modifi�s par les membres et qui sont affich�s dans une liste avec des cat�gories qui sont g�r�es par une taxonomie. "
+msgstr "Ceci définit deux types de contenu qui sont créés et modifiés par les membres et qui sont affichés dans une liste avec des catégories qui sont gérées par une taxonomie. "
 
 #: extensions/cc_offer_want.module:27;37
 msgid "An entry in the @type directory."
@@ -1140,23 +1141,23 @@ msgstr "N.B. Vous pouvez enlever le champ \"corps\" des offres et demandes ici !
 
 #: extensions/cc_offer_want.module:133
 msgid "categories"
-msgstr "cat�gories"
+msgstr "catégories"
 
 #: extensions/cc_offer_want.module:140
 msgid "Add @offers_wants"
-msgstr "Cr�er @offers_wants"
+msgstr "Créer @offers_wants"
 
 #: extensions/cc_offer_want.module:159
 msgid "@offerwant Categories"
-msgstr "Cat�gories des @offerwant"
+msgstr "Catégories des @offerwant"
 
 #: extensions/cc_offer_want.module:166
 msgid "Place your @offerwant"
-msgstr "Cr�er une annonce"
+msgstr "Créer une annonce"
 
 #: extensions/cc_offer_want.module:173
 msgid "Place your ad"
-msgstr "Cr�er une annonce"
+msgstr "Créer une annonce"
 
 #: extensions/cc_offer_want.module:254
 msgid "Names of offers/wants"
@@ -1164,15 +1165,15 @@ msgstr "Noms des offres/demandes"
 
 #: extensions/cc_offer_want.module:258
 msgid "Specify whether you want offers and wants by stating what word to use for them. Also name goods and services if they are enabled in !link."
-msgstr "Sp�cifiez si vous voulez les offres et les demandes en mettant les mots que vous allez utiliser. Nommez aussi les biens et services s'ils sont parame�r�s ici !link."
+msgstr "Spécifiez si vous voulez les offres et les demandes en mettant les mots que vous allez utiliser. Nommez aussi les biens et services s'ils sont parameérés ici !link."
 
 #: extensions/cc_offer_want.module:263
 msgid "Whatever the user is offering to the community (plural)"
-msgstr "Ce que q'un-e membre offre � la communaut� (pluriel)"
+msgstr "Ce que q'un-e membre offre à la communauté (pluriel)"
 
 #: extensions/cc_offer_want.module:269
 msgid "Whatever the user wants from the community (plural)"
-msgstr "Ce que q'un-e membre demande � la communaut� (pluriel)"
+msgstr "Ce que q'un-e membre demande à la communauté (pluriel)"
 
 #: extensions/cc_offer_want.module:370
 msgid "@categoryname @types"
@@ -1200,11 +1201,11 @@ msgstr "@offers ou @wants"
 
 #: extensions/cc_offer_want.module:421
 msgid "Details"
-msgstr "D�tails"
+msgstr "Détails"
 
 #: extensions/cc_offer_want.module:427
 msgid "Submit"
-msgstr "Envoyer"
+msgstr "Afficher l'annonce"
 
 #: extensions/cc_offer_want.module:85
 msgid "cc_transaction_types"
@@ -1228,59 +1229,59 @@ msgstr "offre"
 
 #: extensions/cc_offer_want.module:88
 msgid "create offer"
-msgstr "cr�er une offre"
+msgstr "créer une offre"
 
 #: extensions/cc_currencies.install:19
 msgid "This currency was the system default but is now one of many possible currencies."
-msgstr "Cette unit� d'�change �tait par d�faut, mais fait partie maintenant des nombreuses unit�s possibles."
+msgstr "Cette unité d'échange était par défaut, mais fait partie maintenant des nombreuses unités possibles."
 
 #: extensions/cc_currencies.install:72
 msgid "metadata for currencies, in addition to name and title"
-msgstr "metadata pour les unit�s d'�changes, en plus de nom et  titre"
+msgstr "metadata pour les unités d'échanges, en plus de nom et  titre"
 
 #: extensions/cc_currencies.install:75
 msgid "the node id to which this currency is attached"
-msgstr "L'identification (ID) du node � laquelle cet unit� d'�change est associ�e"
+msgstr "L'identification (ID) du node à laquelle cet unité d'échange est associée"
 
 #: extensions/cc_currencies.install:80
 msgid "the nominal value of this currency expressed as an objective value (0 means not interchanagable)"
-msgstr "La valeur nominative de cette unit� d'�change exprim�e dans une valeur objective (0 = non-�changeable)"
+msgstr "La valeur nominative de cette unité d'échange exprimée dans une valeur objective (0 = non-échangeable)"
 
 #: extensions/cc_currencies.install:86
 msgid "an adjustment to the zero balance per user"
-msgstr "une fa�on d'ajuster le solde z�ro par membre"
+msgstr "une façon d'ajuster le solde zéro par membre"
 
 #: extensions/cc_currencies.install:92
 msgid "what happens after the decimal point, quarter hours or centiles"
-msgstr "que faut-il apr�s la d�cimale, le quart d'heure ou les centi�mes"
+msgstr "que faut-il après la décimale, le quart d'heure ou les centièmes"
 
 #: extensions/cc_currencies.install:97
 msgid "the default minumim balance allowed to tbe held"
-msgstr "Le solde minimum permis par d�faut"
+msgstr "Le solde minimum permis par défaut"
 
 #: extensions/cc_currencies.install:103
 msgid "the default maximum balance allowed to tbe held"
-msgstr "Le solde maximum permis par d�faut"
+msgstr "Le solde maximum permis par défaut"
 
 #: extensions/cc_currencies.install:109
 msgid "location of the currency icon"
-msgstr "l'ic�ne de l'unit� d'�change se trouve ici"
+msgstr "l'icône de l'unité d'échange se trouve ici"
 
 #: extensions/cc_offer_want.install:22
 msgid "Directory categories"
-msgstr "Cat�gories des offres/demandes"
+msgstr "Catégories des offres/demandes"
 
 #: extensions/cc_offer_want.install:23
 msgid "Vocabulary created at Cc offers/wants module installation. Might also be applied to transactions."
-msgstr "Le vocabulaire est cr�� lors de l'installation de Cc offres/demandes. Peut �tre utilis� pour les �changes �galement."
+msgstr "Le vocabulaire est créé lors de l'installation de Cc offres/demandes. Peut être utilisé pour les échanges également."
 
 #: extensions/cc_offer_want.install:39
 msgid "Now go and make some directory categories at !link"
-msgstr "Maintenant, vous pouvez cr�er des cat�gories ici !link"
+msgstr "Maintenant, vous pouvez créer des catégories ici !link"
 
 #: extensions/cc_offer_want.install:76
 msgid "offers and wants extra data"
-msgstr "donn�es en plus des offres et demandes"
+msgstr "données en plus des offres et demandes"
 
 #: extensions/cc_offer_want.install:84
 msgid "1 = goods, 0 = services"
@@ -1292,11 +1293,11 @@ msgstr "0 = cc, 1 = monnaie officielle"
 
 #: extensions/cc_currencies.info:0
 msgid "Cc Multiple Currencies v0.5"
-msgstr "Cc Unit�s d'�changes multiples v0.5"
+msgstr "Cc Unités d'échanges multiples v0.5"
 
 #: extensions/cc_currencies.info:0
 msgid "Experimental module allowing arbitrary creation of currencies by users."
-msgstr "Module exp�rimental qui permet la cr�ation d'unit�s d'�change arbitraires par les membres eux-m�mes."
+msgstr "Module expérimental qui permet la création d'unités d'échange arbitraires par les membres eux-mêmes."
 
 #: extensions/cc_import.info:0
 msgid "Cc Import"
@@ -1304,7 +1305,7 @@ msgstr "Cc Import"
 
 #: extensions/cc_import.info:0
 msgid "Import Offers, Wants and carried forward balances using No 1 account. Built for Fernie, Canada"
-msgstr "Importer les offres, demandes et soldes report�s en passant par le compte 1. Sponsoris� par Fernie, Canada"
+msgstr "Importer les offres, demandes et soldes reportés en passant par le compte 1. Sponsorisé par Fernie, Canada"
 
 #: extensions/cc_mass_pay.info:0
 msgid "Cc Mass Payment"
@@ -1312,7 +1313,7 @@ msgstr "Cc Mass Payment"
 
 #: extensions/cc_mass_pay.info:0
 msgid "Create Transactions involving multiple users to or from one account"
-msgstr "Saisir des �changes avec plusieurs membres vers ou depuis un compte"
+msgstr "Saisir des échanges avec plusieurs membres vers ou depuis un compte"
 
 #: extensions/cc_offer_want.info:0
 msgid "Cc offers/wants"
@@ -1320,31 +1321,31 @@ msgstr "Cc offers/wants"
 
 #: extensions/cc_offer_want.info:0
 msgid "Allows users to contribute to a categorised directory of offers and wants."
-msgstr "Permet aux membres de contribuer � une liste d'offres et demandes cat�goris�e."
+msgstr "Permet aux membres de contribuer à une liste d'offres et demandes catégorisée."
 
 #: views/cc_currencies.views.inc:12
 msgid "Complementary currencies"
-msgstr "Unit�s d'�changes compl�mentaires"
+msgstr "Unités d'échanges complémentaires"
 
 #: views/cc_currencies.views.inc:14;242
 msgid "Currencies"
-msgstr "Unit�s d'�changes"
+msgstr "Unités d'échanges"
 
 #: views/cc_currencies.views.inc:16
 msgid "Units of account, for trade"
-msgstr "Unit�s d'�changes"
+msgstr "Unités d'échanges"
 
 #: views/cc_currencies.views.inc:26;49
 msgid "Icon"
-msgstr "Ic�ne"
+msgstr "Icône"
 
 #: views/cc_currencies.views.inc:28
 msgid "The currency icon"
-msgstr "L'ic�ne pour l'unit� d'�change"
+msgstr "L'icône pour l'unité d'échange"
 
 #: views/cc_currencies.views.inc:39
 msgid "list of all currencies"
-msgstr "liste de toutes les unit�s d'�change"
+msgstr "liste de toutes les unités d'échange"
 
 #: views/cc_currencies.views.inc:73
 msgid "Name"
@@ -1352,15 +1353,15 @@ msgstr "Nom"
 
 #: views/cc_currencies.views.inc:98
 msgid "Owner"
-msgstr "La personne qui a saisi l'�change"
+msgstr "La personne qui a saisi l'échange"
 
 #: views/cc_currencies.views.inc:128
 msgid "Universality"
-msgstr "Universalit�"
+msgstr "Universalité"
 
 #: views/cc_currencies.views.inc:205
 msgid "Public & private currencies"
-msgstr "Unit�s d'�changes publiques, et priv�es"
+msgstr "Unités d'échanges publiques, et privées"
 
 #: views/cc_offer_want.views.inc:19
 msgid "Offers and wants directory entries, created by members"
@@ -1372,7 +1373,7 @@ msgstr "Type"
 
 #: views/cc_offer_want.views.inc:133;542
 msgid "Category"
-msgstr "Cat�gorie"
+msgstr "Catégorie"
 
 #: views/cc_offer_want.views.inc:142;560;728;882;1173
 msgid "Member"
@@ -1384,7 +1385,7 @@ msgstr "Savoir ou Service"
 
 #: views/cc_offer_want.views.inc:176
 msgid "%1 categories"
-msgstr "Cat�gories : %1 "
+msgstr "Catégories : %1 "
 
 #: views/cc_offer_want.views.inc:237;817;1109;1386
 msgid "title"
@@ -1392,7 +1393,7 @@ msgstr "titre"
 
 #: views/cc_offer_want.views.inc:290
 msgid "offers/wants from a given user"
-msgstr "Les offres et demandes d'un-e membre donn�-e"
+msgstr "Les offres et demandes d'un-e membre donné-e"
 
 #: views/cc_offer_want.views.inc:329
 msgid "Delete"
@@ -1404,7 +1405,7 @@ msgstr "Annonces"
 
 #: views/cc_offer_want.views.inc:450
 msgid "No @offers have been entered."
-msgstr "Aucune @offers n'a �t� saisie."
+msgstr "Aucune @offers n'a été saisie."
 
 #: views/cc_offer_want.views.inc:451
 msgid "Member @offers"
@@ -1412,7 +1413,7 @@ msgstr "@offers des membres"
 
 #: views/cc_offer_want.views.inc:492
 msgid "No @wants have been entered."
-msgstr "Aucun @wants n'a �t� saisi."
+msgstr "Aucun @wants n'a été saisi."
 
 #: views/cc_offer_want.views.inc:494
 msgid "Member @wants"
@@ -1424,15 +1425,15 @@ msgstr "Offres : %1"
 
 #: views/cc_offer_want.views.inc:663
 msgid "Latest directory entries"
-msgstr "Offres/Demandes r�centes"
+msgstr "Offres/Demandes récentes"
 
 #: views/cc_offer_want.views.inc:670
 msgid "There are no entries in this category"
-msgstr "Il n'y a pas d'annonces dans cette cat�gorie"
+msgstr "Il n'y a pas d'annonces dans cette catégorie"
 
 #: views/cc_offer_want.views.inc:740;891;1182
 msgid "Posted on"
-msgstr "Cr�� le"
+msgstr "Créé le"
 
 #: views/cc_offer_want.views.inc:771;1045;1323
 msgid "All @types"
@@ -1448,19 +1449,19 @@ msgstr "@type: %1"
 
 #: views/cc_offer_want.views.inc:992;1271
 msgid "@type: recent"
-msgstr "@type: r�cente"
+msgstr "@type: récente"
 
 #: views/cc_offer_want.views.inc:996
 msgid "There are no offers in this category"
-msgstr "Il n'y a pas d'offres dans cette cat�gorie"
+msgstr "Il n'y a pas d'offres dans cette catégorie"
 
 #: views/cc_offer_want.views.inc:1040
 msgid "Latest offers page"
-msgstr "Offres r�centes"
+msgstr "Offres récentes"
 
 #: views/cc_offer_want.views.inc:1275
 msgid "There are no wants in this category"
-msgstr "Il n'y a pas de demande dans cette cat�gorie"
+msgstr "Il n'y a pas de demande dans cette catégorie"
 
 #: views/transactions.views.inc:30
 msgid "Transaction"
@@ -1468,67 +1469,67 @@ msgstr "Echange"
 
 #: views/transactions.views.inc:31
 msgid "Money flows between users."
-msgstr "Les unit�s d'�change circulent entre les membres"
+msgstr "Les unités d'échange circulent entre les membres"
 
 #: views/transactions.views.inc:41;59;477;647;672
 msgid "Payer"
-msgstr "La personne qui as donn� des unit�s"
+msgstr "La personne qui as donné des unités"
 
 #: views/transactions.views.inc:43
 msgid "The user id who spent currency in the transaction."
-msgstr "Le membre qui a vers� des unit�s d'�change"
+msgstr "Le membre qui a versé des unités d'échange"
 
 #: views/transactions.views.inc:47
 msgid "Show only transactions where the current user paid"
-msgstr "Afficher les �changes vers�s par le membre actuel"
+msgstr "Afficher les échanges versés par le membre actuel"
 
 #: views/transactions.views.inc:51
 msgid "The user who gave currency in the transaction."
-msgstr "Le/la membre qui a donn� des unit�s "
+msgstr "Le/la membre qui a donné des unités "
 
 #: views/transactions.views.inc:55
 msgid "The user who spent currency in the transaction."
-msgstr "Le membre qui a vers� des unit�s d'�change"
+msgstr "Le membre qui a versé des unités d'échange"
 
 #: views/transactions.views.inc:63;82;289;681
 msgid "Payee"
-msgstr "La personne qui as re�u des unit�s"
+msgstr "La personne qui as reçu des unités"
 
 #: views/transactions.views.inc:65
 msgid "The user id who received currency in the transaction."
-msgstr "Le membre qui a re�u des unit�s d'�change"
+msgstr "Le membre qui a reçu des unités d'échange"
 
 #: views/transactions.views.inc:69
 msgid "Show only transactions where the current user was paid"
-msgstr "Afficher les �changes re�us par le membre actuel"
+msgstr "Afficher les échanges reçus par le membre actuel"
 
 #: views/transactions.views.inc:71
 msgid "User is payee"
-msgstr "Ce membre va verser des unit�s d'�change"
+msgstr "Ce membre va verser des unités d'échange"
 
 #: views/transactions.views.inc:74;78
 msgid "The user who received currency in the transaction."
-msgstr "Le membre qui a re�u des unit�s d'�change"
+msgstr "Le membre qui a reçu des unités d'échange"
 
 #: views/transactions.views.inc:86
 msgid "Starter"
-msgstr "La personne qui a saisi l'�change"
+msgstr "La personne qui a saisi l'échange"
 
 #: views/transactions.views.inc:88;122
 msgid "The user id who initiated the transaction."
-msgstr "user id de la personne qui a saisi l'�change"
+msgstr "user id de la personne qui a saisi l'échange"
 
 #: views/transactions.views.inc:92
 msgid "Show only transactions started or not started by a given account"
-msgstr "Afficher les �changes saisi ou pas, pour un compte donn�"
+msgstr "Afficher les échanges saisi ou pas, pour un compte donné"
 
 #: views/transactions.views.inc:96
 msgid "Show only transactions started by a given account"
-msgstr "Afficher les �changes saisi par ce compte"
+msgstr "Afficher les échanges saisi par ce compte"
 
 #: views/transactions.views.inc:100
 msgid "The account id who initiated the transaction."
-msgstr "Le num�ro de membre qui a saisi l'�change"
+msgstr "Le numéro de membre qui a saisi l'échange"
 
 #: views/transactions.views.inc:104
 msgid "starter"
@@ -1536,19 +1537,19 @@ msgstr "la personne qui initie"
 
 #: views/transactions.views.inc:108
 msgid "Completer"
-msgstr "La personne qui confirmel'�change"
+msgstr "La personne qui confirmel'échange"
 
 #: views/transactions.views.inc:110
 msgid "The account id who completed the transaction."
-msgstr "Le num�ro de membre qui a confirm� l'�change"
+msgstr "Le numéro de membre qui a confirmé l'échange"
 
 #: views/transactions.views.inc:114
 msgid "Show only transactions completed or not completed by a given account"
-msgstr "Afficher les �changes confirm� ou pas, pour un compte donn�"
+msgstr "Afficher les échanges confirmé ou pas, pour un compte donné"
 
 #: views/transactions.views.inc:118
 msgid "Show only transactions completed by a given account"
-msgstr "Afficher les �changes confirm�s par un compte donn�"
+msgstr "Afficher les échanges confirmés par un compte donné"
 
 #: views/transactions.views.inc:126
 msgid "completer"
@@ -1556,15 +1557,15 @@ msgstr "la personne qui confirme"
 
 #: views/transactions.views.inc:132
 msgid "Quality of the transaction according to the payer"
-msgstr "Appr�ciation de l'�change selon le"
+msgstr "Appréciation de l'échange selon le"
 
 #: views/transactions.views.inc:140
 msgid "Number of units of currency transferred"
-msgstr "Unit�s d'�change transf�r�es"
+msgstr "Unités d'échange transférées"
 
 #: views/transactions.views.inc:145
 msgid "Transactions above or below a certain value"
-msgstr "Les �changes en-dessous, ou en dessus d'une valeur donn�e"
+msgstr "Les échanges en-dessous, ou en dessus d'une valeur donnée"
 
 #: views/transactions.views.inc:150
 msgid "Transaction state"
@@ -1572,15 +1573,15 @@ msgstr "Etat"
 
 #: views/transactions.views.inc:152;157
 msgid "Whether the transaction is completed or pending"
-msgstr "Si l'�change est en attente, ou confirm�"
+msgstr "Si l'échange est en attente de confirmation, ou confirmé"
 
 #: views/transactions.views.inc:169
 msgid "The currency that the transaction was conducted in"
-msgstr "L'unit� d'�change employ�"
+msgstr "L'unité d'échange employé"
 
 #: views/transactions.views.inc:174;201;205
 msgid "The currency id"
-msgstr "L'unit� d'�change"
+msgstr "L'unité d'échange"
 
 #: views/transactions.views.inc:182
 msgid "User Balance"
@@ -1596,27 +1597,27 @@ msgstr "Membre"
 
 #: views/transactions.views.inc:194
 msgid "The user id"
-msgstr "Le num�ro de membre"
+msgstr "Le numéro de membre"
 
 #: views/transactions.views.inc:213
 msgid "The user's total cleared income minus total cleared expenditure"
-msgstr "Unit�s d'�change re�ues, moins les unit�s vers�es"
+msgstr "Unités d'échange reçues, moins les unités versées"
 
 #: views/transactions.views.inc:219
 msgid "Pending Difference"
-msgstr "en attente (diffe�ence)"
+msgstr "en attente (diffeéence)"
 
 #: views/transactions.views.inc:221
 msgid "sum of all pending transactions, (@type)"
-msgstr "cumul des �changes en cours de confirmation : (@type)"
+msgstr "cumul des échanges en cours de confirmation : (@type)"
 
 #: views/transactions.views.inc:227
 msgid "Pending Balance"
-msgstr "� confirmer"
+msgstr "à confirmer"
 
 #: views/transactions.views.inc:229
 msgid "balance including pending transactions, (@type)"
-msgstr "Solde avec les �changes en attente de confirmation inclus : (@type)"
+msgstr "Solde avec les échanges en attente de confirmation inclus : (@type)"
 
 #: views/transactions.views.inc:235
 msgid "Gross Income"
@@ -1628,47 +1629,47 @@ msgstr "Cumul"
 
 #: views/transactions.views.inc:245
 msgid "The user's average rating for this currency"
-msgstr "L'appr�ciation moyenne du membre pour cette unit� d'�change"
+msgstr "L'appréciation moyenne du membre pour cette unité d'échange"
 
 #: views/transactions.views.inc:456
 msgid "There were no payments in this period"
-msgstr "Il n'y as pas de versements pendant cette p�riode"
+msgstr "Il n'y as pas de versements pendant cette période"
 
 #: views/transactions.views.inc:619
 msgid "Receipts"
-msgstr "Re�us"
+msgstr "Reçus"
 
 #: views/transactions.views.inc:623
 msgid "There were no receipts in this period"
-msgstr "Il n'y a pas de versements pendant cette p�riode"
+msgstr "Il n'y a pas de versements pendant cette période"
 
 #: views/transactions.views.inc:868
 msgid "Transaction list"
-msgstr "Liste des �changes"
+msgstr "Liste des échanges"
 
 #: views/transactions.views.inc:870
 msgid "There are no transactions in the system yet"
-msgstr "Il n'y a pas d'�change enregistr�"
+msgstr "Il n'y a pas d'échange enregistré"
 
 #: views/transactions.views.inc:928
 msgid "All transactions"
-msgstr "Tous les �changes"
+msgstr "Tous les échanges"
 
 #: views/transactions.views.inc:929
 msgid "all transactions on the system, with optional argument for currency"
-msgstr "tous les �changes dans le syst�me, avec argument d'unit� d'�change en option"
+msgstr "tous les échanges dans le système, avec argument d'unité d'échange en option"
 
 #: views/transactions.views.inc:1049
 msgid "incomplete transactions, per user"
-msgstr "des �changes non-confirm�s, par membre"
+msgstr "des échanges non-confirmés, par membre"
 
 #: views/transactions.views.inc:1130
 msgid "There are no transactions to complete"
-msgstr "Il n'y a pas d'�change � confirmer"
+msgstr "Il n'y a pas d'échange à confirmer"
 
 #: views/transactions.views.inc:1181
 msgid "Transactions for this user to complete"
-msgstr "Les �changes � confirmer par ce membre"
+msgstr "Les échanges à confirmer par ce membre"
 
 #: views/transactions.views.inc:1246
 msgid "Transactions started by this user"
@@ -1676,11 +1677,11 @@ msgstr "Echanges saisis par ce membre"
 
 #: views/views_handler_field_transactions_payee_uid.inc:24
 msgid "Link this field to its user, the seller's profile"
-msgstr "Lier ce champ au membre, le profil de la personne qui a re�u"
+msgstr "Lier ce champ au membre, le profil de la personne qui a reçu"
 
 #: views/views_handler_field_transactions_payer_uid.inc:23
 msgid "Link this field to its user, the purchaser's profile"
-msgstr "Lier ce champ au membre, le profil de la personne qui a vers�"
+msgstr "Lier ce champ au membre, le profil de la personne qui a versé"
 
 #: views/views_handler_filter_goods_not_services.inc:7
 msgid "This is a @good not a @service"
@@ -1690,5 +1691,3 @@ msgstr "Ceci est un @good pas un @service"
 msgid "This is paid for with official currency"
 msgstr "Paiement en monnaie officielle"
 
-msgid "Which directory?"
-msgstr "Quelle Directoire"

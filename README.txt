@@ -1,9 +1,8 @@
-This document is three documents in one:
+This document is 4 documents in one:
 
 ** How to set up the Complementary currencies package **
-
 ** Generalised architecture of this mutual credit system **
-
+** For advanced users **
 ** Testing procedure **
 
 
@@ -204,7 +203,7 @@ Some would view it as a currency, but there is a kind of volunteering recognitio
     'title' => 'MacBeth pre-registration',
     'quantity'=>6
   );
-  print drupal_get_form('transaction_start_node_form', (object)$transaction, 'hidden');
+  print drupal_get_form('transaction_start_form', (object)$transaction, 'hidden');
 ?>
 The form will be pre-populated with these fields, and the user has only to agree (and confirm agree).
 Note the final parameter, hidden. This means that the prepopulated fields will not be on the form. This value can also be set to parameter, which means they will appear disabled on the form.

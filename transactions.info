@@ -1,14 +1,7 @@
 ; $Id$
 name = Transactions
 description = Makes a contentType called transactions and manages the way that users create and view this content. 
-version = $Name$
 package = Complementary Currencies
 dependencies[] = views
 
 core = "6.x"
-; Information added by drupal.org packaging script on 2009-08-28
-version = "6.x-1.0-rc3"
-core = "6.x"
-project = "marketplace"
-datestamp = "1251465945"
-

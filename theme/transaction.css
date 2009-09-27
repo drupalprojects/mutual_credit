@@ -3,21 +3,33 @@ span.currency img{
   top:3px;
 }
 
-/*transaction form*/
+/* transaction form */
 input.form-autocomplete,
-#transaction-start-node-form #edit-title,
-#transaction-start-node-form-1 #edit-title-1{
-	width:12em;
+#transaction-start-form .form-text,
+#transaction-start-form-1 .form-text{
+  width:12em;
+}
+#transaction-start-form .form-item,
+#transaction-start-form-1 .form-item,
+#edit-state-wrapper, 
+#edit-state-wrapper-1{
+  display:block;
+  clear:both;
 }
 
 #edit-quantity-1-wrapper,
 #edit-quantity-wrapper,
-#edit-minutes-1-wrapper,
-#edit-minutes-wrapper,
+#edit-division-1-wrapper,
+#edit-division-wrapper,
 #edit-cid-1-wrapper,
 #edit-cid-wrapper{
   float:left;
   margin-right:1.5em;
+  clear:none;
+}
+
+input.form-submit{
+  margin-top:2.5em;
 }
 
 .block #edit-title, 
@@ -33,6 +45,7 @@ input.form-autocomplete,
   float:right;
   }
 
+/* node view */
 #transaction-buttons form,
 #transaction-buttons form div,
 div.view-content form,
@@ -45,40 +58,23 @@ input.transaction_button{
   display:inline;
   margin:0;
 }
-
-#edit-next-1.form-submit,
-#edit-next.form-submit,
-#edit-non-payers-wrapper,
-#edit-payees-wrapper{
-	display:block;
-	clear:both;
-	}
-
-
-#edit-state-wrapper,
-#edit-quality-wrapper,
-#edit-state-1-wrapper,
-#edit-quality-1-wrapper{
-clear:both;
-}
-
 	
-/*user profile*/
+/* user profile */
 table.profile-balances td{
-	text-align:right;
-	}
+  text-align:right;
+}
 div.balances {
   float:left;
   margin-left:1em;
 }
 table.user-balances td{
-	text-align:center;
-	}
+  text-align:center;
+}
 
-/*statement page*/
+/* statement page */
 div.view table caption{
-	text-align:left;
-	}
+  text-align:left;
+}
 span.cc-previous{float:left;}
 span.cc-next{float:right;}
 span.cc-previous:before{content:'<<';}
@@ -90,4 +86,19 @@ span.cc-next:after{content:'>>';}
 #edit-max-balance,
 #edit-min-balance {
   width:5em;
+}
+
+
+.transaction-button{
+  border: 1px solid #006;
+  padding: 0.2em 0.4em;
+  background: #eee;
+  margin: 0.2em;
+}
+a.transaction-button:hover{
+  background: #ddd;
+  text-decoration: none;
+}
+div.transactions-pending{
+  margin-bottom:0.5em;
 }
