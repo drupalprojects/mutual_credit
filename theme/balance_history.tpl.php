@@ -19,10 +19,11 @@
 
 //this figure is a bit of guess work, based on 2048 chars - around 100 for the constant data divided by around 10 chars per point
 define (MAX_CHART_POINTS, 140);
+define (GOOGLE_CHARTS_URI, 'http://chart.apis.google.com/chart');
 $dimensions = array(250, 200);
-$legend = t('Balance over time');
-print_r($points);
-  $all_values = array(0);
+$legend = t("Balance over time for @user", array('@user' => strip_tags(theme('username', $account))));
+
+  $all_values = array();
 
   //TODO Add colours to the currency properties
   $randomcolors = array('ff8800','ff0088','0088ff','8800ff','0000ff','ffff00','ff00ff','ff0000', '00ff00', '0000ff');
@@ -37,7 +38,7 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
     $sample_method = t('Steps');
     foreach ($points as $t => $bal){
       //make two points for each point, and calibrate
-      $t1 = $t - $since_unixtime;
+      $t1 = $t - $first_time;
       //we could go further to reduce the number of chars and divide the time (unixtime) by something arbitrary
       $times[]=$t1;$times[]=$t1;
       $values[]=$bal;$values[]=$bal;
@@ -69,7 +70,7 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
     $reverse_points = array_reverse($all_points, TRUE);
     foreach ($reverse_points as $t=>$eachpoint){
       if (fmod($j, $sample_frequency) == 0){
-        $values[$t-$since_unixtime] = $eachpoint;
+        $values[$t-$first_time] = $eachpoint;
       }
       $j++;
     }
@@ -78,7 +79,7 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
     //draws straight lines between the points
     $sample_method = t('Straight');
     foreach ($points as $time => $value) {
-      $time -= $since_unixtime;
+      $time -= $first_time;
       $times[] = $time;
       $values [$time] = $value;
     }
@@ -90,41 +91,43 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
   $line_colors['mainline'.$cid] = array_pop($randomcolors);
   //save the values to get the max and min later
   $all_values = array_merge($all_values, $values);
-}
-//determine the vertical limits according to a variable
-if (variable_get('cc_history_chart_limits', 'trading') == 'limits') {
-  $all_values['max'] = $account->limits[$cid]['max'];
-  $all_values['min'] = $account->limits[$cid]['min'];
+  
+  //determine the vertical limits according to the user's own account limits
+  $all_values += $account->balance_limits[$cid];
+
 }
 $max = max($all_values);
 $min = min($all_values);
 
 $ds=array();
 while ($line = each($lines)) {
-  $ds[] = implode(',',array(-1, time()-$since_unixtime ,$min,$max));
+  $ds[] = implode(',',array(-1, time()-$first_time ,$min,$max));
 }
 
 //now put the line into the google charts api format
 $params['cht'] = 'lxy';
-$params['chs'] = $dimensions;
+$params['chs'] = implode('x',$dimensions);
 $params['chd'] = 't:' . implode('|', $lines);
 //optional parameters
 if ($legend)$params['chtt'] = $legend;
 $params['chds'] = implode(',',$ds);
 $params['chxt'] = 'x,y';
-$params['chxl'] = '0:|' . date('M y', $since_unixtime) . '|' . t('Now') . '|1:|' . $min . '|' . $max;
-$params['chm'] = 'r,000000,0,1,-1'; //this is called a range marker, which we are using for the zero line
+$params['chxl'] = '0:|' . date('M y', $first_time) . '|' . t('Now') . '|1:|' . $min . '|' . $max;
+$params['chm'] = 'r,888888,0,1,-1'; //this is called a range marker, which we are using for the zero line
 $params['chls'] = implode('|',$line_styles);
 $params['chco'] = implode(',',$line_colors);
   
-$src = 'http://chart.apis.google.com/chart?' . charts_build_query($params); 
-$title = t("Balance over time for @user", array('@user' => theme('username', user_load($uid))));
-if (strlen($src) > 2048) {
+//cleaner than http_build_query
+foreach ($params as $key=>$val) {
+    $args[] = $key . '=' . $val;
+  }
+
+$url =  GOOGLE_CHARTS_URI . '?' .implode('&', $args);
+if (strlen($url) > 2048) {
   watchdog('transactions', "Error creating balance chart: url to google charts exceeded 2048 charts.");
   drupal_set_message("Error creating balance chart: url to google charts exceeded 2048 charts.");
 }
-return '<img src="'.$src.'" id="chart" alt="' . $sample_method . ' ' . t('Balance history chart') . '" title="'.$title.'" class="gchart" />';
+
+//can't use theme_image because it expects a file
+print '<img src="' . $url . '" alt="' . $legend . '" title="' . $legend . '" class="chart" />';
     
-    
-    
-?>

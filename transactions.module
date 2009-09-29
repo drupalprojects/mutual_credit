@@ -621,18 +621,20 @@ function transactions_theme($existing, $type, $theme, $path) {
         'currencies' => array(),
       )
     ),
-    'recent_volumes' => array(
-      'template' => 'recent_volumes',
-      'path' => $templates_dir,
-      'arguments' => array(
-        'data' => array(),
-      )
-    ),
     'balance_limits' => array(
       'template' => 'balance_limits',
       'path' => $templates_dir,
       'arguments' => array(
-        'data' => array(),
+        'account' => NULL,
+        'cid' => 0,
+      )
+    ),
+    'period_volumes' => array(
+      'template' => 'period_volumes',
+      'path' => $templates_dir,
+      'arguments' => array(
+        'account' => NULL,
+        'cid' => 0,
       )
     ),
   );
@@ -643,6 +645,7 @@ function transactions_theme($existing, $type, $theme, $path) {
  * This hook is required for modules to define one or more node types.
  */
 function transactions_user($op, &$edit, &$account, $category = NULL) {
+  //load all the currencies this user has access to
   $currencies = currencies_load(array('uids'=>array($account->uid)));
   switch ($op) {
     case 'load':
@@ -652,6 +655,15 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       );
       while ($balance = db_fetch_array($result)){
         $account->balances[$balance['cid']] = $balance;
+      }
+      //and load up the user's personalised balance limits for each currency, defaulting to the currency limits
+      foreach (currencies_load(array('uid'=>$account->uid)) as $currency) {
+        $default_limits = array('min' => $currency->min_balance, 'max'=>$currency->max_balance);
+        if (!$account->balance_limits[$currency->cid]) {
+          !$account->balance_limits[$currency->cid] = $default_limits;
+        } else {
+          $account->balance_limits[$currency->cid] += $default_limits;
+        }
       }
       break;
     case 'form':
@@ -692,12 +704,12 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
           $form['balance_limits']['currency'.$cid]['max'.$cid] = array(
             '#type' => 'textfield',
             '#title' => t('max limit'),
-            '#default_value' => $edit['limits'][$cid]['max'],
+            '#default_value' => $edit['balance_limits'][$cid]['max'],
           );
           $form['balance_limits']['currency'.$cid]['min'.$cid] = array(
             '#type' => 'textfield',
             '#title' => t('min limit'),
-            '#default_value' => $edit['limits'][$cid]['min'],
+            '#default_value' => $edit['balance_limits'][$cid]['min'],
           );
         }
       }
@@ -720,14 +732,14 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       if (user_access('edit all transactions')) {
         foreach ($currencies as $cid => $currency) {
           if ($edit['min'.$cid]=='' && $edit['max'.$cid]=='') {
-            unset ($edit['limits'][$cid]);
+            unset ($edit['balance_limits'][$cid]);
           } else {
             //move the limits into an array, for easier access
             if ($edit['max'.$cid]) {
-              $edit['limits'][$cid]['max'] = $edit['max'.$cid];
+              $edit['balance_limits'][$cid]['max'] = $edit['max'.$cid];
             }
             if ($edit['min'.$cid]) {
-              $edit['limits'][$cid]['min'] = $edit['min'.$cid];
+              $edit['balance_limits'][$cid]['min'] = $edit['min'.$cid];
             }
           }
           unset ($edit['max'.$cid]);
@@ -745,7 +757,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       
         //the user's default limits are inherited from the currency
       foreach ($currencies as $cid => $currency) {
-        $edit['limits'][$cid] = array (
+        $edit['balance_limits'][$cid] = array (
           'max' => $currency->max, 
           'min' => $currency->min,
         );

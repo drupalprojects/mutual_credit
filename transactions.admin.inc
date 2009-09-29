@@ -95,16 +95,6 @@ function cc_options() {
     '#description' => t('Should transactions which have not yet been confirmed be included in transaction listings and in stats?'),
     '#default_value' => variable_get('cc_count_pending', FALSE),
   );
-  $form['visualisation']['cc_history_chart_limits'] = array(
-    '#type' => 'radios',
-    '#title' => t("How to determine the extent of the balance history chart"),
-    '#default_value' => variable_get('cc_history_chart_limits', 'trading'),
-    '#options' => array(
-      'trading' => t("The user's minimum and maximum ever balances"),
-      'limits' => t("The user's minimum and maximum balance limits"),
-    ),
-    '#description' => t("The balance history chart can have its upper and lower limits set by the users hisoty, or by the user's balance limits", array('!stats' => l('stats', 'stats'))),
-  );
   $form['visualisation']['cc_transaction_list'] = array (
     '#type' => 'radios',
     '#title' => t('Preferred transaction view'),
@@ -230,13 +220,13 @@ function currency_form_fields($currency) {
     ),
     '#description' => t('Many LETS currencies are not divisible, while hours might be divisible into quarters.'),
   );
-  $form['limits'] = array(
+  $form['balance_limits'] = array(
     '#type' => 'fieldset',
     '#title' => t('Balance limits'),
     '#description' => t("Balance limits are calculated AFTER the offset.") . t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") . t("Those users can also edit individual balance limits on users' account pages"),
     '#weight' => 5,
   );
-  $form['limits']['max_balance'] = array(
+  $form['balance_limits']['max_balance'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum Balance'),
     '#default_value' => $currency->max_balance,
@@ -247,7 +237,7 @@ function currency_form_fields($currency) {
     t("Leave blank for no limit (not reccomended)") . ' ' . 
     t('Maximum balance must be an integer larger than zero.'),
   );
-  $form['limits']['min_balance'] = array(
+  $form['balance_limits']['min_balance'] = array(
     '#type' => 'textfield',
     '#title' => t('Minimum Balance'),
     '#default_value' => $currency->min_balance,
@@ -258,7 +248,7 @@ function currency_form_fields($currency) {
     t("Leave blank for no limit (not reccomended)") . ' ' . 
     t('Minimum balance must not be larger than 0'),
   );
-    $form['limits']['zero_offset'] = array(
+    $form['balance_limits']['zero_offset'] = array(
     '#type' => 'textfield',
     '#title' => t('Offset all balances by'),
     '#default_value' => $currency->zero_offset,

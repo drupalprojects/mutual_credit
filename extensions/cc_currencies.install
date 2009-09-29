@@ -45,12 +45,12 @@ function cc_currencies_enable(){
 function cc_currencies_disable(){
   //get the first currency, which we will set to become the default
   $first_currency = currency_load();
+  db_query("UPDATE {cc_transactions} SET cid = 0 WHERE cid = %d", $first_currency->nid);
+  db_query("UPDATE {cc_balance_cache} SET cid = 0 WHERE cid = %d", $first_currency->nid);
+  db_query("DELETE from {cc_balance_cache} WHERE cid > 0");
   $first_currency->cid = 0;
   $first_currency->nid = 0;
   variable_set('cc_default_currency', $first_currency);
-  db_query("UPDATE {cc_transactions} SET cid = 0 WHERE cid = %d", $first_currency->nid);
-  db_query("UPDATE {cc_balance_cache} SET cid = 0 WHERE cid = %d", $first_currency->nid);
-  db_query("DELETE from {cc_balance_cache} WHERE cid != 0");
   update_user_balance_keys($first_currency->nid, 0);
 }
 

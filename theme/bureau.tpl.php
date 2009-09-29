@@ -11,8 +11,6 @@
 */
 ?>
 
-<h3>History</h3>
-<?php print $charts['balance_history']; ?>
 <h3>Balances</h3>
 <?php print $balances; ?>
 
@@ -23,16 +21,14 @@ $options = array();//see template_preprocess_balance_history() for $options and 
 print theme('balance_history', $account, array()); 
 ?>
 
-
 <h3>Credit</h3>
 <?php 
 print theme('balance_limits', $account); 
 ?>
 
-
 <h3>Trading volumes</h3>
 <?php 
-print theme('recent_volumes', $account); 
+print theme('period_volumes', $account); 
 ?>
 
 <h3>Pending Transactions</h3>

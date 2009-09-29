@@ -20,7 +20,7 @@ define (TRANSACTIONS_PAGER_ELEMENT, 1);
 //This makes the bureau page, but also contains most of the usual CALLBACK FUNCTIONS, FOR USE WITH PANELS
 function transactions_bureau ($uid) {
   $account=user_load($uid);
-  $balances = theme('balances', transactions_user_balances($uid));
+  $balances = transactions_user_balances($uid);
   $pending = transactions_pending($uid);
   $history = transactions_list($account, array('pager_limit' => 25, 'running_balance' => TRUE));
   return theme('bureau', $account, $balances, $pending, $history);
@@ -59,6 +59,9 @@ function transactions_user_balances ($uid) {
   // identify all possible currencies for this user and set balances to 0 as defaults
   //alternative would be to create zero rows in the db for every possible user/currency combo
 	$currencies = currencies_load(array('uids'=>array($uid)));
+	
+  //if the user has no balance yet, identify the default currency and populate it with zeros 
+  //TODO could sql help with this by providing a default?
 	foreach ($currencies as $currency) {
 	  $balances[$currency->nid] = array(
 	    'cid' => $currency->cid,
@@ -80,11 +83,7 @@ function transactions_user_balances ($uid) {
   while ($row = db_fetch_array($result)) {
     $balances[$row['cid']] = $row;
   }
-  if ($balances) return $balances;
-  
-  //if the user has no balance yet, identify the default currency and populate it with zeros 
-  //could sql help with this by providing a default?
-  $default_currency = currency_load();
+  if ($balances) return theme('balances', $balances);
 }
 
 /*
@@ -464,7 +463,7 @@ function transaction_complete_form(&$form_state, $nid){
     '#value' => $nid,
   );
   $transaction = node_load($nid);
-  $form['#redirect'] = 'user/' . $transaction->completer_uid . '/bureau';
+  $form['#redirect'] = 'user/' . $transaction->completer_uid;
   $output = confirm_form($form,
     t('Are you sure you want to complete the transaction "@description"', array('@description' => $transaction->title)),
     'user/' . $transaction->completer_uid,
@@ -474,7 +473,7 @@ function transaction_complete_form(&$form_state, $nid){
   );
   return $output;
 }
-function transactions_complete_form_submit($form, &$form_state) {
+function transaction_complete_form_submit($form, &$form_state) {
   module_load_include('admin.inc', 'transactions');
   if ($form_state['values']['complete']) {
     $transaction = node_load($form_state['values']['nid']);
@@ -595,8 +594,9 @@ function transactions_mail($key, &$message, $params){
 
 
 /*
- * Visualisations
- */
+ * PREPROCESSING FUNCTIONS
+*/
+
 //TODO This could be cached.
 function template_preprocess_balance_history(&$variables) {//$variables = array($account, $options=array())
   $default_states = array(TRANSACTION_STATE_COMPLETED);
@@ -604,7 +604,7 @@ function template_preprocess_balance_history(&$variables) {//$variables = array(
   extract ($variables['options'] + array(
     'currencies'=>currencies_load(array('uids'=>array($account->uid))), 
     'states' => $default_states,
-    'since_unixtime' => $account->created,
+    'first_time' => $variables['account']->created,
   ));
   
   //this affects the superimposition, I think
@@ -618,9 +618,7 @@ function template_preprocess_balance_history(&$variables) {//$variables = array(
     $transactions = _get_transactions_for_user($variables['account']->uid, array('states' => $states, 'running_balance' => TRUE, 'cid' => $currency->cid));
 
     if (!count($transactions)) continue;
-    
-    //we can now make the first point at zero time, which corresponds to the date of the user's creation
-    $variables['points'] = array(0 => $currency->zero_offset);
+    $variables['points'] = array($first_time => $currency->zero_offset);
     //add all the other points, one per transaction
     foreach ($transactions as $transaction){
       //one point per transaction produces diagaonal lines
@@ -629,98 +627,61 @@ function template_preprocess_balance_history(&$variables) {//$variables = array(
     //add a point showing the balance constant from the last transaction until now
     $variables['points'][time()] = $transaction->balance;
   }
-  print_r($variables);
+  $variables['first_time'] = $first_time;
 }
 
 //shows a chart with 4 columns gross spending/earning, and periodic spending/earning
-//for default options see below
-function chart_user_gross_recent_volumes($account, $options=array()) {
-  $default_options = array(
-    'dimensions' => '150x150', 
-    'periodstring' => '3 month', 
-    'currency' => currency_load(), 
-    'legend' => '', 
-    'states' => array(TRANSACTION_STATE_COMPLETED),
-    'colors' => array('4D89D9','C6D9FD'),
-  );
-  extract($options + $default_options);
+//single currency only
+//TODO Improve the performance of this function, with one SQL query each for income and outgoing, totting it up for each period
+//OR Cache the image!
+function template_preprocess_period_volumes($variables) {
+  $variables['volumes'] = array();
+  $cid = $variables['cid'];
+
+  //firstly add the values from the user object, which store the the total since ever
+  $variables['volumes'][0][$cid]['expenditure'] = $variables['account']->balances[$cid]['gross_expenditure'];
+  $variables['volumes'][0][$cid]['income'] = $variables['account']->balances[$cid]['gross_income'];
   
-  //need to calculate the income and outgoings of the last 3 months only
-  $result = db_query("SELECT * 
-    FROM {cc_transactions} t 
-    INNER JOIN {node} n ON t.nid = n.nid
-    WHERE (payee_uid = %d OR payer_uid = %d) 
-    AND created > %d 
-    AND cid = %d 
-    AND state IN (%s)", 
-    array(':payee'=>$account->uid, 
-      ':payer'=>$account->uid, 
-      ':created'=>strtotime('-'.$periodstring), 
-      ':cid' => $currency->cid, 
-      ':states' => implode(',', $states),
-    )
-  );
-  while ($transaction = db_fetch_object($result)) {
-    if ($transaction->payee_uid == $account->uid){
-      $periodic_income +=$transaction->quantity;
-    } else {
-      $periodic_expenditure += $transaction->quantity;
-    }
+  //then add values from each stats period and currency
+  $states = array(TRANSACTION_STATE_COMPLETED);
+  if (variable_get('cc_count_pending', FALSE)) {
+    $states[] = TRANSACTION_STATE_PENDING;
   }
   
-  $max_ever = max(array($account->balances[$currency->cid]['gross_income'], $account->balances[$currency->cid]['gross_expenditure'])) or $max_ever=0;
-  $max_recent = max(array($periodic_income, $periodic_expenditure));
-  $top_value = 10*ceil($max_ever/10);//this is how high the y axis goes
-  
-  $data=array();
-  $data['cht']= 'bvg';
-  $data['chs']= $dimensions; //chs=<width in pixels>x<height in pixels>
-  $data['chds'] = '0,' . $top_value . ',0,' . $max_recent;
-  $data['chbh'] = 'a,2,10'; //chbh=<bar width>,<space between bars>,<space between groups>
-  $data['chco'] = implode(',',$colors);
-  $data['chf'] =  'bg,s,EFEFEF00';
-  $data['chd'] = 't:' . intval($account->balances[$currency->cid]['gross_income']) . ',' . intval($periodic_income) . '|' . intval($account->balances[$currency->cid]['gross_expenditure']) . ',' . intval($periodic_expenditure);
-  //axis labels
-  $data['chxt'] = 'x,y,x';
-  $data['chxl'] = '0:|in,out|in,out||1:|0|'. $top_value/2 . '|'. $top_value . '|2:|ever|recent';
-  if ($legend)$params['chtt'] = 'chtt=' . $legend;
-  return '<img src="http://chart.apis.google.com/chart?' . charts_build_query($data) . '" class="gchart" />';
+  foreach(variable_get('cc_stats_periods', array()) as $period) {
+    //need to calculate the income and outgoings for the period
+    $result = db_query("SELECT * 
+      FROM {cc_transactions} t 
+      INNER JOIN {node} n ON t.nid = n.nid
+      WHERE (payee_uid = %d OR payer_uid = %d) 
+      AND created > %d 
+      AND cid = %d 
+      AND state IN (%s)", 
+      array(':payee' => $variables['account']->uid, 
+        ':payer' => $variables['account']->uid,
+        ':created' => strtotime('-' . $period),
+        ':cid' => $variables['cid'], 
+        ':states' => implode(',', $states),
+      )
+    );
+    while ($transaction = db_fetch_object($result)) {
+      if ($transaction->payee_uid == $account->uid){
+        $variables['volumes'][$period][$variables['cid']]['income'] += $transaction->quantity;
+      } else {
+        $variables['volumes'][$period][$variables['cid']]['expenditure'] += $transaction->quantity;
+      }
+    }
+  }
 }
 
 //google-o-meter showing balance between balance limits
 //defaults options see below
-function chart_balance_limits($account, $options=array()) {
-  $default_options = array(
-    'dimensions' => '200x100',
-    'currency' => currency_load(), 
-    'legend' => '', 
-    'labels' => array('min','max'),
-    'colors' => array('00ff00','ff0000'),
-  );
-  extract($options + $default_options);
-  $limits = $account->limits[$currency->cid];
-  $data=array();
-  $data['cht']= 'gom';
-  $data['chs']= $dimensions; //chs=<width in pixels>x<height in pixels>
-  $data['chd'] = 't:' . $account->balances[$currency->cid]['balance'];
-  $data['chds'] = $limits['min']. ',' . $limits['max'];
-  $data['chco'] = implode(',',$colors);
-  $data['chf'] =  'bg,s,FFFFFF00';
-  $data['chtt'] = $labels[0] . '  ->  ' . $labels[1];
-  return '<img src="http://chart.apis.google.com/chart?' . charts_build_query($data) . '" class="gchart" />';
+function template_preprocess_balance_limits($variables) {
+  $variables['max'] = $variables['account']->balance_limits[$variables['cid']]['max'];
+  $variables['min'] = $variables['account']->balance_limits[$variables['cid']]['min'];
+  $variables['balance'] = $variables['account']->balances[$variables['cid']]['balance'];
 }
 
-//like http_build_query, but makes less mess - google understands anyway
-function charts_build_query($data) {
-  foreach ($data as $key=>$val) {
-    $items[] = $key . '=' . $val;
-  }
-  return implode('&', $items);
-}
-
-/*
- * PREPROCESSING FUNCTIONS
-*/
 
 //this function would be a view except views can't yet do "WHERE payer_uid = $x OR payee_uid = $x"
 function template_preprocess_statement(&$vars) {
@@ -748,6 +709,21 @@ function template_preprocess_transaction(&$vars) {
   $vars += (array)$vars['transaction'];
   $vars += preprocess_transaction_fields($vars['account'], $vars['transaction']);
 }
+
+function template_preprocess_balances(&$variables) {
+  foreach ($variables['balances'] as $cid=>$values){
+    $currencies[$cid] = currency_load($cid);
+  }
+  foreach ($variables['balances'] as $cid => $cached_balances) {
+    $variables['balances'][$cid]['balance'] = theme('money', $cached_balances['balance'], $cid);
+    $variables['balances'][$cid]['pending_difference'] = theme('money', $cached_balances['pending_difference'], $cid);
+    $variables['balances'][$cid]['pending_balance'] = theme('money', $cached_balances['pending_balance'], $cid);
+    $variables['balances'][$cid]['gross_income'] = theme('money', $cached_balances['gross_income'], $cid);
+    $variables['balances'][$cid]['gross_expenditure'] = theme('money', $cached_balances['gross_expenditure'], $cid);
+    $variables['balances'][$cid]['rating'] = theme('rating', $cached_balances['rating'], $cid);
+  }
+}
+
 
 function preprocess_transaction_fields($account, $transaction) {
   $vars['submitted'] = format_date($transaction->created, 'short');
@@ -791,26 +767,17 @@ function preprocess_transaction_fields($account, $transaction) {
   return $vars;
 }
 
-function template_preprocess_balances(&$vars) {
-  foreach ($vars['balances'] as $cid=>$values){
-    $currencies[$cid] = currency_load($cid);
-  }
-  foreach ($vars['balances'] as $cid => $cached_balances) {
-    $vars['balances'][$cid]['balance'] = theme('money', $cached_balances['balance'], $cid);
-    $vars['balances'][$cid]['pending_difference'] = theme('money', $cached_balances['pending_difference'], $cid);
-    $vars['balances'][$cid]['pending_balance'] = theme('money', $cached_balances['pending_balance'], $cid);
-    $vars['balances'][$cid]['gross_income'] = theme('money', $cached_balances['gross_income'], $cid);
-    $vars['balances'][$cid]['gross_expenditure'] = theme('money', $cached_balances['gross_expenditure'], $cid);
-    $vars['balances'][$cid]['rating'] = theme('rating', $cached_balances['rating'], $cid);
-  }
-}
-
 
 /*
  * Stats from the cache
  * 
 Array(
-    [misc] => array('transaction_count', 'total_volume', 'active_members', 'mean_volume_active') //number of transactions on system
+    [misc] => array(
+      'transaction_count', 
+      'total_volume', 
+      'active_members', 
+      'mean_volume_active', //number of transactions on system
+    ) 
     [active_member_count] => 16 //number of unique traders
     [trades_per_user] => Array  ( uid => transaction count ) sorted by num of transactions descending
     [highest_incomes] => array (uid => income)  sorted by income descending
@@ -1138,30 +1105,20 @@ function _transaction_limit_check($transaction){
   $currency = currency_load($transaction->cid);
   $payee = user_load($transaction->payee_uid);
   $payer = user_load($transaction->payer_uid);
-  $currency_limits = array('min' => $currency->min_balance, 'max'=>$currency->max_balance);
-  if (!$payer->limits[$transaction->cid]) {
-    $payer->limits[$transaction->cid] = $currency_limits;  
-  } else  {
-    $payer->limits[$transaction->cid] += $currency_limits;
-  }
-  if (!$payee->limits[$transaction->cid]) {
-    $payee->limits[$transaction->cid] = $currency_limits;
-  } else {
-    $payee->limits[$transaction->cid] += $currency_limits;
-  }
+
   $messages=array();
   $cid = $transaction->cid;
-  if ($payer->balances[$cid]['balance'] - $transaction->quantity < $payer->limits[$cid]['min']) {
+  if ($payer->balance_limits[$cid]['balance'] - $transaction->quantity < $payer->balance_limits[$cid]['min']) {
     $messages[] = t('Transaction would take !username below the minimum balance of !quantity', 
       array('!username' => theme('username', $payer),
-        '!quantity' => theme('money', $payer->limits[$cid]['min'], $transaction->cid)
+        '!quantity' => theme('money', $payer->balance_limits[$cid]['min'], $transaction->cid)
       )
     );
   }
-  if ($payee->balances[$cid]['balance'] + $transaction->quantity > $payer->limits[$cid]['max']) {
+  if ($payee->balance_limits[$cid]['balance'] + $transaction->quantity > $payer->balance_limits[$cid]['max']) {
     $messages[] = t('Transaction would take !username above the maximum balance of !quantity', 
       array('!username' => theme('username', $payee),
-        '!quantity' => theme('money', $payer->limits[$cid]['max'], $transaction->cid)
+        '!quantity' => theme('money', $payer->balance_limits[$cid]['max'], $transaction->cid)
       )
     );
   }
@@ -1174,25 +1131,6 @@ function _transaction_limit_check($transaction){
     }
   }
 }
-
-//adds the transaction limits for the given currency to the user object
-//this could be done in hook_user('load'), but isn't needed very often
-/*
-function _transaction_add_limits_to_user(&$account, $currency) {
-  $data = unserialize($account->data);
-  $limits=array();
-  if (isset ($data['limits'][$cid]['min'])){
-    $limits['min'] = $data['limits'][$cid]['min'];
-  } else {
-    $limits['min'] = $currency->min_balance;
-  }
-  if (isset ($data['limits'][$cid]['max'])){
-    $limits['max'] = $data['limits'][$cid]['max'];
-  } else {
-    $limits['max'] = $currency->max_balance;
-  }
-  $account->limits[$currency->{cid}] = $limits;
-}*/
 
 function _transaction_email_replacements() {
   //these variables are replaced in function transactions_mail
