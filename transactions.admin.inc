@@ -400,7 +400,7 @@ function alter_quantity_field_types($type) {
   db_change_field($ret, 'cc_transactions', 'quantity', 'quantity', $newfield);
   
   $newfield['description'] = "sum of all completed transactions for this user in this currency, ($type)";
-  db_change_field($ret, 'cc_balance_cache', 'balance', 'balance', $newfield);
+  db_change_field($ret, 'cc_balance_cache', 'cleared_balance', 'cleared_balance', $newfield);
     
   $newfield['description'] = "sum of all pending transactions, ($type)";
   db_change_field($ret, 'cc_balance_cache', 'pending_difference', 'pending_difference', $newfield);
@@ -487,19 +487,21 @@ function cc_balances_refresh(){
   }
   drupal_set_message(t('Flushed balance cache'));
 }
+
 //for each user id passed, go through all their transactions and calculate balance, gross_income and pending amounts in their profile
 //TODO need to make this work better with multiple currencies
 //Could more of this be done by SQL?
 function _recalculate_balances($ids, $cid) {
   module_load_include('inc', 'transactions');
   $currency = currency_load($cid);
-  $cc_count_pending =  (variable_get('cc_count_pending', FALSE));
+  $count_pending =  (variable_get('cc_count_pending', FALSE));
   $options =  array (
     'states'=>array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING),
     'cid' => $cid,
    );
   while ($uid = array_pop($ids)){
     $gross_income=0;
+    $gross_expenditure=0;
     $outgoings=0;
     $pending_dif=0;
     $pending_balance=0;
@@ -531,8 +533,8 @@ function _recalculate_balances($ids, $cid) {
         }
       }
     }
-    $balance = $gross_income-$gross_expenditure + $currency->zero_offset;
-    $pending_balance = $balance + $pending_dif;
+    $cleared_balance = $gross_income-$gross_expenditure + $currency->zero_offset;
+    $pending_balance = $cleared_balance + $pending_dif;
 
     //gross_income must not be affected by the carried forward
     if ($transactions[0]->title == t("Carried forward") && $transactions[0]->payer_uid ==0) {
@@ -541,14 +543,14 @@ function _recalculate_balances($ids, $cid) {
     $quality_mean = count($qualities) ? array_sum($qualities) / count($qualities) : 0;
     
     db_query('UPDATE {cc_balance_cache} 
-      SET balance = %f, pending_balance = %f, pending_difference = %f, gross_income = %f, gross_expenditure = %f, quality_mean = %f
+      SET cleared_balance = %f, pending_balance = %f, pending_difference = %f, gross_income = %f, gross_expenditure = %f, quality_mean = %f
       WHERE uid = %d AND cid = %d', 
-      $balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean, $uid, $cid);
+      $cleared_balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean, $uid, $cid);
     if (!db_affected_rows()) {
       @db_query("INSERT INTO {cc_balance_cache}
-        (uid, cid, balance, pending_balance, pending_difference, gross_income, gross_expenditure, quality_mean)
+        (uid, cid, cleared_balance, pending_balance, pending_difference, gross_income, gross_expenditure, quality_mean)
         VALUES (%d, %d, %f, %f, %f, %f, %f, %f)",
-        $uid, $cid, $balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean);
+        $uid, $cid, $cleared_balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean);
     }
   }
   stats_refresh($cid);

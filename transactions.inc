@@ -65,7 +65,7 @@ function transactions_user_balances ($uid) {
 	foreach ($currencies as $currency) {
 	  $balances[$currency->nid] = array(
 	    'cid' => $currency->cid,
-      'balance' => 0,
+      'cleared_balance' => 0,
       'pending_balance' => 0,
       'pending_difference' => 0,
       'gross_income' => 0,
@@ -75,7 +75,7 @@ function transactions_user_balances ($uid) {
 	}
   //get all the currency rows for the given member
   $result = db_query("
-    SELECT cid, balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean 
+    SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean 
       FROM {cc_balance_cache} 
       WHERE uid = %d",
     $uid
@@ -660,15 +660,16 @@ function template_preprocess_period_volumes($variables) {
       array(':payee' => $variables['account']->uid, 
         ':payer' => $variables['account']->uid,
         ':created' => strtotime('-' . $period),
-        ':cid' => $variables['cid'], 
+        ':cid' => $cid, 
         ':states' => implode(',', $states),
       )
     );
+    $variables['volumes'][$period][$cid] = array('income' => 0, 'expenditure' => 0);
     while ($transaction = db_fetch_object($result)) {
-      if ($transaction->payee_uid == $account->uid){
-        $variables['volumes'][$period][$variables['cid']]['income'] += $transaction->quantity;
+      if ($transaction->payee_uid == $variables['account']->uid){
+        $variables['volumes'][$period][$cid]['income'] += $transaction->quantity;
       } else {
-        $variables['volumes'][$period][$variables['cid']]['expenditure'] += $transaction->quantity;
+        $variables['volumes'][$period][$cid]['expenditure'] += $transaction->quantity;
       }
     }
   }
@@ -679,7 +680,7 @@ function template_preprocess_period_volumes($variables) {
 function template_preprocess_balance_limits($variables) {
   $variables['max'] = $variables['account']->balance_limits[$variables['cid']]['max'];
   $variables['min'] = $variables['account']->balance_limits[$variables['cid']]['min'];
-  $variables['balance'] = $variables['account']->balances[$variables['cid']]['balance'];
+  $variables['balance'] = $variables['account']->balances[$variables['cid']]['cleared_balance'];
 }
 
 
@@ -715,7 +716,7 @@ function template_preprocess_balances(&$variables) {
     $currencies[$cid] = currency_load($cid);
   }
   foreach ($variables['balances'] as $cid => $cached_balances) {
-    $variables['balances'][$cid]['balance'] = theme('money', $cached_balances['balance'], $cid);
+    $variables['balances'][$cid]['cleared_balance'] = theme('money', $cached_balances['cleared_balance'], $cid);
     $variables['balances'][$cid]['pending_difference'] = theme('money', $cached_balances['pending_difference'], $cid);
     $variables['balances'][$cid]['pending_balance'] = theme('money', $cached_balances['pending_balance'], $cid);
     $variables['balances'][$cid]['gross_income'] = theme('money', $cached_balances['gross_income'], $cid);

@@ -3,14 +3,7 @@
  * $balances is an array of the form:
  * Array (
         [$cid] => Array (
-                [balance] => REAL_NUMBER
-                [pending_difference] => REAL_NUMBER
-                [pending_balance] => REAL_NUMBER
-                [gross_income] => REAL_NUMBER
-                [quality_mean] => REAL_NUMBER
-            )
-        [$cid] => Array (
-                [balance] => REAL_NUMBER
+                [cleared_balance] => REAL_NUMBER
                 [pending_difference] => REAL_NUMBER
                 [pending_balance] => REAL_NUMBER
                 [gross_income] => REAL_NUMBER
@@ -37,7 +30,7 @@
   <tr>
     <th><?php print t('Balance'); ?></th>
     <?php foreach ($balances as $cid=>$bals) { 
-      print "<td>" . $bals['balance'] . '</td>';
+      print "<td>" . $bals['cleared_balance'] . '</td>';
     }?>
   </tr>
   <tr>

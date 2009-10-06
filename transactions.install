@@ -169,7 +169,7 @@ function transactions_schema () {
         'type' => 'int',
         'size' => 'normal',
       ),
-      'balance' => array(
+      'final_balance' => array(
         'description' => 'balance including pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
@@ -299,4 +299,15 @@ function transactions_update_6009() {
   db_query ("UPDATE {node} n LEFT JOIN {cc_transactions} t ON n.nid = t.nid SET n.uid = t.starter_uid WHERE n.type = 'transaction' AND n.uid = 0");
   return $ret;
 }
-
+function transactions_update_6010() {
+  $ret = array();
+  $table=drupal_get_schema('cc_balance_cache');
+  db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
+    'description' => "sum of all this user's completed transactions",
+    'type' => $table['fields']['balance']['type'],
+    'size' => 'normal',
+    'not null' => TRUE,
+    )
+  );
+  return $ret;
+}
