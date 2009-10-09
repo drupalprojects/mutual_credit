@@ -159,28 +159,27 @@ function transactions_menu() {
     'title' => 'Economic analysis',
     'description' => 'All available metrics',
     'page callback' => 'show_stats',
-    'page arguments' => array($period, 'page', $firstcurrency->cid),
+    'page arguments' => array($period, 'page'), //this will take a final $cid argument
     'access arguments' => array('view all balances'),
     'type' => MENU_NORMAL_ITEM, 
     'file' => 'transactions.inc',
     'weight' => 20,
   );
-  $prd = str_replace(' ','', $period);
-  $items["economy/$prd"] = array (
+  $items["economy/" . str_replace(' ','_', $period)] = array (
     'title' => $period,
-    'access arguments' => array('access content'),
+    //'page arguments' => array(str_replace(' ','_', $period), 'page'),
+    //'access arguments' => array('view all balances'),
     'type' => MENU_DEFAULT_LOCAL_TASK, 
     'weight' => -20, 
   );
   foreach ($periods as $period) {
-    $prd = str_replace(' ','', $period);
-    $items["economy/$prd"] = array (
+    $items["economy/" . str_replace(' ','_', $period)] = array (
       'title' => $period,
       'page arguments' => array($period, 'page'),
-      'access arguments' => array('access content'),
+      'access arguments' => array('view all balances'),
       'type' => MENU_LOCAL_TASK, 
     ); 
-  } 
+  }
   return $items;
 }
 
@@ -656,11 +655,12 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       while ($balance = db_fetch_array($result)){
         $account->balances[$balance['cid']] = $balance;
       }
+      if (!$account) {echo 'transactions_user'.$op; break;}
       //and load up the user's personalised balance limits for each currency, defaulting to the currency limits
       foreach (currencies_load(array('uid'=>$account->uid)) as $currency) {
         $default_limits = array('min' => $currency->min_balance, 'max'=>$currency->max_balance);
         if (!$account->balance_limits[$currency->cid]) {
-          !$account->balance_limits[$currency->cid] = $default_limits;
+          $account->balance_limits[$currency->cid] = $default_limits;
         } else {
           $account->balance_limits[$currency->cid] += $default_limits;
         }
@@ -780,8 +780,8 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
 function phptemplate_views_view_field__quantity($view, $field, $row) {
   return theme('money', $row->cc_transactions_quantity, $row->cc_transactions_cid);
 }
-function phptemplate_views_view_field__balance($view, $field, $row) {
-  return theme('money', $row->cc_balance_cache_balance, $row->cc_transactions_cid);
+function phptemplate_views_view_field__cleared_balance($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_cleared_balance, $row->cc_transactions_cid);
 }
 function phptemplate_views_view_field__pending_difference($view, $field, $row) {
   return theme('money', $row->cc_balance_cache_pending_difference, $row->cc_transactions_cid);
@@ -847,6 +847,8 @@ function currency_validate($form, &$form_state) {
     'min_balance' => $currency->min_balance, 
     'max_balance' => $currency->max_balance,
   ), TRUE);
+  
+  if (strlen($currency->color)<6)form_set_error('color', t('Color field must be 6 hex characters'));
   
   //check the icon upload
   //does this mean the file is known to the files table? I think not

@@ -68,9 +68,9 @@ function update_user_balance_keys($from_cid, $to_cid) {
   $results = db_query("SELECT uid, data from {users}");
   while ($result = db_fetch_array($results)) {
     $data = unserialize($result['data']);
-    if ($data['limits']) {
-      $data['limits'][$to_cid] = $data['limits'][$from_cid];
-      unset ($data['$limits'][$from_cid]);
+    if ($data['balance_limits']) {  ;
+      $data['balance_limits'][$to_cid] = $data['balance_limits'][$from_cid];
+      unset ($data['balance_limits'][$from_cid]);
       db_query("UPDATE {users} SET data = '%s' WHERE uid = %d", array(':data'=>serialize($data), ':uid' => $result['uid']));
     }
   }
@@ -114,6 +114,11 @@ function cc_currencies_schema() {
         'size' => 'normal',
         'default' => 500,
       ),
+      'color' => array(
+        'description' => t("A hex colour value"),
+        'type' => 'varchar',
+        'length' => '6',
+      ),
       'icon' => array(
         'description' => t("location of the currency icon"),
         'type' => 'varchar',
@@ -122,4 +127,15 @@ function cc_currencies_schema() {
     )
   );
   return $schema;
+}
+
+function cc_currencies_update_6001() {
+  $ret=array();
+  db_add_field($ret, 'cc_multiple', 'color', array(
+    'description' => t("A hex colour value"),
+    'type' => 'varchar',
+    'length' => '6',
+    )
+  );
+  return $ret;
 }

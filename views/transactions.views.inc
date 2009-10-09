@@ -207,7 +207,7 @@ function transactions_views_data() {
       'click sortable' => TRUE,
     )
   );
-  $data['cc_balance_cache']['balance']=array(
+  $data['cc_balance_cache']['cleared_balance']=array(
     'title' => t('Balance'),
     'field' => array(
       'help' => t("The user's total cleared income minus total cleared expenditure"),

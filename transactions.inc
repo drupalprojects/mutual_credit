@@ -109,12 +109,14 @@ function transactions_pending($uid,  $is_starter = TRUE, $is_completer = TRUE) {
 }
 
 function show_stats($timestring, $theme = 'page', $cid=0) {
+  echo $timestring;
+  $timestring = str_replace(' ', '_', $timestring);
   $highest_incomes = cache_get($cid .'-' . $timestring . '-' . 'highest_incomes');
   $highest_expenditures = cache_get($cid .'-' . $timestring . '-' . 'highest_expenditures');
   $highest_volumes = cache_get($cid .'-' . $timestring . '-' . 'highest_volumes');
   $trades_per_user = cache_get($cid .'-' . $timestring . '-' . 'trades_per_user');
   $misc = cache_get($cid .'-' . $timestring . '-' . 'misc');
-  return theme('stats_'.$theme, array(
+  return theme('stats_' . $theme, array(
     'highest_incomes' => $highest_incomes->data,
     'highest_expenditures' => $highest_expenditures->data,
     'highest_volumes' => $highest_volumes->data,
@@ -287,7 +289,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
     '#field_suffix' => $default_currency->title,
     '#element_validate' => array('validate_quantity'),
     '#maxlength'=> 7,
-    '#size'=> 7,
     '#required' => TRUE,
   );
   if ($mode == 'summary') $form['quantity']['#type'] = 'hidden';
@@ -602,7 +603,7 @@ function template_preprocess_balance_history(&$variables) {//$variables = array(
   $default_states = array(TRANSACTION_STATE_COMPLETED);
   if (variable_get('cc_count_pending', FALSE)) $default_states[] = TRANSACTION_STATE_PENDING;
   extract ($variables['options'] + array(
-    'currencies'=>currencies_load(array('uids'=>array($account->uid))), 
+    'currencies'=>currencies_load(array('uids'=>array($variables['account']->uid))), 
     'states' => $default_states,
     'first_time' => $variables['account']->created,
   ));
@@ -929,14 +930,17 @@ function _get_all_trading_accounts () {
     $show_fields =' u.' . $field;
   }
   $account = array();
-  if ($roles = _get_trader_roles()) {
+  if ($roles = user_roles(TRUE, 'ing_')) {
+    foreach ($roles as $rid => $role) {
+      $conditions[] = 'rid = ' . $rid;
+    }
     //the fields MUST include uid as this is the key for the array we are returning. 
     $result2= db_query("SELECT u.uid, %s 
       FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
       WHERE status = 1 AND u.uid > 0
       AND (%s)
       ORDER BY `u`.`%s` ASC",
-      $show_fields, implode(' OR ', $roles), variable_get('cc_select_user_orderby', 'uid')
+      $show_fields, implode(' OR ', $conditions), variable_get('cc_select_user_orderby', 'uid')
     );
     while ($account = db_fetch_array($result2)) {
       $display='';
@@ -963,7 +967,7 @@ function _permitted_transaction_types() {
   }
   return $user_types;
 }
-
+/*
 function _get_trader_roles() {
   //get all the roles with a trading permission
   $result1 = db_query("SELECT rid from {permission}  WHERE perm LIKE '%outgoing_%' OR perm LIKE '%incoming_%'");
@@ -977,7 +981,7 @@ function _get_trader_roles() {
   }
   if ($roles) return $roles;
   else drupal_set_message(t('No roles have permission to start any transactions.'));
-}
+}*/
 
 function _get_view_transactions_by_user($where) {
   $view = views_get_view('cc_transactions_by_user');

@@ -23,10 +23,7 @@ define (GOOGLE_CHARTS_URI, 'http://chart.apis.google.com/chart');
 $dimensions = array(250, 200);
 $legend = t("Balance over time for @user", array('@user' => strip_tags(theme('username', $account))));
 
-  $all_values = array();
-
-  //TODO Add colours to the currency properties
-  $randomcolors = array('ff8800','ff0088','0088ff','8800ff','0000ff','ffff00','ff00ff','ff0000', '00ff00', '0000ff');
+$all_values = array();
 
 foreach ($currencies as $currency){  //this loop draws one line for one currency
   $cid  = $currency->cid;
@@ -88,10 +85,9 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
   //make the url encoded line from the x and y values
   $lines['mainline'.$cid] = implode(',',$times).'|'.implode(',',$values);
   $line_styles['mainline'.$cid] = 2;
-  $line_colors['mainline'.$cid] = array_pop($randomcolors);
+  $line_colors['mainline'.$cid] = $currency->color;
   //save the values to get the max and min later
   $all_values = array_merge($all_values, $values);
-  
   //determine the vertical limits according to the user's own account limits
   $all_values += $account->balance_limits[$cid];
 

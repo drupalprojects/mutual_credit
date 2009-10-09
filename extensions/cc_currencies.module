@@ -5,7 +5,7 @@
  * This module removes that config page and provides and interface so permitted users can create, join and trade with more than one currency
 */
 function cc_currencies_menu() {
-  return; 
+
 }
 
 /** 
@@ -100,7 +100,9 @@ function cc_currencies_form(&$node, $form_state) {
     '#title' => t('Currency purpose, ethos, values and rules'),
     '#default_value' => $node->body,
     '#required' => FALSE,
-    '#description' => t('Write about the purpose and value of your currency. If your currency is "hearts", what is a heart for, how would I earn or spend one? In particular, is it intended to be redeemable or is it purely a unit of account? That means would you redeem 5 virtual loaves of bread for real ones or tell me to go back online where I came from? Remember you may not be able to edit your currency once someone has traded in it.'),
+    '#description' => t('Write about the purpose and value of your currency. ') . 
+      t('If your currency is "hearts", what is a heart for, how would I earn or spend one? In particular, is it intended to be redeemable or is it purely a unit of account? That means would you redeem 5 virtual loaves of bread for real ones or tell me to go back online where I came from?') . 
+      t('Remember you may not be able to edit your currency once someone has traded in it.'),
     '#weight' => '-3',
   );
   $form['#validate'][] = 'currency_validate';
@@ -158,9 +160,9 @@ function cc_currencies_form_alter(&$form, $form_state, $form_id) {
  */
 function cc_currencies_insert(&$node) {
   db_query("INSERT INTO {cc_multiple} (
-    nid, comparative_value, zero_offset, division, min_balance, max_balance
-    ) VALUES (%d, %d, %d, '%s', %d, %d )",
-    $node->nid, $node->comparative_value, $node->zero_offset, $node->division, $node->min_balance, $node->max_balance
+    nid, comparative_value, zero_offset, division, min_balance, max_balance, color
+    ) VALUES (%d, %d, %d, '%s', %d, %d, '%s' )",
+    $node->nid, $node->comparative_value, $node->zero_offset, $node->division, $node->min_balance, $node->max_balance, $node->color
   );
   if ($node->icon) {
     db_query("UPDATE {cc_multiple} SET icon ='%s' WHERE nid = %d", $node->icon, $node->nid);
@@ -172,9 +174,9 @@ function cc_currencies_insert(&$node) {
  */
 function cc_currencies_update(&$node) {
   db_query("UPDATE {cc_multiple} SET
-    comparative_value = '%d', zero_offset = '%d', division = '%s', min_balance = '%d', max_balance = '%d'
+    comparative_value = '%d', zero_offset = '%d', division = '%s', min_balance = '%d', max_balance = '%d', color = '%s'
     WHERE nid = '%d' ",
-    $node->comparative_value, $node->zero_offset, $node->division, $node->min_balance, $node->max_balance, $node->nid
+    $node->comparative_value, $node->zero_offset, $node->division, $node->min_balance, $node->max_balance, $node->color, $node->nid
   );
   if ($node->icon){
     db_query(" UPDATE {cc_multiple} SET icon ='%s' WHERE nid = %d ", $node->icon, $node->nid);
@@ -198,13 +200,14 @@ function cc_currencies_delete(&$node) {
  * http://api.drupal.org/api/function/hook_load/6
  */
 function cc_currencies_load(&$node) {
-  $result = db_fetch_array(db_query("SELECT comparative_value, zero_offset, division, min_balance, max_balance, icon
+  $result = db_fetch_array(db_query("SELECT nid as cid, comparative_value, zero_offset, division, min_balance, max_balance, color, icon
     FROM {cc_multiple} WHERE nid = %d ",  $node->nid
   ));
   foreach ($result as $key=>$value) {
     $node->$key = $value;
   }
 }
+
 /** 
  * http://api.drupal.org/api/function/hook_theme/6
  * This hook is required for modules to define one or more node types.
@@ -307,18 +310,20 @@ function get_currencies($options=array()) {
   return $currencies;
 }
 
+
 function identify_currencies($uids = array()) {
   $uids = array_values($uids);
   $ors1 = array('1=1');
   $ors2 = array('1=1');
   //need to get all the global (sticky) currencies, all these users created, all the ones they traded in.
   if (count($uids)) {
+    if ($uids == array(0=>NULL)){slkjdfgns();}
     $uid_string = '(' . implode(',',$uids) . ')';
     $ors1[] = " uid IN " . $uid_string;
     $ors2[] = " payer_uid IN $uid_string OR payee_uid IN $uid_string ";
   }
   //gets all the universal currencies and the ones owed by named users
-  $results = db_query("SELECT nid from {node} WHERE type = 'currency' AND sticky = TRUE OR ( %s )", implode(" OR ", $ors1));
+  $results = db_query("SELECT nid from {node} WHERE type = 'currency' AND (sticky = TRUE OR ( %s ))", implode(" OR ", $ors1));
   while ($result = db_result($results)) {
     $visible[]=$result;
   }

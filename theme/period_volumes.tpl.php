@@ -35,7 +35,7 @@ $top_value = 10*ceil($max_ever/10);//this is how high the y axis goes
 $params=array();
 $params['cht']= 'bvg';
 $params['chs']= implode('x',$dimensions); //chs=<width in pixels>x<height in pixels>
-$params['chds'] = '0,' . $top_value . ',0,' . $max_recent;
+$params['chds'] = '0,' . $top_value;
 $params['chbh'] = 'a,2,10'; //chbh=<bar width>,<space between bars>,<space between groups>
 $params['chco'] = implode(',',$colors);
 $params['chf'] =  'bg,s,EFEFEF00';

@@ -277,6 +277,16 @@ function currency_form_fields($currency) {
     '#weight' => 10,
     '#description' => t("If this currency is part of a larger trading network, it will have a value within that network (not yet operational)")
   );
+  $form['color'] = array (
+    '#type' => 'textfield',
+    '#title' => t('A hex colour value'),
+    '#default_value' => $node->color,
+    '#required' => TRUE,
+    '#description' => t('6 hex digits'),
+    '#weight' => 3,
+    '#maxlength'=> 6,
+    '#size'=> 6,
+  );
 return $form;
 }
 
@@ -293,6 +303,7 @@ function default_currency_config_submit($form, &$form_state) {
   $cc_default_currency->comparative_value = $form_state['values']['comparative_value'];
   $cc_default_currency->zero_offset = intval($form_state['values']['zero_offset']);
   $cc_default_currency->division = $form_state['values']['division'];
+  $cc_default_currency->color = $form_state['values']['color'];
   //need to test this
   if ($form_state['values']['icon']) {
     $cc_default_currency->icon = $form_state['values']['icon'];
@@ -569,7 +580,6 @@ function stats_refresh($cid = 0){
     $period = trim($period);
     //this excludes transactions with the balancing account
     //Anything involving a member count includes only the active members
-    $all_transactions=array();
     $balancing = variable_get('cc_balancing_account_num', 1);
     $stats = array();
     $earned = array();
@@ -579,7 +589,7 @@ function stats_refresh($cid = 0){
     $states = variable_get('cc_count_pending',FALSE) ? array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING) : array(TRANSACTION_STATE_COMPLETED);
     $result = db_query("SELECT * FROM {cc_transactions} AS t 
       LEFT JOIN {node} AS n ON t.nid = n.nid
-      WHERE n.created > '%d'
+      WHERE n.created > %d
       AND t.cid = %d
       AND state in (%d)
       AND t.payer_uid <> %d AND t.payee_uid <> %d", 
@@ -593,13 +603,13 @@ function stats_refresh($cid = 0){
     );
       
     //iterate through the transactions, adding stuff up
+    $count=0;
     while ($t = db_fetch_object($result)){
       $earned[$t->payee_uid] = $earned[$t->payee_uid] + $t->quantity;
       $spent[$t->payer_uid] = $spent[$t->payer_uid] + $t->quantity;
       $trades[$t->payee_uid] ++;
       $trades[$t->payer_uid] ++;
       $count ++;
-      //print_r($t);
     }
     if (!$count) continue;
     $active_members = count($trades);
@@ -621,7 +631,7 @@ function stats_refresh($cid = 0){
     //we might not need this one, since it is obtained by simple division of the above
     $stats['misc']['mean_transaction_count_active'] = $count/floatval($active_members);
     foreach ($stats as $key => $stat) {
-      cache_set($cid . '-' . $period . '-' . $key, $stat);
+      cache_set($cid . '-' . str_replace(' ', '_', $period) . '-' . $key, $stat);
     }
   }
 }
