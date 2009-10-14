@@ -169,7 +169,7 @@ function transactions_schema () {
         'type' => 'int',
         'size' => 'normal',
       ),
-      'final_balance' => array(
+      'cleared_balance' => array(
         'description' => 'balance including pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',

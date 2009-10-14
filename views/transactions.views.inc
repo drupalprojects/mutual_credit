@@ -12,10 +12,10 @@ function transactions_views_handlers() {
     ),
     'handlers' => array(
       'views_handler_field_transactions_payer_uid' => array(
-        'parent'=> 'views_handler_field'
+        'parent' => 'views_handler_field'
       ),
       'views_handler_field_transactions_payee_uid' => array(
-       'parent'=> 'views_handler_field'
+        'parent' => 'views_handler_field'
       ),
     ),
   );
@@ -1358,8 +1358,17 @@ $handler->override_option('block_caching', -1);
   * reuses the statement argument so it shows transction fromand to a certain user
 */
 function transactions_views_query_alter($view, &$query) {
-  if ($view->name == 'statement') {
-    $query->where[0]['clauses'][] = "cc_transactions.payee_uid = ".$query->where[0]['args'][0];
-    $query->where[0]['type']= 'OR';
+  switch($view->name) {
+    //put the names of the views this should act on
+    case 'cc_directory_recent_offers':
+    case 'cc_directory_recent_wants':
+      //usage. Add a filter by role which filters for any of all the roles
+      global $user;
+      $roles = $user->roles;
+      unset($roles[DRUPAL_AUTHENTICATED_RID]);
+      if ($query->tables['node']['users_roles'] && count($roles)) {
+        //$query->where[0]['clauses'][] = 'users_roles.rid IN (' . implode(',',array_keys($roles)) .')'; 
+      }
+      print_r($query);
   }
 }

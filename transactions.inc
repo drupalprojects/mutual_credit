@@ -109,7 +109,6 @@ function transactions_pending($uid,  $is_starter = TRUE, $is_completer = TRUE) {
 }
 
 function show_stats($timestring, $theme = 'page', $cid=0) {
-  echo $timestring;
   $timestring = str_replace(' ', '_', $timestring);
   $highest_incomes = cache_get($cid .'-' . $timestring . '-' . 'highest_incomes');
   $highest_expenditures = cache_get($cid .'-' . $timestring . '-' . 'highest_expenditures');
@@ -235,7 +234,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
       $form['completer_uid']=array(
         '#type' => 'select',
         '#title' => t('With whom did you transact?'),
-        '#default_value' => $transaction->completer_uid,
+        '#default_value' => $completer,
         '#weight' => -3,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
         '#required' => TRUE
@@ -344,7 +343,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
       }
     }
   }
-  
   return $form;
 }
 
@@ -930,9 +928,11 @@ function _get_all_trading_accounts () {
     $show_fields =' u.' . $field;
   }
   $account = array();
+  $conditions[] = '1=1';
   if ($roles = user_roles(TRUE, 'ing_')) {
     foreach ($roles as $rid => $role) {
-      $conditions[] = 'rid = ' . $rid;
+      //role 2, authenticated user, is not stored in the roles table
+      if ($rid <> DRUPAL_AUTHENTICATED_RID)  $conditions[] = 'rid = ' . $rid;
     }
     //the fields MUST include uid as this is the key for the array we are returning. 
     $result2= db_query("SELECT u.uid, %s 
@@ -967,21 +967,6 @@ function _permitted_transaction_types() {
   }
   return $user_types;
 }
-/*
-function _get_trader_roles() {
-  //get all the roles with a trading permission
-  $result1 = db_query("SELECT rid from {permission}  WHERE perm LIKE '%outgoing_%' OR perm LIKE '%incoming_%'");
-  while ($rid = db_result($result1)){
-    if ($rid == 2) {
-      $roles = array ('1 = 1');
-      break;
-    } else {
-      $roles[] = " rid = $rid "; 
-    }
-  }
-  if ($roles) return $roles;
-  else drupal_set_message(t('No roles have permission to start any transactions.'));
-}*/
 
 function _get_view_transactions_by_user($where) {
   $view = views_get_view('cc_transactions_by_user');

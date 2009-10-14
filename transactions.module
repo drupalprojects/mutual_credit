@@ -137,7 +137,7 @@ function transactions_menu() {
     'file' => 'transactions.inc',
   );
   
-  if (_get_trader_roles()) {
+  if (user_roles(FALSE, "ing_")) {
     $items['transaction/add'] = array(
       'title' => 'Start new transaction',
       'description' => 'The new transaction form, with nothing pre-filled',
@@ -393,7 +393,6 @@ function transactions_nodeapi(&$node, $op) {
   switch ($op) {
   	//the so called node being validated is just the $form_state['values'] converted to an object
     case 'validate':
-      module_load_include('inc', 'transactions');
       $node = _infer_transaction_from_form($node);
       transaction_fields_validate($node);
       //perform checks to see that the transaction doesn't take either party outside of the currency limits
@@ -409,7 +408,6 @@ function transactions_nodeapi(&$node, $op) {
       stats_refresh();
       //gets rid of any boring status messages
       drupal_get_messages('status', TRUE);
-      
   }
 }
 
