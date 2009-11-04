@@ -3,6 +3,7 @@
   * Balance History Google Chart 
   * Takes data in the format below and outputs an <img> tag for a google chart.
   * Feel free to tweak the initial variables
+  * //TODO This could be cached.
   * 
   * $points = array(
   *   '$cid' = array(
@@ -16,19 +17,22 @@
   * 
   */
 
-
 //this figure is a bit of guess work, based on 2048 chars - around 100 for the constant data divided by around 10 chars per point
 define (MAX_CHART_POINTS, 140);
 define (GOOGLE_CHARTS_URI, 'http://chart.apis.google.com/chart');
 $dimensions = array(250, 200);
 $legend = t("Balance over time for @user", array('@user' => strip_tags(theme('username', $account))));
-
 $all_values = array();
+$values = array();
 
 foreach ($currencies as $currency){  //this loop draws one line for one currency
   $cid  = $currency->cid;
   $times = array();
   $values = array();
+  //determine the vertical limits according to the user's own account limits
+  $all_values['max'] = $account->balances[$cid]['max'];
+  $all_values['min'] += $account->balances[$cid]['min'];
+  if (!count($points)) continue;
   //The system will choose here between three smoothing mechanisms, to make the best use fo the 2k URL limits of google charts.
   if (count($points)*2 < MAX_CHART_POINTS) {
     //unsmoothing mechanism, the true picture - adds intermediate points to produce perpendicular lines
@@ -88,30 +92,27 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
   $line_colors['mainline'.$cid] = $currency->color;
   //save the values to get the max and min later
   $all_values = array_merge($all_values, $values);
-  //determine the vertical limits according to the user's own account limits
-  $all_values += $account->balance_limits[$cid];
-
 }
 $max = max($all_values);
 $min = min($all_values);
 
 $ds=array();
-while ($line = each($lines)) {
+while ($line = @each($lines)) {
   $ds[] = implode(',',array(-1, time()-$first_time ,$min,$max));
 }
 
 //now put the line into the google charts api format
 $params['cht'] = 'lxy';
 $params['chs'] = implode('x',$dimensions);
-$params['chd'] = 't:' . implode('|', $lines);
+$params['chd'] = 't:' . @implode('|', $lines);
 //optional parameters
 if ($legend)$params['chtt'] = $legend;
 $params['chds'] = implode(',',$ds);
 $params['chxt'] = 'x,y';
 $params['chxl'] = '0:|' . date('M y', $first_time) . '|' . t('Now') . '|1:|' . $min . '|' . $max;
 $params['chm'] = 'r,888888,0,1,-1'; //this is called a range marker, which we are using for the zero line
-$params['chls'] = implode('|',$line_styles);
-$params['chco'] = implode(',',$line_colors);
+$params['chls'] = @implode('|',$line_styles);
+$params['chco'] = @implode(',',$line_colors);
   
 //cleaner than http_build_query
 foreach ($params as $key=>$val) {

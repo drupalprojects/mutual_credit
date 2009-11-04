@@ -391,10 +391,7 @@ function theme_offers_wants_link ($type) {
   if ($names['offers_wants'][$type]) {
     $link = l($names['offers_wants'][$type], 'node/add/'.$type);
     return '<div class = "directory-link">' . t('Click to add new !items', array('!items' => $link)) . '</div>';
-    $link = l($names['offers_wants'][$type], 'directory/print/'.$type);
-    return '<div class = "directory-link">' . t('Printable !items', array('!items' => $link)) . '</div>';
   }
-  //nother link needed for printable page.
 }
 
 function create_offer_or_want_form() {

@@ -5,7 +5,7 @@
  */
 
 /**
- * Implementation of hook views_default_views().
+ * Implementation of hook views_data().
  */
 function cc_offer_want_views_data() {
   $names = variable_get ('cc_transaction_types', array());
@@ -24,26 +24,6 @@ function cc_offer_want_views_data() {
       'field' => 'nid',
     ),
   );
-/*
-  $data['cc_offers_wants']['goods_not_services'] = array(
-    'title' => $good.'/'.$service,
-    'filter' => array(
-      'help' => t('Filter for goods and services'),
-      'handler' => 'views_handler_filter_goods_not_services',
-    ),
-  );
-  $data['cc_offers_wants']['not_cc'] = array(
-    'title' => t('Local or official money?'),
-    'filter' => array(
-      'help' => t('Whether the trade would be in official money'),
-      'handler' => 'views_handler_filter_not_cc',
-    ),
-    'field' => array(
-      'help' => t('Whether the trade would be in official money'),
-      'handler' => 'views_handler_field_not_cc',
-    ),
-  );
-  */
   return $data;
 }
 

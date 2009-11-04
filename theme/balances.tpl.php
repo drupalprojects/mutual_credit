@@ -53,7 +53,7 @@
   </tr>
   <?php if ($rating) { ?>
   <tr>
-    <th><?php print t('Rating'); ?> </th>
+    <th><?php print t('Average rating'); ?> </th>
     <?php foreach ($balances as $cid=>$bals) {
        print "<td>" . $bals['quality_mean'] . '</td>';
       }

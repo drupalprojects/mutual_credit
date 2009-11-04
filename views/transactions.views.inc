@@ -1076,299 +1076,294 @@ function cc_transaction_list_view() {
 
 function transactions_pending_view() {
   $view = new view;
-$view->name = 'cc_transactions_pending';
-$view->description = t('incomplete transactions, per user');
-$view->tag = '';
-$view->view_php = '';
-$view->base_table = 'node';
-$view->is_cacheable = FALSE;
-$view->api_version = 2;
-$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
-$handler = $view->new_display('default', 'Defaults', 'default');
-$handler->override_option('sorts', array(
-  'created' => array(
-    'order' => 'ASC',
-    'granularity' => 'hour',
-    'id' => 'created',
-    'table' => 'node',
-    'field' => 'created',
-    'relationship' => 'none',
-  ),
-));
-$handler->override_option('arguments', array(
-  'completer_uid' => array(
-    'default_action' => 'ignore',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
+  $view->name = 'cc_transactions_pending';
+  $view->description = t('incomplete transactions, per user');
+  $view->tag = '';
+  $view->view_php = '';
+  $view->base_table = 'node';
+  $view->is_cacheable = FALSE;
+  $view->api_version = 2;
+  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+  $handler = $view->new_display('default', 'Defaults', 'default');
+  $handler->override_option('sorts', array(
+    'created' => array(
+      'order' => 'ASC',
+      'granularity' => 'hour',
+      'id' => 'created',
+      'table' => 'node',
+      'field' => 'created',
+      'relationship' => 'none',
+    ),
+  ));
+  $handler->override_option('arguments', array(
+    'completer_uid' => array(
+      'default_action' => 'ignore',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'default_argument_type' => 'current_user',
+      'default_argument' => '',
+      'validate_type' => 'user',
+      'validate_fail' => 'not found',
+      'id' => 'completer_uid',
+      'table' => 'cc_transactions',
+      'field' => 'completer_uid',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+        '3' => 0,
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'offer' => 0,
+        'want' => 0,
+        'transaction' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '2' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
+    ),
+  ));
+  $handler->override_option('filters', array(
+    'state' => array(
+      'operator' => '=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'state',
+      'table' => 'cc_transactions',
+      'field' => 'state',
+      'relationship' => 'none',
+    ),
+  ));
+  $handler->override_option('access', array(
+    'type' => 'none',
+  ));
+  $handler->override_option('title', t('Pending Transactions'));
+  $handler->override_option('empty', t('There are no transactions to complete'));
+  $handler->override_option('items_per_page', 0);
+  $handler->override_option('row_plugin', 'node');
+  $handler = $view->new_display('page', 'user_page', 'page_1');
+  $handler->override_option('arguments', array(
+    'completer_uid' => array(
+      'default_action' => 'not found',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'default_argument_type' => 'current_user',
+      'default_argument' => '',
+      'validate_type' => 'user',
+      'validate_fail' => 'not found',
+      'id' => 'completer_uid',
+      'table' => 'cc_transactions',
+      'field' => 'completer_uid',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+        '3' => 0,
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'offer' => 0,
+        'want' => 0,
+        'transaction' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '2' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+    ),
+  ));
+  $handler->override_option('header', '<h4>' . t('Transactions for this user to complete') . '</h4>');
+  $handler->override_option('header_format', '2');
+  $handler->override_option('header_empty', 1);
+  $handler->override_option('path', 'transactions/pending');
+  $handler->override_option('menu', array(
+    'type' => 'none',
     'title' => '',
-    'default_argument_type' => 'current_user',
-    'default_argument' => '',
-    'validate_type' => 'user',
-    'validate_fail' => 'not found',
-    'id' => 'completer_uid',
-    'table' => 'cc_transactions',
-    'field' => 'completer_uid',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
-      '3' => 0,
-    ),
-    'relationship' => 'none',
-    'default_options_div_prefix' => '',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'offer' => 0,
-      'want' => 0,
-      'requack' => 0,
-      'transaction' => 0,
-      'page' => 0,
-      'story' => 0,
-    ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '2' => 0,
-    ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-    'validate_argument_php' => '',
-  ),
-));
-$handler->override_option('filters', array(
-  'state' => array(
-    'operator' => '=',
-    'value' => '1',
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
-    ),
-    'id' => 'state',
-    'table' => 'cc_transactions',
-    'field' => 'state',
-    'relationship' => 'none',
-  ),
-));
-$handler->override_option('access', array(
-  'type' => 'none',
-));
-$handler->override_option('empty', t('There are no transactions to complete'));
-$handler->override_option('items_per_page', 0);
-$handler->override_option('row_plugin', 'node');
-$handler = $view->new_display('page', 'user_page', 'page_1');
-$handler->override_option('arguments', array(
-  'completer_uid' => array(
-    'default_action' => 'not found',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
+    'description' => '',
+    'weight' => '0',
+    'name' => 'navigation',
+  ));
+  $handler->override_option('tab_options', array(
+    'type' => 'none',
     'title' => '',
-    'default_argument_type' => 'current_user',
-    'default_argument' => '',
-    'validate_type' => 'user',
-    'validate_fail' => 'not found',
-    'id' => 'completer_uid',
-    'table' => 'cc_transactions',
-    'field' => 'completer_uid',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
-      '3' => 0,
+    'description' => '',
+    'weight' => 0,
+  ));
+  $handler = $view->new_display('attachment', 'Attachment', 'attachment_1');
+  $handler->override_option('arguments', array(
+    'starter_uid' => array(
+      'default_action' => 'not found',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'default_argument_type' => 'fixed',
+      'default_argument' => '',
+      'validate_type' => 'user',
+      'validate_fail' => 'not found',
+      'id' => 'starter_uid',
+      'table' => 'cc_transactions',
+      'field' => 'starter_uid',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+        '3' => 0,
+      ),
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'offer' => 0,
+        'want' => 0,
+        'transaction' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '2' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
     ),
-    'relationship' => 'none',
-    'default_options_div_prefix' => '',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'offer' => 0,
-      'want' => 0,
-      'requack' => 0,
-      'transaction' => 0,
-      'page' => 0,
-      'story' => 0,
-    ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '2' => 0,
-    ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-    'validate_argument_php' => '',
-    'override' => array(
-      'button' => 'Use default',
-    ),
-  ),
-));
-$handler->override_option('header', '<h4>' . t('Transactions for this user to complete') . '</h4>');
-$handler->override_option('header_format', '2');
-$handler->override_option('header_empty', 1);
-$handler->override_option('path', 'marketplace/pending');
-$handler->override_option('menu', array(
-  'type' => 'none',
-  'title' => '',
-  'description' => '',
-  'weight' => '0',
-  'name' => 'navigation',
-));
-$handler->override_option('tab_options', array(
-  'type' => 'none',
-  'title' => '',
-  'description' => '',
-  'weight' => 0,
-));
-$handler = $view->new_display('attachment', 'Attachment', 'attachment_1');
-$handler->override_option('arguments', array(
-  'starter_uid' => array(
-    'default_action' => 'not found',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
+  ));
+  $handler->override_option('header', '<h4>' . t('Transactions started by this user') . '</h4>');
+  $handler->override_option('header_format', '2');
+  $handler->override_option('header_empty', 1);
+  $handler->override_option('attachment_position', 'after');
+  $handler->override_option('inherit_arguments', TRUE);
+  $handler->override_option('inherit_exposed_filters', FALSE);
+  $handler->override_option('displays', array(
+    'page_1' => 'page_1',
+    'default' => 0,
+  ));
+  $handler = $view->new_display('page', 'All', 'page_2');
+  $handler->override_option('arguments', array());
+  $handler->override_option('path', 'transactions/all_pending');
+  $handler->override_option('menu', array(
+    'type' => 'none',
     'title' => '',
-    'default_argument_type' => 'fixed',
-    'default_argument' => '',
-    'validate_type' => 'user',
-    'validate_fail' => 'not found',
-    'id' => 'starter_uid',
-    'table' => 'cc_transactions',
-    'field' => 'starter_uid',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
-      '3' => 0,
-    ),
-    'override' => array(
-      'button' => 'Use default',
-    ),
-    'relationship' => 'none',
-    'default_options_div_prefix' => '',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'offer' => 0,
-      'want' => 0,
-      'requack' => 0,
-      'transaction' => 0,
-      'page' => 0,
-      'story' => 0,
-    ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '2' => 0,
-    ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-    'validate_argument_php' => '',
-  ),
-));
-$handler->override_option('header', '<h4>' . t('Transactions started by this user') . '</h4>');
-$handler->override_option('header_format', '2');
-$handler->override_option('header_empty', 1);
-$handler->override_option('attachment_position', 'after');
-$handler->override_option('inherit_arguments', TRUE);
-$handler->override_option('inherit_exposed_filters', FALSE);
-$handler->override_option('displays', array(
-  'page_1' => 'page_1',
-  'default' => 0,
-));
-$handler = $view->new_display('page', 'All', 'page_2');
-$handler->override_option('arguments', array());
-$handler->override_option('path', 'marketplace/all_pending');
-$handler->override_option('menu', array(
-  'type' => 'none',
-  'title' => '',
-  'description' => '',
-  'weight' => 0,
-  'name' => 'navigation',
-));
-$handler->override_option('tab_options', array(
-  'type' => 'none',
-  'title' => '',
-  'description' => '',
-  'weight' => 0,
-));
-$handler = $view->new_display('block', 'my_pending_block', 'block_1');
-$handler->override_option('arguments', array(
-  'completer_uid' => array(
-    'default_action' => 'default',
-    'style_plugin' => 'default_summary',
-    'style_options' => array(),
-    'wildcard' => 'all',
-    'wildcard_substitution' => 'All',
+    'description' => '',
+    'weight' => 0,
+    'name' => 'navigation',
+  ));
+  $handler->override_option('tab_options', array(
+    'type' => 'none',
     'title' => '',
-    'default_argument_type' => 'current_user',
-    'default_argument' => '',
-    'validate_type' => 'user',
-    'validate_fail' => 'not found',
-    'id' => 'completer_uid',
-    'table' => 'cc_transactions',
-    'field' => 'completer_uid',
-    'validate_user_argument_type' => 'uid',
-    'validate_user_roles' => array(
-      '2' => 0,
-      '3' => 0,
+    'description' => '',
+    'weight' => 0,
+  ));
+  $handler = $view->new_display('block', 'my_pending_block', 'block_1');
+  $handler->override_option('arguments', array(
+    'completer_uid' => array(
+      'default_action' => 'default',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'All',
+      'title' => '',
+      'default_argument_type' => 'current_user',
+      'default_argument' => '',
+      'validate_type' => 'user',
+      'validate_fail' => 'not found',
+      'id' => 'completer_uid',
+      'table' => 'cc_transactions',
+      'field' => 'completer_uid',
+      'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+        '3' => 0,
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_user' => 0,
+      'default_argument_fixed' => '',
+      'default_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'offer' => 0,
+        'want' => 0,
+        'transaction' => 0,
+        'page' => 0,
+        'story' => 0,
+      ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
+      'validate_argument_vocabulary' => array(
+        '2' => 0,
+      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
+      'override' => array(
+        'button' => 'Use default',
+      ),
     ),
-    'relationship' => 'none',
-    'default_options_div_prefix' => '',
-    'default_argument_user' => 0,
-    'default_argument_fixed' => '',
-    'default_argument_php' => '',
-    'validate_argument_node_type' => array(
-      'offer' => 0,
-      'want' => 0,
-      'requack' => 0,
-      'transaction' => 0,
-      'page' => 0,
-      'story' => 0,
-    ),
-    'validate_argument_node_access' => 0,
-    'validate_argument_nid_type' => 'nid',
-    'validate_argument_vocabulary' => array(
-      '2' => 0,
-    ),
-    'validate_argument_type' => 'tid',
-    'validate_argument_transform' => 0,
-    'validate_user_restrict_roles' => 0,
-    'validate_argument_php' => '',
-    'override' => array(
-      'button' => 'Use default',
-    ),
-  ),
-));
-$handler->override_option('block_description', '');
-$handler->override_option('block_caching', -1);
+  ));
+  $handler->override_option('block_description', '');
+  $handler->override_option('block_caching', -1);
   return $view;
 }
 
 /** 
- / Implementation of hook_views_query_alter
-  * reuses the statement argument so it shows transction fromand to a certain user
-*/
-function transactions_views_query_alter($view, &$query) {
+ * Implementation of hook_views_query_alter
+ */
+function ___transactions_views_query_alter($view, &$query) {
   switch($view->name) {
     //put the names of the views this should act on
     case 'cc_directory_recent_offers':
     case 'cc_directory_recent_wants':
-      //usage. Add a filter by role which filters for any of all the roles
+      //usage. Filters nodes according to the role of their creator being shared with the $user's role.
       global $user;
       $roles = $user->roles;
       unset($roles[DRUPAL_AUTHENTICATED_RID]);
       if ($query->tables['node']['users_roles'] && count($roles)) {
         //$query->where[0]['clauses'][] = 'users_roles.rid IN (' . implode(',',array_keys($roles)) .')'; 
       }
-      print_r($query);
   }
 }

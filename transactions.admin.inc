@@ -171,11 +171,11 @@ function cc_options_validate(&$form, &$form_state) {
   }
   $form_state['values']['cc_stats_periods'] = $periods;
   //we want to work on all the keyes which have __
-  foreach($form_state['values'] as $key => $value){
+  foreach($form_state['values'] as $key => $value) {
     //the module names was preserved as a prefix in the field name
-    if (strpos($key, '__')){
+    if (strpos($key, '__')) {
       $parts = explode('__', $key);
-      if (strlen($value)){
+      if (strlen($value)) {
         $nestedvalues[$parts[0]][$parts[1]] = $value;
       }
       unset ($form_state['values'][$key]);
@@ -185,7 +185,7 @@ function cc_options_validate(&$form, &$form_state) {
 }
 
 //builds the form for configuring transactions.
-function default_currency_config(){
+function default_currency_config() {
   $currency= variable_get('cc_default_currency', NULL);
   $form = currency_form_fields($currency);
   $form['title'] = array(
@@ -280,7 +280,7 @@ function currency_form_fields($currency) {
   $form['color'] = array (
     '#type' => 'textfield',
     '#title' => t('A hex colour value'),
-    '#default_value' => $node->color,
+    '#default_value' => $currency->color,
     '#required' => TRUE,
     '#description' => t('6 hex digits'),
     '#weight' => 3,
@@ -311,7 +311,7 @@ function default_currency_config_submit($form, &$form_state) {
   variable_set('cc_default_currency', $cc_default_currency);
 }
 
-function transaction_quality_config(){
+function transaction_quality_config() {
   $saved_array=variable_get('cc_transaction_qualities', array());
   foreach ($saved_array as $key => $word) {
     $default_string .= $key.'|'.$word . "\n";
@@ -347,7 +347,7 @@ function transaction_quality_config_validate($form, &$form_state) {
 function validate_limits($minmax, $required = FALSE) {
   $fieldnames = array_keys($minmax);
   $limits = array_values($minmax);
-  foreach ($limits as $key=>$value){
+  foreach ($limits as $key=>$value) {
     if (!is_numeric($value) && ($required || strlen($value))) {
       form_set_error($fieldnames[$key], t("This must be an integer: @value", array('@value' => $value)));
     }
@@ -362,7 +362,7 @@ function validate_limits($minmax, $required = FALSE) {
 }
 
 //options might equal 
-function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0){
+function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0) {
   global $user;
   if ($quantity < 0) {
     drupal_set_message(t('@function was asked to create a transaction with negative value: @value', array('@function' => 'generate_transaction_node', '@value' => $quantity)));
@@ -458,14 +458,14 @@ function cforge_report() {
 
 
 //helper function for testing
-function generate_transactions($howmany){
+function generate_transactions($howmany) {
   //get a list of all user ids and currency Ids
   $results1 = db_query("SELECT uid FROM {users} WHERE uid != 1");
   $results2 = db_query("SELECT nid FROM {node} WHERE type = 'currency'");
-  while ($result = db_fetch_object($results1)){
+  while ($result = db_fetch_object($results1)) {
     $all_users[] = $result->uid;
   }
-  while ($result = db_fetch_object($results2)){
+  while ($result = db_fetch_object($results2)) {
     $all_currencies[] = $result->nid;
   }
   $usercount = count($all_users);
@@ -482,7 +482,7 @@ function generate_transactions($howmany){
 }
 
 
-function cc_balances_refresh(){
+function cc_balances_refresh() {
   module_load_include('inc', 'transactions');
   db_query("TRUNCATE table {cc_balance_cache}");
   //get a list of all the users and all the currencies they have traded in 
@@ -510,7 +510,7 @@ function _recalculate_balances($ids, $cid) {
     'states'=>array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING),
     'cid' => $cid,
    );
-  while ($uid = array_pop($ids)){
+  while ($uid = array_pop($ids)) {
     $gross_income=0;
     $gross_expenditure=0;
     $outgoings=0;
@@ -519,18 +519,18 @@ function _recalculate_balances($ids, $cid) {
     $transactions=NULL;
     //we don't get the running balance because we're going to iterate through everything anyway
     $transactions = _get_transactions_for_user($uid, $options);
-    if (count($transactions)){
+    if (count($transactions)) {
     //so we work out out the balance, pending and gross_income again in more detail
       foreach($transactions as $t) {
-        if ($t->state == TRANSACTION_STATE_COMPLETED){ //completed transactions
-          if ($t->payer_uid == $uid){
+        if ($t->state == TRANSACTION_STATE_COMPLETED) { //completed transactions
+          if ($t->payer_uid == $uid) {
             $gross_expenditure += $t->quantity;
           } else {
             $qualities[] = $t->quality;
             $gross_income += $t->quantity;
           }
         } elseif ($t->state == TRANSACTION_STATE_PENDING) { //unpublished transactions are pending
-          if ($t->payer_uid == $uid){
+          if ($t->payer_uid == $uid) {
             $pending_dif -= $t->quantity;
             if ($count_pending) {
               $gross_expenditure += $t->quantity;
@@ -574,7 +574,7 @@ function _recalculate_balances($ids, $cid) {
   * $timestring is a positive number of days or months e.g. '3 months'
   * 
   */
-function stats_refresh($cid = 0){
+function stats_refresh($cid = 0) {
   $periods = variable_get('cc_stats_periods', array("1 month"));
   foreach ($periods as $period) {
     $period = trim($period);
@@ -604,7 +604,7 @@ function stats_refresh($cid = 0){
       
     //iterate through the transactions, adding stuff up
     $count=0;
-    while ($t = db_fetch_object($result)){
+    while ($t = db_fetch_object($result)) {
       $earned[$t->payee_uid] = $earned[$t->payee_uid] + $t->quantity;
       $spent[$t->payer_uid] = $spent[$t->payer_uid] + $t->quantity;
       $trades[$t->payee_uid] ++;
@@ -641,7 +641,7 @@ function stats_refresh($cid = 0){
   * stats_refresh_all();
   */
 function stats_refresh_all () {
-  foreach (currencies_load() as $currency){
+  foreach (currencies_load() as $currency) {
     stats_refresh($currency->cid);
   }
 }

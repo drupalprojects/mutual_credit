@@ -151,30 +151,15 @@ Transaction ratings
 A configuration text field invites administrators to determine the scale on which transactions are rated. This is actually asking for numeric keys and textual values for the rating dropdown selector. Ratings are averaged out and presented alongside balances, per currency.
 Accounts
 
-There isn't always a 1:1 relationship between users and accounts. Currently the system assumes account 1 (like user 1 in Drupal) is special. But there is a need for more non-member accounts. Taking this idea further, the trading account numbers could be decoupled from the user IDs and users would have permissions to manage certain accounts, rather than identifying with those accounts.
+In the real world here isn't always a 1:1 relationship between users and accounts. Currently the system assumes account 1 (like user 1 in Drupal) is special. But there is a need for more non-member accounts. Taking this idea further, the trading account numbers could be decoupled from the user IDs and users would have permissions to manage certain accounts, rather than identifying with those accounts.
 Stats
 
 There is one basic function which loads all recent transactions and analyses them into a data structure. This can also be cached before being handed to a display function
-Currencies and multiple currencies
 
-So the transaction object, form and many of the displays all carry with them a currency ID. In a single currency system, this value is set at zero and the default currency properties stored in a system variable. For systems with more currencies, a database table is needed. Each currency has the following values:
-
-    * name - textfield
-    * icon - small image
-    * purpose - textfield
-    * default max credit - positive integer
-    * default max debit - negative integer
-    * relative value - that's relative to other currencies within a larger schema. this would be used
-    * for trading between currencies and transactions between systems
-    * division i.e. integers, hundredths or quarters of an hour
-    * zero offset - By offsetting zero you can work to counter any stigma which might be attached to keeping a debit balance.
-
-In a large system in which anyone has permission to create a currency, there is a need to restrict the currencies visible to a given user so as not overwhelm them. Marketplace is experimenting with 'universal' and 'meme' currencies. Universal currencies can be seen by all, but meme currencies can only be seen by people who have traded with them. So meme currencies spread around the system as people use it.
-
-In the future we might build multiple currencies per transaction. This will involve rebuilding the transaction object to include an array of currency ids and quantities to summarise several transactions with the same id.
 Reporting.
 
-Because of the lack of coordination in the CC movement, this function does a little data gathering. Right now it just collects the domain name, site name, number of active members and number of transactions in the last 30 days.
+A cron task has been included in the transactions module which will ping Community Forge. Right now it just collects the domain name, site name, number of active members and number of transactions in the last 30 days.
+
 Classified ads, (Offers and wants)
 
 This is a simple content type which can be edited by its creator and admin only. It has the following properties:
@@ -189,6 +174,31 @@ It should be possible to filter the ads according to whether they are goods or s
 Volunteer recognition system
 
 Some would view it as a currency, but there is a kind of volunteering recognition system (currently at version 0.5). The idea is that a committee member will post a volunteer request to do a specific task. A member will pledge to do it, and a committee member will mark it completed. Whereupon the volunteer 'owns' that task and a kudos counter in his profile is incremented.
+
+
+***********************
+* MULTIPLE CURRENCIES *
+***********************
+In my early work with LETSlink UK, the need for more than one currency was clearly expressed. Either to allow trading of time-based currencies alongside LETS, or to allow subgroups within a larger system. Even before that, when I first contacted Michael Linton five years ago I learned that he had moved way beyond LETS. He has been proposing for some time that anyone should be able to start a mututal credit currency, and that any number of these currencies could be running in parallel.  Economically though, these ideas have never been demonstrated, in part because of lack of software, and in part, I suspect, because not enough people have yet understood them.
+So the marketplace module had multiple currencies built in to the transaction engine, and there is a secondary module which defines currency as a nodetype and provides the forms for editing them. 
+
+The transaction object, form and many of the displays all carry with them a currency ID. In a single currency system, this value is set at zero and the default currency properties stored in a system variable. For systems with more currencies, a database table is needed. Each currency has the following values:
+
+    * name - textfield
+    * icon - small image
+    * purpose - textfield
+    * default max credit - positive integer
+    * default max debit - negative integer
+    * relative value - that's relative to other currencies within a larger schema. this would be used
+    * for trading between currencies and transactions between systems
+    * division i.e. integers, hundredths or quarters of an hour
+    * zero offset - By offsetting zero you can work to counter any stigma which might be attached to keeping a debit balance.
+
+In a large system in which anyone has permission to create a currency, there is a need to restrict the currencies visible to a given user so as not overwhelm them. Marketplace is experimenting with 'universal' and 'meme' currencies. Universal currencies can be seen by all, but meme currencies can only be seen by people who have traded with them. So meme currencies spread around the system as people use it.
+
+So who wants to be the first to demonstrate that the Lintonomics II is viable?
+
+In the future we might build multiple currencies per transaction. This will involve rebuilding the transaction object to include an array of currency ids and quantities to summarise several transactions with the same id.
 
 
 ***********************

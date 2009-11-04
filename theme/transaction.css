@@ -5,6 +5,8 @@ span.currency img{
 
 /* transaction form */
 input.form-autocomplete,
+.form-text#edit-completer-uid,
+#edit-starter-uid.form-text
 #transaction-start-form .form-text,
 #transaction-start-form-1 .form-text{
   width:12em;
@@ -22,7 +24,7 @@ input.form-autocomplete,
 #edit-division-1-wrapper,
 #edit-division-wrapper,
 #edit-cid-1-wrapper,
-#edit-cid-wrapper{
+#edit-cid-wrapper,{
   float:left;
   margin-right:1.5em;
   clear:none;
@@ -45,7 +47,7 @@ input.form-submit{
   float:right;
   }
 
-/* node view */
+/* node view, and all possible radio buttons */
 #transaction-buttons form,
 #transaction-buttons form div,
 div.view-content form,
@@ -54,7 +56,13 @@ div.views-field-quantity,
 .profile form,
 .profile form div,
 .profile form div input,
-input.transaction_button{
+input.transaction_button,
+#edit-cc-select-user-orderby-uid-wrapper, 
+#edit-cc-select-user-orderby-name-wrapper, 
+#edit-transaction-type-incoming-direct-wrapper,
+#edit-transaction-type-outgoing-direct-wrapper,
+#edit-transaction-type-incoming-confirm-wrapper,
+#edit-transaction-type-outgoing-confirm-wrapper{
   display:inline;
   margin:0;
 }
@@ -81,13 +89,13 @@ span.cc-previous:before{content:'<<';}
 span.cc-next:after{content:'>>';}
 
 /* currency properties form */
+#edit-quantity,
 #edit-comparative-value, 
 #edit-zero-offset,
 #edit-max-balance,
 #edit-min-balance {
   width:5em;
 }
-
 
 .transaction-button{
   border: 1px solid #006;

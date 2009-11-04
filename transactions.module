@@ -1,7 +1,8 @@
 <?php
-// $Id$
+// $Id$: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
 /*
+ * @file
  * Transactions are stored in the database and balances are cached.
  * Permitted users can initiate transactions as another user.
  * The buyer rates the transaction if any ratings are configured.
@@ -9,9 +10,9 @@
  * Transaction types are named in config rather than creating a new po file for every community.
  * Transactions are creating using a pre_transaction_form which feeds into the node/add/transaction form
  * Note the action to mail participants in pending transactions.
- * 
+ *
  * This .module file contains only the hooks and functions which might be needed by other modules
- * 
+ *
  * Quantity is stored as a decimal in the DB for easy calculation
  * The transaction object stores the amount as a decimal fraction
  * In preprocessing  an hour currency the decimal is multiplied by 0.6 to become hours:minutes, 
@@ -37,7 +38,7 @@ function transactions_help($section) {
  * http://api.drupal.org/api/function/hook_init/6
  *
  */
-function transactions_cron () {
+function transactions_cron() {
   //this is for the voluntary reporting function
   if (variable_get('cforge_report', 1)) {
     module_load_include('admin.inc', 'transactions');
@@ -52,7 +53,7 @@ function transactions_init() {
   drupal_add_css(drupal_get_path('module', 'transactions') .'/theme/transaction.css');
 }
 
-/** 
+/**
  * http://api.drupal.org/api/function/hook_node_info/6
  * This hook is required for modules to define one or more node types.
  */
@@ -109,7 +110,7 @@ function transactions_menu() {
     'access arguments' => array('configure marketplace'),
     'file' => 'transactions.admin.inc',
   );
-  $items['marketplace/report'] = array (
+  $items['marketplace/report'] = array(
     'page callback' => 'marketplace_report',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
@@ -163,9 +164,9 @@ function transactions_menu() {
     'access arguments' => array('view all balances'),
     'type' => MENU_NORMAL_ITEM, 
     'file' => 'transactions.inc',
-    'weight' => 20,
+    'weight' => 20, 
   );
-  $items["economy/" . str_replace(' ','_', $period)] = array (
+  $items["economy/" . str_replace(' ', '_', $period)] = array(
     'title' => $period,
     //'page arguments' => array(str_replace(' ','_', $period), 'page'),
     //'access arguments' => array('view all balances'),
@@ -173,7 +174,7 @@ function transactions_menu() {
     'weight' => -20, 
   );
   foreach ($periods as $period) {
-    $items["economy/" . str_replace(' ','_', $period)] = array (
+    $items["economy/" . str_replace(' ', '_', $period)] = array(
       'title' => $period,
       'page arguments' => array($period, 'page'),
       'access arguments' => array('view all balances'),
@@ -199,14 +200,14 @@ function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
   $uid = $account->uid or $uid = $account or $uid = $user->uid;
 
   if (!$transaction)$transaction = node_load(arg(1));//only used in node/%/edit
-  switch($op) {
+  switch ($op) {
     case 'view'://users can always view their own pages
       return user_access('view all transactions') 
       || $uid == $transaction->payee_uid //transactions the present user was involved in
       || $uid == $transaction->payer_uid;
     case 'create':
-      foreach (_named_transaction_types() as $type=>$name) {
-        if (user_access('start ' . $type)) return TRUE;
+      foreach (_named_transaction_types() as $type => $name) {
+        if (user_access('start '. $type)) return TRUE;
       }
       break;
     case 'update': //this is the permission used by node_access
@@ -220,7 +221,7 @@ function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
     case 'bureau': 
       return $GLOBALS['user']->uid == $uid || user_access('view all balances');
     default:
-      drupal_set_message('transaction_access given unknown op: ' . $op);
+      drupal_set_message('transaction_access given unknown op: '. $op);
   }
 }
 
@@ -234,9 +235,10 @@ function transactions_perm() {
     'view all transactions',
     'view all balances',
     'edit all transactions',
-    'configure marketplace');
-  foreach(_named_transaction_types() as $machine_name =>$name) {
-    $perms[] = 'start ' . $machine_name;
+    'configure marketplace'
+  );
+  foreach (_named_transaction_types() as $machine_name => $name) {
+    $perms[] = 'start '. $machine_name;
   }
   return $perms;
 }
@@ -254,7 +256,7 @@ function transactions_load($node) {
     array(':nid' => $node->nid)
   );
   //join the passed node with the transaction fields
-  foreach (db_fetch_array($result) as $key => $value){
+  foreach (db_fetch_array($result) as $key => $value) {
     $node->{$key} = $value;
   }
   return $node;
@@ -265,24 +267,24 @@ function transactions_load($node) {
  * http://api.drupal.org/api/function/hook_block/6
  */
 function transactions_block($op = 'list', $delta = 0, $edit = array()) {
-  switch($op) {
+  switch ($op) {
     case 'list':
       //context sensitive to user being displayed
       $blocks['cc_new_transaction']= array(
-        'info' => 'Cc ' . t('Start transaction'),
+        'info' => 'Cc '. t('Start transaction'),
         'visibility' => 0,
         'pages' => 'transaction*
         admin*',
       );
       $blocks['cc_user_balances'] = array(
-        'info' => 'Cc ' . t('User Balances'),
+        'info' => 'Cc '. t('User Balances'),
         'cache' => BLOCK_CACHE_PER_USER,
       );
       
       foreach (variable_get('cc_stats_periods', array("1 month")) as $period) {
         $prd=str_replace(' ', '_', $period);
         $blocks["economy-$prd"] = array(
-          'info' => 'Cc ' . t("@period economy", array('@period' => $period)),
+          'info' => 'Cc '. t("@period economy", array('@period' => $period)),
           'cache' => BLOCK_CACHE_GLOBAL,
         );
       }
@@ -292,7 +294,7 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
       global $user;
       switch ($delta) {
         case 'cc_user_balances':
-          if (user_access('view all transactions') && arg(0) == 'user' && $uid = arg(1)){
+          if (user_access('view all transactions') && arg(0) == 'user' && $uid = arg(1)) {
             $account = user_load($uid);
             $balances = transactions_user_balances($account->uid);
             return array(
@@ -337,7 +339,7 @@ function transactions_form(&$node, $form_state) {
   switch ($_POST['op']) {
     default:
     case t('Change') ://typically from the 'full edit' link
-      drupal_set_title (t('Editing transaction'));
+      drupal_set_title(t('Editing transaction'));
       $form=transaction_base_form($transaction, 'edit');   
       break;
   }
@@ -349,7 +351,7 @@ function transactions_form(&$node, $form_state) {
  * http://api.drupal.org/api/function/hook_form_alter/6
  */
 function transactions_form_alter(&$form, $form_state, $form_id) {
-  switch($form_id) {
+  switch ($form_id) {
     case 'transaction_node_form':
     case 'transaction_start_form':
       $form['comment_settings']['#type'] = 'value';
@@ -365,12 +367,13 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
       $form['#submit'][] = 'menu_rebuild';
       break;
     case 'node_delete_confirm':
-      if ($form['#parameters'][2]->type == 'transaction'){
-        drupal_set_title (t('Are you sure you want to delete this transaction?'));
-        $form['#prefix'] ='<blockquote>' . $form['#parameters'][2]->title . '</blockquote>';
+      if ($form['#parameters'][2]->type == 'transaction') {
+        drupal_set_title(t('Are you sure you want to delete this transaction?'));
+        $form['#prefix'] ='<blockquote>'. $form['#parameters'][2]->title .'</blockquote>';
         if ($form['#parameters'][2]->state == TRANSACTION_STATE_PENDING) {
           $form['description']['#value'] = t('The transation had not been confirmed');
-        } elseif ($form['#parameters'][2]->state == TRANSACTION_STATE_COMPLETED) {
+        }
+        elseif ($form['#parameters'][2]->state == TRANSACTION_STATE_COMPLETED) {
           $form['description']['#value'] = t('This transaction was confirmed, so the balances of both users will be affected');
         }
       }
@@ -391,8 +394,7 @@ function transactions_nodeapi(&$node, $op) {
   if ($node->type != 'transaction') return;
   module_load_include('inc', 'transactions');
   switch ($op) {
-  	//the so called node being validated is just the $form_state['values'] converted to an object
-    case 'validate':
+    case 'validate': //the so called node being validated is just the $form_state['values'] converted to an object
       $node = _infer_transaction_from_form($node);
       transaction_fields_validate($node);
       //perform checks to see that the transaction doesn't take either party outside of the currency limits
@@ -404,7 +406,7 @@ function transactions_nodeapi(&$node, $op) {
       $node = _infer_transaction_from_form($node);
     case 'insert':
       module_load_include('admin.inc', 'transactions');
-      _recalculate_balances(array($node->payer_uid, $node->payee_uid),$node->cid);
+      _recalculate_balances(array($node->payer_uid, $node->payee_uid), $node->cid);
       stats_refresh();
       //gets rid of any boring status messages
       drupal_get_messages('status', TRUE);
@@ -427,7 +429,7 @@ function transactions_insert($node) {
 function transactions_update($node) {
   db_query("UPDATE {cc_transactions} SET
     payer_uid = '%d', payee_uid = '%d', starter_uid = '%d', completer_uid = '%d', quantity = '%f', cid = '%d', transaction_type = '%s', quality = '%d', state = %d, depends_on = '%d' WHERE nid = '%d' ",
-    $node->payer_uid, $node->payee_uid, $node->starter_uid,$node->completer_uid, $node->quantity, $node->cid, $node->transaction_type, $node->quality, $node->state, 0, $node->nid
+    $node->payer_uid, $node->payee_uid, $node->starter_uid, $node->completer_uid, $node->quantity, $node->cid, $node->transaction_type, $node->quality, $node->state, 0, $node->nid
   );
 }
 
@@ -477,7 +479,7 @@ function transactions_action_info() {
 
 function transactions_email_completer_action_form($context) {
   $vars = _transaction_email_replacements();
-  $form['message'] = array (
+  $form['message'] = array(
     '#type' => 'textarea',
     '#title' => t('Email template'),
     '#default_value' => $context['template'],
@@ -486,18 +488,19 @@ function transactions_email_completer_action_form($context) {
     t("You can use the following strings as variables:")
   );
   if (module_exists('mime_mail')) {
-    $form['message']['#description'] .= t('You can use html in your message. ');
-  } else {
+    $form['message']['#description'] .= t('You can use html in your message.');
+  }
+  else {
     $form['message']['#description'] .= t('Use only plain text ');
   }
-  foreach ($vars as $var=>$exp) {
+  foreach ($vars as $var => $exp) {
     $form['message']['#description'] .= "\n<br /><strong>$var</strong>: $exp";
   }
   return $form;
 }
 function transactions_email_starter_action_form($context) {
   $vars = _transaction_email_replacements();
-  $form['message'] = array (
+  $form['message'] = array(
     '#type' => 'textarea',
     '#title' => t('Email template'),
     '#default_value' => $context['template'],
@@ -506,11 +509,12 @@ function transactions_email_starter_action_form($context) {
     t("You can use the following strings as variables:")
   );
   if (module_exists('mime_mail')) {
-    $form['message']['#description'] .= t('You can use html in your message. ');
-  } else {
+    $form['message']['#description'] .= t('You can use html in your message.');
+  }
+  else {
     $form['message']['#description'] .= t('Use only plain text ');
   }
-  foreach ($vars as $var=>$exp) {
+  foreach ($vars as $var => $exp) {
     $form['message']['#description'] .= "\n<br /><strong>$var</strong>: $exp";
   }
   return $form;
@@ -537,7 +541,8 @@ function transactions_email_starter_action_submit($form, &$form_state) {
  * This hook is required for modules to define one or more node types.
  */
 function transactions_theme($existing, $type, $theme, $path) {
-  $templates_dir = drupal_get_path('module', 'transactions'). '/theme';
+  $templates_dir = drupal_get_path('module', 'transactions') .'/theme';
+  //we load the inc so it's aware of the preprocess functions
   module_load_include('inc', 'transactions');
   return array(
     'transaction' => array(
@@ -549,7 +554,7 @@ function transactions_theme($existing, $type, $theme, $path) {
         'rich_text' => TRUE,
       )
     ),
-    'bureau' => array (
+    'bureau' => array(
       'template' => 'bureau',
       'path' => $templates_dir,
       'arguments' => array(
@@ -559,10 +564,10 @@ function transactions_theme($existing, $type, $theme, $path) {
         'history' => NULL,
       )
     ),
-    'pending' => array (
+    'pending' => array(
       'template' => 'pending',
       'path' => $templates_dir,
-      'arguments' => array (
+      'arguments' => array(
         'account' => NULL,
         'waiting_on_user' => array(),
         'waiting_on_other' => array(),
@@ -580,8 +585,8 @@ function transactions_theme($existing, $type, $theme, $path) {
       'template' => 'balances',
       'path' => $templates_dir,
       'arguments' => array(
-        'balances'=> array(),
-        'currencies'=> array(),
+        'balances' => array(),
+        'currencies' => array(),
       )
     ),
     'stats_block' => array(
@@ -602,8 +607,8 @@ function transactions_theme($existing, $type, $theme, $path) {
         'transactions' => array(),
       )
     ),
-    'rating' => array (
-      'arguments' => array (
+    'rating' => array(
+      'arguments' => array(
         'quality' => NULL,
         'cid' => array(),
       )
@@ -614,8 +619,6 @@ function transactions_theme($existing, $type, $theme, $path) {
       'arguments' => array(
         'account' => NULL,
         'options' => array(),
-        'points' => array(),
-        'currencies' => array(),
       )
     ),
     'balance_limits' => array(
@@ -643,25 +646,27 @@ function transactions_theme($existing, $type, $theme, $path) {
  */
 function transactions_user($op, &$edit, &$account, $category = NULL) {
   //load all the currencies this user has access to
-  $currencies = currencies_load(array('uids'=>array($account->uid)));
+  $currencies = currencies_load(array('uids' => array($account->uid)));
   switch ($op) {
     case 'load':
       //put the user stats into the user object, where the theming layer can see them
       $result = db_query("SELECT * FROM {cc_balance_cache} WHERE uid = %d",
         array(':uid' => $account->uid)
       );
-      while ($balance = db_fetch_array($result)){
-        $account->balances[$balance['cid']] = $balance;
+      while($balance = db_fetch_array($result)) {
+        $cid = $balance['cid'];
+        $account->balances[$cid] = $balance;
       }
-      if (!$account) {echo 'transactions_user'.$op; break;}
-      //and load up the user's personalised balance limits for each currency, defaulting to the currency limits
-      foreach (currencies_load(array('uid'=>$account->uid)) as $currency) {
-        $default_limits = array('min' => $currency->min_balance, 'max'=>$currency->max_balance);
-        if (!$account->balance_limits[$currency->cid]) {
-          $account->balance_limits[$currency->cid] = $default_limits;
-        } else {
-          $account->balance_limits[$currency->cid] += $default_limits;
-        }
+      foreach ($currencies as $currency) {
+        $cid = $currency->cid;
+        //and load up the user's personalised balance limits for each currency, defaulting to the currency limits
+        if (!isset($account->balances[$cid]['min'])) $account->balances[$cid]['min'] = $currencies[$cid]->min_balance;
+        if (!isset($account->balances[$cid]['max'])) $account->balances[$cid]['max'] = $currencies[$cid]->max_balance;
+      }
+
+      //temporary diagnosis for account creation, which sometimes creates an error
+      if (!$account) {
+        echo 'transactions_user'. $op; break;
       }
       break;
     case 'form':
@@ -675,7 +680,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         '#prefix' => '<a name="notifications"></a>',
         '#title' => t('Receive email notification when someone initiates a transaction with you'),
         '#default_value' => intval($account->pending_notification),
-        '#options' => array (0=>t('no'), 1=>t('yes')),
+        '#options' => array(0 => t('no'), 1 => t('yes')),
         '#weight' => 2,
       );
       $form['contact']['starting_notification'] = array(
@@ -683,28 +688,29 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         '#prefix' => '<a name="notifications"></a>',
         '#title' => t('Receive email notification when you start a transaction'),
         '#default_value' => intval($account->pending_notification),
-        '#options' => array (0=>t('no'), 1=>t('yes')),
+        '#options' => array(0 => t('no'), 1 => t('yes')),
         '#weight' => 2,
       );
       //fields for individual balance limits
       if (user_access('edit all transactions')) {
         $form['balance_limits'] = array(
           '#type' => 'fieldset',
-          '#title' => 'Personal balance Limits (accountant only)',
+          '#title' => t('Personal balance limits (accountant only)'),
+          '#description' => t('The default values are inherited from the currency.'),
           '#weight' => -5,
         );
         foreach ($currencies as $cid => $currency) {
-          $form['balance_limits']['currency'.$cid] = array (
+          $form['balance_limits']['currency'. $cid] = array(
             '#type' => 'fieldset',
             '#title' => $currency->title,
             '#weight' => $cid,
           );
-          $form['balance_limits']['currency'.$cid]['max'.$cid] = array(
+          $form['balance_limits']['currency'. $cid]['max'. $cid] = array(
             '#type' => 'textfield',
             '#title' => t('max limit'),
             '#default_value' => $edit['balance_limits'][$cid]['max'],
           );
-          $form['balance_limits']['currency'.$cid]['min'.$cid] = array(
+          $form['balance_limits']['currency'. $cid]['min'. $cid] = array(
             '#type' => 'textfield',
             '#title' => t('min limit'),
             '#default_value' => $edit['balance_limits'][$cid]['min'],
@@ -717,10 +723,10 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       if (user_access('edit all transactions')) {
         module_load_include('admin.inc', 'transactions');
         foreach ($currencies as $cid => $currency) {
-          if ($edit['min'.$cid]=='' && $edit['max'.$cid]=='') continue;
+          if ($edit['min'. $cid]=='' && $edit['max'. $cid]=='') continue;
           validate_limits(array(
-            'min'.$cid => $edit['min'.$cid],
-            'max'.$cid => $edit['max'.$cid],
+            'min'. $cid => $edit['min'. $cid],
+            'max'. $cid => $edit['max'. $cid],
           ), FALSE); 
         }
       }
@@ -729,19 +735,20 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
     case 'update':
       if (user_access('edit all transactions')) {
         foreach ($currencies as $cid => $currency) {
-          if ($edit['min'.$cid]=='' && $edit['max'.$cid]=='') {
-            unset ($edit['balance_limits'][$cid]);
-          } else {
+          if ($edit['min' .$cid] =='' && $edit['max'. $cid]=='') {
+            $edit['balances'] = NULL;
+          }
+          else {
             //move the limits into an array, for easier access
-            if ($edit['max'.$cid]) {
-              $edit['balance_limits'][$cid]['max'] = $edit['max'.$cid];
+            if ($edit['max'. $cid]) {
+              $edit['balances'][$cid]['max'] = $edit['max'. $cid];
             }
-            if ($edit['min'.$cid]) {
-              $edit['balance_limits'][$cid]['min'] = $edit['min'.$cid];
+            if ($edit['min'. $cid]) {
+              $edit['balances'][$cid]['min'] = $edit['min'. $cid];
             }
           }
-          unset ($edit['max'.$cid]);
-          unset ($edit['min'.$cid]);
+          unset($edit['max'. $cid]);
+          unset($edit['min'. $cid]);
         }
       }
       break;
@@ -749,26 +756,38 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       module_load_include('admin.inc', 'transactions');
       //user preference to be sent emails about pending transactions
       $edit['pending_notification']=TRUE; 
-      //this creates an empty row in {cc_balance_cache} for the first currency on the system
+      //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
       $def_cur = currency_load();
-      _recalculate_balances(array($edit['uid']), $def_cur->nid);
+      //_recalculate_balances(array($edit['uid']), $def_cur->nid);
       
-        //the user's default limits are inherited from the currency
+      //the user's default limits are inherited from the currency //also not necesary
+      /*
       foreach ($currencies as $cid => $currency) {
-        $edit['balance_limits'][$cid] = array (
+        $edit['balances'][$cid] = array(
           'max' => $currency->max, 
           'min' => $currency->min,
         );
-      }
+      }*/
       
     case 'view':// put all the pending transactions on the user's front page, where they can be seen by the other participants in them
       module_load_include('inc', 'transactions');
-      $account->content['transactions'] = array (
-        '#type' => user_profile_item,
-        '#title' => t('Pending Transactions'), 
-        '#value' => transactions_pending($account->uid),
-        '#weight' => 5,
+      $account->content['mutual_credit'] = array(
+        '#type' => user_profile_category,
+        '#title' => t('Transactions'),
+        'pending' => array(
+          '#type' => user_profile_item,
+          '#title' => t('Pending Transactions'), 
+          '#value' => transactions_pending($account->uid),
+          '#weight' => 5,
+        )
       );
+      foreach ($account->balances as $currency) {
+        $account->content['mutual_credit']['limits'][$currency->cid] = array(
+          '#type' => user_profile_item,
+          '#title' => t('Balance limits'),  
+          '#value' => theme('balance_limits', $account, $cid)
+        );
+      }
   }
 }
 
@@ -801,7 +820,8 @@ function currency_load($cid=NULL) {
     $all_currencies = get_currencies();
     if ($cid) {
       return $all_currencies[$cid];
-    } else {
+    }
+    else {
       return array_shift($all_currencies);
     }
   }
@@ -825,12 +845,12 @@ function currency_validate($form, &$form_state) {
   //check that the title is unique amongst currencies
   
   //check that the objective value is blank or numeric
-  if ($currency->objective_value != NULL && !is_numeric ($currency->objective_value)){
+  if ($currency->objective_value != NULL && !is_numeric ($currency->objective_value)) {
     form_set_error('objective_value', t("This must be a number: @value", array('@value' => $currency->objective_value)));
   }
-   else $form_state_['values']['objective_value'] = intval($currency->objective_value); //sets blank to zero
+  else $form_state_['values']['objective_value'] = intval($currency->objective_value); //sets blank to zero
   
-  $divisions = array('integer','quarters','decimal');
+  $divisions = array('integer', 'quarters', 'decimal');
   if (!in_array($currency->division, $divisions)) {
     form_set_error('division', t("", array('@value' => $currency->division)));
   }
@@ -850,10 +870,10 @@ function currency_validate($form, &$form_state) {
   
   //check the icon upload
   //does this mean the file is known to the files table? I think not
-  $dest = file_directory_path() . '/currencies';
+  $dest = file_directory_path() .'/currencies';
   file_check_directory($dest, TRUE, 'icon_upload');
   if ($file = file_save_upload('icon_upload', NULL, $dest, FALSE)) {
-    if ($err = array_pop (file_validate_is_image($file))){
+    if ($err = array_pop (file_validate_is_image($file))) {
       form_set_error('icon_upload', $err);
     }
     file_validate_image_resolution($file, "16x16", "12x12");
@@ -878,9 +898,9 @@ function currency_validate($form, &$form_state) {
   }
 }
 
-function template_preprocess_money (&$vars) {
+function template_preprocess_money(&$vars) {
   $currency = currency_load($vars['cid']);
-   if (is_numeric($vars['quantity'])) {
+  if (is_numeric($vars['quantity'])) {
     //seperate the sign, positive or negative
     $vars['quantity'] = $vars['quantity']+0;
     if ($vars['quantity'] <0) {
@@ -889,15 +909,16 @@ function template_preprocess_money (&$vars) {
     }
     //convert the division to something presentable
     if ($currency->division == 'quarters') {
-  	  $quant = intval($vars['quantity']);
-  	  $remainder = 60*($vars['quantity'] - $quant);
-      $vars['quantity'] = sprintf('%d:%02d', $quant,$remainder);
+      $quant = intval($vars['quantity']);
+      $remainder = 60*($vars['quantity'] - $quant);
+      $vars['quantity'] = sprintf('%d:%02d', $quant, $remainder);
     }
   }
   if (strlen($currency->icon)) {
-  	if (module_exists('cc_currencies')) {
-      $vars['icon'] = l(theme_image($currency->icon), 'node/' . $currency->nid, array('html' => TRUE, 'attributes' => array('title'=> $currency->title . ' - ' . $currency->body, 'alt'=>$currency->title)));
-    } else {
+    if (module_exists('cc_currencies')) {
+      $vars['icon'] = l(theme_image($currency->icon), 'node/'. $currency->nid, array('html' => TRUE, 'attributes' => array('title' => $currency->title .' - '. $currency->body, 'alt' => $currency->title)));
+    }
+    else {
       $vars['icon'] = theme_image($currency->icon, t('Currency Icon'), $currency->title);
     }
   }

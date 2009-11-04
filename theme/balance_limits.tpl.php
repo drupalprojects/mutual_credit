@@ -21,11 +21,11 @@ $labels = array('min', 'max');
 $params=array();
 $params['cht'] = 'gom';
 $params['chs'] = implode('x',$dimensions);
-$params['chd'] = 't:' . $balance;
+$params['chd'] = 't:' . $balance; 
 $params['chds'] = $min. ',' . $max;
 if ($colors)$params['chco'] = implode(',',$colors);
 $params['chf'] =  'bg,s,FFFFFF00';
-$params['chtt'] = $labels[0] . '  ->  ' . $labels[1];
+$params['chtt'] = $labels[0] .'('. $account->balances[$cid]['min'] .')'. '  ->  ' . $labels[1] .'('. $account->balances[$cid]['max'] .')';
 
 //cleaner than http_build_query
 foreach ($params as $key=>$val) {

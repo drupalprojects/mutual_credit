@@ -1,20 +1,11 @@
 <?php
 // $Id$
 
-//First time ever this file is loaded, installt he default currency so the cc_currencies can access it as well
-if (!variable_get('cc_default_currency', NULL)) {
-  variable_set('cc_default_currency', (object)array(
-    'title' => 'units',
-    'division' => 'integer',
-    'max_balance' => '500',
-    'min_balance' => '-500',
-    'comparative_value' => 0,
-    'zero_offset' => 0,
-    'cid' => 0,
-    'icon' => drupal_get_path('module', 'transactions') . '/default_currency.png',
-    )
-  );
-}
+/**
+ * @file
+ * Install, update and uninstall functions for the XXX module.
+ */
+
 
 /**
  * Implementation of hook_install().
@@ -34,19 +25,37 @@ function transactions_install() {
   );
   variable_set('cc_transaction_types', $names);
   variable_set('cc_transaction_qualities', array(
-    '-2'=>'unacceptable',
-    '0'=>'acceptable',
-    '1'=>'good',
-    '2'=>'outstanding'
+    '-2' => 'unacceptable',
+    '0' => 'acceptable',
+    '1' => 'good',
+    '2' => 'outstanding'
   ));
   variable_set('cc_select_user_show', array('name'));
   variable_set('cc_select_user_orderby', 'uid');
   variable_set('cc_balancing_account_num', 1);
   variable_get('cforge_report', TRUE);
+  variable_set('cc_default_currency', (object)array(
+    'cid' => 0,
+    'nid' => 0,
+    'title' => 'units',
+    'division' => 'integer',
+    'max_balance' => 500,
+    'min_balance' => -500,
+    'comparative_value' => 0,
+    'zero_offset' => 0,
+    'color' => '0000ff',
+    'icon' => drupal_get_path('module', 'transactions') . '/theme/default_currency.png',
+    )
+  );
   drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
     array('!link'=>l('admin/marketplace', 'admin/marketplace', array('attributes'=>array('target'=> '_blank')))))
   );
-  drupal_http_request('http://www.communityforge.net/registration.php?from=' . $_SERVER["HTTP_HOST"]);
+  //create a row in the balance_cache table for each existing user
+  //could this be condensed into one query?
+  $results = db_query("SELECT uid from {users} WHERE uid > 0");
+  while ($uid = db_result($results)) {
+    //db_query("INSERT into {cc_balance_cache} (uid) VALUES (%d)", array(':uid' => $uid));
+  }
 }
 
 function transactions_enable(){
@@ -69,15 +78,15 @@ function transactions_uninstall() {
     db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
     db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
   }
-  variable_del ('comment_transactions');
-  variable_del ('cc_transaction_types');
-  variable_del ('cc_transaction_qualities');
-  variable_del ('cc_transaction_list');
-  variable_del ('cc_currencies');
-  variable_del ('cc_select_user_show');
-  variable_del ('cc_select_user_orderby');
-  variable_del ('cc_balancing_account_num');
-  variable_del ('cc_stats_periods');
+  variable_del('comment_transactions');
+  variable_del('cc_default_currency');
+  variable_del('cc_transaction_qualities');
+  variable_del('cc_transaction_list');
+  variable_del('cc_currencies');
+  variable_del('cc_select_user_show');
+  variable_del('cc_select_user_orderby');
+  variable_del('cc_balancing_account_num');
+  variable_del('cc_stats_periods');
 }
 
 function transactions_disable() {
@@ -91,14 +100,14 @@ function transactions_disable() {
 //TODO what about storing all this info in the user table instead?
 function transactions_schema () {
   $schema['cc_transactions'] = array(
-    'description'=>'currency exchanges between users',
-    'fields'=> array(
-      'nid'=> array (
+    'description' => 'currency exchanges between users',
+    'fields' => array(
+      'nid' => array (
         'description' => t('the node to which this entry is attached'),
         'type' => 'int',
         'size' => 'normal',
       ),
-      'payer_uid'=> array(
+      'payer_uid' => array(
         'description' => t('the user id of the payer'),
         'type' => 'int',
         'size' => 'normal',
@@ -158,46 +167,54 @@ function transactions_schema () {
    */
   $schema['cc_balance_cache'] = array(
     'description' => t('cached balances, turnovers and pending balances, for exposure to views'), 
-    'fields'=> array(
-      'uid'=> array(
+    'fields' => array(
+      'uid' => array(
         'description' => t('the node to which this entry is attached'),
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'cid' => array(
         'description' => t('the currency id, where there is more than one currency'),
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'cleared_balance' => array(
         'description' => 'balance including pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'pending_difference' => array(
         'description' => 'sum of all pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'pending_balance' => array(
         'description' => 'forecast balance after pending transactions are completed for this user in this currency, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'gross_income' => array(
         'description' => "sum of all this user's income in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'gross_expenditure' => array(
         'description' => "sum of all this user's ougoings in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'quality_mean' => array(
         'description' => "average transaction rating for this user in this currency",
         'type' => 'float',
         'size' => 'normal',
+        'default' => '0',
       ),
   	)
   );
