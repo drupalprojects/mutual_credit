@@ -1,9 +1,12 @@
 This document is 4 documents in one:
 
+CONTENTS:
 ** How to set up the Complementary currencies package **
 ** Generalised architecture of this mutual credit system **
+** Multiple currencies **
 ** For advanced users **
 ** Testing procedure **
+** Priorities **
 
 
 ***********************
@@ -43,7 +46,7 @@ This is the vocabulary for which you may want to enable autocategorise.
 Now you can consider the architecture. 
 This module attempts to be usable by default, but it's up to you how users will ultimately experience the site. 
 The first level of architecture is in menus and blocks.
-For more ideas visit test1.communityforge.net or download the cc_custom module from http://marketplace.matslats.net/installing
+For more ideas visit test1.communityforge.net or download the cc_custom module from http://mutual_credit.matslats.net/installing
 
 Customisation
 The site has been designed with classic LETS in mind. Have fun creating your own terminology on admin/marketplace.
@@ -180,7 +183,7 @@ Some would view it as a currency, but there is a kind of volunteering recognitio
 * MULTIPLE CURRENCIES *
 ***********************
 In my early work with LETSlink UK, the need for more than one currency was clearly expressed. Either to allow trading of time-based currencies alongside LETS, or to allow subgroups within a larger system. Even before that, when I first contacted Michael Linton five years ago I learned that he had moved way beyond LETS. He has been proposing for some time that anyone should be able to start a mututal credit currency, and that any number of these currencies could be running in parallel.  Economically though, these ideas have never been demonstrated, in part because of lack of software, and in part, I suspect, because not enough people have yet understood them.
-So the marketplace module had multiple currencies built in to the transaction engine, and there is a secondary module which defines currency as a nodetype and provides the forms for editing them. 
+So the mutual_credit module had multiple currencies built in to the transaction engine, and there is a secondary module which defines currency as a nodetype and provides the forms for editing them. 
 
 The transaction object, form and many of the displays all carry with them a currency ID. In a single currency system, this value is set at zero and the default currency properties stored in a system variable. For systems with more currencies, a database table is needed. Each currency has the following values:
 
@@ -194,7 +197,7 @@ The transaction object, form and many of the displays all carry with them a curr
     * division i.e. integers, hundredths or quarters of an hour
     * zero offset - By offsetting zero you can work to counter any stigma which might be attached to keeping a debit balance.
 
-In a large system in which anyone has permission to create a currency, there is a need to restrict the currencies visible to a given user so as not overwhelm them. Marketplace is experimenting with 'universal' and 'meme' currencies. Universal currencies can be seen by all, but meme currencies can only be seen by people who have traded with them. So meme currencies spread around the system as people use it.
+In a large system in which anyone has permission to create a currency, there is a need to restrict the currencies visible to a given user so as not overwhelm them. mutual_credit is experimenting with 'universal' and 'meme' currencies. Universal currencies can be seen by all, but meme currencies can only be seen by people who have traded with them. So meme currencies spread around the system as people use it.
 
 So who wants to be the first to demonstrate that the Lintonomics II is viable?
 
@@ -292,3 +295,47 @@ go to admin/content/node and delete all transactions
 import 2 users with their balances. Check their user pages
 Import 2 offers and 2 wants. Check the directory
 
+
+/*
+First form, on cforge site
+ - name of scheme (contract to become subdomain)
+ - your email
+ - slogan
+ - currency name
+ - language (can you translate?)
+ - Would you like members to log in with their user numbers or usernames?
+ - You can define your own categories for offers and wants, would you like the computer to decide what goes in what category? (you can configure it).
+
+
+***********************
+***** PRIORITIES  *****
+***********************
+
+ROADMAP PRIORITIES
+Change month_pager to use views argument 'Node: Created year + month'
+decouple system accounts from member accounts
+get rid of theme_mmoney
+email senders of transactions
+email all parties of direct transactions
+translate permissions
+implement database layer
+visualisation module with more charts and a full stats page.
+implement goods and services, cc and non_cc
+Use javascript for offer-body tooltips
+MIME mail aware
+implement drupal caching for member balances, stats and balance_histories
+consider adding a transaction_node_form #submit callback which builds the transaction object into the form for ease of processing
+remove objects from transaction
+what happens if we don't pre-write cc_balance_cache row to all zeros?
+make a block to start each transaction type
+
+CC_CURRENCIES
+transaction_add form alter to include a quantity for each available currency
+System setting to allow multiple transactions per payment
+New transaction.tpl.php and theme_alter
+Work on completely new transactions table, perhaps using template instead of table.
+Modify transaction object to include payment fragments instead of single quantity & cid
+Modify transaction_load, transaction_save, transaction_update
+modify generate_transaction node
+
+*/

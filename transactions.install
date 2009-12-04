@@ -221,44 +221,42 @@ function transactions_schema () {
   return $schema;
 }
 
-function transactions_update_1(){
-  $ret=array();
-  db_change_field($ret, 'cc_transactions', 'from_uid', 'payer_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
-  db_change_field($ret, 'cc_transactions', 'to_uid', 'payee_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
-  db_change_field($ret, 'cc_transactions', 'transaction_type', 'transaction_type', array(
+function transactions_update_1($ret=array()){
+  $ret[] = db_change_field($ret, 'cc_transactions', 'from_uid', 'payer_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
+  $ret[] = db_change_field($ret, 'cc_transactions', 'to_uid', 'payee_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
+  $ret[] = db_change_field($ret, 'cc_transactions', 'transaction_type', 'transaction_type', array(
     'description' => t('The type of transaction, types are provided by modules'),
     'type' => 'varchar',
     'length' => 32,
     'not null' => TRUE,
   ));
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'incoming_confirmed' WHERE transaction_type = 1");
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'outgoing_confirmed' WHERE transaction_type = 2");
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'incoming_direct' WHERE transaction_type = 3");
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'outgoing_direct' WHERE transaction_type = 4");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'incoming_confirmed' WHERE transaction_type = 1");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'outgoing_confirmed' WHERE transaction_type = 2");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'incoming_direct' WHERE transaction_type = 3");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'outgoing_direct' WHERE transaction_type = 4");
   return $ret;
 }
 
-function transactions_update_5() {
-  $ret = array();
-  db_add_field($ret, 'cc_balance_cache', 'quality_mean', array(
+function transactions_update_5($ret = array()) {
+  $ret[] = db_add_field($ret, 'cc_balance_cache', 'quality_mean', array(
     'description' => "The average transaction rating for this user in this currency",
     'type' => 'float',
     'size' => 'normal',
     )
   );
-  db_add_field($ret, 'cc_balance_cache', 'pending_balance', array(
+  $ret[] = db_add_field($ret, 'cc_balance_cache', 'pending_balance', array(
     'description' => "The balance including pending transactions, (integer)",
     'type' => 'int',
     'size' => 'normal',
     )
   );
-  db_change_field($ret, 'cc_balance_cache', 'pending', 'pending_difference', array(
+  $ret[] = db_change_field($ret, 'cc_balance_cache', 'pending', 'pending_difference', array(
     'description' => 'The sum of all pending transactions, (integer)',
     'type'=>'int',
     'size'=>'normal'
     )
   );
-  db_change_field($ret, 'cc_balance_cache', 'turnover', 'gross_income', array(
+  $ret[] = db_change_field($ret, 'cc_balance_cache', 'turnover', 'gross_income', array(
     'description' => "sum of all this user's income in this currency, (integer)",
     'type' => 'int',
     'size' => 'normal',
@@ -267,9 +265,8 @@ function transactions_update_5() {
   return $ret;
 }
 
-function transactions_update_6() {
-  $ret = array();
-  db_add_field($ret, 'cc_transactions', 'state', array(
+function transactions_update_6($ret = array()) {
+  $ret[] = db_add_field($ret, 'cc_transactions', 'state', array(
     'description' => "State of the transaction - completed, pending, disputed, etc",
     'type' => 'int',
     'size' => 'normal',
@@ -298,9 +295,8 @@ function transactions_update_6007() {
   return $ret;
 }
 
-function transactions_update_6008() {
-  $ret = array();
-  db_add_field($ret, 'cc_balance_cache', 'gross_expenditure', array(
+function transactions_update_6008($ret = array()) {
+  $ret[] = db_add_field($ret, 'cc_balance_cache', 'gross_expenditure', array(
     'description' => "State of the transaction - completed, pending, disputed, etc",
     'type' => 'int',
     'size' => 'normal',
@@ -311,15 +307,13 @@ function transactions_update_6008() {
   return $ret;
 }
 //correction because generate_transaction_node wasn't specifying uid
-function transactions_update_6009() {
-  $ret = array();
+function transactions_update_6009($ret = array()) {
   db_query ("UPDATE {node} n LEFT JOIN {cc_transactions} t ON n.nid = t.nid SET n.uid = t.starter_uid WHERE n.type = 'transaction' AND n.uid = 0");
   return $ret;
 }
-function transactions_update_6010() {
-  $ret = array();
+function transactions_update_6010($ret = array()) {
   $table=drupal_get_schema('cc_balance_cache');
-  db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
+  $ret[] = db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
     'description' => "sum of all this user's completed transactions",
     'type' => $table['fields']['balance']['type'],
     'size' => 'normal',
@@ -327,4 +321,44 @@ function transactions_update_6010() {
     )
   );
   return $ret;
+}
+function transactions_update_6011($ret=array()) {
+  //default currency now has an extra field, cid as well as nid
+  $curr = variable_get('cc_default_currency', NULL);
+  $curr->cid = 0;
+  variable_set('cc_default_currency', $curr);
+  //changed name of permission from
+  $results = db_query('SELECT rid, perm from {permission}');
+  while ($role = db_fetch_array($results)) {
+    $perm = str_replace('configure marketplace', 'configure economy', $role['perm']);
+    $ret[] = update_sql("UPDATE {permission} SET perm = '$perm' WHERE rid = ". $role['rid']);
+  }
+  //change the names of the user notification variables
+  $result = db_query("SELECT uid FROM {users} WHERE uid > 0");
+  while ($uid = db_result($result)) {
+    $account = user_load($uid);
+    $edit = unserialize($account->data);
+    $edit['completer_notification'] = intval($account->pending_notification);
+    $edit['starter_notification'] = intval($account->starting_notification);
+    user_save($account, $edit);
+  }
+  
+  //remove the triggers because these are now automated
+  if (module_exists('trigger')) {
+    $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
+    while ($aid = db_result($result)) {
+      db_query("DELETE from {trigger_assignments} WHERE aid = %d", $aid);
+    }
+    drupal_set_message('Triggers relating to the transaction engine have been unset as those actions now fire automatically');
+  }
+  return $ret;
+}
+function transactions_update_6012($ret=array()) {
+  $results = db_query('SELECT rid, perm from {permission}');
+  while ($role = db_fetch_array($results)) {
+    $perm = str_replace(array('start incoming_confirm, ', 'start outgoing_confirm, ', 'start incoming_direct, ', 'start outgoing_direct, '), '', $role['perm']);
+    if ($perm != $role['perm']) {
+      $ret = update_sql("UPDATE {permission} SET perm = '".$perm . ", use local currency' WHERE rid = ".$role['rid']);
+    }
+  }
 }

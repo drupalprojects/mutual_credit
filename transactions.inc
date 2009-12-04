@@ -6,9 +6,7 @@
  * This file contains all functions to view transaction content
  */
 
-//this is calucluated as 2048 max chars in a google charts url
-// - 250 characters for all the other data
-// divided by 13 characters per point
+//this is calcluated as 2048 max chars in a google charts url - 250 characters for all the other data divided by 13 characters per chart-point
 define(MAX_CHART_POINTS, 140);
 define(TRANSACTIONS_PAGER_ELEMENT, 1);
 
@@ -36,7 +34,7 @@ function transactions_list($account=NULL, $options=array()) {
     $options = $options + array(
       'states' => array(TRANSACTION_STATE_COMPLETED),
     );
-    $options['running_balance']=TRUE;
+    $options['running_balance'] = TRUE;
     //from the year and the month we deduce the time limits for the query
     $transactions = _get_transactions_for_user($account->uid, $options);
     foreach ($transactions as $nid => $transaction) {
@@ -99,11 +97,13 @@ function transactions_pending($uid,  $is_starter = TRUE, $is_completer = TRUE) {
       if ($transaction->starter_uid == $uid && $is_starter) {
         $waiting_on_other[] = $transaction;
       }
-      else 
-      if ($transaction->completer_uid == $uid && $is_completer) {
+      elseif ($transaction->completer_uid == $uid && $is_completer) {
         $waiting_on_user[] = $transaction;
       }
-      else druapl_set_message('wrong transactions selected', 'error');      
+      else {
+        drupal_set_message('Error: pending transaction neither started or completed by this user: node '. $transaction->nid, 'error');
+        //print_r($transaction);
+      }
     }
   }
   return theme('pending', user_load($uid), $waiting_on_user, $waiting_on_other);
@@ -147,7 +147,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
   $accounts = _get_all_trading_accounts();
   if (!$accounts) return;
   
-  $allowed_transactions = _permitted_transaction_types();
+  $allowed_transactions = _named_transaction_types();
   $ttype = $transaction->transaction_type or $ttype = "";
   //this is only for if we use the dropdown, not the autocomplete
   $default_currency= variable_get('cc_default_currency', array());
@@ -220,7 +220,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
       $form['starter_uid']=array(
         '#autocomplete_path' => 'user/autocomplete',
         '#type' => 'select',
-        '#title' => '('. t('Initiator, if not you') .')',
+        '#title' => t('Initiator, (if not you)'),
         '#default_value' => $starter,
         '#weight' => -5,
         '#required' => TRUE,
@@ -268,7 +268,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
       if (substr($type, -7) == 'confirm') {
         $form['state']=array(
           '#type' => 'checkbox',
-          '#title' => t('Transaction is waiting to be confirmed).'),
+          '#title' => t('Transaction is waiting to be confirmed.'),
           '#default_value' => $transaction->state,
           '#weight' => 15,
         );
@@ -336,7 +336,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
       if ($form[$fieldname]['#type'] == 'select') {
         $form[$fieldname]['#type'] = 'textfield';
         unset($form[$fieldname]['#options']);
-        $form[$fieldname]['#description'] = 'Please type a username (or user ID)';
+        $form[$fieldname]['#description'] = t('Please type a username (or user ID)');
         $form[$fieldname]['#autocomplete_path'] = 'user/autocomplete';
         if ($form[$fieldname]['#default_value']) {
           //do autocomplete fields even have a default value?
@@ -353,13 +353,14 @@ function transaction_base_form($transaction, $mode = 'edit') {
 /*
  * I needed a multistep alternative to node/add/transaction form, which creates the transaction using the transactions api, not via Drual
  * Sorry to say it, but Drupal nodes just weren't flexible enough
- * TODO: Redesign this, perhaps not using the multistep in form API
  */
 function transaction_start_form($form_state, $transaction=NULL, $presets = 'editable') {
-  module_load_include('inc', 'transactions');
-  if (!$form_state['storage']['step']) {
+  //this is a nasty hack because I didn't realise until very late that set step to 1 here breaks every other form on the same page
+  //on form submission every form on the page is built using the post, I think
+  //TODO: Redesign this, using a a two stage form NOT a multistep form
+  if (!$form_state['storage']['step'] && ($form_state['post'] == array() || $form_state['post']['transaction_type'])) {
     $form_state['storage']['step'] = 1; //this makes the form reload from POST
-  } 
+  }
   if (count($form_state['values']) || $form_state['storage']['step'] > 1) {
     $transaction  = _infer_transaction_from_form($form_state['values']);
   }
@@ -484,7 +485,7 @@ function transaction_complete_form_submit($form, &$form_state) {
     $transaction = node_load($form_state['values']['nid']);
     db_query('UPDATE {cc_transactions} SET state = %d WHERE nid = %d', TRANSACTION_STATE_COMPLETED, $transaction->nid);
     _recalculate_balances(array($transaction->payer_uid, $transaction->payee_uid), $transaction->cid);
-    drupal_set_message(t('Transaction with @starter completed', array('@starter' => theme('username', user_load($transaction->starter_uid)))));
+    drupal_set_message(t('Transaction with !starter completed', array('!starter' => theme('username', user_load($transaction->starter_uid)))));
   }
 }
 
@@ -534,11 +535,11 @@ function validate_quantity($element, $form_state) {
 /*
  * email notification
 */
-function transactions_email_completer_action($transaction, $context = array()) {
+function transactions_email_completer_action($node, $context = array()) {
   if ($node->type != 'transaction') return;
   //load the user and continue only if the completer wants notification
   $recipient = user_load($node->completer_uid);
-  if ($recipient->pending_notification = FALSE) return;
+  if ($recipient->completer_notification == FALSE) return;
   drupal_mail(
     'transactions',
     'transaction_completer',
@@ -549,12 +550,13 @@ function transactions_email_completer_action($transaction, $context = array()) {
       'template' => $context['template'],
     )
   );
+  drupal_set_message(t('!user has been notified by email.', array('!user' => theme('username', $recipient))));
 }
 function transactions_email_starter_action($node, $context = array()) {
   if ($node->type != 'transaction') return;
   //load the user and continue only if the completer wants notification
   $recipient = user_load($node->starter_uid);
-  if ($recipient->starting_notification = FALSE) return;
+  if ($recipient->starter_notification == FALSE) return;
   drupal_mail(
     'transactions',
     'transaction_starter',
@@ -565,27 +567,33 @@ function transactions_email_starter_action($node, $context = array()) {
       'template' => $context['template'],
     )
   );
+  drupal_set_message(t('!user has been notified by email.', array('!user' => theme('username', $recipient))));
 }
 
 //generates an email message telling the user that that they have a pending transaction to complete
 //params needs to be array($transaction)
 //TODO make this mime_mail aware
 function transactions_mail($key, &$message, $params) {
-  $transaction = $params['transaction'];
+  switch ($key) {
+    case 'transaction_starter':
+      $message['subject'] = t('You have started a transaction');
+      break;
+    case 'transaction_completer':
+      $message['subject'] = t('You have a transaction to confirm');
+  }
   $starter = user_load($transaction->starter_uid);
-  $recipient = user_load($transaction->completer_uid);
-  
-  $message['subject'] = t('You have a transaction to confirm');
+  $completer = user_load($transaction->completer_uid);
+  $transaction = $params['transaction'];
   $message_template = $params['template'];
   $variables = array(
-  '%completer' => $recipient->name,
-  '%starter' => $starter->name,
-  '%summary' => strip_tags(theme('transaction', $transaction, TRUE, FALSE)),
-  '%reason' => $transaction->title,
-  '%profile_url' =>  url('user/'. $recipient->uid, array('absolute' => TRUE)),
-  '%pending_url' => url('user/'. $recipient->uid .'/pending', array('absolute' => TRUE)),
-  '%bureau_url' => url('user/'. $recipient->uid .'/bureau', array('absolute' => TRUE)),
-  '%unsubscribe_url' => url( 'user/'. $recipient->uid .'/edit/account', array('fragment' => 'notifications', 'absolute' => TRUE)),
+    '%completer' => $completer->name,
+    '%starter' => $starter->name,
+    '%summary' => strip_tags(theme('transaction', $transaction, TRUE, FALSE)),
+    '%reason' => $transaction->title,
+    '%profile_url' =>  url('user/'. $recipient->uid, array('absolute' => TRUE)),
+    '%pending_url' => url('user/'. $recipient->uid .'/pending', array('absolute' => TRUE)),
+    '%bureau_url' => url('user/'. $recipient->uid .'/bureau', array('absolute' => TRUE)),
+    '%unsubscribe_url' => url('user/'. $recipient->uid .'/edit/account', array('fragment' => 'notifications', 'absolute' => TRUE)),
   
   //the following tokens require mime_mail to be installed
   //'%statement' => l(t('statement'), 'user/' . $recipient->uid . '/statement', array('absolute' =>TRUE)),
@@ -604,15 +612,24 @@ function transactions_mail($key, &$message, $params) {
 */
 
 function template_preprocess_balance_history(&$vars) {//$variables = array($account, $options=array())
+  //determine which transaction states wil be used to draw the line
   $default_states = array(TRANSACTION_STATE_COMPLETED);
-  if (variable_get('cc_count_pending', FALSE)) $default_states[] = TRANSACTION_STATE_PENDING;
-  $vars['options'] += array(
-    'currencies' => currencies_load(array('uids' => array($vars['account']->uid))), 
-    'states' => $default_states, //transaction of which states to be included in the calculation
-    'first_time' => $vars['account']->created,
-  );
-  //this affects the superimposition, I think
-  $vars['currencies'] = array_reverse($vars['options']['currencies']);
+  if (variable_get('cc_count_pending', FALSE)) {
+    $default_states[] = TRANSACTION_STATE_PENDING;
+  }
+  $vars['currencies'] = $vars['options']['currencies'] 
+    or $vars['currencies'] = currencies_load(array('uids' => array($vars['account']->uid)));
+  $states = $vars['options']['states'] 
+    or $states = $vars['options']['currencies'];
+  $first_time = $vars['options']['first_time'] 
+    or $first_time = $vars['account']->created;
+  unset($vars['options']);
+
+  //this affects the superimposition of lines, I think
+  $vars['currencies'] = array_reverse($vars['currencies']);
+  $vars['first_time'] = $first_time;
+  
+  //make an array of points
   $lines=array();
   $line_styles=array();
   $line_colors=array();
@@ -621,16 +638,15 @@ function template_preprocess_balance_history(&$vars) {//$variables = array($acco
     //gets all completed transactions with a running balance
     $transactions = _get_transactions_for_user($vars['account']->uid, array('states' => $states, 'running_balance' => TRUE, 'cid' => $currency->cid));
     if (!count($transactions)) continue;
-    $vars['points'] = array($first_time => $currency->zero_offset);
+    $vars['points'][$cid] = array($first_time => $currency->zero_offset);
     //add all the other points, one per transaction
     foreach ($transactions as $transaction) {
       //one point per transaction produces diagaonal lines
-      $vars['points'][$transaction->{created}] = $transaction->balance;
+      $vars['points'][$cid][$transaction->{created}] = $transaction->balance;
     }
     //add a point showing the balance constant from the last transaction until now
-    $vars['points'][time()] = $transaction->balance;
+    $vars['points'][$cid][time()] = $transaction->balance;
   }
-  $vars['first_time'] = $first_time;
 }
 
 //shows a chart with 4 columns gross spending/earning, and periodic spending/earning
@@ -940,7 +956,7 @@ function _get_transactions_for_user($uid, $options) {
 
 //get a list of all user accounts from roles with permission on any of the transaction types
 function _get_all_trading_accounts() {  
-  if ($roles = user_roles(TRUE, 'ing_')) {
+  if ($roles = user_roles(TRUE, 'use local currency')) {
     $select_fields[] = 'u.uid';
     $show_fields = variable_get('cc_select_user_show', array('name'));
     foreach ($show_fields as $field) {
@@ -970,21 +986,6 @@ function _get_all_trading_accounts() {
     return $accounts;
   }
   drupal_set_message(t('No roles have permission to trade. Please enable some permissions: '). l('admin/user/permissions', 'admin/user/permissions'), 'error');
-}
-
-/*
- * Returns an array of transaction_types which the user is permitted to initiate
- */
-function _permitted_transaction_types() {
-  $type_names = _named_transaction_types();
-  $user_types = array();
-  //Only the types which the user has permission for will be returned
-  foreach ($type_names as $machine_name => $name) {
-    if (user_access('start '. $machine_name)) {
-      $user_types[$machine_name] = $name;
-    }
-  }
-  return $user_types;
 }
 
 function _get_view_transactions_by_user($where) {
@@ -1086,35 +1087,7 @@ function _transactions_convert_name_uid(&$transaction_array, $validate_only = FA
   }
 }
 
-/*
- * This process completes loading the transaction
- * whether derived from a POSTed array, or from the node_load process.
- *//*
-function _transaction_load_objects($transaction) {
-  if (is_numeric($transaction->starter_uid)) {//used only when validating a pre_transaction
-    if (substr($array['transaction_type'], 0, 9) == 'incoming_') {//this is for flows towards the starter user
-      $transaction->payer_uid  = $transaction->completer_uid;
-      $transaction->payee_uid = $transaction->starter_uid;
-    }
-    elseif (substr($array['transaction_type'], 0, 9) == 'outgoing_') { //flows away from the starter user
-      $transaction->payer_uid = $transaction->starter_uid;
-      $transaction->payee_uid = $transaction->completer_uid;
-    }
-  }
-  elseif (is_numeric($transaction->payer_uid)) {
-    //unfortunately not all transactions passing this point can remember their vectors
-    if (substr($array['transaction_type'], 0, 9) == 'incoming_') {//this is for flows towards the starter user
-      $transaction->completer_uid =$transaction->payer_uid;
-      $transaction->starter_uid = $transaction->payee_uid;
-    }
-    elseif (substr($array['transaction_type'], 0, 9) == 'outgoing_') { //flows towards the completer user
-      $transaction->completer_uid = $transaction->payee_uid;
-      $transaction->starter_uid = $transaction->payer_uid;
-    }
-  }
-  return $transaction;
-}
-*/
+
 /*
  * default limit checker - can be overriden by another module
  * checks a transaction to see if it will put either of the users outside the currency limits.

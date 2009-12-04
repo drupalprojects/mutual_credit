@@ -1,0 +1,165 @@
+# $Id$
+#
+# French translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  cc_currencies.module: n/a
+#  cc_currencies.install,v 1.1.2.3 2009/10/09 14:56:28 matslats
+#  cc_currencies.info: n/a
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2009-11-05 20:11+0530\n"
+"PO-Revision-Date: 2009-11-05 20:11+0530\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: French <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+#: cc_currencies.module:53
+msgid "A complementary currency"
+msgstr "Une unité d'échange complémentaire"
+
+#: cc_currencies.module:55
+msgid "Currency Name"
+msgstr "Nom de l'unité d'échange"
+
+#: cc_currencies.module:57;100
+msgid "Currency purpose, ethos, values and rules"
+msgstr "Les règles, le but, l'ethos et les valeurs de votre unité d'échange"
+
+#: cc_currencies.module:92
+msgid "Currency name"
+msgstr "Nom de l'unité d'échange"
+
+#: cc_currencies.module:95
+msgid "Write the full title, like this: 'Loaves,bread' or 'pounds, sterling silver' or 'chickens'"
+msgstr ""
+"Veuillez écrire le titre en entier, par exemple 'Panier de légumes' "
+"ou 'Peinture de mon salon' ou 'Plat marocain avec boissons "
+"non-alcoolisées'"
+
+#: cc_currencies.module:103
+msgid "Write about the purpose and value of your currency. "
+msgstr ""
+
+#: cc_currencies.module:104
+msgid "If your currency is \"hearts\", what is a heart for, how would I earn or spend one? In particular, is it intended to be redeemable or is it purely a unit of account? That means would you redeem 5 virtual loaves of bread for real ones or tell me to go back online where I came from?"
+msgstr ""
+
+#: cc_currencies.module:105
+msgid "Remember you may not be able to edit your currency once someone has traded in it."
+msgstr ""
+
+#: cc_currencies.module:124
+msgid "visible to all"
+msgstr "Affiché à tous"
+
+#: cc_currencies.module:147
+msgid "Currency"
+msgstr "Unité"
+
+#: cc_currencies.module:230
+msgid "This user has no completed transactions"
+msgstr "Ce membre n'a pas d'échanges comptabilisés"
+
+#: cc_currencies.module:233
+msgid "Date"
+msgstr "Date"
+
+#: cc_currencies.module:234
+msgid "Description"
+msgstr "Description"
+
+#: cc_currencies.module:235
+msgid "With Whom?"
+msgstr "Avec"
+
+#: cc_currencies.module:236
+msgid "Income"
+msgstr "Unités reçues"
+
+#: cc_currencies.module:237
+msgid "Expenditure"
+msgstr "Unités données"
+
+#: cc_currencies.module:238
+msgid ""
+msgstr ""
+
+#: cc_currencies.module:275
+msgid "@username's statement for @month"
+msgstr "Le solde de @username's pour le mois de @month"
+
+#: cc_currencies.module:31
+msgid "create meme currencies"
+msgstr "créer des unités d'échanges meme"
+
+#: cc_currencies.module:31
+msgid "create global currencies"
+msgstr "créer des unités d'échanges globaux"
+
+#: cc_currencies.install:21
+msgid "This currency was the system default but is now one of many possible currencies."
+msgstr ""
+"Cette unité d'échange était par défaut, mais fait partie "
+"maintenant des nombreuses unités possibles."
+
+#: cc_currencies.install:81
+msgid "metadata for currencies, in addition to name and title"
+msgstr "metadata pour les unités d'échanges, en plus de nom et  titre"
+
+#: cc_currencies.install:84
+msgid "the node id to which this currency is attached"
+msgstr ""
+"L'identification (ID) du node à laquelle cet unité d'échange est "
+"associée"
+
+#: cc_currencies.install:89
+msgid "the nominal value of this currency expressed as an objective value (0 means not interchanagable)"
+msgstr ""
+"La valeur nominative de cette unité d'échange exprimée dans une "
+"valeur objective (0 = non-échangeable)"
+
+#: cc_currencies.install:95
+msgid "an adjustment to the zero balance per user"
+msgstr "une façon d'ajuster le solde zéro par membre"
+
+#: cc_currencies.install:101
+msgid "what happens after the decimal point, quarter hours or centiles"
+msgstr "que faut-il après la décimale, le quart d'heure ou les centièmes"
+
+#: cc_currencies.install:106
+msgid "the default minumim balance allowed to tbe held"
+msgstr "Le solde minimum permis par défaut"
+
+#: cc_currencies.install:112
+msgid "the default maximum balance allowed to tbe held"
+msgstr "Le solde maximum permis par défaut"
+
+#: cc_currencies.install:118;135
+msgid "A hex colour value"
+msgstr ""
+
+#: cc_currencies.install:123
+msgid "location of the currency icon"
+msgstr "l'icône de l'unité d'échange se trouve ici"
+
+#: cc_currencies.info:0
+msgid "Cc Multiple Currencies v0.5"
+msgstr "Cc Unités d'échanges multiples v0.5"
+
+#: cc_currencies.info:0
+msgid "Experimental module allowing arbitrary creation of currencies by users."
+msgstr ""
+"Module expérimental qui permet la création d'unités d'échange "
+"arbitraires par les membres eux-mêmes."
+
+#: cc_currencies.info:0
+msgid "Complementary Currencies"
+msgstr "Monnaies Complémentaires"
+

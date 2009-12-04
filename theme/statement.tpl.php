@@ -34,7 +34,7 @@ OR[income] => theme(money $quantity...)
   [payee] => <a href="/user/3" title="View user profile.">carl</a>
   [payer] => <a href="/user/4" title="View user profile.">darren</a>
   [notme] => <a href="/user/4" title="View user profile.">darren</a>
-  [transaction_url] => <a href="/node/44">gift from carl to darren</a>
+  [transaction_link] => <a href="/node/44">gift from carl to darren</a>
   [actions] => some HTML buttons
 )
  */
@@ -43,7 +43,7 @@ OR[income] => theme(money $quantity...)
   //array keys must correspond to the keys in the transaction objects
   $columns = array(
     'submitted' => t('Date'),
-    'transaction_url' => t('Description'), 
+    'transaction_link' => t('Item or service'), 
     'notme' => t('With'),
     'amount' => t('Amount'),
     'rating' => t('Feedback'),

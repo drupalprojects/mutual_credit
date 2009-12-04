@@ -5,15 +5,8 @@
  * Implementation of hook_install().
  */
 function cc_offer_want_install() {
-  $names = variable_get('cc_transaction_types', array());
-  $names['offers_wants'] = array(
-    'offer' => 'Offers',
-    'want' => 'Wants',
-    //'good' => 'Goods',
-    //'service' => 'Services',
-  );
-  variable_set ('cc_transaction_types', $names);
-  drupal_install_schema('cc_offer_want');
+  //drupal_install_schema('cc_offer_want');
+  
   //create a vocab which will be used for the directory
   $vocab = array(
     'name' => t('Offers & Wants categories'),
@@ -50,10 +43,8 @@ function cc_offer_want_enable(){
  * Implementation of hook_uninstall().
  */
 function cc_offer_want_uninstall() {
-  $names = variable_get('cc_transaction_types', array());
-  unset ($names['offers_wants']);
-  variable_set('cc_transaction_types', $names);
-  drupal_uninstall_schema('cc_offer_want');
+  //drupal_uninstall_schema('cc_offer_want');
+  
   //db_query("DELETE FROM {node} WHERE type IN ('offer','want')");
   db_query("DELETE FROM {blocks} WHERE module = 'offers_wants'"); 
   $view_ids = db_query ("SELECT vid from {views_view} WHERE name LIKE 'cc_directory%'");
@@ -67,37 +58,11 @@ function cc_offer_want_uninstall() {
   taxonomy_del_vocabulary($vid);
 }
 
-function cc_offer_want_schema() {
-  $schema['cc_offers_wants'] = array(
-    'description' => t('offers and wants extra data'), 
-    'fields'=> array(
-      'nid'=> array(
-        'description' => t('the node to which this entry is attached'),
-        'type' => 'int',
-        'size' => 'normal',
-      ),
-      'goods_not_services' => array(
-        'description' => t("1 = goods, 0 = services"),
-        'type' => 'int',
-        'size' => 'tiny',
-        'default' => 0,
-      ),
-      'not_cc' => array(
-        'description' => t("0 = cc, 1 = official money"),
-        'type' => 'int',
-        'size' => 'tiny',
-        'default' => 0,
-      ),
-    )
-  );
-  return $schema;
-}
-
 function cc_offer_want_update_6000(){
   $ret=array();
- if (is_function('offers_wants_uninstall')) {
+  if (is_function('offers_wants_uninstall')) {
     $ret['#abort'] = array('success' => FALSE, 'query' => 'Delete the whole marketplace directory and replace with version 1');
- }
- drupal_uninstall_module('offers_wants');
+  }
+  drupal_uninstall_module('offers_wants');
   return $ret;
 }

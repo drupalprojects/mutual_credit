@@ -1,10 +1,33 @@
 <?php
 
-function cc_import_help() {
-    switch ($section) {
+function cc_import_help($section) {
+  switch ($section) {
     case 'admin/help#cc_import':
       return t('Provides advice and a simple text box to paste csv style data from your existing spreadsheets. ') .
-      t('Assumes user 1 is the balancing account.');
+        t('Assumes user 1 is the balancing account.');
+    case 'admin/marketplace/import/balances': 
+      return t("This page allows you to import users' balances and gross incomes for users already on the system. To import users, see the !import_user module.",
+        array('!import_user'=>l('user_import', 'http://drupal.org/project/user_import')
+      )
+    );
+    case 'admin/marketplace/import/offers':
+    case 'admin/marketplace/import/wants':
+      return t("This page allows you to import users' @type for users already on the system.",
+          array('@type' => $type)
+        ) . 
+        t("There are other ways of doing this, but this is simple and maintained along with the rest of the marketplace module.") . '<br />' .
+        t("Use a spreadsheet tool to prepare a list of user ids or names, and the description in each line.") . '<br />' .
+        t("For aesthetic reasons, there is a @num character limit on each description.", 
+          array('@num' => variable_get('cc_ow_max_title', 128))
+        ) . '<br />' .
+        t("Each line should look like this (you must include the header row): !code", 
+          array('!code' => '<blockquote><strong>"UserID","Description"</strong></blockquote>')
+        ) .
+        t("Try importing one or two first!");
+      break;
+    case 'admin/marketplace/import/migrate':
+      return t("This button will give you some drupal code containing all the transactions, offers and wants on the system.") . '<br />' .
+        t("Copy the code and run it in the php box of the devel module on the target system");
   }
 }
 
@@ -17,7 +40,7 @@ function cc_import_menu() {
     'title' => 'Import Tools',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_balances_form'),
-    'access arguments' => array('configure marketplace'),
+    'access arguments' => array('configure economy'),
     'weight' => 5
   );
   $items['admin/marketplace/import/balances'] = array(
@@ -28,15 +51,22 @@ function cc_import_menu() {
   $items['admin/marketplace/import/offers'] = array(
     'title' => 'Import Offers',
     'page callback' => 'drupal_get_form',
-      'page arguments' => array('import_offers_form'),
-    'access arguments' => array('configure marketplace'),
+    'page arguments' => array('import_offers_form'),
+    'access arguments' => array('configure economy'),
     'type' => MENU_LOCAL_TASK,
   );
   $items['admin/marketplace/import/wants'] = array(
     'title' => 'Import Wants',
     'page callback' => 'drupal_get_form',
-      'page arguments' => array('import_wants_form'),
-    'access arguments' => array('configure marketplace'),
+    'page arguments' => array('import_wants_form'),
+    'access arguments' => array('configure economy'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/marketplace/import/migrate'] = array(
+    'title' => 'Migrate',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mutual_credit_migrate_form'),
+    'access arguments' => array('view all transactions'),
     'type' => MENU_LOCAL_TASK,
   );
   return $items;
@@ -49,11 +79,6 @@ function import_balances_form(&$form_state) {
     return array('#prefix' => 'You can only import "carried forward" balances before any transactions have been entered on the system.');
   }
 
-  $form['#prefix'] = '<p>' . t("This page allows you to import users' balances and gross incomes for users already on the system. To import users, see the !import_user module.",
-    array(
-      '!import_user'=>l('import_user', 'http://drupal.org/project/import_user')
-    )
-  )  . '</p>';
   $form['#prefix'] .= "\n<p>".t("Paste paste 2 or 3 comma separated columns into the field below, the first column should be the uid or username, the second column the current balance, and optionally the third column should be the user's gross income until now (turnover).");
   $form['#prefix'] .= "\n<p>".t("This tools assumes there is only one currency in the system. The second column SHOULD add up to 0 for LETS and other zero balance systems, but this will not be checked." ) . '</p>';
   $form['#prefix'] .= "\n<p>".t("The first line of the field should read (third column is optional): !code", array('!code' => '<blockquote>"UserID","Balance","GrossIncome"</blockquote>"')) . '</p>';
@@ -81,6 +106,7 @@ function import_balances_form_validate($form, &$form_state) {
   check_users($rows);
 
   foreach ($rows as $rownum => $row) {
+    $users[] = $row['UserID'];
     //check integrity of balances, the second field
     if (!intval($row['Balance'])) {
       form_set_error('data', t("balance (second item) on row @num is not an integer", array('@num'=>$key+1)));
@@ -98,7 +124,6 @@ function import_balances_form_validate($form, &$form_state) {
 }
 
 function import_balances_form_submit($form, &$form_state) {
-  require_once(drupal_get_path('module', 'transactions').'/transactions.inc');
   $rows = str_getcsv($form_state['values']['data']);
 
   foreach ($rows as $key=>$row) {
@@ -113,7 +138,8 @@ function import_balances_form_submit($form, &$form_state) {
   }
 }
 function cc_import_balances_member($uid, $balance, $gross_income=NULL) {
-  $bal_acc = variable_get('cc_balancing_account_num');
+  module_load_include('admin.inc', 'transactions');
+  $bal_acc = variable_get('cc_balancing_account_num', 1);
   $options = array(
     'transaction_type' => 'imported',
     'starter_uid' => $bal_acc,
@@ -126,7 +152,8 @@ function cc_import_balances_member($uid, $balance, $gross_income=NULL) {
     if (intval($balance) > 0) {
       $payer_uid = $bal_acc;
       $payee_uid = $uid;
-    } else {
+    }
+    elseif (intval($balance) < 0) {
       $balance = abs($balance);
       $payee_uid = $bal_acc;
       $payer_uid = $uid;
@@ -136,7 +163,6 @@ function cc_import_balances_member($uid, $balance, $gross_income=NULL) {
 }
 
 function import_offers_form(&$form_state) {
-  $form['#prefix'] = import_prefix('offers');
   $form['data'] = array (
     '#type' => 'textarea',
     '#title' => 'paste data',
@@ -160,7 +186,6 @@ function import_offers_form_submit ($form, &$form_state) {
 }
 
 function import_wants_form(&$form_state) {
-  $form['#prefix'] = import_prefix('wants');
   $form['data'] = array (
     '#type' => 'textarea',
     '#title' => 'paste data',
@@ -185,55 +210,44 @@ function import_wants_form_submit ($form, &$form_state) {
 
 function import_offers_wants_form_validate($form, &$form_state) {
   $rows = str_getcsv($form_state['values']['data']);
-  check_users($rows);
+  $max = variable_get('cc_ow_max_title', 128);
   foreach ($rows as $rownum => $row) {
+    $users[] = $row['UserID'];
     //we've checked the users (field1) already, so now check the description
-    if (strlen($row['Description'] > 128)) {
-      form_set_error('data', t('The description on row @rownum is more than 128 characters', array('rownum' => $rownum)));
+    if (strlen($row['Description'] > $max)) {
+      $overlong[] = $rownum;
+      //$row['Description'] = substr($row['Description'], 0, 255);
     }
+    if (count($overlong)) {
+      form_set_error('data', t('Descriptions on the following should be reduced to less than @num characters: @rows', array('@num' => $max, '@rows' => implode(',',$overlong))));
+    }
+    
     //now check the taxonomy term exists, and flag an error if it doesn't
-    check_terms($rows);
+    if (count($row > 2)) {
+      drupal_set_message("Only the first two columns will be used", "warning");
+    }
   }
-  
+  check_users($rows);
+}
+
+function check_users($rows) {
+  foreach ($rows as $row) {
+    $users[] = $row['UserID'];
+  }
+  foreach (array_unique($users) as $uid) {
+    $account = user_load($uid);
+    if (!$account->name) {
+      $extinct[] = $uid;
+    }
+    if (count($extinct)) {
+      form_set_error('data', t("The following UserIDs do not exist: @UserIDs", array('@UserIDs' => implode(', ', $extinct))));
+    }
+  }
 }
 
 /*
  * Helper Functions
 */
-
-function import_prefix($type) {
-  return t("This page allows you to import users' @type for users already on the system.", array('@type' => $type)) . 
-  t("There are other ways of doing this, but this is simple and maintained along with the rest of the marketplace module.") . '<br />' .
-  //t("If you have 'goods & services' enabled or 'local vs offical' money then it assumes this is a service in local money.") . '<br />' .
-  t("Use a spreadsheet tool to prepare a list of user ids, or names, and their @type in one line. ") . 
-  t("For aesthetic reasons, there is a 128 character limit on each description. ") . 
-  t("Each line should look like this (you must include the header row): !code", array('!code' => '<blockquote><strong>"UserID","Description"</strong></blockquote>')) .
-  t("Try importing one or two first.");
-}
-
-//check that the user ids or names actually correspond to a user on the system
-//coming from the csv all keys and values will be strings, surrounded by quotes
-function check_users($rows) {
-  foreach ($rows as $rownum => $row){
-    $id = $row['UserID'];
-    if (is_numeric($id)){
-      $member = user_load($id);
-    } else {
-      $member = user_load($id);
-    }
-    if (!$member->name) {
-      form_set_error('data', t("'UserID' on row @rownum is not a user:@data", array('@rownum'=>$rownum+1, '@data'=>$id)));
-    }
-  }
-}
-
-function check_terms($fields) {
-  if ($fields[2]){
-    drupal_set_message("importing categories hasn't been coded yet", "warning");
-  }
-  //TODO
-  return;
-}
 
 if (!function_exists('str_getcsv')) { 
 function str_getcsv($input, $delimiter = ",", $enclosure = '"', $escape = "\\") {
@@ -252,3 +266,26 @@ function str_getcsv($input, $delimiter = ",", $enclosure = '"', $escape = "\\") 
   }
   return $data;
 }}
+
+function mutual_credit_migrate_form() {
+  $form['migrate_button'] = array (
+    '#type' => 'submit',
+    '#value' => 'Migrate',
+  );
+  return $form;
+}
+function mutual_credit_migrate_form_submit() {
+  $output = array('module_load_include("admin.inc", "transactions");');
+  $result = db_query("SELECT n.title, t.payer_uid, t.payee_uid, t.quantity, t.transaction_type, n.created, t.state
+    FROM node n JOIN cc_transactions t ON n.nid = t.nid
+    WHERE n.type = 'transaction'");
+  while ($transaction = db_fetch_object($result)) {
+    //print_r($transaction);
+    $output[] = 'generate_transaction_node("'. trim($transaction->title) .'", "'. $transaction->payer_uid .'", "'. $transaction->payee_uid .'", "'. $transaction->quantity .'", array("transaction_type"=>"'. $transaction->transaction_type .'", "created"=>"'. $transaction->created .'", "state=>"'. $transaction->state .'"));';
+  }
+  $result = db_query("SELECT title, uid, type from node WHERE type = 'offer' OR type = 'want'");
+  while ($ad = db_fetch_object($result)) {
+    $output[] = 'generate_offer_want_node("'. $ad->type .'", "'. $ad->uid .'", "'. trim($ad->title) .'");';
+  }
+  print implode('<br>', $output);die();
+}

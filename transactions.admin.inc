@@ -98,12 +98,12 @@ function cc_options() {
   $form['visualisation']['cc_transaction_list'] = array (
     '#type' => 'radios',
     '#title' => t('Preferred transaction view'),
-    '#default_value' => variable_get('cc_transaction_list', 1),
+    '#default_value' => variable_get('cc_transaction_list', 'statement'),
+    '#description' => t("Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."), 
     '#options' => array (
       'statement' => t('A table of all transactions Full access control; cannot be click-sorted; uses drupal pager; configure using THEME_statement()'),
       'ins_and_outs' => t('Seperate tables of incoming and outgoing transactions. Cruder access control; configure using views module.'),
     ),
-    '#description' => t("Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."), 
   );
   //warning of calendar module dependency
   if (!(module_exists('calendar'))) {
@@ -364,10 +364,10 @@ function validate_limits($minmax, $required = FALSE) {
 //options might equal 
 function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0) {
   global $user;
-  if ($quantity < 0) {
+  if ($quantity <= 0) {
     drupal_set_message(t('@function was asked to create a transaction with negative value: @value', array('@function' => 'generate_transaction_node', '@value' => $quantity)));
     return;
-  } elseif ($quantity <= 0) return;
+  }    
   
   $node = $options + array(
    //default options
@@ -383,7 +383,6 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     'payer_uid' => $payer_uid,
     'quantity' => $quantity,
     'quality' => $quality,
-    'state' => $state,
     'title' => $title,
    //some basic node properties
     'type' => 'transaction',
@@ -397,6 +396,7 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     $node->completer_uid = $node->payee_uid;
   }
   node_save($node);
+  drupal_set_message('transaction node generated');
   return $node;
 }
 

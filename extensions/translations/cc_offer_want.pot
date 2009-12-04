@@ -1,0 +1,153 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  cc_offer_want.module,v 1.1.2.2 2009/11/04 09:04:17 matslats
+#  cc_offer_want.install,v 1.1.2.2 2009/11/04 09:04:17 matslats
+#  cc_offer_want.info,v 1.1.2.1 2009/09/27 15:45:35 matslats
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2009-11-04 21:45+0530\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: cc_offer_want.module:10
+msgid "Defines two contentTypes which are created and edited by each user and which are presented as a directory categorised using taxonomy."
+msgstr ""
+
+#: cc_offer_want.module:27;37
+msgid "An entry in the @type directory."
+msgstr ""
+
+#: cc_offer_want.module:29
+msgid "Product or service you are offering"
+msgstr ""
+
+#: cc_offer_want.module:39
+msgid "Product or service you need"
+msgstr ""
+
+#: cc_offer_want.module:75
+msgid "N.B. It is also possible to disable the node body for offers and wants. See !link"
+msgstr ""
+
+#: cc_offer_want.module:133
+msgid "categories"
+msgstr ""
+
+#: cc_offer_want.module:140
+msgid "Add @offers_wants"
+msgstr ""
+
+#: cc_offer_want.module:160
+msgid "@offerwant Categories"
+msgstr ""
+
+#: cc_offer_want.module:167
+msgid "Place your @offerwant"
+msgstr ""
+
+#: cc_offer_want.module:174
+msgid "Place your ad"
+msgstr ""
+
+#: cc_offer_want.module:255
+msgid "Names of offers/wants"
+msgstr ""
+
+#: cc_offer_want.module:259
+msgid "Specify whether you want offers and wants by stating what word to use for them. Also name goods and services if they are enabled in !link."
+msgstr ""
+
+#: cc_offer_want.module:264
+msgid "Whatever the user is offering to the community (plural)"
+msgstr ""
+
+#: cc_offer_want.module:270
+msgid "Whatever the user wants from the community (plural)"
+msgstr ""
+
+#: cc_offer_want.module:371
+msgid "@categoryname @types"
+msgstr ""
+
+#: cc_offer_want.module:377
+msgid "contact @username"
+msgstr ""
+
+#: cc_offer_want.module:381
+msgid "@person's directory"
+msgstr ""
+
+#: cc_offer_want.module:393
+msgid "Click to add new !items"
+msgstr ""
+
+#: cc_offer_want.module:404
+msgid "Which directory?"
+msgstr ""
+
+#: cc_offer_want.module:413
+msgid "Text of your advert"
+msgstr ""
+
+#: cc_offer_want.module:419
+msgid "Details"
+msgstr ""
+
+#: cc_offer_want.module:86
+msgid "view directory"
+msgstr ""
+
+#: cc_offer_want.module:86
+msgid "edit directory"
+msgstr ""
+
+#: cc_offer_want.module:87
+msgid "offer"
+msgstr ""
+
+#: cc_offer_want.module:88
+msgid "create offer"
+msgstr ""
+
+#: cc_offer_want.install:19
+msgid "Offers & Wants categories"
+msgstr ""
+
+#: cc_offer_want.install:20
+msgid "This vocabulary is for categorising activities people do in their community. It can be used like the 'yellow pages' to help locate goods and services, but can also be used later on, for monitoring purposes."
+msgstr ""
+
+#: cc_offer_want.install:21
+msgid "Choose one or more categories"
+msgstr ""
+
+#: cc_offer_want.install:38
+msgid "Now go and make some directory categories at !link"
+msgstr ""
+
+#: cc_offer_want.install:72
+msgid "offers and wants extra data"
+msgstr ""
+
+#: cc_offer_want.install:75
+msgid "the node to which this entry is attached"
+msgstr ""
+
+#: cc_offer_want.info:0
+msgid "Cc offers/wants"
+msgstr ""
+
+#: cc_offer_want.info:0
+msgid "Allows users to contribute to a categorised directory of offers and wants."
+msgstr ""

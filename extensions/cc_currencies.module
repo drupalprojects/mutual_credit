@@ -18,7 +18,7 @@ function cc_currencies_menu_alter(&$items) {
     'title' => 'Configure Currencies',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('configure_currencies'),
-    'access arguments' => array('configure marketplace'),
+    'access arguments' => array('configure economy'),
   );
   $items['user/%/transactions']['page arguments']['theme'] = 'statement_multi';
 }
@@ -118,7 +118,7 @@ function cc_currencies_form_alter(&$form, $form_state, $form_id) {
       $form['path']['access'] = FALSE;
       $form['options']['access'] = FALSE;
       //we use the sticky node property to universlaise the currency
-      if (user_access('configure marketplace')){
+      if (user_access('configure economy')){
         $form['sticky'] = $form['options']['sticky'];
         unset($form['options']['sticky']);
         $form['sticky']['#title'] = t('visible to all');
@@ -312,6 +312,7 @@ function get_currencies($options=array()) {
 
 
 function identify_currencies($uids = array()) {
+  if ($uids == array(0=>NULL))sdfsh();
   $uids = array_values($uids);
   $ors1 = array('1=1');
   $ors2 = array('1=1');
@@ -321,8 +322,9 @@ function identify_currencies($uids = array()) {
     $ors1[] = " uid IN " . $uid_string;
     $ors2[] = " payer_uid IN $uid_string OR payee_uid IN $uid_string ";
   }
+  $ors1 = implode(" OR ", $ors1);
   //gets all the universal currencies and the ones owed by named users
-  $results = db_query("SELECT nid from {node} WHERE type = 'currency' AND (sticky = TRUE OR ( %s ))", implode(" OR ", $ors1));
+  $results = db_query("SELECT nid from {node} WHERE type = 'currency' AND (sticky = TRUE OR ( %s ))", $ors1);
   while ($result = db_result($results)) {
     $visible[]=$result;
   }

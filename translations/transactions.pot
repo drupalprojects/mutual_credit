@@ -1,0 +1,1253 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  transactions.inc,v 1.1.2.6 2009/11/04 09:04:17 matslats
+#  transactions.module,v 1.1.2.5 2009/11/04 09:04:17 matslats
+#  transactions.admin.inc: n/a
+#  transactions.info,v 1.1.2.1 2009/09/27 15:45:35 matslats
+#  views/transactions.views.inc: n/a
+#  transactions.install,v 1.1.2.4 2009/11/04 09:04:17 matslats
+#  transactions/theme/*
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2009-11-09 01:08+0530\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: transactions.inc:144
+msgid "Full Edit mode. Beware not to enter contradictory information"
+msgstr ""
+
+#: transactions.inc:145
+msgid "The starter and the completer must be the same two users as the payer and the payee."
+msgstr ""
+
+#: transactions.inc:161
+msgid "What is being paid for?"
+msgstr ""
+
+#: transactions.inc:165
+msgid "What goods or services were exchanged? "
+msgstr ""
+
+#: transactions.inc:168
+msgid "Minimum @num words"
+msgstr ""
+
+#: transactions.inc:199
+msgid "Who is being paid?"
+msgstr ""
+
+#: transactions.inc:202;213;240
+msgid "(Please choose...)"
+msgstr ""
+
+#: transactions.inc:209
+msgid "Who is paying?"
+msgstr ""
+
+#: transactions.inc:223
+msgid "Initiator, (if not you)"
+msgstr ""
+
+#: transactions.inc:237
+msgid "With whom did you transact?"
+msgstr ""
+
+#: transactions.inc:249
+msgid "Transaction type"
+msgstr ""
+
+#: transactions.inc:271
+msgid "Transaction is waiting to be confirmed."
+msgstr ""
+
+#: transactions.inc:288
+msgid "Quantity"
+msgstr ""
+
+#: transactions.inc:302
+msgid "Quarters"
+msgstr ""
+
+#: transactions.inc:325
+msgid "Rate the quality of what was paid for"
+msgstr ""
+
+#: transactions.inc:399
+msgid "Do you want to start this transaction?"
+msgstr ""
+
+#: transactions.inc:403
+msgid "Go back"
+msgstr ""
+
+#: transactions.inc:412
+msgid "Send"
+msgstr ""
+
+#: transactions.inc:473
+msgid "Are you sure you want to complete the transaction \"@description\""
+msgstr ""
+
+#: transactions.inc:476
+msgid "Complete"
+msgstr ""
+
+#: transactions.inc:476
+msgid "Cancel"
+msgstr ""
+
+#: transactions.inc:487
+msgid "Transaction with @starter completed"
+msgstr ""
+
+#: transactions.inc:494
+msgid "No transaction type selected"
+msgstr ""
+
+#: transactions.inc:497
+msgid "Plain text only in transaction descriptions."
+msgstr ""
+
+#: transactions.inc:500
+msgid "Please describe the transaction in more detail"
+msgstr ""
+
+#: transactions.inc:503
+msgid "You cannot trade with yourself"
+msgstr ""
+
+#: transactions.inc:508
+msgid "You must enter a number"
+msgstr ""
+
+#: transactions.inc:512
+msgid "You must enter a whole number"
+msgstr ""
+
+#: transactions.inc:518
+msgid "You cannot exchange nothing"
+msgstr ""
+
+#: transactions.inc:521
+msgid "Who are you transacting with?"
+msgstr ""
+
+#: transactions.inc:529
+msgid "Negative numbers not allowed. You may be able to change the direction of the transaction"
+msgstr ""
+
+msgid "You have started a transaction"
+msgstr ""
+
+#: transactions.inc:578
+msgid "You have a transaction to confirm"
+msgstr ""
+
+#: transactions.inc:799;808
+msgid "No statistics will be available until some transactions have happened"
+msgstr ""
+
+#: transactions.inc:800;809
+msgid "Number of transactions: @num"
+msgstr ""
+
+#: transactions.inc:801;810
+msgid "Total volume traded: @num"
+msgstr ""
+
+#: transactions.inc:802;811
+msgid "Number of trading members: @num"
+msgstr ""
+
+#: transactions.inc:803
+msgid "Average trading volume: @num"
+msgstr ""
+
+#: transactions.inc:817
+msgid "Most trades:"
+msgstr ""
+
+#: transactions.inc:822
+msgid "Largest incomes:"
+msgstr ""
+
+#: transactions.inc:827
+msgid "Largest expenditure:"
+msgstr ""
+
+#: transactions.inc:833
+msgid "Highest trading volumes:"
+msgstr ""
+
+#: transactions.inc:972
+msgid "No roles have permission to trade. Please enable some permissions: "
+msgstr ""
+
+#: transactions.inc:1002
+msgid "Expenditure"
+msgstr ""
+
+#: transactions.inc:1006
+msgid "Income"
+msgstr ""
+
+#: transactions.inc:1080
+msgid "Please enter a member's username or email in this field: @nonuser"
+msgstr ""
+
+#: transactions.inc:1131
+msgid "Transaction would take !username below the minimum balance of !quantity"
+msgstr ""
+
+#: transactions.inc:1138
+msgid "Transaction would take !username above the maximum balance of !quantity"
+msgstr ""
+
+#: transactions.inc:1158
+msgid "the username of the recipient"
+msgstr ""
+
+#: transactions.inc:1159
+msgid "the username of the person who started the transaction"
+msgstr ""
+
+#: transactions.inc:1160
+msgid "a summary of the whole transaction"
+msgstr ""
+
+#: transactions.inc:1161
+msgid "description of the transaction by the starter"
+msgstr ""
+
+#: transactions.inc:1162
+msgid "web address of pending transactions page"
+msgstr ""
+
+#: transactions.inc:1163
+msgid "web address of profile page with subscription checkbox"
+msgstr ""
+
+#: transactions.inc:1164
+msgid "web address of 'bureau' page of this user"
+msgstr ""
+
+#: transactions.inc:1165
+msgid "web address of recipient's profile page"
+msgstr ""
+
+#: transactions.inc:1178
+msgid "Sign"
+msgstr ""
+
+#: transactions.inc:1181 transactions.module:341
+msgid "Change"
+msgstr ""
+
+#: transactions.inc:1185
+msgid "Erase"
+msgstr ""
+
+#: transactions.admin.inc:10
+msgid "Tell Community Forge about this community."
+msgstr ""
+
+#: transactions.admin.inc:15
+msgid "Become part of a wider community by allowing a coordinating to know a few things about this site. Such as url, contact details, number of active traders. No personal information will be shared."
+msgstr ""
+
+#: transactions.admin.inc:19
+msgid "Minimum number of words to describe a transaction"
+msgstr ""
+
+#: transactions.admin.inc:24
+msgid "This site could be better if you can get members to take a few seconds more to describe the transaction in more detail. It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4."
+msgstr ""
+
+#: transactions.admin.inc:28
+msgid "Number of the balancing account"
+msgstr ""
+
+#: transactions.admin.inc:33
+msgid "The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank."
+msgstr ""
+
+#: transactions.admin.inc:38
+msgid "Maintenance"
+msgstr ""
+
+#: transactions.admin.inc:40
+msgid "In case the balances get out of sync with the transactions."
+msgstr ""
+
+#: transactions.admin.inc:41
+msgid "Please use this and report an issue at !url"
+msgstr ""
+
+#: transactions.admin.inc:46
+msgid "Recalulate balances & stats"
+msgstr ""
+
+#: transactions.admin.inc:52
+msgid "Selecting other users"
+msgstr ""
+
+#: transactions.admin.inc:59
+msgid "User dropdown order"
+msgstr ""
+
+#: transactions.admin.inc:61
+msgid "On the new transaction form, in what order should the members be listed?"
+msgstr ""
+
+#: transactions.admin.inc:62;71
+msgid "User ID"
+msgstr ""
+
+#: transactions.admin.inc:62;71
+msgid "Username"
+msgstr ""
+
+#: transactions.admin.inc:66
+msgid "User dropdown field(s)"
+msgstr ""
+
+#: transactions.admin.inc:69
+msgid "On the new transaction form, what fields should be used to identify members in the dropdown. Field order nor the spacer character can be configured. Would be great if you choose a view for this, like a cck field."
+msgstr ""
+
+#: transactions.admin.inc:71
+msgid "Email"
+msgstr ""
+
+#: transactions.admin.inc:75
+msgid "Threshold at which to use autocomplete widget on the user selection"
+msgstr ""
+
+#: transactions.admin.inc:77
+msgid "When you have more users than can fit in a dropdown box, you should probably use an autocomplete field instead."
+msgstr ""
+
+#: transactions.admin.inc:81
+msgid "Statistics & visualisation"
+msgstr ""
+
+#: transactions.admin.inc:89
+msgid "On each line write a period using php !strtotime syntax, for which stats will be cached. "
+msgstr ""
+
+#: transactions.admin.inc:90
+msgid "For each period there is a tab on the !stats page, and a block."
+msgstr ""
+
+#: transactions.admin.inc:94
+msgid "Count pending transactions"
+msgstr ""
+
+#: transactions.admin.inc:95
+msgid "Should transactions which have not yet been confirmed be included in transaction listings and in stats?"
+msgstr ""
+
+#: transactions.admin.inc:100
+msgid "Preferred transaction view"
+msgstr ""
+
+#: transactions.admin.inc:103
+msgid "A table of all transactions Full access control; cannot be click-sorted; uses drupal pager; configure using THEME_statement()"
+msgstr ""
+
+#: transactions.admin.inc:104
+msgid "Seperate tables of incoming and outgoing transactions. Cruder access control; configure using views module."
+msgstr ""
+
+#: transactions.admin.inc:106
+msgid "Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."
+msgstr ""
+
+#: transactions.admin.inc:110
+msgid "Pager requires cck, date & calendar modules"
+msgstr ""
+
+#: transactions.admin.inc:116
+msgid "Names of transaction types"
+msgstr ""
+
+#: transactions.admin.inc:120
+msgid "These are the names of the transaction types. Unnamed types will be unavailable. You must name at least one. "
+msgstr ""
+
+#: transactions.admin.inc:121
+msgid "For each type there is a block, a menu link (coming soon) and a permission"
+msgstr ""
+
+#: transactions.admin.inc:125;131;137;143
+msgid "The name of an @direction flow completed @when"
+msgstr ""
+
+#: transactions.admin.inc:125;137
+msgid "outgoing"
+msgstr ""
+
+#: transactions.admin.inc:125;131
+msgid "by the other party"
+msgstr ""
+
+#: transactions.admin.inc:131;143
+msgid "incoming"
+msgstr ""
+
+#: transactions.admin.inc:137;143
+msgid "instantly"
+msgstr ""
+
+#: transactions.admin.inc:155
+msgid "Minimum number of words must be a positive integer"
+msgstr ""
+
+#: transactions.admin.inc:158
+msgid "Balancing account must be an integer."
+msgstr ""
+
+#: transactions.admin.inc:162;352 transactions.module:857
+msgid "This must be an integer: @value"
+msgstr ""
+
+#: transactions.admin.inc:168
+msgid "'@period' is not a valid strtotime string"
+msgstr ""
+
+#: transactions.admin.inc:193
+msgid "Currency name"
+msgstr ""
+
+#: transactions.admin.inc:195
+msgid "Use the plural"
+msgstr ""
+
+#: transactions.admin.inc:200
+msgid "If there is more than one currency on the system, this currency will never be seen or used. There is a default currency name, but you can use theme_money and/or the stylesheet, class 'currency-0'"
+msgstr ""
+
+#: transactions.admin.inc:204
+msgid "Edit"
+msgstr ""
+
+#: transactions.admin.inc:214
+msgid "Currency subdivision"
+msgstr ""
+
+#: transactions.admin.inc:217
+msgid "integer"
+msgstr ""
+
+#: transactions.admin.inc:218
+msgid "quarters (of an hour)"
+msgstr ""
+
+#: transactions.admin.inc:219
+msgid "hundredths (two decimal places)"
+msgstr ""
+
+#: transactions.admin.inc:221
+msgid "Many LETS currencies are not divisible, while hours might be divisible into quarters."
+msgstr ""
+
+#: transactions.admin.inc:225 transactions.module:596
+msgid "Balance limits"
+msgstr ""
+
+#: transactions.admin.inc:226
+msgid "Balance limits are calculated AFTER the offset."
+msgstr ""
+
+#: transactions.admin.inc:226
+msgid "Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts"
+msgstr ""
+
+#: transactions.admin.inc:226
+msgid "Those users can also edit individual balance limits on users' account pages"
+msgstr ""
+
+#: transactions.admin.inc:231
+msgid "Maximum Balance"
+msgstr ""
+
+#: transactions.admin.inc:236
+msgid "Transactions will be declined by the system if the payee balance would go above this number. Up to !num digits."
+msgstr ""
+
+#: transactions.admin.inc:237;248
+msgid "Leave blank for no limit (not reccomended)"
+msgstr ""
+
+#: transactions.admin.inc:238
+msgid "Maximum balance must be an integer larger than zero."
+msgstr ""
+
+#: transactions.admin.inc:242
+msgid "Minimum Balance"
+msgstr ""
+
+#: transactions.admin.inc:247
+msgid "The system will prevent transactions if the payer balance would go below this number. Up to !num digits."
+msgstr ""
+
+#: transactions.admin.inc:249;356
+msgid "Minimum balance must not be larger than 0"
+msgstr ""
+
+#: transactions.admin.inc:253
+msgid "Offset all balances by"
+msgstr ""
+
+#: transactions.admin.inc:258
+msgid "Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0. This could give the impression that users are starting with a positive or negative balance. Members start with x units 'free' but also need to restore their balance to x when they leave. Instead of this consider gifting new members fromt the central account, and storing all debt in the central account"
+msgstr ""
+
+#: transactions.admin.inc:262
+msgid "Icon"
+msgstr ""
+
+#: transactions.admin.inc:266
+msgid "Upload icon"
+msgstr ""
+
+#: transactions.admin.inc:268
+msgid "Should be between 12px square and 16px square, preferably with a transparent background"
+msgstr ""
+
+#: transactions.admin.inc:273
+msgid "Comparative value"
+msgstr ""
+
+#: transactions.admin.inc:278
+msgid "If this currency is part of a larger trading network, it will have a value within that network (not yet operational)"
+msgstr ""
+
+#: transactions.admin.inc:282
+msgid "A hex colour value"
+msgstr ""
+
+#: transactions.admin.inc:285
+msgid "6 hex digits"
+msgstr ""
+
+#: transactions.admin.inc:323
+msgid "Traders can earn a reputation when their customers rate them highly. Use this field to list the words used to describe the quality of transactions, from worst to best, one on each line."
+msgstr ""
+
+#: transactions.admin.inc:324
+msgid "Example:<br />-1|Bad<br />0|As expected<br />1|Great!<br />  Leave blank to disable this feature. Note that in automated transactions, 0 will be be used, so 0 should be a neutral value."
+msgstr ""
+
+#: transactions.admin.inc:325
+msgid "Beware that changing the number of rating options after transactions have been entered will distort the averages."
+msgstr ""
+
+#: transactions.admin.inc:326
+msgid "This feature could use a lot more work to integrate into views and stats"
+msgstr ""
+
+#: transactions.admin.inc:336
+msgid "You must have more than one rating, or leave the field blank to disable the rating system"
+msgstr ""
+
+#: transactions.admin.inc:359
+msgid "Maximum balance must be an integer larger than zero and minimum balance"
+msgstr ""
+
+#: transactions.admin.inc:368
+msgid "@function was asked to create a transaction with negative value: @value"
+msgstr ""
+
+#: transactions.admin.inc:499
+msgid "Flushed balance cache"
+msgstr ""
+
+#: transactions.admin.inc:551
+msgid "Carried forward"
+msgstr ""
+
+#: transactions.module:34
+msgid "Defines a contentType called transactions, manages them and does the accounting."
+msgstr ""
+
+#: transactions.module:63;308;312
+msgid "transaction"
+msgstr ""
+
+#: transactions.module:65
+msgid "A movement of a quantity of a currency between two users."
+msgstr ""
+
+#: transactions.module:67
+msgid "Description of entity traded"
+msgstr ""
+
+#: transactions.module:274
+msgid "Start transaction"
+msgstr ""
+
+#: transactions.module:280
+msgid "User Balances"
+msgstr ""
+
+#: transactions.module:287;324
+msgid "@period economy"
+msgstr ""
+
+#: transactions.module:301
+msgid "@user's balances"
+msgstr ""
+
+#: transactions.module:308
+msgid "Start @transaction_type"
+msgstr ""
+
+#: transactions.module:312
+msgid "Start @transaction_type with @name"
+msgstr ""
+
+#: transactions.module:342
+msgid "Editing transaction"
+msgstr ""
+
+#: transactions.module:371
+msgid "Are you sure you want to delete this transaction?"
+msgstr ""
+
+#: transactions.module:374
+msgid "The transation had not been confirmed"
+msgstr ""
+
+#: transactions.module:377
+msgid "This transaction was confirmed, so the balances of both users will be affected"
+msgstr ""
+
+#: transactions.module:485
+msgid "Contact preferences"
+msgstr ""
+
+#: transactions.module:490
+msgid "Receive email notification when someone initiates a transaction with you"
+msgstr ""
+
+#: transactions.module:492;500
+msgid "no"
+msgstr ""
+
+#: transactions.module:492;500
+msgid "yes"
+msgstr ""
+
+#: transactions.module:498
+msgid "Receive email notification when you start a transaction"
+msgstr ""
+
+#: transactions.module:507
+msgid "Personal balance limits (accountant only)"
+msgstr ""
+
+#: transactions.module:508
+msgid "The default values are inherited from the currency."
+msgstr ""
+
+#: transactions.module:519
+msgid "max limit"
+msgstr ""
+
+#: transactions.module:524
+msgid "min limit"
+msgstr ""
+
+#: transactions.module:585 transactions.info:0 views/transactions.views.inc:27
+msgid "Transactions"
+msgstr ""
+
+#: transactions.module:588 views/transactions.views.inc:1160
+msgid "Pending Transactions"
+msgstr ""
+
+#: transactions.module:610
+msgid "Send email to transaction starter."
+msgstr ""
+
+#: transactions.module:618
+msgid "Send email to transaction completer."
+msgstr ""
+
+msgid "Triggers automatically"
+msgstr ""
+
+#: transactions.module:632;653
+msgid "Email template"
+msgstr ""
+
+#: transactions.module:634
+msgid "This email will be sent to members when someone initiates a transaction with them which needs confirming. "
+msgstr ""
+
+#: transactions.module:635;656
+msgid "Don't forget to enable the trigger module and set up the trigger at !url. "
+msgstr ""
+
+#: transactions.module:636;657
+msgid "You can use the following strings as variables:"
+msgstr ""
+
+#: transactions.module:639;660
+msgid "You can use html in your message."
+msgstr ""
+
+#: transactions.module:642;663
+msgid "Use only plain text "
+msgstr ""
+
+#: transactions.module:655
+msgid "This email will be sent to members who initiate a transaction. "
+msgstr ""
+
+#: transactions.module:672;677
+msgid "You can't send an empty email"
+msgstr ""
+
+#: transactions.module:847
+msgid "This must be a number: @value"
+msgstr ""
+
+#: transactions.module:853
+msgid ""
+msgstr ""
+
+#: transactions.module:867
+msgid "Color field must be 6 hex characters"
+msgstr ""
+
+#: transactions.module:895
+msgid "Quantitative fields in database is set to type '@type'"
+msgstr ""
+
+#: transactions.module:920
+msgid "Currency Icon"
+msgstr ""
+
+#: transactions.module:932
+msgid "There are no transaction types declared on the system. Please go to admin/marketplace and name some transaction types"
+msgstr ""
+
+#: transactions.module:233
+msgid "inc"
+msgstr ""
+
+#: transactions.module:233
+msgid "transactions"
+msgstr ""
+
+#: transactions.module:235
+msgid "view all transactions"
+msgstr ""
+
+#: transactions.module:236
+msgid "view all balances"
+msgstr ""
+
+#: transactions.module:237
+msgid "edit all transactions"
+msgstr ""
+
+#: transactions.module:238
+msgid "configure economy"
+msgstr ""
+
+#: transactions.module:241
+msgid "start "
+msgstr ""
+
+#: transactions.module:89 transactions.info:0
+msgid "Complementary Currencies"
+msgstr ""
+
+#: transactions.module:90
+msgid "General complementary currency options"
+msgstr ""
+
+#: transactions.module:98
+msgid "Default Currency"
+msgstr ""
+
+#: transactions.module:99
+msgid "Default currency, transaction ratings and directory settings"
+msgstr ""
+
+#: transactions.module:106
+msgid "Transaction ratings"
+msgstr ""
+
+#: transactions.module:107
+msgid "Transaction satisfaction ratings"
+msgstr ""
+
+#: transactions.module:120
+msgid "Sign this transaction to finalise it"
+msgstr ""
+
+#: transactions.module:130
+msgid "Bureau"
+msgstr ""
+
+#: transactions.module:131
+msgid "All transaction information for this user"
+msgstr ""
+
+#: transactions.module:143
+msgid "Start new transaction"
+msgstr ""
+
+#: transactions.module:144
+msgid "The new transaction form, with nothing pre-filled"
+msgstr ""
+
+#: transactions.module:160
+msgid "Economic analysis"
+msgstr ""
+
+#: transactions.module:161
+msgid "All available metrics"
+msgstr ""
+
+#: transactions.install:21
+msgid "invoice"
+msgstr ""
+
+#: transactions.install:22
+msgid "payment"
+msgstr ""
+
+#: transactions.install:23
+msgid "claim"
+msgstr ""
+
+#: transactions.install:24
+msgid "gift"
+msgstr ""
+
+#: transactions.install:50
+msgid "Transaction module is installed. Set the default currency at !link"
+msgstr ""
+
+#: transactions.install:106;172
+msgid "the node to which this entry is attached"
+msgstr ""
+
+#: transactions.install:111
+msgid "the user id of the payer"
+msgstr ""
+
+#: transactions.install:116
+msgid "the user id of the payee"
+msgstr ""
+
+#: transactions.install:121
+msgid "the uid of the subject of the transaction, the starter"
+msgstr ""
+
+#: transactions.install:126
+msgid "uid of the object of the transaction"
+msgstr ""
+
+#: transactions.install:131
+msgid "the nid of the currency used"
+msgstr ""
+
+#: transactions.install:136
+msgid "the number of units transferred, (@type)"
+msgstr ""
+
+#: transactions.install:141;229
+msgid "The type of transaction, types are provided by modules"
+msgstr ""
+
+#: transactions.install:146
+msgid "the quality of the work done, expressed as a quantity"
+msgstr ""
+
+#: transactions.install:151
+msgid "State of the transaction - completed, pending, disputed, etc"
+msgstr ""
+
+#: transactions.install:156
+msgid "nid of parent transaction"
+msgstr ""
+
+#: transactions.install:169
+msgid "cached balances, turnovers and pending balances, for exposure to views"
+msgstr ""
+
+#: transactions.install:178
+msgid "the currency id, where there is more than one currency"
+msgstr ""
+
+#: transactions.info:0
+msgid "Makes a contentType called transactions and manages the way that users create and view this content."
+msgstr ""
+
+#: views/transactions.views.inc:30
+msgid "Transaction"
+msgstr ""
+
+#: views/transactions.views.inc:31
+msgid "Money flows between users."
+msgstr ""
+
+#: views/transactions.views.inc:41;59;678;703
+msgid "Payer"
+msgstr ""
+
+#: views/transactions.views.inc:43
+msgid "The user id who spent currency in the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:47
+msgid "Show only transactions where the current user paid"
+msgstr ""
+
+#: views/transactions.views.inc:51
+msgid "The user who gave currency in the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:55
+msgid "The user who spent currency in the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:63;82;297;712
+msgid "Payee"
+msgstr ""
+
+#: views/transactions.views.inc:65
+msgid "The user id who received currency in the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:69
+msgid "Show only transactions where the current user was paid"
+msgstr ""
+
+#: views/transactions.views.inc:71
+msgid "User is payee"
+msgstr ""
+
+#: views/transactions.views.inc:74;78
+msgid "The user who received currency in the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:86
+msgid "Starter"
+msgstr ""
+
+#: views/transactions.views.inc:88;122
+msgid "The user id who initiated the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:92
+msgid "Show only transactions started or not started by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:96
+msgid "Show only transactions started by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:100
+msgid "The account id who initiated the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:104
+msgid "starter"
+msgstr ""
+
+#: views/transactions.views.inc:108
+msgid "Completer"
+msgstr ""
+
+#: views/transactions.views.inc:110
+msgid "The account id who completed the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:114
+msgid "Show only transactions completed or not completed by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:118
+msgid "Show only transactions completed by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:126
+msgid "completer"
+msgstr ""
+
+#: views/transactions.views.inc:130;251
+msgid "Rating"
+msgstr ""
+
+#: views/transactions.views.inc:132
+msgid "Quality of the transaction according to the payer"
+msgstr ""
+
+#: views/transactions.views.inc:138;332;766
+msgid "Amount"
+msgstr ""
+
+#: views/transactions.views.inc:140
+msgid "Number of units of currency transferred"
+msgstr ""
+
+#: views/transactions.views.inc:145
+msgid "Transactions above or below a certain value"
+msgstr ""
+
+#: views/transactions.views.inc:150
+msgid "Transaction state"
+msgstr ""
+
+#: views/transactions.views.inc:152;157
+msgid "Whether the transaction is completed or pending"
+msgstr ""
+
+#: views/transactions.views.inc:167;199;774
+msgid "Currency ID"
+msgstr ""
+
+#: views/transactions.views.inc:169
+msgid "The currency that the transaction was conducted in"
+msgstr ""
+
+#: views/transactions.views.inc:174;201;205
+msgid "Currency id"
+msgstr ""
+
+#: views/transactions.views.inc:182
+msgid "User Balance"
+msgstr ""
+
+#: views/transactions.views.inc:183
+msgid "Balances of users."
+msgstr ""
+
+#: views/transactions.views.inc:192
+msgid "User"
+msgstr ""
+
+#: views/transactions.views.inc:194
+msgid "The user id"
+msgstr ""
+
+#: views/transactions.views.inc:211
+msgid "Balance"
+msgstr ""
+
+#: views/transactions.views.inc:213
+msgid "The user's total cleared income minus total cleared expenditure"
+msgstr ""
+
+#: views/transactions.views.inc:219
+msgid "Pending Difference"
+msgstr ""
+
+#: views/transactions.views.inc:221
+msgid "sum of all pending transactions, (@type)"
+msgstr ""
+
+#: views/transactions.views.inc:227
+msgid "Pending Balance"
+msgstr ""
+
+#: views/transactions.views.inc:229
+msgid "balance including pending transactions, (@type)"
+msgstr ""
+
+#: views/transactions.views.inc:235
+msgid "Gross Income"
+msgstr ""
+
+#: views/transactions.views.inc:237
+msgid "The user's total completed income ever"
+msgstr ""
+
+#: views/transactions.views.inc:243
+msgid "Gross Expenditure"
+msgstr ""
+
+#: views/transactions.views.inc:245
+msgid "The user's total completed expenditure ever"
+msgstr ""
+
+#: views/transactions.views.inc:253
+msgid "The user's average rating for this currency"
+msgstr ""
+
+#: views/transactions.views.inc:287;693
+msgid "Date"
+msgstr ""
+
+#: views/transactions.views.inc:484
+msgid "There were no payments in this period"
+msgstr ""
+
+#: views/transactions.views.inc:641
+msgid "Receipts"
+msgstr ""
+
+#: views/transactions.views.inc:643
+msgid "There were no receipts in this period"
+msgstr ""
+
+#: views/transactions.views.inc:899
+msgid "Transaction list"
+msgstr ""
+
+#: views/transactions.views.inc:901
+msgid "There are no transactions in the system yet"
+msgstr ""
+
+#: views/transactions.views.inc:959
+msgid "All transactions"
+msgstr ""
+
+#: views/transactions.views.inc:960
+msgid "all transactions on the system, with optional argument for currency"
+msgstr ""
+
+#: views/transactions.views.inc:1080
+msgid "incomplete transactions, per user"
+msgstr ""
+
+#: views/transactions.views.inc:1161
+msgid "There are no transactions to complete"
+msgstr ""
+
+#: views/transactions.views.inc:1211
+msgid "Transactions for this user to complete"
+msgstr ""
+
+#: views/transactions.views.inc:1275
+msgid "Transactions started by this user"
+msgstr ""
+
+#: balance_history.tpl.php:24
+msgid "Balance over time for @user"
+msgstr ""
+
+#: balance_history.tpl.php:39
+msgid "Steps"
+msgstr ""
+
+#: balance_history.tpl.php:53
+msgid "Sampled"
+msgstr ""
+
+#: balance_history.tpl.php:81
+msgid "Straight"
+msgstr ""
+
+#: balance_history.tpl.php:112
+msgid "Now"
+msgstr ""
+
+#: balance_history.tpl.php:124
+msgid "Error creating balance chart: url to google charts exceeded 2048 charts."
+msgstr ""
+
+#: balances.tpl.php:31
+msgid "Balance"
+msgstr ""
+
+#: balances.tpl.php:37
+msgid "Unconfirmed total"
+msgstr ""
+
+#: balances.tpl.php:43
+msgid "Gross income"
+msgstr ""
+
+#: balances.tpl.php:49
+msgid "Gross expenditure"
+msgstr ""
+
+#: balances.tpl.php:56
+msgid "Average rating"
+msgstr ""
+
+#: pending.tpl.php:11
+msgid "There are no pending transactions"
+msgstr ""
+
+#: pending.tpl.php:14
+msgid "Transactions for !user to sign off"
+msgstr ""
+
+#: pending.tpl.php:21
+msgid "Transactions !user started"
+msgstr ""
+
+#: statement.tpl.php:3
+msgid "There are no completed transactions."
+msgstr ""
+
+#: statement.tpl.php:45
+msgid "Date"
+msgstr ""
+
+#: statement.tpl.php:46
+msgid "Description"
+msgstr ""
+
+#: statement.tpl.php:47
+msgid "With"
+msgstr ""
+
+#: statement.tpl.php:48
+msgid "Amount"
+msgstr ""
+
+#: statement.tpl.php:49
+msgid "Feedback"
+msgstr ""
+
+#: statement.tpl.php:50
+msgid "Income"
+msgstr ""
+
+#: statement.tpl.php:51
+msgid "Expenditure"
+msgstr ""
+
+#: statement.tpl.php:52
+msgid "Running Total"
+msgstr ""
+
+#: transaction.tpl.php:57
+msgid "!starter will give !completer !amount for '!transaction_link'"
+msgstr ""
+
+#: transaction.tpl.php:59
+msgid "!starter will receive !amount from !completer for '!transaction_link'"
+msgstr ""
+
+#: transaction.tpl.php:63
+msgid "On @submitted, !payer gave !payee !amount for '!transaction_link'"
+msgstr ""
+
+#: transaction.tpl.php:66
+msgid "On @submitted, !payer did not give !payee !amount for '!transaction_link'. (DELETED)'"
+msgstr ""
+
+msgid "Please type a username (or user ID)"
+msgstr ""
