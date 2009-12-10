@@ -197,7 +197,7 @@ function default_currency_config() {
     '#weight' =>-10,
     '#size' => 10,
   );
-  $form['#prefix'] = t("If there is more than one currency on the system, this currency will never be seen or used. There is a default currency name, but you can use theme_money and/or the stylesheet, class 'currency-0'");
+  $form['#prefix'] = t("This default currency is made obselete if the cc_currencies module is installed.");
   $form['#validate'][] = 'currency_validate';// this must go before default_currency_config_validate
   $form['submit']=array (
     '#type' => 'submit',
@@ -223,7 +223,9 @@ function currency_form_fields($currency) {
   $form['balance_limits'] = array(
     '#type' => 'fieldset',
     '#title' => t('Balance limits'),
-    '#description' => t("Balance limits are calculated AFTER the offset.") . t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") . t("Those users can also edit individual balance limits on users' account pages"),
+    '#description' => t("Balance limits are calculated AFTER the offset.") .' ' .
+      t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") .' ' .
+      t("Those users can also edit individual balance limits on users' account pages"),
     '#weight' => 5,
   );
   $form['balance_limits']['max_balance'] = array(
@@ -245,8 +247,8 @@ function currency_form_fields($currency) {
     '#maxlength' => 6,
     '#weight' => 1,
     '#description' => t("The system will prevent transactions if the payer balance would go below this number. Up to !num digits.", array('!num'=>7)) . 
-    t("Leave blank for no limit (not reccomended)") . ' ' . 
-    t('Minimum balance must not be larger than 0'),
+      t("Leave blank for no limit (not reccomended)") . ' ' . 
+      t('Minimum balance must not be larger than 0'),
   );
     $form['balance_limits']['zero_offset'] = array(
     '#type' => 'textfield',
@@ -255,13 +257,17 @@ function currency_form_fields($currency) {
     '#size' => 4,
     '#maxlength' => 6,
     '#weight' => 2,
-    '#description' => t("Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0. This could give the impression that users are starting with a positive or negative balance. Members start with x units 'free' but also need to restore their balance to x when they leave. Instead of this consider gifting new members fromt the central account, and storing all debt in the central account"),
+    '#description' => t("Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0.") .' ' .
+      t("This gives the impression that users are starting with a positive or negative balance.") .' ' .
+      t("Members start with x units 'free' but also need to restore their balance to x when they leave.") .' ' .
+      t("Instead of this trick, consider gifting new members from the central account, and recouping the debt through taxes"),
   );
-  $form['upload'] = array (
+  $form['visual'] = array (
     '#type' => 'fieldset',
-    '#title' => t('Icon'),
+    '#title' => t('Visuals'),
+    '#description' => t("Displays of money can be further tweaked by overriding theme_money and/or with css class 'currency-0'"),
   );
-  $form['upload']['icon_upload'] = array(
+  $form['visual']['icon_upload'] = array(
     '#type' => 'file',
     '#title' => t('Upload icon'),// array('!icon' => theme('1', $currency))),
     '#prefix' => '<img src="' . url($currency->icon) . '" />',
@@ -277,7 +283,7 @@ function currency_form_fields($currency) {
     '#weight' => 10,
     '#description' => t("If this currency is part of a larger trading network, it will have a value within that network (not yet operational)")
   );
-  $form['color'] = array (
+  $form['visual']['color'] = array (
     '#type' => 'textfield',
     '#title' => t('A hex colour value'),
     '#default_value' => $currency->color,
@@ -396,7 +402,6 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     $node->completer_uid = $node->payee_uid;
   }
   node_save($node);
-  drupal_set_message('transaction node generated');
   return $node;
 }
 

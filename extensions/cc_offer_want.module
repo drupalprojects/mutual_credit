@@ -263,7 +263,7 @@ function cc_offer_want_theme($existing, $type, $theme, $path){
 function type_categories_count($nodetype, $link_prefix){
 //TODO need to filter this function by the appropriate vocab
   $result = db_query("
-    SELECT d.tid, d.name, COUNT(*) AS count 
+    SELECT d.tid, d.name, d.description, COUNT(*) AS count 
     FROM {term_data} d 
     INNER JOIN {term_node} USING (tid) 
     INNER JOIN {node} n USING (nid)
@@ -274,7 +274,11 @@ function type_categories_count($nodetype, $link_prefix){
     ", $nodetype);
   $items = array();
   while ($category = db_fetch_object($result)) {
-    $items[] = l($category->name .' ('. $category->count .')', $link_prefix.'/'. $category->tid);
+    $items[] = l(
+      $category->name .' ('. $category->count .')', 
+      $link_prefix.'/'. $category->tid,
+      array('attributes' => array('title' => $category->description))
+    );
   }
   //TODO add theme function theme_add_directory_entry which provides link to node/add/offer or want
   return theme('item_list', $items) . theme('offers_wants_link', $nodetype);
@@ -294,6 +298,7 @@ function cc_offer_want_link($type, $node) {
     $links[$term->name . 'offers'] = array(
       'title' => t('@categoryname @types', array('@categoryname'=> $term->name, '@type' => $node->type)),
       'href' => 'directory/recent_' . $node->type . 's/'.$term->tid,
+      'attributes' => array('title' => $term->description),
     );
   }
   $owner = user_load($node->uid);
@@ -305,6 +310,7 @@ function cc_offer_want_link($type, $node) {
     'title' => t("@person's directory", array('@person'=> $owner->name)),
     'href' => 'user/'.$node->uid.'/directory',
   );
+  print_r($links);
   return $links;
 }
 

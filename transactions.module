@@ -139,19 +139,17 @@ function transactions_menu() {
     'file' => 'transactions.inc',
   );
   
-  if (user_roles(FALSE, "ing_")) {
-    $items['transaction/add'] = array(
-      'title' => 'Start new transaction',
-      'description' => 'The new transaction form, with nothing pre-filled',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('transaction_start_form'),
-      'access callback' => 'transactions_access',
-      'access arguments' => array('create'),
-      'type' => MENU_NORMAL_ITEM,
-      'weight' => 20,
-      'file' => 'transactions.inc',
-    );
-  }
+  $items['transaction/add'] = array(
+    'title' => 'Start new transaction',
+    'description' => 'The new transaction form, with nothing pre-filled',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_start_form'),
+    'access callback' => 'transactions_access',
+    'access arguments' => array('create'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 20,
+    'file' => 'transactions.inc',
+  );
   //we're providing tabs for each stat period, but we should also provide another level of tabs for each currency
   //this setup only works for the default, or first currency
   $periods = variable_get('cc_stats_periods', array("1 month", "1 year"));
@@ -218,7 +216,7 @@ function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
     case 'delete':
       return $uid == $transaction->starter_uid && $transaction->state == TRANSACTION_STATE_PENDING;
     case 'bureau': 
-      return $GLOBALS['user']->uid == $uid || user_access('view all balances');
+      return user_access('use local currency', $account) && ($user->uid == $uid || user_access('view all balances'));
     default:
       drupal_set_message('transaction_access given unknown op: '. $op);
   }
@@ -348,6 +346,7 @@ function transactions_form(&$node, $form_state) {
 function transactions_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'transaction_node_form':
+      $form['#theme'] = 'transaction_start_form';
     case 'transaction_start_form':
       $form['comment_settings']['#type'] = 'value';
       $form['options']['#access'] = FALSE;
@@ -463,22 +462,24 @@ function transactions_view($node, $teaser = FALSE, $page = FALSE) {
 function transactions_user($op, &$edit, &$account, $category = NULL) {
   if ($op == 'categories')return;//because $account = NULL which causes an error
   //load all the currencies this user has access to
-  else $currencies = currencies_load(array('uids' => array($account->uid)));
+  $currencies = currencies_load(array('uids' => array($account->uid)));
   switch ($op) {
     case 'load':
-      //put the user stats into the user object, where the theming layer can see them
-      $result = db_query("SELECT * FROM {cc_balance_cache} WHERE uid = %d",
-        array(':uid' => $account->uid)
-      );
-      while($balance = db_fetch_array($result)) {
-        $cid = $balance['cid'];
-        $account->balances[$cid] = $balance;
-      }
-      foreach ($currencies as $currency) {
-        $cid = $currency->cid;
-        //and load up the user's personalised balance limits for each currency, defaulting to the currency limits
-        if (!isset($account->balances[$cid]['min'])) $account->balances[$cid]['min'] = $currencies[$cid]->min_balance;
-        if (!isset($account->balances[$cid]['max'])) $account->balances[$cid]['max'] = $currencies[$cid]->max_balance;
+      if (user_access('use local currency', $account)) {
+        //put the user stats into the user object, where the theming layer can see them
+        $result = db_query("SELECT * FROM {cc_balance_cache} WHERE uid = %d",
+          array(':uid' => $account->uid)
+        );
+        while($balance = db_fetch_array($result)) {
+          $cid = $balance['cid'];
+          $account->balances[$cid] = $balance;
+        }
+        foreach ($currencies as $currency) {
+          $cid = $currency->cid;
+          //and load up the user's personalised balance limits for each currency, defaulting to the currency limits
+          if (!isset($account->balances[$cid]['min'])) $account->balances[$cid]['min'] = $currencies[$cid]->min_balance;
+          if (!isset($account->balances[$cid]['max'])) $account->balances[$cid]['max'] = $currencies[$cid]->max_balance;
+        }
       }
       break;
     case 'form':
@@ -582,23 +583,25 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       }*/
       
     case 'view':// put all the pending transactions on the user's front page, where they can be seen by the other participants in them
-      module_load_include('inc', 'transactions');
-      $account->content['mutual_credit'] = array(
-        '#type' => user_profile_category,
-        '#title' => t('Transactions'),
-        'pending' => array(
-          '#type' => user_profile_item,
-          '#title' => t('Pending Transactions'), 
-          '#value' => transactions_pending($account->uid),
-          '#weight' => 5,
-        )
-      );
-      foreach ($account->balances as $currency) {
-        $account->content['mutual_credit']['limits'][$currency->cid] = array(
-          '#type' => user_profile_item,
-          '#title' => t('Balance limits'),  
-          '#value' => theme('balance_limits', $account, $cid)
+      if (isset($account->balances) && user_access('view all balances')) {
+        module_load_include('inc', 'transactions');
+        $account->content['mutual_credit'] = array(
+          '#type' => user_profile_category,
+          '#title' => t('Transactions'),
+          'pending' => array(
+            '#type' => user_profile_item,
+            '#title' => t('Pending Transactions'), 
+            '#value' => transactions_pending($account->uid),
+            '#weight' => 5,
+          )
         );
+        foreach ($account->balances as $currency) {
+          $account->content['mutual_credit']['limits'][$currency->cid] = array(
+            '#type' => user_profile_item,
+            '#title' => t('Balance limits'),  
+            '#value' => theme('balance_limits', $account, $cid)
+          );
+        }
       }
   }
 }
@@ -610,7 +613,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
 function transactions_action_info() {
   module_load_include('inc', 'transactions');
   $actions['transactions_email_completer_action'] = array(
-    'description' => t('Send email to transaction starter.') .' '. t('Triggers automatically'),
+    'description' => t('Send email to transaction completer.') .' '. t('Triggers automatically'),
     'type' => 'node',
     'configurable' => TRUE,
     'hooks' => array(
@@ -618,7 +621,7 @@ function transactions_action_info() {
     )
   );
   $actions['transactions_email_starter_action'] = array(
-    'description' => t('Send email to transaction completer.') .' '. t('Triggers automatically'),
+    'description' => t('Send email to transaction starter.') .' '. t('Triggers automatically'),
     'type' => 'node',
     'configurable' => TRUE,
     'hooks' => array(
@@ -629,17 +632,27 @@ function transactions_action_info() {
 }
 
 function transactions_email_completer_action_form($context) {
-  return transaction_email_form_template();
+  return transaction_email_form_template($context);
 }
 function transactions_email_starter_action_form($context) {
-  return transaction_email_form_template();
+  return transaction_email_form_template($context);
 }
-function transaction_email_form_template(){
+function transaction_email_form_template($context){
+  $template = $context['template'] ? $context['template'] : t('');
   $vars = _transaction_email_replacements();
+  $form['subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Message subject'),
+    '#default_value' => $context['subject'] ? $context['subject'] : t('Transaction notification'),
+  );
   $form['message'] = array(
     '#type' => 'textarea',
     '#title' => t('Email template'),
-    '#default_value' => $context['template'],
+    '#default_value' => $context['template'] ? $context['template'] : t('This is an automated notification.') ."\n\n".
+      t('%starter has started a transaction with %completer') ."\n\n".
+      t('The transaction was for: %reason') .' '.
+      t('You can confirm the transaction from your profile page: %profile_url') ."\n\n".
+      t("You can change your mail notification settings by clicking 'edit' on your profile"),
     '#description' => t("This email will be sent to members when someone initiates a transaction with them which needs confirming. ") . 
     t("Don't forget to enable the trigger module and set up the trigger at !url. ", array('!url' => l('admin/build/trigger', 'admin/build/trigger'))) .
     t("You can use the following strings as variables:")
@@ -657,20 +670,30 @@ function transaction_email_form_template(){
 }
 
 function transactions_email_completer_action_validate($form, &$form_state) {
+  transactions_email_action_validate($form_state);
+}
+function transactions_email_starter_action_validate($form, &$form_state) {
+  transactions_email_action_validate($form_state);
+}
+function transactions_email_action_validate($form_state) {
   if (!strlen ($form_state['values']['message'])) {
     form_set_error('message', t("You can't send an empty email"));
   }
-}
-function transactions_email_starter_action_validate($form, &$form_state) {
-  if (!strlen ($form_state['values']['message'])) {
-    form_set_error('message', t("You can't send an empty email"));
+  if (!strlen ($form_state['values']['subject'])) {
+    form_set_error('subject', t("Your mail must have a subject"));
   }
 }
 function transactions_email_completer_action_submit($form, &$form_state) {
-  return array('template' => $form_state['values']['message']);
+  return array(
+    'template' => $form_state['values']['message'],
+    'subject' => $form_state['values']['subject']
+  );
 }
 function transactions_email_starter_action_submit($form, &$form_state) {
-  return array('template' => $form_state['values']['message']);
+  return array(
+    'template' => $form_state['values']['message'],
+    'subject' => $form_state['values']['subject']
+  );
 }
 
 /** 
@@ -773,7 +796,14 @@ function transactions_theme($existing, $type, $theme, $path) {
         'account' => NULL,
         'cid' => 0,
       )
-    )
+    ),
+    'transaction_start_form' => array(
+      'template' => 'transaction-start-form',
+      'path' => $templates_dir,
+      'arguments' => array(
+        'form' => NULL,
+      ),
+    ),
   );
 }
 
@@ -799,7 +829,31 @@ function phptemplate_views_view_field__gross_income($view, $field, $row) {
 function phptemplate_views_view_field__gross_expenditure($view, $field, $row) {
   return theme('money', $row->cc_balance_cache_gross_expenditure, $row->cc_transactions_cid);
 }
-
+function template_preprocess_transaction_start_form(&$vars) {
+  $vars['mode'] = $vars['form']['#mode'];
+  $vars['selector_set'] = $vars['form']['#selector_set'];
+  $optional_fields = array(
+    'payer_uid', 
+    'payee_uid', 
+    'starter_uid', 
+    'completer_uid', 
+    'transaction_type', 
+    'title', 
+    'quantity',
+    'division',
+    'previous',
+    'state'
+  );
+  foreach ($optional_fields as $field) {
+    if ($vars['form'][$field]['#type'] != 'hidden') {
+      $vars[$field]  = drupal_render($vars['form'][$field]);
+    }
+  }
+  $vars['next'] =drupal_render($vars['form']['next']);
+  $vars['hidden_fields'] = drupal_render($vars['form']);
+  $vars['summary'] = $vars['form']['#summary'];
+  //print_r($vars);
+}
 
 //returns the specified, first, or default currency object
 function currency_load($cid=NULL) {

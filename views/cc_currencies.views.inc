@@ -203,7 +203,8 @@ $handler->override_option('access', array(
   'type' => 'none',
 ));
 $handler->override_option('title', t('Public & private currencies'));
-$handler->override_option('footer', '<?php   if (user_access(\'create global currencies\') || user_access(\'create meme currencies\'))
+$handler->override_option('footer', '<?php //enable php module or delete this view footer
+   if (user_access(\'create global currencies\') || user_access(\'create meme currencies\'))
    print l(\'Declare a new currency\', \'node/add/currency\'); ?>');
 $handler->override_option('footer_format', '1');
 $handler->override_option('footer_empty', 0);

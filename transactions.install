@@ -48,7 +48,7 @@ function transactions_install() {
     )
   );
   drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
-    array('!link'=>l('admin/marketplace', 'admin/marketplace', array('attributes'=>array('target'=> '_blank')))))
+    array('!link'=>l('admin/marketplace/currency', 'admin/marketplace/currency', array('attributes'=>array('target'=> '_blank')))))
   );
   //create a row in the balance_cache table for each existing user
   //could this be condensed into one query?
@@ -313,9 +313,11 @@ function transactions_update_6009($ret = array()) {
 }
 function transactions_update_6010($ret = array()) {
   $table=drupal_get_schema('cc_balance_cache');
+  $type = $table['fields']['balance']['type'];
+  drupal_set_message("Renaming $type field 'cc_balance_cache.balance' to 'cleared_balance'");
   $ret[] = db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
     'description' => "sum of all this user's completed transactions",
-    'type' => $table['fields']['balance']['type'],
+    'type' => $type,
     'size' => 'normal',
     'not null' => TRUE,
     )
@@ -349,7 +351,8 @@ function transactions_update_6011($ret=array()) {
     while ($aid = db_result($result)) {
       db_query("DELETE from {trigger_assignments} WHERE aid = %d", $aid);
     }
-    drupal_set_message('Triggers relating to the transaction engine have been unset as those actions now fire automatically');
+    drupal_set_message('Triggers relating to the transaction engine now fire automatically.') .
+     t('Please visit admin/build/trigger and check the transaction notification actions are not assigned');
   }
   return $ret;
 }
@@ -358,7 +361,8 @@ function transactions_update_6012($ret=array()) {
   while ($role = db_fetch_array($results)) {
     $perm = str_replace(array('start incoming_confirm, ', 'start outgoing_confirm, ', 'start incoming_direct, ', 'start outgoing_direct, '), '', $role['perm']);
     if ($perm != $role['perm']) {
-      $ret = update_sql("UPDATE {permission} SET perm = '".$perm . ", use local currency' WHERE rid = ".$role['rid']);
+      $ret[] = update_sql("UPDATE {permission} SET perm = '".$perm . ", use local currency' WHERE rid = ".$role['rid']);
     }
   }
+  return $ret;
 }

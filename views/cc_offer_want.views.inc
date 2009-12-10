@@ -315,7 +315,7 @@ function cc_directory_user_view($php_filter){
   }
   //Keep this at the end of this display
   if ($php_filter) {
-    $footer = "<?php ";
+    $footer = "<?php //enable php module or delete this view footer";
     if ($preset == 'both' || $preset == 'offer') {
       $footer .= "print theme('offers_wants_link', 'offer')";
     }
@@ -519,7 +519,8 @@ function cc_directory_recent_view($php_filter) {
   
   //Keep this at the end of this display
   if ($php_filter) {
-    $handler->override_option('footer', "<?php print theme('offers_wants_link', 'offer') . theme('offers_wants_link', 'want'); ?>");
+    $handler->override_option('footer', "<?php //enable php module or delete this view footer
+    print theme('offers_wants_link', 'offer') . theme('offers_wants_link', 'want'); ?>");
     $handler->override_option('footer_format', $php_filter);
   }
 
@@ -845,7 +846,8 @@ function cc_directory_recent_offers_view($php_filter) {
   
   //Keep this at the end of this display
   if ($php_filter) {
-    $handler->override_option('footer', "<?php print theme('offers_wants_link', 'offer'); ?>");
+    $handler->override_option('footer', "<?php //enable php module or delete this view footer
+    print theme('offers_wants_link', 'offer'); ?>");
     $handler->override_option('footer_format', $php_filter);
   }
 
@@ -1122,7 +1124,8 @@ function cc_directory_recent_wants_view($php_filter){
   
   //Keep this at the end of this display
   if ($php_filter) {
-    $handler->override_option('footer', "<?php print theme('offers_wants_link', 'want'); ?>");
+    $handler->override_option('footer', "<?php //enable php module or delete this view footer
+     print theme('offers_wants_link', 'want'); ?>");
     $handler->override_option('footer_format', $php_filter);
   }
   $handler = $view->new_display('page', 'Latest wants page', 'page_1');

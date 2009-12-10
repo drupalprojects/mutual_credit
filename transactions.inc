@@ -134,50 +134,37 @@ function show_stats($timestring, $theme = 'page', $cid=0) {
 //$mode = init, summary, or edit(default)
 function transaction_base_form($transaction, $mode = 'edit') {
   global $user;
+  $form = array();
+  $accounts = _get_all_trading_accounts();
   //just check, if we are here without using a button, that user can edit the form
-  if ($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) {
+  if (($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) || !$accounts) {
     drupal_access_denied();
   }
-  $form = array();
   if ($mode == 'edit' && user_access('edit all transactions')) {
     $mode = 'fulledit';
-    $form['#prefix'] = t('Full Edit mode. Beware not to enter contradictory information') .' '.
-    t('The starter and the completer must be the same two users as the payer and the payee.');
   }
-  $accounts = _get_all_trading_accounts();
-  if (!$accounts) return;
-  
+  $form['#mode'] = $mode;
+
   $allowed_transactions = _named_transaction_types();
   $ttype = $transaction->transaction_type or $ttype = "";
   //this is only for if we use the dropdown, not the autocomplete
   $default_currency= variable_get('cc_default_currency', array());
   $payer = $transaction->payer_uid or $payer = '';
   $payee = $transaction->payee_uid or $payee = '';
-  $starter = $transaction->starter_uid or $starter = $user->uid;
+  $starter = $transaction->starter_uid or $starter = '';
   $completer = $transaction->completer_uid or $completer = '';
   
   $form['title'] = array(
     '#type' => 'textfield',
-    '#title' => t('What is being paid for?'),
+    //'#title' => t('What is being paid for?'),
     '#required' => TRUE, 
     '#default_value' => $transaction->title,
     '#weight' => -3,
-    '#description' => t('What goods or services were exchanged? '),
+    //'#description' => t('What goods or services were exchanged? '),
   );
   if (variable_get('cc_description_min_words', 3) > 1) {
     $form['title']['#description'] .= '('. t('Minimum @num words', array('@num' => $min_words)) .')';
   }
-  if ($mode == 'summary') $form['title']['#type'] = 'hidden';
-  
-  //set up the default, or hidden values of each trader select field
-  $form['payee_uid'] = array(
-    '#type' => 'hidden',
-    '#default_value' => $payee,
-  );
-  $form['payer_uid'] = array(
-    '#type' => 'hidden',
-    '#default_value' => $payer,
-  );
   $form['starter_uid'] = array(
     '#type' => 'hidden',
     '#value' => $starter,
@@ -186,27 +173,40 @@ function transaction_base_form($transaction, $mode = 'edit') {
     '#type' => 'hidden',
     '#default_value' => $completer,
   );
+  $form['payee_uid'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $payee,
+  );
+  $form['payer_uid'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $payer,
+  );
   //the selector_set is whether we are using starter/completer or payee/payer
   //if we know only one of the payer and payee, we show that set, otherwise show the other set
-  if ($mode == 'fulledit')$selector_set = 'both';
-  elseif ((bool)$payer != (bool)$payee) $selector_set = 'payer_payee';
-  else $selector_set = 'starter_completer';
-  
-  if (($selector_set == 'payer_payee' || $selector_set == 'both' )) {
-    if (!$payee|| $selector_set == 'both' ) {
+  if ($mode == 'fulledit') {
+    $form['#selector_set'] = 'both';
+  }
+  elseif ((bool)$payer != (bool)$payee)  {
+    $form['#selector_set'] = 'payer_payee';
+  }
+  else {
+   $form['#selector_set'] = 'starter_completer'; 
+  }
+  if (($form['#selector_set'] == 'payer_payee' || $form['#selector_set'] == 'both' )) {
+    if (!$payee || $form['#selector_set'] == 'both' ) {
       $form['payee_uid']=array(
         '#type' => 'select',
-        '#title' => t('Who is being paid?'),
+        //'#title' => t('Who is being paid?'),
         '#default_value' => $payee,
         '#weight' => -4,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
         '#required' => TRUE
       );
     }
-    if (!$payer|| $selector_set == 'both' ) {
+    if (!$payer|| $form['#selector_set'] == 'both' ) {
       $form['payer_uid'] = array(
         '#type' => 'select',
-        '#title' => t('Who is paying?'),
+        //'#title' => t('Who is paying?'),
         '#default_value' => $payer,
         '#weight' => -5,
         '#required' => TRUE,
@@ -214,13 +214,13 @@ function transaction_base_form($transaction, $mode = 'edit') {
       );
     }
   }
-  if (($selector_set == 'starter_completer' || $selector_set == 'both' )) {
+  if (($form['#selector_set'] == 'starter_completer' || $form['#selector_set'] == 'both' )) {
     if (!$starter || $mode =='fulledit' || (user_access('edit all transactions') && $mode != 'summary')) {
     //special users can pretend the transaction was started by someone else
       $form['starter_uid']=array(
         '#autocomplete_path' => 'user/autocomplete',
         '#type' => 'select',
-        '#title' => t('Initiator, (if not you)'),
+        //'#title' => t('Initiator, (if not you)'),
         '#default_value' => $starter,
         '#weight' => -5,
         '#required' => TRUE,
@@ -234,19 +234,18 @@ function transaction_base_form($transaction, $mode = 'edit') {
       }
       $form['completer_uid']=array(
         '#type' => 'select',
-        '#title' => t('With whom did you transact?'),
+        //'#title' => t('With whom did you transact?'),
         '#default_value' => $completer,
         '#weight' => -3,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
         '#required' => TRUE
       );
     }
-    
     if (count($allowed_transactions) > 1 && ($mode == 'fulledit' || $ttype == '' )) {
       //$allowed_transactions=array(0=>t('(Please choose...)'))+$allowed_transactions;
       $form['transaction_type'] = array(
         '#type' => 'select',
-        '#title' => t('Transaction type'),
+        //'#title' => t('Transaction type'),
         '#default_value' => $ttype,
         '#weight' => -5,
         '#options' => $allowed_transactions, 
@@ -262,7 +261,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
       );
     }
   }
-  
   if (user_access('edit all transactions')) {
     foreach (array_keys($allowed_transactions) as $type) {
       if (substr($type, -7) == 'confirm') {
@@ -285,7 +283,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
   
   $form['quantity'] = array(
     '#type' => 'textfield',
-    '#title' => t('Quantity'),
+    //'#title' => t('Quantity'),
     '#weight' => -1,
     '#default_value' => intval($transaction->quantity),
     '#field_suffix' => $default_currency->title,
@@ -293,30 +291,27 @@ function transaction_base_form($transaction, $mode = 'edit') {
     '#maxlength' => 7,
     '#required' => TRUE,
   );
-  if ($mode == 'summary') $form['quantity']['#type'] = 'hidden';
   
  //this is begging to be ajax because we don't know what the division is until we know the currency
   if ($default_currency->division == 'quarters'  && !module_exists('cc_currencies')) {
     $form['division'] = array(
       '#type' => 'select',
-      '#title' => t('Quarters'),
+      //'#title' => t('Quarters'),
       '#weight' => $form['quantity']['#weight']+1,
       '#default_value' => 100*($transaction->quantity - intval($transaction->quantity)),
-      '#options' => array('0' => '00 hours', '25' => '15 minutes', '50' => '30 minutes', '75' => '45 minutes'),
+      '#options' => array(
+        '0' => t('00 hours'), 
+        '25' => t('15 minutes'), 
+        '50' => t('30 minutes'), 
+        '75' => t('45 minutes')
+      ),
     );
 
     //these affect the quantity field:
     unset($form['quantity']['#field_suffix']);
-    unset($form['quantity']['#required']);
-    if ($mode == 'summary') $form['division']['#type'] = 'hidden';
+    $form['quantity']['#required'] == FALSE;
   }
   
-  if ($mode == 'summary') {
-    $form['description'] = array(
-      '#value' => theme('transaction', $transaction, TRUE, FALSE),
-      '#weight' => -10,
-    ); 
-  }
   //the payer has to grade the transaction
   $options=variable_get('cc_transaction_qualities', array());
   if (count($options) && (($mode != 'init' && $user->uid == $payer) || $mode == 'fulledit')) {
@@ -346,6 +341,11 @@ function transaction_base_form($transaction, $mode = 'edit') {
       }
     }
   }
+  if ($mode == 'summary') {
+    foreach (array('title', 'quantity', 'division') as $field) {
+      $form[$field]['#type'] = 'hidden';
+    }
+  }
   return $form;
 }
 
@@ -354,7 +354,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
  * I needed a multistep alternative to node/add/transaction form, which creates the transaction using the transactions api, not via Drual
  * Sorry to say it, but Drupal nodes just weren't flexible enough
  */
-function transaction_start_form($form_state, $transaction=NULL, $presets = 'editable') {
+function transaction_start_form($form_state, $transaction = NULL, $presets = 'editable') {
   //this is a nasty hack because I didn't realise until very late that set step to 1 here breaks every other form on the same page
   //on form submission every form on the page is built using the post, I think
   //TODO: Redesign this, using a a two stage form NOT a multistep form
@@ -399,6 +399,7 @@ function transaction_start_form($form_state, $transaction=NULL, $presets = 'edit
     case 2:
       drupal_set_title(t('Do you want to start this transaction?'));
       $form=transaction_base_form($transaction, 'summary');
+      $form['#summary'] = theme('transaction', $transaction, TRUE, FALSE);
       $form['previous'] = array(
         '#type' => 'submit',
         '#value' => t('Go back'),
@@ -535,23 +536,6 @@ function validate_quantity($element, $form_state) {
 /*
  * email notification
 */
-function transactions_email_completer_action($node, $context = array()) {
-  if ($node->type != 'transaction') return;
-  //load the user and continue only if the completer wants notification
-  $recipient = user_load($node->completer_uid);
-  if ($recipient->completer_notification == FALSE) return;
-  drupal_mail(
-    'transactions',
-    'transaction_completer',
-    $recipient->mail,
-    user_preferred_language($recipient),
-    array(
-      'transaction' => $node, 
-      'template' => $context['template'],
-    )
-  );
-  drupal_set_message(t('!user has been notified by email.', array('!user' => theme('username', $recipient))));
-}
 function transactions_email_starter_action($node, $context = array()) {
   if ($node->type != 'transaction') return;
   //load the user and continue only if the completer wants notification
@@ -569,31 +553,48 @@ function transactions_email_starter_action($node, $context = array()) {
   );
   drupal_set_message(t('!user has been notified by email.', array('!user' => theme('username', $recipient))));
 }
+function transactions_email_completer_action($node, $context = array()) {
+  if ($node->type != 'transaction') return;
+  //load the user and continue only if the completer wants notification
+  $recipient = user_load($node->completer_uid);
+  if ($recipient->completer_notification == FALSE) return;
+  drupal_mail(
+    'transactions',
+    'transaction_completer',
+    $recipient->mail,
+    user_preferred_language($recipient),
+    array( //this is the $params in transactions_mail
+      'transaction' => $node, 
+      'template' => $context['template'],
+    )
+  );
+  drupal_set_message(t('!user has been notified by email.', array('!user' => theme('username', $recipient))));
+}
 
 //generates an email message telling the user that that they have a pending transaction to complete
 //params needs to be array($transaction)
 //TODO make this mime_mail aware
 function transactions_mail($key, &$message, $params) {
+  $starter = user_load($params['transaction']->starter_uid);
+  $completer = user_load($params['transaction']->completer_uid);
   switch ($key) {
     case 'transaction_starter':
-      $message['subject'] = t('You have started a transaction');
+      $recipient = $starter;
       break;
     case 'transaction_completer':
-      $message['subject'] = t('You have a transaction to confirm');
+      $recipient = $completer;
+      break;
   }
-  $starter = user_load($transaction->starter_uid);
-  $completer = user_load($transaction->completer_uid);
-  $transaction = $params['transaction'];
-  $message_template = $params['template'];
   $variables = array(
     '%completer' => $completer->name,
     '%starter' => $starter->name,
-    '%summary' => strip_tags(theme('transaction', $transaction, TRUE, FALSE)),
-    '%reason' => $transaction->title,
+    '%summary' => strip_tags(theme('transaction', $params['transaction'], TRUE, FALSE)),
+    '%reason' => $params['transaction']->title,
     '%profile_url' =>  url('user/'. $recipient->uid, array('absolute' => TRUE)),
     '%pending_url' => url('user/'. $recipient->uid .'/pending', array('absolute' => TRUE)),
     '%bureau_url' => url('user/'. $recipient->uid .'/bureau', array('absolute' => TRUE)),
-    '%unsubscribe_url' => url('user/'. $recipient->uid .'/edit/account', array('fragment' => 'notifications', 'absolute' => TRUE)),
+    '%unsubscribe_url' => url('user/'. $recipient->uid .'/edit/account', array('fragment' => 'notifications', 'absolute' => TRUE)
+  ),
   
   //the following tokens require mime_mail to be installed
   //'%statement' => l(t('statement'), 'user/' . $recipient->uid . '/statement', array('absolute' =>TRUE)),
@@ -603,7 +604,8 @@ function transactions_mail($key, &$message, $params) {
   //TODO make the below work. Currently, $transaction is being passed without the nid because it is only just created
   //'%transaction' => l(t('transaction'), 'node/' . $transaction->nid . '/edit', array('absolute' =>TRUE)),
   );
-  $message['body'][] = strtr($message_template, $variables);
+  $message['body'][] = strtr($params['template'], $variables);
+  $message['subject'] = $params['subject'];
 }
 
 

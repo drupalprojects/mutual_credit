@@ -73,11 +73,11 @@ if ($teaser) { // this is a one liner
   <p><?php print $payer; ?>
    <?php if ($state == TRANSACTION_STATE_PENDING) print ' will pay '; else print ' paid '; ?> 
    <?php print $payee; ?><br />
-   the sum of <span style="font-size:250%"> <?php print $quantity . '<span style="line-height:115%"> ' . $currency->title; ?></span></p>
+   the sum of <span style="font-size:250%"> <?php print $amount . '<span style="line-height:115%"> ' . $currency->title; ?></span></p>
   <p>"<strong><?php print $description; ?></strong>"
    <?php if ($state == TRANSACTION_STATE_PENDING) print 'to be exchanged '; else print 'was exchanged '; ?><?php
     if ($rating) {
-      print ", and $payer rated the transaction as '$rating'";
+      print ", and $payer rated the transaction as '$rating'<br />";
     }
 }?>
 <?php print $actions; ?>

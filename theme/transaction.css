@@ -7,37 +7,38 @@ span.currency img{
 input.form-autocomplete,
 .form-text#edit-completer-uid,
 #edit-starter-uid.form-text
-#transaction-start-form .form-text,
-#transaction-start-form-1 .form-text{
+#transaction-start-form .form-text{
   width:12em;
 }
+
 #transaction-start-form .form-item,
-#transaction-start-form-1 .form-item,
-#edit-state-wrapper, 
-#edit-state-wrapper-1{
-  display:block;
-  clear:both;
+#edit-state-wrapper{
+  margin: 0 0 1em 0;
 }
 
-#edit-quantity-1-wrapper,
 #edit-quantity-wrapper,
-#edit-division-1-wrapper,
-#edit-division-wrapper,
-#edit-cid-1-wrapper,
-#edit-cid-wrapper,{
+#edit-cid-wrapper{
   float:left;
-  margin-right:1.5em;
   clear:none;
 }
 
-input.form-submit{
-  margin-top:2.5em;
+#edit-division-1{
+  width:8em;
 }
+#transaction-start-form table,
+#transaction-start-form table tr,
+#transaction-start-form table tbody td,
+#transaction-start-form table tbody th{
+	border: 0;
+	padding: 0 0.3em 0 0;
+	margin: 0;
+	}
 
-.block #edit-title, 
-.block #edit-title-2 {
+#transaction-start-form #edit-title,
+#transaction-start-form #edit-title-1{
   width:85%;
   }
+  
 .block #edit-completer-uid,
 .block #edit-starter-uid{
   font-size:85%;
@@ -94,7 +95,7 @@ span.cc-next:after{content:'>>';}
 #edit-zero-offset,
 #edit-max-balance,
 #edit-min-balance {
-  width:5em;
+  width:3em;
 }
 
 .transaction-button{
