@@ -156,11 +156,11 @@ function transaction_base_form($transaction, $mode = 'edit') {
   
   $form['title'] = array(
     '#type' => 'textfield',
-    //'#title' => t('What is being paid for?'),
+    '#title' => t('What is being paid for?'),
     '#required' => TRUE, 
     '#default_value' => $transaction->title,
     '#weight' => -3,
-    //'#description' => t('What goods or services were exchanged? '),
+    '#description' => t('What goods or services were exchanged? '),
   );
   if (variable_get('cc_description_min_words', 3) > 1) {
     $form['title']['#description'] .= '('. t('Minimum @num words', array('@num' => $min_words)) .')';
@@ -196,7 +196,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
     if (!$payee || $form['#selector_set'] == 'both' ) {
       $form['payee_uid']=array(
         '#type' => 'select',
-        //'#title' => t('Who is being paid?'),
+        '#title' => t('Who is being paid?'),
         '#default_value' => $payee,
         '#weight' => -4,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
@@ -220,7 +220,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
       $form['starter_uid']=array(
         '#autocomplete_path' => 'user/autocomplete',
         '#type' => 'select',
-        //'#title' => t('Initiator, (if not you)'),
+        '#title' => t('Initiator, (if not you)'),
         '#default_value' => $starter,
         '#weight' => -5,
         '#required' => TRUE,
@@ -230,11 +230,11 @@ function transaction_base_form($transaction, $mode = 'edit') {
     if (!$completer || $mode == 'edit' || $mode =='fulledit'  ) {
       //remove the user's own uid so they can't trade with themselves
       if (!user_access('edit all transactions')) {
-        unset($accounts[$user->{uid}]); //this variable isn't used again
+        unset($accounts[$user->{uid}]); //remove user from list of accounts shown to form
       }
       $form['completer_uid']=array(
         '#type' => 'select',
-        //'#title' => t('With whom did you transact?'),
+        '#title' => t('With whom did you transact?'),
         '#default_value' => $completer,
         '#weight' => -3,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
@@ -242,10 +242,9 @@ function transaction_base_form($transaction, $mode = 'edit') {
       );
     }
     if (count($allowed_transactions) > 1 && ($mode == 'fulledit' || $ttype == '' )) {
-      //$allowed_transactions=array(0=>t('(Please choose...)'))+$allowed_transactions;
       $form['transaction_type'] = array(
         '#type' => 'select',
-        //'#title' => t('Transaction type'),
+        '#title' => t('Transaction type'),
         '#default_value' => $ttype,
         '#weight' => -5,
         '#options' => $allowed_transactions, 
@@ -399,7 +398,7 @@ function transaction_start_form($form_state, $transaction = NULL, $presets = 'ed
     case 2:
       drupal_set_title(t('Do you want to start this transaction?'));
       $form=transaction_base_form($transaction, 'summary');
-      $form['#summary'] = theme('transaction', $transaction, TRUE, FALSE);
+      $form['#summary'] = theme('transaction', $transaction, TRUE, FALSE, FALSE);
       $form['previous'] = array(
         '#type' => 'submit',
         '#value' => t('Go back'),
@@ -472,7 +471,7 @@ function transaction_complete_form(&$form_state, $nid) {
   $transaction = node_load($nid);
   $form['#redirect'] = 'user/'. $transaction->completer_uid;
   $output = confirm_form($form,
-    t('Are you sure you want to complete the transaction "@description"', array('@description' => $transaction->title)),
+    t('Are you sure you want to complete the transaction "@description"?', array('@description' => $transaction->title)),
     'user/'. $transaction->completer_uid,
     '',
     t('Complete'), t('Cancel'),
@@ -549,6 +548,7 @@ function transactions_email_starter_action($node, $context = array()) {
     array(
       'transaction' => $node, 
       'template' => $context['template'],
+      'subject' => $context['subject'],
     )
   );
   drupal_set_message(t('!user has been notified by email.', array('!user' => theme('username', $recipient))));
@@ -566,6 +566,7 @@ function transactions_email_completer_action($node, $context = array()) {
     array( //this is the $params in transactions_mail
       'transaction' => $node, 
       'template' => $context['template'],
+      'subject' => $context['subject'],
     )
   );
   drupal_set_message(t('!user has been notified by email.', array('!user' => theme('username', $recipient))));
@@ -588,7 +589,7 @@ function transactions_mail($key, &$message, $params) {
   $variables = array(
     '%completer' => $completer->name,
     '%starter' => $starter->name,
-    '%summary' => strip_tags(theme('transaction', $params['transaction'], TRUE, FALSE)),
+    '%summary' => strip_tags(theme('transaction', $params['transaction'], TRUE, FALSE, FALSE)),
     '%reason' => $params['transaction']->title,
     '%profile_url' =>  url('user/'. $recipient->uid, array('absolute' => TRUE)),
     '%pending_url' => url('user/'. $recipient->uid .'/pending', array('absolute' => TRUE)),
@@ -748,6 +749,9 @@ function template_preprocess_transaction(&$vars) {
   if (!$vars['transaction']->created) {
     $vars['transaction']->created = time();
   }
+  if ($vars['transaction']->nid && $vars['actions']) {
+    $vars['actions'] = implode("\n", _transaction_get_buttons($vars['transaction']));
+  }
   //and we present the main transaction fields as variables in their own rights
   $vars += preprocess_transaction_fields($vars['account'], $vars['transaction']);
   $vars['transaction'] = (array)$vars['transaction']; // because the themeing layer sees transaction as an array, not an object
@@ -765,8 +769,7 @@ function preprocess_transaction_fields($account, $transaction) {
     $vars['rating'] = $qualities[$transaction->quality];
     $vars['transactions'][$key]['classes'] .= 'quality'. $transaction->quality;
   }
-
-  if ($vars->starter_uid == $transaction->payer_uid) {
+  if ($transaction->starter_uid == $transaction->payer_uid) {
     $vars['payer'] = $vars['starter'];
     $vars['payee'] = $vars['completer'];
   }
@@ -786,16 +789,37 @@ function preprocess_transaction_fields($account, $transaction) {
   else {
     $vars['transaction_link'] = $transaction->title;
   }
-  if ($transaction->nid) {
-    $actions = _transaction_get_buttons($transaction);
-    if ($transaction->state == TRANSACTION_STATE_COMPLETED) {
-      $actions[] = '<div style="font-size:2.5em;color:green">&#x2713;</div>';//tick //not worth a theming function of its own?
-    }
-    $vars['actions'] = implode("\n", $actions);
-  }
   return $vars;
 }
 
+function template_preprocess_transaction_start_form(&$vars) {
+  $vars['mode'] = $vars['form']['#mode'];
+  $vars['selector_set'] = $vars['form']['#selector_set'];
+  $optional_fields = array(
+    'payer_uid', 
+    'payee_uid', 
+    'starter_uid', 
+    'completer_uid', 
+    'transaction_type', 
+    'title', 
+    'quantity',
+    'division',
+    'previous',
+    'state'
+  );
+  foreach ($optional_fields as $field) {
+    if ($vars['form'][$field]['#type'] != 'hidden') {
+      if ($vars['form'][$field]['#type'] != 'checkbox') {
+        unset($vars['form'][$field]['#title']);
+        unset($vars['form'][$field]['#description']);
+      }
+      $vars[$field] = drupal_render($vars['form'][$field]);
+    }
+  }
+  $vars['next'] = drupal_render($vars['form']['next']);
+  $vars['hidden_fields'] = drupal_render($vars['form']);
+  $vars['summary'] = $vars['form']['#summary'];
+}
 
 /*
  * Stats from the cache
@@ -1096,34 +1120,41 @@ function _transactions_convert_name_uid(&$transaction_array, $validate_only = FA
  */
 
 function _transaction_limit_check($transaction) {
-  $currency = currency_load($transaction->cid);
-  $payee = user_load($transaction->payee_uid);
-  $payer = user_load($transaction->payer_uid);
+  _transaction_user_limits(user_load($transaction->payer_uid), -$transaction->quantity, $transaction->cid);
+  _transaction_user_limits(user_load($transaction->payee_uid), +$transaction->quantity, $transaction->cid);
+}
 
+function _transaction_user_limits($account, $difference, $cid = 0) {
   $messages=array();
-  $cid = $transaction->cid;
-  if ($payer->balances[$cid]['balance'] - $transaction->quantity < $payer->balances[$cid]['min']) {
-    $messages[] = t('Transaction would take !username below the minimum balance of !quantity', 
-      array('!username' => theme('username', $payer),
-        '!quantity' => theme('money', $payer->balances[$cid]['min'], $transaction->cid)
-      )
-    );
-  }
-  if ($payee->balances[$cid]['balance'] + $transaction->quantity > $payer->balances[$cid]['max']) {
-    $messages[] = t('Transaction would take !username above the maximum balance of !quantity', 
-      array('!username' => theme('username', $payee),
-        '!quantity' => theme('money', $payer->balances[$cid]['max'], $transaction->cid)
-      )
-    );
-  }
-  foreach ($messages as $message) {
-    //accountants are not impeded by the balance limit checks
-    if (user_access('edit all transactions')) {
-      drupal_set_message($message, 'warning');
+  if ((float)$difference > 0) {
+    $credit = $account->balances[$cid]['cleared_balance'] + $difference - $account->balances[$cid]['max'];
+    if ($credit > 0) {
+      $message = t('Transaction would take @username !dif above the maximum balance of !quantity', 
+        array(
+          '@username' => strip_tags(theme('username', $account)),
+          '!dif' => theme('money', $credit, $cid),
+          '!quantity' => theme('money', $account->balances[$cid]['max'], $cid)
+        )
+      );
     }
-    else {
-      form_set_error('quantity', $message);
-    }
+  }
+  else {
+    $debit = $account->balances[$cid]['min'] - ($account->balances[$cid]['cleared_balance'] + $difference);
+    if ($debit > 0) {
+      $message = t('Transaction would take @username !dif below the minimum balance of !quantity', 
+        array(
+          '@username' => strip_tags(theme('username', $account)),
+          '!dif' => theme('money', $debit, $cid),
+          '!quantity' => theme('money', $account->balances[$cid]['min'], $cid)
+        )
+      );
+    } else echo $debit;
+  }
+  if (user_access('edit all transactions')) {
+    drupal_set_message($message, 'warning');
+  }
+  else {
+    form_set_error('quantity', $message);
   }
 }
 

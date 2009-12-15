@@ -310,7 +310,6 @@ function cc_offer_want_link($type, $node) {
     'title' => t("@person's directory", array('@person'=> $owner->name)),
     'href' => 'user/'.$node->uid.'/directory',
   );
-  print_r($links);
   return $links;
 }
 

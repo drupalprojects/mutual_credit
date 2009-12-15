@@ -4,8 +4,8 @@
  * Variables provided by preprocess functions
  * $account = Obj
  * $balances = themed grid
- * 
- * 
+ * $pending
+ * $history
 */
 ?>
 

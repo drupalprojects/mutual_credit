@@ -449,7 +449,7 @@ function transactions_delete($node) {
 
 function transactions_view($node, $teaser = FALSE, $page = FALSE) {
   $node->content['body'] = array(
-    '#value' => theme('transaction', $node, $teaser),
+    '#value' => theme('transaction', $node, $teaser, TRUE),
   );
   return $node;
 } 
@@ -644,6 +644,7 @@ function transaction_email_form_template($context){
     '#type' => 'textfield',
     '#title' => t('Message subject'),
     '#default_value' => $context['subject'] ? $context['subject'] : t('Transaction notification'),
+    '#description' => t('Tokens cannot be used here'),
   );
   $form['message'] = array(
     '#type' => 'textarea',
@@ -712,6 +713,7 @@ function transactions_theme($existing, $type, $theme, $path) {
         'transaction' => NULL,
         'teaser' => FALSE,
         'rich_text' => TRUE,
+        'actions' => TRUE,
       )
     ),
     'bureau' => array(
@@ -828,31 +830,6 @@ function phptemplate_views_view_field__gross_income($view, $field, $row) {
 }
 function phptemplate_views_view_field__gross_expenditure($view, $field, $row) {
   return theme('money', $row->cc_balance_cache_gross_expenditure, $row->cc_transactions_cid);
-}
-function template_preprocess_transaction_start_form(&$vars) {
-  $vars['mode'] = $vars['form']['#mode'];
-  $vars['selector_set'] = $vars['form']['#selector_set'];
-  $optional_fields = array(
-    'payer_uid', 
-    'payee_uid', 
-    'starter_uid', 
-    'completer_uid', 
-    'transaction_type', 
-    'title', 
-    'quantity',
-    'division',
-    'previous',
-    'state'
-  );
-  foreach ($optional_fields as $field) {
-    if ($vars['form'][$field]['#type'] != 'hidden') {
-      $vars[$field]  = drupal_render($vars['form'][$field]);
-    }
-  }
-  $vars['next'] =drupal_render($vars['form']['next']);
-  $vars['hidden_fields'] = drupal_render($vars['form']);
-  $vars['summary'] = $vars['form']['#summary'];
-  //print_r($vars);
 }
 
 //returns the specified, first, or default currency object
