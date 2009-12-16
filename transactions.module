@@ -208,7 +208,6 @@ function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
     case 'create':
       return user_access('use local currency');
     case 'update': //this is the permission used by node_access
-      return $uid == $transaction->starter_uid || $uid == $transaction->completer_uid;
     case 'edit':
       return $uid == $transaction->starter_uid && $transaction->state == TRANSACTION_STATE_PENDING;
     case 'complete':
@@ -216,7 +215,7 @@ function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
     case 'delete':
       return $uid == $transaction->starter_uid && $transaction->state == TRANSACTION_STATE_PENDING;
     case 'bureau': 
-      return user_access('use local currency', $account) && ($user->uid == $uid || user_access('view all balances'));
+      return user_access('use local currency') && ($user->uid == $uid || user_access('view all balances'));
     default:
       drupal_set_message('transaction_access given unknown op: '. $op);
   }
