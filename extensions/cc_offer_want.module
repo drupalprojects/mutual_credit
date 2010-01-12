@@ -22,7 +22,7 @@ function cc_offer_want_node_info(){
   //the status = TRUE seems to have no effect so it's fixed in form_alter
   if ($preset == 'offers' || $preset == 'both') {
     $types['offer'] = array(
-      'name' => t('Offer'),
+      'name' => 'Offer',
       'module' => 'cc_offer_want',
       'description' => t('An entry in the @type directory.', array('@type' => $offers)),
       'has_title' => TRUE,
@@ -32,7 +32,7 @@ function cc_offer_want_node_info(){
   }
   if ($preset == 'wants' || $preset == 'both') {
     $types['want'] = array(
-      'name' => t('Want'),
+      'name' => 'Want',
       'module' => 'cc_offer_want',
       'description' => t('An entry in the @type directory.', array('@type' => $wants)),
       'has_title' => TRUE,
@@ -112,7 +112,6 @@ function cc_offer_want_perm(){
 /**
  * Implementation of hook_access().
  * http://api.drupal.org/api/function/hook_access/6
- * might be cool if this function returned the terminology name of offers / wants
  */
 function cc_offer_want_access($op, $node=NULL, $account=NULL){
   if (is_string($node)){
@@ -185,7 +184,7 @@ function cc_offer_want_block($op = 'list', $delta = 0, $edit = array()) {
             $content = node_add($type);
             drupal_set_title($title);
           } else {
-            $subject = t('Place your ad');
+            $subject = t('Place your @offerwant');
             $content = drupal_get_form('create_offer_or_want_form');
           }
           break;
@@ -315,18 +314,19 @@ function cc_offer_want_link($type, $node) {
 
 //used for putting the links at the bottom of views //not a hook!
 function theme_offers_wants_link ($type) {
-  $names = variable_get ('cc_transaction_types', array());
   if (!user_access('create ' . $type)) return;
-  if ($names['offers_wants'][$type]) {
-    $link = l($names['offers_wants'][$type], 'node/add/'.$type);
-    return '<div class = "directory-link">' . t('Click to add new !items', array('!items' => $link)) . '</div>';
+  switch($type) {
+    case 'offer':
+      $link = l(t('offer'), 'node/add/offer');
+    case 'want':
+      $link = l(t('want'), 'node/add/want');
   }
+  return '<div class = "directory-link">' . t('Click to add a new !item', array('!item' => $link)) . '</div>';
 }
 
 //I don't think it's possible to hack the node form to put a choice of contentType, so I'm making my own form
 function create_offer_or_want_form() {
   $types = node_get_types();
-  $terminology = variable_get ('cc_transaction_types', array());
   
   $form = array();
   $form['content_type'] = array(

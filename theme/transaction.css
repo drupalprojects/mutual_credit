@@ -6,8 +6,8 @@ span.currency img{
 /* transaction form */
 input.form-autocomplete,
 .form-text#edit-completer-uid,
-#edit-starter-uid.form-text
-#transaction-start-form .form-text{
+.form-text#edit-starter-uid,
+.form-text#transaction-start-form {
   width:12em;
 }
 

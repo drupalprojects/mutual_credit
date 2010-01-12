@@ -82,19 +82,21 @@ function cc_offer_want_views_default_views() {
 function cc_directory_user_view($php_filter){
   
   $preset = variable_get('cc_ow_content_types', 'offers');
+  $page_type_filter=array();
   $menu_title = t('Offers');
+  //this view adapts to which contentTypes are in use. The attachment display always displays wants, but the page display is flexible
   switch ($preset) {
-    case 'both': 
-      $menu_title = t('Offers/Wants');
     case 'offers':
-      $page_type_filter = array('offer' => 'offer');
-      $page_type_name = t('Offers');
-     break;
+      $menu_title = t('Offers');
+      $page_type_filter['offer'] = 'offer';
+      break;
     case 'wants': 
       $menu_title = t('Wants');
-      $attachment_type_filter = array('offer' => 'offer');
-      $attachment_type_name = t('Wants');
+      $page_type_filter['want'] = 'want';
       break;
+    case 'both': 
+      $menu_title = t('Offers/Wants');
+      $page_type_filter['offer'] = 'offer';
   }
   
   //careful editing this because it contains variables
@@ -278,12 +280,12 @@ function cc_directory_user_view($php_filter){
     'weight' => 0,
   ));
 
-  if ($attachment_type_name) {  
+  if ($preset == 'both') {  
     $handler = $view->new_display('attachment', 'Attachment', 'attachment_1');
     $handler->override_option('filters', array(
       'type' => array(
         'operator' => 'in',
-        'value' => $attachment_type_filter,
+        'value' => array('wants'),
         'group' => '0',
         'exposed' => FALSE,
         'expose' => array(
@@ -474,9 +476,6 @@ function cc_directory_recent_view($php_filter) {
     'perm' => 'view directory',
   ));
   $handler->override_option('title', t('Latest directory entries'));
-  $handler->override_option('header', 'Directory entries, newest first');
-  $handler->override_option('header_format', '2');
-  $handler->override_option('header_empty', 1);
   $handler->override_option('footer', "");
   $handler->override_option('footer_format', '2');
   $handler->override_option('footer_empty', 1);

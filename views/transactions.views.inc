@@ -188,14 +188,14 @@ function transactions_views_data() {
       'field' => 'uid',
     ),
   );
-  $data['cc_balance_cache']['uid']=array(
+  $data['cc_balance_cache']['uid'] = array(
     'title' => t('User'),
     'argument' => array(
       'help' => t("The user id"),
       'handler' => 'views_handler_argument',
     )
   );
-  $data['cc_balance_cache']['cid']=array(
+  $data['cc_balance_cache']['cid'] = array(
     'title' => t('Currency ID'),
     'argument' => array(
       'help' => t("Currency id"),
@@ -207,7 +207,7 @@ function transactions_views_data() {
       'click sortable' => TRUE,
     )
   );
-  $data['cc_balance_cache']['cleared_balance']=array(
+  $data['cc_balance_cache']['cleared_balance'] = array(
     'title' => t('Balance'),
     'field' => array(
       'help' => t("The user's total cleared income minus total cleared expenditure"),
@@ -215,7 +215,7 @@ function transactions_views_data() {
       'click sortable' => TRUE,
     )
   );
-  $data['cc_balance_cache']['pending_difference']=array(
+  $data['cc_balance_cache']['pending_difference'] = array(
     'title' => t('Pending Difference'),
     'field' => array(
       'help' => t("sum of all pending transactions, (@type)", array('@type'=>'')),
@@ -223,7 +223,7 @@ function transactions_views_data() {
       'click sortable' => TRUE,
     )
   );
-  $data['cc_balance_cache']['pending_balance']=array(
+  $data['cc_balance_cache']['pending_balance'] = array(
     'title' => t('Pending Balance'),
     'field' => array(
       'help' => t('balance including pending transactions, (@type)', array('@type'=>'')),
@@ -231,7 +231,7 @@ function transactions_views_data() {
       'click sortable' => TRUE,
     )
   );
-  $data['cc_balance_cache']['gross_income']=array(
+  $data['cc_balance_cache']['gross_income'] = array(
     'title' => t('Gross Income'),
     'field' => array(
       'help' => t("The user's total completed income ever"),
@@ -239,7 +239,7 @@ function transactions_views_data() {
       'click sortable' => TRUE,
     )
   );
-  $data['cc_balance_cache']['gross_expenditure']=array(
+  $data['cc_balance_cache']['gross_expenditure'] = array(
     'title' => t('Gross Expenditure'),
     'field' => array(
       'help' => t("The user's total completed expenditure ever"),
@@ -247,7 +247,7 @@ function transactions_views_data() {
       'click sortable' => TRUE,
     )
   );
-  $data['cc_balance_cache']['quality_mean']=array(
+  $data['cc_balance_cache']['quality_mean'] = array(
     'title' => t('Rating'),
     'field' => array(
       'help' => t("The user's average rating for this currency"),

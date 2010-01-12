@@ -290,18 +290,18 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
             $account = user_load($uid);
             $balances = transactions_user_balances($account->uid);
             return array(
-              'subject' => t("@user's balances", array('@user' => $account->name)),
+              'subject' => t("@user's balances", array('@user' => theme('username', $account))),
               'content' => theme('balances', $balances),
             );
           }
           break;
         case 'cc_new_transaction':
           if (transactions_access('create')) {
-            $subject = t("Start @transaction_type", array('@transaction_type' => t('transaction')));//later we might use other transaction types
+            $subject = t("Start transaction");//later we might use other transaction types
             $transaction = (object)array('starter_uid' => $user->uid);
             if (arg(0) == 'user' && arg(1) && $user->uid != arg(1)) {
               $otherperson = user_load(arg(1));
-              $subject = t('Start @transaction_type with @name', array('@transaction_type' => t('transaction'), '@name' => $otherperson->name));
+              $subject = t('Start with @name', array('@name' => theme('username', $otherperson)));
               $transaction->completer_uid = $otherperson->uid;
             }
             return array(
@@ -344,18 +344,6 @@ function transactions_form(&$node, $form_state) {
  */
 function transactions_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
-    case 'transaction_node_form':
-      $form['#theme'] = 'transaction_start_form';
-    case 'transaction_start_form':
-      $form['comment_settings']['#type'] = 'value';
-      $form['options']['#access'] = FALSE;
-      $form['buttons']['preview']['#access'] = FALSE;
-      $form['attachments']['#access'] = FALSE;
-      $form['path']['#access'] = FALSE;
-      $form['revision_information']['#access'] = FALSE;
-      $form['author']['#access'] = FALSE;
-      $form['menu']['#access'] = FALSE;
-      break;
     case 'user_admin_perm':
       $form['#submit'][] = 'menu_rebuild';
       break;
@@ -378,7 +366,7 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
   }
 }
 
-function transactions_start_validate($form, &$form_state) {
+function transactions_start_form_validate($form, &$form_state) {
   node_validate($form_state['values'], $form);
 }
 
@@ -390,8 +378,12 @@ function transactions_nodeapi(&$node, $op) {
     case 'validate': //the so called node being validated is just the $form_state['values'] converted to an object
       $node = _infer_transaction_from_form($node);
       transaction_fields_validate($node);
-      //perform checks to see that the transaction doesn't take either party outside of the currency limits
-      _transaction_limit_check($node);
+      if (is_numeric($node->payer_uid)) {
+        _transaction_user_limits(user_load($node->payer_uid), -$node->quantity, $node->cid);
+      }
+      if (is_numeric($node->payee_uid)) {
+        _transaction_user_limits(user_load($node->payee_uid), +$node->quantity, $node->cid);
+      }
       break;
       
     case 'update':
@@ -476,8 +468,12 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         foreach ($currencies as $currency) {
           $cid = $currency->cid;
           //and load up the user's personalised balance limits for each currency, defaulting to the currency limits
-          if (!isset($account->balances[$cid]['min'])) $account->balances[$cid]['min'] = $currencies[$cid]->min_balance;
-          if (!isset($account->balances[$cid]['max'])) $account->balances[$cid]['max'] = $currencies[$cid]->max_balance;
+          if (!isset($account->balances[$cid]['min'])) {
+            $account->balances[$cid]['min'] = $currencies[$cid]->min_balance;
+          }
+          if (!isset($account->balances[$cid]['max'])) {
+            $account->balances[$cid]['max'] = $currencies[$cid]->max_balance;
+          }
         }
       }
       break;
@@ -567,7 +563,8 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
     case 'insert':
       module_load_include('admin.inc', 'transactions');
       //user preference to be sent emails about pending transactions
-      $edit['pending_notification']=TRUE; 
+      $edit['starter_notification'] = TRUE; 
+      $edit['completer_notification'] = TRUE; 
       //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
       $def_cur = currency_load();
       _recalculate_balances(array($edit['uid']), $def_cur->nid);
@@ -939,6 +936,7 @@ function template_preprocess_money(&$vars) {
       $vars['icon'] = theme_image($currency->icon, t('Currency Icon'), $currency->title);
     }
   }
+  $vars['name'] = $currency->title;
 }
 
 /*

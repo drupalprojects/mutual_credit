@@ -92,7 +92,7 @@ function transactions_pending($uid,  $is_starter = TRUE, $is_completer = TRUE) {
   $transactions = _get_transactions_for_user($uid, array('states' => array(TRANSACTION_STATE_PENDING)));
   
   //we might only want to show the ones the user started, or should complete
-  while (list($nid, $transaction) = each($transactions)) {    
+  while (list($nid, $transaction) = each($transactions)) {   
     if (transactions_access('view', $nid, $GLOBALS['user']->uid, $transaction)) {
       if ($transaction->starter_uid == $uid && $is_starter) {
         $waiting_on_other[] = $transaction;
@@ -100,9 +100,9 @@ function transactions_pending($uid,  $is_starter = TRUE, $is_completer = TRUE) {
       elseif ($transaction->completer_uid == $uid && $is_completer) {
         $waiting_on_user[] = $transaction;
       }
-      else {
+      //an error if the transaction node was created by neither participant, nor someone with permission
+      elseif (!user_access('edit all transactions', user_load($transaction->uid))) {
         drupal_set_message('Error: pending transaction neither started or completed by this user: node '. $transaction->nid, 'error');
-        //print_r($transaction);
       }
     }
   }
@@ -159,7 +159,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
     '#title' => t('What is being paid for?'),
     '#required' => TRUE, 
     '#default_value' => $transaction->title,
-    '#weight' => -3,
     '#description' => t('What goods or services were exchanged? '),
   );
   if (variable_get('cc_description_min_words', 3) > 1) {
@@ -198,7 +197,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
         '#type' => 'select',
         '#title' => t('Who is being paid?'),
         '#default_value' => $payee,
-        '#weight' => -4,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
         '#required' => TRUE
       );
@@ -208,7 +206,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
         '#type' => 'select',
         //'#title' => t('Who is paying?'),
         '#default_value' => $payer,
-        '#weight' => -5,
         '#required' => TRUE,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
       );
@@ -222,7 +219,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
         '#type' => 'select',
         '#title' => t('Initiator, (if not you)'),
         '#default_value' => $starter,
-        '#weight' => -5,
         '#required' => TRUE,
         '#options' => $accounts,
       );
@@ -236,7 +232,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
         '#type' => 'select',
         '#title' => t('With whom did you transact?'),
         '#default_value' => $completer,
-        '#weight' => -3,
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
         '#required' => TRUE
       );
@@ -246,7 +241,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
         '#type' => 'select',
         '#title' => t('Transaction type'),
         '#default_value' => $ttype,
-        '#weight' => -5,
         '#options' => $allowed_transactions, 
       );
     }
@@ -267,7 +261,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
           '#type' => 'checkbox',
           '#title' => t('Transaction is waiting to be confirmed.'),
           '#default_value' => $transaction->state,
-          '#weight' => 15,
         );
         break;
       }
@@ -320,7 +313,6 @@ function transaction_base_form($transaction, $mode = 'edit') {
       '#default_value' => intval($transaction->quality),
       '#options' => $options,
       '#required' => TRUE,
-      '#weight' => 3,
     );
   }
  
@@ -332,6 +324,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
         unset($form[$fieldname]['#options']);
         $form[$fieldname]['#description'] = t('Please type a username (or user ID)');
         $form[$fieldname]['#autocomplete_path'] = 'user/autocomplete';
+        $form[$fieldname]['#element_validate'] = array('_convert_name_uid');
         if ($form[$fieldname]['#default_value']) {
           //do autocomplete fields even have a default value?
           $form[$fieldname]['#default_value'] = db_result(db_query("SELECT name FROM {users} WHERE uid = '%d'", $form[$fieldname]['#default_value']));
@@ -345,6 +338,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
       $form[$field]['#type'] = 'hidden';
     }
   }
+  $form['#theme'] = 'transaction_start_form';
   return $form;
 }
 
@@ -356,7 +350,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
 function transaction_start_form($form_state, $transaction = NULL, $presets = 'editable') {
   //this is a nasty hack because I didn't realise until very late that set step to 1 here breaks every other form on the same page
   //on form submission every form on the page is built using the post, I think
-  //TODO: Redesign this, using a a two stage form NOT a multistep form
+  //TODO: Redesign this, using a two stage form NOT a multistep form
   if (!$form_state['storage']['step'] && ($form_state['post'] == array() || $form_state['post']['transaction_type'])) {
     $form_state['storage']['step'] = 1; //this makes the form reload from POST
   }
@@ -366,33 +360,33 @@ function transaction_start_form($form_state, $transaction = NULL, $presets = 'ed
   switch ($form_state['storage']['step']) {
     case 1:
       static $form;
-      if ($form) return $form; //because the transaction is built again using drupal_rebuild_form
+      if ($form) return $form; //because the transaction is built again using drupal_rebuild_form Form API is complex!
       if (!$transaction)$transaction = (object)array();
       if (!$transaction->starter_uid) {
         $transaction->starter_uid = $GLOBALS['user']->uid; 
       }
       $form = transaction_base_form($transaction, 'init');
-      $form['quality']['#access'] = FALSE;
+      if ($form['quality']) {
+        $form['quality']['#access'] = FALSE;
+      }
       $form['state']['#default_value'] = TRANSACTION_STATE_PENDING;
       
       //By pretending to be the transaction node form, we get access to the to the node hooks (and to taxonomy_form_alter)
       //not sure we need any of these actually, Is this what gives us nodeapi access as well?
-      $form['type']['#value'] = 'transaction'; 
+      $form['type'] = array('#value' => 'transaction', '#type' => 'value');
       $form['#node'] = (object)array('type' => 'transaction');
-      //this hides the above, which otherwise renders as a field
-      $form['type']['#type'] = 'value';
       
       $form['#action'] = url('transaction/add');
       //what to do with the preset fields
-      if ($presets == 'disabled') {
-        foreach ((array)$transaction as $prop => $v) {
-          $form[$prop]['#disabled'] = TRUE;
-        }
-      }
-      elseif ($presets == 'hidden') {
-        foreach ((array)$transaction as $prop => $v) {
-          $form[$prop]['#access'] = FALSE;
-        }
+      switch($presets) {
+        case 'disabled':
+          foreach ((array)$transaction as $prop => $v) {
+            $form[$prop]['#disabled'] = TRUE;
+          }
+        case 'hidden':
+          foreach ((array)$transaction as $prop => $v) {
+            $form[$prop]['#access'] = FALSE;
+          }
       }
       break;
     case 2:
@@ -414,25 +408,9 @@ function transaction_start_form($form_state, $transaction = NULL, $presets = 'ed
     '#weight' => 10
   );
 
-  $form['#validate'][] = 'transactions_start_validate';
+  $form['#validate'][] = 'transactions_start_form_validate';
   return $form;
 }
-
-/*
-WHY DOES DRUPAL REBUILD THE FORM IN STEP1?
-drupal_get_form( )  ../common.inc(1655) : eval()'d code:7
-20  0.4797  9917200 call_user_func_array( )  ../form.inc:102
-21  0.4797  9917248 drupal_retrieve_form( ) ../form.inc:0
-22  0.4798  9918264 call_user_func_array( )  ../form.inc:366
-23  0.4798  9918312 transaction_start_form( )
-
-drupal_get_form( )  ../common.inc(1655) : eval()'d code:7
-20  0.5474  9957376 drupal_rebuild_form( )  ../form.inc:143
-21  0.5474  9957912 call_user_func_array( )  ../form.inc:195
-22  0.5474  9957912 drupal_retrieve_form( ) ../form.inc:0
-23  0.5475  9958952 call_user_func_array( )  ../form.inc:366
-24  0.5475  9959072 transaction_start_form( )
- */
 
 function transaction_start_form_submit($form, &$form_state) {
   module_load_include('admin.inc', 'transactions');
@@ -450,12 +428,7 @@ function transaction_start_form_submit($form, &$form_state) {
   }
   else {
     $transaction = _infer_transaction_from_form($form_state['values']);
-    $options = array(
-      'transaction_type' => $transaction->transaction_type,
-      'state' => $transaction->state,
-      'starter_uid' => $transaction->starter_uid,
-      'quality' => $transaction->quality,
-    );
+    $options = (array)$transaction;
     $node = generate_transaction_node($transaction->title, $transaction->payer_uid, $transaction->payee_uid, $transaction->quantity, $options, $transaction->cid);
     //otherwise #redirect doesn't work
     unset($form_state['storage']);
@@ -494,14 +467,14 @@ function transaction_fields_validate(&$transaction) {
   if (!$transaction->transaction_type) {
     form_set_error('transaction_type', t('No transaction type selected'));
   }
-  if ($transaction->title != check_plain($transaction->title)) {
+  if (!check_plain($transaction->title)) {
     form_set_error('title', t('Plain text only in transaction descriptions.'));
   }
   if (str_word_count($transaction->title) < variable_get('cc_description_min_words', 4)) {
     form_set_error('title', t('Please describe the transaction in more detail'));
   }
   if ($transaction->payer_uid == $transaction->payee_uid) {
-    form_set_error('payer_uid', t('You cannot trade with yourself'));
+    form_set_error('completer_uid', t('A transaction must involve two different members'));
   }
   //check quantity field
   if (strlen($transaction->quantity)) {
@@ -795,28 +768,17 @@ function preprocess_transaction_fields($account, $transaction) {
 function template_preprocess_transaction_start_form(&$vars) {
   $vars['mode'] = $vars['form']['#mode'];
   $vars['selector_set'] = $vars['form']['#selector_set'];
-  $optional_fields = array(
-    'payer_uid', 
-    'payee_uid', 
-    'starter_uid', 
-    'completer_uid', 
-    'transaction_type', 
-    'title', 
-    'quantity',
-    'division',
-    'previous',
-    'state'
-  );
-  foreach ($optional_fields as $field) {
-    if ($vars['form'][$field]['#type'] != 'hidden') {
-      if ($vars['form'][$field]['#type'] != 'checkbox') {
-        unset($vars['form'][$field]['#title']);
-        unset($vars['form'][$field]['#description']);
+  foreach ($vars['form'] as $key => $field) {
+    if (strpos($key, '#') !== 0 && is_array($field)  && $key != 'form_token' ){
+      if ($field['#type'] && $field['#type'] != 'hidden') {
+        if ($field['#type'] != 'checkbox') {
+          $vars['form'][$key]['#title'] = NULL;
+          $vars['form'][$key]['#description'] = NULL;
+        }
+        $vars[$key] = drupal_render($vars['form'][$key]);
       }
-      $vars[$field] = drupal_render($vars['form'][$field]);
     }
   }
-  $vars['next'] = drupal_render($vars['form']['next']);
   $vars['hidden_fields'] = drupal_render($vars['form']);
   $vars['summary'] = $vars['form']['#summary'];
 }
@@ -929,7 +891,7 @@ function _get_transactions_for_user($uid, $options) {
   if ($cid) {
     $filters[] = " t.cid = $cid ";
   }
-  $query = 'SELECT n.title, n.nid, t.payer_uid, t.payee_uid, t.starter_uid, t.completer_uid, t.cid, t.quantity, t.quality, t.state, n.created, t.transaction_type
+  $query = 'SELECT n.uid, n.title, n.nid, t.payer_uid, t.payee_uid, t.starter_uid, t.completer_uid, t.cid, t.quantity, t.quality, t.state, n.created, t.transaction_type
       FROM {node} n
       LEFT JOIN {cc_transactions} t ON t.nid = n.nid
       WHERE n.type = "transaction"
@@ -1046,9 +1008,8 @@ function _get_view_transactions_by_user($where) {
  */
 function _infer_transaction_from_form($post) {
   $post = (array)$post;
-  $transaction = (object)array('type' => 'transaction');
-  //process the autocomplete field
-  _transactions_convert_name_uid($post);
+  $transaction = (object)$post;
+  $transaction->type = 'transaction';
   if ($post['starter_uid'] && $post['completer_uid']) { 
     if (substr($post['transaction_type'], 0, 8) == 'incoming') {
       //this is for flows towards the starter user
@@ -1098,35 +1059,23 @@ function _infer_transaction_from_form($post) {
 }
 
 //on submitting a form with autocomplete users, this converts the usernames back to uids
-function _transactions_convert_name_uid(&$transaction_array, $validate_only = FALSE) {
-  foreach (array('starter_uid', 'completer_uid', 'payer_uid', 'payee_uid') as $fieldname) {
-    if (is_numeric($transaction_array[$fieldname])) continue;
-    $uid = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s' OR mail = '%s' ", $transaction_array[$fieldname], $transaction_array[$fieldname]));
-    if ($validate_only) {
-      if (!is_numeric($uid)) {
-        form_set_error($fieldname, t("Please enter a member's username or email in this field: @nonuser", array('@nonuser' => $transaction_array[$fieldname])));
-      }
-    }
-    else {
-      $transaction_array[$fieldname] = $uid;
-    }
+function _convert_name_uid(&$element, &$form_state) {
+  if (is_numeric($element['#value'])) return;
+  $uid = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s' OR mail = '%s' ", $element['#value'], $element['#value']));
+  if (!is_numeric($uid)) {
+    form_set_error($element['#name'], t("Please enter a member's username or email"));
   }
+  $form_state['values'][$element['#name']] = $uid;
 }
-
 
 /*
- * default limit checker - can be overriden by another module
- * checks a transaction to see if it will put either of the users outside the currency limits.
+ * limit checker
+ * checks an account to see if the proposed difference will violate the balance limits
  */
-
-function _transaction_limit_check($transaction) {
-  _transaction_user_limits(user_load($transaction->payer_uid), -$transaction->quantity, $transaction->cid);
-  _transaction_user_limits(user_load($transaction->payee_uid), +$transaction->quantity, $transaction->cid);
-}
 
 function _transaction_user_limits($account, $difference, $cid = 0) {
   $messages=array();
-  if ((float)$difference > 0) {
+  if ((float) $difference > 0) {
     $credit = $account->balances[$cid]['cleared_balance'] + $difference - $account->balances[$cid]['max'];
     if ($credit > 0) {
       $message = t('Transaction would take @username !dif above the maximum balance of !quantity', 
@@ -1148,7 +1097,7 @@ function _transaction_user_limits($account, $difference, $cid = 0) {
           '!quantity' => theme('money', $account->balances[$cid]['min'], $cid)
         )
       );
-    } else echo $debit;
+    }
   }
   if (user_access('edit all transactions')) {
     drupal_set_message($message, 'warning');

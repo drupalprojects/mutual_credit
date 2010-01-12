@@ -368,17 +368,16 @@ function validate_limits($minmax, $required = FALSE) {
 }
 
 //options might equal 
-function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0) {
+function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options = array(), $cid=0) {
   global $user;
   if ($quantity <= 0) {
     drupal_set_message(t('@function was asked to create a transaction with negative value: @value', array('@function' => 'generate_transaction_node', '@value' => $quantity)));
     return;
-  }    
-  
+  }
   $node = $options + array(
    //default options
     'state'=> TRANSACTION_STATE_COMPLETED, 
-    'transaction_type'=>'api unspecified', 
+    'transaction_type' => 'api unspecified', 
     'quality' => NULL, 
     'starter_uid' => $user->uid,
     'uid' => $user->uid,
@@ -388,7 +387,6 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     'payee_uid' => $payee_uid,
     'payer_uid' => $payer_uid,
     'quantity' => $quantity,
-    'quality' => $quality,
     'title' => $title,
    //some basic node properties
     'type' => 'transaction',
