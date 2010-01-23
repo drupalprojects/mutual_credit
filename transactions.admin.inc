@@ -589,7 +589,10 @@ function stats_refresh($cid = 0) {
     $spent = array();
     $trades = array();
     $volume = array();
-    $states = variable_get('cc_count_pending',FALSE) ? array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING) : array(TRANSACTION_STATE_COMPLETED);
+    $states = array(TRANSACTION_STATE_COMPLETED);
+    if (variable_get('cc_count_pending',FALSE)) {
+      $states[] = TRANSACTION_STATE_PENDING;
+    }
     $result = db_query("SELECT * FROM {cc_transactions} AS t 
       LEFT JOIN {node} AS n ON t.nid = n.nid
       WHERE n.created > %d

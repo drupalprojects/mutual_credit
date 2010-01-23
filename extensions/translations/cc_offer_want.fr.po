@@ -50,15 +50,15 @@ msgstr "Offres & Demandes"
 
 #: cc_offer_want.module:68
 msgid "Max number of characters for directory entry headlines"
-msgstr ""
+msgstr "Nombre maximum de caractères pour les titres des annonces"
 
 #: cc_offer_want.module:70
 msgid "Smaller values make the directory easier to to read, encourage concise language. Max is 255. Suggested is 128"
-msgstr ""
+msgstr "Les petites valeurs favorisent la lecture de la Liste et encouragent un langage concis. Le maximum est 255. Nous suggérons 128."
 
 #: cc_offer_want.module:74
 msgid "Content types to be activated"
-msgstr ""
+msgstr "Les types de Contenu à activer"
 
 #: cc_offer_want.module:76
 msgid "Offers"
@@ -74,13 +74,11 @@ msgstr "Les deux"
 
 #: cc_offer_want.module:82
 msgid "N.B. It is also possible to disable the node body for offers and wants. See !link"
-msgstr ""
-"N.B. Vous pouvez enlever le champ \"corps\" des offres et demandes ici "
-"!link"
+msgstr "N.B. Vous pouvez enlever le champ \"corps\" des offres et demandes ici !link"
 
 #: cc_offer_want.module:91
 msgid "Max title length must be less than 255"
-msgstr ""
+msgstr "Le nombre total de caractères du titre ne peut pas dépasser 255"
 
 #: cc_offer_want.module:145
 msgid "categories"
@@ -128,15 +126,15 @@ msgstr "Détails"
 
 #: cc_offer_want.module:355
 msgid "Submit"
-msgstr "Soumettre"
+msgstr "Afficher"
 
 #: cc_offer_want.module:100
 msgid "cc_ow_content_types"
-msgstr ""
+msgstr "cc_ow_content_types"
 
 #: cc_offer_want.module:100;103
 msgid "both"
-msgstr ""
+msgstr "les deux"
 
 #: cc_offer_want.module:101
 msgid "view directory"
@@ -148,7 +146,7 @@ msgstr "modifier la liste"
 
 #: cc_offer_want.module:103
 msgid "offers"
-msgstr ""
+msgstr "offres"
 
 #: cc_offer_want.module:104
 msgid "create offer"
@@ -160,9 +158,7 @@ msgstr "Catégories des Offres & Demandes"
 
 #: cc_offer_want.install:13
 msgid "This vocabulary is for categorising activities people do in their community. It can be used like the 'yellow pages' to help locate goods and services, but can also be used later on, for monitoring purposes."
-msgstr ""
-"Ce vocabulaire est pour mettre en catégorie les activités de votre "
-"communauté, semblable au pages jaunes."
+msgstr "Ce vocabulaire est pour mettre en catégorie les activités de votre communauté, semblable au pages jaunes."
 
 #: cc_offer_want.install:14
 msgid "Choose one or more categories"
@@ -170,7 +166,7 @@ msgstr "Choississez une ou plusiers catégories"
 
 #: cc_offer_want.install:31
 msgid "Now go and make some directory categories at !link"
-msgstr "Maintenant, vous pouvez créer des catégories ici !link"
+msgstr "Vous pouvez créer des catégories ici !link"
 
 #: cc_offer_want.info:0
 msgid "Cc offers/wants"
@@ -178,11 +174,10 @@ msgstr "Cc offres/demandes"
 
 #: cc_offer_want.info:0
 msgid "Allows users to contribute to a categorised directory of offers and wants."
-msgstr ""
-"Permet aux membres de contribuer à une liste d'offres et demandes "
-"catégorisée."
+msgstr "Permet aux membres de contribuer à une liste d'offres et demandes catégorisée."
 
 #: cc_offer_want.info:0
 msgid "Complementary Currencies"
 msgstr "Monnaies Complémentaires"
+
 

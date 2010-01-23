@@ -624,7 +624,7 @@ msgid "@user's balances"
 msgstr ""
 
 #: transactions.module:304
-msgid "Start with @name"
+msgid "Start transaction with @name"
 msgstr ""
 
 #: transactions.module:334
@@ -1177,5 +1177,113 @@ msgstr ""
 
 #: views/transactions.views.inc:1275
 msgid "Transactions started by this user"
+msgstr ""
+
+#: balance_history.tpl.php:24
+msgid "Balance over time for @user"
+msgstr ""
+
+#: balance_history.tpl.php:39
+msgid "Steps"
+msgstr ""
+
+#: balance_history.tpl.php:53
+msgid "Sampled"
+msgstr ""
+
+#: balance_history.tpl.php:81
+msgid "Straight"
+msgstr ""
+
+#: balance_history.tpl.php:112
+msgid "Now"
+msgstr ""
+
+#: balance_history.tpl.php:124
+msgid "Error creating balance chart: url to google charts exceeded 2048 charts."
+msgstr ""
+
+#: balances.tpl.php:31
+msgid "Balance"
+msgstr ""
+
+#: balances.tpl.php:37
+msgid "Unconfirmed total"
+msgstr ""
+
+#: balances.tpl.php:43
+msgid "Gross income"
+msgstr ""
+
+#: balances.tpl.php:49
+msgid "Gross expenditure"
+msgstr ""
+
+#: balances.tpl.php:56
+msgid "Average rating"
+msgstr ""
+
+#: pending.tpl.php:11
+msgid "There are no pending transactions"
+msgstr ""
+
+#: pending.tpl.php:14
+msgid "Transactions for !user to sign off"
+msgstr ""
+
+#: pending.tpl.php:21
+msgid "Transactions !user started"
+msgstr ""
+
+#: statement.tpl.php:3
+msgid "There are no completed transactions."
+msgstr ""
+
+#: statement.tpl.php:45
+msgid "Date"
+msgstr ""
+
+#: statement.tpl.php:46
+msgid "Description"
+msgstr ""
+
+#: statement.tpl.php:47
+msgid "With"
+msgstr ""
+
+#: statement.tpl.php:48
+msgid "Amount"
+msgstr ""
+
+#: statement.tpl.php:49
+msgid "Feedback"
+msgstr ""
+
+#: statement.tpl.php:50
+msgid "Income"
+msgstr ""
+
+#: statement.tpl.php:51
+msgid "Expenditure"
+msgstr ""
+
+#: statement.tpl.php:52
+msgid "Running Total"
+msgstr ""
+
+#: transaction.tpl.php:57
+msgid "!starter will give !completer !amount for '!transaction_link'"
+msgstr ""
+
+#: transaction.tpl.php:59
+msgid "!starter will receive !amount from !completer for '!transaction_link'"
+msgstr ""
+
+#: transaction.tpl.php:63
+msgid "On @submitted, !payer gave !payee !amount for '!transaction_link'"
+msgstr ""
+
+#: transaction.tpl.php:66
+msgid "On @submitted, !payer did not give !payee !amount for '!transaction_link'. (DELETED)'"
 msgstr ""
 

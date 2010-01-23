@@ -146,7 +146,6 @@ function cc_offer_want_block($op = 'list', $delta = 0, $edit = array()) {
         'visibility' =>1,
         'pages' => 'directory*',
       );
-      
       $blocks['cc_add_item']= array(
         'info' => 'Cc ' . t('Add offers/wants'),
         'cache' => BLOCK_CACHE_PER_PAGE,

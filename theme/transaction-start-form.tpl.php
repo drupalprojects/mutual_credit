@@ -34,7 +34,7 @@ switch($mode) {
   case 'init':
   case 'edit':
     if ($starter_uid) print 'Starter:'. $starter_uid; 
-    print 'Completer:'. $completer_uid;
+    if ($completer_uid)print 'Completer:'. $completer_uid;
     if ($transaction_type) print 'Transaction type:'. $transaction_type; 
     if ($title) print 'Title: '. $title;
     if ($quantity) {

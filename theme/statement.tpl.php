@@ -35,7 +35,7 @@ OR[income] => theme(money $quantity...)
   [payer] => <a href="/user/4" title="View user profile.">darren</a>
   [notme] => <a href="/user/4" title="View user profile.">darren</a>
   [transaction_link] => <a href="/node/44">gift from carl to darren</a>
-  [actions] => some HTML buttons
+  [actions] => some HTML links
 )
  */
  
@@ -50,8 +50,8 @@ OR[income] => theme(money $quantity...)
     'income' => t('Income'),
     'expenditure' => t('Expenditure'),
     'balance' => t('Running Total'),
-    'actions' => '',
   );
+  if (strlen($actions)) $columns['actions'] = $actions;
   if (!variable_get('cc_transaction_qualities', array())) unset ($columns['quality']);
   //put the given array into the columns declared to make a table
   foreach($transactions as $key => $transaction) {

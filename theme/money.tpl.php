@@ -7,10 +7,8 @@
  * $quantity = Number, formatted according to currency type.
  * $name = the currency name (usually pluralised)
  */
-?>
-<span class="currency">
-<?php 
+//all spare lines have been removed so as not to bugger up the export to csv
+?><span class="currency"><?php 
   print $sign.$icon.$quantity;
   if (!$icon) print ' '. $name;
 ?></span>
-

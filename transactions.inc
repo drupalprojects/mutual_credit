@@ -137,8 +137,8 @@ function transaction_base_form($transaction, $mode = 'edit') {
   $form = array();
   $accounts = _get_all_trading_accounts();
   //just check, if we are here without using a button, that user can edit the form
-  if (($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) || !$accounts) {
-    drupal_access_denied();
+  if ($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) {
+    drupal_set_message(t('You cannot edit this transaction'), 'error');
   }
   if ($mode == 'edit' && user_access('edit all transactions')) {
     $mode = 'fulledit';
@@ -480,11 +480,11 @@ function transaction_fields_validate(&$transaction) {
   if (strlen($transaction->quantity)) {
     if (!is_numeric($transaction->quantity)) {
       form_set_error('quantity', t('You must enter a number'));
-      $currency = currency_load($transaction->cid);
-      if ($currency->division == 'integer') {
-        if (intval($transaction->quantity) != (float)$transaction->quantity) {
-          form_set_error('quantity', t('You must enter a whole number'));
-        }
+    }
+    $currency = currency_load($transaction->cid);
+    if ($currency->division == 'integer') {
+      if (intval($transaction->quantity) != (float)$transaction->quantity) {
+        form_set_error('quantity', t('You must enter a whole number'));
       }
     }
   }
@@ -675,8 +675,8 @@ function template_preprocess_period_volumes($vars) {
 //google-o-meter showing balance between balance limits
 //defaults options see below
 function template_preprocess_balance_limits(&$vars) {
-  $vars['max'] = $vars['account']->balances[$vars['cid']]['max'];
-  $vars['min'] = $vars['account']->balances[$vars['cid']]['min'];
+  $vars['max'] = $vars['account']->balances[$vars['cid']]['limit_max'];
+  $vars['min'] = $vars['account']->balances[$vars['cid']]['limit_min'];
   $vars['balance'] = floatval($vars['account']->balances[$vars['cid']]['cleared_balance']);
 }
 
@@ -689,6 +689,7 @@ function template_preprocess_statement(&$vars) {
     $vars['transactions'][$key] = (array)$transaction;
     $vars['transactions'][$key]['amount'] = theme('money', $transaction->quantity, $transaction->cid);
     $vars['transactions'][$key]['balance'] = theme('money', $transaction->balance, $transaction->cid);
+    $vars['transactions'][$key] += preprocess_transaction_fields($vars['account'], $transaction);
     if ($transaction->payee_uid == $vars['account']->uid) {
       //change the sign on the money to negative
       $vars['transactions'][$key]['income'] = theme('money', $transaction->quantity, $transaction->cid);
@@ -700,7 +701,6 @@ function template_preprocess_statement(&$vars) {
       //negate the quantity  (and derived amount)
       $vars['transactions'][$key]['quantity'] = -$transaction->quantity;
     }
-    $vars['transactions'][$key] += preprocess_transaction_fields($vars['account'], $transaction);
   }
 }
 
@@ -722,9 +722,6 @@ function template_preprocess_transaction(&$vars) {
   if (!$vars['transaction']->created) {
     $vars['transaction']->created = time();
   }
-  if ($vars['transaction']->nid && $vars['actions']) {
-    $vars['actions'] = implode("\n", _transaction_get_buttons($vars['transaction']));
-  }
   //and we present the main transaction fields as variables in their own rights
   $vars += preprocess_transaction_fields($vars['account'], $vars['transaction']);
   $vars['transaction'] = (array)$vars['transaction']; // because the themeing layer sees transaction as an array, not an object
@@ -737,6 +734,7 @@ function preprocess_transaction_fields($account, $transaction) {
   $vars['completer'] = theme('username', user_load($transaction->completer_uid));
   $vars['amount'] = theme('money', $transaction->quantity, $transaction->cid);
   $vars['balance'] = theme('money', $transaction->balance, $transaction->cid);
+  $vars['actions'] = implode("\n", _transaction_get_buttons($transaction));
 
   if (count($qualities = variable_get('cc_transaction_qualities', array()))) {
     $vars['rating'] = $qualities[$transaction->quality];
@@ -1076,34 +1074,36 @@ function _convert_name_uid(&$element, &$form_state) {
 function _transaction_user_limits($account, $difference, $cid = 0) {
   $messages=array();
   if ((float) $difference > 0) {
-    $credit = $account->balances[$cid]['cleared_balance'] + $difference - $account->balances[$cid]['max'];
+    $credit = $account->balances[$cid]['cleared_balance'] + $difference - $account->balances[$cid]['limit_max'];
     if ($credit > 0) {
       $message = t('Transaction would take @username !dif above the maximum balance of !quantity', 
         array(
           '@username' => strip_tags(theme('username', $account)),
           '!dif' => theme('money', $credit, $cid),
-          '!quantity' => theme('money', $account->balances[$cid]['max'], $cid)
+          '!quantity' => theme('money', $account->balances[$cid]['limit_max'], $cid)
         )
       );
     }
   }
   else {
-    $debit = $account->balances[$cid]['min'] - ($account->balances[$cid]['cleared_balance'] + $difference);
+    $debit = $account->balances[$cid]['limit_min'] - ($account->balances[$cid]['cleared_balance'] + $difference);
     if ($debit > 0) {
       $message = t('Transaction would take @username !dif below the minimum balance of !quantity', 
         array(
           '@username' => strip_tags(theme('username', $account)),
           '!dif' => theme('money', $debit, $cid),
-          '!quantity' => theme('money', $account->balances[$cid]['min'], $cid)
+          '!quantity' => theme('money', $account->balances[$cid]['limit_min'], $cid)
         )
       );
     }
   }
-  if (user_access('edit all transactions')) {
-    drupal_set_message($message, 'warning');
-  }
-  else {
-    form_set_error('quantity', $message);
+  if ($message) {
+    if (user_access('edit all transactions')) {
+      drupal_set_message($message, 'warning');
+    }
+    else {
+      form_set_error('quantity', $message);
+    }
   }
 }
 
@@ -1126,6 +1126,7 @@ function _transaction_email_replacements() {
  * TODO this function should return a single form, and the redirects for each button should happen on processing
  */
 function _transaction_get_buttons($transaction) {
+  if (!$transaction->nid) return array();
   global $user;
   $buttons = array();
 

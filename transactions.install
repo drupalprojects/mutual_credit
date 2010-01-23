@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Install, update and uninstall functions for the XXX module.
+ * Install, update and uninstall functions for the transactions module.
  */
 
 
@@ -216,6 +216,16 @@ function transactions_schema () {
         'size' => 'normal',
         'default' => '0',
       ),
+      'limit_max' => array(
+        'description' => "Maximum balance that this user can hold in this currency",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'limit_min' => array(
+        'description' => "Minimum balance that this user can hold in this currency",
+        'type' => 'int',
+        'size' => 'normal',
+      )
   	)
   );
   return $schema;
@@ -364,5 +374,20 @@ function transactions_update_6012($ret=array()) {
       $ret[] = update_sql("UPDATE {permission} SET perm = '".$perm . ", use local currency' WHERE rid = ".$role['rid']);
     }
   }
+  return $ret;
+}
+function transactions_update_6013($ret=array()) {
+  db_add_field($ret, 'cc_balance_cache', 'limit_max', array(
+    'description' => "Maximum balance that this user can hold in this currency",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
+  db_add_field($ret, 'cc_balance_cache', 'limit_min', array(
+    'description' => "Minimum balance that this user can hold in this currency",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
   return $ret;
 }

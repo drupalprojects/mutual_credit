@@ -53,29 +53,27 @@ msgstr "Qui est votre partenaire?"
 
 #: transactions.inc:242
 msgid "Transaction type"
-msgstr ""
+msgstr "Type d'échange"
 
 #: transactions.inc:262
 msgid "Transaction is waiting to be confirmed."
-msgstr ""
-"Décocher si vous voulez comptabiliser l'échange sans demander une "
-"confirmation."
+msgstr "Décocher si vous voulez comptabiliser l'échange sans demander une confirmation."
 
 #: transactions.inc:295
 msgid "00 hours"
-msgstr ""
+msgstr "00 (min)"
 
 #: transactions.inc:296
 msgid "15 minutes"
-msgstr ""
+msgstr "15 min."
 
 #: transactions.inc:297
 msgid "30 minutes"
-msgstr ""
+msgstr "30 min."
 
 #: transactions.inc:298
 msgid "45 minutes"
-msgstr ""
+msgstr "45 min."
 
 #: transactions.inc:312
 msgid "Rate the quality of what was paid for"
@@ -83,7 +81,7 @@ msgstr "Donner une appréciation de l'échange"
 
 #: transactions.inc:325
 msgid "Please type a username (or user ID)"
-msgstr ""
+msgstr "Veuillez saisir un n° d'adhérent (ou un nom d'utilisateur)"
 
 #: transactions.inc:393
 msgid "Do you want to start this transaction?"
@@ -99,7 +97,7 @@ msgstr "Demander confirmation"
 
 #: transactions.inc:447
 msgid "Are you sure you want to complete the transaction \"@description\"?"
-msgstr ""
+msgstr "Etes-vous sûr de vouloir confirmer l'échange suivant: \"@description\"?"
 
 #: transactions.inc:450
 msgid "Complete"
@@ -111,11 +109,11 @@ msgstr "Annuler"
 
 #: transactions.inc:461
 msgid "Transaction with !starter completed"
-msgstr ""
+msgstr "Échange avec !starter comptabilisé"
 
 #: transactions.inc:468
 msgid "No transaction type selected"
-msgstr ""
+msgstr "Veuillez choisir le sens du flux des unités"
 
 #: transactions.inc:471
 msgid "Plain text only in transaction descriptions."
@@ -123,11 +121,11 @@ msgstr "Veuillez utiliser du texte seul dans les descriptions d'échange."
 
 #: transactions.inc:474
 msgid "Please describe the transaction in more detail"
-msgstr ""
+msgstr "Veuillez décrire l'échange avec plus de détails"
 
 #: transactions.inc:477
 msgid "A transaction must involve two different members"
-msgstr ""
+msgstr "Un échange doit être entre deux adhérents différents"
 
 #: transactions.inc:482
 msgid "You must enter a number"
@@ -135,11 +133,11 @@ msgstr "Veuillez saisir un chiffre"
 
 #: transactions.inc:486
 msgid "You must enter a whole number"
-msgstr ""
+msgstr "Veuillez saisir un numéro entier"
 
 #: transactions.inc:492
 msgid "You cannot exchange nothing"
-msgstr ""
+msgstr "Veuillez décrire l'échange dans le champ prévu"
 
 #: transactions.inc:495
 msgid "Who are you transacting with?"
@@ -147,29 +145,27 @@ msgstr "Avec qui avez-vous échangé ?"
 
 #: transactions.inc:503
 msgid "Negative numbers not allowed. You may be able to change the direction of the transaction"
-msgstr ""
+msgstr "Les nombres négatifs ne sont pas admis. Veuillez changer le sens du flux des unités."
 
 #: transactions.inc:527;545
 msgid "!user has been notified by email."
-msgstr ""
-"Un email de demande de confirmation d'échange a été envoyé à "
-"!user "
+msgstr "Un email de demande de confirmation d'échange a été envoyé à !user "
 
 #: transactions.inc:803;812
 msgid "No statistics will be available until some transactions have happened"
-msgstr ""
+msgstr "Les statistiques seront disponibles dès que les échanges seront saisis (et confirmés)"
 
 #: transactions.inc:804;813
 msgid "Number of transactions: @num"
-msgstr ""
+msgstr "Nombre d'échanges: @num"
 
 #: transactions.inc:805;814
 msgid "Total volume traded: @num"
-msgstr ""
+msgstr "Volume total des échanges: @num"
 
 #: transactions.inc:806;815
 msgid "Number of trading members: @num"
-msgstr ""
+msgstr "Nombre d'adhérents ayant échangé @num"
 
 #: transactions.inc:807
 msgid "Average trading volume: @num"
@@ -177,7 +173,7 @@ msgstr "Volume d'échange moyen: @num"
 
 #: transactions.inc:821
 msgid "Most trades:"
-msgstr ""
+msgstr "Le plus d'échanges:"
 
 #: transactions.inc:826
 msgid "Largest incomes:"
@@ -185,17 +181,15 @@ msgstr "Les cumuls importants:"
 
 #: transactions.inc:831
 msgid "Largest expenditure:"
-msgstr ""
+msgstr "Sorties importantes:"
 
 #: transactions.inc:837
 msgid "Highest trading volumes:"
-msgstr ""
+msgstr "Volumes d'échanges les plus importants"
 
 #: transactions.inc:976
 msgid "No roles have permission to trade. Please enable some permissions: "
-msgstr ""
-"Aucun Rôle n'a le droit d'échanger. Veuillez changer les permissions "
-":"
+msgstr "Aucun Rôle n'a le droit d'échanger. Veuillez changer les permissions: "
 
 #: transactions.inc:991
 msgid "Expenditure"
@@ -207,15 +201,15 @@ msgstr "Unités reçues"
 
 #: transactions.inc:1066
 msgid "Please enter a member's username or email"
-msgstr ""
+msgstr "Veuillez saisir un nom d'utilisateur ou un email"
 
 #: transactions.inc:1081
 msgid "Transaction would take @username !dif above the maximum balance of !quantity"
-msgstr ""
+msgstr "Cet échange va mettre le compte de @username, !dif  au delà du solde maximum de !quantity"
 
 #: transactions.inc:1093
 msgid "Transaction would take @username !dif below the minimum balance of !quantity"
-msgstr ""
+msgstr "Cet échange va mettre le compte de @username, !dif en-dessous du solde minimum de !quantity"
 
 #: transactions.inc:1113
 msgid "the username of the recipient"
@@ -231,7 +225,7 @@ msgstr "un aperçu complet de l'échange"
 
 #: transactions.inc:1116
 msgid "description of the transaction by the starter"
-msgstr ""
+msgstr "description de l'échange par la personne qui a saisi l'échange"
 
 #: transactions.inc:1117
 msgid "web address of pending transactions page"
@@ -239,21 +233,22 @@ msgstr "adresse web de la page des échanges en attente de confirmation"
 
 #: transactions.inc:1118
 msgid "web address of profile page with subscription checkbox"
-msgstr ""
+msgstr "l'adresse internet de la page du profil avec la case à cocher pour s'abonner/se désabonner"
 
 #: transactions.inc:1119
 msgid "web address of 'bureau' page of this user"
-msgstr ""
+msgstr "l'adresse internet du 'tableau de bord' de l'adhérent"
 
 #: transactions.inc:1120
 msgid "web address of recipient's profile page"
-msgstr ""
+msgstr "l'adresse internet du profil de l'adhérent qui a reçu cet email"
 
 #: transactions.inc:1133
 msgid "Sign"
 msgstr "Confirmer"
 
-#: transactions.inc:1136 transactions.module:333
+#: transactions.inc:1136
+#: transactions.module:333
 msgid "Change"
 msgstr "Modifier"
 
@@ -263,11 +258,11 @@ msgstr "Effacer"
 
 #: transactions.admin.inc:10
 msgid "Tell Community Forge about this community."
-msgstr ""
+msgstr "Annoncer cette association à CommunityForge.net"
 
 #: transactions.admin.inc:15
 msgid "Become part of a wider community by allowing a coordinating to know a few things about this site. Such as url, contact details, number of active traders. No personal information will be shared."
-msgstr ""
+msgstr "Faire part d'une communauté plus large en permettant à un coordinateur de connaître quelques infos sur ce site, telles que l'url, les coordonnées de contact, nombre d'adhérents actifs. Aucune information personnelle ne sera partagée."
 
 #: transactions.admin.inc:19
 msgid "Minimum number of words to describe a transaction"
@@ -275,15 +270,15 @@ msgstr "Nombre de mots minimum pour la description"
 
 #: transactions.admin.inc:24
 msgid "This site could be better if you can get members to take a few seconds more to describe the transaction in more detail. It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4."
-msgstr ""
+msgstr "Ce site sera amélioré si vos adhérents prennent quelques secondes de plus pour décrire leurs échanges. Ceci facilite également la catégorisation, et la validation de l'échange par le partenaire. Valeur préconisée: 4"
 
 #: transactions.admin.inc:28
 msgid "Number of the balancing account"
-msgstr ""
+msgstr "N° du compte central (dit, compte d'équilibre)"
 
 #: transactions.admin.inc:33
 msgid "The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank."
-msgstr ""
+msgstr "Le compte central (ou compte d'équilibre) est important, mais pas indispensable. Il sert à \"taxer\" vos adhérents pour  \"rétribuer\"  les tâches accomplies par d'autres adhérents pour la collectivité."
 
 #: transactions.admin.inc:38
 msgid "Maintenance"
@@ -291,11 +286,11 @@ msgstr "Maintenance"
 
 #: transactions.admin.inc:40
 msgid "In case the balances get out of sync with the transactions."
-msgstr ""
+msgstr "Au cas où les soldes sont désynchonisés d'avec les échanges."
 
 #: transactions.admin.inc:41
 msgid "Please use this and report an issue at !url"
-msgstr ""
+msgstr "Veuillez utiliser ceci pour avertir !url d'un problème"
 
 #: transactions.admin.inc:46
 msgid "Recalulate balances & stats"
@@ -303,15 +298,15 @@ msgstr "Recalculer les soldes et les statistiques"
 
 #: transactions.admin.inc:52
 msgid "Selecting other users"
-msgstr ""
+msgstr "Sélectionnez d'autres adhérents"
 
 #: transactions.admin.inc:59
 msgid "User dropdown order"
-msgstr ""
+msgstr "Ordre de la liste déroulante des adhérents"
 
 #: transactions.admin.inc:61
 msgid "On the new transaction form, in what order should the members be listed?"
-msgstr ""
+msgstr "Choisissez l'ordre de la liste des adhérents sur le formulaire Ajouter un échange"
 
 #: transactions.admin.inc:62;71
 msgid "User ID"
@@ -323,11 +318,11 @@ msgstr "Nom d'utilisateur"
 
 #: transactions.admin.inc:66
 msgid "User dropdown field(s)"
-msgstr ""
+msgstr "Champ(s) de la liste déroulante"
 
 #: transactions.admin.inc:69
 msgid "On the new transaction form, what fields should be used to identify members in the dropdown. Field order nor the spacer character can be configured. Would be great if you choose a view for this, like a cck field."
-msgstr ""
+msgstr "Choisissez les champs utilisés pour identifier les adhérents dans le formulaire \"Ajouter un échange\" . Ni l'ordre, ni le caractère d'espacement ne peuvent être choisis."
 
 #: transactions.admin.inc:71
 msgid "Email"
@@ -335,13 +330,11 @@ msgstr "email"
 
 #: transactions.admin.inc:75
 msgid "Threshold at which to use autocomplete widget on the user selection"
-msgstr ""
-"A partir de combien de noms est-ce que le widget autocomplete se met "
-"en marche"
+msgstr "A partir de combien de noms est-ce que le widget autocomplete se met en marche"
 
 #: transactions.admin.inc:77
 msgid "When you have more users than can fit in a dropdown box, you should probably use an autocomplete field instead."
-msgstr ""
+msgstr "Quand vous avez beaucoup d'adhérents, essayez le champ \"remplissage automatique \" à la place de la liste déroulante."
 
 #: transactions.admin.inc:81
 msgid "Statistics & visualisation"
@@ -349,7 +342,7 @@ msgstr "Statistiques & visualisation"
 
 #: transactions.admin.inc:89
 msgid "On each line write a period using php !strtotime syntax, for which stats will be cached. "
-msgstr ""
+msgstr "A chaque ligne, veuillez écrire une période utilisant la syntaxe php !strtotime, pour alimenter les statistiques. "
 
 #: transactions.admin.inc:90
 msgid "For each period there is a tab on the !stats page, and a block."
@@ -357,27 +350,27 @@ msgstr "Pour chaque point, il y a un onglet sur la page !stats, et un bloc."
 
 #: transactions.admin.inc:94
 msgid "Count pending transactions"
-msgstr ""
+msgstr "Inclure des échanges en attente de confirmation"
 
 #: transactions.admin.inc:95
 msgid "Should transactions which have not yet been confirmed be included in transaction listings and in stats?"
-msgstr ""
+msgstr "Voulez-vous inclure les échanges en attente de confirmation dans les statistiques ?"
 
 #: transactions.admin.inc:100
 msgid "Preferred transaction view"
-msgstr ""
+msgstr "Préférence pour l'affichage des échanges"
 
 #: transactions.admin.inc:102
 msgid "Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."
-msgstr ""
+msgstr "Les échanges mensuels peuvent être affichés en deux formats différents. Les deux peuvent être paramétrés par le theming. "
 
 #: transactions.admin.inc:104
 msgid "A table of all transactions Full access control; cannot be click-sorted; uses drupal pager; configure using THEME_statement()"
-msgstr ""
+msgstr "Une table de tous les échanges, Accès complet ; ne peut pas être trié en cliquant ; utilise la pagination Drupal ; à configurer avec THEME_statement()"
 
 #: transactions.admin.inc:105
 msgid "Seperate tables of incoming and outgoing transactions. Cruder access control; configure using views module."
-msgstr ""
+msgstr "Des tables de Sorties et d'Entrées séparées, peu de contrôle d'accès ; à configurer avec Views."
 
 #: transactions.admin.inc:110
 msgid "Pager requires cck, date & calendar modules"
@@ -385,17 +378,15 @@ msgstr "La pagination requiert les modules cck, date & calendar"
 
 #: transactions.admin.inc:116
 msgid "Names of transaction types"
-msgstr ""
+msgstr "Les noms des flux des échanges"
 
 #: transactions.admin.inc:120
 msgid "These are the names of the transaction types. Unnamed types will be unavailable. You must name at least one. "
-msgstr ""
+msgstr "Veuillez saisir les noms des échanges. Ceux qui n'ont pas de nom ne seront pas affichés. Vous devez en nommer au moins un."
 
 #: transactions.admin.inc:121
 msgid "For each type there is a block, a menu link (coming soon) and a permission"
-msgstr ""
-"Pour chaque type, il y a un bloc, un lien de navigation et une "
-"permission"
+msgstr "Pour chaque type, il y a un bloc, un lien de navigation et une permission"
 
 #: transactions.admin.inc:125;131;137;143
 msgid "The name of an @direction flow completed @when"
@@ -403,15 +394,15 @@ msgstr "Le nom d'un flux @direction accomplie @when"
 
 #: transactions.admin.inc:125;137
 msgid "outgoing"
-msgstr ""
+msgstr "sorties"
 
 #: transactions.admin.inc:125;131
 msgid "by the other party"
-msgstr ""
+msgstr "par le partenaire"
 
 #: transactions.admin.inc:131;143
 msgid "incoming"
-msgstr ""
+msgstr "entrées"
 
 #: transactions.admin.inc:137;143
 msgid "instantly"
@@ -419,15 +410,16 @@ msgstr "de suite"
 
 #: transactions.admin.inc:155
 msgid "Minimum number of words must be a positive integer"
-msgstr ""
+msgstr "Le nombre minimum de mots doit être un nombre positif"
 
 #: transactions.admin.inc:158
 msgid "Balancing account must be an integer."
-msgstr ""
+msgstr "Le compte d'équilibre doit être un nombre entier."
 
-#: transactions.admin.inc:162;358 transactions.module:873
+#: transactions.admin.inc:162;358
+#: transactions.module:873
 msgid "This must be an integer: @value"
-msgstr ""
+msgstr "Ceci doit être un nombre entier: @value"
 
 #: transactions.admin.inc:168
 msgid "'@period' is not a valid strtotime string"
@@ -443,9 +435,7 @@ msgstr "Utiliser la forme plurielle"
 
 #: transactions.admin.inc:200
 msgid "This default currency is made obselete if the cc_currencies module is installed."
-msgstr ""
-"L'unité d'échange par défaut devient caduque si le module "
-"cc_currencies est installé."
+msgstr "L'unité d'échange par défaut devient caduque si le module cc_currencies est installé."
 
 #: transactions.admin.inc:204
 msgid "Edit"
@@ -453,7 +443,7 @@ msgstr "Modifier"
 
 #: transactions.admin.inc:214
 msgid "Currency subdivision"
-msgstr ""
+msgstr "sous-division de l'unité"
 
 #: transactions.admin.inc:217
 msgid "integer"
@@ -469,27 +459,24 @@ msgstr "centièmes (à deux décimales)"
 
 #: transactions.admin.inc:221
 msgid "Many LETS currencies are not divisible, while hours might be divisible into quarters."
-msgstr ""
-"De nombreuses unités d'échanges ne sont pas divisibles, tandis que "
-"les heures peuvent être divisées en quarts."
+msgstr "De nombreuses unités d'échanges ne sont pas divisibles, tandis que les heures peuvent être divisées en quarts."
 
-#: transactions.admin.inc:225 transactions.module:597
+#: transactions.admin.inc:225
+#: transactions.module:597
 msgid "Balance limits"
 msgstr "Limites des soldes"
 
 #: transactions.admin.inc:226
 msgid "Balance limits are calculated AFTER the offset."
-msgstr ""
-"Les limites des soldes sont calculées à partir du point zéro choisi "
-"(si vous l'avez déplacé)."
+msgstr "Les limites des soldes sont calculées à partir du point zéro choisi (si vous l'avez déplacé)."
 
 #: transactions.admin.inc:227
 msgid "Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts"
-msgstr ""
+msgstr "Seuls les adhérents avec la permission de 'Modifier tous les échanges' peuvent saisir et confirmer les échanges qui rendent les adhérents hors-limites pour leurs soldes. "
 
 #: transactions.admin.inc:228
 msgid "Those users can also edit individual balance limits on users' account pages"
-msgstr ""
+msgstr "Ces adhérents peuvent modifier les soldes limites sur le profil des adhérents"
 
 #: transactions.admin.inc:233
 msgid "Maximum Balance"
@@ -497,7 +484,7 @@ msgstr "Solde maximum"
 
 #: transactions.admin.inc:238
 msgid "Transactions will be declined by the system if the payee balance would go above this number. Up to !num digits."
-msgstr ""
+msgstr "Les échanges qui poussent le solde de l'adhérent au-dessus de cette limite seront refusés. Jusqu'à !num chiffres."
 
 #: transactions.admin.inc:239;250
 msgid "Leave blank for no limit (not reccomended)"
@@ -513,7 +500,7 @@ msgstr "Solde minimum"
 
 #: transactions.admin.inc:249
 msgid "The system will prevent transactions if the payer balance would go below this number. Up to !num digits."
-msgstr ""
+msgstr "Les échanges qui poussent le solde de l'adhérent en-dessous de cette limite seront refusés. Jusqu'à !num chiffres."
 
 #: transactions.admin.inc:251;362
 msgid "Minimum balance must not be larger than 0"
@@ -525,31 +512,19 @@ msgstr "Déplacer tous les soldes de"
 
 #: transactions.admin.inc:260
 msgid "Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0."
-msgstr ""
-"Bien que chaque unité d'échange soit fermée et équilibrée, vous "
-"avez la possibilité de déplacer le zéro ici. Ceci est prévu pour "
-"des communautés qui attribuent des unités à chaque nouvel adhérent "
-"(en négatif ou positif)."
+msgstr "Bien que chaque unité d'échange soit fermée et équilibrée, vous avez la possibilité de déplacer le zéro ici. Ceci est prévu pour des communautés qui attribuent des unités à chaque nouvel adhérent (en négatif ou positif)."
 
 #: transactions.admin.inc:261
 msgid "This gives the impression that users are starting with a positive or negative balance."
-msgstr ""
-"Ceci donne l'impression que les adhérents débutent avec un solde "
-"positif ou négatif."
+msgstr "Ceci donne l'impression que les adhérents débutent avec un solde positif ou négatif."
 
 #: transactions.admin.inc:262
 msgid "Members start with x units 'free' but also need to restore their balance to x when they leave."
-msgstr ""
-"Des adhérents débutent avec X unités \"gratuites\" mais doivent "
-"remettre leur solde à zéro avant de quitter l'association."
+msgstr "Des adhérents débutent avec X unités \"gratuites\" mais doivent remettre leur solde à zéro avant de quitter l'association."
 
 #: transactions.admin.inc:263
 msgid "Instead of this trick, consider gifting new members from the central account, and recouping the debt through taxes"
-msgstr ""
-"Au lieu de déplacer le zéro, envisagez de faire un don aux nouveaux "
-"adhérents depuis le \"Compte d'équilibrage\" (compte de "
-"l'association), pour ensuite combler la dette par un impôt (afin de "
-"maintenir la confiance dans l'unité d'échange)."
+msgstr "Au lieu de déplacer le zéro, envisagez de faire un don aux nouveaux adhérents depuis le \"Compte d'équilibrage\" (compte de l'association), pour ensuite combler la dette par un impôt (afin de maintenir la confiance dans l'unité d'échange)."
 
 #: transactions.admin.inc:267
 msgid "Visuals"
@@ -557,17 +532,15 @@ msgstr "Affichage"
 
 #: transactions.admin.inc:268
 msgid "Displays of money can be further tweaked by overriding theme_money and/or with css class 'currency-0'"
-msgstr ""
+msgstr "L'affichage de l'unité peut être paramétré avec theme_money et/ou css class 'currency-0'"
 
 #: transactions.admin.inc:272
 msgid "Upload icon"
-msgstr ""
+msgstr "Télécharger l'icône"
 
 #: transactions.admin.inc:274
 msgid "Should be between 12px square and 16px square, preferably with a transparent background"
-msgstr ""
-"L'icône devrait mesurer 12 pixels ou 16 pixels au carré, de "
-"préférence avec un fond transparent"
+msgstr "L'icône devrait mesurer 12 pixels ou 16 pixels au carré, de préférence avec un fond transparent"
 
 #: transactions.admin.inc:279
 msgid "Comparative value"
@@ -575,50 +548,47 @@ msgstr "Valeur comparative"
 
 #: transactions.admin.inc:284
 msgid "If this currency is part of a larger trading network, it will have a value within that network (not yet operational)"
-msgstr ""
-"Si votre unité d'échange fait partie d'un réseau plus large, ce "
-"chiffre permet l'utilisation d'un taux de conversion (n'est pas encore "
-"opérationnel)"
+msgstr "Si votre unité d'échange fait partie d'un réseau plus large, ce chiffre permet l'utilisation d'un taux de conversion (n'est pas encore opérationnel)"
 
 #: transactions.admin.inc:288
 msgid "A hex colour value"
-msgstr ""
+msgstr "Une couleur hexidécimale"
 
 #: transactions.admin.inc:291
 msgid "6 hex digits"
-msgstr ""
+msgstr "les 6 chiffres hexidécimaux"
 
 #: transactions.admin.inc:329
 msgid "Traders can earn a reputation when their customers rate them highly. Use this field to list the words used to describe the quality of transactions, from worst to best, one on each line."
-msgstr ""
+msgstr "Des adhérents peuvent gagner une réputation quand leurs partenaires leur donnent une bonne appréciation. Mettez des mots pour décrire la qualité de l'échange, du pire au meilleur, un mot par ligne "
 
 #: transactions.admin.inc:330
 msgid "Example:<br />-1|Bad<br />0|As expected<br />1|Great!<br />  Leave blank to disable this feature. Note that in automated transactions, 0 will be be used, so 0 should be a neutral value."
-msgstr ""
+msgstr "P.ex:<br />-1|Mauvais<br />0|selon mes attentes<br />1|Excellent<br />  Laissez en blanc pour ne pas utiliser cette fonctionnalité. Pour des échanges automatisés la valeur 0 sera utilisée, et donc 0 devrait être une valeur neutre. "
 
 #: transactions.admin.inc:331
 msgid "Beware that changing the number of rating options after transactions have been entered will distort the averages."
-msgstr ""
+msgstr "NB:  changer le nombre de mots après que les échanges soient entrés va fausser les moyennes."
 
 #: transactions.admin.inc:332
 msgid "This feature could use a lot more work to integrate into views and stats"
-msgstr ""
+msgstr "Cette fonctionnalité pourrait bénéficier d'un coup de main pour l'intégrer dans Views et statistiques"
 
 #: transactions.admin.inc:342
 msgid "You must have more than one rating, or leave the field blank to disable the rating system"
-msgstr ""
+msgstr "Vous devez avoir plus d'une description d'appréciation, ou laisser le champ en blanc pour désactiver le système d'appréciation."
 
 #: transactions.admin.inc:365
 msgid "Maximum balance must be an integer larger than zero and minimum balance"
-msgstr ""
+msgstr "Le solde maximum doit être un nombre entier plus grand que zéro et que le solde minimum"
 
 #: transactions.admin.inc:374
 msgid "@function was asked to create a transaction with negative value: @value"
-msgstr ""
+msgstr "@function était appelé(e) à ajouter un échange avec une valeur négative: @value"
 
 #: transactions.admin.inc:504
 msgid "Flushed balance cache"
-msgstr ""
+msgstr "Le cache des soldes est vidé"
 
 #: transactions.admin.inc:556
 msgid "Carried forward"
@@ -626,7 +596,7 @@ msgstr "Solde reporté"
 
 #: transactions.module:35
 msgid "Defines a contentType called transactions, manages them and does the accounting."
-msgstr ""
+msgstr "Définit un type de contenu appelé échanges, les gère et fait la comptabilité."
 
 #: transactions.module:64
 msgid "transaction"
@@ -634,11 +604,11 @@ msgstr "échange"
 
 #: transactions.module:66
 msgid "A movement of a quantity of a currency between two users."
-msgstr "Mouvement des unités d'échanges entre deux adhérents."
+msgstr "Le flux des unités d'échanges entre deux adhérents."
 
 #: transactions.module:68
 msgid "Description of entity traded"
-msgstr ""
+msgstr "Description de l'échange"
 
 #: transactions.module:266;300
 msgid "Start transaction"
@@ -658,33 +628,31 @@ msgstr "solde de @user "
 
 #: transactions.module:304
 msgid "Start with @name"
-msgstr ""
+msgstr "J'ai échangé avec @name"
 
 #: transactions.module:334
 msgid "Editing transaction"
-msgstr ""
+msgstr "Modifier l'échange"
 
 #: transactions.module:352
 msgid "Are you sure you want to delete this transaction?"
-msgstr ""
+msgstr "Etes-vous sûr de vouloir supprimer cet échange ?"
 
 #: transactions.module:355
 msgid "The transation had not been confirmed"
-msgstr ""
+msgstr "L'échange n'avait pas été confirmé"
 
 #: transactions.module:358
 msgid "This transaction was confirmed, so the balances of both users will be affected"
-msgstr ""
+msgstr "L'échange en question avait été confirmé, donc les soldes des deux adhérents vont être ajustés."
 
 #: transactions.module:484
 msgid "Contact preferences"
-msgstr ""
+msgstr "Paramètres de contact"
 
 #: transactions.module:489
 msgid "Receive email notification when someone initiates a transaction with you"
-msgstr ""
-"Voulez-vous recevoir un email quand un adhérent demande une "
-"confirmation d'échange avec vous ?  :"
+msgstr "Voulez-vous recevoir un email quand un adhérent demande une confirmation d'échange avec vous?"
 
 #: transactions.module:491;499
 msgid "no"
@@ -696,9 +664,7 @@ msgstr "oui"
 
 #: transactions.module:497
 msgid "Receive email notification when you start a transaction"
-msgstr ""
-"Voulez-vous recevoir une copie de l'email quand vous envoyez une "
-"demande de confirmation d'échange ?  : "
+msgstr "Voulez-vous recevoir une copie de l'email quand vous envoyez une demande de confirmation d'échange?"
 
 #: transactions.module:506
 msgid "Personal balance limits (accountant only)"
@@ -716,11 +682,14 @@ msgstr "Limite maximale"
 msgid "min limit"
 msgstr "Limite minimale"
 
-#: transactions.module:586 transactions.info:0 views/transactions.views.inc:27
+#: transactions.module:586
+#: transactions.info:0
+#: views/transactions.views.inc:27
 msgid "Transactions"
 msgstr "Échanges"
 
-#: transactions.module:589 views/transactions.views.inc:1160
+#: transactions.module:589
+#: views/transactions.views.inc:1160
 msgid "Pending Transactions"
 msgstr "Échanges en attente de confirmation"
 
@@ -730,15 +699,11 @@ msgstr "Envoyer un email de demande de confirmation d'échange"
 
 #: transactions.module:612;620
 msgid "Triggers automatically"
-msgstr ""
+msgstr "S'enclenche automatiquement"
 
 #: transactions.module:620
 msgid "Send email to transaction starter."
 msgstr "Envoyer un email de confirmation à la personne qui a saisi l'échange"
-
-#: transactions.module:637;869
-msgid ""
-msgstr ""
 
 #: transactions.module:641
 msgid "Message subject"
@@ -746,15 +711,15 @@ msgstr "Objet du message"
 
 #: transactions.module:642
 msgid "Transaction notification"
-msgstr ""
+msgstr "Notification d'échange"
 
 #: transactions.module:643
 msgid "Tokens cannot be used here"
-msgstr ""
+msgstr "Les Tokens ne peuvent pas être employés ici"
 
 #: transactions.module:647
 msgid "Email template"
-msgstr ""
+msgstr "Modèle d'email"
 
 #: transactions.module:648
 msgid "This is an automated notification."
@@ -762,27 +727,23 @@ msgstr "Ceci est une notification automatique."
 
 #: transactions.module:649
 msgid "%starter has started a transaction with %completer"
-msgstr ""
+msgstr "%starter a saisi un échange avec %completer"
 
 #: transactions.module:650
 msgid "The transaction was for: %reason"
-msgstr "L'échange était : %reason"
+msgstr "L'échange était: %reason"
 
 #: transactions.module:651
 msgid "You can confirm the transaction from your profile page: %profile_url"
-msgstr "Vous pouvez confirmer l'échange sur votre profil : %profile_url "
+msgstr "Vous pouvez confirmer l'échange sur votre profil: %profile_url "
 
 #: transactions.module:652
 msgid "You can change your mail notification settings by clicking 'edit' on your profile"
-msgstr ""
-"Vous pouvez changer le paramétrage des emails en cliquant "
-"\"modifier\" sur votre profil."
+msgstr "Vous pouvez changer le paramétrage des emails en cliquant \"modifier\" sur votre profil."
 
 #: transactions.module:653
 msgid "This email will be sent to members when someone initiates a transaction with them which needs confirming. "
-msgstr ""
-"Cet email sera envoyé quand un adhérent saisi un échange qui "
-"nécessite une confirmation. "
+msgstr "Cet email sera envoyé quand un adhérent saisi un échange qui nécessite une confirmation. "
 
 #: transactions.module:654
 msgid "Don't forget to enable the trigger module and set up the trigger at !url. "
@@ -806,27 +767,27 @@ msgstr "Vous ne pouvez pas envoyer un courriel vide"
 
 #: transactions.module:680
 msgid "Your mail must have a subject"
-msgstr ""
+msgstr "Veuillez ajouter l'objet de votre email"
 
 #: transactions.module:863
 msgid "This must be a number: @value"
-msgstr ""
+msgstr "Ceci doit être un numéro: @value"
 
 #: transactions.module:883
 msgid "Color field must be 6 hex characters"
-msgstr ""
+msgstr "Le champ couleur doit contenir 6 caractères héxadécimaux"
 
 #: transactions.module:911
 msgid "Quantitative fields in database is set to type '@type'"
-msgstr ""
+msgstr "Les champs quantitatifs de la base de données sont paramétrés à '@type'"
 
 #: transactions.module:936
 msgid "Currency Icon"
-msgstr ""
+msgstr "Icône de l'unité d'échange"
 
 #: transactions.module:949
 msgid "There are no transaction types declared on the system. Please go to admin/marketplace and name some transaction types"
-msgstr ""
+msgstr "Veuillez entrer des types d'échanges à nomdevotresite/admin/marketplace"
 
 #: transactions.module:230
 msgid "use local currency"
@@ -842,13 +803,14 @@ msgstr "voir les soldes"
 
 #: transactions.module:233
 msgid "edit all transactions"
-msgstr ""
+msgstr "modifier tous les échanges"
 
 #: transactions.module:234
 msgid "configure economy"
-msgstr "Paramétrer \"économie\""
+msgstr "Paramétrer statistiques"
 
-#: transactions.module:90 transactions.info:0
+#: transactions.module:90
+#: transactions.info:0
 msgid "Complementary Currencies"
 msgstr "Monnaies Complémentaires"
 
@@ -862,21 +824,19 @@ msgstr "unité d'échange"
 
 #: transactions.module:100
 msgid "Default currency, transaction ratings and directory settings"
-msgstr ""
-"Unité d'échange par défaut, appréciation de l'échange et "
-"affichage des listes"
+msgstr "Unité d'échange par défaut, appréciation de l'échange et affichage des listes"
 
 #: transactions.module:107
 msgid "Transaction ratings"
-msgstr ""
+msgstr "Appréciation des échanges"
 
 #: transactions.module:108
 msgid "Transaction satisfaction ratings"
-msgstr ""
+msgstr "Appréciations des échanges"
 
 #: transactions.module:121
 msgid "Sign this transaction to finalise it"
-msgstr ""
+msgstr "Veuillez confirmer cet échange afin de le comptabiliser"
 
 #: transactions.module:131
 msgid "Bureau"
@@ -900,11 +860,11 @@ msgstr "statistiques"
 
 #: transactions.module:160
 msgid "All available metrics"
-msgstr ""
+msgstr "Tous les métriques"
 
 #: transactions.module:169;176
 msgid "@period"
-msgstr ""
+msgstr "@period"
 
 #: transactions.install:21
 msgid "invoice"
@@ -912,7 +872,7 @@ msgstr "demander"
 
 #: transactions.install:22
 msgid "payment"
-msgstr "versement"
+msgstr "donner"
 
 #: transactions.install:23
 msgid "claim"
@@ -920,11 +880,11 @@ msgstr "demander"
 
 #: transactions.install:24
 msgid "gift"
-msgstr "don"
+msgstr "faire un don"
 
 #: transactions.install:50
 msgid "Transaction module is installed. Set the default currency at !link"
-msgstr ""
+msgstr "Le module échanges est installé. Veuillez paramétrer l'unité d'échange par défaut ici !link"
 
 #: transactions.install:106;172
 msgid "the node to which this entry is attached"
@@ -972,7 +932,7 @@ msgstr "n° de l'échange parent"
 
 #: transactions.install:169
 msgid "cached balances, turnovers and pending balances, for exposure to views"
-msgstr ""
+msgstr "soldes en cache, sorties et \"en attente\" , pour être affiché par views"
 
 #: transactions.install:178
 msgid "the currency id, where there is more than one currency"
@@ -980,17 +940,15 @@ msgstr "le n° d'unité, quand il y a plus d'une unité d'échange"
 
 #: transactions.info:0
 msgid "Makes a contentType called transactions and manages the way that users create and view this content."
-msgstr ""
-"Crée un type de contenu appelé \"échanges\" et gère la façon dont "
-"les adhérents créent et consultent ce contenu."
+msgstr "Crée un type de contenu appelé \"échanges\" et gère la façon dont les adhérents créent et consultent ce contenu."
 
 #: views/transactions.views.inc:30
 msgid "Transaction"
-msgstr "Echange"
+msgstr "Échange"
 
 #: views/transactions.views.inc:31
 msgid "Money flows between users."
-msgstr ""
+msgstr "Le Flux d'unités entre adhérents."
 
 #: views/transactions.views.inc:41;59;678;703
 msgid "Payer"
@@ -1002,7 +960,7 @@ msgstr "Le n° de l'adhérent qui a donné des unités d'échange."
 
 #: views/transactions.views.inc:47
 msgid "Show only transactions where the current user paid"
-msgstr ""
+msgstr "Afficher les échanges ou cet adhérent à versé des unités"
 
 #: views/transactions.views.inc:51
 msgid "The user who gave currency in the transaction."
@@ -1082,7 +1040,7 @@ msgstr "Appréciation"
 
 #: views/transactions.views.inc:132
 msgid "Quality of the transaction according to the payer"
-msgstr ""
+msgstr "Appréciation de l'échange selon la personne qui a versé des grains. "
 
 #: views/transactions.views.inc:138;332;766
 msgid "Amount"
@@ -1094,7 +1052,7 @@ msgstr "Nombre d'unités d'échange transférées"
 
 #: views/transactions.views.inc:145
 msgid "Transactions above or below a certain value"
-msgstr ""
+msgstr "Echanges en-dessous ou au-dessus d'une certaine valeur"
 
 #: views/transactions.views.inc:150
 msgid "Transaction state"
@@ -1106,7 +1064,7 @@ msgstr "Que l'échange soit comptabilisé ou en attente"
 
 #: views/transactions.views.inc:167;199;774
 msgid "Currency ID"
-msgstr ""
+msgstr "ID de l'unité d'échange"
 
 #: views/transactions.views.inc:169
 msgid "The currency that the transaction was conducted in"
@@ -1114,7 +1072,7 @@ msgstr "L'unité de l'échange en question"
 
 #: views/transactions.views.inc:174;201;205
 msgid "Currency id"
-msgstr ""
+msgstr "id de l'unité d'échange"
 
 #: views/transactions.views.inc:182
 msgid "User Balance"
@@ -1150,7 +1108,7 @@ msgstr "le cumul de tous les échanges en attente de confirmation, (@type) "
 
 #: views/transactions.views.inc:227
 msgid "Pending Balance"
-msgstr ""
+msgstr "en attente"
 
 #: views/transactions.views.inc:229
 msgid "balance including pending transactions, (@type)"
@@ -1194,7 +1152,7 @@ msgstr "Il n'y a pas d'unités d'échange entrées pendant cette période."
 
 #: views/transactions.views.inc:899
 msgid "Transaction list"
-msgstr ""
+msgstr "Liste des échanges"
 
 #: views/transactions.views.inc:901
 msgid "There are no transactions in the system yet"
@@ -1206,13 +1164,11 @@ msgstr "Tous les échanges"
 
 #: views/transactions.views.inc:960
 msgid "all transactions on the system, with optional argument for currency"
-msgstr ""
-"tous les échanges dans le système, avec un filtre par unité "
-"d'échange"
+msgstr "tous les échanges dans le système, avec un filtre par unité d'échange"
 
 #: views/transactions.views.inc:1080
 msgid "incomplete transactions, per user"
-msgstr "Echanges en cours de confirmation, par adhérent"
+msgstr "Échanges en cours de confirmation, par adhérent"
 
 #: views/transactions.views.inc:1161
 msgid "There are no transactions to complete"
@@ -1220,9 +1176,116 @@ msgstr "Vous n'avez pas d'échange à confirmer"
 
 #: views/transactions.views.inc:1211
 msgid "Transactions for this user to complete"
-msgstr ""
+msgstr "Echanges à confirmer par cet adhérent"
 
 #: views/transactions.views.inc:1275
 msgid "Transactions started by this user"
-msgstr ""
+msgstr "Echanges saisis par cet adhérent"
 
+#: balance_history.tpl.php:24
+msgid "Balance over time for @user"
+msgstr "Evolution du solde de @user"
+
+#: balance_history.tpl.php:39
+msgid "Steps"
+msgstr "Echelons"
+
+#: balance_history.tpl.php:53
+msgid "Sampled"
+msgstr "Echantillonné"
+
+#: balance_history.tpl.php:81
+msgid "Straight"
+msgstr "Droit"
+
+#: balance_history.tpl.php:112
+msgid "Now"
+msgstr "Aujourd'hui"
+
+#: balance_history.tpl.php:124
+msgid "Error creating balance chart: url to google charts exceeded 2048 charts."
+msgstr "Erreur dans la création du tableau: plus que 2048 points."
+
+#: balances.tpl.php:31
+msgid "Balance"
+msgstr "Solde"
+
+#: balances.tpl.php:37
+msgid "Unconfirmed total"
+msgstr "en attente"
+
+#: balances.tpl.php:43
+msgid "Gross income"
+msgstr "Entrées"
+
+#: balances.tpl.php:49
+msgid "Gross expenditure"
+msgstr "Sorties"
+
+#: balances.tpl.php:56
+msgid "Average rating"
+msgstr "Appréciation moyenne"
+
+#: pending.tpl.php:11
+msgid "There are no pending transactions"
+msgstr "Pas d'échanges en attente de confirmation"
+
+#: pending.tpl.php:14
+msgid "Transactions for !user to sign off"
+msgstr "Echanges à confirmer par !user"
+
+#: pending.tpl.php:21
+msgid "Transactions !user started"
+msgstr "Echanges saisis par !user"
+
+#: statement.tpl.php:3
+msgid "There are no completed transactions."
+msgstr "Vous n'avez pas d'échanges comptabilisés"
+
+#: statement.tpl.php:45
+msgid "Date"
+msgstr "Date"
+
+#: statement.tpl.php:46
+msgid "Description"
+msgstr "Description"
+
+#: statement.tpl.php:47
+msgid "With"
+msgstr "avec"
+
+#: statement.tpl.php:48
+msgid "Amount"
+msgstr "Unité(s)"
+
+#: statement.tpl.php:49
+msgid "Feedback"
+msgstr "Feedback"
+
+#: statement.tpl.php:50
+msgid "Income"
+msgstr "Entrées"
+
+#: statement.tpl.php:51
+msgid "Expenditure"
+msgstr "Sorties"
+
+#: statement.tpl.php:52
+msgid "Running Total"
+msgstr "Total courant"
+
+#: transaction.tpl.php:57
+msgid "!starter will give !completer !amount for '!transaction_link'"
+msgstr "!starter va donner à !completer !amount pour '!transaction_link'"
+
+#: transaction.tpl.php:59
+msgid "!starter will receive !amount from !completer for '!transaction_link'"
+msgstr "!starter va recevoir !amount de la part de !completer pour l'échange '!transaction_link'"
+
+#: transaction.tpl.php:63
+msgid "On @submitted, !payer gave !payee !amount for '!transaction_link'"
+msgstr "!payer a donné !payee !amount pour l'échange '!transaction_link' du @submitted"
+
+#: transaction.tpl.php:66
+msgid "On @submitted, !payer did not give !payee !amount for '!transaction_link'. (DELETED)'"
+msgstr "!payer n'as pas donné à !payee !amount pour l'échange '!transaction_link' le @submitted, car cet échange est supprimé."
