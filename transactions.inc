@@ -185,7 +185,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
   if ($mode == 'fulledit') {
     $form['#selector_set'] = 'both';
   }
-  elseif ((bool)$payer != (bool)$payee)  {
+  elseif (user_access('edit all transactions') || (bool)$payer != (bool)$payee)  {
     $form['#selector_set'] = 'payer_payee';
   }
   else {
@@ -210,11 +210,15 @@ function transaction_base_form($transaction, $mode = 'edit') {
         '#options' => array(0 => t('(Please choose...)')) + $accounts,
       );
     }
+    $form['transaction_type'] = array(
+      '#type' => 'hidden',
+      '#default_value' => '3rdparty_confirm',
+    );
   }
   if (($form['#selector_set'] == 'starter_completer' || $form['#selector_set'] == 'both' )) {
     if (!$starter || $mode =='fulledit' || (user_access('edit all transactions') && $mode != 'summary')) {
     //special users can pretend the transaction was started by someone else
-      $form['starter_uid']=array(
+      $form['starter_uid'] = array(
         '#autocomplete_path' => 'user/autocomplete',
         '#type' => 'select',
         '#title' => t('Initiator, (if not you)'),
@@ -228,7 +232,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
       if (!user_access('edit all transactions')) {
         unset($accounts[$user->{uid}]); //remove user from list of accounts shown to form
       }
-      $form['completer_uid']=array(
+      $form['completer_uid'] = array(
         '#type' => 'select',
         '#title' => t('With whom did you transact?'),
         '#default_value' => $completer,
@@ -236,7 +240,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
         '#required' => TRUE
       );
     }
-    if (count($allowed_transactions) > 1 && ($mode == 'fulledit' || $ttype == '' )) {
+    if (count($allowed_transactions) > 1 && ($mode == 'fulledit' || $ttype == '')) {
       $form['transaction_type'] = array(
         '#type' => 'select',
         '#title' => t('Transaction type'),
@@ -300,7 +304,7 @@ function transaction_base_form($transaction, $mode = 'edit') {
     );
 
     //these affect the quantity field:
-    unset($form['quantity']['#field_suffix']);
+    //unset($form['quantity']['#field_suffix']);
     $form['quantity']['#required'] == FALSE;
   }
   
@@ -358,14 +362,20 @@ function transaction_start_form($form_state, $transaction = NULL, $presets = 'ed
     $transaction  = _infer_transaction_from_form($form_state['values']);
   }
   switch ($form_state['storage']['step']) {
-    case 1:
+    case 1: 
       static $form;
       if ($form) return $form; //because the transaction is built again using drupal_rebuild_form Form API is complex!
       if (!$transaction)$transaction = (object)array();
       if (!$transaction->starter_uid) {
         $transaction->starter_uid = $GLOBALS['user']->uid; 
       }
-      $form = transaction_base_form($transaction, 'init');
+      if ($form_state['clicked_button']['#id']=='edit-previous') {
+        $mode = 'edit';
+      }
+      else  {
+        $mode = 'init';
+      }
+      $form = transaction_base_form($transaction, $mode);
       if ($form['quality']) {
         $form['quality']['#access'] = FALSE;
       }
@@ -398,8 +408,7 @@ function transaction_start_form($form_state, $transaction = NULL, $presets = 'ed
         '#value' => t('Go back'),
         '#weight' => 11,
       );
-      $form['#redirect'] = 'user/'. $transaction->starter_uid .'/bureau';
-      
+      $form['#redirect'] = 'user/'. $transaction->starter_uid;
       break;
   }
   $form['next'] = array(
@@ -491,7 +500,7 @@ function transaction_fields_validate(&$transaction) {
   else {
     form_set_error('quantity', t('You cannot exchange nothing'));
   }
-  if (!$transaction->completer_uid) {
+  if ($transaction->starter_uid && !$transaction->completer_uid) {
     form_set_error('completer_uid', t('Who are you transacting with?'));
   }
 }
@@ -813,23 +822,23 @@ function theme_stats_page($stats) {
   $html .= '<div class="stat">' . t("Number of trading members: @num", array('@num' => $stats['misc']['active_members'])) .'</div>';
   //shorten the arrays to a useful amount
   foreach ($stats['trades_per_user'] as $uid=>$count) {
-    $best_traders[] = theme('username', user_load($uid), 'profile') . ' (' . $count . ')';
+    $best_traders[] = theme('username', user_load($uid)) . ' (' . $count . ')';
     if (count($best_traders) == $top_how_many) break;
   }
   $html .= '<div class="stat">' . t("Most trades:") .'<ol><li>'. implode("</li>\n<li>",$best_traders) .'</li></ol></div>';
   foreach ($stats['highest_incomes'] as $uid=>$count) {
-    $incomes[] =  theme('username', user_load($uid), 'profile') .' ('. $count .')';
+    $incomes[] =  theme('username', user_load($uid)) .' ('. $count .')';
     if (count($incomes) == $top_how_many) break;
   }
   $html .= '<div class="stat">' . t("Largest incomes:") .'<ol><li>'. implode("</li>\n<li>", $incomes) . '</li></ol></div>';
   foreach ($stats['highest_expenditures'] as $uid=>$count) {
-    $expenditure[] =  theme('username', user_load($uid), 'profile') .' ('. $count .')';
+    $expenditure[] =  theme('username', user_load($uid)) .' ('. $count .')';
     if (count($expenditure) == $top_how_many) break;
   }
   $html .= '<div class="stat">'. t("Largest expenditure:") .'<ol><li>'. implode("</li>\n<li>", $expenditure) . '</li></ol></div>';
   
   foreach ($stats['highest_volumes'] as $uid=>$count) {
-    $volumes[] =  theme('username', user_load($uid), 'profile') .' ('. $count .')';
+    $volumes[] =  theme('username', user_load($uid)) .' ('. $count .')';
     if (count($volumes) == $top_how_many) break;
   }
   $html .= '<div class="stat">' . t("Highest trading volumes:") . '<ol><li>'. implode("</li>\n<li>", $volumes) .'</li></ol></div>';
@@ -998,7 +1007,6 @@ function _get_view_transactions_by_user($where) {
   }
 }
 
-
 /*
  * This function converts the post from the transaction_start_form or transaction_node_form, 
  * into something like a node,
@@ -1022,13 +1030,13 @@ function _infer_transaction_from_form($post) {
     $transaction->starter_uid = $post['starter_uid'];
     $transaction->completer_uid = $post['completer_uid'];
   }
-  elseif  ($post['payer_uid'] && $post['payee_uid'] && !$post['starter_uid']) {
-    if (substr($post['transaction_type'], 0, 8) == 'incoming') {
+  elseif ($post['payer_uid'] && $post['payee_uid']) {
+    if (substr($post['transaction_type'], 0, 8) == 'outgoing') {
       //this is for flows towards the starter user
-      $transaction->starter_uid  = intval($post['payee_uid']);
+      $transaction->starter_uid = intval($post['payee_uid']);
       $transaction->completer_uid = intval($post['payer_uid']);
     }
-    elseif (substr($post['transaction_type'], 0, 8) == 'outgoing') {
+    else{ //sometimes transaction form doesn't have $transaction_type
       //flows away from the starter user
       $transaction->starter_uid = intval($post['payer_uid']);
       $transaction->completer_uid = intval($post['payee_uid']);

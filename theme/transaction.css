@@ -38,11 +38,7 @@ input.form-autocomplete,
 #transaction-start-form #edit-title-1{
   width:85%;
   }
-  
-.block #edit-completer-uid,
-.block #edit-starter-uid{
-  font-size:85%;
-  }
+
 
 .block #edit-next-1.form-submit{
   float:right;

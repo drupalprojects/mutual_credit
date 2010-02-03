@@ -265,8 +265,7 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
       $blocks['cc_new_transaction']= array(
         'info' => 'Cc '. t('Start transaction'),
         'visibility' => 0,
-        'pages' => 'transaction*
-        admin*',
+        'pages' => "transaction*\nadmin*",
       );
       $blocks['cc_user_balances'] = array(
         'info' => 'Cc '. t('User Balances'),
@@ -288,10 +287,9 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
         case 'cc_user_balances':
           if (user_access('view all transactions') && arg(0) == 'user' && $uid = arg(1)) {
             $account = user_load($uid);
-            $balances = transactions_user_balances($account->uid);
             return array(
               'subject' => t("@user's balances", array('@user' => theme('username', $account))),
-              'content' => theme('balances', $balances),
+              'content' => transactions_user_balances($account->uid),
             );
           }
           break;
@@ -453,11 +451,12 @@ function transactions_view($node, $teaser = FALSE, $page = FALSE) {
  */
 function transactions_user($op, &$edit, &$account, $category = NULL) {
   if ($op == 'categories') return;  //because $account = NULL which causes an error
+  if (!user_access('use local currency', $account) && $op!='insert') return;
   //load all the currencies this user has access to
   $currencies = currencies_load(array('uids' => array($account->uid)));
+  
   switch ($op) {
     case 'load':
-      if (!user_access('use local currency', $account)) return;
       //put the user stats into the user object, where the theming layer can see them
       $result = db_query("SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean, limit_max, limit_min
           FROM {cc_balance_cache} WHERE uid = %d",
@@ -479,7 +478,6 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       }
       break;
     case 'form':
-      if (!user_access('use local currency', $account)) return;
       if ($category != 'account') return;
       if (!module_exists('contact')) { //buggers up if the fieldset is declared twice
         $form['contact']['#type'] = 'fieldset';
@@ -563,6 +561,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
       $def_cur = currency_load();
       _recalculate_balances(array($edit['uid']), $def_cur->nid);
+      break;
       
     case 'view':// put all the pending transactions on the user's front page, where they can be seen by the other participants in them
       if (isset($account->balances) && user_access('view all balances')) {

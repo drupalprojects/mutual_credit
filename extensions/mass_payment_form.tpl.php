@@ -1,4 +1,19 @@
 <?php
+/* mass payout form
+one person [autocomplete] or whatever
+is paying everyone except[multiselect dropdown traders only]
+what for
+how much
+completed?
+
+mass collect form
+all traders except [ traders ]
+are paying [autocomplete]
+what for
+how much 
+completed
+*/
+
 /*
  * transaction_start_form.tpl.php 
  * An opportunity to rearrange the transaction form without using hook_form_alter.
@@ -26,40 +41,19 @@
  * $summary = teaser from transaction.tpl.php
  */
  $currency = variable_get('cc_default_currency', NULL);
+ //if ($backdate) print 'On'. $backdate; //from an optional module, not tested here
+if ($payees) {
+  print t('This account'). $payer_uid;
+  print t('is paying all accounts except:'). $payees;
+}
+else {
+  print t('All accounts except these'). $non_payers;
+  print t('are paying'). $payee_uid;
+}
+print t('The transaction is for:'). $title;
 
-  if ($backdate) print 'On'. $backdate; //from an optional module
-    
-switch($mode) { 
-  case 'fulledit':
-    print '<p>'. t('Full Edit mode. Beware not to enter contradictory information') .' '.
-      t('The starter and the completer must be the same two users as the payer and the payee.') .'</p>';
-    print t('Payee'). $payee_uid;
-    print t('Payer'). $payer_uid;
-  case 'init':
-  case 'edit':
-    if ($selector_set == 'payer_payee' || $selector_set == 'both') {
-      if ($payer_uid) print t('From:'). $payer_uid;
-      if ($payee_uid) print t('To:'). $payee_uid;
-    }
-    if ($selector_set == 'starter_completer' || $selector_set == 'both') {
-      if ($starter_uid) print t('Starter:'). $starter_uid; 
-      if ($completer_uid) print t('Completer:'). $completer_uid;
-      if ($transaction_type) print t('Transaction type:'). $transaction_type;
-    }
-    if ($title) print t('Title:'). $title;
-    if ($quantity) {
-      $row = array($quantity, $division, $next);
-      print t('Quantity'). theme('table', array(), array($row), array('style' => 'width:100px'));
-    } 
-    else {
-      print $next;
-    }
-    break;
-  case 'summary':
-    print $summary;
-    print $previous;
-    print $next;
+$row = array($quantity, $division, $submit);
+print theme('table', array(), array($row), array('style' => 'width:100px'));
 
-} 
 print $state; 
 print $hidden_fields;

@@ -18,6 +18,7 @@
   *   This is subtracted from all the times to reduce the number of of chars per point in the google GET url
   * 
   */
+print '<h4>'. t('Balance History') .'</h4>';
 
 //this figure is a bit of guess work, based on 2048 chars - around 100 for the constant data divided by around 10 chars per point
 define (MAX_CHART_POINTS, 140);
@@ -56,7 +57,7 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
     //we can sample the array by a factor of an integer only
     $sample_frequency = ceil(count($points[$cid]) / MAX_CHART_POINTS);
     //make an array with every possible value - approx one for every pixel
-    $previous_time = array_shift($point_times);
+    $previous_time = array_shift($times);
     $bal = array_shift($points[$cid]);
     $all_points[$previous_time] = $bal;
     while ($time = array_shift($times)) {

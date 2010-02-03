@@ -306,7 +306,7 @@ function transactions_update_6007() {
 }
 
 function transactions_update_6008($ret = array()) {
-  $ret[] = db_add_field($ret, 'cc_balance_cache', 'gross_expenditure', array(
+  db_add_field($ret, 'cc_balance_cache', 'gross_expenditure', array(
     'description' => "State of the transaction - completed, pending, disputed, etc",
     'type' => 'int',
     'size' => 'normal',
@@ -325,7 +325,7 @@ function transactions_update_6010($ret = array()) {
   $table=drupal_get_schema('cc_balance_cache');
   $type = $table['fields']['balance']['type'];
   drupal_set_message("Renaming $type field 'cc_balance_cache.balance' to 'cleared_balance'");
-  $ret[] = db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
+  db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
     'description' => "sum of all this user's completed transactions",
     'type' => $type,
     'size' => 'normal',

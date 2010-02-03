@@ -8,7 +8,12 @@
  * $waiting_on_me  //array of pending transaction objects awaiting competion by the user  (or NULL)
  */ 
 
-if (!count($waiting_on_user) && !count($waiting_on_other)) print t('There are no pending transactions');
+if (!count($waiting_on_user) && !count($waiting_on_other)) {
+  print t('There are no pending transactions');
+}
+else {
+  print '<h4>'. t('Pending transactions') .'</h4>';
+}
 
 if (count($waiting_on_user)) { ?>
 <h5><?php print t('Transactions for !user to sign off', array('!user' => strip_tags(theme_username($account)))); ?></h5>
