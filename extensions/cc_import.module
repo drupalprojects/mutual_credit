@@ -75,7 +75,7 @@ function cc_import_menu() {
 
 function import_balances_form(&$form_state) {
   //check that no transactions have already taken place
-  if (db_result(db_query("SELECT * FROM {cc_transactions} WHERE state <> %d", TRANSACTION_STATE_ERASED))) {
+  if (db_result(db_query("SELECT nid FROM {cc_transactions} WHERE state <> %d LIMIT 0,1", TRANSACTION_STATE_ERASED))) {
     return array('#prefix' => 'You can only import "carried forward" balances before any transactions have been entered on the system.');
   }
 

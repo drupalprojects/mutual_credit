@@ -2,12 +2,14 @@
   if (!count($transactions)) {
     return "<p>".t('There are no completed transactions.')."</p>\n";
   }
-
+  $transactions_per_page = 10;
+  
 /* statement view
  * 
  * Presently we are only preprocessing transactions like this for the 'statement'
- * values $class and $notme are preprocessing is preprocessing is specific to who's statement it is.
- * From the preprocessor, isi sent a $transactions array, where each transaction looks like
+ * VARIABLES:
+ * $transactions array, in ASCending order of node creation: 
+ *   Each transaction looks like
  * 
 array (
   [title] => gift from carl to darren
@@ -26,7 +28,7 @@ array (
   [balance] => -5
   [expenditure] => theme(money $quantity...)
 OR[income] => theme(money $quantity...)
-  [class] => "debit quality2"
+  [class] => "debit quality2" //so you can theme according to the transaction direction and rating
   [description] => gift from carl to darren
   [starter] => <a href="/user/3" title="View user profile.">carl</a>
   [completer] => <a href="/user/4" title="View user profile.">darren</a>
@@ -38,7 +40,19 @@ OR[income] => theme(money $quantity...)
   [actions] => some HTML links
 )
  */
+ $transactions = array_reverse($transactions);
  
+  //do the stuff with the pager
+  if ($transactions_per_page) {
+    global $pager_total, $pager_page_array;
+    $pager_total[TRANSACTIONS_PAGER_ELEMENT] = count($transactions)/$transactions_per_page +1;
+    $page = isset($_GET['page']) ? $_GET['page'] : '';
+    $pager_page_array = explode(',', $page); 
+    $page_no = $pager_page_array[TRANSACTIONS_PAGER_ELEMENT];
+    $first_result = $page_no*$transactions_per_page;
+    $transactions = array_slice($transactions, $page_no*$transactions_per_page, $transactions_per_page);
+  }
+  
   //need to delare the column headings, their order, and associated fields
   //array keys must correspond to the keys in the transaction objects
   $columns = array(
@@ -62,5 +76,6 @@ OR[income] => theme(money $quantity...)
   }
   if (!isset($transaction->quality))unset ($columns['quality']);
   
+  
   print theme('table', $columns, $rows) . 
-    theme('pager', NULL, 1, TRANSACTIONS_PAGER_ELEMENT);
+    theme('pager', NULL, $transactions_per_page, TRANSACTIONS_PAGER_ELEMENT);

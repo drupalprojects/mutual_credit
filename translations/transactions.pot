@@ -56,7 +56,7 @@ msgid "Transaction type"
 msgstr ""
 
 #: transactions.inc:262
-msgid "Transaction is waiting to be confirmed."
+msgid "Tick to request confirmation"
 msgstr ""
 
 #: transactions.inc:295

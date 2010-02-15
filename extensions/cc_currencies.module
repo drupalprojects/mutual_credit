@@ -135,8 +135,8 @@ function cc_currencies_form_alter(&$form, $form_state, $form_id) {
       break;
     case 'transaction_start_form':
     case 'transaction_node_form':
-    case 'cc_mass_pay_payout_form':
-    case 'cc_mass_pay_collect_form':
+    case 'mass_payout_form':
+    case 'mass_collect_form':
       $currencies = get_currencies(array('uids'=>array($GLOBALS['user']->uid))); //name only
       foreach($currencies as $nid=>$values) {
         $currency_names[$nid] = $values->title;

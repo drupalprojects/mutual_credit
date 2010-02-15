@@ -138,16 +138,29 @@ function transactions_menu() {
     'weight' => 2,
     'file' => 'transactions.inc',
   );
-  
-  $items['transaction/add'] = array(
-    'title' => 'Start new transaction',
-    'description' => 'The new transaction form, with nothing pre-filled',
+  $items['transaction'] = array(
+    'title' => 'Create transaction',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('transaction_start_form'),
-    'access callback' => 'transactions_access',
-    'access arguments' => array('create'),
+    'page arguments' => array('transaction_start_form', NULL, 'starter_completer'),
+    'access arguments' => array('use local currency'),
     'type' => MENU_NORMAL_ITEM,
+    'file' => 'transactions.inc',
     'weight' => 20,
+  );
+  $items['transaction/start'] = array(
+    'title' => 'Standard',
+    'access arguments' => array('use local currency'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items['transaction/3rdparty'] = array(
+    'title' => '3rd party',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_start_form', NULL, 'payer_payee'),
+    'access callback' => 'user_access',
+    'access arguments' => array('edit all transactions'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
     'file' => 'transactions.inc',
   );
   //we're providing tabs for each stat period, but we should also provide another level of tabs for each currency
@@ -267,11 +280,6 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
         'visibility' => 0,
         'pages' => "transaction*\nadmin*",
       );
-      $blocks['cc_user_balances'] = array(
-        'info' => 'Cc '. t('User Balances'),
-        'cache' => BLOCK_CACHE_PER_USER,
-      );
-      
       foreach (variable_get('cc_stats_periods', array("1 month")) as $period) {
         $prd=str_replace(' ', '_', $period);
         $blocks["economy-$prd"] = array(
@@ -295,7 +303,7 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
           break;
         case 'cc_new_transaction':
           if (transactions_access('create')) {
-            $subject = t("Start transaction");//later we might use other transaction types
+            $subject = t("Start transaction");
             $transaction = (object)array('starter_uid' => $user->uid);
             if (arg(0) == 'user' && arg(1) && $user->uid != arg(1)) {
               $otherperson = user_load(arg(1));
@@ -305,9 +313,10 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
             }
             return array(
               'subject' => $subject,
-              'content' => drupal_get_form('transaction_start_form', $transaction),
+              'content' => drupal_get_form('transaction_start_form', $transaction, 'starter_completer'),
             );
           }
+          break;
           break;
         default:
           $period = str_replace('_', ' ', substr($delta, 8));
@@ -358,51 +367,13 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
         }
       }
       $form['#redirect'] = 'user';
+      break;
     case 'cc_options':
       //this is here because it must go after the system_settings_form submit handler
       $form['#submit'][] = 'menu_rebuild';
       $form['#submit'][] = 'views_invalidate_cache';
-  } 
-}
-
-function transactions_start_form_validate($form, &$form_state) {
-  node_validate($form_state['values'], $form);
-}
-
-
-function transactions_nodeapi(&$node, $op) {
-  if ($node->type != 'transaction') return;
-  module_load_include('inc', 'transactions');
-  switch ($op) {
-    case 'validate': //the so called node being validated is just the $form_state['values'] converted to an object
-      $node = _infer_transaction_from_form($node);
-      transaction_fields_validate($node);
-      if (is_numeric($node->payer_uid)) {
-        _transaction_user_limits(user_load($node->payer_uid), -$node->quantity, $node->cid);
-      }
-      if (is_numeric($node->payee_uid)) {
-        _transaction_user_limits(user_load($node->payee_uid), +$node->quantity, $node->cid);
-      }
       break;
-      
-    case 'update':
-      //this converts quantity/division into a float 
-      $node = _infer_transaction_from_form($node);
-    case 'insert':
-      module_load_include('admin.inc', 'transactions');
-      _recalculate_balances(array($node->payer_uid, $node->payee_uid), $node->cid);
-      stats_refresh();
-      //gets rid of any boring status messages
-      drupal_get_messages('status', TRUE);
-      //automatically trigger the notifications
-      $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
-      while ($aid = db_result($result)) {
-        actions_do($aid, $node, array(
-          'hook' => 'nodeapi',
-          'op' => $op
-        ));
-      }
-  }
+  } 
 }
 
 /** 
@@ -848,7 +819,7 @@ function currency_validate($form, &$form_state) {
   }
   else $form_state_['values']['objective_value'] = intval($currency->objective_value); //sets blank to zero
   
-  $divisions = array('integer', 'quarters', 'decimal');
+  $divisions = array('integer', 'sixtieths', 'decimal');
   if (!in_array($currency->division, $divisions)) {
     form_set_error('division', t("", array('@value' => $currency->division)));
   }
@@ -906,7 +877,7 @@ function template_preprocess_money(&$vars) {
       $vars['quantity'] = abs($vars['quantity']);
     }
     //convert the division to something presentable
-    if ($currency->division == 'quarters') {
+    if ($currency->division == 'sixtieths') {
       $quant = intval($vars['quantity']);
       $remainder = 60*($vars['quantity'] - $quant);
       $vars['quantity'] = sprintf('%d:%02d', $quant, $remainder);

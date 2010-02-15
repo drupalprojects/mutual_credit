@@ -10,7 +10,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2009-11-05 20:10+0530\n"
+"POT-Creation-Date: 2010-02-04 00:32+0530\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -35,47 +35,47 @@ msgstr ""
 msgid "How much should be taken from each account?"
 msgstr ""
 
-#: cc_mass_pay.module:60;131
+#: cc_mass_pay.module:60;132
 msgid "Generate transactions"
 msgstr ""
 
-#: cc_mass_pay.module:71;142
+#: cc_mass_pay.module:72;144
 msgid "You must enter a number"
 msgstr ""
 
-#: cc_mass_pay.module:74;145
+#: cc_mass_pay.module:75;147
 msgid "Plain text only in transaction descriptions."
 msgstr ""
 
-#: cc_mass_pay.module:102
+#: cc_mass_pay.module:103
 msgid "Many-to-one mass payment of @amount for @description"
 msgstr ""
 
-#: cc_mass_pay.module:121
+#: cc_mass_pay.module:122
 msgid "Payees"
 msgstr ""
 
-#: cc_mass_pay.module:125
-msgid "Select the accounts you want to be paid. Use CTRL click to select more than one."
-msgstr ""
-
-#: cc_mass_pay.module:127
-msgid "Select the one account from which all the transactions will flow."
+#: cc_mass_pay.module:126
+msgid "Select the accounts you don't want to be paid. Use CTRL click to select more than one."
 msgstr ""
 
 #: cc_mass_pay.module:128
+msgid "Select the one account from which all the transactions will flow."
+msgstr ""
+
+#: cc_mass_pay.module:129
 msgid "How much should be paid into each account?"
 msgstr ""
 
-#: cc_mass_pay.module:168
+#: cc_mass_pay.module:173
 msgid "One-to-many multipay of @amount: @description"
 msgstr ""
 
-#: cc_mass_pay.module:104;169
+#: cc_mass_pay.module:105;174
 msgid "transactions"
 msgstr ""
 
-#: cc_mass_pay.module:104;169
+#: cc_mass_pay.module:105;174
 msgid "@message"
 msgstr ""
 
@@ -115,3 +115,7 @@ msgstr ""
 msgid "Complementary Currencies"
 msgstr ""
 
+
+#: transactions.inc:262
+msgid "Tick to request confirmation"
+msgstr ""

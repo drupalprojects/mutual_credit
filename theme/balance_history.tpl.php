@@ -8,6 +8,8 @@
   * $points = array(
   *   '$cid' = array(
   *     '$unixtime' => $balance
+  *     '$unixtime' => $balance
+  *     etc...
   *   )
   * );
   * $currencies = array(
@@ -16,31 +18,32 @@
   * $account = User Obj
   * $first_time = unitime integer of the moment the chart should start displaying
   *   This is subtracted from all the times to reduce the number of of chars per point in the google GET url
+  * $maxes  = array (
+  *   [$cid] => the maximum limit of the user
+  *   etc, for each currency id
+  * $mins  = array (
+  *   [$cid] => the minimum limit of the user
+  *   etc, for each currency id
   * 
   */
-print '<h4>'. t('Balance History') .'</h4>';
+//print '<h4>'. t('Balance History') .'</h4>';
 
 //this figure is a bit of guess work, based on 2048 chars - around 100 for the constant data divided by around 10 chars per point
 define (MAX_CHART_POINTS, 140);
 define (GOOGLE_CHARTS_URI, 'http://chart.apis.google.com/chart');
 $dimensions = array(250, 200);
-$legend = t("Balance over time for @user", array('@user' => strip_tags(theme('username', $account))));
+$legend = t("Balance History");
 $all_values = array();
 $values = array();
-
 foreach ($currencies as $currency){  //this loop draws one line for one currency
   $cid  = $currency->cid;
   $times = array();
   $values = array();
-  //determine the vertical limits according to the user's own account limits
-  $all_values['max'] = $account->balances[$cid]['max'];
-  $all_values['min'] += $account->balances[$cid]['min'];
-  if (!count($points[$cid])) continue;
   //The system will choose here between three smoothing mechanisms, to make the best use fo the 2k URL limits of google charts.
   if (count($points[$cid])*2 < MAX_CHART_POINTS) {
     //unsmoothing mechanism, the true picture - adds intermediate points to produce perpendicular lines
     $sample_method = t('Steps');
-    foreach ($points[$cid] as $t => $bal){
+    while (list($t, $bal) = each($points[$cid])){
       //make two points for each point, and calibrate
       $t1 = $t - $first_time;
       //we could go further to reduce the number of chars and divide the time (unixtime) by something arbitrar
@@ -95,8 +98,10 @@ foreach ($currencies as $currency){  //this loop draws one line for one currency
   //save the values to get the max and min later
   $all_values = array_merge($all_values, $values);
 }
-$max = max($all_values);
-$min = min($all_values);
+
+//we are mapping all the currencies onto the same vertical scale, so here we find the max and min of all displayed currencies
+$max = max($maxes + $values);
+$min = min($mins + $values);
 
 $ds=array();
 while ($line = @each($lines)) {

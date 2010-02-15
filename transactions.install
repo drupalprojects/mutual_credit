@@ -391,3 +391,12 @@ function transactions_update_6013($ret=array()) {
   );
   return $ret;
 }
+
+function transactions_update_6014($ret=array()) {
+  $curr = variable_get('cc_default_currency', (object)array());
+  if ($curr->division == 'quarters') {
+    $curr->division = 'sixtieths';
+    variable_set('cc_default_currency', $curr);
+  }
+  return $ret;
+}

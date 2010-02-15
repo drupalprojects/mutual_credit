@@ -42,9 +42,9 @@ completed
  */
  $currency = variable_get('cc_default_currency', NULL);
  //if ($backdate) print 'On'. $backdate; //from an optional module, not tested here
-if ($payees) {
+if ($non_payees) {
   print t('This account'). $payer_uid;
-  print t('is paying all accounts except:'). $payees;
+  print t('is paying all accounts except:'). $non_payees;
 }
 else {
   print t('All accounts except these'). $non_payers;

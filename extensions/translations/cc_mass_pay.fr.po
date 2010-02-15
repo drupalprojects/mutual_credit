@@ -6,13 +6,12 @@
 #  cc_mass_pay.module: n/a
 #  cc_mass_pay.info: n/a
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2009-11-05 20:11+0530\n"
-"PO-Revision-Date: 2009-11-05 20:11+0530\n"
-"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2010-02-04 00:32+0530\n"
+"PO-Revision-Date: 2010-02-03 20:30+0100\n"
+"Last-Translator: Tim Anderson <timcarouge@gmail.com>\n"
 "Language-Team: French <EMAIL@ADDRESS>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -25,9 +24,7 @@ msgstr "Exceptions par rapport à ce membre"
 
 #: cc_mass_pay.module:54
 msgid "Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."
-msgstr ""
-"Séléctionnez les comptes qui NE vont PAS être crédités. Utilisez "
-"CTRL clic pour faire une multi-sélection"
+msgstr "Séléctionnez les comptes qui NE vont PAS être crédités. Utilisez CTRL clic pour faire une multi-sélection"
 
 #: cc_mass_pay.module:56
 msgid "Select the one account to which all the transactions will flow."
@@ -37,65 +34,61 @@ msgstr "Séléctionnez le compte vers lequel la transaction va être faite."
 msgid "How much should be taken from each account?"
 msgstr "De combien voulez-vous débiter chaque compte ?"
 
-#: cc_mass_pay.module:60;131
+#: cc_mass_pay.module:60;132
 msgid "Generate transactions"
-msgstr "Créer des échanges"
+msgstr "Ajouter ces échanges"
 
-#: cc_mass_pay.module:71;142
+#: cc_mass_pay.module:72;144
 msgid "You must enter a number"
 msgstr "Veuillez saisir un chiffre"
 
-#: cc_mass_pay.module:74;145
+#: cc_mass_pay.module:75;147
 msgid "Plain text only in transaction descriptions."
 msgstr "Veuillez utiliser du texte seul dans les descriptions d'échange."
 
-#: cc_mass_pay.module:102
+#: cc_mass_pay.module:103
 msgid "Many-to-one mass payment of @amount for @description"
-msgstr "paiement en masse de plusieurs-à-un pour @description de @amount"
+msgstr "De plusiers-à-un compte pour le versement en masse de @amount pour @description"
 
-#: cc_mass_pay.module:121
+#: cc_mass_pay.module:122
 msgid "Payees"
 msgstr "La personne qui va recevoir des unités d'échanges"
 
-#: cc_mass_pay.module:125
-msgid "Select the accounts you want to be paid. Use CTRL click to select more than one."
-msgstr ""
-"Séléctionnez les comptes qui vont être crédités. Utilisez CTRL "
-"clic pour faire une multi-sélection"
-
-#: cc_mass_pay.module:127
-msgid "Select the one account from which all the transactions will flow."
-msgstr ""
-"Sélectionnez le compte à partir duquel la transaction vas être "
-"faite."
+#: cc_mass_pay.module:126
+msgid "Select the accounts you don't want to be paid. Use CTRL click to select more than one."
+msgstr "Séléctionnez les comptes qui ne seront pas crédités. Utilisez CTRL clic (pomme clic pour Mac) pour séléctionner plusiers."
 
 #: cc_mass_pay.module:128
+msgid "Select the one account from which all the transactions will flow."
+msgstr "Sélectionnez le compte à partir duquel la transaction vas être faite."
+
+#: cc_mass_pay.module:129
 msgid "How much should be paid into each account?"
 msgstr "De combien voulez-vous créditer chaque compte ?"
 
-#: cc_mass_pay.module:168
+#: cc_mass_pay.module:173
 msgid "One-to-many multipay of @amount: @description"
 msgstr "D'un compte à plusieurs paiements regroupés de @amount: @description"
 
-#: cc_mass_pay.module:104;169
+#: cc_mass_pay.module:105;174
 msgid "transactions"
 msgstr "échanges"
 
-#: cc_mass_pay.module:104;169
+#: cc_mass_pay.module:105;174
 msgid "@message"
 msgstr "@message"
 
 #: cc_mass_pay.module:11
 msgid "Mass Payments"
-msgstr "Paiement en masse"
+msgstr "Versements en masse"
 
 #: cc_mass_pay.module:12
 msgid "Create mass transactions to and from one account"
-msgstr "Créer des paiements en masse de et à partir d'un compte"
+msgstr "Faire des versements à partir de ou vers un compte"
 
 #: cc_mass_pay.module:21
 msgid "Many-to-one"
-msgstr "De plusieurs-à-un"
+msgstr "De plusiers à un"
 
 #: cc_mass_pay.module:22
 msgid "collect an arbitrary amount from most accounts"
@@ -103,11 +96,11 @@ msgstr "prelève un montant de la majorité des comptes"
 
 #: cc_mass_pay.module:26
 msgid "One-to-many"
-msgstr "D'un-à-plusieurs"
+msgstr "D'un à plusiers"
 
 #: cc_mass_pay.module:27
 msgid "payout an arbitary amount to a few people"
-msgstr "verser un montant arbitraire à quelques personnes"
+msgstr "verser un montant arbitraire à quelques adhérents"
 
 #: cc_mass_pay.info:0
 msgid "Cc Mass Payment"
@@ -119,5 +112,9 @@ msgstr "Saisir des échanges avec plusieurs membres vers ou depuis un compte"
 
 #: cc_mass_pay.info:0
 msgid "Complementary Currencies"
-msgstr "Monnaies Complémentaires"
+msgstr "Unités d'échanges"
+
+#: transactions.inc:262
+msgid "Tick to request confirmation"
+msgstr "Cochez pour demander la confirmation de l'échange"
 

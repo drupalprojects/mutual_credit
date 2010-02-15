@@ -7,7 +7,7 @@
  * 
  * Variables available
  * $user = Logged in user Object
- * $mode = init | edit | fulledit | summary
+ * $mode = init | edit | summary
  * $selector_set = both | payer_payee | starter_completer
  * 
  * //The following variables should ALL be printed unless NULL
@@ -24,17 +24,13 @@
  * $next = button
  * $previous = button (only on stage 2)
  * $summary = teaser from transaction.tpl.php
+ * $backdate field, if module is installed
  */
  $currency = variable_get('cc_default_currency', NULL);
 
   if ($backdate) print 'On'. $backdate; //from an optional module
     
 switch($mode) { 
-  case 'fulledit':
-    print '<p>'. t('Full Edit mode. Beware not to enter contradictory information') .' '.
-      t('The starter and the completer must be the same two users as the payer and the payee.') .'</p>';
-    print t('Payee'). $payee_uid;
-    print t('Payer'). $payer_uid;
   case 'init':
   case 'edit':
     if ($selector_set == 'payer_payee' || $selector_set == 'both') {

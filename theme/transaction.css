@@ -26,16 +26,18 @@ input.form-autocomplete,
   width:8em;
 }
 #transaction-start-form table,
+#transaction-start-form table-1,
 #transaction-start-form table tr,
-#transaction-start-form table tbody td,
-#transaction-start-form table tbody th{
+#transaction-start-form table tbody td{
 	border: 0;
 	padding: 0 0.3em 0 0;
 	margin: 0;
+	background-color: transparent;
 	}
 
 #transaction-start-form #edit-title,
-#transaction-start-form #edit-title-1{
+#transaction-start-form #edit-title-1,
+#transaction-start-form-1 #edit-title-1{
   width:85%;
   }
 
@@ -87,6 +89,7 @@ span.cc-next:after{content:'>>';}
 
 /* currency properties form */
 #edit-quantity,
+#edit-quantity-1,
 #edit-comparative-value, 
 #edit-zero-offset,
 #edit-max-balance,

@@ -215,7 +215,7 @@ function currency_form_fields($currency) {
     '#default_value' => $currency->division,
     '#options' => array(
       'integer' => t('integer'),
-      'quarters' => t('quarters (of an hour)'),
+      'sixtieths' => t('quarters (of an hour)'),
       'decimal' => t('hundredths (two decimal places)'),
     ),
     '#description' => t('Many LETS currencies are not divisible, while hours might be divisible into quarters.'),
@@ -456,7 +456,7 @@ function cforge_report() {
   }
   $url = 'http://www.communityforge.net/registration.php?' . http_build_query($data, '', '&');
   $reply = drupal_http_request($url);
-  print $reply->data;
+  drupal_set_message ($reply->data);
 }
 
 
@@ -548,7 +548,7 @@ function _recalculate_balances($ids, $cid) {
       }
     }
     $cleared_balance = $gross_income-$gross_expenditure + $currency->zero_offset;
-    $pending_balance = $cleared_balance + $pending_dif;
+    $pending_balance = $cleared_balance - $pending_dif;
 
     //gross_income must not be affected by the carried forward
     if ($transactions[0]->title == t("Carried forward") && $transactions[0]->payer_uid ==0) {

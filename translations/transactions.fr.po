@@ -56,8 +56,8 @@ msgid "Transaction type"
 msgstr "Type d'échange"
 
 #: transactions.inc:262
-msgid "Transaction is waiting to be confirmed."
-msgstr "Décocher si vous voulez comptabiliser l'échange sans demander une confirmation."
+msgid "Tick to request confirmation"
+msgstr "Cochez pour demander la confirmation de l'échange"
 
 #: transactions.inc:295
 msgid "00 hours"

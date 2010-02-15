@@ -16,7 +16,7 @@
 
   //get the original array to determine if ratings are being used
   $rating = variable_get('cc_transaction_qualities', NULL);
-print '<h4>'. t('Balances') .'</h4>';
+//print '<h4>'. t('Balances') .'</h4>';
 ?>
 <table class = "user-balances"><thead>
   <tr>
@@ -28,12 +28,21 @@ print '<h4>'. t('Balances') .'</h4>';
     }?>
   </tr>
   </thead><tbody>
+  <?php if (variable_get('count_pending', FALSE)) { ?>
   <tr>
     <th><?php print t('Balance'); ?></th>
     <?php foreach ($balances as $cid=>$bals) { 
       print "<td>" . $bals['cleared_balance'] . '</td>';
     }?>
   </tr>
+  <?php } else { ?>
+  <tr>
+    <th><?php print t('Pending Balance'); ?></th>
+     <?php foreach ($balances as $cid=>$bals) {
+        print "<td>" .$bals['pending_balance'] . '</td>';
+      }?>
+  </tr>
+  <?php } ?>
   <tr>
     <th><?php print t('Unconfirmed total'); ?></th>
      <?php foreach ($balances as $cid=>$bals) {
