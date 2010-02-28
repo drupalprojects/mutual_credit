@@ -70,10 +70,14 @@ function cc_options() {
     //to add more options from the profile field, use hook_menu_alter in cc_custom module
     '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'mail' => t('Email') ),
   );
-  $form['user_selection']['cc_autocomplete_user_select_threshold'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Threshold at which to use autocomplete widget on the user selection'),
-    '#default_value' => variable_get('cc_autocomplete_user_select_threshold', 100),
+  $form['user_selection']['cc_autocomplete_user_select_widget'] = array(
+    '#type' => 'radios',
+    '#title' => t('Widget for selecting users'),
+    '#default_value' => variable_get('cc_autocomplete_user_select_widget', 'select'),
+    '#options' => array(
+      'select' => t('Dropdown box'),
+      'textfield' => t('Autocomplete username'),
+    ),
     '#description' => t("When you have more users than can fit in a dropdown box, you should probably use an autocomplete field instead."),
   );
   $form['visualisation'] = array(
@@ -85,7 +89,7 @@ function cc_options() {
   $form['visualisation']['cc_stats_periods'] = array(
     '#type' => 'textarea',
     '#title' => 'Periods for which stats are available',
-    '#default_value' => implode("\n",variable_get('cc_stats_periods', array("1 month","3 months"))),
+    '#default_value' => implode("\n",variable_get('cc_stats_periods', array("1 month", "1 year"))),
     '#description' => t('On each line write a period using php !strtotime syntax, for which stats will be cached. ', array('!strtotime' => l('strtotime', 'http://php.net/strtotime'))) . 
       t('For each period there is a tab on the !stats page, and a block.', array('!stats' => l('stats', 'stats'))),
   );
@@ -94,22 +98,7 @@ function cc_options() {
     '#title' => t('Count pending transactions'),
     '#description' => t('Should transactions which have not yet been confirmed be included in transaction listings and in stats?'),
     '#default_value' => variable_get('cc_count_pending', FALSE),
-  );
-  $form['visualisation']['cc_transaction_list'] = array (
-    '#type' => 'radios',
-    '#title' => t('Preferred transaction view'),
-    '#default_value' => variable_get('cc_transaction_list', 'statement'),
-    '#description' => t("Transaction monthly displays can be viewed in either of two formats. Both can be adjusted by theming."), 
-    '#options' => array (
-      'statement' => t('A table of all transactions Full access control; cannot be click-sorted; uses drupal pager; configure using THEME_statement()'),
-      'ins_and_outs' => t('Seperate tables of incoming and outgoing transactions. Cruder access control; configure using views module.'),
-    ),
-  );
-  //warning of calendar module dependency
-  if (!(module_exists('calendar'))) {
-    $form['cc_transaction_list']['#options']['ins_and_outs'] .= ' <font color="red">' . t("Pager requires cck, date & calendar modules") . '</font>';
-  }
-  
+  );  
   $names = variable_get ('cc_transaction_types', array());
   $form['transactions'] = array(
     '#type' => 'fieldset',
@@ -157,12 +146,7 @@ function cc_options_validate(&$form, &$form_state) {
   if (!is_numeric($form_state['values']['cc_balancing_account_num'])) {
     form_set_error('cc_balancing_account_num', t('Balancing account must be an integer.'));
   }
-  
-  if (!is_numeric($form_state['values']['cc_autocomplete_user_select_threshold'])) {
-    form_set_error('cc_autocomplete_user_select_threshold', t("This must be an integer: @value", array('@value' => $form_state['values']['cc_autocomplete_user_select_threshold'])));
-  } else {
-    $form_state['values']['cc_autocomplete_user_select_threshold'] = abs(intval($form_state['values']['cc_autocomplete_user_select_threshold']));
-  }
+
   foreach (explode("\n", $form_state['values']['cc_stats_periods'])as $period) {
     if (!is_integer(strtotime($period))) {
       form_set_error('cc_stats_periods', t("'@period' is not a valid strtotime string", array('@period' => $period)));
@@ -380,6 +364,7 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     'transaction_type' => 'api unspecified', 
     'quality' => NULL, 
     'starter_uid' => $user->uid,
+    'completer_uid' => $payer_uid,
     'uid' => $user->uid,
     'created' => time(),
    //other incoming arguments
@@ -393,12 +378,7 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     'status' => 0, //this adds protection against anonymous users seeing transactions
   );
   $node=(object)$node;
-  //starter and completer can be either way around if the transaction is complete and starter not provided
-  if ($node->starter_uid == $node->payee_uid) {
-    $node->completer_uid = $node->payer_uid;
-  } else {
-    $node->completer_uid = $node->payee_uid;
-  }
+  //print_r($node);
   node_save($node);
   return $node;
 }
@@ -489,15 +469,9 @@ function cc_balances_refresh() {
   module_load_include('inc', 'transactions');
   db_query("TRUNCATE table {cc_balance_cache}");
   //get a list of all the users and all the currencies they have traded in 
-  $result = db_query('SELECT uid FROM {users}');
-  while ($account = db_fetch_array($result)) {
-    $members[] = $account['uid'];
-  }
-  foreach ($members as $uid) {
-    $currencies = currencies_load(array('uids'=>array($uid)));
-    foreach (array_keys($currencies) as $cid) {
-      _recalculate_balances(array($uid), $cid);
-    }
+  $currencies = currencies_load(array('uids'=>array($uid)));
+  foreach (array_keys($currencies) as $cid) {
+    _recalculate_balances(array(), $cid);
   }
   drupal_set_message(t('Flushed balance cache'));
 }
@@ -505,8 +479,11 @@ function cc_balances_refresh() {
 //for each user id passed, go through all their transactions and calculate balance, gross_income and pending amounts in their profile
 //TODO need to make this work better with multiple currencies
 //Could more of this be done by SQL?
-function _recalculate_balances($ids, $cid) {
+function _recalculate_balances($ids = array(), $cid = 0) {
   module_load_include('inc', 'transactions');
+  if (!count($ids)) {
+    $ids = array_keys(_select_trader_names());
+  }
   $currency = currency_load($cid);
   $count_pending =  (variable_get('cc_count_pending', FALSE));
   $options =  array (
@@ -568,7 +545,6 @@ function _recalculate_balances($ids, $cid) {
     }
   }
   stats_refresh($cid);
-  //TODO Need to update the cache of the block showing pending transactions, which is cached by user
 }
 
  /*
@@ -578,12 +554,11 @@ function _recalculate_balances($ids, $cid) {
   * 
   */
 function stats_refresh($cid = 0) {
-  $periods = variable_get('cc_stats_periods', array("1 month"));
+  $periods = variable_get('cc_stats_periods', array("1 month", "1 year"));
   foreach ($periods as $period) {
     $period = trim($period);
     //this excludes transactions with the balancing account
     //Anything involving a member count includes only the active members
-    $balancing = variable_get('cc_balancing_account_num', 1);
     $stats = array();
     $earned = array();
     $spent = array();
@@ -603,8 +578,8 @@ function stats_refresh($cid = 0) {
         ':since' => strtotime('-'.$period),
         ':cid' => $cid,
         ':states' => implode(',',$states),
-        ':payer_uid' => $balancing,
-        ':payee_uid' => $balancing
+        ':payer_uid' => variable_get('cc_balancing_account_num', 1),
+        ':payee_uid' => variable_get('cc_balancing_account_num', 1)
       )
     );
       

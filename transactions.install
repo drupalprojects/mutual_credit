@@ -13,9 +13,6 @@
 function transactions_install() {
   drupal_install_schema('transactions');
   variable_set('comment_transactions', '0');
-  variable_set('cc_description_min_words', 1);
-  variable_set('cc_transaction_list', 'statement');
-  variable_set('cc_stats_periods', array("1 month", "1 year"));
   $names = variable_get('cc_transaction_types', array());
   $names['transactions'] = array(
     'incoming_confirm' => t('invoice'),
@@ -30,11 +27,9 @@ function transactions_install() {
     '1' => 'good',
     '2' => 'outstanding'
   ));
-  variable_set('cc_select_user_show', array('name'));
-  variable_set('cc_select_user_orderby', 'uid');
   variable_set('cc_balancing_account_num', 1);
   variable_get('cforge_report', TRUE);
-  variable_set('cc_default_currency', (object)array(
+  $currency = (object)array(
     'cid' => 0,
     'nid' => 0,
     'title' => 'units',
@@ -45,22 +40,12 @@ function transactions_install() {
     'zero_offset' => 0,
     'color' => '0000ff',
     'icon' => drupal_get_path('module', 'transactions') . '/theme/default_currency.png',
-    )
-  );
+    );
+  variable_set('cc_default_currency', $currency);
   drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
     array('!link'=>l('admin/marketplace/currency', 'admin/marketplace/currency', array('attributes'=>array('target'=> '_blank')))))
   );
-  //create a row in the balance_cache table for each existing user
-  //could this be condensed into one query?
-  $results = db_query("SELECT uid from {users} WHERE uid > 0");
-  while ($uid = db_result($results)) {
-    //db_query("INSERT into {cc_balance_cache} (uid) VALUES (%d)", array(':uid' => $uid));
-  }
 }
-
-function transactions_enable(){
-
-  }
 
 /**
  * Implementation of hook_uninstall().
@@ -312,8 +297,6 @@ function transactions_update_6008($ret = array()) {
     'size' => 'normal',
     )
   );
-  module_load_include('admin.inc', 'transactions');
-  cc_balances_refresh();
   return $ret;
 }
 //correction because generate_transaction_node wasn't specifying uid
@@ -398,5 +381,23 @@ function transactions_update_6014($ret=array()) {
     $curr->division = 'sixtieths';
     variable_set('cc_default_currency', $curr);
   }
+  return $ret;
+}
+function transactions_update_6015($ret=array()) {
+  module_load_include('inc', 'transactions');
+  $count = count(_select_trader_names());
+  $threshold = variable_get('cc_autocomplete_user_select_threshold', 100);
+  if ($count > $threshold) {
+    $widget = 'textfield';
+  }
+  else {
+    $widget = 'select';
+  }
+  drupal_set_message("Previously if you had more than $threshold users,
+    the autocomplete textfield would be shown, otherwise a select box would be shown.
+    The widget has now been set set to '$widget'"
+  );
+  variable_set('cc_autocomplete_user_select_widget', 'textfield');
+  variable_del('cc_autocomplete_user_select_threshold');
   return $ret;
 }

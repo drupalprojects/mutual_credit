@@ -28,7 +28,7 @@
  */
  $currency = variable_get('cc_default_currency', NULL);
 
-  if ($backdate) print 'On'. $backdate; //from an optional module
+if ($backdate) print t('On @date', array('@date' => $backdate)); //from an optional module
     
 switch($mode) { 
   case 'init':

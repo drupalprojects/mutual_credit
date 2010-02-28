@@ -117,27 +117,6 @@ function transactions_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'transactions.admin.inc',
   );
-  $items['transaction/%/complete'] = array(
-    'title' => 'Sign this transaction to finalise it',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('transaction_complete_form', 1),
-    'access callback' => 'transactions_access',
-    'access arguments' => array('complete', 1),
-    'type' => MENU_CALLBACK,
-    'file' => 'transactions.inc',
-  );
-
-  $items['user/%/bureau'] = array(
-    'title' => 'Bureau',
-    'description' => "All transaction information for this user",
-    'page callback' => 'transactions_bureau',
-    'page arguments' => array(1),
-    'access callback' => 'transactions_access',
-    'access arguments' => array('bureau', 'transaction', 1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 2,
-    'file' => 'transactions.inc',
-  );
   $items['transaction'] = array(
     'title' => 'Create transaction',
     'page callback' => 'drupal_get_form',
@@ -149,7 +128,6 @@ function transactions_menu() {
   );
   $items['transaction/start'] = array(
     'title' => 'Standard',
-    'access arguments' => array('use local currency'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 0,
   );
@@ -161,6 +139,26 @@ function transactions_menu() {
     'access arguments' => array('edit all transactions'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 1,
+    'file' => 'transactions.inc',
+  );
+  $items['transaction/%node/complete'] = array(
+    'title' => 'Sign this transaction to finalise it',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_complete_form', 1),
+    'access callback' => 'transactions_access',
+    'access arguments' => array('complete', 1),
+    'type' => MENU_CALLBACK,
+    'file' => 'transactions.inc',
+  );
+  $items['user/%user/bureau'] = array(
+    'title' => 'Bureau',
+    'description' => "All transaction information for this user",
+    'page callback' => 'transactions_bureau',
+    'page arguments' => array(1),
+    'access callback' => 'transactions_access',
+    'access arguments' => array('bureau', 'transaction', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
     'file' => 'transactions.inc',
   );
   //we're providing tabs for each stat period, but we should also provide another level of tabs for each currency
@@ -280,7 +278,7 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
         'visibility' => 0,
         'pages' => "transaction*\nadmin*",
       );
-      foreach (variable_get('cc_stats_periods', array("1 month")) as $period) {
+      foreach (variable_get('cc_stats_periods', array("1 month", "1 year")) as $period) {
         $prd=str_replace(' ', '_', $period);
         $blocks["economy-$prd"] = array(
           'info' => 'Cc '. t("@period economy", array('@period' => $period)),
@@ -306,17 +304,16 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
             $subject = t("Start transaction");
             $transaction = (object)array('starter_uid' => $user->uid);
             if (arg(0) == 'user' && arg(1) && $user->uid != arg(1)) {
-              $otherperson = user_load(arg(1));
-              $subject = t('Start transaction with @name', array('@name' => strip_tags(theme('username', $otherperson))));
+              $account = user_load(arg(1));
+              $subject = t('Start transaction with @name', array('@name' => strip_tags(theme('username', $account))));
               $subject = str_replace ('&amp;', '&', $subject);//hack for SEL coup de pouce
-              $transaction->completer_uid = $otherperson->uid;
+              $transaction->completer_uid = $account->uid;
             }
             return array(
               'subject' => $subject,
               'content' => drupal_get_form('transaction_start_form', $transaction, 'starter_completer'),
             );
           }
-          break;
           break;
         default:
           $period = str_replace('_', ' ', substr($delta, 8));
@@ -403,9 +400,6 @@ function transactions_delete($node) {
   module_load_include('admin.inc', 'transactions');
   //the node is deleted, but it leaves this trace in the cc_transactions table
   db_query("UPDATE {cc_transactions} set state  = %d WHERE nid = %d", TRANSACTION_STATE_ERASED, $node->nid);
-  
-  //can this go in nodeapi?
-  _recalculate_balances(array($node->payer_uid, $node->payee_uid), $node->cid);
 }
 
 function transactions_view($node, $teaser = FALSE, $page = FALSE) {
@@ -421,8 +415,9 @@ function transactions_view($node, $teaser = FALSE, $page = FALSE) {
  * This hook is required for modules to define one or more node types.
  */
 function transactions_user($op, &$edit, &$account, $category = NULL) {
-  if ($op == 'categories') return;  //because $account = NULL which causes an error
-  if (!user_access('use local currency', $account) && $op!='insert') return;
+  $account = $account ? $account : $GLOBALS['user'];
+  //I'm very unhappy about having to convert account to an object here, but user_register_validate sends through an array
+  if (($op == 'categories') || (!user_access('use local currency', (object)$account) && $op!='insert')) return;
   //load all the currencies this user has access to
   $currencies = currencies_load(array('uids' => array($account->uid)));
   
@@ -499,7 +494,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       return $form;
       
     case 'validate':
-      if (user_access('edit all transactions')) {
+      if (user_access('edit all transactions')) { //this is extra security. Most users won't have seen these form fields
         foreach ($currencies as $cid => $currency) {
           if ($edit['min'. $cid]=='' && $edit['max'. $cid]=='') continue;
           module_load_include('admin.inc', 'transactions');
