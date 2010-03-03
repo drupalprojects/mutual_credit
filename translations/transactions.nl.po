@@ -1,765 +1,970 @@
+# $Id$
+#
+# Dutch translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  transactions.inc,v 1.1.2.14 2010/02/28 12:20:36 matslats
+#  transactions.module,v 1.1.2.14 2010/02/28 12:20:36 matslats
+#  transactions.admin.inc: n/a
+#  transactions.info,v 1.1.2.1 2009/09/27 15:45:35 matslats
+#  views/transactions.views.inc: n/a
+#  transactions.install,v 1.1.2.10 2010/02/28 12:20:36 matslats
+#
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Marketplace\n"
-"POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
-"Last-Translator: egidius <info@kuhlmann.tk>\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2010-03-04 01:28+0530\n"
+"PO-Revision-Date: 2010-03-04 01:28+0530\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Dutch <EMAIL@ADDRESS>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: Dutch\n"
-"X-Poedit-Country: NETHERLANDS\n"
-"X-Poedit-SourceCharset: utf-8\n"
+"Plural-Forms: nplurals=0; plural=;\n"
 
-#: transactions.inc:6
-msgid "Minimum number of words to describe a transaction"
-msgstr "Minimum aantal woorden om een transactie te omschrijven"
-
-#: transactions.inc:10
-msgid "This site could be better if you can get members to take a few seconds more to describe the transaction in more detail. It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4."
-msgstr "Deze website wordt beter als  je de leden zover krijgt om een paar seconden meer uitrekken om de transactie beter te omschrijven. Het zorgt er ook voor dat de transactie beter is te categoriseren, en voor de deelnemers gemakkelijker te herinneren. Voorstel waarde 4.  "
-
-#: transactions.inc:16
-msgid "On the new transaction form, in what order should the members be listed?"
-msgstr "Op een nieuw transactieformulier, in welke volgorde zouden leden genoemd moeten worden. "
-
-#: transactions.inc:17;26
-msgid "User ID"
-msgstr "gebruikers ID"
-
-#: transactions.inc:17;26
-msgid "username"
-msgstr "gebruikersnaam"
-
-#: transactions.inc:24
-msgid "On the new transaction form, what fields should be used to identify members in the dropdown. Sorry but you can't configure the order of fields or the spacer character. Soon this will include all profile fields as well."
-msgstr "Op het nieuwe transactie formulier, welke velden moeten gebruikt worden om de leden te laten zien in het dropdownmenu. Sorry maar je kunt de volgorde van de velden niet bepalen. Er wordt aan gewerkt om in de toekomst de andere profiel velden ook te laten zien. "
-
-#: transactions.inc:26
-msgid "Email address"
-msgstr "E-mail adres"
-
-#: transactions.inc:33
-msgid "Minimum number of words must be a positive integer"
-msgstr "Minimaal aantal woorden moet een positief geheel getal zijn."
-
-#: transactions.inc:47
-msgid "If there is more than one currency on the system, this currency will never be seen or used. The name of the default currency is not used by Drupal, but you should be using the stylesheet class 'currency-0'"
-msgstr "Als er meer dan een valuta op het systeem is, dan wordt deze valuta nooit gebruikt of zichtbaar. De naam van de standaard valuta wordt niet gebruikt door Drupal, maar je zult de 'stylesheet class' 'currency-0' moeten gebruiken "
-
-#: transactions.inc:50
-msgid "Currency subdivision"
-msgstr "Valuta opdeling"
-
-#: transactions.inc:53
-msgid "integer"
-msgstr "geheel getal"
-
-#: transactions.inc:54
-msgid "quarters (of an hour)"
-msgstr "kwartieren (van een uur)"
-
-#: transactions.inc:55
-msgid "hundredths (two decimal places)"
-msgstr "Honderdsten (twee decimale plaatsen)"
-
-#: transactions.inc:57
-msgid "Many LETS currencies are not divisible, while hours might be divisible into quarters. THIS OPTION IS NOT WORKING PRESENTLY. IF YOU CHOOSE CENTILES OR HOURS, YOU NEED TO MANUALLY CHANGE THE FOLLOWING DB_FIELDS TO FLOATS: cc_transactions.quantity, cc_balance_cache.balance,  cc_balance_cache.pending,  cc_balance_cache.turnover."
-msgstr "Vele LETS valuta zijn niet deelbaar, terwijl uren onder te verdelen zijn in kwartieren. DEZE MOGELIJKHEID WERKT NOG NIET. ALS JE ER VOOR KIEST HONDERSTEN OF UURDELEN, DAN MOET JE HANDMATIG DE VOLGENDE DB_VELDEN VERANDEREN IN FLOATS: cc_transactions.quantity, cc_balance_cache.balance,  cc_balance_cache.pending,  cc_balance_cache.turnover."
-
-#: transactions.inc:61
-msgid "Maximum Balance"
-msgstr "Maximaal Balans saldo"
-
-#: transactions.inc:65
-msgid "Transactions will be declined by the system if the seller balance would go further above this number. Up to six digits. Leave blank for no limit(not reccomended). (This feature works independently of the maximum balance for each additional currency defined by the currencies module.)"
-msgstr "Transacties worden niet door het systeem geaccepteerd als het balanstotaal van de verkoper verder boven dit saldo uitkomt. Maximaal 6 posities. laat leeg voor geen limiet(niet aan te bevelen). (Deze functie werkt onafhankelijk van het maximale balans totaal voor elke extra valuta gedefinieerd in de valuta module)"
-
-#: transactions.inc:69
-msgid "Minimum Balance"
-msgstr "Minimaal Balans saldo"
-
-#: transactions.inc:73
-msgid "Transactions will be declined by the system if the payer balance would go further below this number. Up to seven digits, including minus sign. Leave blank for no limit (not reccomended). (This feature works independently of the minimum balance for each additional currency defined by the currencies module.)"
-msgstr "Transacties worden niet door het systeem geaccepteerd als het balanstotaal van de betalende gebruiker verder onder dit saldo uitkomt. Maximaal 7 posities incl. min teken. Laat leeg voor geen limiet(niet aan te bevelen). (Deze functie werkt onafhankelijk van het minimale balans totaal voor elke extra valuta gedefinieerd in de valuta module)  "
-
-#: transactions.inc:87
-msgid "Maximum balance must be an integer larger than zero and minimum balance"
-msgstr "Maximum balans saldo moet een geheel getal zijn groter dan nul en groter dan het minimum balans saldo"
-
-#: transactions.inc:93
-msgid "Minimum balance must not be larger than 0"
-msgstr "Minimum balans saldo moet niet groter zijn dan nul"
-
-#: transactions.inc:157
-msgid ""
-"Traders can earn a reputation when their customers rate them highly. \n"
-"    Use this field to list the words used to describe the quality of transactions, from worst to best, one on each line.\n"
-"    Example:<br />-1|Bad<br />0|As expected<br />1|Great!<br />\n"
-"    Leave blank to disable this feature.\n"
-"    Note that in automated transactions, 0 will be be used, so 0 should be a neutral value\n"
-"    Beware that changing the number of rating options after transactions have been entered will distort the averages. \n"
-"    This feature could use a lot more work to integrate into views and stats"
+#: transactions.inc:172
+msgid "You cannot edit this transaction"
 msgstr ""
-"Handelaren kunnen een reputatie verdienen wanneer hun klanten hen hoog waarderen. \n"
-"   Gebruik dit veld om de woorden in te voeren die gebruikt kunnen worden om de kwaliteit van de transaktie te beschrijven, van slecht tot uitstekend, een op elke lijn. \n"
-"   Bijvoorbeeld <br/> -1|slecht<br/>0| neutraal<br/> 1| goed <br/>\n"
-"   Als je het veld leeg laat, kan de functie niet gebruikt worden. \n"
-"   NB, in automatische transacties wordt 0 gebruikt, 0 vertegenwoordigd dus de neutrale waarde  \n"
-"   Het veranderen van de waarderingsnummers nadat transacties zijn ingevoerd verstoort de berekening van de gemiddelden. \n"
-"   Deze functie kan nog verder uitgebreid worden en geďntegreerd worden in views en statistieken.  "
 
-#: transactions.inc:174
-msgid "You must have more than one rating, or leave the field blank to disable the rating system"
-msgstr "Je moet meer dan een beoordelingsmogelijkheid hebben, of laat dit veld leeg zodat het beoordelingssysteem niet gebruikt wordt."
-
-#: transactions.inc:187
-msgid "Please put here the names of each payment_type (provided by modules). Leave blank to ignore the payment type. A confirmed transaction is one which must be approved by both parties, a direct transaction goes through when created by either party."
-msgstr "Plaats hier de namen ven elk type betaling (aangeleverd door de modules). Vul niks in om het betaal type leeg te negeren. Een bevestigde transactie is een translatie die door twee partijen bevestigd moet worden, een directe transactie wordt verwerkt als deze door een der partijen wordt aangemaakt. "
-
-#: transactions.inc:194
-msgid "Terminology from module: %module"
-msgstr "Terminologie van de module: %module"
-
-#: transactions.inc:236
-msgid "These are the names of the transaction types in the create transaction form. You must name at least one"
-msgstr "Dit zijn de namen van de transactie typen die gebruikt worden in 'maak transactie' formulier. Je moet er in elk geval een gebruiken"
-
-#: transactions.inc:260
-msgid "Transaction has been rejected as it would take !username below the minimum balance of !quantity"
-msgstr "Transactie is geweigerd omdat het !username beneden het minimum balans saldo van !quantity zou brengen."
-
-#: transactions.inc:266
-msgid "Transaction has been rejected as it would take !username above the maximum balance of !quantity"
-msgstr "Transactie is geweigerd omdat het !username boven het maximum balans saldo van !quantity zou brengen."
-
-#: transactions.inc:306
-#: transactions.stats.inc:105
-msgid "Carried forward"
-msgstr "Naar voren geschoven"
-
-#: transactions.inc:337;342;1099
-msgid "Edit"
-msgstr "Bewerken"
-
-#: transactions.inc:365
-#: transactions.module:108
-msgid "My Statement"
-msgstr "Mijn overzicht"
-
-#: transactions.inc:368
-msgid "@username's Statement"
-msgstr "@username's Overzicht"
-
-#: transactions.inc:374
-#: views/offers_wants.views.inc:369
-#: views/transactions.views.inc:179;380;589
-msgid "Date"
-msgstr "Datum"
-
-#: transactions.inc:375
-#: views/offers_wants.views.inc:111;348;547;957;1282
-msgid "Category"
-msgstr "Categorie"
-
-#: transactions.inc:376
-#: views/offers_wants.views.inc:360;556;750;966;1159;1291;1484
-#: views/transactions.views.inc:198;402
-msgid "Description"
-msgstr "Beschrijving"
-
-#: transactions.inc:377
-msgid "With Whom?"
-msgstr "Met wie?"
-
-#: transactions.inc:378
-#: views/transactions.views.inc:92;207;414;626
-msgid "Amount"
-msgstr "Hoeveelheid"
-
-#: transactions.inc:379
-#: views/transactions.views.inc:85
-msgid "Rating"
-msgstr "Waardering"
-
-#: transactions.inc:380;450
-msgid "Income"
-msgstr "Inkomsten"
-
-#: transactions.inc:381;447
-msgid "Expenditure"
-msgstr "Uitgaven"
-
-#: transactions.inc:382
-msgid "Running Total"
-msgstr "Lopend totaal"
-
-#: transactions.inc:383
-msgid "Completed?"
-msgstr "Voltooid?"
-
-#: transactions.inc:424
-msgid "Statement for @month"
-msgstr "Overzicht voor @month "
-
-#: transactions.inc:481
-msgid "There are no pending transactions"
-msgstr "Er zijn geen transacties in de wachtrij."
-
-#: transactions.inc:505
-msgid "This transaction is yet to be confirmed by !other_person"
-msgstr "Deze transactie wacht op de bevestiging door !other_person "
-
-#: transactions.inc:512
-msgid "Transactions for !who to complete"
-msgstr "Transactie voor !who te voltooien"
-
-#: transactions.inc:529
-msgid "Transactions !who started"
-msgstr "Transacties !who begonnen is"
-
-#: transactions.inc:540;549
-msgid "There are no transactions to complete"
-msgstr "Er zijn geen transacties to voltooien"
-
-#: transactions.inc:555
-msgid "!name is paying you !amount"
-msgstr "!name betaald je !amount"
-
-#: transactions.inc:577
-msgid "On @date, !payer gave !payee !amount for '@transaction'"
-msgstr "Op @date, !payer gaf !payee !amount voor '@transaction'"
-
-#: transactions.inc:585
-msgid "!payer will pay !payee !amount for '@transaction'"
-msgstr "!payer betaald aan !payee !amount voor '@transaction' "
-
-#: transactions.inc:593
-msgid "The sale was graded '@quality'."
-msgstr "De verkoop is beoordeeld als '@quality'."
-
-#: transactions.inc:627;651
-#: views/transactions.views.inc:119
-msgid "Balance"
-msgstr "Balans"
-
-#: transactions.inc:633;651
-msgid "Pending"
-msgstr "In afwachting"
-
-#: transactions.inc:639;651
-#: views/transactions.views.inc:133
-msgid "Turnover"
-msgstr "Omzet"
-
-#: transactions.inc:740
+#: transactions.inc:199
 msgid "What is being paid for?"
 msgstr "Waar wordt voor betaald"
 
-#: transactions.inc:745
+#: transactions.inc:202
 msgid "What goods or services were exchanged? "
 msgstr "Welke goederen of dienst werden uitgewisseld? "
 
-#: transactions.inc:754
-msgid "What is this @payment_type for?"
-msgstr "Waar is deze @payment_type voor? "
-
-#: transactions.inc:759
-msgid "Transaction type"
-msgstr "Transactie type"
-
-#: transactions.inc:767
+#: transactions.inc:206
 msgid "Minimum @num words"
 msgstr "Minimum @num woorden "
 
-#: transactions.inc:775
+#: transactions.inc:229
 msgid "Who is being paid?"
 msgstr "Wie wordt er betaald?"
 
-#: transactions.inc:785
+#: transactions.inc:231;241;273
+msgid "(Please choose...)"
+msgstr ""
+
+#: transactions.inc:239
 msgid "Who is paying?"
 msgstr "Wie betaald?"
 
-#: transactions.inc:802
-msgid "Initiator, if not you"
-msgstr "Initiatief nemer, als iemand anders  "
+#: transactions.inc:258
+msgid "Initiator, (if not you)"
+msgstr ""
 
-#: transactions.inc:836
+#: transactions.inc:271
 msgid "With whom did you transact?"
 msgstr "Met wie heb je gehandeld? "
 
-#: transactions.inc:839
-msgid "Please choose..."
-msgstr "Kies alstublieft"
+#: transactions.inc:282
+msgid "Transaction type"
+msgstr "Transactie type"
 
-#: transactions.inc:851
+#: transactions.inc:300
+msgid "Tick to request confirmation"
+msgstr ""
+
+#: transactions.inc:313
 msgid "Quantity"
 msgstr "Hoeveelheid"
 
-#: transactions.inc:862
-msgid "Quarters"
-msgstr "Kwarten"
+#: transactions.inc:326
+msgid "Hours"
+msgstr ""
 
-#: transactions.inc:871
-msgid "Centiles"
-msgstr "Honderdsten"
+#: transactions.inc:331
+msgid "00 hours"
+msgstr ""
 
-#: transactions.inc:887
-#: views/transactions.views.inc:99;215;422
-msgid "Currency"
-msgstr "Valuta"
+#: transactions.inc:332
+msgid "15 minutes"
+msgstr ""
 
-#: transactions.inc:900
+#: transactions.inc:333
+msgid "30 minutes"
+msgstr ""
+
+#: transactions.inc:334
+msgid "45 minutes"
+msgstr ""
+
+#: transactions.inc:352
 msgid "Rate the quality of what was paid for"
 msgstr "Beoordeel de kwaliteit waarvoor U betaald hebt."
 
-#: transactions.inc:909
-msgid "Transaction is completed (not awaiting confirmation)."
-msgstr "Transactie is voltooid (wacht niet op een bevestiging)"
+#: transactions.inc:363
+msgid "Please type a username (or user ID)"
+msgstr ""
 
-#: transactions.inc:929
-#: transactions.module:401
-msgid "Confirm"
-msgstr "Bevestigen"
+#: transactions.inc:404
+msgid "Payer wil be asked to confirm"
+msgstr ""
 
-#: transactions.inc:1084
-msgid "submit"
-msgstr "Voeg toe"
+#: transactions.inc:428
+msgid "Do you want to start this transaction?"
+msgstr ""
 
-#: transactions.inc:1113
-msgid "Are you sure you want to delete this transaction?"
-msgstr "Ben je er zeker van dat je deze transactie wilt verwijderen?"
+#: transactions.inc:433
+msgid "Go back"
+msgstr ""
 
-#: transactions.inc:1133
-msgid "Transaction '%description' has been deleted. Balances have been recalculated"
-msgstr "Transactie '%description' is verwijderd, de balans saldi zijn herberekend. "
+#: transactions.inc:441
+msgid "Send"
+msgstr ""
 
-#: transactions.inc:1162
-msgid "You have a transaction to confirm"
-msgstr "Je hebt een transactie te bevestigen"
+#: transactions.inc:531
+msgid "Are you sure you want to complete the transaction \"@description\"?"
+msgstr ""
 
-#: transactions.inc:1180
-msgid "@function was asked to create a transaction with negative value: @value"
-msgstr "@function is gevraagd een transactie te maken met een negatieve waarde: @value"
+#: transactions.inc:534
+msgid "Complete"
+msgstr ""
 
-#: transactions.stats.inc:61
-msgid "Number of transactions:"
-msgstr "Aantal transacties"
+#: transactions.inc:534
+msgid "Cancel"
+msgstr ""
 
-#: transactions.stats.inc:62
-msgid "Total volume traded:"
-msgstr "Totaal volume verhandeld:"
+#: transactions.inc:545
+msgid "Transaction with !starter completed"
+msgstr ""
 
-#: transactions.stats.inc:63
-msgid "Number of trading members:"
-msgstr "Aantal handels partners"
+#: transactions.inc:552
+msgid "A transaction must involve two different members"
+msgstr ""
 
-#: transactions.stats.inc:69
+#: transactions.inc:557
+msgid "Who are you transacting with?"
+msgstr ""
+
+#: transactions.inc:563
+msgid "Plain text only in transaction descriptions."
+msgstr ""
+
+#: transactions.inc:566
+msgid "Please describe the transaction in more detail"
+msgstr ""
+
+#: transactions.inc:576
+msgid "Negative numbers not allowed. You may be able to change the direction of the transaction"
+msgstr ""
+
+#: transactions.inc:579
+msgid "You must enter a whole number"
+msgstr ""
+
+#: transactions.inc:583
+msgid "You cannot exchange nothing"
+msgstr ""
+
+#: transactions.inc:630;648
+msgid "!user has been notified by email."
+msgstr ""
+
+#: transactions.inc:910;919
+msgid "No statistics will be available until some transactions have happened"
+msgstr ""
+"Geen statistieken zijn beschikbaar totdat een aantal transacties "
+"hebben plaatsgevonden"
+
+#: transactions.inc:911;920
+msgid "Number of transactions: @num"
+msgstr ""
+
+#: transactions.inc:912;921
+msgid "Total volume traded: @num"
+msgstr ""
+
+#: transactions.inc:913;922
+msgid "Number of trading members: @num"
+msgstr ""
+
+#: transactions.inc:914
+msgid "Average trading volume: @num"
+msgstr ""
+
+#: transactions.inc:928
 msgid "Most trades:"
 msgstr "Meeste transacties"
 
-#: transactions.stats.inc:74
+#: transactions.inc:933
 msgid "Largest incomes:"
 msgstr "Grootste inkomsten"
 
-#: transactions.stats.inc:79
+#: transactions.inc:938
 msgid "Largest expenditure:"
 msgstr "Grootste besteding:"
 
-#: transactions.stats.inc:81
-msgid "No statistics will be available until some transactions have happened"
-msgstr "Geen statistieken zijn beschikbaar totdat een aantal transacties hebben plaatsgevonden"
-
-#: transactions.stats.inc:145
-msgid "Now"
-msgstr "Nu"
-
-#: transactions.stats.inc:146
-msgid "Account balance over time"
-msgstr "Account balans over tijd"
-
-#: transactions.stats.inc:151
-msgid "@user's balance over time"
-msgstr "@user's balans over tijd"
-
-#: offers_wants.module:12
-msgid "Defines two contentTypes which are created and edited by each user and which are presented as a directory categorised using taxonomy."
-msgstr "Defineerd twee contentTypen die gemaakt en bewerkt zijn door elke gebruiker en die worden getoond als een gecategoriserde lijst met behulp van de taxonomie "
-
-#: offers_wants.module:29;39
-msgid "An entry in the @type directory."
-msgstr "Een entiteit in de @type directorie"
-
-#: offers_wants.module:31
-msgid "Product or service you want to sell"
-msgstr "Product of dienst die je wilt verkopen"
-
-#: offers_wants.module:41
-msgid "Product or service you want to buy"
-msgstr "Product of dienst die je wilt kopen"
-
-#: offers_wants.module:63
-msgid "Distinguish between @goods and @services"
-msgstr "Maak onderscheidt tussen @goods en @services"
-
-#: offers_wants.module:65
-msgid "Each @offer and @want can be subdivided into @goods and @services, and the directory pages and views can be organised accordingly, although this can get complicated, as there will need to be a whole new set of views"
-msgstr "Elk @offer en @want kan onderverdeeld worden in @goods en @services, en de directory representaties kunnen zodanig "
-
-#: offers_wants.module:70
-msgid "Distinguish between directory entries in community currency and in official currency"
-msgstr "Maak onderscheidt in de directory tussen community geld een officieel geld. "
-
-#: offers_wants.module:72
-msgid "It will be possible, using Ubercart, to take money for adverts for transactions involving official money"
-msgstr "Het is mogelijk door Ubercart te gebruiken om geld te vragen voor advertenties die betaling in echt geld vragen."
-
-#: offers_wants.module:74
-msgid "N.B. It is also possible to disable the node body for offers and wants. See !link"
-msgstr "N.B. Het is ook mogelijk om het grote omschrijvingsgedeelte uit te zetten voor de aanbod en vraag advertenties. Zie !link"
-
-#: offers_wants.module:85
-msgid "Offers/wants directory"
-msgstr "Aanbod/vraag directory"
-
-#: offers_wants.module:86
-msgid "Configure features of the directory"
-msgstr "Configureer de eigenschappen van de directory"
-
-#: offers_wants.module:97;109
-msgid "@type categories"
-msgstr "@type categorien in deze @type directory"
-
-#: offers_wants.module:122
-msgid "My Directory"
-msgstr "Mijn directory"
-
-#: offers_wants.module:123
-msgid "All your !types"
-msgstr "Al je !types"
-
-#: offers_wants.module:190
-msgid "cc-categories of @type"
-msgstr "cc-categorieen voor @type"
-
-#: offers_wants.module:196
-msgid "cc-Add offer/want form"
-msgstr "cc-advertentie  vraag/aanbod formulier"
-
-#: offers_wants.module:206;211
-msgid "@type Categories"
-msgstr "@type categorieën zijn geďnstalleerd. Ga nu naar !link en maak de sleutelwoorden aan voor de categorieën. Dit is in ontwikkeling. "
-
-#: extensions/cc_import.module:16
-msgid "Import Tools"
-msgstr "Import gereedschap"
-
-#: extensions/cc_import.module:25
-msgid "Import Balances"
-msgstr "Importeer balansen"
-
-#: extensions/cc_import.module:30
-msgid "Import Offers"
-msgstr "Importeer aanbiedingen"
-
-#: extensions/cc_import.module:38
-msgid "Import Wants"
-msgstr "Importeer gevraagd"
-
-#: extensions/cc_import.module:55
-msgid "This page allows you to import users' balances and gross incomes for users already on the system. To import users, see the !import_user module."
-msgstr "Deze pagina geeft je de mogelijkheid om gebruikers balanssaldi en bruto inkomen te importeren, van gebruikers die al in het systeem zitten. Om gebruikers te importeren, kijk bij de !import_user module.  "
-
-#: extensions/cc_import.module:60
-msgid "Paste paste 2 or 3 comma separated columns into the field below, the first column should be the uid or username, the second column the current balance, and optionally the third column should be the user's gross income until now (turnover). This tools assumes there is only one currency in the system. The second column SHOULD add up to 0 for LETS and other zero balance systems, but this is not checked."
-msgstr "Plak 2 of 3 komma gescheiden kolommen in het onderstaande veld, de eerste kolom moet het UID of de gebruikersnaam zijn, de tweede kolom het huidige balans saldo, en eventueel de derde kolom het bruto inkomen van de gebruiker tot op heden(omzet). Deze functie neemt aan dat er maar een valuta gebruikt wordt op het systeem. De tweede kolom MOET opgeteld op 0(nul) uitkomen voor LETS en andere ZERO-balans systemen, maar dit wordt niet gecontroleerd. "
-
-#: extensions/cc_import.module:78
-msgid "to import balances you need a balancing account. Specify the account number at !admin/marketplace"
-msgstr "Om balanssaldi te importeren heb je een balans account nodig. Specificeer het account nummer op !admin/marketplace"
-
-#: extensions/cc_import.module:87
-msgid "balance (second item) on row @num is not an integer"
-msgstr "Balans (tweede item) op rij @rownum is geen geheel getal"
-
-#: extensions/cc_import.module:93
-msgid "gross income (third item) on row @rownum must be a positive integer"
-msgstr "Bruto inkomen (derde item) op rij @rownum moet een positief geheel getal zijn"
-
-#: extensions/cc_import.module:95
-msgid "gross income (third item) on row @rownum cannot be less than 0"
-msgstr "Bruto inkomen (derde item) op rij @rownum kan  niet kleiner dan 0(nul) zijn."
-
-#: extensions/cc_import.module:119
-msgid "Gross income to date"
-msgstr "Bruto inkomen tot aan nu"
-
-#: extensions/cc_import.module:120
-msgid "Gross expenditure to date"
-msgstr "Bruto uitgaven tot aan nu"
-
-#: extensions/cc_import.module:129
-msgid "Carried Forward"
-msgstr "Transport naar voren"
-
-#: extensions/cc_import.module:186
-msgid "The description on row @rownum is more than 128 characters"
-msgstr "De beschrijving in de rij @rownum is meer dan 128 karakters"
-
-#: extensions/cc_import.module:206
-msgid ""
-"This page allows you to import users' @type for users already on the system. There are other ways of doing this, but this is simple and maintained along with the rest of the Complementary Currencies module.\n"
-"  <br />If you have 'goods & services' enabled or 'local vs offical' money then it assumes  this is a service in local money\n"
-"  <br />Use a spreadsheet tool to prepare a list of user ids, or names, and their @type in one line. For aesthetic reasons, there is a 128 character limit on each description. Each line should look like this: !code\n"
-"  <br />Try importing one or two first."
+#: transactions.inc:944
+msgid "Highest trading volumes:"
 msgstr ""
-"Deze pagina geeft je de mogelijkheid om gebruikers @type te importeren voor gebruikers die al in het systeem zitten. Er zijn andere manieren om dit doen, maar dit is simpel en wordt onderhouden tegelijkertijd met de rest van de CC module.\n"
-"<br/>Als je 'goederen en diensten' of 'lokaal versus officieel' veel transacties naar en van een account."
 
-#: extensions/cc_multipay.module:20
-msgid "Many-to-one"
-msgstr "Veel-op-een"
+#: transactions.inc:1069
+msgid "No roles have permission to trade. Please enable some permissions: "
+msgstr ""
 
-#: extensions/cc_multipay.module:21
-msgid "collect an arbitrary amount from most accounts"
-msgstr "neem een willekeurige hoeveelheid van bijna alle accounts"
+#: transactions.inc:1085
+msgid "Expenditure"
+msgstr "Uitgaven"
 
-#: extensions/cc_multipay.module:25
-msgid "One-to-many"
-msgstr "Een-op-veel"
+#: transactions.inc:1089
+msgid "Income"
+msgstr "Inkomsten"
 
-#: extensions/cc_multipay.module:26
-msgid "payout an arbitary amount to a few people"
-msgstr "Betaal een willekeurige hoeveelheid aan een paar personen."
+#: transactions.inc:1107
+msgid "Transaction would take @username !dif above the maximum balance of !quantity"
+msgstr ""
 
-#: extensions/cc_multipay.module:46
-msgid "Payer exceptions"
-msgstr "betalingsuitzonderingen"
+#: transactions.inc:1119
+msgid "Transaction would take @username !dif below the minimum balance of !quantity"
+msgstr ""
 
-#: extensions/cc_multipay.module:50
-msgid "Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."
-msgstr "Selecteer de accounts die JE NIET wilt belasten. gebruik CRTL klik om meer dan een te selecteren."
+#: transactions.inc:1141
+msgid "the username of the recipient"
+msgstr ""
 
-#: extensions/cc_multipay.module:52
-msgid "Select the one account to which all the transactions will flow."
-msgstr "Selecteer een account waar alle transacties aan gedaan worden"
+#: transactions.inc:1142
+msgid "the username of the person who started the transaction"
+msgstr ""
 
-#: extensions/cc_multipay.module:53
-msgid "How much should be taken from each account?"
-msgstr "Hoeveel moet er van elk account afgehaald worden?  "
+#: transactions.inc:1143
+msgid "a summary of the whole transaction"
+msgstr ""
 
-#: extensions/cc_multipay.module:56;110
-msgid "Generate transactions"
-msgstr "Genereer transacties"
+#: transactions.inc:1144
+msgid "description of the transaction by the starter"
+msgstr ""
 
-#: extensions/cc_multipay.module:85
-msgid "Many-to-one multipay of @amount: @description"
-msgstr "meer-naar-een multibetaling of @amount: @description"
+#: transactions.inc:1145
+msgid "web address of pending transactions page"
+msgstr ""
 
-#: extensions/cc_multipay.module:100
-msgid "Payees"
-msgstr "Diegene die betaald worden"
+#: transactions.inc:1146
+msgid "web address of profile page with subscription checkbox"
+msgstr ""
 
-#: extensions/cc_multipay.module:104
-msgid "Select the accounts you want to be paid. Use CTRL click to select more than one."
-msgstr "Selecteer de accounts die je wilt betalen, gebruik CRTL klik om meer dan een te selecteren."
+#: transactions.inc:1147
+msgid "web address of 'bureau' page of this user"
+msgstr ""
 
-#: extensions/cc_multipay.module:106
-msgid "Select the one account from which all the transactions will flow."
-msgstr "Selecteer een account waarvan alle transacties worden uitgevoerd."
+#: transactions.inc:1148
+msgid "web address of recipient's profile page"
+msgstr ""
 
-#: extensions/cc_multipay.module:107
-msgid "How much should be paid into each account?"
-msgstr "Hoeveel moet er betaald worden in elk account?"
+#: transactions.inc:1162
+msgid "Sign"
+msgstr ""
 
-#: extensions/cc_multipay.module:136
-msgid "One-to-many multipay of @amount: @description"
-msgstr "Een-naar-meer multibetaling of @amount: @description"
+#: transactions.inc:1165 transactions.module:338
+msgid "Change"
+msgstr ""
 
-#: extensions/requack.module:20
-msgid "A contentType called request, which when completed with a user id, becomes an acknowledgement for which each user has a total."
-msgstr "Een contentType genaamd verzoek, wat voldaan gekoppeld aan een gebruikers ID, een erkenning wordt waar elke gebruiker een totaal heeft. "
+#: transactions.inc:1169
+msgid "Erase"
+msgstr ""
 
-#: extensions/requack.module:32
-msgid "A contentType which when completed with a user id, becomes an acknowledgement for which each user has a total."
-msgstr "Een contentType wat voldaan gekoppeld aan een gebruikers ID, een erkenning wordt waar elke gebruiker een totaal heeft. "
+#: transactions.inc:1204
+msgid "@type @fieldname: @data is not permitted to trade"
+msgstr ""
 
-#: extensions/requack.module:34
-msgid "A need to be met by a user"
-msgstr "Een verzoek dat door een gebruiker voldaan moet worden "
+#: transactions.inc:1208
+msgid "@type @fieldname: @data is not a known user"
+msgstr ""
 
-#: extensions/requack.module:55
-msgid "This special object can have two names which can be the same."
-msgstr "Dit speciale object kan twee namen hebben die hetzelfde kunnen zijn."
+#: transactions.admin.inc:10
+msgid "Tell Community Forge about this community."
+msgstr ""
 
-#: extensions/requack.module:75
-msgid "nobody yet"
-msgstr "Nog niemand"
+#: transactions.admin.inc:15
+msgid "Become part of a wider community by allowing a coordinating to know a few things about this site. Such as url, contact details, number of active traders. No personal information will be shared."
+msgstr ""
 
-#: extensions/requack.module:85
-msgid "Who has fulfilled this @type?"
-msgstr "Wie heeft dit @type voldaan?"
+#: transactions.admin.inc:19
+msgid "Minimum number of words to describe a transaction"
+msgstr "Minimum aantal woorden om een transactie te omschrijven"
 
-#: extensions/cc_import.info:0
-msgid "Cc Import"
-msgstr "Cc Import"
+#: transactions.admin.inc:24
+msgid "Classification can be improved if members take a few seconds to describe their transactions in more detail."
+msgstr "Deze website wordt beter als  je de leden zover krijgt om een paar seconden meer uitrekken om de transactie beter te omschrijven."
 
-#: extensions/cc_import.info:0
-msgid "Import Offers, Wants and 'carried forward' balances. Built for Fernie, Canada"
-msgstr "Importeer aanbod & vraag en niet opgenomen balansssaldi. Gemaakt voor Fernie, Canada"
+msgid "It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4."
+msgstr "Het zorgt er ook voor dat de transactie beter is te categoriseren, en voor de deelnemers gemakkelijker te herinneren. Voorstel waarde 4."
 
-#: extensions/cc_multipay.info:0
-msgid "Create Transactions involving multiple users to or from one account"
-msgstr "Maakt transacties met meerdere gebruikers van of aan een rekening"
+#: transactions.admin.inc:28
+msgid "Number of the balancing account"
+msgstr ""
 
-#: extensions/requack.info:0
-msgid "requests / acknowledgements"
-msgstr "Verzoeken/kennisgevingen"
+#: transactions.admin.inc:33
+msgid "The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank."
+msgstr ""
 
-#: extensions/requack.info:0
-msgid "A contentType called request, which when completed with a user id, becomes an acknowledgement for which each user has a total. Built for Sel du Lac, Geneva."
-msgstr "Een contentType genaamd verzoek, wat voldaan gekoppeld aan een gebruikers ID, een erkenning wordt waar elke gebruiker een totaal heeft. gemaakt voor 'Sel du Lac', Geneve  "
+#: transactions.admin.inc:38
+msgid "Maintenance"
+msgstr ""
 
-#: extensions/uid_login.info:0
-msgid "Uid Login"
-msgstr "UID(unique identifier) login"
+#: transactions.admin.inc:40
+msgid "In case the balances get out of sync with the transactions."
+msgstr ""
 
-#: extensions/uid_login.info:0
-msgid "Alters the login function so that users login with their uid, and usernames are not necessarily unique. Built for Sel du Lac, Geneva"
-msgstr "Veranderd de login functie zodanig dat de leden in kunnen loggen met hun UID, en lidmaatschapsnamen niet noodzakelijk uniek hoeven te zijn. Gemaakt voor 'Sel du Lac', Geneve."
+#: transactions.admin.inc:41
+msgid "Please use this and report an issue at !url"
+msgstr ""
 
-#: views/offers_wants.views.inc:21
-msgid "Offers and wants directory entries, created by members"
-msgstr "Aanbod & gevraagd verzoeken, gemaakt door leden"
+#: transactions.admin.inc:46
+msgid "Recalulate balances & stats"
+msgstr ""
 
-#: views/offers_wants.views.inc:33
-msgid "Filter for goods and services"
-msgstr "Filter voor goederen en diensten"
+#: transactions.admin.inc:52
+msgid "Selecting other users"
+msgstr ""
 
-#: views/offers_wants.views.inc:38
-msgid "Local or official money?"
-msgstr "Lokaal of echt geld?"
+#: transactions.admin.inc:59
+msgid "User dropdown order"
+msgstr ""
 
-#: views/offers_wants.views.inc:40;44
-msgid "Whether the trade would be in official money"
-msgstr "Is de transactie in echt geld?"
+#: transactions.admin.inc:61
+msgid "On the new transaction form, in what order should the members be listed?"
+msgstr "Op een nieuw transactieformulier, in welke volgorde zouden leden genoemd moeten worden."
 
-#: views/offers_wants.views.inc:102;538
-msgid "Type"
-msgstr "Type"
+#: transactions.admin.inc:62;71
+msgid "User ID"
+msgstr "gebruikers ID"
 
-#: views/offers_wants.views.inc:120;565;762;975;1171;1300;1496
-msgid "Member"
-msgstr "Lid"
+#: transactions.admin.inc:62;71
+msgid "Username"
+msgstr ""
 
-#: views/offers_wants.views.inc:129
-msgid "Skill or service"
-msgstr "Vaardigheid of dienst"
+#: transactions.admin.inc:66
+msgid "User dropdown field(s)"
+msgstr ""
 
-#: views/offers_wants.views.inc:154
-msgid "%1 Categories"
-msgstr "%1 Categorien"
+#: transactions.admin.inc:69
+msgid "On the new transaction form, what fields should be used to identify members in the dropdown?"
+msgstr ""
 
-#: views/offers_wants.views.inc:339;513
-msgid "Directory"
-msgstr "Directorie"
+#: transactions.admin.inc:71
+msgid "Email"
+msgstr ""
 
-#: views/offers_wants.views.inc:607;843;1017
-msgid "Latest %1 offers"
-msgstr "Laatste %1 aanbiedingen"
+#: transactions.admin.inc:75
+msgid "Widget for selecting users"
+msgstr ""
 
-#: views/offers_wants.views.inc:669
-msgid "Latest directory entries"
-msgstr "Laatste directory toevoegingen"
+#: transactions.admin.inc:78
+msgid "Dropdown box"
+msgstr ""
 
-#: views/offers_wants.views.inc:676
-msgid "There are no entries in this category"
-msgstr "Er zijn geen leden van de categorie"
+#: transactions.admin.inc:79
+msgid "Autocomplete username"
+msgstr ""
 
-#: views/offers_wants.views.inc:774;1183;1508
-msgid "Posted on"
-msgstr "Geplaatst op"
+#: transactions.admin.inc:81
+msgid "When you have more users than can fit in a dropdown box, you should probably use an autocomplete field instead."
+msgstr ""
 
-#: views/offers_wants.views.inc:887
-msgid "Latest offers/wants"
-msgstr "Laatste aanbiedingen/verzoeken  "
+#: transactions.admin.inc:85
+msgid "Statistics & visualisation"
+msgstr ""
 
-#: views/offers_wants.views.inc:1078
-msgid "Latest Offers"
-msgstr "Laatste aanbiedingen"
+#: transactions.admin.inc:93
+msgid "On each line write a period using php !strtotime syntax, for which stats will be cached. "
+msgstr ""
 
-#: views/offers_wants.views.inc:1085
-msgid "There are no offers in this category"
-msgstr "Er zijn geen aanbiedingen in deze categorie"
+#: transactions.admin.inc:94
+msgid "For each period there is a tab on the !stats page, and a block."
+msgstr ""
 
-#: views/offers_wants.views.inc:1213
-msgid "Latest offers"
-msgstr "Laatste aanbiedingen"
+#: transactions.admin.inc:98
+msgid "Count pending transactions"
+msgstr ""
 
-#: views/offers_wants.views.inc:1342
-msgid "Latest %1 wants"
-msgstr "Laatste %1 verzoeken"
+#: transactions.admin.inc:99
+msgid "Should transactions which have not yet been confirmed be included in transaction listings and in stats?"
+msgstr ""
 
-#: views/offers_wants.views.inc:1403
-msgid "Latest Wants"
-msgstr "Laatste Gevraagd"
+#: transactions.admin.inc:105
+msgid "Names of transaction types"
+msgstr ""
 
-#: views/offers_wants.views.inc:1404
-msgid "Wants, newest first"
-msgstr "Verzoeken, nieuwste eerst "
+#: transactions.admin.inc:109
+msgid "These are the names of the transaction types. Unnamed types will be unavailable. You must name at least one. "
+msgstr ""
 
-#: views/offers_wants.views.inc:1410
-msgid "There are no wants in this category"
-msgstr "Er zijn geen verzoeken in deze categorie"
+#: transactions.admin.inc:110
+msgid "For each type there is a block, a menu link (coming soon) and a permission"
+msgstr ""
 
-#: views/offers_wants.views.inc:1538
-msgid "Latest wants"
-msgstr "Laatste verzoeken"
+#: transactions.admin.inc:114;120;126;132
+msgid "The name of an @direction flow completed @when"
+msgstr ""
 
-#: views/requack.views.inc:12;14
-msgid "Requests/acknowledgements"
-msgstr "Verzoeken/kennisgevingen "
+#: transactions.admin.inc:114;126
+msgid "outgoing"
+msgstr ""
 
-#: views/requack.views.inc:16
-msgid "Things requested done for free, and counted"
-msgstr "Dingen voor niks, maar wel geteld "
+#: transactions.admin.inc:114;120
+msgid "by the other party"
+msgstr ""
 
-#: views/requack.views.inc:26
-msgid "Completer"
-msgstr "Uitvoerder"
+#: transactions.admin.inc:120;132
+msgid "incoming"
+msgstr ""
 
-#: views/requack.views.inc:28;32
-msgid "The user id who met the request"
-msgstr "Gebruikers ID die het verzoek kreeg"
+#: transactions.admin.inc:126;132
+msgid "instantly"
+msgstr ""
 
-#: views/requack.views.inc:36
-msgid "Request"
-msgstr "Verzoek"
+#: transactions.admin.inc:144
+msgid "Minimum number of words must be a positive integer"
+msgstr "Minimaal aantal woorden moet een positief geheel getal zijn."
 
-#: views/requack.views.inc:36
-msgid "Acknowledgement"
-msgstr "Kennisgevingen"
+#: transactions.admin.inc:147
+msgid "Balancing account must be an integer."
+msgstr ""
 
-#: views/requack.views.inc:41
-msgid "Number of @acknowledgements"
-msgstr "Aantal @acknowledgements"
+#: transactions.admin.inc:152
+msgid "'@period' is not a valid strtotime string"
+msgstr ""
 
-#: views/requack.views.inc:50
-msgid "Total"
-msgstr "Totaal"
+#: transactions.admin.inc:177
+msgid "Currency name"
+msgstr ""
 
-#: views/requack.views.inc:52
-msgid "The total number of @acknowledgements received by the user"
-msgstr "Het totaal aantal @acknowledgements ontvangen door de gebruiker"
+#: transactions.admin.inc:179
+msgid "Use the plural"
+msgstr ""
+
+#: transactions.admin.inc:184
+msgid "This default currency is made obselete if the cc_currencies module is installed."
+msgstr ""
+
+#: transactions.admin.inc:188
+msgid "Edit"
+msgstr "Bewerken"
+
+#: transactions.admin.inc:198
+msgid "Currency subdivision"
+msgstr "Valuta opdeling"
+
+#: transactions.admin.inc:201
+msgid "integer"
+msgstr "geheel getal"
+
+#: transactions.admin.inc:202
+msgid "quarters (of an hour)"
+msgstr "kwartieren (van een uur)"
+
+#: transactions.admin.inc:203
+msgid "hundredths (two decimal places)"
+msgstr "Honderdsten (twee decimale plaatsen)"
+
+#: transactions.admin.inc:205
+msgid "Many LETS currencies are not divisible, while hours might be divisible into quarters."
+msgstr ""
+
+#: transactions.admin.inc:209 transactions.module:549
+msgid "Balance limits"
+msgstr ""
+
+#: transactions.admin.inc:210
+msgid "Balance limits are calculated AFTER the offset."
+msgstr ""
+
+#: transactions.admin.inc:211
+msgid "Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts"
+msgstr ""
+
+#: transactions.admin.inc:212
+msgid "Those users can also edit individual balance limits on users' account pages"
+msgstr ""
+
+#: transactions.admin.inc:217
+msgid "Maximum Balance"
+msgstr "Maximaal Balans saldo"
+
+#: transactions.admin.inc:222
+msgid "Transactions will be declined by the system if the payee balance would go above this number. Up to !num digits."
+msgstr ""
+
+#: transactions.admin.inc:223;234
+msgid "Leave blank for no limit (not reccomended)"
+msgstr ""
+
+#: transactions.admin.inc:224
+msgid "Maximum balance must be an integer larger than zero."
+msgstr ""
+
+#: transactions.admin.inc:228
+msgid "Minimum Balance"
+msgstr "Minimaal Balans saldo"
+
+#: transactions.admin.inc:233
+msgid "The system will prevent transactions if the payer balance would go below this number. Up to !num digits."
+msgstr ""
+
+#: transactions.admin.inc:235;346
+msgid "Minimum balance must not be larger than 0"
+msgstr "Minimum balans saldo moet niet groter zijn dan nul"
+
+#: transactions.admin.inc:239
+msgid "Offset balances"
+msgstr ""
+
+#: transactions.admin.inc:244
+msgid "Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0."
+msgstr ""
+
+#: transactions.admin.inc:245
+msgid "This gives the impression that users are starting with a positive or negative balance."
+msgstr ""
+
+#: transactions.admin.inc:246
+msgid "Members start with x units 'free' but also need to restore their balance to x when they leave."
+msgstr ""
+
+#: transactions.admin.inc:247
+msgid "Instead of this trick, consider gifting new members from the central account, and recouping the debt through taxes"
+msgstr ""
+
+#: transactions.admin.inc:251
+msgid "Visuals"
+msgstr ""
+
+#: transactions.admin.inc:252
+msgid "Displays of money can be further tweaked by overriding theme_money and/or with css class 'currency-0'"
+msgstr ""
+
+#: transactions.admin.inc:256
+msgid "Upload icon"
+msgstr ""
+
+#: transactions.admin.inc:258
+msgid "Should be between 12px square and 16px square, preferably with a transparent background"
+msgstr ""
+
+#: transactions.admin.inc:263
+msgid "Comparative value"
+msgstr ""
+
+#: transactions.admin.inc:268
+msgid "If this currency is part of a larger trading network, it will have a value within that network (not yet operational)"
+msgstr ""
+
+#: transactions.admin.inc:272
+msgid "A hex colour value"
+msgstr ""
+
+#: transactions.admin.inc:275
+msgid "6 hex digits"
+msgstr ""
+
+#: transactions.admin.inc:313
+msgid "Traders can earn a reputation when their customers rate them highly. Use this field to list the words used to describe the quality of transactions, from worst to best, one on each line."
+msgstr ""
+
+#: transactions.admin.inc:314
+msgid "Example:<br />-1|Bad<br />0|As expected<br />1|Great!<br />  Leave blank to disable this feature. Note that in automated transactions, 0 will be be used, so 0 should be a neutral value."
+msgstr ""
+
+#: transactions.admin.inc:315
+msgid "Beware that changing the number of rating options after transactions have been entered will distort the averages."
+msgstr ""
+
+#: transactions.admin.inc:316
+msgid "This feature could use a lot more work to integrate into views and stats"
+msgstr ""
+
+#: transactions.admin.inc:326
+msgid "You must have more than one rating, or leave the field blank to disable the rating system"
+msgstr ""
+"Je moet meer dan een beoordelingsmogelijkheid hebben, of laat dit veld "
+"leeg zodat het beoordelingssysteem niet gebruikt wordt."
+
+#: transactions.admin.inc:342 transactions.module:824
+msgid "This must be an integer: @value"
+msgstr ""
+
+#: transactions.admin.inc:349
+msgid "Maximum balance must be an integer larger than zero and minimum balance"
+msgstr ""
+"Maximum balans saldo moet een geheel getal zijn groter dan nul en "
+"groter dan het minimum balans saldo"
+
+#: transactions.admin.inc:358
+msgid "@function was asked to create a transaction with negative value: @value"
+msgstr ""
+"@function is gevraagd een transactie te maken met een negatieve "
+"waarde: @value"
+
+#: transactions.admin.inc:476
+msgid "Flushed balance cache"
+msgstr ""
+
+#: transactions.admin.inc:531
+msgid "Carried forward"
+msgstr "Naar voren geschoven"
+
+#: transactions.module:35
+msgid "Defines a contentType called transactions, manages them and does the accounting."
+msgstr ""
+
+#: transactions.module:64
+msgid "transaction"
+msgstr ""
+
+#: transactions.module:66
+msgid "A movement of a quantity of a currency between two users."
+msgstr ""
+
+#: transactions.module:68
+msgid "Description of entity traded"
+msgstr ""
+
+#: transactions.module:277;304
+msgid "Start transaction"
+msgstr ""
+
+#: transactions.module:284;321
+msgid "@period economy"
+msgstr ""
+
+#: transactions.module:297
+msgid "@user's balances"
+msgstr ""
+
+#: transactions.module:308
+msgid "Start transaction with @name"
+msgstr ""
+
+#: transactions.module:339
+msgid "Editing transaction"
+msgstr ""
+
+#: transactions.module:357
+msgid "Are you sure you want to delete this transaction?"
+msgstr "Ben je er zeker van dat je deze transactie wilt verwijderen?"
+
+#: transactions.module:360
+msgid "The transation had not been confirmed"
+msgstr ""
+
+#: transactions.module:363
+msgid "This transaction was confirmed, so the balances of both users will be affected"
+msgstr ""
+
+#: transactions.module:448
+msgid "Contact preferences"
+msgstr ""
+
+#: transactions.module:453
+msgid "Receive email notification when someone initiates a transaction with you"
+msgstr ""
+
+#: transactions.module:460
+msgid "Receive email notification when you start a transaction"
+msgstr ""
+
+#: transactions.module:468
+msgid "Personal balance limits (accountant only)"
+msgstr ""
+
+#: transactions.module:469
+msgid "The default values are inherited from the currency."
+msgstr ""
+
+#: transactions.module:476
+msgid "currency: @name"
+msgstr ""
+
+#: transactions.module:481
+msgid "max limit"
+msgstr ""
+
+#: transactions.module:487
+msgid "min limit"
+msgstr ""
+
+#: transactions.module:538 transactions.info:0 views/transactions.views.inc:27
+msgid "Transactions"
+msgstr ""
+
+#: transactions.module:541 views/transactions.views.inc:807
+msgid "Pending Transactions"
+msgstr ""
+
+#: transactions.module:564
+msgid "Send email to transaction completer."
+msgstr ""
+
+#: transactions.module:564;572
+msgid "Triggers automatically"
+msgstr ""
+
+#: transactions.module:572
+msgid "Send email to transaction starter."
+msgstr ""
+
+#: transactions.module:589;820
+msgid ""
+msgstr ""
+
+#: transactions.module:593
+msgid "Message subject"
+msgstr ""
+
+#: transactions.module:594
+msgid "Transaction notification"
+msgstr ""
+
+#: transactions.module:595
+msgid "Tokens cannot be used here"
+msgstr ""
+
+#: transactions.module:599
+msgid "Email template"
+msgstr ""
+
+#: transactions.module:600
+msgid "This is an automated notification."
+msgstr ""
+
+#: transactions.module:601
+msgid "%starter has started a transaction with %completer"
+msgstr ""
+
+#: transactions.module:602
+msgid "The transaction was for: %reason"
+msgstr ""
+
+#: transactions.module:603
+msgid "You can confirm the transaction from your profile page: %profile_url"
+msgstr ""
+
+#: transactions.module:604
+msgid "You can change your mail notification settings by clicking 'edit' on your profile"
+msgstr ""
+
+#: transactions.module:605
+msgid "This email will be sent to members when someone initiates a transaction with them which needs confirming. "
+msgstr ""
+
+#: transactions.module:606
+msgid "Don't forget to enable the trigger module and set up the trigger at !url. "
+msgstr ""
+
+#: transactions.module:607
+msgid "You can use the following strings as variables:"
+msgstr ""
+
+#: transactions.module:610
+msgid "You can use html in your message."
+msgstr ""
+
+#: transactions.module:613
+msgid "Use only plain text "
+msgstr ""
+
+#: transactions.module:629
+msgid "You can't send an empty email"
+msgstr ""
+
+#: transactions.module:632
+msgid "Your mail must have a subject"
+msgstr ""
+
+#: transactions.module:814
+msgid "This must be a number: @value"
+msgstr ""
+
+#: transactions.module:834
+msgid "Color field must be 6 hex characters"
+msgstr ""
+
+#: transactions.module:862
+msgid "Quantitative fields in database is set to type '@type'"
+msgstr ""
+
+#: transactions.module:887
+msgid "Currency Icon"
+msgstr ""
+
+#: transactions.module:900
+msgid "There are no transaction types declared on the system. Please go to admin/marketplace and name some transaction types"
+msgstr ""
+
+#: transactions.module:241
+msgid "use local currency"
+msgstr ""
+
+#: transactions.module:242
+msgid "view all transactions"
+msgstr ""
+
+#: transactions.module:243
+msgid "view all balances"
+msgstr ""
+
+#: transactions.module:244
+msgid "edit all transactions"
+msgstr ""
+
+#: transactions.module:245
+msgid "configure economy"
+msgstr ""
+
+#: transactions.module:90 transactions.info:0
+msgid "Complementary Currencies"
+msgstr ""
+
+#: transactions.module:91
+msgid "General complementary currency options"
+msgstr ""
+
+#: transactions.module:99
+msgid "Default Currency"
+msgstr ""
+
+#: transactions.module:100
+msgid "Default currency, transaction ratings and directory settings"
+msgstr ""
+
+#: transactions.module:107
+msgid "Transaction ratings"
+msgstr ""
+
+#: transactions.module:108
+msgid "Transaction satisfaction ratings"
+msgstr ""
+
+#: transactions.module:121
+msgid "Create transaction"
+msgstr ""
+
+#: transactions.module:130
+msgid "Standard"
+msgstr ""
+
+#: transactions.module:135
+msgid "3rd party"
+msgstr ""
+
+#: transactions.module:145
+msgid "Sign this transaction to finalise it"
+msgstr ""
+
+#: transactions.module:154
+msgid "Bureau"
+msgstr ""
+
+#: transactions.module:155
+msgid "All transaction information for this user"
+msgstr ""
+
+#: transactions.module:170
+msgid "Economic analysis"
+msgstr ""
+
+#: transactions.module:171
+msgid "All available metrics"
+msgstr ""
+
+#: transactions.module:180;187
+msgid "@period"
+msgstr ""
+
+#: transactions.install:18
+msgid "invoice"
+msgstr ""
+
+#: transactions.install:19
+msgid "payment"
+msgstr ""
+
+#: transactions.install:20
+msgid "claim"
+msgstr ""
+
+#: transactions.install:21
+msgid "gift"
+msgstr ""
+
+#: transactions.install:45
+msgid "Transaction module is installed. Set the default currency at !link"
+msgstr ""
+
+#: transactions.install:91;157
+msgid "the node to which this entry is attached"
+msgstr ""
+
+#: transactions.install:96
+msgid "the user id of the payer"
+msgstr ""
+
+#: transactions.install:101
+msgid "the user id of the payee"
+msgstr ""
+
+#: transactions.install:106
+msgid "the uid of the subject of the transaction, the starter"
+msgstr ""
+
+#: transactions.install:111
+msgid "uid of the object of the transaction"
+msgstr ""
+
+#: transactions.install:116
+msgid "the nid of the currency used"
+msgstr ""
+
+#: transactions.install:121
+msgid "the number of units transferred, (@type)"
+msgstr ""
+
+#: transactions.install:126;223
+msgid "The type of transaction, types are provided by modules"
+msgstr ""
+
+#: transactions.install:131
+msgid "the quality of the work done, expressed as a quantity"
+msgstr ""
+
+#: transactions.install:136
+msgid "State of the transaction - completed, pending, disputed, etc"
+msgstr ""
+
+#: transactions.install:141
+msgid "nid of parent transaction"
+msgstr ""
+
+#: transactions.install:154
+msgid "cached balances, turnovers and pending balances, for exposure to views"
+msgstr ""
+
+#: transactions.install:163
+msgid "the currency id, where there is more than one currency"
+msgstr ""
+
+#: transactions.install:348
+msgid "Please visit admin/build/trigger and check the transaction notification actions are not assigned"
+msgstr ""
+
+#: transactions.info:0
+msgid "Makes a contentType called transactions and manages the way that users create and view this content."
+msgstr ""
+
+#: views/transactions.views.inc:30
+msgid "Transaction"
+msgstr ""
 
 #: views/transactions.views.inc:31
 msgid "Money flows between users."
 msgstr "Geldstroom tussen de gebruikers"
 
-#: views/transactions.views.inc:41;59;164;393;574;599
-msgid "Purchaser"
-msgstr "Koper"
+#: views/transactions.views.inc:41;59;284;309
+msgid "Payer"
+msgstr ""
 
 #: views/transactions.views.inc:43
 msgid "The user id who spent currency in the transaction."
@@ -769,13 +974,17 @@ msgstr "De gebruikers ID  die geld uitgaf in de transaktie"
 msgid "Show only transactions where the current user paid"
 msgstr "Toon alleen transacties waar de huidige gebruiker betaalde"
 
-#: views/transactions.views.inc:51;55
+#: views/transactions.views.inc:51
+msgid "The user who gave currency in the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:55
 msgid "The user who spent currency in the transaction."
 msgstr "De gebruiker die geld uitgaf in de transactie"
 
-#: views/transactions.views.inc:63;81;189;608
-msgid "Seller"
-msgstr "Verkoper"
+#: views/transactions.views.inc:63;82;318
+msgid "Payee"
+msgstr ""
 
 #: views/transactions.views.inc:65
 msgid "The user id who received currency in the transaction."
@@ -785,97 +994,191 @@ msgstr "De gebruikers ID die geld ontving in de transactie"
 msgid "Show only transactions where the current user was paid"
 msgstr "Toon alleen transacties waar de huidige gebruiker betaald is."
 
-#: views/transactions.views.inc:73;77
+#: views/transactions.views.inc:71
+msgid "User is payee"
+msgstr ""
+
+#: views/transactions.views.inc:74;78
 msgid "The user who received currency in the transaction."
 msgstr "De gebruiker die geld ontving in deze transactie."
 
-#: views/transactions.views.inc:87
+#: views/transactions.views.inc:86
+msgid "Starter"
+msgstr ""
+
+#: views/transactions.views.inc:88;122
+msgid "The user id who initiated the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:92
+msgid "Show only transactions started or not started by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:96
+msgid "Show only transactions started by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:100
+msgid "The account id who initiated the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:104
+msgid "starter"
+msgstr ""
+
+#: views/transactions.views.inc:108
+msgid "Completer"
+msgstr "Uitvoerder"
+
+#: views/transactions.views.inc:110
+msgid "The account id who completed the transaction."
+msgstr ""
+
+#: views/transactions.views.inc:114
+msgid "Show only transactions completed or not completed by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:118
+msgid "Show only transactions completed by a given account"
+msgstr ""
+
+#: views/transactions.views.inc:126
+msgid "completer"
+msgstr ""
+
+#: views/transactions.views.inc:130;251
+msgid "Rating"
+msgstr "Waardering"
+
+#: views/transactions.views.inc:132
 msgid "Quality of the transaction according to the payer"
 msgstr "De kwaliteit van de transactie volgens de opdrachtgever"
 
-#: views/transactions.views.inc:94
+#: views/transactions.views.inc:138;372
+msgid "Amount"
+msgstr "Hoeveelheid"
+
+#: views/transactions.views.inc:140
 msgid "Number of units of currency transferred"
 msgstr "Aantal eenheden van de valuta overgemaakt"
 
-#: views/transactions.views.inc:101
+#: views/transactions.views.inc:145
+msgid "Transactions above or below a certain value"
+msgstr ""
+
+#: views/transactions.views.inc:150
+msgid "Transaction state"
+msgstr ""
+
+#: views/transactions.views.inc:152;157
+msgid "Whether the transaction is completed or pending"
+msgstr ""
+
+#: views/transactions.views.inc:167;199;380
+msgid "Currency ID"
+msgstr ""
+
+#: views/transactions.views.inc:169
 msgid "The currency that the transaction was conducted in"
 msgstr "De valuta die gebruikt werd voor de transactie"
 
-#: views/transactions.views.inc:109
+#: views/transactions.views.inc:174;201;205
+msgid "Currency id"
+msgstr ""
+
+#: views/transactions.views.inc:182
 msgid "User Balance"
 msgstr "Balans saldo gebruiker"
 
-#: views/transactions.views.inc:110
+#: views/transactions.views.inc:183
 msgid "Balances of users."
 msgstr "Balanssaldi van gebruikers"
 
-#: views/transactions.views.inc:121
+#: views/transactions.views.inc:192
+msgid "User"
+msgstr ""
+
+#: views/transactions.views.inc:194
+msgid "The user id"
+msgstr ""
+
+#: views/transactions.views.inc:211
+msgid "Balance"
+msgstr "Balans"
+
+#: views/transactions.views.inc:213
 msgid "The user's total cleared income minus total cleared expenditure"
 msgstr "Het verschil tussen verdiensten en bestedingen van de gebruiker"
 
-#: views/transactions.views.inc:126
+#: views/transactions.views.inc:219
+msgid "Pending Difference"
+msgstr ""
+
+#: views/transactions.views.inc:221
+msgid "sum of all pending transactions, (@type)"
+msgstr ""
+
+#: views/transactions.views.inc:227
 msgid "Pending Balance"
 msgstr "Balans saldo in afwachting"
 
-#: views/transactions.views.inc:128
-msgid "The sum of the user's incomplete transactions"
-msgstr "Het totaal van de gebruikers niet voltooide transacties"
+#: views/transactions.views.inc:229
+msgid "balance including pending transactions, (@type)"
+msgstr ""
 
-#: views/transactions.views.inc:135
-msgid "The user's total cleared income ever"
-msgstr "Het totaal van de gebruikers verdiende inkomsten ooit"
+#: views/transactions.views.inc:235
+msgid "Gross Income"
+msgstr ""
 
-#: views/transactions.views.inc:367
-msgid "payments"
-msgstr "Betalingen"
+#: views/transactions.views.inc:237
+msgid "The user's total completed income ever"
+msgstr ""
 
-#: views/transactions.views.inc:535
-msgid "Receipts"
-msgstr "Kwitanties"
+#: views/transactions.views.inc:243
+msgid "Gross Expenditure"
+msgstr ""
 
-#: views/transactions.views.inc:617
-msgid "Trade"
-msgstr "Handel "
+#: views/transactions.views.inc:245
+msgid "The user's total completed expenditure ever"
+msgstr ""
 
-#: views/transactions.views.inc:634;679
-#: views/views_handler_filter_requack_completer_uid.inc:14
-msgid "Completed"
-msgstr "Voltooid"
+#: views/transactions.views.inc:253
+msgid "The user's average rating for this currency"
+msgstr ""
 
-#: views/transactions.views.inc:692
+#: views/transactions.views.inc:299
+msgid "Date"
+msgstr "Datum"
+
+#: views/transactions.views.inc:505
 msgid "Transaction list"
 msgstr "Transactie lijst"
 
-#: views/transactions.views.inc:694
+#: views/transactions.views.inc:507
 msgid "There are no transactions in the system yet"
 msgstr "Er zijn nog geen transacties in het systeem"
 
-#: views/views_handler_field_requack_completer_uid.inc:24
-msgid "Link this field to its user, the completer's profile"
-msgstr "Link dit veld aan zijn gebruiker, het uitvoerders profiel"
+#: views/transactions.views.inc:565
+msgid "All transactions"
+msgstr ""
 
-#: views/views_handler_field_transactions_from_uid.inc:23
-#: views/views_handler_field_transactions_payer_uid.inc:23
-msgid "Link this field to its user, the purchaser's profile"
-msgstr "Link dit veld aan zijn gebruiker, het kopers profiel"
+#: views/transactions.views.inc:566
+msgid "all transactions on the system, with optional argument for currency"
+msgstr ""
 
-#: views/views_handler_field_transactions_payee_uid.inc:24
-#: views/views_handler_field_transactions_to_uid.inc:24
-msgid "Link this field to its user, the seller's profile"
-msgstr "Link dit veld aan zijn gebruiker, het verkopers profiel"
+#: views/transactions.views.inc:727
+msgid "incomplete transactions, per user"
+msgstr ""
 
-#: views/views_handler_filter_goods_not_services.inc:7
-msgid "This is a @good not a @service"
-msgstr "Dit is een @good en geen @service"
+#: views/transactions.views.inc:808
+msgid "There are no transactions to complete"
+msgstr "Er zijn geen transacties to voltooien"
 
-#: views/views_handler_filter_not_cc.inc:6
-msgid "This is paid for with official currency"
-msgstr "Dit wordt betaald met echt geld"
+#: views/transactions.views.inc:858
+msgid "Transactions for this user to complete"
+msgstr ""
 
-#: views/views_handler_filter_requack_completer_uid.inc:14
-msgid "Open"
-msgstr "Open"
+#: views/transactions.views.inc:922
+msgid "Transactions started by this user"
+msgstr ""
 
-#: views/views_handler_filter_trader_current.inc:6
-msgid "Is the logged in user"
-msgstr "Is de ingelogde gebruiker"

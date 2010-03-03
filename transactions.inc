@@ -49,7 +49,6 @@ function transactions_nodeapi(&$node, $op) {
 
 //This makes the bureau page, but also contains most of the usual CALLBACK FUNCTIONS, FOR USE WITH PANELS
 function transactions_bureau($account) {
-  //$account=user_load($uid);
   $balances = transactions_user_balances($account->uid);
   $pending = transactions_pending($account->uid);
   $history = transactions_list($account, array('running_balance' => TRUE));
@@ -327,6 +326,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
       '#title' => t('Hours'),
       '#weight' => $form['quantity']['#weight']+1,
       '#default_value' => 100*($transaction->quantity - intval($transaction->quantity)),
+      '#field_suffix' => $default_currency->title,
       '#options' => array(
         '0' => t('00 hours'), 
         '25' => t('15 minutes'), 
@@ -335,9 +335,14 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
       ),
     );
     //these affect the quantity field:
-    //unset($form['quantity']['#field_suffix']);
+    unset($form['quantity']['#field_suffix']);
     $form['quantity']['#required'] == FALSE;
   }
+  //placeholder
+  $form['division'] = array(
+    '#type' => 'value',
+    '#value' => 0,
+  );
   
   //the payer has to grade the transaction
   $options=variable_get('cc_transaction_qualities', array());
@@ -478,14 +483,13 @@ function transaction_form_after_build($form, &$form_state) {
       ($form_state['values']['state'] = TRANSACTION_STATE_COMPLETED);
     }
   }
+  //put the quantity and division fields into one decimal value
   $form_state['values']['quantity'] = intval($form_state['values']['quantity']) + $form_state['values']['division']/100;
   
   //any direct transactims can never be in a pending state
   if (substr($form_state['values']['transaction_type'], -7) == '_direct') {
     $form_state['values']['state'] = TRANSACTION_STATE_COMPLETED;
   }
-  //ensure there is a value for the default currency
-  $form_state['values']['cid'] = intval($form_state['values']['cid']);
   return $form;
 }
 
@@ -533,7 +537,6 @@ function transaction_complete_form(&$form_state, $transaction) {
   return $output;
 }
 function transaction_complete_form_submit($form, &$form_state) {
-  print_r(func_get_args());
   module_load_include('admin.inc', 'transactions');
   if ($form_state['values']['complete']) {
     $transaction = node_load($form_state['values']['nid']);
@@ -564,7 +567,9 @@ function cc_validate_title($element, $form_state) {
   }
 }
 
+//by the time this this runs, the after_build function has added the division to the quantity
 function cc_validate_quantity($element, $form_state) {
+  print_r(func_get_args());
   $quant = $element['#value'];
   if (strlen($quant)) {
     if ($quant < 0) {
@@ -577,6 +582,7 @@ function cc_validate_quantity($element, $form_state) {
   else {
     form_error($element, t('You cannot exchange nothing'));
   }
+  /*
   if (isset($form_state['values']['division'])) {
     $division = $form_state['values']['division'];
     $currency = currency_load($transaction->cid);
@@ -597,10 +603,9 @@ function cc_validate_quantity($element, $form_state) {
     }
   }
   if ((!is_numeric($quant) || $quant == 0) && (!is_numeric($division) || $division == 0)){
-    
-  echo $division;
     form_error($element, t('You must enter a number'));
   }
+  */
 }
 
 
@@ -1042,15 +1047,17 @@ function _get_transactions_for_user($uid, $options) {
 //get a list of all user accounts without loading all users into memory
 //this should be possible with a view...
 function _select_trader_names() {
-  $roles = user_roles(TRUE, 'use local currency');
-  if (count($roles)) {
+  if ($roles = user_roles(TRUE, 'use local currency')) {
     unset ($roles[DRUPAL_AUTHENTICATED_RID]);
+    $where = array('status = 1');
+    if (count($roles)) {
+      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
+    }
     $result= db_query("SELECT u.uid, ". implode(', ', variable_get('cc_select_user_show', array('name'))) ." 
       FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
-      WHERE status = 1
-      AND rid in (%s)
+      WHERE %s
       ORDER BY `u`.`". variable_get('cc_select_user_orderby', 'uid') ."` ASC",
-        array(':rids' => implode(', ', array_keys($roles)))
+        array(':where' => implode(' AND ', $where))
     );
     $account = array();
     while ($account = db_fetch_array($result)) {
@@ -1058,7 +1065,9 @@ function _select_trader_names() {
     }
     return $names;
   }
-  drupal_set_message(t('No roles have permission to trade. Please enable some permissions: '). l('admin/user/permissions', 'admin/user/permissions'), 'error');
+  else {
+    drupal_set_message(t('No roles have permission to trade. Please enable some permissions: '). l('admin/user/permissions', 'admin/user/permissions'), 'error');
+  }
 }
 
 function _get_view_transactions_by_user($where) {

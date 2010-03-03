@@ -53,7 +53,7 @@ function cc_offer_want_views_api() {
 function cc_offer_want_menu() {
   return array(
     'admin/marketplace/offers_wants' => array(
-      'title' => t('Offers & Wants'),
+      'title' => 'Offers & Wants',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('offers_wants_config_form'),
       'access arguments' => array('configure economy'),
@@ -256,6 +256,14 @@ function cc_offer_want_theme($existing, $type, $theme, $path){
       'function' => 'theme_offers_wants_link',
     ),
   );
+}
+
+function cc_offer_want_user($op, &$edit, &$account, $category = NULL) {
+  switch($op) {
+    case 'delete':
+      db_query("DELETE FROM {node} WHERE uid = %d AND (type = 'offer' OR type = 'want')", array(':uid' => $account->uid));
+      break; 
+  }  
 }
 
 function type_categories_count($nodetype, $link_prefix){

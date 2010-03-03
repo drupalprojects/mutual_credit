@@ -12,7 +12,8 @@ function cc_options() {
     '#size' => 2,
     '#maxlength' => 3,
     '#weight' => -5,
-    '#description' => t("Become part of a wider community by allowing a coordinating to know a few things about this site. Such as url, contact details, number of active traders. No personal information will be shared.")
+    '#description' => t("Become part of a wider community by allowing a coordinating to know a few things about this site. Such as url, contact details, number of active traders.") .' '.
+      t("No personal information will be shared.")
   );
   $form['cc_description_min_words'] = array(
     '#type' => 'textfield',
@@ -21,7 +22,8 @@ function cc_options() {
     '#size' => 2,
     '#maxlength' => 3,
     '#weight' => -4,
-    '#description' => t("This site could be better if you can get members to take a few seconds more to describe the transaction in more detail. It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4.")
+    '#description' => t("Classification can be improved if members take a few seconds to describe their transactions in more detail.") . ' '.
+      t("It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4.")
   );
   $form['cc_balancing_account_num'] = array (
     '#type' => 'textfield',
@@ -66,7 +68,8 @@ function cc_options() {
     '#title' => t('User dropdown field(s)'),
     '#default_value' => variable_get('cc_select_user_show', 'name'),
     '#multiple' => TRUE,
-    '#description' => t("On the new transaction form, what fields should be used to identify members in the dropdown. Field order nor the spacer character can be configured. Would be great if you choose a view for this, like a cck field."),
+    '#description' => t("On the new transaction form, what fields should be used to identify members in the dropdown?") .
+      t("Neither field order nor the spacer character can be configured. Would be great if you choose a view for this, like a cck field."),
     //to add more options from the profile field, use hook_menu_alter in cc_custom module
     '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'mail' => t('Email') ),
   );
@@ -236,7 +239,7 @@ function currency_form_fields($currency) {
   );
     $form['balance_limits']['zero_offset'] = array(
     '#type' => 'textfield',
-    '#title' => t('Offset all balances by'),
+    '#title' => t('Offset balances'),
     '#default_value' => $currency->zero_offset,
     '#size' => 4,
     '#maxlength' => 6,

@@ -16,7 +16,7 @@ function cc_mass_pay_menu() {
     'title' => 'Many-to-one',
     'description' => 'collect an arbitrary amount from most accounts',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('mass_collect_form'),
+    'page arguments' => array('many2one_form'),
     'access arguments' => array('edit all transactions'),
     'weight' => 2,
     'type' => MENU_LOCAL_TASK,
@@ -27,7 +27,7 @@ function cc_mass_pay_menu() {
     'title' => 'One-to-many',
     'description' => 'payout an arbitary amount to a few people',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('mass_payout_form'),
+    'page arguments' => array('one2many_form'),
     'access arguments' => array('edit all transactions'),
     'weight' => 2,
     'type' => MENU_LOCAL_TASK,
@@ -51,7 +51,7 @@ function cc_mass_pay_theme(){
 }
 
 //This form is built from transaction_base_form then modified
-function mass_collect_form() {
+function cc_many2one_form() {
   //putting an empty object in there makes the transaction form show payer_uid and payee_uid instead of starter_uid and completer_uid
   $form = transaction_base_form((object)array(), 'init', 'payer_payee');
   unset($form['payer_uid']);
@@ -80,7 +80,7 @@ function mass_collect_form() {
   return $form;
 }
 
-function mass_collect_form_validate($form, &$form_state) {
+function many2one_form_validate($form, &$form_state) {
   $payers = array_diff(array_keys(_select_trader_names()), $form_state['values']['non_payers'], array($form_state['values']['payee_uid']));
   if (!count($payers)) {
     form_set_error('non_payers', t("No payers have been selected. Have you selected all accounts as non-payers?")); 
@@ -92,7 +92,7 @@ function mass_collect_form_validate($form, &$form_state) {
   }
 }
 
-function mass_collect_form_submit($form, $form_state) {
+function many2one_form_submit($form, $form_state) {
   module_load_include('admin.inc', 'transactions');
   variable_set('cc_mass_pay_collect_nonpayers', $form_state['values']['non_payers']);
   $transaction = _infer_transaction_from_form($form_state['values']);
@@ -117,11 +117,11 @@ function mass_collect_form_submit($form, $form_state) {
     )
   );
   //this seems to be the only way to get translated strings to watchdog, as the the first 2 parameters must be literal strings
-  watchdog('mass_payment', '!message', array('!message' => $message));
+  watchdog('Mass Payments', '!message', array('!message' => $message));
   mass_pay_redirect($transaction->payee_uid);
 }
 
-function mass_payout_form() {
+function one2many_form() {
   //putting an empty object in there makes the transaction form show payer_uid and payee_uid instead of starter_uid and completer_uid
   $form = transaction_base_form((object)array(), 'init', 'payer_payee');
   unset($form ['payee_uid']);
@@ -151,7 +151,7 @@ function mass_payout_form() {
   return $form;
 }
 
-function mass_payout_form_validate($form, &$form_state) {
+function one2many_form_validate($form, &$form_state) {
   $payees = array_diff(array_keys(_select_trader_names()), $form_state['values']['non_payees'], array($form_state['values']['payer_uid']));
   if (!count($payees)) {
     form_set_error('non_payees', t("No payees have been selected. Have you selected all accounts as non-payees?")); 
@@ -163,7 +163,7 @@ function mass_payout_form_validate($form, &$form_state) {
   }
 }
 
-function mass_payout_form_submit($form, $form_state) {
+function one2many_form_submit($form, $form_state) {
   module_load_include('admin.inc', 'transactions');
   variable_set('cc_mass_pay_non_payees', $form_state['values']['payees']);
   $transaction = _infer_transaction_from_form($form_state['values']);
@@ -188,7 +188,7 @@ function mass_payout_form_submit($form, $form_state) {
       '@description' => $form_state['values']['title'],
     )
   );
-  watchdog('mutual_credit', '!message', array('!message' => $message));
+  watchdog('Mass Payments', '!message', array('!message' => $message));
 }
 
 function template_preprocess_mass_payment_form(&$vars) {

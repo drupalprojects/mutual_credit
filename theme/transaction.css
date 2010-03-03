@@ -70,7 +70,8 @@ input.transaction_button,
 table.profile-balances td{
   text-align:right;
 }
-div.balances {
+div.balances,
+fieldset.balance-limits fieldset {
   float:left;
   margin-left:1em;
 }
@@ -93,7 +94,8 @@ span.cc-next:after{content:'>>';}
 #edit-comparative-value, 
 #edit-zero-offset,
 #edit-max-balance,
-#edit-min-balance {
+#edit-min-balance, 
+.balance-limits .form-text {
   width:3em;
 }
 

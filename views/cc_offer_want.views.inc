@@ -239,7 +239,6 @@ function cc_directory_user_view($php_filter){
     ),
     'default' => 'name_1',
   ));
-  $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->override_option('filters', array(
     'type' => array(
       'operator' => 'in',
@@ -258,7 +257,25 @@ function cc_directory_user_view($php_filter){
       ),
       'relationship' => 'none',
     ),
+    'status' => array(
+      'operator' => '=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'status',
+      'table' => 'users',
+      'field' => 'status',
+      'override' => array(
+        'button' => 'Remplacer',
+      ),
+      'relationship' => 'none',
+    ),
   ));
+  $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->override_option('title', '');
   $handler->override_option('empty', t('No offers have been entered.'));
   $handler->override_option('header', '<h4>' . $menu_title . '</h4>');
@@ -468,6 +485,23 @@ function cc_directory_recent_view($php_filter) {
       'id' => 'type',
       'table' => 'node',
       'field' => 'type',
+      'relationship' => 'none',
+    ),
+    'status' => array(
+      'operator' => '=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'status',
+      'table' => 'users',
+      'field' => 'status',
+      'override' => array(
+        'button' => 'Remplacer',
+      ),
       'relationship' => 'none',
     ),
   ));
@@ -794,6 +828,23 @@ function cc_directory_recent_offers_view($php_filter) {
       'id' => 'type',
       'table' => 'node',
       'field' => 'type',
+      'relationship' => 'none',
+    ),
+    'status' => array(
+      'operator' => '=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'status',
+      'table' => 'users',
+      'field' => 'status',
+      'override' => array(
+        'button' => 'Remplacer',
+      ),
       'relationship' => 'none',
     ),
   ));

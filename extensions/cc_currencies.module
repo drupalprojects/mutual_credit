@@ -115,7 +115,6 @@ function cc_currencies_form_alter(&$form, $form_state, $form_id) {
       //this cleans up the form - might not be necessary
       $form['menu']['access'] = FALSE;
       $form['revision_information']['access'] = FALSE;
-      $form['path']['access'] = FALSE;
       $form['options']['access'] = FALSE;
       //we use the sticky node property to universlaise the currency
       if (user_access('configure economy')){
@@ -135,8 +134,8 @@ function cc_currencies_form_alter(&$form, $form_state, $form_id) {
       break;
     case 'transaction_start_form':
     case 'transaction_node_form':
-    case 'mass_payout_form':
-    case 'mass_collect_form':
+    case 'many2one_form':
+    case 'one2many_form':
       $currencies = get_currencies(array('uids'=>array($GLOBALS['user']->uid))); //name only
       foreach($currencies as $nid=>$values) {
         $currency_names[$nid] = $values->title;
@@ -312,7 +311,6 @@ function get_currencies($options=array()) {
 
 
 function identify_currencies($uids = array()) {
-  if ($uids == array(0=>NULL))sdfsh();
   $uids = array_values($uids);
   $ors1 = array('1=1');
   $ors2 = array('1=1');

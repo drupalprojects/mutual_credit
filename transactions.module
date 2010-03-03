@@ -415,14 +415,10 @@ function transactions_view($node, $teaser = FALSE, $page = FALSE) {
  * This hook is required for modules to define one or more node types.
  */
 function transactions_user($op, &$edit, &$account, $category = NULL) {
-  $account = $account ? $account : $GLOBALS['user'];
-  //I'm very unhappy about having to convert account to an object here, but user_register_validate sends through an array
-  if (($op == 'categories') || (!user_access('use local currency', (object)$account) && $op!='insert')) return;
-  //load all the currencies this user has access to
-  $currencies = currencies_load(array('uids' => array($account->uid)));
-  
+  $currencies = array();
   switch ($op) {
     case 'load':
+      $currencies = currencies_load(array('uids' => array($account->uid)));
       //put the user stats into the user object, where the theming layer can see them
       $result = db_query("SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean, limit_max, limit_min
           FROM {cc_balance_cache} WHERE uid = %d",
@@ -445,24 +441,24 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       break;
     case 'form':
       if ($category != 'account') return;
+    case 'register':
+      $currencies = currencies_load(array('uids' => array($account->uid)));
       if (!module_exists('contact')) { //buggers up if the fieldset is declared twice
         $form['contact']['#type'] = 'fieldset';
         $form['contact']['#title'] = t('Contact preferences');
       }
       $form['contact']['completer_notification'] = array(
-        '#type' => 'radios',
+        '#type' => 'checkbox',
         '#prefix' => '<a name="notifications"></a>',
         '#title' => t('Receive email notification when someone initiates a transaction with you'),
         '#default_value' => intval($account->completer_notification),
-        '#options' => array(0 => t('no'), 1 => t('yes')),
         '#weight' => 2,
       );
       $form['contact']['starter_notification'] = array(
-        '#type' => 'radios',
+        '#type' => 'checkbox',
         '#prefix' => '<a name="notifications"></a>',
         '#title' => t('Receive email notification when you start a transaction'),
         '#default_value' => intval($account->starter_notification),
-        '#options' => array(0 => t('no'), 1 => t('yes')),
         '#weight' => 2,
       );
       //fields for individual balance limits
@@ -472,21 +468,24 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
           '#title' => t('Personal balance limits (accountant only)'),
           '#description' => t('The default values are inherited from the currency.'),
           '#weight' => -5,
+          '#attributes' => array('class' => 'balance-limits')
         );
         foreach ($currencies as $cid => $currency) {
           $form['balance_limits']['currency'. $cid] = array(
             '#type' => 'fieldset',
-            '#title' => $currency->title,
+            '#title' => t("currency: @name", array("@name" => $currency->title)),
             '#weight' => $cid,
           );
           $form['balance_limits']['currency'. $cid]['max'. $cid] = array(
             '#type' => 'textfield',
             '#title' => t('max limit'),
+            '#maxlength' => 6,
             '#default_value' => db_result(db_query("SELECT limit_max from {cc_balance_cache} WHERE uid = %d AND cid = %d", array(':uid' => $account->uid, ':cid' => $cid))),
           );
           $form['balance_limits']['currency'. $cid]['min'. $cid] = array(
             '#type' => 'textfield',
             '#title' => t('min limit'),
+            '#maxlength' => 6,
             '#default_value' => db_result(db_query("SELECT limit_min from {cc_balance_cache} WHERE uid = %d AND cid = %d", array(':uid' => $account->uid, ':cid' => $cid))),
           );
         }
@@ -494,6 +493,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       return $form;
       
     case 'validate':
+      $currencies = currencies_load(array('uids' => array($account->uid)));
       if (user_access('edit all transactions')) { //this is extra security. Most users won't have seen these form fields
         foreach ($currencies as $cid => $currency) {
           if ($edit['min'. $cid]=='' && $edit['max'. $cid]=='') continue;
@@ -507,6 +507,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       break;
       
     case 'update':
+      $currencies = currencies_load(array('uids' => array($account->uid)));
       if (user_access('edit all transactions')) {
         $min = 'NULL';
         $max = 'NULL';
@@ -522,8 +523,8 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
     case 'insert':
       module_load_include('admin.inc', 'transactions');
       //user preference to be sent emails about pending transactions
-      $edit['starter_notification'] = TRUE; 
-      $edit['completer_notification'] = TRUE; 
+      $edit['starter_notification'] = $edit['notifications'];
+      $edit['completer_notification'] = $edit['notifications'];
       //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
       $def_cur = currency_load();
       _recalculate_balances(array($edit['uid']), $def_cur->nid);

@@ -25,6 +25,7 @@
  * $previous = button (only on stage 2)
  * $summary = teaser from transaction.tpl.php
  * $backdate field, if module is installed
+ * $cid, a widget for selecting currency
  */
  $currency = variable_get('cc_default_currency', NULL);
 
@@ -44,7 +45,7 @@ switch($mode) {
     }
     if ($title) print t('Title:'). $title;
     if ($quantity) {
-      $row = array($quantity, $division, $next);
+      $row = array($quantity, $division, $cid, $next);
       print t('Quantity'). theme('table', array(), array($row), array('style' => 'width:100px'));
     } 
     else {
