@@ -16,8 +16,8 @@ function transactions_nodeapi(&$node, $op) {
   switch ($op) {
     case 'validate':
       if ($node->payer_uid && $node->payee_uid) {
-        _transaction_user_limits(user_load($node->payer_uid), -$node->quantity, $node->cid);
-        _transaction_user_limits(user_load($node->payee_uid), +$node->quantity, $node->cid);
+        _transaction_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid));
+        _transaction_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid));
       }
       break;
       
@@ -165,7 +165,8 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   $form = array();
   $user_select_widget = variable_get('cc_autocomplete_user_select_widget', 'select');
   if ($user_select_widget == 'select') {
-    $accounts = _select_trader_names();
+    $cached_traders = cache_get('cc_trader_list');
+    $traders = $cached_traders->data;
   }
   //just check, if we are here without using a button, that user can edit the form
   if ($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) {
@@ -228,7 +229,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#type' => $user_select_widget,
         '#title' => t('Who is being paid?'),
         '#default_value' => $payee,
-        '#options' => $accounts ? array(0 => t('(Please choose...)')) + $accounts : NULL,
+        '#options' => $traders ? array(0 => t('(Please choose...)')) + $traders : NULL,
         '#required' => TRUE,
         '#element_validate' => array('cc_validate_2parties'),
       );
@@ -238,7 +239,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#type' => $user_select_widget,
         '#title' => t('Who is paying?'),
         '#default_value' => $payer,
-        '#options' => $accounts ? array(0 => t('(Please choose...)')) + $accounts : NULL,
+        '#options' => $traders ? array(0 => t('(Please choose...)')) + $traders : NULL,
         '#required' => TRUE,
       );
     }
@@ -258,19 +259,19 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#title' => t('Initiator, (if not you)'),
         '#default_value' => $starter_user ? $starter_user->name : $starter,
         '#required' => TRUE,
-        '#options' => $accounts ? $accounts : NULL,
+        '#options' => $traders ? $traders : NULL,
       );
     }
     if (!$completer || $mode == 'edit') {
       //remove the user's own uid so they can't trade with themselves
       if (!$edit_all_transactions) {
-        unset($accounts[$user->{uid}]); //remove user from list of accounts shown to form
+        unset($traders[$user->{uid}]); //remove user from list of accounts shown to form
       }
       $form['completer_uid'] = array(
         '#type' => $user_select_widget,
         '#title' => t('With whom did you transact?'),
         '#default_value' => $completer,
-        '#options' => $accounts ? array(0 => t('(Please choose...)')) + $accounts : NULL,
+        '#options' => $traders ? array(0 => t('(Please choose...)')) + $traders : NULL,
         '#required' => TRUE,
         '#element_validate' => array('cc_validate_2parties'),
       );
@@ -294,7 +295,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
       );
     }
   }
-  if ($edit_all_transactions && $mode == 'init') {
+  if ($edit_all_transactions && $mode == 'init' && $selectorset == 'starter_completer') {
     $form['state'] = array(
       '#type' => 'checkbox',
       '#title' => t('Tick to request confirmation'),
@@ -480,6 +481,7 @@ function transaction_form_after_build($form, &$form_state) {
       $form_state['values']['completer_uid'] = $form_state['values']['payee_uid'];
     }
     else {
+      //It doesn't matter who the starter and completer are, but the transaction can't be pendinng
       ($form_state['values']['state'] = TRANSACTION_STATE_COMPLETED);
     }
   }
@@ -569,7 +571,6 @@ function cc_validate_title($element, $form_state) {
 
 //by the time this this runs, the after_build function has added the division to the quantity
 function cc_validate_quantity($element, $form_state) {
-  print_r(func_get_args());
   $quant = $element['#value'];
   if (strlen($quant)) {
     if ($quant < 0) {
@@ -857,11 +858,11 @@ function preprocess_transaction_fields($transaction, $uid, $rich = TRUE) {
     $vars['rating'] = $qualities[$transaction->quality];
     $vars['transactions'][$key]['classes'] .= 'quality'. $transaction->quality;
   }
-  if ($transaction->starter_uid == $uid) {
-    $vars['notme'] = $vars['completer'];
+  if ($transaction->payer_uid == $uid) {
+    $vars['notme'] = $vars['payee'];
   }
-  elseif ($transaction->completer_uid == $uid) {
-    $vars['notme'] = $vars['starter'];
+  elseif ($transaction->payee_uid == $uid) {
+    $vars['notme'] = $vars['payer'];
   }
   if ($transaction->nid) {
     $vars['transaction_link'] = l($transaction->title, 'node/'. $transaction->nid);
@@ -1042,32 +1043,6 @@ function _get_transactions_for_user($uid, $options) {
     }
   }
   return $transactions;
-}
-
-//get a list of all user accounts without loading all users into memory
-//this should be possible with a view...
-function _select_trader_names() {
-  if ($roles = user_roles(TRUE, 'use local currency')) {
-    unset ($roles[DRUPAL_AUTHENTICATED_RID]);
-    $where = array('status = 1');
-    if (count($roles)) {
-      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
-    }
-    $result= db_query("SELECT u.uid, ". implode(', ', variable_get('cc_select_user_show', array('name'))) ." 
-      FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
-      WHERE %s
-      ORDER BY `u`.`". variable_get('cc_select_user_orderby', 'uid') ."` ASC",
-        array(':where' => implode(' AND ', $where))
-    );
-    $account = array();
-    while ($account = db_fetch_array($result)) {
-      $names[$account['uid'] ]= implode(' | ', $account);
-    }
-    return $names;
-  }
-  else {
-    drupal_set_message(t('No roles have permission to trade. Please enable some permissions: '). l('admin/user/permissions', 'admin/user/permissions'), 'error');
-  }
 }
 
 function _get_view_transactions_by_user($where) {

@@ -61,7 +61,7 @@ function cc_options() {
     '#title' => t('User dropdown order'),
     '#default_value' => variable_get('cc_select_user_orderby', 'uid'),
     '#description' => t("On the new transaction form, in what order should the members be listed?"),
-    '#options' => array('uid' => t('User ID'), 'name' => t('Username') ),
+    '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'themed_username' => t('themed username')),
   );
   $form['user_selection']['cc_select_user_show'] = array (
     '#type' => 'select',
@@ -71,7 +71,7 @@ function cc_options() {
     '#description' => t("On the new transaction form, what fields should be used to identify members in the dropdown?") .
       t("Neither field order nor the spacer character can be configured. Would be great if you choose a view for this, like a cck field."),
     //to add more options from the profile field, use hook_menu_alter in cc_custom module
-    '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'mail' => t('Email') ),
+    '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'mail' => t('Email'), 'themed_username' => t('themed username') ),
   );
   $form['user_selection']['cc_autocomplete_user_select_widget'] = array(
     '#type' => 'radios',
@@ -136,8 +136,7 @@ function cc_options() {
     '#size' => 15,
     '#default_value' => $names['transactions']['incoming_direct'],
   );
-  $form['#submit'][] = 'menu_rebuild';
-  $form['#submit'][] = 'stats_refresh';
+  $form['#submit'][] = array('menu_rebuild', 'stats_refresh', 'refresh_trader_names');
 
   return system_settings_form($form);
 }
@@ -627,5 +626,50 @@ function stats_refresh($cid = 0) {
 function stats_refresh_all () {
   foreach (currencies_load() as $currency) {
     stats_refresh($currency->cid);
+  }
+}
+
+function refresh_trader_names() {
+  if ($roles = user_roles(TRUE, 'use local currency')) {
+    unset ($roles[DRUPAL_AUTHENTICATED_RID]);
+    $where = array('status = 1');
+    if (count($roles)) {
+      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
+    }
+    $results = db_query("SELECT u.uid 
+      FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
+      WHERE %s
+      ORDER BY `u`.`". variable_get('cc_select_user_orderby', 'uid') ."` ASC",
+        array(':where' => implode(' AND ', $where))
+    );
+    
+    $account = array();
+    while ($account = user_load(db_result($results))) {
+      foreach (variable_get('cc_select_user_show', array('name'))  as $field){
+        switch ($field) {
+          case 'name':
+          case 'mail':
+          case 'uid':
+            $fields[$field] = $account->$field;
+            break;
+          case 'themed_username':
+            $fields[$field] = strip_tags(theme('username', $account));
+        }
+      }
+      $names[$account->uid]= implode(' | ', $fields);
+    }
+    cache_set('cc_trader_list', $names);
+  }
+  else {
+    drupal_set_message(
+      t(
+        'No roles have permission to @trade. Go to !link', 
+        array(
+          '@trade' => t('use local currency'),
+          '!link' => l('admin/user/permissions', 'admin/user/permissions')
+        ),
+      'error'
+      )
+    );
   }
 }

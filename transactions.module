@@ -518,6 +518,10 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
             array(':uid' => $account->uid, ':cid' => $cid));
         }
       }
+      if (variable_get('cc_autocomplete_user_select_widget', 'select') == 'select'){
+        module_load_include('admin.inc', 'transactions');
+        refresh_trader_names();
+      }
       break;
       
     case 'insert':
@@ -528,8 +532,10 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
       $def_cur = currency_load();
       _recalculate_balances(array($edit['uid']), $def_cur->nid);
+      if (variable_get('cc_autocomplete_user_select_widget', 'select') == 'select'){
+        refresh_trader_names();
+      }
       break;
-      
     case 'view':// put all the pending transactions on the user's front page, where they can be seen by the other participants in them
       if (isset($account->balances) && user_access('view all balances')) {
         module_load_include('inc', 'transactions');

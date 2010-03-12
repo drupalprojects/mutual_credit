@@ -16,8 +16,8 @@ input.form-autocomplete,
   margin: 0 0 1em 0;
 }
 
-#edit-quantity-wrapper,
-#edit-cid-wrapper{
+#transaction-start-form #edit-quantity-wrapper,
+#transaction-start-form #edit-cid-wrapper{
   float:left;
   clear:none;
 }

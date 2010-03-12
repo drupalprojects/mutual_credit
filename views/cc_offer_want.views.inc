@@ -774,7 +774,7 @@ function cc_directory_recent_offers_view($php_filter) {
       'style_options' => array(),
       'wildcard' => 'all',
       'wildcard_substitution' => 'All',
-      'title' => t('Offers') .': %1'),
+      'title' => t('Offers') .': %1',
       'default_argument_type' => 'fixed',
       'default_argument' => '',
       'validate_type' => 'taxonomy_term',
@@ -812,6 +812,7 @@ function cc_directory_recent_offers_view($php_filter) {
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
       'validate_argument_php' => '',
+    )
   ));
   $handler->override_option('filters', array(
     'type' => array(

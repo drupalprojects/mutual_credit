@@ -120,6 +120,7 @@ function cc_offer_want_access($op, $node=NULL, $account=NULL){
     $type=$node -> type;
   }
   switch ($op){
+    //node_access isn't doing this
     case 'view':
       return user_access('view directory');
     case 'create':

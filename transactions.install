@@ -383,7 +383,7 @@ function transactions_update_6014($ret=array()) {
   }
   return $ret;
 }
-function transactions_update_6015($ret=array()) {
+function transactions_update_6015() {
   module_load_include('inc', 'transactions');
   $count = count(_select_trader_names());
   $threshold = variable_get('cc_autocomplete_user_select_threshold', 100);
@@ -399,5 +399,14 @@ function transactions_update_6015($ret=array()) {
   );
   variable_set('cc_autocomplete_user_select_widget', 'textfield');
   variable_del('cc_autocomplete_user_select_threshold');
-  return $ret;
+}
+
+function transactions_update_6016() {
+  module_load_include('admin.inc', 'transactions');
+  refresh_trader_names();
+  $trader_list = cache_get('cc_trader_list');
+  if (is_array($trader_list->data)) {
+    return array('success' => 'Created cache for trader listings');
+  }
+  return array('failed' => 'Failed to refresh_trader_names() in transactions.admin.inc');
 }
