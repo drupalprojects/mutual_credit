@@ -1,7 +1,9 @@
 <?php
+// $Id$
+
 /**
+ * @file
  * Field handler to allow linking to a purchaser's name
- *
  * @ingroup views_field_handlers
  */
 class views_handler_field_transactions_payer_uid extends views_handler_field {

@@ -229,12 +229,12 @@ function cc_offer_want_form_alter(&$form, $form_state, $form_id){
   switch ($form_id) {
     case 'offer_node_form':
     case 'want_node_form':
-      $form['menu']['#type'] = 'hidden';
-      $form['path']['#type'] = 'hidden';
-      $form['comment_settings']['#type'] = 'hidden';
-      $form['options']['#type'] = 'hidden';
+      $form['menu']['#access'] = FALSE;
+      $form['path']['#access'] = FALSE;
+      $form['comment_settings']['#access'] = FALSE;
+      $form['options']['#access'] = FALSE;
       $form['options']['status']['#value'] = TRUE;
-      $form['revision_information']['#type'] = 'hidden';
+      $form['revision_information']['#access'] = FALSE;
       $form['author']['#access'] = FALSE;
     	unset($form['buttons']['preview']);
       if ($form['buttons']['delete']) {  //redirect interferes with delete

@@ -6,6 +6,8 @@
  * $balances = themed grid
  * $pending
  * $history
+ * $balance_limits
+ * $period_volumes
 */
 ?>
 
@@ -14,24 +16,14 @@
 
 
 <h3><?php print t('History'); ?></h3>
-<?php 
-$options = array();//see template_preprocess_balance_history() for $options and defaults
-print theme('balance_history', $account, $options); 
-?>
+<?php //see template_preprocess_balance_history() for $options and defaults
+  print theme('balance_history', $account, $options = array()); ?>
 
 <h3><?php print t('Credit'); ?></h3>
-<?php 
-foreach(currencies_load(array('uid'=>$account->uid)) as $currency) {
-  print theme('balance_limits', $account, $currency->cid); 
-}
-?>
+<?php print $balance_limits; ?>
 
 <h3><?php print t('Trading volumes'); ?></h3>
-<?php 
-foreach(currencies_load(array('uid'=>$account->uid)) as $currency) {
-  print theme('period_volumes', $account, $currency->cid); 
-}
-?>
+<?php print $period_volumes; ?>
 
 <h3><?php print t('Pending transactions'); ?></h3>
 <?php print $pending; ?>

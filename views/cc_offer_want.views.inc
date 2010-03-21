@@ -1,4 +1,5 @@
 <?php
+//$Id$
 /**
  * @file
  * Contains default views to supplement the offers/wants modules

@@ -38,7 +38,6 @@ function cc_mass_pay_menu() {
 }
 
 
-
 function cc_mass_pay_theme(){
   return array(
     'mass_payment_form' => array(
@@ -51,7 +50,7 @@ function cc_mass_pay_theme(){
 }
 
 //This form is built from transaction_base_form then modified
-function cc_many2one_form() {
+function many2one_form() {
   //putting an empty object in there makes the transaction form show payer_uid and payee_uid instead of starter_uid and completer_uid
   $form = transaction_base_form((object)array(), 'init', 'payer_payee');
   unset($form['payer_uid']);
@@ -64,7 +63,7 @@ function cc_many2one_form() {
   $form['non_payers'] = array (
     '#type' => 'select', 
     '#title' => t('Payer exceptions'),
-    '#options' => $payers,
+    '#options' => $payers->data,
     '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
     '#multiple' => TRUE,
     '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
@@ -134,7 +133,7 @@ function one2many_form() {
   $form['non_payees'] = array (
     '#type' => 'select', 
     '#title' => t('Payees'),
-    '#options' => $payees,
+    '#options' => $payees->data,
     '#default_value' => variable_get('cc_mass_pay_non_payees', NULL),
     '#multiple' => TRUE,
     '#description' => t("Select the accounts you don't want to be paid. Use CTRL click to select more than one."),

@@ -276,7 +276,7 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
       $blocks['cc_new_transaction']= array(
         'info' => 'Cc '. t('Start transaction'),
         'visibility' => 0,
-        'pages' => "transaction*\nadmin*",
+        'pages' => "transaction*\nadmin*\nnode*edit",
       );
       foreach (variable_get('cc_stats_periods', array("1 month", "1 year")) as $period) {
         $prd=str_replace(' ', '_', $period);
@@ -306,7 +306,7 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
             if (arg(0) == 'user' && arg(1) && $user->uid != arg(1)) {
               $account = user_load(arg(1));
               $subject = t('Start transaction with @name', array('@name' => strip_tags(theme('username', $account))));
-              $subject = str_replace ('&amp;', '&', $subject);//hack for SEL coup de pouce
+              $subject = str_replace('&amp;', '&', $subject);//hack for SEL coup de pouce
               $transaction->completer_uid = $account->uid;
             }
             return array(
@@ -325,9 +325,20 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
   }
 }
 
+
+/**
+ * Implementation of hook_forms().
+ */
+function transactions_forms() {
+  //this function makes no difference, at the moment
+  $forms['transaction_start_form']['callback'] = 'transaction_start_form';
+  $forms['transaction_3rdparty']['callback'] = 'transaction_start_form';
+  return $forms;
+}
+
 /** 
  * http://api.drupal.org/api/function/hook_form/6
- * Because we have a special multistep form creating the transactions, this hook_form is only editing
+ * Because we have a special multistep form creating the transactions, this hook_form is only used for node editing
  */
 function transactions_form(&$node, $form_state) {
   module_load_include('inc', 'transactions');
@@ -337,10 +348,9 @@ function transactions_form(&$node, $form_state) {
     default:
     case t('Change') ://typically from the 'full edit' link
       drupal_set_title(t('Editing transaction'));
-      $form=transaction_base_form($transaction, 'edit');   
+      $form=transaction_base_form($transaction, 'edit', 'payer_payee');   
       break;
   }
-
   return $form;
 }
 
@@ -370,6 +380,13 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
       $form['#submit'][] = 'menu_rebuild';
       $form['#submit'][] = 'views_invalidate_cache';
       break;
+      
+    case 'transaction_node_form':
+      $form['#theme'] = array('transaction_3rdparty_form');
+      $form['buttons']['preview']['#access'] = FALSE;
+      foreach (array('revision_information', 'author', 'options') as $key) {
+        $form[$key]['access'] = FALSE;
+      }
   } 
 }
 
@@ -424,7 +441,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
           FROM {cc_balance_cache} WHERE uid = %d",
         array(':uid' => $account->uid)
       );
-      while($balance = db_fetch_array($result)) {
+      while ($balance = db_fetch_array($result)) {
         $cid = array_shift($balance);
         $account->balances[$cid] = $balance;
       }
@@ -514,11 +531,11 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         foreach ($currencies as $cid => $currency) {
           if ($edit['min'. $cid] !='') $min = $edit['min'. $cid];
           if ($edit['max'. $cid] !='') $max = $edit['max'. $cid];
-          db_query("UPDATE cc_balance_cache SET limit_max = $max, limit_min = $min WHERE uid = %d AND cid = %d", 
+          db_query("UPDATE {cc_balance_cache} SET limit_max = $max, limit_min = $min WHERE uid = %d AND cid = %d", 
             array(':uid' => $account->uid, ':cid' => $cid));
         }
       }
-      if (variable_get('cc_autocomplete_user_select_widget', 'select') == 'select'){
+      if (variable_get('cc_autocomplete_user_select_widget', 'select') == 'select') {
         module_load_include('admin.inc', 'transactions');
         refresh_trader_names();
       }
@@ -532,7 +549,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
       $def_cur = currency_load();
       _recalculate_balances(array($edit['uid']), $def_cur->nid);
-      if (variable_get('cc_autocomplete_user_select_widget', 'select') == 'select'){
+      if (variable_get('cc_autocomplete_user_select_widget', 'select') == 'select') {
         refresh_trader_names();
       }
       break;
@@ -560,96 +577,6 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
   }
 }
 
-/** 
- * http://api.drupal.org/api/function/hook_action_info/6
- * This hook is required for modules to define one or more node types.
- */
-function transactions_action_info() {
-  module_load_include('inc', 'transactions');
-  $actions['transactions_email_completer_action'] = array(
-    'description' => t('Send email to transaction completer.') .' '. t('Triggers automatically'),
-    'type' => 'node',
-    'configurable' => TRUE,
-    'hooks' => array(
-      'nodeapi' => array('presave'),
-    )
-  );
-  $actions['transactions_email_starter_action'] = array(
-    'description' => t('Send email to transaction starter.') .' '. t('Triggers automatically'),
-    'type' => 'node',
-    'configurable' => TRUE,
-    'hooks' => array(
-      'nodeapi' => array('presave'),
-    )
-  );
-  return $actions;
-}
-
-function transactions_email_completer_action_form($context) {
-  return transaction_email_form_template($context);
-}
-function transactions_email_starter_action_form($context) {
-  return transaction_email_form_template($context);
-}
-function transaction_email_form_template($context){
-  $template = $context['template'] ? $context['template'] : t('');
-  $vars = _transaction_email_replacements();
-  $form['subject'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Message subject'),
-    '#default_value' => $context['subject'] ? $context['subject'] : t('Transaction notification'),
-    '#description' => t('Tokens cannot be used here'),
-  );
-  $form['message'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Email template'),
-    '#default_value' => $context['template'] ? $context['template'] : t('This is an automated notification.') ."\n\n".
-      t('%starter has started a transaction with %completer') ."\n\n".
-      t('The transaction was for: %reason') .' '.
-      t('You can confirm the transaction from your profile page: %profile_url') ."\n\n".
-      t("You can change your mail notification settings by clicking 'edit' on your profile"),
-    '#description' => t("This email will be sent to members when someone initiates a transaction with them which needs confirming. ") . 
-    t("Don't forget to enable the trigger module and set up the trigger at !url. ", array('!url' => l('admin/build/trigger', 'admin/build/trigger'))) .
-    t("You can use the following strings as variables:")
-  );
-  if (module_exists('mime_mail')) {
-    $form['message']['#description'] .= t('You can use html in your message.');
-  }
-  else {
-    $form['message']['#description'] .= t('Use only plain text ');
-  }
-  foreach ($vars as $var => $exp) {
-    $form['message']['#description'] .= "\n<br /><strong>$var</strong>: $exp";
-  }
-  return $form;
-}
-
-function transactions_email_completer_action_validate($form, &$form_state) {
-  transactions_email_action_validate($form_state);
-}
-function transactions_email_starter_action_validate($form, &$form_state) {
-  transactions_email_action_validate($form_state);
-}
-function transactions_email_action_validate($form_state) {
-  if (!strlen ($form_state['values']['message'])) {
-    form_set_error('message', t("You can't send an empty email"));
-  }
-  if (!strlen ($form_state['values']['subject'])) {
-    form_set_error('subject', t("Your mail must have a subject"));
-  }
-}
-function transactions_email_completer_action_submit($form, &$form_state) {
-  return array(
-    'template' => $form_state['values']['message'],
-    'subject' => $form_state['values']['subject']
-  );
-}
-function transactions_email_starter_action_submit($form, &$form_state) {
-  return array(
-    'template' => $form_state['values']['message'],
-    'subject' => $form_state['values']['subject']
-  );
-}
 
 /** 
  * http://api.drupal.org/api/function/hook_theme/6
@@ -668,6 +595,20 @@ function transactions_theme($existing, $type, $theme, $path) {
         'teaser' => FALSE,
         'rich_text' => TRUE,
       )
+    ),
+    'transaction_starter_form' => array(
+      'template' => 'transaction-starter-form',
+      'path' => $templates_dir,
+      'arguments' => array(
+        'form' => NULL,
+      ),
+    ),
+    'transaction_3rdparty_form' => array(
+      'template' => 'transaction-3rdparty-form',
+      'path' => $templates_dir,
+      'arguments' => array(
+        'form' => NULL,
+      ),
     ),
     'bureau' => array(
       'template' => 'bureau',
@@ -752,16 +693,99 @@ function transactions_theme($existing, $type, $theme, $path) {
         'cid' => 0,
       )
     ),
-    'transaction_start_form' => array(
-      'template' => 'transaction-start-form',
-      'path' => $templates_dir,
-      'arguments' => array(
-        'form' => NULL,
-      ),
-    ),
   );
 }
 
+/** 
+ * http://api.drupal.org/api/function/hook_action_info/6
+ * This hook is required for modules to define one or more node types.
+ */
+function transactions_action_info() {
+  module_load_include('inc', 'transactions');
+  $actions['transactions_email_completer_action'] = array(
+    'description' => t('Send email to transaction completer.') .' '. t('Triggers automatically'),
+    'type' => 'node',
+    'configurable' => TRUE,
+    'hooks' => array(
+      'nodeapi' => array('presave'),
+    )
+  );
+  $actions['transactions_email_starter_action'] = array(
+    'description' => t('Send email to transaction starter.') .' '. t('Triggers automatically'),
+    'type' => 'node',
+    'configurable' => TRUE,
+    'hooks' => array(
+      'nodeapi' => array('presave'),
+    )
+  );
+  return $actions;
+}
+
+function transactions_email_completer_action_form($context) {
+  return transaction_email_form_template($context);
+}
+function transactions_email_starter_action_form($context) {
+  return transaction_email_form_template($context);
+}
+function transaction_email_form_template($context) {
+  $template = $context['template'] ? $context['template'] : t('');
+  $vars = _transaction_email_replacements();
+  $form['subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Message subject'),
+    '#default_value' => $context['subject'] ? $context['subject'] : t('Transaction notification'),
+    '#description' => t('Tokens cannot be used here'),
+  );
+  $form['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Email template'),
+    '#default_value' => $context['template'] ? $context['template'] : t('This is an automated notification.') ."\n\n".
+      t('%starter has started a transaction with %completer') ."\n\n".
+      t('The transaction was for: %reason') .' '.
+      t('You can confirm the transaction from your profile page: %profile_url') ."\n\n".
+      t("You can change your mail notification settings by clicking 'edit' on your profile"),
+    '#description' => t("This email will be sent to members when someone initiates a transaction with them which needs confirming. ") . 
+    t("Don't forget to enable the trigger module and set up the trigger at !url. ", array('!url' => l('admin/build/trigger', 'admin/build/trigger'))) .
+    t("You can use the following strings as variables:")
+  );
+  if (module_exists('mime_mail')) {
+    $form['message']['#description'] .= t('You can use html in your message.');
+  }
+  else {
+    $form['message']['#description'] .= t('Use only plain text ');
+  }
+  foreach ($vars as $var => $exp) {
+    $form['message']['#description'] .= "\n<br /><strong>$var</strong>: $exp";
+  }
+  return $form;
+}
+
+function transactions_email_completer_action_validate($form, &$form_state) {
+  transactions_email_action_validate($form_state);
+}
+function transactions_email_starter_action_validate($form, &$form_state) {
+  transactions_email_action_validate($form_state);
+}
+function transactions_email_action_validate($form_state) {
+  if (!strlen ($form_state['values']['message'])) {
+    form_set_error('message', t("You can't send an empty email"));
+  }
+  if (!strlen ($form_state['values']['subject'])) {
+    form_set_error('subject', t("Your mail must have a subject"));
+  }
+}
+function transactions_email_completer_action_submit($form, &$form_state) {
+  return array(
+    'template' => $form_state['values']['message'],
+    'subject' => $form_state['values']['subject']
+  );
+}
+function transactions_email_starter_action_submit($form, &$form_state) {
+  return array(
+    'template' => $form_state['values']['message'],
+    'subject' => $form_state['values']['subject']
+  );
+}
 
 //theming for Views fields
 //This function is named after phptemplate because it doesn't work when called as a theme_ function

@@ -11,7 +11,7 @@
  * $transactions array, in ASCending order of node creation: 
  *   Each transaction looks like
  * 
-array (
+object (
   [title] => gift from carl to darren
   [nid] => 44
   [payer_uid] => 3

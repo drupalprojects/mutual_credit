@@ -14,8 +14,6 @@
  * $description = transaction description
  * $payer_uid = user selection widget (or NULL)
  * $payee_uid = user selection widget (or NULL)
- * $starter_uid = user selection widget (or NULL)
- * $completer_uid = user selection widget (or NULL)
  * $transaction_type = selection widget (or NULL)
  * $title = textfield (or NULL)
  * $quantity = textfield (or NULL)
@@ -34,19 +32,15 @@ if ($backdate) print t('On @date', array('@date' => $backdate)); //from an optio
 switch($mode) { 
   case 'init':
   case 'edit':
-    if ($selector_set == 'payer_payee' || $selector_set == 'both') {
-      if ($payer_uid) print t('From:'). $payer_uid;
-      if ($payee_uid) print t('To:'). $payee_uid;
-    }
-    if ($selector_set == 'starter_completer' || $selector_set == 'both') {
-      if ($starter_uid) print t('Starter:'). $starter_uid; 
-      if ($completer_uid) print t('Completer:'). $completer_uid;
-      if ($transaction_type) print t('Transaction type:'). $transaction_type;
-    }
+    if ($payer_uid) print t('From:'). $payer_uid;
+    if ($payee_uid) print t('To:'). $payee_uid;
     if ($title) print t('Title:'). $title;
     if ($quantity) {
-      $row = array($quantity, $division, $cid, $next);
-      print t('Quantity'). theme('table', array(), array($row), array('style' => 'width:100px'));
+      $row = array($quantity);
+      if ($division) $row[] = $division;
+      if ($cid) $row[] = $cid;
+      if ($next) $row[] = $next;
+      print t('Quantity'). theme('table', array(), array($row), array('style' => 'width:100px;'));
     } 
     else {
       print $next;

@@ -1,6 +1,7 @@
 <?php 
-
+// $Id$
 /*
+ * @file
  * This file contains admin pages and also some function which only happen when a transaction is modified
  */
 
@@ -22,10 +23,10 @@ function cc_options() {
     '#size' => 2,
     '#maxlength' => 3,
     '#weight' => -4,
-    '#description' => t("Classification can be improved if members take a few seconds to describe their transactions in more detail.") . ' '.
+    '#description' => t("Classification can be improved if members take a few seconds to describe their transactions in more detail.") .' '.
       t("It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4.")
   );
-  $form['cc_balancing_account_num'] = array (
+  $form['cc_balancing_account_num'] = array(
     '#type' => 'textfield',
     '#title' => t('Number of the balancing account'),
     '#default_value' => variable_get('cc_balancing_account_num', 1),
@@ -39,11 +40,11 @@ function cc_options() {
     '#type' => 'fieldset',
     '#title' => t('Maintenance'),
     '#weight' => -3,
-    '#description' => t('In case the balances get out of sync with the transactions.') . ' ' . 
+    '#description' => t('In case the balances get out of sync with the transactions.') .' '. 
       t('Please use this and report an issue at !url', array('!url' => l('drupal.org', 'http://drupal.org/project/mutual_credit', array('absolute' => TRUE)))),
     '#collapsible' => FALSE,
   );
-  $form['maintenance']['refresh'] = array (
+  $form['maintenance']['refresh'] = array(
     '#type' => 'submit',
     '#value' => t("Recalulate balances & stats"),
     '#submit' => array('cc_balances_refresh'),
@@ -56,14 +57,14 @@ function cc_options() {
     '#collapsed' => TRUE,
     '#weight' => -3,
   );
-  $form['user_selection']['cc_select_user_orderby'] = array (
+  $form['user_selection']['cc_select_user_orderby'] = array(
     '#type' => 'radios',
     '#title' => t('User dropdown order'),
     '#default_value' => variable_get('cc_select_user_orderby', 'uid'),
     '#description' => t("On the new transaction form, in what order should the members be listed?"),
     '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'themed_username' => t('themed username')),
   );
-  $form['user_selection']['cc_select_user_show'] = array (
+  $form['user_selection']['cc_select_user_show'] = array(
     '#type' => 'select',
     '#title' => t('User dropdown field(s)'),
     '#default_value' => variable_get('cc_select_user_show', 'name'),
@@ -92,7 +93,7 @@ function cc_options() {
   $form['visualisation']['cc_stats_periods'] = array(
     '#type' => 'textarea',
     '#title' => 'Periods for which stats are available',
-    '#default_value' => implode("\n",variable_get('cc_stats_periods', array("1 month", "1 year"))),
+    '#default_value' => implode("\n", variable_get('cc_stats_periods', array("1 month", "1 year"))),
     '#description' => t('On each line write a period using php !strtotime syntax, for which stats will be cached. ', array('!strtotime' => l('strtotime', 'http://php.net/strtotime'))) . 
       t('For each period there is a tab on the !stats page, and a block.', array('!stats' => l('stats', 'stats'))),
   );
@@ -102,7 +103,7 @@ function cc_options() {
     '#description' => t('Should transactions which have not yet been confirmed be included in transaction listings and in stats?'),
     '#default_value' => variable_get('cc_count_pending', FALSE),
   );  
-  $names = variable_get ('cc_transaction_types', array());
+  $names = variable_get('cc_transaction_types', array());
   $form['transactions'] = array(
     '#type' => 'fieldset',
     '#title' => t('Names of transaction types'),
@@ -114,25 +115,25 @@ function cc_options() {
   );
   $form['transactions']['transactions__outgoing_confirm'] = array(
     '#type' => 'textfield',
-    '#title' => t('The name of an @direction flow completed @when', array('@direction'=>t('outgoing'), '@when'=>t('by the other party'))),
+    '#title' => t('The name of an @direction flow completed @when', array('@direction' => t('outgoing'), '@when' => t('by the other party'))),
     '#size' => 15,
     '#default_value' => $names['transactions']['outgoing_confirm'],
   );
   $form['transactions']['transactions__incoming_confirm'] = array(
     '#type' => 'textfield',
-    '#title' => t('The name of an @direction flow completed @when', array('@direction'=>t('incoming'), '@when'=>t('by the other party'))),
+    '#title' => t('The name of an @direction flow completed @when', array('@direction' => t('incoming'), '@when' => t('by the other party'))),
     '#size' => 15,
     '#default_value' => $names['transactions']['incoming_confirm'],
   );
   $form['transactions']['transactions__outgoing_direct'] = array(
     '#type' => 'textfield',
-    '#title' => t('The name of an @direction flow completed @when', array('@direction'=>t('outgoing'), '@when'=>t('instantly'))),
+    '#title' => t('The name of an @direction flow completed @when', array('@direction' => t('outgoing'), '@when' => t('instantly'))),
     '#size' => 15,
     '#default_value' => $names['transactions']['outgoing_direct'],
   );
   $form['transactions']['transactions__incoming_direct'] = array(
     '#type' => 'textfield',
-    '#title' => t('The name of an @direction flow completed @when', array('@direction'=>t('incoming'), '@when'=>t('instantly'))),
+    '#title' => t('The name of an @direction flow completed @when', array('@direction' => t('incoming'), '@when' => t('instantly'))),
     '#size' => 15,
     '#default_value' => $names['transactions']['incoming_direct'],
   );
@@ -157,14 +158,14 @@ function cc_options_validate(&$form, &$form_state) {
   }
   $form_state['values']['cc_stats_periods'] = $periods;
   //we want to work on all the keyes which have __
-  foreach($form_state['values'] as $key => $value) {
+  foreach ($form_state['values'] as $key => $value) {
     //the module names was preserved as a prefix in the field name
     if (strpos($key, '__')) {
       $parts = explode('__', $key);
       if (strlen($value)) {
         $nestedvalues[$parts[0]][$parts[1]] = $value;
       }
-      unset ($form_state['values'][$key]);
+      unset($form_state['values'][$key]);
     }
   $form_state['values']['cc_transaction_types'] = $nestedvalues;
   }
@@ -180,7 +181,7 @@ function default_currency_config() {
     '#default_value' => $currency->title,
     '#description' => t('Use the plural'),
     '#required' => TRUE,
-    '#weight' =>-10,
+    '#weight' => -10,
     '#size' => 10,
   );
   $form['#prefix'] = t("This default currency is made obselete if the cc_currencies module is installed.");
@@ -209,8 +210,8 @@ function currency_form_fields($currency) {
   $form['balance_limits'] = array(
     '#type' => 'fieldset',
     '#title' => t('Balance limits'),
-    '#description' => t("Balance limits are calculated AFTER the offset.") .' ' .
-      t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") .' ' .
+    '#description' => t("Balance limits are calculated AFTER the offset.") .' '.
+      t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") .' '.
       t("Those users can also edit individual balance limits on users' account pages"),
     '#weight' => 5,
   );
@@ -221,8 +222,8 @@ function currency_form_fields($currency) {
     '#size' => 4,
     '#maxlength' => 6,
     '#weight' => 0,
-    '#description' => t("Transactions will be declined by the system if the payee balance would go above this number. Up to !num digits.", array('!num'=>6)) . ' ' .
-    t("Leave blank for no limit (not reccomended)") . ' ' . 
+    '#description' => t("Transactions will be declined by the system if the payee balance would go above this number. Up to !num digits.", array('!num' => 6)) .' '.
+    t("Leave blank for no limit (not reccomended)") .' '. 
     t('Maximum balance must be an integer larger than zero.'),
   );
   $form['balance_limits']['min_balance'] = array(
@@ -232,8 +233,8 @@ function currency_form_fields($currency) {
     '#size' => 4,
     '#maxlength' => 6,
     '#weight' => 1,
-    '#description' => t("The system will prevent transactions if the payer balance would go below this number. Up to !num digits.", array('!num'=>7)) . 
-      t("Leave blank for no limit (not reccomended)") . ' ' . 
+    '#description' => t("The system will prevent transactions if the payer balance would go below this number. Up to !num digits.", array('!num' => 7)) . 
+      t("Leave blank for no limit (not reccomended)") .' '. 
       t('Minimum balance must not be larger than 0'),
   );
     $form['balance_limits']['zero_offset'] = array(
@@ -243,12 +244,12 @@ function currency_form_fields($currency) {
     '#size' => 4,
     '#maxlength' => 6,
     '#weight' => 2,
-    '#description' => t("Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0.") .' ' .
-      t("This gives the impression that users are starting with a positive or negative balance.") .' ' .
-      t("Members start with x units 'free' but also need to restore their balance to x when they leave.") .' ' .
+    '#description' => t("Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0.") .' '.
+      t("This gives the impression that users are starting with a positive or negative balance.") .' '.
+      t("Members start with x units 'free' but also need to restore their balance to x when they leave.") .' '.
       t("Instead of this trick, consider gifting new members from the central account, and recouping the debt through taxes"),
   );
-  $form['visual'] = array (
+  $form['visual'] = array(
     '#type' => 'fieldset',
     '#title' => t('Visuals'),
     '#description' => t("Displays of money can be further tweaked by overriding theme_money and/or with css class 'currency-0'"),
@@ -256,7 +257,7 @@ function currency_form_fields($currency) {
   $form['visual']['icon_upload'] = array(
     '#type' => 'file',
     '#title' => t('Upload icon'),// array('!icon' => theme('1', $currency))),
-    '#prefix' => '<img src="' . url($currency->icon) . '" />',
+    '#prefix' => '<img src="'. url($currency->icon) .'" />',
     '#description' => t("Should be between 12px square and 16px square, preferably with a transparent background"),
     '#weight' => -10,
   );
@@ -269,15 +270,15 @@ function currency_form_fields($currency) {
     '#weight' => 10,
     '#description' => t("If this currency is part of a larger trading network, it will have a value within that network (not yet operational)")
   );
-  $form['visual']['color'] = array (
+  $form['visual']['color'] = array(
     '#type' => 'textfield',
     '#title' => t('A hex colour value'),
     '#default_value' => $currency->color,
     '#required' => TRUE,
     '#description' => t('6 hex digits'),
     '#weight' => 3,
-    '#maxlength'=> 6,
-    '#size'=> 6,
+    '#maxlength' => 6,
+    '#size' => 6,
   );
 return $form;
 }
@@ -306,15 +307,15 @@ function default_currency_config_submit($form, &$form_state) {
 function transaction_quality_config() {
   $saved_array=variable_get('cc_transaction_qualities', array());
   foreach ($saved_array as $key => $word) {
-    $default_string .= $key.'|'.$word . "\n";
+    $default_string .= $key .'|'. $word ."\n";
   }
   $form['cc_transaction_qualities'] = array(
     '#title' => 'Possible ratings',
     '#type' => 'textarea',
     '#default_value' => $default_string,
-    '#description' => t('Traders can earn a reputation when their customers rate them highly. Use this field to list the words used to describe the quality of transactions, from worst to best, one on each line.').
-      t('Example:<br />-1|Bad<br />0|As expected<br />1|Great!<br />  Leave blank to disable this feature. Note that in automated transactions, 0 will be be used, so 0 should be a neutral value.').
-      t('Beware that changing the number of rating options after transactions have been entered will distort the averages.').
+    '#description' => t('Traders can earn a reputation when their customers rate them highly. Use this field to list the words used to describe the quality of transactions, from worst to best, one on each line.') .' '.
+      t('Example:<br />-1|Bad<br />0|As expected<br />1|Great!<br />  Leave blank to disable this feature. Note that in automated transactions, 0 will be be used, so 0 should be a neutral value.') .' '.
+      t('Beware that changing the number of rating options after transactions have been entered will distort the averages.') .' '.
       t('This feature could use a lot more work to integrate into views and stats'));
   $form['#redirect'] = 'admin/marketplace';
   return system_settings_form($form);
@@ -339,7 +340,7 @@ function transaction_quality_config_validate($form, &$form_state) {
 function validate_limits($minmax, $required = FALSE) {
   $fieldnames = array_keys($minmax);
   $limits = array_values($minmax);
-  foreach ($limits as $key=>$value) {
+  foreach ($limits as $key => $value) {
     if (!is_numeric($value) && ($required || strlen($value))) {
       form_set_error($fieldnames[$key], t("This must be an integer: @value", array('@value' => $value)));
     }
@@ -362,7 +363,7 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
   }
   $node = $options + array(
    //default options
-    'state'=> TRANSACTION_STATE_COMPLETED, 
+    'state' => TRANSACTION_STATE_COMPLETED, 
     'transaction_type' => 'api unspecified', 
     'quality' => NULL, 
     'starter_uid' => $user->uid,
@@ -422,30 +423,31 @@ function cforge_report() {
       function http_build_query($data, $prefix='', $sep='', $key='') { 
           $ret = array(); 
           foreach ((array)$data as $k => $v) { 
-              if (is_int($k) && $prefix != null) { 
+              if (is_int($k) && $prefix != NULL) { 
                   $k = urlencode($prefix . $k); 
               } 
-              if ((!empty($key)) || ($key === 0))  $k = $key.'['.urlencode($k).']'; 
+              if ((!empty($key)) || ($key === 0))  $k = $key .'['. urlencode($k) .']'; 
               if (is_array($v) || is_object($v)) { 
                   array_push($ret, http_build_query($v, '', $sep, $k)); 
-              } else { 
-                  array_push($ret, $k.'='.urlencode($v)); 
+              } 
+              else { 
+                  array_push($ret, $k .'='. urlencode($v)); 
               } 
           } 
           if (empty($sep)) $sep = ini_get('arg_separator.output'); 
           return implode($sep, $ret); 
       }// http_build_query 
   }
-  $url = 'http://www.communityforge.net/registration.php?' . http_build_query($data, '', '&');
+  $url = 'http://www.communityforge.net/registration.php?'. http_build_query($data, '', '&');
   $reply = drupal_http_request($url);
-  drupal_set_message ($reply->data);
+  drupal_set_message($reply->data);
 }
 
 
 //helper function for testing
 function generate_transactions($howmany) {
   //get a list of all user ids and currency Ids
-  $results1 = db_query("SELECT uid FROM {users} WHERE uid != 1");
+  $results1 = db_query("SELECT uid FROM {users} WHERE uid <> 1");
   $results2 = db_query("SELECT nid FROM {node} WHERE type = 'currency'");
   while ($result = db_fetch_object($results1)) {
     $all_users[] = $result->uid;
@@ -460,8 +462,8 @@ function generate_transactions($howmany) {
   );
   while ($i < $howmany) {
     $i++;
-    $options['created'] = time()-3600*24*rand(1,60);
-    generate_transaction_node('autogenerated transaction', $all_users[rand(0,$usercount-1)], $all_users[rand(0,$usercount-1)], rand(1, 50), $options, $all_currencies[rand(0,$currencycount-1)]);
+    $options['created'] = time()-3600*24*rand(1, 60);
+    generate_transaction_node('autogenerated transaction', $all_users[rand(0, $usercount-1)], $all_users[rand(0, $usercount-1)], rand(1, 50), $options, $all_currencies[rand(0, $currencycount-1)]);
   }
   cc_balances_refresh();
 }
@@ -471,7 +473,7 @@ function cc_balances_refresh() {
   module_load_include('inc', 'transactions');
   db_query("TRUNCATE table {cc_balance_cache}");
   //get a list of all the users and all the currencies they have traded in 
-  $currencies = currencies_load(array('uids'=>array($uid)));
+  $currencies = currencies_load(array('uids' => array($uid)));
   foreach (array_keys($currencies) as $cid) {
     _recalculate_balances(array(), $cid);
   }
@@ -484,12 +486,13 @@ function cc_balances_refresh() {
 function _recalculate_balances($ids = array(), $cid = 0) {
   module_load_include('inc', 'transactions');
   if (!count($ids)) {
-    $ids = array_keys(_select_trader_names());
+    $traders = cache_get('cc_trader_list');
+    $ids = array_keys($traders->data);
   }
   $currency = currency_load($cid);
   $count_pending =  (variable_get('cc_count_pending', FALSE));
-  $options =  array (
-    'states'=>array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING),
+  $options =  array(
+    'states' => array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING),
     'cid' => $cid,
    );
   while ($uid = array_pop($ids)) {
@@ -503,21 +506,24 @@ function _recalculate_balances($ids = array(), $cid = 0) {
     $transactions = _get_transactions_for_user($uid, $options);
     if (count($transactions)) {
     //so we work out out the balance, pending and gross_income again in more detail
-      foreach($transactions as $t) {
+      foreach ($transactions as $t) {
         if ($t->state == TRANSACTION_STATE_COMPLETED) { //completed transactions
           if ($t->payer_uid == $uid) {
             $gross_expenditure += $t->quantity;
-          } else {
+          }
+          else {
             $qualities[] = $t->quality;
             $gross_income += $t->quantity;
           }
-        } elseif ($t->state == TRANSACTION_STATE_PENDING) { //unpublished transactions are pending
+        }
+        elseif ($t->state == TRANSACTION_STATE_PENDING) { //unpublished transactions are pending
           if ($t->payer_uid == $uid) {
             $pending_dif -= $t->quantity;
             if ($count_pending) {
               $gross_expenditure += $t->quantity;
             }
-          } else {
+          }
+          else {
             $pending_dif += $t->quantity;
             if ($count_pending) {
               $gross_income += $t->quantity;
@@ -567,7 +573,7 @@ function stats_refresh($cid = 0) {
     $trades = array();
     $volume = array();
     $states = array(TRANSACTION_STATE_COMPLETED);
-    if (variable_get('cc_count_pending',FALSE)) {
+    if (variable_get('cc_count_pending', FALSE)) {
       $states[] = TRANSACTION_STATE_PENDING;
     }
     $result = db_query("SELECT * FROM {cc_transactions} AS t 
@@ -577,9 +583,9 @@ function stats_refresh($cid = 0) {
       AND state in (%d)
       AND t.payer_uid <> %d AND t.payee_uid <> %d", 
       array(
-        ':since' => strtotime('-'.$period),
+        ':since' => strtotime('-'. $period),
         ':cid' => $cid,
-        ':states' => implode(',',$states),
+        ':states' => implode(',', $states),
         ':payer_uid' => variable_get('cc_balancing_account_num', 1),
         ':payee_uid' => variable_get('cc_balancing_account_num', 1)
       )
@@ -596,7 +602,7 @@ function stats_refresh($cid = 0) {
     }
     if (!$count) continue;
     $active_members = count($trades);
-    foreach ($trades as $uid=>$val) {
+    foreach ($trades as $uid => $val) {
       $volume[$uid] = $earned[$uid] + $spent[$uid];
     }
     asort($earned);
@@ -614,7 +620,7 @@ function stats_refresh($cid = 0) {
     //we might not need this one, since it is obtained by simple division of the above
     $stats['misc']['mean_transaction_count_active'] = $count/floatval($active_members);
     foreach ($stats as $key => $stat) {
-      cache_set($cid . '-' . str_replace(' ', '_', $period) . '-' . $key, $stat);
+      cache_set($cid .'-'. str_replace(' ', '_', $period) .'-'. $key, $stat);
     }
   }
 }
@@ -623,7 +629,7 @@ function stats_refresh($cid = 0) {
   * module_load_include('admin.inc', 'transactions');
   * stats_refresh_all();
   */
-function stats_refresh_all () {
+function stats_refresh_all() {
   foreach (currencies_load() as $currency) {
     stats_refresh($currency->cid);
   }
@@ -631,7 +637,7 @@ function stats_refresh_all () {
 
 function refresh_trader_names() {
   if ($roles = user_roles(TRUE, 'use local currency')) {
-    unset ($roles[DRUPAL_AUTHENTICATED_RID]);
+    unset($roles[DRUPAL_AUTHENTICATED_RID]);
     $where = array('status = 1');
     if (count($roles)) {
       $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
@@ -645,7 +651,7 @@ function refresh_trader_names() {
     
     $account = array();
     while ($account = user_load(db_result($results))) {
-      foreach (variable_get('cc_select_user_show', array('name'))  as $field){
+      foreach (variable_get('cc_select_user_show', array('name'))  as $field) {
         switch ($field) {
           case 'name':
           case 'mail':

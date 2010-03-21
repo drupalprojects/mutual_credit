@@ -1,5 +1,5 @@
 <?php
-// $Id$: transactions.inc,v 1.202 2004/07/08 16:08:21 dries Exp $
+// $Id$
 
 /**
  * @file
@@ -27,15 +27,13 @@ function transactions_nodeapi(&$node, $op) {
       //gets rid of any boring status messages
       drupal_get_messages('status', TRUE);
       
-      if (substr($node->transaction_type, -7) != 'confirm') {
-        //automatically trigger the notifications
-        $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
-        while ($aid = db_result($result)) {
-          actions_do($aid, $node, array(
-            'hook' => 'nodeapi',
-            'op' => $op
-          ));
-        }
+      //automatically trigger the notifications
+      $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
+      while ($aid = db_result($result)) {
+        actions_do($aid, $node, array(
+          'hook' => 'nodeapi',
+          'op' => $op
+        ));
       }
       // the 'break' is missing deliberately
     case 'delete':
@@ -49,18 +47,22 @@ function transactions_nodeapi(&$node, $op) {
 
 //This makes the bureau page, but also contains most of the usual CALLBACK FUNCTIONS, FOR USE WITH PANELS
 function transactions_bureau($account) {
-  $balances = transactions_user_balances($account->uid);
-  $pending = transactions_pending($account->uid);
-  $history = transactions_list($account, array('running_balance' => TRUE));
-  return theme('bureau', $account, $balances, $pending, $history);
+  return theme('bureau', $account);
+}
+function template_preprocess_bureau($vars){
+  $vars['balances'] = transactions_user_balances($account->uid);
+  $vars['pending'] = transactions_pending($account->uid);
+  $vars['history'] = transactions_list($account, array('running_balance' => TRUE));
+  foreach(currencies_load(array('uid'=>$account->uid)) as $currency) {
+    $vars['credit_limits'] .= theme('balance_limits', $account, $currency->cid); 
+    $vars['period_volumes'] .= theme('period_volumes', $account, $currency->cid); 
+  }
 }
 
 //this is intended for user profile tabs only, and shows the last x completed transactions
 //options only apply to the statement theme, not to the view
 function transactions_list($account=NULL, $options=array()) {
-  if (!$account) {
-    $account = $GLOBALS['user'];
-  }
+  $account = $account ? $account : $GLOBALS['user'];
   $count_pending = variable_get('cc_count_pending', FALSE);
   $options = $options + array(
     'states' => array(TRANSACTION_STATE_COMPLETED),
@@ -139,9 +141,9 @@ function show_stats($timestring, $theme = 'page', $cid=0) {
   $timestring = str_replace(' ', '_', $timestring);
   $highest_incomes = cache_get($cid .'-'. $timestring .'-highest_incomes');
   $highest_expenditures = cache_get($cid .'-'. $timestring .'-highest_expenditures');
-  $highest_volumes = cache_get($cid .'-' . $timestring . '-highest_volumes');
+  $highest_volumes = cache_get($cid .'-'. $timestring .'-highest_volumes');
   $trades_per_user = cache_get($cid .'-'. $timestring .'-trades_per_user');
-  $misc = cache_get($cid .'-' . $timestring .'-misc');
+  $misc = cache_get($cid .'-'. $timestring .'-misc');
   return theme('stats_'. $theme, array(
     'highest_incomes' => $highest_incomes->data,
     'highest_expenditures' => $highest_expenditures->data,
@@ -175,13 +177,12 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
 
   $form['#mode'] = $mode;
   $form['#selector_set'] = $selectorset;
-  $form['#theme'] = 'transaction_start_form';
-  //this determines the unfilled user fields in the form
-  $form['#after_build'] = array('transaction_form_after_build');
-  $edit_all_transactions = user_access('edit all transactions');
   if ($edit_all_transactions && $mode == 'edit') { 
     $form['#selector_set'] = 'both';
   }
+  //this determines the unfilled user fields in the form
+  $form['#after_build'] = array('transaction_form_after_build');
+  $edit_all_transactions = user_access('edit all transactions');
   $allowed_transactions = _named_transaction_types();
   $ttype = $transaction->transaction_type or $ttype = "";
   //this is only for if we use the dropdown, not the autocomplete
@@ -190,11 +191,6 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   $payee = $transaction->payee_uid or $payee = '';
   $starter = $transaction->starter_uid or $starter = '';
   $completer = $transaction->completer_uid or $completer = '';
-  //this is for when the form is pretending to be a node form
-  $form['type'] = array(
-    '#type' => 'value',
-    '#value' => 'transaction'
-    );
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('What is being paid for?'),
@@ -222,9 +218,8 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
     '#type' => 'hidden',
     '#default_value' => $payer,
   );
-
   if (($form['#selector_set'] == 'payer_payee' || $form['#selector_set'] == 'both' )) {
-    if (!$payee || $form['#selector_set'] == 'both' ) {
+    if (!$payee || $form['#selector_set'] == 'both' || $mode = 'edit') {
       $form['payee_uid']=array(
         '#type' => $user_select_widget,
         '#title' => t('Who is being paid?'),
@@ -234,7 +229,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#element_validate' => array('cc_validate_2parties'),
       );
     }
-    if (!$payer|| $form['#selector_set'] == 'both' ) {
+    if (!$payer || $form['#selector_set'] == 'both'  || $mode = 'edit') {
       $form['payer_uid'] = array(
         '#type' => $user_select_widget,
         '#title' => t('Who is paying?'),
@@ -247,6 +242,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
       '#type' => 'hidden',
       '#default_value' => '3rdparty_confirm',
     );
+    $form['#theme'] = array('transaction_3rdparty_form');
   }
   if (($form['#selector_set'] == 'starter_completer' || $form['#selector_set'] == 'both' )) {
     if (!$starter || ($edit_all_transactions && $mode == 'edit')) {
@@ -294,8 +290,9 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#default_value' => $ttype,
       );
     }
+    $form['#theme'] = array('transaction_starter_form');
   }
-  if ($edit_all_transactions && $mode == 'init' && $selectorset == 'starter_completer') {
+  if ($edit_all_transactions && $mode == 'init' && $selectorset == 'starter_completer' && ($allowed_transactions['incoming_confirn'] || $allowed_transactions['outgoing_confirn'])) {
     $form['state'] = array(
       '#type' => 'checkbox',
       '#title' => t('Tick to request confirmation'),
@@ -312,7 +309,6 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   $form['quantity'] = array(
     '#type' => 'textfield',
     '#title' => t('Quantity'),
-    '#weight' => -1,
     '#default_value' => intval($transaction->quantity),
     '#field_suffix' => $default_currency->title,
     '#element_validate' => array('cc_validate_quantity'),
@@ -320,6 +316,10 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
     '#required' => TRUE,
   );
   
+  $form['division'] = array(
+    '#type' => 'value',
+    '#value' => 0,
+  );
  //this is begging to be ajax because we don't know what the division is until we know the currency
   if ($default_currency->division == 'sixtieths'  && !module_exists('cc_currencies')) {
     $form['division'] = array(
@@ -339,20 +339,15 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
     unset($form['quantity']['#field_suffix']);
     $form['quantity']['#required'] == FALSE;
   }
-  //placeholder
-  $form['division'] = array(
-    '#type' => 'value',
-    '#value' => 0,
-  );
   
   //the payer has to grade the transaction
-  $options=variable_get('cc_transaction_qualities', array());
-  if (count($options) && (($mode != 'init' && $user->uid == $payer) || $mode == 'fulledit')) {
+  $qualities=variable_get('cc_transaction_qualities', array());
+  if (count($qualities) && (($mode != 'init' && $user->uid == $payer) || $mode == 'fulledit')) {
     $form['quality']=array(
       '#type' => 'select',
       '#title' => t('Rate the quality of what was paid for'),
       '#default_value' => intval($transaction->quality),
-      '#options' => $options,
+      '#options' => $qualities,
       '#required' => TRUE,
     );
   }
@@ -376,7 +371,6 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   }
   return $form;
 }
-
 
 /*
  * I needed a multistep alternative to node/add/transaction form, which creates the transaction using the transactions api, not via Drual
@@ -414,7 +408,7 @@ function transaction_start_form($form_state, $transaction = NULL, $selectorset =
       $form['type'] = array('#value' => 'transaction', '#type' => 'value');
       $form['#node'] = (object)array('type' => 'transaction');
       //what to do with the preset fields
-      switch($presets) {
+      switch ($presets) {
         case 'disabled':
           foreach ((array)$transaction as $prop => $v) {
             $form[$prop]['#disabled'] = TRUE;
@@ -427,7 +421,7 @@ function transaction_start_form($form_state, $transaction = NULL, $selectorset =
       break;
     case 2:
       drupal_set_title(t('Do you want to start this transaction?'));
-      $form=transaction_base_form($transaction, 'summary', $selectorset);
+      $form = transaction_base_form($transaction, 'summary', $selectorset);
       $form['#summary'] = theme('transaction', $transaction, TRUE, FALSE);
       $form['previous'] = array(
         '#type' => 'submit',
@@ -683,7 +677,7 @@ function transactions_mail($key, &$message, $params) {
   //'%transaction' => l(t('transaction'), 'node/' . $transaction->nid . '/edit', array('absolute' =>TRUE)),
   );
   $message['body'][] = strtr($params['template'], $variables);
-  $message['subject'] = $params['subject'];
+  $message['subject'] = $message['params']['subject'];
 }
 
 
@@ -784,7 +778,6 @@ function template_preprocess_period_volumes($vars) {
   }
 }
 
-//google-o-meter showing balance between balance limits
 //defaults options see below
 function template_preprocess_balance_limits(&$vars) {
   $vars['max'] = $vars['account']->balances[$vars['cid']]['limit_max'];
@@ -873,11 +866,18 @@ function preprocess_transaction_fields($transaction, $uid, $rich = TRUE) {
   return $vars;
 }
 
-function template_preprocess_transaction_start_form(&$vars) {
+function template_preprocess_transaction_starter_form(&$vars) {
+  template_preprocess_transaction_form($vars);
+}
+function template_preprocess_transaction_3rdparty_form(&$vars) {
+  template_preprocess_transaction_form($vars);
+}
+
+function template_preprocess_transaction_form(&$vars) {
   $vars['mode'] = $vars['form']['#mode'];
   $vars['selector_set'] = $vars['form']['#selector_set'];
   foreach ($vars['form'] as $key => $field) {
-    if (strpos($key, '#') !== 0 && is_array($field)  && $key != 'form_token' ){
+    if (strpos($key, '#') !== 0 && is_array($field)  && $key != 'form_token' ) {
       if ($field['#type'] && $field['#type'] != 'hidden') {
         if ($field['#type'] != 'checkbox') {
           $vars['form'][$key]['#title'] = NULL;
@@ -918,31 +918,31 @@ function theme_stats_block($stats) {
 
 function theme_stats_page($stats) {
   if (!$stats['misc']['transaction_count'])   return t('No statistics will be available until some transactions have happened');
-  $html = '<div class="stat">' . t("Number of transactions: @num", array('@num' => $stats['misc']['transaction_count'])) .'</div>';
-  $html .= '<div class="stat">' . t("Total volume traded: @num", array('@num' => array_sum($stats['highest_incomes']))) .'</div>';
-  $html .= '<div class="stat">' . t("Number of trading members: @num", array('@num' => $stats['misc']['active_members'])) .'</div>';
+  $html = '<div class="stat">'. t("Number of transactions: @num", array('@num' => $stats['misc']['transaction_count'])) .'</div>';
+  $html .= '<div class="stat">'. t("Total volume traded: @num", array('@num' => array_sum($stats['highest_incomes']))) .'</div>';
+  $html .= '<div class="stat">'. t("Number of trading members: @num", array('@num' => $stats['misc']['active_members'])) .'</div>';
   //shorten the arrays to a useful amount
-  foreach ($stats['trades_per_user'] as $uid=>$count) {
-    $best_traders[] = theme('username', user_load($uid)) . ' (' . $count . ')';
+  foreach ($stats['trades_per_user'] as $uid => $count) {
+    $best_traders[] = theme('username', user_load($uid)) .' ('. $count .')';
     if (count($best_traders) == $top_how_many) break;
   }
-  $html .= '<div class="stat">' . t("Most trades:") .'<ol><li>'. implode("</li>\n<li>",$best_traders) .'</li></ol></div>';
-  foreach ($stats['highest_incomes'] as $uid=>$count) {
+  $html .= '<div class="stat">'. t("Most trades:") .'<ol><li>'. implode("</li>\n<li>", $best_traders) .'</li></ol></div>';
+  foreach ($stats['highest_incomes'] as $uid => $count) {
     $incomes[] =  theme('username', user_load($uid)) .' ('. $count .')';
     if (count($incomes) == $top_how_many) break;
   }
-  $html .= '<div class="stat">' . t("Largest incomes:") .'<ol><li>'. implode("</li>\n<li>", $incomes) . '</li></ol></div>';
-  foreach ($stats['highest_expenditures'] as $uid=>$count) {
+  $html .= '<div class="stat">'. t("Largest incomes:") .'<ol><li>'. implode("</li>\n<li>", $incomes) .'</li></ol></div>';
+  foreach ($stats['highest_expenditures'] as $uid => $count) {
     $expenditure[] =  theme('username', user_load($uid)) .' ('. $count .')';
     if (count($expenditure) == $top_how_many) break;
   }
-  $html .= '<div class="stat">'. t("Largest expenditure:") .'<ol><li>'. implode("</li>\n<li>", $expenditure) . '</li></ol></div>';
+  $html .= '<div class="stat">'. t("Largest expenditure:") .'<ol><li>'. implode("</li>\n<li>", $expenditure) .'</li></ol></div>';
   
-  foreach ($stats['highest_volumes'] as $uid=>$count) {
+  foreach ($stats['highest_volumes'] as $uid => $count) {
     $volumes[] =  theme('username', user_load($uid)) .' ('. $count .')';
     if (count($volumes) == $top_how_many) break;
   }
-  $html .= '<div class="stat">' . t("Highest trading volumes:") . '<ol><li>'. implode("</li>\n<li>", $volumes) .'</li></ol></div>';
+  $html .= '<div class="stat">'. t("Highest trading volumes:") .'<ol><li>'. implode("</li>\n<li>", $volumes) .'</li></ol></div>';
   return '<div class="stats">'. $html .'</div>';
 }
 
@@ -1164,10 +1164,10 @@ function cc_validate_trader($form_field_key, &$value) {
       if (is_numeric($value)) {
          $field = 'uid';
       }
-      elseif(valid_email_address($value)) {
+      elseif (valid_email_address($value)) {
         $field = 'mail';
       }
-      elseif(is_string($value)) {
+      elseif (is_string($value)) {
         $field = 'name';
       }
   }
@@ -1176,10 +1176,10 @@ function cc_validate_trader($form_field_key, &$value) {
   if ($account) {
     $value = $account->uid;
     if (!user_access('use local currency', $account) || !$account->status) {
-      form_set_error($form_field_key, t("@type @fieldname: @data is not permitted to trade", array("@type"=> $type, "@fieldname" => $form_field_key, "@data" => $value)));
+      form_set_error($form_field_key, t("@type @fieldname: @data is not permitted to trade", array("@type" => $type, "@fieldname" => $form_field_key, "@data" => $value)));
     }
   }
   else {
-    form_set_error($form_field_key, t("@type @fieldname: @data is not a known user", array("@type"=> $type, "@fieldname" => $form_field_key, "@data" => $value)));
+    form_set_error($form_field_key, t("@type @fieldname: @data is not a known user", array("@type" => $type, "@fieldname" => $form_field_key, "@data" => $value)));
   }
 }

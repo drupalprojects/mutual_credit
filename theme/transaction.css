@@ -11,15 +11,14 @@ input.form-autocomplete,
   width:12em;
 }
 
-#transaction-start-form .form-item,
-#edit-state-wrapper{
-  margin: 0 0 1em 0;
-}
 
-#transaction-start-form #edit-quantity-wrapper,
+#edit-quantity-wrapper,
 #transaction-start-form #edit-cid-wrapper{
   float:left;
   clear:none;
+}
+#edit-title-wrapper{
+	clear:left;
 }
 
 #edit-division-1{
@@ -35,9 +34,7 @@ input.form-autocomplete,
 	background-color: transparent;
 	}
 
-#transaction-start-form #edit-title,
-#transaction-start-form #edit-title-1,
-#transaction-start-form-1 #edit-title-1{
+#transaction-start-form #edit-title,{
   width:85%;
   }
 
