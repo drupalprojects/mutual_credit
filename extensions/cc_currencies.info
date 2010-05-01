@@ -1,8 +1,0 @@
-; $Id:
-name = Cc Multiple Currencies v0.5
-description =  Experimental module allowing arbitrary creation of currencies by users.
-core = 6.x
-package = Complementary Currencies
-dependencies[] = transactions
-files[] = cc_currencies.module
-files[] = cc_currencies.install

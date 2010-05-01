@@ -1,30 +1,18 @@
 <?php
 // $Id$
 
-//First time ever this file is loaded, installt he default currency so the cc_currencies can access it as well
-if (!variable_get('cc_default_currency', NULL)) {
-  variable_set('cc_default_currency', (object)array(
-    'title' => 'units',
-    'division' => 'integer',
-    'max_balance' => '500',
-    'min_balance' => '-500',
-    'comparative_value' => 0,
-    'zero_offset' => 0,
-    'cid' => 0,
-    'icon' => drupal_get_path('module', 'transactions') . '/default_currency.png',
-    )
-  );
-}
+/**
+ * @file
+ * Install, update and uninstall functions for the transactions module.
+ */
+
 
 /**
  * Implementation of hook_install().
  */
 function transactions_install() {
   drupal_install_schema('transactions');
-  variable_set('comment_transactions', '0');
-  variable_set('cc_description_min_words', 1);
-  variable_set('cc_transaction_list', 'statement');
-  variable_set('cc_stats_periods', array("1 month", "1 year"));
+  variable_set('comment_transactions', 0);
   $names = variable_get('cc_transaction_types', array());
   $names['transactions'] = array(
     'incoming_confirm' => t('invoice'),
@@ -34,24 +22,30 @@ function transactions_install() {
   );
   variable_set('cc_transaction_types', $names);
   variable_set('cc_transaction_qualities', array(
-    '-2'=>'unacceptable',
-    '0'=>'acceptable',
-    '1'=>'good',
-    '2'=>'outstanding'
+    '-2' => 'unacceptable',
+    '0' => 'acceptable',
+    '1' => 'good',
+    '2' => 'outstanding'
   ));
-  variable_set('cc_select_user_show', array('name'));
-  variable_set('cc_select_user_orderby', 'uid');
   variable_set('cc_balancing_account_num', 1);
-  variable_get('cforge_report', TRUE);
+  variable_set('cforge_report', TRUE);
+  $currency = (object)array(
+    'cid' => 0,
+    'nid' => 0,
+    'title' => 'units',
+    'division' => 'integer',
+    'max_balance' => 500,
+    'min_balance' => -500,
+    'comparative_value' => 0,
+    'zero_offset' => 0,
+    'color' => '0000ff',
+    'icon' => drupal_get_path('module', 'transactions') .'/theme/default_currency.png',
+    );
+  variable_set('cc_default_currency', $currency);
   drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
-    array('!link'=>l('admin/settings/marketplace', 'admin/marketplace', array('attributes'=>array('target'=> '_blank')))))
+    array('!link' => l('admin/marketplace/currency', 'admin/marketplace/currency', array('attributes' => array('target' => '_blank')))))
   );
-  drupal_http_request('http://www.communityforge.net/registration.php?from=' . $_SERVER["HTTP_HOST"]);
 }
-
-function transactions_enable(){
-
-  }
 
 /**
  * Implementation of hook_uninstall().
@@ -64,20 +58,20 @@ function transactions_uninstall() {
   db_query('DELETE FROM {node} WHERE type = "%s"', 'transaction');
   db_query("DELETE FROM {blocks} WHERE module = 'transactions'");
   //find all the views provided by the module, which are now broken, and remove them and their displays
-  $view_ids = db_query ("SELECT vid FROM {views_view} WHERE name LIKE 'cc_%'");
+  $view_ids = db_query("SELECT vid FROM {views_view} WHERE name LIKE 'cc_%'");
   while ($vid = db_result($view_ids)) {
     db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
     db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
   }
-  variable_del ('comment_transactions');
-  variable_del ('cc_transaction_types');
-  variable_del ('cc_transaction_qualities');
-  variable_del ('cc_transaction_list');
-  variable_del ('cc_currencies');
-  variable_del ('cc_select_user_show');
-  variable_del ('cc_select_user_orderby');
-  variable_del ('cc_balancing_account_num');
-  variable_del ('cc_stats_periods');
+  variable_del('comment_transactions');
+  variable_del('cc_default_currency');
+  variable_del('cc_transaction_qualities');
+  variable_del('cc_transaction_list');
+  variable_del('cc_currencies');
+  variable_del('cc_select_user_show');
+  variable_del('cc_select_user_orderby');
+  variable_del('cc_balancing_account_num');
+  variable_del('cc_stats_periods');
 }
 
 function transactions_disable() {
@@ -89,16 +83,16 @@ function transactions_disable() {
  * You don't have to deal with the different SQL dialects for table creation and alteration of the supported database engines.
  */
 //TODO what about storing all this info in the user table instead?
-function transactions_schema () {
+function transactions_schema() {
   $schema['cc_transactions'] = array(
-    'description'=>'currency exchanges between users',
-    'fields'=> array(
-      'nid'=> array (
+    'description' => 'currency exchanges between users',
+    'fields' => array(
+      'nid' => array(
         'description' => t('the node to which this entry is attached'),
         'type' => 'int',
         'size' => 'normal',
       ),
-      'payer_uid'=> array(
+      'payer_uid' => array(
         'description' => t('the user id of the payer'),
         'type' => 'int',
         'size' => 'normal',
@@ -113,22 +107,22 @@ function transactions_schema () {
         'type' => 'int',
         'size' => 'normal',
       ),
-      'completer_uid'=> array(
+      'completer_uid' => array(
         'description' => t('uid of the object of the transaction'),
         'type' => 'int',
         'size' => 'normal',
       ),
-      'cid' =>array(
+      'cid' => array(
         'description' => t('the nid of the currency used'),
         'type' => 'int',
         'size' => 'normal',
       ),
       'quantity' => array(
-        'description' => t('the number of units transferred, (@type)', array('@type'=>'integer')),
+        'description' => t('the number of units transferred, (@type)', array('@type' => 'integer')),
         'type' => 'int',
         'size' => 'normal'
       ),
-      'transaction_type' =>array(
+      'transaction_type' => array(
         'description' => t('The type of transaction, types are provided by modules'),
         'type' => 'varchar',
         'length' => 32,
@@ -158,90 +152,106 @@ function transactions_schema () {
    */
   $schema['cc_balance_cache'] = array(
     'description' => t('cached balances, turnovers and pending balances, for exposure to views'), 
-    'fields'=> array(
-      'uid'=> array(
+    'fields' => array(
+      'uid' => array(
         'description' => t('the node to which this entry is attached'),
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'cid' => array(
         'description' => t('the currency id, where there is more than one currency'),
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
-      'balance' => array(
+      'cleared_balance' => array(
         'description' => 'balance including pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'pending_difference' => array(
         'description' => 'sum of all pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'pending_balance' => array(
         'description' => 'forecast balance after pending transactions are completed for this user in this currency, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'gross_income' => array(
         'description' => "sum of all this user's income in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'gross_expenditure' => array(
         'description' => "sum of all this user's ougoings in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'default' => '0',
       ),
       'quality_mean' => array(
         'description' => "average transaction rating for this user in this currency",
         'type' => 'float',
         'size' => 'normal',
+        'default' => '0',
       ),
-  	)
+      'limit_max' => array(
+        'description' => "Maximum balance that this user can hold in this currency",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'limit_min' => array(
+        'description' => "Minimum balance that this user can hold in this currency",
+        'type' => 'int',
+        'size' => 'normal',
+      )
+    )
   );
   return $schema;
 }
 
-function transactions_update_1(){
-  $ret=array();
-  db_change_field($ret, 'cc_transactions', 'from_uid', 'payer_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
-  db_change_field($ret, 'cc_transactions', 'to_uid', 'payee_uid', array('description' =>'the user id of the payer','type'=>'int','size'=>'normal'));
-  db_change_field($ret, 'cc_transactions', 'transaction_type', 'transaction_type', array(
+function transactions_update_1($ret=array()) {
+  $ret[] = db_change_field($ret, 'cc_transactions', 'from_uid', 'payer_uid', array('description' => 'the user id of the payer', 'type' => 'int', 'size' => 'normal'));
+  $ret[] = db_change_field($ret, 'cc_transactions', 'to_uid', 'payee_uid', array('description' => 'the user id of the payer', 'type' => 'int', 'size' => 'normal'));
+  $ret[] = db_change_field($ret, 'cc_transactions', 'transaction_type', 'transaction_type', array(
     'description' => t('The type of transaction, types are provided by modules'),
     'type' => 'varchar',
     'length' => 32,
     'not null' => TRUE,
   ));
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'incoming_confirmed' WHERE transaction_type = 1");
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'outgoing_confirmed' WHERE transaction_type = 2");
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'incoming_direct' WHERE transaction_type = 3");
-  db_query("UPDATE {cc_transactions} SET transaction_type = 'outgoing_direct' WHERE transaction_type = 4");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'incoming_confirmed' WHERE transaction_type = 1");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'outgoing_confirmed' WHERE transaction_type = 2");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'incoming_direct' WHERE transaction_type = 3");
+  $ret[] = update_sql("UPDATE {cc_transactions} SET transaction_type = 'outgoing_direct' WHERE transaction_type = 4");
   return $ret;
 }
 
-function transactions_update_5() {
-  $ret = array();
-  db_add_field($ret, 'cc_balance_cache', 'quality_mean', array(
+function transactions_update_5($ret = array()) {
+  $ret[] = db_add_field($ret, 'cc_balance_cache', 'quality_mean', array(
     'description' => "The average transaction rating for this user in this currency",
     'type' => 'float',
     'size' => 'normal',
     )
   );
-  db_add_field($ret, 'cc_balance_cache', 'pending_balance', array(
+  $ret[] = db_add_field($ret, 'cc_balance_cache', 'pending_balance', array(
     'description' => "The balance including pending transactions, (integer)",
     'type' => 'int',
     'size' => 'normal',
     )
   );
-  db_change_field($ret, 'cc_balance_cache', 'pending', 'pending_difference', array(
+  $ret[] = db_change_field($ret, 'cc_balance_cache', 'pending', 'pending_difference', array(
     'description' => 'The sum of all pending transactions, (integer)',
-    'type'=>'int',
-    'size'=>'normal'
+    'type' => 'int',
+    'size' => 'normal'
     )
   );
-  db_change_field($ret, 'cc_balance_cache', 'turnover', 'gross_income', array(
+  $ret[] = db_change_field($ret, 'cc_balance_cache', 'turnover', 'gross_income', array(
     'description' => "sum of all this user's income in this currency, (integer)",
     'type' => 'int',
     'size' => 'normal',
@@ -250,9 +260,8 @@ function transactions_update_5() {
   return $ret;
 }
 
-function transactions_update_6() {
-  $ret = array();
-  db_add_field($ret, 'cc_transactions', 'state', array(
+function transactions_update_6($ret = array()) {
+  $ret[] = db_add_field($ret, 'cc_transactions', 'state', array(
     'description' => "State of the transaction - completed, pending, disputed, etc",
     'type' => 'int',
     'size' => 'normal',
@@ -273,23 +282,138 @@ function transactions_update_6007() {
   $def = variable_get('cc_default_currency', (object)array());
   if (is_array($def))$def = $def[0];
   $def->title = $def->title or $def->title = $def->name or $def->title = 'units';
-  $def->icon = drupal_get_path('module', 'transactions') . '/default_currency.png';
+  $def->icon = drupal_get_path('module', 'transactions') .'/default_currency.png';
   variable_set('cc_default_currency', $def);
-  require_once(drupal_get_path('module', 'transactions').'/transactions.admin.inc');
+  require_once(drupal_get_path('module', 'transactions') .'/transactions.admin.inc');
   cc_balances_refresh();
-  drupal_set_message ("The default currency icon has changed, along with theme_money. You can upload your icon at admin/marketplace/currency, or make a new theme_money function");
+  drupal_set_message("The default currency icon has changed, along with theme_money. You can upload your icon at admin/marketplace/currency, or make a new theme_money function");
   return $ret;
 }
 
-function transactions_update_6008() {
-  $ret = array();
+function transactions_update_6008($ret = array()) {
   db_add_field($ret, 'cc_balance_cache', 'gross_expenditure', array(
     'description' => "State of the transaction - completed, pending, disputed, etc",
     'type' => 'int',
     'size' => 'normal',
     )
   );
-  module_load_include('admin.inc', 'transactions');
-  cc_balances_refresh();
   return $ret;
+}
+//correction because generate_transaction_node wasn't specifying uid
+function transactions_update_6009($ret = array()) {
+  db_query("UPDATE {node} n LEFT JOIN {cc_transactions} t ON n.nid = t.nid SET n.uid = t.starter_uid WHERE n.type = 'transaction' AND n.uid = 0");
+  return $ret;
+}
+function transactions_update_6010($ret = array()) {
+  $table=drupal_get_schema('cc_balance_cache');
+  $type = $table['fields']['balance']['type'];
+  drupal_set_message("Renaming $type field 'cc_balance_cache.balance' to 'cleared_balance'");
+  db_change_field($ret, 'cc_balance_cache', 'cleared_balance', 'cleared_balance', array(
+    'description' => "sum of all this user's completed transactions",
+    'type' => $type,
+    'size' => 'normal',
+    'not null' => TRUE,
+    )
+  );
+  return $ret;
+  //if this causes problems try this:
+  db_query("alter table cc_balance_cache change balance cleared_balance int(5) unsigned;");
+}
+function transactions_update_6011($ret=array()) {
+  //default currency now has an extra field, cid as well as nid
+  $curr = variable_get('cc_default_currency', NULL);
+  $curr->cid = 0;
+  variable_set('cc_default_currency', $curr);
+  //changed name of permission from
+  $results = db_query('SELECT rid, perm from {permission}');
+  while ($role = db_fetch_array($results)) {
+    $perm = str_replace('configure marketplace', 'configure economy', $role['perm']);
+    $ret[] = update_sql("UPDATE {permission} SET perm = '$perm' WHERE rid = ". $role['rid']);
+  }
+  //change the names of the user notification variables
+  $result = db_query("SELECT uid FROM {users} WHERE uid > 0");
+  while ($uid = db_result($result)) {
+    $account = user_load($uid);
+    $edit = unserialize($account->data);
+    $edit['completer_notification'] = intval($account->pending_notification);
+    $edit['starter_notification'] = intval($account->starting_notification);
+    user_save($account, $edit);
+  }
+  
+  //remove the triggers because these are now automated
+  if (module_exists('trigger')) {
+    $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
+    while ($aid = db_result($result)) {
+      db_query("DELETE from {trigger_assignments} WHERE aid = %d", $aid);
+    }
+    drupal_set_message('Triggers relating to the transaction engine now fire automatically.') .
+     t('Please visit admin/build/trigger and check the transaction notification actions are not assigned');
+  }
+  return $ret;
+}
+function transactions_update_6012($ret=array()) {
+  $results = db_query('SELECT rid, perm from {permission}');
+  while ($role = db_fetch_array($results)) {
+    $perm = str_replace(array('start incoming_confirm, ', 'start outgoing_confirm, ', 'start incoming_direct, ', 'start outgoing_direct, '), '', $role['perm']);
+    if ($perm != $role['perm']) {
+      $ret[] = update_sql("UPDATE {permission} SET perm = '". $perm .", use local currency' WHERE rid = ". $role['rid']);
+    }
+  }
+  return $ret;
+}
+function transactions_update_6013($ret=array()) {
+  db_add_field($ret, 'cc_balance_cache', 'limit_max', array(
+    'description' => "Maximum balance that this user can hold in this currency",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
+  db_add_field($ret, 'cc_balance_cache', 'limit_min', array(
+    'description' => "Minimum balance that this user can hold in this currency",
+    'type' => 'int',
+    'size' => 'normal',
+    )
+  );
+  return $ret;
+}
+
+function transactions_update_6014($ret=array()) {
+  $curr = variable_get('cc_default_currency', (object)array());
+  if ($curr->division == 'quarters') {
+    $curr->division = 'sixtieths';
+    variable_set('cc_default_currency', $curr);
+  }
+  return $ret;
+}
+function transactions_update_6015() {
+  module_load_include('inc', 'transactions');
+  module_load_include('admin.inc', 'transactions');
+  refresh_trader_names();
+  $cached_traders = cache_get('cc_trader_list');
+  $traders = $cached_traders->data;
+  $count = count($traders);
+  $threshold = variable_get('cc_autocomplete_user_select_threshold', 100);
+  if ($count > $threshold) {
+    $widget = 'textfield';
+  }
+  else {
+    $widget = 'select';
+  }
+  drupal_set_message("Previously if you had more than $threshold users,
+    the autocomplete textfield would be shown, otherwise a select box would be shown.
+    The widget has now been set set to '$widget'"
+  );
+  variable_set('cc_autocomplete_user_select_widget', 'textfield');
+  variable_del('cc_autocomplete_user_select_threshold');
+  return array();
+}
+
+function transactions_update_6016() {
+  module_load_include('admin.inc', 'transactions');
+  refresh_trader_names();
+  $trader_list = cache_get('cc_trader_list');
+  if (is_array($trader_list->data)) {
+    return array('success' => 'Created cache for trader listings');
+  }
+  return array('failed' => 'Failed to refresh_trader_names() in transactions.admin.inc');
 }

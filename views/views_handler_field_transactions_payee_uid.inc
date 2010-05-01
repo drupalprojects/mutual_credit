@@ -1,6 +1,8 @@
 <?php
+// $Id$
 
 /**
+ * @file
  * Field handler to allow linking to a seller's name
  *
  * @ingroup views_field_handlers

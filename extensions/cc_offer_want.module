@@ -17,10 +17,10 @@ function cc_offer_want_help($section) {
   * This hook is required for modules to define one or more node types.
  */
 function cc_offer_want_node_info(){
-  $names = variable_get ('cc_transaction_types', array());
+  $preset = variable_get('cc_ow_content_types', 'both');
   
   //the status = TRUE seems to have no effect so it's fixed in form_alter
-  if ($offers = $names['offers_wants']['offer']) {
+  if ($preset == 'offers' || $preset == 'both') {
     $types['offer'] = array(
       'name' => 'Offer',
       'module' => 'cc_offer_want',
@@ -30,7 +30,7 @@ function cc_offer_want_node_info(){
       'status' => TRUE
     );
   }
-  if ($wants = $names['offers_wants']['want']) {
+  if ($preset == 'wants' || $preset == 'both') {
     $types['want'] = array(
       'name' => 'Want',
       'module' => 'cc_offer_want',
@@ -50,31 +50,46 @@ function cc_offer_want_views_api() {
   );
 }
 
+function cc_offer_want_menu() {
+  return array(
+    'admin/marketplace/offers_wants' => array(
+      'title' => 'Offers & Wants',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('offers_wants_config_form'),
+      'access arguments' => array('configure economy'),
+      'weight' => 5
+    )
+  );
+}
+
 function offers_wants_config_form() {
-  $names = variable_get ('cc_transaction_types', array());
-  $offers = $names['offers_wants']['offer']; 
-  $wants = $names['offers_wants']['want'];
-  //$good = $names['offers_wants']['good'];
-  //$service = $names['offers_wants']['service'];
-  /*
-   * $form['cc_goodsandservices'] = array(
-    '#type' => 'checkbox', 
-    '#title' => t("Distinguish between goods and services"),
-    '#default_value' => variable_get('cc_goodsandservices', FALSE),
-    '#description' => t('Each @offer and @want can be subdivided into goods and services, and the directory pages and views can be organised accordingly. These <em>views</em> are not yet provided', 
-      array('@offer'=>$offer, '@want'=>$want)),
+  $form['cc_ow_max_title'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Max number of characters for directory entry headlines'),
+    '#default_value' => variable_get('cc_ow_max_title', 128),
+    '#description' => t('Smaller values make the directory easier to to read, encourage concise language. Max is 255. Suggested is 128'),
   );
-  $form['cc_non_cc'] = array(
-    '#type' => 'checkbox', 
-    '#title' => t('Distinguish between directory entries in community currency and in official currency. ') . t('Not yet implemented'),
-    '#default_value' => variable_get('cc_non_cc', FALSE),
-    '#description' => t('It will be possible, using Ubercart, to take money for adverts for transactions involving official money'),
-    '#active' => FALSE
+  $form['cc_ow_content_types'] = array(
+    '#type' => 'radios', 
+    '#title' => t('Content types to be activated'),
+    '#options' => array(
+      'offers' =>t('Offers'),
+      'wants' =>t('Wants'),
+      'both' =>t('Both'),
+    ),
+    '#default_value' => variable_get('cc_ow_content_types', 'both'),
   );
-  */
   $form['#suffix'] = t('N.B. It is also possible to disable the node body for offers and wants. See !link', array('!link' => l('admin/content/type/offer', 'admin/content/type/offer')));
   $form['#redirect'] = 'admin/marketplace';
   return system_settings_form($form);
+}
+
+function offers_wants_config_form_validate($form, $form_state) {
+  if (!is_numeric($form_state['values']['cc_ow_max_title']) || 
+      $form_state['values']['cc_ow_max_title'] > 255 || 
+      $form_state['values']['cc_ow_max_title'] < 0 ) {
+    form_set_error('cc_ow_max_title', t('Max title length must be less than 255'));
+  }
 }
 
 /**
@@ -82,12 +97,13 @@ function offers_wants_config_form() {
  * http://api.drupal.org/api/function/hook_perm/6
  */
 function cc_offer_want_perm(){
-  $names = variable_get ('cc_transaction_types', array());
+  $preset = variable_get('cc_ow_content_types', 'both');
   $permissions = array('view directory', 'edit directory');
-  if ($names['offers_wants']['offer']){
+  
+  if ($preset == 'offers' || $preset == 'both') {
     $permissions[] = 'create offer';
   }
-  if ($names['offers_wants']['want']){
+  if ($preset == 'wants' || $preset == 'both') {
     $permissions[] = 'create want';
   }
   return $permissions;
@@ -96,7 +112,6 @@ function cc_offer_want_perm(){
 /**
  * Implementation of hook_access().
  * http://api.drupal.org/api/function/hook_access/6
- * might be cool if this function returned the terminology name of offers / wants
  */
 function cc_offer_want_access($op, $node=NULL, $account=NULL){
   if (is_string($node)){
@@ -105,6 +120,7 @@ function cc_offer_want_access($op, $node=NULL, $account=NULL){
     $type=$node -> type;
   }
   switch ($op){
+    //node_access isn't doing this
     case 'view':
       return user_access('view directory');
     case 'create':
@@ -123,28 +139,25 @@ function cc_offer_want_access($op, $node=NULL, $account=NULL){
  * http://api.drupal.org/api/function/hook_block/6
  */
 function cc_offer_want_block($op = 'list', $delta = 0, $edit = array()) {
-  $terminology = variable_get ('cc_transaction_types', array());
-  foreach ($terminology['offers_wants'] as $type => $name) {
-    if ($name) $names[$type] = $name;
-  }
-  $namestring = implode('/', $names);
-  if ($op == 'list') {
-    $blocks['cc_categories']= array(
-      'info' => 'Cc ' . t('categories'),
-      'cache' => BLOCK_CACHE_PER_PAGE,
-      'visibility' =>1,
-      'pages' => 'directory*',
-    );
-    
-    $blocks['cc_add_item']= array(
-      'info' => 'Cc ' . t('Add @offers_wants', array('@offers_wants' => $namestring)),
-      'cache' => BLOCK_CACHE_PER_PAGE,
-      'visibility' =>1,
-      'pages' => 'directory*',
-    );
-    return $blocks;
-  } elseif ($op == 'view') {
-      //determine whether to show offers, wants, or both.
+  switch ($op) {
+    case 'list':
+      $blocks['cc_categories']= array(
+        'info' => 'Cc ' . t('categories'),
+        'cache' => BLOCK_CACHE_PER_PAGE,
+        'visibility' =>1,
+        'pages' => 'directory*',
+      );
+      $blocks['cc_add_item']= array(
+        'info' => 'Cc ' . t('Add offers/wants'),
+        'cache' => BLOCK_CACHE_PER_PAGE,
+        'visibility' =>1,
+        'pages' => 'directory*',
+      );
+      return $blocks;
+      
+    case 'view':
+      //determine whether to show offers, wants, or both. according to the path
+      $names = array('offer' => t('Offer'), 'want' => t('Want'));
       //check the url and if neither is present, show all the named types.
       foreach ($names as $type => $name) {
         //if the type is in the url then go for it
@@ -153,33 +166,33 @@ function cc_offer_want_block($op = 'list', $delta = 0, $edit = array()) {
           break;
         }
       }
-    if (!isset($types)) $types = $names;
-    
-    switch ($delta) {
-      case 'cc_categories':
-        $subject = t('@offerwant Categories', array('@offerwant' => $namestring));
-        foreach ($types as $type=>$name) {
-          $content .= type_categories_count($type, 'directory/recent_'.$type.'s');
-        }
-        break;
-      case 'cc_add_item':
-        if (count($types) == 1) {
-          $subject = t('Place your @offerwant', array('@offerwant' => $names[$type]));
-          require_once(drupal_get_path('module', 'node').'/node.pages.inc');
-          $title = drupal_get_title();
-          //unfortunately this function changes the page title
-          $content = node_add($type);
-          drupal_set_title($title);
-        } else {
-          $subject = t('Place your ad');
-          $content = drupal_get_form('create_offer_or_want_form');
-        }
-        break;
-    }
-    return array(
-      'subject' => $subject,
-      'content' => $content,
-    );
+      if (!isset($types)) $types = $names;
+      
+      switch ($delta) {
+        case 'cc_categories':
+          $subject = t('@offerwant Categories', array('@offerwant' => $name));
+          foreach ($types as $type=>$name) {
+            $content .= type_categories_count($type, 'directory/recent_'.$type.'s');
+          }
+          break;
+        case 'cc_add_item':
+          if (count($types) == 1) {
+            $subject = t('Place your @offerwant', array('@offerwant' => $name));
+            require_once(drupal_get_path('module', 'node').'/node.pages.inc');
+            $title = drupal_get_title();
+            //unfortunately this function changes the page title
+            $content = node_add($type);
+            drupal_set_title($title);
+          } else {
+            $subject = t('Place your @offerwant');
+            $content = drupal_get_form('create_offer_or_want_form');
+          }
+          break;
+      }
+      return array(
+        'subject' => $subject,
+        'content' => $content,
+      );
   }
 }
 
@@ -204,26 +217,6 @@ function cc_offer_want_form(&$node, $param){
       '#required' => FALSE,
     );
   }
-  /*
-  $names = variable_get ('cc_transaction_types', array());
-  if (variable_get('cc_goodsandservices', 0)) {
-    $form['goods_not_services'] = array(
-      '#type' => 'radios',
-      '#title' => t('Type of @type', array('@type' => $node->type)),
-      '#default_value' => intval($node->goods_not_services),
-      '#options' => array (1 => $names['offers_wants']['good'], 0 => $names['offers_wants']['service']),
-    );
-  }
-  if (variable_get('cc_non_cc', 0)) {
-    $form['not_cc'] = array(
-      '#type' => 'radios',
-      '#title' => t(''),
-      '#default_value' => intval($node->not_cc),
-      '#options' => array (0 => t('Community money'), 1 => t('Official Money')),
-    );
-  }
-  */
-  //drupal_set_title (t('Editing @type', array('@type' => $type->name)));
   $form['#redirect']='user/'.$user->uid.'/directory';
   return $form;
 }
@@ -236,83 +229,22 @@ function cc_offer_want_form_alter(&$form, $form_state, $form_id){
   switch ($form_id) {
     case 'offer_node_form':
     case 'want_node_form':
-    $form['menu']['#type'] = 'hidden';
-    $form['path']['#type'] = 'hidden';
-    $form['comment_settings']['#type'] = 'hidden';
-    $form['options']['#type'] = 'hidden';
-    $form['options']['status']['#value'] = TRUE;
-    $form['revision_information']['#type'] = 'hidden';
-    $form['author']['#access'] = FALSE;
-  	unset($form['buttons']['preview']);
-    if ($form['buttons']['delete']) {  //redirect interferes with delete
-      unset($form['#redirect']);
-    }
-    break;
-    case 'cc_options':
-      $names = variable_get ('cc_transaction_types', array());
-      $form['offers_wants'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Names of offers/wants'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#weight' => -1,
-        '#help' => t('Specify whether you want offers and wants by stating what word to use for them. Also name goods and services if they are enabled in !link.',
-          array('!link' => l('settings', url('admin/marketplace/directory')))),
-      );
-      $form['offers_wants']['offers_wants__offer'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Whatever the user is offering to the community (plural)'),
-        '#size' => 15,
-        '#default_value' => $names['offers_wants']['offer'],
-      );
-      $form['offers_wants']['offers_wants__want'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Whatever the user wants from the community (plural)'),
-        '#size' => 15,
-        '#default_value' => $names['offers_wants']['want'],
-      );
-    //$terminology['offers_wants']['good'] = t('The word for an object to be bought or sold');
-    //$terminology['offers_wants']['service'] = t('The word for a service or skill to be bought or sold');
+      $form['menu']['#access'] = FALSE;
+      $form['path']['#access'] = FALSE;
+      $form['comment_settings']['#access'] = FALSE;
+      $form['options']['#access'] = FALSE;
+      $form['options']['status']['#value'] = TRUE;
+      $form['revision_information']['#access'] = FALSE;
+      $form['author']['#access'] = FALSE;
+    	unset($form['buttons']['preview']);
+      if ($form['buttons']['delete']) {  //redirect interferes with delete
+        unset($form['#redirect']);
+      }
+      break;
   }
 }
 
-/** 
- * Implementation of hook_load)()
- * http://api.drupal.org/api/function/hook_load/6
- */
-function cc_offer_want_load($node) {
-  /*
-  $result = db_query('SELECT goods_not_services, not_cc FROM {cc_offers_wants} WHERE nid = %d', $node->nid);
-  $fields = db_fetch_array($result);
-  $node->goods_not_services = $fields['goods_not_services'];
-  $node->not_cc = $fields['not_cc'];
-  return $node;
-  */
-}
 
-/** 
- * Implementation of hook_insert)().
- * http://api.drupal.org/api/function/hook_insert/6
- */
-function cc_offer_want_insert($node) {
-  //db_query('INSERT into {cc_offers_wants} (nid, goods_not_services, not_cc) VALUES (%d, %d, %d)', $node->nid, $node->goods_not_services, $node->not_cc);
-}
-
-/** 
- * Implementation of hook_update)().
- * http://api.drupal.org/api/function/hook_update/6
- */
-function cc_offer_want_update($node) {
-  //db_query('UPDATE {cc_offers_wants} SET goods_not_services = %d, not_cc = %d WHERE nid = %d', $node->goods_not_services, $node->not_cc, $node->nid);
-}
-
-/** 
- * Implementation of hook_delete)().
- * http://api.drupal.org/api/function/hook_delete/6
- */
-function cc_offer_want_delete($node) {
-  //db_query('DELETE FROM cc_offers_wants WHERE nid = %d', $node->nid);
-}
 /** 
  * Implementation of hook_theme)().
  * http://api.drupal.org/api/function/hook_theme/6
@@ -320,15 +252,6 @@ function cc_offer_want_delete($node) {
 function cc_offer_want_theme($existing, $type, $theme, $path){
   //HELP!! I can't get it to recognise the offer.tpl.php in the module folder
   return array(
-/*    'offer'=> array(
-      'arguments' => array('form' => NULL),
-      'template' => 'offer',
-    ),
-    'want'=> array(
-      'arguments' => array('form' => NULL),
-      'template' => 'want',
-    ),
-*/
     'offers_wants_link' => array(
       'arguments' => array('type' => NULL),
       'function' => 'theme_offers_wants_link',
@@ -336,10 +259,18 @@ function cc_offer_want_theme($existing, $type, $theme, $path){
   );
 }
 
+function cc_offer_want_user($op, &$edit, &$account, $category = NULL) {
+  switch($op) {
+    case 'delete':
+      db_query("DELETE FROM {node} WHERE uid = %d AND (type = 'offer' OR type = 'want')", array(':uid' => $account->uid));
+      break; 
+  }  
+}
+
 function type_categories_count($nodetype, $link_prefix){
 //TODO need to filter this function by the appropriate vocab
   $result = db_query("
-    SELECT d.tid, d.name, COUNT(*) AS count 
+    SELECT d.tid, d.name, d.description, COUNT(*) AS count 
     FROM {term_data} d 
     INNER JOIN {term_node} USING (tid) 
     INNER JOIN {node} n USING (nid)
@@ -350,7 +281,11 @@ function type_categories_count($nodetype, $link_prefix){
     ", $nodetype);
   $items = array();
   while ($category = db_fetch_object($result)) {
-    $items[] = l($category->name .' ('. $category->count .')', $link_prefix.'/'. $category->tid);
+    $items[] = l(
+      $category->name .' ('. $category->count .')', 
+      $link_prefix.'/'. $category->tid,
+      array('attributes' => array('title' => $category->description))
+    );
   }
   //TODO add theme function theme_add_directory_entry which provides link to node/add/offer or want
   return theme('item_list', $items) . theme('offers_wants_link', $nodetype);
@@ -370,6 +305,7 @@ function cc_offer_want_link($type, $node) {
     $links[$term->name . 'offers'] = array(
       'title' => t('@categoryname @types', array('@categoryname'=> $term->name, '@type' => $node->type)),
       'href' => 'directory/recent_' . $node->type . 's/'.$term->tid,
+      'attributes' => array('title' => $term->description),
     );
   }
   $owner = user_load($node->uid);
@@ -386,30 +322,29 @@ function cc_offer_want_link($type, $node) {
 
 //used for putting the links at the bottom of views //not a hook!
 function theme_offers_wants_link ($type) {
-  $names = variable_get ('cc_transaction_types', array());
   if (!user_access('create ' . $type)) return;
-  if ($names['offers_wants'][$type]) {
-    $link = l($names['offers_wants'][$type], 'node/add/'.$type);
-    return '<div class = "directory-link">' . t('Click to add new !items', array('!items' => $link)) . '</div>';
-    $link = l($names['offers_wants'][$type], 'directory/print/'.$type);
-    return '<div class = "directory-link">' . t('Printable !items', array('!items' => $link)) . '</div>';
+  switch($type) {
+    case 'offer':
+      $link = l(t('offer'), 'node/add/offer');
+    case 'want':
+      $link = l(t('want'), 'node/add/want');
   }
-  //nother link needed for printable page.
+  return '<div class = "directory-link">' . t('Click to add a new !item', array('!item' => $link)) . '</div>';
 }
 
+//I don't think it's possible to hack the node form to put a choice of contentType, so I'm making my own form
 function create_offer_or_want_form() {
   $types = node_get_types();
-  $terminology = variable_get ('cc_transaction_types', array());
   
   $form = array();
   $form['content_type'] = array(
-    '#type' => 'select',
+    '#type' => 'radios',
     '#title' => t('Which directory?'),
     '#weight' => 0,
     '#options' => array (
-      'offer' => $terminology['offers_wants']['offer'],
-      'want' => $terminology['offers_wants']['want']
-      )
+      'offer' => t('Offer'),
+      'want' => t('Want')
+    )
   );
   $form['title'] = array (
     '#type' => 'textfield',
@@ -430,6 +365,7 @@ function create_offer_or_want_form() {
   );
   return $form;
 }
+
 function create_offer_or_want_form_submit($form, &$form_state) {
   generate_offer_want_node($form_state['values']['content_type'], $GLOBALS['user']->uid, $form_state['values']['title'], $form_state['values']['body']);
 }
