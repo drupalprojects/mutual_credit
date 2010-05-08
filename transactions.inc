@@ -15,7 +15,7 @@ function transactions_nodeapi(&$node, $op) {
   module_load_include('inc', 'transactions');
   switch ($op) {
     case 'validate':
-      if ($node->payer_uid && $node->payee_uid) {
+      if (!count(form_get_errors()) && $node->payer_uid && $node->payee_uid) {
         _transaction_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid));
         _transaction_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid));
       }
@@ -216,10 +216,10 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   );
   $form['payer_uid'] = array(
     '#type' => 'hidden',
-    '#default_value' => $payer,
+    '#default_value' => $payer
   );
-  if (($form['#selector_set'] == 'payer_payee' || $form['#selector_set'] == 'both' )) {
-    if (!$payee || $form['#selector_set'] == 'both' || $mode = 'edit') {
+  if ($form['#selector_set'] == 'payer_payee' || $form['#selector_set'] == 'both' ) {
+    if (!$payee || ($edit_all_transactions && $mode == 'edit')) {
       $form['payee_uid']=array(
         '#type' => $user_select_widget,
         '#title' => t('Who is being paid?'),
@@ -229,7 +229,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#element_validate' => array('cc_validate_2parties'),
       );
     }
-    if (!$payer || $form['#selector_set'] == 'both'  || $mode = 'edit') {
+    if (!$payer || ($edit_all_transactions && $mode == 'edit')) {
       $form['payer_uid'] = array(
         '#type' => $user_select_widget,
         '#title' => t('Who is paying?'),
@@ -321,7 +321,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
     '#value' => 0,
   );
  //this is begging to be ajax because we don't know what the division is until we know the currency
-  if ($default_currency->division == 'sixtieths'  && !module_exists('cc_currencies')) {
+  if ($default_currency->division == 'sixtieths') {
     $form['division'] = array(
       '#type' => 'select',
       '#title' => t('Hours'),
@@ -376,10 +376,10 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
  * I needed a multistep alternative to node/add/transaction form, which creates the transaction using the transactions api, not via Drual
  * Sorry to say it, but Drupal nodes just weren't flexible enough
  */
-function transaction_start_form($form_state, $transaction = NULL, $selectorset = 'starter_completer', $presets = 'editable') {
-  //this is a nasty hack because I didn't realise until very late that set step to 1 here breaks every other form on the same page
+function transaction_create_form($form_state, $transaction = NULL, $selectorset = 'starter_completer', $presets = 'editable') {
+  //this is a nasty hack but it's problematic trying to pass initial variables to a multistep form
+  //The function seems to be run for every form on the page, or at least by devel!
   //on form submission every form on the page is built using the post, I think
-  //TODO: Redesign this, using a two stage form NOT a multistep form
   if (!$form_state['storage']['step'] && ($form_state['post'] == array() || $form_state['post']['transaction_type'])) {
     $form_state['storage']['step'] = 1; //this makes the form reload from POST
   }
@@ -437,7 +437,7 @@ function transaction_start_form($form_state, $transaction = NULL, $selectorset =
     '#weight' => 10
   );
 
-  $form['#validate'][] = 'transaction_start_form_validate';
+  $form['#validate'][] = 'transaction_create_form_validate';
   return $form;
 }
 
@@ -489,12 +489,12 @@ function transaction_form_after_build($form, &$form_state) {
   return $form;
 }
 
-function transaction_start_form_validate($form, &$form_state) {
+function transaction_create_form_validate($form, &$form_state) {
   //this is what calls nodeapi with $op = 'validate'
   node_validate($form_state['values'], $form);
 }
 
-function transaction_start_form_submit($form, &$form_state) {
+function transaction_create_form_submit($form, &$form_state) {
   module_load_include('admin.inc', 'transactions');
   //save the values for the current step into the storage array
   $form_state['storage']['values'][$form_state['storage']['step']] = $form_state['values'];
@@ -780,9 +780,12 @@ function template_preprocess_period_volumes($vars) {
 
 //defaults options see below
 function template_preprocess_balance_limits(&$vars) {
-  $vars['max'] = $vars['account']->balances[$vars['cid']]['limit_max'];
-  $vars['min'] = $vars['account']->balances[$vars['cid']]['limit_min'];
-  $vars['balance'] = floatval($vars['account']->balances[$vars['cid']]['cleared_balance']);
+  foreach(array_keys($vars['account']->balances) as $cid) {
+    $vars['max'][$cid] = $vars['account']->balances[$cid]['limit_max'];
+    $vars['min'][$cid] = $vars['account']->balances[$cid]['limit_min'];
+    $vars['balance'][$cid] = floatval($vars['account']->balances[$cid]['cleared_balance']);
+    $vars['currencies'][$cid] = currency_load($cid);
+  }
 }
 
 

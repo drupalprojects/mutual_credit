@@ -18,9 +18,35 @@ function transactions_views_handlers() {
       'views_handler_field_transactions_payee_uid' => array(
         'parent' => 'views_handler_field'
       ),
+      'views_handler_filter_transaction_types' => array(
+        'parent' => 'views_handler_filter_many_to_one'
+      )
     ),
   );
   return $handlers;
+}
+//this was derived from the similar funcntionality in cck, where a dropdown is populated by a view
+//however is doesn't work
+function transcations_views_plugins() {
+  return array(
+    'module' => 'transactions', // This just tells our themes are elsewhere.
+    'display' => array(
+      'transaction_form_options' => array(
+        'path' => drupal_get_path('module', 'transactions') . '/views',
+        // Those strings are not translated for now.
+        // We'll need to change that if / when we remove 'no ui'
+        'title' => 'Array', // TODO: better name ? (currently not displayed anyway)
+        'help' => 'Destination-agnostic display. Mostly useful for programmatic views.',
+        'handler' => 'transaction_form_options',
+        'no ui' => TRUE, // Programmatic use only.
+        'uses hook menu' => FALSE,
+        'use ajax' => FALSE,
+        'use pager' => FALSE,
+        'accept attachments' => FALSE,
+      ),
+    )
+  );
+
 }
 
 function transactions_views_data() {
@@ -158,22 +184,17 @@ function transactions_views_data() {
       'help' => t('Whether the transaction is completed or pending'),
       'handler' => 'views_handler_filter_boolean_operator',
     ),
-    //'argument' => array(
-    //  'help' => t('Whether the transaction is completed or pending'),
-    //  'handler' => 'views_handler_argument_transaction_state', //extends
-    //),
   );
-//this belongs with the cc_currencies module, but breaks nothing if module ins't installed
-  $data['cc_transactions']['cid'] = array(
-    'title' => t('Currency ID'), 
+
+  $data['cc_transactions']['transaction_type'] = array(
+    'title' => t('Transaction type'),
     'field' => array(
-      'help' => t('The currency that the transaction was conducted in'),
+      'help' => t('Which form or module which created the transaction'),
       'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
     ),
-    'argument' => array(
-      'help' => t('Currency id'),
-      'handler' => 'views_handler_argument'
+    'filter' => array(
+      'help' => t('Which form or module which created the transaction'),
+      'handler' => 'views_handler_filter_transaction_types',
     ),
   );
   
@@ -196,24 +217,16 @@ function transactions_views_data() {
       'handler' => 'views_handler_argument',
     )
   );
-  $data['cc_balance_cache']['cid'] = array(
-    'title' => t('Currency ID'),
-    'argument' => array(
-      'help' => t("Currency id"),
-      'handler' => 'views_handler_argument',
-    ),
-    'field' => array(
-      'help' => t("Currency id"),
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    )
-  );
   $data['cc_balance_cache']['cleared_balance'] = array(
     'title' => t('Balance'),
     'field' => array(
       'help' => t("The user's total cleared income minus total cleared expenditure"),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
+    ),
+    'sort' => array(
+      'help' => t("The user's total cleared income minus total cleared expenditure"),
+      'handler' => 'views_handler_sort',
     )
   );
   $data['cc_balance_cache']['pending_difference'] = array(
@@ -454,50 +467,73 @@ function cc_transaction_list_view() {
     ),
   ));
   $handler->override_option('filters', array(
-  'type' => array(
-    'operator' => 'in',
-    'value' => array(
-      'transaction' => 'transaction',
+    'type' => array(
+      'operator' => 'in',
+      'value' => array(
+        'transaction' => 'transaction',
+      ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'type',
+      'table' => 'node',
+      'field' => 'type',
+      'relationship' => 'none',
     ),
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
+    'starter_uid' => array(
+      'operator' => '!=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'starter_uid',
+      'table' => 'cc_transactions',
+      'field' => 'starter_uid',
+      'relationship' => 'none',
     ),
-    'id' => 'type',
-    'table' => 'node',
-    'field' => 'type',
-    'relationship' => 'none',
-  ),
-  'starter_uid' => array(
-    'operator' => '!=',
-    'value' => '1',
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
+    'completer_uid' => array(
+      'operator' => '!=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'completer_uid',
+      'table' => 'cc_transactions',
+      'field' => 'completer_uid',
+      'relationship' => 'none',
     ),
-    'id' => 'starter_uid',
-    'table' => 'cc_transactions',
-    'field' => 'starter_uid',
-    'relationship' => 'none',
-  ),
-  'completer_uid' => array(
-    'operator' => '!=',
-    'value' => '1',
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
+    'transaction_type' => array(
+      'operator' => 'or',
+      'value' => array(
+        'incoming_direct' => 'incoming_direct',
+        'incoming_confirm' => 'incoming_confirm',
+        'outgoing_direct' => 'outgoing_direct',
+        'outgoing_confirm' => 'outgoing_confirm',
+      ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'transaction_type',
+      'table' => 'cc_transactions',
+      'field' => 'transaction_type',
+      'override' => array(
+        'button' => 'Remplacer',
+      ),
+      'relationship' => 'none',
+      'reduce_duplicates' => 0,
     ),
-    'id' => 'completer_uid',
-    'table' => 'cc_transactions',
-    'field' => 'completer_uid',
-    'relationship' => 'none',
-  ),
   ));
   $handler->override_option('access', array(
     'type' => 'perm',

@@ -157,49 +157,55 @@ function transactions_schema() {
         'description' => t('the node to which this entry is attached'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'cid' => array(
         'description' => t('the currency id, where there is more than one currency'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'cleared_balance' => array(
         'description' => 'balance including pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'pending_difference' => array(
         'description' => 'sum of all pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'pending_balance' => array(
         'description' => 'forecast balance after pending transactions are completed for this user in this currency, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'gross_income' => array(
         'description' => "sum of all this user's income in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'gross_expenditure' => array(
         'description' => "sum of all this user's ougoings in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'quality_mean' => array(
         'description' => "average transaction rating for this user in this currency",
         'type' => 'float',
         'size' => 'normal',
-        'default' => '0',
       ),
       'limit_max' => array(
         'description' => "Maximum balance that this user can hold in this currency",
@@ -211,7 +217,8 @@ function transactions_schema() {
         'type' => 'int',
         'size' => 'normal',
       )
-    )
+    ),
+    'primary_key' => array('uid', 'cid')
   );
   return $schema;
 }
@@ -416,4 +423,17 @@ function transactions_update_6016() {
     return array('success' => 'Created cache for trader listings');
   }
   return array('failed' => 'Failed to refresh_trader_names() in transactions.admin.inc');
+}
+
+function transactions_update_6017() {
+  $ret = array();
+  $schema = drupal_get_schema('cc_balance_cache');
+  foreach (array('cleared_balance', 'pending_difference', 'pending_balance', 'gross_income', 'gross_expenditure', 'quality_mean') as $fieldname) {
+    $field = $schema['fields'][$fieldname];
+    $field['not null'] = TRUE;
+    $field['default'] = 0;
+    db_change_field($ret, 'cc_balance_cache', $fieldname, $fieldname, $field);
+  }
+  db_add_primary_key(&$ret, 'cc_balance_cache', array('uid', 'cid'));
+  return $ret;
 }

@@ -286,7 +286,6 @@ return $form;
 }
 
 
-
 //save the default currency to a variable
 function default_currency_config_submit($form, &$form_state) {
   $cc_default_currency = variable_get('cc_default_currency', (object)array());
@@ -480,7 +479,8 @@ function generate_transactions($howmany) {
 
 
 function cc_balances_refresh() {
-  db_query("TRUNCATE table {cc_balance_cache}");
+  //can't truncate the table because it holds limit_max and limit_min information
+  //db_query("TRUNCATE table {cc_balance_cache}");
   //get a list of all the users and all the currencies they have traded in 
   $currencies = currencies_load();
   foreach (array_keys($currencies) as $cid) {
@@ -545,21 +545,22 @@ function _recalculate_balances($ids = array(), $cid = 0) {
     $pending_balance = $cleared_balance - $pending_dif;
 
     //gross_income must not be affected by the carried forward
-    if ($transactions[0]->title == t("Carried forward") && $transactions[0]->payer_uid ==0) {
+    if ($transactions[0]->title == t("Carried forward") && $transactions[0]->payer_uid == 0) {
       $gross_income -= $transactions[0]->quantity;
     }
     $quality_mean = count($qualities) ? array_sum($qualities) / count($qualities) : 0;
     
-    db_query('UPDATE {cc_balance_cache} 
-      SET cleared_balance = %f, pending_balance = %f, pending_difference = %f, gross_income = %f, gross_expenditure = %f, quality_mean = %f
-      WHERE uid = %d AND cid = %d', 
-      $cleared_balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean, $uid, $cid);
-    if (!db_affected_rows()) {
-      @db_query("INSERT INTO {cc_balance_cache}
-        (uid, cid, cleared_balance, pending_balance, pending_difference, gross_income, gross_expenditure, quality_mean)
-        VALUES (%d, %d, %f, %f, %f, %f, %f, %f)",
-        $uid, $cid, $cleared_balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean);
-    }
+    db_query(
+      "UPDATE {cc_balance_cache} SET
+        cleared_balance = %f,
+        pending_balance = %d,
+        pending_difference = %f,
+        gross_income = %f,
+        gross_expenditure = %f,
+        quality_mean = %f 
+        WHERE uid = %d AND cid = %d",
+      array($cleared_balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean, $uid, $cid)
+    );
   }
   stats_refresh($cid);
 }

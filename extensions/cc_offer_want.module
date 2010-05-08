@@ -184,7 +184,7 @@ function cc_offer_want_block($op = 'list', $delta = 0, $edit = array()) {
             $content = node_add($type);
             drupal_set_title($title);
           } else {
-            $subject = t('Place your @offerwant');
+            $subject = t('Place your small ad');
             $content = drupal_get_form('create_offer_or_want_form');
           }
           break;
