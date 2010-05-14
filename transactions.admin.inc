@@ -479,90 +479,79 @@ function generate_transactions($howmany) {
 
 
 function cc_balances_refresh() {
-  //can't truncate the table because it holds limit_max and limit_min information
-  //db_query("TRUNCATE table {cc_balance_cache}");
   //get a list of all the users and all the currencies they have traded in 
   $currencies = currencies_load();
+  $traders = cache_get('cc_trader_list');
   foreach (array_keys($currencies) as $cid) {
-    _recalculate_balances(array(), $cid);
+    foreach (array_keys($traders->data) as $uid) {
+      recalculate_balances($uid, $cid);
+    }
   }
   drupal_set_message(t('Flushed balance cache'));
+  stats_refresh($cid);
 }
 
-//for each user id passed, go through all their transactions and calculate balance, gross_income and pending amounts in their profile
-//TODO need to make this work better with multiple currencies
+//go through all the user's transactions and calculate balance,
 //Could more of this be done by SQL?
-function _recalculate_balances($ids = array(), $cid = 0) {
+function recalculate_balances($uid, $cid) {
   module_load_include('inc', 'transactions');
-  if (!count($ids)) {
-    $traders = cache_get('cc_trader_list');
-    $ids = array_keys($traders->data);
-  }
-  $currency = currency_load($cid);
-  $count_pending =  (variable_get('cc_count_pending', FALSE));
+  $gross_income=0;
+  $gross_expenditure=0;
+  $outgoings=0;
+  $pending_dif=0;
+  $pending_balance=0;
+  $transactions=NULL;
   $options =  array(
     'states' => array(TRANSACTION_STATE_COMPLETED, TRANSACTION_STATE_PENDING),
     'cid' => $cid,
    );
-  while ($uid = array_pop($ids)) {
-    $gross_income=0;
-    $gross_expenditure=0;
-    $outgoings=0;
-    $pending_dif=0;
-    $pending_balance=0;
-    $transactions=NULL;
-    //we don't get the running balance because we're going to iterate through everything anyway
-    $transactions = _get_transactions_for_user($uid, $options);
-    if (count($transactions)) {
+  //we don't get the running balance because we're going to iterate through everything anyway
+  $transactions = _get_transactions_for_user($uid, $options);
+  if (count($transactions)) {
+    $count_pending = variable_get('cc_count_pending', FALSE);
     //so we work out out the balance, pending and gross_income again in more detail
-      foreach ($transactions as $t) {
-        if ($t->state == TRANSACTION_STATE_COMPLETED) { //completed transactions
-          if ($t->payer_uid == $uid) {
+    foreach ($transactions as $t) {
+      if ($t->state == TRANSACTION_STATE_COMPLETED) { //completed transactions
+        if ($t->payer_uid == $uid) {
+          $gross_expenditure += $t->quantity;
+        }
+        else {
+          $qualities[] = $t->quality;
+          $gross_income += $t->quantity;
+        }
+      }
+      elseif ($t->state == TRANSACTION_STATE_PENDING) { //unpublished transactions are pending
+        if ($t->payer_uid == $uid) {
+          $pending_dif -= $t->quantity;
+          if ($count_pending) {
             $gross_expenditure += $t->quantity;
           }
-          else {
-            $qualities[] = $t->quality;
-            $gross_income += $t->quantity;
-          }
         }
-        elseif ($t->state == TRANSACTION_STATE_PENDING) { //unpublished transactions are pending
-          if ($t->payer_uid == $uid) {
-            $pending_dif -= $t->quantity;
-            if ($count_pending) {
-              $gross_expenditure += $t->quantity;
-            }
-          }
-          else {
-            $pending_dif += $t->quantity;
-            if ($count_pending) {
-              $gross_income += $t->quantity;
-            }
+        else {
+          $pending_dif += $t->quantity;
+          if ($count_pending) {
+            $gross_income += $t->quantity;
           }
         }
       }
     }
-    $cleared_balance = $gross_income-$gross_expenditure + $currency->zero_offset;
-    $pending_balance = $cleared_balance - $pending_dif;
-
-    //gross_income must not be affected by the carried forward
-    if ($transactions[0]->title == t("Carried forward") && $transactions[0]->payer_uid == 0) {
-      $gross_income -= $transactions[0]->quantity;
-    }
-    $quality_mean = count($qualities) ? array_sum($qualities) / count($qualities) : 0;
-    
-    db_query(
-      "UPDATE {cc_balance_cache} SET
-        cleared_balance = %f,
-        pending_balance = %d,
-        pending_difference = %f,
-        gross_income = %f,
-        gross_expenditure = %f,
-        quality_mean = %f 
-        WHERE uid = %d AND cid = %d",
-      array($cleared_balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean, $uid, $cid)
-    );
   }
-  stats_refresh($cid);
+  $cleared_balance = $gross_income-$gross_expenditure + $currency->zero_offset;
+  $pending_balance = $cleared_balance - $pending_dif;
+  $quality_mean = count($qualities) ? array_sum($qualities) / count($qualities) : 0;
+
+  db_query(
+    "REPLACE INTO {cc_balance_cache}
+      SET uid = %d,
+      cid = %d,
+      cleared_balance = %f,
+      pending_balance = %f,
+      pending_difference = %f,
+      gross_income = %f,
+      gross_expenditure = %f,
+      quality_mean = %f",
+    array($uid, $cid, $cleared_balance, $pending_balance, $pending_dif, $gross_income, $gross_expenditure, $quality_mean)
+  );
 }
 
  /*

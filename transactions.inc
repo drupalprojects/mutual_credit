@@ -37,7 +37,9 @@ function transactions_nodeapi(&$node, $op) {
       }
       // the 'break' is missing deliberately
     case 'delete':
-      _recalculate_balances(array($node->payer_uid, $node->payee_uid), $node->cid);
+      recalculate_balances($node->payer_uid, $node->cid);
+      recalculate_balances($node->payee_uid, $node->cid);
+      stats_refresh($node->cid);
   }
 }
 
@@ -445,6 +447,8 @@ function transaction_create_form($form_state, $transaction = NULL, $selectorset 
 //this fills in the gaps in the transaction form
 //It's here because the inc file is not included at this stage of form processing
 function transaction_form_after_build($form, &$form_state) {
+  //this runs every time a page loads containing the form. We don't want it throwing up errors if it hasn't been submitted
+  if (!count($form['#post'])) return $form;
   if ($form_state['values']['starter_uid'] && $form_state['values']['completer_uid']) {
     cc_validate_trader('completer_uid', $form_state['values']['completer_uid']);
     cc_validate_trader('starter_uid', $form_state['values']['starter_uid']);
@@ -532,12 +536,21 @@ function transaction_complete_form(&$form_state, $transaction) {
   );
   return $output;
 }
+
 function transaction_complete_form_submit($form, &$form_state) {
   module_load_include('admin.inc', 'transactions');
   if ($form_state['values']['complete']) {
     $transaction = node_load($form_state['values']['nid']);
-    db_query('UPDATE {cc_transactions} SET state = %d WHERE nid = %d', TRANSACTION_STATE_COMPLETED, $transaction->nid);
-    _recalculate_balances(array($transaction->payer_uid, $transaction->payee_uid), $transaction->cid);
+    db_query(
+      'UPDATE {cc_transactions} SET state = %d WHERE nid = %d',
+      array(
+        ':state' => TRANSACTION_STATE_COMPLETED,
+        ':nid' => $transaction->nid
+      )
+    );
+    recalculate_balances($transaction->payer_uid, $transaction->cid);
+    recalculate_balances($transaction->payee_uid, $transaction->cid);
+    stats_refresh($trsnsaction->cid);
     drupal_set_message(t('Transaction with !starter completed', array('!starter' => theme('username', user_load($transaction->starter_uid)))));
   }
 }
@@ -726,8 +739,8 @@ function template_preprocess_balance_history(&$vars) {//$variables = array($acco
       //add a point showing the balance constant from the last transaction until now
       $vars['points'][$cid][time()] = $transaction->balance;
     }
-    $vars['maxes'][$cid] = $vars['account']->balances[$cid]['limit_max'];
-    $vars['mins'][$cid] = $vars['account']->balances[$cid]['limit_min'];
+    $vars['maxes'][$cid] = $vars['account']->balances[$cid]['max_balance'];
+    $vars['mins'][$cid] = $vars['account']->balances[$cid]['min_balance'];
   }
 }
 
@@ -781,8 +794,8 @@ function template_preprocess_period_volumes($vars) {
 //defaults options see below
 function template_preprocess_balance_limits(&$vars) {
   foreach(array_keys($vars['account']->balances) as $cid) {
-    $vars['max'][$cid] = $vars['account']->balances[$cid]['limit_max'];
-    $vars['min'][$cid] = $vars['account']->balances[$cid]['limit_min'];
+    $vars['min'][$cid] = $vars['account']->balances[$cid]['min_balance'];
+    $vars['max'][$cid] = $vars['account']->balances[$cid]['max_balance'];
     $vars['balance'][$cid] = floatval($vars['account']->balances[$cid]['cleared_balance']);
     $vars['currencies'][$cid] = currency_load($cid);
   }
@@ -1080,25 +1093,25 @@ function _get_view_transactions_by_user($where) {
 function _transaction_user_limits($account, $difference, $cid = 0) {
   $messages=array();
   if ((float) $difference > 0) {
-    $credit = $account->balances[$cid]['cleared_balance'] + $difference - $account->balances[$cid]['limit_max'];
+    $credit = $account->balances[$cid]['cleared_balance'] + $difference - $account->balances[$cid]['max_balance'];
     if ($credit > 0) {
       $message = t('Transaction would take @username !dif above the maximum balance of !quantity', 
         array(
           '@username' => strip_tags(theme('username', $account)),
           '!dif' => theme('money', $credit, $cid),
-          '!quantity' => theme('money', $account->balances[$cid]['limit_max'], $cid)
+          '!quantity' => theme('money', $account->balances[$cid]['max_balance'], $cid)
         )
       );
     }
   }
   else {
-    $debit = $account->balances[$cid]['limit_min'] - ($account->balances[$cid]['cleared_balance'] + $difference);
+    $debit = $account->balances[$cid]['min_balance'] - ($account->balances[$cid]['cleared_balance'] + $difference);
     if ($debit > 0) {
       $message = t('Transaction would take @username !dif below the minimum balance of !quantity', 
         array(
           '@username' => strip_tags(theme('username', $account)),
           '!dif' => theme('money', $debit, $cid),
-          '!quantity' => theme('money', $account->balances[$cid]['limit_min'], $cid)
+          '!quantity' => theme('money', $account->balances[$cid]['min_balance'], $cid)
         )
       );
     }
@@ -1184,5 +1197,13 @@ function cc_validate_trader($form_field_key, &$value) {
   }
   else {
     form_set_error($form_field_key, t("@type @fieldname: @data is not a known user", array("@type" => $type, "@fieldname" => $form_field_key, "@data" => $value)));
+  }
+}
+
+//determines whether an account which doesn't now have permission to trade, used to.
+function visible_balances($account) {
+  if (user_access('use local currency', $account)) return TRUE;
+  foreach ($account->balances as $cid => $balances) {
+    if ($balances->gross_income || $balances->gross_expenditure || $balances->pending_balance) return TRUE;
   }
 }

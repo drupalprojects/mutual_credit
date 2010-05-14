@@ -95,14 +95,16 @@ function transactions_menu() {
     'access arguments' => array('configure economy'),
     'file' => 'transactions.admin.inc',
   );
-  $items['admin/marketplace/currency'] = array(
-    'title' => 'Default Currency',
-    'description' => 'Default currency, transaction ratings and directory settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('default_currency_config'),
-    'access arguments' => array('configure economy'),
-    'file' => 'transactions.admin.inc',
-  );
+  if (!module_exists('cc_currencies')) {
+    $items['admin/marketplace/currency'] = array(
+      'title' => 'Default Currency',
+      'description' => 'Default currency, transaction ratings and directory settings',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('default_currency_config'),
+      'access arguments' => array('configure economy'),
+      'file' => 'transactions.admin.inc',
+    );
+  }
   $items['admin/marketplace/ratings'] = array(
     'title' => 'Transaction ratings',
     'description' => 'Transaction satisfaction ratings',
@@ -225,8 +227,9 @@ function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
       return $uid == $transaction->completer_uid;
     case 'delete':
       return $uid == $transaction->starter_uid && $transaction->state == TRANSACTION_STATE_PENDING;
-    case 'bureau': 
-      return user_access('use local currency') && ($user->uid == $uid || user_access('view all balances'));
+    case 'bureau':
+      //this is only visible if the user may, or has ever traded, and if the viewer is the user, or has permission
+      return visible_balances($account) && ($user->uid == $uid || user_access('view all balances'));
     default:
       drupal_set_message('transaction_access given unknown op: '. $op);
   }
@@ -306,9 +309,12 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
             if (arg(0) == 'user') {
               if (arg(1) && $user->uid != arg(1)) {
                 $account = user_load(arg(1));
+                if (user_access('use local currency', $account)) {
+                  $transaction->completer_uid = $account->uid;
+                }
+                else return; //block will not show on a user's page who can't trade
                 $subject = t('Start transaction with @name', array('@name' => strip_tags(theme('username', $account))));
                 $subject = str_replace('&amp;', '&', $subject);//hack for SEL coup de pouce
-                $transaction->completer_uid = $account->uid;
               }
               else return; //block will not work on a user's own page
             }
@@ -437,31 +443,34 @@ function transactions_view($node, $teaser = FALSE, $page = FALSE) {
 function transactions_user($op, &$edit, &$account, $category = NULL) {
   $currencies = array();
   switch ($op) {
-    case 'load':
-      if (!user_access('use local currency', $account)) return;
-      $currencies = currencies_load(array('uids' => array($account->uid)));
-      //put the user stats into the user object, where the theming layer can see them
-      $result = db_query("SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean, limit_max, limit_min
-          FROM {cc_balance_cache} WHERE uid = %d",
-        array(':uid' => $account->uid)
-      );
-      while ($balance = db_fetch_array($result)) {
-        $cid = array_shift($balance);
-        $account->balances[$cid] = $balance;
-      }
-      //let the currency limits override the personal limits, if personal limits are not set
-      foreach ($currencies as $currency) {
-        $cid = $currency->cid;
-        if (is_null($account->balances[$cid]['limit_min'])) {
-          $account->balances[$cid]['limit_min'] = $currencies[$cid]->min_balance;
+    case 'load': 
+      static $balances; //this can get run rather a lot in some pageloads, so we'll do minicaching here
+      $uid = $account->uid;
+      if (!$all_balances[$uid]) {
+        //put the user stats into the user object, where the theming layer can see them
+        $result = db_query(
+          "SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean
+            FROM {cc_balance_cache} WHERE uid = %d",
+          array(':uid' => $account->uid)
+        );
+        while ($balance = db_fetch_array($result)) {
+          $cid = array_shift($balance);
+          $account->balances[$cid] = array_filter($account->balances[$cid]);
+          $currency = currency_load($cid);
+          $balance['max_balance'] = $currency->max_balance;
+          $balance['min_balance'] = $currency->min_balance;
+          //overwrite the stored null limits with the currency defaults
+          //and add the all the balances out of the database to the user object
+          $balances[$uid][$cid] = $account->balances[$cid] + $balance;
         }
-        if (is_null($account->balances[$cid]['limit_max'])) {
-          $account->balances[$cid]['limit_max'] = $currencies[$cid]->max_balance;
-        }
+        if (!$balances[$uid]) drupal_set_message('No balance cache for user '. $account->uid, 'error');
       }
+      $account->balances = $balances[$uid];
       break;
+
     case 'form':
       if ($category != 'account') return;
+
     case 'register':
       $currencies = currencies_load(array('uids' => array($account->uid)));
       if (!module_exists('contact')) { //buggers up if the fieldset is declared twice
@@ -487,29 +496,35 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         $form['balance_limits'] = array(
           '#type' => 'fieldset',
           '#title' => t('Personal balance limits (accountant only)'),
-          '#description' => t("Each of these values will override the currency's limits"),
+          '#description' => t("Each of these values will override the currency's limits (shown in brackets)"),
           '#weight' => -5,
           '#attributes' => array('class' => 'balance-limits')
         );
-        foreach ($currencies as $cid => $currency) {
-          $form['balance_limits']['currency'. $cid] = array(
-            '#type' => 'fieldset',
-            '#description' => t("@currencyname limits are max: @max, min: @min", array('@currencyname' => $currency->title, '@min' => $currency->min_balance, '@max' => $currency->max_balance)),
-            '#title' => t("currency: @name", array("@name" => $currency->title)),
-            '#weight' => $cid,
-          );
-          $form['balance_limits']['currency'. $cid]['max'. $cid] = array(
-            '#type' => 'textfield',
-            '#title' => t('max limit'),
-            '#maxlength' => 6,
-            '#default_value' => db_result(db_query("SELECT limit_max from {cc_balance_cache} WHERE uid = %d AND cid = %d", array(':uid' => $account->uid, ':cid' => $cid))),
-          );
-          $form['balance_limits']['currency'. $cid]['min'. $cid] = array(
-            '#type' => 'textfield',
-            '#title' => t('min limit'),
-            '#maxlength' => 6,
-            '#default_value' => db_result(db_query("SELECT limit_min from {cc_balance_cache} WHERE uid = %d AND cid = %d", array(':uid' => $account->uid, ':cid' => $cid))),
-          );
+        if (user_access('use local currency', $account)) {
+          foreach ($currencies as $cid => $currency) {
+            $form['balance_limits']['currency-'. $cid] = array(
+              '#type' => 'fieldset',
+              '#title' => $currency->title,
+              '#weight' => $cid,
+            );
+            //because the overridden balance limits were loaded into the user object,
+            //we retrieve them afresh from the db
+            $data = unserialize(db_result(db_query("SELECT data from {users} WHERE uid = %d", array(':uid' => $account->uid))));
+            $form['balance_limits']['currency-'. $cid]['max-'. $cid] = array(
+              '#type' => 'textfield',
+              '#title' => t('max limit'),
+              '#maxlength' => 6,
+              '#default_value' => $data['balances'][$cid]['max_balance'],
+              '#field_suffix' =>' ('. $currency->max_balance .')',
+            );
+            $form['balance_limits']['currency-'. $cid]['min-'. $cid] = array(
+              '#type' => 'textfield',
+              '#title' => t('min limit'),
+              '#maxlength' => 6,
+              '#default_value' => $data['balances'][$cid]['min_balance'],
+              '#field_suffix' =>' ('. $currency->min_balance .')',
+            );
+          }
         }
       }
       return $form;
@@ -518,11 +533,11 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       if (user_access('edit all transactions')) { //this is extra security. Most users won't have seen these form fields
         $currencies = currencies_load(array('uids' => array($account->uid)));
         foreach ($currencies as $cid => $currency) {
-          if ($edit['min'. $cid]=='' && $edit['max'. $cid]=='') continue;
+          if ($edit['min-'. $cid] == '' && $edit['max-'. $cid] == '') continue;
           module_load_include('admin.inc', 'transactions');
           validate_limits(array(
-            'min'. $cid => $edit['min'. $cid],
-            'max'. $cid => $edit['max'. $cid],
+            'min-'. $cid => $edit['min-'. $cid],
+            'max-'. $cid => $edit['max-'. $cid],
           ), FALSE); 
         }
       }
@@ -530,25 +545,17 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       
     case 'update':
       if (user_access('edit all transactions')) {
-        $min = 'NULL';
-        $max = 'NULL';
         $currencies = currencies_load(array('uids' => array($account->uid)));
         foreach ($currencies as $cid => $currency) {
-          if ($edit['min'. $cid] !='') $min = $edit['min'. $cid];
-          if ($edit['max'. $cid] !='') $max = $edit['max'. $cid];
-          db_query("UPDATE {cc_balance_cache} SET limit_max = %f, limit_min = %f WHERE uid = %d AND cid = %d",
-            array(':max' => $max, ':min' => $min, ':uid' => $account->uid, ':cid' => $cid)
-          );
+          $edit['balances'][$cid]['min_balance'] = $edit['min-'. $cid];
+          $edit['balances'][$cid]['max_balance'] = $edit['max-'. $cid];
+          unset($edit['min-'. $cid]);
+          unset($edit['max-'. $cid]);
         }
-      }
-      if (variable_get('cc_autocomplete_user_select_widget', 'select') == 'select') {
-        module_load_include('admin.inc', 'transactions');
-        refresh_trader_names();
       }
       break;
       
     case 'insert':
-      module_load_include('admin.inc', 'transactions');
       //user preference to be sent emails about pending transactions
       $edit['starter_notification'] = $edit['notifications'];
       $edit['completer_notification'] = $edit['notifications'];
@@ -560,28 +567,35 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       break;
 
     case 'after_update':
+        module_load_include('admin.inc', 'transactions');
         refresh_trader_names();
       break;
-    
-    case 'view':// put all the pending transactions on the user's front page, where they can be seen by the other participants in them
+
+    // put all the pending transactions on the user's front page,
+    // show the balances if the user has permission to trade OR has balance already
+    case 'view':
       if (isset($account->balances) && user_access('view all balances')) {
         module_load_include('inc', 'transactions');
-        $account->content['mutual_credit'] = array(
-          '#type' => user_profile_category,
-          '#title' => t('Transactions')
-        );
-        $account->content['mutual_credit']['pending'] = array(
-          '#type' => 'user_profile_item',
-          '#title' => t('Pending Transactions'),
-          '#weight' => 5,
-          '#value' => transactions_pending($account->uid)
-        );
-        $account->content['mutual_credit']['limits'] = array(
-          '#type' => 'user_profile_item',
-          '#title' => t('Balance limits'),
-          '#value' => theme('balance_limits', $account)
-        );
+        if (visible_balances($account)) {
+          $account->content['mutual_credit'] = array(
+            '#type' => user_profile_category,
+            '#title' => t('Transactions')
+          );
+          $account->content['mutual_credit']['pending'] = array(
+            '#type' => 'user_profile_item',
+            '#title' => t('Pending Transactions'),
+            '#weight' => 5,
+            '#value' => transactions_pending($account->uid)
+          );
+          $account->content['mutual_credit']['limits'] = array(
+            '#type' => 'user_profile_item',
+            '#title' => t('Balance limits'),
+            '#value' => theme('balance_limits', $account)
+          );
+        }
       }
+      break;
+
     case 'delete':
       db_query("DELETE from {cc_balance_cache} WHERE uid = %d", array(':uid' => $account->uid));
   }
@@ -676,7 +690,6 @@ function transactions_theme($existing, $type, $theme, $path) {
     'rating' => array(
       'arguments' => array(
         'quality' => NULL,
-        'cid' => array(),
       )
     ),
     'balance_history' => array(
@@ -692,7 +705,6 @@ function transactions_theme($existing, $type, $theme, $path) {
       'path' => $templates_dir,
       'arguments' => array(
         'account' => NULL,
-        'cid' => 0,
       )
     ),
     'period_volumes' => array(
@@ -700,7 +712,6 @@ function transactions_theme($existing, $type, $theme, $path) {
       'path' => $templates_dir,
       'arguments' => array(
         'account' => NULL,
-        'cids' => array(),
       )
     ),
   );

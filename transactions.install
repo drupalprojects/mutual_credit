@@ -145,10 +145,9 @@ function transactions_schema() {
     ),
   );
   /*
-   * This table cointains one row for every user/currency
-   * The rows are deleted and recreated when updated, instead of INSERTED
-   * Multiple currency module deletes rows when it is disabled
-   * We should really be using drupal cache instead of this
+   * This table cointains one row for every user/currency and contains balances and personal balance limits
+   * The rows are created and deleted in hook_user, and when currencies are added and removed.
+   * 
    */
   $schema['cc_balance_cache'] = array(
     'description' => t('cached balances, turnovers and pending balances, for exposure to views'), 
@@ -205,16 +204,6 @@ function transactions_schema() {
       'quality_mean' => array(
         'description' => "average transaction rating for this user in this currency",
         'type' => 'float',
-        'size' => 'normal',
-      ),
-      'limit_max' => array(
-        'description' => "Maximum balance that this user can hold in this currency",
-        'type' => 'int',
-        'size' => 'normal',
-      ),
-      'limit_min' => array(
-        'description' => "Minimum balance that this user can hold in this currency",
-        'type' => 'int',
         'size' => 'normal',
       )
     ),
@@ -435,5 +424,22 @@ function transactions_update_6017() {
     db_change_field($ret, 'cc_balance_cache', $fieldname, $fieldname, $field);
   }
   db_add_primary_key(&$ret, 'cc_balance_cache', array('uid', 'cid'));
+  return $ret;
+}
+
+//remove the personalised balances from the database
+function transactions_update_6018() {
+  $ret = array();
+  $result = db_query("SELECT uid, cid, limit_max, limit_min FROM {cc_balance_cache}");
+  while ($row = db_fetch_array($result)) {
+    $account = user_load($row['uid']);
+    if (!is_array($account->balances))$account->balances = array();
+    $edit['min-'.$row['cid']] = $row['limit_min'];
+    $edit['max-'.$row['cid']] = $row['limit_max'];
+    user_save($account, $edit);
+  }
+
+  db_drop_field($ret, 'cc_balance_cache', 'limit_max');
+  db_drop_field($ret, 'cc_balance_cache', 'limit_min');
   return $ret;
 }

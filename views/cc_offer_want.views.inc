@@ -303,7 +303,7 @@ function cc_directory_user_view($php_filter){
     $handler->override_option('filters', array(
       'type' => array(
         'operator' => 'in',
-        'value' => array('wants'),
+        'value' => array('want' => 'want'),
         'group' => '0',
         'exposed' => FALSE,
         'expose' => array(
