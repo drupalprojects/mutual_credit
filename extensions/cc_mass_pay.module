@@ -155,7 +155,7 @@ function one2many_form() {
 }
 
 function one2many_form_validate($form, &$form_state) {
-  $trader_cache = cache_get('cc_trader_list', array());
+  $trader_cache = cache_get('cc_trader_list');
   $payees = array_diff(
     array_keys($trader_cache->data), 
     $form_state['values']['non_payees'], 

@@ -13,7 +13,9 @@ function cc_options() {
     '#size' => 2,
     '#maxlength' => 3,
     '#weight' => -5,
-    '#description' => t("Become part of a wider community by allowing a coordinating to know a few things about this site. Such as url, contact details, number of active traders.") .' '.
+    '#description' => t("Connect with a wider network by sharing a few key pieces of information with !cforge.", 
+        array('!cforge' => l('Community Forge', 'http://communityforge.net', array('absolute' => TRUE)))).' '.
+      t("e.g. url, contact details, number of active traders.") .' '.
       t("No personal information will be shared.")
   );
   $form['cc_description_min_words'] = array(

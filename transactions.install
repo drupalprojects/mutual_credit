@@ -42,6 +42,7 @@ function transactions_install() {
     'icon' => drupal_get_path('module', 'transactions') .'/theme/default_currency.png',
     );
   variable_set('cc_default_currency', $currency);
+  refresh_trader_names();
   drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
     array('!link' => l('admin/marketplace/currency', 'admin/marketplace/currency', array('attributes' => array('target' => '_blank')))))
   );
@@ -207,7 +208,9 @@ function transactions_schema() {
         'size' => 'normal',
       )
     ),
-    'primary_key' => array('uid', 'cid')
+    'unique keys' => array(
+      'uid_cid' => array('uid', 'cid')
+    )
   );
   return $schema;
 }
@@ -409,7 +412,7 @@ function transactions_update_6016() {
   refresh_trader_names();
   $trader_list = cache_get('cc_trader_list');
   if (is_array($trader_list->data)) {
-    return array('success' => 'Created cache for trader listings');
+    return array('success' => array('Created cache for trader listings'));
   }
   return array('failed' => 'Failed to refresh_trader_names() in transactions.admin.inc');
 }
@@ -423,7 +426,7 @@ function transactions_update_6017() {
     $field['default'] = 0;
     db_change_field($ret, 'cc_balance_cache', $fieldname, $fieldname, $field);
   }
-  db_add_primary_key(&$ret, 'cc_balance_cache', array('uid', 'cid'));
+  db_add_primary_key($ret, 'cc_balance_cache', array('uid', 'cid'));
   return $ret;
 }
 

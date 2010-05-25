@@ -1,0 +1,190 @@
+# $Id$
+#
+# Catalan translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  cc_offer_want.module,v 1.3 2010/05/01 15:52:49 matslats
+#  cc_offer_want.install,v 1.3 2010/05/01 15:52:49 matslats
+#  cc_offer_want.info,v 1.2 2009/09/07 14:12:11 matslats
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2010-05-04 17:16+0200\n"
+"PO-Revision-Date: 2010-05-04 17:16+0200\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Catalan <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+#: cc_offer_want.module:10
+msgid "Defines two contentTypes which are created and edited by each user and which are presented as a directory categorised using taxonomy."
+msgstr ""
+
+#: cc_offer_want.module:27;37
+msgid "An entry in the @type directory."
+msgstr ""
+
+#: cc_offer_want.module:29
+msgid "Product or service you are offering"
+msgstr ""
+
+#: cc_offer_want.module:39
+msgid "Product or service you need"
+msgstr ""
+
+#: cc_offer_want.module:68
+msgid "Max number of characters for directory entry headlines"
+msgstr ""
+
+#: cc_offer_want.module:70
+msgid "Smaller values make the directory easier to to read, encourage concise language. Max is 255. Suggested is 128"
+msgstr ""
+
+#: cc_offer_want.module:74
+msgid "Content types to be activated"
+msgstr ""
+
+#: cc_offer_want.module:76
+msgid "Offers"
+msgstr ""
+
+#: cc_offer_want.module:77
+msgid "Wants"
+msgstr ""
+
+#: cc_offer_want.module:78
+msgid "Both"
+msgstr ""
+
+#: cc_offer_want.module:82
+msgid "N.B. It is also possible to disable the node body for offers and wants. See !link"
+msgstr ""
+
+#: cc_offer_want.module:91
+msgid "Max title length must be less than 255"
+msgstr ""
+
+#: cc_offer_want.module:145
+msgid "categories"
+msgstr ""
+
+#: cc_offer_want.module:151
+msgid "Add offers/wants"
+msgstr ""
+
+#: cc_offer_want.module:160;345
+msgid "Offer"
+msgstr ""
+
+#: cc_offer_want.module:160;346
+msgid "Want"
+msgstr ""
+
+#: cc_offer_want.module:173
+msgid "@offerwant Categories"
+msgstr ""
+
+#: cc_offer_want.module:180;187
+msgid "Place your @offerwant"
+msgstr ""
+
+#: cc_offer_want.module:306
+msgid "@categoryname @types"
+msgstr ""
+
+#: cc_offer_want.module:313
+msgid "contact @username"
+msgstr ""
+
+#: cc_offer_want.module:317
+msgid "@person's directory"
+msgstr ""
+
+#: cc_offer_want.module:328
+msgid "offer"
+msgstr ""
+
+#: cc_offer_want.module:330
+msgid "want"
+msgstr ""
+
+#: cc_offer_want.module:332
+msgid "Click to add a new !item"
+msgstr ""
+
+#: cc_offer_want.module:342
+msgid "Which directory?"
+msgstr ""
+
+#: cc_offer_want.module:351
+msgid "Text of your advert"
+msgstr ""
+
+#: cc_offer_want.module:357
+msgid "Details"
+msgstr "Detalls"
+
+#: cc_offer_want.module:363
+msgid "Submit"
+msgstr ""
+
+#: cc_offer_want.module:100
+msgid "cc_ow_content_types"
+msgstr ""
+
+#: cc_offer_want.module:100;103
+msgid "both"
+msgstr ""
+
+#: cc_offer_want.module:101
+msgid "view directory"
+msgstr ""
+
+#: cc_offer_want.module:101
+msgid "edit directory"
+msgstr ""
+
+#: cc_offer_want.module:103
+msgid "offers"
+msgstr ""
+
+#: cc_offer_want.module:104
+msgid "create offer"
+msgstr ""
+
+#: cc_offer_want.module:56
+msgid "Offers & Wants"
+msgstr ""
+
+#: cc_offer_want.install:12
+msgid "Offers & Wants categories"
+msgstr ""
+
+#: cc_offer_want.install:13
+msgid "This vocabulary is for categorising activities people do in their community. It can be used like the 'yellow pages' to help locate goods and services, but can also be used later on, for monitoring purposes."
+msgstr ""
+
+#: cc_offer_want.install:14
+msgid "Choose one or more categories"
+msgstr ""
+
+#: cc_offer_want.install:30
+msgid "Now go and make some directory categories at !link"
+msgstr ""
+
+#: cc_offer_want.info:0
+msgid "Cc offers/wants"
+msgstr ""
+
+#: cc_offer_want.info:0
+msgid "Allows users to contribute to a categorised directory of offers and wants."
+msgstr ""
+
+#: cc_offer_want.info:0
+msgid "Complementary Currencies"
+msgstr ""
+

@@ -228,6 +228,7 @@ function transactions_access($op, $nid=NULL, $account=NULL, $transaction=NULL) {
     case 'delete':
       return $uid == $transaction->starter_uid && $transaction->state == TRANSACTION_STATE_PENDING;
     case 'bureau':
+      module_load_include('inc', 'transactions');
       //this is only visible if the user may, or has ever traded, and if the viewer is the user, or has permission
       return visible_balances($account) && ($user->uid == $uid || user_access('view all balances'));
     default:
@@ -304,22 +305,19 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
           break;
         case 'cc_new_transaction':
           if (transactions_access('create')) {
-            $subject = t("Start transaction");
             $transaction = (object)array('starter_uid' => $user->uid);
             if (arg(0) == 'user') {
               if (arg(1) && $user->uid != arg(1)) {
                 $account = user_load(arg(1));
-                if (user_access('use local currency', $account)) {
-                  $transaction->completer_uid = $account->uid;
-                }
-                else return; //block will not show on a user's page who can't trade
+                //block will not show on a user's page who can't trade
+                if (!user_access('use local currency', $account)) return;
+                $transaction->completer_uid = $account->uid;
                 $subject = t('Start transaction with @name', array('@name' => strip_tags(theme('username', $account))));
                 $subject = str_replace('&amp;', '&', $subject);//hack for SEL coup de pouce
               }
-              else return; //block will not work on a user's own page
             }
             return array(
-              'subject' => $subject,
+              'subject' => $subject ? $subject : t("Start transaction"),
               'content' => drupal_get_form('transaction_create_form', $transaction, 'starter_completer'),
             );
           }
@@ -446,7 +444,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
     case 'load': 
       static $balances; //this can get run rather a lot in some pageloads, so we'll do minicaching here
       $uid = $account->uid;
-      if (!$all_balances[$uid]) {
+      if ($uid && !$all_balances[$uid]) {
         //put the user stats into the user object, where the theming layer can see them
         $result = db_query(
           "SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean
@@ -455,13 +453,15 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         );
         while ($balance = db_fetch_array($result)) {
           $cid = array_shift($balance);
-          $account->balances[$cid] = array_filter($account->balances[$cid]);
           $currency = currency_load($cid);
-          $balance['max_balance'] = $currency->max_balance;
-          $balance['min_balance'] = $currency->min_balance;
+          //this is tricky and subtly different in version 2.0
+          //balances are stored in the user object, but if they are null, they are overwritten by the curreny limits
+          $balance += array('min_balance' => $currency->min_balance, 'max_balance' => $currency->max_balance);
+          if ($account->balances[$cid]['min_balance']=='') unset ($account->balances[$cid]['min_balance']);
+          if ($account->balances[$cid]['max_balance']=='') unset ($account->balances[$cid]['max_balance']);
           //overwrite the stored null limits with the currency defaults
           //and add the all the balances out of the database to the user object
-          $balances[$uid][$cid] = $account->balances[$cid] + $balance;
+          $balances[$uid][$cid] = (array)$account->balances[$cid] + $balance;
         }
         if (!$balances[$uid]) drupal_set_message('No balance cache for user '. $account->uid, 'error');
       }

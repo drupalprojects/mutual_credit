@@ -308,6 +308,7 @@ function cc_transaction_list_view() {
       'field' => 'payee_uid',
     ),
   ));
+  $cur = currency_load();
   $handler->override_option('fields', array(
     'changed' => array(
       'label' => t('Date'),
@@ -383,7 +384,7 @@ function cc_transaction_list_view() {
       ),
     ),
     'quantity' => array(
-      'label' => t('Amount'),
+      'label' => $cur->title,
       'exclude' => 0,
       'id' => 'quantity',
       'table' => 'cc_transactions',
