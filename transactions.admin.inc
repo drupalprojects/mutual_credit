@@ -481,11 +481,14 @@ function generate_transactions($howmany) {
 
 
 function cc_balances_refresh() {
+  module_load_include('inc', 'transactions');
   //get a list of all the users and all the currencies they have traded in 
   $currencies = currencies_load();
-  $traders = cache_get('cc_trader_list');
   foreach (array_keys($currencies) as $cid) {
-    foreach (array_keys($traders->data) as $uid) {
+    //for my sake, we calculate balances for every user, not just permitted ones.
+    $result = db_query("SELECT uid FROM {users}");
+    db_result($result); //gets rid of user 0
+    while ($uid = db_result($result)) {
       recalculate_balances($uid, $cid);
     }
   }

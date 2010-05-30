@@ -479,8 +479,9 @@ function transaction_form_after_build($form, &$form_state) {
       $form_state['values']['completer_uid'] = $form_state['values']['payee_uid'];
     }
     else {
+      //in most cases there won't even be a transaction type for 3rdparty
       //It doesn't matter who the starter and completer are, but the transaction can't be pendinng
-      ($form_state['values']['state'] = TRANSACTION_STATE_COMPLETED);
+      $form_state['values']['state'] = TRANSACTION_STATE_COMPLETED;
     }
   }
   //put the quantity and division fields into one decimal value

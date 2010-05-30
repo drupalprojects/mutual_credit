@@ -79,7 +79,7 @@ function offers_wants_config_form() {
     ),
     '#default_value' => variable_get('cc_ow_content_types', 'both'),
   );
-  $form['#suffix'] = t('N.B. It is also possible to disable the node body for offers and wants. See !link', array('!link' => l('admin/content/type/offer', 'admin/content/type/offer')));
+  $form['#suffix'] = t('N.B. A popular configuration is to disable the node body for offers and wants. See !link', array('!link' => l('admin/content/type/offer', 'admin/content/type/offer')));
   $form['#redirect'] = 'admin/marketplace';
   return system_settings_form($form);
 }

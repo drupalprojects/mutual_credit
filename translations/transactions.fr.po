@@ -847,7 +847,10 @@ msgid "All transaction information for this user"
 msgstr "Tout échange pour cet adhérent"
 
 #: transactions.module:143
-msgid "Start new transaction"
+msgid "Create transaction"
+msgstr "Ajouter un échange"
+
+msgid "Initiate transaction"
 msgstr "Ajouter un échange"
 
 #: transactions.module:144
