@@ -46,7 +46,7 @@ function transactions_install() {
   module_load_include('admin.inc', 'transactions');
   refresh_trader_names();
   cc_balances_refresh();
-  drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
+  drupal_set_message(t('Transaction module is installed. Set up the default currency at !link',
     array('!link' => l('admin/marketplace/currency', 'admin/marketplace/currency', array('attributes' => array('target' => '_blank')))))
   );
 }

@@ -171,6 +171,15 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   if ($user_select_widget == 'select') {
     $cached_traders = cache_get('cc_trader_list');
     $traders = $cached_traders->data;
+    if (!count($traders)) {
+      drupal_set_message(t('No roles have permission to @trade. Go to !link',
+        array(
+          '@trade' => t('use local currency'),
+          '!link' => l('admin/user/permissions', 'admin/user/permissions')
+        ),'warning'
+      ));
+      return;
+    }
   }
   //just check, if we are here without using a button, that user can edit the form
   if ($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) {

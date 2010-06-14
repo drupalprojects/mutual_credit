@@ -367,7 +367,7 @@ function transactions_form(&$node, $form_state) {
 function transactions_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'user_admin_perm':
-      $form['#submit'][] = 'menu_rebuild';
+      $form['#submit'][] = 'refresh_trader_names';
       break;
     case 'node_delete_confirm':
       if ($form['#parameters'][2]->type == 'transaction') {
@@ -463,7 +463,6 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
           //and add the all the balances out of the database to the user object
           $balances[$uid][$cid] = (array)$account->balances[$cid] + $balance;
         }
-        if (!$balances[$uid]) drupal_set_message('No balance cache for user '. $account->uid, 'error');
       }
       $account->balances = $balances[$uid];
       break;
@@ -543,6 +542,17 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       }
       break;
       
+    case 'insert':
+      //user preference to be sent emails about pending transactions
+      $edit['starter_notification'] = $edit['notifications'];
+      $edit['completer_notification'] = $edit['notifications'];
+      //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
+      $currencies = currencies_load();
+      foreach ($currencies as $currency) {
+        db_query("INSERT INTO {cc_balance_cache} (uid, cid, cleared_balance, pending_balance, pending_difference, gross_income, gross_expenditure) VALUES (%d, %d, 0,0,0,0,0)", array(':uid' => $account->uid, ':cid' => $currency->cid));
+      }
+      //following on...
+
     case 'update':
       if (user_access('edit all transactions')) {
         $currencies = currencies_load(array('uids' => array($account->uid)));
@@ -553,18 +563,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
           unset($edit['max-'. $cid]);
         }
       }
-      break;
-      
-    case 'insert':
-      //user preference to be sent emails about pending transactions
-      $edit['starter_notification'] = $edit['notifications'];
-      $edit['completer_notification'] = $edit['notifications'];
-      //this creates an empty row in {cc_balance_cache} for the first currency on the system //not necessary, I think.
-      $currencies = currencies_load();
-      foreach ($currencies as $currency) {
-        db_query("INSERT INTO {cc_balance_cache} (uid, cid) VALUES (%d, %d)", array(':uid' => $account->uid, ':cid'=>'cid'));
-      }
-      break;
+      //following on...
 
     case 'after_update':
         module_load_include('admin.inc', 'transactions');
@@ -951,4 +950,49 @@ function _named_transaction_types() {
     drupal_set_message(t('There are no transaction types declared on the system. Please go to admin/marketplace and name some transaction types')); 
   } 
   return $types;
+}
+
+function refresh_trader_names() {
+  if ($roles = user_roles(TRUE, 'use local currency')) {
+    unset($roles[DRUPAL_AUTHENTICATED_RID]);
+    $where = array('status = 1');
+    if (count($roles)) {
+      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
+    }
+    $results = db_query("SELECT u.uid
+      FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
+      WHERE %s
+      ORDER BY `u`.`". variable_get('cc_select_user_orderby', 'uid') ."` ASC",
+        array(':where' => implode(' AND ', $where))
+    );
+
+    $account = array();
+    while ($account = user_load(db_result($results))) {
+      foreach (variable_get('cc_select_user_show', array('name'))  as $field) {
+        switch ($field) {
+          case 'name':
+          case 'mail':
+          case 'uid':
+            $fields[$field] = $account->$field;
+            break;
+          case 'themed_username':
+            $fields[$field] = strip_tags(theme('username', $account));
+        }
+      }
+      $names[$account->uid]= implode(' | ', $fields);
+    }
+    cache_set('cc_trader_list', $names);
+  }
+  else {
+    drupal_set_message(
+      t(
+        'No roles have permission to @trade. Go to !link',
+        array(
+          '@trade' => t('use local currency'),
+          '!link' => l('admin/user/permissions', 'admin/user/permissions')
+        ),
+      'warning'
+      )
+    );
+  }
 }

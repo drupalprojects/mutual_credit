@@ -424,10 +424,11 @@ function alter_quantity_field_types($type) {
 }
 
 function cforge_report() {
+  $traders = cache_get('cc_trader_list');
   $data = array(
     'server' => $_SERVER["HTTP_HOST"],
     'site_name' => variable_get('site_name', 'site_name'),
-    'user_count' => db_result(db_query("SELECT COUNT(*) FROM {users}")),
+    'user_count' => count($traders->data),
     'transactions_last_month' => db_result(db_query("SELECT COUNT(*) from {node} WHERE created > %d ", strtotime('-1 month'))),
   );
   if (!function_exists('http_build_query')) { 
@@ -451,7 +452,6 @@ function cforge_report() {
   }
   $url = 'http://www.communityforge.net/registration.php?'. http_build_query($data, '', '&');
   $reply = drupal_http_request($url);
-  drupal_set_message($reply->data);
 }
 
 
@@ -636,50 +636,5 @@ function stats_refresh($cid = 0) {
 function stats_refresh_all() {
   foreach (currencies_load() as $currency) {
     stats_refresh($currency->cid);
-  }
-}
-
-function refresh_trader_names() {
-  if ($roles = user_roles(TRUE, 'use local currency')) {
-    unset($roles[DRUPAL_AUTHENTICATED_RID]);
-    $where = array('status = 1');
-    if (count($roles)) {
-      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
-    }
-    $results = db_query("SELECT u.uid 
-      FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
-      WHERE %s
-      ORDER BY `u`.`". variable_get('cc_select_user_orderby', 'uid') ."` ASC",
-        array(':where' => implode(' AND ', $where))
-    );
-    
-    $account = array();
-    while ($account = user_load(db_result($results))) {
-      foreach (variable_get('cc_select_user_show', array('name'))  as $field) {
-        switch ($field) {
-          case 'name':
-          case 'mail':
-          case 'uid':
-            $fields[$field] = $account->$field;
-            break;
-          case 'themed_username':
-            $fields[$field] = strip_tags(theme('username', $account));
-        }
-      }
-      $names[$account->uid]= implode(' | ', $fields);
-    }
-    cache_set('cc_trader_list', $names);
-  }
-  else {
-    drupal_set_message(
-      t(
-        'No roles have permission to @trade. Go to !link', 
-        array(
-          '@trade' => t('use local currency'),
-          '!link' => l('admin/user/permissions', 'admin/user/permissions')
-        ),
-      'error'
-      )
-    );
   }
 }
