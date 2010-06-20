@@ -766,8 +766,8 @@ function template_preprocess_period_volumes($vars) {
 
   //firstly add the values from the user object, which store the the total since ever
   //floatval is incase the value is null
-  $vars['volumes'][0][$cid]['expenditure'] = floatval($vars['account']->balances[$cid]['gross_expenditure']);
   $vars['volumes'][0][$cid]['income'] = floatval($vars['account']->balances[$cid]['gross_income']);
+  $vars['volumes'][0][$cid]['expenditure'] = floatval($vars['account']->balances[$cid]['gross_expenditure']);
   
   //then add values from each stats period and currency
   $states = array(TRANSACTION_STATE_COMPLETED);

@@ -712,6 +712,7 @@ function transactions_theme($existing, $type, $theme, $path) {
       'path' => $templates_dir,
       'arguments' => array(
         'account' => NULL,
+        'cid' => 0
       )
     ),
   );
