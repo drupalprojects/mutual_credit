@@ -355,7 +355,7 @@ function transactions_form(&$node, $form_state) {
     default:
     case t('Change') ://typically from the 'full edit' link
       drupal_set_title(t('Editing transaction'));
-      $form=transaction_base_form($transaction, 'edit', 'payer_payee');   
+      $form=transaction_base_form($transaction, 'edit', 'payer_payee');
       break;
   }
   return $form;
@@ -869,12 +869,7 @@ function currency_validate($form, &$form_state) {
   if (!in_array($currency->division, $divisions)) {
     form_set_error('division', t("", array('@value' => $currency->division)));
   }
-  
-  if ($currency->zero_offset != NULL && !is_numeric($currency->zero_offset)) {
-    form_set_error('zero_offset', t("This must be an integer: @value", array('@value' => $currency->zero_offset)));
-  } 
-  else $form_state_['values']['zero_offset'] = intval($currency->zero_offset); //sets blank to zero
-  
+
   module_load_include('admin.inc', 'transactions');
   validate_limits(array(
     'min_balance' => $currency->min_balance, 

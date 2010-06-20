@@ -22,7 +22,7 @@ function cc_offer_want_node_info(){
   //the status = TRUE seems to have no effect so it's fixed in form_alter
   if ($preset == 'offers' || $preset == 'both') {
     $types['offer'] = array(
-      'name' => 'Offer',
+      'name' => t('Offer'),
       'module' => 'cc_offer_want',
       'description' => t('An entry in the @type directory.', array('@type' => $offers)),
       'has_title' => TRUE,
@@ -32,7 +32,7 @@ function cc_offer_want_node_info(){
   }
   if ($preset == 'wants' || $preset == 'both') {
     $types['want'] = array(
-      'name' => 'Want',
+      'name' => t('Want'),
       'module' => 'cc_offer_want',
       'description' => t('An entry in the @type directory.', array('@type' => $wants)),
       'has_title' => TRUE,

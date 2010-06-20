@@ -214,8 +214,7 @@ function currency_form_fields($currency) {
   $form['balance_limits'] = array(
     '#type' => 'fieldset',
     '#title' => t('Balance limits'),
-    '#description' => t("Balance limits are calculated AFTER the offset.") .' '.
-      t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") .' '.
+    '#description' => t("Only users with 'Edit all transactions' permission can do trades which take users outside their balance limts") .' '.
       t("Those users can also edit individual balance limits on users' account pages"),
     '#weight' => 5,
   );
@@ -240,18 +239,6 @@ function currency_form_fields($currency) {
     '#description' => t("The system will prevent transactions if the payer balance would go below this number. Up to !num digits.", array('!num' => 7)) . 
       t("Leave blank for no limit (not reccomended)") .' '. 
       t('Minimum balance must not be larger than 0'),
-  );
-    $form['balance_limits']['zero_offset'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Offset balances'),
-    '#default_value' => $currency->zero_offset,
-    '#size' => 4,
-    '#maxlength' => 6,
-    '#weight' => 2,
-    '#description' => t("Although each currency is a closed, zero-balance system, the baseline balance can be offset from 0.") .' '.
-      t("This gives the impression that users are starting with a positive or negative balance.") .' '.
-      t("Members start with x units 'free' but also need to restore their balance to x when they leave.") .' '.
-      t("Instead of this trick, consider gifting new members from the central account, and recouping the debt through taxes"),
   );
   $form['visual'] = array(
     '#type' => 'fieldset',
@@ -297,7 +284,6 @@ function default_currency_config_submit($form, &$form_state) {
   $cc_default_currency->max_balance = $form_state['values']['max_balance'];
   $cc_default_currency->min_balance = $form_state['values']['min_balance'];
   $cc_default_currency->comparative_value = $form_state['values']['comparative_value'];
-  $cc_default_currency->zero_offset = intval($form_state['values']['zero_offset']);
   $cc_default_currency->division = $form_state['values']['division'];
   $cc_default_currency->color = $form_state['values']['color'];
   //need to test this
@@ -541,7 +527,7 @@ function recalculate_balances($uid, $cid) {
       }
     }
   }
-  $cleared_balance = $gross_income-$gross_expenditure + $currency->zero_offset;
+  $cleared_balance = $gross_income-$gross_expenditure;
   $pending_balance = $cleared_balance - $pending_dif;
   $quality_mean = count($qualities) ? array_sum($qualities) / count($qualities) : 0;
 
@@ -565,7 +551,7 @@ function recalculate_balances($uid, $cid) {
   * $timestring is a positive number of days or months e.g. '3 months'
   * 
   */
-function stats_refresh($cid = 0) {
+function stats_refresh($cid) {
   $periods = variable_get('cc_stats_periods', array("1 month", "1 year"));
   foreach ($periods as $period) {
     $period = trim($period);

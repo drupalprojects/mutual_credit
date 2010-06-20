@@ -37,7 +37,6 @@ function transactions_install() {
     'max_balance' => 500,
     'min_balance' => -500,
     'comparative_value' => 0,
-    'zero_offset' => 0,
     'color' => '0000ff',
     'icon' => drupal_get_path('module', 'transactions') .'/theme/default_currency.png',
     );
@@ -308,7 +307,7 @@ function transactions_update_6010($ret = array()) {
   $table=drupal_get_schema('cc_balance_cache');
   $type = $table['fields']['balance']['type'];
   drupal_set_message("Renaming $type field 'cc_balance_cache.balance' to 'cleared_balance'");
-  db_change_field($ret, 'cc_balance_cache', 'cleared_balance', 'cleared_balance', array(
+  db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
     'description' => "sum of all this user's completed transactions",
     'type' => $type,
     'size' => 'normal',

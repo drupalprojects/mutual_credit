@@ -39,7 +39,7 @@ function transactions_nodeapi(&$node, $op) {
     case 'delete':
       recalculate_balances($node->payer_uid, $node->cid);
       recalculate_balances($node->payee_uid, $node->cid);
-      stats_refresh($node->cid);
+      stats_refresh(intval($node->cid));
   }
 }
 
@@ -168,6 +168,8 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   global $user;
   $form = array();
   $user_select_widget = variable_get('cc_autocomplete_user_select_widget', 'select');
+  //this is last minute hack for node/%/edit only. Resolved in version 2
+  if (arg(0)=='node') $user_select_widget = 'select'; 
   if ($user_select_widget == 'select') {
     $cached_traders = cache_get('cc_trader_list');
     $traders = $cached_traders->data;
@@ -740,7 +742,7 @@ function template_preprocess_balance_history(&$vars) {//$variables = array($acco
     );
     
     if (count($transactions)) {
-      $vars['points'][$cid][$first_time] = $currency->zero_offset;
+      $vars['points'][$cid][$first_time] = 0;
       //add all the other points, one per transaction
       foreach ($transactions as $transaction) {
         //one point per transaction produces diagaonal lines
@@ -1038,10 +1040,9 @@ function _get_transactions_for_user($uid, $options) {
   //gets all the transactions, calculates the running balances and discards transactions before the time limit
   if ($running_balance) {
     $running_balance = array(); //one balance for each currency (not used)
-    //start the running balance with the zero_offset for each currency
     $currencies = currencies_load(array('uids' => array($uid)));
     foreach ($currencies as $cid => $currency) {
-      $running_balance[$cid] = $currency->zero_offset;
+      $running_balance[$cid] = 0;
     }
   }
   //now iterate through the transactions making running balances
