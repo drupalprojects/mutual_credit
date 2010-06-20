@@ -394,6 +394,7 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
       foreach (array('revision_information', 'author', 'options') as $key) {
         $form[$key]['access'] = FALSE;
       }
+      $form['state']['#default_value'] = intval($form['state']['#default_value']);
   } 
 }
 
