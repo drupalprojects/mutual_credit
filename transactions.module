@@ -356,6 +356,12 @@ function transactions_form(&$node, $form_state) {
     case t('Change') ://typically from the 'full edit' link
       drupal_set_title(t('Editing transaction'));
       $form=transaction_base_form($transaction, 'edit', 'payer_payee');
+      $form['state']['#default_value'] = intval($form['state']['#default_value']);
+      //this stops the node author being overwritten as 0
+      $form['name'] = array(
+        '#type' => 'hidden',
+        '#value' => $GLOBALS['user']->name
+      );
       break;
   }
   return $form;
@@ -394,7 +400,8 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
       foreach (array('revision_information', 'author', 'options') as $key) {
         $form[$key]['access'] = FALSE;
       }
-      $form['state']['#default_value'] = intval($form['state']['#default_value']);
+
+      break;
   } 
 }
 
@@ -865,7 +872,10 @@ function currency_validate($form, &$form_state) {
   if ($currency->objective_value != NULL && !is_numeric ($currency->objective_value)) {
     form_set_error('objective_value', t("This must be a number: @value", array('@value' => $currency->objective_value)));
   }
-  else $form_state_['values']['objective_value'] = intval($currency->objective_value); //sets blank to zero
+  else {
+    //sets blank to zero
+    $form_state_['values']['objective_value'] = intval($currency->objective_value);
+  }
   
   $divisions = array('integer', 'sixtieths', 'decimal');
   if (!in_array($currency->division, $divisions)) {
@@ -878,7 +888,9 @@ function currency_validate($form, &$form_state) {
     'max_balance' => $currency->max_balance,
   ), TRUE);
   
-  if (strlen($currency->color)<6)form_set_error('color', t('Color field must be 6 hex characters'));
+  if (strlen($currency->color) < 6) {
+    form_set_error('color', t('Color field must be 6 hex characters'));
+  }
   
   //check the icon upload
   //does this mean the file is known to the files table? I think not
@@ -896,17 +908,20 @@ function currency_validate($form, &$form_state) {
   //if any currency on the system is float then the db fields should be floats too.
   //if the division of this currency has changed...
   $all_currencies = currencies_load();
-  if ($currency->division != $all_currencies[$currency->{nid}]->division) {
+  //we don't have the nid/cid here so we need to key the all_currencies array by title
+  foreach ($all_currencies as $curr) {$named_currencies[$curr->{title}] = $curr;}
+  if ($currency->division != $named_currencies[$currency->{title}]->division) {
     //check to see if any currencies are floats and set the db fields accordingly
-    $all_currencies[$currency->{nid}] = $currency; //because the settings haven't been saved yet
+    $named_currencies[$currency->{title}] = $currency; //because the settings haven't been saved yet
     $div = 'int';
-    foreach ($all_currencies as $curr) {
-      //three possible values for division, the last two require float fields. integer, hours, decimal
-      if ($curr->division != 'integer') $div='float';
+    foreach ($named_currencies as $curr) {
+      //three possible values for division: integer, hours, decimal; the last two require float fields.
+      if ($curr->division != 'integer') {
+        $div ='float';
+      }
     }
     module_load_include('admin.inc', 'transactions');
     alter_quantity_field_types($div);
-    drupal_set_message(t("Quantitative fields in database is set to type '@type'", array('@type' => $div)));
   }
 }
 

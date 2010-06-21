@@ -371,7 +371,6 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     'status' => 0, //this adds protection against anonymous users seeing transactions
   );
   $node=(object)$node;
-  //print_r($node);
   node_save($node);
   return $node;
 }
@@ -400,6 +399,7 @@ function alter_quantity_field_types($type) {
   
   $newfield['description'] = "the sum of all this user's expenditure in this currency, ($type)";
   db_change_field($ret, 'cc_balance_cache', 'gross_expenditure', 'gross_expenditure', $newfield);
+  //checking and feeback
   $schema = drupal_get_schema('cc_transactions');
   if ($schema['fields']['quantity']['type'] != $type) {
     drupal_set_message(t("Drupal was unable to set your database field types to @type", array('@type' => $type)));
