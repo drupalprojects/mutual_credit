@@ -99,17 +99,5 @@ span.cc-next:after{content:'>>';}
 .balance-limits .form-text {
   width:3em;
 }
-
-.transaction-button{
-  border: 1px solid #006;
-  padding: 0.2em 0.4em;
-  background: #eee;
-  margin: 0.2em;
-}
-a.transaction-button:hover{
-  background: #ddd;
-  text-decoration: none;
-}
-div.transactions-pending{
-  margin-bottom:0.5em;
-}
+div.transaction.teaser{margin-bottom:1em;}
+.view-cc-transactions-pending .view-header{}

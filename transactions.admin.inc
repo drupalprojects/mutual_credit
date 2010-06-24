@@ -554,7 +554,6 @@ function recalculate_balances($uid, $cid) {
 function stats_refresh($cid) {
   $periods = variable_get('cc_stats_periods', array("1 month", "1 year"));
   foreach ($periods as $period) {
-    $period = trim($period);
     //this excludes transactions with the balancing account
     //Anything involving a member count includes only the active members
     $stats = array();
@@ -605,13 +604,13 @@ function stats_refresh($cid) {
     $stats['trades_per_user'] = array_reverse($trades, TRUE);
     $stats['misc']['active_members'] = $active_members;
     $stats['misc']['total_volume'] = array_sum($stats['highest_volumes'])/2;
-    $stats['misc']['mean_volume_active'] = 2*intval(array_sum($stats['highest_volumes'])/$active_members);
+    //$stats['misc']['mean_volume_active'] = 2*intval(array_sum($stats['highest_volumes'])/$active_members);
+    $stats['misc']['mean_volume_active'] = round($stats['misc']['total_volume']/$active_members, 1);
     $stats['misc']['transaction_count'] = $count;
     //we might not need this one, since it is obtained by simple division of the above
     $stats['misc']['mean_transaction_count_active'] = $count/floatval($active_members);
-    foreach ($stats as $key => $stat) {
-      cache_set($cid .'-'. str_replace(' ', '_', $period) .'-'. $key, $stat);
-    }
+    $period = str_replace(' ', '-', trim($period));
+    cache_set($period . '-'. $cid, $stats);
   }
 }
 /*

@@ -578,31 +578,6 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         refresh_trader_names();
       break;
 
-    // put all the pending transactions on the user's front page,
-    // show the balances if the user has permission to trade OR has balance already
-    case 'view':
-      if (isset($account->balances) && user_access('view all balances')) {
-        module_load_include('inc', 'transactions');
-        if (visible_balances($account)) {
-          $account->content['mutual_credit'] = array(
-            '#type' => user_profile_category,
-            '#title' => t('Transactions')
-          );
-          $account->content['mutual_credit']['pending'] = array(
-            '#type' => 'user_profile_item',
-            '#title' => t('Pending Transactions'),
-            '#weight' => 5,
-            '#value' => transactions_pending($account->uid)
-          );
-          $account->content['mutual_credit']['limits'] = array(
-            '#type' => 'user_profile_item',
-            '#title' => t('Balance limits'),
-            '#value' => theme('balance_limits', $account)
-          );
-        }
-      }
-      break;
-
     case 'delete':
       db_query("DELETE from {cc_balance_cache} WHERE uid = %d", array(':uid' => $account->uid));
   }
@@ -618,15 +593,6 @@ function transactions_theme($existing, $type, $theme, $path) {
   //we load the inc so it's aware of the preprocess functions
   module_load_include('inc', 'transactions');
   return array(
-    'transaction' => array(
-      'template' => 'transaction',
-      'path' => $templates_dir,
-      'arguments' => array(
-        'transaction' => NULL,
-        'teaser' => FALSE,
-        'rich_text' => TRUE,
-      )
-    ),
     'transaction_starter_form' => array(
       'template' => 'transaction-starter-form',
       'path' => $templates_dir,
@@ -649,15 +615,6 @@ function transactions_theme($existing, $type, $theme, $path) {
         'balances' => NULL,
         'pending' => NULL,
         'history' => NULL,
-      )
-    ),
-    'pending' => array(
-      'template' => 'pending',
-      'path' => $templates_dir,
-      'arguments' => array(
-        'account' => NULL,
-        'waiting_on_user' => array(),
-        'waiting_on_other' => array(),
       )
     ),
     'money' => array(
@@ -723,6 +680,20 @@ function transactions_theme($existing, $type, $theme, $path) {
       )
     ),
   );
+}
+
+
+/**
+* Implementation of hook_theme_registry_alter
+*/
+function transactions_theme_registry_alter(&$theme_registry) {
+  //the 'node' theme callback should include this module's theme directory in its list of paths
+  $info = $theme_registry['node']['theme paths'];
+  $idx = array_search('modules/node', $info);
+  if ($idx !== FALSE) {
+    $theme_path = drupal_get_path('module', 'transactions') . '/theme';
+    array_splice($theme_registry['node']['theme paths'], $idx+1, 0, $theme_path);
+  }
 }
 
 /** 

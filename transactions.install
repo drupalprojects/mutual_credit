@@ -407,16 +407,6 @@ function transactions_update_6015() {
   return array();
 }
 
-function transactions_update_6016() {
-  module_load_include('admin.inc', 'transactions');
-  refresh_trader_names();
-  $trader_list = cache_get('cc_trader_list');
-  if (is_array($trader_list->data)) {
-    return array('success' => 'Created cache for trader listings');
-  }
-  return array('failed' => 'Failed to refresh_trader_names() in transactions.admin.inc');
-}
-
 function transactions_update_6017() {
   $ret = array();
   $schema = drupal_get_schema('cc_balance_cache');
@@ -426,7 +416,7 @@ function transactions_update_6017() {
     $field['default'] = 0;
     db_change_field($ret, 'cc_balance_cache', $fieldname, $fieldname, $field);
   }
-  foreach ($schema['unique keys'] as $key=>$value) {
+  while (list($key, $value) = @each($schema['unique keys'])) {
     db_drop_unique_key($ret, 'cc_balance_cache', $key);
   }
   if (!$schema['primary key']) {
@@ -438,6 +428,7 @@ function transactions_update_6017() {
 //remove the personalised balances from the database
 function transactions_update_6018() {
   $ret = array();
+  module_load_include('admin.inc', 'transactions');
   $result = db_query("SELECT uid, cid, limit_max, limit_min FROM {cc_balance_cache}");
   while ($row = db_fetch_array($result)) {
     $account = user_load($row['uid']);
@@ -449,5 +440,17 @@ function transactions_update_6018() {
 
   db_drop_field($ret, 'cc_balance_cache', 'limit_max');
   db_drop_field($ret, 'cc_balance_cache', 'limit_min');
+
+  refresh_trader_names();
+  $trader_list = cache_get('cc_trader_list');
+  if (is_array($trader_list->data)) {
+    $ret[] = array('success' => TRUE, 'query' => 'Created cache for trader listings');
+  }
+  else {
+    $ret[] = array('success' => FALSE, 'query' => 'Failed to refresh_trader_names()');
+  }
+  drupal_set_message('There are now two (unplaced) blocks to replace the pending transactions which used to be at the bottom of the user profile page', 'alert');
+  drupal_rebuild_theme_registry();
+  stats_refresh_all();
   return $ret;
 }
