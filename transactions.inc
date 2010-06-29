@@ -305,7 +305,10 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
     $form['#theme'] = array('transaction_starter_form');
   }
   
-  if ($edit_all_transactions && $mode == 'init' && $selectorset == 'starter_completer' && ($allowed_transactions['incoming_confirm'] || $allowed_transactions['outgoing_confirm'])) {
+  if ($edit_all_transactions &&
+      $mode == 'init' &&
+      $selectorset == 'starter_completer' &&
+      ($allowed_transactions['incoming_confirm'] || $allowed_transactions['outgoing_confirm'])) {
     $form['state'] = array(
       '#type' => 'checkbox',
       '#title' => t('Tick to request confirmation'),

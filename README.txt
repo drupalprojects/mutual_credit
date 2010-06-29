@@ -5,6 +5,8 @@ This document is 4 documents in one:
 ** For advanced users **
 ** Testing procedure **
 
+It is a work in progress and may not be entirely up-to-date!
+
 
 ***********************
 **   HOW TO SET UP   **
@@ -13,18 +15,21 @@ This document is 4 documents in one:
 ENABLE MODULES
 Enable transactions module, views
 Optionally enable the other modules in the Complementary Currencies Section.
-PHP_filter will enables default user friendly links at the bottom of some views, which you could easily change
-Also consider uid_login and autocategorise, and user_tabs
+PHP_filter will enable default user friendly links at the bottom of some views to work out of the box, though you are advised to customise them and not use the filter)
+Cc_import implements the user_import hook and can help with offers, wants, initial balances, and transactions, see admin/marketplace/import.
+Also consider:
+uid_login - written by the present author for LETS groups who commonly use their User ID
+autocategorise - written by the present author
+and user_tabs - which the user/%/edit tabs under the Account tab, leaving more room for tabs on the first level
 
 Transactions
 Setup your currency and other options at admin/marketplace and the pages under it.
 
-Permissions
-Don't forget to define the permissions AFTER naming the transaction-types for these modules at admin/user/permissions.
-Owing to technical limitations, all trading users must have permission to 'view all transactions'
+Don't forget to define the permissions.
 
-Complementary Currencies should now function. However before your site makes sense, you'll need to add some users and data.
-Check out the cc_import for offers, wants, users with balances, and transactions, admin/marketplace/import.
+If you have more than one user, you should now be able to use the transaction form.
+You may need to edit a user page to kick start the saved list of permitted traders.
+
 You can also generate random transactions and offers/wants using generate_transaction_node() in transactions.admin.inc
 
 Further set up
@@ -32,8 +37,7 @@ Further set up
 Email notifications
 Ensure that actions and trigger modules are enabled.
 Go to admin/settings/actions and add the advanced action 'Mail anyone who needs to complete a transaction'
-Configure the action by writing the email using the wildcards
-Go to admin/build/trigger and assign the action to the trigger 'When either saving a new post or updating an existing post'
+This action is triggered automatically.
 Note that users can disable their notifications on their user profile pages
 
 Directory Categories
@@ -43,13 +47,14 @@ This is the vocabulary for which you may want to enable autocategorise.
 Now you can consider the architecture. 
 This module attempts to be usable by default, but it's up to you how users will ultimately experience the site. 
 The first level of architecture is in menus and blocks.
-For more ideas visit test1.communityforge.net or download the cc_custom module from http://marketplace.matslats.net/installing
+For more ideas visit demo.communityforge.net
+The cforge_custom installation profile which makes the demo module, is available on request. It is a work in progress.
 
-Customisation
-The site has been designed with classic LETS in mind. Have fun creating your own terminology on admin/marketplace.
-Be creative with the transaction certificate transaction.tpl.php
-Upload your own a currency icon
-Look at the theme functions provided and see if you can do better
+Basic customisation
+Upload your own a currency icon on admin/marketplace/currency
+Be creative with the transaction certificate node-transaction.tpl.php, and other tpl.php files in the themes directory.
+Edit the views provided.
+Please contribute back if you do something good!
 
 
 
@@ -62,16 +67,15 @@ Introduction
 This architecture supports mutual credit systems such as LETS, SEL, Tauschring and Timebanks. These systems are characterised by the sum and mean of all user balances always being zero. There is no central authority issuing the currency, managing liquidity or inflation. There is no possibility of forgery because the system calculates the balances from the sum total of transactions, and every transaction has a description, a payer and a payee.
 The story of a transaction
 
-Ben did some Gardening for Ann. She logs on to her community web site to pay him. On his profile she fills in a form entitled 'transact with Ben' She simply completes the transaction direction (that she is paying him), the number of credits, and a description of what he did. The system infers that she is starting the transaction and that Ben is completing it. Then the system checks that both are within their balance limits before showing a confirmation page which asks her to rate Ben's work. When she submits this she can see her cleared balance has changed and has an opportunity to edit or delete the transaction before Ben signs it.
+Ben did some Gardening for Ann. She logs on to her community web site to pay him 10 units. On his profile she fills in a form entitled 'transact with Ben' She simply completes the transaction direction (that she is paying him), the number of credits, and a description of what he did. The system infers that she is starting the transaction and that Ben is completing it. Then the system checks that both are within their balance limits before showing a confirmation page which asks her to rate Ben's work. When she submits this she can see her cleared balance has changed and has an opportunity to edit or delete the transaction before Ben signs it.
 
 Ben receives an email and clicks on it. He sees the transaction waiting to be completed on his 'money' page. He clicks to sign it and the transaction is complete and can only be edited by an administrator.
+Ben now has 10 units and Ann has -10. the sum of all balances in the system is zero.
+
 Transaction Form
 
-Another important component is the transaction form, which needs to be context sensitive to save users filling in unneccessary fields. The form has three modes.
-
-    * INIT, for when only one or two fields are provided. This will typically show the starter/completer selectors
-    * EDIT, for a user to edit their transaction before the completer signs it. This doesn't allow changing of the participants or the direction because it would be too complex
-    * FULLEDIT, for an administrator to have full access. This form allows for contradictory data in the payer/payee/starter/completer selectors.
+The transaction form is very flexible and contains many elements which can be shown or hidden according to context.
+Elements can be prefilled and certain elements hidden or greyed out.
 
 The form building function takes a transaction object and uses it to prefill fields, which may then be hidden from the user.
 The transaction object
@@ -103,25 +107,26 @@ There are four possible transaction types, namely:
     * outgoing_direct
     * outgoing_confirmed.
 
-A confirmed transaction is one that will wait for the 'completer' to 'sign' it before it is marked completed. Each of these has a colloquial name which the administrator decides, and if unnamed the transaction will not be known on the system. Each of the named transactions should appear in the permissions. Particularly the incoming_direct should be used with caution.
+A '_confirmed' transaction is one that will wait for the 'completer' to 'sign' it before it is marked completed.
+Each of these has a colloquial name on the transaction form, configured on admin/marketplace
+Unnamed transaction types will not be available.
+'incoming_direct' allows permitted users to take from other accounts without consent.
+Some find 'incoming_direct' the most efficient way to trade, but beware - the software doesn't manage dispute procedures!
 
 There are three transaction states so far:
 
     * completed
     * pending
     * deleted
-    * with room for another contested
 
-Whenever the transaction form is processed, or a transaction loaded from the database, it must first be converted to a transaction object. In this format it can be passed around the system. The form will sometimes contain only partial information, such as starter, completer and direction, so the payee and payer need to be derived, or inferred from the other data.
-Permissions
+When a transaction is viewed in a list or on a page of it's own, some node links are provided, depending on the user's permissions.
+The links are Sign, Edit, Delete.
 
-These need to be a little more elaborate than many frameworks probably provide. Transactions can always be viewed by an accountant, and either of the participants. But systems will want to decide for themselves whether transactions can be seen by all members or even by non-members. And of course the ability to 'edit' or 'sign' a transaction depends on who it's starter and completer are.
-Transaction actions
 
-When a transaction is viewed in a list or on a page of it's own, some buttons are provided, depending on the user's permissions. The buttons are Sign, Edit, Delete. These are nothing to do with the transaction form.
 API
 
 This is not well developed, but the most useful function will create a transaction in one function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0){} In the Complementary Currencies module for Drupal, this is used to create the transaction from the form, but also for mass payments and generating example data. It has also been used for auto-payments such as demurrage, and will shortly be used to imprint transactions from offers and wants.
+
 Balances
 
 The system retains it's integrity by deriving the balances from the sum of a user's transactions. So for performance reasons there is a cache table which contains a row for each currency for each user:
@@ -157,7 +162,10 @@ Stats
 There is one basic function which loads all recent transactions and analyses them into a data structure. This can also be cached before being handed to a display function
 Currencies and multiple currencies
 
-So the transaction object, form and many of the displays all carry with them a currency ID. In a single currency system, this value is set at zero and the default currency properties stored in a system variable. For systems with more currencies, a database table is needed. Each currency has the following values:
+So the transaction object, form and many of the displays all carry with them a currency ID.
+In a single currency system, this value is set at zero and the default currency properties stored in a system variable.
+For systems with more currencies, a database table is needed.
+Each currency has the following values:
 
     * name - textfield
     * icon - small image
@@ -168,13 +176,15 @@ So the transaction object, form and many of the displays all carry with them a c
     * for trading between currencies and transactions between systems
     * division i.e. integers, hundredths or quarters of an hour
     * zero offset - By offsetting zero you can work to counter any stigma which might be attached to keeping a debit balance.
+Multiple currency support has been withdrawn in version 1, but will be integral in version 2.0
 
-In a large system in which anyone has permission to create a currency, there is a need to restrict the currencies visible to a given user so as not overwhelm them. Marketplace is experimenting with 'universal' and 'meme' currencies. Universal currencies can be seen by all, but meme currencies can only be seen by people who have traded with them. So meme currencies spread around the system as people use it.
-
-In the future we might build multiple currencies per transaction. This will involve rebuilding the transaction object to include an array of currency ids and quantities to summarise several transactions with the same id.
 Reporting.
 
-Because of the lack of coordination in the CC movement, this function does a little data gathering. Right now it just collects the domain name, site name, number of active members and number of transactions in the last 30 days.
+Because of the lack of coordination in the CC movement, this function does a little data gathering.
+Right now it just collects the domain name, site name, number of active members and number of transactions in the last 30 days.
+You can view the results on communityforge.net/php.
+Please share this information with us.
+
 Classified ads, (Offers and wants)
 
 This is a simple content type which can be edited by its creator and admin only. It has the following properties:
@@ -187,8 +197,6 @@ This is a simple content type which can be edited by its creator and admin only.
 
 It should be possible to filter the ads according to whether they are goods or services (goods will always have a one off price), what category they belong in (such as household, equipment hire, care), and whether they are offers or wants. It is also useful to be able to order them according to the balance of the members, so as to stimulate trading with the people that need it.
 Volunteer recognition system
-
-Some would view it as a currency, but there is a kind of volunteering recognition system (currently at version 0.5). The idea is that a committee member will post a volunteer request to do a specific task. A member will pledge to do it, and a committee member will mark it completed. Whereupon the volunteer 'owns' that task and a kudos counter in his profile is incremented.
 
 
 ***********************

@@ -355,7 +355,7 @@ function transactions_form(&$node, $form_state) {
     default:
     case t('Change') ://typically from the 'full edit' link
       drupal_set_title(t('Editing transaction'));
-      $form=transaction_base_form($transaction, 'edit', 'payer_payee');
+      $form = transaction_base_form($transaction, 'edit', 'payer_payee');
       $form['state']['#default_value'] = intval($form['state']['#default_value']);
       //this stops the node author being overwritten as 0
       $form['name'] = array(
