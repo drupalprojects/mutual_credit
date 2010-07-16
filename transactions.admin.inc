@@ -5,18 +5,21 @@
  * This file contains admin pages and also some function which only happen when a transaction is modified
  */
 
-function cc_options() {
+function cc_options_form() {
   $form['cforge_report'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Tell Community Forge about this community.'),
+    '#type' => 'radios',
+    '#title' => t('Connect with other users of the Complementary Currency module'),
     '#default_value' => variable_get('cforge_report', TRUE),
-    '#size' => 2,
-    '#maxlength' => 3,
+    '#options' => array(
+      0 => t('Do not connect'),
+      1 => t('Just share basic stats'),
+      2 => t('Please put us in a public directory, when you get time!')
+    ),
     '#weight' => -5,
-    '#description' => t("Connect with a wider network by sharing a few key pieces of information with !cforge.", 
+    '#description' => t("Be part of a wider network of local currency comunities by sharing a few key pieces of information with !cforge.",
         array('!cforge' => l('Community Forge', 'http://communityforge.net', array('absolute' => TRUE)))).' '.
-      t("e.g. url, contact details, number of active traders.") .' '.
-      t("No personal information will be shared.")
+      t("e.g. url, number of active traders.") .' '.
+      t("Community Forge staff live from donations and these stats help motivate us and can be used to promote our work. They seek your trust and will not abuse this information")
   );
   $form['cc_description_min_words'] = array(
     '#type' => 'textfield',
@@ -26,7 +29,7 @@ function cc_options() {
     '#maxlength' => 3,
     '#weight' => -4,
     '#description' => t("Classification can be improved if members take a few seconds to describe their transactions in more detail.") .' '.
-      t("It will also make the transaction easier to categorise, and easier for the participants to remember. Suggested value is 4.")
+      t("Suggested value is 4.")
   );
   $form['cc_balancing_account_num'] = array(
     '#type' => 'textfield',
@@ -35,13 +38,14 @@ function cc_options() {
     '#size' => 2,
     '#maxlength' => 4,
     '#weight' => -4,
-    '#description' => t("The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank."), 
+    '#description' => t("The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank.") .' '.
+      t('Transactions with this account are excluded from trading stats.'), 
   );
   
   $form['maintenance'] = array(
     '#type' => 'fieldset',
     '#title' => t('Maintenance'),
-    '#weight' => -3,
+    '#weight' => 3,
     '#description' => t('In case the balances get out of sync with the transactions.') .' '. 
       t('Please use this and report an issue at !url', array('!url' => l('drupal.org', 'http://drupal.org/project/mutual_credit', array('absolute' => TRUE)))),
     '#collapsible' => FALSE,
@@ -51,40 +55,16 @@ function cc_options() {
     '#value' => t("Recalulate balances & stats"),
     '#submit' => array('cc_balances_refresh'),
   );
-  
-  $form['user_selection'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Selecting other users'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#weight' => -3,
-  );
-  $form['user_selection']['cc_select_user_orderby'] = array(
-    '#type' => 'radios',
-    '#title' => t('User dropdown order'),
-    '#default_value' => variable_get('cc_select_user_orderby', 'uid'),
-    '#description' => t("On the new transaction form, in what order should the members be listed?"),
-    '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'themed_username' => t('themed username')),
-  );
-  $form['user_selection']['cc_select_user_show'] = array(
-    '#type' => 'select',
-    '#title' => t('User dropdown field(s)'),
-    '#default_value' => variable_get('cc_select_user_show', 'name'),
-    '#multiple' => TRUE,
-    '#description' => t("On the new transaction form, what fields should be used to identify members in the dropdown?") .
-      t("Neither field order nor the spacer character can be configured. Would be great if you choose a view for this, like a cck field."),
-    //to add more options from the profile field, use hook_menu_alter in cc_custom module
-    '#options' => array('uid' => t('User ID'), 'name' => t('Username'), 'mail' => t('Email'), 'themed_username' => t('themed username') ),
-  );
-  $form['user_selection']['cc_autocomplete_user_select_widget'] = array(
-    '#type' => 'radios',
+
+  $form['cc_trader_selector'] = array(
+    '#type' => 'textfield',
     '#title' => t('Widget for selecting users'),
-    '#default_value' => variable_get('cc_autocomplete_user_select_widget', 'select'),
-    '#options' => array(
-      'select' => t('Dropdown box'),
-      'textfield' => t('Autocomplete username'),
-    ),
-    '#description' => t("When you have more users than can fit in a dropdown box, you should probably use an autocomplete field instead."),
+    '#default_value' => variable_get('cc_trader_selector', '%uid | %theme_username'),
+    '#weight' => -3,
+    '#description' => t("Leave blank for autocomplete (reccommended above about 150 users).") .' '.
+      t('Otherwise, specify how each row of the dropdown box should be formatted.') .' '.
+      t('Use the following tokens: %uid, %username, %email, %theme_username') .' '.
+      t('Dropdown list will be ordered alphabetically.')
   );
   $form['visualisation'] = array(
     '#type' => 'fieldset',
@@ -112,8 +92,8 @@ function cc_options() {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#weight' => -2,
-    '#help' => t('These are the names of the transaction types. Unnamed types will be unavailable. You must name at least one. ') .
-        t('For each type there is a block, a menu link (coming soon) and a permission'),
+    '#description' => t('These are the transaction types for the default transaction form.') .' '.
+      t('You must name at least one. Unnamed types will be unavailable. ')
   );
   $form['transactions']['transactions__outgoing_confirm'] = array(
     '#type' => 'textfield',
@@ -139,12 +119,10 @@ function cc_options() {
     '#size' => 15,
     '#default_value' => $names['transactions']['incoming_direct'],
   );
-  $form['#submit'] = array('menu_rebuild', 'stats_refresh_all', 'refresh_trader_names');
-
   return system_settings_form($form);
 }
 
-function cc_options_validate(&$form, &$form_state) {
+function cc_options_form_validate(&$form, &$form_state) {
   if (intval($form_state['values']['cc_description_min_words']) < 1) {
     form_set_error('description_min_words', t('Minimum number of words must be a positive integer'));
   }
@@ -414,28 +392,12 @@ function cforge_report() {
   $data = array(
     'server' => $_SERVER["HTTP_HOST"],
     'site_name' => variable_get('site_name', 'site_name'),
+    'site_mail' => variable_get('site_name', 'site_mail'),
     'user_count' => count($traders->data),
-    'transactions_last_month' => db_result(db_query("SELECT COUNT(*) from {node} WHERE created > %d ", strtotime('-1 month'))),
+    'version' => db_result(db_query("SELECT schema_version from {system} WHERE name = 'mutual_credit'")),
+    'transactions_last_month' => db_result(db_query("SELECT COUNT(*) from {node} WHERE created > %d and type = 'transaction'", strtotime('-1 month'))),
+    'public' => variable_get('cforge_report', 1) -1,
   );
-  if (!function_exists('http_build_query')) { 
-      function http_build_query($data, $prefix='', $sep='', $key='') { 
-          $ret = array(); 
-          foreach ((array)$data as $k => $v) { 
-              if (is_int($k) && $prefix != NULL) { 
-                  $k = urlencode($prefix . $k); 
-              } 
-              if ((!empty($key)) || ($key === 0))  $k = $key .'['. urlencode($k) .']'; 
-              if (is_array($v) || is_object($v)) { 
-                  array_push($ret, http_build_query($v, '', $sep, $k)); 
-              } 
-              else { 
-                  array_push($ret, $k .'='. urlencode($v)); 
-              } 
-          } 
-          if (empty($sep)) $sep = ini_get('arg_separator.output'); 
-          return implode($sep, $ret); 
-      }// http_build_query 
-  }
   $url = 'http://www.communityforge.net/registration.php?'. http_build_query($data, '', '&');
   $reply = drupal_http_request($url);
 }
@@ -621,5 +583,25 @@ function stats_refresh($cid) {
 function stats_refresh_all() {
   foreach (currencies_load() as $currency) {
     stats_refresh($currency->cid);
+  }
+}
+
+if (!function_exists('http_build_query')) {
+  function http_build_query($data, $prefix='', $sep='', $key='') {
+    $ret = array();
+    foreach ((array)$data as $k => $v) {
+      if (is_int($k) && $prefix != NULL) {
+          $k = urlencode($prefix . $k);
+      }
+      if ((!empty($key)) || ($key === 0))  $k = $key .'['. urlencode($k) .']';
+      if (is_array($v) || is_object($v)) {
+          array_push($ret, http_build_query($v, '', $sep, $k));
+      }
+      else {
+          array_push($ret, $k .'='. urlencode($v));
+      }
+    }
+    if (empty($sep)) $sep = ini_get('arg_separator.output');
+    return implode($sep, $ret);
   }
 }

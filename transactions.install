@@ -441,7 +441,6 @@ function transactions_update_6018() {
   db_drop_field($ret, 'cc_balance_cache', 'limit_max');
   db_drop_field($ret, 'cc_balance_cache', 'limit_min');
 
-  refresh_trader_names();
   $trader_list = cache_get('cc_trader_list');
   if (is_array($trader_list->data)) {
     $ret[] = array('success' => TRUE, 'query' => 'Created cache for trader listings');
@@ -453,4 +452,28 @@ function transactions_update_6018() {
   drupal_rebuild_theme_registry();
   stats_refresh_all();
   return $ret;
+}
+
+function transactions_update_6019() {
+  $previous = variable_get('cc_autocomplete_user_select_widget', 'select');
+  if ($previous == 'select') {
+    $fields = variable_get('cc_select_user_show', array('uid', 'themed_username'));
+    foreach ($fields as $key=>$field)$fields[$key] = '%'.$field;
+    variable_set('cc_trader_selector', implode(' | ', $fields));
+  }
+  else {
+    variable_set('cc_trader_selector', '');
+  }
+  if (function_exists('refresh_trader_names')) {
+    refresh_trader_names();
+    drupal_set_message('Note the improved user selection formatting widget on '.l('admin/marketplace', 'admin/marketplace'));
+    variable_del('cc_autocomplete_user_select_widget', '%uid | %theme_username');
+    variable_del('cc_select_user_show');
+    variable_del('cc_select_user_orderby');
+  }
+  else {
+    drupal_set_message('transactions.module lnot loaded');
+  }
+  
+  return array();
 }

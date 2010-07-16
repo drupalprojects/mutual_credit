@@ -485,6 +485,7 @@ function cc_transaction_list_view() {
         'incoming_confirm' => 'incoming_confirm',
         'outgoing_direct' => 'outgoing_direct',
         'outgoing_confirm' => 'outgoing_confirm',
+        '3rdparty_direct' => '3rdparty_direct'
       ),
       'group' => '0',
       'exposed' => FALSE,

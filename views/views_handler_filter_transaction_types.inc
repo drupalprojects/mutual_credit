@@ -10,6 +10,7 @@ class views_handler_filter_transaction_types extends views_handler_filter_many_t
       'incoming_confirm' => 'incoming_confirm',
       'outgoing_direct' => 'outgoing_direct',
       'outgoing_confirm'=> 'outgoing_confirm',
+      '3rdparty_direct' => '3rdparty_direct',
       'outgoing_mass_direct' => 'outgoing_mass_direct',
       'outgoing_mass_confirm' => 'outgoing_mass_confirm',
       'incoming_mass_direct' =>'incoming_mass_direct',

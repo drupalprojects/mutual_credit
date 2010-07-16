@@ -55,10 +55,9 @@ function transactions_bureau($account) {
 }
 function template_preprocess_bureau($vars){
   $vars['balances'] = transactions_user_balances($vars['account']->uid);
-  $vars['pending'] = views_embed_view('cc_transactions_pending', 'block_user_pending', $vars['account']->uid);
   $vars['history'] = transactions_list($vars['account'], array('running_balance' => TRUE));
   foreach(currencies_load(array('uid'=>$vars['account']->uid)) as $currency) {
-    $vars['credit_limits'] .= theme('balance_limits', $vars['account'], $currency->cid); 
+    $vars['balance_limits'] .= theme('balance_limits', $vars['account'], $currency->cid);
     $vars['period_volumes'] .= theme('period_volumes', $vars['account'], $currency->cid); 
   }
 }
@@ -166,21 +165,12 @@ function transactions_user_balances($uid) {
 function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'starter_completer') {
   global $user;
   $form = array();
-  $user_select_widget = variable_get('cc_autocomplete_user_select_widget', 'select');
+  variable_get('cc_trader_selector', '') == '' ? $user_select_widget = 'textfield' : $user_select_widget = 'select';
   //this is last minute hack for node/%/edit only. Resolved in version 2
   if (arg(0)=='node') $user_select_widget = 'select'; 
   if ($user_select_widget == 'select') {
     $cached_traders = cache_get('cc_trader_list');
     $traders = $cached_traders->data;
-    if (!count($traders)) {
-      drupal_set_message(t('No roles have permission to @trade. Go to !link',
-        array(
-          '@trade' => t('use local currency'),
-          '!link' => l('admin/user/permissions', 'admin/user/permissions')
-        ),'warning'
-      ));
-      return;
-    }
   }
   //just check, if we are here without using a button, that user can edit the form
   if ($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) {
@@ -239,6 +229,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#options' => $traders ? array(0 => t('(Please choose...)')) + $traders : NULL,
         '#required' => TRUE,
         '#element_validate' => array('cc_validate_2parties'),
+        '#disabled' => $mode == 'edit' && $transaction->state
       );
     }
     if (!$payer || ($edit_all_transactions && $mode == 'edit')) {
@@ -248,6 +239,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#default_value' => $payer,
         '#options' => $traders ? array(0 => t('(Please choose...)')) + $traders : NULL,
         '#required' => TRUE,
+        '#disabled' => $mode == 'edit' && $transaction->state
       );
     }
     $form['transaction_type'] = array(
@@ -543,9 +535,9 @@ function transaction_complete_form(&$form_state, $transaction) {
   );
   $form['#redirect'] = 'user/'. $transaction->completer_uid;
   $output = confirm_form($form,
-    t('Are you sure you want to complete the transaction "@description"?', array('@description' => $transaction->title)),
+    t('Complete the transaction?'),
     'user/'. $transaction->completer_uid,
-    '',
+    t('Are you sure you want to complete this transaction?') . theme('node', $transaction, TRUE, FALSE),
     t('Complete'), t('Cancel'),
     'complete'
   );
@@ -716,14 +708,19 @@ function transactions_mail($key, &$message, $params) {
 /*
  * PREPROCESSING FUNCTIONS
 */
-
-function template_preprocess_balance_history(&$vars) {//$variables = array($account, $options=array())
+//balance history chart
+//$options (not very tested) are array(
+//  currencies => an array of currency objects, defaults to all
+//  states => an array of states, defaults to all
+//  first_time => linux era seconds of start of chart.
+//  )
+function template_preprocess_balance_history(&$vars) {
   //determine which transaction states wil be used to draw the line
   $default_states = array(TRANSACTION_STATE_COMPLETED);
   if (variable_get('cc_count_pending', FALSE)) {
     $default_states[] = TRANSACTION_STATE_PENDING;
   }
-  $vars['currencies'] = $vars['options']['currencies'] 
+  $vars['currencies'] = $vars['options']['currencies']
     or $vars['currencies'] = currencies_load(array('uids' => array($vars['account']->uid)));
   $states = $vars['options']['states'] 
     or $states = $vars['options']['currencies'];

@@ -25,8 +25,5 @@
 <h3><?php print t('Trading volumes'); ?></h3>
 <?php print $period_volumes; ?>
 
-<h3><?php print t('Pending transactions'); ?></h3>
-<?php print $pending; ?>
-
 <h3><?php print t('Recent transactions'); ?></h3>
 <?php print $history; ?>

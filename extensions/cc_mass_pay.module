@@ -7,6 +7,9 @@
 */
 
 function cc_mass_pay_menu() {
+  $payers = cache_get('cc_trader_list');
+  if (count($payers->data) < 2) return;
+
   $items['admin/marketplace/mass_payment'] = array (
     'title' => 'Mass Payments',
     'description' => 'Create mass transactions to and from one account',
@@ -57,17 +60,28 @@ function many2one_form() {
   unset($form['completer_uid']);
   unset($form['starter_uid']);
   unset($form['#after_build']);
-  $payers = cache_get('cc_trader_list');
-  if (!$payers) return;
 
-  $form['non_payers'] = array (
-    '#type' => 'select', 
-    '#title' => t('Payer exceptions'),
-    '#options' => $payers->data,
-    '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
-    '#multiple' => TRUE,
-    '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
-  );
+  $payers = cache_get('cc_trader_list');
+  if (module_exists('jquery_multiselect')) {
+    $form['non_payers'] = array (
+      '#type' => 'select',
+      '#title' => t('Payer exceptions'),
+      '#options' => $payers->data,
+      '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
+      '#multiple' => TRUE,
+      '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
+    );
+  }
+  else {
+    $form['non_payers'] = array (
+      '#type' => 'select',
+      '#title' => t('Payer exceptions'),
+      '#options' => $payers->data,
+      '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
+      '#multiple' => TRUE,
+      '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
+    );
+  }
   $form['payee_uid']['#description'] = t("Select the one account to which all the transactions will flow.");
   $form['quantity']['#description']  = t('How much should be taken from each account?');
   $form['submit'] = array (
@@ -131,8 +145,7 @@ function one2many_form() {
   unset($form ['completer_uid']);
   unset($form ['starter_uid']);
   unset($form['#after_build']);
-  $payees = cache_get('cc_trader_list');
-  if (!$payees) return;
+  $payers = cache_get('cc_trader_list');
 
   $form['non_payees'] = array (
     '#type' => 'select', 

@@ -90,7 +90,7 @@ function transactions_menu() {
     'title' => 'Complementary Currencies',
     'description' => 'General complementary currency options',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('cc_options'),
+    'page arguments' => array('cc_options_form'),
     'access callback' => 'user_access',
     'access arguments' => array('configure economy'),
     'file' => 'transactions.admin.inc',
@@ -119,30 +119,39 @@ function transactions_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'transactions.admin.inc',
   );
-  $items['transaction'] = array(
-    'title' => 'Create transaction',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('transaction_create_form', NULL, 'starter_completer'),
-    'access arguments' => array('use local currency'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'transactions.inc',
-    'weight' => 20,
-  );
-  $items['transaction/start'] = array(
-    'title' => 'Initiate',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 0,
-  );
-  $items['transaction/3rdparty'] = array(
-    'title' => '3rd party',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('transaction_create_form', NULL, 'payer_payee'),
-    'access callback' => 'user_access',
-    'access arguments' => array('edit all transactions'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 1,
-    'file' => 'transactions.inc',
-  );
+  
+  $payers = cache_get('cc_trader_list');
+  if (count($payers->data) > 1) {
+    $items['transaction'] = array(
+      'title' => 'Create transaction',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('transaction_create_form', NULL, 'starter_completer'),
+      'access arguments' => array('use local currency'),
+      'type' => MENU_NORMAL_ITEM,
+      'file' => 'transactions.inc',
+      'weight' => 20,
+    );
+    $items['transaction/start'] = array(
+      'title' => 'Initiate',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => 0,
+    );
+    $items['transaction/3rdparty'] = array(
+      'title' => '3rd party',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('transaction_create_form', NULL, 'payer_payee'),
+      'access callback' => 'user_access',
+      'access arguments' => array('edit all transactions'),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 1,
+      'file' => 'transactions.inc',
+    );
+  }
+  else {
+    drupal_set_message(t("Transaction forms are disabled until at least 2 users are permitted to '!trade'.",
+        array('!trade' => t('use local currency'))
+    ));
+  }
   $items['transaction/%node/complete'] = array(
     'title' => 'Sign this transaction to finalise it',
     'page callback' => 'drupal_get_form',
@@ -374,6 +383,7 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'user_admin_perm':
       $form['#submit'][] = 'refresh_trader_names';
+      $form['#submit'][] = 'menu_rebuild'; //because some menu items depend on the number of traders
       break;
     case 'node_delete_confirm':
       if ($form['#parameters'][2]->type == 'transaction') {
@@ -388,10 +398,12 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
       }
       $form['#redirect'] = 'user';
       break;
-    case 'cc_options':
+    case 'cc_options_form':
       //this is here because it must go after the system_settings_form submit handler
       $form['#submit'][] = 'menu_rebuild';
       $form['#submit'][] = 'views_invalidate_cache';
+      $form['#submit'][] = 'refresh_trader_names';
+      $form['#submit'][] = 'stats_refresh_all';
       break;
       
     case 'transaction_node_form':
@@ -592,6 +604,7 @@ function transactions_theme($existing, $type, $theme, $path) {
   $templates_dir = drupal_get_path('module', 'transactions') .'/theme';
   //we load the inc so it's aware of the preprocess functions
   module_load_include('inc', 'transactions');
+  module_load_include('admin.inc', 'transactions');
   return array(
     'transaction_starter_form' => array(
       'template' => 'transaction-starter-form',
@@ -678,10 +691,9 @@ function transactions_theme($existing, $type, $theme, $path) {
         'account' => NULL,
         'cid' => 0
       )
-    ),
+    )
   );
 }
-
 
 /**
 * Implementation of hook_theme_registry_alter
@@ -937,33 +949,29 @@ function _named_transaction_types() {
 
 function refresh_trader_names() {
   if ($roles = user_roles(TRUE, 'use local currency')) {
-    unset($roles[DRUPAL_AUTHENTICATED_RID]);
-    $where = array('status = 1');
-    if (count($roles)) {
+    $where = array('status = 1',  'u.uid > 0');
+    if (!$roles[DRUPAL_AUTHENTICATED_RID]) {
       $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
     }
     $results = db_query("SELECT u.uid
       FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
-      WHERE %s
-      ORDER BY `u`.`". variable_get('cc_select_user_orderby', 'uid') ."` ASC",
+      WHERE %s",
         array(':where' => implode(' AND ', $where))
     );
 
     $account = array();
+    $pattern = variable_get('cc_trader_selector', '%uid | %theme_username');
+
     while ($account = user_load(db_result($results))) {
-      foreach (variable_get('cc_select_user_show', array('name'))  as $field) {
-        switch ($field) {
-          case 'name':
-          case 'mail':
-          case 'uid':
-            $fields[$field] = $account->$field;
-            break;
-          case 'themed_username':
-            $fields[$field] = strip_tags(theme('username', $account));
-        }
-      }
-      $names[$account->uid]= implode(' | ', $fields);
+      $replacements = array(
+        '%uid' => $account->uid,
+        '%name' => $account->name,
+        '%email' => $account->mail,
+        '%theme_username' => strip_tags(theme('username', $account))
+      );
+      $names[] = strtr($pattern, $replacements);
     }
+    natcasesort($names);
     cache_set('cc_trader_list', $names);
   }
   else {
