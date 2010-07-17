@@ -377,14 +377,23 @@ function alter_quantity_field_types($type) {
   
   $newfield['description'] = "the sum of all this user's expenditure in this currency, ($type)";
   db_change_field($ret, 'cc_balance_cache', 'gross_expenditure', 'gross_expenditure', $newfield);
-  //checking and feeback
-  $schema = drupal_get_schema('cc_transactions');
-  if ($schema['fields']['quantity']['type'] != $type) {
-    drupal_set_message(t("Drupal was unable to set your database field types to @type", array('@type' => $type)));
+
+  //we can only check by writing a float and reading it back
+  db_query("REPLACE INTO {cc_balance_cache} (uid, cid, cleared_balance) VALUES (0, 0, 0.49)");
+  if (db_result(db_query("SELECT cleared_balance FROM {cc_balance_cache} WHERE uid = 0 AND cid = 0"))) $set_type = 'float';
+  else $set_type = 'int';
+
+  if ($set_type != $type) {
+    $message = t("Drupal was unable to set your database field types to @type. Please check your db permissions", array('@type' => $type));
+    drupal_set_message($message, 'error');
   }
   else {
-    drupal_set_message(t("Quantitative fields in database is set to type '@type'", array('@type' => $type)));
+    $message = (t("Quantitative fields in database is set to type '@type'", array('@type' => $type)));
+    drupal_set_message($message);
   }
+  watchdog('mcapi', $message);
+  //tidy up
+  db_query("DELETE FROM {cc_balance_cache WHERE uid = 0}");
 }
 
 function cforge_report() {
