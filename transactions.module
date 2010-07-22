@@ -969,7 +969,7 @@ function refresh_trader_names() {
         '%email' => $account->mail,
         '%theme_username' => strip_tags(theme('username', $account))
       );
-      $names[] = strtr($pattern, $replacements);
+      $names[$account->uid] = strtr($pattern, $replacements);
     }
     natcasesort($names);
     cache_set('cc_trader_list', $names);

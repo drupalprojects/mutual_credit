@@ -226,7 +226,7 @@ function currency_form_fields($currency) {
   $form['visual']['icon_upload'] = array(
     '#type' => 'file',
     '#title' => t('Upload icon'),// array('!icon' => theme('1', $currency))),
-    '#prefix' => '<img src="'. url($currency->icon) .'" />',
+    '#prefix' => t('Current icon') .': ' . theme('image', $node->icon),
     '#description' => t("Should be between 12px square and 16px square, preferably with a transparent background"),
     '#weight' => -10,
   );

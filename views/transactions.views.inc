@@ -729,7 +729,7 @@ function cc_transaction_list_view() {
 function transactions_pending_view() {
   $view = new view;
   $view->name = 'cc_transactions_pending';
-  $view->description = 'pending transactions';
+  $view->description = t('pending transactions');
   $view->tag = '';
   $view->view_php = '';
   $view->base_table = 'node';
@@ -854,8 +854,7 @@ function transactions_pending_view() {
   $handler->override_option('block_description', 'pending transactions for user');
   $handler->override_option('block_caching', -1);
 
-  //block to show all pending transactions relating to the logged in user. Attachment follows
-  //this block is also used on the bureau page, where it is passed another user user argument
+  //block to show all pending transactions relating to the logged in user.
   $handler = $view->new_display('block', 'User Pending', 'block_user_pending');
   $handler->override_option('arguments', array(
     'completer_uid' => array(
@@ -889,46 +888,16 @@ function transactions_pending_view() {
       'validate_user_restrict_roles' => 0,
       'validate_argument_php' => '',
       'default_argument_image_size' => '_original',
-      'validate_argument_node_type' => array(
-        'image' => 0,
-        'community_task' => 0,
-        'transaction' => 0,
-        'offer' => 0,
-        'want' => 0,
-        'event' => 0,
-        'page' => 0,
-        'simplenews' => 0,
-        'story' => 0,
-      ),
-      'validate_argument_vocabulary' => array(
-        '2' => 0,
-        '1' => 0,
-        '4' => 0,
-        '3' => 0,
-        '5' => 0,
-      ),
-      'validate_user_roles' => array(
-        '2' => 0,
-        '5' => 0,
-        '4' => 0,
-        '6' => 0,
-        '7' => 0,
-        '3' => 0,
-      ),
-      'image_size' => array(
-        '_original' => '_original',
-        'thumbnail' => 'thumbnail',
-        'preview' => 'preview',
-      ),
+      'validate_argument_node_type' => array(),
+      'image_size' => array(),
     ),
   ));
-  $handler->override_option('block_description', 'Pending transactions');
-  $handler->override_option('block_caching', -1);
+  $handler->override_option('block_description', t('Transactions to sign off'));
   $handler->override_option('header', t('Transactions to sign off'));
-  $handler->override_option('header_format', '3');
+  $handler->override_option('block_caching', -1);
   $handler->override_option('header_empty', 0);
 
-  $handler = $view->new_display('attachment', 'User waiting', 'attachment_1');
+  $handler = $view->new_display('block', 'User Waiting', 'block_user_waiting');
   $handler->override_option('arguments', array(
     'starter_uid' => array(
       'default_action' => 'default',
@@ -946,6 +915,14 @@ function transactions_pending_view() {
       'table' => 'cc_transactions',
       'field' => 'starter_uid',
       'validate_user_argument_type' => 'uid',
+      'validate_user_roles' => array(
+        '2' => 0,
+        '5' => 0,
+        '4' => 0,
+        '6' => 0,
+        '7' => 0,
+        '3' => 0,
+      ),
       'override' => array(
         'button' => 'Utiliser les valeurs par défaut',
       ),
@@ -955,15 +932,9 @@ function transactions_pending_view() {
       'default_argument_user' => 0,
       'default_argument_image_size' => '_original',
       'default_argument_php' => '',
-      'validate_argument_node_access' => 0,
-      'validate_argument_nid_type' => 'nid',
-      'validate_argument_type' => 'tid',
-      'validate_argument_transform' => 0,
-      'validate_user_restrict_roles' => 0,
-      'validate_argument_php' => '',
       'validate_argument_node_type' => array(
-        'image' => 0,
         'community_task' => 0,
+        'image' => 0,
         'transaction' => 0,
         'offer' => 0,
         'want' => 0,
@@ -972,6 +943,8 @@ function transactions_pending_view() {
         'simplenews' => 0,
         'story' => 0,
       ),
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
       'validate_argument_vocabulary' => array(
         '2' => 0,
         '1' => 0,
@@ -979,33 +952,22 @@ function transactions_pending_view() {
         '3' => 0,
         '5' => 0,
       ),
-      'validate_user_roles' => array(
-        '2' => 0,
-        '5' => 0,
-        '4' => 0,
-        '6' => 0,
-        '7' => 0,
-        '3' => 0,
-      ),
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_user_restrict_roles' => 0,
       'image_size' => array(
         '_original' => '_original',
         'thumbnail' => 'thumbnail',
         'preview' => 'preview',
       ),
+      'validate_argument_php' => '',
     ),
   ));
+  $handler->override_option('block_description', t('Transactions awaiting confirmation'));
   $handler->override_option('header', t('Transactions awaiting confirmation'));
-  $handler->override_option('empty', '');
-  $handler->override_option('attachment_position', 'after');
-  $handler->override_option('inherit_arguments', TRUE);
-  $handler->override_option('inherit_exposed_filters', FALSE);
-  $handler->override_option('inherit_pager', FALSE);
-  $handler->override_option('render_pager', TRUE);
-  $handler->override_option('displays', array(
-    'block_my_pending' => 'block_my_pending',
-    'default' => 0,
-    'block_user_pending' => 0,
-  ));
+  $handler->override_option('block_caching', -1);
+  $handler->override_option('header_empty', 0);
+  
 
   return $view;
 }

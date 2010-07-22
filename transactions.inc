@@ -557,7 +557,7 @@ function transaction_complete_form_submit($form, &$form_state) {
     );
     recalculate_balances($transaction->payer_uid, $transaction->cid);
     recalculate_balances($transaction->payee_uid, $transaction->cid);
-    stats_refresh($trsnsaction->cid);
+    stats_refresh($transaction->cid);
     drupal_set_message(t('Transaction with !starter completed', array('!starter' => theme('username', user_load($transaction->starter_uid)))));
   }
 }
