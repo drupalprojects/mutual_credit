@@ -15,7 +15,7 @@ function cc_options_form() {
       1 => t('Just share basic stats'),
       2 => t('Please put us in a public directory, when you get time!')
     ),
-    '#weight' => -5,
+    '#weight' => -7,
     '#description' => t("Be part of a wider network of local currency comunities by sharing a few key pieces of information with !cforge.",
         array('!cforge' => l('Community Forge', 'http://communityforge.net', array('absolute' => TRUE)))).' '.
       t("e.g. url, number of active traders.") .' '.
@@ -27,7 +27,7 @@ function cc_options_form() {
     '#default_value' => variable_get('cc_description_min_words', 4),
     '#size' => 2,
     '#maxlength' => 3,
-    '#weight' => -4,
+    '#weight' => -6,
     '#description' => t("Classification can be improved if members take a few seconds to describe their transactions in more detail.") .' '.
       t("Suggested value is 4.")
   );
@@ -37,23 +37,18 @@ function cc_options_form() {
     '#default_value' => variable_get('cc_balancing_account_num', 1),
     '#size' => 2,
     '#maxlength' => 4,
-    '#weight' => -4,
+    '#weight' => -5,
     '#description' => t("The balancing account is important, but not strictly neccessary. It is usually used as a central kitty, or bank.") .' '.
       t('Transactions with this account are excluded from trading stats.'), 
   );
   
-  $form['maintenance'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Maintenance'),
-    '#weight' => 3,
-    '#description' => t('In case the balances get out of sync with the transactions.') .' '. 
-      t('Please use this and report an issue at !url', array('!url' => l('drupal.org', 'http://drupal.org/project/mutual_credit', array('absolute' => TRUE)))),
-    '#collapsible' => FALSE,
-  );
-  $form['maintenance']['refresh'] = array(
-    '#type' => 'submit',
-    '#value' => t("Recalulate balances & stats"),
-    '#submit' => array('cc_balances_refresh'),
+
+  $form['cc_trader_autocomplete'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Autocomplete trader names in transaction form'),
+    '#default_value' => variable_get('cc_trader_autocomplete', TRUE),
+    '#description' => t('Reccommended above about 150 users. If not enabled, will use selection widget below.'),
+    '#weight' => -4,
   );
 
   $form['cc_trader_selector'] = array(
@@ -61,10 +56,12 @@ function cc_options_form() {
     '#title' => t('Widget for selecting users'),
     '#default_value' => variable_get('cc_trader_selector', '%uid | %theme_username'),
     '#weight' => -3,
-    '#description' => t("Leave blank for autocomplete (reccommended above about 150 users).") .' '.
+    '#description' => t("How will the users appear in a select list?") .' '.
       t('Otherwise, specify how each row of the dropdown box should be formatted.') .' '.
       t('Use the following tokens: %uid, %username, %email, %theme_username') .' '.
-      t('Dropdown list will be ordered alphabetically.')
+      t('Dropdown list will be ordered alphabetically.'),
+    '#element_validate' => array('validate_trader_selector'),
+    '#startwith' => array('%uid', '%username', '%email', '%theme_username')
   );
   $form['visualisation'] = array(
     '#type' => 'fieldset',
@@ -119,9 +116,34 @@ function cc_options_form() {
     '#size' => 15,
     '#default_value' => $names['transactions']['incoming_direct'],
   );
+
+  $form['maintenance'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Maintenance'),
+    '#weight' => 3,
+    '#description' => t('In case the balances get out of sync with the transactions.') .' '.
+      t('Please use this and report an issue at !url', array('!url' => l('drupal.org', 'http://drupal.org/project/mutual_credit', array('absolute' => TRUE)))),
+    '#collapsible' => FALSE,
+  );
+  $form['maintenance']['refresh'] = array(
+    '#type' => 'submit',
+    '#value' => t("Recalulate balances & stats"),
+    '#submit' => array('cc_balances_refresh'),
+  );
   return system_settings_form($form);
 }
 
+function transactions_form_cc_options_form_alter($form) {
+  //this is here because it must go after the system_settings_form submit handler
+  $form['#submit'] = array_merge($form['#submit'], array('menu_rebuild', 'views_invalidate_cache', 'refresh_trader_names', 'stats_refresh_all'));
+}
+
+function validate_trader_selector($element, $form_state) {
+  foreach ($element['#startwith'] as $token) {
+    if (substr($element['#value'], 0, strlen($token)) == $token) return TRUE;
+  }
+  form_error($element, t('Widget must begin with one of the tokens provided'));
+}
 function cc_options_form_validate(&$form, &$form_state) {
   if (intval($form_state['values']['cc_description_min_words']) < 1) {
     form_set_error('description_min_words', t('Minimum number of words must be a positive integer'));
@@ -322,37 +344,6 @@ function validate_limits($minmax, $required = FALSE) {
   
 }
 
-//options might equal 
-function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options = array(), $cid=0) {
-  global $user;
-  if ($quantity <= 0) {
-    drupal_set_message(t('@function was asked to create a transaction with negative value: @value', array('@function' => 'generate_transaction_node', '@value' => $quantity)));
-    return;
-  }
-  $node = $options + array(
-   //default options
-    'state' => TRANSACTION_STATE_COMPLETED, 
-    'transaction_type' => 'api unspecified', 
-    'quality' => NULL, 
-    'starter_uid' => $user->uid,
-    'completer_uid' => $payer_uid,
-    'uid' => $user->uid,
-    'created' => time(),
-   //other incoming arguments
-    'cid' => $cid,
-    'payee_uid' => $payee_uid,
-    'payer_uid' => $payer_uid,
-    'quantity' => $quantity,
-    'title' => $title,
-   //some basic node properties
-    'type' => 'transaction',
-    'status' => 0, //this adds protection against anonymous users seeing transactions
-  );
-  $node=(object)$node;
-  node_save($node);
-  return $node;
-}
-
 
 /*
  * if even one currency has float values, we need to change the whole database, and back again
@@ -388,21 +379,21 @@ function alter_quantity_field_types($type) {
     drupal_set_message($message, 'error');
   }
   else {
-    $message = (t("Quantitative fields in database is set to type '@type'", array('@type' => $type)));
+    $message = t("Quantitative fields in database is set to type '@type'", array('@type' => $type));
     drupal_set_message($message);
   }
-  watchdog('mcapi', $message);
+  watchdog('mcapi', "Quantitative fields in database is set to type '@type'", array('@type' => $type));
   //tidy up
   db_query("DELETE FROM {cc_balance_cache WHERE uid = 0}");
 }
 
 function cforge_report() {
-  $traders = cache_get('cc_trader_list');
+  $traders = get_trader_list();
   $data = array(
     'server' => $_SERVER["HTTP_HOST"],
     'site_name' => variable_get('site_name', 'site_name'),
-    'site_mail' => variable_get('site_name', 'site_mail'),
-    'user_count' => count($traders->data),
+    'site_mail' => variable_get('site_mail', 'site_mail'),
+    'user_count' => count($traders),
     'version' => db_result(db_query("SELECT schema_version from {system} WHERE name = 'mutual_credit'")),
     'transactions_last_month' => db_result(db_query("SELECT COUNT(*) from {node} WHERE created > %d and type = 'transaction'", strtotime('-1 month'))),
     'public' => variable_get('cforge_report', 1) -1,
@@ -498,8 +489,8 @@ function recalculate_balances($uid, $cid) {
       }
     }
   }
-  $cleared_balance = $gross_income-$gross_expenditure;
-  $pending_balance = $cleared_balance - $pending_dif;
+  $cleared_balance = $gross_income - $gross_expenditure;
+  $pending_balance = $cleared_balance + $pending_dif;
   $quality_mean = count($qualities) ? array_sum($qualities) / count($qualities) : 0;
 
   db_query(
@@ -613,4 +604,48 @@ if (!function_exists('http_build_query')) {
     if (empty($sep)) $sep = ini_get('arg_separator.output');
     return implode($sep, $ret);
   }
+}
+
+
+function refresh_trader_names() {
+  if ($roles = user_roles(TRUE, 'use local currency')) {
+    $where = array('status = 1',  'u.uid > 0');
+    if (!$roles[DRUPAL_AUTHENTICATED_RID]) {
+      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
+    }
+    $results = db_query("SELECT u.uid
+      FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
+      WHERE %s",
+        array(':where' => implode(' AND ', $where))
+    );
+
+    $account = array();
+    $pattern = variable_get('cc_trader_selector', '%uid | %theme_username')
+      or $pattern = '%uid | %theme_username';
+
+    while ($account = user_load(db_result($results))) {
+      $replacements = array(
+        '%uid' => $account->uid,
+        '%name' => $account->name,
+        '%email' => $account->mail,
+        '%theme_username' => strip_tags(theme('username', $account))
+      );
+      $names[$account->uid] = strtr($pattern, $replacements);
+    }
+    if (count($names)) {
+      natcasesort($names);
+      cache_set('cc_trader_list', $names);
+      return;
+    }
+  }
+  drupal_set_message(
+    t(
+      'No users have permission to @trade. Go to !link',
+      array(
+        '@trade' => t('use local currency'),
+        '!link' => l('admin/user/permissions', 'admin/user/permissions')
+      ),
+    'warning'
+    )
+  );
 }

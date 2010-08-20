@@ -7,8 +7,8 @@
 */
 
 function cc_mass_pay_menu() {
-  $payers = cache_get('cc_trader_list');
-  if (count($payers->data) < 2) return;
+  $payers = get_trader_list();
+  if (count($payers) < 2) return;
 
   $items['admin/marketplace/mass_payment'] = array (
     'title' => 'Mass Payments',
@@ -61,12 +61,12 @@ function many2one_form() {
   unset($form['starter_uid']);
   unset($form['#after_build']);
 
-  $payers = cache_get('cc_trader_list');
+  $payers = get_trader_list();
   if (module_exists('jquery_multiselect')) {
     $form['non_payers'] = array (
       '#type' => 'select',
       '#title' => t('Payer exceptions'),
-      '#options' => $payers->data,
+      '#options' => $payers,
       '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
       '#multiple' => TRUE,
       '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
@@ -76,7 +76,7 @@ function many2one_form() {
     $form['non_payers'] = array (
       '#type' => 'select',
       '#title' => t('Payer exceptions'),
-      '#options' => $payers->data,
+      '#options' => $payers,
       '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
       '#multiple' => TRUE,
       '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
@@ -94,9 +94,9 @@ function many2one_form() {
 }
 
 function many2one_form_validate($form, &$form_state) {
-  $trader_cache = cache_get('cc_trader_list');
+  $traders = get_trader_list();
   $payers = array_diff(
-    array_keys($trader_cache->data),
+    array_keys($traders),
     $form_state['values']['non_payers'],
     array($form_state['values']['payee_uid'])
   );
@@ -145,12 +145,12 @@ function one2many_form() {
   unset($form ['completer_uid']);
   unset($form ['starter_uid']);
   unset($form['#after_build']);
-  $payers = cache_get('cc_trader_list');
+  $payees = get_trader_list();
 
   $form['non_payees'] = array (
     '#type' => 'select', 
     '#title' => t('Payees'),
-    '#options' => $payees->data,
+    '#options' => $payees,
     '#default_value' => variable_get('cc_mass_pay_non_payees', NULL),
     '#multiple' => TRUE,
     '#description' => t("Select the accounts you don't want to be paid. Use CTRL click to select more than one."),
@@ -168,9 +168,9 @@ function one2many_form() {
 }
 
 function one2many_form_validate($form, &$form_state) {
-  $trader_cache = cache_get('cc_trader_list');
+  $traders = get_trader_list();
   $payees = array_diff(
-    array_keys($trader_cache->data), 
+    array_keys($traders),
     $form_state['values']['non_payees'], 
     array($form_state['values']['payer_uid'])
   );

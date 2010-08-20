@@ -799,7 +799,7 @@ function transactions_pending_view() {
       'field' => 'completer_uid',
       'validate_user_argument_type' => 'uid',
       'override' => array(
-        'button' => 'Utiliser les valeurs par défaut',
+        'button' => 'Use default',
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',
@@ -851,7 +851,7 @@ function transactions_pending_view() {
     'perm' => 'view all transactions',
   ));
   $handler->override_option('header', '');
-  $handler->override_option('block_description', 'pending transactions for user');
+  $handler->override_option('block_description', 'my pending');
   $handler->override_option('block_caching', -1);
 
   //block to show all pending transactions relating to the logged in user.
@@ -874,7 +874,7 @@ function transactions_pending_view() {
       'field' => 'completer_uid',
       'validate_user_argument_type' => 'uid',
       'override' => array(
-        'button' => 'Utiliser les valeurs par défaut',
+        'button' => 'Use default',
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',
@@ -924,7 +924,7 @@ function transactions_pending_view() {
         '3' => 0,
       ),
       'override' => array(
-        'button' => 'Utiliser les valeurs par défaut',
+        'button' => 'Use default',
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',

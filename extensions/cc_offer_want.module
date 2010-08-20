@@ -326,6 +326,7 @@ function theme_offers_wants_link ($type) {
   switch($type) {
     case 'offer':
       $link = l(t('offer'), 'node/add/offer');
+      break;
     case 'want':
       $link = l(t('want'), 'node/add/want');
   }

@@ -11,40 +11,6 @@ define(MAX_CHART_POINTS, 140);
 define(TRANSACTIONS_PAGER_ELEMENT, 1);
 define(TRANSACTIONS_PER_PAGE, 20);
 
-function transactions_nodeapi(&$node, $op) {
-  if ($node->type != 'transaction') return;
-  module_load_include('inc', 'transactions');
-  switch ($op) {
-    case 'validate':
-      if (!count(form_get_errors()) && $node->payer_uid && $node->payee_uid) {
-        _transaction_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid));
-        _transaction_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid));
-      }
-      break;
-      
-    case 'insert':
-      module_load_include('admin.inc', 'transactions');
-      //gets rid of any boring status messages
-      drupal_get_messages('status', TRUE);
-      
-      //automatically trigger the notifications
-      $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
-      while ($aid = db_result($result)) {
-        actions_do($aid, $node, array(
-          'hook' => 'nodeapi',
-          'op' => $op
-        ));
-      }
-      // the 'break' is missing deliberately
-    case 'update':
-    case 'delete':
-      module_load_include('admin.inc', 'transactions');
-      recalculate_balances($node->payer_uid, $node->cid);
-      recalculate_balances($node->payee_uid, $node->cid);
-      stats_refresh(intval($node->cid));
-  }
-}
-
 /*
  * Menu Callbacks
  */
@@ -165,16 +131,19 @@ function transactions_user_balances($uid) {
 function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'starter_completer') {
   global $user;
   $form = array();
-  variable_get('cc_trader_selector', '') == '' ? $user_select_widget = 'textfield' : $user_select_widget = 'select';
-  //this is last minute hack for node/%/edit only. Resolved in version 2
-  if (arg(0)=='node') $user_select_widget = 'select'; 
-  if ($user_select_widget == 'select') {
-    $cached_traders = cache_get('cc_trader_list');
-    $traders = $cached_traders->data;
-  }
+  
   //just check, if we are here without using a button, that user can edit the form
   if ($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) {
     drupal_set_message(t('You cannot edit this transaction'), 'error');
+  }
+
+  if (arg(0)=='node' || !variable_get('cc_trader_autocomplete', TRUE)) {
+    //this is last minute hack for node/%/edit only. Resolved in version 2
+    $user_select_widget = 'select';
+    $traders = get_trader_list();
+  }
+  else {
+     $user_select_widget = 'textfield';
   }
 
   $form['#mode'] = $mode;
@@ -439,6 +408,7 @@ function transaction_create_form($form_state, $transaction = NULL, $selectorset 
       $form['#redirect'] = 'user/'. $transaction->starter_uid;
       break;
   }
+  
   $form['next'] = array(
     '#type' => 'submit',
     '#value' => t('Send'),
@@ -818,47 +788,6 @@ function template_preprocess_balance_limits(&$vars) {
 }
 
 
-//takes the transaction node opbject and returns a load of ready to print fields, in an array
-function preprocess_transaction_fields($transaction, $uid) {
-  $props = array('node' => $transaction);
-  $classes = array();
-  //this is for the initial confirmation form, before the transaction is saved to db
-  if (!$transaction->created) {
-    $transaction->created = time();
-  }
-  $props['submitted'] = format_date($transaction->created, 'short');
-  $props['description'] = $transaction->title;
-  $props['payer'] = theme('username', user_load($transaction->payer_uid));
-  $props['payee'] = theme('username', user_load($transaction->payee_uid));
-  $props['amount'] = theme('money', $transaction->quantity, $transaction->cid);
-  $props['balance'] = theme('money', $transaction->balance, $transaction->cid);
-  $props['classes'][] = $transaction->state ? 'pending' : 'completed';
-
-  if ($transaction->starter_uid) {
-    $props['starter'] = theme('username', user_load($transaction->starter_uid));
-  }
-  if ($transaction->completer_uid) {
-    $props['completer'] = theme('username', user_load($transaction->completer_uid));
-  }
-  if (count($qualities = variable_get('cc_transaction_qualities', array()))) {
-    $classes[] = 'quality-'. $transaction->quality;
-    $classes[] = $qualities[$transaction->quality];
-  }
-  if ($transaction->payer_uid == $uid) {
-    $props['notme'] = $props['payee'];
-  }
-  elseif ($transaction->payee_uid == $uid) {
-    $props['notme'] = $props['payer'];
-  }
-  if ($transaction->nid) {
-    $props['transaction_link'] = l($transaction->title, 'node/'. $transaction->nid);
-  }
-  else {
-    $props['transaction_link'] = $transaction->title;
-  }
-  return $props;
-}
-
 
 function template_preprocess_balances(&$vars) {
   foreach ($vars['balances'] as $cid => $values) {
@@ -994,16 +923,16 @@ function _get_transactions_for_user($uid, $options) {
   }
   if ($states) {
     foreach ($states as $state) {
-      $statess[] = " t.state = $state ";
+      $statess[] = "t.state = $state ";
     }
   }
   else {
-    $statess[] = " t.state = " . TRANSACTION_STATE_COMPLETED;
+    $statess[] = "t.state = " . TRANSACTION_STATE_COMPLETED;
   }
   $filters[] = '('. implode(' OR ', $statess) .')';
   //time limits
   if ($until) {
-    $filters[] = " n.created < $until ";
+    $filters[] = "n.created < $until ";
   }
   else {
     //ensures we include transactions created this very query
@@ -1011,17 +940,16 @@ function _get_transactions_for_user($uid, $options) {
   }
   
   if ($cid) {
-    $filters[] = " t.cid = $cid ";
+    $filters[] = "t.cid = $cid ";
   }
   $query = "SELECT n.uid, n.title, n.nid, t.payer_uid, t.payee_uid, t.starter_uid, t.completer_uid, t.cid, t.quantity, t.quality, t.state, n.created, t.transaction_type
       FROM {node} n
       LEFT JOIN {cc_transactions} t ON t.nid = n.nid
       WHERE n.type = 'transaction'
-      AND %s
+      AND ". implode(' AND ', $filters) ."
       ORDER BY n.created ASC
     ";
-  $args = array(implode(' AND ', $filters));
-  $results = db_query($query, $args);
+  $results = db_query($query);
   
   //gets all the transactions, calculates the running balances and discards transactions before the time limit
   if ($running_balance) {
@@ -1110,14 +1038,7 @@ function _transaction_user_limits($account, $difference, $cid = 0) {
       );
     }
   }
-  if ($message) {
-    if (user_access('edit all transactions')) {
-      drupal_set_message($message, 'warning');
-    }
-    else {
-      form_set_error('quantity', $message);
-    }
-  }
+  return $message;
 }
 
 function _transaction_email_replacements() {

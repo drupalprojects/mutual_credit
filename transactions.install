@@ -464,16 +464,19 @@ function transactions_update_6019() {
   else {
     variable_set('cc_trader_selector', '');
   }
-  if (function_exists('refresh_trader_names')) {
-    refresh_trader_names();
-    drupal_set_message('Note the improved user selection formatting widget on '.l('admin/marketplace', 'admin/marketplace'));
-    variable_del('cc_autocomplete_user_select_widget', '%uid | %theme_username');
-    variable_del('cc_select_user_show');
-    variable_del('cc_select_user_orderby');
+  return array();
+}
+
+function transactions_update_6020() {
+  db_query("UPDATE {permission} set perm = REPLACE (perm, 'edit all transactions', 'edit all transactions, create 3rdparty transactions')");
+  drupal_set_message("A new permission has been created: 'create 3rdparty transactions'");
+  return array();
+}
+function transactions_update_6021() {
+  if (!variable_get('cc_trader_selector', '')) {
+    variable_set('cc_trader_autocomplete', TRUE);
+    variable_set('cc_trader_selector', '%uid | %theme_username');
+    register_shutdown_function('refresh_trader_names');
   }
-  else {
-    drupal_set_message('transactions.module lnot loaded');
-  }
-  
   return array();
 }

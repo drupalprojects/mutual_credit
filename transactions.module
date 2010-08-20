@@ -120,38 +120,30 @@ function transactions_menu() {
     'file' => 'transactions.admin.inc',
   );
   
-  $payers = cache_get('cc_trader_list');
-  if (count($payers->data) > 1) {
-    $items['transaction'] = array(
-      'title' => 'Create transaction',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('transaction_create_form', NULL, 'starter_completer'),
-      'access arguments' => array('use local currency'),
-      'type' => MENU_NORMAL_ITEM,
-      'file' => 'transactions.inc',
-      'weight' => 20,
-    );
-    $items['transaction/start'] = array(
-      'title' => 'Initiate',
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-      'weight' => 0,
-    );
-    $items['transaction/3rdparty'] = array(
-      'title' => '3rd party',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('transaction_create_form', NULL, 'payer_payee'),
-      'access callback' => 'user_access',
-      'access arguments' => array('edit all transactions'),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 1,
-      'file' => 'transactions.inc',
-    );
-  }
-  else {
-    drupal_set_message(t("Transaction forms are disabled until at least 2 users are permitted to '!trade'.",
-        array('!trade' => t('use local currency'))
-    ));
-  }
+  $items['transaction'] = array(
+    'title' => 'Create transaction',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_create_form', NULL, 'starter_completer'),
+    'access arguments' => array('use local currency'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'transactions.inc',
+    'weight' => 20,
+  );
+  $items['transaction/start'] = array(
+    'title' => 'Initiate',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items['transaction/3rdparty'] = array(
+    'title' => '3rd party',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_create_form', NULL, 'payer_payee'),
+    'access callback' => 'user_access',
+    'access arguments' => array('create 3rdparty transactions'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+    'file' => 'transactions.inc',
+  );
   $items['transaction/%node/complete'] = array(
     'title' => 'Sign this transaction to finalise it',
     'page callback' => 'drupal_get_form',
@@ -255,6 +247,7 @@ function transactions_perm() {
     'view all transactions',
     'view all balances',
     'edit all transactions',
+    'create 3rdparty transactions',
     'configure economy'
   );
 }
@@ -383,7 +376,6 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'user_admin_perm':
       $form['#submit'][] = 'refresh_trader_names';
-      $form['#submit'][] = 'menu_rebuild'; //because some menu items depend on the number of traders
       break;
     case 'node_delete_confirm':
       if ($form['#parameters'][2]->type == 'transaction') {
@@ -397,22 +389,13 @@ function transactions_form_alter(&$form, $form_state, $form_id) {
         }
       }
       $form['#redirect'] = 'user';
-      break;
-    case 'cc_options_form':
-      //this is here because it must go after the system_settings_form submit handler
-      $form['#submit'][] = 'menu_rebuild';
-      $form['#submit'][] = 'views_invalidate_cache';
-      $form['#submit'][] = 'refresh_trader_names';
-      $form['#submit'][] = 'stats_refresh_all';
-      break;
-      
+      break;      
     case 'transaction_node_form':
       $form['#theme'] = array('transaction_3rdparty_form');
       $form['buttons']['preview']['#access'] = FALSE;
       foreach (array('revision_information', 'author', 'options') as $key) {
         $form[$key]['access'] = FALSE;
       }
-
       break;
   } 
 }
@@ -469,7 +452,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
         $result = db_query(
           "SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean
             FROM {cc_balance_cache} WHERE uid = %d",
-          array(':uid' => $account->uid)
+          array(':uid' => $uid)
         );
         while ($balance = db_fetch_array($result)) {
           $cid = array_shift($balance);
@@ -595,6 +578,49 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
   }
 }
 
+function transactions_nodeapi(&$node, $op) {
+  if ($node->type != 'transaction') return;
+  module_load_include('inc', 'transactions');
+  switch ($op) {
+    case 'validate':
+      if (!count(form_get_errors()) && $node->payer_uid && $node->payee_uid) {
+        $errors = _transaction_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid));
+        $errors .= _transaction_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid));
+        if (strlen($errors)) {
+          //permitted users can override the balance limits
+          //this decision should be moved upwards for version 2.0
+          if (user_access('edit all transactions')) {
+            drupal_set_message($errors, 'warning');
+          }
+          else {
+            form_set_error('quantity', $errors);
+          }
+        }
+      }
+      break;
+
+    case 'insert':
+      module_load_include('admin.inc', 'transactions');
+      //gets rid of any boring status messages
+      drupal_get_messages('status', TRUE);
+
+      //automatically trigger the notifications
+      $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
+      while ($aid = db_result($result)) {
+        actions_do($aid, $node, array(
+          'hook' => 'nodeapi',
+          'op' => $op
+        ));
+      }
+      // the 'break' is missing deliberately
+    case 'update':
+    case 'delete':
+      module_load_include('admin.inc', 'transactions');
+      recalculate_balances($node->payer_uid, $node->cid);
+      recalculate_balances($node->payee_uid, $node->cid);
+      stats_refresh(intval($node->cid));
+  }
+}
 
 /** 
  * http://api.drupal.org/api/function/hook_theme/6
@@ -624,10 +650,7 @@ function transactions_theme($existing, $type, $theme, $path) {
       'template' => 'bureau',
       'path' => $templates_dir,
       'arguments' => array(
-        'account' => NULL,
-        'balances' => NULL,
-        'pending' => NULL,
-        'history' => NULL,
+        'account' => NULL
       )
     ),
     'money' => array(
@@ -740,7 +763,7 @@ function transactions_email_starter_action_form($context) {
   return transaction_email_form_template($context);
 }
 function transaction_email_form_template($context) {
-  $template = $context['template'] ? $context['template'] : t('');
+  $template = $context['template'] ? $context['template'] : '';
   $vars = _transaction_email_replacements();
   $form['subject'] = array(
     '#type' => 'textfield',
@@ -821,6 +844,47 @@ function phptemplate_views_view_field__gross_expenditure($view, $field, $row) {
   return theme('money', $row->cc_balance_cache_gross_expenditure, $row->cc_transactions_cid);
 }
 
+//takes the transaction node opbject and returns a load of ready to print fields, in an array
+function preprocess_transaction_fields($transaction, $uid) {
+  $props = array('node' => $transaction);
+  $classes = array();
+  //this is for the initial confirmation form, before the transaction is saved to db
+  if (!$transaction->created) {
+    $transaction->created = time();
+  }
+  $props['submitted'] = format_date($transaction->created, 'short');
+  $props['description'] = $transaction->title;
+  $props['payer'] = theme('username', user_load($transaction->payer_uid));
+  $props['payee'] = theme('username', user_load($transaction->payee_uid));
+  $props['amount'] = theme('money', $transaction->quantity, $transaction->cid);
+  $props['balance'] = theme('money', $transaction->balance, $transaction->cid);
+  $props['classes'][] = $transaction->state ? 'pending' : 'completed';
+
+  if ($transaction->starter_uid) {
+    $props['starter'] = theme('username', user_load($transaction->starter_uid));
+  }
+  if ($transaction->completer_uid) {
+    $props['completer'] = theme('username', user_load($transaction->completer_uid));
+  }
+  if (count($qualities = variable_get('cc_transaction_qualities', array()))) {
+    $classes[] = 'quality-'. $transaction->quality;
+    $classes[] = $qualities[$transaction->quality];
+  }
+  if ($transaction->payer_uid == $uid) {
+    $props['notme'] = $props['payee'];
+  }
+  elseif ($transaction->payee_uid == $uid) {
+    $props['notme'] = $props['payer'];
+  }
+  if ($transaction->nid) {
+    $props['transaction_link'] = l($transaction->title, 'node/'. $transaction->nid);
+  }
+  else {
+    $props['transaction_link'] = $transaction->title;
+  }
+  return $props;
+}
+
 //returns the specified, first, or default currency object
 function currency_load($cid=NULL) {
   if (module_exists('cc_currencies')) {
@@ -862,7 +926,7 @@ function currency_validate($form, &$form_state) {
   
   $divisions = array('integer', 'sixtieths', 'decimal');
   if (!in_array($currency->division, $divisions)) {
-    form_set_error('division', t("", array('@value' => $currency->division)));
+    form_set_error('division', t("Invalid option for division: @value", array('@value' => $currency->division)));
   }
 
   module_load_include('admin.inc', 'transactions');
@@ -947,43 +1011,45 @@ function _named_transaction_types() {
   return $types;
 }
 
-function refresh_trader_names() {
-  if ($roles = user_roles(TRUE, 'use local currency')) {
-    $where = array('status = 1',  'u.uid > 0');
-    if (!$roles[DRUPAL_AUTHENTICATED_RID]) {
-      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
-    }
-    $results = db_query("SELECT u.uid
-      FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
-      WHERE %s",
-        array(':where' => implode(' AND ', $where))
-    );
-
-    $account = array();
-    $pattern = variable_get('cc_trader_selector', '%uid | %theme_username');
-
-    while ($account = user_load(db_result($results))) {
-      $replacements = array(
-        '%uid' => $account->uid,
-        '%name' => $account->name,
-        '%email' => $account->mail,
-        '%theme_username' => strip_tags(theme('username', $account))
-      );
-      $names[$account->uid] = strtr($pattern, $replacements);
-    }
-    natcasesort($names);
-    cache_set('cc_trader_list', $names);
+function get_trader_list() {
+  $data = cache_get('cc_trader_list');
+  if (!$data) {
+    module_load_include('admin.inc', 'transactions');
+    refresh_trader_names();
+    $data = cache_get('cc_trader_list');
   }
-  else {
-    drupal_set_message(
-      t(
-        'No roles have permission to @trade. Go to !link',
-        array(
-          '@trade' => t('use local currency'),
-          '!link' => l('admin/user/permissions', 'admin/user/permissions')
-        ),
-      'warning'
-      )
-    );
+  return $data->data;
+}
+
+  
+
+//options might equal
+function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options = array(), $cid=0) {
+  global $user;
+  if ($quantity <= 0) {
+    drupal_set_message(t('@function was asked to create a transaction with negative value: @value', array('@function' => 'generate_transaction_node', '@value' => $quantity)));
+    return;
   }
+  $node = $options + array(
+   //default options
+    'state' => TRANSACTION_STATE_COMPLETED,
+    'transaction_type' => 'api unspecified',
+    'quality' => NULL,
+    'starter_uid' => $user->uid,
+    'completer_uid' => $payer_uid,
+    'uid' => $user->uid,
+    'created' => time(),
+   //other incoming arguments
+    'cid' => $cid,
+    'payee_uid' => $payee_uid,
+    'payer_uid' => $payer_uid,
+    'quantity' => $quantity,
+    'title' => $title,
+   //some basic node properties
+    'type' => 'transaction',
+    'status' => 0, //this adds protection against anonymous users seeing transactions
+  );
+  $node=(object)$node;
+  node_save($node);
+  return $node;
 }
