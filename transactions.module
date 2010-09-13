@@ -407,7 +407,7 @@ function transactions_insert($node) {
   $result = db_query('INSERT INTO {cc_transactions} (
     nid, payer_uid, payee_uid, starter_uid, completer_uid, quantity, cid, transaction_type, quality, state, depends_on
   ) VALUES (%d, %d, %d, %d, %d, %f, %d, "%s", %d, %d, %d)',
-    $node->nid, $node->payer_uid, $node->payee_uid, $node->starter_uid, $node->completer_uid, $node->quantity, $node->cid, $node->transaction_type, $node->quality, $node->state, 0);
+    $node->nid, $node->payer_uid, $node->payee_uid, $node->starter_uid, $node->completer_uid, $node->quantity, $node->cid, $node->transaction_type, $node->quality, $node->state, $node->depends_on);
 }
 
 /** 
@@ -603,14 +603,16 @@ function transactions_nodeapi(&$node, $op) {
       module_load_include('admin.inc', 'transactions');
       //gets rid of any boring status messages
       drupal_get_messages('status', TRUE);
-
-      //automatically trigger the notifications
-      $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
-      while ($aid = db_result($result)) {
-        actions_do($aid, $node, array(
-          'hook' => 'nodeapi',
-          'op' => $op
-        ));
+      //3rdparty transactions will not receive any notification, for now. See version 2.0
+      if (!strpos($node->transaction_type, 'party')) {
+        //automatically trigger the notifications
+        $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
+        while ($aid = db_result($result)) {
+          actions_do($aid, $node, array(
+            'hook' => 'nodeapi',
+            'op' => $op
+          ));
+        }
       }
       // the 'break' is missing deliberately
     case 'update':
@@ -780,7 +782,6 @@ function transaction_email_form_template($context) {
       t('You can confirm the transaction from your profile page: %profile_url') ."\n\n".
       t("You can change your mail notification settings by clicking 'edit' on your profile"),
     '#description' => t("This email will be sent to members when someone initiates a transaction with them which needs confirming. ") . 
-    t("Don't forget to enable the trigger module and set up the trigger at !url. ", array('!url' => l('admin/build/trigger', 'admin/build/trigger'))) .
     t("You can use the following strings as variables:")
   );
   if (module_exists('mime_mail')) {
@@ -852,7 +853,7 @@ function preprocess_transaction_fields($transaction, $uid) {
   if (!$transaction->created) {
     $transaction->created = time();
   }
-  $props['submitted'] = format_date($transaction->created, 'short');
+  $props['submitted'] = format_date($transaction->created, 'small');
   $props['description'] = $transaction->title;
   $props['payer'] = theme('username', user_load($transaction->payer_uid));
   $props['payee'] = theme('username', user_load($transaction->payee_uid));
@@ -1027,7 +1028,9 @@ function get_trader_list() {
 function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options = array(), $cid=0) {
   global $user;
   if ($quantity <= 0) {
-    drupal_set_message(t('@function was asked to create a transaction with negative value: @value', array('@function' => 'generate_transaction_node', '@value' => $quantity)));
+    drupal_set_message(t('@function was asked to create a transaction with negative value: @value', 
+      array('@function' => 'generate_transaction_node', '@value' => $quantity)
+    ));
     return;
   }
   $node = $options + array(
@@ -1036,7 +1039,7 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     'transaction_type' => 'api unspecified',
     'quality' => NULL,
     'starter_uid' => $user->uid,
-    'completer_uid' => $payer_uid,
+    'completer_uid' => $user->uid == $payer_uid ? $payee_uid : $payer_uid,
     'uid' => $user->uid,
     'created' => time(),
    //other incoming arguments
@@ -1047,7 +1050,9 @@ function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $o
     'title' => $title,
    //some basic node properties
     'type' => 'transaction',
-    'status' => 0, //this adds protection against anonymous users seeing transactions
+    ////this adds protection against anonymous users seeing transactions
+    //if transactions_access isn't working properly
+    'status' => 0,
   );
   $node=(object)$node;
   node_save($node);

@@ -56,7 +56,6 @@ function transactions_list($account=NULL, $options=array()) {
   $transactions = array_reverse($transactions);
   $transactions = array_slice($transactions, $page_no*TRANSACTIONS_PER_PAGE, TRANSACTIONS_PER_PAGE);
   return theme('statement', $account, $transactions);
-
 }
 
 
@@ -650,7 +649,7 @@ function transactions_mail($key, &$message, $params) {
   $variables = array(
     '%completer' => $completer->name,
     '%starter' => $starter->name,
-    '%summary' => node_view($params['transaction'], TRUE, FALSE, FALSE),
+    '%summary' => strip_tags(node_view($params['transaction'], TRUE, FALSE)),
     '%reason' => $params['transaction']->title,
     '%profile_url' =>  url('user/'. $recipient->uid, array('absolute' => TRUE)),
     '%pending_url' => url('user/'. $recipient->uid .'/pending', array('absolute' => TRUE)),
@@ -942,7 +941,7 @@ function _get_transactions_for_user($uid, $options) {
   if ($cid) {
     $filters[] = "t.cid = $cid ";
   }
-  $query = "SELECT n.uid, n.title, n.nid, t.payer_uid, t.payee_uid, t.starter_uid, t.completer_uid, t.cid, t.quantity, t.quality, t.state, n.created, t.transaction_type
+  $query = "SELECT n.uid, n.title, n.nid, t.payer_uid, t.payee_uid, t.starter_uid, t.completer_uid, t.cid, t.quantity, t.quality, t.state, n.created, t.transaction_type, t.depends_on
       FROM {node} n
       LEFT JOIN {cc_transactions} t ON t.nid = n.nid
       WHERE n.type = 'transaction'
@@ -981,30 +980,6 @@ function _get_transactions_for_user($uid, $options) {
     $transactions[$nid] = $transaction;
   }
   return $transactions;
-}
-
-function _get_view_transactions_by_user($where) {
-  $view = views_get_view('cc_transactions_by_user');
-  //need to remove the field which is also the argument, i.e. payer_uid or payee_uid
-  foreach ($view->display['default']->display_options['fields'] as $i => $field) {
-    if ($field['relationship'] == $where['field']) {
-      unset($view->display['default']->display_options['fields'][$i]);
-      break;
-    }
-  }
-  //Change the column heading of 'amount' to be Income or Expenditure
-  //and render the view with the right parameter
-  if ($where['field'] == 'payer_uid') {
-    $view->display['default']->display_options['fields']['quantity']['label'] = t('Expenditure');
-    return $view->execute_display('default', array($where['uid']));
-  }
-  elseif ($where['field'] == 'payee_uid') {
-    $view->display['default']->display_options['fields']['quantity']['label']=t('Income');
-    return $view->execute_display('default', array('all', $where['uid']));
-  }
-  else{
-    drupal_set_message('wrong parameter sent to _get_view_transactions_by_user');
-  }
 }
 
 /*

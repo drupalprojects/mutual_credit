@@ -17,7 +17,7 @@ function cc_import_menu() {
     'title' => 'Import Tools',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_balances_form'),
-    'access arguments' => array('configure currencies'),
+    'access arguments' => array('configure economy'),
     'weight' => 5
   );
   $items['admin/marketplace/import/balances'] = array(
@@ -29,21 +29,21 @@ function cc_import_menu() {
     'title' => 'Import Offers',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_offers_form'),
-    'access arguments' => array('configure currencies'),
+    'access arguments' => array('configure economy'),
     'type' => MENU_LOCAL_TASK,
   );
   $items['admin/marketplace/import/wants'] = array(
     'title' => 'Import Wants',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_wants_form'),
-    'access arguments' => array('configure currencies'),
+    'access arguments' => array('configure economy'),
     'type' => MENU_LOCAL_TASK,
   );
   $items['admin/marketplace/import/launch'] = array(
     'title' => 'LAUNCH MAIL',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('launch_form'),
-    'access arguments' => array('configure currencies'),
+    'access arguments' => array('configure economy'),
     'type' => MENU_NORMAL_ITEM,
     'weight' => -50
   );
