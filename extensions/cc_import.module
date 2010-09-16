@@ -1,5 +1,5 @@
 <?php
-
+// $Id$
 function cc_import_help() {
     switch ($section) {
     case 'admin/help#cc_import':

@@ -1,4 +1,5 @@
 <?php
+// $Id$
 /* mass payout form
 one person [autocomplete] or whatever
 is paying everyone except[multiselect dropdown traders only]

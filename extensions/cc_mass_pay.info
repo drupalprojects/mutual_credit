@@ -1,6 +1,6 @@
-; $Id:
+; $Id$
 name = Cc Mass Payment
-description =  Create Transactions involving multiple users to or from one account
+description =  "Create Transactions involving multiple users to or from one account"
 core = 6.x
 package = Complementary Currencies
 dependencies[] = transactions
