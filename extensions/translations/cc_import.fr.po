@@ -1,0 +1,142 @@
+# $Id$
+#
+# French translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  cc_import.module: n/a
+#  cc_import.info: n/a
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2010-01-12 17:00+0300\n"
+"PO-Revision-Date: 2010-01-12 17:00+0300\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: French <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+
+#: cc_import.module:6
+msgid "Provides advice and a simple text box to paste csv style data from your existing spreadsheets. "
+msgstr "Vous donne des conseils ainsi qu'un champ texte pour coller des données csv de votre logiciel tableur (comme Excel). "
+
+#: cc_import.module:7
+msgid "Assumes user 1 is the balancing account."
+msgstr "Le compte 1 est employé comme compte d'équilibre. "
+
+#: cc_import.module:9
+msgid "This page allows you to import users' balances and gross incomes for users already on the system. To import users, see the !import_user module."
+msgstr "Cette page vous permet d'importer les soldes des membres et leurs cumuls pour les utilisateurs qui sont déjà dans le système.  Pour importer les membres,voir le module  !import_user."
+
+#: cc_import.module:15
+msgid "This page allows you to import users' @type for users already on the system."
+msgstr "Cette page vous permet d'importer membres @type pour les membres qui sont déjà dans le système."
+
+#: cc_import.module:18
+msgid "There are other ways of doing this, but this is simple and maintained along with the rest of the marketplace module."
+msgstr "Il y a d'autres façons de le faire, mais c'est simple et entretenu avec le module marketplace."
+
+#: cc_import.module:19
+msgid "Use a spreadsheet tool to prepare a list of user ids or names, and the description in each line."
+msgstr "Veuillez utiliser un tableur afin de préparer la liste avec des n° d'adhérents, et la description de chaque ligne."
+
+#: cc_import.module:20
+msgid "For aesthetic reasons, there is a @num character limit on each description."
+msgstr "Pour des raisons de mise en page, il y a une limite de @num caractères de description."
+
+#: cc_import.module:23
+msgid "Each line should look like this (you must include the header row): !code"
+msgstr "Chaque ligne devrait s'afficher comme ceci (vous devez inclure le rangée d'en-tête) : !code"
+
+#: cc_import.module:26
+msgid "Try importing one or two first!"
+msgstr "Veuillez faire des tests avec un ou deux adhérents."
+
+#: cc_import.module:29
+msgid "This button will give you some drupal code containing all the transactions, offers and wants on the system."
+msgstr "Ce bouton va donner du code Drupal avec les échanges, les offres et les demandes du système."
+
+#: cc_import.module:30
+msgid "Copy the code and run it in the php box of the devel module on the target system"
+msgstr "Veuillez copier le code et le mettre dans la boîte php du module développement du système ciblé."
+
+#: cc_import.module:82
+msgid "Paste paste 2 or 3 comma separated columns into the field below, the first column should be the uid or username, the second column the current balance, and optionally the third column should be the user's gross income until now (turnover)."
+msgstr "Coller 2 ou 3 csv colonnes dans le champ ci-dessous. La première colonne devrait contenir le uid ou numéro de membre, le 2e son solde actuel, et le 3e son cumul (en option). "
+
+#: cc_import.module:83
+msgid "This tools assumes there is only one currency in the system. The second column SHOULD add up to 0 for LETS and other zero balance systems, but this will not be checked."
+msgstr "Cet outil d'importation n'est prévu que pour une seule unité d'échange. Le total de la 2e colonne DEVRAIT être 0 pour les SELs et autres systèmes avec un compte d'équilibrage, mais l'outil ne le contrôle pas. "
+
+#: cc_import.module:84
+msgid "The first line of the field should read (third column is optional): !code"
+msgstr "La première ligne du champ devrait afficher (3e colonne en option): !code"
+
+#: cc_import.module:102
+msgid "to import balances you need a balancing account. Specify the account number at !admin/marketplace"
+msgstr "Afin d'importer les soldes des membres, vous avez besoin d'un compte équilibre. Veuillez spécifier le numéro de compte ici !admin/marketplace"
+
+#: cc_import.module:112
+msgid "balance (second item) on row @num is not an integer"
+msgstr "soldes (2e item) sur rangé @num n'est pas un nombre entier"
+
+#: cc_import.module:118
+msgid "gross income (third item) on row @rownum must be a positive integer"
+msgstr "cumul (3e item) sur rangée @rownum doit être un nombre entier positif"
+
+#: cc_import.module:120
+msgid "gross income (third item) on row @rownum cannot be less than 0"
+msgstr "cumul (3e item) sur rangée @rownum ne doit pas être moins que 0"
+
+#: cc_import.module:148
+msgid "Gross income"
+msgstr "Entrées"
+
+#: cc_import.module:149
+msgid "Gross expenditure"
+msgstr "Dépenses brutes"
+
+#: cc_import.module:161
+msgid "Carried Forward"
+msgstr "Solde reporté"
+
+#: cc_import.module:222
+msgid "Descriptions on the following should be reduced to less than @num characters: @rows"
+msgstr "Veuillez réduire les descriptions à @num characters: @rows"
+
+#: cc_import.module:243
+msgid "The following UserIDs do not exist: @UserIDs"
+msgstr "Les numéros d'adhérent suivants n'existent pas: @UserIDs"
+
+#: cc_import.module:40
+msgid "Import Tools"
+msgstr "Outils d'importation"
+
+#: cc_import.module:47
+msgid "Import Balances"
+msgstr "Importer les soldes"
+
+#: cc_import.module:52
+msgid "Import Offers"
+msgstr "Importer des offres"
+
+#: cc_import.module:59
+msgid "Import Wants"
+msgstr "Importer des demandes"
+
+#: cc_import.module:66
+msgid "Migrate"
+msgstr "Passer à l'autre système"
+
+#: cc_import.info:0
+msgid "Import Offers, Wants and carried forward balances using No 1 account. Built for Fernie, Canada"
+msgstr "Importer les offres, demandes et soldes reportés en passant par le compte 1. Sponsorisé par Fernie, Canada"
+
+#: cc_import.info:0
+msgid "Complementary Currencies"
+msgstr "Monnaies Complémentaires"
+
