@@ -1,31 +1,27 @@
 # $Id$
 #
-# LANGUAGE translation of Drupal (general)
+# Catalan translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
 # Generated from files:
-#  cc_offer_want.module,v 1.1.2.3 2009/12/04 10:41:25 matslats
-#  cc_offer_want.install,v 1.1.2.3 2009/12/04 10:41:25 matslats
-#  cc_offer_want.info,v 1.1.2.1 2009/09/27 15:45:35 matslats
+#  cc_offer_want.module,v 1.3 2010/05/01 15:52:49 matslats
+#  cc_offer_want.install,v 1.3 2010/05/01 15:52:49 matslats
+#  cc_offer_want.info,v 1.2 2009/09/07 14:12:11 matslats
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2010-01-12 16:33+0300\n"
-"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"POT-Creation-Date: 2010-05-04 17:16+0200\n"
+"PO-Revision-Date: 2010-05-04 17:16+0200\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"Language-Team: Catalan <EMAIL@ADDRESS>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
 
 #: cc_offer_want.module:10
 msgid "Defines two contentTypes which are created and edited by each user and which are presented as a directory categorised using taxonomy."
-msgstr ""
-
-#: cc_offer_want.module:25;161;337
-msgid "Offer"
 msgstr ""
 
 #: cc_offer_want.module:27;37
@@ -36,16 +32,8 @@ msgstr ""
 msgid "Product or service you are offering"
 msgstr ""
 
-#: cc_offer_want.module:35;161;338
-msgid "Want"
-msgstr ""
-
 #: cc_offer_want.module:39
 msgid "Product or service you need"
-msgstr ""
-
-#: cc_offer_want.module:56
-msgid "Offers & Wants"
 msgstr ""
 
 #: cc_offer_want.module:68
@@ -84,51 +72,63 @@ msgstr ""
 msgid "categories"
 msgstr ""
 
-#: cc_offer_want.module:152
+#: cc_offer_want.module:151
 msgid "Add offers/wants"
 msgstr ""
 
-#: cc_offer_want.module:174
+#: cc_offer_want.module:160;345
+msgid "Offer"
+msgstr ""
+
+#: cc_offer_want.module:160;346
+msgid "Want"
+msgstr ""
+
+#: cc_offer_want.module:173
 msgid "@offerwant Categories"
 msgstr ""
 
-#: cc_offer_want.module:181
+#: cc_offer_want.module:180;187
 msgid "Place your @offerwant"
 msgstr ""
 
-#: cc_offer_want.module:188
-msgid "Place your small ad"
-msgstr ""
-
-#: cc_offer_want.module:299
+#: cc_offer_want.module:306
 msgid "@categoryname @types"
 msgstr ""
 
-#: cc_offer_want.module:306
+#: cc_offer_want.module:313
 msgid "contact @username"
 msgstr ""
 
-#: cc_offer_want.module:310
+#: cc_offer_want.module:317
 msgid "@person's directory"
 msgstr ""
 
-#: cc_offer_want.module:322
-msgid "Click to add new !items"
+#: cc_offer_want.module:328
+msgid "offer"
 msgstr ""
 
-#: cc_offer_want.module:334
+#: cc_offer_want.module:330
+msgid "want"
+msgstr ""
+
+#: cc_offer_want.module:332
+msgid "Click to add a new !item"
+msgstr ""
+
+#: cc_offer_want.module:342
 msgid "Which directory?"
 msgstr ""
 
-#: cc_offer_want.module:343
+#: cc_offer_want.module:351
 msgid "Text of your advert"
 msgstr ""
 
-#: cc_offer_want.module:349
+#: cc_offer_want.module:357
 msgid "Details"
-msgstr ""
+msgstr "Detalls"
 
-#: cc_offer_want.module:355
+#: cc_offer_want.module:363
 msgid "Submit"
 msgstr ""
 
@@ -156,6 +156,10 @@ msgstr ""
 msgid "create offer"
 msgstr ""
 
+#: cc_offer_want.module:56
+msgid "Offers & Wants"
+msgstr ""
+
 #: cc_offer_want.install:12
 msgid "Offers & Wants categories"
 msgstr ""
@@ -168,7 +172,7 @@ msgstr ""
 msgid "Choose one or more categories"
 msgstr ""
 
-#: cc_offer_want.install:31
+#: cc_offer_want.install:30
 msgid "Now go and make some directory categories at !link"
 msgstr ""
 

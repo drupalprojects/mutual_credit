@@ -109,8 +109,8 @@ msgid "@person's directory"
 msgstr "offres/demandes de @person's "
 
 #: cc_offer_want.module:322
-msgid "Click to add new !items"
-msgstr "Cliquez pour ajouter une !items"
+msgid "Click to add a new !item"
+msgstr "Cliquez pour ajouter une !item"
 
 #: cc_offer_want.module:334
 msgid "Which directory?"

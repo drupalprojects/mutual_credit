@@ -109,17 +109,19 @@ while ($line = @each($lines)) {
 }
 
 //now put the line into the google charts api format
-$params['cht'] = 'lxy';
-$params['chs'] = implode('x',$dimensions);
-$params['chd'] = 't:' . @implode('|', $lines);
-//optional parameters
+$params = array(
+  'cht' => 'lxy',
+  'chs' => implode('x',$dimensions),
+  'chd' => 't:' . @implode('|', $lines),
+  //optional parameters
+  'chds' => implode(',',$ds),
+  'chxt' => 'x,y',
+  'chxl' => '0:|' . date('M y', $first_time) . '|' . t('Now') . '|1:|' . $min . '|' . $max,
+  'chm' => 'r,888888,0,1,-1', //this is called a range marker, which we are using for the zero line
+  'chls' => @implode('|',$line_styles),
+  'chco' => @implode(',',$line_colors),
+);
 if ($legend)$params['chtt'] = $legend;
-$params['chds'] = implode(',',$ds);
-$params['chxt'] = 'x,y';
-$params['chxl'] = '0:|' . date('M y', $first_time) . '|' . t('Now') . '|1:|' . $min . '|' . $max;
-$params['chm'] = 'r,888888,0,1,-1'; //this is called a range marker, which we are using for the zero line
-$params['chls'] = @implode('|',$line_styles);
-$params['chco'] = @implode(',',$line_colors);
   
 //cleaner than http_build_query
 foreach ($params as $key=>$val) {

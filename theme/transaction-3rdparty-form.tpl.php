@@ -52,5 +52,5 @@ switch($mode) {
     print $next;
 
 } 
-print $state; 
-print $hidden_fields;
+print $state; //this is only shown occaisionally
+print $hidden_fields; //this MUST be printed somewhere in the form

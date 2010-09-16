@@ -7,13 +7,13 @@ span.currency img{
 input.form-autocomplete,
 .form-text#edit-completer-uid,
 .form-text#edit-starter-uid,
-.form-text#transaction-start-form {
+.form-text#transaction-create-form {
   width:12em;
 }
 
 
 #edit-quantity-wrapper,
-#transaction-start-form #edit-cid-wrapper{
+#transaction-create-form #edit-cid-wrapper{
   float:left;
   clear:none;
 }
@@ -21,21 +21,25 @@ input.form-autocomplete,
 	clear:left;
 }
 
-#edit-division-1{
+#edit-division{
   width:8em;
 }
-#transaction-start-form table,
-#transaction-start-form table-1,
-#transaction-start-form table tr,
-#transaction-start-form table tbody td{
-	border: 0;
-	padding: 0 0.3em 0 0;
-	margin: 0;
-	background-color: transparent;
-	}
 
-#transaction-start-form #edit-title,{
-  width:85%;
+#transaction-create-form table,
+#transaction-create-form table tr,
+#transaction-create-form table tbody td{
+  border: 0;
+  padding: 0 0.3em 0 0;
+  margin: 0;
+  background-color: transparent;
+}
+#transaction-create-form .form-item{
+  margin: 0 0 1.5em 0;
+}
+
+.block #edit-title,
+.block #edit-title-1{
+  width:95%;
   }
 
 
@@ -95,17 +99,5 @@ span.cc-next:after{content:'>>';}
 .balance-limits .form-text {
   width:3em;
 }
-
-.transaction-button{
-  border: 1px solid #006;
-  padding: 0.2em 0.4em;
-  background: #eee;
-  margin: 0.2em;
-}
-a.transaction-button:hover{
-  background: #ddd;
-  text-decoration: none;
-}
-div.transactions-pending{
-  margin-bottom:0.5em;
-}
+div.transaction.teaser{margin-bottom:1em;}
+.view-cc-transactions-pending .view-header{}

@@ -37,12 +37,15 @@ function transactions_install() {
     'max_balance' => 500,
     'min_balance' => -500,
     'comparative_value' => 0,
-    'zero_offset' => 0,
     'color' => '0000ff',
     'icon' => drupal_get_path('module', 'transactions') .'/theme/default_currency.png',
     );
   variable_set('cc_default_currency', $currency);
-  drupal_set_message(t('Transaction module is installed. Set the default currency at !link',
+  module_load_include('module', 'transactions');
+  module_load_include('admin.inc', 'transactions');
+  refresh_trader_names();
+  cc_balances_refresh();
+  drupal_set_message(t('Transaction module is installed. Set up the default currency at !link',
     array('!link' => l('admin/marketplace/currency', 'admin/marketplace/currency', array('attributes' => array('target' => '_blank')))))
   );
 }
@@ -145,10 +148,9 @@ function transactions_schema() {
     ),
   );
   /*
-   * This table cointains one row for every user/currency
-   * The rows are deleted and recreated when updated, instead of INSERTED
-   * Multiple currency module deletes rows when it is disabled
-   * We should really be using drupal cache instead of this
+   * This table cointains one row for every user/currency and contains balances and personal balance limits
+   * The rows are created and deleted in hook_user, and when currencies are added and removed.
+   * 
    */
   $schema['cc_balance_cache'] = array(
     'description' => t('cached balances, turnovers and pending balances, for exposure to views'), 
@@ -157,61 +159,58 @@ function transactions_schema() {
         'description' => t('the node to which this entry is attached'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'cid' => array(
         'description' => t('the currency id, where there is more than one currency'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'cleared_balance' => array(
         'description' => 'balance including pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'pending_difference' => array(
         'description' => 'sum of all pending transactions, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'pending_balance' => array(
         'description' => 'forecast balance after pending transactions are completed for this user in this currency, (integer)',
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'gross_income' => array(
         'description' => "sum of all this user's income in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'gross_expenditure' => array(
         'description' => "sum of all this user's ougoings in this currency, (integer)",
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
         'default' => '0',
       ),
       'quality_mean' => array(
         'description' => "average transaction rating for this user in this currency",
         'type' => 'float',
         'size' => 'normal',
-        'default' => '0',
-      ),
-      'limit_max' => array(
-        'description' => "Maximum balance that this user can hold in this currency",
-        'type' => 'int',
-        'size' => 'normal',
-      ),
-      'limit_min' => array(
-        'description' => "Minimum balance that this user can hold in this currency",
-        'type' => 'int',
-        'size' => 'normal',
       )
-    )
+    ),
+    'primary key' => array('uid', 'cid')
   );
   return $schema;
 }
@@ -308,7 +307,7 @@ function transactions_update_6010($ret = array()) {
   $table=drupal_get_schema('cc_balance_cache');
   $type = $table['fields']['balance']['type'];
   drupal_set_message("Renaming $type field 'cc_balance_cache.balance' to 'cleared_balance'");
-  db_change_field($ret, 'cc_balance_cache', 'cleared_balance', 'cleared_balance', array(
+  db_change_field($ret, 'cc_balance_cache', 'balance', 'cleared_balance', array(
     'description' => "sum of all this user's completed transactions",
     'type' => $type,
     'size' => 'normal',
@@ -408,12 +407,76 @@ function transactions_update_6015() {
   return array();
 }
 
-function transactions_update_6016() {
+function transactions_update_6017() {
+  $ret = array();
+  $schema = drupal_get_schema('cc_balance_cache');
+  foreach (array('cleared_balance', 'pending_difference', 'pending_balance', 'gross_income', 'gross_expenditure', 'quality_mean') as $fieldname) {
+    $field = $schema['fields'][$fieldname];
+    $field['not null'] = TRUE;
+    $field['default'] = 0;
+    db_change_field($ret, 'cc_balance_cache', $fieldname, $fieldname, $field);
+  }
+  while (list($key, $value) = @each($schema['unique keys'])) {
+    db_drop_unique_key($ret, 'cc_balance_cache', $key);
+  }
+  if (!$schema['primary key']) {
+    db_add_primary_key($ret, 'cc_balance_cache', array('uid', 'cid'));
+  }
+  return $ret;
+}
+
+//remove the personalised balances from the database
+function transactions_update_6018() {
+  $ret = array();
   module_load_include('admin.inc', 'transactions');
-  refresh_trader_names();
+  $result = db_query("SELECT uid, cid, limit_max, limit_min FROM {cc_balance_cache}");
+  while ($row = db_fetch_array($result)) {
+    $account = user_load($row['uid']);
+    if (!is_array($account->balances))$account->balances = array();
+    $edit['min-'.$row['cid']] = $row['limit_min'];
+    $edit['max-'.$row['cid']] = $row['limit_max'];
+    user_save($account, $edit);
+  }
+
+  db_drop_field($ret, 'cc_balance_cache', 'limit_max');
+  db_drop_field($ret, 'cc_balance_cache', 'limit_min');
+
   $trader_list = cache_get('cc_trader_list');
   if (is_array($trader_list->data)) {
-    return array('success' => 'Created cache for trader listings');
+    $ret[] = array('success' => TRUE, 'query' => 'Created cache for trader listings');
   }
-  return array('failed' => 'Failed to refresh_trader_names() in transactions.admin.inc');
+  else {
+    $ret[] = array('success' => FALSE, 'query' => 'Failed to refresh_trader_names()');
+  }
+  drupal_set_message('There are now two (unplaced) blocks to replace the pending transactions which used to be at the bottom of the user profile page', 'alert');
+  drupal_rebuild_theme_registry();
+  stats_refresh_all();
+  return $ret;
+}
+
+function transactions_update_6019() {
+  $previous = variable_get('cc_autocomplete_user_select_widget', 'select');
+  if ($previous == 'select') {
+    $fields = variable_get('cc_select_user_show', array('uid', 'themed_username'));
+    foreach ($fields as $key=>$field)$fields[$key] = '%'.$field;
+    variable_set('cc_trader_selector', implode(' | ', $fields));
+  }
+  else {
+    variable_set('cc_trader_selector', '');
+  }
+  return array();
+}
+
+function transactions_update_6020() {
+  db_query("UPDATE {permission} set perm = REPLACE (perm, 'edit all transactions', 'edit all transactions, create 3rdparty transactions')");
+  drupal_set_message("A new permission has been created: 'create 3rdparty transactions'");
+  return array();
+}
+function transactions_update_6021() {
+  if (!variable_get('cc_trader_selector', '')) {
+    variable_set('cc_trader_autocomplete', TRUE);
+    variable_set('cc_trader_selector', '%uid | %theme_username');
+    register_shutdown_function('refresh_trader_names');
+  }
+  return array();
 }

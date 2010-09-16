@@ -7,6 +7,9 @@
 */
 
 function cc_mass_pay_menu() {
+  $payers = get_trader_list();
+  if (count($payers) < 2) return;
+
   $items['admin/marketplace/mass_payment'] = array (
     'title' => 'Mass Payments',
     'description' => 'Create mass transactions to and from one account',
@@ -57,17 +60,28 @@ function many2one_form() {
   unset($form['completer_uid']);
   unset($form['starter_uid']);
   unset($form['#after_build']);
-  $payers = cache_get('cc_trader_list');
-  if (!$payers) return;
 
-  $form['non_payers'] = array (
-    '#type' => 'select', 
-    '#title' => t('Payer exceptions'),
-    '#options' => $payers->data,
-    '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
-    '#multiple' => TRUE,
-    '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
-  );
+  $payers = get_trader_list();
+  if (module_exists('jquery_multiselect')) {
+    $form['non_payers'] = array (
+      '#type' => 'select',
+      '#title' => t('Payer exceptions'),
+      '#options' => $payers,
+      '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
+      '#multiple' => TRUE,
+      '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
+    );
+  }
+  else {
+    $form['non_payers'] = array (
+      '#type' => 'select',
+      '#title' => t('Payer exceptions'),
+      '#options' => $payers,
+      '#default_value' => variable_get('cc_mass_pay_collect_nonpayers', NULL),
+      '#multiple' => TRUE,
+      '#description' => t("Select the accounts you DON'T want to be billed. Use CTRL click to select more than one."),
+    );
+  }
   $form['payee_uid']['#description'] = t("Select the one account to which all the transactions will flow.");
   $form['quantity']['#description']  = t('How much should be taken from each account?');
   $form['submit'] = array (
@@ -80,9 +94,14 @@ function many2one_form() {
 }
 
 function many2one_form_validate($form, &$form_state) {
-  $payers = array_diff(array_keys(cache_get('cc_trader_list')), $form_state['values']['non_payers'], array($form_state['values']['payee_uid']));
+  $traders = get_trader_list();
+  $payers = array_diff(
+    array_keys($traders),
+    $form_state['values']['non_payers'],
+    array($form_state['values']['payee_uid'])
+  );
   if (!count($payers)) {
-    form_set_error('non_payers', t("No payers have been selected. Have you selected all accounts as non-payers?")); 
+    form_set_error('non_payers', t("No payers have been selected.")); 
   }
   else {
     cc_validate_trader('uid', $payers);
@@ -94,30 +113,29 @@ function many2one_form_validate($form, &$form_state) {
 function many2one_form_submit($form, $form_state) {
   module_load_include('admin.inc', 'transactions');
   variable_set('cc_mass_pay_collect_nonpayers', $form_state['values']['non_payers']);
-  $transaction = _infer_transaction_from_form($form_state['values']);
   $options = array(
-    'transaction_type'=> ($transaction->state == TRANSACTION_STATE_COMPLETED) ? 'incoming_mass_direct' :  'incoming_mass_confirmed',
-    'starter_uid' => $transaction->payee_uid,
+    'transaction_type'=> ($form_state['values']['state'] == TRANSACTION_STATE_COMPLETED) ? 'incoming_mass_direct' :  'incoming_mass_confirmed',
+    'starter_uid' => $form_state['values']['payee_uid'],
     'uid' => $GLOBALS['user']->uid,
-    'state' => $transaction->state,
+    'state' => $form_state['values']['state'],
   );
   // make the payments
   foreach ($form_state['payers'] as $payer_uid) {
     $options['completer_uid'] = $payer_uid;
-    generate_transaction_node($transaction->title, $payer_uid, $transaction->payee_uid, $transaction->quantity, $options, $transaction->cid);
+    generate_transaction_node($form_state['values']['title'], $payer_uid, $form_state['values']['payee_uid'], $form_state['values']['quantity'], $options, $form_state['values']['cid']);
   }  
   cc_balances_refresh();
-  $payee = user_load($transaction->payee_uid);
+  $payee = user_load($$form_state['values']['payee_uid']);
   $message = t("Many to @name mass payment of @amount for @description", 
     array(
-    '@user' => $payee->name,
-    '@amount' => $form_state['values']['quantity'] .' ' . $currency->title,
-    '@description' => $form_state['values']['title']
+      '@name' => $payee->name,
+      '@amount' => $form_state['values']['quantity'] .' ' . $currency->title,
+      '@description' => $form_state['values']['title']
     )
   );
   //this seems to be the only way to get translated strings to watchdog, as the the first 2 parameters must be literal strings
   watchdog('Mass Payments', '!message', array('!message' => $message));
-  mass_pay_redirect($transaction->payee_uid);
+  mass_pay_redirect($form_state['values']['payee_uid']);
 }
 
 function one2many_form() {
@@ -127,13 +145,12 @@ function one2many_form() {
   unset($form ['completer_uid']);
   unset($form ['starter_uid']);
   unset($form['#after_build']);
-  $payees = cache_get('cc_trader_list');
-  if (!$payees) return;
+  $payees = get_trader_list();
 
   $form['non_payees'] = array (
     '#type' => 'select', 
     '#title' => t('Payees'),
-    '#options' => $payees->data,
+    '#options' => $payees,
     '#default_value' => variable_get('cc_mass_pay_non_payees', NULL),
     '#multiple' => TRUE,
     '#description' => t("Select the accounts you don't want to be paid. Use CTRL click to select more than one."),
@@ -151,9 +168,14 @@ function one2many_form() {
 }
 
 function one2many_form_validate($form, &$form_state) {
-  $payees = array_diff(array_keys(cache_get('cc_trader_list')), $form_state['values']['non_payees'], array($form_state['values']['payer_uid']));
+  $traders = get_trader_list();
+  $payees = array_diff(
+    array_keys($traders),
+    $form_state['values']['non_payees'], 
+    array($form_state['values']['payer_uid'])
+  );
   if (!count($payees)) {
-    form_set_error('non_payees', t("No payees have been selected. Have you selected all accounts as non-payees?")); 
+    form_set_error('non_payees', t("No payees have been selected.")); 
   }
   else {
     cc_validate_trader('uid', $payees);
@@ -165,21 +187,20 @@ function one2many_form_validate($form, &$form_state) {
 function one2many_form_submit($form, $form_state) {
   module_load_include('admin.inc', 'transactions');
   variable_set('cc_mass_pay_non_payees', $form_state['values']['payees']);
-  $transaction = _infer_transaction_from_form($form_state['values']);
   
   $options = array(
-    'transaction_type'=> ($transaction->state == TRANSACTION_STATE_COMPLETED) ? 'outgoing_mass_direct' :  'outgoing_mass_confirmed',
-    'starter_uid' => $transaction->payer_uid,
+    'transaction_type'=> ($form_state['values']['state'] == TRANSACTION_STATE_COMPLETED) ? 'outgoing_mass_direct' :  'outgoing_mass_confirmed',
+    'starter_uid' => $form_state['values']['payer_uid'],
     'uid' => $GLOBALS['user']->uid,
-    'state' => $transaction->state,
+    'state' => $form_state['values']['state'],
   );
   //make payments one by one.
   foreach ($form_state['payees'] as $payee_uid) {
     $options['completer_uid'] = $payee_uid;
-    generate_transaction_node($transaction->title, $transaction->payer_uid, $payee_uid, $transaction->quantity, $options, $transaction->cid);
+    generate_transaction_node($form_state['values']['title'], $form_state['values']['payer_uid'], $payee_uid, $form_state['values']['quantity'], $options, $form_state['values']['cid']);
   }
   cc_balances_refresh();
-  $payer = user_load($transaction->payer_uid);
+  $payer = user_load($form_state['values']['payer_uid']);
   $message = t("@user pays many @amount: @description", 
     array(
       '@user'=> $payer->name, 

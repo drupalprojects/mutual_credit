@@ -2,7 +2,6 @@
   if (!count($transactions)) {
     return "<p>".t('There are no completed transactions.')."</p>\n";
   }
-  $transactions_per_page = 10;
   
 /* statement view
  * 
@@ -38,20 +37,9 @@ OR[income] => theme(money $quantity...)
   [notme] => <a href="/user/4" title="View user profile.">darren</a>
   [transaction_link] => <a href="/node/44">gift from carl to darren</a>
   [actions] => some HTML links
+  [pager] => themed pager
 )
  */
- $transactions = array_reverse($transactions);
- 
-  //do the stuff with the pager
-  if ($transactions_per_page) {
-    global $pager_total, $pager_page_array;
-    $pager_total[TRANSACTIONS_PAGER_ELEMENT] = count($transactions)/$transactions_per_page +1;
-    $page = isset($_GET['page']) ? $_GET['page'] : '';
-    $pager_page_array = explode(',', $page); 
-    $page_no = $pager_page_array[TRANSACTIONS_PAGER_ELEMENT];
-    $first_result = $page_no*$transactions_per_page;
-    $transactions = array_slice($transactions, $page_no*$transactions_per_page, $transactions_per_page);
-  }
   
   //need to delare the column headings, their order, and associated fields
   //array keys must correspond to the keys in the transaction objects
@@ -77,5 +65,5 @@ OR[income] => theme(money $quantity...)
   if (!isset($transaction->quality))unset ($columns['quality']);
   
   
-  print theme('table', $columns, $rows) . 
-    theme('pager', NULL, $transactions_per_page, TRANSACTIONS_PAGER_ELEMENT);
+  print theme('table', $columns, $rows) .
+    theme('pager', NULL, TRANSACTIONS_PER_PAGE, TRANSACTIONS_PAGER_ELEMENT);

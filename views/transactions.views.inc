@@ -18,9 +18,35 @@ function transactions_views_handlers() {
       'views_handler_field_transactions_payee_uid' => array(
         'parent' => 'views_handler_field'
       ),
+      'views_handler_filter_transaction_types' => array(
+        'parent' => 'views_handler_filter_many_to_one'
+      )
     ),
   );
   return $handlers;
+}
+//this was derived from the similar funcntionality in cck, where a dropdown is populated by a view
+//however is doesn't work
+function transcations_views_plugins() {
+  return array(
+    'module' => 'transactions', // This just tells our themes are elsewhere.
+    'display' => array(
+      'transaction_form_options' => array(
+        'path' => drupal_get_path('module', 'transactions') . '/views',
+        // Those strings are not translated for now.
+        // We'll need to change that if / when we remove 'no ui'
+        'title' => 'Array', // TODO: better name ? (currently not displayed anyway)
+        'help' => 'Destination-agnostic display. Mostly useful for programmatic views.',
+        'handler' => 'transaction_form_options',
+        'no ui' => TRUE, // Programmatic use only.
+        'uses hook menu' => FALSE,
+        'use ajax' => FALSE,
+        'use pager' => FALSE,
+        'accept attachments' => FALSE,
+      ),
+    )
+  );
+
 }
 
 function transactions_views_data() {
@@ -146,34 +172,34 @@ function transactions_views_data() {
       'help' => t('Transactions above or below a certain value'),
       'handler' => 'views_handler_filter_numeric'
     ),
+    'sort' => array(
+      'help' => t('The value of the transaction'),
+    ),
   );
   $data['cc_transactions']['state'] = array(
     'title' => t('Transaction state'), 
     'field' => array(
       'help' => t('Whether the transaction is completed or pending'),
+      //TODO need a new handler which understands the transaction state constants
       'handler' => 'views_handler_field_boolean',
       'click sortable' => TRUE,
     ),
     'filter' => array(
       'help' => t('Whether the transaction is completed or pending'),
+      //TODO need a new handler which understands the transaction state constants
       'handler' => 'views_handler_filter_boolean_operator',
     ),
-    //'argument' => array(
-    //  'help' => t('Whether the transaction is completed or pending'),
-    //  'handler' => 'views_handler_argument_transaction_state', //extends
-    //),
   );
-//this belongs with the cc_currencies module, but breaks nothing if module ins't installed
-  $data['cc_transactions']['cid'] = array(
-    'title' => t('Currency ID'), 
+
+  $data['cc_transactions']['transaction_type'] = array(
+    'title' => t('Transaction type'),
     'field' => array(
-      'help' => t('The currency that the transaction was conducted in'),
+      'help' => t('Which form or module which created the transaction'),
       'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
     ),
-    'argument' => array(
-      'help' => t('Currency id'),
-      'handler' => 'views_handler_argument'
+    'filter' => array(
+      'help' => t('Which form or module which created the transaction'),
+      'handler' => 'views_handler_filter_transaction_types',
     ),
   );
   
@@ -196,24 +222,16 @@ function transactions_views_data() {
       'handler' => 'views_handler_argument',
     )
   );
-  $data['cc_balance_cache']['cid'] = array(
-    'title' => t('Currency ID'),
-    'argument' => array(
-      'help' => t("Currency id"),
-      'handler' => 'views_handler_argument',
-    ),
-    'field' => array(
-      'help' => t("Currency id"),
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    )
-  );
   $data['cc_balance_cache']['cleared_balance'] = array(
     'title' => t('Balance'),
     'field' => array(
       'help' => t("The user's total cleared income minus total cleared expenditure"),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
+    ),
+    'sort' => array(
+      'help' => t("The user's total cleared income minus total cleared expenditure"),
+      'handler' => 'views_handler_sort',
     )
   );
   $data['cc_balance_cache']['pending_difference'] = array(
@@ -295,6 +313,7 @@ function cc_transaction_list_view() {
       'field' => 'payee_uid',
     ),
   ));
+  $cur = currency_load();
   $handler->override_option('fields', array(
     'changed' => array(
       'label' => t('Date'),
@@ -370,7 +389,7 @@ function cc_transaction_list_view() {
       ),
     ),
     'quantity' => array(
-      'label' => t('Amount'),
+      'label' => $cur->title,
       'exclude' => 0,
       'id' => 'quantity',
       'table' => 'cc_transactions',
@@ -414,90 +433,75 @@ function cc_transaction_list_view() {
       'relationship' => 'none',
     ),
   ));
-  $handler->override_option('arguments', array(
-    'cid' => array(
-      'default_action' => 'ignore',
-      'style_plugin' => 'default_summary',
-      'style_options' => array(),
-      'wildcard' => 'all',
-      'wildcard_substitution' => 'All',
-      'title' => '',
-      'default_argument_type' => 'fixed',
-      'default_argument' => '',
-      'validate_type' => 'none',
-      'validate_fail' => 'ignore',
-      'id' => 'cid',
-      'table' => 'cc_transactions',
-      'field' => 'cid',
-      'relationship' => 'none',
-      'default_options_div_prefix' => '',
-      'default_argument_user' => 0,
-      'default_argument_fixed' => '',
-      'default_argument_php' => '',
-      'validate_argument_node_type' => array(
-        'currency' => 0,
-        'offer' => 0,
-        'want' => 0,
-        'transaction' => 0,
-        'page' => 0,
-        'story' => 0,
-        'testfield' => 0,
-      ),
-      'validate_argument_node_access' => 0,
-      'validate_argument_nid_type' => 'nid',
-      'validate_argument_vocabulary' => array(),
-      'validate_argument_type' => 'tid',
-      'user_argument_type' => 'uid',
-      'restrict_user_roles' => 0,
-      'user_roles' => array(),
-      'validate_argument_php' => '',
-    ),
-  ));
   $handler->override_option('filters', array(
-  'type' => array(
-    'operator' => 'in',
-    'value' => array(
-      'transaction' => 'transaction',
+    'type' => array(
+      'operator' => 'in',
+      'value' => array(
+        'transaction' => 'transaction',
+      ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'type',
+      'table' => 'node',
+      'field' => 'type',
+      'relationship' => 'none',
     ),
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
+    'starter_uid' => array(
+      'operator' => '!=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'starter_uid',
+      'table' => 'cc_transactions',
+      'field' => 'starter_uid',
+      'relationship' => 'none',
     ),
-    'id' => 'type',
-    'table' => 'node',
-    'field' => 'type',
-    'relationship' => 'none',
-  ),
-  'starter_uid' => array(
-    'operator' => '!=',
-    'value' => '1',
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
+    'completer_uid' => array(
+      'operator' => '!=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'completer_uid',
+      'table' => 'cc_transactions',
+      'field' => 'completer_uid',
+      'relationship' => 'none',
     ),
-    'id' => 'starter_uid',
-    'table' => 'cc_transactions',
-    'field' => 'starter_uid',
-    'relationship' => 'none',
-  ),
-  'completer_uid' => array(
-    'operator' => '!=',
-    'value' => '1',
-    'group' => '0',
-    'exposed' => FALSE,
-    'expose' => array(
-      'operator' => FALSE,
-      'label' => '',
+    'transaction_type' => array(
+      'operator' => 'or',
+      'value' => array(
+        'incoming_direct' => 'incoming_direct',
+        'incoming_confirm' => 'incoming_confirm',
+        'outgoing_direct' => 'outgoing_direct',
+        'outgoing_confirm' => 'outgoing_confirm',
+        '3rdparty_direct' => '3rdparty_direct'
+      ),
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'transaction_type',
+      'table' => 'cc_transactions',
+      'field' => 'transaction_type',
+      'override' => array(
+        'button' => 'Remplacer',
+      ),
+      'relationship' => 'none',
+      'reduce_duplicates' => 0,
     ),
-    'id' => 'completer_uid',
-    'table' => 'cc_transactions',
-    'field' => 'completer_uid',
-    'relationship' => 'none',
-  ),
   ));
   $handler->override_option('access', array(
     'type' => 'perm',
@@ -725,7 +729,7 @@ function cc_transaction_list_view() {
 function transactions_pending_view() {
   $view = new view;
   $view->name = 'cc_transactions_pending';
-  $view->description = t('incomplete transactions, per user');
+  $view->description = t('pending transactions');
   $view->tag = '';
   $view->view_php = '';
   $view->base_table = 'node';
@@ -733,59 +737,6 @@ function transactions_pending_view() {
   $view->api_version = 2;
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
   $handler = $view->new_display('default', 'Defaults', 'default');
-  $handler->override_option('sorts', array(
-    'created' => array(
-      'order' => 'ASC',
-      'granularity' => 'hour',
-      'id' => 'created',
-      'table' => 'node',
-      'field' => 'created',
-      'relationship' => 'none',
-    ),
-  ));
-  $handler->override_option('arguments', array(
-    'completer_uid' => array(
-      'default_action' => 'ignore',
-      'style_plugin' => 'default_summary',
-      'style_options' => array(),
-      'wildcard' => 'all',
-      'wildcard_substitution' => 'All',
-      'title' => '',
-      'default_argument_type' => 'current_user',
-      'default_argument' => '',
-      'validate_type' => 'user',
-      'validate_fail' => 'not found',
-      'id' => 'completer_uid',
-      'table' => 'cc_transactions',
-      'field' => 'completer_uid',
-      'validate_user_argument_type' => 'uid',
-      'validate_user_roles' => array(
-        '2' => 0,
-        '3' => 0,
-      ),
-      'relationship' => 'none',
-      'default_options_div_prefix' => '',
-      'default_argument_user' => 0,
-      'default_argument_fixed' => '',
-      'default_argument_php' => '',
-      'validate_argument_node_type' => array(
-        'offer' => 0,
-        'want' => 0,
-        'transaction' => 0,
-        'page' => 0,
-        'story' => 0,
-      ),
-      'validate_argument_node_access' => 0,
-      'validate_argument_nid_type' => 'nid',
-      'validate_argument_vocabulary' => array(
-        '2' => 0,
-      ),
-      'validate_argument_type' => 'tid',
-      'validate_argument_transform' => 0,
-      'validate_user_restrict_roles' => 0,
-      'validate_argument_php' => '',
-    ),
-  ));
   $handler->override_option('filters', array(
     'state' => array(
       'operator' => '=',
@@ -802,22 +753,43 @@ function transactions_pending_view() {
       'relationship' => 'none',
     ),
   ));
+  $handler->override_option('sorts', array(
+  'quantity' => array(
+    'order' => 'DESC',
+    'id' => 'quantity',
+    'table' => 'cc_transactions',
+    'field' => 'quantity',
+    'relationship' => 'none',
+  ),
+));
   $handler->override_option('access', array(
     'type' => 'none',
   ));
-  $handler->override_option('title', t('Pending Transactions'));
-  $handler->override_option('empty', t('There are no transactions to complete'));
+  $handler->override_option('cache', array(
+    'type' => 'none',
+  ));
+  $handler->override_option('empty', '');
+  $handler->override_option('empty_format', '1');
   $handler->override_option('items_per_page', 0);
   $handler->override_option('row_plugin', 'node');
-  $handler = $view->new_display('page', 'user_page', 'page_1');
+  $handler->override_option('row_options', array(
+    'relationship' => 'none',
+    'build_mode' => 'teaser',
+    'links' => 1,
+    'comments' => 0,
+  ));
+
+  //block to show transactions awaiting confirmation from the user who's page we're on
+  $handler = $view->new_display('block', 'my_pending', 'block_my_pending');
   $handler->override_option('arguments', array(
     'completer_uid' => array(
-      'default_action' => 'not found',
+      'default_action' => 'default',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
       'wildcard' => 'all',
-      'wildcard_substitution' => 'All',
+      'wildcard_substitution' => 'Tous / Toutes',
       'title' => '',
+      'breadcrumb' => '',
       'default_argument_type' => 'current_user',
       'default_argument' => '',
       'validate_type' => 'user',
@@ -826,63 +798,116 @@ function transactions_pending_view() {
       'table' => 'cc_transactions',
       'field' => 'completer_uid',
       'validate_user_argument_type' => 'uid',
-      'validate_user_roles' => array(
-        '2' => 0,
-        '3' => 0,
+      'override' => array(
+        'button' => 'Use default',
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',
-      'default_argument_user' => 0,
       'default_argument_fixed' => '',
+      'default_argument_user' => 0,
+      'default_argument_image_size' => '_original',
       'default_argument_php' => '',
-      'validate_argument_node_type' => array(
-        'offer' => 0,
-        'want' => 0,
-        'transaction' => 0,
-        'page' => 0,
-        'story' => 0,
-      ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
+      'validate_argument_type' => 'tid',
+      'validate_argument_transform' => 0,
+      'validate_argument_php' => '',
+      'validate_argument_node_type' => array(
+        'image' => 0,
+        'community_task' => 0,
+        'transaction' => 0,
+        'offer' => 0,
+        'want' => 0,
+        'event' => 0,
+        'page' => 0,
+        'simplenews' => 0,
+        'story' => 0,
+      ),
       'validate_argument_vocabulary' => array(
         '2' => 0,
+        '1' => 0,
+        '4' => 0,
+        '3' => 0,
+        '5' => 0,
       ),
+      'validate_user_restrict_roles' => 0,
+      'validate_user_roles' => array(
+        '2' => 0,
+        '5' => 0,
+        '4' => 0,
+        '6' => 0,
+        '7' => 0,
+        '3' => 0,
+      ),
+      'image_size' => array(
+        '_original' => '_original',
+        'thumbnail' => 'thumbnail',
+        'preview' => 'preview',
+      ),
+    ),
+  ));
+  $handler->override_option('access', array(
+    'type' => 'perm',
+    'perm' => 'view all transactions',
+  ));
+  $handler->override_option('header', '');
+  $handler->override_option('block_description', 'my pending');
+  $handler->override_option('block_caching', -1);
+
+  //block to show all pending transactions relating to the logged in user.
+  $handler = $view->new_display('block', 'User Pending', 'block_user_pending');
+  $handler->override_option('arguments', array(
+    'completer_uid' => array(
+      'default_action' => 'default',
+      'style_plugin' => 'default_summary',
+      'style_options' => array(),
+      'wildcard' => 'all',
+      'wildcard_substitution' => 'Tous / Toutes',
+      'title' => '',
+      'breadcrumb' => '',
+      'default_argument_type' => 'user',
+      'default_argument' => '',
+      'validate_type' => 'user',
+      'validate_fail' => 'not found',
+      'id' => 'completer_uid',
+      'table' => 'cc_transactions',
+      'field' => 'completer_uid',
+      'validate_user_argument_type' => 'uid',
+      'override' => array(
+        'button' => 'Use default',
+      ),
+      'relationship' => 'none',
+      'default_options_div_prefix' => '',
+      'default_argument_fixed' => '',
+      'default_argument_user' => 0,
+      'default_argument_php' => '',
+      'validate_argument_node_access' => 0,
+      'validate_argument_nid_type' => 'nid',
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
       'validate_argument_php' => '',
-      'override' => array(
-        'button' => 'Use default',
-      ),
+      'default_argument_image_size' => '_original',
+      'validate_argument_node_type' => array(),
+      'image_size' => array(),
     ),
   ));
-  $handler->override_option('header', '<h4>' . t('Transactions for this user to complete') . '</h4>');
-  $handler->override_option('header_format', '2');
-  $handler->override_option('header_empty', 1);
-  $handler->override_option('path', 'transactions/pending');
-  $handler->override_option('menu', array(
-    'type' => 'none',
-    'title' => '',
-    'description' => '',
-    'weight' => '0',
-    'name' => 'navigation',
-  ));
-  $handler->override_option('tab_options', array(
-    'type' => 'none',
-    'title' => '',
-    'description' => '',
-    'weight' => 0,
-  ));
-  $handler = $view->new_display('attachment', 'Attachment', 'attachment_1');
+  $handler->override_option('block_description', t('Transactions to sign off'));
+  $handler->override_option('header', t('Transactions to sign off'));
+  $handler->override_option('block_caching', -1);
+  $handler->override_option('header_empty', 0);
+
+  $handler = $view->new_display('block', 'User Waiting', 'block_user_waiting');
   $handler->override_option('arguments', array(
     'starter_uid' => array(
-      'default_action' => 'not found',
+      'default_action' => 'default',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
       'wildcard' => 'all',
-      'wildcard_substitution' => 'All',
+      'wildcard_substitution' => 'Tous / Toutes',
       'title' => '',
-      'default_argument_type' => 'fixed',
+      'breadcrumb' => '',
+      'default_argument_type' => 'user',
       'default_argument' => '',
       'validate_type' => 'user',
       'validate_fail' => 'not found',
@@ -892,6 +917,10 @@ function transactions_pending_view() {
       'validate_user_argument_type' => 'uid',
       'validate_user_roles' => array(
         '2' => 0,
+        '5' => 0,
+        '4' => 0,
+        '6' => 0,
+        '7' => 0,
         '3' => 0,
       ),
       'override' => array(
@@ -899,102 +928,47 @@ function transactions_pending_view() {
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',
-      'default_argument_user' => 0,
       'default_argument_fixed' => '',
+      'default_argument_user' => 0,
+      'default_argument_image_size' => '_original',
       'default_argument_php' => '',
       'validate_argument_node_type' => array(
+        'community_task' => 0,
+        'image' => 0,
+        'transaction' => 0,
         'offer' => 0,
         'want' => 0,
-        'transaction' => 0,
+        'event' => 0,
         'page' => 0,
+        'simplenews' => 0,
         'story' => 0,
       ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
       'validate_argument_vocabulary' => array(
         '2' => 0,
-      ),
-      'validate_argument_type' => 'tid',
-      'validate_argument_transform' => 0,
-      'validate_user_restrict_roles' => 0,
-      'validate_argument_php' => '',
-    ),
-  ));
-  $handler->override_option('header', '<h4>' . t('Transactions started by this user') . '</h4>');
-  $handler->override_option('header_format', '2');
-  $handler->override_option('header_empty', 1);
-  $handler->override_option('attachment_position', 'after');
-  $handler->override_option('inherit_arguments', TRUE);
-  $handler->override_option('inherit_exposed_filters', FALSE);
-  $handler->override_option('displays', array(
-    'page_1' => 'page_1',
-    'default' => 0,
-  ));
-  $handler = $view->new_display('page', 'All', 'page_2');
-  $handler->override_option('arguments', array());
-  $handler->override_option('path', 'transactions/all_pending');
-  $handler->override_option('menu', array(
-    'type' => 'none',
-    'title' => '',
-    'description' => '',
-    'weight' => 0,
-    'name' => 'navigation',
-  ));
-  $handler->override_option('tab_options', array(
-    'type' => 'none',
-    'title' => '',
-    'description' => '',
-    'weight' => 0,
-  ));
-  $handler = $view->new_display('block', 'my_pending_block', 'block_1');
-  $handler->override_option('arguments', array(
-    'completer_uid' => array(
-      'default_action' => 'default',
-      'style_plugin' => 'default_summary',
-      'style_options' => array(),
-      'wildcard' => 'all',
-      'wildcard_substitution' => 'All',
-      'title' => '',
-      'default_argument_type' => 'current_user',
-      'default_argument' => '',
-      'validate_type' => 'user',
-      'validate_fail' => 'not found',
-      'id' => 'completer_uid',
-      'table' => 'cc_transactions',
-      'field' => 'completer_uid',
-      'validate_user_argument_type' => 'uid',
-      'validate_user_roles' => array(
-        '2' => 0,
+        '1' => 0,
+        '4' => 0,
         '3' => 0,
-      ),
-      'relationship' => 'none',
-      'default_options_div_prefix' => '',
-      'default_argument_user' => 0,
-      'default_argument_fixed' => '',
-      'default_argument_php' => '',
-      'validate_argument_node_type' => array(
-        'offer' => 0,
-        'want' => 0,
-        'transaction' => 0,
-        'page' => 0,
-        'story' => 0,
-      ),
-      'validate_argument_node_access' => 0,
-      'validate_argument_nid_type' => 'nid',
-      'validate_argument_vocabulary' => array(
-        '2' => 0,
+        '5' => 0,
       ),
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
-      'validate_argument_php' => '',
-      'override' => array(
-        'button' => 'Use default',
+      'image_size' => array(
+        '_original' => '_original',
+        'thumbnail' => 'thumbnail',
+        'preview' => 'preview',
       ),
+      'validate_argument_php' => '',
     ),
   ));
-  $handler->override_option('block_description', '');
+  $handler->override_option('block_description', t('Transactions awaiting confirmation'));
+  $handler->override_option('header', t('Transactions awaiting confirmation'));
   $handler->override_option('block_caching', -1);
+  $handler->override_option('header_empty', 0);
+  
+
   return $view;
 }
 

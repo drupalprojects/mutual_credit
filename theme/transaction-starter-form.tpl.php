@@ -1,6 +1,6 @@
 <?php
 /*
- * transaction_start_form.tpl.php 
+ * transaction_starter_form.tpl.php
  * An opportunity to rearrange the transaction form without using hook_form_alter.
  * Only the non-hidden fields below are avaialble as theming variables
  * If expected variables not present, check your form generation parameters and then template_preprocess_transaction_start_form()
