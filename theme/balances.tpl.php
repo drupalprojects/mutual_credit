@@ -1,4 +1,5 @@
 <?php 
+// $Id$
 /* themes the balances for a given user.
  * $balances is an array of the form:
  * Array (
