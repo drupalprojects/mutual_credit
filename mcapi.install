@@ -1,0 +1,403 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Install, update and uninstall functions for the exchanges module.
+ */
+
+  define('INCOMING_CONFIRM', 1);
+  define('INCOMING_DIRECT', 2);
+  define('OUTGOING_CONFIRM', 4);
+  define('OUTGOING_DIRECT', 8);
+  variable_set('mc_exchange_types', array(
+    INCOMING_CONFIRM => t('Request'),
+    INCOMING_DIRECT => t('Claim'),
+    OUTGOING_CONFIRM => t('Offer'),
+    OUTGOING_DIRECT => t('Gift')
+  ));
+
+/**
+ * Implementation of hook_install().
+ */
+function mcapi_install() {
+  drupal_install_schema('mcapi');
+  $currency = (object)array(
+    'title' => 'Community Coins',
+    'body' => t('This is the default currency'),
+    'type' => 'currency',
+    'status' => TRUE,
+    'uid' => 1,
+    'sub' => 'int',
+    'max' => 500,
+    'min' => -500,
+    'value' => 0,
+    'icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png',
+    'data' => serialize(array(
+      'color' => '00ff00',
+    ))
+  );
+
+    //'exchange_subtypes' => array(INCOMING_CONFIRM, OUTGOING_CONFIRM),
+  node_save($currency);
+  drupal_set_message(t('Your defult currency is @name. !edit', array(
+    '@name' => $currency->title,
+    '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
+  )));
+  variable_set('comment_exchanges', 0);
+
+  //add a permission so that trading can begin
+  if (!user_roles(FALSE, 'exchange')) {
+    $perm = db_result(db_query("SELECT perm FROM {permission} WHERE rid = %d", array(':rid' => DRUPAL_AUTHENTICATED_RID)));
+    $perm .= ', exchange';
+    db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", array(':perm'=>$perm, ':rid' => DRUPAL_AUTHENTICATED_RID));
+  }
+}
+
+/**
+ * Implementation of hook_uninstall().
+ * http://api.drupal.org/api/function/hook_uninstall/6
+ * Remove any tables or variables that the module sets.
+ */
+function mcapi_uninstall() {
+  //delete all the currency nodes, because we lose the table that contains their metadata
+  $result = db_query("SELECT nid FROM node WHERE type = 'currency'");
+  while ($nid = db_result($result)) {
+    node_delete($nid);
+  }
+
+  drupal_uninstall_schema('mcapi');
+  //find all the views provided by the module, which are now broken, and remove them and their displays
+  if(module_exists('views')) {
+    $view_ids = db_query("SELECT vid FROM {views_view} WHERE name LIKE 'mc_%'");
+  }
+  while ($vid = db_result($view_ids)) {
+    db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
+    db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
+  }
+  variable_del('comment_exchanges');
+  variable_del('cforge_report');
+}
+
+function mcapi_disable() {
+}
+/**
+ * Implementation of hook_schema)().
+ * http://api.drupal.org/api/function/hook_schema/6
+ * You don't have to deal with the different SQL dialects for table creation and alteration of the supported database engines.
+ */
+//TODO what about storing all this info in the user table instead?
+function mcapi_schema() {
+  //the schema has two modes, depending on whether we store the amounts as integers or floats.
+  module_load_include('inc', 'mcapi');
+
+  $type = mcapi_value_type_needed();
+
+  $schema['mc_exchanges'] = array(
+    'description' => 'currency exchanges between users',
+    'fields' => array(
+      'nid' => array(
+        'description' => t('the node to which this entry is attached'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'payer_uid' => array(
+        'description' => t('the user id of the payer'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'payee_uid' => array(
+        'description' => t('the user id of the payee'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'cid' => array(
+        'description' => t('the nid of the currency used'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'quantity' => array(
+        'description' => t('the number of units transferred, (@type)', array('@type' => 'integer')),
+        'type' => $type,
+        'size' => 'normal'
+      ),
+      //this needs to be a field for views to see and for easy calculations
+      'rating' => array(
+        'description' => t('the payer assessment of the goods or services'),
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      //views is likely to want to see this, but it can have many uses
+      'exchange_type' => array(
+        'description' => t('The type of exchange, types are provided by modules'),
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+
+      'state' => array(
+        'description' => t("State of the exchange - completed, pending, disputed, etc"),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'parent' => array(
+        'description' => t('nid of parent exchange'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'data' => array(
+        'description' => 'any other serialized data that modules want to store',
+        'type' => 'text',
+        'size' => 'small',
+        'serialize' => TRUE,
+        //'default' => serialize(array())
+      )
+    ),
+  );
+  /*
+   * This table cointains one row for every user/currency and contains balances and personal balance limits
+   * The rows are created and deleted in hook_user, and when currencies are added and removed.
+   * 
+   */
+  $schema['mc_cache'] = array(
+    'description' => t('cached balances, turnovers and pending balances, for exposure to views'), 
+    'fields' => array(
+      'uid' => array(
+        'description' => t('the node to which this entry is attached'),
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cid' => array(
+        'description' => t('the currency id, where there is more than one currency'),
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cleared_balance' => array(
+        'description' => 'balance excluding pending exchanges, (integer)',
+        'type' => $type,
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'pending_dif' => array(
+        'description' => 'Sum of pending exchanges, (integer)',
+        'type' => $type,
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'gross_in' => array(
+        'description' => "sum of all this user's income in this currency, (integer)",
+        'type' => $type,
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'gross_out' => array(
+        'description' => "sum of all this user's ougoings in this currency, (integer)",
+        'type' => $type,
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'rating' => array(
+        'description' => "average rating for transactions by this user in this currency",
+        'type' => 'float',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'count' => array(
+        'description' => "number of transactions",
+        'type' => 'int',
+        'size' => 'small',
+        'default' => 0,
+      ),
+      'exchanges' => array(
+        'description' => 'Total exchange history wth running balances',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big'
+      ),
+    ),
+    'unique keys' => array(
+      'uid_cid' => array('uid', 'cid')
+    )
+  );
+
+  $schema['mc_currencies'] = array(
+    'description' => t('metadata for currencies, in addition to name and title'),
+    'fields' => array(
+      'nid' => array(
+        'description' => t('the node id to which this currency is attached'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'min' => array(
+        'description' => t("the default minumim balance allowed to tbe held"),
+        'type' => 'int',
+        'size' => 'normal',
+        'default' => -500,
+      ),
+      'max' => array(
+        'description' => t("the default maximum balance allowed to tbe held"),
+        'type' => 'int',
+        'size' => 'normal',
+        'default' => 500,
+      ),
+      'data' => array(
+        'description' => t("An array of other properties"),
+        'type' => 'text',
+        'size' => 'small',
+        'serialize' => TRUE,
+        //'default' => serialize(array())
+      ),
+      'icon' => array(
+        'description' => t("location of the currency icon"),
+        'type' => 'varchar',
+        'length' => '128',
+      ),
+      'sub' => array(
+        'description' => t("Units and values after the decimal point"),
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+      ),
+      'value' => array(
+        'description' => t("the nominal value of this currency expressed as an objective value (0 means not interchanagable)"),
+        'type' => 'int',
+        'size' => 'normal',
+        'default' => 0,
+      ),
+    )
+  );
+  return $schema;
+}
+
+//upgrade from version 1.0
+function mc_upgrade() {
+  //probably need to install the mc_completer if there are any pending transactions...
+  
+  $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state
+    FROM {cc_transactions}");
+  while ($transaction = db_fetch_object($result)) {
+    drupal_write_record('mc_exchanges', $transaction);
+    break;
+  }
+  //still need to deal with pending transactions
+  //cc_transactions.starter_uid
+  //cc_transactions.completer_uid
+
+  $result = db_query("SELECT uid, cid, cleared_balance as balance, gross_income as gross_in, gross_expenditure as gross_out
+    FROM {cc_balance_cache}");
+  while ($row = db_fetch_object($result)) {
+    drupal_write_record('mc_cache', $row);
+    break;
+  }
+  //if transaction_qualities have been used...
+  if (variable_get('cc_transaction_qualities', NULL)) {
+    $result = db_query("SELECT uid, quality_mean FROM {cc_balance_cache}");
+    while ($row = db_fetch_object($result)) {
+      $account = user_load($row->uid);
+      $edit = array('mutual_credit_v1_transaction_rating_mean' => $row->quality_mean);
+      user_save($account, $edit);
+    }
+  }
+
+  //currency (only one supported in this upgrade)
+  $default_cur = variable_get('cc_default_currency', NULL);
+  $new_cur = array(
+    'nid' => $default_cur->cid,
+    'value' => $default_cur->comparative_value,
+    'sub' => $default_cur->division,
+    'min' => $default_cur->min_balance,
+    'max' => $default_cur->max_balance,
+    'data' => serialize(array()),
+    'icon' => $default_cur->icon
+  );
+  drupal_write_record('mc_currencies', $new_cur);
+  //check the currency is there. There can only be one.
+  $success = db_result(db_query("SELECT * from {mc_currencies}"));
+
+  //Then the permissions
+  $permissions_old_new = array(
+    'use local currency' => 'exchange',
+    'view all transactions' => 'view all exchanges',
+    'view all transactions' => 'view all balances',
+    'edit all transactions' => 'edit all exchanges',
+  );
+  $result = db_query("SELECT * FROM {permission}");
+  while ($row = db_fetch_object($result)) {
+    $row->perm = strtr($row->perm, $permissions_old_new);
+    drupal_write_record('permission', $row, array('pid'));
+  }
+  //might want to do something with the balancing account - 'cc_balancing_account_num'
+
+  module_disable(array('transactions'));
+  drupal_set_message(t('Transactions module has been disabled. Uninstall when you are confident all data has been migrated.'));
+}
+
+
+function mcapi_value_type_needed(){
+  $result = @db_query("SELECT sub from {mc_currencies} WHERE sub = 1");
+  return @db_result($result) ? 'float' : 'int';
+}
+
+function mcapi_value_type_existing(){
+  //get the existing type by looking at schema api
+  $table  = drupal_get_schema('mc_exchanges');
+  return $table['fields']['quantity']['type'];
+}
+
+/*
+ * Change all the fields which store currency quantities between float and int
+ * It looks like Drupals representation of the db (the schema) doesn't change when schema api changes the db
+ * So we can't interrogate schema api to find out what the changed database is like.
+ *
+ */
+function refresh_quantity_field_types() {
+  $table  = drupal_get_schema('mc_exchanges');
+  $existing_type = mcapi_value_type_existing();
+  //get the needed type by looking at the currency table
+  $needed_type = mcapi_value_type_needed();
+  if ($existing_type == $needed_type) {
+    return;
+  }
+
+  $newfield = array(
+    'type' => $needed_type,
+    'size' => 'normal'
+  );
+
+  $newfield['description'] = "number of units transacted, ($needed_type)";
+  db_change_field($ret, 'mc_exchanges', 'quantity', 'quantity', $newfield);
+
+  $newfield['description'] = "sum of all completed exchanges for this user in this currency, ($needed_type)";
+  db_change_field($ret, 'mc_cache', 'cleared_balance', 'balance', $newfield);
+
+  $newfield['description'] = "the sum of all this user's income in this currency, ($needed_type)";
+  db_change_field($ret, 'mc_cache', 'gross_in', 'gross_in', $newfield);
+
+  $newfield['description'] = "the sum of all this user's expenditure in this currency, ($needed_type)";
+  db_change_field($ret, 'mc_cache', 'gross_out', 'gross_out', $newfield);
+  //changing the fields is not the same as changing the schema. We need to rebuild the schema at the same time
+  drupal_get_schema(NULL, TRUE);
+
+  //check that it all worked
+  if (mcapi_value_type_existing() != $needed_type) {
+    $message = t("Drupal was unable to set your database field types to @type. Please check your db permissions",
+      array('@type' => $needed_type));
+    drupal_set_message($message, 'error');
+  }
+  else {
+    $message = (t("Quantitative fields in database is set to type '@type'", array('@type' => $needed_type)));
+    drupal_set_message($message);
+  }
+  watchdog('mcapi', $message);
+  //tidy up
+}

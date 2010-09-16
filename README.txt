@@ -1,11 +1,17 @@
+$Id$
+
 This document is 4 documents in one:
 
+** Features **
 ** How to set up the Complementary currencies package **
 ** Generalised architecture of this mutual credit system **
-** For advanced users **
 ** Testing procedure **
 
-It is a work in progress and may not be entirely up-to-date!
+***********************
+**     FEATURES      **
+***********************
+
+Switch between floating point and integer db storage.
 
 
 ***********************
@@ -13,31 +19,29 @@ It is a work in progress and may not be entirely up-to-date!
 ***********************
 
 ENABLE MODULES
-Enable transactions module, views
+Enable exchanges module, views
 Optionally enable the other modules in the Complementary Currencies Section.
-PHP_filter will enable default user friendly links at the bottom of some views to work out of the box, though you are advised to customise them and not use the filter)
-Cc_import implements the user_import hook and can help with offers, wants, initial balances, and transactions, see admin/marketplace/import.
-Also consider:
-uid_login - written by the present author for LETS groups who commonly use their User ID
-autocategorise - written by the present author
-and user_tabs - which the user/%/edit tabs under the Account tab, leaving more room for tabs on the first level
+PHP_filter will enables default user friendly links at the bottom of some views, which you could easily change
+Also consider uid_login and autocategorise, and user_tabs
 
-Transactions
+exchanges
 Setup your currency and other options at admin/marketplace and the pages under it.
 
-Don't forget to define the permissions.
+Permissions
+Don't forget to define the permissions AFTER naming the exchange-types for these modules at admin/user/permissions.
+Owing to technical limitations, all trading users must have permission to 'view all exchanges'
 
-If you have more than one user, you should now be able to use the transaction form.
-You may need to edit a user page to kick start the saved list of permitted traders.
-
-You can also generate random transactions and offers/wants using generate_transaction_node() in transactions.admin.inc
+Complementary Currencies should now function. However before your site makes sense, you'll need to add some users and data.
+Check out the mc_import for offers, wants, users with balances, and exchanges, admin/marketplace/import.
+You can also generate random exchanges and offers/wants using generate_exchange_node() in exchanges.admin.inc
 
 Further set up
 
 Email notifications
 Ensure that actions and trigger modules are enabled.
-Go to admin/settings/actions and add the advanced action 'Mail anyone who needs to complete a transaction'
-This action is triggered automatically.
+Go to admin/settings/actions and add the advanced action 'Mail anyone who needs to complete a exchange'
+Configure the action by writing the email using the wildcards
+Go to admin/build/trigger and assign the action to the trigger 'When either saving a new post or updating an existing post'
 Note that users can disable their notifications on their user profile pages
 
 Directory Categories
@@ -47,14 +51,13 @@ This is the vocabulary for which you may want to enable autocategorise.
 Now you can consider the architecture. 
 This module attempts to be usable by default, but it's up to you how users will ultimately experience the site. 
 The first level of architecture is in menus and blocks.
-For more ideas visit demo.communityforge.net
-The cforge_custom installation profile which makes the demo module, is available on request. It is a work in progress.
+For more ideas visit test1.communityforge.net or download the mc_custom module from http://marketplace.matslats.net/installing
 
-Basic customisation
-Upload your own a currency icon on admin/marketplace/currency
-Be creative with the transaction certificate node-transaction.tpl.php, and other tpl.php files in the themes directory.
-Edit the views provided.
-Please contribute back if you do something good!
+Customisation
+The site has been designed with classic LETS in mind. Have fun creating your own terminology on admin/marketplace.
+Be creative with the exchange certificate exchange.tpl.php
+Upload your own a currency icon
+Look at the theme functions provided and see if you can do better
 
 
 
@@ -64,108 +67,64 @@ Please contribute back if you do something good!
 (For html version see http://matslats.net/mutual-credit-architecture-social-network)
 Introduction
 
-This architecture supports mutual credit systems such as LETS, SEL, Tauschring and Timebanks. These systems are characterised by the sum and mean of all user balances always being zero. There is no central authority issuing the currency, managing liquidity or inflation. There is no possibility of forgery because the system calculates the balances from the sum total of transactions, and every transaction has a description, a payer and a payee.
-The story of a transaction
+This architecture supports mutual credit systems such as LETS, SEL, Tauschring and Timebanks. These systems are characterised by the sum and mean of all user balances always being zero. There is no central authority issuing the currency, managing liquidity or inflation. There is no possibility of forgery because the system calculates the balances from the sum total of exchanges, and every exchange has a description, a payer and a payee.
+The story of a exchange
 
-Ben did some Gardening for Ann. She logs on to her community web site to pay him 10 units. On his profile she fills in a form entitled 'transact with Ben' She simply completes the transaction direction (that she is paying him), the number of credits, and a description of what he did. The system infers that she is starting the transaction and that Ben is completing it. Then the system checks that both are within their balance limits before showing a confirmation page which asks her to rate Ben's work. When she submits this she can see her cleared balance has changed and has an opportunity to edit or delete the transaction before Ben signs it.
+Ben did some Gardening for Ann. She logs on to her community web site to pay him. On his profile she fills in a form entitled 'transact with Ben' She simply completes the exchange direction (that she is paying him), the number of credits, and a description of what he did. The system infers that she is starting the exchange and that Ben is completing it. Then the system checks that both are within their balance limits before showing a confirmation page which asks her to rate Ben's work. When she submits this she can see her cleared balance has changed and has an opportunity to edit or delete the exchange before Ben signs it.
 
-Ben receives an email and clicks on it. He sees the transaction waiting to be completed on his 'money' page. He clicks to sign it and the transaction is complete and can only be edited by an administrator.
-Ben now has 10 units and Ann has -10. the sum of all balances in the system is zero.
+Ben receives an email and clicks on it. He sees the exchange waiting to be completed on his 'money' page. He clicks to sign it and the exchange is complete and can only be edited by an administrator.
+exchange Form
 
-Transaction Form
+The mutual_credit_api provides a new 'exchange' node-type: and caching facility which stores per user trading statistics, including the balances
+It also declares a currencies node type, though most use cases require only one currency.
 
-The transaction form is very flexible and contains many elements which can be shown or hidden according to context.
-Elements can be prefilled and certain elements hidden or greyed out.
+Depending on that there is the mc_webforms module Instead of using the naked node/add/transaction facility, this module contains 4 exchange forms for different purposes
+It also introduces exchanges in a 'pending' state and provodes a form for the completer to confirm and a list of pending exchanges for each user.
 
-The form building function takes a transaction object and uses it to prefill fields, which may then be hidden from the user.
-The transaction object
+The mcapi_user module creates a 'bureau' page which is the default home for some themable user data
 
-At the heart of the system is the transaction object. It contains the following properties:
-
-    * Transaction ID: auto-increment integer (Key)
-    * Title: string
-    * Quantity: integer or float
-    * Currency ID: currency ID
-    * Quality rating: float
-    * Payer ID: user ID
-    * Payee ID: user ID
-    * Starter ID: user ID
-    * Completer ID: user ID
-    * Transaction type: enum
-    * Depends On: transaction ID
-    * Currency: currency data
-    * Starter: information about the starter user
-    * Completer: information about the completer user
-    * State: enum.
-
-Note that this contains redundant information, but it is stored in this way for ease of access. This may also be true of the database structure as well as the object in memory.
-
-There are four possible transaction types, namely:
-
-    * incoming_direct
-    * incoming_confirmed
-    * outgoing_direct
-    * outgoing_confirmed.
-
-A '_confirmed' transaction is one that will wait for the 'completer' to 'sign' it before it is marked completed.
-Each of these has a colloquial name on the transaction form, configured on admin/marketplace
-Unnamed transaction types will not be available.
-'incoming_direct' allows permitted users to take from other accounts without consent.
-Some find 'incoming_direct' the most efficient way to trade, but beware - the software doesn't manage dispute procedures!
-
-There are three transaction states so far:
-
-    * completed
-    * pending
-    * deleted
-
-When a transaction is viewed in a list or on a page of it's own, some node links are provided, depending on the user's permissions.
-The links are Sign, Edit, Delete.
-
+Permissions
+Permissions for transaction types, transaction states and currencies would make a three dimensionsl grid, so permissions are optimised around a single currency.
 
 API
 
-This is not well developed, but the most useful function will create a transaction in one function generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0){} In the Complementary Currencies module for Drupal, this is used to create the transaction from the form, but also for mass payments and generating example data. It has also been used for auto-payments such as demurrage, and will shortly be used to imprint transactions from offers and wants.
+modules wanting to create transaction nodes, should use this function
+generate_exchange_node($title, $payer_uid, $payee_uid, $quantity, $cid, $options = array())
+For a list of default $options, see the function in mcapi.inc
 
-Balances
-
-The system retains it's integrity by deriving the balances from the sum of a user's transactions. So for performance reasons there is a cache table which contains a row for each currency for each user:
+The system retains it's integrity by deriving the balances from the sum of users' exchanges.
+So for performance reasons there is a cache table which contains a row for each currency for each user:
 
     * User ID
     * Currency ID
-    * Current balance
-    * Cleared balance
-    * Pending difference
+    * Balance
     * Gross income
-    * Average rating
+    * Gross expenditure
 
 Displays
 
 There are many ways to do this but the suggested displays are:
 
     * User balances
-    * User transactions by month, incoming and outgoing
-    * Recent user transactions, showing the running balance
+    * User exchanges by month, incoming and outgoing
+    * Recent user exchanges, showing the running balance
     * A history of the account balance as a google chart
-    * A list of all pending transactions
+    * A list of all pending exchanges
 
-Most of the displays depend on a function which will get all the transactions a user was involved in, and optionally add the running balance, and return the ones for a given time period. I call this
-function get_transactions_for_user($uid, $options=array(), $running_balance = FALSE){}
-Transaction ratings
+Most of the displays depend on a function which will get all the exchanges a user was involved in, and optionally add the running balance, and return the ones for a given time period. I call this
+function get_exchanges_for_user($uid, $options=array(), $running_balance = FALSE){}
+exchange ratings
 
-A configuration text field invites administrators to determine the scale on which transactions are rated. This is actually asking for numeric keys and textual values for the rating dropdown selector. Ratings are averaged out and presented alongside balances, per currency.
+A configuration text field invites administrators to determine the scale on which exchanges are rated. This is actually asking for numeric keys and textual values for the rating dropdown selector. Ratings are averaged out and presented alongside balances, per currency.
 Accounts
 
 There isn't always a 1:1 relationship between users and accounts. Currently the system assumes account 1 (like user 1 in Drupal) is special. But there is a need for more non-member accounts. Taking this idea further, the trading account numbers could be decoupled from the user IDs and users would have permissions to manage certain accounts, rather than identifying with those accounts.
 Stats
 
-There is one basic function which loads all recent transactions and analyses them into a data structure. This can also be cached before being handed to a display function
+There is one basic function which loads all recent exchanges and analyses them into a data structure. This can also be cached before being handed to a display function
 Currencies and multiple currencies
 
-So the transaction object, form and many of the displays all carry with them a currency ID.
-In a single currency system, this value is set at zero and the default currency properties stored in a system variable.
-For systems with more currencies, a database table is needed.
-Each currency has the following values:
+So the exchange object, form and many of the displays all carry with them a currency ID. In a single currency system, this value is set at zero and the default currency properties stored in a system variable. For systems with more currencies, a database table is needed. Each currency has the following values:
 
     * name - textfield
     * icon - small image
@@ -173,18 +132,16 @@ Each currency has the following values:
     * default max credit - positive integer
     * default max debit - negative integer
     * relative value - that's relative to other currencies within a larger schema. this would be used
-    * for trading between currencies and transactions between systems
+    * for trading between currencies and exchanges between systems
     * division i.e. integers, hundredths or quarters of an hour
     * zero offset - By offsetting zero you can work to counter any stigma which might be attached to keeping a debit balance.
-Multiple currency support has been withdrawn in version 1, but will be integral in version 2.0
 
+In a large system in which anyone has permission to create a currency, there is a need to restrict the currencies visible to a given user so as not overwhelm them. Marketplace is experimenting with 'universal' and 'meme' currencies. Universal currencies can be seen by all, but meme currencies can only be seen by people who have traded with them. So meme currencies spread around the system as people use it.
+
+In the future we might build multiple currencies per exchange. This will involve rebuilding the exchange object to include an array of currency ids and quantities to summarise several exchanges with the same id.
 Reporting.
 
-Because of the lack of coordination in the CC movement, this function does a little data gathering.
-Right now it just collects the domain name, site name, number of active members and number of transactions in the last 30 days.
-You can view the results on communityforge.net/php.
-Please share this information with us.
-
+Because of the lack of coordination in the CC movement, this function does a little data gathering. Right now it just collects the domain name, site name, number of active members and number of exchanges in the last 30 days.
 Classified ads, (Offers and wants)
 
 This is a simple content type which can be edited by its creator and admin only. It has the following properties:
@@ -198,34 +155,23 @@ This is a simple content type which can be edited by its creator and admin only.
 It should be possible to filter the ads according to whether they are goods or services (goods will always have a one off price), what category they belong in (such as household, equipment hire, care), and whether they are offers or wants. It is also useful to be able to order them according to the balance of the members, so as to stimulate trading with the people that need it.
 Volunteer recognition system
 
+Some would view it as a currency, but there is a kind of volunteering recognition system (currently at version 0.5). The idea is that a committee member will post a volunteer request to do a specific task. A member will pledge to do it, and a committee member will mark it completed. Whereupon the volunteer 'owns' that task and a kudos counter in his profile is incremented.
 
-***********************
-** FOR ADVANCED USERS *
-***********************
+Making your own forms
 
-1. The transaction form is very flexible. You can pre-polulate it with an ad hoc transaction object, and make you're own payment blocks. If you want people to sign up to your theatre trip by making a pre-payment, you might do the following in a block entitled 'Register for MacBeth'
+1. The exchange form is very flexible. You can pre-polulate it with an ad hoc exchange object, and make you're own payment blocks. If you want people to sign up to your theatre trip by making a pre-payment, you might do the following in a block entitled 'Register for MacBeth'
 <?php 
-  $transaction = array(
+  $exchange = array(
     'completer_uid' => 1,
-    'transaction_type' => outgoing_direct,
+    'exchange_type' => outgoing_direct,
     'title' => 'MacBeth pre-registration',
     'quantity'=>6
   );
-  print drupal_get_form('transaction_start_node_form', (object)$transaction, 'hidden');
+  print drupal_get_form('exchange_start_node_form', (object)$exchange, 'hidden');
 ?>
 The form will be pre-populated with these fields, and the user has only to agree (and confirm agree).
 Note the final parameter, hidden. This means that the prepopulated fields will not be on the form. This value can also be set to parameter, which means they will appear disabled on the form.
-N.B. The four transaction types in this module work better with starter_uid & completer_uid than payee_uid/payer_uid.
-
-2. the transaction API
-if you are developing a module like mass_payments, such as a taxation module, or a communal meal module which creates transactions, without using the form provided, then there is an API for that.
-//first of all include the admin.inc file where the api funcntion is stored
-module_load_include('admin.inc', 'transactions');
-//then
-generate_transaction_node($title, $payer_uid, $payee_uid, $quantity, $options=array(), $cid=0);
-where the options default to:
-array('state'=> TRANSACTION_STATE_COMPLETED, 'type'=>'arbitrary_type', 'rating' => '0', 'starter_uid' => 'payee_uid');
-
+N.B. The four exchange types in this module work better with starter_uid & completer_uid than payee_uid/payer_uid.
 
 
 ***********************
@@ -234,22 +180,22 @@ array('state'=> TRANSACTION_STATE_COMPLETED, 'type'=>'arbitrary_type', 'rating' 
 
 The following procedure is carried out before every point release on Drupal.org.
 
-Install all the modules except cc_currencies and set up as per instructions above, with 2 other users without accountant permissions (here called users 3 and 4).
+Install all the modules except mc_currencies and set up as per instructions above, with 2 other users without accountant permissions (here called users 3 and 4).
 User 4 should have your own email address.
 
-Transactions
+exchanges
 At admin/marketplace/currencies, change default currency, including a new currency icon
 Log in as user 3.
 Create a outgoing_direct payment to user 4. You should be redirected to user/3/statement
 Create a incoming_confirm to user 4. You should be redirected to user/3/pending
-Change the transaction you just created.
+Change the exchange you just created.
 Check balance chart, pending page, statement
-Check the mail you should have received notifying user 4 of a pending transaction
+Check the mail you should have received notifying user 4 of a pending exchange
 Login as user 4.
-Complete the pending transaction
-Attempt a new transaction with user 3 which will take you outside the balance limits.
+Complete the pending exchange
+Attempt a new exchange with user 3 which will take you outside the balance limits.
 
-Install cc_currencies
+Install mc_currencies
 check previous default currency is intact as edited
 add a new currency
 repeat previous section
@@ -258,19 +204,13 @@ Offers and wants
 Create an offer and a want
 See them on the directory tab in the user profile
 See them in the public directory (link in navigation menu)
-HOW DO WE CHECK PRINTABLE VIEW WITH MINIMAL SETUP?
-
-Requack
-Create a reuest.
-At /requests, click complete and choose user 3
-at user/3 see the acknowledgement count
 
 Anonymous users
-Log out. See if you can see any transaction information, user profiles, or offers and wants
+Log out. See if you can see any exchange information, user profiles, or offers and wants
 Try going directory to
 user/3
 directory/recent_offers
-transactions
+exchanges
 
 Mass pay
 Log in as user 1
@@ -278,15 +218,15 @@ At admin/marketplace/mass_payment, make two payments
 one from admin to everyone excepting user 4
 one from everyone excepting user 4 to admin
 
-Enable the cc_currencies module.
+Enable the mc_currencies module.
 At admin/marketplace/currency Check that the previous default currency is now a node
-If you have phpmyadmin check that all cids are <> 0 in cc_transactions and cc_balance_cache
+If you have phpmyadmin check that all cids are <> 0 in mc_exchanges and mc_balance_cache
 Add a new currency
-start a couple of transactions in the new currency
-check user/1/statement, user/1/balances, and transactions
+start a couple of exchanges in the new currency
+check user/1/statement, user/1/balances, and exchanges
 
 Import
-go to admin/content/node and delete all transactions
+go to admin/content/node and delete all exchanges
 import 2 users with their balances. Check their user pages
 Import 2 offers and 2 wants. Check the directory
 

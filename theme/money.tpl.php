@@ -1,4 +1,5 @@
 <?php
+// $Id$
 /*
  * money.tpl.php theme an amount of money with richtext
  *
@@ -9,6 +10,10 @@
  */
 //all spare lines have been removed so as not to bugger up the export to csv
 ?><span class="currency"><?php 
-  print $sign.$icon.$quantity;
-  if (!$icon) print ' '. $name;
+  if (!$icon || $richtext == FALSE) {
+    print $sign.$quantity.' '. $name;
+  }
+  else {
+    print $sign.$icon.$quantity;
+  }
 ?></span>

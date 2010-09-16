@@ -1,0 +1,59 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Install, update and uninstall functions for the exchanges module.
+ */
+
+
+/**
+ * Implementation of hook_install().
+ */
+function mc_signatures_install() {
+  drupal_install_schema('mc_webforms');
+}
+
+/**
+ * Implementation of hook_uninstall(˙˙˙).
+ * http://api.drupal.org/api/function/hook_uninstall/6
+ * Remove any tables or variables that the module sets.
+ */
+function mc_signatures_uninstall() {
+  drupal_uninstall_schema('mc_signatures');
+}
+
+function mc_signatures_enable() {
+  variable_set('hide_submit_js_load_pages', TRUE);
+  variable_set('hide_submit_keypress', TRUE);
+  variable_set('hide_submit_script_mode', TRUE);
+  variable_set('hide_submit_js_load_pages', 'exchange*');
+  drupal_set_message(t("Set up mail notifications for signatories at !link", array('!link' => url('admin/settings/actions'))));
+}
+
+/**
+ * Implementation of hook_schema)().
+ * http://api.drupal.org/api/function/hook_schema/6
+ */
+//TODO what about storing all this info in the user table instead?
+function mc_signatures_schema() {
+  $schema['mc_unsigned'] = array(
+    'description' => 'signatories needed on pending transactions',
+    'fields' => array(
+      'nid' => array(
+        'description' => t('the node to which this entry is attached'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'uid' => array(
+        'description' => t('the user id of the payer'),
+        'type' => 'int',
+        'size' => 'normal',
+      )
+    ),
+    'unique_keys' => array(
+      'nid_uid' => array('nid', 'uid')
+    )
+  );
+  return $schema;
+}

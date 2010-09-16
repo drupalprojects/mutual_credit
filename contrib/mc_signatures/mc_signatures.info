@@ -1,0 +1,6 @@
+; $Id$
+name = Mutual credit signatures
+description = Controls pending exchanges, notification and signing the exchanges to 'finish' them.
+package = Local currencies
+core = "6.x"
+dependencies[mcapi]

@@ -1,0 +1,7 @@
+; $Id$
+name = MCAPI display
+description = Display exchanges in tables, views and blocks
+package = Local currencies
+core = "6.x"
+dependencies[mcapi]
+dependencies[views]

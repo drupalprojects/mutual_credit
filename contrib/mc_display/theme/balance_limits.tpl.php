@@ -16,6 +16,7 @@
 ?>
 
 <?php foreach(array_keys($min) as $cid) { ?>
+<h5><?php print t('Balance limits'); ?></h5>
 <p>Max: <?php print theme('money', $max[$cid]); ?>
 <br />Min: <?php print theme('money', $min[$cid]); ?></p>
 <?php } ?>

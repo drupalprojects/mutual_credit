@@ -1,7 +1,0 @@
-; $Id$
-name = Transactions
-description = Makes a contentType called transactions and manages the way that users create and view this content. 
-package = Complementary Currencies
-dependencies[] = views
-
-core = "6.x"

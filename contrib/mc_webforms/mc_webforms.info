@@ -1,0 +1,6 @@
+; $Id$
+name = Mutual credit web forms
+description = AJAX Forms to create exchanges: 3rd party and multiple forms
+package = Local currencies
+core = "6.x"
+dependencies[mcapi]
