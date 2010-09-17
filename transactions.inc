@@ -7,9 +7,9 @@
  */
 
 //this is calcluated as 2048 max chars in a google charts url - 250 characters for all the other data divided by 13 characters per chart-point
-define(MAX_CHART_POINTS, 140);
-define(TRANSACTIONS_PAGER_ELEMENT, 1);
-define(TRANSACTIONS_PER_PAGE, 20);
+define('MAX_CHART_POINTS', 140);
+define('TRANSACTIONS_PAGER_ELEMENT', 1);
+define('TRANSACTIONS_PER_PAGE', 20);
 
 /*
  * Menu Callbacks

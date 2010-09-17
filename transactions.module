@@ -22,9 +22,9 @@
  *
  * if the multiple currencies module is not installed, the default currency id ('cid') is 0
  */
-define (TRANSACTION_STATE_COMPLETED, 0);
-define (TRANSACTION_STATE_PENDING, 1);
-define (TRANSACTION_STATE_ERASED, -1);
+define ('TRANSACTION_STATE_COMPLETED', 0);
+define ('TRANSACTION_STATE_PENDING', 1);
+define ('TRANSACTION_STATE_ERASED', -1);
 
 /** 
  * http://api.drupal.org/api/function/hook_help/6
@@ -447,7 +447,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
     case 'load': 
       static $balances; //this can get run rather a lot in some pageloads, so we'll do minicaching here
       $uid = $account->uid;
-      if ($uid && !$all_balances[$uid]) {
+      if ($uid) {
         //put the user stats into the user object, where the theming layer can see them
         $result = db_query(
           "SELECT cid, cleared_balance, pending_difference, pending_balance, gross_income, gross_expenditure, quality_mean
@@ -716,10 +716,47 @@ function transactions_theme($existing, $type, $theme, $path) {
         'account' => NULL,
         'cid' => 0
       )
-    )
+    ),
+    //views fields
+    'views_view_field__quantity' => array(
+      'arguments' => array('view' => NULL, 'field' => NULL, 'row' => NULL),
+    ),
+    'views_view_field__cleared_balance' => array(
+      'arguments' => array('view' => NULL, 'field' => NULL, 'row' => NULL),
+    ),
+    'views_view_field__pending_difference' => array(
+      'arguments' => array('view' => NULL, 'field' => NULL, 'row' => NULL),
+    ),
+    'views_view_field__pending_balance' => array(
+      'arguments' => array('view' => NULL, 'field' => NULL, 'row' => NULL),
+    ),
+    'views_view_field__gross_income' => array(
+      'arguments' => array('view' => NULL, 'field' => NULL, 'row' => NULL),
+    ),
+    'views_view_field__gross_expenditure' => array(
+      'arguments' => array('view' => NULL, 'field' => NULL, 'row' => NULL),
+    ),
   );
 }
 
+function theme_views_view_field__quantity($view, $field, $row) {print_r($row);
+  return theme('money', $row->cc_transactions_quantity, $row->cc_transactions_cid);
+}
+function theme_views_view_field__cleared_balance($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_cleared_balance, $row->cc_transactions_cid);
+}
+function theme_views_view_field__pending_difference($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_pending_difference, $row->cc_transactions_cid);
+}
+function theme_views_view_field__pending_balance($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_pending_balance, $row->cc_transactions_cid);
+}
+function theme_views_view_field__gross_income($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_gross_income, $row->cc_transactions_cid);
+}
+function theme_views_view_field__gross_expenditure($view, $field, $row) {
+  return theme('money', $row->cc_balance_cache_gross_expenditure, $row->cc_transactions_cid);
+}
 /**
 * Implementation of hook_theme_registry_alter
 */
@@ -823,27 +860,6 @@ function transactions_email_starter_action_submit($form, &$form_state) {
   );
 }
 
-//theming for Views fields
-//This function is named after phptemplate because it doesn't work when called as a theme_ function
-//this is ok as long as these theme callbacks don't clash with core
-function phptemplate_views_view_field__quantity($view, $field, $row) {
-  return theme('money', $row->cc_transactions_quantity, $row->cc_transactions_cid);
-}
-function phptemplate_views_view_field__cleared_balance($view, $field, $row) {
-  return theme('money', $row->cc_balance_cache_cleared_balance, $row->cc_transactions_cid);
-}
-function phptemplate_views_view_field__pending_difference($view, $field, $row) {
-  return theme('money', $row->cc_balance_cache_pending_difference, $row->cc_transactions_cid);
-}
-function phptemplate_views_view_field__pending_balance($view, $field, $row) {
-  return theme('money', $row->cc_balance_cache_pending_balance, $row->cc_transactions_cid);
-}
-function phptemplate_views_view_field__gross_income($view, $field, $row) {
-  return theme('money', $row->cc_balance_cache_gross_income, $row->cc_transactions_cid);
-}
-function phptemplate_views_view_field__gross_expenditure($view, $field, $row) {
-  return theme('money', $row->cc_balance_cache_gross_expenditure, $row->cc_transactions_cid);
-}
 
 //takes the transaction node opbject and returns a load of ready to print fields, in an array
 function preprocess_transaction_fields($transaction, $uid) {

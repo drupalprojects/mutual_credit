@@ -24,7 +24,7 @@ function cc_offer_want_node_info(){
     $types['offer'] = array(
       'name' => t('Offer'),
       'module' => 'cc_offer_want',
-      'description' => t('An entry in the @type directory.', array('@type' => $offers)),
+      'description' => t('An entry in the offers directory.', array('@type' => t('offers'))),
       'has_title' => TRUE,
       'title_label' => t('Product or service you are offering'),
       'status' => TRUE
@@ -34,7 +34,7 @@ function cc_offer_want_node_info(){
     $types['want'] = array(
       'name' => t('Want'),
       'module' => 'cc_offer_want',
-      'description' => t('An entry in the @type directory.', array('@type' => $wants)),
+      'description' => t('An entry in the @type directory.', array('@type' => t('wants'))),
       'has_title' => TRUE,
       'title_label' => t('Product or service you need'),
       'status' => TRUE
