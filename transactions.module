@@ -739,22 +739,28 @@ function transactions_theme($existing, $type, $theme, $path) {
   );
 }
 
-function theme_views_view_field__quantity($view, $field, $row) {print_r($row);
+function theme_views_view_field__quantity($view, $field, $row) {
+  if (!isset($row->cc_transactions_cid))$row->cc_transactions_cid = 0;
   return theme('money', $row->cc_transactions_quantity, $row->cc_transactions_cid);
 }
 function theme_views_view_field__cleared_balance($view, $field, $row) {
+  if (!isset($row->cc_transactions_cid))$row->cc_transactions_cid = 0;
   return theme('money', $row->cc_balance_cache_cleared_balance, $row->cc_transactions_cid);
 }
 function theme_views_view_field__pending_difference($view, $field, $row) {
+  if (!isset($row->cc_transactions_cid))$row->cc_transactions_cid = 0;
   return theme('money', $row->cc_balance_cache_pending_difference, $row->cc_transactions_cid);
 }
 function theme_views_view_field__pending_balance($view, $field, $row) {
+  if (!isset($row->cc_transactions_cid))$row->cc_transactions_cid = 0;
   return theme('money', $row->cc_balance_cache_pending_balance, $row->cc_transactions_cid);
 }
 function theme_views_view_field__gross_income($view, $field, $row) {
+  if (!isset($row->cc_transactions_cid))$row->cc_transactions_cid = 0;
   return theme('money', $row->cc_balance_cache_gross_income, $row->cc_transactions_cid);
 }
 function theme_views_view_field__gross_expenditure($view, $field, $row) {
+  if (!isset($row->cc_transactions_cid))$row->cc_transactions_cid = 0;
   return theme('money', $row->cc_balance_cache_gross_expenditure, $row->cc_transactions_cid);
 }
 /**
@@ -991,6 +997,7 @@ function currency_validate($form, &$form_state) {
 
 function template_preprocess_money(&$vars) {
   $currency = currency_load($vars['cid']);
+  $vars['sign'] = '';
   if (is_numeric($vars['quantity'])) {
     //seperate the sign, positive or negative
     $vars['quantity'] = $vars['quantity']+0;

@@ -1,31 +1,76 @@
 <?php
 
-
-
 /**
- * Implementation of hook_init().
+ * Implementation of hook_menu().
  */
-function fwm_init() {
-  global $conf;
-  $conf['i18n_variables'][] = 'fwm_method_title';
-  $conf['i18n_variables'][] = 'fwm_credit_purchase_button';
+function cc_uc_menu() {
+  return array(
+    'admin/marketplace/store' => array(
+      'title' => 'Store transactions',
+      'page_callback' => 'drupal_get_form',
+      'page arguments' => array('cc_uc_settings'),
+      'access arguments' => array('edit all transactions'),
+      'file' => '',
+      'weight' => 5
+    )
+  );
 }
 
+function cc_uc_settings() {
+  $form['cc_uc_rate'] = array(
+    '#title' => t('rate of commission'),
+    '#description' => t('What percentage should be added to the subtotal of each order, to be paid in commission?'),
+    '#type' => 'textfield',
+    '#element_validate' =>  array('cc_check_numeric'),
+    '#default_value' => variable_get('cc_uc_rate', 0),
+    '#weight' => 1
+  );
+  
+  $form['cc_uc_rounding'] = array(
+    '#title' => t('Rounding'),
+    '#type' => 'radios',
+    '#options' => array(0 => 'down', 1 => 'up'),
+    '#default_value' => variable_get('cc_uc_rounding', 0),
+    '#weight' => 2,
+    '#required' => TRUE
+  );
+  
+  $form['cc_uc_commission_acc'] = array(
+    '#title' => t('Account to credit'),
+    '#description' => t('The commission should be paid into which uid account?'),
+    '#type' => 'textfield',
+    '#element_validate' => array('validate_trader_account'),
+    '#default_value' => variable_get('cc_uc_commission_acc', 1),
+    '#weight' => 1
+  );
+  return system_settings_form($form);
+}
+function validate_trader_account($element, $form_state) {
+  $account = user_load($element['#value']);
+  if ($account) {
+    if (!user_access('use local currency', $account) || !$account->status) {
+      form_error($element, t("'@data' is not an account uid which can trade", array("@data" => $element['#value'])));
+    }
+  }
+}
+function cc_check_numeric(&$element, $form_state) {
+  if (!is_numeric($element['#value'])) form_error($element, t("must be numeric"));
+}
 
 /**
  * Implementation of hook_payment_method().
  *
- * @see uc_payment_method_fwm()
+ * @see mutual_credit_payment_method()
  */
-function fwm_payment_method() {
-  $img = theme('img', path_to_theme().silver-01.jpg);
+function cc_uc_payment_method() {
+  $currency = variable_get('cc_default_currency', '');
   $methods[] = array(
-    'id' => 'fwm_pay',
-    'name' => t('FWM transaction'),
-    'title' => variable_get('fwm_method_title', t('Silver account:')) . $img,
-    'review' => variable_get('fwm_method_title', t('Silver exchange:')),
-    'desc' => t('Silver transfer.'),
-    'callback' => 'uc_payment_method_fwm',
+    'id' => 'cc_uc_pay',
+    'name' => $currency->title,
+    'title' => $currency->title,
+    'review' => $currency->title,
+    'desc' => $currency->body,
+    'callback' => 'mutual_credit_payment_method',
     'weight' => 3,
     'checkout' => TRUE,
     'no_gateway' => FALSE,
@@ -34,273 +79,341 @@ function fwm_payment_method() {
 }
 
 
-
-/**
- * Implementation of hook_payment_gateway().
- */
-function fwm_payment_gateway() {
-  $gateways[] = array(
-    'id' => 'fwm_pay',
-    'title' => t('FWM gateway'),
-    'description' => t('Process transactions through internal 'silver' accounting system'),
-    'fwm_pay' => 'fwm_transact',
-    );
-  return $gateways;
-}
-
-// conduct the payment, making separate payments to the owners of each product
-function fwm_transact($order_id, $amount, $data) {
-  global $user;
-  $result = false;
-  if (($order = uc_order_load($order_id)){
-  	print_r($order);
-  	drupal_set_message('mutual_credit needs to do payment here for $amount');
-  	print_r($data);
-
-    foreach ($order->products as $product) {
-      $owner_uid = db_result(db_query('SELECT uid FROM {node} WHERE nid = %d', $product->nid));
-      $ticket[$owner]['amount'] += uc_price(
-        array( 'price' => $product->price, 'qty' => $product->qty ),
-        array( 'revision' => 'original')
-      );
-      $ticket[$owner]['description'] .= $product->model .':'. $product->qty .',';
-    }
-
-    // Different payment foreach product
-    //would be good if these could be grouped by vendor
-    foreach ($ticket as $owner => $detail) {
-      $message = 'transaction failed';
-      //MAKE THE PAYMENTS HERE
-      
-      if ($node = generate_transaction_node(
-        $detail['description'],
-        $user->uid, 
-        $owner_uid, 
-        $detail['amount'], 
-        $options = array('transaction_type' => 'ubercart', state => TRANSACTION_TYPE_COMPLETED),
-      ) {
-        $message = "Transaction successful.";
-        $_SESSION['cyclos_pay'] = true;
-	    watchdog('fwm', 'Cyclos xfer complete: @message', array( '@message' => $order->order_id ), WATCHDOG_NOTICE);
-	  }
-      uc_order_comment_save($order->order_id, 0, $message, 'admin');
-	}
-	return $result;
-  
-	/*  don't know if we really need this result object or how important the formatting is.
-	//maybe ubercart requires it just so.
-	  $result = array(
-	    'success' => $status['success'],
-	    'comment' => t($status['result']),
-	    'message' => t($message),
-	    'uid' => $user->uid,
-	    'log_payment' => !$status['fatal'],
-	  );
-	*/ 
-  }
-  else {
-    drupal_set_message('Your order could not be identified, #id:'.$order_id);
-  }
-}
-
 /**
  * Implementation of hook_order().
  */
-function fwm_order($op, &$arg1, $arg2) {print_r(func_get_args());
+function cc_uc_order($op, &$arg1, $arg2) {
   switch ($op) {
+  	case 'load':
+    case 'total': //last chance to add a fee?
+      $totals = addup_products($arg1->products);
+      $arg1->order_total = $totals['total'];
+      break;
+      
+    //I don't know how to use these
     case 'submit':
-    if ($arg1->payment_method == 'cyclos') {
-      // Clear out that session variable denoting paid order.
-      unset($_SESSION['cyclos_pay']);
-      $pass = uc_payment_process($arg1->payment_method, $arg1->order_id, $arg1->order_total, $arg2, TRUE, NULL, FALSE);
-      if (!$pass) {
-        $message = variable_get('fwm_fail_message', t('We were unable to process your transaction.'));
-        return array(array('pass' => FALSE, 'message' => $message));
-      }
-    }
+    case 'new':
+    case 'save':
+    case 'update':
+    case 'can_update':
+    default:
+      break;
   }
 }
 
-
 /**
- * @see fwm_payment_method()
+ * @see cc_uc_payment_method()
+ * This seems to be called from the payment module's hook_order, with the order for $arg1
+ * hence the helpfully named ops, inherited from the hook_order, order-submit, order-load, order-save order-delete 
  */
-function uc_payment_method_fwm($op, &$arg1) { drupal_set_message('is this even needed at all since we know that mutual_credit is installed');
-  global $user; 
-  echo $op.' in uc_payment_method_fwm';
+function mutual_credit_payment_method($op, &$arg1) {
   switch ($op) {
-    case 'cart-process':
-      $_SESSION['pay_method'] = $_POST['pay_method'];
-      $details = '<div class="form-item"><b>'. t('Purchase more credits: ').
-          '</b>'.url(variable_get('fwm_external_credit_site', t('http://silverbartermoney.com'))). '<br/><b>balance:</b>' . $user->account_balance.'</div>';
-      return $details;
-    case 'settings':
-      $form['fwm_method_title'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Payment method title'),
-        '#default_value' => variable_get('fwm_method_title', t('Silver exchange:')),
-      );
-      $form['fwm_database_url'] = array(
-        '#type' => 'textfield',
-        '#title' => t('DSN to the Cyclos database'),
-        '#description' => t('The DSN is needed to push users from Drupal to Cyclos.'),
-        '#default_value' => variable_get('fwm_database_url', t('mysql:host=localhost;dbname=cyclos')),
-      );
-      $form['fwm_external_credit_site'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Add credits to the account'),
-        '#description' => t('The URL providing a place where customers can purchase credits to increase their balance.'),
-        '#default_value' => variable_get('fwm_external_credit_site', t('http://silverbartermoney.com')),
-      );
-      $form['fwm_credit_purchase_button'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Credit purchase button text'),
-        '#description' => t('Provide specific text for the purchase credit button on the order review page.'),
-        '#default_value' => variable_get('fwm_credit_purchase_button', t('Purchase Credit')),
-      );
-      return $form;
-    case 'order-view':
-    case 'customer-view':
-      // Fetch the description for the payment entered by the administrator.
-      if ($description = db_result(db_query("SELECT description FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id))) {
-        return t('Description: @desc', array('@desc' => $description));
-      }
-      break;
-
-    case 'order-details':
-      $details = drupal_get_form('uc_payment_method_other_form', $arg1);
-      return uc_strip_form($details);
-
-    case 'edit-process':
-      $changes['payment_details']['pm_other_description'] = check_plain($_POST['pm_other_description']);
-      return $changes;
-
+  	case 'order-submit':
+      //make one transaction per vendor (compatible with ubercart marketplace)
+      //first group the transactions by vendor
+  	  foreach ($arg1->products as $product) {
+  	  	$payee_uid = db_result(db_query("SELECT uid FROM {node} WHERE nid = %d", array(':nid' => $product->nid)));
+  	  	$vendors[$payee_uid][] = $product;
+  	  }
+  	  foreach ($vendors as $vendor_uid => $products) {
+  	  	$vendor_total = 0;
+  	  	$items = array();
+  	  	//add up the prices of the products
+  	  	foreach ($products as $product) {
+  	  	  $vendor_total += $product->qty * $product->price;
+  	  	  $items[] .= $product->qty > 1 ? $product->qty .'x ' : '' . $product->title;
+  	  	}
+  	    $node = generate_transaction_node(
+  	      'Order # '. $arg1->order_id . ': '. implode('; ', $items),
+  	      $arg1->uid,
+  	      $vendor_uid,
+  	      $vendor_total,
+  	      $options = array(
+  	        'transaction_type'=>'cc_uc_purchase', 
+  	        'state' => TRANSACTION_STATE_COMPLETED,
+  	        'depends_on' => $arg1->order_id 
+  	      ),
+  	      0
+  	    );
+  	    if (!is_object($node)) {
+  	      drupal_set_message("unknown error. Failed to generate local transaction. Administrator has been notified.");
+  	      //mail the administrator
+          cc_transaction_uc_error(t('Order @oid failed to generate a cc transaction', array('@oid' => $arg1->order_id)));
+  	      drupal_goto('cart');
+  	    }
+  	  }
+      uc_cart_empty($arg1->uid);
+      //This triggers conditional action 'A payment gets entered for an order', which pays the commission
+      uc_payment_enter($arg1->order_id, 'cc_uc_pay', $totals['total'], $arg1->uid, NULL, 'no comment!');      
+  	  break;
+  	  
+    //I don't know how to use most of these
+    case 'cart-process': //called from uc_payment_checkout_pane.inc and uc_credit.module
     case 'order-load':
-      if ($description = db_result(db_query("SELECT description FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id))) {
-        $arg1->payment_details['description'] = $description;
-      }
-      break;
-
     case 'order-save':
-      db_query("DELETE FROM {uc_payment_other} WHERE order_id = %d", $arg1->order_id);
-      if (!empty($arg1->payment_details['pm_other_description'])) {
-        db_query("INSERT INTO {uc_payment_other} (order_id, description) VALUES (%d, '%s')", $arg1->order_id, $arg1->payment_details['pm_other_description']);
-      }
+    case 'order-view':
+    //not sure how these other hooks got to be here, maybe from a different version?
+    case 'customer-view': //called from uc_payment_order_pane.inc
+    case 'order-details': //can't see where this is called from
+    case 'edit-process': //called from uc_payment_order_pane.inc and uc_order.admin.inc
+    case 'cart-review': //called from uc_payment_checkout_pane.inc:
+    case 'cart-details':
       break;
+    default:
+      drupal_set_message('mutual_credit_payment_method:'.$op); return;  
+  }
+}
+
+function cc_transaction_uc_error($body) {
+  $message = array(
+    'to' => variable_get('site_mail', ''), 
+    'subject' => t('Transaction failed at @site', array('@site', variable_get('site_name', ''))),
+    'body' => $body,
+  );
+  drupal_mail_send($message);
+}
+
+
+function limit_warning($fresh = FALSE) {
+  static $message;
+  if (isset($message) && !$fresh) return $message;
+  else $message = '';
+  $cart_products = uc_cart_get_contents($account->uid);
+  $totals = addup_products($cart_products);
+  if ($over = quick_balance_check($totals['total'])) {
+  	$currency = variable_get('cc_default_currency', '');
+    $message = t('You have @quant more in your <a href="/cart">shopping cart</a> than in your wallet.', array('@quant' => $over));
+   	drupal_set_message($message .' '. t("You'll need to remove some items from the cart, or purchase more @currency_name.", 
+   	  array('@currency_name' => $currency->name)), 'warning', FALSE);
+  }
+  return $message;  	  
+}
+
+
+//returns the amount by which the user would go over
+function quick_balance_check($quant) {
+  $account = user_load($GLOBALS['user']->uid); 
+  $dif = $quant - $account->balances[0]['cleared_balance']; 
+  if ($dif > 0) return $dif;
+}
+
+function cc_uc_form_uc_cart_checkout_form_alter(&$form, $form_state) {
+  $warning = limit_warning();
+  if (strlen($warning)){
+    $form['panes']['topup']['#value'] = theme('block', (object)module_invoke('fwm_custom', 'block', 'view', 'my_balance'));
+    $form['panes']['customer']['#access'] = FALSE;
+    $form['panes']['comments']['#access'] = FALSE;
+    $form['panes']['payment']['#access'] = FALSE;
+    unset($form['panes']['payment']);
+    $form['cancel']['#access'] = FALSE;
+    $form['continue']['#access'] = FALSE;
   }
 }
 
 
-/**
- * Form provides customer with option to purchase account credits.
- */
-function fwm_checkout_review_form($form_state) { drupal_set_message(fwm_checkout_review_form);
-    global $user;
-    $form['#method'] = 'get';
-    $form['#action'] = url(variable_get('fwm_external_credit_site', t('http://silverbartermoney.com')));
-    //what are all these hidden fields for?
-    $data = array(
-      'account_id' => $user->name,
-      'x_receipt_link_url' => url('cart/checkout/review', array('absolute' => TRUE)),
-      'x_id' => time,
-      'signature' => time,
-    );
+//this theme override removes the checkout link if the cc balance is insufficicent see uc_cart.module
+function phptemplate_uc_cart_block_content($help_text, $items, $item_count, $item_text, $total, $summary_links) {
+  $output = '';
+  // Add the help text if enabled.
+  if ($help_text) {
+    $output .= '<span class="cart-help-text">'. $help_text .'</span>';
+  }
+  // Add a wrapper div for use when collapsing the block.
+  $output .= '<div id="cart-block-contents">';
+  // Add a table of items in the cart or the empty message.
+  $output .= theme('uc_cart_block_items', $items);
+  $output .= '</div>';
+  
+  //added by matslats
+  $warning = limit_warning(TRUE);
+  if (strlen($warning)){
+    unset($summary_links['cart-block-checkout']);
+  }
 
-    foreach ($data as $name => $value) {
-      $form[$name] = array('#type' => 'hidden', '#value' => $value);
-    }
+  // Add the summary section beneath the items table.
+  $output .= theme('uc_cart_block_summary', $item_count, $item_text, $total, $summary_links);
 
-    $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => variable_get('fwm_credit_purchase_button', t('Purchase Credit')),
-    );
-  return $form;
+  return $output;
 }
 
-/**
- * Implementation of hook_form_FORM_ID_alter().
- */
-function fwm_form_uc_cart_checkout_review_form_alter(&$form, &$form_state) {
-  drupal_set_message('wierd hook hook_form_FORM_ID_alter is running');
 
-  global $user;
-  if (isset($_REQUEST['account_id'])) {
-      fwm_credits_purchased($user->name, $_REQUEST['value'], $_REQUEST['x_id'], $_REQUEST['signature']);
-  }
-  drupal_set_message('need to get balance for user ' . $user->uid);
-  $elements = '<td><b>'.t("Account Balance: ").'</b>' . uc_currency_format($user->balances[0]['cleared_balance']).
-      '</td><td>' . drupal_get_form('fwm_checkout_review_form');
-
-  $form['#prefix'] = '<table id="two-checkout-review-table"><tr><td>';
-  $form['#suffix'] = '</td></tr><tr>'.$elements.'</td></tr></table>';
-
-  if (($order_id = intval($_SESSION['cart_order'])) > 0 &&  ($order = uc_order_load($order_id)) == TRUE &&  $order->order_total > $user->account_balance) {
+function cc_uc_form_uc_cart_checkout_review_alter(&$form, $form_state) {
+  $warning = limit_warning();
+  if (strlen($warning)){
     $form['submit']['#disabled'] = TRUE;
+    $form['#suffix'] = $warning;
   }
 }
 
-function fwm_credits_purchased($identifier, $value, $transaction_id, $hash) {
-  $md5hash = md5($auth['cpg_salt1'].$identifier.':'.$value.':'.$transaction_id.$auth['cpg_salt2']);
-  if (isset($hash)) {
-    // Verify that this is a good credit purchase.
-    if ($md5hash == $hash) {
-      $exists = db_result(db_query('SELECT signature FROM {fwm_external_transactions} WHERE signature = %s', $hash));
-      if ($exists) {
-        watchdog('fwm_main', 'Bad signature while adding credits name: @name amount: @value xid: @transaction_id sig: @hash', array( '@name' => $identifier, '@value' => $value, '@transaction_id' => $transaction_id, '@hash' => $hash ), WATCHDOG_WARNING);
-       } else {
-         drupal_set_message('time to use the mutual_credit API');
-       }
-     }
-  }
+function cc_uc_ca_action() {
+  $actions['cc_uc_commission'] = array(
+    '#title' => t('Pay percentage of order total to designated account'),
+    '#category' => t('Order'),
+    '#callback' => 'cc_uc_commission',
+    '#arguments' => array(
+      'order' =>array(
+        '#entity' => 'uc_order',
+        '#title' => t('Order'),
+      ),
+    ),
+  );
+  return $actions;
 }
 
+function cc_uc_commission($order) {
+  $totals = addup_products($order->products);
+  $commission_node = generate_transaction_node(
+    '5% commission on #'. $order->order_id,
+    $order->uid,
+    variable_get('cc_uc_commission_acc', '1'),
+    $totals['xtra'],
+    $options = array(
+      'transaction_type'=>'cc_uc_commission',
+      'state' => TRANSACTION_STATE_COMPLETED,
+    ),
+    0
+  );
+  if (!is_object($commission_node)) {
+  	//also print out the $messages from wherever
+  	cc_transaction_uc_error(t('Order @oid failed to generate a commission transaction', array('@oid' => $arg1->order_id)));
+  }
+}
 
 /*
- * Transfer credits from system to member
+ * Implementation of ubercart's hook_line_item
+ * http://www.ubercart.org/docs/api/hook_line_item
  */
-function _fwm_credit_member($member, $amount, $transaction_id) { print_r($func_get_args);
-  drupal_set_message('this needs to made like _fwm_doBulkPayment');
-  global $user;
-
-  // Setup the payment parameters
-  $params = new stdclass();
-  $params->amount = $amount;
-  $params->description = 'credit purchase: ' . $transaction_id;
-  $params->toMember = $member;
-  $params->fromMember = $systemName;
-
-  $params->fromSystem = true;
-  $params->toSystem = false;
-
-  $param_list[] = $params;
-
-  //$status = $cyclos->doBulkPayment($param_list);
-  drupal_set_message('Purchase of $amount credits for mutual_credit module');
-
-  if ($status['success']) {
-      $message = "Transaction successful.";
-      $_SESSION['cyclos_pay'] = true;
-      watchdog('uc_cyclos', 'Cyclos xfer complete: @message', array( '@message' => $order->order_id ), WATCHDOG_NOTICE);
-  } else {
-      $message = "Transaction failed: " . $status['result'];
-      if ($status['fatal']) {
-          drupal_set_message("$message: " . $status['result'], 'error');
-          uc_order_update_status($order->order_id, 'cancelled');
-          drupal_set_message("Error detected, notifying administrator.", 'error');
-      } else {
-          drupal_set_message("Transaction failure: " . $status['result'], 'error');
-      }
-  }
-
-  uc_order_comment_save($order->order_id, 0, $status['result'], 'admin');
-
-  $result = array(
-      'success' => $status['success'],
-      'comment' => t($status['result']),
-      'message' => t($message),
-      'uid' => $user->uid,
-      'log_payment' => !$status['fatal'],
-      );
-
-  return $result;
+function cc_uc_line_item() {
+  $items[] = array(
+    'id' => 'cc_uc_cut',
+    'title' => t('Transaction Fee from @site', array('@site' => variable_get('site_name', 'this site'))),
+    'weight' => 2,
+    'default' => FALSE,
+    'stored' => FALSE,
+    'add_list' => TRUE,
+    'calculated' => TRUE,
+    'display_only' => FALSE,
+    'callback' => 'cc_commission_line_item',
+  );
+  return $items;
 }
+
+function cc_commission_line_item($op, $arg1) {
+  switch($op) {
+    case 'load':
+      $totals = addup_products($arg1->products);
+      return array(
+         array(
+          'id' => 'cc_uc_cut', 
+          'title' => t('Transaction fee from @site', array('@site' => variable_get('site_name', 'this site'))), 
+          'amount' => $totals['xtra']
+        )
+      );
+    case 'cart-preview':
+      $totals = addup_products($arg1);
+      drupal_add_js("\$(document).ready( function() { set_line_item('cc_uc_cut', '". t('Transaction Fee from @site', array('@site' => variable_get('site_name', 'this site'))) ."', ". $totals['xtra'] .", -10); } );", 'inline');
+      break;
+  }
+}
+
+function addup_products($products) {
+  foreach ($products as $product) {
+    $sum += $product->qty ? $product->price * $product->qty : $product->price;
+  }
+  $rate = variable_get('cc_uc_rate', 0)/100;
+  $xtra = variable_get('cc_uc_rounding', 0) ? ceil($sum*$rate) : floor($sum*$rate);
+  $totals =  array(
+    'sum' => $sum,
+    'xtra' => $xtra,
+    'total' => $sum + $xtra,
+  );
+  return $totals;
+}
+
+//if the balance isn't enough to cover the costs in the cart, we need to replace the buttons at the bottom of the cart and checkout form
+function cc_uc_form_uc_cart_view_form_alter(&$form, $form_state) {
+  $warning = limit_warning(TRUE);
+  if (strlen($warning)){
+    $form['checkout']['#disabled'] = TRUE;
+    $form['#suffix'] = theme('block', (object)module_invoke('fwm_custom', 'block', 'view', 'my_balance'));
+  }
+}
+
+/*
+//Example order object
+stdClass Object(
+  [order_id] => 154
+  [uid] => 26
+  [order_status] => in_checkout
+  [order_total] => 
+  [product_count] => 1
+  [primary_email] => matslats@gmail.com
+  [delivery_first_name] => blah 
+  [delivery_last_name] => blah 
+  [delivery_phone] => 94844746
+  [delivery_company] => 
+  [delivery_street1] => blah 
+  [delivery_street2] => 
+  [delivery_city] => blah 
+  [delivery_zone] => 2
+  [delivery_postal_code] => 1212
+  [delivery_country] => 840
+  [billing_first_name] => 
+  [billing_last_name] => 
+  [billing_phone] => 
+  [billing_company] => 
+  [billing_street1] => 
+  [billing_street2] => 
+  [billing_city] => 
+  [billing_zone] => 0
+  [billing_postal_code] => 
+  [billing_country] => 840
+  [payment_method] => cc_uc_pay
+  [data] => 
+  [created] => 1281388382
+  [modified] => 1281388383
+  [host] => 91.114.233.139
+  [products] => Array (
+    [0] => stdClass Object (
+      [order_product_id] => 303
+      [order_id] => 154
+      [nid] => 10
+      [title] => DRAPHT GREY LENS/GLOSS BLACK FRAME
+      [manufacturer] => 
+      [model] => ACDRA01 
+      [qty] => 1
+      [cost] => 0.01000
+      [price] => 75.00000
+      [weight] => 0
+      [data] => Array (
+        [shippable] => 1
+        [module] => uc_product
+      )
+      [order_uid] => 26
+    )
+  )
+  [quote] => Array(
+    [method] => 
+    [accessorials] => 
+    [rate] => 0.00000
+    [quote_form] => 
+  )
+  [line_items] => Array(
+    [0] => Array(
+      [line_item_id] => subtotal
+      [type] => subtotal
+      [title] => Subtotal
+      [amount] => 75
+      [weight] => 0
+      [data] => 
+    )
+    [1] => Array(
+      [line_item_id] => cc_uc_cut
+      [type] => cc_uc_cut
+      [title] => Transaction fee from Free World Market
+      [amount] => 4
+      [weight] => 2
+      [data] => 
+    )
+  )
+)*/
