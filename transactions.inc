@@ -132,7 +132,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
   $form = array();
   
   //just check, if we are here without using a button, that user can edit the form
-  if ($mode == edit && !transactions_access('edit', NULL, $user->uid, $transaction)) {
+  if ($mode == 'edit' && !transactions_access('edit', NULL, $user->uid, $transaction)) {
     drupal_set_message(t('You cannot edit this transaction'), 'error');
   }
 
@@ -147,25 +147,25 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
 
   $form['#mode'] = $mode;
   $form['#selector_set'] = $selectorset;
+  $edit_all_transactions = user_access('edit all transactions');
   if ($edit_all_transactions && $mode == 'edit') { 
     $form['#selector_set'] = 'both';
   }
   //this determines the unfilled user fields in the form
   $form['#after_build'] = array('transaction_form_after_build');
-  $edit_all_transactions = user_access('edit all transactions');
   $allowed_transactions = _named_transaction_types();
-  $ttype = $transaction->transaction_type or $ttype = "";
+  $ttype = isset($transaction->transaction_type) ? $transaction->transaction_type : $ttype = "";
   //this is only for if we use the dropdown, not the autocomplete
   $default_currency= variable_get('cc_default_currency', array());
-  $payer = $transaction->payer_uid or $payer = '';
-  $payee = $transaction->payee_uid or $payee = '';
-  $starter = $transaction->starter_uid or $starter = '';
-  $completer = $transaction->completer_uid or $completer = '';
+  $payee = isset($transaction->payee_uid) ? $transaction->payee_uid : '';
+  $payer = isset($transaction->payer_uid) ? $transaction->payer_uid :  '';
+  $starter = isset($transaction->starter_uid) ? $transaction->starter_uid : '';
+  $completer = isset($transaction->completer_uid) ? $transaction->completer_uid : '';
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('What is being paid for?'),
     '#required' => TRUE, 
-    '#default_value' => $transaction->title,
+    '#default_value' => isset($transaction->title) ? $transaction->title : '',
     '#description' => t('What goods or services were exchanged? '),
     '#element_validate' => array('cc_validate_title')
   );
@@ -239,7 +239,7 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
         '#type' => $user_select_widget,
         '#title' => t('With whom did you transact?'),
         '#default_value' => $completer,
-        '#options' => $traders ? array(0 => t('(Please choose...)')) + $traders : NULL,
+        '#options' => isset($traders) ? array(0 => t('(Please choose...)')) + $traders : NULL,
         '#required' => TRUE,
         '#element_validate' => array('cc_validate_2parties'),
       );
@@ -272,24 +272,25 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
     $form['state'] = array(
       '#type' => 'checkbox',
       '#title' => t('Tick to request confirmation'),
-      '#default_value' => $transaction->state,
+      '#default_value' => isset($transaction->state) ? $transaction->state : '',
     );
   }
   else {
     $form['state'] = array(
       '#type' => 'hidden',
-      '#default_value' => $transaction->state,
+      '#default_value' => isset($transaction->state) ? $transaction->state : '',
     );
   }
   
   $form['quantity'] = array(
     '#type' => 'textfield',
     '#title' => t('Quantity'),
-    '#default_value' => intval($transaction->quantity),
+    '#default_value' => isset($transaction->quantity) ? intval($transaction->quantity) : '',
     '#field_suffix' => $default_currency->title,
     '#element_validate' => array('cc_validate_quantity'),
     '#maxlength' => 7,
     '#required' => TRUE,
+    '#weight' => 10,
   );
   
   $form['division'] = array(
@@ -301,8 +302,8 @@ function transaction_base_form($transaction, $mode = 'edit', $selectorset = 'sta
     $form['division'] = array(
       '#type' => 'select',
       '#title' => t('Hours'),
-      '#weight' => $form['quantity']['#weight']+1,
-      '#default_value' => 100*($transaction->quantity - intval($transaction->quantity)),
+      '#weight' => $form['quantity']['#weight'] + 1,
+      '#default_value' => isset($transaction->quantity) ? 100*($transaction->quantity - intval($transaction->quantity)) : '',
       '#field_suffix' => $default_currency->title,
       '#options' => array(
         '0' => t('00 hours'), 
@@ -359,7 +360,7 @@ function transaction_create_form($form_state, $transaction = NULL, $selectorset 
   if (!$form_state['storage']['step'] && ($form_state['post'] == array() || $form_state['post']['transaction_type'])) {
     $form_state['storage']['step'] = 1; //this makes the form reload from POST
   }
-  if (count($form_state['values']) || $form_state['storage']['step'] > 1) {
+  if (isset($form_state['values']) || (isset($form_state['storage']['step']) && $form_state['storage']['step'] > 1)) {
     $transaction  = (object)$form_state['values'];
   }
   switch ($form_state['storage']['step']) {
@@ -367,14 +368,19 @@ function transaction_create_form($form_state, $transaction = NULL, $selectorset 
       static $form;
       if ($form) return $form; //because the transaction is built again using drupal_rebuild_form. Form API is complex!
       if (!$transaction)$transaction = (object)array();
-      if ($selectorset == 'starter_completer' && !$transaction->starter_uid) {
+      if ($selectorset == 'starter_completer' && !isset($transaction->starter_uid)) {
         $transaction->starter_uid = $GLOBALS['user']->uid; 
       }
       elseif ($selectorset == 'payer_payee') {
         $transaction->transaction_type = '3rdparty_direct';
         $form['state']['#description'] = t('Payer wil be asked to confirm');
       }
-      $mode = $form_state['clicked_button']['#id'] == 'edit-previous' ? $mode = 'edit' : $mode = 'init';
+      if (isset($form_state['clicked_button']['#id']) && $form_state['clicked_button']['#id'] == 'edit-previous') {
+        $mode = 'edit';
+      }
+      else {
+        $mode = 'init';
+      }
       $form = transaction_base_form($transaction, $mode, $selectorset);
       if (arg(0) != 'transaction') $form['#action'] = url('transaction');
       $form['quality']['#access'] = FALSE;
@@ -816,7 +822,7 @@ function template_preprocess_transaction_form(&$vars) {
   $vars['selector_set'] = $vars['form']['#selector_set'];
   foreach ($vars['form'] as $key => $field) {
     if (strpos($key, '#') !== 0 && is_array($field)  && $key != 'form_token' ) {
-      if ($field['#type'] && $field['#type'] != 'hidden') {
+      if (isset($field['#type']) && $field['#type'] != 'hidden') {
         if ($field['#type'] != 'checkbox') {
           $vars['form'][$key]['#title'] = NULL;
           $vars['form'][$key]['#description'] = NULL;
@@ -826,7 +832,7 @@ function template_preprocess_transaction_form(&$vars) {
     }
   }
   $vars['hidden_fields'] = drupal_render($vars['form']);
-  $vars['summary'] = $vars['form']['#summary'];
+  $vars['summary'] = isset($vars['form']['#summary']) ? $vars['form']['#summary'] : '';
 }
 
 

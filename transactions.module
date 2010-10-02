@@ -296,15 +296,6 @@ function transactions_block($op = 'list', $delta = 0, $edit = array()) {
       module_load_include('inc', 'transactions');
       global $user;
       switch ($delta) {
-        case 'cc_user_balances':
-          if (user_access('view all transactions') && arg(0) == 'user' && $uid = arg(1)) {
-            $account = user_load($uid);
-            return array(
-              'subject' => t("@user's balances", array('@user' => theme('username', $account))),
-              'content' => transactions_user_balances($account->uid),
-            );
-          }
-          break;
         case 'cc_new_transaction':
           if (transactions_access('create')) {
             $transaction = (object)array('starter_uid' => $user->uid);

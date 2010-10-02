@@ -61,7 +61,7 @@ function cc_options_form() {
       t('Use the following tokens: %uid, %username, %email, %theme_username') .' '.
       t('Dropdown list will be ordered alphabetically.'),
     '#element_validate' => array('validate_trader_selector'),
-    '#startwith' => array('%uid', '%username', '%email', '%theme_username')
+    '#startwith' => cc_widget_tokens()
   );
   $form['visualisation'] = array(
     '#type' => 'fieldset',
@@ -628,7 +628,10 @@ function refresh_trader_names() {
         '%uid' => $account->uid,
         '%name' => $account->name,
         '%email' => $account->mail,
-        '%theme_username' => strip_tags(theme('username', $account))
+        '%theme_username' => strip_tags(theme('username', $account)),
+        //these are for cforge_custom only
+        '%firstname' => $account->profile_firstname,
+        '%familyname' => $account->profile_familyname
       );
       $names[$account->uid] = strtr($pattern, $replacements);
     }
@@ -648,4 +651,13 @@ function refresh_trader_names() {
     'warning'
     )
   );
+}
+
+function cc_widget_tokens() {
+  $tokens = array('%uid', '%username', '%email', '%theme_username');
+  if (module_exists('cforge_custom')) {
+    $tokens[] = '%firstname';
+    $tokens[] = '%familyname';
+  }
+  return $tokens;
 }

@@ -22,9 +22,9 @@ function cc_offer_want_node_info(){
   //the status = TRUE seems to have no effect so it's fixed in form_alter
   if ($preset == 'offers' || $preset == 'both') {
     $types['offer'] = array(
-      'name' => t('Offer'),
+      'name' => 'Offer',
       'module' => 'cc_offer_want',
-      'description' => t('An entry in the offers directory.', array('@type' => t('offers'))),
+      'description' => t('An entry in the @type directory.', array('@type' => $offers)),
       'has_title' => TRUE,
       'title_label' => t('Product or service you are offering'),
       'status' => TRUE
@@ -32,9 +32,9 @@ function cc_offer_want_node_info(){
   }
   if ($preset == 'wants' || $preset == 'both') {
     $types['want'] = array(
-      'name' => t('Want'),
+      'name' => 'Want',
       'module' => 'cc_offer_want',
-      'description' => t('An entry in the @type directory.', array('@type' => t('wants'))),
+      'description' => t('An entry in the @type directory.', array('@type' => $wants)),
       'has_title' => TRUE,
       'title_label' => t('Product or service you need'),
       'status' => TRUE
@@ -79,7 +79,7 @@ function offers_wants_config_form() {
     ),
     '#default_value' => variable_get('cc_ow_content_types', 'both'),
   );
-  $form['#suffix'] = t('N.B. A popular configuration is to disable the node body for offers and wants. See !link', array('!link' => l('admin/content/type/offer', 'admin/content/type/offer')));
+  $form['#suffix'] = t('N.B. It is also possible to disable the node body for offers and wants. See !link', array('!link' => l('admin/content/type/offer', 'admin/content/type/offer')));
   $form['#redirect'] = 'admin/marketplace';
   return system_settings_form($form);
 }
@@ -184,7 +184,7 @@ function cc_offer_want_block($op = 'list', $delta = 0, $edit = array()) {
             $content = node_add($type);
             drupal_set_title($title);
           } else {
-            $subject = t('Place your small ad');
+            $subject = t('Place your @offerwant');
             $content = drupal_get_form('create_offer_or_want_form');
           }
           break;
@@ -326,7 +326,6 @@ function theme_offers_wants_link ($type) {
   switch($type) {
     case 'offer':
       $link = l(t('offer'), 'node/add/offer');
-      break;
     case 'want':
       $link = l(t('want'), 'node/add/want');
   }
