@@ -237,7 +237,7 @@ function transactions_views_data() {
   $data['cc_balance_cache']['pending_difference'] = array(
     'title' => t('Pending Difference'),
     'field' => array(
-      'help' => t("sum of all pending transactions, (@type)", array('@type'=>'')),
+      'help' => t("sum of all pending transactions"),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     )
@@ -245,7 +245,7 @@ function transactions_views_data() {
   $data['cc_balance_cache']['pending_balance'] = array(
     'title' => t('Pending Balance'),
     'field' => array(
-      'help' => t('balance including pending transactions, (@type)', array('@type'=>'')),
+      'help' => t('balance including pending transactions'),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     )

@@ -608,6 +608,7 @@ if (!function_exists('http_build_query')) {
 
 
 function refresh_trader_names() {
+  if (!$GLOBALS['user']->uid) return;
   if ($roles = user_roles(TRUE, 'use local currency')) {
     $where = array('status = 1',  'u.uid > 0');
     if (!$roles[DRUPAL_AUTHENTICATED_RID]) {

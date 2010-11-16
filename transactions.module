@@ -537,6 +537,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       break;
       
     case 'insert':
+      module_load_include('admin.inc', 'transactions');
       //user preference to be sent emails about pending transactions
       $edit['starter_notification'] = $edit['notifications'];
       $edit['completer_notification'] = $edit['notifications'];
@@ -545,6 +546,7 @@ function transactions_user($op, &$edit, &$account, $category = NULL) {
       foreach ($currencies as $currency) {
         db_query("INSERT INTO {cc_balance_cache} (uid, cid, cleared_balance, pending_balance, pending_difference, gross_income, gross_expenditure) VALUES (%d, %d, 0,0,0,0,0)", array(':uid' => $account->uid, ':cid' => $currency->cid));
       }
+      recalculate_balances($node->payer_uid, $node->cid); //this creates the row in the balace_cache table.
       //following on...
 
     case 'update':
@@ -1027,13 +1029,16 @@ function _named_transaction_types() {
 }
 
 function get_trader_list() {
-  $data = cache_get('cc_trader_list');
-  if (!$data) {
-    module_load_include('admin.inc', 'transactions');
-    refresh_trader_names();
+  //there have been reports of this function being called by a user without permission to see the names
+  if ($GLOBALS['user']->uid) {
     $data = cache_get('cc_trader_list');
+    if (!$data) {
+      module_load_include('admin.inc', 'transactions');
+      refresh_trader_names();
+      $data = cache_get('cc_trader_list');
+    }
+    return $data->data;
   }
-  return $data->data;
 }
 
   

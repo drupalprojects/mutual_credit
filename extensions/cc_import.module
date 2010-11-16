@@ -50,6 +50,10 @@ function cc_import_menu() {
   return $items;
 }
 
+function cc_import_menu_alter($items) {
+  //override the password reset login function so it doesn't expire after 24 hours
+  $items['user/reset/%/%/%']['page arguments'][0] = 'mutual_credit_user_pass_reset';
+}
 
 function import_balances_form(&$form_state) {
   //check that no transactions have already taken place
@@ -375,6 +379,8 @@ function launch_form_submit($form, $form_state) {
     change_and_mail(user_load($uid));
   }
   drupal_set_message('Your users have now been notified');
+
+  include_once './includes/install.inc';
   drupal_uninstall_modules('cc_import');
 }
 
@@ -383,4 +389,60 @@ function change_and_mail($account) {
   //user_save($account, array('pass' => $newpass));
   //$account->pass = $newpass;
   _user_mail_notify('password_reset', $account);
+}
+
+/**
+ * Menu callback; process one time login link and redirects to the user page on success.
+ */
+function mutual_credit_user_pass_reset(&$form_state, $uid, $timestamp, $hashed_pass, $action = NULL) {
+  global $user;
+
+  // Check if the user is already logged in. The back button is often the culprit here.
+  if ($user->uid) {
+    drupal_set_message(t('You have already used this one-time login link. It is not necessary to use this link to login anymore. You are already logged in.'));
+    drupal_goto();
+  }
+  else {
+    // Time out, in seconds, until login URL expires. 24 hours = 86400 seconds.
+    $timeout = 86400;
+    $current = time();
+    // Some redundant checks for extra security ?
+    if ($timestamp < $current && $account = user_load(array('uid' => $uid, 'status' => 1)) ) {
+      // Deny one-time login to blocked accounts.
+      if (drupal_is_denied('user', $account->name) || drupal_is_denied('mail', $account->mail)) {
+        drupal_set_message(t('You have tried to use a one-time login for an account which has been blocked.'), 'error');
+        drupal_goto();
+      }
+
+      if ($account->uid && $hashed_pass == user_pass_rehash($account->pass, $timestamp, $account->login)) {
+        // First stage is a confirmation form, then login
+        if ($action == 'login') {
+          watchdog('user', 'User %name used one-time login link at time %timestamp.', array('%name' => $account->name, '%timestamp' => $timestamp));
+          // Set the new user.
+          $user = $account;
+          // user_authenticate_finalize() also updates the login timestamp of the
+          // user, which invalidates further use of the one-time login link.
+          user_authenticate_finalize($form_state['values']);
+          drupal_set_message(t('You have just used your one-time login link. It is no longer necessary to use this link to login. Please change your password.'));
+          drupal_goto('user/'. $user->uid .'/edit');
+        }
+        else {
+          $form['message'] = array('#value' => t('<p>This is a one-time login for %user_name and will expire on %expiration_date.</p><p>Click on this button to login to the site and change your password.</p>', array('%user_name' => $account->name, '%expiration_date' => format_date($timestamp + $timeout))));
+          $form['help'] = array('#value' => '<p>'. t('This login can be used only once.') .'</p>');
+          $form['submit'] = array('#type' => 'submit', '#value' => t('Log in'));
+          $form['#action'] = url("user/reset/$uid/$timestamp/$hashed_pass/login");
+          return $form;
+        }
+      }
+      else {
+        drupal_set_message(t('You have tried to use a one-time login link which has either been used or is no longer valid. Please request a new one using the form below.'));
+        drupal_goto('user/password');
+      }
+    }
+    else {
+      // Deny access, no more clues.
+      // Everything will be in the watchdog's URL for the administrator to check.
+      drupal_access_denied();
+    }
+  }
 }

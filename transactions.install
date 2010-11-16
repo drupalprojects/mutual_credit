@@ -77,9 +77,6 @@ function transactions_uninstall() {
   variable_del('cc_stats_periods');
 }
 
-function transactions_disable() {
-}
-
 /**
  * Implementation of hook_schema)().
  * http://api.drupal.org/api/function/hook_schema/6
@@ -387,7 +384,6 @@ function transactions_update_6014($ret=array()) {
 function transactions_update_6015() {
   module_load_include('inc', 'transactions');
   module_load_include('admin.inc', 'transactions');
-  refresh_trader_names();
   $cached_traders = cache_get('cc_trader_list');
   $traders = $cached_traders->data;
   $count = count($traders);
@@ -441,13 +437,6 @@ function transactions_update_6018() {
   db_drop_field($ret, 'cc_balance_cache', 'limit_max');
   db_drop_field($ret, 'cc_balance_cache', 'limit_min');
 
-  $trader_list = cache_get('cc_trader_list');
-  if (is_array($trader_list->data)) {
-    $ret[] = array('success' => TRUE, 'query' => 'Created cache for trader listings');
-  }
-  else {
-    $ret[] = array('success' => FALSE, 'query' => 'Failed to refresh_trader_names()');
-  }
   drupal_set_message('There are now two (unplaced) blocks to replace the pending transactions which used to be at the bottom of the user profile page', 'alert');
   drupal_rebuild_theme_registry();
   stats_refresh_all();
