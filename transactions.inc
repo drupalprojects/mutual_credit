@@ -916,6 +916,7 @@ function theme_rating($quality, $currency) {
  *   )
  */
 function _get_transactions_for_user($uid, $options) {
+  if (!$uid && function_exists('ddebug_backtrace')) ddebug_backtrace();
   extract($options);
   if ($direction == 'in') {
     $filters[] = '(payee_uid = '. $uid .')';
