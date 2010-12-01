@@ -1,6 +1,5 @@
 <?php 
-// $Id$
-$limits[$node->nid] = array('min' => $node->min, 'max' => $node->max);
+
 if (!$node->sub) $division = t('integer');
 elseif (!isset($node->data['divisions']) || !count($node->data['divisions'])) $division = t('centiles');
 else {
@@ -11,31 +10,33 @@ else {
      $division  = str_replace('|', '', implode(', ', $divisions));
    }
 }
-
 ?>
 <div class="node node-currency">
   <?php if ($teaser) { ?>
-  <h2><?php print l($node->title, 'node/'.$node->nid); ?></h2>
-  <p><?php print $content; ?></p>
+    <h2><?php print l($node->title, 'node/'.$node->nid); ?></h2>
+    <p><?php print $content; ?></p>
   <?php } elseif ($page) { ?>
-  <?php print theme('image', $node->icon); ?>
-  <?php print t('created by !user', array('!user', theme('username', user_load($node->uid)))); ?>
-  <h3>Currency rationale</h3>
-  <p style="color:#<?php print $node->color; ?>"><?php print $content; ?></p>
+    <h3><?php print t('Rationale'); ?></h3>
+    <p style=""color:#<?php print $node->data['color']; ?>">
+    <?php print theme('image', $node->icon, 'icon', 'icon', array('style' => "float:left;padding-right:5px;")); ?>
+    <?php print $content; ?><br />
+    <?php print t('created by !user', array('!user' => theme('username', user_load($node->uid)))); ?></p>
 
-  <h4><?php print t('Balance Limits'); ?></h4>
-  <?php print theme('balance_limits', $limits); ?>
+    <h4><?php print t('Range'); ?></h4>
+    <?php print theme('currency_range', $node); ?>
 
-  <?php if ($node->divisions) { ?>
-    <h4><?php print t('Division'); ?></h4>
-    <pre><?php print $node->divisions; ?></pre>
-  <?php } ?>
-  <?php if ($node->ratings) { ?>
-    <h4><?php print t('Ratings'); ?></h4>
-    <pre><?php print $node->ratings; ?></pre>
-  <?php } ?>
+    <?php if (isset($node->data['divisions']) && count($node->data['divisions'])) { ?>
+      <h4><?php print t('Divisions'); ?></h4>
+      <?php print theme('currency_settings_array', $node->data['divisions']); ?>
+    <?php } ?>
+    <?php if (isset($node->data['ratings']) && count($node->data['ratings'])) { ?>
+      <h4><?php print t('Ratings'); ?></h4>
+      <?php print theme('currency_settings_array', $node->data['ratings']); ?>
+    <?php } ?>
 
-  <h4><?php print t('Relative value'); ?>
-  <p><?php print $node->value ?></p>
+    <?php if ($node->value) { ?>
+      <h4><?php print t('Relative value'); ?>
+      <p><?php print $node->value ?></p>
+    <?php } ?>
   <?php } ?>
 </div>

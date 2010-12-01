@@ -1,0 +1,2220 @@
+# $Id$
+#
+# French translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  mcapi.api.inc: n/a
+#  mcapi.inc: n/a
+#  mc_display/mc_display.module: n/a
+#  mc_stats/mc_stats.module: n/a
+#  mc_webforms/mc_webforms.module: n/a
+#  mc_webforms/mc_3rdparty_formspecial.tpl.php: n/a
+#  mc_display/theme/statement.tpl.php: n/a
+#  mc_display.views.inc,v 1.5 2010/05/25 00:56:35 matslats
+#  exchanges.module,v 1.6 2010/05/14 20:19:50 matslats
+#  theme/node-currency.tpl.php: n/a
+#  mc_webforms/mc_signatures/mc_signatures.module: n/a
+#  exchanges.install,v 1.5 2010/05/14 20:19:50 matslats
+#  mc_webforms/mc_webform_1stparty/mc_webform_1stparty.install: n/a
+#  mc_display/theme/balance_history.tpl.php: n/a
+#  mcapi.info: n/a
+#  1099B/irs_1099b.info: n/a
+#  mc_clearing_central/mc_clearing_central.info: n/a
+#  mc_display/mc_display.info: n/a
+#  mc_sms/mc_sms.info: n/a
+#  mc_stats/mc_stats.info: n/a
+#  mc_user_limits/mc_user_limits.info: n/a
+#  mc_webforms/mc_webforms.info: n/a
+#  mc_webforms/mc_multiple/mc_multiple.info: n/a
+#  mc_webforms/mc_signatures/mc_signatures.info: n/a
+#  mc_webforms/mc_webform_1stparty/mc_webform_1stparty.info: n/a
+#  1099B/irs_1099b.module: n/a
+#  mc_clearing_central/mc_clearing_central.module: n/a
+#  mc_webforms/mc_signatures/views/mc_signatures.views.inc: n/a
+#  mc_webforms/mc_webforms.inc: n/a
+#  mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc: n/a
+#  mc_display/theme/balances.tpl.php: n/a
+#  views_handler_filter_user_current.inc,v 1.2 2009/09/15 16:18:38 merlinofchaos
+#  views_handler_field_mc_trader.inc,v 1.2 2010/05/01 15:52:48 matslats
+#  mc_sms/mc_sms.module: n/a
+#  mc_stats/theme/mc_currency_stats.tpl.php: n/a
+#  mc_stats/theme/mc_stat_summary.tpl.php: n/a
+#  mc_stats/theme/mc_stat_summary_block.tpl.php: n/a
+#  mc_user_limits/mc_user_limits.module: n/a
+#  mc_webforms/mc_multiple/mc_multiple.module: n/a
+#  mc_webforms/mc_webform_1stparty/mc_1stparty_formspecial.tpl.php: n/a
+#  mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module: n/a
+#  mc_webforms/mc_webform_1stparty/views/mc_webform_1stparty.views.inc: n/a
+#  mc_webforms/mc_webform_1stparty/views/views_handler_field_node_link_convert.inc: n/a
+#  mc_webforms/views/views_handler_field_node_link_convert_3rdparty_offer.inc: n/a
+#  mc_webforms/views/views_handler_field_node_link_convert_3rdparty_want.inc: n/a
+#  mc_webforms/views/mc_webforms.views.inc: n/a
+#  theme/node-exchange.tpl.php: n/a
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2010-11-18 21:34+0100\n"
+"PO-Revision-Date: 2010-11-18 21:34+0100\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: French <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+#: mcapi.api.inc:21
+msgid "Cannot create a zero value exchange"
+msgstr ""
+
+#: mcapi.api.inc:25
+msgid "No details given"
+msgstr ""
+
+#: mcapi.api.inc:34
+msgid "no description given"
+msgstr ""
+
+#: mcapi.api.inc:56
+msgid "Failed to create exchange. Details have been forwarded to the site administrator"
+msgstr ""
+
+#: mcapi.api.inc:61
+msgid "Exchange failed on @site"
+msgstr ""
+
+#: mcapi.api.inc:175
+msgid "Exchange takes @username !quant above the maximum balance of !max"
+msgstr ""
+
+#: mcapi.api.inc:187
+msgid "Exchange takes @username !quant below the minimum balance of !min"
+msgstr ""
+
+#: mcapi.inc:18
+msgid "Given currency id is not valid: @id"
+msgstr ""
+
+#: mcapi.inc:24
+msgid "Choose currency..."
+msgstr ""
+
+#: mcapi.inc:25 mc_display/mc_display.module:300 mc_stats/mc_stats.module:83
+msgid "Currency"
+msgstr "Unité"
+
+#: mcapi.inc:26
+msgid "The node ID of the currency"
+msgstr ""
+
+#: mcapi.inc:33
+msgid "Reason for exchange"
+msgstr ""
+
+#: mcapi.inc:43
+msgid "Details of exchange"
+msgstr ""
+
+#: mcapi.inc:53
+msgid "Account to be debited"
+msgstr ""
+
+#: mcapi.inc:60
+msgid "Account to be credited"
+msgstr ""
+
+#: mcapi.inc:61 mc_webforms/mc_webforms.module:433
+msgid "A username, email, or user ID"
+msgstr ""
+
+#: mcapi.inc:68 mc_webforms/mc_3rdparty_formspecial.tpl.php:45
+msgid "Quantity"
+msgstr "Quantité"
+
+#: mcapi.inc:74
+msgid "not applicable"
+msgstr ""
+
+#: mcapi.inc:86 mc_display/theme/statement.tpl.php:67 mc_display/views/mc_display.views.inc:98;248;398 mc_webforms/mc_3rdparty_formspecial.tpl.php:50
+msgid "Rating"
+msgstr "Appréciation"
+
+#: mcapi.inc:87
+msgid "A numeric value, used cumulatively to rate the payee."
+msgstr ""
+
+#: mcapi.inc:108
+msgid "State"
+msgstr ""
+
+#: mcapi.inc:109
+msgid "Finished exchanges cannot have empty values."
+msgstr ""
+
+#: mcapi.inc:112
+msgid "Finished"
+msgstr ""
+
+#: mcapi.inc:113
+msgid "Pending"
+msgstr "Attente d'envoi"
+
+#: mcapi.inc:128
+msgid "Currency name"
+msgstr "Nom de l'unité d'échange"
+
+#: mcapi.inc:130
+msgid "Use the plural"
+msgstr "Utiliser la forme plurielle"
+
+#: mcapi.inc:136 mcapi.module:100 theme/node-currency.tpl.php:19
+msgid "Rationale"
+msgstr ""
+
+#: mcapi.inc:138
+msgid "What are the credentials of this currency? Richard Douthewaite poses these questions:"
+msgstr ""
+
+#: mcapi.inc:139
+msgid "Who issues the money?"
+msgstr ""
+
+#: mcapi.inc:140
+msgid "Why do they issue it?"
+msgstr ""
+
+#: mcapi.inc:141
+msgid "Where is the money created?"
+msgstr ""
+
+#: mcapi.inc:142
+msgid "What gives the money its value?"
+msgstr ""
+
+#: mcapi.inc:143
+msgid "How is the money created?"
+msgstr ""
+
+#: mcapi.inc:144
+msgid "When is the money created?"
+msgstr ""
+
+#: mcapi.inc:151
+msgid "Default balance limits"
+msgstr ""
+
+#: mcapi.inc:152
+msgid "Up to !num digits. The system will prevent exchanges if the either participant's balance would go outside these numbers."
+msgstr ""
+
+#: mcapi.inc:153
+msgid "Users with 'edit all exchanges' permission can overridde these limits on the users' account pages, and bypass these limits in any exchanges they edit."
+msgstr ""
+
+#: mcapi.inc:160
+msgid "Optional min balance"
+msgstr ""
+
+#: mcapi.inc:164
+msgid "Must not be larger than 0"
+msgstr ""
+
+#: mcapi.inc:169
+msgid "Optional max balance"
+msgstr ""
+
+#: mcapi.inc:174
+msgid "Must be a positive integer."
+msgstr ""
+
+#: mcapi.inc:180
+msgid "Appearance"
+msgstr ""
+
+#: mcapi.inc:181
+msgid "Displays of money can be further tweaked by overriding theme_money and/or with css class 'currency-0'"
+msgstr ""
+"L'affichage de l'unité peut être paramétré avec theme_money et/ou "
+"css class 'currency-0'"
+
+#: mcapi.inc:186
+msgid "Upload icon"
+msgstr "Télécharger l'icône"
+
+#: mcapi.inc:187
+msgid "Current icon"
+msgstr ""
+
+#: mcapi.inc:188
+msgid "Probably will be about the same size as the page text, preferably with a transparent background."
+msgstr ""
+
+#: mcapi.inc:189
+msgid "Drupal them will normally resize at client side in HTML."
+msgstr ""
+
+#: mcapi.inc:195
+msgid "A hex colour value"
+msgstr "Une couleur hexidécimale"
+
+#: mcapi.inc:197
+msgid "6 hex digits"
+msgstr "les 6 chiffres hexidécimaux"
+
+#: mcapi.inc:205
+msgid "Fractions"
+msgstr ""
+
+#: mcapi.inc:211
+msgid "1 unit is the smallest possible exchange"
+msgstr ""
+
+#: mcapi.inc:212
+msgid "Enable fractions"
+msgstr ""
+
+#: mcapi.inc:217
+msgid "Fractions visible in form"
+msgstr ""
+
+#: mcapi.inc:218
+msgid "Only applies when 'database storage' is set to 'fractions'."
+msgstr ""
+
+#: mcapi.inc:219
+msgid "Leave blank to use hundredths. To use a dropdown, such as for quarters of an hour, write a \"hundredths value|visible text\" on each line. E.g. "
+msgstr ""
+
+#: mcapi.inc:227
+msgid "Comparative value"
+msgstr "Valeur comparative"
+
+#: mcapi.inc:231
+msgid "The value of the currency in relation to other currencies in the same trading network (not yet operational)"
+msgstr ""
+
+#: mcapi.inc:236
+msgid "Rating range"
+msgstr ""
+
+#: mcapi.inc:237
+msgid "Payees gain reputation when their payers rate them highly."
+msgstr ""
+
+#: mcapi.inc:238
+msgid "This feature needs more work to integrate into views and stats, when users requre it."
+msgstr ""
+
+#: mcapi.inc:243
+msgid "Leave blank to disable this feature."
+msgstr ""
+
+#: mcapi.inc:244
+msgid "Use this field to list the words or expressions used to rate exchanges, one on each line."
+msgstr ""
+
+#: mcapi.inc:245
+msgid "Use 0 for 'neutral'. E.g."
+msgstr ""
+
+#: mcapi.inc:246
+msgid "Beware that changing the number of rating options after exchanges have been entered will distort the averages."
+msgstr ""
+
+#: mcapi.inc:280
+msgid "Min"
+msgstr "Min"
+
+#: mcapi.inc:280
+msgid "Max"
+msgstr ""
+
+#: mcapi.inc:350
+msgid "Symbol"
+msgstr ""
+
+#: mcapi.inc:350
+msgid "Name"
+msgstr "Nom"
+
+#: mcapi.inc:350
+msgid "Unit-type"
+msgstr ""
+
+#: mcapi.inc:350
+msgid "usage"
+msgstr ""
+
+#: mcapi.inc:363
+msgid "Database field type"
+msgstr ""
+
+#: mcapi.inc:369
+msgid "Declare new currency"
+msgstr ""
+
+#: mcapi.inc:398 mc_webforms/mc_signatures/mc_signatures.module:372
+msgid "Mail notification templates need to be written: !link"
+msgstr ""
+
+#: mcapi.inc:410
+msgid "At the very least, please report your site stats to Community Forge."
+msgstr ""
+
+#: mcapi.inc:413
+msgid "Send no data."
+msgstr ""
+
+#: mcapi.inc:414
+msgid "Report our site data to Community Forge only."
+msgstr ""
+
+#: mcapi.inc:415
+msgid "Report our site data to anyone who is interested"
+msgstr ""
+
+#: mcapi.inc:418
+msgid "Be part of a wider network of local currency comunities by sharing a few key pieces of information with us."
+msgstr ""
+
+#: mcapi.inc:419
+msgid "No data about individual users or transactions will be sent."
+msgstr ""
+
+#: mcapi.inc:420
+msgid "e.g. site_name, site_url, number of active traders, number of transactions."
+msgstr ""
+
+#: mcapi.inc:421
+msgid "These stats motivate us and can be used to promote our work. We seek your trust and will not abuse this information."
+msgstr ""
+
+#: mcapi.inc:427
+msgid "Recalulate balances & stats"
+msgstr "Recalculer les soldes et les statistiques"
+
+#: mcapi.inc:443
+msgid "Flushed balance cache"
+msgstr "Le cache des soldes est vidé"
+
+#: mcapi.inc:517
+msgid "Newly recorded exchanges"
+msgstr ""
+
+#: mcapi.inc:521 mc_webforms/mc_signatures/mc_signatures.module:309
+msgid "Mail subject"
+msgstr ""
+
+#: mcapi.inc:522 mc_webforms/mc_signatures/mc_signatures.module:311;321
+msgid "Tokens may be used"
+msgstr ""
+
+#: mcapi.inc:524 mc_webforms/mc_signatures/mc_signatures.module:310
+msgid "Notification from !site"
+msgstr ""
+
+#: mcapi.inc:529 mc_webforms/mc_signatures/mc_signatures.module:317
+msgid "Mail body"
+msgstr ""
+
+#: mcapi.inc:530
+msgid "Sent to payer or payee whenever an exchange is first recorded."
+msgstr ""
+
+#: mcapi.inc:530
+msgid "Available variables are:"
+msgstr "Les variables disponibles sont :"
+
+#: mcapi.inc:533 mc_webforms/mc_signatures/mc_signatures.module:318
+msgid "Dear !username,"
+msgstr ""
+
+#: mcapi.inc:533
+msgid "A new exchange has been recorded."
+msgstr ""
+
+#: mcapi.inc:538
+msgid "Users can choose notifications"
+msgstr ""
+
+#: mcapi.inc:539 mc_webforms/mc_signatures/mc_signatures.module:327
+msgid "Should users be able to choose whether to recieve these emails?"
+msgstr ""
+
+#: mcapi.inc:545
+msgid "Notifications 'On' by default"
+msgstr ""
+
+#: mcapi.inc:641
+msgid "On @submitted, !payer will pay !payee !amount for '@title'"
+msgstr ""
+
+#: mcapi.inc:643
+msgid "On @submitted, !payer gave !payee !amount for '@title'"
+msgstr ""
+
+#: mcapi.inc:645
+msgid "On @submitted, !payer did not give !payee !amount for '@title'. (DELETED)'"
+msgstr ""
+
+#: mcapi.inc:666
+msgid "No roles have permission to '@trade'. Go to !link"
+msgstr ""
+
+#: mcapi.inc:669 mcapi.module:105;178
+msgid "exchange"
+msgstr ""
+
+#: mcapi.module:47
+msgid "Defines a contentType called exchanges, manages them and does the accounting."
+msgstr ""
+
+#: mcapi.module:49
+msgid "This module, its development and implementations at !cforge,"
+msgstr ""
+
+#: mcapi.module:50
+msgid "have been the full time commitment of one person since Spring 2008, and another since spring 2009."
+msgstr ""
+
+#: mcapi.module:51
+msgid "The results of this work are offered freely to all."
+msgstr ""
+
+#: mcapi.module:52
+msgid "We give all possible resources to this work, and live by reciprocal gifting as much as possible."
+msgstr ""
+
+#: mcapi.module:53
+msgid "We look forward to the day when support is robust enough to pay staff and provide a reliable nonprofit public service."
+msgstr ""
+
+#: mcapi.module:54
+msgid "Please consider supporting this work by:"
+msgstr ""
+
+#: mcapi.module:56
+msgid "sending some scarce hard currency to the developer"
+msgstr ""
+
+#: mcapi.module:57
+msgid "allying with us to build a global complementary currency ecosystem"
+msgstr ""
+
+#: mcapi.module:58
+msgid "offering board and lodging for a month or two"
+msgstr ""
+
+#: mcapi.module:94
+msgid "currency"
+msgstr ""
+
+#: mcapi.module:96
+msgid "A unit of value"
+msgstr ""
+
+#: mcapi.module:98
+msgid "Currency Name"
+msgstr "Nom de l'unité d'échange"
+
+#: mcapi.module:107
+msgid "A record of an exchange between two users, denominated in a currency"
+msgstr ""
+
+#: mcapi.module:109
+msgid "Description of entity traded"
+msgstr "Description de l'échange"
+
+#: mcapi.module:337
+msgid "Contact preferences"
+msgstr "Paramètres de contact"
+
+#: mcapi.module:343
+msgid "Mail me when I record an exchange"
+msgstr ""
+
+#: mcapi.module:349
+msgid "Mail me when an exchange is recorded involving me"
+msgstr ""
+
+#: mcapi.module:459
+msgid "A currency called !name already exists."
+msgstr ""
+
+#: mcapi.module:464
+msgid "Currency value must be a number"
+msgstr ""
+
+#: mcapi.module:471
+msgid "Hidden field '@field' needs to be added to form. This value is intended to identify the module or form which created the exchange"
+msgstr ""
+
+#: mcapi.module:475
+msgid "An exchange must involve two different users"
+msgstr ""
+
+#: mcapi.module:494
+msgid "Payee or payer required for completed exchange"
+msgstr ""
+
+#: mcapi.module:497
+msgid "Quantity required for completed exchange"
+msgstr ""
+
+#: mcapi.module:500
+msgid "Description required for completed exchange"
+msgstr ""
+
+#: mcapi.module:503
+msgid "Currency ID required for completed exchange"
+msgstr ""
+
+#: mcapi.module:519
+msgid "Minimum balance must not be larger than 0"
+msgstr "Le Solde miminal ne doit pas excéder 0"
+
+#: mcapi.module:524
+msgid "Maximum balance must be larger than 1"
+msgstr ""
+
+#: mcapi.module:531
+msgid "Plain text only in exchange descriptions."
+msgstr ""
+
+#: mcapi.module:538
+msgid "Invalid currency specified: @num"
+msgstr ""
+
+#: mcapi.module:554
+msgid "Must be an integer"
+msgstr ""
+
+#: mcapi.module:578
+msgid "@user is not permitted to trade"
+msgstr ""
+
+#: mcapi.module:584
+msgid "@data is not a known user"
+msgstr ""
+
+#: mcapi.module:593
+msgid "There should be at least two lines in field '@fieldname'"
+msgstr ""
+
+#: mcapi.module:597
+msgid "line \"@val\" should contain a pipe character, |"
+msgstr ""
+
+#: mcapi.module:601
+msgid "'@val' should be an integer from  0 to 99, followed directly by a pipe, |, followed directly by a word or phrase with no unusual characters"
+msgstr ""
+
+#: mcapi.module:611 mc_webforms/mc_webforms.module:311
+msgid "Negative values not allowed for '@fieldname'"
+msgstr ""
+
+#: mcapi.module:615
+msgid "Integer values only for '@currency'"
+msgstr ""
+
+#: mcapi.module:620 mc_webforms/mc_webforms.module:325
+msgid "Invalid fraction for '@fieldname'"
+msgstr ""
+
+#: mcapi.module:647
+msgid "Color field must be 6 hex characters"
+msgstr "Le champ couleur doit contenir 6 caractères héxadécimaux"
+
+#: mcapi.module:662
+msgid "Invalid rating entered: @value"
+msgstr ""
+
+#: mcapi.module:752
+msgid "As soon as an exchange is created"
+msgstr ""
+
+#: mcapi.module:755;758
+msgid "As soon as an exchange is updated"
+msgstr ""
+
+#: mcapi.module:785
+msgid "Are you sure you want to delete this exchange?"
+msgstr ""
+
+#: mcapi.module:788
+msgid "The transation had not been confirmed"
+msgstr "L'échange n'avait pas été confirmé"
+
+#: mcapi.module:791
+msgid "This exchange was confirmed, so the balances of both users will be affected"
+msgstr ""
+
+#: mcapi.module:804
+msgid "This is the only currency and thus cannot be deleted."
+msgstr ""
+
+#: mcapi.module:179
+msgid "view all exchanges"
+msgstr ""
+
+#: mcapi.module:180
+msgid "edit all exchanges"
+msgstr ""
+
+#: mcapi.module:181
+msgid "configure currencies"
+msgstr ""
+
+#: mcapi.module:182
+msgid "declare currency"
+msgstr ""
+
+#: mcapi.module:121
+msgid "Complementary Currencies"
+msgstr "Monnaies Complémentaires"
+
+#: mcapi.module:122
+msgid "Complementary currency options"
+msgstr ""
+
+#: mcapi.module:128
+msgid "Currencies"
+msgstr ""
+
+#: mcapi.module:129
+msgid "List of currency nodes"
+msgstr ""
+
+#: mcapi.module:136
+msgid "Mail notification template"
+msgstr ""
+
+#: mcapi.module:137
+msgid "Compose the notification emails"
+msgstr ""
+
+#: mcapi.install:13
+msgid "Disabled transactions module"
+msgstr ""
+
+#: mcapi.install:14
+msgid "The new mcapi module conflicts with transactions module"
+msgstr ""
+
+#: mcapi.install:80
+msgid "This is the default currency"
+msgstr ""
+
+#: mcapi.install:93
+msgid "Your defult currency is @name. !edit"
+msgstr ""
+
+#: mcapi.install:95 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.install:36
+msgid "edit"
+msgstr "modifier"
+
+#: mcapi.install:119;185 mc_webforms/mc_signatures/mc_signatures.install:66
+msgid "the node to which this entry is attached"
+msgstr "cette item est attaché à ce node"
+
+#: mcapi.install:124 mc_webforms/mc_signatures/mc_signatures.install:71
+msgid "the user id of the payer"
+msgstr "le n° de la personne qui a donné des unités d'échange"
+
+#: mcapi.install:129
+msgid "the user id of the payee"
+msgstr "le n° de la personne qui a reçu des unités d'échange"
+
+#: mcapi.install:134
+msgid "the nid of the currency used"
+msgstr "le n° de l'unité d'échange employée"
+
+#: mcapi.install:139
+msgid "the number of units transferred, (@type)"
+msgstr "le nombre d'unités d'échange transférées, (@type) "
+
+#: mcapi.install:145
+msgid "the payer assessment of the goods or services"
+msgstr ""
+
+#: mcapi.install:153
+msgid "The type of exchange, types are provided by modules"
+msgstr ""
+
+#: mcapi.install:159
+msgid "State of the exchange - completed, pending, disputed, etc"
+msgstr ""
+
+#: mcapi.install:164
+msgid "nid of parent exchange"
+msgstr ""
+
+#: mcapi.install:182
+msgid "cached balances, turnovers and pending balances, for exposure to views"
+msgstr ""
+"soldes en cache, sorties et \"en attente\" , pour être affiché par "
+"views"
+
+#: mcapi.install:192
+msgid "the currency id, where there is more than one currency"
+msgstr "le n° d'unité, quand il y a plus d'une unité d'échange"
+
+#: mcapi.install:246
+msgid "metadata for currencies, in addition to name and title"
+msgstr "metadata pour les unités d'échanges, en plus de nom et  titre"
+
+#: mcapi.install:249
+msgid "the node id to which this currency is attached"
+msgstr ""
+"L'identification (ID) du node à laquelle cet unité d'échange est "
+"associée"
+
+#: mcapi.install:254
+msgid "the default minumim balance allowed to tbe held"
+msgstr "Le solde minimum permis par défaut"
+
+#: mcapi.install:260
+msgid "the default maximum balance allowed to tbe held"
+msgstr "Le solde maximum permis par défaut"
+
+#: mcapi.install:266
+msgid "An array of other properties"
+msgstr ""
+
+#: mcapi.install:273
+msgid "location of the currency icon"
+msgstr "l'icône de l'unité d'échange se trouve ici"
+
+#: mcapi.install:278
+msgid "Units and values after the decimal point"
+msgstr ""
+
+#: mcapi.install:284
+msgid "the nominal value of this currency expressed as an objective value (0 means not interchanagable)"
+msgstr ""
+"La valeur nominative de cette unité d'échange exprimée dans une "
+"valeur objective (0 = non-échangeable)"
+
+#: mcapi.install:334
+msgid "hours"
+msgstr ""
+
+#: mcapi.install:334
+msgid "and a quarter"
+msgstr ""
+
+#: mcapi.install:334
+msgid "and a half"
+msgstr ""
+
+#: mcapi.install:334
+msgid "and three quarters"
+msgstr ""
+
+#: mcapi.install:340
+msgid "Currency saved as node:<pre>@cur</pre>"
+msgstr ""
+
+#: mcapi.install:341
+msgid "The exchange sub-types need to be upgraded by hand. !link"
+msgstr ""
+
+#: mcapi.install:388
+msgid "Uninstall transactions module when you are confident all data has been migrated."
+msgstr ""
+
+#: mcapi.install:456
+msgid "Drupal was unable to set your database field types to @type. Please check your db permissions"
+msgstr ""
+
+#: mcapi.install:461;463
+msgid "Quantitative fields in database is set to type '@type'"
+msgstr ""
+"Les champs quantitatifs de la base de données sont paramétrés à "
+"'@type'"
+
+#: mcapi.install:463 mc_display/theme/balance_history.tpl.php:129
+msgid "mcapi"
+msgstr ""
+
+#: mcapi.info:0
+msgid "Mutual Credit API"
+msgstr ""
+
+#: mcapi.info:0
+msgid "Defines two node-types, currencies and exchanges, and various functions for manipulating them by other modules."
+msgstr ""
+
+#: mcapi.info:0 1099B/irs_1099b.info:0 mc_clearing_central/mc_clearing_central.info:0 mc_display/mc_display.info:0 mc_sms/mc_sms.info:0 mc_stats/mc_stats.info:0 mc_user_limits/mc_user_limits.info:0 mc_webforms/mc_webforms.info:0 mc_webforms/mc_multiple/mc_multiple.info:0 mc_webforms/mc_signatures/mc_signatures.info:0 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.info:0
+msgid "Mutual Credit"
+msgstr ""
+
+#: 1099B/irs_1099b.module:21
+msgid "IRS fields"
+msgstr ""
+
+#: 1099B/irs_1099b.module:22
+msgid "map the fields required by the IRS to your user's data"
+msgstr ""
+
+#: 1099B/irs_1099b.module:29
+msgid "IRS data"
+msgstr ""
+
+#: 1099B/irs_1099b.module:30
+msgid "The data which is exposed to the IRS"
+msgstr ""
+
+#: 1099B/irs_1099b.info:0
+msgid "Generate US Barter Tax Returns"
+msgstr ""
+
+#: 1099B/irs_1099b.info:0
+msgid "Specifies new required fields for users, and generates the 1099b file required by US barter networks to submit tax returns."
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:46
+msgid "Clearing Central is installed but not configured: !configure"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:82
+msgid "ID of this currency on Clearing Central"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:83
+msgid "The id is provided for each account created at !link"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:107
+msgid "Intertrading account"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:108
+msgid "Which user account on this system is for intertrading? (Give account number)"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:115
+msgid "Per cent of turnover which can be externalised. (Requires cron)"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:116
+msgid "A trade imbalance can cause liquidity problems in a currency."
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:117
+msgid "It is strongly reccommended that the external balance be limited."
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:130
+msgid "@name must be a number between 1 and 100"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:136
+msgid "Buyer's network ID"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:137
+msgid "Example: eg cen0008 ?"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:144
+msgid "Buyer's account ID"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:152 mc_display/views/mc_display.views.inc:292 mc_webforms/mc_3rdparty_formspecial.tpl.php:42
+msgid "Description"
+msgstr "Description"
+
+#: mc_clearing_central/mc_clearing_central.module:153
+msgid "What did you sell?"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:160 mc_display/theme/statement.tpl.php:66 mc_display/views/mc_display.views.inc:106;390 mc_webforms/mc_signatures/views/mc_signatures.views.inc:421
+msgid "Amount"
+msgstr "Montant"
+
+#: mc_clearing_central/mc_clearing_central.module:161
+msgid "e.g. 50.00 or 125"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:169 mc_webforms/mc_webforms.inc:112;317 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:249
+msgid "Submit"
+msgstr "Soumettre"
+
+#: mc_clearing_central/mc_clearing_central.module:195
+msgid "Plain text only"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:16;35 mc_clearing_central/mc_clearing_central.info:0
+msgid "Clearing Central"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.module:17;36
+msgid "Settings for trading via CES"
+msgstr ""
+
+#: mc_clearing_central/mc_clearing_central.info:0
+msgid "Trade with other mutual credit exchanges via the CES network"
+msgstr ""
+
+#: mc_display/mc_display.module:43;215
+msgid "Balance history"
+msgstr "Evolution du solde"
+
+#: mc_display/mc_display.module:46 mc_display/views/mc_display.views.inc:44;589 mc_webforms/mc_signatures/views/mc_signatures.views.inc:25
+msgid "Exchanges"
+msgstr ""
+
+#: mc_display/mc_display.module:49
+msgid "Balances"
+msgstr "Soldes"
+
+#: mc_display/mc_display.module:53
+msgid "Balance-ometer"
+msgstr ""
+
+#: mc_display/mc_display.module:104
+msgid "Balance-ometer requires minimum and maximum balances for currency: !link"
+msgstr ""
+
+#: mc_display/mc_display.module:179
+msgid "User balance(s) since creation"
+msgstr ""
+
+#: mc_display/mc_display.module:182
+msgid "All user balance(s) now"
+msgstr ""
+
+#: mc_display/mc_display.module:185
+msgid "List of user's exchanges"
+msgstr ""
+
+#: mc_display/mc_display.module:188
+msgid "Balance-o-meter"
+msgstr ""
+
+#: mc_display/mc_display.module:193
+msgid "Limits for user"
+msgstr ""
+
+#: mc_display/mc_display.module:228
+msgid "@user's balances"
+msgstr "solde de @user "
+
+#: mc_display/mc_display.module:241
+msgid "@user's limits"
+msgstr ""
+
+#: mc_display/mc_display.module:254
+msgid "@user's credit"
+msgstr ""
+
+#: mc_display/mc_display.module:268
+msgid "@user's exchanges"
+msgstr ""
+
+#: mc_display/mc_display.module:280
+msgid "Starting from"
+msgstr ""
+
+#: mc_display/mc_display.module:281
+msgid "!strtotime string. Using a relative date like '@example1' will mean this can't be cached. Better use '@example2'"
+msgstr ""
+
+#: mc_display/mc_display.module:283
+msgid "Leave blank to use each user's creation date."
+msgstr ""
+
+#: mc_display/mc_display.module:294
+msgid "Vertical extent of chart"
+msgstr ""
+
+#: mc_display/mc_display.module:295
+msgid "The chart can show either the maximum extents of the user's credit limits, or of their balance to date."
+msgstr ""
+
+#: mc_display/mc_display.module:301 mc_display/views/mc_display.views.inc:195
+msgid "Balance"
+msgstr "Solde"
+
+#: mc_display/mc_display.module:311
+msgid "Number of exchanges to show on one page"
+msgstr ""
+
+#: mc_display/mc_display.module:312
+msgid "Enter an integer"
+msgstr ""
+
+#: mc_display/mc_display.module:339
+msgid "Not a valid strtotime() string"
+msgstr ""
+
+#: mc_display/mc_display.module:166
+msgid "view all balances"
+msgstr "voir les soldes"
+
+#: mc_display/mc_display.module:29
+msgid "Bureau"
+msgstr "Tableau de bord"
+
+#: mc_display/mc_display.module:30
+msgid "Example page showing user data"
+msgstr ""
+
+#: mc_display/mc_display.info:0
+msgid "User displays"
+msgstr ""
+
+#: mc_display/mc_display.info:0
+msgid "Display balances and exchanges in tables, views and blocks"
+msgstr ""
+
+#: mc_display/theme/balance_history.tpl.php:116
+msgid "Now"
+msgstr "Maintenant"
+
+#: mc_display/theme/balance_history.tpl.php:129
+msgid "Error creating balance chart: url to google charts exceeded 2048 charts."
+msgstr "Erreur dans la création du tableau : plus que 2048 points."
+
+#: mc_display/theme/balances.tpl.php:22
+msgid "Yet to trade."
+msgstr ""
+
+#: mc_display/theme/balances.tpl.php:27
+msgid "Cleared balance"
+msgstr ""
+
+#: mc_display/theme/balances.tpl.php:28
+msgid "Total income"
+msgstr ""
+
+#: mc_display/theme/balances.tpl.php:29
+msgid "Spending limit"
+msgstr ""
+
+#: mc_display/theme/balances.tpl.php:33 theme/node-currency.tpl.php:33
+msgid "Ratings"
+msgstr ""
+
+#: mc_display/theme/statement.tpl.php:37
+msgid "@currency statement (reverse chronological)"
+msgstr ""
+
+#: mc_display/theme/statement.tpl.php:41
+msgid "No exchanges."
+msgstr ""
+
+#: mc_display/theme/statement.tpl.php:63 mc_display/views/mc_display.views.inc:282
+msgid "Date"
+msgstr "Date"
+
+#: mc_display/theme/statement.tpl.php:64
+msgid "Item or service"
+msgstr ""
+
+#: mc_display/theme/statement.tpl.php:65
+msgid "With"
+msgstr "avec"
+
+#: mc_display/theme/statement.tpl.php:68
+msgid "Income"
+msgstr "Unités reçues"
+
+#: mc_display/theme/statement.tpl.php:69
+msgid "Expenditure"
+msgstr "Unités données"
+
+#: mc_display/theme/statement.tpl.php:70
+msgid "Running Total"
+msgstr "Solde"
+
+#: mc_display/views/mc_display.views.inc:47
+msgid "Exchange"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:48
+msgid "Money flows between users."
+msgstr "Le Flux d'unités entre adhérents."
+
+#: mc_display/views/mc_display.views.inc:58;322 mc_webforms/mc_3rdparty_formspecial.tpl.php:30
+msgid "Payer"
+msgstr "La personne qui donne des unités d'échange"
+
+#: mc_display/views/mc_display.views.inc:60
+msgid "The user id who spent currency in the exchange."
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:65
+msgid "Show only exchanges where the current user paid"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:67
+msgid "User is payer"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:69
+msgid "Show only exchanges where the specified user paid"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:73
+msgid "The user who gave currency in the exchange."
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:78;356 mc_webforms/mc_3rdparty_formspecial.tpl.php:33
+msgid "Payee"
+msgstr "La personne qui reçoit des unités d'échange"
+
+#: mc_display/views/mc_display.views.inc:80
+msgid "The user id who received currency in the exchange."
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:85
+msgid "Show only exchanges where the current user was paid"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:87
+msgid "User is payee"
+msgstr "Ce membre a reçu des unités d'échange"
+
+#: mc_display/views/mc_display.views.inc:89
+msgid "Show only exchanges where the specified user was paid"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:93
+msgid "The user who received currency in the exchange."
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:100
+msgid "The payer's rating of the exchange"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:107
+msgid "Number of units of currency transferred"
+msgstr "Nombre d'unités d'échange transférées"
+
+#: mc_display/views/mc_display.views.inc:113
+msgid "Exchanges above or below a certain value"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:121
+msgid "Exchange state"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:122
+msgid "Whether the exchange is completed (FALSE) or pending (TRUE)"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:132;187
+msgid "Currency ID"
+msgstr "ID de l'unité d'échange"
+
+#: mc_display/views/mc_display.views.inc:134;189
+msgid "Use this field (check 'exclude') for the theming to work on rating and all quantities in the row"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:139;143
+msgid "The currency the exchange was denominated in"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:149 mc_webforms/mc_3rdparty_formspecial.tpl.php:36
+msgid "Exchange type"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:150
+msgid "Which form or module which created the exchange"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:160
+msgid "User exchanges"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:161
+msgid "Show only those exchanges in which a user was involved"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:170
+msgid "User Balance"
+msgstr "Solde"
+
+#: mc_display/views/mc_display.views.inc:171
+msgid "Balances of users."
+msgstr "Soldes des membres"
+
+#: mc_display/views/mc_display.views.inc:180
+msgid "User"
+msgstr "Utilisateur"
+
+#: mc_display/views/mc_display.views.inc:182
+msgid "The user id"
+msgstr "Le n° du membre"
+
+#: mc_display/views/mc_display.views.inc:197;202
+msgid "The user's total cleared income minus total cleared expenditure"
+msgstr "Le solde du membre (entrées confirmées et sorties confirmées)"
+
+#: mc_display/views/mc_display.views.inc:207
+msgid "Pending Difference"
+msgstr "Différence \"en attente\""
+
+#: mc_display/views/mc_display.views.inc:209
+msgid "The sum of all pending exchanges, (@type)"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:215
+msgid "Gross Income"
+msgstr "Entrées"
+
+#: mc_display/views/mc_display.views.inc:216
+msgid "The user's total completed income"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:226
+msgid "Gross Expenditure"
+msgstr "Sorties"
+
+#: mc_display/views/mc_display.views.inc:227
+msgid "The user's total completed expenditure"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:237;238
+msgid "Number of exchanges"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:249
+msgid "The user's average rating for this currency"
+msgstr "L'appréciation moyenne du membre pour cette unité d'échange"
+
+#: mc_display/views/mc_display.views.inc:531
+msgid "Exchange list"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:533
+msgid "There are no exchanges in the system yet"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:578;582
+msgid "All exchanges"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:583
+msgid "All member-to-member exchanges"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:673
+msgid "all the exchanges on the system, except the mass-exchanges, and those involving admin"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:677
+msgid "who gave to whom"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:800
+msgid "Filter exchanges"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:940
+msgid "Use the widgets to filter through all the exchanges ever listed, and then sort the columns by clicking the column headings"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:943
+msgid "No exchanges meet these criteria. Try using fewer filters"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:989
+msgid "Filtered exchages"
+msgstr ""
+
+#: mc_display/views/mc_display.views.inc:1002
+msgid "exchanging what?"
+msgstr ""
+
+#: mc_display/views/views_handler_argument_mc_user_exchanges.inc:10
+msgid "Is the logged in user"
+msgstr "Est l'utilisateur connecté"
+
+#: mc_display/views/views_handler_field_mc_trader.inc:19
+msgid "Link this field to the user"
+msgstr ""
+
+#: mc_sms/mc_sms.module:24
+msgid "SMS"
+msgstr ""
+
+#: mc_sms/mc_sms.module:25
+msgid "Define the SMS syntax for recording exchanges"
+msgstr ""
+
+#: mc_sms/mc_sms.module:36
+msgid "Syntax"
+msgstr ""
+
+#: mc_sms/mc_sms.module:37
+msgid "Define the form of the text messages"
+msgstr ""
+
+#: mc_sms/mc_sms.module:42;51;58
+msgid "Expressions for creating a new exchange"
+msgstr ""
+
+#: mc_sms/mc_sms.module:43;52;59
+msgid "One per line."
+msgstr ""
+
+#: mc_sms/mc_sms.info:0
+msgid "MC SMS"
+msgstr ""
+
+#: mc_sms/mc_sms.info:0
+msgid "Trigger exchanges from your phone using SMS"
+msgstr ""
+
+#: mc_stats/mc_stats.module:16
+msgid "Rather than overwhelm the block page with permutations, only the required blocks are be defined here"
+msgstr ""
+
+#: mc_stats/mc_stats.module:25
+msgid "Statistics"
+msgstr "Statistiques"
+
+#: mc_stats/mc_stats.module:63
+msgid "Statistical summary"
+msgstr ""
+
+#: mc_stats/mc_stats.module:85
+msgid "All in one"
+msgstr ""
+
+#: mc_stats/mc_stats.module:102
+msgid "Type of statistic"
+msgstr ""
+
+#: mc_stats/mc_stats.module:113
+msgid "How many to show"
+msgstr ""
+
+#: mc_stats/mc_stats.module:117
+msgid "Integer"
+msgstr "Entier"
+
+#: mc_stats/mc_stats.module:414
+msgid "Week"
+msgstr "Semaine"
+
+#: mc_stats/mc_stats.module:481
+msgid "Block definitions (one per line)"
+msgstr ""
+
+#: mc_stats/mc_stats.module:485
+msgid "put a five word description of each required block, then go configure it on the block page"
+msgstr ""
+
+#: mc_stats/mc_stats.module:488
+msgid "Live Stats"
+msgstr ""
+
+#: mc_stats/mc_stats.module:490
+msgid "Regenerate stats after every transaction. (Not suitable for larger systems)"
+msgstr ""
+
+#: mc_stats/mc_stats.module:495
+msgid "Exclude from stats"
+msgstr ""
+
+#: mc_stats/mc_stats.module:497
+msgid "Any exchange involving these accounts will not be counted in stats."
+msgstr ""
+
+#: mc_stats/mc_stats.module:498
+msgid "Comma separated account numbers."
+msgstr ""
+
+#: mc_stats/mc_stats.module:506
+msgid "Recalculate stats"
+msgstr ""
+
+#: mc_stats/mc_stats.module:534 mc_stats/theme/mc_currency_stats.tpl.php:10
+msgid "Highest incomes"
+msgstr ""
+
+#: mc_stats/mc_stats.module:541
+msgid "Biggest spenders"
+msgstr ""
+
+#: mc_stats/mc_stats.module:548
+msgid "Exchange volumes"
+msgstr ""
+
+#: mc_stats/mc_stats.module:555
+msgid "Most exchanges"
+msgstr ""
+
+#: mc_stats/mc_stats.module:563
+msgid "Periodic exchanges"
+msgstr ""
+
+#: mc_stats/mc_stats.module:575
+msgid "Periodic volume"
+msgstr ""
+
+#: mc_stats/mc_stats.module:50
+msgid "view exchange stats"
+msgstr ""
+
+#: mc_stats/mc_stats.module:32
+msgid "Exchange statistics"
+msgstr ""
+
+#: mc_stats/mc_stats.module:33
+msgid "All available metrics"
+msgstr "Tous les métriques"
+
+#: mc_stats/mc_stats.info:0
+msgid "MC Statistics"
+msgstr ""
+
+#: mc_stats/mc_stats.info:0
+msgid "Caches various statistics and provides displays."
+msgstr ""
+
+#: mc_stats/theme/mc_currency_stats.tpl.php:15
+msgid "Highest spenders"
+msgstr ""
+
+#: mc_stats/theme/mc_currency_stats.tpl.php:20
+msgid "Highest Volumes"
+msgstr ""
+
+#: mc_stats/theme/mc_currency_stats.tpl.php:25
+msgid "Most Trades"
+msgstr ""
+
+#: mc_stats/theme/mc_currency_stats.tpl.php:31
+msgid "Weekly volumes"
+msgstr ""
+
+#: mc_stats/theme/mc_currency_stats.tpl.php:36
+msgid "Weekly trades"
+msgstr ""
+
+#: mc_stats/theme/mc_stat_summary.tpl.php:11 mc_stats/theme/mc_stat_summary_block.tpl.php:10
+msgid "Active users"
+msgstr "Utilisateurs actifs"
+
+#: mc_stats/theme/mc_stat_summary.tpl.php:14
+msgid "Trades / user / week"
+msgstr ""
+
+#: mc_stats/theme/mc_stat_summary_block.tpl.php:13
+msgid "Trade rate (7 days)"
+msgstr ""
+
+#: mc_stats/theme/mc_stat_summary_block.tpl.php:15
+msgid "Top traders"
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.module:38
+msgid "Personal balance limits (accountant only)"
+msgstr "Les limites des soldes (uniquement le Comptable)"
+
+#: mc_user_limits/mc_user_limits.module:39
+msgid "Each of these values will dynamically inherit the currency's limits (shown in brackets) if left blank"
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.module:55;109
+msgid "Min limit"
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.module:63;108
+msgid "Max limit"
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.module:136
+msgid "Edit each user's balance limits on their account page."
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.module:11
+msgid "Limits"
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.module:12
+msgid "Configure the maximum and minimum permissible balances"
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.info:0
+msgid "User Limits"
+msgstr ""
+
+#: mc_user_limits/mc_user_limits.info:0
+msgid "Sets positive and negative balance limts for each user"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:102
+msgid "Is this the exchange you want to record?"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:107
+msgid "Back"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:149 mc_webforms/mc_webforms.module:275
+msgid "Erase"
+msgstr "Effacer"
+
+#: mc_webforms/mc_webforms.inc:157
+msgid "Save"
+msgstr "Enregistrer"
+
+#: mc_webforms/mc_webforms.inc:178
+msgid "Trader Selection"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:179
+msgid "Users often need to select other users in forms, but sometimes a dropdownlist of usernames ordered by uid isn't the most usable solution"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:184
+msgid "Autocomplete trader names in transaction form"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:186
+msgid "Reccommended above about 150 users. If not enabled, will use selection widget below."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:191
+msgid "Widget for selecting users"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:194
+msgid "Leave blank for autocomplete (reccommended above about 150 users)."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:195
+msgid "Otherwise, specify how each row of the dropdown box should be formatted."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:196
+msgid "Use the following tokens: %uid, %username, %email, %theme_username"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:197
+msgid "Dropdown list will be ordered alphabetically."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:201
+msgid "Minimum number of words to describe an exchange"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:206
+msgid "Classification can be improved if members take a few seconds to describe their exchanges in more detail."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:207
+msgid "It will also make the exchange easier to categorise, and easier for the participants to remember."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:207
+msgid "Zero means no minimum. Suggested value is 4."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:211
+msgid "Theme adjustments"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:216
+msgid "Special theming mode"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:220
+msgid "Start with the Drupal defaults, and theme forms as normal"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:221
+msgid "Use the special theming features."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:223
+msgid "Transaction forms need to be exactly right. Special theming mode offers a ready-made transaction form and some form-widget theme overrides which avoid !theme_form_element "
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:225
+msgid "Then, using the provided tpl.php, you can arrange things more exactly as you want."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:229
+msgid "CSS selector for the menu tabs"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:231
+msgid "On step 2 of the multistep forms, it is desirable to hide the menu tabs."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:232
+msgid "Enter the css selector here which will be set to display:none"
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:321 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:109
+msgid "Next"
+msgstr "Suivant"
+
+#: mc_webforms/mc_webforms.inc:479
+msgid "There must be two participants in any exchange."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:526
+msgid "Unknown content type in link."
+msgstr ""
+
+#: mc_webforms/mc_webforms.inc:584
+msgid "A comma-separated list of terms describing this content. Example: funny, bungee jumping, \"Company, Inc.\"."
+msgstr ""
+"Une liste de termes décrivant ce contenu, séparés par des virgules. "
+"Exemple : marrant, saut à l'élastique, \"Société SA\"."
+
+#: mc_webforms/mc_webforms.inc:616
+msgid "Vocabularies"
+msgstr "Vocabulaires"
+
+#: mc_webforms/mc_webforms.module:30
+msgid "The mc_webforms module provides a 3rd party transaction form, and some useful code for building other forms."
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:219;232
+msgid "3rd party exchange"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:252
+msgid "Please describe the exchange with at least @count words"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:268
+msgid "Change"
+msgstr "Modifier"
+
+#: mc_webforms/mc_webforms.module:304
+msgid "Only numbers allowed for '@fieldname'"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:307;321
+msgid "Integer values only for '@fieldname'"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:397
+msgid "Units"
+msgstr "Unités"
+
+#: mc_webforms/mc_webforms.module:406;416
+msgid "Fraction"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:443
+msgid "Please Choose..."
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:453
+msgid "Pay @user"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:455
+msgid "Claim from @user"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:120
+msgid "create 3rdparty exchanges"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:53
+msgid "Exchange form options"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:54
+msgid "These forms are super-flexible"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:63
+msgid "Record exchange"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:72
+msgid "Third party"
+msgstr ""
+
+#: mc_webforms/mc_webforms.module:96
+msgid "Modify exchange"
+msgstr ""
+
+#: mc_webforms/mc_webforms.info:0
+msgid "Mutual credit web forms"
+msgstr ""
+
+#: mc_webforms/mc_webforms.info:0
+msgid "AJAX Forms to create exchanges: 3rd party and multiple forms"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:17
+msgid "Pay from all but a few of the site accounts, the same amount, all into one account"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:19
+msgid "Pay from one account the same amount into all but a few of the site accounts"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:99;36
+msgid "Many-2-one"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:103;42
+msgid "One-2-many"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:107;58
+msgid "Few-2-one"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:111;50
+msgid "One-2-few"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:158
+msgid "Payers"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:158
+msgid "Payees"
+msgstr "La personne qui va recevoir des unités d'échanges"
+
+#: mc_webforms/mc_multiple/mc_multiple.module:163
+msgid "Select the accounts to be ignored. Use CTRL click to select more than one."
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:164
+msgid "Non-payers"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:164
+msgid "Non-payees"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:168
+msgid "Select the accounts. Use CTRL click to select more than one."
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:177
+msgid "Test exchanges"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:183
+msgid "Generate exchanges"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:189
+msgid "Previews"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:199
+msgid "You cannot exchange a negative amount."
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:208
+msgid "Many to one multiple payment of @amount for @description"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:216
+msgid "One to many multiple payment of @amount for @description"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:241
+msgid "Multiple exchanges created"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:268
+msgid "The exchange in which !name is both payer and payee will be ignored"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:330
+msgid "Usernames, emails, or user IDs (mixed is ok)"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:244
+msgid "Mass Payments"
+msgstr "Paiement en masse"
+
+#: mc_webforms/mc_multiple/mc_multiple.module:244
+msgid "!message"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.module:28
+msgid "Multiple"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.info:0
+msgid "Multiple exchanges forms"
+msgstr ""
+
+#: mc_webforms/mc_multiple/mc_multiple.info:0
+msgid "Record many exchanges from a single form, Many-2-one, one-2-many etc."
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:100
+msgid "Are you sure you want to sign this exchange?"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:103;263
+msgid "Sign"
+msgstr "Confirmer"
+
+#: mc_webforms/mc_signatures/mc_signatures.module:103;263
+msgid "Cancel"
+msgstr "Annuler"
+
+#: mc_webforms/mc_signatures/mc_signatures.module:116
+msgid "!signer signed the exchange"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:125
+msgid "The exchange is now finished"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:158;187
+msgid "This exchange is pending, but has no signatories"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:204;390
+msgid "Require signatures"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:229
+msgid "Sign this exchange"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:232
+msgid "Sign for @user"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:244
+msgid "Sign for all"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:260
+msgid "Are you sure you want to sign this exchange on behalf of all the remaining signatories?"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:273
+msgid "Transaction #@nid is signed off."
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:287
+msgid "Mail me when an exchange needs my signature"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:288
+msgid "Some combinations may send than one mail per transacation"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:303
+msgid "Request to sign"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:319
+msgid "A new exchange has been recorded by !creator."
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:320
+msgid "This email will be sent to members when someone initiates a transaction with them which needs signing."
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:326
+msgid "Users can choose signature notifications"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:333
+msgid "Signature notifications 'On' by default"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:364
+msgid "!user has been notified by email."
+msgstr ""
+"Un email de demande de confirmation d'échange a été envoyé à "
+"!user "
+
+#: mc_webforms/mc_signatures/mc_signatures.module:9
+msgid "Sign this exchange to finalise it"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.module:17
+msgid "Sign off exchange"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.install:18
+msgid "Invoice"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.install:19
+msgid "Proffer"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.install:23
+msgid "This is an automated notification."
+msgstr "Ceci est une notification automatique."
+
+#: mc_webforms/mc_signatures/mc_signatures.install:24
+msgid "!creator has recorded the following exchange:"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.install:25
+msgid "Click here to add your signature and finalise the exchange: !sign_link"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.install:26
+msgid "You can change your mail notification settings by clicking 'edit' on your profile."
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.install:28
+msgid "Your signature needed"
+msgstr ""
+
+#: mc_webforms/mc_signatures/mc_signatures.info:0
+msgid "Signatures"
+msgstr "Signatures"
+
+#: mc_webforms/mc_signatures/mc_signatures.info:0
+msgid "Enables pending exchange types, in which exchanges need to be signed. Notifications can be sent"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:40
+msgid "Signatories"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:41
+msgid "Provide a simple link to edit the comment."
+msgstr "Fournit un lien simple pour modifier le commentaire."
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:47
+msgid "Users needing to sign exchange"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:49
+msgid "Signature needed from user"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:56
+msgid "My signatures"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:67
+msgid "pending exchanges, and their signatories"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:286;330
+msgid "I must sign"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:333;334
+msgid "User must sign"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:337
+msgid "User waiting on"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:381
+msgid "user waiting on"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:383
+msgid "All pending"
+msgstr ""
+
+#: mc_webforms/mc_signatures/views/mc_signatures.views.inc:539
+msgid "Unsigned exchanges"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_1stparty_formspecial.tpl.php:35;38
+msgid "I exchanged<br />!description<br />with<br />!trader<br />and now I<br />!exchange_type<br />the sum of <br />!quantity !currency"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_1stparty_formspecial.tpl.php:45
+msgid "Please rate the the goods or services exchanged:"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:50
+msgid "Type of exchange"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:51
+msgid "Please choose..."
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:96
+msgid "Exchange partner"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:166
+msgid "Initiate exchange"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:199
+msgid "OVERRIDE theme_mc_webform_title() for more control here"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:210;229;319 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:12
+msgid "Incoming"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:210;219;313 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:16
+msgid "Direct"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:219;238;319 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:12
+msgid "Outgoing"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:229;238;316 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:15
+msgid "Signed"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:257
+msgid "plain text values only: @string"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:260
+msgid "Each name must be unique"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:288
+msgid "Trade with @user"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:302
+msgid "Initiate @type"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:304 mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:31;37
+msgid "Initiate"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.inc:318
+msgid "Exchange types"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:10
+msgid "The user friendly webforms module introduces four 2 exchange types, which are named here."
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:11
+msgid "Each one should be a singular noun. Only currencies using at least one of these types are visible to the 1stparty forms."
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:12
+msgid "'!incoming' means the currency flows towards the initiator of the exchange, <br />!outgoing', away."
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:14
+msgid "These two are supplemented by two more 'signed' types from the signatory module"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:15
+msgid "'!signed', means the exchange will be not be counted until both parties have agreed."
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:16
+msgid "'!direct' exchanges happen immediately."
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:198
+msgid "Exchange sub-types"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.module:201
+msgid "For the currency to appear in the user friendly webform, at least one of these must be checked"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.install:14
+msgid "MCAPI should be installed first"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.install:15
+msgid "This module required that a currency node already exists. One has now been created, please install user friendly form again"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.install:34
+msgid "@name has had the two 'confirm' exchange types enabled by default. !edit"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.install:52
+msgid "Claim"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.install:53
+msgid "Gift"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.info:0
+msgid "1st Person exchange form"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/mc_webform_1stparty.info:0
+msgid "Record exchanges assumming the user is the starter and might trade in either direction"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/views/mc_webform_1stparty.views.inc:24
+msgid "Convert to 1stparty exchange"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/views/mc_webform_1stparty.views.inc:25
+msgid "Use the node to populate 1stparty exchange form"
+msgstr ""
+
+#: mc_webforms/mc_webform_1stparty/views/views_handler_field_node_link_convert.inc:16 mc_webforms/views/views_handler_field_node_link_convert_3rdparty_offer.inc:16 mc_webforms/views/views_handler_field_node_link_convert_3rdparty_want.inc:17
+msgid "exchange..."
+msgstr ""
+
+#: mc_webforms/views/mc_webforms.views.inc:26
+msgid "Convert offer to exchange"
+msgstr ""
+
+#: mc_webforms/views/mc_webforms.views.inc:27
+msgid "Populate the thirdparty exchange form, using this node as an offer"
+msgstr ""
+
+#: mc_webforms/views/mc_webforms.views.inc:33
+msgid "Convert want to exchange"
+msgstr ""
+
+#: mc_webforms/views/mc_webforms.views.inc:34
+msgid "Populate the thirdparty exchange form, using this node as a want"
+msgstr ""
+
+#: theme/node-currency.tpl.php:3
+msgid "integer"
+msgstr "nombre entier"
+
+#: theme/node-currency.tpl.php:4
+msgid "centiles"
+msgstr ""
+
+#: theme/node-currency.tpl.php:23
+msgid "created by !user"
+msgstr ""
+
+#: theme/node-currency.tpl.php:25
+msgid "Range"
+msgstr ""
+
+#: theme/node-currency.tpl.php:29
+msgid "Divisions"
+msgstr ""
+
+#: theme/node-currency.tpl.php:38
+msgid "Relative value"
+msgstr "Valeur Relative"
+
+#: theme/node-exchange.tpl.php:39
+msgid "Exchange Certificate #@nid"
+msgstr ""
+
+#: theme/node-exchange.tpl.php:40
+msgid "pending"
+msgstr ""
+

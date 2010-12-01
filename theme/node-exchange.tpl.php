@@ -1,5 +1,4 @@
 <?php 
-// $Id$
 /*
  * we'll do the preprocessing here, rather than try to interrupt the normal node preprocessing hierarchy
  * which would be inefficient

@@ -1,5 +1,5 @@
-; $Id$
+; $Id: 
 name = Mutual Credit API
-description = Declares 'exchange' node type and functions for manipulating it
-package = Local currencies
+description = Defines two node-types, currencies and exchanges, and various functions for manipulating them by other modules.
+package = Mutual Credit
 core = "6.x"

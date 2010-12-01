@@ -1,0 +1,22 @@
+on admin/build/modules disable the transactions module
+if you have enabled the user_friendly form, go to your default currency and check the boxes to enable the exchange types
+all views will be replaced
+some blocks will be migrated
+check all your theme customisations
+Views will need reworking.
+    Starter and Completer no longer exist, instead there is payer, payee, and signatories
+    Relationships no longer needed
+    Note that you can now filter by exchange_type
+
+(optional, to be tidy, move the 3 files extensions/offer_want to their own module folder and replace the whole mutual_credit )
+
+
+drush -y @dev dis transactions //will disable all dependents, including cforge_custom
+-- Change theme, update cforge_custom module, insert new modules
+drush -y @dev en mcapi
+drush -y @dev en cforge_custom
+drush -y @dev up cforge_custom
+..
+problem with the currency icon?
+reported problem with blocks
+stats need jump starting

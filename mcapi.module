@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id$: exchanges.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
 /*
  * @file
@@ -31,12 +31,13 @@
  */
 
 //it might not be necessary to include this all the time. Depends how large it gets as well.
-module_load_include('api', 'mcapi');
+module_load_include('api.inc', 'mcapi');
 
 //states are mutually exclusive
 define ('EXCHANGE_STATE_FINISHED', 0);
 define ('EXCHANGE_STATE_PENDING', 1);
 define ('EXCHANGE_STATE_ERASED', -1);
+define ('MC_NOTIFICATION_DEFAULT_LEVEL', 2);
 
 /**
  * http://api.drupal.org/api/function/hook_help/6
@@ -45,18 +46,17 @@ function mcapi_help($section) {
   switch ($section) {
     case 'admin/help#exchange':
       return t('Defines a contentType called exchanges, manages them and does the accounting.');
-    case 'admin/cc':
-      return '<p>'. t("This module, its development and implementations at !cforge," .' ',
-        array('!cforge' => l('Community Forge', 'http://communityforge.net'))) .
+    case 'admin/mc':
+      return '<p>'. t("This module, its development and implementations at !cforge,", array('!cforge' => l('Community Forge', 'http://communityforge.net')))  .' '.
         t("have been the full time commitment of one person since Spring 2008, and another since spring 2009.") . ' '.
         t("The results of this work are offered freely to all.") .'</p><p>'.
         t("We give all possible resources to this work, and live by reciprocal gifting as much as possible.") .' '.
         t("We look forward to the day when support is robust enough to pay staff and provide a reliable nonprofit public service.") .' '.
         t("Please consider supporting this work by:") . ' '.
         theme('item_list', array(
-          t("sending some scarce hard currency to the developer ") ."IBAN - ES62 2077 0148 7716 0133 1092, SWIFT - CVALESVVXXX",
+          t("sending some scarce hard currency to the developer"),
           t("allying with us to build a global complementary currency ecosystem"),
-          t("offering of board and lodging for a month or two, or other commodities we can exchange")
+          t("offering board and lodging for a month or two")
         )
       );
   }
@@ -68,7 +68,7 @@ function mcapi_help($section) {
 function mcapi_cron() {
   //this is for the voluntary reporting function
   if (variable_get('cforge_report', 1)) {
-    module_load_include('inc', 'mcapi');
+    module_load_include('install', 'mcapi');
     cforge_report();
   }
 }
@@ -122,26 +122,25 @@ function mcapi_menu() {
     'title' => 'Complementary Currencies',
     'description' => 'Complementary currency options',
     'page callback' => 'mc_admin_menu_block_page',
-    'access arguments' => array('configure economy'),
+    'access arguments' => array('configure currencies'),
     'file' => 'mcapi.inc',
-  );
-  $items['admin/mc/general'] = array(
-    'title' => 'General',
-    'description' => 'Complementary Currency API options',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mc_options'),
-    'access arguments' => array('configure economy'),
-    'file' => 'mcapi.inc',
-    'weight' => 1
   );
   $items['admin/mc/currencies'] = array(
     'title' => 'Currencies',
-    'description' => t('List of currency nodes'),
+    'description' => 'List of currency nodes',
     'page callback' => 'currency_list',
-    'access callback' => TRUE,
-    'access arguments' => array('configure economy'),
+    'access arguments' => array('configure currencies'),
     'file' => 'mcapi.inc',
     'weight' => 2
+  );
+  $items['admin/mc/notification'] = array(
+    'title' => 'Mail notification template',
+    'description' => 'Compose the notification emails',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mc_mail_template'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'mcapi.inc',
+    'weight' => 3
   );
   return $items;
 }
@@ -165,8 +164,6 @@ function mcapi_access($op, $node, $account = NULL) {
       return user_access('view all exchanges')
       || $account->uid == $node->payee_uid //exchanges the present user was involved in
       || $account->uid == $node->payer_uid;
-    case 'create':
-      return user_access('exchange');
     case 'update': //this is the permission used by node_access
     case 'delete':
       return $account->uid == $node->starter_uid && $node->state == EXCHANGE_STATE_PENDING;
@@ -182,7 +179,7 @@ function mcapi_perm() {
     'exchange',
     'view all exchanges',
     'edit all exchanges',
-    'configure economy',
+    'configure currencies',
     'declare currency'
   );
 }
@@ -218,7 +215,7 @@ function mcapi_form(&$node) {
     //reload the whole exchange, which will include all the other fields
    //it's in a separate function so that other modules can access it.
     $form = mcapi_form_exchange($node);
-    if (!$node->exchange_type) $node->exchange_type = 'api';
+    if (!isset($node->exchange_type)) $node->exchange_type = 'api';
     $form['exchange_type'] = array(
       '#type' => 'hidden',
       '#default_value' => $node->exchange_type,
@@ -226,7 +223,7 @@ function mcapi_form(&$node) {
     return $form;
   }
   else {
-    return mcapi_form_currency(&$node);
+    return mcapi_form_currency($node);
   }
 }
 
@@ -243,8 +240,6 @@ function mcapi_insert(&$node) {
     module_load_include('install', 'mcapi');
     refresh_quantity_field_types();
   }
-  //this is needed to get before the node after_save trigger
-  module_invoke_all('exchange_registered', $node);
 }
 
 /**
@@ -275,6 +270,7 @@ function mcapi_delete($node) {
     //the currency can only be deleted if there are no exchanges in it (or if all users have zero!)
     //but validation will have checked this, I hope
     db_query("DELETE FROM {mc_currencies} WHERE nid = %d", $node->nid);
+    db_query("DELETE FROM {mc_cache} WHERE cid = %d", $node->cid);
   }
   //this is not used
   //module_invoke_all('exchange_erase', $node);
@@ -292,108 +288,57 @@ function mcapi_view($node, $teaser = FALSE, $page = FALSE) {
 }
 
 function mcapi_nodeapi(&$node, $op) {
-  if ($node->type == 'exchange' && ($op == 'insert' || $op == 'update' || $op == 'delete')) {
-    module_load_include('inc', 'mcapi');
-    _rebuild_exchange_history($node->payer_uid, $node->cid);
-    _rebuild_exchange_history($node->payee_uid, $node->cid);
-  }
-  elseif($node->type == 'currency') {
-    switch($op) {
-      case 'presave':
-        mcapi_node_presave_currency($node);
-      break;
+  if ($node->type == 'exchange') {
+    switch ($op) {
+      case 'update':
+        //the after_transaction $op = insert happens in mcapi.api
+        module_invoke_all('after_transaction', 'update', array($node));
+      case 'insert':
+        if (isset($node->rating) && $node->rating == 'null') {
+          unset($node->rating);
+        }
     }
+  }
+  elseif($node->type == 'currency' && $op == 'presave') {
+    module_load_include('inc', 'mcapi');
+    mcapi_node_presave_currency($node);
   }
 }
 
-function mcapi_node_presave_currency(&$node) {
-  module_load_include('inc', 'mcapi');
-  $node->data['color'] = $node->color;
-  $node->data['divisions'] = mc_convert_settings_array($node->divisions); //converted to an array for storage
-  $node->data['ratings'] = mc_convert_settings_array($node->ratings); //converted to an array for storage
-  if (isset($node->upload_icon)) {
-    $file = $node->upload_icon;
-    //it was parked in the temp directory in the validation phase
-    $dest = file_directory_path() .'/currencies/'. $file->filename;
-    if (file_move($file->filepath, $dest, FILE_EXISTS_REPLACE)) {
-      $node->icon = $dest;
-    }
-    else {
-      drupal_set_message('Failed to upload new currency icon');
-    }
-  }
-  elseif ($node->icon == '') {
-    unset($node->icon); //otherwise it will overwrite the icon with blank
-  }
-}
+
 
 /**
  * http://api.drupal.org/api/function/hook_user/6
  * This hook is required for modules to define one or more node types.
  */
 function mcapi_user($op, &$edit, &$account, $category = NULL) {
-  $currencies = array();
   switch ($op) {
     case 'form':
       if ($category != 'account') return;
-
     case 'register':
-      $currencies = currencies_load();
-      //fields for individual balance limits
-      if (user_access('edit all exchanges')) {
-        $form['mc_limits'] = array(
-          '#type' => 'fieldset',
-          '#title' => t('Personal balance limits (accountant only)'),
-          '#description' => t("Each of these values will override the currency's limits (shown in brackets)"),
-          '#weight' => -5,
-          '#attributes' => array('class' => 'balance-limits'),
-          '#tree' => TRUE,
-        );
-        if (user_access('exchange', $account)) {
-          foreach ($currencies as $cid => $currency) {
-            $form['mc_limits'][$cid] = array(
-              '#type' => 'fieldset',
-              '#title' => $currency->title,
-              '#weight' => $cid,
-              '#element_validate' => array('mc_validate_limits'),
-              '#cid' => $cid, //this helps with validation
-            );
-            //because the overridden balance limits were loaded into the user object,
-            //we retrieve them afresh from the db
-            $data = unserialize(db_result(db_query("SELECT data from {users} WHERE uid = %d", array(':uid' => $account->uid))));
-            $form['mc_limits'][$cid]['min'] = array(
-              '#type' => 'textfield',
-              '#title' => t('Min limit'),
-              '#maxlength' => 6,
-              '#size' => 6,
-              '#default_value' => $data['mc_limits'][$cid]['min'],
-              '#field_suffix' =>' ('. $currency->min .')',
-            );
-            $form['mc_limits'][$cid]['max'] = array(
-              '#type' => 'textfield',
-              '#title' => t('Max limit'),
-              '#maxlength' => 6,
-              '#size' => 6,
-              '#default_value' => $data['mc_limits'][$cid]['max'],
-              '#field_suffix' =>' ('. $currency->max .')',
-            );
-          }
+      if (variable_get('mc_notification_option', TRUE)) {
+        if (!module_exists('contact')) { //buggers up if the fieldset is declared twice
+          $form['contact']['#type'] = 'fieldset';
+          $form['contact']['#title'] = t('Contact preferences');
+          //$form['contact']['#description'] = t('Mail me when:');
+          $form['contact']['#prefix'] = '<a id="notifications"></a>';
         }
-      }
+        module_load_include('inc', 'mcapi');
+        $form['contact']['mc_notification_throttle'] = notification_throttle();
+        $form['contact']['mc_notification_throttle']['#default_value'] = 
+          isset($account->mc_notification_throttle) ?
+          $account->mc_notification_throttle :
+          MC_NOTIFICATION_DEFAULT_LEVEL;
       return $form;
-
-    case 'insert':
-      //this is really a governance thing - start each user off with no credit limit
-      $currencies = currencies_load();
-      foreach ($currencies as $cid => $currency) {
-        if ($edit['min-'. $cid] == '') {
-          $edit['min-'. $cid] == 0;
-          drupal_set_message(t('By default, new user credit limits are set to 0'), 'warning');
-        }
       }
-
+      break;
     case 'delete':
-      db_query("DELETE from {mc_balance_cache} WHERE uid = %d", array(':uid' => $account->uid));
+      db_query("DELETE from {mc_cache} WHERE uid = %d", array(':uid' => $account->uid));
+      break;
+    case 'load':
+      if (!variable_get('mc_notification_option', TRUE) || !isset($account->mc_notification_throttle)) {
+        $account->mc_notification_throttle = variable_get('mc_notification_throttle_default', MC_NOTIFICATION_DEFAULT_LEVEL);
+      }
   }
 }
 
@@ -414,6 +359,18 @@ function mcapi_theme() {
       'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
       'arguments' => array('form' => NULL),
     ),
+    'currency_range' => array(
+      'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
+      'arguments' => array(
+        'currency' => NULL,
+      )
+    ),
+    'currency_settings_array' => array(
+      'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
+      'arguments' => array(
+        'currency' => NULL,
+      )
+    ),
     'mc_rating' => array(
       'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
       'arguments' => array(
@@ -422,13 +379,12 @@ function mcapi_theme() {
         ),
     ),
     'exchange_summary' => array(
-      'arguments' => array('exchange'),
       'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
+      'arguments' => array('exchange'),
     )
   );
   return $items;
 }
-
 
 /**
  * Implementation of hook_theme_registry_alter
@@ -444,33 +400,27 @@ function mcapi_theme_registry_alter(&$items) {
   }
 }
 
-function template_preprocess_money(&$vars)  {
-  if (!$vars['cid'])print_r($vars);
-  $currency = node_load($vars['cid']);
+//don't confuse incoming float $vars['quantity']
+function template_preprocess_money(&$vars) {if (!isset($vars['cid'])) return;
+  $vars['currency'] = node_load($vars['cid']) or ddebug_backtrace();
   $vars['sign'] = '';
-  $vars['icon'] = '';
   //seperate the sign, positive or negative
   if ($vars['quantity'] < 0) {
     $vars['sign'] = '-';
     $vars['quantity'] = abs($vars['quantity']);
   }
   //convert the sub to something presentable
-  if ($currency->sub) {
-    $quant = intval($vars['quantity']);
-    $fraction = $vars['quantity'] - $quant;
-    if (count($currency->data['divisions'])) {
-      $vars['quantity'] = $quant . ' '. $currency->data['divisions'][$fraction*100];
+  if ($vars['currency']->sub) {
+    if (isset($vars['currency']->data['divisions']) && count($vars['currency']->data['divisions'])) {
+      $quant = intval($vars['quantity']);
+      //format using the given currency subdivision
+      $vars['quantity'] = $quant . $vars['currency']->data['divisions'][($vars['quantity'] - $quant)*100];
     }
-    else {
-      $vars['quantity'] = sprintf('%d:%02d', $quant, $fraction);
+    else {//format the centiles
+      $vars['quantity'] = sprintf("%01.2f", $vars['quantity']);
     }
   }
-
-  if (strlen($currency->icon)) {
-    $vars['icon'] = l(theme_image($currency->icon), 'node/'. $currency->nid,
-      array('html' => TRUE, 'attributes' => array('title' => $currency->title .' - '. $currency->body, 'alt' => $currency->title)));
-  }
-  $vars['name'] = $currency->title;
+  $vars['name'] = $vars['currency']->title;
 }
 
 
@@ -479,14 +429,17 @@ function template_preprocess_money(&$vars)  {
  * have to be in the .module file otherwise form.inc won't see them before they are included
  */
 
-//this is a node hook, but remember  mc_webforms don't use node forms, and must call this explicitly
+//this is a node hook, but remember mc_webforms don't use node forms, and must call this explicitly
 function mcapi_validate($node) {
   module_load_include('inc', 'mcapi');
   if ($node->type == 'currency') {
     //check that the title is unique amongst currencies
-    $nid = db_result(db_query("SELECT nid FROM {node} where type = 'currency' AND title = '%s'", array(':title' => $node->title)));
-    if ($nid && $node->nid != $nid) {
-      form_set_error('title', t('A currency called @name already exists', array('@name' => l($node->title, 'node/'.$node->nid))));
+    $result = db_query("SELECT nid FROM {node} where type = 'currency' AND title = '%s' AND nid != %d",
+      array(':title' => $node->title, ':nid' => $node->nid)
+    );
+
+    if ($nid = db_result($result)) {
+      form_set_error('title', t('A currency called !name already exists.', array('!name' => l($node->title, 'node/'.$nid))));
     }
 
     //check that the objective value is either blank or numeric
@@ -506,44 +459,56 @@ function mcapi_validate($node) {
       return;
     }
     if (!count(form_get_errors()) && $node->payer_uid && $node->payee_uid) {
-      $errors = mc_api_check_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid));
-      $errors .= mc_api_check_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid));
-      if (strlen($errors)) {
-        //permitted users can override the balance limits
-        //this decision should be moved upwards for version 2.0
-        if (user_access('edit all transactions')) {
-          drupal_set_message($errors, 'warning');
+      $errors[] = mc_api_check_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid));
+      $errors[] = mc_api_check_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid));
+      $errors = array_filter($errors);
+      if (count($errors)) {
+        //users with 'edit all exchanges' permission only get a warning about balance limits
+        //but most users will get an error
+        //this decision should be moved towards configuration level, but how?
+        if (user_access('edit all exchanges')) {
+          foreach ($errors as $error) {
+            drupal_set_message($error, 'warning');
+          }
         }
         else {
-          form_set_error('quantity', $errors);
+          foreach ($errors as $error) {
+            form_set_error('quantity', $error);
+          }
         }
       }
-    //an exchange can only be complete if all the fields are filled in.
-    if ($node->state == EXCHANGE_STATE_FINISHED) {
-      if (!$node->payer_uid && !$node->payee_uid) {
-        form_set_error('payer_uid', t('Payee or payer required for completed exchange'));
+      //an exchange can only be complete if all the fields are filled in.
+      if ($node->state == EXCHANGE_STATE_FINISHED) {
+        if (!$node->payer_uid && !$node->payee_uid) {
+          form_set_error('payer_uid', t('Payee or payer required for completed exchange'));
+        }
+        if (!$node->quantity) {
+          form_set_error('quantity', t('Quantity required for completed exchange'));
+        }
+        if (!$node->title) {
+          form_set_error('title', t('Description required for completed exchange'));
+        }
+        if (!$node->cid) {
+          form_set_error('cid', t('Currency ID required for completed exchange'));
+        }
       }
-      if (!$node->quantity) form_set_error('quantity', t('Quantity required for completed exchange'));
-      if (!$node->title) form_set_error('title', t('Description required for completed exchange'));
-      if (!$node->cid) form_set_error('cid', t('Currency ID required for completed exchange'));
-    }
     }
   }
 }
 
 
-//validates the min and max values against each other and/or against the currency in case these are local balance limits.
+//validates the min and max values
 //this could be done in javascript also, on the form
 //values have already been validated as numeric
 function mc_validate_limits(&$element, $form_state) {
   $min_subelement = &$element['min'];
   $max_subelement = &$element['max'];
-  if (isset($min_subelement['#value'])){
-    if ($min_subelement['#value'] > 0) {
+  if (strlen($min_subelement['#value'])){
+    if (strlen($min_subelement['#value']) && $min_subelement['#value'] > 0) {
       form_error($min_subelement, t('Minimum balance must not be larger than 0'));
     }
   }
-  if (isset($max_subelement['#value'])){
+  if (strlen($max_subelement['#value'])){
     if ($max_subelement['#value'] < 1) {
       form_error($max_subelement, t('Maximum balance must be larger than 1'));
     }
@@ -571,6 +536,14 @@ function mc_validate_trader(&$element, &$form_state) {
     _mc_check_trader($val, $element);
   }
 }
+
+function mc_validate_integer(&$element, $form_state) {
+  if (!is_numeric($element['#value']) ||
+    is_numeric($element['#value'] && !is_integer($element['#value'] + 0))) {
+    form_error($element, t('Must be an integer'));
+  }
+}
+
 //we have to make at least 3x2 calls on this in on form submission
 //so the static variable will help, a little
 function _mc_check_trader($value, &$element = NULL) {
@@ -585,16 +558,20 @@ function _mc_check_trader($value, &$element = NULL) {
   }
   $criterion = array($field => $value);
   $account = user_load($criterion);
-  if ($account->uid) {
+  if (isset($account->uid)) {
     if (user_access('exchange', $account)  && $account->status) {
       return $account->uid;
     }
     else {
-      if ($element) form_error($element, t("@user is not permitted to trade", array("@user" => $account->name)));
+      if ($element) {
+        form_error($element, t("@user is not permitted to trade", array("@user" => $account->name)));
+      }
     }
   }
   else {
-    if ($element) form_error($element, t("@data is not a known user", array("@data" => $value)));
+    if ($element) {
+      form_error($element, t("@data is not a known user", array("@data" => $value)));
+    }
   }
 }
 
@@ -610,7 +587,11 @@ function mc_validate_settings_array(&$element, $form_state) {
       }
       $vals = explode('|', $line);
       if (!is_numeric($vals[0]) || !strlen($lines[0]) || $vals[1] != check_plain($vals[1]) || !strlen($vals[1] || !is_integer($vals[1]))) {
-        form_error($element, t("'@val' should be an integer from  0 to 99, followed directly by a pipe, |, followed directly by a word or phrase with no unusual characters", array('@val' => $line)));
+        form_error($element, 
+          t("'@val' should be an integer from  0 to 99, followed directly by a pipe, |, followed directly by a word or phrase with no unusual characters",
+            array('@val' => $line)
+          )
+        );
       }
     }
   }
@@ -628,7 +609,7 @@ function mc_validate_quantity(&$element, &$form_state) {
     }
     if ($currency->sub) {
       $division = $value - intval($value);
-      if (!isset($currency->data['divisions'][$division])) {
+      if ($division && !isset($currency->data['divisions'][$division])) {
         form_error($element, t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
       }
     }
@@ -661,17 +642,22 @@ function mc_validate_color($element, $form_state) {
 }
 
 //validates that a transaction has a rating value consistent with the options defined in the currency
-function mc_validate_rating(&$element, &$form_state) {
-  module_load_include('inc', 'mcapi');
+//pending exchanges don't have to have a value
+//a value of 'null' means that the dropdown box wasn't activated
+function mc_validate_rating(&$element, $form_state) {
   //get the rating scale for that currency and check that value is on it.
   $currency = node_load($form_state['values']['cid']);
-  $ratings = $currency->ratings;
+  $ratings = $currency->data['ratings'];
   if (count($ratings)) {
-    if (array_key_exists($element['#value'], $ratings)) {
+    if (array_key_exists($element['#value'], $ratings) || $element['#value'] == 'null') {
       return;
     }
-  form_error($element, t('Invalid rating entered'));
+    form_error($element, t('Invalid rating entered: @value', array('@value' => $element['#value'])));
   }
+}
+
+function mc_validate_state(&$element, $form_state) {
+  
 }
 
 //Some currency properties need to be identical if they are to rendered into the exchange form
@@ -679,7 +665,8 @@ function mc_validate_rating(&$element, &$form_state) {
 //takes top-level fieldnames or data fieldnames
 //this is a bit complicated by the design of the currency object, but it works fine
 function get_common_currency_properties($currencies, $fieldname) {
-  $first = array_pop($currencies); 
+  $first = array_pop($currencies);
+
   foreach ($currencies as $currency) {
     if (isset($first->$fieldname)) {
       if ($first->$fieldname != $currency->$fieldname) return;
@@ -691,134 +678,24 @@ function get_common_currency_properties($currencies, $fieldname) {
     }
   }
   if (isset($val))return $val;
+  elseif (isset($first->$fieldname)) return $first->$fieldname;
+  elseif (isset($first->data[$fieldname])) return $first->data[$fieldname];
 }
 
 //standard exchange form builder function. $currencies can be NULL, a $nid, or an array of currencies
 function mcapi_form_exchange($node, $currencies = array()) {
   //certain currencies may be visisble to the form, not necessarily all the currencies on the system
   //or one currency might be passed by the url
-  $form['#currencies'] = $currencies;
-  if (!is_array($form['#currencies']) || empty($form['#currencies'])) {
-    $form['#currencies'] = currencies_load();
-  }
+  $form['#currencies'] = empty($currencies) ? currencies_load() : $currencies;
   if (count($form['#currencies']) == 1) {
     $currency = current($form['#currencies']);
     $node->cid = $currency->nid;
   }
-  //set the currency if there's only one to choose from, or it is given in the node
-  if (isset($node->cid)) {
-    if ($form['#currencies'][$node->cid]) {
-      $form['cid'] = array(
-        '#type' => 'hidden',
-        '#value' => $node->cid,
-      );
-    }
-    else {
-      drupal_set_message(t('Given currency id is not valid: @id', array('@id' => $node->cid)), 'warning');
-    }
-  }
-  else {
-    $form['cid'] = array(
-      '#type' => 'select',
-      '#options' => mc_node_select_options($form['#currencies'], t('Choose currency...')),
-      '#title' => t('Currency'),
-      '#description' => t('The node ID of the currency'),
-      '#weight' => 0,
-      '#element_validate' => array('mc_validate_cid')
-    );
-  }
-  $form['title'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Reason for exchange'),
-    '#default_value' => isset($node->title) ? $node->title : '',
-    '#element_validate' => array('mc_validate_title'),
-    '#required' => TRUE,
-    '#weight' => 3,
-    '#size' => 35
-  );
-  $form['payer_uid'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Account to be debited'),
-    '#default_value' => isset($node->payer_uid) ? $node->payer_uid : '',
-    '#element_validate' => array('mc_validate_trader'),
-    '#weight' => 6
-  );
-  $form['payee_uid'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Account to be credited'),
-    '#description' => t('A username, email, or user ID'),
-    '#default_value' => isset($node->payee_uid) ? $node->payee_uid : '',
-    '#element_validate' => array('mc_validate_trader'),
-    '#weight' => 9
-  );
-  $form['quantity'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Quantity'),
-    '#element_validate' => array('mc_validate_quantity'),
-    '#default_value' => isset($node->quantity) ? $node->quantity : '',
-    '#weight' => 12,
-    '#size' => 7,
-  );
-  $ratings = array('null' => t('Please choose...'));
-  if (isset($node->cid)){
-    if ($common = get_common_currency_properties(array($form['#currencies'][$node->cid]), 'ratings')) {
-      $ratings += $form['#currencies'][$node->cid]->data['ratings'];
-    }
-  }
-  else {
-    if ($common = get_common_currency_properties($form['#currencies'], 'ratings')) {
-      $ratings += $common;
-    }
-  }
-  $rating = array(
-    '#title' => t('Rating'),
-    '#description' => t('A numeric value, used cumulatively to rate the payee.'),
-    '#weight' => 15
-  );
-  //if ratings knows the currency it shows as a select widget
-  if (count($ratings) > 1) {
-    $form['rating'] = $rating + array(
-      '#type' => 'select',
-      '#default_value' => isset($node->rating) ? $node->rating : NULL,
-      '#options' => $ratings,
-      '#required' => TRUE,
-      '#element_validate' => array('mc_validate_rating'),
-    );
-  }
-  else {
-    $form['rating'] = $rating + array(
-      '#type' => 'textfield',
-      '#default_value' => isset($node->rating) ? $node->rating : NULL,
-    );
-  }
-  $form['state'] = array(
-    '#type' => 'radios',
-    '#title' => t('State'),
-    '#description' => t('Finished exchanges cannot have empty values.'),
-    '#default_value' => isset($node->state) ? intval($node->state) : '0', //defaults to 0, or EXCHANGE_STATE_FINISHED
-    '#options' => array(
-      EXCHANGE_STATE_FINISHED => t('Finished'),
-      EXCHANGE_STATE_PENDING => t('Pending'),
-      //there is no use case for this, because erased exchanges have no entry in the node table
-      //EXCHANGE_STATE_ERASED => t('erased'),
-    ),
-    '#weight' => 18
-  );
-  return $form;
+  module_load_include('inc', 'mcapi');
+  //this is in the other file purely for optimisation
+  return mcapi_form_exchange_inc($form, $node);
 }
 
-//returns all currencies
-//this could happily be cached
-function currencies_load() {
-  static $currencies;
-  if (!$currencies) {
-    $results = db_query("SELECT nid FROM {node} WHERE type = 'currency'");
-    while ($nid = db_result($results)) {
-      $currencies[$nid] = node_load($nid);
-    }
-  }
-  return $currencies;
-}
 
 //takes an array of nodes, with the nid as array keys and returns an array with just the titles
 //for preparing form field select options
@@ -828,13 +705,18 @@ function mc_node_select_options($nodes, $zero_val = '') {
     $options[] = $zero_val;
   }
   foreach ($nodes as $nid => $node) {
-    $options[$nid] = $node->title;
+    if (is_array($node)) {
+      $options[$nid] = $node['title'];
+    }
+    else {
+      $options[$nid] = $node->title;
+    }
   }
   return $options;
 }
 
 /*
- * NOT USED
+ * NOT USED NOT USED NOT USED NOT USED NOT USED NOT USED NOT USED NOT USED
  */
 
 /*
@@ -842,7 +724,7 @@ function mc_node_select_options($nodes, $zero_val = '') {
  * In other words a trigger
  * These triggers are for mcapi-related modules,
  */
-function mcapi_hook_info() {
+function _mcapi_hook_info() {
   return array(
     'mcapi' => array(
       'mcapi' => array(
@@ -862,7 +744,7 @@ function mcapi_hook_info() {
 /**
  * Implementation of hook_trigger_name().
  */
-function mcapi_mcapi($op, $user) {print_r(func_get_args());
+function _mcapi_mcapi($op, $user) {
   if (!in_array($op, array('created_exchange', 'updated_exchange', 'deleted_exchange'))) {
     return;
   }
@@ -901,5 +783,21 @@ function mcapi_form_currency_node_form_alter(&$form, $form_state) {
     $form['buttons']['delete']['#access'] = FALSE;
     $form['buttons']['delete']['#suffix'] = t('This is the only currency and thus cannot be deleted.');
   }
-  $form['#redirect'] = 'admin/mc/currencies';
+  unset($form['buttons']['preview']);
+  $form['buttons']['submit']['#submit'][] = 'redirect_to_currencies';
+}
+function redirect_to_currencies($form, &$form_state) {
+  $form_state['redirect'] = 'admin/mc/currencies';
+}
+
+//this function is built in to v7
+function ajax_form_callback() {
+  $form_state = array('storage' => NULL, 'submitted' => FALSE);
+  $form_build_id = $_POST['form_build_id']; 
+  $form = form_get_cache($form_build_id, $form_state);
+  $args = $form['#parameters'];
+  $form_id = array_shift($args);
+  $form_state['post'] = $form['#post'] = $_POST;
+  $form['#programmed'] = $form['#redirect'] = FALSE;
+  return drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
 }

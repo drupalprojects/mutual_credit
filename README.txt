@@ -1,5 +1,3 @@
-$Id$
-
 This document is 4 documents in one:
 
 ** Features **

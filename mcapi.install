@@ -6,44 +6,24 @@
  * Install, update and uninstall functions for the exchanges module.
  */
 
-  define('INCOMING_CONFIRM', 1);
-  define('INCOMING_DIRECT', 2);
-  define('OUTGOING_CONFIRM', 4);
-  define('OUTGOING_DIRECT', 8);
-  variable_set('mc_exchange_types', array(
-    INCOMING_CONFIRM => t('Request'),
-    INCOMING_DIRECT => t('Claim'),
-    OUTGOING_CONFIRM => t('Offer'),
-    OUTGOING_DIRECT => t('Gift')
-  ));
+function mcapi_requirements($phase) {
+  $req = array();
+  if ($phase == 'install') {
+    $req[] = array(
+      'title' => t("Disabled transactions module"),
+      'description' => t('The new mcapi module conflicts with transactions module'),
+      'severity' => module_exists('transactions') ? REQUIREMENT_ERROR : REQUIREMENT_OK,
+    );
+  }
+  return $req;
+}
 
 /**
  * Implementation of hook_install().
  */
 function mcapi_install() {
   drupal_install_schema('mcapi');
-  $currency = (object)array(
-    'title' => 'Community Coins',
-    'body' => t('This is the default currency'),
-    'type' => 'currency',
-    'status' => TRUE,
-    'uid' => 1,
-    'sub' => 'int',
-    'max' => 500,
-    'min' => -500,
-    'value' => 0,
-    'icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png',
-    'data' => serialize(array(
-      'color' => '00ff00',
-    ))
-  );
 
-    //'exchange_subtypes' => array(INCOMING_CONFIRM, OUTGOING_CONFIRM),
-  node_save($currency);
-  drupal_set_message(t('Your defult currency is @name. !edit', array(
-    '@name' => $currency->title,
-    '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
-  )));
   variable_set('comment_exchanges', 0);
 
   //add a permission so that trading can begin
@@ -52,6 +32,19 @@ function mcapi_install() {
     $perm .= ', exchange';
     db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", array(':perm'=>$perm, ':rid' => DRUPAL_AUTHENTICATED_RID));
   }
+  if (!variable_get('mc_subtypes', NULL)) {
+    variable_set('mc_subtypes', array(
+      1 => 'Claim',
+      2 => 'Gift',
+      4 => 'Invoice',
+      8 => 'Pay'
+    ));
+  }
+  //here we set all the module weights together
+  db_query("UPDATE {system} SET weight = -1 WHERE name = 'mcapi'");
+  db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_webform_1stparty'");
+  db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_multiple'");
+  db_query("UPDATE {system} SET weight = 2 WHERE name = 'mc_signatures'");
 }
 
 /**
@@ -75,12 +68,38 @@ function mcapi_uninstall() {
     db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
     db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
   }
-  variable_del('comment_exchanges');
   variable_del('cforge_report');
 }
 
-function mcapi_disable() {
+function mcapi_enable() {
+  //by using enable instead of install, we have access to node hooks
+  if (!db_result(db_query("SELECT count(nid) FROM {mc_currencies}"))) {
+    $props = array('color' => '00ff00', 'divisions' => '', 'ratings' => '', 'subtype_bitmask' => 3);
+    $currency = (object)array(
+      'title' => 'Community Coins',
+      'body' => t('This is the default currency'),
+      'type' => 'currency',
+      'status' => TRUE,
+      'uid' => 1,
+      'max' => '',
+      'min' => 0,
+      'data' => $props,
+      'icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png',
+    );
+    node_save($currency); //for some reason this doesn't save into the other table - like node
+    //db_query("UPDATE {mc_currencies} (max, min, icon, data) SET (%d, %d, %d, '%s', '%s')",
+    //  '', '0', drupal_get_path('module', 'mcapi') .'/theme/cc.png', serialize($props)
+    //);
+    drupal_set_message(t('Your defult currency is @name. !edit', array(
+      '@name' => $currency->title,
+      '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
+    )));
+    if (db_result(db_query("SELECT nid from {node} where type = 'transaction'"))) {
+      mc_upgrade();
+    }
+  }
 }
+
 /**
  * Implementation of hook_schema)().
  * http://api.drupal.org/api/function/hook_schema/6
@@ -151,7 +170,6 @@ function mcapi_schema() {
         'type' => 'text',
         'size' => 'small',
         'serialize' => TRUE,
-        //'default' => serialize(array())
       )
     ),
   );
@@ -217,13 +235,7 @@ function mcapi_schema() {
         'type' => 'int',
         'size' => 'small',
         'default' => 0,
-      ),
-      'exchanges' => array(
-        'description' => 'Total exchange history wth running balances',
-        'type' => 'blob',
-        'not null' => FALSE,
-        'size' => 'big'
-      ),
+      )
     ),
     'unique keys' => array(
       'uid_cid' => array('uid', 'cid')
@@ -240,22 +252,21 @@ function mcapi_schema() {
       ),
       'min' => array(
         'description' => t("the default minumim balance allowed to tbe held"),
-        'type' => 'int',
-        'size' => 'normal',
-        'default' => -500,
+        'type' => 'varchar',
+        'length' => '7',
+        'default' => NULL,
       ),
       'max' => array(
         'description' => t("the default maximum balance allowed to tbe held"),
-        'type' => 'int',
-        'size' => 'normal',
-        'default' => 500,
+        'type' => 'varchar',
+        'length' => '7',
+        'default' => NULL,
       ),
       'data' => array(
         'description' => t("An array of other properties"),
         'type' => 'text',
         'size' => 'small',
         'serialize' => TRUE,
-        //'default' => serialize(array())
       ),
       'icon' => array(
         'description' => t("location of the currency icon"),
@@ -281,65 +292,123 @@ function mcapi_schema() {
 
 //upgrade from version 1.0
 function mc_upgrade() {
-  //probably need to install the mc_completer if there are any pending transactions...
-  
-  $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state
-    FROM {cc_transactions}");
+  module_load_include('inc', 'mcapi');
+
+  $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state, quality as rating
+    FROM {cc_transactions}
+    WHERE state > -1");
   while ($transaction = db_fetch_object($result)) {
+    $transaction->exchange_type = mcapi_upgrade_exchange_types($transaction->exchange_type);
     drupal_write_record('mc_exchanges', $transaction);
-    break;
   }
-  //still need to deal with pending transactions
-  //cc_transactions.starter_uid
-  //cc_transactions.completer_uid
 
-  $result = db_query("SELECT uid, cid, cleared_balance as balance, gross_income as gross_in, gross_expenditure as gross_out
-    FROM {cc_balance_cache}");
-  while ($row = db_fetch_object($result)) {
-    drupal_write_record('mc_cache', $row);
-    break;
-  }
-  //if transaction_qualities have been used...
-  if (variable_get('cc_transaction_qualities', NULL)) {
-    $result = db_query("SELECT uid, quality_mean FROM {cc_balance_cache}");
-    while ($row = db_fetch_object($result)) {
-      $account = user_load($row->uid);
-      $edit = array('mutual_credit_v1_transaction_rating_mean' => $row->quality_mean);
-      user_save($account, $edit);
+  db_query("UPDATE {node} set type = 'exchange' WHERE type = 'transaction'");
+
+  //pending transactions
+  if (db_result(db_query("SELECT nid FROM {cc_transactions} WHERE state = 1"))) {
+    drupal_install_modules(array('mc_signatures'));
+    $result = db_query("SELECT nid, completer_uid as uid FROM {cc_transactions} WHERE state = 1");
+    $rows = array();
+    while ($row = db_fetch_array($result)) {
+      $rows[] = '('. implode(',', $row) .')';
     }
+    $query = "INSERT INTO {mc_unsigned} (nid, uid) VALUES ". implode(',', $rows);
+    db_query($query);
   }
 
-  //currency (only one supported in this upgrade)
-  $default_cur = variable_get('cc_default_currency', NULL);
-  $new_cur = array(
-    'nid' => $default_cur->cid,
-    'value' => $default_cur->comparative_value,
-    'sub' => $default_cur->division,
-    'min' => $default_cur->min_balance,
-    'max' => $default_cur->max_balance,
-    'data' => serialize(array()),
-    'icon' => $default_cur->icon
+  //overwrite the v2 default currency with the default currency from v1
+  $v2cur = node_load(array('type' => 'currency'));
+  $v1cur = variable_get('cc_default_currency', NULL);
+
+  $v2cur->title = $v1cur->title;
+  $v2cur->min = $v1cur->min_balance;
+  $v2cur->max = $v1cur->max_balance;
+  $v2cur->icon = $v1cur->icon;
+  $v2cur->sub = intval($v1cur->division != 'integer');
+  $v2cur->color = $v1cur->color;
+  $v2cur->data = array(
+    'subtype_bitmask' => 3,
   );
-  drupal_write_record('mc_currencies', $new_cur);
-  //check the currency is there. There can only be one.
-  $success = db_result(db_query("SELECT * from {mc_currencies}"));
+  if ($v1cur->division == 'sixtieths') {
+    $v2cur->data['divisions'] = '0|'. t('hours') ."\n15|". t('and a quarter') ."\n30|". t('and a half') ."\n45|". t('and three quarters');
+  }
+  node_save($v2cur);
+  $cid = $v2cur->nid; //for use later
+  //division wasn't saving properly, we'll just write it directly here
+
+  drupal_set_message(t('Currency saved as node:<pre>@cur</pre>', array('@cur' => $v2cur->nid)));
+  drupal_set_message(t('The exchange sub-types need to be upgraded by hand. !link', array('!link'=> l($v2cur->title, 'node/'.$v2cur->nid.'/edit'))));
+
+  db_query("UPDATE {mc_exchanges} set cid = %d", array(':nid' => $v2cur->nid));
 
   //Then the permissions
   $permissions_old_new = array(
-    'use local currency' => 'exchange',
-    'view all transactions' => 'view all exchanges',
-    'view all transactions' => 'view all balances',
-    'edit all transactions' => 'edit all exchanges',
+    'use local currency' => 'exchange', //works
+    'transactions' => 'exchanges',
+    'configure economy' => 'declare currency, configure economy, create 3rdparty exchanges',
+    'access content' => 'view exchange stats'
   );
   $result = db_query("SELECT * FROM {permission}");
   while ($row = db_fetch_object($result)) {
     $row->perm = strtr($row->perm, $permissions_old_new);
     drupal_write_record('permission', $row, array('pid'));
   }
-  //might want to do something with the balancing account - 'cc_balancing_account_num'
+  
+  $results = db_query("SELECT uid FROM {users} WHERE uid > 0");
+  while ($uid = db_result($results)) {
+    $account = user_load($uid);
+    $limits = array(
+      $cid => array(
+        'max'=> $account->balances[0]['max_balance'],
+        'min' => $account->balances[0]['min_balance'],
+      )
+    );
+    $throttle = 0;
+    if ($account->starter_notification) $throttle = 2;
+    if ($account->completer_notification) $throttle = 3;
+    $edit = array(
+      'mc_notification_throttle' => $throttle,
+      //'mailme_I_start' => $account->starter_notification,
+      //'mailme_involved' => $account->completer_notification,
+      'mc_limits' => $limits,
+      'balances' => NULL,
+      'max0' => NULL,//unset from v1
+      'min0' => NULL,//unset from v1
+      'completer_notification' => NULL,
+      'starter_notification' => NULL,
+    );
+    user_save($account, $edit);
+  }
 
-  module_disable(array('transactions'));
-  drupal_set_message(t('Transactions module has been disabled. Uninstall when you are confident all data has been migrated.'));
+  //blocks offered by transactions.module
+  db_query("UPDATE {blocks} SET module = 'mc_webform_1stparty', delta = 'start_exchange' WHERE module = 'transactions' AND delta = 'cc_new_transaction'");
+  db_query("UPDATE {blocks} SET module = 'mcapi' WHERE module = 'transactions'"); //actually this applies to stats which aren't done yet
+  db_query("UPDATE {blocks} SET delta = 'mc_all_exchanges-block_2' WHERE module = 'views' AND delta = 'cc_transaction_list-block_2'");
+  db_query("UPDATE {blocks} SET delta = 'mc_all_exchanges-block_1' WHERE module = 'views' AND delta = 'cc_transaction_list-block_3'");
+  //set any block visibilities that depended on old pathnames
+  db_query("UPDATE {blocks} SET pages = REPLACE (pages, 'transaction', 'exchange')");
+
+  db_query("DELETE FROM {menu_links} WHERE path LIKE 'admin/marketplace%");
+
+  drupal_set_message(t('Uninstall transactions module when you are confident all data has been migrated.'));
+  mc_balances_refresh();
+  if (function_exists('mc_cache_set_stats')) mc_cache_set_stats();
+}
+
+function mcapi_upgrade_exchange_types($old) {
+  $conversion  = array(
+    'incoming_direct' => 'incoming direct',
+    'outgoing_direct' => 'outgoing direct',
+    'incoming_confirm' => 'incoming signed',
+    'outgoing_confirm' => 'outgoing signed',
+    'incoming_mass_direct' => 'many2one',
+    'outgoing_mass_direct' => 'one2many',
+    'incoming_mass_confirm' => 'many2one',
+    'outgoing_mass_confirm' => 'one2many',
+    '3rdparty_confirm' => '3rdparty',
+  );
+  if (isset($conversion[$old]))return $conversion[$old];
+  else return '3rdparty';
 }
 
 
@@ -378,7 +447,7 @@ function refresh_quantity_field_types() {
   db_change_field($ret, 'mc_exchanges', 'quantity', 'quantity', $newfield);
 
   $newfield['description'] = "sum of all completed exchanges for this user in this currency, ($needed_type)";
-  db_change_field($ret, 'mc_cache', 'cleared_balance', 'balance', $newfield);
+  db_change_field($ret, 'mc_cache', 'cleared_balance', 'cleared_balance', $newfield);
 
   $newfield['description'] = "the sum of all this user's income in this currency, ($needed_type)";
   db_change_field($ret, 'mc_cache', 'gross_in', 'gross_in', $newfield);
@@ -395,9 +464,38 @@ function refresh_quantity_field_types() {
     drupal_set_message($message, 'error');
   }
   else {
-    $message = (t("Quantitative fields in database is set to type '@type'", array('@type' => $needed_type)));
-    drupal_set_message($message);
+    drupal_set_message(t("Quantitative fields in database is set to type '@type'", array('@type' => $needed_type)));
   }
-  watchdog('mcapi', $message);
-  //tidy up
+  watchdog('mcapi', "Quantitative fields in database is set to type '@type'", array('@type' => $needed_type));
+}
+
+
+function cforge_report() {
+  $traders = get_trader_list();
+  $data = array(
+    'server' => $_SERVER["HTTP_HOST"],
+    'site_name' => variable_get('site_name', 'site_name'),
+    'site_mail' => variable_get('site_mail', 'site_mail'),
+    'user_count' => count($traders),
+    'version' => db_result(db_query("SELECT schema_version from {system} WHERE name = 'mutual_credit'")),
+    'transactions_last_month' => db_result(db_query("SELECT COUNT(*) from {node} WHERE created > %d and type = 'transaction'", strtotime('-1 month'))),
+    'public' => variable_get('cforge_report', 1) -1,
+  );
+
+  foreach ($data as $key => $val) {
+    $args[] = $key . '=' . $val;
+  }
+  $url = 'http://www.communityforge.net/registration.php?'. implode('&', $data);
+  $reply = drupal_http_request($url);
+  drupal_set_message($reply->data);
+}
+
+function mcapi_update_6001() {
+  $ret = array();
+  db_query("UPDATE {permission} SET perm = REPLACE(perm, 'configure economy', 'configure currencies') ");
+  $installed = db_result(db_query("SELECT status FROM {system} WHERE name = 'mc_webform_usable'"));
+  if ($installed){
+    db_query("UPDATE {system} SET status = 1 WHERE name = 'mc_webform_1stparty'");
+  }
+  return $ret;
 }
