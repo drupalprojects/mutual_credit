@@ -482,10 +482,10 @@ function mcapi_after_transaction($op, $exchanges) {
     );
     if ($message['params']['send']) {
       drupal_mail_send($message);
-      drupal_set_message('mailed '. $account->name .'with mail throttle setting '. $account->mc_notification_throttle);
+      drupal_set_message('mailed '. $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
     }
     else {
-      drupal_set_message("Didn't mail ". $account->name .'with mail throttle setting '. $account->mc_notification_throttle);
+      drupal_set_message("Didn't mail ". $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
     }
   }
 }

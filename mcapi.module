@@ -320,7 +320,6 @@ function mcapi_user($op, &$edit, &$account, $category = NULL) {
         if (!module_exists('contact')) { //buggers up if the fieldset is declared twice
           $form['contact']['#type'] = 'fieldset';
           $form['contact']['#title'] = t('Contact preferences');
-          //$form['contact']['#description'] = t('Mail me when:');
           $form['contact']['#prefix'] = '<a id="notifications"></a>';
         }
         module_load_include('inc', 'mcapi');
