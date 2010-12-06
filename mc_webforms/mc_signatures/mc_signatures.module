@@ -1,4 +1,6 @@
 <?php
+// $Id$
+
 /*
  * 'Signatories' is an added property of pending exchanges
  *  mc_webforms module half expects this to be present.
@@ -65,7 +67,7 @@ function mc_signatures_nodeapi(&$node, $op) {
       mc_signatures_node_delete($node);
     break;
     case 'insert':
-    case 'update': 
+    case 'update':
       mc_signatures_require($node);
   }
 }
@@ -245,7 +247,7 @@ function mc_append_sign_links($exchange, &$links) {
       );
     }
   }
-  
+
   if (user_access('edit all exchanges') && count($exchange->mc_unsigned) > 1) {
     $links['signall'] = array(
       'title' => t('Sign for all'),

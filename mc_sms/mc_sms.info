@@ -1,0 +1,7 @@
+; $Id$
+name = MC SMS
+description = Trigger exchanges from your phone using SMS
+package = Mutual Credit
+core = "6.x"
+dependencies[] = mcapi
+dependencies[] = sms_user

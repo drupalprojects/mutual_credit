@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /*
  * t('The mc_webforms module provides a 3rd party transaction form, and some useful code for building other forms.');
@@ -11,7 +12,7 @@
  * provides a cache of friendly trader names and a setting for formatting them along with a configurable user selection field
  * * I wonder if that would make a nice hook_element
  * There's also a form 'preprocess mode' for themers who want more control over the form
- * 
+ *
  * AJAX notes
  * On setting the exchange type or the currency, the form is refreshed via AJAX
  * so that the divisions & ratings fields and confirm checkboxes can be re-loaded
@@ -121,7 +122,7 @@ function mc_webforms_perm(){
 }
 
 
-/** 
+/**
  * http://api.drupal.org/api/function/hook_theme/6
  * note that there are preprocess functions in inc, file, which is already loaded by the form callback menu items
  */
@@ -374,7 +375,7 @@ function field_process_mc_quantity($element, $edit, &$form_state, &$form) {
     $def_integer = intval($element['#default_value']);
     $def_division = 100*($element['#default_value'] - $def_integer);
   }
-  
+
   $element['integer'] = array(
     '#title' => t('Units'), //would be nice to have currency name, but this is only ever seen on the error message anyway
     '#type' => 'textfield',

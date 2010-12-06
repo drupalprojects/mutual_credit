@@ -1,4 +1,5 @@
-<?php 
+<?php
+// $Id$
 
 if (!$node->sub) $division = t('integer');
 elseif (!isset($node->data['divisions']) || !count($node->data['divisions'])) $division = t('centiles');

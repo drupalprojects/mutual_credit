@@ -1,0 +1,536 @@
+<?php
+// $Id$
+
+/**
+ * IRS 1099B Tax returns
+ * Creates and maps fields for the tax return, tests the data to extent, and generates the tax return file
+ *
+ * Since the barter network may choose to store user metadata in a variety of ways,
+ * this module allows the admin to map this metadata to fields created by
+ * - the profile module
+ * - content_profile module
+ * - location module
+ *
+ */
+
+/**
+ * This first part of the module, concerned with the UI and data collection is by matslats
+ */
+
+function irs_1099b_menu() {
+  $items['admin/mc/irs'] = array(
+    'title' => 'IRS fields',
+    'description' => "map the fields required by the IRS to your user's data",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('irs_form'),
+    'access arguments' => array('configure economy'),
+    'weight' => 10,
+  );
+  $items['user/%/irs'] = array(
+    'title' => 'IRS data',
+    'description' => 'The data which is exposed to the IRS',
+    'page callback' => 'show_irs_user',
+    'page arguments' => array(1),
+    'access arguments' => array('user_profile_view'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+function irs_form() {
+  $defaults = variable_get('irs_fields', array());
+  $form['transmitter'] = array(
+    '#title' => 'Transmitter fields (T Record)',
+    '#type' => 'fieldset',
+    '#description' => 'Identified the transmitter of the electronic file',
+    '#weight' => -2
+  );
+  foreach (get_t_fields($defaults) as $key => $element) {
+    $form['transmitter'][$key] = $element;
+  }
+  $form['a_record'] = array(
+    '#title' => 'Payer (A Record)',
+    '#type' => 'fieldset',
+    '#description' => 'Identifies the Payer (the institution or person making payments) the type of document being reported, & other misc. info.',
+    '#weight' => -1
+  );
+  foreach (get_a_fields($defaults) as $key => $element) {
+    $form['a_record'][$key] = $element;
+  }
+
+  $form['b_records'] = array(
+    '#title' => 'Mapping user fields (B record)',
+    '#type' => 'fieldset',
+    '#description' => 'Identifies the payee, the specific payment amounts, and info pertinet to that form',
+    '#weight' => 0
+  );
+  foreach (get_b_fields($defaults) as $key => $element) {
+    $form['b_records'][$key] = $element;
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'submit'
+  );
+  $form['test'] = array(
+    '#type' => 'submit',
+    '#value' => 'test user data',
+    '#submit' => array('irs_test_user_data'),
+  );
+  $form['generate'] = array(
+    '#type' => 'fieldset',
+    '#description' => 'Generate the file for between the given dates. For conversion to unixtimes, see '. l('Onlineconversion.com', 'http://www.onlineconversion.com/unix_time.htm'),
+    '#title' => 'Generate file',
+  );
+  $form['generate']['irs_from'] = array(
+    '#type' => 'textfield',
+    '#title' => 'From',
+    '#description' => 'Unixtime',
+    '#default_value' => variable_get('irs_from', 0),
+    '#size' => 12,
+    '#prefix' => '<span style="float:left;">',
+    '#suffix' => '</span>'
+  );
+  $form['generate']['irs_to'] = array(
+    '#type' => 'textfield',
+    '#title' => 'to',
+    '#description' => 'Unixtime',
+    '#default_value' => variable_get('irs_to', time()),
+    '#size' => 12,
+  );
+  $form['generate']['generate'] = array(
+    '#type' => 'submit',
+    '#value' => 'Generate file',
+    '#submit' => array('irs_generate_file'),
+    '#weight' => 6
+  );
+  return $form;
+}
+
+function get_t_fields($defaults = array()) {
+  return array(
+    'payment_year' => array(
+      '#title' => 'Payment year',
+      '#description' => 'Enter "2010."  If reporting prior year data report the year which applies (2009, 2008, etc.) and set the Prior Year Data Indicator.',
+      '#type' => 'textfield',
+      '#default_value' => $defaults['payment_year'],
+      '#required' => TRUE,
+      '#max_length' => 4,
+      '#size' => 4,
+    ),
+    'prior_indicator' => array(
+      '#title' => 'Prior year data indicator',
+      '#description' => 'Enter "P" only if reporting prior year data; otherwise, enter blank.',
+      '#type' => 'checkbox',
+      '#default_value' => $defaults['prior_indicator'],
+      '#return_value' => 'P',
+      '#max_length' => 1,
+      '#size' => 1,
+    ),
+    'transmitter_TIN' => array(
+      '#title' => "Transmitter's TIN",
+      '#description' => "Enter the transmitter's nine-digit Taxpayer Identification Number (TIN)",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['transmitter_TIN'],
+      '#required' => TRUE,
+      '#max_length' => 9,
+      '#size' => 9,
+    ),
+    'transmitter_control_code' => array(
+      '#title' => "Transmitter control code",
+      '#description' => "Enter the five-character alpha/numeric Transmitter Control Code (TCC) assigned by IRS/IRB.  A TCC must be obtained to file data with this program. ",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['transmitter_control_code'],
+      '#required' => TRUE,
+      '#max_length' => 5,
+      '#size' => 5,
+    ),
+    'test_file_indicator' => array(
+      '#title' => "Test file indicator",
+      '#description' => "Enter a 'T' if this is a test file; otherwise, enter a blank",
+      '#type' => 'checkbox',
+      '#default_value' => $defaults['test_file_indicator'],
+      '#return_value' => 'T',
+      '#max_length' => 1,
+      '#size' => 1,
+    ),
+    'transmitter_name' => array(
+      '#title' => "Transmitter name",
+      '#description' => "Enter the name of the transmitter in the manner in which it is used in normal business.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['transmitter_name'],
+      '#required' => TRUE,
+      '#max_length' => 40,
+      '#size' => 40,
+    ),
+    'transmitter_name_continued' => array(
+      '#title' => "Transmitter name (continued)",
+      '#description' => "(Continuation) Enter any additional information that may be part of the name.  Left-justify information and fill unused positions with blanks.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['transmitter_name_continued'],
+      '#required' => TRUE,
+      '#max_length' => 40,
+      '#size' => 40,
+    ),
+    'company_name' => array(
+      '#title' => "Company name",
+      '#description' => "Enter the name of the company associated with the address where correspondence should be sent",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['company_name'],
+      '#required' => TRUE,
+      '#max_length' => 40,
+      '#size' => 40,
+    ),
+    'company_name_continued' => array(
+      '#title' => "company name (continued)",
+      '#description' => "Enter any additional information that may be part of the name of the company where correspondence should be sent. ",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['company_name_continued'],
+      '#required' => TRUE,
+      '#max_length' => 40,
+      '#size' => 40,
+    ),
+    'company_mailing_address' => array(
+      '#title' => "Company mailing address",
+      '#description' => "Enter the mailing address where correspondence should be sent.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['company_mailing_address'],
+      '#required' => TRUE,
+      '#max_length' => 40,
+      '#size' => 40,
+    ),
+    'company_city' => array(
+      '#title' => "Company city",
+      '#description' => "Enter the city, town, or post office where correspondence should be sent.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['company_city'],
+      '#required' => TRUE,
+      '#max_length' => 40,
+      '#size' => 40,
+    ),
+    'company_state' => array(
+      '#title' => "Company state",
+      '#description' => "Enter the city, town, or post office where correspondence should be sent.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['company_state'],
+      '#required' => TRUE,
+      '#max_length' => 2,
+      '#size' => 2,
+    ),
+    'company_zip' => array(
+      '#title' => "Company Zip code",
+      '#description' => "Enter the five or nine-digit ZIP Code assigned by the U.S. Postal Service.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['company_zip'],
+      '#required' => TRUE,
+      '#max_length' => 9,
+      '#size' => 9,
+    ),
+    'contact_name' => array(
+      '#title' => "Contact name",
+      '#description' => "Enter the name of the person to be contacted if IRS/IRB encounters problems with the file or transmission.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['contact_name'],
+      '#required' => TRUE,
+      '#max_length' => 40,
+      '#size' => 40,
+    ),
+    'contact_telephone' => array(
+      '#title' => "Contact telephone",
+      '#description' => "Enter the telephone number of the person to contact regarding electronic files. Omit hyphens and spaces.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['contact_telephone'],
+      '#required' => TRUE,
+      '#max_length' => 15,
+      '#size' => 15,
+    ),
+    'contact_email' => array(
+      '#title' => "Contact email",
+      '#description' => "Enter the e-mail address of the person to contact regarding electronic files. Left-justify information.  If no e-mail address is available, enter blanks.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['contact_email'],
+      '#required' => TRUE,
+      '#max_length' => 50,
+      '#size' => 50,
+    )
+  );
+}
+function get_a_fields($defaults = array()) {
+  return array(
+    'payment_year' => array(
+      '#title' => 'Payment year',
+      '#description' => 'Same as B record',
+      '#type' => 'textfield',
+      '#default_value' => $defaults['payment_year'],
+      '#disabled' => TRUE,
+      '#max_length' => 4,
+      '#size' => 4,
+    ),
+    'payer_TIN' => array(
+      '#title' => "Payer's TIN",
+      '#description' => "Must be the valid nine-digit Taxpayer Identification Number assigned to the payer.  Do not enter blanks, hyphens, or alpha characters. All zeros, ones, twos, etc., will have the effect of an incorrect TIN. ",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['payer_TIN'],
+      '#required' => TRUE,
+      '#max_length' => 9,
+      '#size' => 9,
+    ),
+    'payer_name_control' => array(
+      '#title' => 'Payer name control',
+      '#description' => "The Payer Name Control can be obtained only from the mail label on the Package 1096 that is mailed to most payers each December. If a Package 1096 has not been received, you can determine your name control using the following simple rules or you can leave the field blank.  For a business, use the first four significant characters of the business name. Disregard the word “the” when it is the first word of the name, unless there are only two words in the name.  A hyphen (-) and an ampersand (&) are the only acceptable special characters.  Names of less than four (4) characters should be left-justified, filling the unused positions with blanks.",
+      '#type' => 'textfield',
+      '#default_value' => $defaults['payer_name_control'],
+      '#required' => TRUE,
+      '#max_length' => 4,
+      '#size' => 4,
+    ),
+    'last filing' => array(
+      '#title' => "Payer's TIN",
+      '#description' => "Is this the last year this payer name and TIN will file information returns?",
+      '#type' => 'checkbox',
+      '#default_value' => $defaults['payer_name_control'],
+      '#required' => TRUE,
+      '#max_length' => 1,
+      '#size' => 1,
+    ),
+  );
+}
+
+function get_b_fields($defaults) {
+  $options = array();
+  //first get all the fields from each of the likely modules
+  if (module_exists('content_profile')) {
+    $options['content_profile'] = array();
+    $fields = _irs_get_content_profile_fields();
+    foreach ($fields as $module => $fieldnames) {
+      foreach ($fieldnames as $fieldname) {
+        $address = $module.'->'.$fieldname;
+        $options['content_profile']['content_profile:'.$address] = $address;
+      }
+    }
+  }
+  if (module_exists('profile')) {
+    $options['profile'] = array();
+    $result = db_query("SELECT fid, name, title FROM {profile_fields} WHERE required = %d", TRUE);
+    while ($field = db_fetch_array($result)) {
+      $options['profile']['profile:'. $field['fid']] = $field['title'];
+    }
+  }
+
+  if (module_exists('location') && $user_location = variable_get('location_settings_user', NULL)) {
+    $options['location (user)'] = array();
+    foreach ($user_location['form']['fields'] as $key => $field) {
+      if ($field['collect']) {
+        $options['location (user)']['location:user-'.$key] = 'location:user-'.$key;
+      }
+    }
+  }
+  return array(
+    'payee_name_control' => array(
+      '#title' => 'Payer name control',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payer_name_control'],
+      '#irs_size' => 4
+    ),
+    'TIN_type' => array(
+      '#title' => 'Type of TIN',
+      '#description' => 'EIN, SSN, ITIN, ATIN or blank',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['TIN_type'],
+      '#irs_size' => 4
+    ),
+    'payee_taxpayer_id' => array(
+      '#title' => 'Taxpayer identification number',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payee_taxpayer_id'],
+      '#irs_size' => 9
+    ),
+    'payee_name_1' => array(
+      '#title' => 'First payer name line',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payee_name_1'],
+      '#irs_size' => 40
+    ),
+    'payee_name_2' => array(
+      '#title' => 'Second payer name line',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payee_name_2'],
+      '#irs_size' => 40
+    ),
+    'payee_mailing_address' => array(
+      '#title' => 'Payee mailing address',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payee_mailing_address'],
+      '#irs_size' => 40
+    ),
+    'payee_city' => array(
+      '#title' => 'Payee City',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payee_city'],
+      '#irs_size' => 40
+    ),
+    'payee_state' => array(
+      '#title' => 'Payee State',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payee_state'],
+      '#irs_size' => 2
+    ),
+    'payee_zip' => array(
+      '#title' => 'Payee Zip Code',
+      '#type' => 'select',
+      '#options' => $options,
+      '#default_value' => $defaults['payee_zip'],
+      '#irs_size' => 9
+    ),
+  );
+}
+
+function irs_field_definition_form_validate($form, &$form_state) {
+  //might want to check that no two of the user fields are the same
+
+}
+
+function irs_field_definition_form_submit($form, $form_state) {
+  $values = &$form_state['values'];
+  unset($values['submit'], $values['op'], $values['form_build_id'], $values['form_token'], $values['form_id']);
+  variable_set('irs_fields', $form_state['values']);
+}
+
+
+//check that none of the fields required by IRS are blank.
+function irs_test_user_data() {
+  module_load_include('inc', 'mcapi');
+  $traders = get_trader_uids();
+  foreach ($traders as $uid) {
+    $empty = array();
+    $fields = irs_b_record($uid);
+    //print_r($fields);
+    foreach ($fields as $name => $field) {
+      if (!strlen(trim($field))) {
+        $empty[] = $name;
+      }
+    }
+    if (count($empty)) drupal_set_message("User $uid hasn't filled: ".implode(', ', $empty));
+  }
+}
+
+function show_irs_user($uid) {
+  $output = '';
+  foreach (irs_b_record($uid) as $key => $value) {
+    $output .= '<p>'.str_replace('_', ' ', $key) .'<br>';
+    $output .= '<font face = "courier">'.str_replace(' ', '.', $value).'</font></p>';
+  }
+  return $output;
+}
+
+
+function irs_get_value_profile($uid, $fid, $char_length){
+  return db_result(db_query("SELECT RPAD(value, $char_length ,' ') FROM {profile_values} WHERE uid = %d AND fid = %d", $uid, $fid));
+}
+function irs_get_value_content_profile($uid, $data, $char_length){
+  $keys = explode('->', $data);
+  //get the profile nid/vid of the user
+  $ids = db_fetch_array(db_query("SELECT nid, vid FROM node where uid = %d AND type = '%s'", $uid, $keys[0]));
+  $fieldname = $keys[1].'_value';
+  return db_result(db_query("SELECT RPAD($fieldname, $char_length ,' ') FROM {content_%s} WHERE nid = %d AND vid = %d",
+    $keys[1], $ids['nid'], $ids['vid']));
+}
+function irs_get_value_location($uid, $data, $char_length) {
+  $fields = explode('-', $data);
+  $function = 'irs_get_value_location_'. $fields[0];
+  return $function($uid, $fields[1], $char_length);
+}
+function irs_get_value_location_user($uid, $field, $char_length) {
+  return db_result(db_query("SELECT RPAD($field, $char_length, ' ') FROM {location} l LEFT JOIN {location_instance} i ON l.lid = i.lid WHERE uid = %d", $uid));
+}
+
+function _irs_get_content_profile_fields() {
+  $profiles = (array_keys(content_profile_get_types()));
+  $cck_fields = array();
+  foreach ($profiles as $name) {
+    $result = db_query(
+      "SELECT i.field_name
+      FROM {content_node_field_instance} i
+        LEFT JOIN {content_node_field} f
+        ON i.field_name = f.field_name
+      WHERE f.required = TRUE
+        AND i.type_name = '%s'",
+      array(':type_name' => $name)
+    );
+    while ($field_name = db_result($result)) {
+      $cck_fields[$name][] = $field_name;
+    }
+  }
+  return $cck_fields;
+}
+
+function irs_generate_file($form, $form_state){
+  //$to and $from are unixtimes
+  $from = $form_state['values']['irs_from'];
+  $to = $form_state['values']['irs_to'];
+  if ($to <= $from) drupal_set_message('Bad dates for generating file');
+  $file = irs_build_file($from, $to);
+  echo $file; die();
+}
+
+/**
+ * These two functions provide the data, in all cases padded to the right,
+ */
+
+function irs_t_record() {
+  //we only retrieve the form here so we know how much to pad each field
+  $form = get_t_fields();
+  $saved = variable_get('irs_fields', array());
+  foreach($form as $fieldname => $field) {
+    $padded = str_pad($saved[$fieldname], $field['#size'], ' ');
+    $values[$fieldname] = $padded;
+  }
+  return $values;
+}
+
+function irs_a_record() {
+  //we only retrieve the form here so we know how much to pad each field
+  $form = get_a_fields();
+  $saved = variable_get('irs_fields', array());
+  foreach($form as $fieldname => $field) {
+    $padded = str_pad($saved[$fieldname], $fieldname['#size'], ' ');
+    $values[$fieldname] = $padded;
+  }
+  return $values;
+}
+
+function irs_b_record($uid) {
+  $saved = variable_get('irs_fields', array());
+  print_r($saved);
+  $fields = get_b_fields($uid);
+  print_r($fields);
+  foreach ($fields as $key => $data) {
+    //print_r($data);
+    $char_length = $data['#irs_size'];
+    $parts = explode(':', $saved[$key]);
+    $function = 'irs_get_value_'.$parts[0];
+    $string = $function($uid, $parts[1], $char_length);
+    //$key .= '('.$char_length .')';
+    $values[$key] = $string;
+  }
+  return $values;
+}
+
+/*
+ * Mike's code...
+ */
+/*
+ * return the file in a text string
+ * $test and $backdate are bits in the file
+ */
+function irs_build_file($from, $to) {
+  return "This should be a file covering the period $form to $to";
+}

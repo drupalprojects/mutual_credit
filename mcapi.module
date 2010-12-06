@@ -1,7 +1,7 @@
 <?php
 // $Id$: exchanges.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
-/*
+/**
  * @file
  * exchanges are a simple nodetype, stored in the database and balances & other stats are cached.
  *
@@ -324,7 +324,7 @@ function mcapi_user($op, &$edit, &$account, $category = NULL) {
         }
         module_load_include('inc', 'mcapi');
         $form['contact']['mc_notification_throttle'] = notification_throttle();
-        $form['contact']['mc_notification_throttle']['#default_value'] = 
+        $form['contact']['mc_notification_throttle']['#default_value'] =
           isset($account->mc_notification_throttle) ?
           $account->mc_notification_throttle :
           MC_NOTIFICATION_DEFAULT_LEVEL;
@@ -586,7 +586,7 @@ function mc_validate_settings_array(&$element, $form_state) {
       }
       $vals = explode('|', $line);
       if (!is_numeric($vals[0]) || !strlen($lines[0]) || $vals[1] != check_plain($vals[1]) || !strlen($vals[1] || !is_integer($vals[1]))) {
-        form_error($element, 
+        form_error($element,
           t("'@val' should be an integer from  0 to 99, followed directly by a pipe, |, followed directly by a word or phrase with no unusual characters",
             array('@val' => $line)
           )
@@ -656,7 +656,7 @@ function mc_validate_rating(&$element, $form_state) {
 }
 
 function mc_validate_state(&$element, $form_state) {
-  
+
 }
 
 //Some currency properties need to be identical if they are to rendered into the exchange form
@@ -792,7 +792,7 @@ function redirect_to_currencies($form, &$form_state) {
 //this function is built in to v7
 function ajax_form_callback() {
   $form_state = array('storage' => NULL, 'submitted' => FALSE);
-  $form_build_id = $_POST['form_build_id']; 
+  $form_build_id = $_POST['form_build_id'];
   $form = form_get_cache($form_build_id, $form_state);
   $args = $form['#parameters'];
   $form_id = array_shift($args);

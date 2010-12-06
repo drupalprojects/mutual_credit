@@ -1,13 +1,15 @@
 <?php
+// $Id$
+
 /*
  * mc_webform.tpl.php
  * A powerful default web form for entering and editing exchanges
- * 
+ *
  * Variables available
  * $user = Logged in user Object
  * $form = the full form definition array
  * ... and all the others
- * 
+ *
  * //The following form fields should ALL be rendered unless they are NULL
  * $description = transaction description
  * $payer_uid = user selection widget (or NULL)
@@ -29,3 +31,4 @@ print $teaser;
 print $buttons;
 //need to make sure the ccka and taxonomy of the fields are hidden
 print '<div style = "display:none;">'.$hidden . '</div>';
+?>

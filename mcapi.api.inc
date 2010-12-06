@@ -1,12 +1,13 @@
 <?php
+// $Id$
 
-/*
- * API functions for mutual_credit 
+/**
+ * API functions for mutual_credit
  */
- 
 
 
-/*
+
+/**
  * Create an exchange
  * It enables other modules to create exchanges by passing in the properties
  * these other modules should do all form-level data checking though.
@@ -150,7 +151,7 @@ function mc_balances($account, $cid = NULL) {
   return $data;
 }
 
-/*
+/**
  * Provides a list of exchanges in a way that views cannot, and more efficiently.
  * This is not yet possible with views, because you can't do WHERE payer_uid = x OR payee_uid = x
  *

@@ -1,5 +1,5 @@
 <?php
-
+// $Id$
 
 /**
  * Mutual Credit API forms for multiple exchanges
@@ -127,7 +127,7 @@ function mc_multiple_form($form_state, $fields) {
     $node = (object)$form_state['values'];
   }
   $form = mcapi_form_exchange($node);
-  
+
   $form['title']['#element_validate'][] = 'mc_validate_webform_title';
   $frorm['rating']['#required'] = FALSE;
   //need to be explicit because these because this function is called from hook_forms
@@ -369,6 +369,6 @@ function _mc_check_traders($traders, $invert = FALSE) {
   if ($invert) {
     $traders = array_diff(array_keys(get_trader_list()), $new_values);
   }
-  
+
   return $new_values;
 }

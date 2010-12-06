@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 if (!defined('INCOMING_DIRECT')){
   define('INCOMING_SIGNED', 4);

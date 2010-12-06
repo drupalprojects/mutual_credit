@@ -1,4 +1,6 @@
-<?php 
+<?php
+// $Id$
+
 /*
  * we'll do the preprocessing here, rather than try to interrupt the normal node preprocessing hierarchy
  * which would be inefficient
@@ -35,7 +37,7 @@ $currency = node_load($cid);
 ?>
 
 <div class="exchange <?php print implode(' ', $classes); ?>">
-<?php 
+<?php
   $page_title = t('Exchange Certificate #@nid', array('@nid' => $nid));
   if ($state == EXCHANGE_STATE_PENDING) $page_title .= '-'. strtoupper(t('pending'));
   drupal_set_title($page_title);
@@ -46,7 +48,7 @@ $currency = node_load($cid);
    <?php print $payee; ?><br /><br />
    the sum of <span style="font-size:250%"> <?php print $quantity .' '. $currency->title; ?> </span></p>
   <p>for "<strong><?php print $title; ?></strong>"
-  <?php 
+  <?php
     //links are used by the webforms module for edit/complete/delete actions
     print $links;
   ?>

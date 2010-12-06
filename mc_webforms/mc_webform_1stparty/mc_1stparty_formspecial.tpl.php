@@ -1,13 +1,15 @@
 <?php
+// $Id$
+
 /*
  * mc_webform.tpl.php
  * A web form for exchanges going in either direction in relation to the user.
- * 
+ *
  * Variables available
  * $user = Logged in user Object
  * $form = the full form definition array
  * ... and all the others
- * 
+ *
  * //The following variables should ALL be printed unless they are NULL
  * $title = transaction description
  * $completer = user selection widget (or NULL)

@@ -1,4 +1,4 @@
-; $Id: 
+; $Id$
 name = Mutual Credit API
 description = Defines two node-types, currencies and exchanges, and adds up exchanges per user
 package = Mutual Credit

@@ -1,14 +1,16 @@
 <?php
+// $Id$
+
 /*
  * mc_3rdparty_formspecial.tpl.php
  * A powerful default web form for entering and editing exchanges
  * N.B. This form is only called when special theming is on, see admin/mc/webforms
- * 
+ *
  * Variables available
  * $user = Logged in user Object
  * $form = the full form definition array
  * ... and all the others
- * 
+ *
  * //The following variables should ALL be printed unless they are NULL
  * $description = transaction description
  * $payer = user selection widget (or NULL)
@@ -57,3 +59,4 @@ if (isset($rating)) {
 if (isset($body)) print $body;
 print $hidden;
 print $buttons;
+?>

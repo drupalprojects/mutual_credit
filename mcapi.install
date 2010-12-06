@@ -176,10 +176,10 @@ function mcapi_schema() {
   /*
    * This table cointains one row for every user/currency and contains balances and personal balance limits
    * The rows are created and deleted in hook_user, and when currencies are added and removed.
-   * 
+   *
    */
   $schema['mc_cache'] = array(
-    'description' => t('cached balances, turnovers and pending balances, for exposure to views'), 
+    'description' => t('cached balances, turnovers and pending balances, for exposure to views'),
     'fields' => array(
       'uid' => array(
         'description' => t('the node to which this entry is attached'),
@@ -353,7 +353,7 @@ function mc_upgrade() {
     $row->perm = strtr($row->perm, $permissions_old_new);
     drupal_write_record('permission', $row, array('pid'));
   }
-  
+
   $results = db_query("SELECT uid FROM {users} WHERE uid > 0");
   while ($uid = db_result($results)) {
     $account = user_load($uid);

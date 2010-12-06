@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 //these are bitmasks, so saved as one number in currency sub-types
 define('INCOMING_SIGNED', 4);
@@ -7,7 +8,7 @@ define('OUTGOING_SIGNED', 8);
 function mc_webform_1stparty_help($path) {
   switch($path) {
     case 'admin/mc/currencies':
-      $help = t("The user friendly webforms module introduces four 2 exchange types, which are named here.") .' '. 
+      $help = t("The user friendly webforms module introduces four 2 exchange types, which are named here.") .' '.
         t("Each one should be a singular noun. Only currencies using at least one of these types are visible to the 1stparty forms.") . '<br />'.
         t("'!incoming' means the currency flows towards the initiator of the exchange, <br />!outgoing', away.", array('!incoming' => '<strong>'.t('Incoming').'</strong>', '!outgoing' => '<strong>'.t('Outgoing').'</strong>')) .'<br />';
       if (module_exists('mc_signatures')) {
@@ -204,7 +205,7 @@ function mc_webform_1stparty_form_currency_node_form_alter(&$form, $form_state) 
 
 
 /*
- * this is the main form callback, 
+ * this is the main form callback,
  * note that there is no editable version of this form, instead we use the edit from module mc_webforms
  * this function has to be in this file, otherwise the ajax callback, declared in mc_webforms, can't find it
  */
@@ -235,7 +236,7 @@ function mc_1stparty_form($form_state, $prefill = NULL) {
     //get the default exchange form, with defaults
     $form = mcapi_form_exchange((object)$values, get_currencies_for_1stparty());
     mc_build_1stparty_form($form, $values);
-    
+
     //there are some circumstances the ajax is not needed, but I'm not going to make all the rules now
     //act of choosing the currency updates the form to show the ratings field and the divisions, if the currency has them
     //choosing the exchange type shows the ratings field, if appropriate.

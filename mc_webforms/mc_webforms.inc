@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /*
  * 3rd party form. This is for third parties to create exchanges
@@ -20,7 +21,7 @@ function mc_3rdparty_form($form_state, $prefill = NULL) {
     $form = mcapi_form_exchange((object)$values);
 
     mc_build_webform($form, $values);
-    
+
     //there are some circumstances the ajax is not needed, but I'm not going to make all the rules now
     //act of choosing the currency updates the form to show the ratings field and the divisions, if the currency has them
     if (!isset($form['cid']['#value'])) {
@@ -305,7 +306,7 @@ function mc_build_webform(&$form, $values = NULL) {
     '#element_validate' => array('validate_mc_quantity_field'),
   ) + $form['quantity'];
   unset($form['quantity']);
-  
+
   //more proxy fields
   $form['payer'] = array(
     '#type' => 'mc_trader',
@@ -494,7 +495,7 @@ function mc_trader_validate($element, &$form_state) {
     form_error($element, t('There must be two participants in any exchange.'));
   }
   $uid = _mc_check_trader($element['#value'], $element); //this delievers it's own error messages
-  
+
   $form_state['values'][$element['#dest_field']] = $uid;
 }
 
@@ -561,7 +562,7 @@ function mc_webforms_extra_fields(&$form, $form_state) {
   else {
     $form['#node'] = (object)array('type' => 'exchange');
   }
-  
+
   if (isset($form_state['values']['taxonomy'])) {
     foreach ($form_state['values']['taxonomy'] as $vid) {
       foreach ($vid as $tid) {

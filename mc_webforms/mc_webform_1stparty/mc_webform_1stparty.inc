@@ -1,4 +1,6 @@
 <?php
+// $Id$
+
 module_load_include('inc', 'mc_webforms');
 
 //although this isn't a node form, as far as Drupal is concerned, we are going to use the node validation from mcapi
@@ -131,7 +133,7 @@ function get_common_exchange_subtypes($currencies, $exclusive = TRUE) {
   $subtypes = mc_webform_1stparty_exchange_type_info();
   $new_names = array();
   if ($exclusive) {
-    //if the checkbox isn't ticked on any of the currencies given, remove the type from a copy of the full array 
+    //if the checkbox isn't ticked on any of the currencies given, remove the type from a copy of the full array
     foreach ($subtypes as $key => $details) {
       $new_names[$key] = $details['title'];
       foreach ($currencies as $currency) {
@@ -310,7 +312,7 @@ function theme_subtype_names($element){
   if (module_exists('mc_signatures')) {
     $rows[] = array('<strong>'.t('Signed').'</strong>', drupal_render($element[4]), drupal_render($element[8]));
   }
-  return '<h4>'.t('Exchange types').'</h4>' . 
+  return '<h4>'.t('Exchange types').'</h4>' .
     theme('table', array('', t('Incoming'), t('Outgoing')), $rows);
 }
 

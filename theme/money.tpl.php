@@ -1,4 +1,6 @@
 <?php
+// $Id$
+
 /*
  * money.tpl.php theme an amount of money with richtext
  *

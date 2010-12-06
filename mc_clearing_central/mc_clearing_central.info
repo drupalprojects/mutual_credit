@@ -1,0 +1,7 @@
+; $Id$
+name = Clearing Central
+description = Trade with other mutual credit exchanges via the CES network
+package = Mutual Credit
+core = "6.x"
+dependencies[] = mcapi
+dependencies[] = mc_webforms

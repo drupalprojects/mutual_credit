@@ -1,5 +1,5 @@
 <?php
-// $Id:
+// $Id$
 
 /**
  * @file
@@ -500,7 +500,7 @@ function _refresh_mc_cache($uid, $cid) {
   //now iterate through the exchanges making running balances
   $exchanges = $ratings = array();
   $cleared_balance = $pending_dif = $gross_out = $gross_in = 0;
-  
+
   while ($exchange = db_fetch_object($results)) {
     //add to or subtract from the running balances
     if ($exchange->payer_uid == $uid) {
@@ -540,7 +540,7 @@ function _refresh_mc_cache($uid, $cid) {
 
 function _get_transactions($uid, $cid, $states = array(EXCHANGE_STATE_FINISHED, EXCHANGE_STATE_PENDING)) {
   $fields = array('n.uid', 'n.title', 'n.nid', 'e.payer_uid', 'e.payee_uid', 'e.quantity', 'e.rating', 'e.state', 'n.created', 'e.rating', 'e.exchange_type', 'e.cid');
-  
+
   foreach ($states as $state) {
     $state_filters[] = "e.state = " . $state;
   }

@@ -1,4 +1,4 @@
-; $Id: 
+; $Id$
 name = Signatures
 description = Enables pending exchange types, in which exchanges need to be signed. Notifications can be sent
 package = Mutual Credit

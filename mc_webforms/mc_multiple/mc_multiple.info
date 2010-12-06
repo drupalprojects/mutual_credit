@@ -1,4 +1,4 @@
-; $Id: 
+; $Id$
 name = Multiple exchanges forms
 description = Record many exchanges from a single form, Many-2-one, one-2-many etc.
 package = Mutual Credit

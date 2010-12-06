@@ -1,0 +1,6 @@
+; $Id$
+name = MC Statistics
+description = Caches various statistics and provides displays.
+package = Mutual Credit
+core = "6.x"
+dependencies[] = mc_webforms
