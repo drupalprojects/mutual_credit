@@ -1,7 +1,0 @@
-; $Id$
-name = Mutual credit user friendly web form
-description = Create exchanges assumming the user is the starter and might trade in either direction
-package = Local currencies
-core = "6.x"
-dependencies[mcapi]
-dependencies[mc_webforms]
