@@ -1,6 +1,0 @@
-; $Id$
-name = Generate US Barter Tax Returns
-description = Specifies new required fields for users, and generates the 1099b file required by US barter networks to submit tax returns.
-package = Mutual Credit
-core = "6.x"
-dependencies[] = mcapi
