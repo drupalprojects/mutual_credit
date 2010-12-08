@@ -224,11 +224,8 @@ function mc_multiple_form_submit(&$form, &$form_state) {
     (array)$payee_uid,
     $form_state['values']
   );
+  $results = array();
   foreach ($node_arrays as $node_array) {
-    $unsigned = array();
-    if ($form_state['values']['state'] == EXCHANGE_STATE_PENDING) {
-      $unsigned = array($node_array['payer_uid'], $node_array['payee_uid']);
-    }
     $results[] = mc_webform_create($node_array);
   }
   $fail = 0;

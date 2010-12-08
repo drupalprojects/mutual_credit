@@ -1,5 +1,5 @@
 <?php
-// $Id$
+//// $Id$
 
 /*
  * 'Signatories' is an added property of pending exchanges
@@ -303,7 +303,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
   $form['mc_signatures_wrapper']['mc_signatures_notification_body'] = array(
     '#type' => 'textarea',
     '#title' => t('Request to sign'),
-    '#default_value' => t("Click here to add your signature and finalise the exchange: !sign_link"),
+    '#default_value' => variable_get('mc_signatures_notification_body', t("Click here to add your signature and finalise the exchange: !sign_link")),
     '#description' => t("This will be added to notification mails.") .' '. t('Tokens may be used as above, plus !sign_link'),
     '#required' => TRUE,
     '#weight' => 2
@@ -326,16 +326,17 @@ function mc_signatures_form_mc_webform_settings_alter(&$form, $form_state) {
  */
 function mc_signatures_mail_alter(&$message) {
   if ($message['id'] != 'mcapimail_notify') return;
-  if (!is_array($message['params']['exchange']->mc_unsigned)) return;
+  $params = &$message['params'];
+  if (!is_array($params['exchange']->mc_unsigned)) return;
   $variables = mc_mail_tokens($params['recipient'], $message['language'], $params['exchange']);
   //alter only messages where the recipient is one of the remaining signatories
-  if (!in_array($message['params']['recipient']->uid, $message['params']['exchange']->mc_unsigned)) return;
+  if (!in_array($params['recipient']->uid, $params['exchange']->mc_unsigned)) return;
   //handle only messages if they are required to be sent
-  if ($message['params']['recipient']->mc_notification_throttle == 0) return;
+  if ($params['recipient']->mc_notification_throttle == 0) return;
 
-  $message['params']['send'] = TRUE;
+  $params['send'] = TRUE;
   $footer = array_pop($message['body']);
-  $variables['!sign_link'] = url('exchange/'. $message['params']['exchange']->nid . '/sign/'. $message['params']['recipient']->uid, array('absolute' => TRUE));
+  $variables['!sign_link'] = url('exchange/'. $params['exchange']->nid . '/sign/'. $params['recipient']->uid, array('absolute' => TRUE));
   if (variable_get('mc_signatures_notification_subject', '')) {
     $message['subject'] = strtr(variable_get('mc_signatures_notification_subject', ''), $variables);
   }
