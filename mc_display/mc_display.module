@@ -1,4 +1,5 @@
 <?php
+//$Id
 define ('GOOGLE_CHARTS_URI', 'http://chart.apis.google.com/chart?');
 define('EXCHANGES_PAGER_ELEMENT', 1);
 
