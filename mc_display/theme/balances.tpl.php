@@ -1,4 +1,6 @@
-<?php 
+<?php
+//$Id$
+
 /* themes the balances for a given user.
  * Available variables
  * $balances is an array of the form:
