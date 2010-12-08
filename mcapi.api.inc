@@ -61,6 +61,7 @@ function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
   }
   $result->success = TRUE;
   //this updates the balances, stats, & sends emails
+  if (!count($exchanges)){echo mcapi_add_node;print_r(func_get_args());}
   module_invoke_all('after_transaction', 'create', $exchanges);
 
   //gather up all the notifications

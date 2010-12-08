@@ -581,7 +581,7 @@ function mc_mail_template() {
     '#title' => t('Mail subject'),
     '#description' => t('Tokens may be used'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('mc_notification_subject', t('Notification from !site')),
+    '#default_value' => variable_get('mc_notification_subject', 'Notification from !site'),
     '#weight' => 1,
     '#required' => TRUE
   );
@@ -590,7 +590,7 @@ function mc_mail_template() {
     '#description' => t('Sent to payer or payee whenever an exchange is first recorded.') .' '. t('Available variables are:') .
       '!username, !site, !uri, !uri_brief, !mailto, !date, !login_uri, !edit_uri, !login_url, !creator, !exchange_uri, !summary',
     '#type' => 'textarea',
-    '#default_value' => variable_get('mc_notification__body', t("Dear !username,") ."\n\n". t("A new exchange has been recorded.")),
+    '#default_value' => variable_get('mc_notification_body', "Dear !username,\n\nA new exchange has been recorded."),
     '#weight' => 2,
     '#required' => TRUE
   );
