@@ -10,7 +10,7 @@ Views will need reworking.
 
 (optional, to be tidy, move the 3 files extensions/offer_want to their own module folder and replace the whole mutual_credit )
 
-
+UPGRADE SIMPLENEWS
 drush -y @dev dis transactions //will disable all dependents, including cforge_custom
 -- Change theme, update cforge_custom module, insert new modules
 drush -y @dev en mcapi

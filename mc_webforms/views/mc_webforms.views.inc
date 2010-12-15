@@ -7,10 +7,10 @@ function mc_webforms_views_handlers() {
       'path' => drupal_get_path('module', 'mc_webforms') .'/views',
     ),
     'handlers' => array(
-      'views_handler_field_node_link_convert_3rdparty_offer' => array(
+      'views_handler_field_node_link_convert_3rdparty_outgoing' => array(
         'parent' => 'views_handler_field_node_link'
       ),
-      'views_handler_field_node_link_convert_3rdparty_want' => array(
+      'views_handler_field_node_link_convert_3rdparty_incoming' => array(
         'parent' => 'views_handler_field_node_link'
       ),
     ),
@@ -21,18 +21,18 @@ function mc_webforms_views_handlers() {
 
 function mc_webforms_views_data() {
   $data = array();
-  $data['node']['convert_node_3rdparty_offer'] = array(
+  $data['node']['convert_node_3rdparty_outgoing'] = array(
     'field' => array(
-      'title' => t('Convert offer to exchange'),
-      'help' => t('Populate the thirdparty exchange form, using this node as an offer'),
-      'handler' => 'views_handler_field_node_link_convert_3rdparty_offer',
+      'title' => t('Convert node to outgoing exchange'),
+      'help' => t('Populate the thirdparty exchange form'),
+      'handler' => 'views_handler_field_node_link_convert_3rdparty_outgoing',
     ),
   );
-  $data['node']['convert_node_3rdparty_want'] = array(
+  $data['node']['convert_node_3rdparty_incoming'] = array(
     'field' => array(
-      'title' => t('Convert want to exchange'),
-      'help' => t('Populate the thirdparty exchange form, using this node as a want'),
-      'handler' => 'views_handler_field_node_link_convert_3rdparty_want',
+      'title' => t('Convert node to incoming exchange'),
+      'help' => t('Populate the thirdparty exchange form'),
+      'handler' => 'views_handler_field_node_link_convert_3rdparty_incoming',
     ),
   );
   return $data;

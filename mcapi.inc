@@ -755,10 +755,9 @@ function get_trader_uids() {
     if (!$roles[DRUPAL_AUTHENTICATED_RID]) {
       $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
     }
-    $results = db_query("SELECT u.uid
+    $results = db_query("SELECT DISTINCT u.uid
       FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
-      WHERE %s",
-        array(':where' => implode(' AND ', $where))
+      WHERE ". implode(' AND ', $where)
     );
     while ($uid = db_result($results)) {
       $uids[] = $uid;

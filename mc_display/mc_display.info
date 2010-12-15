@@ -4,3 +4,4 @@ description = Display balances and exchanges in tables, views and blocks
 package = Mutual Credit
 core = "6.x"
 dependencies[] = mcapi
+dependencies[] = views

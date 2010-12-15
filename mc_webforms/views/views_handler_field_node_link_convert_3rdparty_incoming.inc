@@ -4,8 +4,7 @@
 /**
  * Field handler to present a link node edit.
  */
-
-class views_handler_field_node_link_convert_3rdparty_want extends views_handler_field_node_link {
+class views_handler_field_node_link_convert_3rdparty_incoming extends views_handler_field_node_link {
   function construct() {
     parent::construct();
   }
@@ -16,6 +15,6 @@ class views_handler_field_node_link_convert_3rdparty_want extends views_handler_
     }
 
     $text = !empty($this->options['text']) ? $this->options['text'] : t('exchange...');
-    return l($text, "exchange/3rdparty/want/". $values->{$this->aliases['nid']});
+    return l($text, "exchange/3rdparty/incoming/". $values->{$this->aliases['nid']});
   }
 }

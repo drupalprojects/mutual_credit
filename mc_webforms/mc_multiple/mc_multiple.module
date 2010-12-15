@@ -128,8 +128,21 @@ function mc_multiple_form($form_state, $fields) {
   }
   $form = mcapi_form_exchange($node);
 
-  $form['title']['#element_validate'][] = 'mc_validate_webform_title';
-  $frorm['rating']['#required'] = FALSE;
+  //need to put the 'please choose' on the beginning of the array without buggering up all the array keys, one of which may be '0'
+  if ($form['rating']['#type'] == 'select') {
+    foreach ($form['rating']['#options'] as $key => $description) {
+      $options[$key] = $description;
+    }
+    $form['rating']['#options'] = $options;
+
+    if (!isset($values['rating']) && !isset($form['rating']['#default_value'])) {
+      $form['rating']['#default_value'] = 'null';
+    }
+  }
+  else {
+      unset($form['rating']);
+  }
+
   //need to be explicit because these because this function is called from hook_forms
   //$form['quantity']['#element_validate']['']
   $form['#validate'] = array('mc_multiple_form_validate');
@@ -185,7 +198,7 @@ function mc_multiple_form($form_state, $fields) {
   );
 
   if (isset($form_state['#previews']) && count($form_state['#previews'])) {
-    $element['#children'] = '<div class="fieldset-wrapper">'.implode("\n", $form_state['#previews']) . '</div>';
+    $element['#children'] = '<div class="fieldset-wrapper">'.implode("<br />", $form_state['#previews']) . '</div>';
     $element['#title'] = t('Previews');
     $element['#collapsible'] = TRUE;
     $form['#prefix'] = theme('fieldset', $element);
@@ -199,29 +212,29 @@ function mc_multiple_form_validate($form, &$form_state) {
     form_set_error('quantity', t('You cannot exchange a negative amount.'));
   }
 }
-function mc_multiple_form_submit(&$form, &$form_state) {
 
-  //assume that payee and payer are an array and a single value
-  if (is_array($form_state['values']['payee_uid'])) {
-    $payer_uid = _mc_check_trader($form_state['values']['payer_uid']);
-    $payee_uid = _mc_check_traders($form_state['values']['payee_uid'], isset($form['payee_uid']['#invert']));
+function mc_multiple_form_submit(&$form, &$form_state) {
+  if (isset($form_state['values']['payee_uid_array'])) {
+    $one = $payer = _mc_check_trader($form_state['values']['payer_uid']);
+    $many = $payee = _mc_check_traders($form_state['values']['payee_uid_array'], $form['payee_uid']['#invert']);
     $message = t("Many to one multiple payment of @amount for @description", array(
       '@description' => $form_state['values']['title'],
       '@amount' => theme('money', $form_state['values']['quantity'],$form_state['values']['cid'], FALSE)
     ));
   }
   else {
-    $payee_uid = _mc_check_trader($form_state['values']['payee_uid']);
-    $payer_uid = _mc_check_traders($form_state['values']['payer_uid'], isset($form['payee_uid']['#invert']));
+    $one = $payee = _mc_check_trader($form_state['values']['payee_uid']);
+    $many = $payer = _mc_check_traders($form_state['values']['payer_uid_array'], $form['payer_uid']['#invert']);
     $message = t("One to many multiple payment of @amount for @description", array(
       '@description' => $form_state['values']['title'],
       '@amount' => theme('money', $form_state['values']['quantity'], $form_state['values']['cid'], FALSE)
     ));
   }
 
+
   $node_arrays = prepare_mass_exchanges(
-    (array)$payer_uid,
-    (array)$payee_uid,
+    (array)$payer,
+    (array)$payee,
     $form_state['values']
   );
   $results = array();
@@ -248,15 +261,14 @@ function mc_multiple_form_submit(&$form, &$form_state) {
 }
 
 function preview_mass_exchanges($form, &$form_state) {
-  //assume that payee and payer are an array and a single value
-  if (is_array($form_state['values']['payee_uid'])) {
+  if (isset($form_state['values']['payee_uid_array'])) {
     $one = $payer = _mc_check_trader($form_state['values']['payer_uid']);
-    $many = $payee = _mc_check_traders($form_state['values']['payee_uid'], $form['payee_uid']['#invert']);
+    $many = $payee = _mc_check_traders($form_state['values']['payee_uid_array'], $form['payee_uid']['#invert']);
     $each_total = $form_state['values']['quantity'];
   }
   else {
     $one = $payee = _mc_check_trader($form_state['values']['payee_uid']);
-    $many = $payer = _mc_check_traders($form_state['values']['payer_uid'], $form['payer_uid']['#invert']);
+    $many = $payer = _mc_check_traders($form_state['values']['payer_uid_array'], $form['payer_uid']['#invert']);
     $each_total = -$form_state['values']['quantity'];
   }
   $total = count($many) * -$each_total;
@@ -325,8 +337,10 @@ function field_process_mc_traders(&$element, $edit, &$form_state, $form) {
   $element['#theme'] = 'mc_trader';
   if (variable_get('mc_trader_autocomplete', TRUE)) {
     $element['#type'] = 'textfield';
-    //borrow the views ajax callback for selecting multiple users
-    $element['#autocomplete_path'] = 'admin/views/ajax/autocomplete/user';
+    if (module_exists('views')) {
+      //borrow the views ajax callback for selecting multiple users
+      $element['#autocomplete_path'] = 'admin/views/ajax/autocomplete/user';
+    }
     $element['#description'] =  t('Usernames, emails, or user IDs (mixed is ok)');
     $element['#submit'] = array('mc_submit_traders_autocomplete');
     $element['#attributes']['style'] = 'width:100%';
@@ -339,21 +353,23 @@ function field_process_mc_traders(&$element, $edit, &$form_state, $form) {
 }
 
 //validate traders for the validation phase, not changing input variables
-function mc_validate_traders(&$element, $form_state){
+function mc_validate_traders(&$element, &$form_state){
   //we might be getting an array OR a comma separated list here, depending on the widget chosen
   if (is_string($element['#value'])) {
-    $traders = drupal_explode_tags(',', $element['#value']);
+    $traders = explode(',', $element['#value']);
   }
   else {
-    $traders = $element['#value'];
+    $traders = array($element['#value']);
   }
   if ($element['#invert']) {//#invert is added by the form builder
     $traders = array_diff(array_keys(get_trader_list()), $traders);
   }
   foreach ($traders as $trader) {
-    _mc_check_trader($trader, $element);
+    _mc_check_trader(trim($trader), $element);
   }
+  $form_state['values'][$element['#name'].'_array'] = $traders;
 }
+
 //return trader uids whether given an array or comma separated list
 function _mc_check_traders($traders, $invert = FALSE) {
   //we might be getting an array or a comma separated list here

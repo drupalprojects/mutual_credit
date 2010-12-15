@@ -289,7 +289,7 @@ function mc_display_block_configure($delta){
         '#size' => '10',
       );
       if (count($currencies) > 1) {
-        $form['cids'] = mc_currency_picker($currencies, $edit);
+        $form['cids'] = mc_currency_picker($currencies, $edit, TRUE);
       }
       $form['extent'] = array(
         '#title' => t('Vertical extent of chart'),
@@ -305,7 +305,7 @@ function mc_display_block_configure($delta){
     break;
     case 'mc_statement':
       if (count($currencies) > 1) {
-        $form['cids'] = mc_currency_picker($currencies, $edit);
+        $form['cids'] = mc_currency_picker($currencies, $edit, TRUE);
       }
       $form['per_page'] = array(
         '#type' => 'textfield',
@@ -318,20 +318,25 @@ function mc_display_block_configure($delta){
     //these do not have a start time
     case 'mc_balances':
       if (count($currencies) > 1) {
-        $form['cids'] = mc_currency_picker($currencies, $edit);
+        $form['cids'] = mc_currency_picker($currencies, $edit, TRUE);
       }
       break;
     case 'balance_ometer': //chose one currency only
       if (count($currencies) > 1) {
-        $form['cids'] = mc_currency_picker($currencies, $edit);
+        $form['cids'] = mc_currency_picker($currencies, $edit, FALSE);
       }
       break;
   }
   return $form;
 }
 function mc_display_block_save($delta, $values) {
-  $edit = array('cids' => $values['cids']);
-  if ($values['start_time']) $edit['start_time'] = $values['start_time'];
+  //save each of the fields, if they exist
+  $fields = array('cids', 'start_time', 'extent', 'per_page');
+  foreach ($fields as $field) {
+    if ($values[$field]) {
+      $edit[$field] = $values[$field];
+    }
+  }
   variable_set('block_'.$delta, $edit);
 }
 
@@ -341,6 +346,22 @@ function mc_validate_strtotime(&$element, $form_state) {
   }
 }
 
+function mc_currency_picker($currencies, $defaults, $multiple = FALSE) {
+  //there's a function for this somewhere in this package
+  foreach ($currencies as $nid => $currency) {
+    $options[$nid] = $currency->title;
+  }
+
+  $widget = array(
+    '#title' => $multiple ? t('Pick currencies') : t('Pick currency'),
+    '#description' => t('Choose one or more currencies by holding down CTRL'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#multiple' => $multiple,
+    '#default_value' => $defaults[cids],
+  );
+  return $widget;
+}
 
 /*
  * PREPROCESSING FUNCTIONS

@@ -74,22 +74,20 @@ function mcapi_uninstall() {
 function mcapi_enable() {
   //by using enable instead of install, we have access to node hooks
   if (!db_result(db_query("SELECT count(nid) FROM {mc_currencies}"))) {
-    $props = array('color' => '00ff00', 'divisions' => '', 'ratings' => '', 'subtype_bitmask' => 3);
     $currency = (object)array(
       'title' => 'Community Coins',
       'body' => t('This is the default currency'),
       'type' => 'currency',
       'status' => TRUE,
       'uid' => 1,
-      'max' => '',
-      'min' => 0,
-      'data' => $props,
-      'icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png',
     );
-    node_save($currency); //for some reason this doesn't save into the other table - like node
-    //db_query("UPDATE {mc_currencies} (max, min, icon, data) SET (%d, %d, %d, '%s', '%s')",
-    //  '', '0', drupal_get_path('module', 'mcapi') .'/theme/cc.png', serialize($props)
-    //);
+    node_save($currency);
+
+    db_query("INSERT INTO {mc_currencies} (max, min, data, icon) VALUES (NULL, 0, '%s', %s)",
+      serialize(array('color' => '00ff00', 'divisions' => '', 'ratings' => '', 'subtype_bitmask' => 3)),
+      drupal_get_path('module', 'mcapi') .'/theme/cc.png'
+    );
+
     drupal_set_message(t('Your defult currency is @name. !edit', array(
       '@name' => $currency->title,
       '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
@@ -264,8 +262,8 @@ function mcapi_schema() {
       ),
       'data' => array(
         'description' => t("An array of other properties"),
-        'type' => 'text',
-        'size' => 'small',
+        'type' => 'varchar',
+        'size' => '512',
         'serialize' => TRUE,
       ),
       'icon' => array(

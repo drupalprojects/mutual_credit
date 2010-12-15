@@ -75,20 +75,11 @@ function mc_webforms_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 2,
   );
-  $items['exchange/3rdparty/offer/%node'] = array(
+  $items['exchange/3rdparty/%/%node'] = array(
     'title callback' => 'converted_form_title',
-    'title arguments' => array(3, 'offer'),
+    'title arguments' => array(2, 3),
     'page callback' => 'mc_prepopulate_3rdparty',
-    'page arguments' => array(3, 'offer'),
-    'access arguments' => array('exchange'),
-    'type' => MENU_CALLBACK,
-    'file' => 'mc_webforms.inc'
-  );
-  $items['exchange/3rdparty/want/%node'] = array(
-    'title callback' => 'converted_form_title',
-    'title arguments' => array(3, 'want'),
-    'page callback' => 'mc_prepopulate_3rdparty',
-    'page arguments' => array(3, 'want'),
+    'page arguments' => array(2, 3),
     'access arguments' => array('exchange'),
     'type' => MENU_CALLBACK,
     'file' => 'mc_webforms.inc'
@@ -434,9 +425,9 @@ function field_process_mc_trader($element, $edit, &$form_state, $form) {
 
 function converted_form_title($node, $type) {
   switch($type) {
-    case 'offer':
+    case 'outgoing':
       return t('Pay @user', array('@user' => strip_tags(theme('username', user_load($node->uid)))));
-    case 'want':
+    case 'incoming':
       return t('Claim from @user', array('@user' => strip_tags(theme('username', user_load($node->uid)))));
   }
 }

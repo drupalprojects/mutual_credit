@@ -306,7 +306,6 @@ function mcapi_nodeapi(&$node, $op) {
 }
 
 
-
 /**
  * http://api.drupal.org/api/function/hook_user/6
  * This hook is required for modules to define one or more node types.
@@ -400,8 +399,8 @@ function mcapi_theme_registry_alter(&$items) {
 }
 
 //don't confuse incoming float $vars['quantity']
-function template_preprocess_money(&$vars) {if (!isset($vars['cid'])) return;
-  $vars['currency'] = node_load($vars['cid']) or ddebug_backtrace();
+function template_preprocess_money(&$vars) {
+  $vars['currency'] = node_load($vars['cid']);
   $vars['sign'] = '';
   //seperate the sign, positive or negative
   if ($vars['quantity'] < 0) {
@@ -712,48 +711,6 @@ function mc_node_select_options($nodes, $zero_val = '') {
     }
   }
   return $options;
-}
-
-/*
- * NOT USED NOT USED NOT USED NOT USED NOT USED NOT USED NOT USED NOT USED
- */
-
-/*
- * implementation of hook_hook_info()
- * In other words a trigger
- * These triggers are for mcapi-related modules,
- */
-function _mcapi_hook_info() {
-  return array(
-    'mcapi' => array(
-      'mcapi' => array(
-        'created_exchange' => array(
-          'runs when' => t('As soon as an exchange is created'),
-        ),
-        'updated_exchange' => array(
-          'runs when' => t('As soon as an exchange is updated'),
-        ),
-        'deleted_exchange' => array(
-          'runs when' => t('As soon as an exchange is updated'),
-        ),
-      ),
-    ),
-  );
-}
-/**
- * Implementation of hook_trigger_name().
- */
-function _mcapi_mcapi($op, $user) {
-  if (!in_array($op, array('created_exchange', 'updated_exchange', 'deleted_exchange'))) {
-    return;
-  }
-  $aids = _trigger_get_hook_aids('mcapi', $op);
-  $context = array(
-    'hook' => 'exchanges',
-    'op' => $op,
-    'user' => $user,
-  );
-  actions_do(array_keys($aids), $user, $context);
 }
 
 /**

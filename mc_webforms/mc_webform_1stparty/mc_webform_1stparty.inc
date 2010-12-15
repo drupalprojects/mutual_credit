@@ -259,8 +259,7 @@ function mc_validate_subtype_names($element, &$form_state) {
 }
 
 function exchange_subtype_names_form_submit($form, $form_state) {
-  $subtype_names = variable_get('mc_subtypes', array());
-  foreach (array_keys($subtype_names) as $key) {
+  foreach ($form['subtype_names'] as $key => $array) {
     $new_subtype_names[$key] = $form_state['values'][$key];
   }
   variable_set('mc_subtypes', $new_subtype_names);

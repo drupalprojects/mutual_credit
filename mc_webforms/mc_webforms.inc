@@ -279,7 +279,9 @@ function mc_build_webform(&$form, $values = NULL) {
       $form['rating']['#default_value'] = 'null';
     }
   }
-  else unset($form['rating']);
+  else {
+      unset($form['rating']);
+  }
 
   $form['exchange_type'] = array(
     '#type' => 'hidden',
@@ -516,18 +518,18 @@ function mc_ajax_webform($block = FALSE) {
   drupal_json($rendered);
 }
 
-function mc_prepopulate_3rdparty($node, $type) {
+function mc_prepopulate_3rdparty($type, $node) {
   $prefill = array(
     'title' => $node->title,
   );
   switch ($type) {
-    case 'offer':
+    case 'outgoing':
       $prefill['payee_uid'] = $node->uid;
       if ($node->uid != $GLOBALS['user']->uid) {
         $prefill['payer_uid'] = $GLOBALS['user']->uid;
       }
     break;
-    case 'want':
+    case 'incoming':
       $prefill['payer_uid'] = $node->uid;
       if ($node->uid != $GLOBALS['user']->uid) {
         $prefill['payee_uid'] = $GLOBALS['user']->uid;
@@ -546,10 +548,10 @@ function mc_prepopulate_3rdparty($node, $type) {
  * this is mostly copied from those modules, with a few alterations.
  */
 function  mc_webforms_form_mc_3rdparty_form_alter(&$form, $form_state) {
-  mc_webforms_extra_fields(&$form, $form_state);
+  mc_webforms_extra_fields($form, $form_state);
 }
 function  mc_webforms_form_mc_edit_form_alter(&$form, $form_state) {
-  mc_webforms_extra_fields(&$form, $form_state);
+  mc_webforms_extra_fields($form, $form_state);
 }
 
 
