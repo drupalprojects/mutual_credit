@@ -17,6 +17,6 @@ class views_handler_filter_mc_exchange_types extends views_handler_filter_many_t
       'one2many' => 'one2many',
       'few2one' =>'few2one',
       'one2few' => 'one2few',
-    );
+	  );
   }
 }

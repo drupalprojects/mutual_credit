@@ -7,7 +7,7 @@
  * @ingroup views_field_handlers
  */
 class views_handler_field_other_participant extends views_handler_field {
-
+  
   function construct() {
     parent::construct();
     if ($this->definition['group'] == t('Exchanges')) {
@@ -39,7 +39,7 @@ class views_handler_field_other_participant extends views_handler_field {
     }
     return $name;
   }
-
+  
   function query() {
     //this is needed because the address of this function implies a db field which doesn't exist
     //see mc_display.views.inc $data['mc_exchanges']['participant']

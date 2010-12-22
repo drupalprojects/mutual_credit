@@ -35,7 +35,10 @@ function mc_display_views_handlers() {
       ),
       'views_handler_argument_mc_participant' => array(
         'parent' => 'views_handler_argument_numeric'
-      )
+      ),
+     // 'views_handler_filter_balance_currency' => array(
+     //     parent => ''
+     // ),
     ),
   );
   return $handlers;
@@ -167,7 +170,7 @@ function mc_display_views_data() {
   );
 
 
-  $data['mc_cache']['table']['group'] = 'Balances';
+  $data['mc_cache']['table']['group'] = t('Balances');
   $data['mc_cache']['table']['base'] = array(
     'field' => 'uid',
     'title' => t('User Balance'),
@@ -192,6 +195,10 @@ function mc_display_views_data() {
       'help' => t("Use this field (check 'exclude') for the theming to work on rating and all quantities in the row"),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
+    ),
+    'filter' => array(
+       'help' => t('Filter the balances by currency ID'),
+       'handler' => 'views_handler_filter_mc_currency'
     ),
   );
   $data['mc_cache']['cleared_balance'] = array(

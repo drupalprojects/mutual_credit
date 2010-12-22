@@ -11,7 +11,7 @@ class views_handler_field_mc_amount extends views_handler_field {
   function construct() {
     parent::construct();
     $this->additional_fields['cid'] = 'cid';
-    if ($this->definition['group'] == t('Exchanges')) {
+    if ($this->definition['group'] != t('Balances')) {
       $this->additional_fields['payer_uid'] = 'payer_uid';
       $this->additional_fields['payee_uid'] = 'payee_uid';
     }
@@ -65,6 +65,10 @@ class views_handler_field_mc_amount extends views_handler_field {
     }
     elseif ($this->options['output_type'] != 'normal') {
       return t('n/a');
+    }
+    //in case there isn't a row yet in the cache table
+    elseif ($values->{$this->aliases['cid']} == NULL && $values->cleared_balance == NULL) { 
+      $values->{$this->aliases['cid']} = db_result(db_query("SELECT nid FROM {node} WHERE type = 'currency'"));
     }
     return theme('money', $values->{$this->field_alias}, $values->{$this->aliases['cid']});
   }
