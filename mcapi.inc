@@ -265,14 +265,14 @@ function theme_currency_node_form($form) {
   $output .= drupal_render($form['sub_divisions']);
   $output .= drupal_render($form['ratings_area']);
   $output .= "</div>";
-
+  $buttons = drupal_render($form['buttons']);
   // Everything else gets rendered here, and is displayed before the admin form
   // field and the submit buttons.
   $output .= "  <div class=\"standard\">\n";
   $output .= drupal_render($form);
   $output .= "  </div>\n";
 
-  $output.= drupal_render($form['buttons']);
+  $output.= $buttons;
   $output .= "</div>\n";
 
   return $output;
@@ -482,10 +482,10 @@ function mcapi_after_transaction($op, $exchanges) {
     );
     if ($message['params']['send']) {
       drupal_mail_send($message);
-      drupal_set_message('mailed '. $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
+      //drupal_set_message('mailed '. $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
     }
     else {
-      drupal_set_message("Didn't mail ". $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
+      //drupal_set_message("Didn't mail ". $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
     }
   }
 }

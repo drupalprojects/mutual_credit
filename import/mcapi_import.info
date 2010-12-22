@@ -5,3 +5,9 @@ dependencies[] = mcapi
 dependencies[] = user_import
 package = Mutual Credit
 files[] = mcapi_import.module
+; Information added by drupal.org packaging script on 2010-12-16
+version = "6.x-2.x-dev"
+core = "6.x"
+project = "mutual_credit"
+datestamp = "1292458728"
+

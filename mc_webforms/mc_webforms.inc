@@ -564,77 +564,77 @@ function mc_webforms_extra_fields(&$form, $form_state) {
   else {
     $form['#node'] = (object)array('type' => 'exchange');
   }
-
-  if (isset($form_state['values']['taxonomy'])) {
-    foreach ($form_state['values']['taxonomy'] as $vid) {
-      foreach ($vid as $tid) {
-        $terms[$tid] = taxonomy_get_term($tid);
-      }
-    }
-  }
-  elseif (!isset($node->taxonomy)) {
-    $terms = empty($node->nid) ? array() : taxonomy_node_get_terms($node);
-  }
-  else {
-    // After a preview or form reload, the terms must be converted to objects.
-    reset($node->taxonomy);
-    if (!is_object(current($node->taxonomy))) {
-      $node->taxonomy = taxonomy_preview_terms($node);
-    }
-    $terms = $node->taxonomy;
-  }
-  $c = db_query(db_rewrite_sql("SELECT v.* FROM {vocabulary} v INNER JOIN {vocabulary_node_types} n ON v.vid = n.vid WHERE n.type = '%s' ORDER BY v.weight, v.name", 'v', 'vid'), 'exchange');
-
-  while ($vocabulary = db_fetch_object($c)) {
-    if ($vocabulary->tags) {
-      if (isset($form_state['node_preview'])) {
-        // Typed string can be changed by the user before preview,
-        // so we just insert the tags directly as provided in the form.
-        $typed_string = $node->taxonomy['tags'][$vocabulary->vid];
-      }
-      else {
-        $typed_string = taxonomy_implode_tags($terms, $vocabulary->vid) . (array_key_exists('tags', $terms) ? $terms['tags'][$vocabulary->vid] : NULL);
-      }
-      $form['taxonomy']['tags'][$vocabulary->vid] = array(
-        '#type' => 'textfield',
-        '#title' => $vocabulary->name,
-        '#required' => $vocabulary->required,
-        '#default_value' => $typed_string,
-        '#autocomplete_path' => 'taxonomy/autocomplete/' . $vocabulary->vid,
-        '#weight' => $vocabulary->weight,
-        '#maxlength' => 1024,
-      );
-    }
-    else {
-      // Extract terms belonging to the vocabulary in question.
-      $default_terms = array();
-      foreach ($terms as $term) {
-        // Free tagging has no default terms and also no vid after preview.
-        if (isset($term->vid) && $term->vid == $vocabulary->vid) {
-          $default_terms[$term->tid] = $term;
+  if (module_exists('taxonomy')) {
+    if (isset($form_state['values']['taxonomy'])) {
+      foreach ($form_state['values']['taxonomy'] as $vid) {
+        foreach ($vid as $tid) {
+          $terms[$tid] = taxonomy_get_term($tid);
         }
       }
-      $form['taxonomy'][$vocabulary->vid] = taxonomy_form($vocabulary->vid, array_keys($default_terms), filter_xss_admin($vocabulary->help));
-      $form['taxonomy'][$vocabulary->vid]['#weight'] = $vocabulary->weight;
-      $form['taxonomy'][$vocabulary->vid]['#required'] = $vocabulary->required;
     }
-  }
-  if (!empty($form['taxonomy']) && is_array($form['taxonomy'])) {
-    if (count($form['taxonomy']) > 1) {
-      // Add fieldset only if form has more than 1 element.
-      $form['taxonomy'] += array(
-        '#type' => 'fieldset',
-        '#title' => t('Vocabularies'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
+    elseif (!isset($node->taxonomy)) {
+      $terms = empty($node->nid) ? array() : taxonomy_node_get_terms($node);
     }
-    $form['taxonomy']['#weight'] = -3;
-    $form['taxonomy']['#tree'] = TRUE;
-  }
+    else {
+      // After a preview or form reload, the terms must be converted to objects.
+      reset($node->taxonomy);
+      if (!is_object(current($node->taxonomy))) {
+        $node->taxonomy = taxonomy_preview_terms($node);
+      }
+      $terms = $node->taxonomy;
+    }
+    $c = db_query(db_rewrite_sql("SELECT v.* FROM {vocabulary} v INNER JOIN {vocabulary_node_types} n ON v.vid = n.vid WHERE n.type = '%s' ORDER BY v.weight, v.name", 'v', 'vid'), 'exchange');
 
+    while ($vocabulary = db_fetch_object($c)) {
+      if ($vocabulary->tags) {
+        if (isset($form_state['node_preview'])) {
+          // Typed string can be changed by the user before preview,
+          // so we just insert the tags directly as provided in the form.
+          $typed_string = $node->taxonomy['tags'][$vocabulary->vid];
+        }
+        else {
+          $typed_string = taxonomy_implode_tags($terms, $vocabulary->vid) . (array_key_exists('tags', $terms) ? $terms['tags'][$vocabulary->vid] : NULL);
+        }
+        $form['taxonomy']['tags'][$vocabulary->vid] = array(
+          '#type' => 'textfield',
+          '#title' => $vocabulary->name,
+          '#required' => $vocabulary->required,
+          '#default_value' => $typed_string,
+          '#autocomplete_path' => 'taxonomy/autocomplete/' . $vocabulary->vid,
+          '#weight' => $vocabulary->weight,
+          '#maxlength' => 1024,
+        );
+      }
+      else {
+        // Extract terms belonging to the vocabulary in question.
+        $default_terms = array();
+        foreach ($terms as $term) {
+          // Free tagging has no default terms and also no vid after preview.
+          if (isset($term->vid) && $term->vid == $vocabulary->vid) {
+            $default_terms[$term->tid] = $term;
+          }
+        }
+        $form['taxonomy'][$vocabulary->vid] = taxonomy_form($vocabulary->vid, array_keys($default_terms), filter_xss_admin($vocabulary->help));
+        $form['taxonomy'][$vocabulary->vid]['#weight'] = $vocabulary->weight;
+        $form['taxonomy'][$vocabulary->vid]['#required'] = $vocabulary->required;
+      }
+    }
+    if (!empty($form['taxonomy']) && is_array($form['taxonomy'])) {
+      if (count($form['taxonomy']) > 1) {
+        // Add fieldset only if form has more than 1 element.
+        $form['taxonomy'] += array(
+          '#type' => 'fieldset',
+          '#title' => t('Vocabularies'),
+          '#collapsible' => TRUE,
+          '#collapsed' => FALSE,
+        );
+      }
+      $form['taxonomy']['#weight'] = -3;
+      $form['taxonomy']['#tree'] = TRUE;
+    }
+  }
   //and the cck widgets
-  if (isset($form['type'])) {
+  if (module_exists('content') && isset($form['type'])) {
     $type = content_types($form['#node']->type);
     if (!empty($type['fields'])) {
       module_load_include('inc', 'content', 'includes/content.node_form');

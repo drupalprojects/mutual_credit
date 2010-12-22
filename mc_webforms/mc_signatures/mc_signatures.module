@@ -130,7 +130,6 @@ function mc_one_signing($node, $signer_uid){
   if (!isset($unfinished)) {
     $node->state = EXCHANGE_STATE_FINISHED;
     node_save($node);
-    module_invoke_all('after_transaction', 'update', $node);
     drupal_set_message(t('The exchange is now finished'));
   }
 }

@@ -19,9 +19,10 @@ else {
   <?php } elseif ($page) { ?>
     <h3><?php print t('Rationale'); ?></h3>
     <p style=""color:#<?php print $node->data['color']; ?>">
-    <?php print theme('image', $node->icon, 'icon', 'icon', array('style' => "float:left;padding-right:5px;")); ?>
-    <?php print $content; ?><br />
-    <?php print t('created by !user', array('!user' => theme('username', user_load($node->uid)))); ?></p>
+    <?php print theme('image', $node->icon, 'icon', 'icon'); ?>
+    <?php print t('created by !user', array('!user' => theme('username', user_load($node->uid)))); ?><br />
+    <?php print $content; ?></p>
+
 
     <h4><?php print t('Range'); ?></h4>
     <?php print theme('currency_range', $node); ?>

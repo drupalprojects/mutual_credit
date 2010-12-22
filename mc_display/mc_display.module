@@ -3,11 +3,13 @@
 define ('GOOGLE_CHARTS_URI', 'http://chart.apis.google.com/chart?');
 define('EXCHANGES_PAGER_ELEMENT', 1);
 
+/*
 function mc_display_help($path) {
   if ($path == 'user/%/bureau') {
-    return t('');
+    return '';
   }
-}
+}*/
+
 /*
  * mc_display - get you started with displaying exchanges to users
  * provides five themed dislays and some views to

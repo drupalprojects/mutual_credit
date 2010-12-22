@@ -158,15 +158,16 @@ function mcapi_access($op, $node, $account = NULL) {
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-
+  $participant = $account->uid == $node->payee_uid || $account->uid == $node->payer_uid;
   switch ($op) {
     case 'view'://users can always view their own pages
-      return user_access('view all exchanges')
-      || $account->uid == $node->payee_uid //exchanges the present user was involved in
-      || $account->uid == $node->payer_uid;
+      return user_access('view all exchanges') || $participant;
     case 'update': //this is the permission used by node_access
+      return $participant && (
+        user_access('edit own finished exchanges') || $node->state == EXCHANGE_STATE_PENDING);
     case 'delete':
-      return $account->uid == $node->starter_uid && $node->state == EXCHANGE_STATE_PENDING;
+      //pending exchanges can be deleted only by the node owner
+      return $node->uid == $account->uid && $node->state == EXCHANGE_STATE_PENDING;
   }
 }
 
@@ -178,6 +179,7 @@ function mcapi_perm() {
   return array(
     'exchange',
     'view all exchanges',
+    'edit own finished exchanges',
     'edit all exchanges',
     'configure currencies',
     'declare currency'
