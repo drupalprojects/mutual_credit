@@ -1,4 +1,4 @@
-; $Id$
+; $Id: 
 name = MC Statistics
 description = Caches various statistics and provides displays.
 package = Mutual Credit

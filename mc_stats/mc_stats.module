@@ -24,7 +24,7 @@ function mc_stats_help($path) {
  */
 function mc_stats_menu() {
   $items['admin/mc/stats'] = array(
-    'title' => t('Statistics'),
+    'title' => 'Statistics',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mc_stats_settings_form'),
     'access arguments' => array('configure currencies'),
