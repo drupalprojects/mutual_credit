@@ -1,5 +1,4 @@
 <?php
-//$Id$
 
 /* themes the balances for a given user.
  * Available variables

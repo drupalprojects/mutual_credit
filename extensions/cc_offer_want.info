@@ -1,4 +1,3 @@
-; $Id$
 name = Cc offers/wants
 description = Allows users to contribute to a categorised directory of offers and wants.
 core = "6.x"
