@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /* Provides a form for administrators to create a set of transactions
  * Intended to tax members to the balancing account and pay salaries
  * Users cannot change their names (because I can't get around the Drupal duplicate name check)

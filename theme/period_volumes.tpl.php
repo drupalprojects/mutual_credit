@@ -1,5 +1,4 @@
 <?php 
-// $Id$
 /*
  * recent_volumes.tpl.php
  * 

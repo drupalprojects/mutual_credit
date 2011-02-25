@@ -1,5 +1,4 @@
 <?php 
-// $Id$
 /*
  * @file
  * This file contains admin pages and also some function which only happen when a transaction is modified

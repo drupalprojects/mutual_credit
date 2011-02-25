@@ -1,4 +1,3 @@
-# $Id$
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"

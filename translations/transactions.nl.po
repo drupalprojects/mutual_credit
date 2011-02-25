@@ -1,4 +1,3 @@
-# $Id$
 #
 #
 # Dutch translation of Drupal (general)
