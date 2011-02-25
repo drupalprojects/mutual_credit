@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /* statement view
  *

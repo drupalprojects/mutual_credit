@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /*
  * $data => an array where every key is a unixperiod
  * $limit => the number if rows to display

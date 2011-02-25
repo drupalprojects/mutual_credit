@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * Everything in this set of module is for use in the user_limits function in mcapi.inc

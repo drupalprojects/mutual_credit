@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 module_load_include('inc', 'mc_webforms');
 

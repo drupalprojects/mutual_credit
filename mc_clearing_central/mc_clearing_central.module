@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 define('CLEARING_CENTRAL_URL', 'http://www.cxn.org.za/txinput.php');
 

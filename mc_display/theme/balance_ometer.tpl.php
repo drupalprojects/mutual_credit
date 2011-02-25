@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * Balance_limits.tpl.php

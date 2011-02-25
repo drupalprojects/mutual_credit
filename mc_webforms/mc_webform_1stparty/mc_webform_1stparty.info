@@ -1,4 +1,3 @@
-; $Id$
 name = 1st Person exchange form
 description = Record exchanges assumming the user is the starter and might trade in either direction
 package = Mutual Credit

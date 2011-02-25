@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 //these are bitmasks, so saved as one number in currency sub-types
 define('INCOMING_SIGNED', 4);

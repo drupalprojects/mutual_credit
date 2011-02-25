@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * 3rd party form. This is for third parties to create exchanges

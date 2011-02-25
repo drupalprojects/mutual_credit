@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * t('The mc_webforms module provides a 3rd party transaction form, and some useful code for building other forms.');

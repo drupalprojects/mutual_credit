@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * mc_3rdparty_formspecial.tpl.php

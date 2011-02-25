@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /*
  * Balance_limits.tpl.php
  * Themed display the user's balance limits for a given currency

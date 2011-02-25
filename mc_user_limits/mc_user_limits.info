@@ -1,4 +1,3 @@
-; $Id$
 name = User Limits
 description = Sets positive and negative balance limts for each user
 package = Mutual Credit

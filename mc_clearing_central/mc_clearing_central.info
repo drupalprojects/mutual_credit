@@ -1,4 +1,3 @@
-; $Id$
 name = Clearing Central
 description = Trade with other mutual credit exchanges via the CES network
 package = Mutual Credit

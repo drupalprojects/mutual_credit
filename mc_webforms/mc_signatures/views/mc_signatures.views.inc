@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Exposes the signatories to views

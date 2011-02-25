@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * The stats module caches a summary of all the transactions

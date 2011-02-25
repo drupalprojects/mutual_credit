@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * template for theme callback 'mc_currency_stats';

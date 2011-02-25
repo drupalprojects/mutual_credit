@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * $top_exchanges = array(uid => num of trades)

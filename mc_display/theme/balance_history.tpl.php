@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 //this is calcluated as 2048 max chars in a google charts url - 250 characters for all the other data divided by 13 characters per chart-point
 define ('MAX_CHART_POINTS', 140);

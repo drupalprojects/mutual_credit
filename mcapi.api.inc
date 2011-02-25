@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * API functions for mutual_credit

@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 function mc_webform_1stparty_views_handlers() {
   $handlers = array(

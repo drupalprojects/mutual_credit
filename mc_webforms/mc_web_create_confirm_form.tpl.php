@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * mc_webform.tpl.php
