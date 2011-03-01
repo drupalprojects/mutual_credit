@@ -1,4 +1,5 @@
 <?php
+// $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: exchanges.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
 /**
  * @file
@@ -12,10 +13,6 @@
  * The exchange object stores the amount as a decimal fraction
  * In preprocessing  an hour currency the decimal is multiplied by 0.6 to become hours:minutes,
  * The theme_money function then attaches the icon or currency name
- *
- * NOTES ON THE EXCHANGE RATINGS
- * This module doesn't fully support the $exchange->rating, but it's here for legacy reasons
- * also other modules can use it
  *
  * if the multiple currencies module is not installed, the default currency id ('cid') is 0
  *
@@ -191,14 +188,15 @@ function mcapi_perm() {
 function mcapi_load($node) {
   //retrieve the extra fields from the node-specific tables, and return them to be added to the node
   if ($node->type == 'exchange') {
-    $table = 'mc_exchanges';
+    $fields = db_fetch_array(db_query('SELECT * FROM {mc_exchanges} WHERE nid = %d',
+      array(':nid' => $node->nid)
+    ));
   }
   else {
-    $table = 'mc_currencies';
+    $fields = db_fetch_array(db_query('SELECT * FROM {mc_currencies} WHERE nid = %d',
+      array(':nid' => $node->nid)
+    ));
   }
-  $fields = db_fetch_array(db_query('SELECT * FROM {%s} WHERE nid = %d',
-    array(':table' => $table, ':nid' => $node->nid)
-  ));
   //while drupal_write record and schema API will serialize an array into a serialized field
   //it can't unserialize them on the way out of the db since there is no function drupal_read_record
   $fields['data'] = unserialize($fields['data']);
@@ -238,8 +236,6 @@ function mcapi_insert(&$node) {
   }
   else {
     drupal_write_record('mc_currencies', $node);
-    module_load_include('install', 'mcapi');
-    refresh_quantity_field_types();
   }
 }
 
@@ -252,11 +248,7 @@ function mcapi_update($node) {
   }
   else {
     drupal_write_record('mc_currencies', $node, array('nid'));
-    module_load_include('install', 'mcapi');
-    refresh_quantity_field_types();
   }
-  //this is not used
-  //module_invoke_all('exchange_update', $node);
 }
 
 /**
@@ -273,8 +265,6 @@ function mcapi_delete($node) {
     db_query("DELETE FROM {mc_currencies} WHERE nid = %d", $node->nid);
     db_query("DELETE FROM {mc_cache} WHERE cid = %d", $node->cid);
   }
-  //this is not used
-  //module_invoke_all('exchange_erase', $node);
 }
 
 function mcapi_view($node, $teaser = FALSE, $page = FALSE) {
@@ -292,12 +282,10 @@ function mcapi_nodeapi(&$node, $op) {
   if ($node->type == 'exchange') {
     switch ($op) {
       case 'update':
-        //the after_transaction $op = insert happens in mcapi.api
-        module_invoke_all('after_transaction', 'update', array($node));
       case 'insert':
-        if (isset($node->rating) && $node->rating == 'null') {
-          unset($node->rating);
-        }
+      case 'delete':
+        module_load_include('inc', 'mcapi');
+        module_invoke_all('after_exchange', $op, $node);
     }
   }
   elseif($node->type == 'currency' && $op == 'presave') {
@@ -344,8 +332,6 @@ function mcapi_user($op, &$edit, &$account, $category = NULL) {
 function mcapi_theme() {
   $items = array(
     'money' => array(
-      'template' => 'money',
-      'path' => drupal_get_path('module', 'mcapi') .'/theme',
       'arguments' => array(
         'quantity' => 0,
         'cid' => 0,
@@ -364,18 +350,11 @@ function mcapi_theme() {
         'currency' => NULL,
       )
     ),
-    'currency_settings_array' => array(
+    'currency_division_array' => array(
       'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
       'arguments' => array(
         'currency' => NULL,
       )
-    ),
-    'mc_rating' => array(
-      'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
-      'arguments' => array(
-        'rating' => NULL,
-        'cid' => 0
-        ),
     ),
     'exchange_summary' => array(
       'file' => drupal_get_path('module', 'mcapi') . '/mcapi.inc',
@@ -399,27 +378,36 @@ function mcapi_theme_registry_alter(&$items) {
   }
 }
 
-//don't confuse incoming float $vars['quantity']
-function template_preprocess_money(&$vars) {
-  $vars['currency'] = node_load($vars['cid']);
-  $vars['sign'] = '';
-  //seperate the sign, positive or negative
-  if ($vars['quantity'] < 0) {
-    $vars['sign'] = '-';
-    $vars['quantity'] = abs($vars['quantity']);
+
+function theme_money($quant, $cid, $richtext=TRUE) {
+  static $currencies;
+  if (!isset($currencies[$cid])) {
+    $currencies[$cid] = node_load($cid);
   }
-  //convert the sub to something presentable
-  if ($vars['currency']->sub) {
-    if (isset($vars['currency']->data['divisions']) && count($vars['currency']->data['divisions'])) {
-      $quant = intval($vars['quantity']);
-      //format using the given currency subdivision
-      $vars['quantity'] = $quant . $vars['currency']->data['divisions'][($vars['quantity'] - $quant)*100];
+  $symbol = $currencies[$cid]->symbol;
+  if ($currencies[$cid]->sub) {
+    $integer = abs(intval($quant));
+    $fraction = 100 * round(abs($quant) - abs($integer), 2);
+    if (is_array($currencies[$cid]->data['divisions'])) {
+      $subdivision = $currencies[$cid]->data['divisions'][$fraction];
     }
-    else {//format the centiles
-      $vars['quantity'] = sprintf("%01.2f", $vars['quantity']);
-    }
+    else $subdivision = $fraction;
   }
-  $vars['name'] = $vars['currency']->title;
+  else {
+    $integer = $quant;
+  }
+  $sign = $quant < 0 ? '-' :'';
+  $icon = isset($currencies[$cid]->icon) ? theme('image', $currencies[$cid]->icon) : '';
+
+  return strtr(
+    $symbol,
+    array(
+      '[minus]' => $sign,
+      '[integer]' => $integer,
+      '[icon]' => $icon,
+      '[subdivision]' => $subdivision ? $subdivision : '00'
+    )
+  );
 }
 
 
@@ -574,7 +562,7 @@ function _mc_check_trader($value, &$element = NULL) {
   }
 }
 
-function mc_validate_settings_array(&$element, $form_state) {
+function mc_validate_currency_divisions(&$element, $form_state) {
   if ($text = $element['#value']) { //blank is not validated, because it means use hundredths
     $lines = explode("\n", $text);
     if (count($lines) < 2) {
@@ -608,7 +596,7 @@ function mc_validate_quantity(&$element, &$form_state) {
     }
     if ($currency->sub) {
       $division = $value - intval($value);
-      if ($division && !isset($currency->data['divisions'][$division])) {
+      if ($division && isset($currency->data['divisions']) && !isset($currency->data['divisions'][$division])) {
         form_error($element, t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
       }
     }
@@ -640,20 +628,6 @@ function mc_validate_color($element, $form_state) {
   }
 }
 
-//validates that a transaction has a rating value consistent with the options defined in the currency
-//pending exchanges don't have to have a value
-//a value of 'null' means that the dropdown box wasn't activated
-function mc_validate_rating(&$element, $form_state) {
-  //get the rating scale for that currency and check that value is on it.
-  $currency = node_load($form_state['values']['cid']);
-  $ratings = $currency->data['ratings'];
-  if (count($ratings)) {
-    if (array_key_exists($element['#value'], $ratings) || $element['#value'] == 'null') {
-      return;
-    }
-    form_error($element, t('Invalid rating entered: @value', array('@value' => $element['#value'])));
-  }
-}
 
 function mc_validate_state(&$element, $form_state) {
 
@@ -751,7 +725,7 @@ function redirect_to_currencies($form, &$form_state) {
 function ajax_form_callback() {
   $form_state = array('storage' => NULL, 'submitted' => FALSE);
   $form_build_id = $_POST['form_build_id'];
-  $form = form_get_cache($form_build_id, $form_state);
+  $form = form_get_cache($form_build_id, $form_state); 
   $args = $form['#parameters'];
   $form_id = array_shift($args);
   $form_state['post'] = $form['#post'] = $_POST;

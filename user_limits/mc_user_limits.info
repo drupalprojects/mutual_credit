@@ -1,0 +1,6 @@
+; $Id: 
+name = User Limits
+description = Sets positive and negative balance limts for each user
+package = Mutual Credit
+core = "6.x"
+dependencies[] = mcapi

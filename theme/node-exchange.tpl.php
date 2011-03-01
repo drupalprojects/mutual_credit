@@ -1,4 +1,5 @@
 <?php
+// $Id: node-exchange.tpl.php,v 1.1.2.3 2010/12/06 13:19:46 hutch Exp $
 
 /*
  * we'll do the preprocessing here, rather than try to interrupt the normal node preprocessing hierarchy
@@ -33,20 +34,26 @@ extract(mc_preprocess_exchange($node));
 //lumping all these together just makes the following translation strings easier
 
 $currency = node_load($cid);
+
+$page_title = t('Exchange Certificate #@nid', array('@nid' => $nid));
+if ($state == EXCHANGE_STATE_PENDING) {
+  $page_title .= '-'. strtoupper(t('pending'));
+}
+drupal_set_title($page_title);
+
+$date = t('On @date', array('@date' => $submitted));
+$movement = $state == EXCHANGE_STATE_PENDING ? 
+  t('!payer will pay !payee', array('!payer' => $payer, '!payee' => $payee)) :
+  t('!payer paid !payee', array('!payer' => $payer, '!payee' => $payee));
+$sum = t('the sum of !amount', array('!amount' => '</p><p style="font-size:250%">'.$quantity .' '. $currency->title));
+$reason = t('for !reason', array('!reason' => '<strong>'.$title.'</strong>'));
 ?>
 
 <div class="exchange <?php print implode(' ', $classes); ?>">
-<?php
-  $page_title = t('Exchange Certificate #@nid', array('@nid' => $nid));
-  if ($state == EXCHANGE_STATE_PENDING) $page_title .= '-'. strtoupper(t('pending'));
-  drupal_set_title($page_title);
-  ?>
-  <p>On <?php print $submitted; ?></p>
-   <p><?php print $payer; ?>
-   <?php $state == EXCHANGE_STATE_PENDING ? print ' will pay ': print ' paid '; ?>
-   <?php print $payee; ?><br /><br />
-   the sum of <span style="font-size:250%"> <?php print $quantity .' '. $currency->title; ?> </span></p>
-  <p>for "<strong><?php print $title; ?></strong>"
+  <p><?php print $date; ?></p>
+   <p><?php print $movement; ?></p>
+   <p><?php print $sum; ?> </p>
+  <p><?php print $reason; ?>
   <?php
     //links are used by the webforms module for edit/complete/delete actions
     print $links;

@@ -1,10 +1,9 @@
 <?php
+// $Id: mcapi.api.inc,v 1.1.2.3 2010/12/08 10:29:42 matslats Exp $
 
 /**
  * API functions for mutual_credit
  */
-
-
 
 /**
  * Create an exchange
@@ -21,15 +20,17 @@
  * hook to update balance & stats & sendmail
  */
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
   static $result;
   module_load_include('inc', 'mcapi');
 
   $exchange = build_exchange_node($payer_uid, $payee_uid, $quantity, $options);
   //implementations of this hook should provide pre-built exchanges
-  $exchanges = array($exchange);
   //NOT TESTED YET
-  $exchanges += module_invoke_all('mcapi_derive', $exchange);
   $result = new stdClass();
   $result->success = FALSE;
   if (count(drupal_get_messages('error', FALSE))) {
@@ -38,19 +39,15 @@ function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
     return $result;
   }
   else {
-    foreach ($exchanges as $key => $exchange) {
-      node_save($exchange);
-      //there shouldn't be failures at this point
-      if (!isset($exchange->nid)) $fail = TRUE;
-    }
-    $result->nodes = $exchanges;
-    if (isset($fail)) {
+    node_save($exchange);
+    //there shouldn't be failures at this point
+    if (!isset($exchange->nid)) {
       //node was not saved, so stop trying and get to error reporting
       $errors = drupal_get_messages('error');
       $errors['error'][] = t('Failed to create exchange. Details have been forwarded to the site administrator');
       $result->errors = $errors['error'];
       drupal_mail_send(array(
-        'to' => db_result(db_query("SELECT mail FROM {users} WHERE uid = 1")),
+        'to' => db_result(db_query("SELECT mail FROM {users} WHERE uid = :uid", array(':uid' => 1))),
         'subject' => t('Exchange failed on @site', array('@site' => variable_get('site_name', 'no_site'))),
         'body' => print_r($result, 1),
         'headers' => array('From' => variable_get('site_mail', '')),
@@ -58,10 +55,8 @@ function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
       return $result;
     }
   }
+  $result->node = $exchange;
   $result->success = TRUE;
-  //this updates the balances, stats, & sends emails
-  if (!count($exchanges)){echo mcapi_add_node;print_r(func_get_args());}
-  module_invoke_all('after_transaction', 'create', $exchanges);
 
   //gather up all the notifications
   $result->messages = $_SESSION['messages'];
@@ -121,35 +116,6 @@ function mc_api_check_user_limits($account, $difference, $cid) {
 }
 
 
-//returns all the currency limits and cached balances for one user, in an array using currency ids as keys
-function mc_balances($account, $cid = NULL) {
-  if (!$cid) $cid = array_pop(array_keys(currencies_load()));
-  module_load_include('inc', 'mcapi');
-  //get all the currency rows for the given member
-  $result = db_query(
-    "SELECT cleared_balance, pending_dif, gross_in, gross_out, rating, count
-      FROM {mc_cache}
-      WHERE uid = %d
-      AND cid = %d",
-    array(':uid' => $account->uid, ':cid' => $cid)
-  );
-
-  $balances = array();
-  $data = db_fetch_array($result) or
-  $data = array(
-    'cleared_balance' => 0,
-    'pending_dif' => 0,
-    'gross_in' => 0,
-    'gross_out' => 0,
-    'rating' => 0,
-    'count' => 0
-  );
-
-  $data += user_limits($account, $cid);
-  $data['max_in'] = $data['max'] - $data['cleared_balance'];
-  $data['max_out'] = $data['min'] - $data['cleared_balance'];
-  return $data;
-}
 
 /**
  * Provides a list of exchanges in a way that views cannot, and more efficiently.
@@ -166,41 +132,82 @@ function mc_balances($account, $cid = NULL) {
 
 //need to find a way to cache these, but the list will be different for every user
 //because each exchange has it's own visibility.
-function mc_api_user_exchanges($uid, $cid, $options) {
+function mc_api_user_exchanges($uid, $cid, $options = array()) {
   module_load_include('inc', 'mcapi');
   $options += array(
-    'to' => time(),
+    'to' => REQUEST_TIME,
     'from' => 0,
     'direction' => 'both',
     'states' => array(EXCHANGE_STATE_FINISHED),
   );
   $filtered = array();
 
-    //this recalls the whole exchange history in one currency, in descending order of time
-    //TODO IMPORTANT CACHE THIS
-    $results = _get_transactions($uid, $cid, $options['states']);
-    $balance = 0;
-    while ($exchange = db_fetch_object($results)) {
-      //add the running balance
-      if ($exchange->payer_uid == $uid) {
-        $balance -= $exchange->quantity;
-        if ($options['direction'] == 'incoming') continue;
+  //this recalls the whole exchange history in one currency, in descending order of time
+  //TODO IMPORTANT CACHE THIS
+  $results = _get_transactions($uid, $cid, $options['states']);
+  $balance = 0;
+  while ($exchange = db_fetch_object($results)) {
+    //add the running balance
+    if ($exchange->payer_uid == $uid) {
+      $balance -= $exchange->quantity;
+      if ($options['direction'] == 'incoming') {
+        continue;
       }
-      else {
-        $balance += $exchange->quantity;
-        if ($options['direction'] == 'outgoing') continue;
-      }
-      //then filters according to several criteria
-      if (!mcapi_access('view', $exchange, $GLOBALS['user'])) continue;
-      if (!in_array($exchange->state, $options['states'])) continue;
-      if ($exchange->created > $options['to'] || ($exchange->created < $options['from'])) continue;
-
-      $exchange->balance = $balance;
-      $filtered[] = $exchange;
     }
+    else {
+      $balance += $exchange->quantity;
+      if ($options['direction'] == 'outgoing') {
+        continue;
+      }
+    }
+    //then filters according to several criteria
+    if (!mcapi_access('view', $exchange, $GLOBALS['user'])) {
+      continue;
+    }
+    if (!in_array($exchange->state, $options['states'])) {
+      continue;
+    }
+    if ($exchange->created > $options['to'] || ($exchange->created < $options['from'])) {
+      continue;
+    }
+
+    $exchange->balance = $balance;
+    $filtered[] = $exchange;
+  }
 
   return $filtered;
 }
+
+
+//returns all the currency limits and cached balances for one user, in an array using currency ids as keys
+function mc_balances($account, $cid = NULL) {
+  if (!$cid) $cid = array_pop(array_keys(currencies_load()));
+  module_load_include('inc', 'mcapi');
+  //get all the currency rows for the given member
+  $result = db_query(
+    "SELECT cleared_balance, pending_dif, gross_in, gross_out, count
+      FROM {mc_cache}
+      WHERE uid = %d
+      AND cid = %d",
+    array(':uid' => $account->uid, ':cid' => $cid)
+  );
+
+  $balances = array();
+  $data = db_fetch_array($result) or
+  $data = array(
+    'cleared_balance' => 0,
+    'pending_dif' => 0,
+    'gross_in' => 0,
+    'gross_out' => 0,
+    'count' => 0
+  );
+
+  $data += user_limits($account, $cid);
+  $data['max_in'] = $data['max'] - $data['cleared_balance'];
+  $data['max_out'] = $data['min'] - $data['cleared_balance'];
+  return $data;
+}
+
 
 
 //returns all currencies
@@ -215,5 +222,3 @@ function currencies_load() {
   }
   return $currencies;
 }
-
-//list_users

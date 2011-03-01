@@ -1,4 +1,5 @@
 <?php
+// $Id: mcapi.install,v 1.1.2.4 2010/12/15 22:04:03 matslats Exp $
 
 /**
  * @file
@@ -82,9 +83,12 @@ function mcapi_enable() {
     );
     node_save($currency);
 
-    db_query("INSERT INTO {mc_currencies} (max, min, data, icon) VALUES (NULL, 0, '%s', %s)",
-      serialize(array('color' => '00ff00', 'divisions' => '', 'ratings' => '', 'subtype_bitmask' => 3)),
-      drupal_get_path('module', 'mcapi') .'/theme/cc.png'
+    db_query("INSERT INTO {mc_currencies} (nid, max, min, data, icon) VALUES (%d, NULL, NULL, '%s', '%s')",
+      array(
+        ':nid' => $currency->nid,
+        ':data' => serialize(array('color' => '00ff00', 'divisions' => '', 'subtype_bitmask' => 3)),
+        ':icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png'
+      )
     );
 
     drupal_set_message(t('Your defult currency is @name. !edit', array(
@@ -92,7 +96,7 @@ function mcapi_enable() {
       '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
     )));
     if (db_result(db_query("SELECT nid from {node} where type = 'transaction'"))) {
-      mc_upgrade();
+      mc_upgrade($currency->nid);
     }
   }
 }
@@ -107,7 +111,14 @@ function mcapi_schema() {
   //the schema has two modes, depending on whether we store the amounts as integers or floats.
   module_load_include('inc', 'mcapi');
 
-  $type = mcapi_value_type_needed();
+  $numeric = array(
+    'type' => 'numeric',
+    'size' => 'normal',
+    'precision' => 8,
+    'scale' => 2,
+    'not null' => TRUE,
+    'default' => 0,
+  );
 
   $schema['mc_exchanges'] = array(
     'description' => 'currency exchanges between users',
@@ -116,46 +127,43 @@ function mcapi_schema() {
         'description' => t('the node to which this entry is attached'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
       ),
       'payer_uid' => array(
         'description' => t('the user id of the payer'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
       ),
       'payee_uid' => array(
         'description' => t('the user id of the payee'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
       ),
       'cid' => array(
         'description' => t('the nid of the currency used'),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
       ),
-      'quantity' => array(
-        'description' => t('the number of units transferred, (@type)', array('@type' => 'integer')),
-        'type' => $type,
-        'size' => 'normal'
-      ),
-      //this needs to be a field for views to see and for easy calculations
-      'rating' => array(
-        'description' => t('the payer assessment of the goods or services'),
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => FALSE,
-        'default' => NULL,
+      'quantity' => $numeric + array(
+        'description' => t('the number of units transferred'),
       ),
       //views is likely to want to see this, but it can have many uses
       'exchange_type' => array(
         'description' => t('The type of exchange, types are provided by modules'),
         'type' => 'varchar',
         'length' => '32',
+        'not null' => TRUE,
       ),
 
       'state' => array(
         'description' => t("State of the exchange - completed, pending, disputed, etc"),
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0
       ),
       'parent' => array(
         'description' => t('nid of parent exchange'),
@@ -192,45 +200,23 @@ function mcapi_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'cleared_balance' => array(
-        'description' => 'balance excluding pending exchanges, (integer)',
-        'type' => $type,
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
+      'cleared_balance' => $numeric + array(
+        'description' => 'balance excluding pending exchanges)',
       ),
-      'pending_dif' => array(
-        'description' => 'Sum of pending exchanges, (integer)',
-        'type' => $type,
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
+      'pending_dif' => $numeric + array(
+        'description' => 'Sum of pending exchanges',
       ),
-      'gross_in' => array(
-        'description' => "sum of all this user's income in this currency, (integer)",
-        'type' => $type,
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
+      'gross_in' => $numeric + array(
+        'description' => "sum of all this user's income in this currency",
       ),
-      'gross_out' => array(
-        'description' => "sum of all this user's ougoings in this currency, (integer)",
-        'type' => $type,
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'rating' => array(
-        'description' => "average rating for transactions by this user in this currency",
-        'type' => 'float',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
+      'gross_out' => $numeric + array(
+        'description' => "sum of all this user's ougoings in this currency",
       ),
       'count' => array(
         'description' => "number of transactions",
         'type' => 'int',
         'size' => 'small',
+        'not null' => TRUE,
         'default' => 0,
       )
     ),
@@ -262,13 +248,19 @@ function mcapi_schema() {
       'data' => array(
         'description' => t("An array of other properties"),
         'type' => 'varchar',
-        'size' => '512',
+        'length' => '512',
         'serialize' => TRUE,
       ),
       'icon' => array(
         'description' => t("location of the currency icon"),
         'type' => 'varchar',
         'length' => '128',
+      ),
+      'symbol' => array(
+        'description' => t("Expression used to display amounts"),
+        'type' => 'varchar',
+        'length' => '32',
+        'default' => '[minus][icon][integer] [subdivision]'
       ),
       'sub' => array(
         'description' => t("Units and values after the decimal point"),
@@ -287,10 +279,9 @@ function mcapi_schema() {
   return $schema;
 }
 
-//upgrade from version 1.0
-function mc_upgrade() {
+//upgrade from version 1.0 - assumes 1 currency
+function mc_upgrade($cid) {
   module_load_include('inc', 'mcapi');
-
   $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state, quality as rating
     FROM {cc_transactions}
     WHERE state > -1");
@@ -314,7 +305,7 @@ function mc_upgrade() {
   }
 
   //overwrite the v2 default currency with the default currency from v1
-  $v2cur = node_load(array('type' => 'currency'));
+  $v2cur = node_load($cid);
   $v1cur = variable_get('cc_default_currency', NULL);
 
   $v2cur->title = $v1cur->title;
@@ -330,13 +321,15 @@ function mc_upgrade() {
     $v2cur->data['divisions'] = '0|'. t('hours') ."\n15|". t('and a quarter') ."\n30|". t('and a half') ."\n45|". t('and three quarters');
   }
   node_save($v2cur);
-  $cid = $v2cur->nid; //for use later
   //division wasn't saving properly, we'll just write it directly here
 
-  drupal_set_message(t('Currency saved as node:<pre>@cur</pre>', array('@cur' => $v2cur->nid)));
-  drupal_set_message(t('The exchange sub-types need to be upgraded by hand. !link', array('!link'=> l($v2cur->title, 'node/'.$v2cur->nid.'/edit'))));
+  drupal_set_message(t('Currency saved as node:<pre>@cur</pre>', array('@cur' => $cid)));
+  drupal_set_message(t('The exchange sub-types need to be upgraded by hand. !link', array('!link'=> l($v2cur->title, 'node/'. $cid .'/edit'))));
 
-  db_query("UPDATE {mc_exchanges} set cid = %d", array(':nid' => $v2cur->nid));
+  //upgrading from a single currency system we can assume all the exchanges had the same cid
+  //this line didn't work
+  drupal_set_message('setting all exchanges to cid = '.$cid);
+  db_query("UPDATE {mc_exchanges} set cid = %d", array(':nid' => $cid));
 
   //Then the permissions
   $permissions_old_new = array(
@@ -362,13 +355,11 @@ function mc_upgrade() {
     );
     $throttle = 0;
     if ($account->starter_notification) $throttle = 2;
-    if ($account->completer_notification) $throttle = 3;
+    elseif ($account->completer_notification) $throttle = 3;
     $edit = array(
       'mc_notification_throttle' => $throttle,
-      //'mailme_I_start' => $account->starter_notification,
-      //'mailme_involved' => $account->completer_notification,
       'mc_limits' => $limits,
-      'balances' => NULL,
+      //'balances' => NULL,
       'max0' => NULL,//unset from v1
       'min0' => NULL,//unset from v1
       'completer_notification' => NULL,
@@ -385,7 +376,7 @@ function mc_upgrade() {
   //set any block visibilities that depended on old pathnames
   db_query("UPDATE {blocks} SET pages = REPLACE (pages, 'transaction', 'exchange')");
 
-  db_query("DELETE FROM {menu_links} WHERE path LIKE 'admin/marketplace%");
+  db_query("DELETE FROM {menu_links} WHERE link_path LIKE 'admin/marketplace%'");
 
   drupal_set_message(t('Uninstall transactions module when you are confident all data has been migrated.'));
   mc_balances_refresh();
@@ -409,72 +400,15 @@ function mcapi_upgrade_exchange_types($old) {
 }
 
 
-function mcapi_value_type_needed(){
-  $result = @db_query("SELECT sub from {mc_currencies} WHERE sub = 1");
-  return @db_result($result) ? 'float' : 'int';
-}
-
-function mcapi_value_type_existing(){
-  //get the existing type by looking at schema api
-  $table  = drupal_get_schema('mc_exchanges');
-  return $table['fields']['quantity']['type'];
-}
-
-/*
- * Change all the fields which store currency quantities between float and int
- * It looks like Drupals representation of the db (the schema) doesn't change when schema api changes the db
- * So we can't interrogate schema api to find out what the changed database is like.
- *
- */
-function refresh_quantity_field_types() {
-  $table  = drupal_get_schema('mc_exchanges');
-  $existing_type = mcapi_value_type_existing();
-  //get the needed type by looking at the currency table
-  $needed_type = mcapi_value_type_needed();
-  if ($existing_type == $needed_type) {
-    return;
-  }
-
-  $newfield = array(
-    'type' => $needed_type,
-    'size' => 'normal'
-  );
-
-  $newfield['description'] = "number of units transacted, ($needed_type)";
-  db_change_field($ret, 'mc_exchanges', 'quantity', 'quantity', $newfield);
-
-  $newfield['description'] = "sum of all completed exchanges for this user in this currency, ($needed_type)";
-  db_change_field($ret, 'mc_cache', 'cleared_balance', 'cleared_balance', $newfield);
-
-  $newfield['description'] = "the sum of all this user's income in this currency, ($needed_type)";
-  db_change_field($ret, 'mc_cache', 'gross_in', 'gross_in', $newfield);
-
-  $newfield['description'] = "the sum of all this user's expenditure in this currency, ($needed_type)";
-  db_change_field($ret, 'mc_cache', 'gross_out', 'gross_out', $newfield);
-  //changing the fields is not the same as changing the schema. We need to rebuild the schema at the same time
-  drupal_get_schema(NULL, TRUE);
-
-  //check that it all worked
-  if (mcapi_value_type_existing() != $needed_type) {
-    $message = t("Drupal was unable to set your database field types to @type. Please check your db permissions",
-      array('@type' => $needed_type));
-    drupal_set_message($message, 'error');
-  }
-  else {
-    drupal_set_message(t("Quantitative fields in database is set to type '@type'", array('@type' => $needed_type)));
-  }
-  watchdog('mcapi', "Quantitative fields in database is set to type '@type'", array('@type' => $needed_type));
-}
-
-
 function cforge_report() {
-  $traders = get_trader_list();
+  module_load_include('inc', 'mcapi');
+  $traders = get_trader_uids();
   $data = array(
     'server' => $_SERVER["HTTP_HOST"],
-    'site_name' => variable_get('site_name', 'site_name'),
+    'site_name' => urlencode(variable_get('site_name', 'site_name')),
     'site_mail' => variable_get('site_mail', 'site_mail'),
     'user_count' => count($traders),
-    'version' => db_result(db_query("SELECT schema_version from {system} WHERE name = 'mutual_credit'")),
+    'version' => db_result(db_query("SELECT schema_version from {system} WHERE name = 'mcapi'")),
     'transactions_last_month' => db_result(db_query("SELECT COUNT(*) from {node} WHERE created > %d and type = 'transaction'", strtotime('-1 month'))),
     'public' => variable_get('cforge_report', 1) -1,
   );
@@ -482,7 +416,7 @@ function cforge_report() {
   foreach ($data as $key => $val) {
     $args[] = $key . '=' . $val;
   }
-  $url = 'http://www.communityforge.net/registration.php?'. implode('&', $data);
+  $url = 'http://www.communityforge.net/registration.php?'. urlencode(implode('&', $args));
   $reply = drupal_http_request($url);
   drupal_set_message($reply->data);
 }
@@ -494,5 +428,58 @@ function mcapi_update_6001() {
   if ($installed){
     db_query("UPDATE {system} SET status = 1 WHERE name = 'mc_webform_1stparty'");
   }
+  return $ret;
+}
+function mcapi_update_6002() {
+  $ret = array();
+
+  db_drop_field($ret, 'mc_exchanges', 'rating');
+  db_drop_field($ret, 'mc_cache', 'rating');
+
+  $numeric = array(
+    'type' => 'numeric',
+    'size' => 'normal',
+    'precision' => 8,
+    'scale' => 2,
+    'not null' => TRUE,
+    'default' => 0,
+  );
+
+  $numeric['description'] = t('the number of units transferred');
+  db_change_field($ret, 'mc_exchanges', 'quantity', 'quantity', $numeric);
+
+  $numeric['description'] = t('balance excluding pending exchanges');
+  db_change_field($ret, 'mc_cache', 'cleared_balance', 'cleared_balance', $numeric);
+
+  $numeric['description'] = t('Sum of pending exchanges');
+  db_change_field($ret, 'mc_cache', 'pending_dif', 'pending_dif', $numeric);
+
+  $numeric['description'] = t("sum of all this user's income in this currency");
+  db_change_field($ret, 'mc_cache', 'gross_in', 'gross_in', $numeric);
+
+  $numeric['description'] = t("sum of all this user's ougoings in this currency");
+  db_change_field($ret, 'mc_cache', 'gross_out', 'gross_out', $numeric);
+  return $ret;
+}
+
+function mcapi_update_6003() {
+  if (module_exists('trigger')) {
+    $result = db_query("SELECT aid FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
+    while ($aid = db_result($result)) {
+      db_query("DELETE from {trigger_assignments} WHERE aid = %d", $aid);
+    }
+    drupal_set_message('Triggers relating to the transaction engine now fire automatically.') .
+     t('Please visit admin/build/trigger and check the transaction notification actions are not assigned');
+    db_query("DELETE FROM {actions} WHERE callback = 'transactions_email_starter_action' OR callback = 'transactions_email_completer_action'");
+  }
+
+  $field = array(
+    'description' => t("Expression used to display amounts"),
+    'type' => 'varchar',
+    'length' => '64',
+    'default' => '[minus][icon][integer] [subdivision]'
+  );
+  $ret = array();
+  db_add_field($ret, 'mc_currencies', 'symbol', $field);
   return $ret;
 }

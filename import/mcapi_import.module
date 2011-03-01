@@ -22,7 +22,7 @@ function mcapi_import_menu() {
   );
   $items['admin/mc/import/balances'] = array(
     'title' => 'Import Balances',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'type' => MENU_LOCAL_TASK,
     'weight' => -10
   );
   $items['admin/mc/import/launch'] = array(
@@ -30,7 +30,7 @@ function mcapi_import_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('launch_form'),
     'access arguments' => array('configure economy'),
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -50
   );
   return $items;
@@ -43,7 +43,7 @@ function mcapi_import_menu_alter($items) {
 
 function import_balances_form(&$form_state) {
   //check that no exchanges have already taken place
-  if (db_result(db_query("SELECT * FROM {mc_exchanges}"))) {
+  if (db_result(db_query("SELECT * FROM {mc_exchanges} WHERE state != %d", EXCHANGE_STATE_ERASED))) {
     return array('#prefix' => 'You can only import "carried forward" balances before any exchanges have been entered on the system.');
   }
 
@@ -66,12 +66,12 @@ function import_balances_form(&$form_state) {
     '#type' => 'submit',
     '#value' => 'import',
   );
-  $form['#redirect'] = 'user/'.variable_get('cc_balancing_account_num', NULL).'/statement';
+  $form['#redirect'] = 'user/1';
   return $form;
 }
 
 function import_balances_form_validate($form, &$form_state) {
-
+  $form_state['values']['data'] .= "\n";
   $rows = str_getcsv($form_state['values']['data']);
   check_users($rows);
 
@@ -99,81 +99,33 @@ function import_balances_form_submit($form, &$form_state) {
   }
 }
 
-function import_offers_form(&$form_state) {
-  $form['#prefix'] = import_prefix('offers');
-  $form['data'] = array (
-    '#type' => 'textarea',
-    '#title' => 'paste data',
-    '#default_value' => $form_state['values']['data'],
-    '#required' => TRUE  
-  );
-  $form['import_balances'] = array (
-    '#type' => 'submit',
-    '#value' => 'import',
-  );
-  $form['#redirect'] = 'directory/recent_offers';
-  $form['#validate'][] = 'import_offers_wants_form_validate';
-  return $form;
-}
 
-function import_offers_form_submit ($form, &$form_state) {
-  $rows = str_getcsv($form_state['values']['data']);
-  foreach ($rows as $row) {
-    generate_offer_want_node('offer', $row['UserID'], $row['Description']);
+function mcapi_import_balances_member($uid, $balance, $gross_income=NULL) {
+  $account = user_load($uid);
+  $bal_acc = 1;
+  $options = array(
+    'exchange_type' => 'mcapi_import',
+  );
+  if ($gross_income) {
+    $options['title'] = t("Gross income");
+    mcapi_add_node($bal_acc, $uid, $gross_income, $options);
+    $options['title'] = t("Gross expenditure");
+    mcapi_add_node($uid, $bal_acc, $gross_income-$balance, $options);
   }
-}
-
-function import_wants_form(&$form_state) {
-  $form['#prefix'] = import_prefix('wants');
-  $form['data'] = array (
-    '#type' => 'textarea',
-    '#title' => 'paste data',
-    '#default_value' => $form_state['values']['data'],
-    '#required' => TRUE  
-  );
-  $form['import_balances'] = array (
-    '#type' => 'submit',
-    '#value' => 'import',
-  );
-  $form['#redirect'] = 'directory/recent_wants';
-  $form['#validate'][] = 'import_offers_wants_form_validate';
-  return $form;
-}
-
-function import_wants_form_submit ($form, &$form_state) {
-  $rows = str_getcsv($form_state['values']['data']);
-  foreach ($rows as $row) {
-    generate_offer_want_node('want', $row['UserID'], $row['Description']);
-  }
-}
-
-function import_offers_wants_form_validate($form, &$form_state) {
-  $rows = str_getcsv($form_state['values']['data']);
-  check_users($rows);
-  foreach ($rows as $rownum => $row) {
-    //we've checked the users (field1) already, so now check the description
-    if (strlen($row['Description'] > 128)) {
-      form_set_error('data', t('The description on row @rownum is more than 128 characters', array('rownum' => $rownum)));
+  else {//if there is only balance, we do one exchange, which is simply + balance
+    $options['title'] = t("Carried Forward");
+    if (intval($balance) > 0) {
+      $tokens = array('@user' => $account->name, '@balance' => $balance);
+      $result = mcapi_add_node($bal_acc, $uid, $balance, $options);
+      $message = t("Initial payment to @user of @balance", $tokens);
+    } elseif (intval($balance) < 0) {
+      $result = mcapi_add_node($uid, $bal_acc, -$balance, $options);
+      $message = t("Initial payment from @user of @balance", $tokens);
     }
-    //now check the taxonomy term exists, and flag an error if it doesn't
-    check_terms($row);
   }
-  
+  if ($result->success) drupal_set_message($message);
 }
 
-/*
- * Helper Functions
-*/
-
-function import_prefix($type) {
-  return t("This page allows you to import users' @type for users already on the system.", array('@type' => $type)) . 
-  t("There are other ways of doing this, but this is simple and maintained along with the rest of the marketplace module.") . '<br />' .
-  //t("If you have 'goods & services' enabled or 'local vs offical' money then it assumes this is a service in local money.") . '<br />' .
-  t("Use a spreadsheet tool to prepare a list of user ids, or names, and their @type in one line. ") . 
-  t("For aesthetic reasons, there is a 128 character limit on each description. ") . 
-  t("Each line should look like this (you must include the header row): !code", array('!code' => '<blockquote><strong>"UserID","Description"</strong></blockquote>')) .
-  t("Try importing one or two first.");
-}
 
 //check that the user ids or names actually correspond to a user on the system
 //coming from the csv all keys and values will be strings, surrounded by quotes
@@ -189,14 +141,6 @@ function check_users($rows) {
       form_set_error('data', t("'UserID' on row @rownum is not a user:@data", array('@rownum'=>$rownum+1, '@data'=>$id)));
     }
   }
-}
-
-function check_terms($fields) {
-  if ($fields[2]){
-    form_set_error("data", "importing categories (third column) hasn't been coded yet", "warning");
-  }
-  //TODO
-  return;
 }
 
 if (!function_exists('str_getcsv')) { 
@@ -237,27 +181,6 @@ function mcapi_import_user_import_data($settings, $update_setting, $column_setti
 }
 function mcapi_import_user_import_after_save($settings, $account, $password, $fields, $updated, $update_setting_per_module) {
   mcapi_import_balances_member($account->uid, $fields['mutual_credit']['cleared_balance'][0], $fields['mutual_credit']['gross_income'][0]);
-}
-
-function mcapi_import_balances_member($uid, $balance, $gross_income=NULL) {
-  $account = user_load($uid);
-  $bal_acc = 1;
-  $options = array(
-    'exchange_type' => 'mcapi_import',
-  );
-  if ($gross_income) {
-    mcapi_add_node(t("Gross income"), $bal_acc, $uid, $gross_income, $options);
-    mcapi_add_node(t("Gross expenditure"), $uid, $bal_acc, $gross_income-$balance, $options);
-  }
-  else {//if there is only balance, we do one exchange, which is simply + balance
-    if (intval($balance) > 0) {
-      drupal_set_message(t("Initial payment to @user of @balance", array('@user' => $account->name, '@balance' => $balance)));
-      $result = mcapi_add_node(t("Carried Forward"), $bal_acc, $uid, $balance, $options);
-    } elseif (intval($balance) < 0) {
-      drupal_set_message(t("Initial payment from @user of @balance", array('@user' => $account->name, '@balance' => $balance)));
-      $result = mcapi_add_node(t("Carried Forward"), $uid, $bal_acc, -$balance, $options);
-    }
-  }
 }
 
 //provide a checklist and lauch button
@@ -364,6 +287,7 @@ function change_and_mail($account) {
 
 /**
  * Menu callback; process one time login link and redirects to the user page on success.
+ * this is identical to user_pass_reset, except it doesn't check for expiry
  */
 function mutual_credit_user_pass_reset(&$form_state, $uid, $timestamp, $hashed_pass, $action = NULL) {
   global $user;

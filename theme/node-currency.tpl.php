@@ -1,4 +1,5 @@
 <?php
+// $Id: node-currency.tpl.php,v 1.1.2.4 2010/12/22 19:30:29 matslats Exp $
 
 if (!$node->sub) $division = t('integer');
 elseif (!isset($node->data['divisions']) || !count($node->data['divisions'])) $division = t('centiles');
@@ -28,11 +29,7 @@ else {
 
     <?php if (isset($node->data['divisions']) && count($node->data['divisions'])) { ?>
       <h4><?php print t('Divisions'); ?></h4>
-      <?php print theme('currency_settings_array', $node->data['divisions']); ?>
-    <?php } ?>
-    <?php if (isset($node->data['ratings']) && count($node->data['ratings'])) { ?>
-      <h4><?php print t('Ratings'); ?></h4>
-      <?php print theme('currency_settings_array', $node->data['ratings']); ?>
+      <?php print theme('currency_division_array', $node->data['divisions']); ?>
     <?php } ?>
 
     <?php if ($node->value) { ?>

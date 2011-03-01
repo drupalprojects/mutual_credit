@@ -1,4 +1,5 @@
 <?php
+// $Id: balance_limits.tpl.php,v 1.3.2.1 2010/09/16 12:59:27 hutch Exp $
 /*
  * Balance_limits.tpl.php
  * Themed display the user's balance limits for a given currency

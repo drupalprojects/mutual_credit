@@ -27,7 +27,7 @@ Get the css #id of the menu tabs and enter them into admin/mc/forms
 
 
 Complementary Currencies should now function. However before your site makes sense, you'll need to add some users and data.
-Don't forget you can import balances and exchanges with the mcapi_import.module (not yet available at time of writing);
+Don't forget you can import balances and exchanges with the mcapi_import.module
 
 
 Architecture

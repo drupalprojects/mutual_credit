@@ -1,4 +1,5 @@
 <?php
+// $Id: mcapi.inc,v 1.1.2.7 2010/12/22 19:30:29 matslats Exp $
 
 /**
  * @file
@@ -46,7 +47,6 @@ function mcapi_form_exchange_inc($form, $node) {
       '#height' => 4
     );
   }
-
   $form['payer_uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Account to be debited'),
@@ -70,38 +70,6 @@ function mcapi_form_exchange_inc($form, $node) {
     '#weight' => 12,
     '#size' => 7,
   );
-  $ratings = array('null' => t('not applicable'));
-  if (isset($node->cid) && $node->cid){
-    if (get_common_currency_properties(array($form['#currencies'][$node->cid]), 'ratings')) {
-      $ratings += $form['#currencies'][$node->cid]->data['ratings'];
-    }
-  }
-  else {
-    if ($common = get_common_currency_properties($form['#currencies'], 'ratings')) {
-      $ratings += $common;
-    }
-  }
-  $rating = array(
-    '#title' => t('Rating'),
-    '#description' => t('A numeric value, used cumulatively to rate the payee.'),
-    '#weight' => 15
-  );
-  //if ratings knows the currency it shows as a select widget
-  if (count($ratings) > 1) {
-    $form['rating'] = $rating + array(
-      '#type' => 'select',
-      '#default_value' => isset($node->rating) ? $node->rating : 'null',
-      '#options' => $ratings,
-      '#required' => TRUE,
-      '#element_validate' => array('mc_validate_rating'),
-    );
-  }
-  else {
-    $form['rating'] = $rating + array(
-      '#type' => 'textfield',
-      '#default_value' => isset($node->rating) ? $node->rating : NULL,
-    );
-  }
   $form['state'] = array(
     '#type' => 'radios',
     '#title' => t('State'),
@@ -181,12 +149,20 @@ function mcapi_form_currency(&$node) {
     '#description' => t("Displays of money can be further tweaked by overriding theme_money and/or with css class 'currency-0'"),
   );
   $form['#attributes'] = array('enctype' => "multipart/form-data");
+  $form['visual']['symbol'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Notation'),
+    '#default_value' => $node->symbol,
+    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .'[icon], [quant], [sub]' .
+       t('For example to display -$45:23 AUS, enter [minus][icon][integer]:[subdivision] AUS'),
+    '#required' => TRUE,
+    '#size' => 10,
+  );
   $form['visual']['icon'] = array(
     '#type' => 'file',
     '#title' => t('Upload icon'),// array('!icon' => theme('1', $currency))),
     '#prefix' => t('Current icon') .': ' . theme('image', $node->icon),
-    '#description' => t("Probably will be about the same size as the page text, preferably with a transparent background.") .' '.
-      t("Drupal them will normally resize at client side in HTML."),
+    '#description' => t("Suggested size: 12px, preferably with a transparent background."),
     '#element_validate' => array('mc_validate_icon_upload'),
     '#size' => 25,//the default, 60, ruins the 2 col theming
   );
@@ -212,14 +188,21 @@ function mcapi_form_currency(&$node) {
       '1' => t('Enable fractions').'...'
     )
   );
+  if (is_array($node->data['divisions']) && !count($node->data['divisions'])) {
+    $divisions = array();
+    while (list($key,$val) = each($node->data['divisions'])) {
+      $divisions[] = $key . '|'. $val;
+    }
+    $divisions = implode("\n", $divisions);
+  }
   $form['sub_divisions']['divisions'] = array(
     '#type' => 'textarea',
     '#title' => t('Fractions visible in form'),
     '#description' => '<p>'. t("Only applies when 'database storage' is set to 'fractions'.") .' '.
       t('Leave blank to use hundredths. To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') .'</p>' .
       '<pre>0| exactly<br />50| half an hour',
-    '#default_value' => isset($node->data['divisions']) ? mc_convert_array_settings($node->data['divisions']) : '',
-    '#element_validate' => array('mc_validate_settings_array', 'mc_validate_divisions'),
+    '#default_value' => isset($divisions) ? $divisions : '',
+    '#element_validate' => array('mc_validate_currency_divisions'),
     '#rows' => 4,
   );
   $form['value'] = array(
@@ -229,22 +212,6 @@ function mcapi_form_currency(&$node) {
     '#size' => 4,
     '#maxlength' => 6,
     '#description' => t("The value of the currency in relation to other currencies in the same trading network (not yet operational)")
-  );
-
-  $form['ratings_area'] = array(//this is just cosmetic
-    '#type' => 'fieldset',
-    '#title' => t('Rating range'),
-    '#description' => t("Payees gain reputation when their payers rate them highly.") .' '.
-      t("This feature needs more work to integrate into views and stats, when users requre it.")
-  );
-  $form['ratings_area']['ratings'] = array(
-    '#type' => 'textarea',
-    '#default_value' => isset($node->data['ratings']) ? mc_convert_array_settings($node->data['ratings']) : '',
-    '#description' => t("Leave blank to disable this feature.") .' '.
-      t("Use this field to list the words or expressions used to rate exchanges, one on each line.") .' '.
-      t("Use 0 for 'neutral'. E.g.").'<pre>-1|Bad<br />0|As expected<br />1|Great!</pre>' .
-      t("Beware that changing the number of rating options after exchanges have been entered will distort the averages."),
-    '#element_validate' => array('mc_validate_settings_array')
   );
   return $form;
 }
@@ -262,7 +229,6 @@ function theme_currency_node_form($form) {
   $output .='</div><div style = "width:49%; float:right;">';
   $output .= drupal_render($form['visual']);
   $output .= drupal_render($form['sub_divisions']);
-  $output .= drupal_render($form['ratings_area']);
   $output .= "</div>";
   $buttons = drupal_render($form['buttons']);
   // Everything else gets rendered here, and is displayed before the admin form
@@ -288,14 +254,22 @@ function theme_currency_range($currency) {
 }
 
 
+//expects the settings array to be already validated, and just converts.
+function mc_convert_division_array($value) {
+
+  return $array;
+}
+
 function mcapi_node_presave_currency(&$node) {
-  module_load_include('inc', 'mcapi');
   $node->data['color'] = $node->color;
   if (isset($node->divisions) && is_string($node->divisions)) {
-    $node->data['divisions'] = mc_convert_settings_array($node->divisions); //converted to an array for storage
-  }
-  if (isset($node->ratings) && is_string($node->ratings)) {
-    $node->data['ratings'] = mc_convert_settings_array($node->ratings); //converted to an array for storage
+    $node->data['divisions'] = array();
+    $lines = array_filter(explode("\n", $node->divisions));
+    if (!count($lines)) return;
+    foreach($lines as $line) {
+      $vals = explode('|', $line);
+      $node->data['divisions'][$vals[0]] = trim($vals[1]);
+    }
   }
   if (isset($node->upload_icon)) {
     $file = $node->upload_icon;
@@ -326,23 +300,11 @@ function mc_preprocess_exchange($node) {
   $props['payer'] = theme('username', user_load($node->payer_uid));
   $props['payee'] = theme('username', user_load($node->payee_uid));
   $props['amount'] = theme('money', $node->quantity, $node->cid);
-  $props['rating'] = isset($node->rating) ? $node->rating : NULL;
 
   $props['classes'] = array();
-  if (count($qualities = variable_get('cc_exchange_qualities', array()))) {
-    $props['classes'][] = 'rating-'. $node->rating;
-  }
   return $props;
 }
 
-
-//returns true if the user has permission to trade or has ever traded
-//used for determining whether to display trading data for a user.
-function trading_history($account) {
-  if (user_access('exchange', $account) || count($account->balances)) {
-    return TRUE;
-  }
-}
 
 //this could almost have been done with a view, but as this is the API module, we're saving a dependency
 function currency_list() {
@@ -359,10 +321,6 @@ function currency_list() {
     }
     $rows[] = $row;
   }
-  //add an indicator showing what type the database is set to
-  $rows[] = array(0 => '', 1 => '', 2 => '<strong>'. t('Database field type') .'</strong>', 3 => '', 4 => '');
-  module_load_include('install', 'mcapi');
-  $rows[] = array(0 => '', 1 => '', 2 => mcapi_value_type_existing(), 3 => '', 4 => '');
   $output .= theme('table', $headers, $rows);
 
   if (user_access('declare currency')) {
@@ -444,101 +402,46 @@ function mc_balances_refresh() {
   //need to tell the stats module to rebuild.
 }
 
-/*
- * implementation of mcapi hook after_transaction
- * updates the balances and sends the mail
- */
-function mcapi_after_transaction($op, $exchanges) {
-  //update the balances
-  foreach ($exchanges as $exchange){
-    $refreshers[] = $exchange->payer_uid;
-    $refreshers[] = $exchange->payee_uid;
-  }
-  $refreshers = array_unique($refreshers);
-  foreach ($refreshers as $uid) {
-    //this assumes that all the exchanges were in the same currency.
-    _refresh_mc_cache($uid, $exchange->cid);
-  }
-
-  //decide whether to send mail, according to system and user settings.
-  //for now we'll just mention the first exchange, but we'll need a theme callback to show how one exchange triggered the derivatives
-  $exchange = array_shift($exchanges);
-  foreach (array(user_load($exchange->payer_uid), user_load($exchange->payee_uid)) as $account) {
-    //first need to deterine whether to send
-    //this depends on each user's threshhold but also on whether the mc_signatures module is installed.
-    $message = drupal_mail(
-      'mcapimail',
-      'notify',
-      $account->mail,
-      user_preferred_language($account),
-      array(
-        'recipient' => $account,
-        'exchange' => $exchange,
-        'send' => FALSE
-      ),
-      NULL, //defualts to site_mail
-      FALSE //don't send it
-    );
-    if ($message['params']['send']) {
-      drupal_mail_send($message);
-      //drupal_set_message('mailed '. $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
-    }
-    else {
-      //drupal_set_message("Didn't mail ". $account->name .' with mail throttle setting '. $account->mc_notification_throttle);
-    }
-  }
-}
-
 //refreshes a cache of all the exchanges, calculates the running balances and other totals
 //this is an unusual kind of cache which should never be empty, because some functions access the cache table directly
 //for this reason this function REPLACES rows.ƒ
 function _refresh_mc_cache($uid, $cid) {
-  $rating = NULL;
   $results = _get_transactions($uid, $cid);
 
-  //now iterate through the exchanges making running balances
-  $exchanges = $ratings = array();
-  $cleared_balance = $pending_dif = $gross_out = $gross_in = 0;
+  $cleared_balance = $pending_dif = $gross_out = $gross_in = $count = 0;
 
   while ($exchange = db_fetch_object($results)) {
+    $count++;
     //add to or subtract from the running balances
     if ($exchange->payer_uid == $uid) {
       if ($exchange->state == EXCHANGE_STATE_FINISHED) {
         $cleared_balance -= $exchange->quantity;
+        $gross_out += $exchange->quantity;
       }
       else {
         $pending_dif -= $exchange->quantity;
       }
-      $gross_out += $exchange->quantity;
     }
     else {
       if ($exchange->state == EXCHANGE_STATE_FINISHED) {
         $cleared_balance += $exchange->quantity;
+        $gross_in += $exchange->quantity;
       }
       else {
         $pending_dif -= $exchange->quantity;
       }
-      $gross_in += $exchange->quantity;
     }
     $exchange->balance = $cleared_balance;
-    $ratings[] = $exchange->rating;
-    //add the exchange to the list if requred
-    if ($exchange->state == EXCHANGE_STATE_FINISHED) {
-      $exchanges[$exchange->nid] = $exchange;
-    }
-  }
-  if (count($ratings)) {
-    $rating = array_sum($ratings) / count($ratings);
   }
 
-  db_query("REPLACE INTO {mc_cache} (uid, cid, cleared_balance, pending_dif, gross_in, gross_out, rating)
-    VALUES (%d, %d, %f, %f, %f, %f, %f)",
-    array($uid, $cid, $cleared_balance, $pending_dif, $gross_in, $gross_out, $rating)
+  db_query("REPLACE INTO {mc_cache} (uid, cid, cleared_balance, pending_dif, gross_in, gross_out, count)
+    VALUES (%d, %d, %f, %f, %f, %f, %d)",
+    array($uid, $cid, $cleared_balance, $pending_dif, $gross_in, $gross_out, $count)
   );
 }
 
 function _get_transactions($uid, $cid, $states = array(EXCHANGE_STATE_FINISHED, EXCHANGE_STATE_PENDING)) {
-  $fields = array('n.uid', 'n.title', 'n.nid', 'e.payer_uid', 'e.payee_uid', 'e.quantity', 'e.rating', 'e.state', 'n.created', 'e.rating', 'e.exchange_type', 'e.cid');
+  $fields = array('n.uid', 'n.title', 'n.nid', 'e.payer_uid', 'e.payee_uid', 'e.quantity', 'e.state', 'n.created', 'e.exchange_type', 'e.cid');
 
   foreach ($states as $state) {
     $state_filters[] = "e.state = " . $state;
@@ -561,11 +464,11 @@ function mc_mail_template() {
   $form['mc_notification_throttle_default'] = notification_throttle();
   $form['mc_notification_throttle_default']['#weight'] = -6;
   $form['mc_notification_throttle_default']['#default_value'] = variable_get('mc_notification_throttle_default', 2);
-  $form['mc_notification_options'] = array(
+  $form['mc_notification_option'] = array(
     '#title' => t('Allow user to choose notification frequency'),
     '#description' => t('Users will see the throttle below on user/%/edit page'),
     '#type' => 'checkbox',
-    '#default_value' => variable_get('mc_notification_options', TRUE),
+    '#default_value' => variable_get('mc_notification_option', TRUE),
     '#weight' => -5
   );
 
@@ -620,7 +523,6 @@ function mc_mail_template() {
     '#required' => TRUE
   );
 
-
   $form['mc_notification_footer'] = array(
     '#title' => t('Mail footer'),
     '#description' => t('Tokens may be used'),
@@ -629,9 +531,83 @@ function mc_mail_template() {
     '#required' => TRUE,
     '#weight' => -1
   );
-
   return system_settings_form($form);
 }
+
+
+/*
+ * implementation of mcapi hook after_exchange
+ * updates the balances and sends the mail
+ */
+function mcapi_after_exchange($op, $exchange) {
+  _refresh_mc_cache($exchange->payer_uid, $exchange->cid);
+  _refresh_mc_cache($exchange->payee_uid, $exchange->cid);
+  //we need a fresh copy for taxonomy's sake
+  $exchange = node_load($exchange->nid, NULL, TRUE);
+  //decide whether to send mail, according to system and user settings.
+  foreach (array(user_load($exchange->payer_uid), user_load($exchange->payee_uid)) as $account) {
+    //first need to deterine whether to send
+    //this depends on each user's threshhold but also on whether the mc_signatures module is installed.
+    $message = drupal_mail(
+      'mcapimail',
+      $op,
+      $account->mail,
+      user_preferred_language($account),
+      array(//params
+        'recipient' => $account,
+        'exchange' => $exchange,
+        'send' => FALSE//??
+      ),
+      NULL, //sender defaults to site_mail
+      FALSE //don't send it yet...
+    );
+    if ($message['params']['send']) {
+      drupal_mail_send($message);
+    }
+  }
+}
+
+function mcapimail_mail($key, &$message, $params) {
+  $throttle = $message['params']['recipient']->mc_notification_throttle;
+  switch ($key) {
+    case 'delete':
+      //might not need a mail if deleting exchanges isn't allowed
+      return;
+    case 'update':
+    case 'insert':
+      $variables = mc_mail_tokens($params['recipient'], $message['language'], $params['exchange']);
+      $subject = variable_get('mc_notification_subject', '');
+      $message['subject'] = strtr($subject, $variables);
+      $message['body']['main'] = strtr(variable_get('mc_notification_body', ''), $variables);
+      $message['body']['footer'] = strtr(variable_get('mc_notification_footer', ''), $variables);
+  }
+  
+  //Setting of 2 means that users don't want to be notified of their own activity.
+  if ($message['params']['recipient']->uid == $GLOBALS['user']->uid) $throttle --;
+  if ($throttle > 1) {
+    $message['params']['send'] = TRUE;
+  }
+}
+
+function mc_mail_tokens($account, $language, $exchange) {//$account is the recipient of the mail
+  $tokens = user_mail_tokens($account, $language);
+  $creator = user_load($exchange->uid);
+  $tokens['!exchange_uri'] = url('node/'. $exchange->nid, array('absolute' => TRUE));
+  return $tokens+ array(
+    '!creator' => $creator->name,
+    '!summary' => strip_tags(theme('node', $exchange, TRUE, FALSE)),
+  );
+  //ADDENDUM
+  //it seems that system_mail converts all mails to text, and mimemail doesn't compensate,
+  //so any html is rendered literally
+  if (module_exists('mimemail')) {
+    return $tokens + array(
+      '!creator' => theme('username', $creator),
+      '!summary' => theme('node', $exchange, TRUE, FALSE),
+    );
+  }
+}
+
 
 function notification_throttle() {
   return array(
@@ -647,86 +623,14 @@ function notification_throttle() {
   );
 }
 
-function mcapimail_mail($key, &$message, $params) {
-  $variables = mc_mail_tokens($params['recipient'], $message['language'], $params['exchange']);
-  //the only $key possible is 'notify', so we don't need to switch($key)
-  $subject = variable_get('mc_notification_subject', '');
-  $message['subject'] = strtr($subject, $variables);
-  $message['body']['main'] = strtr(variable_get('mc_notification_body', ''), $variables);
-  $message['body']['footer'] = strtr(variable_get('mc_notification_footer', ''), $variables);
-  $throttle = $message['params']['recipient']->mc_notification_throttle;
-  //Setting of 2 means users don't want to be notified of their own activity.
-  if ($message['params']['recipient']->uid == $GLOBALS['user']->uid) $throttle --;
-  if ($throttle > 1) {
-    $message['params']['send'] = TRUE;
-  }
-}
-
-function mc_mail_tokens($account, $language, $exchange) {//$account is the recipient of the mail
-  $tokens = user_mail_tokens($account, $language);
-  $creator = user_load($exchange->uid);
-  $tokens['!exchange_uri'] = url('node/'. $exchange->nid, array('absolute' => TRUE));
-  if (module_exists('mimemail')) {
-    return $tokens + array(
-      '!creator' => theme('username', $creator),
-      '!summary' => theme('node', $exchange, TRUE, FALSE),
-    );
-  }
-  else {
-    return $tokens+ array(
-      '!creator' => $creator->name,
-      '!summary' => strip_tags(theme('node', $exchange, TRUE, FALSE)),
-    );
-  }
-}
-
-
-/*
-  * TO CALL THIS FROM ANYWHERE, COPY THIS
-  * module_load_include('admin.inc', 'exchanges');
-  * stats_refresh_all();
-  */
-function stats_refresh_all() {
-  foreach (currencies_load() as $currency) {
-    stats_refresh($currency->cid);
-  }
-}
-
-//expects the settings array to be already validated, and just converts.
-function mc_convert_settings_array($value) {
-  $array = array();
-  $lines = array_filter(explode("\n", $value));
-  if (!count($lines)) return;
-  foreach($lines as $line) {
-    $vals = explode('|', $line);
-    $array[$vals[0]] = trim($vals[1]);
-  }
-  return $array;
-}
-
-function mc_convert_array_settings($settings){
-  if (!is_array($settings) || !count($settings)) return;
-  while (list($key,$val) = each($settings)) {
-    $lines[] = $key . '|'. $val;
-  }
-  return implode("\n", $lines);
-}
-
-//this applies to ratings and to subdivisions
-function theme_currency_settings_array($settings_array) {
+//this applies to subdivisions
+function theme_currency_division_array($settings_array) {
   if (!is_array($settings_array)) return $settings_array;
   if (count($settings_array)) {
     foreach ($settings_array as $key => $row) {
       $rows[] = array($row);
     }
     return theme('table', array(), $rows);
-  }
-}
-
-function theme_mc_rating($rating, $cid) {
-  if (isset($rating)) {
-    $currency = node_load($cid);
-    return $currency->data['ratings'][$rating];
   }
 }
 
@@ -801,7 +705,6 @@ function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
     'name' => $user->name,
     'created' => time(),
     'data' => array(),
-    //rating will take NULL, not 0 if not specified
    //essential node property
     'type' => 'exchange',
   );
