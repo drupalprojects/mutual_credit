@@ -23,6 +23,7 @@ class views_handler_field_mc_running_balance extends views_handler_field {
       $options['count_pending'] = array('default' => FALSE);
       return $options;
     }
+    return array();
   }
 
   function options_form(&$form, &$form_state) {

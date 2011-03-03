@@ -23,7 +23,6 @@ if (!count($balances)) {
   print t("Yet to trade.");
   return;
 }
-
 $rows = array(
   0 => array(0 => t('Cleared balance')),
   1 => array(0 => t('Total income')),

@@ -1,4 +1,5 @@
 <?php
+// $Id: views_handler_field_node_link_convert_3rdparty_outgoing.inc,v 1.1.2.1 2010/12/15 22:04:04 matslats Exp $
 
 /**
  * Field handler to present a link node edit.

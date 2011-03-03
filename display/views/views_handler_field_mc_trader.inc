@@ -13,6 +13,12 @@ class views_handler_field_mc_trader extends views_handler_field {
     $options['link_to_trader'] = TRUE;
   }
 
+  function option_definition() {
+    $options = parent::option_definition();
+    $options['link_to_trader'] = array('default' => TRUE);
+    return $options;
+  }
+
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
     $form['link_to_trader'] = array(

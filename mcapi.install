@@ -34,10 +34,10 @@ function mcapi_install() {
   }
   if (!variable_get('mc_subtypes', NULL)) {
     variable_set('mc_subtypes', array(
-      1 => 'Claim',
-      2 => 'Gift',
-      4 => 'Invoice',
-      8 => 'Pay'
+      1 => t('Claim'),
+      2 => t('Gift'),
+      4 => t('Invoice'),
+      8 => t('Pay')
     ));
   }
   //here we set all the module weights together
@@ -45,6 +45,9 @@ function mcapi_install() {
   db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_webform_1stparty'");
   db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_multiple'");
   db_query("UPDATE {system} SET weight = 2 WHERE name = 'mc_signatures'");
+
+  $dir = file_directory_path() . '/currencies';
+  if (!is_dir($dir)) mkdir($dir);
 }
 
 /**
@@ -96,6 +99,8 @@ function mcapi_enable() {
       '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
     )));
     if (db_result(db_query("SELECT nid from {node} where type = 'transaction'"))) {
+      migrate_exchanges($currency->nid);
+      drupal_install_modules(array('mc_signatures'));
       mc_upgrade($currency->nid);
     }
   }
@@ -259,8 +264,8 @@ function mcapi_schema() {
       'symbol' => array(
         'description' => t("Expression used to display amounts"),
         'type' => 'varchar',
-        'length' => '32',
-        'default' => '[minus][icon][integer] [subdivision]'
+        'length' => '64',
+        'default' => '@minus@icon@integer @subdivision'
       ),
       'sub' => array(
         'description' => t("Units and values after the decimal point"),
@@ -282,19 +287,11 @@ function mcapi_schema() {
 //upgrade from version 1.0 - assumes 1 currency
 function mc_upgrade($cid) {
   module_load_include('inc', 'mcapi');
-  $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state, quality as rating
-    FROM {cc_transactions}
-    WHERE state > -1");
-  while ($transaction = db_fetch_object($result)) {
-    $transaction->exchange_type = mcapi_upgrade_exchange_types($transaction->exchange_type);
-    drupal_write_record('mc_exchanges', $transaction);
-  }
 
   db_query("UPDATE {node} set type = 'exchange' WHERE type = 'transaction'");
 
   //pending transactions
   if (db_result(db_query("SELECT nid FROM {cc_transactions} WHERE state = 1"))) {
-    drupal_install_modules(array('mc_signatures'));
     $result = db_query("SELECT nid, completer_uid as uid FROM {cc_transactions} WHERE state = 1");
     $rows = array();
     while ($row = db_fetch_array($result)) {
@@ -318,18 +315,13 @@ function mc_upgrade($cid) {
     'subtype_bitmask' => 3,
   );
   if ($v1cur->division == 'sixtieths') {
-    $v2cur->data['divisions'] = '0|'. t('hours') ."\n15|". t('and a quarter') ."\n30|". t('and a half') ."\n45|". t('and three quarters');
+    $v2cur->data['divisions'] = "0|-\n15|1/4\n30|1/2\n45|3/4";
   }
   node_save($v2cur);
   //division wasn't saving properly, we'll just write it directly here
 
   drupal_set_message(t('Currency saved as node:<pre>@cur</pre>', array('@cur' => $cid)));
   drupal_set_message(t('The exchange sub-types need to be upgraded by hand. !link', array('!link'=> l($v2cur->title, 'node/'. $cid .'/edit'))));
-
-  //upgrading from a single currency system we can assume all the exchanges had the same cid
-  //this line didn't work
-  drupal_set_message('setting all exchanges to cid = '.$cid);
-  db_query("UPDATE {mc_exchanges} set cid = %d", array(':nid' => $cid));
 
   //Then the permissions
   $permissions_old_new = array(
@@ -381,6 +373,18 @@ function mc_upgrade($cid) {
   drupal_set_message(t('Uninstall transactions module when you are confident all data has been migrated.'));
   mc_balances_refresh();
   if (function_exists('mc_cache_set_stats')) mc_cache_set_stats();
+}
+
+function migrate_exchages($cid) {
+  //this isn't selecting properly...
+  $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state, quality as rating
+    FROM {cc_transactions}
+    WHERE state > -1");
+  while ($transaction = db_fetch_object($result)) {
+    $transaction->exchange_type = mcapi_upgrade_exchange_types($transaction->exchange_type);
+    $transaction->cid = $cid;
+    echo drupal_write_record('mc_exchanges', $transaction);
+  }
 }
 
 function mcapi_upgrade_exchange_types($old) {
@@ -477,9 +481,29 @@ function mcapi_update_6003() {
     'description' => t("Expression used to display amounts"),
     'type' => 'varchar',
     'length' => '64',
-    'default' => '[minus][icon][integer] [subdivision]'
+    'default' => '@minus@icon@integer @subdivision'
   );
   $ret = array();
   db_add_field($ret, 'mc_currencies', 'symbol', $field);
   return $ret;
+}
+
+function mcapi_update_6004() {
+  db_query("UPDATE {mc_currencies} SET symbol = REPLACE(symbol, '[', '@')");
+  db_query("UPDATE {mc_currencies} SET symbol = REPLACE(symbol, ']', '')");
+  $field = array(
+    'description' => t("Expression used to display amounts"),
+    'type' => 'varchar',
+    'length' => '64',
+    'default' => '@minus@icon@integer @subdivision'
+  );
+  $ret= array();
+  db_change_field($ret, 'mc_currencies', 'symbol', 'symbol', $field);
+  return $ret;
+}
+
+function ____mcapi_update_6005() {
+  $dir = file_directory_path() . '/currencies';
+  if (!is_dir($dir)) mkdir($dir);;
+  return array();
 }

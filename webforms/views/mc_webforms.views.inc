@@ -1,4 +1,5 @@
 <?php
+// $Id: mc_webforms.views.inc,v 1.1.2.2 2010/12/15 22:04:04 matslats Exp $
 
 function mc_webforms_views_handlers() {
   $handlers = array(

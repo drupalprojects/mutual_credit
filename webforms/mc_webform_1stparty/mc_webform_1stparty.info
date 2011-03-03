@@ -1,5 +1,5 @@
 ; $Id: mc_webform_1stparty.info,v 1.1.2.2 2010/12/06 13:19:46 hutch Exp $
-name = 1st Person exchange form
+name = 1stparty exchange form
 description = Form for users to enter their own exchanges
 package = Mutual Credit
 core = "6.x"

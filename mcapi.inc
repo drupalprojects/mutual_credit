@@ -153,8 +153,8 @@ function mcapi_form_currency(&$node) {
     '#type' => 'textfield',
     '#title' => t('Notation'),
     '#default_value' => $node->symbol,
-    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .'[icon], [quant], [sub]' .
-       t('For example to display -$45:23 AUS, enter [minus][icon][integer]:[subdivision] AUS'),
+    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .'@icon, @quant, @subdivision' .
+       t('For example to display -$45:23 AUS, enter @minus@icon@integer:@subdivision AUS'),
     '#required' => TRUE,
     '#size' => 10,
   );
@@ -188,7 +188,7 @@ function mcapi_form_currency(&$node) {
       '1' => t('Enable fractions').'...'
     )
   );
-  if (is_array($node->data['divisions']) && !count($node->data['divisions'])) {
+  if (is_array($node->data['divisions']) && count($node->data['divisions'])) {
     $divisions = array();
     while (list($key,$val) = each($node->data['divisions'])) {
       $divisions[] = $key . '|'. $val;
@@ -265,10 +265,11 @@ function mcapi_node_presave_currency(&$node) {
   if (isset($node->divisions) && is_string($node->divisions)) {
     $node->data['divisions'] = array();
     $lines = array_filter(explode("\n", $node->divisions));
-    if (!count($lines)) return;
-    foreach($lines as $line) {
-      $vals = explode('|', $line);
-      $node->data['divisions'][$vals[0]] = trim($vals[1]);
+    if (count($lines)) {
+      foreach($lines as $line) {
+        $vals = explode('|', $line);
+        $node->data['divisions'][$vals[0]] = trim($vals[1]);
+      }
     }
   }
   if (isset($node->upload_icon)) {
@@ -279,7 +280,7 @@ function mcapi_node_presave_currency(&$node) {
       $node->icon = $dest;
     }
     else {
-      drupal_set_message('Failed to upload new currency icon');
+      drupal_set_message(t('Failed to upload new currency icon'), 'error');
     }
   }
   elseif ($node->icon == '') {
@@ -309,12 +310,12 @@ function mc_preprocess_exchange($node) {
 //this could almost have been done with a view, but as this is the API module, we're saving a dependency
 function currency_list() {
   $currencies = currencies_load();
-  $headers = array(t('Symbol'), t('Name'), t('Unit-type'), t('usage'));
+  $headers = array(t('Symbol'), t('Name'), '-99 '. t('Format'), t('usage'));
   $output = '';
   foreach ($currencies as $currency) {
     $row['icon'] = theme('image', $currency->icon);
     $row['name'] = l($currency->title, 'node/'.$currency->nid);
-    $row['type'] = $currency->sub ? 'float' : 'integer';
+    $row['format'] = theme('money', -99, $currency->nid);
     $row['usage'] = db_result(db_query("SELECT count(nid) FROM {mc_exchanges} WHERE cid = %d", array(':cid' => $currency->nid)));
     if (user_access('configure currencies')) {
       $row['edit'] = l('edit', 'node/'. $currency->nid . '/edit');
