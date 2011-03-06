@@ -58,7 +58,7 @@ function mc_signatures_views_api() {
    */
 
 function mc_signatures_nodeapi(&$node, $op) {
-  if ($node->type != 'exchange') return;
+  if ($node->type != 'exchange' || $node->state != EXCHANGE_STATE_PENDING) return;
   switch($op) {
     case 'load':
       mc_signatures_node_load($node);
@@ -160,7 +160,7 @@ function deduce_signatures(&$node) {
       $node->mc_unsigned = array($node->payee_uid, $node->payer_uid);
   }
 }
-function save_signatures($node) {
+function save_signatures($node) {ddebug_backtrace();
   //this module assumes that every pending exchange is awaiting at least one signature
   //clear all the completers ready for re-adding
   if (isset($node->nid)) {

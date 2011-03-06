@@ -20,4 +20,4 @@ When you are sure the upgrade worked, uninstall transactions module. Move the 3 
 
 
 check all your theme customisations
-problem with the currency icon?
+

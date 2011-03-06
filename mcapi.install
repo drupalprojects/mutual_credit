@@ -98,10 +98,13 @@ function mcapi_enable() {
       '@name' => $currency->title,
       '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
     )));
-    if (db_result(db_query("SELECT nid from {node} where type = 'transaction'"))) {
-      migrate_exchanges($currency->nid);
-      drupal_install_modules(array('mc_signatures'));
-      mc_upgrade($currency->nid);
+  }
+  if (db_result(db_query("SELECT nid from {node} where type = 'transaction'"))) {
+    drupal_install_modules(array('mc_signatures'));
+    mc_upgrade($currency->nid);
+    if (!db_result(db_query("SELECT nid from {mc_exchanges}"))) {
+      drupal_set_message("Don't know why, but exchanges weren't copied to the new table. Try manually:", 'error');
+      drupal_set_message("module_load_include('install', 'mcapi');migrate_exchanges();", 'error');
     }
   }
 }
@@ -287,7 +290,7 @@ function mcapi_schema() {
 //upgrade from version 1.0 - assumes 1 currency
 function mc_upgrade($cid) {
   module_load_include('inc', 'mcapi');
-
+  migrate_exchanges();
   db_query("UPDATE {node} set type = 'exchange' WHERE type = 'transaction'");
 
   //pending transactions
@@ -375,16 +378,19 @@ function mc_upgrade($cid) {
   if (function_exists('mc_cache_set_stats')) mc_cache_set_stats();
 }
 
-function migrate_exchages($cid) {
+function migrate_exchanges() {
   //this isn't selecting properly...
+  $cid = db_result(db_query("SELECT nid FROM {mc_currencies}"));
   $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state, quality as rating
     FROM {cc_transactions}
     WHERE state > -1");
   while ($transaction = db_fetch_object($result)) {
     $transaction->exchange_type = mcapi_upgrade_exchange_types($transaction->exchange_type);
     $transaction->cid = $cid;
-    echo drupal_write_record('mc_exchanges', $transaction);
+    drupal_write_record('mc_exchanges', $transaction);
   }
+  module_load_include('inc', 'mcapi');
+  mc_balances_refresh();
 }
 
 function mcapi_upgrade_exchange_types($old) {

@@ -153,7 +153,7 @@ function mcapi_form_currency(&$node) {
     '#type' => 'textfield',
     '#title' => t('Notation'),
     '#default_value' => $node->symbol,
-    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .'@icon, @quant, @subdivision' .
+    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @icon, @quant, @subdivision ' .
        t('For example to display -$45:23 AUS, enter @minus@icon@integer:@subdivision AUS'),
     '#required' => TRUE,
     '#size' => 10,
@@ -318,7 +318,7 @@ function currency_list() {
     $row['format'] = theme('money', -99, $currency->nid);
     $row['usage'] = db_result(db_query("SELECT count(nid) FROM {mc_exchanges} WHERE cid = %d", array(':cid' => $currency->nid)));
     if (user_access('configure currencies')) {
-      $row['edit'] = l('edit', 'node/'. $currency->nid . '/edit');
+      $row['edit'] = l(t('edit'), 'node/'. $currency->nid . '/edit');
     }
     $rows[] = $row;
   }

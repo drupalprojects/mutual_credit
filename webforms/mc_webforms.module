@@ -374,7 +374,7 @@ function field_process_mc_quantity($element, $edit, &$form_state, &$form) {
     '#maxlength' => 7
   );
   //if any currency on the form has subdivisions then output this field
-  if (isset($divisions)){
+  if (isset($divisions) && count($divisions)){
     $element['division'] = array(
       '#title' => t('Fraction'),
       '#type' => 'select',
