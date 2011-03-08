@@ -397,7 +397,7 @@ function field_process_mc_quantity($element, $edit, &$form_state, &$form) {
   return $element;
 }
 
-function field_process_mc_trader($element, $edit, &$form_state, $form) {
+function field_process_mc_trader($element, $edit, &$form_state, $form) {;
   //By this point in the processing, #default_value has been moved to #value in the element
   $element['#required'] = TRUE;
   if (variable_get('mc_trader_autocomplete', TRUE)) {

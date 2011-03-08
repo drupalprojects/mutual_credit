@@ -543,8 +543,6 @@ function mc_mail_template() {
 function mcapi_after_exchange($op, $exchange) {
   _refresh_mc_cache($exchange->payer_uid, $exchange->cid);
   _refresh_mc_cache($exchange->payee_uid, $exchange->cid);
-  //we need a fresh copy for taxonomy's sake
-  $exchange = node_load($exchange->nid, NULL, TRUE);
   //decide whether to send mail, according to system and user settings.
   foreach (array(user_load($exchange->payer_uid), user_load($exchange->payee_uid)) as $account) {
     //first need to deterine whether to send
@@ -557,7 +555,7 @@ function mcapi_after_exchange($op, $exchange) {
       array(//params
         'recipient' => $account,
         'exchange' => $exchange,
-        'send' => FALSE//??
+        'send' => FALSE//this may get changed
       ),
       NULL, //sender defaults to site_mail
       FALSE //don't send it yet...
@@ -587,6 +585,10 @@ function mcapimail_mail($key, &$message, $params) {
   if ($message['params']['recipient']->uid == $GLOBALS['user']->uid) $throttle --;
   if ($throttle > 1) {
     $message['params']['send'] = TRUE;
+    //drupal_set_message("Mailing ".$message['params']['recipient']->name." who has throttle $throttle");
+  }
+  else {
+    //drupal_set_message("Not mailing ".$message['params']['recipient']->name." who has throttle $throttle");
   }
 }
 

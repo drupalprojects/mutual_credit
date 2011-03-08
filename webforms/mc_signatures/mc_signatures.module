@@ -71,6 +71,7 @@ function mc_signatures_nodeapi(&$node, $op) {
       break;
     case 'insert':
     case 'update':
+      //can't do this until we know the nid
       save_signatures($node);
       break;
   }
@@ -160,7 +161,7 @@ function deduce_signatures(&$node) {
       $node->mc_unsigned = array($node->payee_uid, $node->payer_uid);
   }
 }
-function save_signatures($node) {ddebug_backtrace();
+function save_signatures($node) {
   //this module assumes that every pending exchange is awaiting at least one signature
   //clear all the completers ready for re-adding
   if (isset($node->nid)) {
@@ -347,7 +348,7 @@ function mc_signatures_form_mc_webform_settings_alter(&$form, $form_state) {
 /*
  * Adds to the exchange notification mail
  */
-function mc_signatures_mail_alter(&$message) {//print_R($message);echo substr($message['id'], 0, 9);
+function mc_signatures_mail_alter(&$message) {
   if (substr($message['id'], 0, 9) != 'mcapimail') return;
   $params = &$message['params'];
   if (!is_array($params['exchange']->mc_unsigned)) return;
@@ -357,7 +358,7 @@ function mc_signatures_mail_alter(&$message) {//print_R($message);echo substr($m
   //handle only messages if they are required to be sent
   if ($params['recipient']->mc_notification_throttle == 0) return;
 
-  $params['send'] = TRUE;
+  $message['params']['send'] = TRUE;
   $footer = array_pop($message['body']);
   $variables['!sign_link'] = url('exchange/'. $params['exchange']->nid . '/sign/'. $params['recipient']->uid, array('absolute' => TRUE));
   if (variable_get('mc_signatures_notification_subject', '')) {

@@ -125,21 +125,6 @@ function mc_multiple_form($form_state, $fields) {
   }
   $form = mcapi_form_exchange($node);
 
-  //need to put the 'please choose' on the beginning of the array without buggering up all the array keys, one of which may be '0'
-  if ($form['rating']['#type'] == 'select') {
-    foreach ($form['rating']['#options'] as $key => $description) {
-      $options[$key] = $description;
-    }
-    $form['rating']['#options'] = $options;
-
-    if (!isset($values['rating']) && !isset($form['rating']['#default_value'])) {
-      $form['rating']['#default_value'] = 'null';
-    }
-  }
-  else {
-      unset($form['rating']);
-  }
-
   //need to be explicit because these because this function is called from hook_forms
   //$form['quantity']['#element_validate']['']
   $form['#validate'] = array('mc_multiple_form_validate');
@@ -168,6 +153,7 @@ function mc_multiple_form($form_state, $fields) {
       $form[$field]['#title'] = $field == 'payer_uid_array' ? t('Payers') : t('Payees');
       $form[$field]['#type'] = 'mc_traders';
       $form[$field]['#element_validate'] = array('mc_validate_traders');
+      $form[$field]['#default_value'] = $form_state['values'][$field];
       if ($widget == 'all') {
         $form[$field]['#description'] = t("Select the accounts to be ignored. Use CTRL click to select more than one.");
         $form[$field]['#title'] = $field == 'payer_uid_array' ? t('Excluded payers') : t('Excluded payees');
@@ -329,11 +315,8 @@ function mc_multiple_elements() {
 function field_process_mc_traders(&$element, $edit, &$form_state, $form) {
   //process as though it were a single trader select
   $element = field_process_mc_trader($element, $edit, $form_state, $form);
-
   $element['#element_validate'] = array('mc_validate_traders');
-  if (!$element['#default_value']) {
-    $element['#default_value'] = variable_get($form['#id']['#value'] .'_defaults_'. $element['#name'] , array());
-  }
+
   $element['#theme'] = 'mc_trader';
   if (variable_get('mc_trader_autocomplete', TRUE)) {
     $element['#type'] = 'textfield';
@@ -344,13 +327,23 @@ function field_process_mc_traders(&$element, $edit, &$form_state, $form) {
     $element['#description'] =  t('Usernames, emails, or user IDs (mixed is ok)');
     $element['#submit'] = array('mc_submit_traders_autocomplete');
     $element['#attributes']['style'] = 'width:100%';
+    //convert the displayed users to usernames
+    if (isset($element['#value'])) {
+      $values = drupal_explode_tags($element['#value']);
+      $names = array();
+      foreach ($values as $value) {
+        $uid = _mc_check_trader($value);
+        $account = user_load($uid);
+        $names[] = $account->name;
+      }
+      $element['#value'] = drupal_implode_tags($names);
+    }
   }
-  else {
+  else {//using the multi-select widget
     unset ($element['#options'][0]);
     $element['#multiple'] = TRUE;
   }
   $element['#required'] = !$element['#invert'];
-
   return $element;
 }
 

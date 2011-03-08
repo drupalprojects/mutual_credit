@@ -301,20 +301,20 @@ function mc_build_webform(&$form, $values = NULL) {
   ) + $form['quantity'];
   unset($form['quantity']);
 
+  
   //more proxy fields
-  $form['payer'] = array(
-    '#type' => 'mc_trader',
-    '#dest_field' => 'payer_uid',
-    '#default_value' => isset($values['payer']) ? $values['payer'] : '',
-  ) + $form['payer_uid'];
-  unset($form['payer_uid']); //this is replaced in the mc_trader's validate function
-
-  $form['payee'] = array(
-    '#type' => 'mc_trader',
-    '#dest_field' => 'payee_uid',
-    '#default_value' => isset($values['payee']) ? $values['payee'] : '',
-  ) + $form['payee_uid'];
-  unset($form['payee_uid']);
+  foreach (array('payer', 'payee') as $trader) {
+    $form[$trader] = array(
+      '#type' => 'mc_trader',
+      '#dest_field' => $trader.'_uid',
+      //'#default_value' => isset($values[$trader]) ? $values[$trader] : '',
+    );
+    if (isset($values[$trader])) {
+      $form[$trader]['#default_value'] = $values[$trader];
+    }
+    $form[$trader] += $form[$trader.'_uid'];
+    unset($form[$trader.'_uid']); //this is replaced in the mc_trader's validate function
+  }
 
   $form['title']['#element_validate'][] = 'mc_validate_webform_title';
 

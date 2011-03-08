@@ -281,8 +281,8 @@ function mcapi_view($node, $teaser = FALSE, $page = FALSE) {
 function mcapi_nodeapi(&$node, $op) {
   if ($node->type == 'exchange') {
     switch ($op) {
-      case 'update':
       case 'insert':
+      case 'update':
       case 'delete':
         module_load_include('inc', 'mcapi');
         module_invoke_all('after_exchange', $op, $node);
@@ -384,7 +384,6 @@ function theme_money($quant, $cid, $richtext=TRUE) {
   if (!isset($currencies[$cid])) {
     $currencies[$cid] = node_load($cid);
   }
-  $symbol = $currencies[$cid]->symbol;
   $integer = abs(intval($quant));
   if ($currencies[$cid]->sub) {
     $fraction = 100 * round(abs($quant) - abs($integer), 2);
@@ -397,7 +396,7 @@ function theme_money($quant, $cid, $richtext=TRUE) {
   $icon = isset($currencies[$cid]->icon) ? theme('image', $currencies[$cid]->icon) : '';
 
   return strtr(
-    $symbol,
+    $currencies[$cid]->symbol,
     array(
       '@minus' => $sign,
       '@integer' => $integer,
