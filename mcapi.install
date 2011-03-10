@@ -1,0 +1,363 @@
+<?php
+// $Id: mcapi.install,v 1.1.2.4 2010/12/15 22:04:03 matslats Exp $
+
+/**
+ * @file
+ * Install, update and uninstall functions for the transactions module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function mcapi_install() {
+  variable_set('comment_transactions', 0);
+
+  //permit authenticated user to trade by default
+  if (!user_roles(FALSE, 'transact')) {
+    db_merge('role_permission')
+    ->key(array('permission' => 'transact', 'rid' => DRUPAL_AUTHENTICATED_RID))
+    ->fields(array('module' => 'mcapi'))
+    ->execute();
+  }
+  drupal_set_message(t('By default, authenticated user has been given permission to transact'));
+
+  //here we set all the module weights together
+  //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
+  db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_webform_1stparty')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_multiple')->execute();
+
+
+  if (module_exists('image')) {
+    mcapi_modules_enabled(array('image'));
+  }
+  if (module_exists('contact')) {
+    mcapi_modules_enabled(array('contact'));
+  }
+  mcapi_create_default_currency();
+}
+
+
+/**
+ * Implements hook_uninstall().
+ * Remove any tables or variables that the module sets.
+ */
+function mcapi_uninstall() {
+  $view_ids = db_query("SELECT vid FROM {views_view} WHERE name LIKE 'mcapi_%'");
+  while ($vid = $view_ids->fetchField()) {
+    // TODO Please review the conversion of this statement to the D7 database API syntax.
+    /* db_query("DELETE FROM {views_view} WHERE vid = %d", $vid) */
+    db_delete('views_view')
+    ->condition('vid', $vid)
+    ->execute();
+    db_delete('views_display')
+    ->condition('vid', $vid)
+    ->execute();
+  }
+
+  //lose the currency node fields, and their instances, supposedly
+  field_delete_field('curr_data'); 
+  field_purge_batch(20);
+  
+  variable_del('cforge_report');
+}
+
+/**
+ * Implements hook_enable
+ */
+function mcapi_enable() {
+  $currency = db_select('mcapi_currencies', 'c')->fields('c', array('cid', 'name'))->execute()->fetch();
+  drupal_set_message(t('Your defult currency is @name. !edit', array(
+    '@name' => $currency->name,
+    '!edit' => l(t('edit'), 'currency/' . $currency->cid . '/edit')
+  )));
+}
+
+/**
+ * Implements of hook_schema)()
+ */
+function mcapi_schema() {
+  //the schema has two modes, depending on whether we store the amounts as integers or floats.
+  module_load_include('inc', 'mcapi');
+  $numeric = array(
+    'type' => 'numeric',
+    'size' => 'normal',
+    'precision' => 8,
+    'scale' => 2
+  );
+  $schema['mcapi_transactions'] = array(
+    'description' => 'currency transactions between users',
+    'fields' => array(
+      'xid' => array(
+        'description' => 'the unique transaction ID',
+        'type' => 'serial',
+        'size' => 'normal',
+      ),
+      'description' => array(
+        'description' => 'a brief description of what was transactiond',
+        'type' => 'text',
+        'size' => 'small',
+      ),
+      'uid' => array(
+        'description' => 'the user id of the creator',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'payer_uid' => array(
+        'description' => 'the user id of the payer',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'payee_uid' => array(
+        'description' => 'the user id of the payee',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'cid' => array(
+        'description' => 'the nid of the currency used',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'quantity' => $numeric + array(
+        'description' => 'the number of units transferred',
+      ),
+      //views is likely to want to see this, but it can have many uses
+      'type' => array(
+        'description' => 'The type of transaction, types are provided by modules',
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'state' => array(
+        'description' => "State of the transaction - completed, pending, disputed, etc",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'created' => array(
+        'description' => "Unixtime that the transaction was recorded",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'parent' => array(
+        'description' => 'nid of parent transaction',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'data' => array(
+        'description' => 'any other serialized data that modules want to store',
+        'type' => 'text',
+        'size' => 'small',
+        'serialize' => TRUE,
+      )
+    ),
+    'primary key' => array('xid'),
+  );
+
+  //This table cointains one row for every user/currency and contains balances and personal balance limits
+  //The rows are created and deleted in hook_user, and when currencies are added and removed.
+  $schema['mcapi_cache'] = array(
+    'description' => 'cached balances, turnovers and pending balances, for exposure to views',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'the user to which this entry is attached',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cid' => array(
+        'description' => 'the currency id, where there is more than one currency',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cleared_balance' => $numeric + array(
+        'description' => 'balance excluding pending transactions',
+        'not null' => TRUE,
+        //'default' => 0,
+      ),
+      'pending_dif' => $numeric + array(
+        'description' => 'sum of pending transactions',
+        'not null' => TRUE,
+        //'default' => 0,
+      ),
+      'gross_in' => $numeric + array(
+        'description' => "sum of all this user's income in this currency",
+        'not null' => TRUE,
+        //'default' => 0,
+      ),
+      'gross_out' => $numeric + array(
+        'description' => "sum of all this user's ougoings in this currency",
+        'not null' => TRUE,
+        //'default' => 0,
+      ),
+      'max' => $numeric + array(
+        'description' => "the max balance for this account for this user",
+        'not null' => FALSE,
+      ),
+      'min' => $numeric + array(
+        'description' => "the min balance for this account for this user",
+        'not null' => FALSE,
+      ),
+      'count' => array(
+        'description' => "number of transactions",
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 0,
+      )
+    ),
+    'unique keys' => array(
+      'uid_cid' => array('uid', 'cid')
+    )
+  );
+
+  $schema['mcapi_currencies'] = array(
+    'description' => 'metadata for currencies, in addition to name and title',
+    'fields' => array(
+      'cid' => array(
+        'description' => 'the unique currency ID',
+        'type' => 'serial',
+        'size' => 'normal',
+      ),
+      'name' => array(
+        'description' => 'the name of the currency',
+        'type' => 'varchar',
+        'length' => '64',
+        'not null' => TRUE
+      ),
+      'rationale' => array(
+        'description' => 'description of the currency',
+        'type' => 'text',
+        'not null' => TRUE
+      ),
+      'divisions' => array(
+        'description' => 'fractions of the currency unit',
+        'type' => 'text',
+        'size' => 'small',
+      ),
+      'format' => array(
+        'description' => "How to display the amount using normal characters",
+        'type' => 'varchar',
+        'length' => '64',
+        'default' => '@minus<strong>Cc</strong>@integer:@subdivision',
+      ),
+      'data' => array(
+        'description' => "An array of other properties",
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => FALSE,
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('cid'),
+    'unique keys' => array(
+      'name' => array('name')
+    )
+  );
+  return $schema;
+}
+
+
+function cforge_report() {
+  module_load_include('inc', 'mcapi');
+  $traders = get_trader_uids();
+  $data = array(
+    'server' => $_SERVER["HTTP_HOST"],
+    'site_name' => urlencode(variable_get('site_name', 'site_name')),
+    'site_mail' => variable_get('site_mail', 'site_mail'),
+    'user_count' => count($traders),
+    'version' => db_query("SELECT schema_version from {system} WHERE name = 'mcapi'")->fetchCol(),
+    'transactions_last_month' => db_select('node', 'n')->condition('created',  strtotime('-1 month'), '>')->condition('type', 'transaction')->countQuery()->execute()->fetchField(),
+    'public' => variable_get('cforge_report', 1) -1,
+  );
+
+  foreach ($data as $key => $val) {
+    $args[] = $key . '=' . $val;
+  }
+  $url = 'http://www.communityforge.net/registration.php?'. implode('&', $args);
+  $reply = drupal_http_request($url);
+  if (isset($reply->data)) {
+    drupal_set_message($reply->data);
+  }
+}
+
+function mcapi_modules_enabled($modules) {
+  $fields = field_read_fields();
+  if (in_array('image', $modules)) {
+    if (!isset($fields['curr_icon'])) {
+      $field = array(
+        'field_name' => 'curr_icon',
+        'type' => 'image',
+        'entity_types' => array('currency'),
+      );
+      field_create_field($field);
+    }
+    $instances = field_read_fields();
+    if (!isset($instances['curr_icon'])) {
+      $currency_icon = array(
+        'field_name' => 'curr_icon',
+        'entity_type' => 'currency',
+        'bundle' => 'mutual_credit',
+        'label' => t('Icon'),
+        'description' => t('A small graphical representation of the currency'),
+        'settings' => array(
+          //'max_filesize' => 2,
+          //'image_style' => 'thumbnail'
+        )
+      );
+      field_create_instance($currency_icon);
+    }
+  }
+
+  if (in_array('contact', $modules)) {
+    if (!isset($fields['notify_threshhold'])) {
+      $contact_field = array(
+        'field_name' => 'notify_threshhold',
+        'type' => 'list_integer',
+        'entity_types' => array('user'),
+      );
+      field_create_field($contact_field);
+
+      $instance = array(
+        'field_name' => 'notify_threshhold',
+        'entity_type' => 'user',
+        'bundle' => 'user',
+        'label' => t('When to notify about transactions via email'),
+        'description' => t('Set the default frequency of notifications'),
+        'settings' => array(
+          'allowed_values' => array(1 => t("Only when action is needed"), 2 => t('When affected by another user'), 3 => t('For all events'))
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+
+function mcapi_modules_disabled($modules) {
+  $fields = field_read_fields();
+  if (in_array('image', $modules)) {
+    field_delete_field('curr_icon');
+  }
+  if (in_array('contact', $modules)) {
+    field_delete_field('notify_threshhold');
+  }
+}
+
+function mcapi_create_default_currency() {
+  if (db_select('mcapi_currencies', 'c')->fields('c')->countquery()->execute()->fetchField()) {
+    return;
+  }
+  $currency = array(
+    'name' => t('Community Coins'),
+    'rationale' => t('This is the default currency'),
+    'divisions' => '00',
+    'format' => '@minus<strong>Cc</strong>@integer:@subdivision',
+    'data' => array(
+      'max' => NULL,
+      'min' => 0,
+    )
+  );
+  module_load_include('inc', 'mcapi', 'entities');
+  entity_get_controller('currency')->save($currency);
+}

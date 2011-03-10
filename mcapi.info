@@ -1,0 +1,21 @@
+; $Id: mcapi.info,v 1.1.2.4 2010/12/06 13:19:45 hutch Exp $
+name = Mutual Credit API
+description = Defines two entities, currency and transaction, and does basic validation and caching
+package = Mutual Credit
+core = 7.x
+
+files[] = exchange.entity
+files[] = mcapi.module
+files[] = mcapi.inc
+files[] = mcapi.install
+files[] = views/mcapi_views.inc ;this isn't needed, actually
+
+; Views handlers
+files[] = views/views_handler_argument_mcapi_user_exchanges.inc
+files[] = views/views_handler_argument_mcapi_participant.inc
+files[] = views/views_handler_field_mcapi_amount.inc
+files[] = views/views_handler_field_mcapi_other_participant.inc
+files[] = views/views_handler_field_mcapi_trader.inc
+files[] = views/views_handler_filter_mcapi_currency.inc
+files[] = views/views_handler_filter_mcapi_types.inc
+files[] = views/views_handler_filter_mcapi_role_current_user.inc
