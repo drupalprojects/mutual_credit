@@ -55,6 +55,9 @@ function mcapi_help($section) {
           t("offering board and lodging for a month or two")
         )
       );
+    case 'admin/mc/notification':
+      return '<p>'. t('Mail templates can use the following tokens:') .
+        ' !username, !site, !uri, !uri_brief, !mailto, !date, !login_uri, !edit_uri, !login_url, !creator, !exchange_uri, !summary</p>';
   }
 }
 /**
@@ -283,9 +286,8 @@ function mcapi_nodeapi(&$node, $op) {
     switch ($op) {
       case 'insert':
       case 'update':
-      case 'delete':
         module_load_include('inc', 'mcapi');
-        module_invoke_all('after_exchange', $op, $node);
+        mcapi_notify($op, $node);
     }
   }
   elseif($node->type == 'currency' && $op == 'presave') {

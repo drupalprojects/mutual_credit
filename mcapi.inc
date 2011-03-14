@@ -354,7 +354,12 @@ function user_limits($account, $cid){
 function mc_admin_menu_block_page() {
   //run some checks
   if (!variable_get('mc_notification_subject', 0) || !variable_get('mc_notification_body', 0)) {
-    drupal_set_message(t('Mail notification templates need to be written: !link', array('!link' => l('admin/mc/notification', 'admin/mc/notification'))), 'warning');
+    //the mc_signatures variables go unchecked, however.
+    drupal_set_message(
+      t('Mail notification templates need to be written: !link',
+        array('!link' => l('admin/mc/notification', 'admin/mc/notification'))),
+      'warning'
+    );
   }
 
   module_load_include('admin.inc', 'system');
@@ -482,7 +487,7 @@ function mc_mail_template() {
   );
   $form['mc_notification_wrapper']['mc_notification_subject'] = array(
     '#title' => t('Mail subject'),
-    '#description' => t('Tokens may be used'),
+    '#description' => t('Tokens may be used.'),
     '#type' => 'textfield',
     '#default_value' => variable_get('mc_notification_subject', 'Notification from !site'),
     '#weight' => 1,
@@ -508,7 +513,7 @@ function mc_mail_template() {
   );
   $form['mc_notification_update_wrapper']['mc_notification_update_subject'] = array(
     '#title' => t('Mail subject'),
-    '#description' => t('Tokens may be used'),
+    '#description' => t('Tokens may be used.'),
     '#type' => 'textfield',
     '#default_value' => variable_get('mc_notification_update_subject', t('Notification from !site')),
     '#weight' => 1,
@@ -523,15 +528,6 @@ function mc_mail_template() {
     '#weight' => 2,
     '#required' => TRUE
   );
-
-  $form['mc_notification_footer'] = array(
-    '#title' => t('Mail footer'),
-    '#description' => t('Tokens may be used'),
-    '#type' => 'textarea',
-    '#default_value' => variable_get('mc_notification_footer', t('The team at !site')),
-    '#required' => TRUE,
-    '#weight' => -1
-  );
   return system_settings_form($form);
 }
 
@@ -540,13 +536,15 @@ function mc_mail_template() {
  * implementation of mcapi hook after_exchange
  * updates the balances and sends the mail
  */
-function mcapi_after_exchange($op, $exchange) {
-  _refresh_mc_cache($exchange->payer_uid, $exchange->cid);
-  _refresh_mc_cache($exchange->payee_uid, $exchange->cid);
-  //decide whether to send mail, according to system and user settings.
+function mcapi_notify($op, $exchange) {
   foreach (array(user_load($exchange->payer_uid), user_load($exchange->payee_uid)) as $account) {
-    //first need to deterine whether to send
-    //this depends on each user's threshhold but also on whether the mc_signatures module is installed.
+    //decide whether to send mail, according to system and user settings.
+    $throttle = $account->mc_notification_throttle;
+    if ($account->uid == $GLOBALS['user']->uid && $throttle == 2) $throttle = 1;
+    if ($throttle < 2) {
+      continue; //to the next transactee
+    }
+
     $message = drupal_mail(
       'mcapimail',
       $op,
@@ -555,41 +553,43 @@ function mcapi_after_exchange($op, $exchange) {
       array(//params
         'recipient' => $account,
         'exchange' => $exchange,
-        'send' => FALSE//this may get changed
+        'send' => NULL //will be set elsewhere
       ),
       NULL, //sender defaults to site_mail
-      FALSE //don't send it yet...
+      TRUE //send by default
     );
-    if ($message['params']['send']) {
-      drupal_mail_send($message);
+  }
+  if ($message['params']['send']) {
+    $message['result'] = drupal_mail_send($message);
+    // Log errors
+    if (!$message['result']) {
+      watchdog('mail', 'Error sending e-mail (from %from to %to).', array('%from' => $message['from'], '%to' => $message['to']), WATCHDOG_ERROR);
+      drupal_set_message(t('Unable to send e-mail. Please contact the site administrator if the problem persists.'), 'error');
     }
   }
 }
 
 function mcapimail_mail($key, &$message, $params) {
-  $throttle = $message['params']['recipient']->mc_notification_throttle;
-  switch ($key) {
-    case 'delete':
-      //might not need a mail if deleting exchanges isn't allowed
-      return;
-    case 'update':
-    case 'insert':
-      $variables = mc_mail_tokens($params['recipient'], $message['language'], $params['exchange']);
-      $subject = variable_get('mc_notification_subject', '');
-      $message['subject'] = strtr($subject, $variables);
-      $message['body']['main'] = strtr(variable_get('mc_notification_body', ''), $variables);
-      $message['body']['footer'] = strtr(variable_get('mc_notification_footer', ''), $variables);
-  }
-  
   //Setting of 2 means that users don't want to be notified of their own activity.
-  if ($message['params']['recipient']->uid == $GLOBALS['user']->uid) $throttle --;
-  if ($throttle > 1) {
-    $message['params']['send'] = TRUE;
-    //drupal_set_message("Mailing ".$message['params']['recipient']->name." who has throttle $throttle");
+  if ($key == 'delete') return;
+  $subject = variable_get('mc_notification_subject', '');
+  switch ($key) {
+    case 'update':
+      $body = 'mc_notification_update_body';
+      break;
+    case 'insert':
+      $body = 'mc_notification_body';
+      break;
   }
-  else {
-    //drupal_set_message("Not mailing ".$message['params']['recipient']->name." who has throttle $throttle");
+  if (!$subject || !$body) {
+    drupal_set_message('Notification mail templates are not set.' .' '. t('Notification not sent'));
+    return;
   }
+  $body = variable_get($body, '');
+
+  $variables = mc_mail_tokens($params['recipient'], $message['language'], $params['exchange']);
+  $message['subject'] = strtr($subject, $variables);
+  $message['body'] = strtr($body, $variables);
 }
 
 function mc_mail_tokens($account, $language, $exchange) {//$account is the recipient of the mail

@@ -26,7 +26,6 @@ extract(mc_preprocess_exchange($node));
  * $payee           //name linked to payee profile
  * $amount          //formatted quantity
  * $balance         //formatted running balance
- * $rating          //themed rating
  * $title_link    //title of exchange, linked to node
  * $classes         //array of css classes
  *

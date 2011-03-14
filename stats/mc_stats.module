@@ -253,6 +253,7 @@ function mc_stats_theme() {
 function mc_stats_nodeapi(&$node, $op) {
   if ($node->type != 'exchange' || !variable_get('mc_live_stats', TRUE)) return;
   switch ($op) {
+    case 'insert':
     case 'update':
     case 'delete':
       mc_cache_set_stats($node->cid);
@@ -307,7 +308,8 @@ function mc_gen_stats($cid = 0, $from = 0, $to = NULL) {
   //iterate through the exchanges, adding stuff up
   while ($t = db_fetch_object($result)) {
     $dayofyear = date('yz', $t->changed);
-    $weekofyear = date('yW', $t->changed);
+    $weekofyear = strftime("%W", $t->changed); //the date 'W' doesn't work as the year rolls over
+    $weekofyear = date("yW", $t->changed);
     $monthofyear = date('ym', $t->changed);
     //create the array keys, if needed, annoying but otherwise we get php warnings
     foreach (array('payer_uid', 'payee_uid') as $user_id) {
@@ -432,9 +434,31 @@ function mc_theme_cache_stat($stat_type, $limit, $cid = NULL, $span = NULL) {
           $time = strftime("%b '%g", $time);
           break;
       }
-      $new_intervals[$time] = theme('money', $value, $cid);
+      //bit of an afterthought here because some values are money, others not
+      switch($stat_type) {
+        case 'period_volumes':
+          $new_intervals[$time] = theme('money', $value, $cid);
+          break;
+        case 'period_exchanges':
+          $new_intervals[$time] = $value;
+      }
     }
     $data = $new_intervals;
+  }
+  else {//more afterthought
+    switch($stat_type) {
+      case 'incomes':
+      case 'expenditures':
+      case 'volumes':
+        foreach ($data as $key => $value) {
+          $data[$key] = theme('money', $value, $cid);
+        }
+        break;
+      default:
+        foreach ($data as $key => $value) {
+          $data[$key] = '('.$value.')';
+        }
+    }
   }
   $output = '';
   $types = mc_stat_types();
@@ -456,10 +480,12 @@ function mc_cache_get_stat($type, $cid = NULL, $date_string = NULL) {
 }
 
 function theme_top_users($list) {
+  
+
   $output = array();
   if (count($list)) {
     foreach ($list as $uid => $quant) {
-      $output[] = theme('username', user_load($uid)) . ' ('.$quant.')';
+      $output[] = theme('username', user_load($uid)) ." $quant";
     }
   }
   return theme('item_list', $output, NULL, 'ol');
@@ -527,6 +553,7 @@ function mc_stat_types() {
     //the options are assumed to type single select dropdown boxes
     //null_cid is whether the stat type applies with no specified currency.
     'incomes' => array(
+      'name' => 'incomes',
       'title' => t('Highest incomes'),
       'callback' => 'top_users',
       'options' => array(
@@ -534,6 +561,7 @@ function mc_stat_types() {
       'null_cid' => FALSE
     ),
     'expenditures' => array(
+      'name' => 'expenditures',
       'title' => t('Biggest spenders'),
       'callback' => 'top_users',
       'options' => array(
@@ -541,6 +569,7 @@ function mc_stat_types() {
       'null_cid' => FALSE
     ),
     'volumes'=> array(
+      'name' => 'volumes',
       'title' => t('Exchange volumes'),
       'callback' => 'top_users',
       'options' => array(
@@ -548,6 +577,7 @@ function mc_stat_types() {
       'null_cid' => FALSE
     ),
     'exchanges'=> array(
+      'name' => 'exchanges',
       'title' => t('Most exchanges'),
       'callback' => 'top_users',
       'options' => array(
@@ -556,6 +586,7 @@ function mc_stat_types() {
     ),
     //these require a graphic to display, and their own
     'period_exchanges' => array(
+      'name' => 'period_exchanges',
       'title' => t('Periodic exchanges'),
       'callback' => 'periodic_values',
       'options' => array(
@@ -568,6 +599,7 @@ function mc_stat_types() {
       'null_cid' => TRUE
     ),
     'period_volumes' => array(
+      'name' => 'period_volumes',
       'title' => t('Periodic volume'),
       'callback' => 'periodic_values',
       'options' => array(

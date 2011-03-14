@@ -187,7 +187,7 @@ function mc_edit_form_submit($form, $form_state) {
   }
   //unsigned cannot be affected in this submit handler
   node_save($node);
-  drupal_goto('node/'.$node->nid);
+ drupal_goto('node/'.$node->nid);
 }
 
 function mc_webform_settings() {
