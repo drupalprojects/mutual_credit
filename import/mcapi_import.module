@@ -123,6 +123,9 @@ function mcapi_import_balances_member($uid, $balance, $gross_income=NULL) {
       $message = t("Initial payment from @user of @balance", $tokens);
     }
   }
+  module_load_include('inc', 'mcapi');
+  $cid = db_result(db_query("SELECT nid from {node} WHERE type = 'currency'"));
+  _refresh_mc_cache($account->uid, $cid);
   if ($result->success) drupal_set_message($message);
 }
 

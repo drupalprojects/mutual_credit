@@ -388,7 +388,7 @@ function cforge_report_form() {
   //we're just putting this here for lack of anywhere else at the moment
   $form['maintenance']['refresh'] = array(
     '#type' => 'submit',
-    '#value' => t("Recalulate balances"),
+    '#value' => t("Recalculate balances"),
     '#submit' => array('mc_balances_refresh'),
     '#weight' => 5,
   );
