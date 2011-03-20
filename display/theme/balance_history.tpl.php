@@ -48,33 +48,24 @@ foreach ($histories as $cid => $history){
   }
   //second smoothing mechanism, resample if there are too many points
   elseif (count($history) > MAX_CHART_POINTS) {
-    //we can sample the array by a factor of an integer only
-    $sample_frequency = ceil(count($history) / MAX_CHART_POINTS);
-    //make an array with every possible value - approx one for every pixel
-    $previous_time = array_shift($times);
-    $bal = array_shift($history);
-    $all_points[$previous_time] = $bal;
-    while ($time = array_shift($times)) {
-      while ($previous_time < $time) {//adding the in between points
-        $all_points[$previous_time] = $bal;
-        $previous_time++;
-      }
-      $bal = array_shift($history);
-      $all_points[$previous_time] = $bal;
+    $history_times = array_keys($history);
+    $history_values = array_values($history);
+    $first_time = reset($history_times);
+    $last_time = end($history_times);
+    $history_values[] = end($history);//repeat the last time because it has to have the same number of elements as the temp array, with the sample moment added
+    $sampling_interval = ceil(($last_time - $first_time) / MAX_CHART_POINTS);
+    for ($i = 0; $i <= MAX_CHART_POINTS; $i++) {
+      $sample_time = $first_time + $i*$sampling_interval; // arbitrary granularity figure
+      $temp = $history_times;
+      $temp[] = $sample_time;
+      sort($temp);
+      $sample_position = array_search($sample_time, $temp);
+      $times[] = floor(($sample_time-$first_time)/10000);
+      $values[] = $history_values[$sample_position];
     }
-    unset($points[$cid]);
-    //$all_points now contains a value for every pixel time interval, ready for sampling
-    //we reverse this array to be sure to sample the final value, which may be only a few seconds ago, so might otherwsie be sampled out
-    $reverse_points = array_reverse($all_points, TRUE);
-    foreach ($reverse_points as $t=>$eachpoint){
-      if (fmod($j, $sample_frequency) == 0){
-        $values[$t-$first_time] = $eachpoint;
-      }
-      $j++;
-    }
-    $times = array_keys($values);
-  } else { //using given data
-    //draws straight lines between the points
+  } 
+  else { //using given data
+    //draws straight diagonal lines between the points
     foreach ($history as $time => $value) {
       $values [$time - $first_time] = $value;
     }
@@ -127,9 +118,10 @@ foreach ($params as $key=>$val) {
 
 $url =  GOOGLE_CHARTS_URI .implode('&', $args);
 if (strlen($url) > 2048) {
-  watchdog('mcapi', "Error creating balance chart: url to google charts exceeded 2048 charts.");
-  drupal_set_message("Error creating balance chart: url to google charts exceeded 2048 charts.");
+  $replacements = array('@user' => $account->uid, '@count1' => count($times), '@count2' => strlen($url));
+  watchdog('mcapi', "Error creating balance chart for account @user: url to google charts exceeded 2048 chars with @count1 points and @count2 chars.", $replacements);
+  drupal_set_message(t("Error creating balance chart for account @user: url to google charts exceeded 2048 chars with @count1 points and @count2 chars.", $replacements), 'warning');
 }
 
 //can't use theme_image because it checks for the presence of a file
-print '<img src="' . $url . '" alt="' . $legend . '" title="' . $legend . '" class="chart" />';
+print '<img src = "' . $url . '" alt = "' . $legend . '" title = "' . $legend . '" class = "chart" />';

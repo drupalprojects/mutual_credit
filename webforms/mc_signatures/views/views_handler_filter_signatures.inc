@@ -13,8 +13,8 @@ class views_handler_filter_signatures extends views_handler_filter_boolean_opera
 
   function get_value_options() {
     $this->value_options = array(
-      'user' => t('User must sign'),
-      'another' => t('Another must sign')
+      'participant' => t('Involved user must sign'),
+      'another' => t('Another user must sign')
     );
   }
   function option_definition() {
@@ -30,13 +30,15 @@ class views_handler_filter_signatures extends views_handler_filter_boolean_opera
         $uid = $this->view->args[$key];
         $this->ensure_my_table();
         $fieldname = "$this->table_alias.$this->real_field ";
-        if ($this->options['value'] == 'user') {
+        if ($this->options['value'] == 'participant') {
           $where = "$fieldname = $uid";
         }
         else {
            $where = "$fieldname <> $uid";
         }
-        $this->query->add_where($this->options['group'], $where);
+        $this->query->add_where(NULL, $where);
+        //filtering for pending will only make a difference if there are data integrity problems
+        //$this->query->add_where(NULL, 'mc_exchanges.state = '.EXCHANGE_STATE_PENDING);
       }
     }
   }

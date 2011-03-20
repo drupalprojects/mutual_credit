@@ -204,24 +204,24 @@ function mc_signatures_views_default_views() {
     ),
   ));
   $handler->override_option('arguments', array(
-    'uid' => array(
-      'default_action' => 'default',
+    'participant' => array(
+      'default_action' => 'not found',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
       'wildcard' => 'all',
       'wildcard_substitution' => 'All',
       'title' => '',
       'breadcrumb' => '',
-      'default_argument_type' => 'user',
+      'default_argument_type' => 'fixed',
       'default_argument' => '',
       'validate_type' => 'user',
       'validate_fail' => 'not found',
       'break_phrase' => 0,
       'not' => 0,
-      'id' => 'uid',
-      'table' => 'mc_unsigned',
-      'field' => 'uid',
-      'validate_user_argument_type' => 'uid',
+      'id' => 'participant',
+      'table' => 'mc_exchanges',
+      'field' => 'participant',
+      'validate_user_argument_type' => 'either',
       'validate_user_roles' => array(
         '2' => 0,
       ),
@@ -229,36 +229,32 @@ function mc_signatures_views_default_views() {
       'default_options_div_prefix' => '',
       'default_argument_fixed' => '',
       'default_argument_user' => 0,
+      'default_argument_php' => '',
       'validate_argument_node_type' => array(
         'currency' => 0,
         'exchange' => 0,
+        'offer' => 0,
+        'want' => 0,
         'page' => 0,
         'story' => 0,
       ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
-      'validate_argument_vocabulary' => array(),
+      'validate_argument_vocabulary' => array(
+        '1' => 0,
+      ),
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
-      'override' => array(
-        'button' => 'Override',
-      ),
+      'validate_argument_php' => '',
     ),
   ));
   $handler->override_option('filters', array(
-    'state' => array(
-      'operator' => '=',
-      'value' => '1',
-      'group' => '0',
-      'exposed' => FALSE,
-      'expose' => array(
-        'operator' => FALSE,
-        'label' => '',
-      ),
-      'id' => 'state',
-      'table' => 'mc_exchanges',
-      'field' => 'state',
+    'uid' => array(
+      'value' => 'participant',
+      'id' => 'uid',
+      'table' => 'mc_unsigned',
+      'field' => 'uid',
       'relationship' => 'none',
     ),
   ));
@@ -282,7 +278,7 @@ function mc_signatures_views_default_views() {
 
   $handler = $view->new_display('block', t('I must sign'), 'block_1');
   $handler->override_option('arguments', array(
-    'uid' => array(
+    'participant' => array(
       'default_action' => 'default',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
@@ -296,10 +292,10 @@ function mc_signatures_views_default_views() {
       'validate_fail' => 'not found',
       'break_phrase' => 0,
       'not' => 0,
-      'id' => 'uid',
-      'table' => 'mc_unsigned',
-      'field' => 'uid',
-      'validate_user_argument_type' => 'uid',
+      'id' => 'participant',
+      'table' => 'mc_exchanges',
+      'field' => 'participant',
+      'validate_user_argument_type' => 'either',
       'validate_user_roles' => array(
         '2' => 0,
       ),
@@ -307,18 +303,24 @@ function mc_signatures_views_default_views() {
       'default_options_div_prefix' => '',
       'default_argument_fixed' => '',
       'default_argument_user' => 0,
+      'default_argument_php' => '',
       'validate_argument_node_type' => array(
         'currency' => 0,
         'exchange' => 0,
+        'offer' => 0,
+        'want' => 0,
         'page' => 0,
         'story' => 0,
       ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
-      'validate_argument_vocabulary' => array(),
+      'validate_argument_vocabulary' => array(
+        '1' => 0,
+      ),
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
+      'validate_argument_php' => '',
       'override' => array(
         'button' => 'Use default',
       ),
@@ -332,47 +334,16 @@ function mc_signatures_views_default_views() {
   $handler->override_option('block_caching', -1);
 
   $handler = $view->new_display('block', t('User waiting on'), 'block_3');
-  $handler->override_option('arguments', array(
-    'uid_touch' => array(
-      'default_action' => 'default',
-      'style_plugin' => 'default_summary',
-      'style_options' => array(),
-      'wildcard' => 'all',
-      'wildcard_substitution' => 'All',
-      'title' => '',
-      'breadcrumb' => '',
-      'default_argument_type' => 'user',
-      'default_argument' => '',
-      'validate_type' => 'user',
-      'validate_fail' => 'not found',
-      'id' => 'uid_touch',
-      'table' => 'node',
-      'field' => 'uid_touch',
-      'validate_user_argument_type' => 'uid',
-      'validate_user_roles' => array(
-        '2' => 0,
-      ),
+  $handler->override_option('filters', array(
+    'uid' => array(
+      'value' => 'another',
+      'id' => 'uid',
+      'table' => 'mc_unsigned',
+      'field' => 'uid',
+      'relationship' => 'none',
       'override' => array(
         'button' => 'Use default',
       ),
-      'relationship' => 'none',
-      'default_options_div_prefix' => '',
-      'default_argument_fixed' => '',
-      'default_argument_user' => 0,
-      'default_argument_php' => '',
-      'validate_argument_node_type' => array(
-        'currency' => 0,
-        'exchange' => 0,
-        'page' => 0,
-        'story' => 0,
-      ),
-      'validate_argument_node_access' => 0,
-      'validate_argument_nid_type' => 'nid',
-      'validate_argument_vocabulary' => array(),
-      'validate_argument_type' => 'tid',
-      'validate_argument_transform' => 0,
-      'validate_user_restrict_roles' => 0,
-      'validate_argument_php' => '',
     ),
   ));
   $handler->override_option('block_description', t('user waiting on'));
@@ -494,6 +465,25 @@ function mc_signatures_views_default_views() {
     'type' => 'perm',
     'perm' => 'view all exchanges',
   ));
+  $handler->override_option('filters', array(
+    'state' => array(
+      'operator' => '=',
+      'value' => '1',
+      'group' => '0',
+      'exposed' => FALSE,
+      'expose' => array(
+        'operator' => FALSE,
+        'label' => '',
+      ),
+      'id' => 'state',
+      'table' => 'mc_exchanges',
+      'field' => 'state',
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'relationship' => 'none',
+    ),
+  ));
   $handler->override_option('style_plugin', 'table');
   $handler->override_option('style_options', array(
     'grouping' => '',
@@ -530,7 +520,7 @@ function mc_signatures_views_default_views() {
     'separator' => '',
     'hide_empty' => 0,
   ));
-  $handler->override_option('path', 'unsigned');
+  $handler->override_option('path', 'admin/mc/unsigned');
   $handler->override_option('menu', array(
     'type' => 'normal',
     'title' => t('Unsigned exchanges'),
