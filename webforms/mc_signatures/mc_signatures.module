@@ -134,6 +134,7 @@ function mc_one_signing($node, $signer_uid){
   }
   if (!isset($unfinished)) {
     db_query("UPDATE {mc_exchanges} SET state = %d WHERE nid = %d", array(':state' => EXCHANGE_STATE_FINISHED, ':nid' => $node->nid));
+    mc_signatures_update_balances($node);
     drupal_set_message(t("Exchange &hash;@nid is signed off.", array('@nid' => $node->nid)));
     mc_signatures_signoff_notify($node);
   }
@@ -306,6 +307,7 @@ function mc_signall_confirm_form_submit($form, $form_state) {
     $nid = $form_state['values']['nid'];
     _clear_unsigned('nid', $nid);
     db_query("UPDATE {mc_exchanges} SET state = %d WHERE nid = %d", array(':state' => EXCHANGE_STATE_FINISHED,':nid' => $nid));
+    mc_signatures_update_balances(node_load($nid));
     drupal_set_message(t("Transaction #@nid is signed off.", array('@nid' => $nid)));
     mc_signatures_signoff_notify(node_load($nid));
   }
@@ -443,4 +445,10 @@ function mc_convert_state_checkbox(&$form) {
   $form['state']['#type'] = 'checkbox';
   $form['state']['#title'] = t('Require signatures');
   unset($form['state']['#description']);
+}
+
+function mc_signatures_update_balances($exchange) {
+  module_load_include('inc', 'mcapi');
+  _refresh_mc_cache($exchange->payer_uid, $exchange->cid);
+  _refresh_mc_cache($exchange->payee_uid, $exchange->cid);
 }
