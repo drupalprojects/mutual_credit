@@ -34,6 +34,7 @@ function mcapi_import_menu() {
     'weight' => -50
   );
   return $items;
+print_r($items);
 }
 
 function mcapi_import_menu_alter($items) {
@@ -183,7 +184,17 @@ function mcapi_import_user_import_data($settings, $update_setting, $column_setti
   }
 }
 function mcapi_import_user_import_after_save($settings, $account, $password, $fields, $updated, $update_setting_per_module) {
-  mcapi_import_balances_member($account->uid, $fields['mutual_credit']['cleared_balance'][0], $fields['mutual_credit']['gross_income'][0]);
+  if ($fields['mutual_credit']['cleared_balance'][0]) {
+    mcapi_import_balances_member($account->uid, $fields['mutual_credit']['cleared_balance'][0], $fields['mutual_credit']['gross_income'][0]);
+  }
+  elseif ($fields['uid_login']['uid_login']) {
+    db_query("UPDATE {mc_cache} SET uid = %d WHERE uid = %d",
+      array(
+        ':uid_new' => $fields['uid_login']['uid_login'][0],
+        ':uid_old' => $account->uid
+      )
+    );
+  }
 }
 
 //provide a checklist and lauch button

@@ -58,7 +58,7 @@ class views_handler_field_mc_running_balance extends views_handler_field {
       $key = array_search('participant', array_keys($this->view->argument));
       if ($key !== FALSE) {
         $uid = $this->view->args[$key];
-
+        //could these be incorporated into the query itself?
         $outgoing = db_result(db_query("SELECT sum(quantity) from {mc_exchanges} WHERE payer_uid = %d AND state in ($states) AND nid <= %d", $uid, $values->nid));
         $income = db_result(db_query("SELECT sum(quantity) from {mc_exchanges} WHERE payee_uid = %d AND state IN ($states) AND nid <= %d", $uid, $values->nid));
         return theme('money', $income-$outgoing, $values->mc_exchanges_cid);

@@ -540,9 +540,11 @@ function mcapi_notify($op, $exchange) {
   foreach (array(user_load($exchange->payer_uid), user_load($exchange->payee_uid)) as $account) {
     //decide whether to send mail, according to system and user settings.
     $throttle = $account->mc_notification_throttle;
-    if ($account->uid == $GLOBALS['user']->uid && $throttle == 2) $throttle = 1;
-    if ($throttle < 2) {
-      continue; //to the next transactee
+    if ($account->uid == $GLOBALS['user']->uid) {// for the current user
+      if ($throttle < 3) continue; //to the next transactee
+    }
+    elseif ($throttle < 1) {//for the other user
+      continue; 
     }
 
     $message = drupal_mail(

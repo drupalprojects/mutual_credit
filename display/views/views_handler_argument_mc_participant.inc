@@ -2,7 +2,7 @@
 // $Id: views_handler_argument_mc_participant.inc,v 1.1.2.2 2010/12/22 20:21:51 matslats Exp $
 
 /**
- * Filter handler for the current user
+ *  Argument handler to select exchanges involving the passed user
  */
 class views_handler_argument_mc_participant extends views_handler_argument_numeric {
   function construct() {

@@ -133,7 +133,7 @@ function mcapi_menu() {
     'weight' => 2
   );
   $items['admin/mc/notification'] = array(
-    'title' => 'Mail notification template',
+    'title' => 'Mail notification templates',
     'description' => 'Compose the notification emails',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mc_mail_template'),

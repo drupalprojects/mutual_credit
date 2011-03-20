@@ -14,8 +14,8 @@ function mc_signatures_views_handlers() {
       'views_handler_field_mc_signatories' => array(
         'parent' => 'views_handler_field'
       ),
-      'views_handler_argument_mc_signatures' => array(
-        'parent' => 'views_handler_argument'
+      'views_handler_filter_signatures' => array(
+        'parent' => 'views_handler_filter_boolean_operator'
       ),
     ),
   );
@@ -36,27 +36,22 @@ function mc_signatures_views_data() {
     ),
   );
 
-    // link to edit comment
+  // link to edit comment
   $data['mc_unsigned']['signatories'] = array(
     'field' => array(
+    'help' => t('Provide a simple link to edit the comment.'),
       'title' => t('Signatories'),
-      'help' => t('Provide a simple link to edit the comment.'),
       'handler' => 'views_handler_field_mc_signatories',
     ),
   );
 
   $data['mc_unsigned']['uid'] = array(
-    'help' => t('Users needing to sign exchange'),
-    'argument' => array(
-      'title' => t('Signature needed from user'),
-      'handler' => 'views_handler_argument_user_uid',
-      'numeric' => TRUE,
-    ),
+    'help' => t('Pending signatures'),
     // Works for admin. Otherwise query & results are good, but process doesn't reach render
     // could it be permissions? mcapi access is not called.
     'filter' => array(
-      'title' => t('My signatures'),
-      'handler' => 'views_handler_filter_user_current',
+      'title' => t('Users waiting or already signed'),
+      'handler' => 'views_handler_filter_signatures',
       'numeric' => TRUE,
     ),
   );
