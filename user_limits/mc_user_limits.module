@@ -11,7 +11,7 @@ function mc_user_limits_menu() {
       'title' => 'Limits',
       'description' => 'Configure the maximum and minimum permissible balances',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('mc_configure_limits'),
+      'page arguments' => array('mc_configure_limits_form'),
       'access arguments' => array('configure currencies'),
       'weight' => 4,
     )
@@ -119,26 +119,4 @@ function theme_balance_limits($account, $cids) {
   }
 
   return theme('table', $headings, $rows);
-}
-
-function mc_configure_limits() {
-  $fieldsets = module_implements('mc_user_limits', 'settings');
-  foreach ($fieldsets as $key => $fields) {
-    $form[$key] = array(
-      '#type' => 'fieldset',
-      '#title' => $key
-    );
-    foreach ($fields as $fieldkey => $field){
-      $form[$key][$fieldkey] = $field;
-    }
-  }
-  if (!count($form)) {
-    $form['default'] = array(
-      '#value' => t("Edit each user's balance limits on their account page.")
-    );
-    return $form;
-  }
-  else {
-    return system_settings_form($form);
-  }
 }
