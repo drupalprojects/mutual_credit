@@ -44,8 +44,8 @@ class views_handler_field_mcapi_amount extends views_handler_field {
   }
 
   function render($values) {
-    //if we are using the 'user_exchanges' argument, the options kick in.
-    //not the most efficient way to access the arguments
+    //if we are using the 'participant' argument, the options kick in.
+    //might not be the most efficient way to access the arguments
     if (isset($this->view->argument['participant']) && count($this->view->args)) {
       $key = array_search('user_exchanges', array_keys($this->view->argument));
       $uid = $this->view->args[$key];
@@ -68,7 +68,7 @@ class views_handler_field_mcapi_amount extends views_handler_field {
     }
     //in case there isn't a row yet in the cache table
     elseif ($values->{$this->aliases['cid']} == NULL && $values->cleared_balance == NULL) { 
-      $values->{$this->aliases['cid']} = db_result(db_query("SELECT nid FROM {node} WHERE type = 'currency'"));
+      $values->{$this->aliases['cid']} = db_result(db_query("SELECT cid FROM {mcapi_currencies}"));
     }
     return theme('money', $values->{$this->field_alias}, $values->{$this->aliases['cid']});
   }

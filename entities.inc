@@ -11,20 +11,54 @@ class TransactionEntityController extends DrupalDefaultEntityController {
   //this converts the serialized data property into an array
   //not needed I think, because we should add proper fields for that
   /*
-  public function load($xids = array(), $conditions = array()) {
+
+/*
+ * Implements hook_user_view
+ */
+function mcapi_user_view($account) {
+  module_load_include('inc', 'mcapi', 'entities');
+  $balances = entity_get_controller('transaction')->get_balances($account->uid);
+  $account->content['mcapi'] = array(
+    '#title' => t('Monetary activity'),
+    '#type' => 'user_profile_category',
+    'balances' => array(
+      '#theme' => 'balances',
+      '#title' => t('Balances'),
+      '#balances' => $balances,
+    )
+  );
+}
+  public function _________load($xids = array(), $conditions = array()) {
     $transactions = parent::load($xids, $conditions);
     foreach($transactions as $key => $transaction) {
-       $transactions[$key]->data = unserialize($transaction->data);
+      $transactions[$key]->data = unserialize($transaction->data);
     }
     return $transactions;
   }
-*/
   /*
    * Validation ideally would happen by using the save function with $write set to FALSE
-   * Instead we just check the balances here
+   * Instead we just check the balances here/
    */
-  public function validate($values){
-    mcapi_check_limits($values['payer_uid'], $values['payee_uid'], -$values['quantity'], intval($values['cid']));
+  public function validate($transaction){
+    $currency = currencies_load($transaction->cid);
+    //if the limit check fails, it will be thrown back and the rest of validate won't run
+    mcapi_check_limits($transaction->payer_uid, $transaction->payee_uid, -$transaction->quantity, $transaction->cid);
+    $key = isset($transaction->xid) ? $transaction->xid : NULL;
+    try {
+      //temporarily change the transaction type so that validated transaction left hanging DO leave a trace.
+      $state = $transaction->state;
+      $transaction->state = TRANSACTION_STATE_VALIDATING;
+      entity_get_controller('transaction')->save($transaction, $currency->write_validate);
+      $transaction->state = $state;
+    }
+    catch (Exception $e){
+      //if the validation fails, we add the error message to the transaction object
+      $transaction->data['error'] = $e; //THIS IS NOT TESTED
+    }
+    //the db rolled back but now we need to change this object back
+    if (!$currency->write_validate) {
+      $transaction->xid = $key;
+    }
   }
 
   /*
@@ -35,7 +69,7 @@ class TransactionEntityController extends DrupalDefaultEntityController {
     //this is only used to fix what I think is a Drupal bug, see mcapi_field_attach_presave
     //removes the 'add more' item from fields with infinite cardinality
     $instances = array();
-    $instances = _field_invoke_get_instances('transaction', $transaction->type, array('deleted' => FALSE));
+    $instances = _field_invoke_get_instances('transaction', 'transaction', array('deleted' => FALSE));
     foreach($instances as $instance) {
       $field = field_info_field($instance['field_name']);
       if ($field['cardinality'] == -1) {
@@ -43,24 +77,28 @@ class TransactionEntityController extends DrupalDefaultEntityController {
       }
     }//end of bugfix
 
+    //clear any error messages which were created in validation
+    unset ($transaction->data['error']);
     //somebody should tell me if the methodology is good here.
     $t = db_transaction();
+    //unfortunately the rollback doesn't roll back the auto-increment.
     $function = isset($transaction->xid) && $transaction->xid ? 'update' : 'insert';
     try {
-      $transaction = entity_get_controller('transaction')->$function($transaction, TRUE);
+      entity_get_controller('transaction')->$function($transaction, TRUE);
     }
     catch (Exception $e) {
       $t->rollback();
       watchdog_exception('mcapi', $e);
-      drupal_set_message($e, 'error');
+      throw $e;
     }
     if (!$write) {
       $t->rollback();
+      //for some reason these public functions all have their arguments passed by reference
+      //so we must be careful to unset the xid if we were only testing
     }
     else {
-      module_invoke_all('entity_'.$function, 'transaction', $transaction);// can't remember what this is for - sending mail?
+      module_invoke_all('entity_'.$function, 'transaction', $transaction);
     }
-    module_invoke_all('after_transaction', $transaction, $function);
   }
 
   /*
@@ -68,14 +106,25 @@ class TransactionEntityController extends DrupalDefaultEntityController {
    * there is no error checking on this.
    */
   public function erase($transaction) {
-    //TODO configure this variable in the interface
-    if (variable_get('mcapi_really_delete', FALSE)) {
-      $query = db_delete('mcapi_transactions');
+    $currency = currencies_load($transaction->cid);
+    $currency = currencies_load($transaction->cid);
+    switch ($currency->delete_mode) {
+      case '0':
+        throw new Exception(t('Deletions not allowed'));
+        break;
+      case '1':
+        $transaction->state = TRANSACTION_STATE_ERASED;
+        //db_query("UPDATE {mcapi_transactions} SET state = :state, data = :data WHERE xid = :xid",
+        //  array(':state' => $transaction->state, ':data' => serialize($transaction->data), ':xid' => $transaction->xid)
+        //);
+        drupal_write_record('mcapi_transactions', $transaction, 'xid');
+        break;
+      case '2':
+        $query = db_delete('mcapi_transactions')
+        ->condition('xid', $transaction->xid)
+        ->execute();
+        break;
     }
-    else {
-      $query = db_update('mcapi_transactions')->fields(array('state' => EXCHANGE_STATE_ERASED));
-    }
-    $query->condition('xid', $transaction->xid)->execute();
     try {
       balances_refresh($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
     }
@@ -138,9 +187,8 @@ class TransactionEntityController extends DrupalDefaultEntityController {
   /*
    * write an transaction (and its dependents) to the database, refreshing the balances
    */
-  function insert(&$transaction) {
+  function insert($transaction) {
     $table = 'mcapi_transactions';
-    ddebug_backtrace();
     $success = drupal_write_record($table, $transaction);
     if (!$success) {
       throw new Exception(t('failed to write to @name table', array('@name' => $table)));
@@ -162,18 +210,26 @@ class TransactionEntityController extends DrupalDefaultEntityController {
    * Transactions with derived transactions, do not update, but automatically erase and insert,
    * TODO We could use the versions table here, since it is included already
    */
-  function update(&$transaction) {
-    //TODO configure this variable in the interface
-    if (variable_get('transaction_records_mutable', FALSE)) {
-      //so there are no derived transactions, we are dealing with one only
-      drupal_write_record('mcapi_transactions', $transaction, array('xid'));
-      field_attach_update('transaction', $transaction);
-    }
-    else {
-      $this->erase($transaction);
-      $transaction->data['former_xid'] = $transaction->xid;//this is where we link the new to the old.
-      unset($transaction->xid);
-      $this->insert($transaction, TRUE);
+  function update($transaction) {
+    $currency = currencies_load($transaction->cid);
+    switch($currency->update_mode) {
+      case 0:
+        throw new Exception(t('Updates not allowed'));
+        break;
+      case 1:
+        //delete the old, remove the xid and insert it
+        $old = clone $transaction;
+        //$transaction->data['was'] = $transaction->xid;//this is where we link the new to the old.
+        unset($transaction->xid);
+        $this->insert($transaction); //will give a new xid
+        $old->data['became'] = $transaction->xid;
+        $this->erase($old);
+        break;
+      case 2:
+        //while there are no 'derived' transactions, we are dealing with one only
+        drupal_write_record('mcapi_transactions', $transaction, 'xid');
+        field_attach_update('transaction', $transaction);
+        break;
     }
     balances_refresh($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
   }
@@ -185,11 +241,15 @@ class TransactionEntityController extends DrupalDefaultEntityController {
  */
 class CurrencyEntityController extends DrupalDefaultEntityController {
 
-  public function _load($cids = array(), $conditions = array()) {
+  public function load($cids = array(), $conditions = array()) {
     $currencies = parent::load($cids, $conditions);
     foreach($currencies as $key => $currency) {
-       $currencies[$key]->data = unserialize($currency->data);
-       $currencies[$key]->divisions = currency_extract_divisions($entity->currency_allowed_fractions);
+      $data = unserialize($currencies[$key]->data);
+      foreach ($data as $name => $value) {
+        $currencies[$key]->$name = $value;
+      }
+      //make the divisions available as an array, from the string they are stored and edited as.
+      $currencies[$key]->divisions = currency_divisions_array($currency->divisions_conf);
     }
     return $currencies;
   }
@@ -205,7 +265,6 @@ class CurrencyEntityController extends DrupalDefaultEntityController {
     module_invoke_all('entity_'.$function, 'currency', $currency);
   }
   
-
   function insert($currency) {
     $table = 'mcapi_currencies';
     $success = drupal_write_record($table, $currency);
@@ -219,19 +278,50 @@ class CurrencyEntityController extends DrupalDefaultEntityController {
     drupal_write_record('mcapi_currencies', $currency, array('cid'));
     field_attach_update('currency', $currency);
   }
+/*
+  function delete($cid) {
+    db_query("DELETE FROM {mcapi_currencies} WHERE cid = :cid", array(':cid' => $cid));
+  }
+*/
+}
 
-  function currency_extract_divisions($string) {
-    if (strpos($string, '|')) {
-      $lines = explode("\n", $string);
-      foreach($lines as $line) {
-        $array = explode('|', $line);
-        $allowed[$array[0]] = $array[1];
-      }
-      return $allowed;
+
+/*
+ * Alternative approach to mcapi_check_limits
+ * Assuming the transaction is recorded and the balances are updated, but it can all be rolled back
+ */
+function test_balances($uid, $cid) {
+  $balances = db_select('mcapi_cache')
+  ->fields(array('cleared_balance', 'pending_dif', 'max', 'min'))
+  ->condition('uid', $uid)
+  ->condition('cid', $cid)
+  ->execute()->getAssoc();
+  extract($balances);
+
+  $deficit = $min - $cleared_balance + $pending_dif;
+  if ($deficit > 0) {
+    $message = t('Transaction takes @username !quant below the minimum balance of !min',
+      array(
+        '@username' => strip_tags(theme('username', array('account' => user_load($payer_uid)))),
+        '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
+        '!min' => theme('money', array('quantity' => $min, 'cid' => $cid, $richtext = FALSE))
+      )
+    );
+  }
+  else {
+    $excess = $cleared_balance + $pending_dif -$max;
+    if ($excess > 0) {
+      $message = t('Transaction takes @username !quant above the maximum balance of !max',
+        array(
+          '@username' => strip_tags(theme('username', array('account' => user_load($uid)))),
+          '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
+          '!max' => theme('money', array('quantity' => $max, 'cid' => $cid, $richtext = FALSE))
+        )
+      );
     }
-    elseif ($string == '00') {
-      return '00';
-    }
+  }
+  if ($message) {
+    throw new Exception($message);
   }
 }
 
@@ -276,49 +366,26 @@ function mcapi_check_limits($payer_uid, $payee_uid, $difference, $cid) {
       );
     }
   }
-  if ($message) {
+  if (strlen($message)) {
     throw new Exception($message);
   }
 }
 
-/*
- * Alternative approach to mcapi_check_limits
- * Assuming the transaction is recorded and the balances are updated, but it can all be rolled back
- */
-function test_balances($uid, $cid) {
-  $balances = db_select('mcapi_cache')
-  ->fields(array('cleared_balance', 'pending_dif', 'max', 'min'))
-  ->condition('uid', $uid)
-  ->condition('cid', $cid)
-  ->execute()->getAssoc();
-  extract($balances);
 
-  $deficit = $min - $cleared_balance + $pending_dif;
-  if ($deficit > 0) {
-    $message = t('Transaction takes @username !quant below the minimum balance of !min',
-      array(
-        '@username' => strip_tags(theme('username', array('account' => user_load($payer_uid)))),
-        '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
-        '!min' => theme('money', array('quantity' => $min, 'cid' => $cid, $richtext = FALSE))
-      )
-    );
-  }
-  else {
-    $excess = $cleared_balance + $pending_dif -$max;
-    if ($excess > 0) {
-      $message = t('Transaction takes @username !quant above the maximum balance of !max',
-        array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($uid)))),
-          '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
-          '!max' => theme('money', array('quantity' => $max, 'cid' => $cid, $richtext = FALSE))
-        )
-      );
+function currency_divisions_array($string) {
+  if (strpos($string, '|')) {
+    $lines = explode("\n", $string);
+    foreach($lines as $line) {
+      $array = explode('|', $line);
+      $allowed[$array[0]] = $array[1];
     }
+    return $allowed;
   }
-  if ($message) {
-    throw new Exception($message);
+  elseif ($string == '00') {
+    return '00';
   }
 }
+
 
 
 //refreshes a cache of all the transactions, calculates the running balances and other totals
@@ -334,7 +401,7 @@ function balances_refresh($cid, $uids) {
     while (list($key, $transaction) = each($history)) {
       //add to or subtract from the running balances
       if ($transaction->payer_uid == $uid) {
-        if ($transaction->state == EXCHANGE_STATE_FINISHED) {
+        if ($transaction->state == TRANSACTION_STATE_FINISHED) {
           $cleared_balance -= $transaction->quantity;
         }
         else {
@@ -343,7 +410,7 @@ function balances_refresh($cid, $uids) {
         $gross_out += $transaction->quantity;
       }
       else {
-        if ($transaction->state == EXCHANGE_STATE_FINISHED) {
+        if ($transaction->state == TRANSACTION_STATE_FINISHED) {
           $cleared_balance += $transaction->quantity;
         }
         else {
@@ -353,7 +420,7 @@ function balances_refresh($cid, $uids) {
       }
       $transaction->balance = $cleared_balance;
       //add the transaction to the list if requred
-      if ($transaction->state == EXCHANGE_STATE_FINISHED) {
+      if ($transaction->state == TRANSACTION_STATE_FINISHED) {
         $transactions[$transaction->xid] = $transaction;
       }
     }
@@ -366,40 +433,3 @@ function balances_refresh($cid, $uids) {
     $query->execute();
   }
 }
-
-function validate_divisions(&$element, $form_state) {
-  $divisions = currency_extract_divisions($element['#value']);
-  if ($divisions == '00' || $divisions == '') return;
-  if (!is_array($divisions)) {
-    form_error($element, t('Invalid fractions. Follow the instructions below the field'));
-  }
-  else {
-    foreach (array_keys($divisions) as $integer) {
-      if (!is_numeric($integer)){
-        form_error($element, t('Each division key must be an integer from 0 to 99'));
-      }
-      $integer += 0; //convert from string to number
-      if (!is_integer($integer) || $integer > 99) {
-        form_error($element, t('Each division key must be an integer from 0 to 99'));
-      }
-    }
-  }
-}
-
-  /*
-   * Called from the formAPI
-   * Checks for duplicate names
-   */
-  function currency_form_validate($form, $form_state) {
-    //check that the title is unique amongst currencies
-    $query = db_select('currency')
-    ->condition('title', $form_state['values']['name'])
-    ->countQuery();
-    if (isset($form_state['values']['cid']) && $form_state['values']['cid']) {
-      $count->condition('cid', $currency->cid, '<>');
-    }
-    $cid = $query->execute()->fetchField();
-    if ($cid) {
-      form_set_error('title', t('Another currency called !name already exists.', array('!name' => l($form_state['values']['name'], 'currency/' . $cid))));
-    }
-  }

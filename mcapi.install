@@ -19,20 +19,25 @@ function mcapi_install() {
     ->fields(array('module' => 'mcapi'))
     ->execute();
   }
-  drupal_set_message(t('By default, authenticated user has been given permission to transact'));
+  drupal_set_message(t('By default, authenticated user has been given permission to transact.'));
 
   //here we set all the module weights together
   //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
   db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi')->execute();
-  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_webform_1stparty')->execute();
-  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_multiple')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_webforms')->execute();
 
+  //allow the body field to be added to currencies and transactions
+  $data = unserialize(db_query("SELECT data from field_config where field_name = 'body'")->fetchField());
+  foreach (array('currency', 'transaction') as $ent) {
+    if (!in_array($ent, $data['entity_types'])) {
+      $data['entity_types'][] = $ent;
+    }
+  }
+  $data_col = serialize($data);
+  db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
 
   if (module_exists('image')) {
     mcapi_modules_enabled(array('image'));
-  }
-  if (module_exists('contact')) {
-    mcapi_modules_enabled(array('contact'));
   }
   mcapi_create_default_currency();
 }
@@ -54,10 +59,24 @@ function mcapi_uninstall() {
     ->condition('vid', $vid)
     ->execute();
   }
-
-  //lose the currency node fields, and their instances, supposedly
-  field_delete_field('curr_data'); 
-  field_purge_batch(20);
+  /* this doesn't work, perhaps because the controller has been disabled
+  //delete all the currencies properly, with their field data
+  module_load_include('inc', 'mcapi', 'entities');
+  $controller = entity_get_controller('currency');
+  $result = db_query("SELECT cid from {mcapi_currencies}");
+  while ($cid = $result->Fetchfield()) {
+    $controller->delete($cid);
+  }
+   * So instead we're going to manually delete the fields
+   * Except the instances don't delete unless they are mentioned in the fields' "bundles" property, which is undocumented.
+   * IN fact we can't even retrieve the instances here, possibly because the entity is already gone
+   * So we delete the instances manually
+   */
+  //lose the currency entity fields and instances
+  db_query("DELETE FROM field_config_instance WHERE entity_type = 'currency'");
+  db_query("DELETE FROM field_data_body WHERE entity_type = 'currency'");
+  db_query("DELETE FROM field_revision_body WHERE entity_type = 'currency'");
+  //db_query("DELETE FROM file_usage WHERE type = 'currency'");
   
   variable_del('cforge_report');
 }
@@ -66,11 +85,9 @@ function mcapi_uninstall() {
  * Implements hook_enable
  */
 function mcapi_enable() {
-  $currency = db_select('mcapi_currencies', 'c')->fields('c', array('cid', 'name'))->execute()->fetch();
-  drupal_set_message(t('Your defult currency is @name. !edit', array(
-    '@name' => $currency->name,
-    '!edit' => l(t('edit'), 'currency/' . $currency->cid . '/edit')
-  )));
+
+  //this seems to have been omitted from core...
+  menu_rebuild();
 }
 
 /**
@@ -94,7 +111,7 @@ function mcapi_schema() {
         'size' => 'normal',
       ),
       'description' => array(
-        'description' => 'a brief description of what was transactiond',
+        'description' => 'a brief description of what was exchanged',
         'type' => 'text',
         'size' => 'small',
       ),
@@ -143,7 +160,7 @@ function mcapi_schema() {
         'size' => 'normal',
       ),
       'data' => array(
-        'description' => 'any other serialized data that modules want to store',
+        'description' => 'nonessential info not fitting into existing fields',
         'type' => 'text',
         'size' => 'small',
         'serialize' => TRUE,
@@ -220,18 +237,19 @@ function mcapi_schema() {
         'type' => 'serial',
         'size' => 'normal',
       ),
+      'uid' => array(
+        'description' => 'the creator of the currency',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
       'name' => array(
         'description' => 'the name of the currency',
         'type' => 'varchar',
         'length' => '64',
         'not null' => TRUE
       ),
-      'rationale' => array(
-        'description' => 'description of the currency',
-        'type' => 'text',
-        'not null' => TRUE
-      ),
-      'divisions' => array(
+      'divisions_conf' => array(
         'description' => 'fractions of the currency unit',
         'type' => 'text',
         'size' => 'small',
@@ -243,10 +261,9 @@ function mcapi_schema() {
         'default' => '@minus<strong>Cc</strong>@integer:@subdivision',
       ),
       'data' => array(
-        'description' => "An array of other properties",
-        'type' => 'blob',
-        'size' => 'big',
-        'not null' => FALSE,
+        'description' => 'nonessential info not fitting into existing fields',
+        'type' => 'text',
+        'size' => 'small',
         'serialize' => TRUE,
       ),
     ),
@@ -259,77 +276,63 @@ function mcapi_schema() {
 }
 
 
-function cforge_report() {
-  module_load_include('inc', 'mcapi');
-  $traders = get_trader_uids();
-  $data = array(
-    'server' => $_SERVER["HTTP_HOST"],
-    'site_name' => urlencode(variable_get('site_name', 'site_name')),
-    'site_mail' => variable_get('site_mail', 'site_mail'),
-    'user_count' => count($traders),
-    'version' => db_query("SELECT schema_version from {system} WHERE name = 'mcapi'")->fetchCol(),
-    'transactions_last_month' => db_select('node', 'n')->condition('created',  strtotime('-1 month'), '>')->condition('type', 'transaction')->countQuery()->execute()->fetchField(),
-    'public' => variable_get('cforge_report', 1) -1,
-  );
-
-  foreach ($data as $key => $val) {
-    $args[] = $key . '=' . $val;
-  }
-  $url = 'http://www.communityforge.net/registration.php?'. implode('&', $args);
-  $reply = drupal_http_request($url);
-  if (isset($reply->data)) {
-    drupal_set_message($reply->data);
-  }
-}
 
 function mcapi_modules_enabled($modules) {
   $fields = field_read_fields();
   if (in_array('image', $modules)) {
-    if (!isset($fields['curr_icon'])) {
-      $field = array(
-        'field_name' => 'curr_icon',
-        'type' => 'image',
-        'entity_types' => array('currency'),
-      );
-      field_create_field($field);
-    }
-    $instances = field_read_fields();
-    if (!isset($instances['curr_icon'])) {
+    $instance = field_info_instance('currency', 'field_image', 'currency');
+    if (empty($instance)) {
       $currency_icon = array(
-        'field_name' => 'curr_icon',
+        'field_name' => 'field_image',
         'entity_type' => 'currency',
-        'bundle' => 'mutual_credit',
-        'label' => t('Icon'),
+        'label' => 'Icon',
+        'bundle' => 'currency',
         'description' => t('A small graphical representation of the currency'),
+        'required' => FALSE,
         'settings' => array(
-          //'max_filesize' => 2,
-          //'image_style' => 'thumbnail'
-        )
+          'file_directory' => 'field/image',
+          'file_extensions' => 'png gif jpg jpeg',
+          'max_filesize' => '2048',
+          'max_resolution' => '20x20',
+          'min_resolution' => '12x12',
+          'alt_field' => FALSE,
+          'title_field' => TRUE,
+        ),
+        'display' => array(
+          'default' => array(
+            'label' => 'hidden',
+            'type' => 'image',
+            'settings' => array('image_style' => 'curr_icon', 'image_link' => ''),
+            'weight' => -1,
+          ),
+        ),
       );
       field_create_instance($currency_icon);
     }
-  }
-
-  if (in_array('contact', $modules)) {
-    if (!isset($fields['notify_threshhold'])) {
-      $contact_field = array(
-        'field_name' => 'notify_threshhold',
-        'type' => 'list_integer',
-        'entity_types' => array('user'),
-      );
-      field_create_field($contact_field);
-
-      $instance = array(
-        'field_name' => 'notify_threshhold',
-        'entity_type' => 'user',
-        'bundle' => 'user',
-        'label' => t('When to notify about transactions via email'),
-        'description' => t('Set the default frequency of notifications'),
+    $instance = field_info_instance('currency', 'body', 'currency');
+    if (empty($instance)) {
+      $rationale = array(
+        'field_name' => 'body',
+        'entity_type' => 'currency',
+        'bundle' => 'currency',
+        'label' => t('Rationale'),
+        'widget_type' => 'text_textarea_with_summary',
+        'description' => t('What are the credentials of this currency? Richard Douthwaite poses these questions:') . theme('item_list', array('items' => array(
+            t('Who issues the money?'),
+            t('Why do they issue it?'),
+            t('Where is the money created?'),
+            t('What gives the money its value?'),
+            t('How is the money created?'),
+            t('When is the money created?'),
+          ), 'title' => NULL, 'type' => 'ol')),
         'settings' => array(
-          'allowed_values' => array(1 => t("Only when action is needed"), 2 => t('When affected by another user'), 3 => t('For all events'))
+          'default' => array(
+            'label' => 'hidden',
+            'type' => 'text_default',
+          ),
         )
       );
-      field_create_instance($instance);
+      field_create_instance($rationale);
     }
   }
 }
@@ -345,19 +348,38 @@ function mcapi_modules_disabled($modules) {
 }
 
 function mcapi_create_default_currency() {
-  if (db_select('mcapi_currencies', 'c')->fields('c')->countquery()->execute()->fetchField()) {
+  $count = db_select('mcapi_currencies', 'c')->fields('c')->countquery()->execute()->fetchField();
+  if ($count) {
+    drupal_set_message('Currency already exists');
     return;
   }
   $currency = array(
     'name' => t('Community Coins'),
-    'rationale' => t('This is the default currency'),
-    'divisions' => '00',
+    'divisions_conf' => '00',
     'format' => '@minus<strong>Cc</strong>@integer:@subdivision',
+    'body' => array (
+      'en' => array (
+        0 => array (
+          'value' => t('This is the default currency'),
+          'format' => 'filtered_html',
+        ),
+      ),
+    ),
     'data' => array(
       'max' => NULL,
       'min' => 0,
-    )
+    ),
+    'delete_mode' => 2,
+    'update_mode' => 2,
+    'user_editable_mode' => 2,
+    'write_validate' => TRUE,
+    'privacy' => 2,
+    'access_callback' => '',
   );
   module_load_include('inc', 'mcapi', 'entities');
-  entity_get_controller('currency')->save($currency);
+  entity_get_controller('currency')->save((object)$currency);
+
+  $new_curr = db_select('mcapi_currencies', 'c')->fields('c', array('cid', 'name'))->execute()->fetch();
+  drupal_set_message(t('Your default currency is @name.', array('@name' => $new_curr->name)));
+  drupal_set_message(t('N.B. The default currency does not allow negative balances: !edit', array('!edit' => l(t('edit'), 'currency/' . $new_curr->cid . '/edit'))));
 }

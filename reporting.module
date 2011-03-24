@@ -1,0 +1,71 @@
+<?php
+
+function ___hook_menu() {
+
+  $items['admin/accounting/acknowledgements'] = array(
+    'title' => 'Acknowledgements',
+    'description' => 'Help us to help you',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cforge_report_form'),
+    'access arguments' => array('configure currencies'),
+    'file' => 'mcapi.inc',
+    'weight' => 10
+  );
+return $items;
+}
+
+/**
+ * Implements hook_cron()
+ */
+function ___hook_cron() {
+  //this is for the voluntary reporting function
+  if (variable_get('cforge_report', 1)) {
+    module_load_include('install', 'mcapi');
+    cforge_report();
+  }
+}
+
+function cforge_report_form($form) {
+  $form = array(
+    'cforge_report' => array(
+      '#type' => 'radios',
+      '#title' => t('Please report your site stats to Community Forge.'),
+      '#default_value' => variable_get('cforge_report', TRUE),
+      '#options' => array(
+        0 => t('Send no data.'),
+        1 => t('Report our site data to Community Forge only.'),
+        2 => t('Report our site data to anyone who is interested')
+      ),
+      '#weight' => -5,
+      '#description' => t("Be part of a wider network of local currency comunities by sharing a few key pieces of information with us.") . ' ' .
+        t("No data about individual users or transactions will be sent.") . ' ' .
+        t("e.g. site_name, site_url, number of active traders, number of transactions.") . ' ' .
+        t("These stats motivate us and can be used to promote our work. We seek your trust and will not abuse this information.")
+    )
+  );
+  return system_settings_form($form);
+}
+
+
+function cforge_report() {
+  module_load_include('inc', 'mcapi');
+  $traders = get_trader_uids();
+  $data = array(
+    'server' => $_SERVER["HTTP_HOST"],
+    'site_name' => urlencode(variable_get('site_name', 'site_name')),
+    'site_mail' => variable_get('site_mail', 'site_mail'),
+    'user_count' => count($traders),
+    'version' => db_query("SELECT schema_version from {system} WHERE name = 'mcapi'")->fetchCol(),
+    'transactions_last_month' => db_select('node', 'n')->condition('created',  strtotime('-1 month'), '>')->condition('type', 'transaction')->countQuery()->execute()->fetchField(),
+    'public' => variable_get('cforge_report', 1) -1,
+  );
+
+  foreach ($data as $key => $val) {
+    $args[] = $key . '=' . $val;
+  }
+  $url = 'http://www.communityforge.net/registration.php?'. implode('&', $args);
+  $reply = drupal_http_request($url);
+  if (isset($reply->data)) {
+    drupal_set_message($reply->data);
+  }
+}
