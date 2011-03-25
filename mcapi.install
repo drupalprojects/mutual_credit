@@ -374,7 +374,7 @@ function mcapi_create_default_currency() {
     'user_editable_mode' => 2,
     'write_validate' => TRUE,
     'privacy' => 2,
-    'access_callback' => '',
+    'access_callback' => 'user_access',
   );
   module_load_include('inc', 'mcapi', 'entities');
   entity_get_controller('currency')->save((object)$currency);

@@ -11,23 +11,6 @@ class TransactionEntityController extends DrupalDefaultEntityController {
   //this converts the serialized data property into an array
   //not needed I think, because we should add proper fields for that
   /*
-
-/*
- * Implements hook_user_view
- */
-function mcapi_user_view($account) {
-  module_load_include('inc', 'mcapi', 'entities');
-  $balances = entity_get_controller('transaction')->get_balances($account->uid);
-  $account->content['mcapi'] = array(
-    '#title' => t('Monetary activity'),
-    '#type' => 'user_profile_category',
-    'balances' => array(
-      '#theme' => 'balances',
-      '#title' => t('Balances'),
-      '#balances' => $balances,
-    )
-  );
-}
   public function _________load($xids = array(), $conditions = array()) {
     $transactions = parent::load($xids, $conditions);
     foreach($transactions as $key => $transaction) {
@@ -35,14 +18,14 @@ function mcapi_user_view($account) {
     }
     return $transactions;
   }
+   */
+
   /*
    * Validation ideally would happen by using the save function with $write set to FALSE
    * Instead we just check the balances here/
    */
   public function validate($transaction){
     $currency = currencies_load($transaction->cid);
-    //if the limit check fails, it will be thrown back and the rest of validate won't run
-    mcapi_check_limits($transaction->payer_uid, $transaction->payee_uid, -$transaction->quantity, $transaction->cid);
     $key = isset($transaction->xid) ? $transaction->xid : NULL;
     try {
       //temporarily change the transaction type so that validated transaction left hanging DO leave a trace.
@@ -325,53 +308,6 @@ function test_balances($uid, $cid) {
   }
 }
 
-/*
- * limit checker
- * checks an account to see if the proposed difference will violate the balance limits
- * this is also called during transaction validation
- */
-function mcapi_check_limits($payer_uid, $payee_uid, $difference, $cid) {
-  module_load_include('inc', 'mcapi');
-  $message = '';
-
-  //check that the payee isn't going over their max limit
-  $balances = entity_get_controller('transaction')->get_balances($payee_uid, $cid);
-  $payee_projected = $balances[$cid]['cleared_balance'] + $balances[$cid]['pending_dif'] + $difference;
-  $max = $balances[$cid]['max'];
-  if (is_numeric($max) && (float)$difference > 0) {
-    $surplus = $payee_projected - $max;
-    if ($surplus > 0) {
-      $message .= t('Transaction takes @username !quant above the maximum balance of !max',
-        array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($uid)))),
-          '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
-          '!max' => theme('money', array('quantity' => $max, 'cid' => $cid, $richtext = FALSE))
-        )
-      );
-    }
-  }
-  //check that the payer isn't going below their min limit
-  $balances = entity_get_controller('transaction')->get_balances($payer_uid, array($cid));
-  $payer_projected = $balances[$cid]['cleared_balance'] + $balances[$cid]['pending_dif'] + $difference;
-  $min = $balances[$cid]['min'];
-  if (is_numeric($min) && (float)$difference < 0) {
-    $deficit = $min - $payer_projected;
-    if ($deficit > 0) {
-      $message .= t('Transaction takes @username !quant below the minimum balance of !min',
-        array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($payer_uid)))),
-          '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
-          '!min' => theme('money', array('quantity' => $min, 'cid' => $cid, $richtext = FALSE))
-        )
-      );
-    }
-  }
-  if (strlen($message)) {
-    throw new Exception($message);
-  }
-}
-
-
 function currency_divisions_array($string) {
   if (strpos($string, '|')) {
     $lines = explode("\n", $string);
@@ -386,44 +322,11 @@ function currency_divisions_array($string) {
   }
 }
 
-
-
 //refreshes a cache of all the transactions, calculates the running balances and other totals
-//will be done automatically by GVA engine, so this function won't be needed
 function balances_refresh($cid, $uids) {
   foreach($uids as $uid) {
-    $conditions['id'] = $uid;
-    $conditions['cid'] = $cid;
-    $history = entity_get_controller('transaction')->transaction_list($conditions);
+    extract(sum_transactions($cid, $uid));
 
-    //now iterate through the transactions making running balances
-    $cleared_balance = $pending_dif = $gross_out = $gross_in = 0;
-    while (list($key, $transaction) = each($history)) {
-      //add to or subtract from the running balances
-      if ($transaction->payer_uid == $uid) {
-        if ($transaction->state == TRANSACTION_STATE_FINISHED) {
-          $cleared_balance -= $transaction->quantity;
-        }
-        else {
-          $pending_dif -= $transaction->quantity;
-        }
-        $gross_out += $transaction->quantity;
-      }
-      else {
-        if ($transaction->state == TRANSACTION_STATE_FINISHED) {
-          $cleared_balance += $transaction->quantity;
-        }
-        else {
-          $pending_dif -= $transaction->quantity;
-        }
-        $gross_in += $transaction->quantity;
-      }
-      $transaction->balance = $cleared_balance;
-      //add the transaction to the list if requred
-      if ($transaction->state == TRANSACTION_STATE_FINISHED) {
-        $transactions[$transaction->xid] = $transaction;
-      }
-    }
     $query = db_merge('mcapi_cache')
     ->key(array('cid' => $cid, 'uid' => $uid))
     ->fields(
@@ -432,4 +335,24 @@ function balances_refresh($cid, $uids) {
     );
     $query->execute();
   }
+}
+
+//TODO how do we SUM with the drupal db API?
+function sum_transactions($cid, $uid, $pending = TRUE) {
+  $in =  db_fetch_array(db_query("SELECT sum(quantity) total, count(quantity) count FROM {mc_exchanges} WHERE payee_uid = %d AND state = %d",
+    array($uid, TRANSACTION_STATE_FINISHED)));
+  $out = db_fetch_array(db_query("SELECT sum(quantity) total ,count(quantity) count FROM {mc_exchanges} WHERE payer_uid = %d AND state %d",
+    array($uid, TRANSACTION_STATE_FINISHED)));
+  $balances = array(
+    'gross_in' => $in['total'],
+    'gross_out' => $out['total'],
+    'cleared_balance' => $in['total']-$out['total'],
+    'count' => $in['count'] + $out['count']
+  );
+  if ($pending) {
+    $pend_out = db_result(db_query("SELECT sum(quantity) from {mc_exchanges} WHERE payer_uid = %d AND state = %d", $uid));
+    $pend_in = db_result(db_query("SELECT sum(quantity) from {mc_exchanges} WHERE payee_uid = %d AND state = %d", $uid));
+    $balances['pending_dif'] = $pend_in = $pend_out;
+  }
+  return $balances;
 }

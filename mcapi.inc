@@ -94,16 +94,22 @@ function mcapi_menu_inc() {
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.inc',
   );
-  /*
-  $items['admin/accounting/options'] = array(
-    'title' => 'Accounting options',
-    'description' => 'Determine the rigour and tracability of your accounting',
+  $items['admin/accounting/acknowledgements'] = array(
+    'title' => 'Acknowledgements',
+    'description' => "Software doesn't just grow on trees",
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_accounting_options'),
-    'access arguments' => array('manage all transactions'),
+    'page arguments' => array('mcapi_acknowledgements'),
+    'access arguments' => array('configure all currencies'),
     'file' => 'mcapi.inc',
   );
-   */
+  $items['admin/accounting/entity_controller'] = array(
+    'title' => 'Entity controller',
+    'description' => "Choose which lump of code reads and writes your transaction data.",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mcapi_choose_controller_form'),
+    'access arguments' => array('configure all currencies'),
+    'file' => 'mcapi.inc',
+  );
   $items['transaction/%transaction'] = array(
     'title' => 'Transaction certificate',
     // The page callback also invokes drupal_set_title() in case
@@ -199,11 +205,24 @@ function dev_tools_form() {
   return $form;
 }
 /*
-function mcapi_accounting_options() {
-  $form['#submit'] = array('menu_rebuild');
+ *
+ */
+function mcapi_choose_controller_form() {
+  $controllers = file_scan_directory(drupal_get_path('module', 'mcapi'), '/.controller/');
+  foreach ($controllers as $path => $file){
+    $options[$file->name] = $file->filename;
+  }
+
+  $form['mcapi_controller'] = array(
+    '#title' => 'Entity controller file',
+    '#description' => t('Choose which .controller file, in modules/mutual_credit directory to use'),
+    '#type' => 'radios',
+    '#options' => $options,
+    '#default_value' => variable_get('mcapi_controller', 'default')
+  );
+
   return system_settings_form($form);
 }
-*/
 
 /*
  * refresh all balances - needs to be retired
@@ -368,26 +387,10 @@ function currency_form($form, $form_state, $currency) {
       '#default_value' => isset($currency->write_validate) ? $currency->write_validate : 1,
       '#weight' => 3,
     ),
-    //could use some D7 formAPI AJAX here to disable this field if update_mode is 0
-    'user_editable_mode' => array(
-      '#title' => t('User editable'),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t("Users cannot edit"),
-        1 => t('Creator can edit/delete pending transactions'),
-        2 => t('Both can edit/delete pending transactions'),
-        3 => t('Both can edit/delete finished transactions'),
-      ),
-      '#default_value' => isset($currency->user_editable_mode) ? $currency->user_editable_mode : 0,
-      '#weight' => 4
-    )
   );
   $form['limits'] = array(
     '#title' => t('Balance limits'),
-    '#description' => t('Transactions will be rejected which take accounts beyond these limits unless:') .'<ul><li>'.
-      t('The account is number 1') .'</li><li>'.
-      t("The transation was initiated by a user with permission to @perm", array('@perm' => t('manage all transactions'))) .'</li><li>'.
-      t('The user_limits module is installed and the account has its own limits set for this currency') .'</li></ul>',
+    '#description' => t('Transactions will be rejected which take accounts beyond these limits.'),
     '#type' => 'fieldset',
     '#weight' => 1,
     '#group' => 'additional_settings',
@@ -413,11 +416,11 @@ function currency_form($form, $form_state, $currency) {
     'limit_personal' => array(
       '#title' => t('Override'),
       '#description' => t("Limits are set per-user, on their profile form, by users with permission to '@permission'", array('@permission' => t('Administer users'))),
-      '#type' => 'textfield',
-      '#default_value' => isset($currency->max) ? $currency->max : 100,
+      '#type' => 'checkbox',
+      '#default_value' => isset($currency->limit_personal) ? $currency->limit_personal : 0,
       '#size' => 6,
       '#maxlength' => 6,
-      '#weight' => 1,
+      '#weight' => 2,
     )
   );
   $form['access'] = array(
@@ -430,7 +433,8 @@ function currency_form($form, $form_state, $currency) {
       '#description' => t('How is access to this currency determined?'),
       '#type' => 'radios',
       '#options' => array(
-        '' => t('Everyone can use'),
+        'user_access' => t('Everyone can use'),
+        'currencies_access_viral' => t('Spreads virally. Only users who have already traded in this currency can initiate transactions with it'),
       ),
       '#default_value' => isset($currency->access_callback) ? $currency->access_callback : '',// empty means user_access('transact')
     ),
@@ -445,6 +449,19 @@ function currency_form($form, $form_state, $currency) {
         3 => t('Public')
       ),
       '#default_value' => isset($currency->privacy) ? $currency->privacy : 2,
+    ),
+    //could use some D7 formAPI AJAX here to disable this field if update_mode is 0
+    'user_editable_mode' => array(
+      '#title' => t('User editable'),
+      '#type' => 'radios',
+      '#options' => array(
+        0 => t("Users cannot edit"),
+        1 => t('Creator can edit/delete pending transactions'),
+        2 => t('Both can edit/delete pending transactions'),
+        3 => t('Both can edit/delete finished transactions'),
+      ),
+      '#default_value' => isset($currency->user_editable_mode) ? $currency->user_editable_mode : 0,
+      '#weight' => 4
     )
   );
 
@@ -527,7 +544,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 }
 
 function currency_form_submit($form, $form_state) {
-  module_load_include('inc', 'mcapi', 'entities');
+  mcapi_controller();
   $values = $form_state['values'];
   $values['data'] = array(
     'min' => $values['min'],
@@ -582,10 +599,10 @@ function user_limits($uid, $cid) {
 function mcapi_admin_transaction_record_form($form, $form_state, $currencies = array()) {
   //certain currencies may be visisble to the form, not necessarily all the currencies on the system
   //or one currency might be passed by the url
-  $form['#currencies'] = empty($currencies) ? currencies_load() : which_currencies($GLOBALS['user']->uid);
+  //$form['#currencies'] = empty($currencies) ? currencies_load() : currency_choose('active', $GLOBALS['user']->uid);
   $transaction = new stdClass;
-  if (count($form['#currencies']) == 1) {
-    $transaction->cid = current($form['#currencies'])->cid;
+  if (count($currencies) == 1) {
+    $transaction->cid = current($currencies)->cid;
   }
   transaction_form_build($form, $form_state, $transaction);
   $form['#submit'][] = 'transaction_form_submit';
@@ -599,7 +616,7 @@ function mcapi_admin_transaction_record_form($form, $form_state, $currencies = a
  */
 function transaction_form_build(&$form, $form_state, $transaction = NULL) {
   $xid = isset($transaction->xid) ? $transaction->xid : NULL;
-  $currencies =  array(t('Choose currency...')) + which_currencies($GLOBALS['user']->uid);
+  $currencies =  array(t('Choose currency...')) + currency_choose('active', $GLOBALS['user']->uid);
 
   $form['cid'] = array(
     '#title' => t('Currency'),
@@ -768,11 +785,28 @@ function transaction_form_validate($form, &$form_state) {
     $required = array('payer_uid', 'payee_uid', 'quantity', 'cid', 'type');
     foreach ($required as $fieldname) {
       if (!$transaction->$fieldname) {
-        form_set_error($fieldname, t("@fieldname required for completed transaction", array('@fieldname' => $form[fieldname]['#title'])));
+        form_set_error($fieldname, t("@fieldname required for completed transaction", array('@fieldname' => $form[$fieldname]['#title'])));
       }
     }
   }
-
+  //check that each user is permitted to use that currency
+  $currency = currencies_load($transaction->cid);
+  foreach (array($transaction->payer_uid, $transaction->payee_uid) as $uid) {
+    if (!currency_access('passive', $currency, $uid) || !currency_access('passive', $currency, $transaction->payee_uid)) {
+      form_set_error('cid', t("@name is not permitted to use @currency", array(
+        '@name' => theme_username(user_load($transaction->payer_uid)),
+        '@currency' => $currency->name
+      )));
+    }
+  }
+  try{
+    //this checking is done at the form validation level here, but maybe also by the database validate
+    mcapi_check_limits($transaction, $transaction->state);
+  }
+  catch (Exception $e) {
+    form_set_error('', $e);
+  }
+  
   if ($transaction->payer_uid && $transaction->payee_uid) {
     //this concerns rules and database integrity, so we hand it off to the db controller
     $transactionController = entity_get_controller('transaction');
@@ -835,4 +869,59 @@ function odd_cents($float) {
     return ceil($fraction * 100); //corrects the floating point error
 }
 
+/*
+ * limit checker
+ * checks a transaction to see if the proposed difference will violate the balance limits
+ * A pending transaction will be checked against the pending total
+ * $transaction = A transaction object
+ * $state = Whether to compare with finished or pending balances.
+ */
+function mcapi_check_limits($transaction, $state = TRANSACTION_STATE_FINISHED) {
+  $cid = $transaction->cid;
+  $payer_uid = $transaction->payer_uid;
+  $payee_uid = $transaction->payee_uid;
+  $difference = $transaction->amount;
+  $message = '';
 
+  //check that the payee isn't going over their max limit
+  $balances = entity_get_controller('transaction')->get_balances($payee_uid, $cid);
+  $payee_projected = $balances[$cid]['cleared_balance'] + $difference;
+  if ($state == TRANSACTION_STATE_PENDING) {
+    $payee_projected += $balances[$cid]['pending_dif'];
+  }
+  $max = $balances[$cid]['max'];
+  if (is_numeric($max) && (float)$difference > 0) {
+    $surplus = $payee_projected - $max;
+    if ($surplus > 0) {
+      $message .= t('Transaction takes @username !quant above the maximum balance of !max',
+        array(
+          '@username' => strip_tags(theme('username', array('account' => user_load($uid)))),
+          '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
+          '!max' => theme('money', array('quantity' => $max, 'cid' => $cid, $richtext = FALSE))
+        )
+      );
+    }
+  }
+  //check that the payer isn't going below their min limit
+  $balances = entity_get_controller('transaction')->get_balances($payer_uid, array($cid));
+  $payer_projected = $balances[$cid]['cleared_balance'] + $difference;
+  if ($state == TRANSACTION_STATE_PENDING) {
+    $payer_projected += $balances[$cid]['pending_dif'];
+  }
+  $min = $balances[$cid]['min'];
+  if (is_numeric($min) && (float)$difference < 0) {
+    $deficit = $min - $payer_projected;
+    if ($deficit > 0) {
+      $message .= t('Transaction takes @username !quant below the minimum balance of !min',
+        array(
+          '@username' => strip_tags(theme('username', array('account' => user_load($payer_uid)))),
+          '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
+          '!min' => theme('money', array('quantity' => $min, 'cid' => $cid, $richtext = FALSE))
+        )
+      );
+    }
+  }
+  if (strlen($message)) {
+    throw new Exception($message);
+  }
+}

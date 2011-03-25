@@ -34,7 +34,7 @@ function mcapi_help($section) {
   switch ($section) {
     case 'admin/help#transaction':
       return t('Defines a contentType called transactions, manages them and does the accounting.');
-    case 'admin/accounting':
+    case 'admin/accounting/acknowledgements':
       return '<p>'. t("This module, its development and implementations at !cforge,", array('!cforge' => l('Community Forge', 'http://communityforge.net')))  .' '.
         t("have been the full time commitment of one person since Spring 2008, and a second person since spring 2009.") . ' '.
         t("The results of this work are offered freely to all.") .'</p><p>'.
@@ -53,6 +53,20 @@ function mcapi_help($section) {
   }
 }
 
+function mcapi_controller() {
+  $name = variable_get('mcapi_controller', 'default');
+  module_load_include('controller', 'mcapi', $name);
+}
+
+/*
+ * Needed for the views 2 module
+ */
+function mcapi_views_api() {
+  return array(
+    'api' => '3.0-alpha1', //TODO update this to v3
+    'path' => drupal_get_path('module', 'mcapi') .'/views',
+  );
+}
 
 /**
  * implements hook_menu()
@@ -125,43 +139,39 @@ function transaction_access($op, $transaction, $account = NULL) {
  */
 function currency_access($op, $currency, $uid = NULL) {
   if (!$uid) $uid = $GLOBALS['user'];
+  $function = $currency->access_callback;
   switch ($op) {
-    case 'transact':
-      return strlen($currency->access_callback) ? $currency->access_callback($uid) : user_access('transact');
     case 'edit':
       return $uid == $currency->uid || user_access('configure all currencies');
+    default:
+      return $function == 'user_access' ? user_access('transact') : $function($op, $currency, $uid);
   }
 }
 /*
  * determines which currencies a user can use
  */
-function which_currencies($uid) {
+function currency_choose($op, $uid) {
   $currencies = currencies_load();
   foreach ($currencies as $currency) {
-    if (currency_access('transact', $currency, $uid)) {
+    if (currency_access($op, $currency, $uid)) {
       $currencies[$currency->cid] = $currency->name;
     }
   }
   return $currencies;
 }
+
 /*
- * return all the currencies which the user has ever used, or created
+ * viral spread means that anyone can use the currency, but only after someone has traded with them first.
+ * So this function just returns true for active if the user created or has used the currency
  */
-function which_currencies_viral($uid) {
-  $used = db_select('mcapi_transactions', 't')
-  ->fields(array('cid'))
-  ->condition(
-    db_or()
-    ->condition('payer_uid', $conditions['id'])
-    ->condition('payee_uid', $conditions['id'])
-  )
-  ->execute()->fetchCol();
-  $declared = db_select('mcapi_currencies')
-  ->field('c', array('cid'))
-  ->condition('uid', $uid)
-  ->execute()->fetchCol();
-  $cids = array_unique($used + $declared);
-  return currencies_load($cids);
+function currencies_access_viral($op, $currency, $uid) {
+  //return all the currencies which the user has ever used, or created
+  if ($currency->uid == $uid || $op == 'passive') return TRUE;
+  if ($op == 'active') {
+    return db_query('SELECT xid FROM mcapi_transactions WHERE payer_uid = :payer or payee_uid = :payee',
+       array(':payer' => $uid, ':payee' => $uid)
+    )->execute()->fetchField();
+  }
 }
 
 /**
@@ -203,7 +213,7 @@ function mcapi_user_cancel($edit, $account, $method) {
  * Implements hook_user_view
  */
 function mcapi_user_view($account) {
-  module_load_include('inc', 'mcapi', 'entities');
+  mcapi_controller();
   $balances = entity_get_controller('transaction')->get_balances($account->uid);
   $account->content['mcapi'] = array(
     '#title' => t('Monetary activity'),
@@ -221,7 +231,7 @@ function mcapi_user_view($account) {
  * this is used to as a menu loader, so can't be in an inc file
  */
 function transaction_load($xid) {
-  module_load_include('inc', 'mcapi', 'entities');
+  mcapi_controller();
   $transaction = array_pop(entity_load('transaction', array($xid)));
   return $transaction;
 }
@@ -413,43 +423,10 @@ function mcapi_validate_ttype($element, $form_state) {
   }
 }
 
-
-//Some currency properties need to be identical if they are to rendered into the transaction form
-//this returns the field only if it is the same in all the passed currencies
-//takes top-level fieldnames or data fieldnames
-//this is a bit complicated by the design of the currency object, but it works fine
-function get_common_currency_properties($currencies, $fieldname) {
-  $first = array_pop($currencies);
-
-  foreach ($currencies as $currency) {
-    if (isset($first->$fieldname)) {
-      if ($first->$fieldname != $currency->$fieldname) {
-        return;
-      }
-      $val = $first->$fieldname;
-    }
-    elseif (isset($first->data[$fieldname])) {
-      if ($first->data[$fieldname] != $currency->data[$fieldname]) {
-        return;
-      }
-      $val = $first->data['$fieldname'];
-    }
-  }
-  if (isset($val)) {
-    return $val;
-  }
-  elseif (isset($first->$fieldname)) {
-    return $first->$fieldname;
-  }
-  elseif (isset($first->data[$fieldname])) {
-    return $first->data[$fieldname];
-  }
-}
-
 function currencies_load($cids = array()) {
   $currencies = drupal_static(__FUNCTION__);
   if (!count($currencies)) {
-    module_load_include('inc', 'mcapi', 'entities');
+    mcapi_controller();
     //load all the currencies
     $currencies = entity_get_controller('currency')->loadAll();
   }
@@ -513,7 +490,7 @@ function theme_currency_range($variables) {
  * Implements hook_entity_info()
  */
 function mcapi_entity_info(){
-  module_load_include('inc', 'mcapi');
+  mcapi_controller();
   return mcapi_entity_info_inc();
 }
 
@@ -549,15 +526,6 @@ function mcapi_transaction_type_info() {
   );
 }
 
-/*
- * Needed for the views 2 module
- */
-function mcapi_views_api() {
-  return array(
-    'api' => '3.0-alpha1', //TODO update this to v3
-    'path' => drupal_get_path('module', 'mcapi') .'/views',
-  );
-}
 
 
 /*
@@ -647,4 +615,36 @@ function template_preprocess_transaction(&$arguments) {
     'recorded' => format_date($transaction->created, 'medium'),
     'type' => $transaction->type
   );
+}
+
+//Some currency properties need to be identical if they are to rendered into the transaction form
+//this returns the field only if it is the same in all the passed currencies
+//takes top-level fieldnames or data fieldnames
+//this is a bit complicated by the design of the currency object, but it works fine
+function get_common_currency_properties($currencies, $fieldname) {
+  $first = array_pop($currencies);
+
+  foreach ($currencies as $currency) {
+    if (isset($first->$fieldname)) {
+      if ($first->$fieldname != $currency->$fieldname) {
+        return;
+      }
+      $val = $first->$fieldname;
+    }
+    elseif (isset($first->data[$fieldname])) {
+      if ($first->data[$fieldname] != $currency->data[$fieldname]) {
+        return;
+      }
+      $val = $first->data['$fieldname'];
+    }
+  }
+  if (isset($val)) {
+    return $val;
+  }
+  elseif (isset($first->$fieldname)) {
+    return $first->$fieldname;
+  }
+  elseif (isset($first->data[$fieldname])) {
+    return $first->data[$fieldname];
+  }
 }
