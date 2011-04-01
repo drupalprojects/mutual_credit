@@ -24,8 +24,11 @@
 define ('TRANSACTION_STATE_FINISHED', 0);
 define ('TRANSACTION_STATE_PENDING', 1);
 define ('TRANSACTION_STATE_ERASED', -1);
-define ('TRANSACTION_STATE_VALIDATING', -2);
 define ('MCAPI_NOTIFICATION_DEFAULT_LEVEL', 2);
+
+
+$currencies = &drupal_static('currencies');
+$currencies = entity_get_controller('currency')->load(FALSE);
 
 /**
  * implements hook_help()
@@ -77,27 +80,36 @@ function mcapi_menu() {
 }
 function mcapi_menu_alter(&$items) {
   foreach (array_keys($items) as $key) {
+    //we don't need to see the page for arranging the bundle fields,
     if (substr($key, 0, 41) == 'admin/accounting/transaction/edit/display' || substr($key, 0, 38) == 'admin/accounting/currency/edit/display') {
       unset($items[$key]);
     }
   }
   unset($items['admin/accounting/transaction/edit/display']);
   unset($items['admin/accounting/currency/edit/display']);
+  //but we do want to manage the fields for two entity types on one page.
   $items['admin/accounting/currency/edit/fields']['title'] = 'Currency fields';
   $items['admin/accounting/transaction/edit/fields']['title'] = 'Transaction fields';
 }
 
+
+function mcapi_forms() {
+  $forms['transaction_admin_form']['callback'] = 'transaction_form';
+  $forms['transaction_admin__update_form']['callback'] = 'transaction_form';
+  return $forms;
+}
+
 /**
  * special access function for transactions - NOT hook implementation
- * this function is called by ndebug(func_get_args());ode_access
  * $ops can be array('view', 'update', 'erase')
  * User 1 cannot update or delete if the currency type doesn't allow
  */
 function transaction_access($op, $transaction, $account = NULL) {
+  $currencies = &drupal_static('currencies');
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-  $currency = currencies_load($transaction->cid);
+  $currency = $currencies[$transaction->cid];
   $participated = $account->uid == $transaction->payee_uid || $account->uid == $transaction->payer_uid;
   $pending = $transaction->state == TRANSACTION_STATE_PENDING;
   $owner = $transaction->uid == $account->uid;
@@ -105,10 +117,12 @@ function transaction_access($op, $transaction, $account = NULL) {
   $accountant = user_access('manage all transactions') && $currency->privacy;
   switch ($op) {
     case 'view'://users can always view their own pages
+      debug($currency->privacy);
       switch ($currency->privacy) {
         case 0: return $participated;
         case 1: return $participated || $accountant;
-        case 2: return $currency->access_callback($GLOBALS['user']->uid);
+        case 2: $callback = $currency->access_callback;
+          return $callback('view', $currency, $GLOBALS['user']->uid);
         case 2: return $GLOBALS['user']->uid;
         case 3: return TRUE;
     }
@@ -122,12 +136,13 @@ function transaction_access($op, $transaction, $account = NULL) {
       }
     case 'erase':
       if ($currency->delete_mode < 1 || $transaction->state == TRANSACTION_STATE_ERASED) return;
-      switch($curency->user_editable_mode) {
+      switch($currency->user_editable_mode) {
         case 0: return $accountant;
         case 1: return $accountant || ($pending && $owner);
         case 2: return $accountant || ($pending && $participated);
         case 3: return $accountant || $participated;
       }
+    default: debug('Unknown $op in transactions_access');
   }
 }
 
@@ -143,31 +158,54 @@ function currency_access($op, $currency, $uid = NULL) {
   switch ($op) {
     case 'edit':
       return $uid == $currency->uid || user_access('configure all currencies');
-    default:
-      return $function == 'user_access' ? user_access('transact') : $function($op, $currency, $uid);
+    case 'view'://which is to say, view transactions in
+      switch($currency->privacy) {
+        case 0: return TRUE;
+        case 1: return currency_access('use', $currency, $uid);
+        case 2: return NULL; //can't be calculated here
+        case 3: return NULL;
+      }
+      //I"m not yet sure exactly a user of the currency is?
+      //does it denote the right to use, which is thus far not stored in the db
+      //or does it denote that user has used?
+    case 'use':
+    case 'initiate':
+      return $function == 'user_access' ? user_access('transact', user_load($uid)) : $function($op, $currency, $uid);
   }
 }
 /*
  * determines which currencies a user can use
  */
 function currency_choose($op, $uid) {
-  $currencies = currencies_load();
+  $currencies = &drupal_static('currencies');
   foreach ($currencies as $currency) {
     if (currency_access($op, $currency, $uid)) {
-      $currencies[$currency->cid] = $currency->name;
+      $currencies[$currency->cid] = $currency;
     }
   }
   return $currencies;
 }
+function currency_select($currencies) {
+  foreach ($currencies as $currency) {
+    $selection[$currency->cid] = $currency->name;
+  }
+  return $selection;
+}
 
 /*
+ * callback function for currency usage
  * viral spread means that anyone can use the currency, but only after someone has traded with them first.
- * So this function just returns true for active if the user created or has used the currency
+ * So this function just returns true for 'initiate' if the user created or has used the currency
+ * $ops can be
+ * 'view' meaning view transactions in that currency
+ * 'initiate' meaning start transactions in that currency
+ * 'use' meaning you can have a balance
  */
 function currencies_access_viral($op, $currency, $uid) {
   //return all the currencies which the user has ever used, or created
-  if ($currency->uid == $uid || $op == 'passive') return TRUE;
-  if ($op == 'active') {
+  if ($currency->uid == $uid || $op == 'use') return TRUE;
+  if ($op == 'initiate' || $op == 'view') {
+    //this includes pending transactions
     return db_query('SELECT xid FROM mcapi_transactions WHERE payer_uid = :payer or payee_uid = :payee',
        array(':payer' => $uid, ':payee' => $uid)
     )->execute()->fetchField();
@@ -200,21 +238,12 @@ function mcapi_permission() {
 }
 
 
-/**
- * Implements hook_user_cancel().
- */
-function mcapi_user_cancel($edit, $account, $method) {
-  if ($method == 'user_cancel_delete')
-  db_query("DELETE from {mcapi_cache} WHERE uid = :uid", array(':uid' => $account->uid));
-  NULL;
-}
-
 /*
  * Implements hook_user_view
  */
 function mcapi_user_view($account) {
   mcapi_controller();
-  $balances = entity_get_controller('transaction')->get_balances($account->uid);
+  $balances = entity_get_controller('transaction')->get_cache($account->uid);
   $account->content['mcapi'] = array(
     '#title' => t('Monetary activity'),
     '#type' => 'user_profile_category',
@@ -264,24 +293,14 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'variables' => array(
         'balances' => array() //array with cid for keys
       )
-    ),
-    //this only needs to be in this module if we are theming the currencies.
-    'currency_range' => array(
-      'path' => $path,
-      'variables' => array(
-        'currency' => NULL,
-      )
     )
   );
   return $items;
 }
 
-function mcapi_page_alter($page){}
-
-
 function theme_money($variables) {
   extract($variables);
-  $currency = currencies_load($cid);
+  $currency = currency_load($cid);
   //the static variable saves processing the icon every time
   $formats = drupal_static(__FUNCTION__);
   if (!isset($formats[$cid])) {
@@ -307,7 +326,6 @@ function theme_money($variables) {
   else {
     $subdivision = '00';
   }
-
   return strtr(
     $formats[$cid],
     array(
@@ -318,179 +336,26 @@ function theme_money($variables) {
   );
 }
 
+
 function template_preprocess_balances(&$vars) {
+  $currencies = &drupal_static('currencies');
   foreach ($vars['balances'] as $cid => $amounts) {
-    $vars['currencies'][$cid] = currencies_load($cid);
+    $vars['currencies'][$cid] = $currencies[$cid];
     foreach ($amounts as $key => $quantity) {
-      $vars['balances'][$cid][$key] = theme('money', compact('quantity', 'cid', 'currencies'));
-    }
-  }
-}
-
-
-function mcapi_validate_title($element, $form_state) {
-  //don't know the max length of 'small' text field. Will be just truncated
-  $form_state['values']['title'] = check_plain($element['#value']);
-}
-
-function mcapi_validate_cid(&$element, $form_state) {
-  //might be worth loading up the currency into $form_state?
-  if (isset($element['#value']) && $element['#value']) {
-    $currency = currencies_load($element['#value']);
-    if (!is_object($currency)) { //you would also check here if the user had permission to use this currency
-      form_error($element, t('Invalid currency specified: @num', array('@num' => $element['#value'])));
-    }
-  }
-}
-
-
-/*
- * Validate the quantity field on the transaction form
- */
-function mcapi_validate_quantity(&$element, &$form_state) {
-  $value = $element['#value'] + 0;//convert it from string to a number
-  //null values allowed
-  if (!$value)return;
-
-  if ($element['#value'] < 0 ) {
-    form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element['#title'])));
-  }
-  $fraction = odd_cents($value);
-  if ($fraction && isset($form_state['values']['cid']) && $currency = currencies_load($form_state['values']['cid'])) {
-    if (is_null($currency->divisions) && !is_integer($value)) {
-      form_error($element, t("Integer values only for '@currency'", array('@currency' => $currency->title)));
-    }
-    elseif($currency->divisions == '00') {
-      return;
-    }
-    elseif (isset($currency->divisions)) {
-      if ($fraction && !isset($currency->divisions[$fraction])) {
-        form_error($element, t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
+      if ($key != 'count') {
+        $vars['balances'][$cid][$key] = theme('money', compact('quantity', 'cid', 'currencies'));
       }
     }
   }
 }
 
-//the api module will validate any number or username or email as a user with permission to trade
-//this function permits blank values
-function mcapi_validate_trader(&$element, &$form_state) {
-  if ($val = $element['#value']) {
-    _mcapi_check_trader($val, $element);
-  }
-}
-
-function _mcapi_check_trader($value, &$element = NULL) {
-  if (is_numeric($value)) {
-    $field = 'uid';
-  }
-  elseif (valid_email_address($value)) {
-    $field = 'mail';
-  }
-  elseif (is_string($value) && strlen($value)) {
-    $field = 'name';
-  }
-  $criterion = array($field => $value);
-  /*
-   * Check this
-   */
-  $account = array_shift(user_load_multiple(array(), $criterion));
-  if (isset($account->uid)) {
-    if (user_access('transact', $account)   && $account->status) {
-      return $account->uid;
-    }
-    else {
-      if ($element) {
-        form_error($element, t("@user is not permitted to trade", array("@user" => $account->name)));
-      }
-    }
-  }
-  else {
-    if ($element) {
-      form_error($element, t("@data is not a known user", array("@data" => $value)));
-    }
-  }
-}
-function mcapi_validate_state($element, $form_state) {
-  $states = array(TRANSACTION_STATE_FINISHED, TRANSACTION_STATE_PENDING, TRANSACTION_STATE_ERASED);
-  if (!in_array($element['#value'], $states)) {
-    form_error($element, t('Invalid transaction state.') .' '. t('Suspected hacking attempt!'));
-  }
-}
-function mcapi_validate_ttype($element, $form_state) {
-  $types = module_invoke_all('transaction_type_info');
-  if (!is_array($types[$element['#value']])) {
-    form_error($element, t('Invalid transaction type.') .' '. t('Suspected hacking attempt!'));
-  }
-}
-
-function currencies_load($cids = array()) {
-  $currencies = drupal_static(__FUNCTION__);
-  if (!count($currencies)) {
-    mcapi_controller();
-    //load all the currencies
-    $currencies = entity_get_controller('currency')->loadAll();
-  }
-  if (is_numeric($cids)) {
-    return $currencies[$cids];
-  }
-  elseif(is_array($cids) && count($cids)) {
-    foreach($cids as $cid) {
-      $returns[$cid] = $currencies[$cid];
-    }
-    return $returns;
-  }
-  else {
-    return $currencies;
-  }
-}
-
-
-//move the notification theshhold inside the contacts fieldset,
-//only works if this module weight is heavier than contact
-function mcapi_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'user_profile_form') {
-    if($form['#user_category'] == 'account' && isset($form['contact']) && variable_get('mcapi_notification_option', TRUE)) {
-      $form['contact']['notify_threshhold'] = $form['notify_threshhold'];
-      unset($form['notify_threshhold']);
-    }
-  }
-}
-
-
-/* MOVE TO user_limits MODULE
- * add the balance limit fields
- */
-function hook_form_user_profile_form_alter(&$form,&$form_state, $account) {
-  if ($form['#user_category'] == 'account') {
-
-    $form['#submit'][] = 'mcapi_user_profile_submit';
-  }
-}function mcapi_user_profile_submit() {
-
-}
-/**
- * default theme function for callback 'currency_range'
- * which simply shows the min and max extents of an account
- * (assuming both exist)
- */
-function theme_currency_range($variables) {
-  $currency = $variables['currency'];
-  $header = array(t('Min'), t('Max'));
-  $rows = array(
-    array(
-      theme('money', array('quantity' => $currency->min, 'cid' => $currency->nid)),
-      theme('money', array('quantity' => $currency->max, 'cid' => $currency->nid))
-    )
-  );
-  return theme('table', array('header' => $header, 'rows' => $rows));
-}
 
 
 /**
  * Implements hook_entity_info()
  */
 function mcapi_entity_info(){
-  mcapi_controller();
+  module_load_include('inc', 'mcapi');
   return mcapi_entity_info_inc();
 }
 
@@ -504,14 +369,6 @@ function transaction_label($transaction){
 }
 function currency_label($currency) {
   return $currency->name;
-}
-/*
- * determine which form to edit according to the transaction_type info
- */
-function transaction_edit($transaction){
-  $types = module_invoke_all('transaction_type_info');
-  $type = $types[$transaction->type];
-  return drupal_get_form($type['edit'], $transaction);
 }
 
 /*
@@ -566,6 +423,11 @@ function mcapi_image_default_styles() {
   );
 }
 
+function currency_load($cid) {
+  module_load_include('inc', 'mcapi');
+  $currencies = &drupal_static('currencies');
+  return $currencies[$cid];
+}
 
 /**
  * build a render array for the transaction
@@ -600,10 +462,6 @@ function transaction_view($transaction, $view_mode = 'certificate') {
  */
 function template_preprocess_transaction(&$arguments) {
   $transaction = $arguments['transaction'];
-
-  if (!$transaction->created)ddebug_backtrace();
-  //$submitted = isset($transaction->created) ? $transaction->created : REQUEST_TIME;
-
 
   $arguments['theme_hook_suggestion'] = 'transaction__' . $transaction->cid;
   $arguments += array(
@@ -647,4 +505,47 @@ function get_common_currency_properties($currencies, $fieldname) {
   elseif (isset($first->data[$fieldname])) {
     return $first->data[$fieldname];
   }
+}
+
+/*
+ * implements hook_query_TAG_alter
+ * the saved view adds the tag 'transaction_access'
+ * this modifies the query only to show the transactions visible to the user.
+ * in practice, this means filtering by currency firstly
+ * but currencies with view control based on who traded is more complicated
+ */
+function mcapi_query_transaction_access_alter(&$query) {
+  $uid = $GLOBALS['user']->uid;
+  //what currencies can the current user see?
+  $currencies = currency_choose('view', $uid);
+  $eachcurrency = db_or();
+  foreach ($currencies as $currency) {
+    switch ($currency->privacy) {
+      case 1: //show only transactions in currencies that authenticated user can see
+        if (!$GLOBALS['user']->uid) continue;
+        //if you are logged in, then its the same as if there were no restrictions
+      case 0: //in effect, no restrictions
+        $eachcurrency->condition('cid', $currency->cid);
+        break;
+      case 2: //show only transactions in currencies where I have a cached balance
+        $cached = entity_get_controller('transaction')->get_cache($uid);
+        if (isset($cached[$currency->cid])) {
+          $eachcurrency->condition('cid', $currency->cid);
+        }
+        break;
+      case 3: //participants, accountant and user 1
+        if (!user_access('manage all transactions')) continue;
+        //and if you do have permission, then that's like privacy being 4, for this currency.
+      case 4: //only participants
+        $eachcurrency->condition(db_and()
+          ->condition('cid', $currency->cid)
+          ->condition(db_or()
+            ->condition('payer_uid', $uid)
+            ->condition('payee_uid', $uid)
+            ->condition('uid', $uid)
+          )
+        );
+    }
+  }
+  $query->condition($eachcurrency);
 }

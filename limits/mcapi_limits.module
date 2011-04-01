@@ -1,0 +1,317 @@
+<?php
+
+//retrieves the max and min limits from the mcapi_cache table
+function limits_get($cid, $uid){
+  $currency = currency_load($cid);
+  $callback = $currency->limits_callback;
+  return $callback($currency, $uid);
+}
+
+function mcapi_limits_form_currency_form_alter(&$form, &$form_state) {
+  //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
+  $form['limits'] = array(
+    '#title' => t('Balance limits'),
+    '#description' => t('Transactions will be rejected which take accounts beyond these limits.') .' '. t('Choose which method to use, and configure it.'),
+    '#type' => 'fieldset',
+    '#weight' => 1,
+    '#group' => 'additional_settings',
+    'limits_callback' => array(
+      '#title' => t('Method'),
+      '#description' => t('How will the limits be determined?'),
+      '#type' => 'select',
+      '#options' => array(
+        'limits_none' => t('No limits'),
+        'limits_global' => t('Everyone has the same limits, stated below'),
+        'limits_personal' => t('Fields on the user profile can override limits stated below.'),
+      ),
+      '#default_value' => 'limits_none',
+      '#weight' => -1,
+      '#ajax' => array(
+        'callback' => 'limits_settings_subform',
+        'wrapper' => 'limits-settings',
+      ),
+    ),
+    'limits_settings' => array(
+      '#prefix' => '<div id="limits-settings">',
+      '#suffix' => '</div>'
+    )
+  );
+  $form['#entity_builders'][] = 'currency_entity_limits_settings_builder';
+  
+  if (isset($form['cid']['#default_value'])) {
+    $currencies = &drupal_static('currencies');
+    $currency = $currencies[$form['cid']['#default_value']];
+    //put in a default for testing
+    if (!isset($currency->limits_callback)) $currency->limits_callback =  'limits_global';
+    $callback = $currency->limits_callback;
+    $form['limits']['limits_callback']['#default_value'] = $callback;
+    $callback .='_form';
+    if (!function_exists($callback)) return;
+    $form['limits']['limits_settings'] = limits_settings_subform($form, $form_state, $currency);
+    //we are relying in the inserted fields to validate themselves, so there is no validation added at the form level
+  }
+}
+
+/*
+ * callback which builds the entity from the form submission
+ * will automatically save the values declared by the limits_callback form
+ */
+function currency_entity_limits_settings_builder($entity_type, $currency, &$form, &$form_state) {
+  $callback = $currency->limits_callback;
+  $currency->data['limits_callback'] = $callback;
+  $form_callback = $callback .'_form';
+  //in all cases the keys are min and max, so far, but this means they needn't be
+  $keys = array_keys($form_callback($form, $form_state));
+  foreach($keys as $key) {
+    //have to get it from the post because the form elements were added by ajax and Drupal doesn't know about them
+    $currency->data[$callback][$key] = $currency->$key;
+  }
+}
+
+/*
+ * AJAX callback for the currency edit form
+ * also used to build the form in the first place.
+ * when building the initial page, the currency is passed, but from AJAX only form_state is passed
+ * When called via AJAX, the $settings_form should contain '#value' not '#default_value', not sure why
+ */
+
+function limits_settings_subform($form, $form_state, $currency = NULL) {
+  $settings_callback = isset($currency) ? $currency->limits_callback : $form_state['values']['limits_callback'];
+  $settings_form = array();
+
+  $form_callback = $settings_callback .'_form';
+  $settings_form = $form_callback($form, $form_state);
+  
+  $settings_form += array(
+    '#prefix' => '<div id="limits-settings">',
+    '#suffix' => '</div>'
+  );
+  if (arg(0) == 'system') {//that means this is an ajax query
+    foreach ($settings_form as $key => $element) {
+      $settings_form[$key]['#value'] = $element['#default_value'];
+    }
+  }
+  return $settings_form;
+}
+
+
+/*
+ * NO LIMITS
+ */
+function limits_none($currency, $uid) {
+  return array();
+}
+function limits_none_form() {
+  return array();
+}
+
+
+/*
+ * GLOBAL LIMITS
+ */
+
+//limits callback - returns the min an max limits for that currency for that user
+function limits_global($currency, $uid) {
+  return $currency->limits_global;
+}
+function limits_global_form($form, $form_state) {
+  $currency = currency_load($form['cid']['#default_value']);
+  $limits_global = isset($currency->limits_global) ? $currency->limits_global : array('min' => NULL, 'max' => NULL);
+  return min_max_fields($limits_global);
+}
+function min_max_fields($defaults) {
+  return array(
+    'min' => array(
+      '#title' => t('Optional minimum balance'),
+      '#description' => t('Must be less than or equal to zero'),
+      '#type' => 'textfield',
+      '#default_value' => $defaults['min'],
+      '#element_validate' => array('mcapi_limits_validate_minmax'),
+      '#size' => 7,
+      '#maxlength' => 7,
+      '#attributes' => array('style' => 'width:inherit;')
+     ),
+     'max' => array(
+      '#title' => t('Optional maximum balance'),
+      '#description' => t('Must be greater than 0.'),
+      '#type' => 'textfield',
+      '#default_value' => $defaults['max'],
+      '#element_validate' => array('mcapi_limits_validate_minmax'),
+      '#size' => 6,
+      '#maxlength' => 6,
+      '#weight' => 1,
+      '#attributes' => array('style' => 'width:inherit;'),
+    )
+  );
+}
+
+
+/*
+ * PERSONAL LIMITS
+ */
+function limits_personal($currency, $uid) {
+  $personal = db_select('mcapi_cache', 'c')
+    ->fields('c', array('min', 'max'))
+    ->condition('uid', $uid)
+    ->condition('cid', $currency->cid)
+    ->execute()->fetchAssoc();
+  return $personal + $currency->limits_personal;
+}
+function limits_personal_form($form, $form_state) {
+  $currency = currency_load($form['cid']['#default_value']);
+  $saved = isset($currency->limits_personal) ? $currency->limits_personal : array('min' => NULL, 'max' => NULL);
+  $personal_form = min_max_fields($saved);
+  $personal_form['min']['#title'] = t('Default minimum balance.');
+  $personal_form['max']['#title'] = t('Default maximum balance.');
+  return $personal_form;
+}
+//put the fields on the user form
+function mcapi_limits_form_user_profile_form_alter(&$form, $form_state) {
+  if (!user_access('manage all transactions')) return;
+  $currencies = currency_choose('passive', $form_state['user']->uid);
+
+  foreach ($currencies as $cid => $currency) {
+    if ($currency->limits_callback == 'limits_personal') {
+      $defaults = limits_get($cid, $form_state['user']->uid);
+      $fields = min_max_fields($defaults);
+      $form['limits'][$cid]['min-'.$cid] = $fields['min'];
+      $form['limits'][$cid]['max-'.$cid] = $fields['max'];
+    }
+  }
+  if (isset($form['limits'])) {
+    $form['limits'] += array(
+      '#title' => t('Personal balance limits, set manually'),
+      '#type' => 'fieldset',
+      '#weight' => 2
+    );
+  }
+}
+//save the user object
+function mcapi_limits_user_update($edit, $account, $category) {
+  $currencies = currency_choose('passive', $account->uid);
+  foreach($currencies as $cid => $currency) {
+    $limits[$cid]['min'] = $edit['min-'.$cid];
+    $limits[$cid]['max'] = $edit['max-'.$cid];
+  }
+  foreach($limits as $cid => $limit) {
+    db_merge('mcapi_cache')
+      ->key(array('uid' => $account->uid, 'cid' => $cid, ))
+      ->fields(array('min' => $limit['min'], 'max' => $limit['max']))
+      ->execute();
+  }
+}
+
+
+//validate callback for the min and max values on the currency form
+//this could be done in javascript also, on the form
+//values have already been validated as numeric
+function mcapi_limits_validate_minmax(&$element, $form_state) {
+  if (!is_numeric($element['#value'])) {
+    form_error($element, t('Limits must be numeric: @value', array('@value' => $element['#value'])));
+  }
+  if ($element['#name'] == 'min' && strlen($element['#value'])){
+    if ($element['#value'] > 0) {
+      form_error($element, t('Minimum balance must not be larger than 0'));
+    }
+  }
+  elseif ($element['#name'] == 'max' && strlen($element['#value'])){
+    if ($element['#value'] <= 0) {
+      form_error($element, t('Maximum balance must be larger than 0'));
+    }
+  }
+}
+
+
+/*
+ * inject the limit checker function into the transaction form
+ */
+function mcapi_limits_form_transaction_form_alter(&$form, $form_state) {
+  $form['#validate'][] = 'limits_transaction_form_validate';
+}
+/*
+ * validate callback which checks that the transaction doesn't take anyone beyond their limits
+ */
+function limits_transaction_form_validate(&$form, $form_state) {
+  //fortunately the $form_state already contains a $transaction object
+  try {
+    mcapi_limit_check($form_state['#transaction'], $form_state['#transaction']->state);
+  }
+  catch (Exception $e) {
+    form_set_error('quantity', $e->getMessage());
+  }
+}
+
+/*
+ * limit checker
+ * checks a transaction to see if the proposed difference will violate the balance limits
+ * A pending transaction will be checked against the pending total
+ * $transaction = A transaction object
+ * $state = Whether to compare with finished or pending balances.
+ * This is a drupal function, but the checking could just as easily be done through the entity controller.
+ */
+function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
+  $cid = $transaction->cid;
+  $payer_uid = $transaction->payer_uid;
+  $payee_uid = $transaction->payee_uid;
+  $difference = $transaction->quantity;
+  $messages = array();
+
+  //check that the payee isn't going over their max limit
+  $limits = limits_get($cid, $payee_uid);
+  if (is_numeric($limits['max'])) {
+    $balances = entity_get_controller('transaction')->get_cache($payee_uid);
+    $payee_projected = $balances[$cid]['cleared_balance'] + $difference;
+    if ($state == TRANSACTION_STATE_PENDING) {
+      $payee_projected += $balances[$cid]['pending_dif'];
+    }
+    $surplus = $payee_projected - $limits['max'];
+    if ($surplus > 0) {
+      $messages[] .= t('Transaction would take @username !quant above the maximum balance of !max.',
+        array(
+          '@username' => strip_tags(theme('username', array('account' => user_load($payee_uid)))),
+          '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
+          '!max' => theme('money', array('quantity' => $limits['max'], 'cid' => $cid, $richtext = FALSE))
+        )
+      );
+    }
+  }
+  //check that the payer isn't going below their min limit
+  $limits = limits_get($cid, $payer_uid);
+  if (is_numeric($limits['min'])) {
+    $balances = entity_get_controller('transaction')->get_cache($payer_uid);
+    $payer_projected = $balances[$cid]['cleared_balance'] - $difference;
+    if ($state == TRANSACTION_STATE_PENDING) {
+      $payer_projected += $balances[$cid]['pending_dif'];
+    }
+    $deficit = $limits['min'] - $payer_projected;
+    if ($deficit > 0) {
+      $messages[] .= t('Transaction would take @username !quant below the minimum balance of !min.',
+        array(
+          '@username' => strip_tags(theme('username', array('account' => user_load($payer_uid)))),
+          '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
+          '!min' => theme('money', array('quantity' => $limits['min'], 'cid' => $cid, $richtext = FALSE))
+        )
+      );
+    }
+  }
+  if (count($messages)) {
+    throw new Exception(implode(' ', $messages));
+  }
+}
+
+
+
+//this was in case we wanted to do form level validation using ['limits_callback'].'_form_validate'
+//the name of this validate function would need to be included in mcapi_limits_form_currency_form_alter
+//$form['#validate'][] = 'limits_subform_validate'
+/*
+function limits_subform_validate($form, &$form_state) {
+  if ($form_state['values']['limits_callback']) {
+    $form_callback = $form_state['values']['limits_callback'].'_form_validate';
+    if (function_exists($form_callback)) {
+      $form_callback($form_state);
+    }
+  }
+}
+ */
+

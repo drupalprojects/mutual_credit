@@ -1,0 +1,58 @@
+<?php
+
+/*
+ * implements hook_form_FORMID_alter
+ * puts the equation option into the currency form
+ */
+function mcapi_limits_equation_form_currency_form_alter(&$form, $form_state) {
+  $form['limits']['limits_callback']['#options']['limits_equations] = t('Calculate the limits using an equation and tokens.');
+}
+
+/*
+ * Equation
+ * has tokens
+ * @gross_in gross income
+ * @gross_out gross spending
+ * @trades number of trades
+ * e.g. 10+@gross_in+@gross_out+@trades
+ */
+function limits_equations($currency, $uid) {
+  $cached = entity_get_controller('transaction')->get_cache($uid, $currency->cid);
+  foreach (array('max', 'min') as $limit) {
+    debug($currency->limits_equations[$limit]);
+    $pattern = 'return '. str_replace('@', '', $currency->limits_equations[$limit]) .';';
+    $formula = strtr(
+      $pattern,
+      db_query("SELECT gross_in, gross_out, count as trades from {mcapi_cache} WHERE uid = $uid AND cid = $currency->cid")->fetchAssoc()
+    );
+    $limits[$limit] = eval($formula);
+  }
+  return $limits;
+}
+
+function limits_equations_form($form, $form_state) {
+  $currency = currency_load($form['cid']['#default_value']);
+  $saved = isset($currency->limits_equations) ? $currency->limits_equations : array('min' => NULL, 'max' => NULL);
+
+  return array(
+    'min' => array(
+      '#title' => t('Formula to calculate minimum limit'),
+      '#description' => t('Use the following tokens:') . ' '. t('@gross_in, @gross_out, @trades'),
+      '#type' => 'textfield',
+      '#default_value' => isset($passed['min']) ? $passed['min'] : $saved['min'],
+      '#element_validate' => array('mcapi_limits_equation_validate'),
+    ),
+    'max' => array(
+      '#title' => t('Formula to calculate maximum limit'),
+      '#description' => t('Use the following tokens:') . ' '. t('@gross_in, @gross_out, @trades'),
+      '#type' => 'textfield',
+      '#default_value' => isset($passed['max']) ? $passed['max'] : $saved['max'],
+      '#element_validate' => array('mcapi_limits_equation_validate'),
+    ),
+  );
+}
+
+
+function mcapi_limts_equation_validate(&$element, &$form_state) {
+
+}

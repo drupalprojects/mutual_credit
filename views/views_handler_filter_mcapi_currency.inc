@@ -5,6 +5,6 @@
  */
 class views_handler_filter_mcapi_currency extends views_handler_filter_in_operator {
   function get_value_options() {
-    $this->value_options = which_currencies($GLOBALS['user']->uid);
+    $this->value_options = currency_select(currency_choose('passive', $GLOBALS['user']->uid));
   }
 }

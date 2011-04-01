@@ -1,0 +1,11 @@
+<?php
+
+/*
+ * determine which form to edit according to the transaction_type info
+ */
+function transaction_edit($transaction){
+  $types = module_invoke_all('transaction_type_info');
+  $type = $types[$transaction->type];
+  return drupal_get_form($type['edit'], $transaction);
+}
+

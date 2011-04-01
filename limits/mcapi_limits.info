@@ -1,0 +1,7 @@
+; $Id: 
+name = Mutual Credit Limits
+description = Sets global and personal balance limits for each currency
+package = Mutual Credit
+core = 7.x
+
+files[] = mcapi_limits.module

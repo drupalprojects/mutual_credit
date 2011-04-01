@@ -208,16 +208,8 @@ function mcapi_schema() {
         'not null' => TRUE,
         //'default' => 0,
       ),
-      'max' => $numeric + array(
-        'description' => "the max balance for this account for this user",
-        'not null' => FALSE,
-      ),
-      'min' => $numeric + array(
-        'description' => "the min balance for this account for this user",
-        'not null' => FALSE,
-      ),
       'count' => array(
-        'description' => "number of transactions",
+        'description' => "number of cleared transactions",
         'type' => 'int',
         'size' => 'small',
         'not null' => TRUE,

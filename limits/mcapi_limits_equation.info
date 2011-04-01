@@ -1,0 +1,7 @@
+; $Id: 
+name = Mutual Credit Limits, with equation
+description = Use an equation to set each member's balance limits
+package = Mutual Credit
+core = 7.x
+dependencies[] = mcapi_limits
+files[] = mcapi_limits_equation.module

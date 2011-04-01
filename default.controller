@@ -1,31 +1,32 @@
 <?php
 
 /*
- * This file should be loaded whenever a currency or transaction is viewed or modified
+ * This file is included using the function mcapi_controller();
  */
+
+define ('TRANSACTION_STATE_VALIDATING', -2);
 
 /*
  * The transaction entity has its own CRUD operations
  */
 class TransactionEntityController extends DrupalDefaultEntityController {
-  //this converts the serialized data property into an array
-  //not needed I think, because we should add proper fields for that
   /*
-  public function _________load($xids = array(), $conditions = array()) {
+   * Throws an error if a transaction doesn't exist
+   */
+  public function load($xids = array(), $conditions = array()) {
     $transactions = parent::load($xids, $conditions);
-    foreach($transactions as $key => $transaction) {
-      $transactions[$key]->data = unserialize($transaction->data);
+    if (!count($transactions)) {
+      throw new Exception(t('Invalid transaction ID: @ids', array('@ids' => implode(', ', $xids))));
     }
     return $transactions;
   }
-   */
 
   /*
    * Validation ideally would happen by using the save function with $write set to FALSE
    * Instead we just check the balances here/
    */
   public function validate($transaction){
-    $currency = currencies_load($transaction->cid);
+    $currency = currency_load($transaction->cid);
     $key = isset($transaction->xid) ? $transaction->xid : NULL;
     try {
       //temporarily change the transaction type so that validated transaction left hanging DO leave a trace.
@@ -36,9 +37,10 @@ class TransactionEntityController extends DrupalDefaultEntityController {
     }
     catch (Exception $e){
       //if the validation fails, we add the error message to the transaction object
-      $transaction->data['error'] = $e; //THIS IS NOT TESTED
+      //THIS IS NOT TESTED BECAUSE VALIDATION SHOULDN'T FAIL AT THIS LATE STAGE
+      $transaction->data['error'] = $e->getMessage(); 
     }
-    //the db rolled back but now we need to change this object back
+    //the db rolled back but the allocated transaction ID persists in the transaction object
     if (!$currency->write_validate) {
       $transaction->xid = $key;
     }
@@ -71,7 +73,7 @@ class TransactionEntityController extends DrupalDefaultEntityController {
     }
     catch (Exception $e) {
       $t->rollback();
-      watchdog_exception('mcapi', $e);
+      watchdog_exception('mcapi', $e->getMessage());
       throw $e;
     }
     if (!$write) {
@@ -80,6 +82,7 @@ class TransactionEntityController extends DrupalDefaultEntityController {
       //so we must be careful to unset the xid if we were only testing
     }
     else {
+      balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
       module_invoke_all('entity_'.$function, 'transaction', $transaction);
     }
   }
@@ -89,8 +92,7 @@ class TransactionEntityController extends DrupalDefaultEntityController {
    * there is no error checking on this.
    */
   public function erase($transaction) {
-    $currency = currencies_load($transaction->cid);
-    $currency = currencies_load($transaction->cid);
+    $currency = currency_load($transaction->cid);
     switch ($currency->delete_mode) {
       case '0':
         throw new Exception(t('Deletions not allowed'));
@@ -109,10 +111,10 @@ class TransactionEntityController extends DrupalDefaultEntityController {
         break;
     }
     try {
-      balances_refresh($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
+      balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
     }
     catch (Exception $e) {
-      drupal_set_message($e, 'warning');
+      drupal_set_message($e->getMessage(), 'warning');
     }
     module_invoke_all('entity_delete', 'transaction', $transaction);
   }
@@ -147,24 +149,17 @@ class TransactionEntityController extends DrupalDefaultEntityController {
     return $query->fields('x')->execute()->fetchAll();
   }
   /*
-   * retrieve all the balances for a user
+   * retrieve all the cached balances for a user, in all the currencies cached.
+   * it's not clear what it means if a row doesn't exist here
    * $cids can be an array or a currency id
    * every cid asked for will return list of values, even if it doesn't exist in the db.
    */
-  public function get_balances($uid, $cids = array()) {
-    if (is_numeric($cids)) {
-      $cids = array($cids);
-    }
-    $query = db_select('mcapi_cache', 'c')->fields('c')->condition('uid', $uid);
-    foreach ($cids as $cid) {
-      $query->condition('cid', $cid);
-    }
-    $results = $query->execute()->fetchAllAssoc('cid', PDO::FETCH_ASSOC);
-    //in case the requested row doesn't exist in the table, make a row of zero values
-    foreach ($cids as $cid) {
-      if (!isset($results[$cid])) $results[$cid] = array('cleared_balance' => 0 , 'pending_dif' => 0, 'gross_in' => 0, 'gross_out' => 0, 'max' => NULL, 'min' => NULL, 'count' => 0);
-    }
-    return $results;
+  public function get_cache($uid) {
+    return db_select('mcapi_cache', 'c')
+    ->fields('c')
+    ->condition('uid', $uid)
+    ->execute()
+    ->fetchAllAssoc('cid', PDO::FETCH_ASSOC);
   }
 
   /*
@@ -178,11 +173,11 @@ class TransactionEntityController extends DrupalDefaultEntityController {
     }
     field_attach_insert('transaction', $transaction);
     //make a unique list of all the affected and update their balances
+    //it is conceivable that we might be processing other
     $refreshers[] = $transaction->payer_uid;
     $refreshers[] = $transaction->payee_uid;
 
     //assumes all the transactions were in the same currency
-    balances_refresh($transaction->cid, array_unique($refreshers));
   }
 
   /*
@@ -194,7 +189,7 @@ class TransactionEntityController extends DrupalDefaultEntityController {
    * TODO We could use the versions table here, since it is included already
    */
   function update($transaction) {
-    $currency = currencies_load($transaction->cid);
+    $currency = currency_load($transaction->cid);
     switch($currency->update_mode) {
       case 0:
         throw new Exception(t('Updates not allowed'));
@@ -214,9 +209,7 @@ class TransactionEntityController extends DrupalDefaultEntityController {
         field_attach_update('transaction', $transaction);
         break;
     }
-    balances_refresh($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
   }
-
 }
 
 /*
@@ -231,15 +224,10 @@ class CurrencyEntityController extends DrupalDefaultEntityController {
       foreach ($data as $name => $value) {
         $currencies[$key]->$name = $value;
       }
-      //make the divisions available as an array, from the string they are stored and edited as.
+      //does this need to be done here, for every currency on every page_load?
       $currencies[$key]->divisions = currency_divisions_array($currency->divisions_conf);
     }
     return $currencies;
-  }
-  public function loadAll() {
-    //web have to get the ids of all the currencies before we can use the standard entity load function
-    $cids = db_select('mcapi_currencies', 'c')->fields('c', array('cid'))->execute()->fetchCol('cid');
-    return $this->load($cids);
   }
 
   public function save($currency) {
@@ -261,53 +249,13 @@ class CurrencyEntityController extends DrupalDefaultEntityController {
     drupal_write_record('mcapi_currencies', $currency, array('cid'));
     field_attach_update('currency', $currency);
   }
-/*
-  function delete($cid) {
-    db_query("DELETE FROM {mcapi_currencies} WHERE cid = :cid", array(':cid' => $cid));
-  }
-*/
 }
 
 
 /*
- * Alternative approach to mcapi_check_limits
- * Assuming the transaction is recorded and the balances are updated, but it can all be rolled back
+ * When we need to know the currency divisions, this function converts them
+ * from the multiline string of the configuration to a nice array
  */
-function test_balances($uid, $cid) {
-  $balances = db_select('mcapi_cache')
-  ->fields(array('cleared_balance', 'pending_dif', 'max', 'min'))
-  ->condition('uid', $uid)
-  ->condition('cid', $cid)
-  ->execute()->getAssoc();
-  extract($balances);
-
-  $deficit = $min - $cleared_balance + $pending_dif;
-  if ($deficit > 0) {
-    $message = t('Transaction takes @username !quant below the minimum balance of !min',
-      array(
-        '@username' => strip_tags(theme('username', array('account' => user_load($payer_uid)))),
-        '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
-        '!min' => theme('money', array('quantity' => $min, 'cid' => $cid, $richtext = FALSE))
-      )
-    );
-  }
-  else {
-    $excess = $cleared_balance + $pending_dif -$max;
-    if ($excess > 0) {
-      $message = t('Transaction takes @username !quant above the maximum balance of !max',
-        array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($uid)))),
-          '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
-          '!max' => theme('money', array('quantity' => $max, 'cid' => $cid, $richtext = FALSE))
-        )
-      );
-    }
-  }
-  if ($message) {
-    throw new Exception($message);
-  }
-}
-
 function currency_divisions_array($string) {
   if (strpos($string, '|')) {
     $lines = explode("\n", $string);
@@ -322,37 +270,92 @@ function currency_divisions_array($string) {
   }
 }
 
-//refreshes a cache of all the transactions, calculates the running balances and other totals
-function balances_refresh($cid, $uids) {
-  foreach($uids as $uid) {
-    extract(sum_transactions($cid, $uid));
+/*
+ * This is where the settings specific to the controller are added to the currency form
+ */
+function mcapi_form_currency_form_alter(&$form, $form_state, $form_id) {
+  $currency = $form['cid']['#default_value'] ? currency_load($form['cid']['#default_value']) : NULL;
+  $form['accounting'] = array(
+    '#title' => t('Accounting standards'),
+    '#description' => t('More or less formal accounting standards can be determined.') .' '. 
+      t('Not all combinations are meaningful!') .' '.
+      t('The first fields take precedence') .' '.
+      t('YOU SHOULD TEST THAT YOUR SETTINGS WORK AS INTENDED!'),
+    '#type' => 'fieldset',
+    '#weight' => 0,
+    '#group' => 'additional_settings',
+    'delete_mode' => array(
+      '#title' => t('Delete mode'),
+      '#type' => 'radios',
+      '#options' => array(
+        0 => t("Can't delete"),
+        1 => t('Mark deleted'),
+        2 => t('Remove all traces from the database (not from backups)'),
+      ),
+      '#default_value' => isset($currency->delete_mode) ? $currency->delete_mode : 0,
+      '#weight' => 1
+    ),
+    'update_mode' => array(
+      '#title' => t('Update mode'),
+      '#description' => t("Changing the state of a transaction doesn't count as editing it"),
+      '#type' => 'radios',
+      '#options' => array(
+        0 => t("Can't update"),
+        1 => t("Delete and create a new transaction"),
+        2 => t("Update same record"),
+        //3 => t("Use entity versioning the same transaction (not available)"),
+      ),
+      '#default_value' => isset($currency->update_mode) ? $currency->update_mode : 0,
+      '#weight' => 2,
+      '#element_validate' => array('mcapi_currency_validate_update_mode')
+    ),
+    'write_validate' => array(
+      '#title' => t('Write transaction during validation'),
+      '#description' => t('Transactions that are abandoned between validation and saving will leave a trace in the database.'),
+      '#type' => 'checkbox',
+      '#default_value' => isset($currency->write_validate) ? $currency->write_validate : 1,
+      '#weight' => 3,
+    ),
+  );
+  $form['#entity_builders'][] = 'currency_entity_builder_default';
+}
 
+function currency_entity_builder_default($entity_type, $entity, $form, $form_state) {
+  $entity->data['delete_mode'] = $entity->delete_mode;
+  $entity->data['update_mode'] = $entity->update_mode;
+  $entity->data['write_validate'] = $entity->write_validate;
+}
+
+
+//refreshes a cache of all the transactions,
+function balances_recalc($cid, $uids) {
+  foreach($uids as $uid) {
+    $in = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
+      array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
+      ->fetchAssoc();
+    $out = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payer_uid = :uid AND state = :state AND cid = :cid",
+      array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
+      ->fetchAssoc();
+    $in['total'] = floatval($in['total']);
+    $out['total'] = floatval($out['total']);
+
+    $pend_out = floatval(db_query("SELECT sum(quantity)  from {mcapi_transactions} WHERE payer_uid = :uid AND state = :state AND cid = :cid",
+      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid))
+      ->fetchField());
+    $pend_in = floatval(db_query("SELECT sum(quantity) from {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
+      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid))
+      ->fetchField());
     $query = db_merge('mcapi_cache')
-    ->key(array('cid' => $cid, 'uid' => $uid))
-    ->fields(
-       array('cleared_balance', 'pending_dif', 'gross_in', 'gross_out', 'count'),
-       array($cleared_balance, $pending_dif, $gross_in, $gross_out, count($history))
-    );
+    ->key(array('cid' => $cid, 'uid' => $uid));
+    
+    $query->fields(array(
+      'cleared_balance' => $in['total'] - $out['total'],
+      'gross_in' => $in['total'],
+      'gross_out' =>$out['total'],
+      'count' => intval($in['count'] + $out['count']),
+      'pending_dif' => $pend_in - $pend_out,
+    ));
     $query->execute();
   }
 }
 
-//TODO how do we SUM with the drupal db API?
-function sum_transactions($cid, $uid, $pending = TRUE) {
-  $in =  db_fetch_array(db_query("SELECT sum(quantity) total, count(quantity) count FROM {mc_exchanges} WHERE payee_uid = %d AND state = %d",
-    array($uid, TRANSACTION_STATE_FINISHED)));
-  $out = db_fetch_array(db_query("SELECT sum(quantity) total ,count(quantity) count FROM {mc_exchanges} WHERE payer_uid = %d AND state %d",
-    array($uid, TRANSACTION_STATE_FINISHED)));
-  $balances = array(
-    'gross_in' => $in['total'],
-    'gross_out' => $out['total'],
-    'cleared_balance' => $in['total']-$out['total'],
-    'count' => $in['count'] + $out['count']
-  );
-  if ($pending) {
-    $pend_out = db_result(db_query("SELECT sum(quantity) from {mc_exchanges} WHERE payer_uid = %d AND state = %d", $uid));
-    $pend_in = db_result(db_query("SELECT sum(quantity) from {mc_exchanges} WHERE payee_uid = %d AND state = %d", $uid));
-    $balances['pending_dif'] = $pend_in = $pend_out;
-  }
-  return $balances;
-}

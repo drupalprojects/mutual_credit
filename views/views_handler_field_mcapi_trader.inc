@@ -23,7 +23,7 @@ class views_handler_field_mcapi_trader extends views_handler_field {
   }
 
   function render_link($data, $values) {
-    $name = theme('username', user_load($data));
+    $name = theme('username', array('account' => user_load($data)));
     if (!$this -> options['link_to_trader']) {
       $name = strip_tags($name);
     }
