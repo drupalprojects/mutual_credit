@@ -1,22 +1,5 @@
 <?php
-/* 
- * Everything in this set of module is for use in the user_limits function in mcapi.inc
- * This module itself merely sets a per-user limit, stored at $account->mc_limits,
- * but there's a hook so that other modules can define this limit automatcially
- */
 
-function mc_user_limits_menu() {
-  return array(
-    'admin/mc/limits' => array(
-      'title' => 'Limits',
-      'description' => 'Configure the maximum and minimum permissible balances',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('mc_configure_limits_form'),
-      'access arguments' => array('configure currencies'),
-      'weight' => 4,
-    )
-  );
-}
 
 /**
 * http://api.drupal.org/api/function/hook_user/6
@@ -34,9 +17,9 @@ function mc_user_limits_user($op, &$edit, &$account, $category = NULL) {
       //fields for individual balance limits
       if (user_access('edit all exchanges')) {
         $form['mc_limits'] = array(
-          '#type' => 'fieldset',
           '#title' => t('Personal balance limits (accountant only)'),
           '#description' => t("Each of these values will dynamically inherit the currency's limits (shown in brackets) if left blank"),
+          '#type' => 'fieldset',
           '#weight' => -5,
           '#attributes' => array('class' => 'balance-limits'),
           '#tree' => TRUE,
@@ -45,8 +28,8 @@ function mc_user_limits_user($op, &$edit, &$account, $category = NULL) {
           drupal_set_html_head('<style>fieldset.balance-limits fieldset div.form-item{float:left;margin-right:2em;}</style>');
           foreach ($currencies as $cid => $currency) {
             $form['mc_limits'][$cid] = array(
-              '#type' => 'fieldset',
               '#title' => $currency->title,
+              '#type' => 'fieldset',
               '#weight' => $cid,
               '#element_validate' => array('mc_validate_limits'),
               '#cid' => $cid, //this helps with validation

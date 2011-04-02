@@ -93,19 +93,19 @@ function mc_multiple_forms() {
 function mc_multiple_exchange_type_info() {
   $types = array(
     'alltoone' => array(
-      'title' => t('all to one'),
+      'title' => t('All-to-one'),
       'edit' => 'mc_edit_form'
     ),
     'onetoall' => array(
-      'title' => t('one to all'),
+      'title' => t('One-to-all'),
       'edit' => 'mc_edit_form'
     ),
     'manytoone' => array(
-      'title' => t('many to one'),
+      'title' => t('Many-to-one'),
       'edit' => 'mc_edit_form'
     ),
     'onetomany' => array(
-      'title' => t('one to many'),
+      'title' => t('One-to-many'),
       'edit' => 'mc_edit_form'
     )
   );

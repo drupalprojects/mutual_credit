@@ -24,25 +24,22 @@ class views_handler_filter_signatures extends views_handler_filter_boolean_opera
 
   function query() {
     //this only works if the 'participant' argument is present.
-    if (isset($this->view->argument['participant']) && count($this->view->args)) {
-      $key = array_search('participant', array_keys($this->view->argument));
-      if ($key !== FALSE) {
-        $uid = $this->view->args[$key];
-        $this->ensure_my_table();
-        $fieldname = "$this->table_alias.$this->real_field ";
-        if ($this->options['value'] == 'participant') {
-          $where = "$fieldname = $uid";
-        }
-        else {
-           $where = "$fieldname <> $uid";
-        }
-        $this->query->add_where(NULL, $where);
-        //filtering for pending will only make a difference if there are data integrity problems
-        //$this->query->add_where(NULL, 'mc_exchanges.state = '.EXCHANGE_STATE_PENDING);
+    if (isset($this->view->argument['participant'])) {
+     // $key = array_search('participant', array_keys($this->view->argument));
+      $uid = $this->view->argument['participant']->get_value();
+      $this->ensure_my_table();
+
+      if ($this->options['value'] == 'participant') {
+        $op = '=';
       }
+      else {
+        $op = '<>';
+      }
+
+      $fieldname = "$this->table_alias.$this->real_field";
+      $this->query->add_where(0, "$fieldname $op ". $uid);
     }
   }
-
 
   function render($values) {
     $exchange = node_load($values->nid); //additional field from above

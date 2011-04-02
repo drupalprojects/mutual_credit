@@ -62,16 +62,16 @@ function mc_signatures_nodeapi(&$node, $op) {
   switch($op) {
     case 'load':
       mc_signatures_node_load($node);
-    break;
+      break;
     case 'delete':
       mc_signatures_node_delete($node);
-    break;
+      break;
     case 'presave':
       if (!$node->nid) deduce_signatures($node);
       break;
     case 'insert':
     case 'update':
-      //can't do this until we know the nid
+      //can't do this in presave because we don't know the nid
       save_signatures($node);
       break;
   }
@@ -123,18 +123,19 @@ function mc_sign_form_submit($form, &$form_state) {
 }
 function mc_one_signing($node, $signer_uid){
   $result = db_query("SELECT uid FROM {mc_unsigned} WHERE nid = %d", array(':nid' => $node->nid));
+  $pending = FALSE;
   while ($uid = db_result($result)) {
-    if ($uid == $signer_uid) {
+    if ($uid != $signer_uid) {
+      $pending = TRUE; continue;
+    }
+    else {
       db_query("DELETE FROM {mc_unsigned} WHERE nid = %d AND uid = %d", array(':nid' => $node->nid, ':uid' => $uid));
       drupal_set_message(t('!user signed the exchange', array('!user' => theme('username', user_load($uid)))));
     }
-    else {
-      $unfinished = TRUE;
-    }
   }
-  if (!isset($unfinished)) {
+  if (!$pending) {
     db_query("UPDATE {mc_exchanges} SET state = %d WHERE nid = %d", array(':state' => EXCHANGE_STATE_FINISHED, ':nid' => $node->nid));
-    mc_signatures_update_balances($node);
+    mcapi_update_balances($node);
     drupal_set_message(t("Exchange &hash;@nid is signed off.", array('@nid' => $node->nid)));
     mc_signatures_signoff_notify($node);
   }
@@ -148,19 +149,19 @@ function deduce_signatures(&$node) {
   if ($node->state != EXCHANGE_STATE_PENDING) return;
   //based on the exchange_type, we know which signatories to add
   switch($node->exchange_type) {
-    case 'one2many':
-    case 'one2few':
+    case 'onetomany':
+    case 'onetoall':
     case 'incoming signed':
       $node->mc_unsigned = array($node->payer_uid);
-    break;
+      break;
     case 'outgoing signed':
-    case 'many2one':
-    case 'few2one':
+    case 'manytoone':
+    case 'alltoone':
       $node->mc_unsigned = array($node->payee_uid);
-    break;
+      break;
     case '3rdparty':
       $node->mc_unsigned = array($node->payee_uid, $node->payer_uid);
-    break;
+      break;
     default:
       drupal_set_message("function deduce_signatures doesn't know exchange_type: ".$node->exchange_type,  'error');
   }
@@ -179,7 +180,7 @@ function save_signatures($node) {
   foreach ($node->mc_unsigned as $uid) {
     $rows[] = '('. $node->nid .', '. $uid .')';
   }
-  db_query("INSERT INTO  {mc_unsigned} (nid, uid) VALUES %s",
+  db_query("INSERT INTO {mc_unsigned} (nid, uid) VALUES %s",
     array(':values' => implode(', ', $rows))
   );
 }
@@ -305,12 +306,15 @@ function mc_signall_confirm_form($form_state, $nid) {
 function mc_signall_confirm_form_submit($form, $form_state) {
   if (user_access('edit all exchanges')){
     $nid = $form_state['values']['nid'];
-    _clear_unsigned('nid', $nid);
-    db_query("UPDATE {mc_exchanges} SET state = %d WHERE nid = %d", array(':state' => EXCHANGE_STATE_FINISHED,':nid' => $nid));
-    mc_signatures_update_balances(node_load($nid));
-    drupal_set_message(t("Transaction #@nid is signed off.", array('@nid' => $nid)));
+    mc_signoff($nid);
     mc_signatures_signoff_notify(node_load($nid));
   }
+}
+function mc_signoff($nid) {
+  _clear_unsigned('nid', $nid);
+  db_query("UPDATE {mc_exchanges} SET state = %d WHERE nid = %d", array(':state' => EXCHANGE_STATE_FINISHED,':nid' => $nid));
+  mcapi_update_balances(node_load($nid));
+  drupal_set_message(t("Transaction #@nid is signed off.", array('@nid' => $nid)));
 }
 
 
@@ -357,7 +361,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
     '#type' => 'textarea',
     '#title' => t('Exchange is signed off.'),
     '#default_value' => variable_get('mc_signatures_signoff_body', t("The following exchange has been signed off and your balance updated.")),
-    '#description' => t("This will be added to notification mails.") .' '. t('Tokens may be used.'),
+    '#description' => t('Tokens may be used.'),
     '#required' => TRUE,
     '#weight' => 2
   );
@@ -445,10 +449,4 @@ function mc_convert_state_checkbox(&$form) {
   $form['state']['#type'] = 'checkbox';
   $form['state']['#title'] = t('Require signatures');
   unset($form['state']['#description']);
-}
-
-function mc_signatures_update_balances($exchange) {
-  module_load_include('inc', 'mcapi');
-  _refresh_mc_cache($exchange->payer_uid, $exchange->cid);
-  _refresh_mc_cache($exchange->payee_uid, $exchange->cid);
 }

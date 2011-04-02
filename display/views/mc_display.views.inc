@@ -81,11 +81,11 @@ function mc_display_views_data() {
       'click sortable' => TRUE,
     ),
     'filter' => array(
-      'help' => t('Show only exchanges where the specified user was paid'),
+      'help' => t('Show only exchanges where the specified user was paid.'),
       'handler' => 'views_handler_filter_user_name'
     ),
     'argument' => array(
-      'help' => t('The user who received currency in the exchange.'),
+      'help' => t('The user who received currency in the exchange'),
       'handler' => 'views_handler_argument'
     ),
   );
@@ -120,7 +120,7 @@ function mc_display_views_data() {
   $data['mc_exchanges']['cid'] = array(
     'title' => t('Currency ID'),
     'field' => array(
-      'help' => t("Use this field (check 'exclude') for the theming to work on all quantities in the row"),
+      'help' => t("Use this field (check 'exclude') for the theming to work on all quantities in the row."),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     ),
@@ -136,7 +136,7 @@ function mc_display_views_data() {
 
   $data['mc_exchanges']['exchange_type'] = array(
     'title' => t('Exchange type'),
-    'help' => t('Which form or module which created the exchange'),
+    'help' => t('Form or module which created the exchange'),
     'field' => array(
       'handler' => 'views_handler_field',
       'click sortable' => TRUE
@@ -190,7 +190,7 @@ function mc_display_views_data() {
   $data['mc_cache']['cid'] = array(
     'title' => t('Currency ID'),
     'field' => array(
-      'help' => t("Use this field (check 'exclude') for the theming to work on all quantities in the row"),
+      'help' => t("Use this field (check 'exclude') for the theming to work on all quantities in the row."),
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     ),
@@ -202,27 +202,28 @@ function mc_display_views_data() {
   $data['mc_cache']['cleared_balance'] = array(
     'title' => t('Balance'),
     'field' => array(
-      'help' => t("The user's total cleared income minus total cleared expenditure"),
+      'help' => t("The user's total cleared income minus total cleared expenditure.") .' '.  t('Will return one row for each currency.'),
       'handler' => 'views_handler_field_mc_amount',
       'click sortable' => TRUE,
     ),
     'sort' => array(
-      'help' => t("The user's total cleared income minus total cleared expenditure"),
+      'help' => t("The user's total cleared income minus total cleared expenditure."),
       'handler' => 'views_handler_sort',
     )
   );
   $data['mc_cache']['pending_dif'] = array(
     'title' => t('Pending Difference'),
     'field' => array(
-      'help' => t("The sum of all pending exchanges, (@type)", array('@type'=>'')),
+      'help' => t("The sum of all pending exchanges, (@type)", array('@type'=>'')) .' '.  t('Will return one row for each currency.'),
       'handler' => 'views_handler_field_mc_amount',
       'click sortable' => TRUE,
     )
   );
   $data['mc_cache']['gross_in'] = array(
     'title' => t('Gross Income'),
-    'help' => t("The user's total completed income"),
+    'help' => t("The user's total completed income."),
     'field' => array(
+      'help' => t("The user's total completed income.") .' '.  t('Will return one row for each currency.'),
       'handler' => 'views_handler_field_mc_amount',
       'click sortable' => TRUE,
     ),
@@ -232,8 +233,9 @@ function mc_display_views_data() {
   );
   $data['mc_cache']['gross_out'] = array(
     'title' => t('Gross Expenditure'),
-    'help' => t("The user's total completed expenditure"),
+    'help' => t("The user's total completed expenditure."),
     'field' => array(
+      'help' => t("The user's total completed expenditure.") .' '.  t('Will return one row for each currency.'),
       'handler' => 'views_handler_field_mc_amount',
       'click sortable' => TRUE,
     ),
@@ -242,8 +244,8 @@ function mc_display_views_data() {
     )
   );
   $data['mc_cache']['count'] = array(
-    'title' => t('Number of exchanges'),
-    'help' => t('Number of exchanges'),
+    'title' => t('Number of exchanges.'),
+    'help' => t('Number of exchanges.') .' '. t('Will return one row for each currency.'),
     'field' => array(
       'handler' => 'views_handler_field_mc_amount',
       'click sortable' => TRUE,
@@ -561,11 +563,10 @@ function mc_exchanges_all_view() {
         'incoming direct' => 'incoming direct',
         'outgoing signed' => 'outgoing signed',
         'incoming signed' => 'incoming signed',
-        'many2one' => 'many2one',
-        'one2many' => 'one2many',
-        'few2one' => 'few2one',
-        'one2few' => 'one2few',
-        'sms incoming' => 'sms incoming',
+        'manytoone' => 'manytoone',
+        'onetomany' => 'onetomany',
+        'alltoone' => 'alltoone',
+        'onetoall' => 'onetoall',
       ),
       'group' => '0',
       'exposed' => FALSE,
@@ -646,6 +647,10 @@ function mc_exchanges_all_view() {
     'name' => 'navigation',
   ));
   $handler = $view->new_display('page', t('Filter exchanges'), 'page_2');
+  $types = module_invoke_all('exchange_type_info');
+  foreach ($types as $type => $info) {
+    $options[$type] = $info['title'];
+  }
   $handler->override_option('filters', array(
     'type' => array(
       'operator' => 'in',
@@ -665,18 +670,7 @@ function mc_exchanges_all_view() {
     ),
     'exchange_type' => array(
       'operator' => 'or',
-      'value' => array(
-        '3rdparty' => '3rdparty',
-        'outgoing direct' => 'outgoing direct',
-        'incoming direct' => 'incoming direct',
-        'outgoing signed' => 'outgoing signed',
-        'incoming signed' => 'incoming signed',
-        'many2one' => 'many2one',
-        'one2many' => 'one2many',
-        'few2one' => 'few2one',
-        'one2few' => 'one2few',
-        'sms incoming' => 'sms incoming',
-      ),
+      'value' => $options,
       'group' => '0',
       'exposed' => TRUE,
       'expose' => array(
@@ -833,7 +827,7 @@ function mc_exchanges_all_view() {
   $handler->override_option('path', 'exchanges/filter');
   $handler->override_option('menu', array(
     'type' => 'tab',
-    'title' => 'Filtered exchages',
+    'title' => 'Filtered exchanges',
     'description' => '',
     'weight' => '25',
     'name' => 'navigation',

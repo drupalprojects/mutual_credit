@@ -38,8 +38,8 @@ function mc_signatures_views_data() {
 
   // link to edit comment
   $data['mc_unsigned']['signatories'] = array(
-    'field' => array(
     'help' => t('Provide a simple link to edit the comment.'),
+    'field' => array(
       'title' => t('Signatories'),
       'handler' => 'views_handler_field_mc_signatories',
     ),
@@ -205,14 +205,14 @@ function mc_signatures_views_default_views() {
   ));
   $handler->override_option('arguments', array(
     'participant' => array(
-      'default_action' => 'not found',
+      'default_action' => 'default',
       'style_plugin' => 'default_summary',
       'style_options' => array(),
       'wildcard' => 'all',
       'wildcard_substitution' => 'All',
       'title' => '',
       'breadcrumb' => '',
-      'default_argument_type' => 'fixed',
+      'default_argument_type' => 'user',
       'default_argument' => '',
       'validate_type' => 'user',
       'validate_fail' => 'not found',
@@ -222,31 +222,21 @@ function mc_signatures_views_default_views() {
       'table' => 'mc_exchanges',
       'field' => 'participant',
       'validate_user_argument_type' => 'either',
-      'validate_user_roles' => array(
-        '2' => 0,
-      ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',
       'default_argument_fixed' => '',
       'default_argument_user' => 0,
       'default_argument_php' => '',
-      'validate_argument_node_type' => array(
-        'currency' => 0,
-        'exchange' => 0,
-        'offer' => 0,
-        'want' => 0,
-        'page' => 0,
-        'story' => 0,
-      ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
-      'validate_argument_vocabulary' => array(
-        '1' => 0,
-      ),
       'validate_argument_type' => 'tid',
       'validate_argument_transform' => 0,
       'validate_user_restrict_roles' => 0,
       'validate_argument_php' => '',
+      'default_argument_image_size' => '_original',
+      'override' => array(
+        'button' => 'Supplanter',
+      ),
     ),
   ));
   $handler->override_option('filters', array(
@@ -259,7 +249,10 @@ function mc_signatures_views_default_views() {
     ),
   ));
   $handler->override_option('access', array(
-    'type' => 'none',
+    'type' => 'role',
+    'role' => array(
+      '2' => 2,
+    ),
   ));
   $handler->override_option('cache', array(
     'type' => 'none',
@@ -304,14 +297,6 @@ function mc_signatures_views_default_views() {
       'default_argument_fixed' => '',
       'default_argument_user' => 0,
       'default_argument_php' => '',
-      'validate_argument_node_type' => array(
-        'currency' => 0,
-        'exchange' => 0,
-        'offer' => 0,
-        'want' => 0,
-        'page' => 0,
-        'story' => 0,
-      ),
       'validate_argument_node_access' => 0,
       'validate_argument_nid_type' => 'nid',
       'validate_argument_vocabulary' => array(

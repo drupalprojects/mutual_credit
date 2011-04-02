@@ -286,8 +286,11 @@ function mcapi_nodeapi(&$node, $op) {
     switch ($op) {
       case 'insert':
       case 'update':
-        module_load_include('inc', 'mcapi');
+        mcapi_update_balances($node);
         mcapi_notify($op, $node);
+        break;
+      case 'delete':
+        mcapi_update_balances($node);
     }
   }
   elseif($node->type == 'currency' && $op == 'presave') {
@@ -729,4 +732,10 @@ function ajax_form_callback() {
   $form_state['post'] = $form['#post'] = $_POST;
   $form['#programmed'] = $form['#redirect'] = FALSE;
   return drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
+}
+
+function mcapi_update_balances($exchange) {
+  module_load_include('inc', 'mcapi');
+  _refresh_mc_cache($exchange->payer_uid, $exchange->cid);
+  _refresh_mc_cache($exchange->payee_uid, $exchange->cid);
 }

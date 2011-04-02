@@ -434,12 +434,11 @@ function _refresh_mc_cache($uid, $cid) {
         $gross_in += $exchange->quantity;
       }
       else {
-        $pending_dif -= $exchange->quantity;
+        $pending_dif += $exchange->quantity;
       }
     }
     $exchange->balance = $cleared_balance;
   }
-
   db_query("REPLACE INTO {mc_cache} (uid, cid, cleared_balance, pending_dif, gross_in, gross_out, count)
     VALUES (%d, %d, %f, %f, %f, %f, %d)",
     array($uid, $cid, $cleared_balance, $pending_dif, $gross_in, $gross_out, $count)
@@ -495,8 +494,7 @@ function mc_mail_template() {
   );
   $form['mc_notification_wrapper']['mc_notification_body'] = array(
     '#title' => t('Mail body'),
-    '#description' => t('Sent to payer or payee whenever an exchange is first recorded.') .' '. t('Available variables are:') .
-      '!username, !site, !uri, !uri_brief, !mailto, !date, !login_uri, !edit_uri, !login_url, !creator, !exchange_uri, !summary',
+    '#description' => t('Tokens may be used.'),
     '#type' => 'textarea',
     '#default_value' => variable_get('mc_notification_body', "Dear !username,\n\nA new exchange has been recorded."),
     '#weight' => 2,
@@ -521,8 +519,7 @@ function mc_mail_template() {
   );
   $form['mc_notification_update_wrapper']['mc_notification_update_body'] = array(
     '#title' => t('Mail body'),
-    '#description' => t('Sent to payer or payee whenever an exchange is first recorded.') .' '. t('Available variables are:') .
-      '!username, !site, !uri, !uri_brief, !mailto, !date, !login_uri, !edit_uri, !login_url, !creator, !exchange_uri, !summary',
+    '#description' => t('Tokens may be used.'),
     '#type' => 'textarea',
     '#default_value' => variable_get('mc_notification_update_body', t("Dear !username,") ."\n\n". t("An exchange involving you has been edited")),
     '#weight' => 2,
@@ -533,7 +530,6 @@ function mc_mail_template() {
 
 
 /*
- * implementation of mcapi hook after_exchange
  * updates the balances and sends the mail
  */
 function mcapi_notify($op, $exchange) {

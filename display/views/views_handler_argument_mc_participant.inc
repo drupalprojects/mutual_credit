@@ -9,9 +9,6 @@ class views_handler_argument_mc_participant extends views_handler_argument_numer
     parent::construct();
     $this->value_value = t('Is the logged in user');
   }
-  function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
-  }
 
 function query() {
     $this->ensure_my_table();
