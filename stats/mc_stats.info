@@ -1,6 +1,5 @@
 ; $Id: 
 name = MC Statistics
-description = Caches various statistics and provides displays.
+description = Provides configurable blocks and caches their contents.
 package = Mutual Credit
 core = "6.x"
-dependencies[] = mc_webforms

@@ -2,10 +2,8 @@
 // $Id: mc_stats.module,v 1.1.2.2 2010/12/22 19:42:54 matslats Exp $
 
 /*
- * The stats module caches a summary of all the transactions
- * and provides theme callbacks, pages and blocks for displaying them
- *
- * Blocks are defined by naming them in a special config page and then configured in place
+ * The stats module provides an arbitrary number of blocks which can all be configured
+ * Then manages the caching of these blocks
  *
  */
 
@@ -14,8 +12,10 @@
  */
 function mc_stats_help($path) {
   switch($path) {
-    case 'admin/mc/stat_blocks':
-      return t('Rather than overwhelm the block page with permutations, only the required blocks are be defined here');
+    case 'admin/mc/stats':
+      return t('Rather than overwhelm the block page with permutations, only the required blocks are be defined here.') .' '.
+        t('The stats are divided into user ranking stats, and historic performance stats. Configure the actual blocks for more.') .' '.
+        t('Go to !link', array('!link' => l('admin/build/block', 'admin/build/block')));
   }
 }
 
@@ -25,25 +25,11 @@ function mc_stats_help($path) {
 function mc_stats_menu() {
   $items['admin/mc/stats'] = array(
     'title' => 'Statistics',
-    'title' => 'Options for gathering, calculating and displaying exchange statistics',
+    'description' => 'Options for gathering, calculating and displaying exchange statistics',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mc_stats_settings_form'),
     'access arguments' => array('configure currencies'),
     'weight' => 5
-  );
-  $items['exchange_stats'] = array(
-    'title' => 'Exchange statistics',
-    'description' => 'All available metrics',
-    'page callback' => 'exchange_stats',
-    'access arguments' => array('view exchange stats'),
-    'weight' => 20,
-  );
-  $items['stats/ajax'] = array(
-    'page callback' => 'mc_rebuild_form',
-    'access arguments' => array('configure currencies'),
-    'type' => MENU_CALLBACK,
-    'file' => 'block.admin.inc',
-    'file path' => drupal_get_path('module', 'block')
   );
   return $items;
 }
@@ -55,119 +41,206 @@ function mc_stats_perm(){
 }
 
 
+/*
+ * This options form allows the block names to be declared in various categories
+ */
+function mc_stats_settings_form(){
+  $form = array(
+    'mc_stats_exclude'  => array(
+      '#title' => t('Exclude from stats'),
+      '#type' => 'textfield',
+      '#description' => t('Any exchange involving these accounts will not be counted in stats.') . ' ' .
+        t('Comma separated account numbers.'),
+      '#default_value' => variable_get('mc_stats_exclude', 1),
+      '#element_validate' => array('mc_validate_stats_exclude'),
+      '#weight' => -1,
+     ),
+    'mc_stats_blocks_user' => array(
+      '#title' => t('User performance stats blocks'),
+      '#description' => t('The machine names of blocks which will show a ranking of user behaviour.') .' '.
+        t('One per line. No spaces. Then go to the blocks page and configure each block.'),
+      '#type' => 'textarea',
+      '#default_value' => variable_get('mc_stats_blocks_user', ''),
+      '#element_validate' => array('mc_validate_blocknames'),
+    ),
+    'mc_stats_blocks_historic' => array(
+      '#title' => t('Historic performance of the whole system'),
+      '#description' => t('The machine names of blocks which will show performance of the system accross stated time intervals.') .' '.
+        t('One per line. No spaces. Then go to the blocks page and configure each block.'),
+      '#type' => 'textarea',
+      '#default_value' => variable_get('mc_stats_blocks_historic', ''),
+      '#element_validate' => array('mc_validate_blocknames'),
+    ),
+    'mc_stats_blocks_baseline' => array(
+      '#title' => t('Baseline stats blocks'),
+      '#description' => t('The machine names of blocks which will show general indicators of system performance') .' '.
+        t('One per line. No spaces. Then go to the blocks page and configure each block.'),
+      '#type' => 'textarea',
+      '#default_value' => variable_get('mc_stats_blocks_baseline', ''),
+      '#element_validate' => array('mc_validate_blocknames'),
+    ),
+  );
+  return system_settings_form($form);
+}
+
+function mc_validate_stats_exclude(&$element, $form_state) {
+  $uids = explode(',', $element['#value']);
+  foreach (array_filter($uids) as $uid) {
+    _mc_check_trader($uid, $element);
+  }
+}
+function mc_validate_blocknames($element, $form_state) {
+  $blocknames = array_filter(explode("\n", $element['#value']));
+  foreach ($blocknames as $blockname) {
+    if (is_numeric(strpos($blockname, ' '))) {
+      form_error($element, t('Machine names must not have spaces'));
+    }
+  }
+}
+
+/*
+ * Declare, configure and render the blocks
+ */
 function mc_stats_block($op = 'list', $delta = 0, $edit = array()) {
   $function = 'mc_stats_block_'.$op;
   return $function($delta, $edit);
 }
 
 function mc_stats_block_list($delta) {
-  $blocks = array(
-    'mc_stat_summary' => array(
-      'info' => t('Statistical summary'),
-    )
-  );
-  $descriptions = array_filter(explode("\n", variable_get('mc_stats_block_definitions', '')));
-  if (count($descriptions)) {
-    foreach ($descriptions as $info) {
-      $key = str_replace(' ', '', trim($info));
-      $blocks[$key] = array('info' => $info);
+  $scopes = _mc_stats_get_blocknames();
+  foreach ($scopes as $scope => $machine_names) {
+    if (count($machine_names)) {
+      foreach ($machine_names as $name) {
+        $name = trim($name);
+        $blocks[$name] = array(
+          'info' => t('MC Statistics:') .' '. $scope .': '. $name,
+          'cache' => BLOCK_CACHE_GLOBAL
+        );
+      }
     }
   }
   return $blocks;
 }
 
 function mc_stats_block_configure($delta) {
-  if ($delta == 'mc_stat_summary') return;
-  $types = mc_stat_types();
-  if (count($_POST)) {
-    $defaults = $_POST; //this is for the AJAX
-  }
-  else {
-    $defaults = variable_get('mc_statsblock'.$delta, array('stat_type' => '', 'cid' => NULL));
-  }
-
-  $form['cid'] = array(
-    '#title' => t('Currency'),
-    '#description' => t('All in one gives a summary of activity in all currencies.'),
-    '#type' => 'select',
-    '#options' => array(NULL => t('All in one')) + mc_node_select_options(currencies_load()),
-    '#default_value' => $defaults['cid'],
-    '#weight' => -1,
-    '#ahah' => array(
-      'path' => 'stats/ajax',
-      'wrapper' => 'block-admin-configure',
-      'progress' => array('type' => 'throbber')
+  $scopes = _mc_stats_get_blocknames();
+  $settings = variable_get('mc_statsblock:'. $delta, array());
+  $form =  array(
+    'description' => array(
+      '#title' => t('Description'),
+      '#description' => t('Explain what this block shows (optional)'),
+      '#type' => 'textfield',
+      '#default_value' => isset($settings['description']) ? $settings['description'] : '',
+      '#weight' => -1,
+    ),
+    'cid' => array(
+      '#title' => t('Currency ID'),
+      '#description' => t('Choose currency'),
+      '#type' => 'select',
+      '#options' => _currency_chooser(),
+      '#default_value' => isset($settings['cid']) ? $settings['cid'] : '',
+      '#required' => TRUE,
+    ),
+    'measure' => array(
+      '#title' => t('The statistic being displayed'),
+      '#type' => 'select',
+      '#options' => array(
+        'trades' => t('Number of exchanges'),
+        'volume' => t('Exchange Volume'),
+      ),
+      '#default_value' => isset($settings['measure']) ? $settings['measure'] : 'trades',
+    ),
+    'limit' => array(
+      '#title' => t('The number of items to show'),
+      '#description' => t('Not applicable to baseline stats'),
+      '#type' => 'select',
+      '#options' => array(3 => 3, 5 => 5, 10 => 10),
+      '#default_value' => isset($settings['limit']) ? $settings['limit'] : '3'
+    ),
+    'from' => array(
+      '#title' => t('The begining of the time frame'),
+      '#description' => t('This will be parsed by the php function !strtotime', array('!strtotime' => l('strtotime()', 'http://php.net/strtotime'))) .' '.
+        "e.g. '01-01-11', '-1 month', 'first day of last month'",
+      '#type' => 'textfield',
+      '#default_value' => isset($settings['from']) ? $settings['from'] : '',
+     ),
+     'to' => array(
+      '#title' => t('The end of the time frame'),
+      '#description' => t('This will be parsed by the php function !strtotime', array('!strtotime' => l('strtotime()', 'http://php.net/strtotime'))) .' '.
+        "e.g. 'Jan 1st 2011', 'now, 'last day of last year'",
+      '#type' => 'textfield',
+      '#default_value' => isset($settings['to']) ? $settings['to'] : '',
     )
   );
-
-  $types = mc_stat_types();
-  if (!$defaults['cid']) {
-    foreach ($types as $key => $type){
-      if (!$type['null_cid']) unset($types[$key]);
-    }
+  //we set other parts of the form, depending on the scope
+  if (in_array($delta, $scopes['user'])) {
+    $form['measure']['#options'] += array(
+      'income' => t('Gross income'),
+      'outgoing' => t('Gross expenditure'),
+      'promiscuity' => t('Promiscuity'),
+    );
   }
-  $form['stat_type'] = array(
-    '#title' => t('Type of statistic'),
-    '#type' => 'select',
-    '#options' => mc_node_select_options($types),
-    '#default_value' => $defaults['stat_type'],
-    '#ahah' => array(
-      'path' => 'stats/ajax',
-      'wrapper' => 'block-admin-configure',
-      'progress' => array('type' => 'throbber')
-    )
-  );
-  $form['limit'] = array(
-    '#title' => t('How many to show'),
-    '#type' => 'textfield',
-    '#default_value' => $defaults['limit'],
-    '#weight' => 1,
-    '#description' => t('Integer'),
-    '#required' => TRUE,
-    '#element_validate' => array('mc_validate_integer')
-  );
-
-  if (isset($defaults['stat_type']['options'])) {
-    foreach ($types[$defaults['stat_type']]['options'] as $fieldname => $options) {
-      $form[$fieldname] = array(
-        '#title' => $fieldname,
-        '#type' => 'select',
-        '#default_value' => $defaults[$fieldname],
-        '#options' => $options,
-      );
-    }
+  elseif (in_array($delta, $scopes['historic'])) {
+    unset($form['from']);
+    unset($form['to']);
+    $form['limit']['#options'] += array(3 => 3, 6 => 6, 12 => 12);
+    $form['interval'] = array(
+      '#title' => t('Interval'),
+      '#description' => t('What is the interval for measuring?'),
+      '#type' => 'select',
+      '#options' => array(
+        //in all cases here we will remove the first 2 digits and convert the remainder to a name
+        'md' => t('Day'),
+        'yW' => t('Week'),
+        'ym' => t('Month'),
+        'yY' => t('Year'),
+      ),
+      '#default_value' => isset($settings['interval']) ? $settings['interval'] : '',
+    );
+  }
+  else { //for baseline stats
+    unset($form['limit']);
+    $form['measure']['#options'] = array(
+      'baseline' =>  t('Baseline stats')
+    );
   }
   return $form;
 }
 
 function mc_stats_block_save($delta, $edit) {
-  if ($delta == 'mc_stat_summary') return;
-  //set some defaults to prevent warnings
-  $edit += array('limit' => 3, 'span' => 'z');
-  variable_set('mc_statsblock'. $delta, $edit);
+  foreach (array('description', 'cid', 'measure', 'limit', 'from', 'to') as $var) {
+    if (strlen($edit[$var])) {
+      $settings[$var] = $edit[$var];
+    }
+  }
+  variable_set('mc_statsblock:'. $delta, $edit);
 }
 
+
 function mc_stats_block_view($delta) {
-  if ($delta == 'mc_stat_summary') {
-    $data = get_global_stats();
-    return array(
-      'content' => theme('mc_stat_summary_block', $data['top_exchangers'], $data['period_exchanges'], $data['active_users'], $data['user_count'])
-    );
-  }
-  return ;
-  //all other blocks have settings
-  $settings = variable_get('mc_statsblock'.$delta, NULL);
-  if (!isset($settings)) {
-    drupal_set_message(
-      t('Block needs configuring: !blockname', array('!blockname' => l($delta, 'admin/build/block/configure/mc_stats/'.$delta))),
-      'warning');
+  $settings = variable_get('mc_statsblock:'. $delta, array());
+  if (!count($settings)) {
+    drupal_set_message( t('Block needs configuring: !blockname', array('!blockname' => l($delta, 'admin/build/block/configure/mc_stats/'.$delta))), 'warning');
     return;
   }
+  $scopes = _mc_stats_get_blocknames();
+  foreach ($scopes as $scope => $blocknames) {
+    if (in_array($delta, $blocknames)) break; //having set scope
+  }
 
-  $timecode = substr($stat_type, 0, 6) == 'period' ? $settings['span'] : NULL;
+  $theme = $scope.'_stats';
+  $settings['from'] = strlen($settings['from']) ? strtotime($settings['from']) : 0;
+  $settings['to'] = strlen($settings['to']) ? strtotime($settings['to']) : strtotime('+1 second');
+
+  $function = 'mc_stats_'.$scope.'_'. $settings['measure'] .'_build';
+  if (!function_exists($function)){ //this should never happen unless there's a messy upgrade or something.
+    drupal_set_message("Illegal block setting for $delta: $function");
+    return;
+  }
+  $data = $function($settings);
 
   return array(
-    'content' => mc_theme_cache_stat($settings['stat_type'], $settings['limit'], $settings['cid'], $timecode),
+    'content' => theme($theme, $data, $settings)
   );
 }
 
@@ -179,477 +252,311 @@ function mc_stats_block_view($delta) {
 function mc_stats_theme() {
   $templates_dir = drupal_get_path('module', 'mc_stats') .'/theme';
   return array(
-    'top_users' => array(
+    'user_stats' => array(
       'arguments' => array(
         'data' => array(),
-        'limit' => 0
+        'cid' => NULL //that's the currency ID
       ),
     ),
-    'periodic_values' => array(
-      'template' => 'periodic_values',
-      'path' => $templates_dir,
+    'historic_stats' => array(
       'arguments' => array(
         'data' => array(),
         'limit' => 0,
-        'period' => ''
       )
     ),
-    'mc_stat_summary_block' => array(
-      'template' => 'mc_stat_summary_block',
-      'path' => $templates_dir,
+    'baseline_stats' => array(
+      'template' => 'baseline_stats',
       'arguments' => array(
-        'top_exchangers' => array(),
-        'weekly_exchanges' => 0,
-        'active_users' => 0,
-        'user_count' => 0,
-      )
-    ),
-    'mc_stat_summary' => array(
-      'template' => 'mc_stat_summary',
-      'path' => $templates_dir,
-      'arguments' => array(
-        'top_exchangers' => array(),
-        'weekly_exchanges' => 0,
-        'active_users' => 0,
-        'user_count' => 0,
-      )
-    ),
-    'mc_currency_stats' => array(
-      'template' => 'mc_currency_stats',
-      'path' => $templates_dir,
-      'arguments' => array(
-        'cid' => 0
-      )
-    ),
-    'mc_stat' => array(
-      'template' => 'mc_stat',
-      'path' => $templates_dir,
-      'arguments' => array(
-        'title' => '',
-        'content' => ''
-      )
-    ),
-    'mc_stat_cid' => array(
-      'arguments' => array(
-        'incomes' => array(),
-        'expenditures' => 0,
-        'volumes' => 0,
-        'exchanges' => 0,
-        'period_exchanges' => 0,
-        'period_volumes' => 0
-      )
-    ),
-    'stats_page' => array(
-      'arguments' => array(
-        'global_stats' => array(),
-        'currencies' => array(),
+        'data' => array()
       )
     ),
   );
 }
 
+function theme_user_stats($list, $settings) {
+  $output = array();
+  if (count($list)) {
+    foreach ($list as $uid => $quant) {
+      $amount = $cid ? theme('money', $quant, $settings['cid']) : $quant;
+      $output[] = theme('username', user_load($uid)) ." ($amount)";
+    }
+  }
+  return theme('item_list', $output, $settings['description'], 'ol');
+}
 
+function theme_historic_stats($list, $settings) {
+  switch (substr($settings['interval'], 1, 2)) {
+    case 'd': $date_format = 'D jS'; $headers[0] = t('Day'); break;
+    case 'W': $date_format = 'W'; $headers[0] = t('Week'); break;
+    case 'm': $date_format = 'm'; $headers[0] = t('Month'); break;
+    case 'Y': $date_format = 'Y'; $headers[0] = t('Year'); break;
+  }
+  switch ($settings['measure']) {
+    case 'volume': $headers[1] = t('Volume'); $curr = TRUE; break;
+    case 'trades': $headers[1] = t('Trades'); $curr = FALSE; break;
+  }
 
+  //need to format the keys of the list to something meaningful.
+  $lookup = array('d' => D, 'W' => W, 'm' => M, 'Y' => Y);
+  foreach ($list as $timestamp => $value) {
+    $newlist[] = array(
+      date($date_format, $timestamp),
+      $curr ? theme('money', $value, $settings['cid']) : $value,
+    );
+  }
+  $description = isset($settings['description']) ? '<p>'.$settings['description'].'</p>' : '';
+  return $description . theme('table', $headers, $newlist);
+}
+
+/*
+ * implements hook_nodeapi
+ * clear the block cache of everything in the same currency.
+ */
 function mc_stats_nodeapi(&$node, $op) {
-  if ($node->type != 'exchange' || !variable_get('mc_live_stats', TRUE)) return;
   switch ($op) {
     case 'insert':
     case 'update':
     case 'delete':
-      mc_cache_set_stats($node->cid);
-  }
-}
-/*
- * implementation of hook 'after_exchage'
- */
-function mc_stats_after_exchange($op, $exchange) {
-  if (variable_get('mc_live_stats', TRUE)) {
-    mc_cache_set_stats($exchange->cid);
+      $scopes = _mc_stats_get_blocknames();
+      foreach ($scopes as $blocks) {
+        foreach ($blocks as $delta => $settings) {
+          if ($settings['cid'] == $node->cid) {
+            cache_clear_all(NULL, 'cache_block', $delta);
+          }
+        }
+      }
   }
 }
 
 /*
-  * Stats generator
-  * calculates a set of basic stats for one currency between two times
-  */
-function mc_gen_stats($cid = 0, $from = 0, $to = NULL) {
-  if (!isset($to)) {
-    $to = time() + 1;
-  }
-  if (!$cid) {
-    $cids = implode(',', array_keys(currencies_load()));
-  }
-  else {
-    $cids = $cid;
-  }
-  //this excludes exchanges with the balancing account
-  //Anything involving a member count includes only the active members
-  $stats = $incomes = $expenditures = $exchanges = $volume = array();
-  $result = db_query("SELECT payer_uid, payee_uid, quantity, changed FROM {mc_exchanges} AS t
-    LEFT JOIN {node} AS n ON t.nid = n.nid
-    WHERE n.changed > %d AND n.changed < $to
-    AND t.cid IN ($cids)
-    AND state = %d
-    AND NOT t.payer_uid IN (%s) AND NOT t.payee_uid in (%s)",
+ * Later his can include more indicators
+ */
+function mc_stats_baseline_baseline_build($settings) {
+  //$cache = cache_get('mc_stats_baseline');
+  if ($cache) return $cache->data;
+
+  $result = db_fetch_array(db_query(
+    "SELECT count(n.nid) count, SUM(quantity) volume FROM {mc_exchanges} e
+      LEFT JOIN {node} n ON n.nid = e.nid
+      WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+      AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)",
     array(
-      ':since' => $from,
-      ':state' => EXCHANGE_STATE_FINISHED,
-      ':payer_uid' => variable_get('mc_stats_exclude', 1),
-      ':payee_uid' => variable_get('mc_stats_exclude', 1)
+      EXCHANGE_STATE_COMPLETED,
+      $settings['cid'],
+      $settings['from'],
+      $settings['to'],
+      variable_get('mc_stats_exclude', 1),
+      variable_get('mc_stats_exclude', 1),
+    )
+  ));
+
+  $settings = array('from' => 0, 'to' => time(), 'cid' => db_result(db_query("select nid from node where type = 'currency'")));
+  $partners = _get_promiscuity_data($settings);
+  $stats = array(
+    'active_users' => db_result(db_query("SELECT count(uid) FROM {users} WHERE status = 1 AND login > 0")),
+    'promiscuity' => round(array_sum($partners)/ floatval(count($partners)), 1),
+    'total_trades' => $result['count'],
+    'total_volume' => $result['volume']
+  );
+  //cache these because they might be needed elsewhere
+  cache_set('mc_stats_baseline', $stats);
+  return ($stats);
+}
+
+/*
+ * Functions to generate stats
+ * Called from mc_stats_block_view
+ * Function names are derived from the scope, which is 'user' or 'historic'
+ * and from the 'measure'
+ */
+
+function mc_stats_user_income_build($settings) {
+  $result = db_query(
+    "SELECT payee_uid, SUM(quantity) q
+      FROM {mc_exchanges} e
+      LEFT JOIN {node} n ON n.nid = e.nid
+      WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+      AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)
+      GROUP BY payee_uid
+      ORDER BY q DESC
+      LIMIT 0, %d",
+    _mc_stats_get_db_args($settings)
+  );
+  while ($row = db_fetch_array($result)) {
+    $best[$row['payee_uid']] = $row['q'];
+  }
+  return $best;
+}
+function mc_stats_user_outgoing_build($settings) {
+  $result = db_query(
+    "SELECT payer_uid, SUM(quantity) q
+      FROM {mc_exchanges} e
+      LEFT JOIN {node} n ON n.nid = e.nid
+      WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+      AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)
+      GROUP BY payer_uid
+      ORDER BY q DESC
+      LIMIT 0, %d",
+    _mc_stats_get_db_args($settings)
+  );
+  while ($row = db_fetch_array($result)) {
+    $best[$row['payer_uid']] = $row['q'];
+  }
+  return $best;
+}
+function mc_stats_user_trades_build($settings) {
+  //there might be a better way to do this using sql
+  foreach (array('payer_uid', 'payee_uid') as $uid) {
+    $result = db_query(
+      "SELECT $uid, count(e.nid) q
+        FROM {mc_exchanges} e
+        LEFT JOIN {node} n ON n.nid = e.nid
+        WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+        AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)
+        GROUP BY $uid",
+    _mc_stats_get_db_args($settings)
+    );
+    while ($row = db_fetch_array($result)) {
+      $best[$row[$uid]] += $row['q'];
+    }
+  }
+  arsort($best);
+  return array_slice($best, 0, $settings['limit'], TRUE);
+}
+
+function mc_stats_user_volume_build($settings) {
+  //there might be a better way to do this using sql
+  foreach (array('payer_uid', 'payee_uid') as $player) {
+    $result = db_query(
+      "SELECT $player p, sum(e.quantity) quantity
+        FROM {mc_exchanges} e
+        JOIN {node} n ON n.nid = e.nid
+        WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+        AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)
+        GROUP BY p",
+    _mc_stats_get_db_args($settings)
+    );
+    while ($row = db_fetch_array($result)) {
+      $best[$row['p']] += $row['quantity'];
+    }
+  }
+  arsort($best);
+  return array_slice($best, 0, $settings['limit'], TRUE);
+}
+
+//this function will take processor resources in large systems
+function mc_stats_user_promiscuity_build(&$settings) {
+  $partners = _get_promiscuity_data($settings);
+  arsort($partners);
+  return array_slice($partners, 0, $settings['limit'], TRUE);
+}
+
+
+function mc_stats_historic_volume_build($settings) {
+  $result = db_query(
+    "SELECT n.created, e.quantity
+      FROM {mc_exchanges} e
+      JOIN {node} n ON n.nid = e.nid
+      WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+      AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)",
+    _mc_stats_get_db_args($settings)
+  );
+  $marker = _get_clump_expression($settings['interval']);
+  while ($row = db_fetch_array($result)) {
+    $periods[strtotime($marker, $row['created'])] += $row['quantity'];
+  }
+  ksort($periods);
+  $periods = array_slice($periods, 0, $settings['limit'], TRUE);
+  return $periods;
+}
+
+function mc_stats_historic_trades_build($settings) {
+  $result = db_query(
+    "SELECT n.created
+      FROM {mc_exchanges} e JOIN {node} n ON n.nid = e.nid
+      WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+      AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)",
+    _mc_stats_get_db_args($settings)
+  );
+  $marker = _get_clump_expression($settings['interval']); 
+  while ($row = db_fetch_array($result)) {
+    $timestamp = strtotime($marker, $row['created']);
+    $periods[$timestamp] ++;
+  }
+  ksort($periods);
+  $periods = array_slice($periods, 0, $settings['limit'], TRUE);
+  return $periods;
+}
+
+/*
+ *  helper functions
+ */
+
+function _mc_stats_get_db_args($settings) {
+  return array(
+    EXCHANGE_STATE_COMPLETED,
+    $settings['cid'],
+    $settings['from'],
+    $settings['to'],
+    variable_get('mc_stats_exclude', 1),
+    variable_get('mc_stats_exclude', 1),
+    $settings['limit']
+  );
+}
+function _get_clump_expression($interval) {
+  switch(substr($interval, 1, 2)) {
+    case 'd': return 'noon today';
+    case 'W': return 'first hour of this week';
+    case 'm': return 'first hour of this month';
+    case 'Y': return 'first hour of this year';
+  }
+}
+
+function _currency_chooser(){
+  $result = db_query("SELECT nid, title from {node} WHERE type = 'currency'");
+  while ($c = db_fetch_object($result)) {
+    $currencies[$c->nid] = $c->title;
+  }
+  return $currencies;
+}
+
+
+function _mc_stats_get_blocknames() {
+  //there has to be a better way of doing this...
+  $scopes = array();
+  foreach (array('user', 'historic', 'baseline') as $scope) {
+    $blocks = array_filter(explode("\n", variable_get('mc_stats_blocks_'.$scope, '')));
+    foreach ($blocks as $key => $val) {
+      $scopes[$scope][$key] = trim($val);
+    }
+  }
+  return $scopes;
+}
+//this function is expensive
+//there's currently no way to get the stat for one person
+function _get_promiscuity_data($settings) {
+  $result = db_query(
+    "SELECT payer_uid, payee_uid
+      FROM {mc_exchanges} e
+        LEFT JOIN {node} n ON n.nid = e.nid
+      WHERE e.state = %d AND e.cid = %d AND n.created > %d AND n.created < %d
+      AND payer_uid NOT IN (%s) AND payee_uid NOT IN (%s)",
+    array(
+      EXCHANGE_STATE_COMPLETED,
+      $settings['cid'],
+      $settings['from'],
+      $settings['to'],
+      variable_get('mc_stats_exclude', 1),
+      variable_get('mc_stats_exclude', 1)
     )
   );
-  //TODO. Not all of these stats will be needed and will have a performance impact on larger system
-  //A better strategy might be to configure which stats to collect
-  $exchanges = $yz_period_exchanges = $yW_period_exchanges = $ym_period_exchanges = array();
-  if ($cid) {
-    $incomes = $expenditures = $volumes = $yz_period_volumes = $yW_period_volumes = $ym_period_volumes = array();
+  $pairs = array();
+  while ($ex = db_fetch_array($result)) {
+    $pairs[$ex['payer_uid']][$ex['payee_uid']] = 1;
+    $pairs[$ex['payee_uid']][$ex['payer_uid']] = 1;
   }
-
-  //iterate through the exchanges, adding stuff up
-  while ($t = db_fetch_object($result)) {
-    $dayofyear = date('yz', $t->changed);
-    $weekofyear = strftime("%W", $t->changed); //the date 'W' doesn't work as the year rolls over
-    $weekofyear = date("yW", $t->changed);
-    $monthofyear = date('ym', $t->changed);
-    //create the array keys, if needed, annoying but otherwise we get php warnings
-    foreach (array('payer_uid', 'payee_uid') as $user_id) {
-      if (!isset($exchanges[$t->$user_id])) {
-        $exchanges[$t->$user_id] = 0;
-        $volumes[$t->$user_id] = 0;
-        if (!isset($incomes[$t->$user_id])) {
-          $incomes[$t->$user_id] = 0;
-        }
-        if (!isset($expenditures[$t->$user_id])) {
-          $expenditures[$t->$user_id] = 0;
-        }
-      }
-    }
-    if (!isset($yz_period_exchanges[$dayofyear])) {
-      $yz_period_exchanges[$dayofyear] = 0;
-      $yz_period_volumes[$dayofyear] = 0;
-    }
-    if (!isset($yW_period_exchanges[$weekofyear])) {
-      $yW_period_exchanges[$weekofyear] = 0;
-      $yW_period_volumes[$weekofyear] = 0;
-    }
-    if (!isset($ym_period_exchanges[$monthofyear])) {
-      $ym_period_exchanges[$monthofyear] = 0;
-      $ym_period_volumes[$monthofyear] = 0;
-    }
-    //now start adding up
-    $exchanges[$t->payee_uid] ++;
-    $exchanges[$t->payer_uid] ++;
-    $yz_period_exchanges[$dayofyear]++;
-    $yW_period_exchanges[$weekofyear]++;
-    $ym_period_exchanges[$monthofyear]++;
-    if (!$cid) continue;
-
-    $incomes[$t->payee_uid] += $t->quantity;
-    $expenditures[$t->payer_uid] += $t->quantity;
-    $volumes[$t->payee_uid] += $t->quantity;
-    $volumes[$t->payer_uid] += $t->quantity;
-    $yz_period_volumes[$dayofyear] += $t->quantity;
-    $yW_period_volumes[$weekofyear] += $t->quantity;
-    $ym_period_volumes[$monthofyear] += $t->quantity;
-    //to these could also be added weekly and monthly exchanges and volumes
+  foreach ($pairs as $uid => $blah) {
+    $partners[$uid] = count($blah);
   }
-  if (!count($exchanges)) {
-    drupal_set_message('no stats...');
-    return array();
-  }
-
-  //all of these are stored in DESC order
-  arsort($exchanges);
-  krsort($yz_period_exchanges);
-  krsort($yW_period_exchanges);
-  krsort($ym_period_exchanges);
-  $stats = compact('exchanges', 'z_period_exchanges', 'yW_period_exchanges', 'ym_period_exchanges');
-  if (!$cid) {
-    return $stats;
-  }
-  arsort($incomes);
-  arsort($expenditures);
-  arsort($volumes);
-  krsort($yz_period_volumes);
-  krsort($yW_period_volumes);
-  krsort($ym_period_volumes);
-
-  return $stats + compact('incomes', 'expenditures', 'exchanges', 'volumes', 'z_period_volumes', 'yW_period_volumes', 'ym_period_volumes');
-}
-
-function mc_cache_set_stats($cid = 0) {
-  //first set the stats which apply accross all currencies
-  $stats = mc_gen_stats();
-  foreach ($stats as $type => $data) {
-    cache_set('>'.$type, $data);
-  }
-  //then set stats per currency
-  $cids = $cid ? array($cid) : array_keys(currencies_load());
-  foreach ($cids as $cid) {
-    $stats = mc_gen_stats($cid);
-    foreach ($stats as $type => $data) {
-      cache_set($cid .'>'.$type, $data);
-    }
-  }
-}
-
-//shows all the stats (for a given period)
-function exchange_stats() {
-  $cids = array_keys(currencies_load());
-  $settings = array('limit' => 5);
-  foreach ($cids as $cid) {
-    $per_currency[$cid] = theme('mc_currency_stats', $cid);
-  }
-  $data = get_global_stats();
-  $global = theme('mc_stat_summary', $data['top_exchangers'], $data['period_exchanges'], $data['active_users'], $data['user_count']);
-  return theme('stats_page', $global, $per_currency);
-}
-
-function mc_theme_cache_stat($stat_type, $limit, $cid = NULL, $span = NULL) {
-  $data = mc_cache_get_stat($stat_type, $cid, $span);
-  if (!count($data)) return;
-  if ($limit) {
-    //in php5 we can array_slice without losing the keys
-    //$data = array_slice($data, 0, $limit);
-    $chunks = array_chunk($data, $limit, TRUE);
-    $data = $chunks[0];
-  }
-  //remake the array with useful keys and cut to the limit
-  if (isset($span)) {
-    array_reverse($data);
-    foreach ($data as $key => $value) {
-      //user str_split in php5
-      $segments[0] = substr($key, 0, 2);
-      $segments[1] = substr($key, 2);
-      switch($span) {
-        case 'yz':
-          $time = strtotime('20'. $segments[0] .' + '. $segments[1] .' days');
-          break;
-        case 'yW':
-          $time = strtotime('20'. $segments[0] .' + '. $segments[1] .' weeks');
-          $time = t('Week') .date(' W', $time);
-          break;
-        case 'ym':
-          $time = mktime(0,0,0, $segments[1], 0, $segments[0]);
-          $time = strftime("%b '%g", $time);
-          break;
-      }
-      //bit of an afterthought here because some values are money, others not
-      switch($stat_type) {
-        case 'period_volumes':
-          $new_intervals[$time] = theme('money', $value, $cid);
-          break;
-        case 'period_exchanges':
-          $new_intervals[$time] = $value;
-      }
-    }
-    $data = $new_intervals;
-  }
-  else {//more afterthought
-    switch($stat_type) {
-      case 'incomes':
-      case 'expenditures':
-      case 'volumes':
-        foreach ($data as $key => $value) {
-          $data[$key] = theme('money', $value, $cid);
-        }
-        break;
-      default:
-        foreach ($data as $key => $value) {
-          $data[$key] = '('.$value.')';
-        }
-    }
-  }
-  $output = '';
-  $types = mc_stat_types();
-  if (!count($data)) return;
-  return theme($types[$stat_type]['callback'], $data, $limit, $span);
-}
-
-
-//for types see mc_stat_types()
-function mc_cache_get_stat($type, $cid = NULL, $date_string = NULL) {
-  if ($date_string) {
-    $type = $date_string.'_'. $type;
-  }
-  $cache = cache_get($cid .'>'.$type);
-  if (!$cache){
-    return array();
-  }
-  return $cache->data;
-}
-
-function theme_top_users($list) {
-  
-
-  $output = array();
-  if (count($list)) {
-    foreach ($list as $uid => $quant) {
-      $output[] = theme('username', user_load($uid)) ." $quant";
-    }
-  }
-  return theme('item_list', $output, NULL, 'ol');
-}
-
-//variables includes $global, and $currencies, a nested array of stats grouped by currencies, all preformatted
-function theme_stats_page($global_stats, $per_currency){
-  $break = '<br style="clear:both" />';
-  $output = $global_stats . $break;
-  foreach ($per_currency as $cid => $stats) {
-    $currency = node_load($cid);
-    $output .= '<fieldset style = "float:left"><legend>'.$currency->title.'</legend>';
-    $output .= $stats;
-    $output .= '</fieldset>';
-  }
-  return $output . $break;
-}
-
-function mc_validate_stats_exclude(&$element, $form_state) {
-  $uids = explode(',', $element['#value']);
-
-  foreach (array_filter($uids) as $uid) {
-    _mc_check_trader($uid, $element);
-  }
-}
-
-//configuration page
-function mc_stats_settings_form() {
-  $form['mc_stats_block_definitions'] = array(
-    '#title' => t('Block definitions (one per line)'),
-    '#type' => 'textarea',
-    '#default_value' => variable_get('mc_stats_block_definitions', ''),
-    '#rows' => 6,
-    '#description' => t('put a five word description of each required block, then go configure it on the block page'),
-  );
-  $form['mc_live_stats']  = array(
-    '#title' => t('Live Stats'),
-    '#type' => 'checkbox',
-    '#description' => t('Regenerate stats after every transaction. (Not suitable for larger systems)'),
-    '#default_value' => variable_get('mc_live_stats', TRUE),
-    '#weight' => -1,
-  );
-  $form['mc_stats_exclude']  = array(
-    '#title' => t('Exclude from stats'),
-    '#type' => 'textfield',
-    '#description' => t('Any exchange involving these accounts will not be counted in stats.') . ' ' .
-      t('Comma separated account numbers.'),
-    '#default_value' => variable_get('mc_stats_exclude', 1),
-    '#element_validate' => array('mc_validate_stats_exclude'),
-    '#weight' => -1,
-  );
-  if ($GLOBALS['user']->uid == 1) {
-    $form['refresh'] = array(
-      '#type' => 'submit',
-      '#value' => t('Recalculate stats'),
-      '#submit' => array('mc_stats_recalc_all')
-    );
-  }
-  $form['#redirect'] = 'admin/build/block';
-  return system_settings_form($form);
-}
-
-function mc_stat_types() {
-  $types = array(
-    //the options are assumed to type single select dropdown boxes
-    //null_cid is whether the stat type applies with no specified currency.
-    'incomes' => array(
-      'name' => 'incomes',
-      'title' => t('Highest incomes'),
-      'callback' => 'top_users',
-      'options' => array(
-      ),
-      'null_cid' => FALSE
-    ),
-    'expenditures' => array(
-      'name' => 'expenditures',
-      'title' => t('Biggest spenders'),
-      'callback' => 'top_users',
-      'options' => array(
-      ),
-      'null_cid' => FALSE
-    ),
-    'volumes'=> array(
-      'name' => 'volumes',
-      'title' => t('Exchange volumes'),
-      'callback' => 'top_users',
-      'options' => array(
-      ),
-      'null_cid' => FALSE
-    ),
-    'exchanges'=> array(
-      'name' => 'exchanges',
-      'title' => t('Most exchanges'),
-      'callback' => 'top_users',
-      'options' => array(
-      ),
-      'null_cid' => TRUE
-    ),
-    //these require a graphic to display, and their own
-    'period_exchanges' => array(
-      'name' => 'period_exchanges',
-      'title' => t('Periodic exchanges'),
-      'callback' => 'periodic_values',
-      'options' => array(
-        'span' => array(
-          'yz' => 'Day',
-          'yW' => 'Week',
-          'ym' => 'Month'
-        ),
-      ),
-      'null_cid' => TRUE
-    ),
-    'period_volumes' => array(
-      'name' => 'period_volumes',
-      'title' => t('Periodic volume'),
-      'callback' => 'periodic_values',
-      'options' => array(
-        'span' => array(
-          'yz' => 'Day',
-          'yW' => 'Week',
-          'ym' => 'Month'
-        ),
-      ),
-      'null_cid' => FALSE
-    ),
-  );
-  return $types;
-}
-
-function mc_stats_cron() {
-  //then if live update is disabled, do it for each currency
-  if (!variable_get('mc_live_stats', TRUE)) {
-    mc_stats_recalc_all();
-  }
-}
-
-function mc_rebuild_form() {
-  $form = ajax_form_callback();
-  //to prevent rendering the form tag itself, since we are replacing only the contents of the form tag
-  $form['#printed'] = TRUE;
-  //clear the form errors and messages before re-rendering the form
-  form_set_error(NULL, NULL, TRUE);
-  drupal_get_messages(NULL, TRUE);
-  $rendered = drupal_render($form);
-  drupal_json($rendered);
-}
-
-function mc_stats_recalc_all() {
-  mc_cache_set_stats();
-  drupal_set_message('The stats have been recalculated');
-}
-
-
-function get_global_stats() {
-  //this but requires php5
-  $exchanges = mc_cache_get_stat('exchanges', NULL);
-  return array(
-    'top_exchangers' => array_slice($exchanges, 0, 5, TRUE),//that 5 should be a variable somehow.
-    'period_exchanges' => mc_cache_get_stat('period_exchanges', NULL, 'yW'),
-    'active_users' => count($exchanges),
-    'user_count' => db_result(db_query("SELECT count(uid) FROM {users} WHERE status = 1 AND login > 0"))
-  );
-}
-
-function mc_stats_enable(){
-  mc_stats_recalc_all();
+  return $partners;
 }

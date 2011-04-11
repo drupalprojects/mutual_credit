@@ -230,16 +230,6 @@ function mc_webform_settings() {
       t('Dropdown list will be ordered alphabetically.') .' '.
       t('In Drupal 7 any user field will be allowed')
   );
-  $form['mc_description_min_words'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Minimum number of words to describe an exchange'),
-    '#default_value' => variable_get('mc_description_min_words', 2),
-    '#size' => 2,
-    '#maxlength' => 3,
-    '#weight' => -2,
-    '#description' => t("Classification can be improved if members take a few seconds to describe their exchanges in more detail.") .' '.
-      t("It will also make the exchange easier to categorise, and easier for the participants to remember.") . ' '. t('Zero means no minimum. Suggested value is 4.')
-  );
   $form['theming'] = array(
     '#type' => 'fieldset',
     '#title' => t('Theme adjustments'),
@@ -315,8 +305,6 @@ function mc_build_webform(&$form, $values = NULL) {
     $form[$trader] += $form[$trader.'_uid'];
     unset($form[$trader.'_uid']); //this is replaced in the mc_trader's validate function
   }
-
-  $form['title']['#element_validate'][] = 'mc_validate_webform_title';
 
   $form['buttons'] = array(
     'submit' => array(

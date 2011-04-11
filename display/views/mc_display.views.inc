@@ -1510,7 +1510,8 @@ function mc_exchanges_user_view() {
     ),
     'default' => 'changed',
   ));
-  $handler = $view->new_display('page', 'All exchanges', 'page_1');
+  $handler = $view->new_display('page', 'My exchanges', 'my_exchanges');
+  $handler->override_option('title', t('My exchanges'));
   $handler->override_option('header', t('Click the column headings to re-sort'));
   $handler->override_option('header_format', '1');
   $handler->override_option('header_empty', 0);
