@@ -1,0 +1,244 @@
+<?php
+
+/*
+ * Admin writes the emails using tokens, then, according to some checkboxes in the user profile,
+ * this module will email users with notifications about transactions in which they are involved
+ */
+
+
+function mcapi_mail_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+  $account = user_load($form['#user']->uid);
+  $form['mutual_credit_notifications'] = array(
+    '#title' => t('Transaction notifications'),
+    '#description' => t('The system will inform you when you are involved in transactions'),
+    '#type' => 'fieldset',
+    'mutual_credit_mail' => array(
+      '#title' => t('Mail me when'),
+      '#description' => t('Choose when to receive mail notifications'),
+      '#type' => 'checkboxes',
+      '#options' => array(
+        'all' => t('Anything happens'),
+        'passive' => t('Someone starts a transaction involving me')
+      ),
+      '#default_value' => isset($account->data['mutual_credit_mail']) ? $account->data['mutual_credit_mail'] : array()
+    )
+  );
+}
+
+/*
+ * implements hook_user_update
+ */
+
+function mcapi_mail_user_presave(&$edit, $account, $category) {
+  if ($category != 'account') return;
+  $edit['data']['mutual_credit_mail'] = $edit['mutual_credit_mail'];
+}
+
+/*
+ * Tabs on the currency edit form to compose the notification emails
+ */
+function mcapi_mail_form_currency_form_alter(&$form, $form_state) {
+  $currency = currency_load($form['cid']['#default_value']);
+  if (empty($currency->use_mail)) $currency->use_mail = 1;
+  $form['email_insert_transaction'] = array(
+    '#title' => t('Mail notification'),
+    '#description' => implode(' ', array(
+      t('Edit the welcome e-mail messages sent to new member accounts created by an administrator.'),
+      t('Available variables are: [site:name], [site:url], [user:name], [user:mail], [site:login-url], [site:url-brief], [user:edit-url], [user:one-time-login-url], [user:cancel-url].'),
+      mcapi_get_tokens()
+    )),
+    '#type' => 'fieldset',
+    '#group' => 'additional_settings',
+    '#weight' => 10
+  );
+  $form['email_insert_transaction']['use_mail'] = array(
+    '#title' => t('Send mail notifications'),
+    '#type' => 'radios',
+    '#options' => array(
+      0 => t('Send no mail'),
+      1 => t('User decides'),
+      2 => t('Always send mail')
+    ),
+    '#default_value' => empty($form_state['values']['use_mail']) ? $currency->use_mail : $form_state['values']['use_mail'],
+    '#ajax' => array(
+      'callback' => 'currency_form_ajax',
+      'wrapper' => 'currency-form',
+    ),
+  );
+  if ($form['email_insert_transaction']['use_mail']['#default_value'] == 0) return;
+  $form['email_insert_transaction']['#title'] = t('Mail notification (insert)');
+  $form['email_insert_transaction']['email_insert_subject'] = array(
+    '#title' => t('Subject'),
+    '#type' => 'textfield',
+    '#default_value' => empty($currency->insert_email['subject']) ?
+      _mcapi_mail_text('mcapi_insert_mail_subject') :
+      $currency->insert_email['subject'],
+    '#maxlength' => 180,
+  );
+  $form['email_insert_transaction']['email_insert_body'] = array(
+    '#title' => t('Body'),
+    '#type' => 'textarea',
+    '#default_value' => empty($currency->insert_email['body']) ?
+      _mcapi_mail_text('mcapi_insert_mail_body') :
+      $currency->insert_email['body'] ,
+    '#rows' => 15
+  );
+
+  //this might only appear if editing transactions is allowed.
+  $form['email_update_transaction'] = array(
+    '#title' => t('Mail notification (update)'),
+    '#description' => implode(' ', array(
+      t('Sent to payer or payee whenever an transaction is changed.'),
+      t('(Currency settings may prevent transaction updates.)'),
+      t('Available variables are: [site:name], [site:url], [user:name], [user:mail], [site:login-url], [site:url-brief], [user:edit-url], [user:one-time-login-url], [user:cancel-url].'),
+      mcapi_get_tokens()
+    )),
+    '#type' => 'fieldset',
+    '#group' => 'additional_settings',
+    '#weight' => 11
+  );
+  $form['email_update_transaction']['email_update_subject'] = array(
+    '#title' => t('Subject'),
+    '#type' => 'textfield',
+    '#default_value' => empty($currency->update_email['subject']) ?
+      _mcapi_mail_text('mcapi_update_mail_subject') :
+      $currency->update_email['subject'],
+    '#maxlength' => 180,
+  );
+  $form['email_update_transaction']['email_update_body'] = array(
+    '#title' => t('Body'),
+    '#type' => 'textarea',
+    '#default_value' => empty($currency->update_email['body']) ?
+      _mcapi_mail_text('mcapi_update_mail_body') :
+      $currency->update_email['body'],
+    '#rows' => 15
+  );
+  $form['#entity_builders'][] = 'currency_mail_entity_builder';
+}
+
+/*
+ * entity_builder callback for saving currencies
+ * puts the mail settings in the data
+ */
+function currency_mail_entity_builder($entity_type, $entity, &$form, &$form_state) {
+  $entity->data['use_mail'] = $entity->use_mail;
+  $entity->data['insert_email'] = array(
+    'subject' => $entity->email_insert_subject,
+    'body' => $entity->email_insert_body
+  );
+  $entity->data['update_email'] = array(
+    'subject' => $entity->email_update_subject,
+    'body' => $entity->email_update_body
+  );
+}
+
+/*
+ * implementation of hook entity_insert
+ * triggers the insert mail
+ */
+function mcapi_mail_entity_insert($type, $transaction) {
+  if ($type != 'transaction')return;
+    mcapi_mail_send('insert', $transaction);
+}
+
+/*
+ * implementation of hook entity_insert
+ * triggers the update mail
+ */
+function mcapi_mail_entity_update($type, $transaction) {
+  if ($type != 'transaction')return;
+    mcapi_mail_send('update', $transaction);
+}
+
+function mcapi_mail_send($op, $transaction) {
+  $currency = currency_load($transaction->cid);
+  if (empty($currency->use_mail)) return;
+  $force = $currency->use_mail == 2 ? TRUE : FALSE;
+  foreach (array(user_load($transaction->payer_uid), user_load($transaction->payee_uid)) as $account) {
+    //if the user wants notification for everything or
+    if ( $force ||
+      ($account->data['mutual_credit_mail']['all'] == 'all') ||
+      //if the user didn't start it and requires 'passive' notification
+      ($account->data['mutual_credit_mail']['passive'] == 'passive' && $GLOBALS['user']->uid != $account->uid)
+    ) {
+      $message = drupal_mail(
+        'mcapimail',
+        $op,
+        $account->mail,
+        user_preferred_language($account),
+        array(
+          'recipient' => $account,
+          'transaction' => $transaction,
+        ),
+        NULL, //defualts to site_mail
+        TRUE //don't send it
+      );
+    }
+  }
+}
+
+/*
+ * implements hook_mail
+ * $key can be insert or update. delete is also a possiblity
+ */
+
+function mcapimail_mail($key, &$message, $params) {
+  $language = $message['language'];
+  $variables = array(
+    'transaction' => $params['transaction'],
+    'user' => $params['recipient']
+  );
+
+  $message['subject'] =  _mcapi_mail_text('mcapi_'. $key .'_mail_subject', $language, $variables);
+  $message['body'][] =  _mcapi_mail_text('mcapi_'. $key .'_mail_body', $language, $variables);
+}
+
+function _mcapi_mail_text($key, $language = NULL, $variables = array(), $replace = TRUE) {
+  if ($template = variable_get($key, NULL)) {
+    $text = $template;
+  }
+  else {
+    switch($key) {
+      case 'mcapi_insert_mail_subject':
+        $text = t('Exchange recorded with [transaction:partner]');
+        break;
+      case 'mcapi_insert_mail_body':
+        $text =  t("[user:name],
+
+A new transaction for [transaction:amount] has been recorded with [transaction:partner]
+
+More details can be found at
+[transaction:uri]
+
+To change your notification settings, visit your profile at
+[user:edit-url]
+
+The team at [site:name]");
+        break;
+      case 'mcapi_update_mail_subject':
+        $text = 'Change to transaction [transaction:xid]';
+        break;
+      case 'mcapi_update_mail_body':
+        $text = t("[user:name],
+
+Your transaction with [transaction:partner] for '[transaction:description]' has been modified.
+
+The current transaction can be found at
+[transaction:uri]
+
+To change your notification settings, visit your profile at
+[user:edit-url]
+
+The team at [site:name]");
+        break;
+    }
+  }
+
+  // We do not sanitize the token replacement, since the output of this
+  // replacement is intended for an e-mail message, not a web browser.
+  return token_replace(
+    $text,
+    $variables,
+    array('language' => $language, 'sanitize' => FALSE)
+  );
+}

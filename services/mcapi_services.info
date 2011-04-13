@@ -1,6 +1,7 @@
 ; $Id: 
 name = Mutual Credit Services
-description = se MCAPI module as a banking server (Sponsored by Xchange Stewards)
-package = Services - services
-core = "6.x"
+description = Use MCAPI module as a banking server (Sponsored by Xchange Stewards)
+package = Services
+core = "7.x"
 dependencies[] = mcapi
+dependencies[] = services

@@ -22,69 +22,78 @@ class TransactionEntityController extends DrupalDefaultEntityController {
   }
 
   /*
-   * Validation ideally would happen by using the save function with $write set to FALSE
-   * Instead we just check the balances here/
+   * This controller actually writes the transaction during validation
+   * with a special state: TRANSACTION_STATE_VALIDATING
+   * When written, the transaction has a unique ID, so we
+   * indicate that the transaction is actually a new transaction with the new property, 'is_new'
    */
   public function validate($transaction){
     $currency = currency_load($transaction->cid);
-    $key = isset($transaction->xid) ? $transaction->xid : NULL;
-    try {
-      //temporarily change the transaction type so that validated transaction left hanging DO leave a trace.
-      $state = $transaction->state;
+    $state = $transaction->state;
+    $transaction->validating = TRUE;
+    if (empty($transaction->xid)) {
+      $transaction->is_new = TRUE;
+      //temporarily change the transaction state so that validated transaction left hanging DO leave a trace.
       $transaction->state = TRANSACTION_STATE_VALIDATING;
-      entity_get_controller('transaction')->save($transaction, $currency->write_validate);
-      $transaction->state = $state;
+    }
+    $t = db_transaction();
+    try {
+      entity_get_controller('transaction')->save($transaction);
     }
     catch (Exception $e){
       //if the validation fails, we add the error message to the transaction object
       //THIS IS NOT TESTED BECAUSE VALIDATION SHOULDN'T FAIL AT THIS LATE STAGE
-      $transaction->data['error'] = $e->getMessage(); 
+      $transaction->data['error'] = $e->getMessage();
+      throw $e;
     }
-    //the db rolled back but the allocated transaction ID persists in the transaction object
-    if (!$currency->write_validate) {
-      $transaction->xid = $key;
+    if (empty($transaction->is_new)) {
+      $t->rollback();
     }
+    unset($transaction->validating);
+    $transaction->state = $state;
+    return $transaction;
   }
 
   /*
    * update or insert the saved transaction
    * expects a single, validated transaction object
+   * what the user thinks of as inserting and updating isn't actually what the controller is doing.
+   * because the transaction was actually 'inserted' during the validation phase
+   * So we use the 'is_new' property and run insert a second time
+   * The transaction is only really processed if the state isn't TRANSACTION_STATE_VALIDATING
    */
-  public function save($transaction, $write = FALSE) {
+  public function save($transaction) {
     //this is only used to fix what I think is a Drupal bug, see mcapi_field_attach_presave
     //removes the 'add more' item from fields with infinite cardinality
     $instances = array();
     $instances = _field_invoke_get_instances('transaction', 'transaction', array('deleted' => FALSE));
     foreach($instances as $instance) {
       $field = field_info_field($instance['field_name']);
-      if ($field['cardinality'] == -1) {
+      if ($field['cardinality'] == -1 && isset($transaction->{$instance['field_name']}[LANGUAGE_NONE]['add_more'])) {
         unset($transaction->{$instance['field_name']}[LANGUAGE_NONE]['add_more']);
       }
     }//end of bugfix
 
-    //clear any error messages which were created in validation
+    $transaction->modified = REQUEST_TIME;
+    $transaction->modifier = $GLOBALS['user']->uid;
+    //clear any Exception traces which from validation, which should no longer apply
     unset ($transaction->data['error']);
-    //somebody should tell me if the methodology is good here.
     $t = db_transaction();
-    //unfortunately the rollback doesn't roll back the auto-increment.
-    $function = isset($transaction->xid) && $transaction->xid ? 'update' : 'insert';
+    //the transaction is actually written during the validation phase, but we still want to run
+    $function = empty($transaction->is_new) ? 'update' : 'insert';
     try {
-      entity_get_controller('transaction')->$function($transaction, TRUE);
+      entity_get_controller('transaction')->$function($transaction);
     }
     catch (Exception $e) {
       $t->rollback();
-      watchdog_exception('mcapi', $e->getMessage());
+      watchdog_exception('mcapi', $e);
       throw $e;
     }
-    if (!$write) {
-      $t->rollback();
-      //for some reason these public functions all have their arguments passed by reference
-      //so we must be careful to unset the xid if we were only testing
-    }
-    else {
-      balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
-      module_invoke_all('entity_'.$function, 'transaction', $transaction);
-    }
+    if (isset($transaction->validating)) return;
+
+    balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
+    module_invoke_all('entity_'.$function, 'transaction', $transaction);
+    return $transaction;
   }
 
   /*
@@ -98,27 +107,36 @@ class TransactionEntityController extends DrupalDefaultEntityController {
         throw new Exception(t('Deletions not allowed'));
         break;
       case '1':
-        $transaction->state = TRANSACTION_STATE_ERASED;
-        //db_query("UPDATE {mcapi_transactions} SET state = :state, data = :data WHERE xid = :xid",
-        //  array(':state' => $transaction->state, ':data' => serialize($transaction->data), ':xid' => $transaction->xid)
-        //);
-        drupal_write_record('mcapi_transactions', $transaction, 'xid');
+        $transaction = $this->change_state($transaction, TRANSACTION_STATE_ERASED);
         break;
       case '2':
         $query = db_delete('mcapi_transactions')
         ->condition('xid', $transaction->xid)
         ->execute();
-        break;
+        try {
+          balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
+        }
+        catch (Exception $e) {
+          drupal_set_message($e->getMessage(), 'warning');
+        }
     }
-    try {
+    module_invoke_all('entity_delete', 'transaction', $transaction);
+    return $transaction;
+  }
+
+  public function change_state($transaction, $new_state) {
+    $transaction->state = $new_state;
+    $transaction->modified = REQUEST_TIME;
+    $transaction->modifier = $GLOBALS['user']->uid;
+    try{
+      drupal_write_record('mcapi_transactions', $transaction, 'xid');
       balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
     }
     catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'warning');
+      drupal_set_message(t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state)));
     }
-    module_invoke_all('entity_delete', 'transaction', $transaction);
+    return $transaction;
   }
-
 
   /*
    * Get a list of transactions, filtered by $conditions
@@ -136,8 +154,8 @@ class TransactionEntityController extends DrupalDefaultEntityController {
     if (isset($conditions['cid'])) {
       $query->condition('cid', $conditions['cid']);
     }
-    if (isset($conditions['uid'])) {
-      $query->condition('uid', $conditions['uid']);
+    if (isset($conditions['creator'])) {
+      $query->condition('creator', $conditions['c']);
     }
     if (isset($conditions['id'])) {
       $query->condition(
@@ -163,48 +181,46 @@ class TransactionEntityController extends DrupalDefaultEntityController {
   }
 
   /*
-   * write an transaction (and its dependents) to the database, refreshing the balances
+   * create a transaction, either the first moment at validation
    */
   function insert($transaction) {
-    $table = 'mcapi_transactions';
-    $success = drupal_write_record($table, $transaction);
-    if (!$success) {
-      throw new Exception(t('failed to write to @name table', array('@name' => $table)));
+    $transaction->creator = $GLOBALS['user']->uid;
+    $transaction->created = REQUEST_TIME;
+    if (empty($transaction->xid)) {
+      $success = drupal_write_record('mcapi_transactions', $transaction);
+      field_attach_insert('transaction', $transaction);
     }
-    field_attach_insert('transaction', $transaction);
-    //make a unique list of all the affected and update their balances
-    //it is conceivable that we might be processing other
-    $refreshers[] = $transaction->payer_uid;
-    $refreshers[] = $transaction->payee_uid;
-
-    //assumes all the transactions were in the same currency
+    else {
+      $success = drupal_write_record('mcapi_transactions', $transaction, 'xid');
+      field_attach_update('transaction', $transaction);
+    }
+    if (!$success) {
+      throw new Exception(t('failed to write to table @tablename', array('@tablename' => $table)));
+    }
   }
 
   /*
-   *
-   * The GVA engine will erase and create a new record rather that actually updating a record
-   * This update function copies that
-   * An alternative would be to use the revision control provided by the entity
-   * Transactions with derived transactions, do not update, but automatically erase and insert,
-   * TODO We could use the versions table here, since it is included already
+   * This controller makes no use of the entity revision control facility
    */
   function update($transaction) {
     $currency = currency_load($transaction->cid);
-    switch($currency->update_mode) {
+    //special case. This prevents writing a new row on validation
+    //instead we validate by updating the row
+    $mode = intval(isset($transaction->validating) && $currency->update_mode == 1 ? 2 : $currency->update_mode == 1);
+    switch($mode) {
       case 0:
         throw new Exception(t('Updates not allowed'));
-        break;
       case 1:
-        //delete the old, remove the xid and insert it
-        $old = clone $transaction;
-        //$transaction->data['was'] = $transaction->xid;//this is where we link the new to the old.
+        $old = transaction_load($transaction->xid);
+        $transaction->data['formerly'] = $transaction->xid;
+        //remove the xid and insert the transaction anew
         unset($transaction->xid);
         $this->insert($transaction); //will give a new xid
         $old->data['became'] = $transaction->xid;
+        //then erase the old one
         $this->erase($old);
         break;
       case 2:
-        //while there are no 'derived' transactions, we are dealing with one only
         drupal_write_record('mcapi_transactions', $transaction, 'xid');
         field_attach_update('transaction', $transaction);
         break;
@@ -232,6 +248,7 @@ class CurrencyEntityController extends DrupalDefaultEntityController {
 
   public function save($currency) {
     $function = isset($currency->cid) && $currency->cid ? 'update' : 'insert';
+    cache_clear_all('currencies', 'cache');
     $currency = $this->$function($currency, TRUE);
     module_invoke_all('entity_'.$function, 'currency', $currency);
   }
@@ -270,66 +287,11 @@ function currency_divisions_array($string) {
   }
 }
 
-/*
- * This is where the settings specific to the controller are added to the currency form
- */
-function mcapi_form_currency_form_alter(&$form, $form_state, $form_id) {
-  $currency = $form['cid']['#default_value'] ? currency_load($form['cid']['#default_value']) : NULL;
-  $form['accounting'] = array(
-    '#title' => t('Accounting standards'),
-    '#description' => t('More or less formal accounting standards can be determined.') .' '. 
-      t('Not all combinations are meaningful!') .' '.
-      t('The first fields take precedence') .' '.
-      t('YOU SHOULD TEST THAT YOUR SETTINGS WORK AS INTENDED!'),
-    '#type' => 'fieldset',
-    '#weight' => 0,
-    '#group' => 'additional_settings',
-    'delete_mode' => array(
-      '#title' => t('Delete mode'),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t("Can't delete"),
-        1 => t('Mark deleted'),
-        2 => t('Remove all traces from the database (not from backups)'),
-      ),
-      '#default_value' => isset($currency->delete_mode) ? $currency->delete_mode : 0,
-      '#weight' => 1
-    ),
-    'update_mode' => array(
-      '#title' => t('Update mode'),
-      '#description' => t("Changing the state of a transaction doesn't count as editing it"),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t("Can't update"),
-        1 => t("Delete and create a new transaction"),
-        2 => t("Update same record"),
-        //3 => t("Use entity versioning the same transaction (not available)"),
-      ),
-      '#default_value' => isset($currency->update_mode) ? $currency->update_mode : 0,
-      '#weight' => 2,
-      '#element_validate' => array('mcapi_currency_validate_update_mode')
-    ),
-    'write_validate' => array(
-      '#title' => t('Write transaction during validation'),
-      '#description' => t('Transactions that are abandoned between validation and saving will leave a trace in the database.'),
-      '#type' => 'checkbox',
-      '#default_value' => isset($currency->write_validate) ? $currency->write_validate : 1,
-      '#weight' => 3,
-    ),
-  );
-  $form['#entity_builders'][] = 'currency_entity_builder_default';
-}
-
-function currency_entity_builder_default($entity_type, $entity, $form, $form_state) {
-  $entity->data['delete_mode'] = $entity->delete_mode;
-  $entity->data['update_mode'] = $entity->update_mode;
-  $entity->data['write_validate'] = $entity->write_validate;
-}
-
 
 //refreshes a cache of all the transactions,
-function balances_recalc($cid, $uids) {
+function balances_recalc($cid, $uids, $test = FALSE) {
   foreach($uids as $uid) {
+    //$in = db_select('mcapi_transactions', 't')->fields('c', array());
     $in = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
       array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
       ->fetchAssoc();

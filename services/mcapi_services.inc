@@ -28,6 +28,7 @@ function mcapi_service_currency_retrieve($ucid) {
   return mcapi_service_universal_lookup($ucid, 'currency');
 }
 
+
 //this will need better validation.
 function mcapi_service_currency_update($ucid, $data) {
   $currency = mcapi_service_universal_lookup($ucid, 'currency');
@@ -44,7 +45,7 @@ function mcapi_service_currency_update($ucid, $data) {
 }
 
 function mcapi_service_currencies_list() {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   foreach ($currencies as $currency) {
     if (!$currency->ucid) continue;
     $universal_currencies[$currency->ucid] = $currency;

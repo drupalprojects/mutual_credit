@@ -23,8 +23,11 @@ function mcapi_install() {
 
   //here we set all the module weights together
   //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
-  db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi')->execute();
-  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_webforms')->execute();
+  //could all these be done in one query?
+  db_update('system')->fields(array('weight' => 0))->condition('name', 'mcapi')->execute();
+  db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi_limits')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_services')->execute();
+  db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_limits_equation')->execute();
 
   //allow the body field to be added to currencies and transactions
   $data = unserialize(db_query("SELECT data from field_config where field_name = 'body'")->fetchField());
@@ -85,7 +88,14 @@ function mcapi_uninstall() {
  * Implements hook_enable
  */
 function mcapi_enable() {
-
+  //we need to refresht this variable because it's not set on installation
+  //$drupal_static_fast['entity_info'] = &drupal_static('entity_get_info');
+  //$drupal_static_fast['entity_info'] = array();
+  global $language;
+  $langcode = $language->language;
+  cache_clear_all("entity_info:$langcode", 'cache');
+  module_load_include('inc', 'mcapi');
+  mcapi_controller();
   //this seems to have been omitted from core...
   menu_rebuild();
 }
@@ -114,11 +124,6 @@ function mcapi_schema() {
         'description' => 'a brief description of what was exchanged',
         'type' => 'text',
         'size' => 'small',
-      ),
-      'uid' => array(
-        'description' => 'the user id of the creator',
-        'type' => 'int',
-        'size' => 'normal',
       ),
       'payer_uid' => array(
         'description' => 'the user id of the payer',
@@ -149,11 +154,6 @@ function mcapi_schema() {
         'type' => 'int',
         'size' => 'normal',
       ),
-      'created' => array(
-        'description' => "Unixtime that the transaction was recorded",
-        'type' => 'int',
-        'size' => 'normal',
-      ),
       'parent' => array(
         'description' => 'nid of parent transaction',
         'type' => 'int',
@@ -164,7 +164,27 @@ function mcapi_schema() {
         'type' => 'text',
         'size' => 'small',
         'serialize' => TRUE,
-      )
+      ),
+      'creator' => array(
+        'description' => 'the user id of the creator',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'created' => array(
+        'description' => "Unixtime that the transaction was recorded",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'modifier' => array(
+        'description' => 'the user id of the modifier',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'modified' => array(
+        'description' => "Unixtime that the transaction was modified",
+        'type' => 'int',
+        'size' => 'normal',
+      ),
     ),
     'primary key' => array('xid'),
   );
@@ -255,7 +275,6 @@ function mcapi_schema() {
       'data' => array(
         'description' => 'nonessential info not fitting into existing fields',
         'type' => 'text',
-        'size' => 'small',
         'serialize' => TRUE,
       ),
     ),
@@ -358,20 +377,39 @@ function mcapi_create_default_currency() {
       ),
     ),
     'data' => array(
-      'max' => NULL,
-      'min' => 0,
-    ),
-    'delete_mode' => 2,
-    'update_mode' => 2,
-    'user_editable_mode' => 2,
-    'write_validate' => TRUE,
-    'privacy' => 2,
-    'access_callback' => 'user_access',
+      'delete_mode' => 2,
+      'update_mode' => 2,
+      'user_editable_mode' => 2,
+      'write_validate' => TRUE,
+      'privacy' => 2,
+      'access_callback' => 'user_access',
+    )
   );
-  module_load_include('inc', 'mcapi', 'entities');
+  mcapi_controller();
   entity_get_controller('currency')->save((object)$currency);
-
   $new_curr = db_select('mcapi_currencies', 'c')->fields('c', array('cid', 'name'))->execute()->fetch();
   drupal_set_message(t('Your default currency is @name.', array('@name' => $new_curr->name)));
   drupal_set_message(t('N.B. The default currency does not allow negative balances: !edit', array('!edit' => l(t('edit'), 'currency/' . $new_curr->cid . '/edit'))));
+  cache_clear_all("currencies", 'cache');
+}
+
+
+/*
+ *
+ */
+function mcapi_choose_controller_form() {
+  $controllers = file_scan_directory(drupal_get_path('module', 'mcapi'), '/.controller/');
+  foreach ($controllers as $path => $file){
+    $options[$file->name] = $file->filename;
+  }
+
+  $form['mcapi_controller'] = array(
+    '#title' => 'Entity controller file',
+    '#description' => t('Choose which .controller file, in modules/mutual_credit directory to use'),
+    '#type' => 'radios',
+    '#options' => $options,
+    '#default_value' => variable_get('mcapi_controller', 'default')
+  );
+
+  return system_settings_form($form);
 }

@@ -2,14 +2,6 @@
 // $Id: mc_webform_1stparty.install,v 1.1.2.3 2010/12/15 22:04:04 matslats Exp $
 
 
-function mcapi_services_install() {
-  drupal_install_schema('mcapi_services');
-}
-
-function mcapi_services_uninstall() {
-  drupal_uninstall_schema('mcapi_services');
-}
-
 function mcapi_services_schema() {
   $schema['mcapi_universal_ids'] = array(
     'description' => 'currency exchanges between users',

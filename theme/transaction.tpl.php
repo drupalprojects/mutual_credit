@@ -22,7 +22,7 @@
  * need to do some more work on the icon size
  * for now, you might want to include your own large-size graphic instead
  * using $transaction->quantity
- * tip: $currency = entity_load('currency', $transaction->cid)
+ * tip: $currency = currency_load($transaction->cid);
  *
  *
  */
@@ -42,7 +42,7 @@ if ($view_mode == 'summary') {
     case TRANSACTION_STATE_FINISHED:
       print t("On @recorded, !payer gave !payee !amount for '@description'", $replacements);
       break;
-    case TRANSACTION_STATE_DELETED:
+    case TRANSACTION_STATE_ERASED:
       print t("On @recorded, !payer did not give !payee !amount for '@description'. (DELETED)'", $replacements);
       break;
   }

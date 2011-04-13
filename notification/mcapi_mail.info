@@ -1,0 +1,8 @@
+; $Id: mcapi.info,v 1.1.2.4 2010/12/06 13:19:45 hutch Exp $
+name = Mutual Credit mail notifications
+description = User settings and mail templates for transaction notification
+package = Mutual Credit
+core = 7.x
+
+files[] = mcapi_mail.module
+dependencies[] = mcapi

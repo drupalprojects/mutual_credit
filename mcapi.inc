@@ -4,10 +4,6 @@
 //this $currencies is bit like a global, since we need it all over the place
 //it is initialised at the moment that this file is included.
 //this includes the controller file
-mcapi_controller();
-
-//$currency->divisions = currency_divisions_array($currency->divisions_conf);
-
 
 
 /*
@@ -116,7 +112,7 @@ function mcapi_menu_inc() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_choose_controller_form'),
     'access arguments' => array('configure all currencies'),
-    'file' => 'mcapi.inc',
+    'file' => 'mcapi.install',
   );
   $items['transaction/%transaction'] = array(
     'title' => 'Transaction certificate',
@@ -208,58 +204,11 @@ function mcapi_balances_refresh($currency) {
   drupal_goto('admin/accounting');
 }
 
-/*
- *
- */
-function mcapi_choose_controller_form() {
-  $controllers = file_scan_directory(drupal_get_path('module', 'mcapi'), '/.controller/');
-  foreach ($controllers as $path => $file){
-    $options[$file->name] = $file->filename;
-  }
-
-  $form['mcapi_controller'] = array(
-    '#title' => 'Entity controller file',
-    '#description' => t('Choose which .controller file, in modules/mutual_credit directory to use'),
-    '#type' => 'radios',
-    '#options' => $options,
-    '#default_value' => variable_get('mcapi_controller', 'default')
-  );
-
-  return system_settings_form($form);
-}
-
-
-/*
- * get a list of uids of users with permission to transaction
- */
-function get_trader_uids() {
-  if ($roles = user_roles(TRUE, 'transaction')) {
-    $query = db_select('users', 'u')
-      //NEED TO SELECT DISTINCT
-      //->join('users_roles', 'ur')
-      ->fields('u', array('uid'))
-      ->condition('u.status', 1)->condition('u.uid', 1, '>');
-    if (!$roles[DRUPAL_AUTHENTICATED_RID]) {
-      $query->condition('ur.rid', array_keys($roles));
-    }
-    return $query->execute()->fetchAll();
-  }
-  else {
-    drupal_set_message(
-      t(
-        "No roles have permission to '@trade'. Go to !link",
-        array(
-          '@trade' => t('transaction'),
-          '!link' => l('admin/user/permissions', 'admin/user/permissions')
-        ), array('langcode' => 'warning'))
-    );
-  }
-}
 
 //this could almost have been done with a view, but as this is the API module, we don't want to create that dependency
 //this will be done with the entitiy, and with a services hook
 function show_currencies() {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $entity = entity_get_info('transaction');
   $header = array(t('Format'), t('Name'), t('Transactions'), t(''));
   $output = '';
@@ -286,6 +235,7 @@ function show_currencies() {
 }
 
 function currency_form($form, $form_state, $currency = NULL) {
+  
   if (isset($currency->name)) $title = t("Edit currency '@name'", array('@name' => $currency->name));
   else $title = t('Declare currency');
   drupal_set_title($title);
@@ -343,6 +293,57 @@ function currency_form($form, $form_state, $currency = NULL) {
     '#type' => 'vertical_tabs',
     '#weight' => 15,
   );
+  $form['accounting'] = array(
+    '#title' => t('Accounting standards'),
+    '#description' => t('More or less formal accounting standards can be determined.') .' '.
+      t('Not all combinations are meaningful!') .' '.
+      t('The first fields take precedence'),
+    '#type' => 'fieldset',
+    '#weight' => 0,
+    '#group' => 'additional_settings',
+    'update_mode' => array(
+      '#title' => t('Update mode'),
+      '#type' => 'radios',
+      '#options' => array(
+        0 => t("Can't update"),
+        1 => t("Delete and create a new transaction"),
+        2 => t("Update same record"),
+        //3 => t("Use entity versioning the same transaction (not available)"),
+      ),
+      '#default_value' => empty($form_state['values']['update_mode']) ? $currency->update_mode : $form_state['values']['update_mode'],
+      '#weight' => 1,
+      '#element_validate' => array('mcapi_currency_validate_update_mode'),
+      '#ajax' => array(
+        'callback' => 'currency_form_ajax',
+        'wrapper' => 'currency-form',
+      ),
+    ),
+    'delete_mode' => array(
+      '#title' => t('Delete mode'),
+      '#type' => 'radios',
+      '#options' => array(
+        0 => t("Can't delete"),
+        1 => t('Mark deleted'),
+        2 => t('Remove all traces from the database (not from backups)'),
+      ),
+      '#default_value' => empty($form_state['values']['delete_mode']) ? $currency->delete_mode : $form_state['values']['delete_mode'],
+      '#weight' => 2,
+      '#ajax' => array(
+        'callback' => 'currency_form_ajax',
+        'wrapper' => 'currency-form',
+      ),
+    )
+  );
+  //alter the options according to what is set
+  if ($form['accounting']['delete_mode']['#default_value'] == 0) {
+    unset($form['accounting']['update_mode']['#options'][1]);
+    if ($form['accounting']['update_mode']['#default_value'] == 1);
+    $form['accounting']['update_mode']['#default_value'] = 0;
+  }
+  //nasty design flaw around radio buttons which means ajax rebuilds them wrong
+  if (arg(0) == 'system') {
+    unset($form['accounting']['update_mode']['#title']);
+  }
   $form['access'] = array(
     '#title' => t('Availability'),
     '#type' => 'fieldset',
@@ -356,7 +357,7 @@ function currency_form($form, $form_state, $currency = NULL) {
         'user_access' => t('Everyone can use'),
         'currencies_access_viral' => t('Spreads virally. Only users who have already traded in this currency can initiate transactions with it'),
       ),
-      '#default_value' => isset($currency->access_callback) ? $currency->access_callback : '',// empty means user_access('transact')
+      '#default_value' => isset($currency->access_callback) ? $currency->access_callback : 'user_access',// empty means user_access('transact')
     ),
   );
   $form['privacy'] = array(
@@ -377,26 +378,28 @@ function currency_form($form, $form_state, $currency = NULL) {
       '#default_value' => isset($currency->privacy) ? $currency->privacy : 1,
     )
   );
-  $form['malleability'] = array(
-    '#title' => t('Malleability'),
-    '#description' => t('Only applies if editing is permitted by accounting standards.').' (AJAX needed!)',
-    '#type' => 'fieldset',
-    '#group' => 'additional_settings',
-    '#weight' => 5,
-    //could use some D7 formAPI AJAX here to disable this field if update_mode is 0
-    'user_editable_mode' => array(
-      '#title' => t('User editable'),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t("Users cannot edit"),
-        1 => t('Creator can edit/delete pending transactions'),
-        2 => t('Both can edit/delete pending transactions'),
-        3 => t('Both can edit/delete finished transactions'),
-      ),
-      '#default_value' => isset($currency->user_editable_mode) ? $currency->user_editable_mode : 0,
-      '#weight' => 4
-    )
-  );
+
+  if ($form['accounting']['update_mode']['#default_value'] > 0) {
+    $form['editable'] = array(
+      '#title' => t('Edit permissions'),
+      '#description' => t('Only applies if editing is permitted by accounting standards.').' (AJAX needed!)',
+      '#type' => 'fieldset',
+      '#group' => 'additional_settings',
+      '#weight' => 5,
+      //could use some D7 formAPI AJAX here to disable this field if update_mode is 0
+      'user_editable_mode' => array(
+        '#title' => t('User editable'),
+        '#type' => 'radios',
+        '#options' => array(
+          0 => t("Users cannot edit"),
+        ),
+        '#default_value' => isset($currency->user_editable_mode) ? $currency->user_editable_mode : 0,
+        '#weight' => 4
+      )
+    );
+  }
+
+
   $form['#entity_builders'][] = 'currency_entity_builder';
 
   $form['actions'] = array(
@@ -415,6 +418,9 @@ function currency_form($form, $form_state, $currency = NULL) {
       '#value' => t('Record'),
     );
   }
+  return $form;
+}
+function currency_form_ajax(&$form, &$form_state) {
   return $form;
 }
 
@@ -440,17 +446,6 @@ function mcapi_currency_validate_divisions(&$element, $form_state) {
   }
 }
 
-function mcapi_validate_user(&$element, $form_state) {
-  //copied from node_validate
-  if (!empty($element['#value']) && !($account = user_load_by_name($element['#value']))) {
-    form_error($element, t('The username %name does not exist.', array('%name' => $element['#value'])));
-  }
-}
-function mcapi_currency_validate_update_mode(&$element, $form_state) {
-  if ($element['#value'] == 1 && $form_state['values']['delete_mode'] == 0) {
-    form_error($element, t('Accounting standards') .' '. t('Update mode is incompatible with delete mode'));
-  }
-}
 
 /*
  * Called from the formAPI
@@ -480,7 +475,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 function currency_form_submit($form, &$form_state) {
   $currency = new stdClass;
   entity_form_submit_build_entity('currency', $currency, $form, $form_state);
-  entity_get_controller('currency')->save($currency);
+  currency_controller('save', $currency);
   if (user_access('configure all currencies')) {
     drupal_goto('admin/accounting');
   }
@@ -492,11 +487,12 @@ function currency_form_submit($form, &$form_state) {
  * callback which builds the entity from the form submission
  */
 function currency_entity_builder($entity_type, $entity, &$form, &$form_state) {
+  $entity->data['delete_mode'] = $entity->delete_mode;
+  $entity->data['update_mode'] = $entity->update_mode;
   $entity->data['access_callback'] = $entity->access_callback;
   $entity->data['privacy'] = $entity->privacy;
   $entity->data['user_editable_mode'] = $entity->user_editable_mode;
 }
-
 
 
 /**
@@ -544,7 +540,6 @@ function transaction_form($form, $form_state, $transaction = NULL) {
     '#type' => 'textfield',
     '#title' => t('Account to be debited'),
     '#default_value' => isset($transaction->payer_uid) ? $transaction->payer_uid : '',
-    '#element_validate' => array('mcapi_validate_trader'),
     '#weight' => 6,
     '#size' => 7
   );
@@ -553,7 +548,6 @@ function transaction_form($form, $form_state, $transaction = NULL) {
     '#title' => t('Account to be credited'),
     '#description' => t('A username, email, or user ID'),
     '#default_value' => isset($transaction->payee_uid) ? $transaction->payee_uid : '',
-    '#element_validate' => array('mcapi_validate_trader'),
     '#weight' => 9,
     '#size' => 7
   );
@@ -639,14 +633,13 @@ function mcapi_prevalidate_transaction($form, &$form_state) {
     'description' =>  isset($form_state['values']['description']) ?  $form_state['values']['description'] : t('no description given'), //shouldn't really be omitted
     'state' => isset($form_state['values']['state']) ?  $form_state['values']['state'] : TRANSACTION_STATE_FINISHED, //shouldn't really be omitted
     'type' => isset($form_state['values']['type']) ?  $form_state['values']['type'] : 'unspecified', //shouldn't really be omitted
-    'uid' => isset($form_state['values']['uid']) ?  $form_state['values']['uid'] : $GLOBALS['user']->uid,
+    'creator' => isset($form_state['values']['creator']) ?  $form_state['values']['creator'] : $GLOBALS['user']->uid,
     'created' => REQUEST_TIME,
     'data' => array(),
   );
   if (isset($form_state['values']['xid'])) {
     $form_state['#transaction']->xid = $form_state['values']['xid'];
   }
-  return $form;
 }
 
 
@@ -662,7 +655,7 @@ function mcapi_prevalidate_transaction($form, &$form_state) {
 function transaction_form_validate($form, &$form_state) {
   field_attach_form_validate('transaction', (object) $form_state['values'], $form, $form_state);
   try {
-    mcapi_transaction_validate(&$form_state['#transaction'], $form);
+    mcapi_transaction_validate($form_state['#transaction'], $form);
   }
   catch (Exception $e) {
    drupal_set_message($e->getMessage(), 'warning');
@@ -671,7 +664,7 @@ function transaction_form_validate($form, &$form_state) {
 /*
  * Universal transaction validation
  */
-function mcapi_transaction_validate($transaction, &$form = NULL){
+function mcapi_transaction_validate(&$transaction, &$form = NULL){
   //no usecase is currently envisaged where someone might pay themselves
   if ($transaction->payer_uid > 0) {
     if ($transaction->payer_uid == $transaction->payee_uid) {
@@ -687,12 +680,13 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
         if (isset($form[$fieldname])) {
           form_set_error($fieldname, t("@fieldname required for completed transaction", array('@fieldname' => $form[$fieldname]['#title'])));
         }
-        else
+        else {
           form_set_error(t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
+        }
       }
     }
   }
-
+  if (count(form_get_errors())) return;
   //check that each user is permitted to use that currency
   $currency = currency_load($transaction->cid);
   foreach (array($transaction->payer_uid, $transaction->payee_uid) as $uid) {
@@ -706,10 +700,8 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
   
   if ($transaction->payer_uid && $transaction->payee_uid) {
     //this concerns rules and database integrity, so we hand it off to the db controller
-    $transactionController = entity_get_controller('transaction');
-      //we're checking the balances, and trial-entering the transaction in the db
-    $transactionController->validate($transaction);
-    //both should produce the same results, only one is necessary
+    //we're checking the balances, and trial-entering the transaction in the db
+    $transaction = transaction_controller('validate', $transaction);
   }
 }
 
@@ -717,14 +709,12 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
  * Submit callback for default transaction form
  */
 function transaction_admin_form_submit($form, &$form_state) {
-  $transaction = new stdClass;
-  entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-  entity_get_controller('transaction')->save($form_state['#transaction'], TRUE);
-  if (isset($form_state['#transaction']->xid)) {
-    drupal_set_message(t('Transaction recorded.'));
-  }
+
+  entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
+  $transaction = transaction_controller('save', $form_state['#transaction'], TRUE);
+   //die();
   if (!isset($form_state['redirect'])) {
-    //$form_state['redirect'] = 'transaction/'.$form_state['#transaction']->xid;
+    $form_state['redirect'] = 'transaction/'.$transaction->xid;
   }
 }
 
@@ -749,18 +739,15 @@ function mcapi_transaction_erase_confirm_form($form, $transaction){
  * delete a single transaction
  */
 function transaction_erase($xid) {
-  $transaction = entity_get_controller('transaction')->load($xid);
-  return entity_get_controller('transaction')->erase($transaction);
+  $transaction = transaction_controller('load', array($xid));
+  return  transaction_controller('erase', $transaction);
 }
 
 
-function odd_cents($float) {
-    $integer = intval($float);
-    //format using the given currency subdivision
-    $fraction = $float - $integer;
-    return ceil($fraction * 100); //corrects the floating point error
-}
 
+/*
+ * form element validation callback functions
+ */
 
 function mcapi_validate_title($element, $form_state) {
   //don't know the max length of 'small' text field. Will be just truncated
@@ -776,10 +763,6 @@ function mcapi_validate_cid(&$element, $form_state) {
   }
 }
 
-
-/*
- * Validate the quantity field on the transaction form
- */
 function mcapi_validate_quantity(&$element, &$form_state) {
   $value = $element['#value'] + 0;//convert it from string to a number
   //null values allowed
@@ -788,7 +771,7 @@ function mcapi_validate_quantity(&$element, &$form_state) {
   if ($element['#value'] < 0 ) {
     form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element['#title'])));
   }
-  $fraction = odd_cents($value);
+  $fraction = _odd_cents($value);
   if ($fraction && isset($form_state['values']['cid']) && $currency = all_currencies($form_state['values']['cid'])) {
     if (is_null($currency->divisions) && !is_integer($value)) {
       form_error($element, t("Integer values only for '@currency'", array('@currency' => $currency->title)));
@@ -803,46 +786,14 @@ function mcapi_validate_quantity(&$element, &$form_state) {
     }
   }
 }
-
-//the api module will validate any number or username or email as a user with permission to trade
-//this function permits blank values
-function mcapi_validate_trader(&$element, &$form_state) {
-  if ($val = $element['#value']) {
-    _mcapi_check_trader($val, $element);
-  }
+//shouldn't really need this...
+function _odd_cents($float) {
+  $integer = intval($float);
+  //format using the given currency subdivision
+  $fraction = $float - $integer;
+  return ceil($fraction * 100); //corrects the floating point error
 }
 
-function _mcapi_check_trader($value, &$element = NULL) {
-  if (is_numeric($value)) {
-    $field = 'uid';
-  }
-  elseif (valid_email_address($value)) {
-    $field = 'mail';
-  }
-  elseif (is_string($value) && strlen($value)) {
-    $field = 'name';
-  }
-  $criterion = array($field => $value);
-  /*
-   * Check this
-   */
-  $account = array_shift(user_load_multiple(array(), $criterion));
-  if (isset($account->uid)) {
-    if (user_access('transact', $account)   && $account->status) {
-      return $account->uid;
-    }
-    else {
-      if ($element) {
-        form_error($element, t("@user is not permitted to trade", array("@user" => $account->name)));
-      }
-    }
-  }
-  else {
-    if ($element) {
-      form_error($element, t("@data is not a known user", array("@data" => $value)));
-    }
-  }
-}
 function mcapi_validate_state($element, $form_state) {
   $states = array(TRANSACTION_STATE_FINISHED, TRANSACTION_STATE_PENDING, TRANSACTION_STATE_ERASED);
   if (!in_array($element['#value'], $states)) {
@@ -853,5 +804,17 @@ function mcapi_validate_ttype($element, $form_state) {
   $types = module_invoke_all('transaction_type_info');
   if (!is_array($types[$element['#value']])) {
     form_error($element, t('Invalid transaction type.') .' '. t('Suspected hacking attempt!'));
+  }
+}
+
+function mcapi_validate_user(&$element, $form_state) {
+  //copied from node_validate
+  if (!empty($element['#value']) && !($account = user_load_by_name($element['#value']))) {
+    form_error($element, t('The username %name does not exist.', array('%name' => $element['#value'])));
+  }
+}
+function mcapi_currency_validate_update_mode(&$element, $form_state) {
+  if ($element['#value'] == 1 && $form_state['values']['delete_mode'] == 0) {
+    form_error($element, t('Accounting standards') .' '. t('Update mode is incompatible with delete mode'));
   }
 }

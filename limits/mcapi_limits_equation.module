@@ -5,7 +5,7 @@
  * puts the equation option into the currency form
  */
 function mcapi_limits_equation_form_currency_form_alter(&$form, $form_state) {
-  $form['limits']['limits_callback']['#options']['limits_equations] = t('Calculate the limits using an equation and tokens.');
+  $form['limits']['limits_callback']['#options']['limits_equations'] = t('Calculate the limits using an equation and tokens.');
 }
 
 /*
@@ -19,13 +19,10 @@ function mcapi_limits_equation_form_currency_form_alter(&$form, $form_state) {
 function limits_equations($currency, $uid) {
   $cached = entity_get_controller('transaction')->get_cache($uid, $currency->cid);
   foreach (array('max', 'min') as $limit) {
-    debug($currency->limits_equations[$limit]);
-    $pattern = 'return '. str_replace('@', '', $currency->limits_equations[$limit]) .';';
-    $formula = strtr(
-      $pattern,
+    $limits[$limit] = mcapi_limits_equation_parse(
+      $currency->limits_equations[$limit],
       db_query("SELECT gross_in, gross_out, count as trades from {mcapi_cache} WHERE uid = $uid AND cid = $currency->cid")->fetchAssoc()
     );
-    $limits[$limit] = eval($formula);
   }
   return $limits;
 }
@@ -52,7 +49,22 @@ function limits_equations_form($form, $form_state) {
   );
 }
 
-
-function mcapi_limts_equation_validate(&$element, &$form_state) {
-
+//checks that the formula evaluates to a number
+function mcapi_limits_equation_validate(&$element, &$form_state) {
+  if (!strlen($element['#value'])) return;
+  $value = mcapi_limits_equation_parse(
+    $element['#value'],
+    array('gross_in' => 100, 'gross_out' => 100, 'trades' => 10)
+  );
+  if (!is_numeric($value)) {
+    form_error($element, t('Formula does not evaluate to a number: @result', array('@result' => $result)));
+  }
+}
+function mcapi_limits_equation_parse($string, $values) {
+  $pattern = 'return '. str_replace('@', '', $string) .';';
+  $formula = strtr(
+    $pattern,
+    $values
+  );
+  return eval($formula);
 }

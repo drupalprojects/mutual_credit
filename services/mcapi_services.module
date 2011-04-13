@@ -237,17 +237,18 @@ function mcapi_services_form_currency_node_form_alter(&$form, $form_state) {
     '#weight' => -3
   );
 }
-function mcapi_services_currency_load(&$currency) {
-  $node->ucid = db_result(db_query(
-    "SELECT universal_id FROM {mcapi_universal_ids} WHERE type = 'currency' AND did = :did",
-    array(':did' => $currency->cid)
-    )
-  );
-}
 
+
+/*
+ * implements hook_entity_insert
+ */
 function mcapi_services_currency_insert($currency, $type) {
   mcapi_services_currency_update($currency, $type);
 }
+
+/*
+ * implements hook_entity_update
+ */
 function mcapi_services_currency_update($currency, $type) {
   if ($type == 'currency') {
     $unid = isset($currency->ucid) ? $currency->ucid : $currency->cid;
@@ -259,36 +260,29 @@ function mcapi_services_currency_update($currency, $type) {
     );
   }
 }
-function mcapi_services_entity_delete(&$currency, $type) {
+/*
+ * implements hook_entity_delete
+ */
+function mcapi_services_entity_delete($currency, $type) {
   if ($type == 'currency') {
     db_query("DELETE FROM {mcapi_universal_ids} WHERE did = :did AND type = 'currency'",
       array(':did' => $currency->cid)
     );
   }
 }
+
+
 /*
  * helper functions
  * get the currency object from the universal currency ID
  */
 function mcapi_service_currency_lookup($ucid){
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   foreach ($currencies as $currency) {
     if ($currency->ucid == $ucid) return $curr;
   }
 }
 
-/*
- * implements of hook_user_load
- */
-function mcapi_services_user_load(&$users) {
-  $currencies = &drupal_static('currencies');
-  foreach ($currencies as $cid => $currency) {
-    foreach ($users as $account) {
-      //
-      $account->balances[$cid] = mc_balances($account, $cid) + user_limits($account, $cid);
-    }
-  }
-}
 
 /*
  * implements hook_form_FORM_ID_alter
@@ -340,3 +334,34 @@ function mcapi_service_universal_lookup($universal_id, $type){
     return user_load($did);
   }
 }
+
+
+/*
+ * implements hook_entity_load
+ * adds the universal currency id to the currency
+ */
+/*
+function mcapi_services_currency_load($currencies) {ddebug_backtrace();
+  foreach ($currencies as $cid => $currency) {
+    $currencies[$cid]->ucid = db_query(
+      "SELECT universal_id FROM {mcapi_universal_ids} WHERE type = 'currency' AND did = :did",
+      array(':did' => $currency->cid)
+    )->fetchField();
+  }
+}
+
+/*
+ * implements of hook_user_load
+ * adds the universal user id  to the user //if it's necessary
+ */
+/*
+function mcapi_services_user_load($users) {
+  $currencies = currencies_load();
+  foreach ($users as $uid => $account) {
+    $users[$uid]->uuid = db_query(
+      "SELECT universal_id FROM {mcapi_universal_ids} WHERE type = 'user' AND did = :did",
+      array(':did' => $uid)
+    )->fetchField();
+  }
+}
+ */
