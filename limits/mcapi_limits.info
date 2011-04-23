@@ -5,3 +5,4 @@ package = Mutual Credit
 core = 7.x
 
 files[] = mcapi_limits.module
+dependencies[] = mcapi

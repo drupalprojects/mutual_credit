@@ -9,18 +9,61 @@ define ('TRANSACTION_STATE_VALIDATING', -2);
 /*
  * The transaction entity has its own CRUD operations
  */
-class TransactionEntityController extends DrupalDefaultEntityController {
+class MCAPIEntityController extends DrupalDefaultEntityController {
   /*
-   * Throws an error if a transaction doesn't exist
+   * Adapted from the default entity controller.
+   * no support for revisions
+   * switches database to load transactions
+   * returns an error if the transaction id is invalid
    */
-  public function load($xids = array(), $conditions = array()) {
-    $transactions = parent::load($xids, $conditions);
-    if (!count($transactions)) {
-      throw new Exception(t('Invalid transaction ID: @ids', array('@ids' => implode(', ', $xids))));
-    }
-    return $transactions;
-  }
+  public function load($ids = array(), $conditions = array()) {
+    $entities = array();
+    $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
 
+    //get from cache where available
+    if ($this->cache) {
+      $entities += $this->cacheGet($ids, $conditions);
+      // If any entities were loaded, remove them from the ids still to load.
+      if ($passed_ids) {
+        $ids = array_keys(array_diff_key($passed_ids, $entities));
+      }
+    }
+
+
+    if ($ids === FALSE || $ids || ($conditions && !$passed_ids)) {
+      db_set_active(variable_get('mcapi_db_read', 'default'));
+      $query = db_select($this->entityInfo['base table'], 'base');
+      db_set_active();
+      $query->fields('base', $this->entityInfo['schema_fields_sql']['base table']);
+      // Build the query.
+      if ($ids) {
+        $query->condition("base.{$this->idKey}", $ids, 'IN');
+      }
+      foreach ($conditions as $field => $value) {
+        $query->condition('base.' . $field, $value);
+      }
+      $queried_entities = $query->execute()->fetchAllAssoc($this->idKey);
+    }
+    if (!empty($queried_entities)) {
+      $this->attachLoad($queried_entities);
+      $entities += $queried_entities;
+    }
+    if ($this->cache) {
+      if (!empty($queried_entities)) {
+        $this->cacheSet($queried_entities);
+      }
+    }
+    if (!count($entities)) {
+      throw new Exception(t('Invalid entity ID: @ids', array('@ids' => implode(', ', $ids))));
+    }
+    foreach ($entities as $key => $entity) {
+      $entities[$key] = drupal_unpack($entity);
+    }
+    return $entities;
+  }
+}
+
+class TransactionEntityController extends MCAPIEntityController {
   /*
    * This controller actually writes the transaction during validation
    * with a special state: TRANSACTION_STATE_VALIDATING
@@ -82,7 +125,7 @@ class TransactionEntityController extends DrupalDefaultEntityController {
     //the transaction is actually written during the validation phase, but we still want to run
     $function = empty($transaction->is_new) ? 'update' : 'insert';
     try {
-      entity_get_controller('transaction')->$function($transaction);
+      $this->$function($transaction, !empty($transaction->validating));
     }
     catch (Exception $e) {
       $t->rollback();
@@ -106,64 +149,49 @@ class TransactionEntityController extends DrupalDefaultEntityController {
       case '0':
         throw new Exception(t('Deletions not allowed'));
         break;
-      case '1':
-        $transaction = $this->change_state($transaction, TRANSACTION_STATE_ERASED);
-        break;
-      case '2':
-        $query = db_delete('mcapi_transactions')
-        ->condition('xid', $transaction->xid)
-        ->execute();
-        try {
+      case '1': //mark deleted
+        debug($transaction);
+        $transaction->state = TRANSACTION_STATE_ERASED;
+        $transaction->modified = REQUEST_TIME;
+        $transaction->modifier = $GLOBALS['user']->uid;
+        try{
+          mcapi_write_record('mcapi_transactions', $transaction, 'xid');
           balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
         }
         catch (Exception $e) {
-          drupal_set_message($e->getMessage(), 'warning');
+          $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
+          throw $e;
         }
-    }
-    module_invoke_all('entity_delete', 'transaction', $transaction);
-    return $transaction;
-  }
-
-  public function change_state($transaction, $new_state) {
-    $transaction->state = $new_state;
-    $transaction->modified = REQUEST_TIME;
-    $transaction->modifier = $GLOBALS['user']->uid;
-    try{
-      drupal_write_record('mcapi_transactions', $transaction, 'xid');
-      balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
-    }
-    catch (Exception $e) {
-      drupal_set_message(t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state)));
+        break;
+      case '2': //actually delete
+        try {
+          $query = db_delete('mcapi_transactions')
+          ->condition('xid', $transaction->xid)
+          ->execute();
+          balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
+        }
+        catch (Exception $e) {
+          throw $e;
+        }
+        module_invoke_all('entity_delete', 'transaction', $transaction);
     }
     return $transaction;
   }
 
   /*
-   * Get a list of transactions, filtered by $conditions
-   * keys in $conditions array are:
-   * * states - the transaction state constant
-   * * cid - the currency id
-   * * uid (the owner of the transaction)
-   * * id a participant in the transaction
+   * Get a list of transactions for a user, between unixtimes
    */
-  public function transaction_list($conditions = array()){
+  public function statement($uid){
+    db_set_active(variable_get('mcapi_db_read', 'default'));
     $query = db_select('mcapi_transactions', 'x');
-    if (isset($conditions['states'])){
-      $query->condition('state', $conditions['states']);
-    }
-    if (isset($conditions['cid'])) {
-      $query->condition('cid', $conditions['cid']);
-    }
-    if (isset($conditions['creator'])) {
-      $query->condition('creator', $conditions['c']);
-    }
-    if (isset($conditions['id'])) {
-      $query->condition(
-         db_or()
-         ->condition('payer_uid', $conditions['id'])
-         ->condition('payee_uid', $conditions['id'])
-       );
-    }
+    db_set_active();
+    $query->condition(db_or()
+      ->condition('payer_uid', $uid)
+      ->condition('payee_uid', $uid)
+    )->condition(db_or()
+      ->condition('state', TRANSACTION_STATE_FINISHED)
+      ->condition('state', TRANSACTION_STATE_PENDING)
+    );
     return $query->fields('x')->execute()->fetchAll();
   }
   /*
@@ -173,11 +201,21 @@ class TransactionEntityController extends DrupalDefaultEntityController {
    * every cid asked for will return list of values, even if it doesn't exist in the db.
    */
   public function get_cache($uid) {
+    db_set_active(variable_get('mcapi_db', 'default'));
     return db_select('mcapi_cache', 'c')
     ->fields('c')
     ->condition('uid', $uid)
     ->execute()
     ->fetchAllAssoc('cid', PDO::FETCH_ASSOC);
+    db_set_active();
+  }
+
+  public function count($conditions = array()) {
+    $query = db_select('mcapi_transactions');
+    foreach ($conditions as $field => $value) {
+      $query->condition($field, $value);
+    }
+    return $query->countquery()->execute()->fetchField();
   }
 
   /*
@@ -186,12 +224,13 @@ class TransactionEntityController extends DrupalDefaultEntityController {
   function insert($transaction) {
     $transaction->creator = $GLOBALS['user']->uid;
     $transaction->created = REQUEST_TIME;
+    $table = 'mcapi_transactions';
     if (empty($transaction->xid)) {
-      $success = drupal_write_record('mcapi_transactions', $transaction);
+      $success = mcapi_write_record($table, $transaction);
       field_attach_insert('transaction', $transaction);
     }
     else {
-      $success = drupal_write_record('mcapi_transactions', $transaction, 'xid');
+      $success = mcapi_write_record($table, $transaction, 'xid');
       field_attach_update('transaction', $transaction);
     }
     if (!$success) {
@@ -202,26 +241,34 @@ class TransactionEntityController extends DrupalDefaultEntityController {
   /*
    * This controller makes no use of the entity revision control facility
    */
-  function update($transaction) {
+  function update($transaction, $force_replace = FALSE) {
     $currency = currency_load($transaction->cid);
     //special case. This prevents writing a new row on validation
     //instead we validate by updating the row
-    $mode = intval(isset($transaction->validating) && $currency->update_mode == 1 ? 2 : $currency->update_mode == 1);
+    $mode = $currency->update_mode;
+    if ($force_replace && $mode == 1) $mode = 2;
     switch($mode) {
       case 0:
         throw new Exception(t('Updates not allowed'));
       case 1:
         $old = transaction_load($transaction->xid);
         $transaction->data['formerly'] = $transaction->xid;
+        $old->data = $transaction->data;
         //remove the xid and insert the transaction anew
         unset($transaction->xid);
         $this->insert($transaction); //will give a new xid
-        $old->data['became'] = $transaction->xid;
+        $old->data['became'] = $transaction->xid; debug($old);
         //then erase the old one
         $this->erase($old);
         break;
       case 2:
-        drupal_write_record('mcapi_transactions', $transaction, 'xid');
+        try {
+          mcapi_write_record('mcapi_transactions', $transaction, 'xid');
+        }
+        catch (Exception $e) {
+          $e->message .= ' '. t('Database failed to update transaction record.');
+          throw $e;
+        }
         field_attach_update('transaction', $transaction);
         break;
     }
@@ -231,17 +278,14 @@ class TransactionEntityController extends DrupalDefaultEntityController {
 /*
  * The currency entity has its own CRUD operations
  */
-class CurrencyEntityController extends DrupalDefaultEntityController {
+class CurrencyEntityController extends MCAPIEntityController {
 
   public function load($cids = array(), $conditions = array()) {
     $currencies = parent::load($cids, $conditions);
+    module_load_include('inc', 'mcapi');
     foreach($currencies as $key => $currency) {
-      $data = unserialize($currencies[$key]->data);
-      foreach ($data as $name => $value) {
-        $currencies[$key]->$name = $value;
-      }
       //does this need to be done here, for every currency on every page_load?
-      $currencies[$key]->divisions = currency_divisions_array($currency->divisions_conf);
+      $currencies[$key]->divisions = _currency_divisions_array($currency->divisions_conf);
     }
     return $currencies;
   }
@@ -252,10 +296,19 @@ class CurrencyEntityController extends DrupalDefaultEntityController {
     $currency = $this->$function($currency, TRUE);
     module_invoke_all('entity_'.$function, 'currency', $currency);
   }
+
+  public function delete($currency) {
+    //check that there are no transactions in this currency
+    if (db_query("SELECT xid FROM {mcapi_transactions} WHERE cid = :cid", array(':cid' => $currency->cid))->fetchField()) {
+      throw new Exception(t('Cannot delete currency without first deleting all transactions using that currency'));
+    }
+    db_query("DELETE FROM {mcapi_currencies} WHERE cid = :cid", array(':cid' => $currency->cid));
+    field_attach_delete('currency', $currency);
+  }
   
   function insert($currency) {
     $table = 'mcapi_currencies';
-    $success = drupal_write_record($table, $currency);
+    $success = mcapi_write_record($table, $currency);
     if (!$success) {
       throw new Exception(t('failed to write to @name table', array('@name' => $table)));
     }
@@ -263,27 +316,8 @@ class CurrencyEntityController extends DrupalDefaultEntityController {
   }
 
   function update($currency) {
-    drupal_write_record('mcapi_currencies', $currency, array('cid'));
+    mcapi_write_record('mcapi_currencies', $currency, array('cid'));
     field_attach_update('currency', $currency);
-  }
-}
-
-
-/*
- * When we need to know the currency divisions, this function converts them
- * from the multiline string of the configuration to a nice array
- */
-function currency_divisions_array($string) {
-  if (strpos($string, '|')) {
-    $lines = explode("\n", $string);
-    foreach($lines as $line) {
-      $array = explode('|', $line);
-      $allowed[$array[0]] = $array[1];
-    }
-    return $allowed;
-  }
-  elseif ($string == '00') {
-    return '00';
   }
 }
 
@@ -291,7 +325,6 @@ function currency_divisions_array($string) {
 //refreshes a cache of all the transactions,
 function balances_recalc($cid, $uids, $test = FALSE) {
   foreach($uids as $uid) {
-    //$in = db_select('mcapi_transactions', 't')->fields('c', array());
     $in = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
       array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
       ->fetchAssoc();
@@ -307,17 +340,55 @@ function balances_recalc($cid, $uids, $test = FALSE) {
     $pend_in = floatval(db_query("SELECT sum(quantity) from {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
       array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid))
       ->fetchField());
-    $query = db_merge('mcapi_cache')
-    ->key(array('cid' => $cid, 'uid' => $uid));
-    
-    $query->fields(array(
+    $row = (object)array(
+      'cid' => $cid,
+      'uid' => $uid,
       'cleared_balance' => $in['total'] - $out['total'],
       'gross_in' => $in['total'],
       'gross_out' =>$out['total'],
       'count' => intval($in['count'] + $out['count']),
       'pending_dif' => $pend_in - $pend_out,
-    ));
-    $query->execute();
+    );
+    foreach (variable_get('mcapi_db_write', array('default')) as $connection) {
+      db_set_active($connection);
+      mcapi_write_record('mcapi_cache', $row, array('cid', 'uid'));
+    }
   }
+  db_set_active();
 }
 
+
+
+/*
+ */
+function mcapi_write_record($table, &$record, $primary_keys = array()) {
+  //we need to ensure the schema is cached before calling mcapi_write_record
+  //Otherwise it may try to retrieve the schema from the wrong database
+  drupal_get_schema($table);
+  foreach (variable_get('mcapi_db_write', array('default')) as $connection) {
+    db_set_active($connection);
+    try{
+      $ts[] = db_transaction();
+      $success = drupal_write_record($table, $record, $primary_keys);
+    }
+    catch (Exception $e) {
+      foreach ($ts as $db_transaction) {
+        $db_transaction->rollback();
+      }
+      foreach ($primary_keys as $keyname) {
+        $keys[$keyname] = $record->$key;
+      }
+      $e->message = t("Failed to write to table '@table' on database '@database', using keys: @keys",
+        array(
+          '@table' => $table,
+          '@database' => $connection,
+          '@keys' => print_r('<pre>'.print_r($keys, 1).'</pre>')
+        )
+      );
+      db_set_active();
+      throw $e;
+    }
+  }
+  db_set_active();
+  return $success;
+}

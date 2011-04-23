@@ -70,7 +70,7 @@ class views_handler_field_mcapi_amount extends views_handler_field {
     elseif ($values->{$this->aliases['cid']} == NULL && $values->cleared_balance == NULL) { 
       $values->{$this->aliases['cid']} = db_result(db_query("SELECT cid FROM {mcapi_currencies}"));
     }
-    return theme('money', array('quantity' => $values->{$this->field_alias}, 'cid' => $values->{$this->aliases['cid']}));
+    return mcapi_format_money($values->{$this->field_alias}, $values->{$this->aliases['cid']});
   }
 
 }

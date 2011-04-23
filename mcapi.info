@@ -2,6 +2,7 @@
 name = Mutual Credit API
 description = Defines two entities, currency and transaction, and does basic validation and caching
 package = Mutual Credit
+configure = admin/accounting
 core = 7.x
 
 files[] = default.controller
@@ -21,6 +22,3 @@ files[] = views/views_handler_field_transaction_links.inc
 files[] = views/views_handler_filter_mcapi_currency.inc
 files[] = views/views_handler_filter_mcapi_role_current_user.inc
 files[] = views/views_handler_filter_mcapi_types.inc
-
-;theme templates not needed
-;files[] = themes/transaction.tpl.php

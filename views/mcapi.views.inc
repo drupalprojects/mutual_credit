@@ -9,6 +9,7 @@ function mcapi_views_data() {
   $data = array();
   $data['mcapi_transactions']['table']['group']  = t('transactions');
   $data['mcapi_transactions']['table']['base'] = array(
+    'database' => variable_get('mcapi_db_read', 'default'),
     'field' => 'xid',
     'title' => t('transaction'),
     'help' => t('Records of transactions between users'),
@@ -81,11 +82,11 @@ function mcapi_views_data() {
     'title' => t('transaction state'),
     'help' => t('Whether the transaction is completed (FALSE) or pending (TRUE)'),
     'field' => array(
-      'handler' => 'views_handler_field_boolean',
+      'handler' => 'views_handler_field_transaction_state',
       'click sortable' => TRUE,
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_boolean_operator',
+      'handler' => 'views_handler_filter_transaction_state',
     ),
   );
   $data['mcapi_transactions']['cid'] = array(
@@ -153,6 +154,7 @@ function mcapi_views_data() {
 
   $data['mcapi_cache']['table']['group'] = t('Balances');
   $data['mcapi_cache']['table']['base'] = array(
+    'database' => variable_get('mcapi_db_read', 'default'),
     'field' => 'uid',
     'title' => t('User Balance'),
     'help' => t('Balances of users.'),

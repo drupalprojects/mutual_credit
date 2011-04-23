@@ -188,7 +188,6 @@ function mcapimail_mail($key, &$message, $params) {
     'transaction' => $params['transaction'],
     'user' => $params['recipient']
   );
-
   $message['subject'] =  _mcapi_mail_text('mcapi_'. $key .'_mail_subject', $language, $variables);
   $message['body'][] =  _mcapi_mail_text('mcapi_'. $key .'_mail_body', $language, $variables);
 }

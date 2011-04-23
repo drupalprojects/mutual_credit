@@ -1,5 +1,4 @@
-<?php
-// $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
+<?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
 /**
  * @file
@@ -15,16 +14,15 @@
  * The theme_money function then attaches the icon or currency name
  *
  *
- * if the multiple currencies module is not installed, the default currency id ('cid') is 0
  *
  */
 
 
 //states are mutually exclusive
 define ('TRANSACTION_STATE_FINISHED', 0);
-define ('TRANSACTION_STATE_PENDING', 1);
+//define ('TRANSACTION_STATE_PENDING', 1);
 define ('TRANSACTION_STATE_ERASED', -1);
-define ('MCAPI_NOTIFICATION_DEFAULT_LEVEL', 2);
+//define ('MCAPI_NOTIFICATION_DEFAULT_LEVEL', 2);
 
 
 /**
@@ -48,8 +46,8 @@ function mcapi_help($section) {
         )));
       case 'admin/accounting/record':
         return t('This is a base form provided for administration purposes only. For end-users, there are forms provided by other modules');
-      case 'admin/accounting/options':
-        return t('Determine the rigour of your accounting standards. (May not be compatible with all engines).') .' '. 'Should this be per-currency?';
+      case 'user/%/transactions_list':
+        return t("This page isn't intended for end users. It merely demonstrates the API call 'statement'.");
   }
 }
 
@@ -91,6 +89,27 @@ function mcapi_forms() {
   return $forms;
 }
 
+/*
+ * hook for modules to declare new transactions types and states
+ */
+function mcapi_hook_info() {
+  return array(
+    'transaction_info' => array()
+  );
+}
+
+function mcapi_transaction_info($field) {
+  $info = array(
+    'states' => array(
+      TRANSACTION_STATE_FINISHED => t('Finished'),
+      TRANSACTION_STATE_ERASED => t('Erased')
+    ),
+    'types' => array(
+      'admin'
+    )
+  );
+  return $info[$field];
+}
 
 /**
  * implements hook_permission
@@ -103,7 +122,7 @@ function mcapi_permission() {
       'description' => t('Use unrestricted currencies'),
     ),
     'manage all transactions' => array(
-      'title' => t('manage all transactions'),
+      'title' => t('Manage all transactions'),
       'description' => t('Retrospectively manage transactions'),
     ),
     'configure all currencies' => array(
@@ -238,12 +257,6 @@ function currencies_access_viral($op, $currency, $uid) {
 function mcapi_theme($existing, $type, $theme, $path) {
   $path .='/theme';
   $items = array(
-    'money' => array(
-      'variables' => array(
-        'quantity' => 0,
-        'cid' => 0,
-      )
-    ),
     'transaction' => array(
       'template' => 'transaction',
       'pattern' => 'transaction__',
@@ -264,8 +277,10 @@ function mcapi_theme($existing, $type, $theme, $path) {
   return $items;
 }
 
-function theme_money($variables) {
-  extract($variables);
+/*
+ * This function might merit a 'mode' later on
+ */
+function mcapi_format_money($quantity, $cid) {
   $currency = currency_load($cid);
   //the static variable saves processing the icon every time
   $formats = &drupal_static(__FUNCTION__);
@@ -309,7 +324,7 @@ function template_preprocess_balances(&$vars) {
     $vars['currencies'][$cid] = $currencies[$cid];
     foreach ($amounts as $key => $quantity) {
       if ($key != 'count') {
-        $vars['balances'][$cid][$key] = theme('money', compact('quantity', 'cid', 'currencies'));
+        $vars['balances'][$cid][$key] = mcapi_format_money($quantity, $cid);
       }
     }
   }
@@ -378,9 +393,6 @@ function currencies_load() {
 }
 function refresh_currs(){
   $currencies = &drupal_static('currencies');
-  if ($cache = cache_get('currencies')){
-    $currencies = $cache->data;
-  }
   if (!$currencies) {
     $currencies = currency_controller('load', FALSE);
     cache_set('currencies', $currencies);
@@ -480,13 +492,24 @@ function template_preprocess_transaction(&$arguments) {
     'description' => $transaction->description,
     'payer' => theme('username', array('account' => user_load($transaction->payer_uid))),
     'payee' => theme('username', array('account' => user_load($transaction->payee_uid))),
-    'amount' => theme('money', array('cid' => $transaction->cid, 'quantity' => $transaction->quantity)),
+    'amount' => mcapi_format_money($transaction->quantity, $transaction->cid),
     'state' => $transaction->state,
     'recorded' => format_date($transaction->created, 'medium'),
     'type' => $transaction->type
   );
 }
 
+// this shouldn't be necessary, but how else to get a dynamic list of tokens?
+function mcapi_get_tokens() {
+  module_load_include('tokens.inc', 'mcapi');
+  $info = mcapi_token_info();
+  $markers = array_keys($info['tokens']['transaction']);
+  $tokens = array();
+  foreach ($markers as $token) {
+    $tokens[] = "[transaction:$token]";
+  }
+  return implode(', ', $tokens);
+}
 
 /*
  * implements hook_query_TAG_alter
@@ -532,85 +555,42 @@ function mcapi_query_transaction_access_alter(&$query) {
 }
 
 /*
- * implements hook_tokens
+ * INTERNAL API FOR MODULE DEVELOPERS
+ * entity controllers must work comply
+ *
+ * This is where we interface with the entity controller
+ * array transaction_controller('load', array(94), $conditions)
+ * object transaction_controller('validate', $transaction)
+ * object transaction_controller('save', $transaction)
+ * array transaction_controller('get_cache', $uid)
+ * array transaction_controller('statement', $uid, $from, $to)
+ * NULL transaction_controller('erase', $transaction)
+ * int transaction_controller('count', $conditions)
+ * and
+ * array currency_controller('load', array(94), $conditions)
+ * array currency_controller('save', $transaction)
+ * NULL currency_controller('delete', $transaction) //only if there are no transactions left
+ *
  */
-function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  $replacements = array();
-  if ($type != 'transaction' || empty($data['transaction'])) return $replacements;
-
-  $transaction = &$data['transaction'];
-  $url_options = array('absolute' => TRUE);
-  $sanitize = !empty($options['sanitize']);
-  $language_code = NULL;
-
-  if (isset($options['language'])) {
-    $url_options['language'] = $options['language'];
-    $language_code = $options['language']->language;
-  }
-
-  foreach ($tokens as $name => $original) {
-    switch ($name) {
-      // Simple key values on the node.
-      case 'xid':
-        $replacements[$original] = $transaction->xid;
-        break;
-      case 'payer':
-        $name = user_load($transaction->payer_uid)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
-        break;
-      case 'payee':
-        $name = user_load($transaction->payee_uid)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
-        break;
-      case 'partner':
-        $uid = $data['user']->uid == $transaction->payee_uid ? $transaction->payee_uid :$transaction->payer_uid;
-        $name = user_load($uid)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
-        break;
-      case 'amount':
-        $replacements[$original] = theme('money', array('quantity' => $transaction->quantity, 'cid' => $transaction->cid));
-        break;
-      case 'description':
-        $replacements[$original] = $transaction->description;
-        break;
-      case 'created':
-        $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
-        break;
-      case 'summary':
-        $replacements[$original] = theme('transaction', array('transaction' => $transaction, 'view_mode' => 'summary'));
-        break;
-      case 'uri':
-        $replacements[$original] = url("transaction/$transaction->xid", $url_options);
-        break;
-    }
-  }
-  return $replacements;
-}
-function mcapi_get_tokens() {
-  $markers = array('xid', 'payer', 'payee', 'partner', 'amount', 'description', 'created', 'summary', 'uri');
-  $tokens = array();
-  foreach ($markers as $token) {
-    $tokens[] = "[transaction:$token]";
-  }
-  return implode(', ', $tokens);
-}
 
 //all this business with func_get_args is a bit horrible as it means, I think, we can't pass references.
 //so all calls to these functions need to expect a return;
 function transaction_controller() {
-  return mcapi_controller('transaction', func_get_args());
-}
-function currency_controller($function) {
-  return mcapi_controller('currency', func_get_args());
-}
-function mcapi_controller($entity_type, $args) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+  $args = func_get_args();
   $function = array_shift($args);
-  //this is yukky, but call_user_function_array won't work if the function is in a class
-  $arg1 = isset($args[0]) ? $args[0] : NULL;
-  $arg2 = isset($args[1]) ? $args[1] : NULL;
+  return mcapi_controller('transaction', $function, $args);
+}
+
+function currency_controller() {
+  $args = func_get_args();
+  $function = array_shift($args);
+  return mcapi_controller('currency', $function, $args);
+}
+function mcapi_controller($entity_type, $function, $args) {
+  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+  $method = array(entity_get_controller($entity_type), $function);
   try{
-    $result = entity_get_controller($entity_type)->$function($arg1, $arg2);
+    $result = call_user_func_array($method, $args);
   }
   catch (Exception $e) {
     drupal_set_message($e, 'error');

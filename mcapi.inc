@@ -84,7 +84,7 @@ function mcapi_menu_inc() {
   $items['admin/accounting'] = array(
     'title' => 'Accounting',
     'description' => 'Manage currencies and transactions',
-    'page callback' => 'mcapi_options',
+    'page callback' => 'mcapi_accounting',
     'access arguments' => array('configure all currencies'),
     //'position' => 'right',
     'file' => 'mcapi.inc',
@@ -110,7 +110,7 @@ function mcapi_menu_inc() {
     'title' => 'Entity controller',
     'description' => "Choose which lump of code reads and writes your transaction data.",
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_choose_controller_form'),
+    'page arguments' => array('mcapi_controller_options_form'),
     'access arguments' => array('configure all currencies'),
     'file' => 'mcapi.install',
   );
@@ -172,8 +172,17 @@ function mcapi_menu_inc() {
     'type' => MENU_CALLBACK,
     'file' => 'mcapi.inc',
   );
-  //this is supposed for development purposes only
+  $items['user/%user/transactions_list'] = array(
+    'title' => 'Transactions',
+    'page callback' => 'mcapi_statement',
+    'page arguments' => array(1),
+    'access callback' => 'user_edit_access',
+    'access arguments' => array(1),
+    'file' => 'mcapi.inc',
+    'type' => MENU_LOCAL_TASK, 
+  );
 
+  //this is supposed for development purposes only, and may not apply to some controllers
   $items['admin/accounting/refresh/%currency'] = array(
     'title' => 'Modify currency',
     'page callback' => 'mcapi_balances_refresh',
@@ -188,9 +197,10 @@ function mcapi_menu_inc() {
 /*
  * page showing currencies and transaction_types
  */
-function mcapi_options() {
+function mcapi_accounting() {
   module_load_include('install', 'mcapi');
   module_load_include('admin.inc', 'system');
+  check_default_currency();
   $page  = '<h3>'. t('Currencies') .'</h3>'. show_currencies();
   $page .= system_admin_menu_block_page();
 
@@ -199,7 +209,7 @@ function mcapi_options() {
 
 function mcapi_balances_refresh($currency) {
   $uids = db_select('mcapi_cache', 'c')->fields('c',array('uid'))->condition('cid', $currency->cid)->execute()->fetchCol();
-  echo function_exists('balacnes_recalc');
+  echo function_exists('balances_recalc');
   balances_recalc($currency->cid, $uids);
   drupal_goto('admin/accounting');
 }
@@ -210,12 +220,14 @@ function mcapi_balances_refresh($currency) {
 function show_currencies() {
   $currencies = currencies_load();
   $entity = entity_get_info('transaction');
-  $header = array(t('Format'), t('Name'), t('Transactions'), t(''));
+  $header = array(t('Format'), t('Name'), t('Access callback'), t('Count'), t('Declared by'), NULL);
   $output = '';
   foreach ($currencies as $currency) {
-    $row['format'] = theme('money', array('quantity' => -99, 'cid' => $currency->cid));
+    $row['format'] = mcapi_format_money(-99, $currency->cid);
     $row['title'] = l($currency->name, 'currency/' . $currency->cid);
-    $row['usage'] = db_select('mcapi_transactions')->condition('cid', $currency->cid)->countQuery()->execute()->fetchField();
+    $row['availability'] = $currency->access_callback;
+    $row['count'] = transaction_controller('count', array('cid' => $currency->cid));
+    $row['owner'] = format_username(user_load($currency->uid));
     $actions = array();
     if (currency_access('edit', $currency)) {
       $actions[] = l('edit', 'currency/' . $currency->cid . '/edit');
@@ -227,15 +239,14 @@ function show_currencies() {
     $rows[] = $row;
   }
   if (user_access('declare currency')) {
-    $rows[]= array(NULL, NULL, NULL, l(t('Declare new currency'), 'currency/add'));
+    $rows[]= array(NULL, NULL, NULL, NULL, NULL, l(t('Declare new currency'), 'currency/add'));
   }
   $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
   return $output;
 }
 
-function currency_form($form, $form_state, $currency = NULL) {
-  
+function currency_form($form, $form_state, $currency) {
   if (isset($currency->name)) $title = t("Edit currency '@name'", array('@name' => $currency->name));
   else $title = t('Declare currency');
   drupal_set_title($title);
@@ -252,7 +263,7 @@ function currency_form($form, $form_state, $currency = NULL) {
       '#title' => t('Name of currency'),
       '#description' => t('Use the plural'),
       '#type' => 'textfield',
-      '#default_value' => isset($currency->name) ? $currency->name : 0,
+      '#default_value' => empty($form_state['values']['name']) ? strval($currency->name) : $form_state['values']['name'],
       '#element_validate' => array('mcapi_currency_validate_name'),
       '#weight' => -18
     ),
@@ -261,7 +272,7 @@ function currency_form($form, $form_state, $currency = NULL) {
       '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @icon, @quant, @subdivision ' .
          t('For example to display -$45:23 AUS, enter @minus@icon@integer:@subdivision AUS'),
       '#type' => 'textfield',
-      '#default_value' => isset($currency->format) ? $currency->format : '',
+      '#default_value' => empty($form_state['values']['format']) ? strval($currency->format) : $form_state['values']['format'],
       '#element_validate' => array('mcapi_currency_validate_format'),
       '#required' => TRUE,
       '#weight' => -10
@@ -269,9 +280,9 @@ function currency_form($form, $form_state, $currency = NULL) {
     'divisions_conf' => array(
       '#title' => t('Allowed divisions'),
       '#description' => t('Leave blank to use integers. "00" to use hundredths.') . t('To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') . '<br />' .
-        '<pre>0| exactly<br />50| half an hour</pre>',
+        '<pre>0|/.<br />25|1/4<br />50|1/2<br />75|3/4</pre>',
       '#type' => 'textarea',
-      '#default_value' => isset($currency->divisions_conf) ? $currency->divisions_conf : '',
+      '#default_value' => empty($form_state['values']['divisions_conf']) ? strval($currency->divisions_conf) : $form_state['values']['divisions_conf'],
       '#element_validate' => array('mcapi_currency_validate_divisions'),
       '#weight' => -5
     ),
@@ -281,13 +292,11 @@ function currency_form($form, $form_state, $currency = NULL) {
     '#title' => t('Declared by'),
     '#maxlength' => 60,
     '#autocomplete_path' => 'user/autocomplete',
-    '#default_value' => !empty($currency->uid) ? user_load($currency->uid)->name : $GLOBALS['user']->name,
+    '#default_value' => empty($form_state['values']['uid']) ? user_load($currency->uid)->name : user_load($form_state['values']['uid'])->name,
     '#element_validate' => array('mcapi_validate_user'),
     '#required' => TRUE,
     '#weight' => 10,
   );
-
-  field_attach_form('currency', $currency, $form, $form_state);
 
   $form['additional_settings'] = array(
     '#type' => 'vertical_tabs',
@@ -348,7 +357,7 @@ function currency_form($form, $form_state, $currency = NULL) {
     '#title' => t('Availability'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
-    '#weight' => 3,
+    '#weight' => 5,
     'access_callback' => array(
       '#title' => t('Criterion to use this currency'),
       '#description' => t('How is access to this currency determined?'),
@@ -357,14 +366,14 @@ function currency_form($form, $form_state, $currency = NULL) {
         'user_access' => t('Everyone can use'),
         'currencies_access_viral' => t('Spreads virally. Only users who have already traded in this currency can initiate transactions with it'),
       ),
-      '#default_value' => isset($currency->access_callback) ? $currency->access_callback : 'user_access',// empty means user_access('transact')
+      '#default_value' =>  empty($form_state['values']['access_callback']) ? strval($currency->access_callback) : $form_state['values']['access_callback'],// empty means user_access('transact')
     ),
   );
   $form['privacy'] = array(
     '#title' => t('Privacy'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
-    '#weight' => 4,
+    '#weight' => 3,
     'privacy' => array(
       '#title' => t('Visibility of transactions in this currency'),
       '#type' => 'radios',
@@ -375,31 +384,34 @@ function currency_form($form, $form_state, $currency = NULL) {
         3 => t("All authenticated users"),
         4 => t('Public'),
       ),
-      '#default_value' => isset($currency->privacy) ? $currency->privacy : 1,
+      '#default_value' => empty($form_state['values']['privacy']) ? intval($currency->privacy) : $form_state['values']['privacy'],
     )
   );
 
   if ($form['accounting']['update_mode']['#default_value'] > 0) {
     $form['editable'] = array(
-      '#title' => t('Edit permissions'),
+      '#title' => t('Mutability'),
       '#description' => t('Only applies if editing is permitted by accounting standards.').' (AJAX needed!)',
       '#type' => 'fieldset',
       '#group' => 'additional_settings',
-      '#weight' => 5,
-      //could use some D7 formAPI AJAX here to disable this field if update_mode is 0
+      '#weight' => 4,
       'user_editable_mode' => array(
         '#title' => t('User editable'),
         '#type' => 'radios',
         '#options' => array(
-          0 => t("Users cannot edit"),
+          0 => t("Only users with '@permission' can edit", array('@permission' => t('manage all transactions'))),
+          1 => t('Creator can edit/delete pending transactions'),
+          2 => t('Both can edit/delete pending transactions'),
+          3 => t('Both can edit/delete finished transactions'),
         ),
-        '#default_value' => isset($currency->user_editable_mode) ? $currency->user_editable_mode : 0,
+        '#default_value' => empty($form_state['values']['user_editable_mode']) ? intval($currency->user_editable_mode) : $form_state['values']['user_editable_mode'],
         '#weight' => 4
       )
     );
   }
 
 
+  field_attach_form('currency', $currency, $form, $form_state);
   $form['#entity_builders'][] = 'currency_entity_builder';
 
   $form['actions'] = array(
@@ -476,6 +488,7 @@ function currency_form_submit($form, &$form_state) {
   $currency = new stdClass;
   entity_form_submit_build_entity('currency', $currency, $form, $form_state);
   currency_controller('save', $currency);
+  //cache_clear_all('currencies');
   if (user_access('configure all currencies')) {
     drupal_goto('admin/accounting');
   }
@@ -491,7 +504,7 @@ function currency_entity_builder($entity_type, $entity, &$form, &$form_state) {
   $entity->data['update_mode'] = $entity->update_mode;
   $entity->data['access_callback'] = $entity->access_callback;
   $entity->data['privacy'] = $entity->privacy;
-  $entity->data['user_editable_mode'] = $entity->user_editable_mode;
+  $entity->data['user_editable_mode'] = empty($entity->user_editable_mode) ? 0 : $entity->user_editable_mode;
 }
 
 
@@ -603,19 +616,25 @@ function transaction_form($form, $form_state, $transaction = NULL) {
       '#value' => t('Record'),
     );
   }
-  switch (variable_get('mcapi_delete_mode', '0')) {
-    case '1':
-      $form['state']['#options'][TRANSACTION_STATE_ERASED] = t('Erased');
-        break;
-    case '2':
-      $form['actions']['delete'] = array(
-        '#type' => 'submit',
-        '#value' => t('Delete'),
-      );
-      break;
+  //sort out the delete options
+  if (!empty($transaction->cid)) {
+    $currency = currency_load($transaction->cid);
+    if (isset($currency->delete_mode)) {
+      switch ($currency->delete_mode) {
+        case '1': //we can update the currency row by simply changing the state
+          $form['state']['#options'][TRANSACTION_STATE_ERASED] = t('Erased');
+            break;
+        case '2': //if deleting is hard then provide a button
+          $form['actions']['delete'] = array(
+            '#type' => 'submit',
+            '#value' => t('Delete'),
+          );
+          break;
+      }
+    }
   }
   $form['#validate'] = array('mcapi_prevalidate_transaction', 'transaction_form_validate');
-  $form['#redirect'] = 'user';
+  $form_state['redirect'] = 'user';
   return $form;
 }
 
@@ -712,7 +731,6 @@ function transaction_admin_form_submit($form, &$form_state) {
 
   entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
   $transaction = transaction_controller('save', $form_state['#transaction'], TRUE);
-   //die();
   if (!isset($form_state['redirect'])) {
     $form_state['redirect'] = 'transaction/'.$transaction->xid;
   }
@@ -735,6 +753,27 @@ function mcapi_transaction_erase_confirm_form($form, $transaction){
   }
 }
 
+/*
+ * This is mostly here just to test the controller
+ * Usually you would use views to list a users transactions
+ * that's why there's no dedicated theme callback
+ */
+function mcapi_statement($account) {
+  $objects = transaction_controller('statement', $account->uid);
+  foreach ($objects as $object) {
+    $transaction = (array)$object;
+    $transaction['payer_uid'] = format_username(user_load($transaction['payer_uid']));
+    $transaction['payee_uid'] = format_username(user_load($transaction['payee_uid']));
+    $transaction['creator'] = format_username(user_load($transaction['creator']));
+    $transaction['modifier'] = format_username(user_load($transaction['modifier']));
+    $transaction['description'] = l($transaction['description'], 'transaction/'. $transaction['xid']);
+    unset($transaction['data']);
+    $transactions[] = $transaction;
+  }
+
+  return theme('table', array('rows' => $transactions, 'header' => array_keys($transaction)));
+}
+
 /**
  * delete a single transaction
  */
@@ -742,8 +781,6 @@ function transaction_erase($xid) {
   $transaction = transaction_controller('load', array($xid));
   return  transaction_controller('erase', $transaction);
 }
-
-
 
 /*
  * form element validation callback functions
@@ -774,7 +811,7 @@ function mcapi_validate_quantity(&$element, &$form_state) {
   $fraction = _odd_cents($value);
   if ($fraction && isset($form_state['values']['cid']) && $currency = all_currencies($form_state['values']['cid'])) {
     if (is_null($currency->divisions) && !is_integer($value)) {
-      form_error($element, t("Integer values only for '@currency'", array('@currency' => $currency->title)));
+      form_error($element, t('%name must be a positive integer.', array('%name' => $currency->title)));
     }
     elseif($currency->divisions == '00') {
       return;
@@ -816,5 +853,26 @@ function mcapi_validate_user(&$element, $form_state) {
 function mcapi_currency_validate_update_mode(&$element, $form_state) {
   if ($element['#value'] == 1 && $form_state['values']['delete_mode'] == 0) {
     form_error($element, t('Accounting standards') .' '. t('Update mode is incompatible with delete mode'));
+  }
+}
+
+
+/*
+ * When we need to know the currency divisions, this function converts them
+ * from the multiline string of the configuration to a nice array
+ * This could possibly be configured, stored and retrieved better
+ * How does the list module do it?
+ */
+function _currency_divisions_array($string) {
+  if (strpos($string, '|')) {
+    $lines = explode("\n", $string);
+    foreach($lines as $line) {
+      $array = explode('|', $line);
+      $allowed[$array[0]] = $array[1];
+    }
+    return $allowed;
+  }
+  elseif ($string == '00') {
+    return '00';
   }
 }

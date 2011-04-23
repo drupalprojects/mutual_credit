@@ -42,7 +42,6 @@ function mcapi_install() {
   if (module_exists('image')) {
     mcapi_modules_enabled(array('image'));
   }
-  mcapi_create_default_currency();
 }
 
 
@@ -81,7 +80,10 @@ function mcapi_uninstall() {
   db_query("DELETE FROM field_revision_body WHERE entity_type = 'currency'");
   //db_query("DELETE FROM file_usage WHERE type = 'currency'");
   
-  variable_del('cforge_report');
+
+  variable_del('mcapi_controller');
+  variable_del('mcapi_db_read');
+  variable_del('mcapi_db_write');
 }
 
 /**
@@ -95,9 +97,11 @@ function mcapi_enable() {
   $langcode = $language->language;
   cache_clear_all("entity_info:$langcode", 'cache');
   module_load_include('inc', 'mcapi');
-  mcapi_controller();
   //this seems to have been omitted from core...
   menu_rebuild();
+  drupal_set_message(t('A default currency will be created the first time you visit !link',
+    array('!link' => l('admin/accounting', 'admin/accounting'))
+  ), 'warning');
 }
 
 /**
@@ -154,11 +158,12 @@ function mcapi_schema() {
         'type' => 'int',
         'size' => 'normal',
       ),
+        /*
       'parent' => array(
         'description' => 'nid of parent transaction',
         'type' => 'int',
         'size' => 'normal',
-      ),
+      ),*/
       'data' => array(
         'description' => 'nonessential info not fitting into existing fields',
         'type' => 'text',
@@ -358,12 +363,10 @@ function mcapi_modules_disabled($modules) {
   }
 }
 
-function mcapi_create_default_currency() {
+function check_default_currency() {
   $count = db_select('mcapi_currencies', 'c')->fields('c')->countquery()->execute()->fetchField();
-  if ($count) {
-    drupal_set_message('Currency already exists');
-    return;
-  }
+  if ($count) return;
+  
   $currency = array(
     'name' => t('Community Coins'),
     'divisions_conf' => '00',
@@ -385,19 +388,18 @@ function mcapi_create_default_currency() {
       'access_callback' => 'user_access',
     )
   );
-  mcapi_controller();
-  entity_get_controller('currency')->save((object)$currency);
+  currency_controller('save', (object)$currency);
+  
   $new_curr = db_select('mcapi_currencies', 'c')->fields('c', array('cid', 'name'))->execute()->fetch();
   drupal_set_message(t('Your default currency is @name.', array('@name' => $new_curr->name)));
   drupal_set_message(t('N.B. The default currency does not allow negative balances: !edit', array('!edit' => l(t('edit'), 'currency/' . $new_curr->cid . '/edit'))));
-  cache_clear_all("currencies", 'cache');
 }
-
 
 /*
  *
  */
-function mcapi_choose_controller_form() {
+function mcapi_controller_options_form($form_state) {
+  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
   $controllers = file_scan_directory(drupal_get_path('module', 'mcapi'), '/.controller/');
   foreach ($controllers as $path => $file){
     $options[$file->name] = $file->filename;
@@ -408,8 +410,49 @@ function mcapi_choose_controller_form() {
     '#description' => t('Choose which .controller file, in modules/mutual_credit directory to use'),
     '#type' => 'radios',
     '#options' => $options,
-    '#default_value' => variable_get('mcapi_controller', 'default')
+    '#default_value' => variable_get('mcapi_controller', 'default'),
+    '#ajax' => array(
+      'callback' => 'mcapi_controller_options_form_ajax',
+      'wrapper' => 'mcapi-controller-options-form',
+    ),
   );
-
+  if (variable_get('mcapi_controller', 'default') == 'default') {
+    global $databases;
+    if (count($databases) == 1) return;
+    foreach($databases as $key => $data) {
+      $options[$key] = $key;
+    }
+    $form['master_slave'] = array(
+      '#title' => t('Databases'),
+      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
+        t('Write accounting information to more than one database, and read from one database, making a sort of master/slave arrangement.') .' '.
+        t("Don't forget each database connection itself can have master/slave arrangement, but we are concerned only with accounting here."),
+      '#type' => 'fieldset',
+      '#attributes' => array('id' => 'master-slave'),
+    );
+    $form['master_slave']['mcapi_db_write'] = array(
+      '#title' => t('Write accounting information to'),
+      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
+        t('Use with caution as fields added to transactions and currencies will still be saved locally'),
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => variable_get('mcapi_db_write', array('default'=>'default')),
+      '#ajax' => array(
+        'callback' => 'mcapi_controller_options_form_ajax',
+        'wrapper' => 'master-slave',
+      ),
+    );
+    $form['master_slave']['mcapi_db_read'] = array(
+      '#title' => t('Read accounting information from'),
+      '#type' => 'select',
+      '#options' => variable_get('mcapi_db_write', array('default'=>'default')),
+      '#default_value' => variable_get('mcapi_db_read', 'default'),
+      '#weight' => 1,
+    );
+  }
   return system_settings_form($form);
+}
+function mcapi_controller_options_form_ajax($form, $form_state) {
+  $form['master_slave']['mcapi_db_read']['#options'] = array_filter($form_state['values']['mcapi_db_write']);
+  return $form['master_slave'];
 }
