@@ -398,7 +398,7 @@ function template_preprocess_balances(&$vars) {
   foreach ($vars['balances'] as $cid => $amounts) {
     $vars['currencies'][$cid] = node_load($cid);
     foreach ($amounts as $key => $amount) {
-      $vars['balances'][$cid][$key] = theme('money', $amount, $cid);
+      $vars['themed_balances'][$cid][$key] = theme('money', $amount, $cid);
     }
   }
 }
