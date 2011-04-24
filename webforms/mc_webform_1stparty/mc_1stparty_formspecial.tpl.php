@@ -33,19 +33,12 @@ $translations = array(
   '!currency' => isset($cid) ? $cid : '',
   );
 
-if (isset($cid)) {
-  $message = t('I exchanged<br />!description<br />with<br />!trader<br />and now I<br />!exchange_type<br />the sum of <br />!quantity !currency', $translations);
-}
-else {
-  $message = $message = t('I exchanged<br />!description<br />with<br />!trader<br />and now I<br />!exchange_type<br />the sum of <br />!quantity !currency', $translations);
-}
+$message = t('I exchanged<br />!description<br />with<br />!trader<br />and now I<br />!exchange_type<br />the sum of <br />!quantity !currency', $translations);
+
 
 print '<p>'. $message .'</p>
 <p style="clear:left">';
 
-if (isset($rating)) {
-  print t('Please rate the the goods or services exchanged:') . $rating;
-}
 print $taxonomy;
 print $hidden;
 print $buttons;
