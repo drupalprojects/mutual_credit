@@ -7,7 +7,7 @@
  */
 function mcapi_form_exchange_inc($form, $node) {
   //set the currency if there's only one to choose from, or it is given in the node
-  if (isset($node->cid) && $node->cid) {
+  if (!empty($node->cid)) {
     if ($form['#currencies'][$node->cid]) {
       $form['cid'] = array(
         '#type' => 'hidden',

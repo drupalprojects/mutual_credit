@@ -98,8 +98,7 @@ function mcapi_node_info(){
       'title_label' => t('Currency Name'),
       'has_body' => TRUE,
       'body_label' => t('Rationale'),
-      'status' => TRUE,
-      'sticky' => FALSE,
+      'locked' => TRUE
     ),
     'exchange' => array(
       'name' => t('exchange'),
@@ -108,6 +107,7 @@ function mcapi_node_info(){
       'has_title' => TRUE,
       'title_label' => t('Description of entity traded'),
       'has_body' => FALSE,
+      'locked' => TRUE
     )
   );
 }
@@ -524,15 +524,8 @@ function mc_validate_cid(&$element, $form_state) {
 //the api module will validate any number or username or email as a user with permission to trade
 //this function permits blank values
 function mc_validate_trader(&$element, &$form_state) {
-  if ($val = $element['#value']) {
-    _mc_check_trader($val, $element);
-  }
-}
-
-function mc_validate_integer(&$element, $form_state) {
-  if (!is_numeric($element['#value']) ||
-    is_numeric($element['#value'] && !is_integer($element['#value'] + 0))) {
-    form_error($element, t('Must be an integer'));
+  if (!empty($element['#value'])) {
+    _mc_check_trader($element['#value'], $element);
   }
 }
 
@@ -633,9 +626,11 @@ function mc_validate_color($element, $form_state) {
   }
 }
 
-
-function mc_validate_state(&$element, $form_state) {
-
+function mc_validate_integer(&$element, $form_state) {
+  if (!is_numeric($element['#value']) ||
+    is_numeric($element['#value'] && !is_integer($element['#value'] + 0))) {
+    form_error($element, t('Must be an integer'));
+  }
 }
 
 //Some currency properties need to be identical if they are to rendered into the exchange form

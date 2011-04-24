@@ -25,6 +25,7 @@ function mcapi_install() {
   drupal_install_schema('mcapi');
 
   variable_set('comment_exchanges', 0);
+  variable_set('node_options_exchange', array());
 
   //add a permission so that trading can begin
   if (!user_roles(FALSE, 'exchange')) {
