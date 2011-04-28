@@ -262,7 +262,7 @@ function mc_convert_division_array($value) {
 
 function mcapi_node_presave_currency(&$node) {
   $node->data['color'] = $node->color;
-  if (isset($node->divisions) && is_string($node->divisions)) {
+  if (!empty($node->divisions) && is_string($node->divisions)) {
     $node->data['divisions'] = array();
     $lines = array_filter(explode("\n", $node->divisions));
     if (count($lines)) {
