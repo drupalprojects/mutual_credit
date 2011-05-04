@@ -20,9 +20,9 @@
 
 //states are mutually exclusive
 define ('TRANSACTION_STATE_FINISHED', 0);
-//define ('TRANSACTION_STATE_PENDING', 1);
+define ('TRANSACTION_STATE_PENDING', 1);
 define ('TRANSACTION_STATE_ERASED', -1);
-//define ('MCAPI_NOTIFICATION_DEFAULT_LEVEL', 2);
+define ('TRANSACTION_STATE_VALIDATING', -2);
 
 
 /**
@@ -82,10 +82,18 @@ function mcapi_menu_alter(&$items) {
   $items['admin/accounting/transaction/edit/fields']['title'] = 'Transaction fields';
 }
 
-
-function mcapi_forms() {
-  $forms['transaction_admin_form']['callback'] = 'transaction_form';
-  $forms['transaction_admin__update_form']['callback'] = 'transaction_form';
+/*
+ * implements hook_forms
+ */
+function mcapi_forms($form_id, $args) {
+  if (empty($args[0]->xid)) {
+    $args[0] = new transaction;
+  }
+ 
+  $forms['transaction_admin_form'] = array(
+    'callback' => 'transaction_form',
+    'callback arguments' => $args
+  );
   return $forms;
 }
 
@@ -101,14 +109,21 @@ function mcapi_hook_info() {
 function mcapi_transaction_info($field) {
   $info = array(
     'states' => array(
+      'unset' => t('Unset'),//this should never reach the database
       TRANSACTION_STATE_FINISHED => t('Finished'),
-      TRANSACTION_STATE_ERASED => t('Erased')
+      TRANSACTION_STATE_ERASED => t('Erased'),
+      TRANSACTION_STATE_VALIDATING => t('Validating')
     ),
     'types' => array(
-      'admin'
+      'unspecified'
+    ),
+    //this is experimental
+    'controllers' => array(
+      'default'
     )
   );
   return $info[$field];
+
 }
 
 /**
@@ -141,7 +156,7 @@ function mcapi_permission() {
  * $ops can be array('view', 'update', 'erase')
  * User 1 cannot update or delete if the currency type doesn't allow
  */
-function transaction_access($op, $transaction, $account = NULL) {
+function transaction_access($op, $transaction, $account = NULL) {if (!$transaction)ddebug_backtrace();
   $currencies = currencies_load();
   if (empty($account)) {
     $account = $GLOBALS['user'];
@@ -151,34 +166,34 @@ function transaction_access($op, $transaction, $account = NULL) {
   $pending = $transaction->state == TRANSACTION_STATE_PENDING;
   $owner = $transaction->creator == $account->uid;
 
-  $accountant = user_access('manage all transactions') && $currency->privacy;
+  $accountant = user_access('manage all transactions') && $currency->extra['privacy'];
   switch ($op) {
     case 'view'://users can always view their own pages
-      switch ($currency->privacy) {
+      switch ($currency->extra['privacy']) {
         case 0: return $participated;
         case 1: return $participated || $accountant;
-        case 2: $callback = $currency->access_callback;
+        case 2: $callback = $currency->extra['access_callback'];
           return $callback('view', $currency, $GLOBALS['user']->uid);
         case 2: return $GLOBALS['user']->uid;
         case 3: return TRUE;
     }
     case 'update':
-      if ($currency->update_mode < 1 || $transaction->state == TRANSACTION_STATE_ERASED) return;
-      switch ($currency->user_editable_mode) {
+      if ($currency->extra['update_mode'] < 1 || $transaction->state == TRANSACTION_STATE_ERASED) return;
+      switch ($currency->extra['user_editable_mode']) {
         case 0: return $accountant;
         case 1: return $accountant || ($pending && $owner);
         case 2: return $accountant || ($pending && $participated);
         case 3: return $accountant || $participated;
       }
     case 'erase':
-      if ($currency->delete_mode < 1 || $transaction->state == TRANSACTION_STATE_ERASED) return;
-      switch($currency->user_editable_mode) {
+      if ($currency->extra['delete_mode'] < 1 || $transaction->state == TRANSACTION_STATE_ERASED) return;
+      switch($currency->extra['user_editable_mode']) {
         case 0: return $accountant;
         case 1: return $accountant || ($pending && $owner);
         case 2: return $accountant || ($pending && $participated);
         case 3: return $accountant || $participated;
       }
-    default: debug('Unknown $op in transactions_access');
+    default: debug('Unknown $op in transaction_access:'. $op);
   }
 }
 
@@ -196,7 +211,7 @@ function currency_access($op, $currency, $uid = NULL) {
     case 'edit':
       return $uid == $currency->uid || user_access('configure all currencies');
     case 'view'://which is to say, view transactions in
-      switch($currency->privacy) {
+      switch($currency->extra['privacy']) {
         case 0: return TRUE;
         case 1: return currency_access('use', $currency, $uid);
         case 2: return NULL; //can't be calculated here
@@ -207,7 +222,7 @@ function currency_access($op, $currency, $uid = NULL) {
       //or does it denote that user has used?
     case 'use':
     case 'initiate':
-      $function = $currency->access_callback;
+      $function = $currency->extra['access_callback'];
       return $function == 'user_access' ? user_access('transact', user_load($uid)) : $function($op, $currency, $uid);
   }
 }
@@ -279,9 +294,11 @@ function mcapi_theme($existing, $type, $theme, $path) {
 
 /*
  * This function might merit a 'mode' later on
+ * $quantity should be a float, integer, array or string - it matters which
  */
 function mcapi_format_money($quantity, $cid) {
   $currency = currency_load($cid);
+  $subdivision = NULL;
   //the static variable saves processing the icon every time
   $formats = &drupal_static(__FUNCTION__);
   if (!isset($formats[$cid])) {
@@ -295,18 +312,24 @@ function mcapi_format_money($quantity, $cid) {
     }
     $formats[$cid] = str_replace('@icon', isset($props) ? theme('image', $props) : '', $currency->format);
   }
-  
-  $integer = abs(intval($quantity));
-  if ($currency->divisions) {
-    $fraction = 100 * round(abs($quantity) - abs($integer), 2);
-    if (is_array($currency->divisions)) {
-      $subdivision = $currency->divisions[$fraction];
+  switch (gettype($quantity)) {
+    case 'array': 
+      $integer = array_shift($quantity);
+      $subdivision = array_shift($quantity);
+      break;
+    case 'string':
+      $integer = $quantity;
+      break;
+    default:
+      $integer = abs(intval($quantity));
+      if ($currency->divisions) {
+        $fraction = fmod($quantity, 1) * 100;
+        if (is_array($currency->divisions)) {
+          $subdivision = $currency->divisions[$fraction];
+        }
+        else $subdivision = $fraction;
+      }
     }
-    else $subdivision = $fraction;
-  }
-  else {
-    $subdivision = '00';
-  }
   return strtr(
     $formats[$cid],
     array(
@@ -398,18 +421,6 @@ function refresh_currs(){
     cache_set('currencies', $currencies);
   }
   return $currencies;
-}
-
-/*
- * Implementation of hook_transaction_type_info
- * Transaction types are NOT entity bundles
- */
-function mcapi_transaction_type_info() {
-  return array(
-    'admin' => array(
-      'title' => 'admin',
-    )
-  );
 }
 
 
@@ -524,7 +535,7 @@ function mcapi_query_transaction_access_alter(&$query) {
   $currencies = currency_choose('view', $uid);
   $eachcurrency = db_or();
   foreach ($currencies as $currency) {
-    switch ($currency->privacy) {
+    switch ($currency->extra['privacy']) {
       case 1: //show only transactions in currencies that authenticated user can see
         if (!$GLOBALS['user']->uid) continue;
         //if you are logged in, then its the same as if there were no restrictions
@@ -552,6 +563,83 @@ function mcapi_query_transaction_access_alter(&$query) {
     }
   }
   $query->condition($eachcurrency);
+}
+
+/*
+ * Callback to help build transaction entity from $form_state
+ */
+function transaction_entity_builder($entity_type, $entity, $form, &$form_state) {
+  $entity->description = isset($form_state['values']['description']) ?  $form_state['values']['description'] : t('no description given');
+  $entity->state = isset($form_state['values']['state']) ?  $form_state['values']['state'] : TRANSACTION_STATE_FINISHED; //shouldn't really be omitted
+  $entity->creator = isset($form_state['values']['creator']) ?  $form_state['values']['creator'] : $GLOBALS['user']->uid;
+  $entity->created = REQUEST_TIME;
+}
+
+
+/*
+ * form submit callback from the base transaction form, hence used by all forms
+ * hence must be in .module file
+ * this is what actually saves the data
+ * $form_state['#transaction'] was created in the validation stage
+ */
+function transaction_all_submit($form, &$form_state) {
+  //if (!empty($form_state['rebuild'])) return;
+  $transaction = transaction_controller('save', $form_state['#transaction'], TRUE);
+  if ($transaction) {
+    field_attach_submit('transaction', $transaction, $form, $form_state);
+  }
+}
+
+/*
+ * this creates a nice default object, nicer than 'new stdClass'
+ * but should I go ahead put a load of methods in here?
+ * and how should this object be extended with other variables?
+ * is there some kind of hook
+ */
+class currency {
+  //these fields correspond to the datbase fields, but what to do with the fields which live serialized in $data?
+  //and why use this to create objects when the entitycontroller fetches existing objects from the database result?
+  //should this be in the entity controller?
+  //could do with some advice
+  public $cid;
+  public $name;
+  public $format;
+  public $divisions_conf;
+  public $extra = array();
+  public $uid;
+
+  //this runs every time a 'new currency' is created
+  //but what about when the currency is loaded from the db
+  public function __construct(){
+    $this->uid = $GLOBALS['user']->uid;
+  }
+}
+class transaction {
+  //these fields correspond to the datbase fields, but what to do with the fields which live serialized in $data?
+  //and why use this to create objects when the entitycontroller fetches existing objects from the database result?
+  //should this be in the entity controller?
+  //could do with some advice
+  public $xid;
+  public $description;
+  public $payer_uid;
+  public $payee_uid;
+  public $cid;
+  public $quantity;
+  public $type;
+  public $state;
+  public $extra = array();
+  public $creator;
+  public $created;
+  public $modifer;
+  public $modified;
+
+  //this runs every time a 'new currency' is created
+  //but what about when the currency is loaded from the db
+  public function __construct(){
+    $this->creator = $GLOBALS['user']->uid;
+    $this->state = 'unset';//this isn't one of the declared states and should cause an error if saved
+    $this->type = 'unspecified';
+  }
 }
 
 /*
@@ -594,7 +682,19 @@ function mcapi_controller($entity_type, $function, $args) {
   }
   catch (Exception $e) {
     drupal_set_message($e, 'error');
+    drupal_set_message('That was a caught exception');
     return;
   }
   return $result;
+}
+
+//module_invoke_all uses array_merge and loses the keys.
+//so this function retrives the states using module_implements instead
+function mcapi_transaction_states(){
+  $states = array();
+  foreach (module_implements('transaction_info') as $module) {
+    $function = $module .'_transaction_info';
+    $states += $function('states');
+  }
+  return $states;
 }

@@ -43,11 +43,13 @@ class views_handler_field_transaction_links extends views_handler_field {
         );
       }
     }
-    if (transaction_access('update', $transaction)) {
-      $links[] = array(
-        'title' => t('Edit'), 
-        'href' => 'transaction/'.$values->xid.'/edit'
-      );
+    if (module_exists('mcapi_webforms')) {
+      if (transaction_access('update', $transaction)) {
+        $links[] = array(
+          'title' => t('Edit'),
+          'href' => 'transaction/'.$values->xid.'/formedit'
+        );
+      }
     }
     if (transaction_access('erase', $transaction)) {
       $links[] = array(

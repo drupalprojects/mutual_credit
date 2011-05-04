@@ -4,7 +4,6 @@
  * This file is included using the function mcapi_controller();
  */
 
-define ('TRANSACTION_STATE_VALIDATING', -2);
 
 /*
  * The transaction entity has its own CRUD operations
@@ -43,7 +42,13 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
         $query->condition('base.' . $field, $value);
       }
       $queried_entities = $query->execute()->fetchAllAssoc($this->idKey);
+      //extract the serialized data into 'extra' property
+      foreach ($queried_entities as $key => $entity) {
+        $queried_entities[$key]->extra = unserialize($queried_entities[$key]->data);
+        unset($queried_entities[$key]->data);
+      }
     }
+
     if (!empty($queried_entities)) {
       $this->attachLoad($queried_entities);
       $entities += $queried_entities;
@@ -55,9 +60,6 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
     }
     if (!count($entities)) {
       throw new Exception(t('Invalid entity ID: @ids', array('@ids' => implode(', ', $ids))));
-    }
-    foreach ($entities as $key => $entity) {
-      $entities[$key] = drupal_unpack($entity);
     }
     return $entities;
   }
@@ -86,7 +88,7 @@ class TransactionEntityController extends MCAPIEntityController {
     catch (Exception $e){
       //if the validation fails, we add the error message to the transaction object
       //THIS IS NOT TESTED BECAUSE VALIDATION SHOULDN'T FAIL AT THIS LATE STAGE
-      $transaction->data['error'] = $e->getMessage();
+      $transaction->extra['error'] = $e->getMessage();
       throw $e;
     }
     if (empty($transaction->is_new)) {
@@ -103,7 +105,7 @@ class TransactionEntityController extends MCAPIEntityController {
    * what the user thinks of as inserting and updating isn't actually what the controller is doing.
    * because the transaction was actually 'inserted' during the validation phase
    * So we use the 'is_new' property and run insert a second time
-   * The transaction is only really processed if the state isn't TRANSACTION_STATE_VALIDATING
+   * The transaction is only really processed if the validating property is NOT set
    */
   public function save($transaction) {
     //this is only used to fix what I think is a Drupal bug, see mcapi_field_attach_presave
@@ -119,8 +121,7 @@ class TransactionEntityController extends MCAPIEntityController {
 
     $transaction->modified = REQUEST_TIME;
     $transaction->modifier = $GLOBALS['user']->uid;
-    //clear any Exception traces which from validation, which should no longer apply
-    unset ($transaction->data['error']);
+    $transaction->data = $transaction->extra;
     $t = db_transaction();
     //the transaction is actually written during the validation phase, but we still want to run
     $function = empty($transaction->is_new) ? 'update' : 'insert';
@@ -145,7 +146,7 @@ class TransactionEntityController extends MCAPIEntityController {
    */
   public function erase($transaction) {
     $currency = currency_load($transaction->cid);
-    switch ($currency->delete_mode) {
+    switch ($currency->extra['delete_mode']) {
       case '0':
         throw new Exception(t('Deletions not allowed'));
         break;
@@ -155,7 +156,7 @@ class TransactionEntityController extends MCAPIEntityController {
         $transaction->modified = REQUEST_TIME;
         $transaction->modifier = $GLOBALS['user']->uid;
         try{
-          mcapi_write_record('mcapi_transactions', $transaction, 'xid');
+          mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
           balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
         }
         catch (Exception $e) {
@@ -230,7 +231,7 @@ class TransactionEntityController extends MCAPIEntityController {
       field_attach_insert('transaction', $transaction);
     }
     else {
-      $success = mcapi_write_record($table, $transaction, 'xid');
+      $success = mcapi_write_record($table, $transaction, array('xid'));
       field_attach_update('transaction', $transaction);
     }
     if (!$success) {
@@ -245,28 +246,29 @@ class TransactionEntityController extends MCAPIEntityController {
     $currency = currency_load($transaction->cid);
     //special case. This prevents writing a new row on validation
     //instead we validate by updating the row
-    $mode = $currency->update_mode;
+    $mode = $currency->extra['update_mode'];
     if ($force_replace && $mode == 1) $mode = 2;
     switch($mode) {
       case 0:
         throw new Exception(t('Updates not allowed'));
       case 1:
         $old = transaction_load($transaction->xid);
-        $transaction->data['formerly'] = $transaction->xid;
-        $old->data = $transaction->data;
+        $transaction->extra['formerly'] = $transaction->xid;
+        $old->extra = $transaction->extra;
         //remove the xid and insert the transaction anew
         unset($transaction->xid);
         $this->insert($transaction); //will give a new xid
-        $old->data['became'] = $transaction->xid; debug($old);
+        $old->extra['became'] = $transaction->xid; debug($old);
         //then erase the old one
         $this->erase($old);
         break;
       case 2:
         try {
-          mcapi_write_record('mcapi_transactions', $transaction, 'xid');
+          mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
         }
         catch (Exception $e) {
-          $e->message .= ' '. t('Database failed to update transaction record.');
+          //getting an error: Cannot access protected property Exception::$message
+          //$e->message .= ' '. t('Database failed to update transaction record.');
           throw $e;
         }
         field_attach_update('transaction', $transaction);
@@ -375,18 +377,18 @@ function mcapi_write_record($table, &$record, $primary_keys = array()) {
       foreach ($ts as $db_transaction) {
         $db_transaction->rollback();
       }
+      db_set_active();
       foreach ($primary_keys as $keyname) {
-        $keys[$keyname] = $record->$key;
+        $keys[$keyname] = $record->$keyname;
       }
-      $e->message = t("Failed to write to table '@table' on database '@database', using keys: @keys",
+      $newmessage = t("Failed to write to table '@table' on database '@database', using keys: @keys",
         array(
           '@table' => $table,
           '@database' => $connection,
-          '@keys' => print_r('<pre>'.print_r($keys, 1).'</pre>')
+          '@keys' => '<pre>'.print_r($keys, 1).'</pre>'
         )
       );
-      db_set_active();
-      throw $e;
+      throw new Exception ($newmessage);
     }
   }
   db_set_active();

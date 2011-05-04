@@ -1,0 +1,14 @@
+; $Id: 
+name = Mutual Credit transaction forms
+description = Highly configurable webforms generator for recording transactions
+package = Mutual Credit
+core = 7.x
+configure = admin/accounting/webforms
+
+files[] = mcapi_webforms.install
+files[] = mcapi_webforms.module
+files[] = mcapi_webforms.inc
+files[] = mcapi_webforms.mcapi.inc
+files[] = plugins/export_ui/export_ui.inc
+
+dependencies[] = mcapi

@@ -134,11 +134,11 @@ function mcapi_menu_inc() {
     'file' => 'mcapi.inc',
   );
   $items['transaction/%transaction/edit'] = array(
-    'title' => 'Edit',
+    'title' => 'Admin edit',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_admin_form', 1),
-    'access callback' => 'transaction_access',
-    'access arguments' => array('update', 1),
+    'access callback' => 'user_access',
+    'access arguments' => array('manage all transactions'),
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
     'file' => 'mcapi.inc',
@@ -225,7 +225,7 @@ function show_currencies() {
   foreach ($currencies as $currency) {
     $row['format'] = mcapi_format_money(-99, $currency->cid);
     $row['title'] = l($currency->name, 'currency/' . $currency->cid);
-    $row['availability'] = $currency->access_callback;
+    $row['availability'] = $currency->extra['access_callback'];
     $row['count'] = transaction_controller('count', array('cid' => $currency->cid));
     $row['owner'] = format_username(user_load($currency->uid));
     $actions = array();
@@ -246,18 +246,25 @@ function show_currencies() {
   return $output;
 }
 
-function currency_form($form, $form_state, $currency) {
-  if (isset($currency->name)) $title = t("Edit currency '@name'", array('@name' => $currency->name));
-  else $title = t('Declare currency');
-  drupal_set_title($title);
+/*
+ * build the currency edit form
+ * I'm not sure yet, how arguments are supposed to be passed in a situation like this
+ * and wouldn't it be nice if we could do 'new currency' and not have to check whether each object property isset
+ */
+function currency_form($form, $form_state, $currency = NULL) {
+  if (!$currency) {
+    $currency = new currency;
+    $currency->extra['update_mode'] = 0;
+    $currency->extra['delete_mode'] = 0;
+    $currency->extra['access_callback'] = 'user_access';
+    $currency->extra['privacy'] = 1;
+  }
+  drupal_set_title( !empty($currency->name) ? $title = t("Edit currency '@name'", array('@name' => $currency->name)) : t('Declare currency') );
 
   $form = array(
     'cid' => array(
-      '#title' => t('Currency ID'),
-      '#type' => 'textfield',
-      '#size' => isset($currency->cid) ? strlen($currency->cid) : 1,
-      '#default_value' => isset($currency->cid) ? $currency->cid : '',
-      '#weight' => -21
+      '#type' => 'hidden',
+      '#value' => isset($currency->cid) ? $currency->cid : '',
     ),
     'name' => array(
       '#title' => t('Name of currency'),
@@ -269,7 +276,7 @@ function currency_form($form, $form_state, $currency) {
     ),
     'format' => array(
       '#title' => t('Display format'),
-      '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @icon, @quant, @subdivision ' .
+      '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @minus, @icon, @integer, @subdivision ' .
          t('For example to display -$45:23 AUS, enter @minus@icon@integer:@subdivision AUS'),
       '#type' => 'textfield',
       '#default_value' => empty($form_state['values']['format']) ? strval($currency->format) : $form_state['values']['format'],
@@ -319,7 +326,7 @@ function currency_form($form, $form_state, $currency) {
         2 => t("Update same record"),
         //3 => t("Use entity versioning the same transaction (not available)"),
       ),
-      '#default_value' => empty($form_state['values']['update_mode']) ? $currency->update_mode : $form_state['values']['update_mode'],
+      '#default_value' => empty($form_state['values']['update_mode']) ? $currency->extra['update_mode'] : $form_state['values']['update_mode'],
       '#weight' => 1,
       '#element_validate' => array('mcapi_currency_validate_update_mode'),
       '#ajax' => array(
@@ -335,7 +342,7 @@ function currency_form($form, $form_state, $currency) {
         1 => t('Mark deleted'),
         2 => t('Remove all traces from the database (not from backups)'),
       ),
-      '#default_value' => empty($form_state['values']['delete_mode']) ? $currency->delete_mode : $form_state['values']['delete_mode'],
+      '#default_value' => empty($form_state['values']['delete_mode']) ? $currency->extra['delete_mode'] : $form_state['values']['delete_mode'],
       '#weight' => 2,
       '#ajax' => array(
         'callback' => 'currency_form_ajax',
@@ -366,7 +373,7 @@ function currency_form($form, $form_state, $currency) {
         'user_access' => t('Everyone can use'),
         'currencies_access_viral' => t('Spreads virally. Only users who have already traded in this currency can initiate transactions with it'),
       ),
-      '#default_value' =>  empty($form_state['values']['access_callback']) ? strval($currency->access_callback) : $form_state['values']['access_callback'],// empty means user_access('transact')
+      '#default_value' =>  empty($form_state['values']['access_callback']) ? strval($currency->extra['access_callback']) : $form_state['values']['access_callback'],// empty means user_access('transact')
     ),
   );
   $form['privacy'] = array(
@@ -384,11 +391,12 @@ function currency_form($form, $form_state, $currency) {
         3 => t("All authenticated users"),
         4 => t('Public'),
       ),
-      '#default_value' => empty($form_state['values']['privacy']) ? intval($currency->privacy) : $form_state['values']['privacy'],
+      '#default_value' => empty($form_state['values']['privacy']) ? intval($currency->extra['privacy']) : $form_state['values']['privacy'],
     )
   );
+  $update_mode = !empty($form_state['values']['update_mode']) ? TRUE : $form['accounting']['update_mode']['#default_value'];
 
-  if ($form['accounting']['update_mode']['#default_value'] > 0) {
+  if (!empty($update_mode)){
     $form['editable'] = array(
       '#title' => t('Mutability'),
       '#description' => t('Only applies if editing is permitted by accounting standards.').' (AJAX needed!)',
@@ -404,7 +412,7 @@ function currency_form($form, $form_state, $currency) {
           2 => t('Both can edit/delete pending transactions'),
           3 => t('Both can edit/delete finished transactions'),
         ),
-        '#default_value' => empty($form_state['values']['user_editable_mode']) ? intval($currency->user_editable_mode) : $form_state['values']['user_editable_mode'],
+        '#default_value' => empty($form_state['values']['user_editable_mode']) ? intval($currency->extra['user_editable_mode']) : $form_state['values']['user_editable_mode'],
         '#weight' => 4
       )
     );
@@ -414,18 +422,18 @@ function currency_form($form, $form_state, $currency) {
   field_attach_form('currency', $currency, $form, $form_state);
   $form['#entity_builders'][] = 'currency_entity_builder';
 
-  $form['actions'] = array(
+  $form['buttons'] = array(
     '#weight' => 20,
   );
 
   if (isset($currency->cid)) {
-    $form['actions']['submit'] = array(
+    $form['buttons']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
     );
   }
   else {
-    $form['actions']['submit'] = array(
+    $form['buttons']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Record'),
     );
@@ -485,7 +493,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 }
 
 function currency_form_submit($form, &$form_state) {
-  $currency = new stdClass;
+  $currency = new currency;
   entity_form_submit_build_entity('currency', $currency, $form, $form_state);
   currency_controller('save', $currency);
   //cache_clear_all('currencies');
@@ -500,84 +508,84 @@ function currency_form_submit($form, &$form_state) {
  * callback which builds the entity from the form submission
  */
 function currency_entity_builder($entity_type, $entity, &$form, &$form_state) {
-  $entity->data['delete_mode'] = $entity->delete_mode;
-  $entity->data['update_mode'] = $entity->update_mode;
-  $entity->data['access_callback'] = $entity->access_callback;
-  $entity->data['privacy'] = $entity->privacy;
-  $entity->data['user_editable_mode'] = empty($entity->user_editable_mode) ? 0 : $entity->user_editable_mode;
+  $entity->extra['delete_mode'] = $entity->delete_mode;
+  $entity->extra['update_mode'] = $entity->update_mode;
+  $entity->extra['access_callback'] = $entity->access_callback;
+  $entity->extra['privacy'] = $entity->privacy;
+  $entity->extra['user_editable_mode'] = empty($entity->extra['user_editable_mode']) ? 0 : $entity->extra['user_editable_mode'];
 }
 
 
 /**
+ * implements hook_form_FORMID_alter
  * since all transaction forms are based on the same generic 'transaction_form'
- * we use hook_form_FORM_ID_alter to modify different forms.
- * This module provides only one form, intended for admin to use.
+ * we use hook_form_FORM_ID_alter to modify specific forms.
+ * This function modifies the one form provided by this module, putting in a currency selector
  */
 function mcapi_form_transaction_admin_form_alter(&$form, $form_state) {
   $available_currencies = currency_select(currency_choose('initiate', $GLOBALS['user']->uid));
   if (count($available_currencies) > 1) {
-    $available_currencies = array(t('Choose currency...')) + $available_currencies;
+    drupal_set_title(t('Admin editing transaction #@xid', array('@xid' => $form['xid']['#default_value'])));
+    $form['cid']['#type'] = 'select';
+    $form['cid']['#options'] = array(t('Choose currency...')) + $available_currencies;
   }
-  $form['cid'] = array(
-    '#title' => t('Currency'),
-    '#description' => t('The ID of the currency'),
-    '#type' => 'select',
-    '#options' => $available_currencies,
-    '#weight' => 0,
-    '#required' => TRUE,
-    '#element_validate' => array('mcapi_validate_cid'),
-    '#default_value' => $form['cid']['#default_value']
-  );
 }
 
 /**
  * All transaction forms should use this function as a basis using hook_forms
  * the cid widget if needed is provided by hook_form_FORM_ID_alter
  */
-function transaction_form($form, $form_state, $transaction = NULL) {
-  $xid = isset($transaction->xid) ? $transaction->xid : NULL;
+function transaction_form($form, $form_state, $transaction) {
   //the currency chooser if needed is done by form_alter
-  $form['cid'] = array(
-    '#type' => 'hidden',
-    '#default_value' => isset($transaction->cid) ? $transaction->cid : '',
+  $form['xid'] = array(
+    '#type'=> 'hidden',
+    '#value' => intval($transaction->xid)
   );
+  $form['cid'] = array(
+    '#title' => t('Currency'),
+    '#description' => t('The ID of the currency'),
+    '#type' => 'textfield',
+    '#default_value' => $transaction->cid,
+    '#weight' => 0,
+    '#element_validate' => array('mcapi_validate_cid'),
+  );
+
   $form['description'] = array(
     '#type' => 'textfield',
     '#title' => t('Reason for transaction'),
-    '#default_value' => isset($transaction->description) ? $transaction->description : '',
+    '#default_value' => $transaction->description,
     '#element_validate' => array('mcapi_validate_title'),
     '#weight' => 3,
+    '#attributes' => array('style' => 'width:100%;')
   );
 
   $form['payer_uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Account to be debited'),
-    '#default_value' => isset($transaction->payer_uid) ? $transaction->payer_uid : '',
+    '#default_value' => $transaction->payer_uid,
+    '#element_validate' => array('mcapi_validate_user'),
     '#weight' => 6,
-    '#size' => 7
   );
   $form['payee_uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Account to be credited'),
     '#description' => t('A username, email, or user ID'),
-    '#default_value' => isset($transaction->payee_uid) ? $transaction->payee_uid : '',
+    '#default_value' => $transaction->payee_uid,
+    '#element_validate' => array('mcapi_validate_user'),
     '#weight' => 9,
-    '#size' => 7
   );
   $form['quantity'] = array(
     '#type' => 'textfield',
     '#title' => t('Quantity'),
     '#element_validate' => array('mcapi_validate_quantity'),
-    '#default_value' => isset($transaction->quantity) ? $transaction->quantity : '',
+    '#default_value' => $transaction->quantity,
     '#weight' => 12,
-    '#size' => 7,
   );
-  $types = module_invoke_all('transaction_type_info');
   $form['type'] = array(
     '#title' => t('Transaction type'),
-    '#options' => mcapi_title_selector($types, 'title', t('Please choose...')),
+    '#options' => drupal_map_assoc(module_invoke_all('transaction_info', 'types')),
     '#type' => 'select',
-    '#default_value' => isset($transaction->type) ? intval($transaction->type) : 'unspecified',
+    '#default_value' => $transaction->type,
     '#element_validate' => array('mcapi_validate_ttype'),
     '#required' => TRUE,
     '#weight' => 15
@@ -586,7 +594,7 @@ function transaction_form($form, $form_state, $transaction = NULL) {
     '#type' => 'radios',
     '#title' => t('State'),
     '#description' => t('Finished transactions cannot have empty values.'),
-    '#default_value' => isset($transaction->state) ? intval($transaction->state) : '0', //defaults to 0, or TRANSACTION_STATE_FINISHED
+    '#default_value' => $transaction->state,
     '#options' => array(
       TRANSACTION_STATE_FINISHED => t('Finished'),
       TRANSACTION_STATE_PENDING => t('Pending'),
@@ -595,23 +603,17 @@ function transaction_form($form, $form_state, $transaction = NULL) {
     '#weight' => 18
   );
   field_attach_form('transaction', $transaction, $form, $form_state);
-  $form['actions']['#weight'] = 25;
+  $form['buttons']['#weight'] = 25;
+
+  $xid = $transaction->xid;
   if ($xid) {
-    $form['xid'] = array(
-      '#title' => t('Transaction ID'),
-      '#type' => 'textfield',
-      '#default_value' => $xid,
-      '#disabled' => TRUE,
-      '#weight' => -1,
-      '#attributes' => array('size' => $xid ? strlen($xid) : 1 ),
-    );
-    $form['actions']['submit'] = array(
+    $form['buttons']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
     );
   }
   else {
-    $form['actions']['submit'] = array(
+    $form['buttons']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Record'),
     );
@@ -619,13 +621,14 @@ function transaction_form($form, $form_state, $transaction = NULL) {
   //sort out the delete options
   if (!empty($transaction->cid)) {
     $currency = currency_load($transaction->cid);
-    if (isset($currency->delete_mode)) {
-      switch ($currency->delete_mode) {
+    if (isset($currency->extra['delete_mode'])) {
+      switch ($currency->extra['delete_mode']) {
         case '1': //we can update the currency row by simply changing the state
           $form['state']['#options'][TRANSACTION_STATE_ERASED] = t('Erased');
             break;
-        case '2': //if deleting is hard then provide a button
-          $form['actions']['delete'] = array(
+        case '2': //if hard deleting is allowed then provide a button
+          if ($transaction->state == TRANSACTION_STATE_VALIDATING) continue;
+          $form['buttons']['delete'] = array(
             '#type' => 'submit',
             '#value' => t('Delete'),
           );
@@ -633,48 +636,30 @@ function transaction_form($form, $form_state, $transaction = NULL) {
       }
     }
   }
-  $form['#validate'] = array('mcapi_prevalidate_transaction', 'transaction_form_validate');
+  $form['#entity_builders'][] = 'transaction_entity_builder';
+  $form['#validate'] = array('transaction_form_validate');
+  $form['#submit'] = array('transaction_all_submit');
   $form_state['redirect'] = 'user';
   return $form;
 }
 
 /*
- * 
- * Prepares a transaction object in the $form_state
- */
-function mcapi_prevalidate_transaction($form, &$form_state) {
-  global $user;
-  $form_state['#transaction'] = (object)array(
-    'payer_uid' => $form_state['values']['payer_uid'],
-    'payee_uid' => $form_state['values']['payee_uid'],
-    'quantity' => $form_state['values']['quantity'],
-    'cid' => $form_state['values']['cid'],
-    'description' =>  isset($form_state['values']['description']) ?  $form_state['values']['description'] : t('no description given'), //shouldn't really be omitted
-    'state' => isset($form_state['values']['state']) ?  $form_state['values']['state'] : TRANSACTION_STATE_FINISHED, //shouldn't really be omitted
-    'type' => isset($form_state['values']['type']) ?  $form_state['values']['type'] : 'unspecified', //shouldn't really be omitted
-    'creator' => isset($form_state['values']['creator']) ?  $form_state['values']['creator'] : $GLOBALS['user']->uid,
-    'created' => REQUEST_TIME,
-    'data' => array(),
-  );
-  if (isset($form_state['values']['xid'])) {
-    $form_state['#transaction']->xid = $form_state['values']['xid'];
-  }
-}
-
-
-/*
  * standard validation function for ALL transaction forms
  * fields have already been validated individually
- * and $form_state['#transaction'] has been created by mcapi_prevalidate_transaction
  * Anything that validates in this function should work in the database
  * Even if the form wasn't properly designed in all respects.
  * This validation process allows NULL fields.
  * which also means it can validate partially completed forms
  */
 function transaction_form_validate($form, &$form_state) {
-  field_attach_form_validate('transaction', (object) $form_state['values'], $form, $form_state);
+  if (empty($form_state['#transaction'])) {
+    $form_state['#transaction'] = new transaction;
+  }
+  debug($form_state['values']);
+  entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
+  field_attach_form_validate('transaction', $form_state['#transaction'], $form, $form_state);
   try {
-    mcapi_transaction_validate($form_state['#transaction'], $form);
+    _mcapi_transaction_validate($form_state['#transaction'], $form);
   }
   catch (Exception $e) {
    drupal_set_message($e->getMessage(), 'warning');
@@ -682,8 +667,9 @@ function transaction_form_validate($form, &$form_state) {
 }
 /*
  * Universal transaction validation
+ * called from transaction_form_validate
  */
-function mcapi_transaction_validate(&$transaction, &$form = NULL){
+function _mcapi_transaction_validate(&$transaction, &$form = NULL){
   //no usecase is currently envisaged where someone might pay themselves
   if ($transaction->payer_uid > 0) {
     if ($transaction->payer_uid == $transaction->payee_uid) {
@@ -728,9 +714,6 @@ function mcapi_transaction_validate(&$transaction, &$form = NULL){
  * Submit callback for default transaction form
  */
 function transaction_admin_form_submit($form, &$form_state) {
-
-  entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
-  $transaction = transaction_controller('save', $form_state['#transaction'], TRUE);
   if (!isset($form_state['redirect'])) {
     $form_state['redirect'] = 'transaction/'.$transaction->xid;
   }
@@ -767,7 +750,7 @@ function mcapi_statement($account) {
     $transaction['creator'] = format_username(user_load($transaction['creator']));
     $transaction['modifier'] = format_username(user_load($transaction['modifier']));
     $transaction['description'] = l($transaction['description'], 'transaction/'. $transaction['xid']);
-    unset($transaction['data']);
+    unset($transaction['extra']);
     $transactions[] = $transaction;
   }
 
@@ -779,14 +762,14 @@ function mcapi_statement($account) {
  */
 function transaction_erase($xid) {
   $transaction = transaction_controller('load', array($xid));
-  return  transaction_controller('erase', $transaction);
+  return transaction_controller('erase', $transaction);
 }
 
 /*
  * form element validation callback functions
  */
 
-function mcapi_validate_title($element, $form_state) {
+function mcapi_validate_title(&$element, $form_state) {
   //don't know the max length of 'small' text field. Will be just truncated
   $form_state['values']['title'] = check_plain($element['#value']);
 }
@@ -808,7 +791,7 @@ function mcapi_validate_quantity(&$element, &$form_state) {
   if ($element['#value'] < 0 ) {
     form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element['#title'])));
   }
-  $fraction = _odd_cents($value);
+  $fraction = fmod($value, 1) * 100;
   if ($fraction && isset($form_state['values']['cid']) && $currency = all_currencies($form_state['values']['cid'])) {
     if (is_null($currency->divisions) && !is_integer($value)) {
       form_error($element, t('%name must be a positive integer.', array('%name' => $currency->title)));
@@ -823,31 +806,26 @@ function mcapi_validate_quantity(&$element, &$form_state) {
     }
   }
 }
-//shouldn't really need this...
-function _odd_cents($float) {
-  $integer = intval($float);
-  //format using the given currency subdivision
-  $fraction = $float - $integer;
-  return ceil($fraction * 100); //corrects the floating point error
-}
 
-function mcapi_validate_state($element, $form_state) {
-  $states = array(TRANSACTION_STATE_FINISHED, TRANSACTION_STATE_PENDING, TRANSACTION_STATE_ERASED);
-  if (!in_array($element['#value'], $states)) {
-    form_error($element, t('Invalid transaction state.') .' '. t('Suspected hacking attempt!'));
-  }
+function mcapi_validate_state(&$element, $form_state) {
+  if (!in_array($element['#value'], mcapi_transaction_states())) return;
+  form_error($element, t('Invalid transaction state.') .' '. t('Suspected hacking attempt!'));
 }
-function mcapi_validate_ttype($element, $form_state) {
-  $types = module_invoke_all('transaction_type_info');
-  if (!is_array($types[$element['#value']])) {
-    form_error($element, t('Invalid transaction type.') .' '. t('Suspected hacking attempt!'));
-  }
+function mcapi_validate_ttype(&$element, $form_state) {
+  // _element_validate() checks select widgets in the same way
+  if (in_array( $element['#value'], module_invoke_all('transaction_info', 'types'))) return;
+  form_error($element, t('Invalid transaction type.') .' '. t('Suspected hacking attempt!'));
 }
-
+/*
+ * validate callback for user id fields, using
+ */
 function mcapi_validate_user(&$element, $form_state) {
-  //copied from node_validate
-  if (!empty($element['#value']) && !($account = user_load_by_name($element['#value']))) {
-    form_error($element, t('The username %name does not exist.', array('%name' => $element['#value'])));
+  $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
+  if (empty($value)) return;
+  foreach ($values as $value) {
+    $account = user_load_by_name($value);
+    if ($account->uid) continue;
+    form_error($element, t('The username %name does not exist.', array('%name' => $value)));
   }
 }
 function mcapi_currency_validate_update_mode(&$element, $form_state) {

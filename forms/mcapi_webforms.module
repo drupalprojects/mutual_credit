@@ -1,0 +1,247 @@
+<?php // ;id:
+
+/*
+ * Permitted users can design their own webforms, hopefully all valid!
+ */
+define('TRANSACTION_STATE_TEMPLATE', -3);
+
+function mcapi_webforms_menu() {
+  //all the admin menu items are generated via the ctools export-ui plugin
+  $items = array();
+  $items['transaction/%transaction/formedit'] = array(
+    'title' => 'Modify transaction',
+    'page callback' => 'mcapi_webform_edit_wrapper',
+    'page arguments' => array(1), //+ we need the right webform object
+    'access callback' => 'transaction_access',
+    'access arguments' => array('update', 1), //+ the right webform object
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'mcapi_webforms.inc',
+  );
+  //one menu callback for each form.
+  $webforms = mcapi_webforms_load();
+  foreach($webforms as $webform) {
+    $item = array(
+      'title' => $webform->data['templates']['title-1'],
+      //'description' => $webform->data['description'], //this will be help
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array($webform->name),
+      'access callback' => strtok($webform->data['outputs']['access'], ':'),
+      'access arguments' => array(strtok(':')),
+      'file' => 'mcapi_webforms.inc',
+    );
+
+    if (is_numeric($webform->data['outputs']['menu_link'])) {
+      $item['type'] = $webform->data['outputs']['menu_link'];
+    }
+    else {
+      $item['type'] = MENU_NORMAL_ITEM;
+      $item['menu_name'] = $webform->data['outputs']['menu_link'];
+    }
+    $items[$webform->path] = $item;
+  }
+  return $items;
+}
+/*
+ * implements hook_forms
+ * args[0] is the transaction, if passed
+ */
+function mcapi_webforms_forms($form_id, $args) {
+  if (empty($args[0]->xid)) {
+    $args[0] = new transaction;
+  }
+  $webforms = mcapi_webforms_load();
+  foreach($webforms as $webform) {
+    $args[1] = $webform;
+    $forms[$webform->name] = array(
+      'callback' => 'mcapi_webforms_form',
+      'callback arguments' => $args
+    );
+  }
+  return $forms;
+}
+
+/*
+ * Implements hook_permissions
+ */
+function mcapi_webforms_permissions() {
+  return array(
+    'design transaction forms' => array(
+      'title' => t('Design transaction forms'),
+      'description' => t('Create and edit the forms used to record and edit transactions'),
+    )
+  );
+}
+
+/*
+ * Implements hook_block_info
+ */
+function mcapi_webforms_block_info() {
+  $webforms = mcapi_webforms_load();
+  foreach ($webforms as $webform) {
+    if ($webform->data['outputs']['use_block']) {
+      $blocks[$webform->name] = array(
+        'info' => $webform->data['templates']['title-1'],
+        'cache' => DRUPAL_CACHE_PER_USER
+      );
+    }
+  }
+  return $blocks;
+}
+
+/*
+ * Implements hook_block_view
+ */
+function mcapi_webforms_block_view($delta) {
+  //load the form and check access first
+  $webform = mcapi_webforms_load($delta);
+  //it's generally a bad idea to show the form in block on its own page
+  if (current_path() == $webform->path) return;
+  return array(
+    'title' => $webform->data['templates']['title-1'],
+    'content' => drupal_get_form($delta, $webform)//delta is the $webform->machine_name
+  );
+  module_load_include('inc', 'mcapi_webforms');
+}
+
+/*
+ * Implements hook_block_transaction_info
+ */
+function mcapi_webforms_transaction_info($field) {
+  switch($field) {
+    case 'states':
+      return array(TRANSACTION_STATE_TEMPLATE => t('Template'));
+    case 'types':
+      $webforms = mcapi_webforms_load();
+      foreach($webforms as $webform) {
+        $types[] = $webform->name;
+      }
+      return $types;
+  }
+}
+
+/*
+ * Implements hook_theme
+ */
+function mcapi_webforms_theme($existing, $type, $theme, $path) {
+  return array(
+    'mcapi_webform' => array(
+      'render element' => 'form',
+    ),
+    'mcapi_amount' => array(
+      'render element' => 'amount'
+    )
+  );
+}
+/*
+ * implements hook_element_info
+ * the 'amount' field replaces and populates the single quantity field with two fields for either side of the decimal point
+ */
+function mcapi_webforms_element_info() {
+  module_load_include('inc', 'mcapi_webforms');
+  $type['mcapi_amount'] = array(
+    '#input' => TRUE,
+    '#process' => array('form_process_mcapi_amount'),
+    '#theme' => 'mcapi_amount'//maybe this goes without saying?
+  );
+  return $type;
+}
+
+
+/*
+ * callback specified in the export_ui plugin
+ */
+function mcapi_edit_webform(&$form, &$form_state) {
+  //I can't think of a better place to put this,
+  menu_rebuild();
+  //move this all over to the admin file to reduce load burden
+  module_load_include('admin.inc', 'mcapi_webforms');
+  $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_webforms') .'/mcapi_webforms.admin.inc';
+  $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
+  $form['#tree'] = TRUE;
+  return _mcapi_edit_webform($form, $form_state);
+}
+function mcapi_edit_webform_validate($form, $form_state) {
+  
+}
+/*
+ * load a webform by name, using ctools
+ */
+function mcapi_webforms_load($name = NULL) {
+  ctools_include('export');
+  $results = ctools_export_crud_load_all('mcapi_webforms');
+  if ($name) {
+    if (!empty($results[$name])) {
+      return $results[$name];
+    }
+    else return;
+  }
+  return $results;
+}
+
+/*
+ * Implements ctools hook_ctools_plugin_directory
+ */
+function mcapi_webforms_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/'.$plugin;
+  }
+}
+/*
+ * Implements ctools hook_ctools_plugin_api
+ */
+function mcapi_webforms_ctools_plugin_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi_webforms'),
+  );
+}
+
+/**
+ * Find out whether the logged in user has one of the given roles
+ */
+function mcapi_access_check_roles($rid) {
+  global $user;
+  $roles = array_keys($user->roles);
+  $roles[] = DRUPAL_AUTHENTICATED_RID;
+  return in_array($rid, $roles);
+}
+
+/*
+ * menu callback
+ * determines which form to use to edit the transaction,
+ * on the basis of the transaction 'type', which is the form name
+ */
+function mcapi_webform_edit_wrapper($transaction) {
+  if ( $webform = mcapi_webforms_load($transaction->type)) {
+    return drupal_get_form('mcapi_webforms_form', $transaction, $webform);
+  }
+  else {
+    drupal_set_message(t('Appropriate transaction editing form not found: @formname; reverting to admin edit form', array('@formname' => $transaction->type)), 'warning');
+    return drupal_get_form('transaction_admin_form', $transaction);
+  }
+}
+/*
+ * return an array of fields added to the transaction entity,  - critically, keyed by machine_name
+ */
+function mcapi_webform_get_additional_form_fields() {
+  //get the names of the additional entity fields
+  $psuedo_form = array();
+  $transaction = new transaction;
+  $fs = array();//just a placeholder for form_state
+  //add the fields to our imaginary form, and then iterate through them
+  field_attach_form('transaction', $transaction, $psuedo_form, $fs);
+  $fields = array();
+  foreach (element_children($psuedo_form) as $fieldname) {
+    $fields[$fieldname] = $psuedo_form[$fieldname];
+  }
+  return $fields;
+}
+
+function get_deepest_child($element) {
+  $children = element_children($element);
+  if (count($children)) {
+    $last_child = array_pop($children);
+    return get_deepest_child($element[$last_child]);
+  }
+  return $element;
+}

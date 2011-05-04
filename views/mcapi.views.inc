@@ -79,14 +79,14 @@ function mcapi_views_data() {
     )
   );
   $data['mcapi_transactions']['state'] = array(
-    'title' => t('transaction state'),
+    'title' => t('State'),
     'help' => t('Whether the transaction is completed (FALSE) or pending (TRUE)'),
     'field' => array(
-      'handler' => 'views_handler_field_transaction_state',
+      'handler' => 'views_handler_field_mcapi_state',
       'click sortable' => TRUE,
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_transaction_state',
+      'handler' => 'views_handler_filter_mcapi_state',
     ),
   );
   $data['mcapi_transactions']['cid'] = array(

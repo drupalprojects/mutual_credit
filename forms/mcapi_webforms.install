@@ -1,0 +1,72 @@
+<?php
+
+function mcapi_webforms_install() {
+  
+}
+function mcapi_webforms_uninstall() {
+
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function mcapi_webforms_schema() {
+  $schema = array();
+  $schema['mcapi_webforms'] = array(
+    'description' => 'Stores endpoint information for services',
+    'fields' => array(
+      'xfid' => array(
+        'type'        => 'serial',
+        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+        'no export'   => TRUE,
+      ),
+      'name' => array(
+        'description' => 'The unique, machine readable name of the form.',
+        'type'        => 'varchar',
+        'length'      => 63,
+        'not null'    => TRUE,
+      ),
+      'path' => array(
+        'description' => 'Internal path',
+        'type'        => 'varchar',
+        'length'      => 63,
+        'not null'    => TRUE,
+      ),
+      'status' => array(
+       'description' => 'Webform is enabled.',
+       'type'        => 'int',
+       'length'      => 2,
+       'not null'    => TRUE,
+       'default'     => 1
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'description' => 'A serialized array of options for this display',
+        'serialize' => TRUE,
+        'serialized default' => 'a:0:{}',
+      ),
+    ),
+    'primary key' => array('xfid'),
+    'unique keys' => array(
+      'name' => array('name'),
+      'path' => array('path'),
+    ),
+    'export' => array(
+      'key' => 'name',
+      'primary key' => 'xfid',
+      'identifier' => 'webform',
+      'api' => array(
+        'owner' => 'mcapi_webforms',
+        'api' => 'mcapi',
+        'minimum_version' => 3,
+        'current_version' => 3,
+      ),
+      'default hook' => 'default_mcapi_webforms',
+      //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
+      'admin_title' => 'name' //this converts the form field into machine_name I think
+    ),
+  );
+  return $schema;
+}
