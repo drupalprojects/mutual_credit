@@ -84,6 +84,10 @@ function mcapi_form_exchange_inc($form, $node) {
     //'#element_validate' => array('mc_validate_state'),
     '#weight' => 18
   );
+  $form['status'] = array(
+    '#type' => 'value',
+    '#value' => FALSE,
+  );
   return $form;
 }
 
