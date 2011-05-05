@@ -655,7 +655,6 @@ function transaction_form_validate($form, &$form_state) {
   if (empty($form_state['#transaction'])) {
     $form_state['#transaction'] = new transaction;
   }
-  debug($form_state['values']);
   entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
   field_attach_form_validate('transaction', $form_state['#transaction'], $form, $form_state);
   try {

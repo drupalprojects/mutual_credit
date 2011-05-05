@@ -148,24 +148,17 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
   );
 
-  //special settings for cid
-  $form['cid'] = mcapi_webform_prefill_fields($webform, 'cid', t('Currency ID'));
   $options = currency_select(currency_choose('initiate', 1));//that's uid 1 to make all currencies available
-  $form['cid']['options'] = array(
-    '#title' => t('Limit choosable currencies to'),
-    '#description' => t('To not limit, check nothing.'),
-    '#type' => 'checkboxes',
-    '#options' => $options,
-    '#default_value' => isset($webform->data['cid']['options']) ? $webform->data['cid']['options'] : array(),
-  );
-  if (count($options) == 1) {
-    $form['cid']['preset']['#default_value'] = array_pop(array_keys($options));
-    $form['cid']['widget'] = array(
-      '#value' => 'hidden',
-      '#type' => 'hidden',
+  if (count($options) > 1) {
+    //special settings for cid
+    $form['cid'] = mcapi_webform_prefill_fields($webform, 'cid', t('Currency ID'));
+    $form['cid']['options'] = array(
+      '#title' => t('Limit choosable currencies to'),
+      '#description' => t('To not limit, check nothing.'),
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => isset($webform->data['cid']['options']) ? $webform->data['cid']['options'] : array(),
     );
-  }
-  else{
     $form['cid']['widget'] = array(
       '#title' => t('Widget'),
       '#type' => 'radios',
@@ -176,7 +169,24 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       '#default_value' => empty($webform->data['cid']['widget']) ? 'select' : $webform->data['cid']['widget']
     );
   }
-  
+  else {
+    if (count($options) == 1) {
+      $form['cid']['common'] = array(
+        'preset' => array(
+          '#type' => 'value',
+          '#value' => array_pop(array_keys($options))
+        ),
+        'widget' => array(
+          '#value' => 'hidden',
+          '#type' => 'value',
+        ),
+        'required' => array(
+          '#value' => FALSE,
+          '#type' => 'value'
+        )
+      );
+    }
+  }
   if ($form['aspect']['#default_value'] == 3) {
     //special settings for payer and payee
     foreach (array('payer' => t('Payer ID'), 'payee' => t('Payee ID')) as $key => $name) {
