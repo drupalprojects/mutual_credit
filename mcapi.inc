@@ -84,10 +84,6 @@ function mcapi_form_exchange_inc($form, $node) {
     //'#element_validate' => array('mc_validate_state'),
     '#weight' => 18
   );
-  $form['status'] = array(
-    '#type' => 'value',
-    '#value' => FALSE,
-  );
   return $form;
 }
 
@@ -710,6 +706,7 @@ function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
     'name' => $user->name,
     'created' => time(),
     'data' => array(),
+    'status' => FALSE,
    //essential node property
     'type' => 'exchange',
   );

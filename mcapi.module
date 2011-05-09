@@ -581,6 +581,9 @@ function mc_validate_currency_divisions(&$element, $form_state) {
     }
   }
 }
+/*
+ * Default form element validate callback
+ */
 function mc_validate_quantity(&$element, &$form_state) {
   $value = $element['#value'] + 0;
   //null values allowed
@@ -589,13 +592,15 @@ function mc_validate_quantity(&$element, &$form_state) {
     form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element['#title'])));
   }
   if (isset($form_state['values']['cid']) && $currency = node_load($form_state['values']['cid'])) {
-    if (!$currency->sub && !is_integer($value)) {
-      form_error($element[$subfield], t("Integer values only for '@currency'", array('@currency' => $currency->title)));
-    }
-    if ($currency->sub) {
-      $division = $value - intval($value);
-      if ($division && isset($currency->data['divisions']) && !isset($currency->data['divisions'][$division])) {
-        form_error($element, t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
+    $division = $value - intval($value);
+    if ($division) {
+      if ($currency->sub) {
+        if ($division && isset($currency->data['divisions']) && !isset($currency->data['divisions'][$division])) {
+          form_error($element, t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
+        }
+      }
+      else{
+        form_error($element, t("Integer values only for '@currency'", array('@currency' => $currency->title)));
       }
     }
   }
