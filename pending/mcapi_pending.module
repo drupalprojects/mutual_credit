@@ -1,0 +1,349 @@
+<?php
+// $Id:
+
+define ('TRANSACTION_STATE_PENDING', 1);
+
+
+/*
+ * Introduces a new transaction state, 'pending', and
+ * modifies existing default transaction forms to create pending transactions
+ * Pending transactions require at least one signature
+ * Required signatures are stored in a db table and deleted.
+ */
+
+function mcapi_pending_menu() {
+  $items['transaction/%transaction/sign/%user_uid_optional'] = array(
+    'title' => 'Sign this transaction to finalise it',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mc_sign_form', 1),
+    'access callback' => 'sign_transaction_access',
+    'access arguments' => array(1,3),
+    'type' => MENU_CALLBACK,
+  );
+  $items['transaction/%transaction/signoff'] = array(
+    'title' => 'Sign off transaction',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mc_signall_confirm_form', 1),
+    'access arguments' => array('manage all transactions'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+
+
+function mcapi_pending_transaction_info($prop) {
+  $info = array(
+    'states' => array(
+      TRANSACTION_STATE_PENDING => t('Finished'),
+    ),
+    'access' => array(
+      TRANSACTION_STATE_PENDING => 'mcapi_access_pending',
+    ),
+    'types' => array(),
+    'controllers' => array()
+  );
+  return $info[$prop];
+}
+
+
+function mcapi_pending_node_load(&$node) {
+  if ($node->state == transaction_STATE_PENDING) {
+    //override the stored data with the actual data form the 'unsigned' table
+    $result = db_query("SELECT uid FROM {mc_unsigned} WHERE nid = %d", array(':nid' => $node->nid));
+    while($uid = db_result($result)) {
+      $node->mc_unsigned[] = $uid;
+    }
+  }
+}
+
+function mcapi_pending_node_delete($node) {
+  switch ($node->type) {
+    case 'transaction':
+      _clear_unsigned('nid', $node->nid);
+  }
+}
+
+function mcapi_pending_form_currency_form_alter(&$form, $form_state, $currency) {
+
+  $update_mode = !empty($form_state['values']['update_mode']) ? TRUE : $form['accounting']['update_mode']['#default_value'];
+  if (!empty($update_mode)){
+    $form['editable'] = array(
+      '#title' => t('Pending state access'),
+      '#description' => t('Only applies if editing is permitted by accounting standards.').' (AJAX needed!)',
+      '#type' => 'fieldset',
+      '#group' => 'additional_settings',
+      '#weight' => 4,
+      'user_editable_mode' => array(
+        '#title' => t('User editable'),
+        '#type' => 'radios',
+        '#options' => array(
+          0 => t("Only users with '@permission' can edit", array('@permission' => t('manage all transactions'))),
+          1 => t('Creator can edit/delete pending transactions'),
+          2 => t('Both can edit/delete pending transactions'),
+          3 => t('Both can edit/delete finished transactions'),
+        ),
+        '#default_value' => empty($form_state['values']['user_editable_mode']) ? intval($currency->extra['user_editable_mode']) : $form_state['values']['user_editable_mode'],
+        '#weight' => 4
+      )
+    );
+  }
+}
+
+//menu access callback
+//does the current user have permission to remove the signatory from the given transaction?
+//on if they have 'edit all transactions' or they are named signatory.
+function sign_transaction_access($node, $signatory_account) {
+  if ($node->state != transaction_STATE_PENDING) {
+    return FALSE;
+  }
+  if (user_access('edit all transactions')) {
+    return TRUE;
+  }
+  return $GLOBALS['user']->uid == $signatory_account->uid;
+}
+
+/*
+ * Transaction access callback from mcapi module.
+ */
+function mcapi_access_pending($op, $transaction, $account, $currency) {
+  $participated = $account->uid == $transaction->payee_uid || $account->uid == $transaction->payer_uid;
+  $owner = $transaction->creator == $account->uid;
+  switch ($op) {
+    case 'view'://users can always view their own pages
+      switch ($currency->extra['privacy']) {
+        case 0: return $participated;
+        case 1: return $participated || $accountant;
+        case 2: $callback = $currency->extra['access_callback'];
+          return $callback('view', $currency, $GLOBALS['user']->uid);
+        case 2: return $GLOBALS['user']->uid;
+        case 3: return TRUE;
+    }
+    case 'update':
+      if ($currency->extra['update_mode'] < 1) return;
+      switch ($currency->extra['user_editable_mode']) {
+        case 0: return $accountant;
+        case 1: return $accountant || $owner;
+        default:return $accountant || $participated;
+      }
+    case 'erase':
+      if ($currency->extra['delete_mode'] < 1) return;
+      switch($currency->extra['user_editable_mode']) {
+        case 0: return $accountant;
+        case 1: return $accountant || $owner;
+        default:return $accountant || $participated;
+      }
+  }
+}
+
+function mcapi_pending_entity_update($type, $transaction) {
+  if ($type != 'transaction') return;
+  $cid = $transaction->cid;
+  foreach (array($transaction->payer_uid, $transaction->payee_uid) as $uid) {
+    //can these two queries be combined into one?
+    $pend_out = db_query("SELECT sum(quantity) from {mcapi_transactions} WHERE payer_uid = :uid AND state = :state AND cid = :cid",
+      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid)
+    )->fetchField();
+    $pend_in = db_query("SELECT sum(quantity) from {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
+      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid)
+    )->fetchField();
+
+    db_query("UPDATE {mcapi} SET pending_dif = :pending WHERE uid = $uid AND cid = $cid",
+      array(':pending' => $pend_in - $pend_out)
+    );
+  }
+}
+
+
+/*
+ * Needed for the views 2 module
+ */
+function mcapi_pending_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'mcapi_pending') .'/views',
+  );
+}
+
+//shows a confirm form and/or completes the transaction
+function mc_sign_form(&$form_state, $transaction) {
+  if (!variable_get('mcapi_pending_sure', TRUE)) {
+    mc_one_signing($transaction, arg(3));
+    drupal_goto(variable_get('mc_webform_destination', 'user'));
+  }
+  $form = array();
+  $form['#node'] = $transaction;
+  $form['#signer'] = arg(3);
+  $form['#prefix'] = theme('node', $transaction, FALSE, TRUE);
+  $form['#redirect'] = 'node/'. $transaction->nid;
+  return confirm_form(
+    $form,
+    t('Are you sure you want to sign this transaction?'),
+    'user',
+    '',
+    t('Sign'), t('Cancel'),
+    'sign'
+  );
+}
+
+
+function mc_sign_form_submit($form, &$form_state) {
+  mc_one_signing($form['#node'], $form['#signer']);
+}
+function mc_one_signing($node, $signer_uid){
+  $result = db_query("SELECT uid FROM {mc_unsigned} WHERE nid = %d", array(':nid' => $node->nid));
+  $pending = FALSE;
+  while ($uid = db_result($result)) {
+    if ($uid != $signer_uid) {
+      $pending = TRUE; continue;
+    }
+    else {
+      db_query("DELETE FROM {mc_unsigned} WHERE nid = %d AND uid = %d", array(':nid' => $node->nid, ':uid' => $uid));
+      drupal_set_message(t('!user signed the transaction', array('!user' => theme('username', user_load($uid)))));
+    }
+  }
+  if (!$pending) {
+    db_query("UPDATE {mc_transactions} SET state = %d WHERE nid = %d", array(':state' => transaction_STATE_FINISHED, ':nid' => $node->nid));
+    mcapi_update_balances($node);
+    drupal_set_message(t("transaction &hash;@nid is signed off.", array('@nid' => $node->nid)));
+    mcapi_pending_signoff_notify($node);
+  }
+}
+
+/*
+ * Implementation of hook_transaction_record
+ * add the signatories
+ */
+function deduce_signatures(&$node) {
+  if ($node->state != transaction_STATE_PENDING) return;
+  //based on the transaction_type, we know which signatories to add
+  switch($node->transaction_type) {
+    case 'onetomany':
+    case 'onetoall':
+    case 'incoming signed':
+      $node->mc_unsigned = array($node->payer_uid);
+      break;
+    case 'outgoing signed':
+    case 'manytoone':
+    case 'alltoone':
+      $node->mc_unsigned = array($node->payee_uid);
+      break;
+    case '3rdparty':
+      $node->mc_unsigned = array($node->payee_uid, $node->payer_uid);
+      break;
+    default:
+      drupal_set_message("function deduce_signatures doesn't know transaction_type: ".$node->transaction_type,  'error');
+  }
+}
+function save_signatures($node) {
+  //this module assumes that every pending transaction is awaiting at least one signature
+  //clear all the completers ready for re-adding
+  if (isset($node->nid)) {
+    _clear_unsigned('nid', $node->nid);
+  }
+  $rows = array();
+  if (!count($node->mc_unsigned)) {
+    drupal_set_message(t("This transaction is pending, but has no signatories"), 'error');
+    return;
+  }
+  foreach ($node->mc_unsigned as $uid) {
+    $rows[] = '('. $node->nid .', '. $uid .')';
+  }
+  db_query("INSERT INTO {mc_unsigned} (nid, uid) VALUES %s",
+    array(':values' => implode(', ', $rows))
+  );
+}
+
+function _clear_unsigned($field, $id) {
+  db_query("DELETE FROM {mc_unsigned} WHERE $field = $id");
+  if ($field == 'nid') {
+    db_query("UPDATE {node} SET changed = %d WHERE nid = %d", array(':mod' => time(), ':nid' => $id));
+  }
+}
+
+/**
+ * http://api.drupal.org/api/function/hook_link/6
+ * Add the 'sign' links to each transaction node
+ */
+function mcapi_pending_link($type, $transaction) {
+  //ignore comments, nodes which aren't created yet, or nodes which aren't transactions
+  if ($type != 'node' || !$transaction->nid || $transaction->type != 'transaction') return array();
+
+  //sign buttons
+  if ($transaction->state == transaction_STATE_PENDING) {
+    if (!isset($transaction->mc_unsigned)) {
+      drupal_set_message(t("This transaction is pending, but has no signatories"), 'error');
+      return;
+    }
+    mc_append_sign_links($transaction, $links);
+  }
+  if (isset($links)) {
+    return $links;
+  }
+}
+
+function mcapi_pending_form_alter($form, $form_state, $form_id) {
+  switch ($form_id) {
+    case 'mc_3rdparty_form':
+    case 'mc_edit_form':
+      if ($form_state['storage']['step'] == 1) {
+        //change state to checkbox corresponding to transaction_STATE constants
+        $form['state']['#type'] = 'checkbox';
+        $form['state']['#title'] = t('Require signatures');
+        unset($form['state']['#description']);
+      }
+      $form['state']['#element_validate'][] = 'mc_signature_validate_state';
+  }
+}
+
+
+function mc_signall_confirm_form($form_state, $nid) {
+  $form = array();
+  $form['#redirect'] = 'node/'. $nid;
+  $form['nid'] = array(
+    '#type' => 'hidden',
+    '#value' => $nid
+  );
+  return confirm_form(
+    $form,
+    t('Are you sure you want to sign this transaction on behalf of all the remaining signatories?'),
+    'user',
+    '',
+    t('Sign'), t('Cancel'),
+    'sign'
+  );
+}
+
+function mc_signall_confirm_form_submit($form, $form_state) {
+  if (user_access('edit all transactions')){
+    $nid = $form_state['values']['nid'];
+    mc_signoff($nid);
+    mcapi_pending_signoff_notify(node_load($nid));
+  }
+}
+function mc_signoff($nid) {
+  _clear_unsigned('nid', $nid);
+  db_query("UPDATE {mc_transactions} SET state = %d WHERE nid = %d", array(':state' => transaction_STATE_FINISHED,':nid' => $nid));
+  mcapi_update_balances(node_load($nid));
+  drupal_set_message(t("Transaction #@nid is signed off.", array('@nid' => $nid)));
+}
+
+
+function mcapi_pending_signoff_notify($transaction) {
+  foreach (array(user_load($transaction->payer_uid), user_load($transaction->payee_uid)) as $account) {
+    $throttle = $account->mc_notification_throttle - intval($GLOBALS['user']->uid == $account->uid);
+    if ($throttle < 2) continue;
+    $message = drupal_mail(
+      'mcapi_pending',
+      'blah',
+      $account->mail,
+      user_preferred_language($account),
+      array(//params
+        'recipient' => $account,
+        'transaction' => $transaction,
+      ),
+      NULL, //sender defaults to site_mail
+      TRUE
+    );
+  }
+}

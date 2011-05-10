@@ -1,0 +1,66 @@
+<?php
+
+function mcapi_pending_install() {
+  db_add_field('mcapi_cache', 'pending_dif', pending_field());
+}
+
+/**
+ * Implementation of hook_uninstall(˙˙˙).
+ * http://api.drupal.org/api/function/hook_uninstall/6
+ * Remove any tables or variables that the module sets.
+ */
+function mc_pending_uninstall() {
+  db_drop_field('mcapi_cache', 'pending_dif');
+
+  //still needs to be reviewd for D7
+  if(module_exists('views')) {
+    $view_ids = db_query("SELECT vid FROM {views_view} WHERE name = 'pending_transactions'");
+    while ($vid = db_result($view_ids)) {
+      db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
+      db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_schema)().
+ * creates a table for storing signatures needed on pending transactions
+ */
+function mc_pending_schema() {
+  $schema['mc_unsigned'] = array(
+    'description' => 'signatories needed on pending transactions',
+    'fields' => array(
+      'xid' => array(
+        'description' => t('the transaction to which this entry is attached'),
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'uid' => array(
+        'description' => t('the uid of the signatory'),
+        'type' => 'int',
+        'size' => 'normal',
+      )
+    ),
+    'primary key' => array('xid', 'uid')
+  );
+  return $schema;
+}
+
+/*
+ * implements hook_schema_alter
+ * adds a field to the mcapi_cache table
+ */
+function mcapi_pending_schema_alter(&$tables) {
+  $tables['mcapi_cache']['fields']['pending_dif'] = pending_field();
+}
+
+function pending_field() {
+  return array(
+    'description' => 'sum of pending transactions',
+    'not null' => TRUE,
+    'type' => 'numeric',
+    'size' => 'normal',
+    'precision' => 8,
+    'scale' => 2
+  );
+}

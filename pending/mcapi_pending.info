@@ -1,0 +1,8 @@
+; $Id:
+name = Mutual Credit Pending transactions
+description = Transactions are created into a pending state and are 'signed' into completion
+package = Mutual Credit
+configure = admin/accounting
+core = 7.x
+
+files[] = mcapi.module
