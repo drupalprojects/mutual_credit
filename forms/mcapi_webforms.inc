@@ -8,7 +8,7 @@ module_load_include('inc', 'mcapi');
 /*
  * main form builder, starts by building the base form in the mcapi module
  */
-function mcapi_webforms_form($form, &$form_state, $transaction, $webform) {
+function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user = NULL) {
   //reject if the transaction isn't in one of the acceptable states
   //because of a problem rendering checkboxes with value 0, the options were saved using the state names as keys, not the integer constants
   //so we have to look them up again
@@ -21,7 +21,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform) {
     $form_state['step'] = 1;
   }
   if (current_path() == $webform->path) {
-    drupal_set_title($webform->data['templates']['title-'. $form_state['step']]);
+    drupal_set_title($webform->data['step-'.$form_state['step']]['title']);
   }
   if (isset($form_state['#transaction'])) {
     $transaction = $form_state['#transaction'];
@@ -91,6 +91,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform) {
   }
   else {
     //I-thou exchanges
+    //this section cannot be used to edit existing transactions
     $form['2ndperson'] = array(
       '#default_value' => isset($form_state['values']['2ndperson']) ? $form_state['values']['2ndperson'] : ''
     ) + $form['payee_uid'];
@@ -104,8 +105,20 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform) {
         'outgoing' => $webform->data['direction']['outgoing']
       )
     );
+    //if we are loading the page from blank, or rebuilding the form, we set the default values here,
     mcapi_webform_default_value($form['direction'], $webform->data['direction']);
-
+    //however if we are editing an existing transaction,
+    //we have to show the transaction owner and derive the direction and partner from the payer and payee
+    if ($transaction->xid) {
+      if ($transaction->creator == $transaction->payer_uid) {
+        $form['2ndperson']['#default_value'] = $transaction->payee_uid;
+        $form['direction']['#default_value'] = 'outgoing';
+      }
+      else{
+        $form['2ndperson']['#default_value'] = $transaction->payer_uid;
+        $form['direction']['#default_value'] = 'incoming';
+      }
+    }
     unset($form['payer_uid'], $form['payee_uid']);
     //this validation function must run BEFORE the main one in the API, which requires payer and payee
     array_unshift($form['#validate'], 'mcapi_webforms_validate_2ndperson');
@@ -119,7 +132,6 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform) {
   $form['amount']['#type'] = 'mcapi_amount';
   $form['amount']['#default_value'] = $transaction->quantity;
   $form['amount']['#chars'] =  !empty($webform->data['amount']['chars']) ? $webform->data['amount']['chars'] : 6;
-  $form['amount']['#suffix'] = count($currencies) == 1 ? key($currencies) : '';
   mcapi_webform_default_value($form['amount'], $webform->data['amount']);
   $replacement_id = $webform->name .'-amount';
   //for AJAX rebuilding, we overwrite $transaction with the form state values,
@@ -155,7 +167,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform) {
   $form['#after_build'] = array('mcapi_webform_prepare_tokens');
   //custom properties
   //this tells the theme callback which template to use
-  $form['#template'] = $webform->data['templates']['template-'. $form_state['step']];
+  $form['#template'] = $webform->data['step-'. $form_state['step']]['template'];
   return $form;
 }
 
@@ -195,7 +207,7 @@ function mcapi_webform_prepare_tokens($form, $form_state) {
     $tokens[$fieldname] = $fieldname;
     mcapi_webform_remove_theme_wrapper($form[$fieldname]);
   }
-  $replacements = array(); 
+  $form['#replacements'] = array();
   //this way we only render and replace the fields actually used.
   if ($form_state['step'] == 1) {
     foreach ($tokens as $token => $fieldname) {
@@ -492,7 +504,7 @@ function mcapi_webforms_form_presubmit($form, &$form_state) {
     $form_state['values'] = $form_state['storage'];
     $form_state['step']--;
   }
-  elseif (strlen($form_state['#webform']->data['templates']['template-2'])) {
+  elseif (strlen($form_state['#webform']->data['step-2']['template'])) {
     $form_state['rebuild'] = $form_state['step'] == 1 ? TRUE : FALSE;
     //TODO
     //Submission errors will not prevent the form advancing.

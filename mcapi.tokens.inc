@@ -45,7 +45,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = $sanitize ? filter_xss($name) : $name;
         break;
       case 'amount':
-        $replacements[$original] = format_mcapi_money($transaction->quantity, $transaction->cid);
+        $replacements[$original] = mcapi_format_money($transaction->quantity, $transaction->cid);
         break;
       case 'description':
         $replacements[$original] = $transaction->description;

@@ -30,7 +30,7 @@ function mcapi_install() {
   db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_limits_equation')->execute();
 
   //allow the body field to be added to currencies and transactions
-  $data = unserialize(db_query("SELECT data from field_config where field_name = 'body'")->fetchField());
+  $data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField());
   foreach (array('currency', 'transaction') as $ent) {
     if (!in_array($ent, $data['entity_types'])) {
       $data['entity_types'][] = $ent;
@@ -215,11 +215,6 @@ function mcapi_schema() {
       ),
       'cleared_balance' => $numeric + array(
         'description' => 'balance excluding pending transactions',
-        'not null' => TRUE,
-        //'default' => 0,
-      ),
-      'pending_dif' => $numeric + array(
-        'description' => 'sum of pending transactions',
         'not null' => TRUE,
         //'default' => 0,
       ),

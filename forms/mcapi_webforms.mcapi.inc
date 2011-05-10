@@ -23,7 +23,7 @@ function mcapi_webforms_default_mcapi_webforms() {
     ),
     'workflow' => array(
       'incoming' => array(
-        'Unset' => 0,
+        t('Unset') => t('Unset'),
         'Finished' => 0,
         'Template' => 0,
       ),
@@ -80,14 +80,16 @@ function mcapi_webforms_default_mcapi_webforms() {
       'button' => 'Submit',
       'redirect' => 'transaction/#xid',
     ),
-    'templates' => array(
-      'title-1' => '3rd party form',
-      'template-1' => 'Payer: [payer]<br />
+    'step-1' => array(
+      'title' => '3rd party form',
+      'template' => 'Payer: [payer]<br />
 Payee: [payee]<br />
 Description: [description]<br />
 Amount: [amount]<br />',
-      'title-2' => 'are you sure?',
-      'template-2' => 'Payer: [payer]<br />
+    ),
+    'step-2' => array(
+      'title' => 'are you sure?',
+      'template' => 'Payer: [payer]<br />
 Payee: [payee]<br />
 Description: [description]<br />
 Amount: [amount]<br />',
@@ -119,7 +121,7 @@ Amount: [amount]<br />',
     ),
     'workflow' => array(
       'incoming' => array(
-        'Unset' => 'Unset',
+        t('Unset') => t('Unset'),
         'Finished' => 0,
         'Template' => 0,
       ),
@@ -176,14 +178,16 @@ Amount: [amount]<br />',
       'button' => 'Submit',
       'redirect' => 'transaction/#xid',
     ),
-    'templates' => array(
-      'title-1' => '1st party form',
-      'template-1' => 'Partner: [2ndperson]<br />
+    'step-1' => array(
+      'title' => '1st party form',
+      'template' => 'Partner: [2ndperson]<br />
 Direction: [direction]<br />
 Amount: [amount]<br />
 Description: [description]<br />',
-      'title-2' => 'Are you sure?',
-      'template-2' => '[amount]
+    ),
+    'step-2' => array(
+      'title' => 'Are you sure?',
+      'template' => '[amount]
 with  [2ndperson]<br />
 for [description]<br />',
     ),
@@ -213,7 +217,7 @@ for [description]<br />',
     ),
     'workflow' => array(
       'incoming' => array(
-        'Unset' => 'Unset',
+        t('Unset') => t('Unset'),
         'Finished' => 0,
         'Template' => 0,
       ),
@@ -266,16 +270,18 @@ for [description]<br />',
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
-    'templates' => array(
-      'title-1' => 'Enter multiple payments',
-      'template-1' => '[payer]<br />
+    'step-1' => array(
+      'title' => 'Enter multiple payments',
+      'template' => '[payer]<br />
 will pay<br />
 [payee]<br />
 [amount] each<br />
 for<br />
-[description]',
-      'title-2' => 'Are you sure?',
-      'template-2' => '[payer]<br />
+[description]'
+    ),
+    'step-2' => array(
+      'title' => 'Are you sure?',
+      'template' => '[payer]<br />
 will pay<br />
 [payee]<br />
 [amount] each<br />
@@ -287,7 +293,118 @@ for<br />
       'delete' => 'Delete',
     ),
   );
+  $webforms[$webform->name] = $webform;
 
+  $webform = new stdClass;
+  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
+  $webform->api_version = 3;
+  $webform->name = 'correction';
+  $webform->path = 'transaction/%transaction/correction';
+  $webform->status = 1;
+  $webform->data = array(
+    'info' => array(
+      'name' => 'correction',
+    ),
+    'aspect' => '3',
+    'help' => 'To change the participants, please erase or counter this transaction and make a new one',
+    'outputs' => array(
+      'access' => 'user_access:transact',
+      'menu_link' => '0',
+      'use_block' => 0,
+    ),
+    'workflow' => array(
+      'incoming' => array(
+        'Finished' => 'Finished',
+        'Unset' => 0,
+        'Template' => 0,
+      ),
+      'outgoing' => '0',
+    ),
+    'webform_fields' => array(
+      'webform_fields__active_tab' => 'edit-payer',
+    ),
+    'cid' => array(
+      'common' => array(
+        'preset' => 1,
+        'widget' => 'hidden',
+        'required' => FALSE,
+      ),
+    ),
+    'payer' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => TRUE,
+        'required' => 1,
+      ),
+      'args' => 'user_chooser_permissions:transact',
+      'multiple' => 0,
+    ),
+    'payee' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => TRUE,
+        'required' => 1,
+      ),
+      'args' => 'user_chooser_permissions:transact',
+      'multiple' => 0,
+    ),
+    'amount' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+      'chars' => '4',
+    ),
+    'description' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+    ),
+    'submission' => array(
+      'button' => 'Submit',
+      'redirect' => 'transaction/#xid',
+    ),
+    'webform_templates' => array(
+      'webform_templates__active_tab' => 'edit-step-1',
+    ),
+    'step-1' => array(
+      'title' => 'Correct transaction record',
+      'template' => '[payer] paid [payee]<br />
+  Amount: [amount]<br />
+  For: [description]<br />',
+    ),
+    'step-2' => array(
+      'title-2' => '',
+      'template-2' => '',
+    ),
+    'buttons' => array(
+      'submit' => 'Save',
+      'delete' => 'Delete',
+    ),
+    'email_template' => array(
+      'subject' => 'Exchange recorded with [transaction:partner]',
+      'body' => '[user:name],
+
+A transaction involving you and [transaction:partner] has been corrected.
+The corrected amount is [transaction:amount]
+The corrected description is "[transaction:description]"
+
+To change your notification settings, visit your profile at
+[user:edit-url]
+
+The team at [site:name]',
+      'send' => 0,
+    ),
+    'step-1' => array(
+      'title' => t('Transaction corrected'),
+      'template' => '[payer] paid [payee]<br />
+Amount: [amount]<br />
+For: [description]<br />',
+    ),
+  );
 
   $webforms[$webform->name] = $webform;
   return $webforms;

@@ -27,14 +27,14 @@ function _mcapi_edit_webform(&$form, &$form_state) {
 
   $options = array(
     3 => t('3rd Party'),
-    1 => t('Participant')
+    1 => t('1st Party')
   );
   $form['aspect'] = array(
     '#title' => t('Aspect'),
     '#description' => t('Whether this is completed by a 3rd party or a participant.'),
     '#type' => 'radios',
     '#options' => $options,
-    '#default_value' => isset($form_state['values']['aspect']) ? $webform->data['aspect'] : (isset($webform->data['aspect']) ? $webform->data['aspect'] : 3),
+    '#default_value' => isset($webform->data['aspect']) ? $webform->data['aspect'] : 3,
     '#weight' => 1,
     //this ajax only works once then the form #id increments to ctools-export-ui-edit-item-form--2
     '#ajax' => array(
@@ -55,10 +55,9 @@ function _mcapi_edit_webform(&$form, &$form_state) {
   );
   $form['path'] = array(
     '#title' => t('Path'),
-    '#description' => t('url of this form. Use % to represent an existing transaction ID.'),
+    '#description' => t("Url of this form. Use optional literals '%transaction' and '%user'. See !url documentation for advanced usage", array('!url' => l('hook_menu','http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
     '#type' => 'textfield',
     '#default_value' => isset($webform->path) ? $webform->path : '',
-    '#element_validate' => array('mcapi_path_validate'),
     '#required' => TRUE,
     '#weight' => 2
 
@@ -115,7 +114,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
   unset($incoming_options[-1]);//erase transactions should never be editable
   unset($outgoing_options['unset']);
   $outgoing_options['null'] = '('.t('inherit').')';
-
+  
   $form['workflow'] = array(
     '#title' => t('Workflow'),
     '#description' => t('Beyond simply creating and editing transactions, these forms move the transactions between states'),
@@ -129,6 +128,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       '#type' => 'checkboxes',
       '#options' => drupal_map_assoc($incoming_options),
       '#default_value' => isset($webform->data['workflow']['incoming']) ? $webform->data['workflow']['incoming'] : array('Unset'),
+      '#element_validate' => array('webform_workflow_incoming_validate'),
       '#weight' => 1,
     ),
     'outgoing' => array(
@@ -187,7 +187,8 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       );
     }
   }
-  if ($form['aspect']['#default_value'] == 3) {
+  $aspect = isset($form_state['values']['aspect']) ? $form_state['values']['aspect'] : $form['aspect']['#default_value'] ;
+  if ($aspect == 3) {
     //special settings for payer and payee
     foreach (array('payer' => t('Payer ID'), 'payee' => t('Payee ID')) as $key => $name) {
       $form[$key] = mcapi_webform_prefill_fields($webform, $key, $name);
@@ -244,6 +245,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     );
     $form['direction']['common']['preset']['#description'] = t("Either 'incoming' or 'outgoing'");
   }
+  
   //special settings for amount
   $form['amount'] = mcapi_webform_prefill_fields($webform, 'amount', t('Amount'));
   $form['amount']['chars'] = array(
@@ -281,7 +283,6 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       '#description' => implode('<br />', array(
         t("Use token '#xid' to refer to the transaction id."),
         t("E.g. the transaction's own page is 'transaction/#xid'."),
-        t("All 'Validating' transactions should point to another form.")
       )),
       '#type' => 'textfield',
       '#default_value' => isset($webform->data['submission']['redirect']) ? $webform->data['submission']['redirect'] : '',
@@ -291,43 +292,58 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     ),
     '#weight' => 20,
   );
-  $form['templates'] = array(
-    '#title' => t('Templates'),
+
+  $form['webform_templates'] = array(
+    '#type' => 'vertical_tabs',
+    '#weight' => 7,
+    '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
+  );
+  $form['step-1'] = array(
+    '#title' => t('Step 1 form'),
     '#description' => implode(' ', array(
       t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
       t('Allowed tags are:') .' a, p, br, font, style'
     )),
     '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => !empty($webform->name),
-    '#weight' => 7,
-    'title-1' => array(
+    '#group' => 'webform_templates',
+    '#weight' => 1,
+    'title' => array(
       '#title' => t('Title'),
       '#description' => t('For use in block title and menu links'),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['templates']['title-1']) ? $webform->data['templates']['title-1'] : '',
+      '#default_value' => isset($webform->data['step-1']['title']) ? $webform->data['step-1']['title'] : '',
       '#required' => TRUE
     ),
-    'template-1' => array(
+    'template' => array(
       '#title' => t('Main form'),
       '#type' => 'textarea',
-      '#rows' => isset($webform->data['templates']['template-1']) ? count(explode("\n", $webform->data['templates']['template-1'])) : 5,
-      '#default_value' => isset($webform->data['templates']['template-1']) ? $webform->data['templates']['template-1'] : '',
+      '#rows' => isset($webform->data['step-1']['template']) ? count(explode("\n", $webform->data['step-1']['template'])) : 5,
+      '#default_value' => isset($webform->data['step-1']['template']) ? $webform->data['step-1']['template'] : '',
       '#element_validate' => array('mcapi_webforms_template_validate'),
       '#required' => TRUE,
     ),
-    'title-2' => array(
+  );
+  $form['step-2'] = array(
+    '#title' => t('Step-2 form (optional)'),
+    '#description' => implode(' ', array(
+      t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
+      t('Allowed tags are:') .' a, p, br, font, style'
+    )),
+    '#type' => 'fieldset',
+    '#group' => 'webform_templates',
+    '#weight' => 2,
+    'title' => array(
       '#title' => t('Title'),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['templates']['title-2']) ? $webform->data['templates']['title-2'] : '',
+      '#default_value' => isset($webform->data['step-2']['template']) ? $webform->data['step-2']['template'] : '',
     ),
-    'template-2' =>  array(
+    'template' =>  array(
       '#title' => t('Confirmation page (optional)'),
       '#description' => t('This page will be shown after the transaction has validated but before the form is submitted.') .' '.
         t("Two more tokens are available here, '@certificate' and '@summary'", array('@certificate' => '[certificate]', '@summary' => '[summary]')),
       '#type' => 'textarea',
-      '#rows' => isset($webform->data['templates']['template-2']) ? count(explode("\n", $webform->data['templates']['template-2'])) : 5,
-      '#default_value' => isset($webform->data['templates']['template-2']) ? $webform->data['templates']['template-2'] : '',
+      '#rows' => isset($webform->data['step-2']['template']) ? count(explode("\n", $webform->data['step-2']['template'])) : 5,
+      '#default_value' => isset($webform->data['step-2']['template']) ? $webform->data['step-2']['template'] : '',
       '#weight' => 2,
     )
   );
@@ -346,7 +362,7 @@ function mcapi_webform_prefill_fields($webform, $key, $name) {
       '#title' => t('Common properties'),//this isn't showing, and nor is the border
       '#description' =>  '<strong>'.t('Common properties') .'</strong> '.t('What to do with passed parameters'),
       '#type' => 'fieldset',
-      '#attributes' => array('style' => 'border:thin solid gray;width:350px;'),
+      '#attributes' => array('style' => 'border:thin solid gray;width:300px;'),
       '#weight' => -5,
       'preset' => array(
         '#title' => t('Hard set value'),
@@ -402,30 +418,33 @@ function mcapi_webforms_template_validate(&$element, &$form_state) {
   //TODO: check that all forms which output state 'Validating' redirect to another webform
 }
 
-
-//this is completely wrong, but I just couldn't get ctools to work without proper documentation
-function mcapi_edit_webform_submit($form, &$form_state) {
+function mcapi_edit_webform_validate($form, &$form_state) {
   $values = &$form_state['values'];
   unset($values['form_id'], $values['form_token'], $values['op'], $values['form_build_id'], $values['submit'], $values['xfid']);
-  if (isset($form_state['item'])) {
-    $webform = &$form_state['item'];
-  }
-  else {
-    ctools_export_crud_new('mcapi_webforms');
-  }
+  //we need to start with an existing ctools object which contains essential default properties
+
+  $webform = empty($form_state['item']) ? ctools_export_crud_new('mcapi_webforms') : $form_state['item'];
   $webform->name = $values['info']['name'];//this isn't editable at the moment
   $webform->path = $values['path'];
   unset($values['name'], $values['path']);
   $webform->data = $values;
-  //this should be used in conjunction with form_alter
-  drupal_alter('mcapi_webform', $webform, $values);
+  $form_state['item'] = $webform;
+}
+/*
+ * element validate callback
+ * make sure at least one incoming state is chosen for the workflow
+ */
+function webform_workflow_incoming_validate(&$element, $form_state) {
+  debug($form_state['values']['workflow']);
+  if (!array_filter($form_state['values']['workflow']['incoming'])) {
+    form_error($element, t('At least one incoming state must be selected'));
+  }
+}
 
-  $form_state['redirect'] = 'admin/accounting/webforms';
-  register_shutdown_function('menu_rebuild');
+//I think this is completely wrong, but I just couldn't get ctools to work without proper documentation
+function mcapi_edit_webform_submit($form, &$form_state) {
+  $form_state['redirect'] = 'admin/accounting/webforms'; //where the menu_rebuild is run
 }
 
 function mcapi_path_validate(&$element, $form_state) {
-  if (!valid_url($element['#value'])) {
-    form_error($element, t('The provided URL is invalid.'));
-  }
 }

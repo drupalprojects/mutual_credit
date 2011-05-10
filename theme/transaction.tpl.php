@@ -36,9 +36,6 @@ if ($view_mode == 'summary') {
     '@description' => $description,
   );
   switch ($transaction->state) {
-    case TRANSACTION_STATE_PENDING:
-      print t("On @recorded, !payer will pay !payee !amount for '@description'", $replacements);
-      break;
     case TRANSACTION_STATE_FINISHED:
       print t("On @recorded, !payer gave !payee !amount for '@description'", $replacements);
       break;

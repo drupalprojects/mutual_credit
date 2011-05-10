@@ -191,7 +191,6 @@ class TransactionEntityController extends MCAPIEntityController {
       ->condition('payee_uid', $uid)
     )->condition(db_or()
       ->condition('state', TRANSACTION_STATE_FINISHED)
-      ->condition('state', TRANSACTION_STATE_PENDING)
     );
     return $query->fields('x')->execute()->fetchAll();
   }
@@ -336,12 +335,6 @@ function balances_recalc($cid, $uids, $test = FALSE) {
     $in['total'] = floatval($in['total']);
     $out['total'] = floatval($out['total']);
 
-    $pend_out = floatval(db_query("SELECT sum(quantity)  from {mcapi_transactions} WHERE payer_uid = :uid AND state = :state AND cid = :cid",
-      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid))
-      ->fetchField());
-    $pend_in = floatval(db_query("SELECT sum(quantity) from {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
-      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid))
-      ->fetchField());
     $row = (object)array(
       'cid' => $cid,
       'uid' => $uid,
@@ -349,7 +342,6 @@ function balances_recalc($cid, $uids, $test = FALSE) {
       'gross_in' => $in['total'],
       'gross_out' =>$out['total'],
       'count' => intval($in['count'] + $out['count']),
-      'pending_dif' => $pend_in - $pend_out,
     );
     foreach (variable_get('mcapi_db_write', array('default')) as $connection) {
       db_set_active($connection);

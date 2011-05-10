@@ -20,7 +20,6 @@
 
 //states are mutually exclusive
 define ('TRANSACTION_STATE_FINISHED', 0);
-define ('TRANSACTION_STATE_PENDING', 1);
 define ('TRANSACTION_STATE_ERASED', -1);
 define ('TRANSACTION_STATE_VALIDATING', -2);
 
@@ -106,13 +105,19 @@ function mcapi_hook_info() {
   );
 }
 
-function mcapi_transaction_info($field) {
+function mcapi_transaction_info($prop) {
   $info = array(
     'states' => array(
       'unset' => t('Unset'),//this should never reach the database
       TRANSACTION_STATE_FINISHED => t('Finished'),
-      TRANSACTION_STATE_ERASED => t('Erased'),
-      TRANSACTION_STATE_VALIDATING => t('Validating')
+      //TRANSACTION_STATE_ERASED => t('Erased'), //internal use only
+      //TRANSACTION_STATE_VALIDATING => t('Validating') //internal use only
+    ),
+    //access needs to have the same array keys as 'states'
+    'access' => array(
+      TRANSACTION_STATE_FINISHED => 'mcapi_access_finished',
+      TRANSACTION_STATE_ERASED => 'mcapi_access_erased',
+      TRANSACTION_STATE_VALIDATING => 'mcapi_access_validating',
     ),
     'types' => array(
       'unspecified'
@@ -122,7 +127,7 @@ function mcapi_transaction_info($field) {
       'default'
     )
   );
-  return $info[$field];
+  return $info[$prop];
 
 }
 
@@ -157,16 +162,22 @@ function mcapi_permission() {
  * User 1 cannot update or delete if the currency type doesn't allow
  */
 function transaction_access($op, $transaction, $account = NULL) {if (!$transaction)ddebug_backtrace();
-  $currencies = currencies_load();
+  static $states;
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-  $currency = $currencies[$transaction->cid];
-  $participated = $account->uid == $transaction->payee_uid || $account->uid == $transaction->payer_uid;
-  $pending = $transaction->state == TRANSACTION_STATE_PENDING;
-  $owner = $transaction->creator == $account->uid;
+  $currency = currency_load($transaction->cid);
+  if (!$states) {
+    $states = module_invoke_all('transaction_info', 'access');
+  }
+  $function = $states[$transaction->state];
+  return $function($op, $transaction, $account, $currency);
+}
 
-  $accountant = user_access('manage all transactions') && $currency->extra['privacy'];
+function mcapi_access_finished($op, $transaction, $account, $currency) {
+  $participated = $account->uid == $transaction->payee_uid || $account->uid == $transaction->payer_uid;
+  $owner = $transaction->creator == $account->uid;
+  $accountant = user_access('manage all transactions');
   switch ($op) {
     case 'view'://users can always view their own pages
       switch ($currency->extra['privacy']) {
@@ -178,23 +189,32 @@ function transaction_access($op, $transaction, $account = NULL) {if (!$transacti
         case 3: return TRUE;
     }
     case 'update':
-      if ($currency->extra['update_mode'] < 1 || $transaction->state == TRANSACTION_STATE_ERASED) return;
+      if ($currency->extra['update_mode'] < 1) return;
       switch ($currency->extra['user_editable_mode']) {
-        case 0: return $accountant;
-        case 1: return $accountant || ($pending && $owner);
-        case 2: return $accountant || ($pending && $participated);
+        case 0:
+        case 1:
+        case 2: return $accountant;
         case 3: return $accountant || $participated;
       }
     case 'erase':
-      if ($currency->extra['delete_mode'] < 1 || $transaction->state == TRANSACTION_STATE_ERASED) return;
+      if ($currency->extra['delete_mode'] < 1) return;
       switch($currency->extra['user_editable_mode']) {
         case 0: return $accountant;
-        case 1: return $accountant || ($pending && $owner);
-        case 2: return $accountant || ($pending && $participated);
+        case 1: return $accountant;
+        case 2: return $accountant;
         case 3: return $accountant || $participated;
       }
-    default: debug('Unknown $op in transaction_access:'. $op);
   }
+}
+
+function mcapi_access_erased($op, $transaction, $account, $currency) {
+  switch ($op) {
+    case 'view':
+      return user_access('manage all transactions');
+    }
+}
+function mcapi_access_validating($op, $transaction, $account, $currency) {
+  return $GLOBALS['user']->uid == $transaction->creator;
 }
 
 /*
@@ -258,7 +278,6 @@ function currencies_access_viral($op, $currency, $uid) {
   //return all the currencies which the user has ever used, or created
   if ($currency->uid == $uid || $op == 'use') return TRUE;
   if ($op == 'initiate' || $op == 'view') {
-    //this includes pending transactions
     return db_query('SELECT xid FROM mcapi_transactions WHERE payer_uid = :payer or payee_uid = :payee',
        array(':payer' => $uid, ':payee' => $uid)
     )->execute()->fetchField();
@@ -471,9 +490,6 @@ function mcapi_image_default_styles() {
 function transaction_view($transaction, $view_mode = 'certificate') {
   //this is almost certainly a full page view, so I dare to set the title here
   $page_title = t('Transaction Certificate #@xid', array('@xid' => $transaction->xid));
-  if ($transaction->state == TRANSACTION_STATE_PENDING) {
-    $page_title .= '-'. strtoupper(t('pending'));
-  }
   drupal_set_title($page_title);
 
   // This is only needed if there are fields on the transaction entity

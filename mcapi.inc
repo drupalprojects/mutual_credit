@@ -394,33 +394,9 @@ function currency_form($form, $form_state, $currency = NULL) {
       '#default_value' => empty($form_state['values']['privacy']) ? intval($currency->extra['privacy']) : $form_state['values']['privacy'],
     )
   );
-  $update_mode = !empty($form_state['values']['update_mode']) ? TRUE : $form['accounting']['update_mode']['#default_value'];
-
-  if (!empty($update_mode)){
-    $form['editable'] = array(
-      '#title' => t('Mutability'),
-      '#description' => t('Only applies if editing is permitted by accounting standards.').' (AJAX needed!)',
-      '#type' => 'fieldset',
-      '#group' => 'additional_settings',
-      '#weight' => 4,
-      'user_editable_mode' => array(
-        '#title' => t('User editable'),
-        '#type' => 'radios',
-        '#options' => array(
-          0 => t("Only users with '@permission' can edit", array('@permission' => t('manage all transactions'))),
-          1 => t('Creator can edit/delete pending transactions'),
-          2 => t('Both can edit/delete pending transactions'),
-          3 => t('Both can edit/delete finished transactions'),
-        ),
-        '#default_value' => empty($form_state['values']['user_editable_mode']) ? intval($currency->extra['user_editable_mode']) : $form_state['values']['user_editable_mode'],
-        '#weight' => 4
-      )
-    );
-  }
-
 
   field_attach_form('currency', $currency, $form, $form_state);
-  $form['#entity_builders'][] = 'currency_entity_builder';
+  //$form['#entity_builders'][] = 'currency_entity_builder';
 
   $form['buttons'] = array(
     '#weight' => 20,
@@ -495,7 +471,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 function currency_form_submit($form, &$form_state) {
   $currency = new currency;
   entity_form_submit_build_entity('currency', $currency, $form, $form_state);
-  currency_controller('save', $currency);
+  currency_controller('save', $currency);debug($currency);
   //cache_clear_all('currencies');
   if (user_access('configure all currencies')) {
     drupal_goto('admin/accounting');
@@ -595,10 +571,7 @@ function transaction_form($form, $form_state, $transaction) {
     '#title' => t('State'),
     '#description' => t('Finished transactions cannot have empty values.'),
     '#default_value' => $transaction->state,
-    '#options' => array(
-      TRANSACTION_STATE_FINISHED => t('Finished'),
-      TRANSACTION_STATE_PENDING => t('Pending'),
-    ),
+    '#options' => module_invoke_all('transaction_info', 'states'),
     '#element_validate' => array('mcapi_validate_state'),
     '#weight' => 18
   );
@@ -726,12 +699,7 @@ function mcapi_transaction_erase_confirm_form($form, $transaction){
   if ($form['#parameters'][2]->type == 'transaction') {
     drupal_set_title(t('Are you sure you want to erase this transaction?'));
     $form['#prefix'] = '<blockquote>' . $transaction->title . '</blockquote>';
-    if ($transaction->state == TRANSACTION_STATE_PENDING) {
-      $form['description']['#value'] = t('The transation had not been confirmed');
-    }
-    elseif ($transaction->state == TRANSACTION_STATE_FINISHED) {
-      $form['description']['#value'] = t('This transaction was confirmed, so the balances of both users will be affected');
-    }
+    $form['description']['#value'] = t('This transaction was confirmed, so the balances of both users will be affected');
   }
 }
 
@@ -752,7 +720,6 @@ function mcapi_statement($account) {
     unset($transaction['extra']);
     $transactions[] = $transaction;
   }
-
   return theme('table', array('rows' => $transactions, 'header' => array_keys($transaction)));
 }
 

@@ -20,11 +20,19 @@ function mcapi_webforms_menu() {
   //one menu callback for each form.
   $webforms = mcapi_webforms_load();
   foreach($webforms as $webform) {
+    $sections = explode('/',$webform->path);
+    //the first ->name is for drupal_get_form, the second is for hook_forms to be more efficient
+    //then we add subsequent arguments in an order expected by mcapi_webforms_form
+    $page_args = array(
+      $webform->name,
+      array_search('%transaction', $sections),
+      array_search('%user', $sections)
+    );
     $item = array(
-      'title' => $webform->data['templates']['title-1'],
-      //'description' => $webform->data['description'], //this will be help
+      'title' => $webform->data['step-1']['title'],
+      'description' => $webform->data['help'], //this will be help
       'page callback' => 'drupal_get_form',
-      'page arguments' => array($webform->name),
+      'page arguments' => $page_args,
       'access callback' => strtok($webform->data['outputs']['access'], ':'),
       'access arguments' => array(strtok(':')),
       'file' => 'mcapi_webforms.inc',
@@ -43,21 +51,26 @@ function mcapi_webforms_menu() {
 }
 /*
  * implements hook_forms
- * args[0] is the transaction, if passed
+ * args[0] is a transaction
+ * args[1] is the webform name
+ * args[2] is a loaded user (optional)
+ * args added here are not put into $form_state[build_info][args]
  */
 function mcapi_webforms_forms($form_id, $args) {
-  if (empty($args[0]->xid)) {
-    $args[0] = new transaction;
-  }
-  $webforms = mcapi_webforms_load();
-  foreach($webforms as $webform) {
-    $args[1] = $webform;
-    $forms[$webform->name] = array(
-      'callback' => 'mcapi_webforms_form',
-      'callback arguments' => $args
+  //this function only need bother return anything if the first arg is passed
+  if (!count($args)) return;
+  if ($webform = mcapi_webforms_load($form_id)) {
+    //ensure there is a transaction object in arg 1
+    return array(
+      $form_id => array(
+        'callback' => 'mcapi_webforms_form',
+        'callback arguments' => array(
+          0 => empty($args[0]->xid) ?  new transaction : $args[0],
+          1 => $webform
+        )
+      )
     );
   }
-  return $forms;
 }
 
 /*
@@ -80,7 +93,7 @@ function mcapi_webforms_block_info() {
   foreach ($webforms as $webform) {
     if ($webform->data['outputs']['use_block']) {
       $blocks[$webform->name] = array(
-        'info' => $webform->data['templates']['title-1'],
+        'info' => $webform->data['step-1']['title'],
         'cache' => DRUPAL_CACHE_PER_USER
       );
     }
@@ -109,7 +122,8 @@ function mcapi_webforms_block_view($delta) {
 function mcapi_webforms_transaction_info($field) {
   switch($field) {
     case 'states':
-      return array(TRANSACTION_STATE_TEMPLATE => t('Template'));
+      return array();
+      //return array(TRANSACTION_STATE_TEMPLATE => t('Template'));
     case 'types':
       $webforms = mcapi_webforms_load();
       foreach($webforms as $webform) {
@@ -151,18 +165,19 @@ function mcapi_webforms_element_info() {
  * callback specified in the export_ui plugin
  */
 function mcapi_edit_webform(&$form, &$form_state) {
-  //I can't think of a better place to put this,
+  //I can't think of a better place to put this.
+  //menu needs rebuilding when a webform is saved
+  //were does views do it?
   menu_rebuild();
-  //move this all over to the admin file to reduce load burden
-  module_load_include('admin.inc', 'mcapi_webforms');
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_webforms') .'/mcapi_webforms.admin.inc';
   $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
   $form['#tree'] = TRUE;
+
+  //this big form builder function is kept in admin.inc
+  module_load_include('admin.inc', 'mcapi_webforms');
   return _mcapi_edit_webform($form, $form_state);
 }
-function mcapi_edit_webform_validate($form, $form_state) {
-  
-}
+
 /*
  * load a webform by name, using ctools
  */
@@ -173,7 +188,7 @@ function mcapi_webforms_load($name = NULL) {
     if (!empty($results[$name])) {
       return $results[$name];
     }
-    else return;
+    return;
   }
   return $results;
 }
