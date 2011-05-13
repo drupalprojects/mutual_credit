@@ -504,6 +504,7 @@ function mc_prepopulate_3rdparty($type, $node) {
       if ($node->uid != $GLOBALS['user']->uid) {
         $prefill['payee_uid'] = $GLOBALS['user']->uid;
       }
+    break;
     default:
       drupal_set_message(t('Unknown content type in link.'));
   }

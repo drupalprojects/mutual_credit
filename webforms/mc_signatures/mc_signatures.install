@@ -86,3 +86,14 @@ function mc_signatures_update_6001($ret = array()) {
   db_drop_unique_key($ret, 'mc_unsigned', 'nid_uid');
   return array();
 }
+
+/*
+ * bugfix retro correcting exchanges stuck in pending with no signatures
+ */
+function mc_signatures_update_6002() {
+  $result = db_query("select e.nid from mc_exchanges e left join mc_unsigned u on e.nid = u.nid where e.state = 1 and u.nid IS NULL");
+  while ($nid = db_result($result)) {
+    db_query("UPDATE {mcapi_exchanges} SET state = 0 WHERE nid = $nid");
+  }
+  return array();
+}
