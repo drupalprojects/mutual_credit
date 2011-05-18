@@ -550,7 +550,8 @@ function mcapi_notify($op, $exchange) {
       user_preferred_language($account),
       array(//params
         'recipient' => $account,
-        'exchange' => $exchange,
+        //reload the exchange especially for the sake of $node->taxonomy
+        'exchange' => node_load($exchange->nid),
         'send' => NULL //will be set elsewhere
       ),
       NULL, //sender defaults to site_mail
