@@ -18,7 +18,8 @@ function mc_3rdparty_form($form_state, $prefill = NULL) {
   }
   if ($form_state['storage']['step'] == 1){
     //get the default exchange form, with defaults
-    $form = mcapi_form_exchange((object)$values);
+    $passed_currencies = $values['cid'] ? array($values['cid'] => node_load($values['cid'])) : NULL;
+    $form = mcapi_form_exchange((object)$values, $passed_currencies);
 
     mc_build_webform($form, $values);
 
@@ -267,7 +268,7 @@ function mc_build_webform(&$form, $values = NULL) {
 
   $form['exchange_type'] = array(
     '#type' => 'hidden',
-    '#value' => '3rdparty',
+    '#value' => isset($values['exchange_type']) ? $values['exchange_type'] : '3rdparty',
   );
   //this can't be in mcapi module because the node-form tries to add and screws up.
   $form['type'] = array(
