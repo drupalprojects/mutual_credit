@@ -1445,7 +1445,7 @@ function mc_exchanges_user_view() {
     'type' => 'none',
   ));
   $handler->override_option('title', t('Exchange list'));
-  $handler->override_option('footer', l(t('Record exchange'), '/exchange'));
+  $handler->override_option('footer', l(t('Record exchange'), 'exchange'));
   $handler->override_option('footer_format', '1');
   $handler->override_option('footer_empty', 1);
   $handler->override_option('empty', t('There are no exchanges in the system yet'));

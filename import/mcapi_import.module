@@ -34,7 +34,6 @@ function mcapi_import_menu() {
     'weight' => -50
   );
   return $items;
-print_r($items);
 }
 
 function mcapi_import_menu_alter($items) {
@@ -212,7 +211,7 @@ function launch_form($form_state) {
     '#description' => t("Have you composed the 'password_reset' email at !page", array('!page' => l('admin/user/settings', 'admin/user/settings'))),
   );
 
-  $traders = cache_get('cc_trader_list');
+  $traders = cache_get('mc_trader_list');
   $form['checklist']['membercount'] = array(
     '#title' => t('Trading accounts ready: @num', array('@num' => count($traders->data))),
     '#type' => 'checkbox',
@@ -287,7 +286,7 @@ function mcapi_import_test_launch($form, $form_state) {
 }
 
 function launch_form_submit($form, $form_state) {
-  $traders = cache_get('cc_trader_list');
+  $traders = cache_get('mc_trader_list');
   foreach(array_keys($traders->data) as $uid){
     change_and_mail(user_load($uid));
   }

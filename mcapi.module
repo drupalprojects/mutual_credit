@@ -72,6 +72,12 @@ function mcapi_cron() {
   }
 }
 
+/**
+ * http://api.drupal.org/api/function/hook_init/6
+ */
+function mcapi_init() {
+  currencies_load();
+}
 /*
  * Needed for the views 2 module
  */
