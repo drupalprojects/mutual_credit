@@ -3,7 +3,7 @@
 /*
  * Permitted users can design their own webforms, hopefully all valid!
  */
-define('TRANSACTION_STATE_TEMPLATE', -3);
+//define('TRANSACTION_STATE_TEMPLATE', -3);
 
 function mcapi_webforms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
@@ -58,6 +58,7 @@ function mcapi_webforms_menu() {
  */
 function mcapi_webforms_forms($form_id, $args) {
   //this function only need bother return anything if the first arg is passed
+  //perhaps it should just return an array of all forms as the examples indicate?
   if (!count($args)) return;
   if ($webform = mcapi_webforms_load($form_id)) {
     //ensure there is a transaction object in arg 1
@@ -122,6 +123,7 @@ function mcapi_webforms_block_view($delta) {
 function mcapi_webforms_transaction_info($field) {
   switch($field) {
     case 'states':
+    case 'access':
       return array();
       //return array(TRANSACTION_STATE_TEMPLATE => t('Template'));
     case 'types':
@@ -198,7 +200,7 @@ function mcapi_webforms_load($name = NULL) {
  */
 function mcapi_webforms_ctools_plugin_directory($module, $plugin) {
   if ($module == 'ctools' && $plugin == 'export_ui') {
-    return 'plugins/'.$plugin;
+    return 'plugins/export_ui';//directory
   }
 }
 /*
@@ -252,11 +254,11 @@ function mcapi_webform_get_additional_form_fields() {
   return $fields;
 }
 
-function get_deepest_child($element) {
+function _get_deepest_child($element) {
   $children = element_children($element);
   if (count($children)) {
     $last_child = array_pop($children);
-    return get_deepest_child($element[$last_child]);
+    return _get_deepest_child($element[$last_child]);
   }
   return $element;
 }

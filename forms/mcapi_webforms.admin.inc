@@ -60,11 +60,10 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#default_value' => isset($webform->path) ? $webform->path : '',
     '#required' => TRUE,
     '#weight' => 2
-
   );
   $form['help'] = array(
     '#title' => t('Help'),
-    '#description' => t('Tell the user what this form is for (optional).'),
+    '#description' => t('A quick description for the administrator'),
     '#type' => 'textfield',
     '#default_value' => isset($webform->data['help']) ? $webform->data['help'] : '',
     '#maxlength' => 255,
@@ -396,7 +395,7 @@ function mcapi_webforms_ajax_settings($form, &$form_state) {
  * wrapper function to build default settings form for additional fields
  */
 function mcapi_webform_prefill_fields_additional(&$webform, $key, $field) {
-  $element = get_deepest_child($field);
+  $element = _get_deepest_child($field);
   $form = mcapi_webform_prefill_fields($webform, $key, $element['#title']);
   if (!empty($element['#required'])) {
     $form['common']['required']['#default_value'] = TRUE;
@@ -406,16 +405,7 @@ function mcapi_webform_prefill_fields_additional(&$webform, $key, $field) {
 }
 
 function mcapi_webforms_template_validate(&$element, &$form_state) {
-  $main_template =  filter_xss($element['#value'], array('a', 'p', 'br', 'font', 'style', ));
-  foreach ($form_state['values'] as $fieldname => $value) {
-    if (is_array($value) && !empty($value['common']['required'])) {
-      if (!strpos($main_template, $fieldname)) {
-        form_error($element, t('Required value @title has no preset and is not included in the template', array('@title' => $fieldname)));
-      }
-    }
-  }
-  $form_state['values']['templates']['template-1'] = $main_template;
-  //TODO: check that all forms which output state 'Validating' redirect to another webform
+  $form_state['values']['templates']['template-1'] = filter_xss($element['#value'], array('a', 'p', 'br', 'font', 'style', ));
 }
 
 function mcapi_edit_webform_validate($form, &$form_state) {
@@ -435,7 +425,6 @@ function mcapi_edit_webform_validate($form, &$form_state) {
  * make sure at least one incoming state is chosen for the workflow
  */
 function webform_workflow_incoming_validate(&$element, $form_state) {
-  debug($form_state['values']['workflow']);
   if (!array_filter($form_state['values']['workflow']['incoming'])) {
     form_error($element, t('At least one incoming state must be selected'));
   }

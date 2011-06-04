@@ -1,20 +1,12 @@
 <?php
-// $Id: views_handler_field_mcapi_other_participant.inc,v 1.1.2.2 2010/12/22 20:21:51 matslats Exp $
+// $Id
 
 /**
  * @file
- * Field handler to allow linking to a payer's user page
+ * Field handler to show the user not referenced in the views argument
  * @ingroup views_field_handlers
  */
 class views_handler_field_mcapi_other_participant extends views_handler_field {
-  
-  function construct() {
-    parent::construct();
-    if ($this->definition['group'] == t('Exchanges')) {
-      $this->additional_fields['payer_uid'] = 'payer_uid';
-      $this->additional_fields['payee_uid'] = 'payee_uid';
-    }
-  }
 
   function options(&$options) {
     parent::options($options);
@@ -33,7 +25,7 @@ class views_handler_field_mcapi_other_participant extends views_handler_field {
   }
 
   function render_link($data, $values) {
-    $name = theme('username', user_load($data));
+    $name = format_username(user_load($data));
     if (!$this->options['link_to_user']) {
       $name = strip_tags($name);
     }
@@ -41,9 +33,8 @@ class views_handler_field_mcapi_other_participant extends views_handler_field {
   }
   
   function query() {
-    //this is needed because the address of this function implies a db field which doesn't exist
-    //see mc_display.views.inc $data['mc_exchanges']['participant']
     $this->ensure_my_table();
+    $this->add_additional_fields();
   }
 
   function render($values) {
@@ -51,9 +42,9 @@ class views_handler_field_mcapi_other_participant extends views_handler_field {
       $key = array_search('participant', array_keys($this->view->argument));
       if ($key !== FALSE) {
         $uid = $this->view->args[$key];
-        $result = $values->mc_exchanges_payee_uid == $uid ?
-          $values->mc_exchanges_payer_uid :
-          $values->mc_exchanges_payee_uid;
+        $result = $values->mcapi_transactions_payee == $uid ?
+          $values->mcapi_transactions_payer :
+          $values->mcapi_transactions_payee;
         return $this->render_link($result, $values);
       }
     }

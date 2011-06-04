@@ -9,7 +9,6 @@ files[] = default.controller
 files[] = mcapi.module
 files[] = mcapi.inc
 files[] = mcapi.install
-files[] = views/mcapi_views.inc ;I think the views hook declares this so it's not needed
 
 ; Views handlers
 files[] = views/views_handler_argument_mcapi_participant.inc
@@ -18,9 +17,10 @@ files[] = views/views_handler_field_mcapi_amount.inc
 files[] = views/views_handler_field_mcapi_description.inc
 files[] = views/views_handler_field_mcapi_other_participant.inc
 files[] = views/views_handler_field_mcapi_trader.inc
-files[] = views/views_handler_field_transaction_links.inc
 files[] = views/views_handler_field_mcapi_state.inc
+files[] = views/views_handler_field_transaction_links.inc
 files[] = views/views_handler_filter_mcapi_currency.inc
 files[] = views/views_handler_filter_mcapi_role_current_user.inc
+files[] = views/views_handler_filter_mcapi_other_participant.inc
 files[] = views/views_handler_filter_mcapi_types.inc
 files[] = views/views_handler_filter_mcapi_state.inc

@@ -12,3 +12,4 @@ files[] = mcapi_webforms.mcapi.inc
 files[] = plugins/export_ui/export_ui.inc
 
 dependencies[] = mcapi
+dependencies[] = ctools

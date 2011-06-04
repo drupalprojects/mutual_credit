@@ -8,15 +8,6 @@
  */
 class views_handler_field_mcapi_amount extends views_handler_field {
 
-  function construct() {
-    parent::construct();
-    $this->additional_fields['cid'] = 'cid';
-    if ($this->definition['group'] != t('Balances')) {
-      $this->additional_fields['payer_uid'] = 'payer_uid';
-      $this->additional_fields['payee_uid'] = 'payee_uid';
-    }
-  }
-
   function option_definition() {
     $options = parent::option_definition();
     $options['output_type'] = array('default' => 'normal');
@@ -32,7 +23,7 @@ class views_handler_field_mcapi_amount extends views_handler_field {
       'normal' => t('Just show amount')
     );
 
-    if ($this->definition['group'] == t('Exchanges')) {
+    if ($this->definition['group'] == t('Transaction')) {
       $form['output_type'] = array(
         '#type' => 'radios',
         '#title' => t('Output type'),
@@ -42,7 +33,37 @@ class views_handler_field_mcapi_amount extends views_handler_field {
       );
     }
   }
+  
 
+  function query() {
+    static $i;
+    $i++;
+    $this->ensure_my_table();
+    $this->aliases['cid'] = $this->query->add_field('mcapi_transactions', 'cid', NULL);
+
+    // Add the field here, not in the inherited function
+    //sometimes we want to add more than one instance here so we ensure they get different aliases
+    $params = $this->options['group_type'] != 'group' ? array('function' => $this->options['group_type']) : array();
+    $alias = 'quantity_'.$i.'_'.$this->options['output_type'];
+    $this->field_alias = $this->query->add_field($this->table_alias, $this->real_field, $alias, $params);
+    //these may be needed
+    $this->add_additional_fields(array('payer'));
+    $this->add_additional_fields(array('payee'));
+
+    $this->add_additional_fields();
+  }
+
+  /*
+  array(
+    [mcapi_transactions_cid] => 1
+    [mcapi_transactions_quantity] => 6
+    [quantity_1_normal] => 13.66
+    [mcapi_transactions_payer] => 12
+    [mcapi_transactions_payee] => 7
+    [quantity_2_incoming] => 13.66
+    [quantity_3_outgoing] => 13.66
+  )
+*/
   function render($values) {
     //if we are using the 'participant' argument, the options kick in.
     //might not be the most efficient way to access the arguments
@@ -51,13 +72,13 @@ class views_handler_field_mcapi_amount extends views_handler_field {
       $uid = $this->view->args[$key];
       switch($this->options['output_type']) {
         case 'outgoing':
-          if ($values->{$this->aliases['payee_uid']} == $uid) return;
+          if ($values->{$this->aliases['payee']} == $uid) return;
           break;
         case 'incoming':
-          if ($values->{$this->aliases['payer_uid']} == $uid) return;
+          if ($values->{$this->aliases['payer']} == $uid) return;
           break;
         case 'sign':
-          if ($values->{$this->aliases['payer_uid']} == $uid) {
+          if ($values->{$this->aliases['payer']} == $uid) {
             //negate the value
             $values->{$this->field_alias} = -$values->{$this->field_alias};
           }
@@ -70,7 +91,6 @@ class views_handler_field_mcapi_amount extends views_handler_field {
     elseif ($values->{$this->aliases['cid']} == NULL && $values->cleared_balance == NULL) { 
       $values->{$this->aliases['cid']} = db_result(db_query("SELECT cid FROM {mcapi_currencies}"));
     }
-    return mcapi_format_money($values->{$this->field_alias}, $values->{$this->aliases['cid']});
+   return mcapi_format_money($values->{$this->field_alias}, $values->{$this->aliases['cid']});
   }
-
 }

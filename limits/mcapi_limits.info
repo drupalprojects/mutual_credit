@@ -6,3 +6,6 @@ core = 7.x
 
 files[] = mcapi_limits.module
 dependencies[] = mcapi
+
+files[] = views/views_handler_field_mcapi_min.inc
+files[] = views/views_handler_field_mcapi_max.inc

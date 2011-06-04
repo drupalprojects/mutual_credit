@@ -8,14 +8,11 @@
  */
 class views_handler_field_transaction_links extends views_handler_field {
 
-  function construct() {
-    parent::construct();
-    $this->additional_fields['xid'] = 'xid';
-  }
   function options(&$options) {
     parent::options($options);
     $options['include_view'] = FALSE;
   }
+
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
     if ($this->definition['group'] == t('Exchanges')) {
@@ -26,10 +23,12 @@ class views_handler_field_transaction_links extends views_handler_field {
       );
     }
   }
+
   function query() {
     //this is needed because the address of this function implies a db field which doesn't exist
     //see mc_display.views.inc $data['mc_exchanges']['participant']
     $this->ensure_my_table();
+    $this->add_additional_fields(array('xid'));
   }
 
   function render($values) {

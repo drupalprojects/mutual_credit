@@ -5,4 +5,9 @@ package = Mutual Credit
 configure = admin/accounting
 core = 7.x
 
-files[] = mcapi.module
+files[] = mcapi_pending.module
+files[] = mcapi_pending.install
+files[] = mcapi_pending.mcapi.inc
+
+dependencies[] = mcapi
+dependencies[] = mcapi_webforms

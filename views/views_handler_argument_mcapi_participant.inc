@@ -9,12 +9,15 @@ class views_handler_argument_mcapi_participant extends views_handler_argument_nu
     parent::construct();
     $this->value_value = t('Is the logged in user');
   }
+  
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
   }
 
 function query() {
     $this->ensure_my_table();
-    $this->query->add_where_expression(0, "$this->table_alias.payer_uid = $this->argument OR $this->table_alias.payee_uid = $this->argument");
+    $this->query->set_where_group('OR', 'participant'); //otherwise auto-sets to AND
+    $this->query->add_where('participant', 'payer', $this->argument, '=');
+    $this->query->add_where('participant', 'payee', $this->argument, '=');
   }
 }

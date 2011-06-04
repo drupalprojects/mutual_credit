@@ -71,8 +71,8 @@ function mcapi_service_transaction_save($data) {
   mcapi_service_validate_object($data, 'transaction');
   $currency = mcapi_service_universal_lookup($data->ucid, 'user');
   $transaction = (object)array(
-    'payer_uid' => mcapi_service_universal_lookup($data->payer_uuid, 'user'),
-    'payer_uid' => mcapi_service_universal_lookup($data->payee_uuid, 'user'),
+    'payer' => mcapi_service_universal_lookup($data->payer_uuid, 'user'),
+    'payer' => mcapi_service_universal_lookup($data->payee_uuid, 'user'),
     'quantity' => $data['quantity'],
     'cid' => $currency->cid,
     'transaction_type' => 'external',

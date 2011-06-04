@@ -172,6 +172,7 @@ function mcapi_menu_inc() {
     'type' => MENU_CALLBACK,
     'file' => 'mcapi.inc',
   );
+  /*
   $items['user/%user/transactions_list'] = array(
     'title' => 'Transactions',
     'page callback' => 'mcapi_statement',
@@ -181,7 +182,7 @@ function mcapi_menu_inc() {
     'file' => 'mcapi.inc',
     'type' => MENU_LOCAL_TASK, 
   );
-
+*/
   //this is supposed for development purposes only, and may not apply to some controllers
   $items['admin/accounting/refresh/%currency'] = array(
     'title' => 'Modify currency',
@@ -259,9 +260,11 @@ function currency_form($form, $form_state, $currency = NULL) {
     $currency->extra['access_callback'] = 'user_access';
     $currency->extra['privacy'] = 1;
   }
-  drupal_set_title( !empty($currency->name) ? $title = t("Edit currency '@name'", array('@name' => $currency->name)) : t('Declare currency') );
-
-  $form = array(
+  else {
+    drupal_set_title( !empty($currency->name) ? $title = t("Edit currency '@name'", array('@name' => $currency->name)) : t('Declare currency') );
+  }
+  $form['#currency'] = $currency;
+  $form += array(
     'cid' => array(
       '#type' => 'hidden',
       '#value' => isset($currency->cid) ? $currency->cid : '',
@@ -396,7 +399,7 @@ function currency_form($form, $form_state, $currency = NULL) {
   );
 
   field_attach_form('currency', $currency, $form, $form_state);
-  //$form['#entity_builders'][] = 'currency_entity_builder';
+  $form['#entity_builders'][] = 'currency_entity_builder';
 
   $form['buttons'] = array(
     '#weight' => 20,
@@ -416,6 +419,7 @@ function currency_form($form, $form_state, $currency = NULL) {
   }
   return $form;
 }
+
 function currency_form_ajax(&$form, &$form_state) {
   return $form;
 }
@@ -445,7 +449,7 @@ function mcapi_currency_validate_divisions(&$element, $form_state) {
 
 /*
  * Called from the formAPI
- * Checks for duplicate names
+ * Checks for duplicate currency names
  */
 function mcapi_currency_validate_name(&$element, $form_state) {
   if (!isset($form_state['values']['cid']) || $form_state['values']['cid'] == 0) return;
@@ -471,7 +475,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 function currency_form_submit($form, &$form_state) {
   $currency = new currency;
   entity_form_submit_build_entity('currency', $currency, $form, $form_state);
-  currency_controller('save', $currency);debug($currency);
+  currency_controller('save', $currency);
   //cache_clear_all('currencies');
   if (user_access('configure all currencies')) {
     drupal_goto('admin/accounting');
@@ -490,7 +494,6 @@ function currency_entity_builder($entity_type, $entity, &$form, &$form_state) {
   $entity->extra['privacy'] = $entity->privacy;
   $entity->extra['user_editable_mode'] = empty($entity->extra['user_editable_mode']) ? 0 : $entity->extra['user_editable_mode'];
 }
-
 
 /**
  * implements hook_form_FORMID_alter
@@ -535,18 +538,18 @@ function transaction_form($form, $form_state, $transaction) {
     '#attributes' => array('style' => 'width:100%;')
   );
 
-  $form['payer_uid'] = array(
+  $form['payer'] = array(
     '#type' => 'textfield',
     '#title' => t('Account to be debited'),
-    '#default_value' => $transaction->payer_uid,
+    '#default_value' => $transaction->payer,
     '#element_validate' => array('mcapi_validate_user'),
     '#weight' => 6,
   );
-  $form['payee_uid'] = array(
+  $form['payee'] = array(
     '#type' => 'textfield',
     '#title' => t('Account to be credited'),
     '#description' => t('A username, email, or user ID'),
-    '#default_value' => $transaction->payee_uid,
+    '#default_value' => $transaction->payee,
     '#element_validate' => array('mcapi_validate_user'),
     '#weight' => 9,
   );
@@ -575,6 +578,9 @@ function transaction_form($form, $form_state, $transaction) {
     '#element_validate' => array('mcapi_validate_state'),
     '#weight' => 18
   );
+  //TODO
+  //I'm just fed up of multistep forms, this will have to wait
+  //the following doesn't retrieve default values out of form_state when we come back from step 2
   field_attach_form('transaction', $transaction, $form, $form_state);
   $form['buttons']['#weight'] = 25;
 
@@ -624,9 +630,14 @@ function transaction_form($form, $form_state, $transaction) {
  * This validation process allows NULL fields.
  * which also means it can validate partially completed forms
  */
-function transaction_form_validate($form, &$form_state) {
+function transaction_form_validate($form, &$form_state) {ddebug_backtrace();
   if (empty($form_state['#transaction'])) {
-    $form_state['#transaction'] = new transaction;
+    if (!empty($form_state['values']['xid'])) {
+      $form_state['#transaction'] = transaction_load($form_state['values']['xid']);
+    }
+    else {
+      $form_state['#transaction'] = new transaction;
+    }
   }
   entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
   field_attach_form_validate('transaction', $form_state['#transaction'], $form, $form_state);
@@ -643,15 +654,15 @@ function transaction_form_validate($form, &$form_state) {
  */
 function _mcapi_transaction_validate(&$transaction, &$form = NULL){
   //no usecase is currently envisaged where someone might pay themselves
-  if ($transaction->payer_uid > 0) {
-    if ($transaction->payer_uid == $transaction->payee_uid) {
+  if ($transaction->payer > 0) {
+    if ($transaction->payer == $transaction->payee) {
       form_set_error('', t('A transaction must involve two different users'));
     }
   }
 
   //a transaction can only be complete if all these fields are filled in.
   if ($transaction->state == TRANSACTION_STATE_FINISHED) {
-    $required = array('payer_uid', 'payee_uid', 'quantity', 'cid', 'type');
+    $required = array('payer', 'payee', 'quantity', 'cid', 'type');
     foreach ($required as $fieldname) {
       if (!$transaction->$fieldname) {
         if (isset($form[$fieldname])) {
@@ -666,16 +677,16 @@ function _mcapi_transaction_validate(&$transaction, &$form = NULL){
   if (count(form_get_errors())) return;
   //check that each user is permitted to use that currency
   $currency = currency_load($transaction->cid);
-  foreach (array($transaction->payer_uid, $transaction->payee_uid) as $uid) {
+  foreach (array($transaction->payer, $transaction->payee) as $uid) {
     if (!currency_access('use', $currency, $uid)) {
       form_set_error('cid', t("!name is not permitted to use @currency", array(
-        '!name' => theme('username', array('account' => user_load($transaction->payer_uid))),
+        '!name' => theme('username', array('account' => user_load($transaction->payer))),
         '@currency' => $currency->name
       )));
     }
   }
-  
-  if ($transaction->payer_uid && $transaction->payee_uid) {
+
+  if ($transaction->payer && $transaction->payee) {
     //this concerns rules and database integrity, so we hand it off to the db controller
     //we're checking the balances, and trial-entering the transaction in the db
     $transaction = transaction_controller('validate', $transaction);
@@ -708,20 +719,21 @@ function mcapi_transaction_erase_confirm_form($form, $transaction){
  * Usually you would use views to list a users transactions
  * that's why there's no dedicated theme callback
  */
+/*
 function mcapi_statement($account) {
   $objects = transaction_controller('statement', $account->uid);
   foreach ($objects as $object) {
     $transaction = (array)$object;
-    $transaction['payer_uid'] = format_username(user_load($transaction['payer_uid']));
-    $transaction['payee_uid'] = format_username(user_load($transaction['payee_uid']));
+    $transaction['payer'] = format_username(user_load($transaction['payer']));
+    $transaction['payee'] = format_username(user_load($transaction['payee']));
     $transaction['creator'] = format_username(user_load($transaction['creator']));
     $transaction['modifier'] = format_username(user_load($transaction['modifier']));
     $transaction['description'] = l($transaction['description'], 'transaction/'. $transaction['xid']);
-    unset($transaction['extra']);
+    unset($transaction['data']);
     $transactions[] = $transaction;
   }
   return theme('table', array('rows' => $transactions, 'header' => array_keys($transaction)));
-}
+}*/
 
 /**
  * delete a single transaction
@@ -818,5 +830,55 @@ function _currency_divisions_array($string) {
   }
   elseif ($string == '00') {
     return '00';
+  }
+}
+
+
+function theme_balances($variables) {
+  $view = &$variables['view'];
+  $handler = $view->style_plugin;
+  $header = array();
+  //the first column of the result is the currency id, which we need for the header.
+  array_shift($view->style_plugin->options['columns']);
+  $cid_alias = array_shift($view->field)->field_alias;
+  //each column heading is a currency name
+  $header = array('');
+  foreach($variables['rows'] as $curr) {
+   //wouldn't need to load it if views was linking the table properly
+    $name = currency_load($curr->$cid_alias)->name;
+    $header[] = $name;
+  }
+  foreach ($view->style_plugin->options['columns'] as $field) {
+    $name = $view->field[$field]->field_alias;
+    if (!empty($view->field[$field])) {
+      $rows[$name][] = check_plain($view->field[$field]->label());
+    }
+    foreach($variables['rows'] as $row) {
+      $rows[$name][$row->$cid_alias] =  $row->$name;
+    }
+  }
+  return theme('table', compact('header', 'rows'));
+}
+
+/*
+ * adds a running balance field 'balance' to an array of transactions
+ * $offset is in fact a starting balance
+ */
+function transactions_totalise(&$transactions, $uid, $offsets) {
+  //ensure every currency has a starting balance
+  foreach (currencies_load() as $currency) {
+    $totals[$currency->cid] = isset($offsets[$currency->cid]) ? $offsets[$currency->cid] : 0;
+  }
+  while (list($key, $transaction) = each($transactions)) {
+    if (!isset($totals[$transaction->cid])) {
+      $totals[$transaction->cid] = mcapi_controller('transaction', 'get_running_balance', array($transaction->xid, $uid, $transaction->cid));
+    }
+    if ($transaction->payer == $uid) {
+      $totals[$transaction->cid] -= $transaction->quantity;
+    }
+    else {
+      $totals[$transaction->cid] -= $transaction->quantity;
+    }
+    $transactions[$key]->balance = $totals[$transaction->cid];
   }
 }

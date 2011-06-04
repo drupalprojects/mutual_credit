@@ -1,17 +1,16 @@
 <?php
-
+// $Id:
 //retrieves the max and min limits from the mcapi_cache table
 function limits_get($cid, $uid){
   $currency = currency_load($cid);
-  if (isset($currency->limits_callback) && function_exists($currency->limits_callback)) {
-    $callback = $currency->limits_callback;
+  if (isset($currency->extra['limits_callback']) && function_exists($currency->extra['limits_callback'])) {
+    $callback = $currency->extra['limits_callback'];
     return $callback($currency, $uid);
   }
 }
 
-function mcapi_limits_form_currency_form_alter(&$form, &$form_state) {
-  $currency = currency_load($form['cid']['#default_value']);
-  $limits_callback = isset($currency->limits_callback) ? $currency->limits_callback : 'limits_none';
+function mcapi_limits_form_currency_form_alter(&$form, &$form_state, $form_id) {
+  $limits_callback = isset($form['#currency']->extra['limits_callback']) ? $form['#currency']->extra['limits_callback'] : 'limits_none';
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
   $form['limits'] = array(
     '#title' => t('Balance limits'),
@@ -44,10 +43,10 @@ function mcapi_limits_form_currency_form_alter(&$form, &$form_state) {
   );
   $form['#entity_builders'][] = 'currency_entity_limits_settings_builder';
   //if we know what the currency is, then load the limit settings subform
-  if (isset($form['cid']['#default_value'])) {
+  if (isset($form['#currency']->cid)) {
     $callback = $limits_callback .'_form';
     if (!function_exists($callback)) return;
-    limits_settings_subform($form, $form_state, $currency);
+    limits_settings_subform($form, $form_state, $form['#currency']);
     //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
   }
 }
@@ -57,13 +56,14 @@ function mcapi_limits_form_currency_form_alter(&$form, &$form_state) {
  * will automatically save the values declared by the limits_callback form
  */
 function currency_entity_limits_settings_builder($entity_type, $currency, &$form, &$form_state) {
-  //copy all the limit settings fromt he top level of the currency object to the data array, where they'll be serialized and saved
+  //print_r($currency);
+  //copy all the limit settings fromt the top level of the currency object to the data array, where they'll be serialized and saved
   $callback = $currency->limits_callback;
   $currency->extra['limits_callback'] = $callback;
-  //in all cases so far the keys are simply min and max, but they needn't be, so we'll get them from the settings form
+  //in all cases so far the keys are simply min and$currency max, but they needn't be, so we'll get them from the settings form
   $form_callback = $callback .'_form';
-  $keys = array_keys($form_callback($form, $form_state));
-  foreach($keys as $key) {
+  $segment = $form_callback($form, $form_state);
+  foreach(element_children($segment) as $key) {
     $currency->extra[$callback][$key] = $currency->$key;
   }
 }
@@ -74,19 +74,18 @@ function currency_entity_limits_settings_builder($entity_type, $currency, &$form
  * when building the initial page, the currency is passed, but from AJAX only form_state is passed
  * When called via AJAX, the $settings_form should contain '#value' not '#default_value', not sure why
  */
-function limits_settings_subform(&$form, $form_state, $currency = NULL) {
-  $limits_callback = empty($currency->limits_callback) ? 'limits_none' : $currency->limits_callback;
-  $settings_callback = empty($form_state['values']['limits_callback']) ? $limits_callback : $form_state['values']['limits_callback'];
-  $form_callback = $settings_callback .'_form';
+function limits_settings_subform(&$form, $form_state, $currency=NULL) {
+  $currency_limits_callback = isset($currency->extra['limits_callback']) ? $currency->extra['limits_callback'] : 'limits_none';
+  $limits_callback = isset($form_state['values']['limits_callback']) ? $form_state['values']['limits_callback'] : $currency_limits_callback;
+  $form_callback = $limits_callback .'_form';
+  $form['limits']['limits_settings'] += $form_callback($form, $form_state, $currency);
 
-  $settings = $form_callback($form, $form_state);
-  
-  if (arg(0) == 'system') {//that means this is an ajax query
-    foreach ($settings as $key => $element) {
-      $settings[$key]['#default_value'] = empty($form_state['values'][$key]) ? '' : $form_state['values'][$key];
-    }
+  //get the defaults from the form state if this is an ajax request or the $currency otherwise
+  $default_source = arg(0) == 'system' ? $form_state['values'] : $currency->extra[$limits_callback];
+  foreach (element_children($form['limits']['limits_settings']) as $key) {
+    $form['limits']['limits_settings'][$key]['#default_value'] = isset($default_source[$key]) ? $default_source[$key] : '';
   }
-  $form['limits']['limits_settings'] += $settings;
+
   //we return the array for the ajax callback but the main form builder has been altered by reference
   return $form['limits']['limits_settings'];
 }
@@ -112,11 +111,10 @@ function limits_none_form() {
 
 //limits callback - returns the min an max limits for that currency for that user
 function limits_global($currency, $uid) {
-  return $currency->limits_global;
+  return $currency->extra['limits_global'];
 }
-function limits_global_form($form, $form_state) {
-  $currency = currency_load($form['cid']['#default_value']);
-  $limits_global = isset($currency->limits_global) ? $currency->limits_global : array('min' => NULL, 'max' => NULL);
+function limits_global_form($form, $form_state, $currency=NULL) {
+  $limits_global = isset($currency->extra['limits_global']) ? $currency->extra['limits_global'] : array('min' => NULL, 'max' => NULL);
   return min_max_fields($limits_global);
 }
 function min_max_fields($defaults) {
@@ -155,15 +153,13 @@ function limits_personal($currency, $uid) {
   if (isset($account->extra['limits_personal'][$currency->cid]) && is_array($account->extra['limits_personal'][$currency->cid])) {
     $personal = $account->extra['limits_personal'][$currency->cid];
   }
-  return $personal + $currency->limits_personal;
+  return $personal + $currency->extra['limits_personal'];
 }
 /*
  * the sub form for setting the default user limits on the currency form
  */
-function limits_personal_form($form, $form_state) {
-  $currency = currency_load($form['cid']['#default_value']);
-  $saved = isset($account->extra['limits_personal'][$currency->cid]) ? $account->extra['limits_personal'][$currency->cid] : array();
-  $saved += isset($currency->limits_personal) ? $currency->limits_personal : array('min' => NULL, 'max' => NULL);
+function limits_personal_form($form, $form_state, $currency = NULL) {
+  $saved = isset($currency->extra['limits_personal']) ? $currency->extra['limits_personal'] : array('min' => NULL, 'max' => NULL);
   $personal_form = min_max_fields($saved);
   $personal_form['#description'] = t("Users with permission to manage all transactions can edit the users' personal limits.");
   $personal_form['min']['#title'] = t('Default minimum balance.');
@@ -177,7 +173,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, $form_state) {
   //get all the currencies with personal limits, so as to display config fields on the user profile form
   $currencies = currency_choose('passive', $form['#account']->uid);
   foreach ($currencies as $cid => $currency) {
-    if (isset($currency->limits_callback) && $currency->limits_callback == 'limits_personal') {
+    if (isset($currency->extra['limits_callback']) && $currency->extra['limits_callback'] == 'limits_personal') {
       $form['limits_personal'][$cid] = array(
          '#type' => 'fieldset',
          '#title' => $currency->name,
@@ -204,7 +200,7 @@ function mcapi_limits_user_presave(&$edit, $account, $category) {
   if ($category != 'account') return;
   $currencies = currency_choose('passive', $account->uid);
   foreach($currencies as $cid => $currency) {
-    if (isset($currency->limits_callback) && $currency->limits_callback == 'limits_personal') {
+    if (isset($currency->extra['limits_callback']) && $currency->extra['limits_callback'] == 'limits_personal') {
       $edit['data']['limits_personal'][$cid]['min'] = $edit['min-'.$cid];
       $edit['data']['limits_personal'][$cid]['max'] = $edit['max-'.$cid];
     }
@@ -261,15 +257,15 @@ function limits_transaction_form_validate(&$form, $form_state) {
  */
 function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
   $cid = $transaction->cid;
-  $payer_uid = $transaction->payer_uid;
-  $payee_uid = $transaction->payee_uid;
+  $payer = $transaction->payer;
+  $payee = $transaction->payee;
   $difference = $transaction->quantity;
   $messages = array();
 
   //check that the payee isn't going over their max limit
-  $limits = limits_get($cid, $payee_uid);
+  $limits = limits_get($cid, $payee);
   if (is_numeric($limits['max'])) {
-    $balances = entity_get_controller('transaction')->get_cache($payee_uid);
+    $balances = entity_get_controller('transaction')->get_cache($payee);
     $payee_projected = $balances[$cid]['cleared_balance'] + $difference;
     if ($state == TRANSACTION_STATE_PENDING) {
       $payee_projected += $balances[$cid]['pending_dif'];
@@ -278,7 +274,7 @@ function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
     if ($surplus > 0) {
       $messages[] .= t('Transaction would take @username !quant above the maximum balance of !max.',
         array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($payee_uid)))),
+          '@username' => strip_tags(theme('username', array('account' => user_load($payee)))),
           '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
           '!max' => theme('money', array('quantity' => $limits['max'], 'cid' => $cid, $richtext = FALSE))
         )
@@ -286,9 +282,9 @@ function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
     }
   }
   //check that the payer isn't going below their min limit
-  $limits = limits_get($cid, $payer_uid);
+  $limits = limits_get($cid, $payer);
   if (is_numeric($limits['min'])) {
-    $balances = entity_get_controller('transaction')->get_cache($payer_uid);
+    $balances = entity_get_controller('transaction')->get_cache($payer);
     $payer_projected = $balances[$cid]['cleared_balance'] - $difference;
     if ($state == TRANSACTION_STATE_PENDING) {
       $payer_projected += $balances[$cid]['pending_dif'];
@@ -297,7 +293,7 @@ function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
     if ($deficit > 0) {
       $messages[] .= t('Transaction would take @username !quant below the minimum balance of !min.',
         array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($payer_uid)))),
+          '@username' => strip_tags(theme('username', array('account' => user_load($payer)))),
           '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
           '!min' => theme('money', array('quantity' => $limits['min'], 'cid' => $cid, $richtext = FALSE))
         )
@@ -309,68 +305,106 @@ function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
   }
 }
 
-function mcapi_limits_theme($existing, $type, $theme, $path) {
-  $items = array(
-    'limits' => array(
-      'template' => 'limits',
-      'variables' => array(
-        'currency' => 0,
-        'balance' => 0,
-        'max' => 0,
-        'min' => 0,
-      )
-    ),
-    'all_limits' => array(
-      'variables' => array(
-        'uid' => NULL,
-        'all_limits' => array()
-      )
-    )
+/*
+ * Implements views hook_views_api
+ */
+function mcapi_limits_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi_limits').'/views',
   );
-  return $items;
-}
-
-function theme_all_limits($variables) {
-  $all_limits = &$variables['all_limits'];
-  if (count($all_limits) == 1) {
-    foreach($all_limits as $cid => $limits) {
-      return theme('limits', array('currency' => currency_load($cid), 'uid' => $variables['uid'], 'min' => $limits['min'], 'max' => $limits['max']));
-    }
-  }
-  else {
-    //output them all in a single table
-    $headings = array(t('Currency'), t('Min'), t('Max'));
-    $currencies = currencies_load();
-    foreach($all_limits as $cid => $limits) {
-      $rows[$cid] = array(
-        $currencies[$cid]->name,
-        theme('money', array('quantity' => $limits['min'], 'cid' => $cid)),
-        theme('money', array('quantity' => $limits['max'], 'cid' => $cid))
-      );
-    }
-    return theme('table', array('header' => $headings, 'rows' => $rows));
-  }
 }
 
 /*
- * Implements hook_user_view
+ * display limits (as a google-o-meter)
+ * NB google-o-meter is technically obselete
+ * and is no longer documented on the charts API
  */
-function mcapi_limits_user_view($account) {
-  $currencies = currencies_load();
-  foreach ($currencies as $currency) {
-    $limits = limits_get($currency->cid, $account->uid);
-    if ($limits) {
-      $all_limits[$currency->cid] = $limits;
-    }
+
+/*
+ * callback to return themed balance limits
+ */
+function show_balance_limits($account, $cid) {
+  $currency = currency_load($cid);
+  $balances = mcapi_controller('transaction', 'get_cache', array($account->uid));
+  $limits = limits_get($cid, $account->uid);
+  //this chart makes no sense if there isn't a max (or min) limit
+  if (!is_numeric($limits['max']) || !is_numeric($limits['min'])) {
+    drupal_set_message(t('Balance limits requires minimum and maximum balances for currency: !link', array('!link' => l($currency->title, 'node/'.$currency->nid.'/edit'))));
+    return;
   }
-  //show the limits for all currencies
-  $account->content['mcapi']['all_limits'] = array(
-    '#theme' => 'all_limits',
-    '#title' => t('Limits'),
-    '#uid' => $account->uid,
-    '#all_limits' => $all_limits
+  return theme('balance_limits', array(
+    'currency' => $currency,
+    'min' => $limits['min'],
+    'balance' => $balances[$cid]['cleared_balance'],
+    'max' => $limits['max']
+  ));
+}
+/*
+ * Implements views hook_block_list
+ */
+function mcapi_limits_block_info() {
+  $blocks['balance_limits'] = array(
+    'info' => 'MC '. t("Balance limits")
+  );
+  return $blocks;
+}
+
+/*
+ * Implements views hook_block_view
+ */
+function mcapi_limits_block_view($delta) {
+  if (arg(0) != 'user') return;
+  $account = user_uid_optional_load(arg(1));
+  if (!user_access('view all balances') && !$account->uid == $uid) return;
+  $values = variable_get('block_'.$delta, array());
+  if (!isset($values['cids']) || !count($values['cids'])) {
+    $values['cids'] = array_keys(currencies_load());
+  }
+  foreach ($values['cids'] as $cid) {
+    $output .= show_balance_limits($account, currency_load($cid));
+  }
+  return array(
+    'subject' => t("@user's limits", array('@user' => strip_tags(format_username($account)))),
+    'content' => $output
+  );
+  break;
+}
+
+
+/*
+ * Implements views hook_block_configure
+ */
+function mcapi_limits_block_configure($edit) {
+  if (count(currencies_load()) > 1) {
+    $form['cids'] = mc_currency_picker($currencies, $edit, FALSE);
+  }
+}
+function mcapi_limits_block_save($delta, $values) {
+  variable_set('block_'.$delta, $values);
+}
+
+/*
+ * Implements views hook_theme
+ */
+function mcapi_limits_theme($existing, $type, $theme, $path){
+  $path .='/theme';
+  return array(
+    //similar to balance limits, but only shows one currency
+    'balance_limits' => array(
+      'template' => 'balance_limits',
+      'path' => $path,
+      'variables' => array(
+        'currency' => 0,
+        'min' => 0,
+        'balance' => 0,
+        'max' => 0,
+      )
+    )
   );
 }
+
+
 
 //this was in case we wanted to do form level validation using ['limits_callback'].'_form_validate'
 //the name of this validate function would need to be included in mcapi_limits_form_currency_form_alter
@@ -385,4 +419,3 @@ function limits_subform_validate($form, &$form_state) {
   }
 }
  */
-

@@ -25,9 +25,12 @@ function mcapi_install() {
   //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
   //could all these be done in one query?
   db_update('system')->fields(array('weight' => 0))->condition('name', 'mcapi')->execute();
+  db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi_webforms')->execute();
   db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi_limits')->execute();
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_services')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_pending')->execute();
   db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_limits_equation')->execute();
+  db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_display')->execute();
 
   //allow the body field to be added to currencies and transactions
   $data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField());
@@ -129,12 +132,12 @@ function mcapi_schema() {
         'type' => 'text',
         'size' => 'small',
       ),
-      'payer_uid' => array(
+      'payer' => array(
         'description' => 'the user id of the payer',
         'type' => 'int',
         'size' => 'normal',
       ),
-      'payee_uid' => array(
+      'payee' => array(
         'description' => 'the user id of the payee',
         'type' => 'int',
         'size' => 'normal',
@@ -216,17 +219,17 @@ function mcapi_schema() {
       'cleared_balance' => $numeric + array(
         'description' => 'balance excluding pending transactions',
         'not null' => TRUE,
-        //'default' => 0,
+        'default' => 0,
       ),
       'gross_in' => $numeric + array(
         'description' => "sum of all this user's income in this currency",
         'not null' => TRUE,
-        //'default' => 0,
+        'default' => 0,
       ),
       'gross_out' => $numeric + array(
         'description' => "sum of all this user's ougoings in this currency",
         'not null' => TRUE,
-        //'default' => 0,
+        'default' => 0,
       ),
       'count' => array(
         'description' => "number of cleared transactions",
@@ -234,7 +237,13 @@ function mcapi_schema() {
         'size' => 'small',
         'not null' => TRUE,
         'default' => 0,
-      )
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'description' => 'nonessential info not fitting into existing fields',
+        'serialize' => TRUE,
+        'serialized default' => 'a:0:{}',
+      ),
     ),
     'unique keys' => array(
       'uid_cid' => array('uid', 'cid')
@@ -328,14 +337,7 @@ function mcapi_modules_enabled($modules) {
         'bundle' => 'currency',
         'label' => t('Rationale'),
         'widget_type' => 'text_textarea_with_summary',
-        'description' => t('What are the credentials of this currency? Richard Douthwaite poses these questions:') . theme('item_list', array('items' => array(
-            t('Who issues the money?'),
-            t('Why do they issue it?'),
-            t('Where is the money created?'),
-            t('What gives the money its value?'),
-            t('How is the money created?'),
-            t('When is the money created?'),
-          ), 'title' => NULL, 'type' => 'ol')),
+        'description' => t('What are the monetary credentials of this currency?'),
         'settings' => array(
           'default' => array(
             'label' => 'hidden',
@@ -367,9 +369,16 @@ function check_default_currency() {
     'divisions_conf' => '00',
     'format' => '@minus<strong>Cc</strong>@integer:@subdivision',
     'body' => array (
-      'en' => array (
+      'und' => array (
         0 => array (
-          'value' => t('This is the default currency'),
+          'value' => t('Richard Douthwaite poses these questions:') . theme('item_list', array('items' => array(
+            t('Who issues the money?'),
+            t('Why do they issue it?'),
+            t('Where is the money created?'),
+            t('What gives the money its value?'),
+            t('How is the money created?'),
+            t('When is the money created?'),
+          ), 'title' => NULL, 'type' => 'ol')),
           'format' => 'filtered_html',
         ),
       ),

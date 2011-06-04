@@ -13,14 +13,15 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   //because of a problem rendering checkboxes with value 0, the options were saved using the state names as keys, not the integer constants
   //so we have to look them up again
   $all_states = mcapi_transaction_states();
-  if (!in_array($transaction->state, $webform->data['workflow']['incoming']) && !$form_state['rebuild']) {
+  if (!in_array($all_states[$transaction->state], $webform->data['workflow']['incoming']) && !$form_state['rebuild']) {
     drupal_set_message(t('Configuration error: this form cannot edit a transaction in state: @state', array('@state' => $transaction->state)));
     return;
   }
   if (empty($form_state['step'])) {
     $form_state['step'] = 1;
+    $form_state['storage'] = array();
   }
-  if (current_path() == $webform->path) {
+  if (_is_this_webform($webform)) {
     drupal_set_title($webform->data['step-'.$form_state['step']]['title']);
   }
   if (isset($form_state['#transaction'])) {
@@ -71,15 +72,15 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   //particpants
   if ($webform->data['aspect'] == 3) {
     //payer
-    $form['payer_uid']['#type'] = strtok($webform->data['payer']['args'], ':');
-    $form['payer_uid']['#args'] = array(strtok(':'));
-    $form['payer_uid']['#multiple'] = $webform->data['payer']['multiple'];
-    mcapi_webform_default_value($form['payer_uid'], $webform->data['payer']);
+    $form['payer']['#type'] = strtok($webform->data['payer']['args'], ':');
+    $form['payer']['#args'] = array(strtok(':'));
+    $form['payer']['#multiple'] = $webform->data['payer']['multiple'];
+    mcapi_webform_default_value($form['payer'], $webform->data['payer']);
     
     //payee;
-    $form['payee_uid']['#type'] = strtok($webform->data['payee']['args'], ':');
-    $form['payee_uid']['#args'] = array(strtok(':'));
-    mcapi_webform_default_value($form['payee_uid'], $webform->data['payee']);
+    $form['payee']['#type'] = strtok($webform->data['payee']['args'], ':');
+    $form['payee']['#args'] = array(strtok(':'));
+    mcapi_webform_default_value($form['payee'], $webform->data['payee']);
     foreach (array('payer', 'payee') as $participant) {
       if ($webform->data[$participant]['multiple']) {
         $form[$participant.'_uid']['#multiple'] = TRUE;
@@ -94,7 +95,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     //this section cannot be used to edit existing transactions
     $form['2ndperson'] = array(
       '#default_value' => isset($form_state['values']['2ndperson']) ? $form_state['values']['2ndperson'] : ''
-    ) + $form['payee_uid'];
+    ) + $form['payee'];
     $form['2ndperson']['#type'] = strtok($webform->data['2ndperson']['args'], ':');
     $form['2ndperson']['#args'] = array(strtok(':'));
     mcapi_webform_default_value($form['2ndperson'], $webform->data['2ndperson']);
@@ -110,16 +111,17 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     //however if we are editing an existing transaction,
     //we have to show the transaction owner and derive the direction and partner from the payer and payee
     if ($transaction->xid) {
-      if ($transaction->creator == $transaction->payer_uid) {
-        $form['2ndperson']['#default_value'] = $transaction->payee_uid;
+      if ($transaction->creator == $transaction->payer) {
+        $form['2ndperson']['#default_value'] = $transaction->payee;
         $form['direction']['#default_value'] = 'outgoing';
       }
       else{
-        $form['2ndperson']['#default_value'] = $transaction->payer_uid;
+        $form['2ndperson']['#default_value'] = $transaction->payer;
         $form['direction']['#default_value'] = 'incoming';
       }
     }
-    unset($form['payer_uid'], $form['payee_uid']);
+    debug($form['2ndperson']);
+    unset($form['payer'], $form['payee']);
     //this validation function must run BEFORE the main one in the API, which requires payer and payee
     array_unshift($form['#validate'], 'mcapi_webforms_validate_2ndperson');
   }
@@ -141,11 +143,6 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   //description
   mcapi_webform_default_value($form['description'], $webform->data['description']);
 
-  //TODO
-  //I'm just fed up of multistep forms, this will have to wait
-  //the following doesn't retrieve default values out of form_state when we come back from step 2
-  field_attach_form('transaction', $transaction, $form, $form_state);
-
   //save button
   if (strpos($webform->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -164,10 +161,21 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   $form_state['#webform'] =  $webform;
   $form['#theme'] = 'mcapi_webform';
   array_unshift($form['#submit'], 'mcapi_webforms_form_presubmit');
-  $form['#after_build'] = array('mcapi_webform_prepare_tokens');
+  $form['#validate'][] = 'mcapi_webforms_validate';
   //custom properties
   //this tells the theme callback which template to use
   $form['#template'] = $webform->data['step-'. $form_state['step']]['template'];
+  //this is rather elaborate, but we NOW have to set the type of fields not being used in the template as hidden
+  $form['#tokens'] = mcapi_webform_collect_tokens($form, $form_state['#webform']);
+  //hide the fields which don't appear as tokens
+  foreach ($form['#tokens'] as $fieldname) {
+    if (strpos($form['#template'], "[$fieldname]") === FALSE) {
+      mcapi_hide_form_children($form[$fieldname]);
+    }
+  }
+  //Only after processing, can we render the tokens and replace them into the template,
+  //which is used instead of custom form theming
+  $form['#after_build'] = array('mcapi_webform_prepare_tokens');
   return $form;
 }
 
@@ -187,49 +195,72 @@ function mcapi_webform_default_value(&$element, $settings) {
   }
   $element['#required'] = intval($settings['common']['required']);
   $element['#theme_wrappers'] = array();
+  unset($element['#weight']);
 }
 
 
-function mcapi_webform_prepare_tokens($form, $form_state) {
-  //this is really a  sort of preprocessing, but its too late in the theme layer to change #type or delete items
-  $tokens = drupal_map_assoc(array('cid', 'description', 'amount'));
-  if ($form_state['#webform']->data['aspect'] == 3) {
-    $tokens['payee'] = 'payee_uid';
-    $tokens['payer'] = 'payer_uid';
+
+function mcapi_webform_collect_tokens(&$form, &$webform) {
+  $tokens = array('cid', 'description', 'amount');
+  if ($webform->data['aspect'] == 3) {
+    $tokens[] = 'payee';
+    $tokens[] = 'payer';
   }
   else {
-    $tokens['direction'] = 'direction';
-    $tokens['2ndperson'] = '2ndperson';
+    $tokens[] = 'direction';
+    $tokens[] = '2ndperson';
   }
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
-  $additional_fields = mcapi_webform_get_additional_form_fields();
-  foreach ($additional_fields as $fieldname => $field) {
+  foreach (mcapi_webform_get_additional_form_fields() as $fieldname => $field) {
     $tokens[$fieldname] = $fieldname;
-    mcapi_webform_remove_theme_wrapper($form[$fieldname]);
   }
+  return $tokens;
+}
+
+function mcapi_webform_prepare_tokens(&$form, &$form_state) {
   $form['#replacements'] = array();
   //this way we only render and replace the fields actually used.
   if ($form_state['step'] == 1) {
-    foreach ($tokens as $token => $fieldname) {
-      $tok = '['.$token.']';
-      if (strpos($form['#template'], $tok) !== FALSE) {
-        $form['#replacements'][$tok] = drupal_render($form[$fieldname]);
+    foreach ($form['#tokens'] as $fieldname) {
+      if (strpos($form['#template'], "[$fieldname]") !== FALSE) {
+        mcapi_webform_remove_theme_wrapper($form[$fieldname]);
+        $form['#replacements']["[$fieldname]"] = drupal_render($form[$fieldname]);
       }
-      else {
-        $form[$fieldname]['#type'] = 'hidden';
-      }
+      //otherwise it was already hidden when the form was built
     }
   }
   else {//2nd stage
     //unset all the fields in the form, having derived their token values
     //all that data is in $form_state['storage'] by now
-    foreach ($tokens as $token => $fieldname) {
-      if (!isset($form[$fieldname])){debug($fieldname); continue;}
+    foreach ($form['#tokens'] as $token => $fieldname) {
       $form['#replacements'][ '['.$token.']'] = mcapi_element_markup_render($form[$fieldname]);
+      //we can unset the field in step 2 because the transaction has already been stored
+      //in $form_state['#transaction'] in validation of step 1
       unset($form[$fieldname]);
     }
   }
   return $form;
+}
+
+/*
+ * nesting function to hide the form elements within form elements
+ */
+function mcapi_hide_form_children(&$element) {
+  $element['#type'] = 'hidden';
+  foreach(element_children($element) as $subfield) {
+    mcapi_hide_form_children($element[$subfield]);
+  }
+}
+/*
+ * nesting function to remove the outer theme wrapper put on by the element processing.
+ */
+function mcapi_webform_remove_theme_wrapper(&$field){
+  if (isset($field['#theme_wrappers'])) {
+    $field['#theme_wrappers'] = array();
+  }
+  foreach(element_children($field) as $fieldname) {
+    mcapi_webform_remove_theme_wrapper($field[$fieldname]);
+  }
 }
 
 /*
@@ -243,14 +274,6 @@ function theme_mcapi_webform($variables) {
   return strtr($form['#template'], $form['#replacements']);
 }
 
-function mcapi_webform_remove_theme_wrapper(&$field){
-  if (isset($field['#theme_wrappers'])) {
-    $field['#theme_wrappers'] = array();
-  }
-  foreach(element_children($field) as $fieldname) {
-    mcapi_webform_remove_theme_wrapper($field[$fieldname]);
-  }
-}
 
 
 /*
@@ -258,7 +281,7 @@ function mcapi_webform_remove_theme_wrapper(&$field){
  */
 function mcapi_element_markup_render($element) {
   if (!isset($element['#type']) || $element['#type'] == 'container') {
-    return mcapi_element_markup_render(get_deepest_child($element));
+    return mcapi_element_markup_render(_get_deepest_child($element));
   }
   switch($element['#type']) {
     case 'textfield':
@@ -441,12 +464,12 @@ function mcapi_webforms_validate_2ndperson($form, &$form_state) {
   global $user;
   $values = &$form_state['values'];
   if ($values['direction'] == 'incoming') {
-    $values['payer_uid'] = $values['2ndperson'];
-    $values['payee_uid'] = $user->uid;
+    $values['payer'] = $values['2ndperson'];
+    $values['payee'] = $user->uid;
   }
   else {
-    $values['payer_uid'] = $user->uid;
-    $values['payee_uid'] = $values['2ndperson'];
+    $values['payer'] = $user->uid;
+    $values['payee'] = $values['2ndperson'];
   }
 }
 
@@ -456,12 +479,12 @@ function mcapi_webforms_validate_2ndperson($form, &$form_state) {
  */
 function mcapi_webforms_multiple_validate($form, &$form_state) {
   //$transaction = clone($form_state['#transaction']);
-  $payers = (array)$form_state['values']['payer_uid'];
-  $payees = (array)$form_state['values']['payee_uid'];
+  $payers = (array)$form_state['values']['payer'];
+  $payees = (array)$form_state['values']['payee'];
   foreach ($payees as $payee) {
     foreach ($payers as $payer) {
-      $form_state['values']['payer_uid'] = $payer;
-      $form_state['values']['payee_uid'] = $payee;
+      $form_state['values']['payer'] = $payer;
+      $form_state['values']['payee'] = $payee;
       transaction_form_validate($form, $form_state);
       $validatids[] = $form_state['#transaction']->xid;
     }
@@ -469,14 +492,14 @@ function mcapi_webforms_multiple_validate($form, &$form_state) {
   //this object will only work in the following submit handler
   $form_state['#transactions'] = (object)array(
     'xids' => $validatids,
-    'payer_uid' => $payers,
-    'payee_uid' => $payees
+    'payer' => $payers,
+    'payee' => $payees
   );
 }
 /*
  * submit callback to replace the default
  */
-function mcapi_webforms_multiple_submit($form, $form_state) {
+function mcapi_webforms_multiple_submit($form, &$form_state) {
   $transactions = transaction_controller('load', $form_state['#transactions']->xids);
   debug($transactions);
   foreach ($transactions as $transaction) {
@@ -494,27 +517,40 @@ function mcapi_webforms_multiple_submit($form, $form_state) {
   }
 }
 
-/*
- * Submit callback for default transaction form
- */
-function mcapi_webforms_form_presubmit($form, &$form_state) {
+function mcapi_webforms_validate($form, &$form_state) {
   //go back if that button was pressed
   if (isset($form_state['values']['back']) && $form_state['values']['op'] == $form_state['values']['back']) {
     $form_state['rebuild'] = TRUE;
-    $form_state['values'] = $form_state['storage'];
+    //$form_state['values'] = $form_state['storage'];
     $form_state['step']--;
   }
   elseif (strlen($form_state['#webform']->data['step-2']['template'])) {
-    $form_state['rebuild'] = $form_state['step'] == 1 ? TRUE : FALSE;
-    //TODO
     //Submission errors will not prevent the form advancing.
+    $form_state['rebuild'] = $form_state['step'] == 1 ? TRUE : FALSE;
     $form_state['step']++;
   }
+  $form_state['storage'] += $form_state['values'];
+}
 
+/*
+ * First submit callback for default transaction form
+ */
+function mcapi_webforms_form_presubmit($form, &$form_state) {
+  $form_state['values'] = $form_state['storage'];
   //look for the webform object for the redirect
   $form_state['redirect'] = str_replace(
     '#xid',
     $form_state['#transaction']->xid,
     $form_state['#webform']->data['submission']['redirect']
   );
+}
+
+//ascertains whether the active path corresponds to this webform
+function _is_this_webform($webform) {
+  $parts = explode('/', current_path());
+  $map = explode('/', $webform->path);
+  foreach($map as $key => $part) {
+    if (strpos($part, '%') === 0) $parts[$key] = $part;
+  }
+  return $parts == $map;
 }

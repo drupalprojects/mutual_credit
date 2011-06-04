@@ -15,6 +15,6 @@ class views_handler_argument_mcapi_user_exchanges extends views_handler_argument
 
 function query() {
     $this->ensure_my_table();
-    $this->query->add_where(0, "$this->table_alias.payer_uid = %d OR $this->table_alias.payee_uid = %d", $this->argument, $this->argument);
+    $this->query->add_where(0, "$this->table_alias.payer = :payer OR $this->table_alias.payee = :payee", array(':payer' => $this->argument, ':payee' => $this->argument);
   }
 }

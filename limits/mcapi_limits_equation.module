@@ -17,7 +17,7 @@ function mcapi_limits_equation_form_currency_form_alter(&$form, $form_state) {
  * e.g. 10+@gross_in+@gross_out+@trades
  */
 function limits_equations($currency, $uid) {
-  $cached = entity_get_controller('transaction')->get_cache($uid, $currency->cid);
+  $cached = transaction_controller('get_cache', $uid, $currency->cid);
   foreach (array('max', 'min') as $limit) {
     $limits[$limit] = mcapi_limits_equation_parse(
       $currency->limits_equations[$limit],
@@ -27,9 +27,8 @@ function limits_equations($currency, $uid) {
   return $limits;
 }
 
-function limits_equations_form($form, $form_state) {
-  $currency = currency_load($form['cid']['#default_value']);
-  $saved = isset($currency->limits_equations) ? $currency->limits_equations : array('min' => NULL, 'max' => NULL);
+function limits_equations_form($form, $form_state, $currency = NULL) {
+  $saved = isset($currency->extra['limits_equations']) ? $currency->extra['limits_equations'] : array('min' => NULL, 'max' => NULL);
 
   return array(
     'min' => array(

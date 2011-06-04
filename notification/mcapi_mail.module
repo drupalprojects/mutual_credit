@@ -68,13 +68,12 @@ function mcapi_mail_send($op, $transaction) {
     drupal_set_message('Mail notification NOT sent.');
     return;
   }
-  foreach (array($transaction->payer_uid, $transaction->payee_uid) as $uid) {
+  foreach (array($transaction->payer, $transaction->payee) as $uid) {
     $account = user_load($uid);
     $pref = $account->data['mutual_credit_mail'];
     //if the user wants notification for everything or he defers to the form settings and the form wants to send
     //there's no use case here for 'minimal
-    if ($pref == 2 || ($pref == 1 && $send)) {
-      debug ($account->name);
+    if ($pref == 2 || ($pref == 1 && $send) || ($GLOBALS['user']->uid != $uid && $send)) {
       $message = drupal_mail(
         'mcapimail',
         $op,
@@ -95,7 +94,6 @@ function mcapi_mail_send($op, $transaction) {
  * implements hook_mail
  * $key can be insert or update. delete is also a possiblity
  */
-
 function mcapimail_mail($key, &$message, $params) {
   $language = $message['language'];
   $variables = array(
@@ -144,7 +142,7 @@ The team at [site:name]");
  * Admin writes the emails using tokens, then, according to some checkboxes in the user profile,
  * this module will email users with notifications about transactions in which they are involved
  */
-function mcapi_mail_form_user_profile_form_alter(&$form, $form_state) {debug($form['#user']);
+function mcapi_mail_form_user_profile_form_alter(&$form, $form_state) {
   $account = user_load($form['#user']->uid);
   $form['mutual_credit_notifications'] = array(
     '#title' => t('Transaction notifications'),
@@ -174,22 +172,16 @@ function mcapi_mail_user_presave(&$edit, $account, $category) {
 }
 
 /*
-      case 'mcapi_update_mail_subject':
-        $text = 'Change to transaction [transaction:xid]';
-        break;
-      case 'mcapi_update_mail_body':
-        $text = t("[user:name],
-
-Your transaction with [transaction:partner] for '[transaction:description]' has been modified.
-
-The current transaction can be found at
-[transaction:uri]
-
-To change your notification settings, visit your profile at
-[user:edit-url]
-
-The team at [site:name]");
-        break;
-    }
-  }
+ * Implements ctools hook default_mcapi_webforms
+ * adds the mail template to the default webforms (only those which haven't been overridden)
+ * should possibly go in mcapi_mail.mcapi_inc, but that file isn't being included
  */
+function mcapi_mail_default_mcapi_webforms_alter(&$webforms) {
+  foreach ($webforms as $path => $webform) {
+    $webforms[$path]->data['email_template'] = array(
+      'subject' => _mcapi_mail_text('subject'),
+      'body' => _mcapi_mail_text('body'),
+      'send' => TRUE,
+    );
+  }
+}

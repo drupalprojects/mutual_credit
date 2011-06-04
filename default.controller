@@ -1,5 +1,5 @@
 <?php
-
+// $Id:
 /*
  * This file is included using the function mcapi_controller();
  */
@@ -15,7 +15,7 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
    * switches database to load transactions
    * returns an error if the transaction id is invalid
    */
-  public function load($ids = array(), $conditions = array()) {
+  public function load($ids = array(), $conditions = array()) {print_r($ids);
     $entities = array();
     $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
 
@@ -83,7 +83,7 @@ class TransactionEntityController extends MCAPIEntityController {
     }
     $t = db_transaction();
     try {
-      entity_get_controller('transaction')->save($transaction);
+      $this->save($transaction);
     }
     catch (Exception $e){
       //if the validation fails, we add the error message to the transaction object
@@ -135,7 +135,7 @@ class TransactionEntityController extends MCAPIEntityController {
     }
     if (isset($transaction->validating)) return;
 
-    balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
+    balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
     module_invoke_all('entity_'.$function, 'transaction', $transaction);
     return $transaction;
   }
@@ -157,7 +157,7 @@ class TransactionEntityController extends MCAPIEntityController {
         $transaction->modifier = $GLOBALS['user']->uid;
         try{
           mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
-          balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
+          balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
@@ -169,7 +169,7 @@ class TransactionEntityController extends MCAPIEntityController {
           $query = db_delete('mcapi_transactions')
           ->condition('xid', $transaction->xid)
           ->execute();
-          balances_recalc($transaction->cid, array($transaction->payer_uid, $transaction->payee_uid));
+          balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           throw $e;
@@ -180,20 +180,40 @@ class TransactionEntityController extends MCAPIEntityController {
   }
 
   /*
+   * alternative to using views
    * Get a list of transactions for a user, between unixtimes
+   * arguments, in any order can be
+   * from // unixtime
+   * to //unixtime
+   * states array, defaults to array(0) which is completed transactions only
+   * no pager is provided in this function
    */
-  public function statement($uid){
+  public function get_period($uid, $variables){
+    $variables += array(
+      'from' => 0,
+      'to' => REQUEST_TIME + 1,
+      'states' => array(TRANSACTION_STATE_FINISHED),
+      'cid' => NULL
+    );
+    extract($variables);
     db_set_active(variable_get('mcapi_db_read', 'default'));
-    $query = db_select('mcapi_transactions', 'x');
+    $query = db_select('mcapi_transactions', 'x')->fields('x');
     db_set_active();
     $query->condition(db_or()
-      ->condition('payer_uid', $uid)
-      ->condition('payee_uid', $uid)
-    )->condition(db_or()
-      ->condition('state', TRANSACTION_STATE_FINISHED)
-    );
-    return $query->fields('x')->execute()->fetchAll();
+      ->condition('payer', $uid)
+      ->condition('payee', $uid)
+    )
+    ->condition('state', $states)
+    ->condition('created', $from, '>')
+    ->condition('created', $to,  '<')
+    ->orderby('created');
+    if ($cid) {
+      $query->condition('cid', $cid);
+    }
+    return $query->execute()->fetchAll();
   }
+  
+
   /*
    * retrieve all the cached balances for a user, in all the currencies cached.
    * it's not clear what it means if a row doesn't exist here
@@ -208,6 +228,22 @@ class TransactionEntityController extends MCAPIEntityController {
     ->execute()
     ->fetchAllAssoc('cid', PDO::FETCH_ASSOC);
     db_set_active();
+  }
+
+  /*
+   * get the total of all incoming and outgoing finished transactions up to and including the given xid
+   */
+  public function get_running_balance($xid, $uid, $cid) {
+    //new dbAPI has no SUM
+    $outgoing = db_query(
+      "SELECT SUM(quantity) from {mcapi_exchanges} WHERE payer_uid = $uid AND state = :state AND xid <= $xid",
+      array(':state' => TRANSACTION_STATE_FINISHED)
+    );
+    $income = db_query(
+      "SELECT SUM(quantity) from {mcapi_exchanges} WHERE payee_uid = $uid AND state = :state AND xid <= $xid",
+      array(':state' => TRANSACTION_STATE_FINISHED)
+    );
+    return db_result($income) - db_result($outgoing);
   }
 
   public function count($conditions = array()) {
@@ -230,7 +266,7 @@ class TransactionEntityController extends MCAPIEntityController {
       field_attach_insert('transaction', $transaction);
     }
     else {
-      $success = mcapi_write_record($table, $transaction, array('xid'));
+      $success = mcapi_write_record($table, $transaction, 'xid');
       field_attach_update('transaction', $transaction);
     }
     if (!$success) {
@@ -294,6 +330,7 @@ class CurrencyEntityController extends MCAPIEntityController {
   public function save($currency) {
     $function = isset($currency->cid) && $currency->cid ? 'update' : 'insert';
     cache_clear_all('currencies', 'cache');
+    $currency->data = $currency->extra;
     $currency = $this->$function($currency, TRUE);
     module_invoke_all('entity_'.$function, 'currency', $currency);
   }
@@ -326,26 +363,30 @@ class CurrencyEntityController extends MCAPIEntityController {
 //refreshes a cache of all the transactions,
 function balances_recalc($cid, $uids, $test = FALSE) {
   foreach($uids as $uid) {
-    $in = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payee_uid = :uid AND state = :state AND cid = :cid",
+    $in = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payee = :uid AND state = :state AND cid = :cid",
       array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
       ->fetchAssoc();
-    $out = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payer_uid = :uid AND state = :state AND cid = :cid",
+    $out = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payer = :uid AND state = :state AND cid = :cid",
       array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
       ->fetchAssoc();
     $in['total'] = floatval($in['total']);
     $out['total'] = floatval($out['total']);
 
-    $row = (object)array(
-      'cid' => $cid,
+    $row = array(
       'uid' => $uid,
+      'cid' => $cid,
       'cleared_balance' => $in['total'] - $out['total'],
       'gross_in' => $in['total'],
       'gross_out' =>$out['total'],
       'count' => intval($in['count'] + $out['count']),
     );
-    foreach (variable_get('mcapi_db_write', array('default')) as $connection) {
-      db_set_active($connection);
+    //we HAVE to know already if this row already exists because drupal_write_record is trying to be efficient and this caching mechanism is counter-intuitive
+    if ($exists = db_query("SELECT uid FROM {mcapi_cache} WHERE cid = $cid AND uid = $uid")->fetchField()) {
       mcapi_write_record('mcapi_cache', $row, array('cid', 'uid'));
+    }
+    else{
+      debug('creating cache row');
+      debug(db_insert('mcapi_cache')->fields($row)->execute());
     }
   }
   db_set_active();
@@ -377,7 +418,7 @@ function mcapi_write_record($table, &$record, $primary_keys = array()) {
         array(
           '@table' => $table,
           '@database' => $connection,
-          '@keys' => '<pre>'.print_r($keys, 1).'</pre>'
+          '@keys' => '<pre>'.print_r($primary_keys, 1).'</pre>'
         )
       );
       throw new Exception ($newmessage);

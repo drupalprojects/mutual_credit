@@ -9,13 +9,13 @@ function mcapi_pending_install() {
  * http://api.drupal.org/api/function/hook_uninstall/6
  * Remove any tables or variables that the module sets.
  */
-function mc_pending_uninstall() {
+function mcapi_pending_uninstall() {
   db_drop_field('mcapi_cache', 'pending_dif');
 
   //still needs to be reviewd for D7
   if(module_exists('views')) {
-    $view_ids = db_query("SELECT vid FROM {views_view} WHERE name = 'pending_transactions'");
-    while ($vid = db_result($view_ids)) {
+    $view_ids = db_query("SELECT vid FROM {views_view} WHERE name = 'pending_transactions'")->fetchCol();
+    while (list($key, $vid) = each($view_ids)) {
       db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
       db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
     }
@@ -26,8 +26,8 @@ function mc_pending_uninstall() {
  * Implementation of hook_schema)().
  * creates a table for storing signatures needed on pending transactions
  */
-function mc_pending_schema() {
-  $schema['mc_unsigned'] = array(
+function mcapi_pending_schema() {
+  $schema['mcapi_unsigned'] = array(
     'description' => 'signatories needed on pending transactions',
     'fields' => array(
       'xid' => array(
@@ -61,6 +61,7 @@ function pending_field() {
     'type' => 'numeric',
     'size' => 'normal',
     'precision' => 8,
-    'scale' => 2
+    'scale' => 2,
+    'default' => 0
   );
 }

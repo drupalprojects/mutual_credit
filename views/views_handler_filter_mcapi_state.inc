@@ -10,13 +10,21 @@
  */
 class views_handler_filter_mcapi_state extends views_handler_filter {
 
+  function construct() {
+    //$this->value_value = t('True');
+    $this->value_value = t('State');
+    $this->accept_null = FALSE;
+    $this->value_options = NULL;
+    parent::construct();
+  }
+
   function get_value_options() {
     $this->value_options = module_invoke_all('transaction_info', 'states');
   }
 
   function option_definition() {
     $options = parent::option_definition();
-    $options['value']['default'] = 0;
+    $options['value']['default'] = TRANSACTION_STATE_FINISHED;
     return $options;
   }
 
@@ -36,7 +44,7 @@ class views_handler_filter_mcapi_state extends views_handler_filter {
     }
     $form['value'] = array(
       '#type' => $filter_form_type,
-      '#title' => $this->value_value,
+      '#title' => t('State'),
       '#options' => $this->value_options,
       '#default_value' => $this->value,
     );
@@ -73,7 +81,7 @@ class views_handler_filter_mcapi_state extends views_handler_filter {
   function expose_options() {
     parent::expose_options();
     $this->options['expose']['operator_id'] = '';
-    $this->options['expose']['label'] = $this->value_value;
+    $this->options['expose']['label'] = t('State');
     $this->options['expose']['required'] = TRUE;
   }
 
