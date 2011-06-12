@@ -157,7 +157,7 @@ function mcapi_schema() {
         'length' => '32',
       ),
       'state' => array(
-        'description' => "State of the transaction - completed, pending, disputed, etc",
+        'description' => "completed, pending, disputed, etc",
         'type' => 'int',
         'size' => 'normal',
       ),
@@ -195,59 +195,6 @@ function mcapi_schema() {
       ),
     ),
     'primary key' => array('xid'),
-  );
-
-  //This table cointains one row for every user/currency and contains balances and personal balance limits
-  //The rows are created and deleted in hook_user, and when currencies are added and removed.
-  $schema['mcapi_cache'] = array(
-    'description' => 'cached balances, turnovers and pending balances, for exposure to views',
-    'fields' => array(
-      'uid' => array(
-        'description' => 'the user to which this entry is attached',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'cid' => array(
-        'description' => 'the currency id, where there is more than one currency',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'cleared_balance' => $numeric + array(
-        'description' => 'balance excluding pending transactions',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'gross_in' => $numeric + array(
-        'description' => "sum of all this user's income in this currency",
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'gross_out' => $numeric + array(
-        'description' => "sum of all this user's ougoings in this currency",
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'count' => array(
-        'description' => "number of cleared transactions",
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'data' => array(
-        'type' => 'blob',
-        'description' => 'nonessential info not fitting into existing fields',
-        'serialize' => TRUE,
-        'serialized default' => 'a:0:{}',
-      ),
-    ),
-    'unique keys' => array(
-      'uid_cid' => array('uid', 'cid')
-    )
   );
 
   $schema['mcapi_currencies'] = array(
@@ -383,7 +330,7 @@ function check_default_currency() {
         ),
       ),
     ),
-    'data' => array(
+    'extra' => array(
       'delete_mode' => 2,
       'update_mode' => 2,
       'user_editable_mode' => 2,

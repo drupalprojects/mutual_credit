@@ -57,9 +57,7 @@ $plugin = array(
       ),
     ),
   ),
-  /* THIS ISN'T WORKING
-  'handler' => array(
-    'class' => 'mcapi_webform_ui',
-  ),
-  */
+ // THIS ISN'T WORKING
+  'handler' => 'mcapi_webform_ui',
+
 );

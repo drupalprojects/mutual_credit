@@ -1,12 +1,13 @@
 ; $Id:
-name = Mutual Credit Taxnonomy
-description = Indexes taxonomy terms on transactions and expose the index to views.
+name = Mutual Credit Taxonomy
+description = (HELP NEEDED) Indexes taxonomy terms on transactions and expose the index to views.
 package = Mutual Credit
 core = 7.x
 
 files[] = mcapi_taxonomy.module
 files[] = mcapi_taxonomy.install
-; files[] = mcapi_taxonomy.views.inc NOT ACTUALLY NEEDED
+files[] = mcapi_taxonomy.views.inc
+files[] = mcapi_taxonomy.views_default.inc
 files[] = views/views_handler_field_term_transaction_tid.inc
 files[] = views/views_handler_relationship_transaction_term_data.inc
 

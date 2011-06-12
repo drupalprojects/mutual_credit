@@ -37,8 +37,6 @@ function mcapi_pending_menu() {
 }
 
 function mcapi_pending_menu_alter(&$items) {
-  //this item is created by webforms but we need to fix some things here
-  //$items['transaction/%transaction/sign/%user_uid_optional']['page arguments'] = '';
   $items['transaction/%transaction/sign']['access callback'] = 'mcapi_pending_sign_access';
   $items['transaction/%transaction/sign']['access arguments'] = array(1, 3);
   $items['transaction/%transaction/sign']['type'] = MENU_LOCAL_ACTION;
@@ -150,13 +148,23 @@ function mcapi_pending_entity_insert($type, $transaction) {
   if ($type != 'transaction' || $transaction->state != TRANSACTION_STATE_PENDING) return;
   //load the webform to check if this transaction has any signatories
   //this is where we actually add the signatures to the transaction object
-  $webform = mcapi_webforms_load($transaction->type);
-  if (!empty($webform->data['2ndperson']['signature'])) {
-    $transaction->pending[] = $transaction->payee == $GLOBALS['user']->uid ? $transaction->payer : $transaction->payee;
+  if (module_exists('mcapi_webforms')) {
+    $webform = mcapi_webforms_load($transaction->type);
+    if (!empty($webform->data['2ndperson']['signature'])) {
+      $transaction->pending[] = $transaction->payee == $GLOBALS['user']->uid ? $transaction->payer : $transaction->payee;
+    }
+    else {
+      foreach (array('payer', 'payee') as $participant) {
+        if (!empty($webform->data[$participant]['signature'])){
+          $transaction->pending[] = $transaction->$participant;
+        }
+      }
+    }
   }
   else {
+    //make pending for any user who isn't the currency user
     foreach (array('payer', 'payee') as $participant) {
-      if (!empty($webform->data[$participant]['signature'])){
+      if ($transaction->$participant != $GLOBALS['user']->uid) {
         $transaction->pending[] = $transaction->$participant;
       }
     }
@@ -173,13 +181,14 @@ function mcapi_pending_entity_save($transaction) {
   if (isset($transaction->xid)) {
     db_query("DELETE FROM {mcapi_unsigned} WHERE xid = ".$transaction->xid);
   }
-  if (count($transaction->pending)) {
+  if (isset($transaction->pending) && count($transaction->pending)) {
     foreach ($transaction->pending as $uid) {
       $rows[] = '('. $transaction->xid .', '. $uid .')';
     }
     db_query("INSERT INTO {mcapi_unsigned} (xid, uid) VALUES ". implode(', ', $rows));
   }
-  recalc_pending($transaction);
+  //this is obselete. Yet to be replaced, I think
+  //recalc_pending($transaction);
 }
 /*
  * Will implement hook_entity_delete or some such
@@ -188,7 +197,7 @@ function mcapi_pending_entity_delete($entity, $type) {
   if ($type = transaction && !empty($entity->pending)) {
     db_query("DELETE FROM {mcapi_unsigned} WHERE xid = ".$transaction->xid);
   }
-  recalc_pending($transaction);
+  //recalc_pending($transaction);
 }
 
 /*
@@ -200,12 +209,13 @@ function mcapi_sign($transaction, $uid) {
   if (!count($transaction->pending)) {
     $transaction->state = TRANSACTION_STATE_FINISHED;
   }
-  transaction_controller('save', $transaction);
+  transaction_controller('state', $transaction);
 }
 
 /*
  * calculates pending difference for both users from scratch and saves to cache
  */
+/*
 function recalc_pending($transaction) {
   $cid = $transaction->cid;
   //calculate pending balances and save in cache table
@@ -223,6 +233,8 @@ function recalc_pending($transaction) {
     );
   }
 }
+ *
+ */
 
 function mcapi_pending_form_currency_form_alter(&$form, $form_state) {
   $cid = !empty($form_state['values']['cid']) ? currency_load($form_state['values']['cid']) : $form['cid']['#value'];
@@ -279,58 +291,6 @@ function mcapi_pending_views_api() {
 function mcapi_get_signatories($transaction) {
   $uids = db_select('mcapi_unsigned', 'u')->fields('u', array('uid'))->condition('xid', $transaction->xid)->execute()->fetchCol();
   return user_load_multiple($uids);
-}
-
-
-/*
- * Implements hook_form_FORM_ID_alter
- * modifies its own form to hide exceptional fields
- * adds ajax to the state selector
- * then if the state is set to pending, this inserts the checkboxes to require signatures in webforms
- *
- */
-function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
-  $webform = &$form_state['item'];
-  if ($webform->path == 'transaction/%transaction/sign/%user_uid_optional') {
-    $form['path']['#disabled'] = TRUE;
-    $form['aspect']['#disabled'] = TRUE;
-    foreach(array('output', 'cid', 'description', 'payer', 'payee', 'amount', 'step-2', 'workflow') as $fieldname) {
-      $form[$fieldname]['#access'] = FALSE;
-    }
-    $form['webform_fields'] = array(
-      '#type' => 'markup',
-      '#value' => t('Use the following tokens: @tokens', array('@tokens' => '[payer], [payee], [description], [amount]')),
-    );
-  }
-  else{
-    $form['workflow']['outgoing']['#ajax'] = array(
-      'callback' => 'mcapi_webforms_ajax_settings',
-      'wrapper' => 'form-wrapper'
-    );
-    if ($form['workflow']['outgoing']['#default_value'] == TRANSACTION_STATE_PENDING ) {
-      foreach (array('payer', 'payee', '2ndperson') as $participant) {
-        if (isset($form[$participant])) {
-          $form[$participant]['signature'] = array(
-            '#title' => t('User must sign before transaction completes'),
-            '#type' => 'checkbox',
-            '#default_value' => isset($webform->data[$participant]['signature']) ? $webform->data[$participant]['signature'] : FALSE,
-            '#weight' => 5
-          );
-        }
-      }
-      $form['#validate'][] = 'mcapi_webform_pending_validate';
-    }
-  }
-}
-/*
- * Validate callback for webforms editing page
- * Ensures that pending forms will require signatures.
- */
-function mcapi_webform_pending_validate(&$element, $form_state) {
-  foreach (array('payer', 'payee', '2ndperson') as $participant) {
-    if (!empty($form_state['values'][$participant]['signature'])) return;
-  }
-  form_error($element, t('Pending transactions require that the payer, payee or 2ndperson sign the transaction'));
 }
 
 
@@ -439,3 +399,56 @@ function mcapi_signall_confirm_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'user';
 }
 
+
+/*
+ * Integration with mcapi_webforms module
+ *
+ * Implements hook_form_FORM_ID_alter
+ * modifies its own form to hide exceptional fields
+ * adds ajax to the state selector
+ * then if the state is set to pending, this inserts the checkboxes to require signatures in webforms
+ *
+ */
+function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+  $webform = &$form_state['item'];
+  if ($webform->path == 'transaction/%transaction/sign/%user_uid_optional') {
+    $form['path']['#disabled'] = TRUE;
+    $form['aspect']['#disabled'] = TRUE;
+    foreach(array('output', 'cid', 'description', 'payer', 'payee', 'amount', 'step-2', 'workflow') as $fieldname) {
+      $form[$fieldname]['#access'] = FALSE;
+    }
+    $form['webform_fields'] = array(
+      '#type' => 'markup',
+      '#value' => t('Use the following tokens: @tokens', array('@tokens' => '[payer], [payee], [description], [amount]')),
+    );
+  }
+  else{
+    $form['workflow']['outgoing']['#ajax'] = array(
+      'callback' => 'mcapi_webforms_ajax_settings',
+      'wrapper' => 'form-wrapper'
+    );
+    if ($form['workflow']['outgoing']['#default_value'] == TRANSACTION_STATE_PENDING ) {
+      foreach (array('payer', 'payee', '2ndperson') as $participant) {
+        if (isset($form[$participant])) {
+          $form[$participant]['signature'] = array(
+            '#title' => t('User must sign before transaction completes'),
+            '#type' => 'checkbox',
+            '#default_value' => isset($webform->data[$participant]['signature']) ? $webform->data[$participant]['signature'] : FALSE,
+            '#weight' => 5
+          );
+        }
+      }
+      $form['#validate'][] = 'mcapi_webform_pending_validate';
+    }
+  }
+}
+/*
+ * Validate callback for webforms editing page
+ * Ensures that pending forms will require signatures.
+ */
+function mcapi_webform_pending_validate(&$element, $form_state) {
+  foreach (array('payer', 'payee', '2ndperson') as $participant) {
+    if (!empty($form_state['values'][$participant]['signature'])) return;
+  }
+  form_error($element, t('Pending transactions require that the payer, payee or 2ndperson sign the transaction'));
+}

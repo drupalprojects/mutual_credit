@@ -50,6 +50,23 @@ function mcapi_webforms_menu() {
   return $items;
 }
 /*
+ * implements hook_menu_alter
+ * alters the menu item provided by ctools so it can be used for context
+ */
+function mcapi_webforms_menu_alter(&$items) {
+  $items['admin/accounting/webforms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
+  $items['admin/accounting/webforms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/webforms/list/%';
+  $items['admin/accounting/webforms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function mcapi_webforms_admin_paths() {
+  return array('transaction/*/formedit' => TRUE);
+}
+
+/*
  * implements hook_forms
  * args[0] is a transaction
  * args[1] is the webform name

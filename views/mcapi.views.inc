@@ -16,7 +16,7 @@ function mcapi_views_data() {
     'field' => 'xid',
     'title' => t('Transactions'),
     'help' => t('Records of transactions between users'),
-    'access query tag' => 'transaction_access',
+//    'access query tag' => 'transaction_access',
     'defaults' => array(
       'field' => 'description',
     ),
@@ -50,7 +50,7 @@ function mcapi_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument',
-    ),
+    )
   );
   $data['mcapi_transactions']['payer'] = array(
     'title' => t('Payer'), // The item it appears as on the UI,
@@ -65,7 +65,7 @@ function mcapi_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument'
-    ),
+    )
   );
   $data['mcapi_transactions']['payee'] = array(
     'title' => t('Payee'),
@@ -135,28 +135,9 @@ function mcapi_views_data() {
       'handler' => 'views_handler_filter_mcapi_types',
     ),
   );
-
-  $data['mcapi_transactions']['participant'] = array(
-    'argument' => array(
-      'title' => t('Involved user'),
-      'help' => t('Show only those transactions in which a user was involved'),
-      'handler' => 'views_handler_argument_mcapi_participant',
-    ),
-    'field' => array(
-      'title' => t('Other user'),
-      'help' => t("Show the other user who wasn't passed in the views argument"),
-      'handler' => 'views_handler_field_mcapi_other_participant',
-      'click sortable' => TRUE
-    ),
-    'filter' => array(
-      'title' => t('Involved user (must be exposed)'),
-      'help' => t("Exchanges involving a user"),
-      'handler' => 'views_handler_filter_mcapi_other_participant',
-    )
-  );
   $data['mcapi_transactions']['creator'] = array(
     'title' => t('Creator'),
-    'help' => t('The user who first recorded the transaction.'),
+    'help' => t('The user who first created the transaction.'),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_trader',
       'click sortable' => TRUE,
@@ -169,8 +150,8 @@ function mcapi_views_data() {
     ),
   );
   $data['mcapi_transactions']['created'] = array(
-    'title' => t('Recorded'),
-    'help' => t("the second the transaction was recorded"),
+    'title' => t('created'),
+    'help' => t("the second the transaction was created"),
     'field' => array(
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
@@ -181,6 +162,10 @@ function mcapi_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_date',
     ),
+    'argument' => array(
+      'field' => 'created',
+      'handler' => 'views_handler_argument_mcapi_created_year_month',
+    )
   );
   $data['mcapi_transactions']['modifer'] = array(
     'title' => t('Modifier'),
@@ -200,7 +185,7 @@ function mcapi_views_data() {
     'title' => t('Corrected'),
     'help' => t("the second the transaction was corrected"),
     'field' => array(
-      'handler' => 'views_handler_field_date',
+      'handler' => 'views_handler_field_time_interval',
       'click sortable' => TRUE,
     ),
     'sort' => array(
@@ -214,134 +199,21 @@ function mcapi_views_data() {
     'title' => t('Admin links'),
     'help' => t("Edit and delete links"),
     'field' => array(
-      'handler' => 'views_handler_field_transaction_links',
+      'handler' => 'views_handler_field_mcapi_links',
     )
   );
 
-  $data['mcapi_cache']['table']['group'] = t('Balances');
-  $data['mcapi_cache']['table']['base'] = array(
-    'database' => variable_get('mcapi_db_read', 'default'),
-    'field' => 'uid',
-    'title' => t('Transaction totals'),
-    'help' => t('Balances of users.'),
-    'defaults' => array(
-      'field' => 'cleared_balance',
-    )
-  );
-
-  $data['mcapi_cache']['table']['join'] = array(
-    array(
-      'left_table' => 'users',
-      'left_field' => 'uid',
-      'field' => 'uid',
-    ),
-    array(
-      'left_table' => 'mcapi_currencies',
-      'left_field' => 'cid',
-      'field' => 'cid'
-    )
-  );
-   
-  $data['mcapi_cache']['uid'] = array(
-    'title' => t('User'),
-    'argument' => array(
-      'help' => t("The user id"),
-      'handler' => 'views_handler_argument',
-    ),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'users',
-      'field' => 'uid',
-      'label' => t('user'),
-    ),
-  );
-  $data['mcapi_cache']['cid'] = array(
-    'title' => t('Currency ID'),
-    'help' => t("The currency id"),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument',
-    ),
-    'filter' => array(
-       'handler' => 'views_handler_filter_mcapi_currency'
-    ),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'mcapi_currencies',
-      'field' => 'cid',
-      'label' => t('currency'),
-    ),
-  );
-  $data['mcapi_cache']['cleared_balance'] = array(
-    'title' => t('Balance'),
-    'field' => array(
-      'help' => t("The user's total cleared income minus total cleared expenditure"),
-      'handler' => 'views_handler_field_mcapi_amount',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'help' => t("The user's total cleared income minus total cleared expenditure"),
-      'handler' => 'views_handler_sort',
-    )
-  );
-  $data['mcapi_cache']['pending_dif'] = array(
-    'title' => t('Pending Difference'),
-    'field' => array(
-      'help' => t("The sum of all pending transactions, (@type)", array('@type'=>'')),
-      'handler' => 'views_handler_field_mcapi_amount',
-      'click sortable' => TRUE,
-    )
-  );
-  $data['mcapi_cache']['gross_in'] = array(
-    'title' => t('Gross Income'),
-    'help' => t("The user's total completed income"),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    )
-  );
-  $data['mcapi_cache']['gross_out'] = array(
-    'title' => t('Gross Expenditure'),
-    'help' => t("The user's total completed expenditure"),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    )
-  );
-  $data['mcapi_cache']['count'] = array(
-    'title' => t('Number of transactions'),
-    'help' => t('Number of transactions'),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    )
-  );
   return $data;
 }
 
 /*
  * implements views hook_views_data_alter
  */
-function mcapi_views_data_alter(&$data) {
-    // For other base tables, explain how we join
-  $data['users']['table']['join']['mcapi_transactions'] = array(
+function mcapi_views_data_alter(&$items) {
+  //not sure if this does anything
+  $items['users']['table']['join']['mcapi_transactions'] = array(
+    'left_table' => 'mcapi_transactions',
     'left_field' => 'creator',
-    'field' => 'uid',
-  );
-  $data['users']['table']['join']['mcapi_cache'] = array(
-    'left_field' => 'uid',
     'field' => 'uid',
   );
 }
@@ -395,7 +267,7 @@ class views_handler_field_transactions extends views_handler_field {
     return $data;
   }
 
-  function render($values) {
+  function render($values) {debug('views_handler_field_transactions');
     return $this->render_link(check_plain($values->{$this->field_alias}), $values);
   }
 }

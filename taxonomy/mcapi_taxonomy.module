@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * NEEDS HELP
+ * Drupal 7's taxonomy is geared towards the node entity type and I've been unsuccessful in transposing it to taxonomy
+ * I have created an index table and done lots of work with views integration
+ * This job might be suitable for a bounty!
+ */
+
 function mcapi_taxonomy_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
   // We maintain a denormalized table of term/transaction relationships, containing
   // only data for current, published transactions.

@@ -1,26 +1,5 @@
 <?php
-
-function mcapi_pending_install() {
-  db_add_field('mcapi_cache', 'pending_dif', pending_field());
-}
-
-/**
- * Implementation of hook_uninstall(˙˙˙).
- * http://api.drupal.org/api/function/hook_uninstall/6
- * Remove any tables or variables that the module sets.
- */
-function mcapi_pending_uninstall() {
-  db_drop_field('mcapi_cache', 'pending_dif');
-
-  //still needs to be reviewd for D7
-  if(module_exists('views')) {
-    $view_ids = db_query("SELECT vid FROM {views_view} WHERE name = 'pending_transactions'")->fetchCol();
-    while (list($key, $vid) = each($view_ids)) {
-      db_query("DELETE FROM {views_view} WHERE vid = %d", $vid);
-      db_query("DELETE FROM {views_display} WHERE vid = %d", $vid);
-    }
-  }
-}
+//Id;
 
 /**
  * Implementation of hook_schema)().
@@ -44,24 +23,4 @@ function mcapi_pending_schema() {
     'primary key' => array('xid', 'uid')
   );
   return $schema;
-}
-
-/*
- * implements hook_schema_alter
- * adds a field to the mcapi_cache table
- */
-function mcapi_pending_schema_alter(&$tables) {
-  $tables['mcapi_cache']['fields']['pending_dif'] = pending_field();
-}
-
-function pending_field() {
-  return array(
-    'description' => 'sum of pending transactions',
-    'not null' => TRUE,
-    'type' => 'numeric',
-    'size' => 'normal',
-    'precision' => 8,
-    'scale' => 2,
-    'default' => 0
-  );
 }

@@ -274,7 +274,7 @@ function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
     if ($surplus > 0) {
       $messages[] .= t('Transaction would take @username !quant above the maximum balance of !max.',
         array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($payee)))),
+          '@username' => strip_tags(format_username(user_load($payee))),
           '!quant' => theme('money', array('quantity' => $surplus, 'cid' => $cid, $richtext = FALSE)),
           '!max' => theme('money', array('quantity' => $limits['max'], 'cid' => $cid, $richtext = FALSE))
         )
@@ -293,7 +293,7 @@ function mcapi_limit_check($transaction, $state = TRANSACTION_STATE_FINISHED) {
     if ($deficit > 0) {
       $messages[] .= t('Transaction would take @username !quant below the minimum balance of !min.',
         array(
-          '@username' => strip_tags(theme('username', array('account' => user_load($payer)))),
+          '@username' => strip_tags(format_username(user_load(user_load($payer))),
           '!quant' => theme('money', array('quantity' => $deficit, 'cid' => $cid, $richtext = FALSE)),
           '!min' => theme('money', array('quantity' => $limits['min'], 'cid' => $cid, $richtext = FALSE))
         )

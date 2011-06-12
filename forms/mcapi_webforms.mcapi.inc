@@ -8,7 +8,7 @@ function mcapi_webforms_default_mcapi_webforms() {
   $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
   $webform->api_version = 3;
   $webform->name = '3rdparty';
-  $webform->path = 'transaction/3rdparty';
+  $webform->path = 'transact/3rdparty';
   $webform->status = 1;
   $webform->data = array(
     'info' => array(
@@ -41,7 +41,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'options' => array(
         1 => 0,
       ),
-      'widget' => 'hidden',
+      'widget' => 'radios',
     ),
     'payer' => array(
       'common' => array(
@@ -106,7 +106,7 @@ Amount: [amount]<br />',
   $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
   $webform->api_version = 3;
   $webform->name = '1stparty';
-  $webform->path = 'transaction/1stparty';
+  $webform->path = 'transact/1stparty';
   $webform->status = 1;
   $webform->data = array(
     'info' => array(
@@ -139,7 +139,7 @@ Amount: [amount]<br />',
       'options' => array(
         1 => 0,
       ),
-      'widget' => 'hidden',
+      'widget' => 'radios',
     ),
     '2ndperson' => array(
       'common' => array(
@@ -198,15 +198,16 @@ for [description]<br />',
   );
   $webforms[$webform->name] = $webform;
 
+
   $webform = new stdClass;
   $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
   $webform->api_version = 3;
-  $webform->name = 'multiple';
-  $webform->path = 'transaction/multiple';
+  $webform->name = 'many2one';
+  $webform->path = 'transact/many2one';
   $webform->status = 1;
   $webform->data = array(
     'info' => array(
-      'name' => 'multiple',
+      'name' => 'many2one',
     ),
     'aspect' => '3',
     'help' => '',
@@ -237,10 +238,107 @@ for [description]<br />',
       'common' => array(
         'preset' => '',
         'disable' => 0,
-        'required' => 0,
+        'required' => 1,
       ),
       'args' => 'user_chooser_roles:2',
       'multiple' => 1,
+    ),
+    'payee' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+      'args' => 'user_chooser_roles:2',
+      'multiple' => 0,
+    ),
+    'amount' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+      'chars' => '4',
+    ),
+    'description' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+    ),
+    'submission' => array(
+      'button' => 'Submit',
+      'redirect' => 'transactions',
+    ),
+    'step-1' => array(
+      'title' => 'Enter multiple payments',
+      'template' => '[payer]<br />
+will pay<br />
+[payee]<br />
+[amount] each<br />
+for<br />
+[description]'
+    ),
+    'step-2' => array(
+      'title' => 'Are you sure?',
+      'template' => '[payer]<br />
+will pay<br />
+[payee]<br />
+[amount] each<br />
+for<br />
+[description]',
+    ),
+    'buttons' => array(
+      'submit' => 'Save',
+      'delete' => 'Delete',
+    ),
+  );
+  $webforms[$webform->name] = $webform;
+
+  $webform = new stdClass;
+  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
+  $webform->api_version = 3;
+  $webform->name = 'one2many';
+  $webform->path = 'transact/one2many';
+  $webform->status = 1;
+  $webform->data = array(
+    'info' => array(
+      'name' => 'one2many',
+    ),
+    'aspect' => '3',
+    'help' => '',
+    'outputs' => array(
+      'access' => 'user_access:manage all transactions',
+      'menu_link' => 'management',
+      'use_block' => 0,
+    ),
+    'workflow' => array(
+      'incoming' => array(
+        t('Unset') => t('Unset'),
+        'Finished' => 0,
+        'Template' => 0,
+      ),
+      'outgoing' => '0',
+    ),
+    'webform_fields' => array(
+      'webform_fields__active_tab' => 'edit-amount',
+    ),
+    'cid' => array(
+      'common' => array(
+        'preset' => 1,
+        'widget' => 'hidden',
+        'required' => FALSE,
+      ),
+    ),
+    'payer' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+      'args' => 'user_chooser_roles:2',
+      'multiple' => 0,
     ),
     'payee' => array(
       'common' => array(

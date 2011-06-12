@@ -47,9 +47,9 @@ if ($view_mode == 'summary') {
 }
 else {
   $date = t('On @date', array('@date' => $recorded));
-  $movement = $state == TRANSACTION_STATE_PENDING ?
-    t('!payer <strong>will pay</strong> !payee', array('!payer' => $payer, '!payee' => $payee)) :
-    t('!payer <strong>paid</strong> !payee', array('!payer' => $payer, '!payee' => $payee));
+  $movement = $state == TRANSACTION_STATE_FINISHED ?
+    t('!payer <strong>paid</strong> !payee', array('!payer' => $payer, '!payee' => $payee)) :
+    t('!payer <strong>will pay</strong> !payee', array('!payer' => $payer, '!payee' => $payee));
   $sum = t('the sum of !amount', array('!amount' => '</p><p style="font-size:250%">'.$amount));
   $reason = t('for !reason', array('!reason' => '<strong>'.$description.'</strong>'));
 

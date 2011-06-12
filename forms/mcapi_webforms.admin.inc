@@ -135,7 +135,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       '#description' => t('Transaction will be submitted in this state'),
       '#type' => 'select',
       '#options' => $outgoing_options,
-      '#default_value' => isset($webform->data['workflow']['outgoing']) ? $webform->data['workflow']['outgoing'] : TRANSACTION_STATE_FINISHED,
+      '#default_value' => empty($webform->data['workflow']['outgoing']) ? TRANSACTION_STATE_FINISHED : $webform->data['workflow']['outgoing'],
       '#weight' => 3,
     ),
     '#weight' => 5,
@@ -308,7 +308,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#weight' => 1,
     'title' => array(
       '#title' => t('Title'),
-      '#description' => t('For use in block title and menu links'),
+      '#description' => t('For use in block title and menu links.') .' '. t('Plain text only.'),
       '#type' => 'textfield',
       '#default_value' => isset($webform->data['step-1']['title']) ? $webform->data['step-1']['title'] : '',
       '#required' => TRUE
@@ -333,8 +333,9 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#weight' => 2,
     'title' => array(
       '#title' => t('Title'),
+      '#description' => t('Plain text only.'),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['step-2']['template']) ? $webform->data['step-2']['template'] : '',
+      '#default_value' => isset($webform->data['step-2']['title']) ? $webform->data['step-2']['title'] : '',
     ),
     'template' =>  array(
       '#title' => t('Confirmation page (optional)'),

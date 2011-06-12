@@ -70,24 +70,19 @@ class views_handler_field_term_transaction_tid extends views_handler_field_prere
    * Add this term to the query
    */
   function query() {
-    $this->add_additional_fields(
-      array(
-        'table' => 'mcapi_transactions', 
-‎        'field' => 'xid'
-      )
-    );
+    $this->add_additional_fields(array('xid'));s
   }
 
   function pre_render(&$values) {
     $this->field_alias = $this->aliases['xid'];
-    $nids = array();
+    $xids = array();
     foreach ($values as $result) {
       if (!empty($result->{$this->aliases['xid']})) {
-        $nids[] = $result->{$this->aliases['xid']};
+        $xids[] = $result->{$this->aliases['xid']};
       }
     }
 
-    if ($nids) {
+    if ($xids) {
       $query = db_select('taxonomy_term_data', 'td');
       $query->innerJoin('taxonomy_index_transactions', 'tn', 'td.tid = tn.tid');
       $query->innerJoin('taxonomy_vocabulary', 'tv', 'td.vid = tv.vid');
@@ -97,7 +92,7 @@ class views_handler_field_term_transaction_tid extends views_handler_field_prere
       $query->addField('tv', 'machine_name', 'vocabulary_machine_name');
       $query->orderby('td.weight');
       $query->orderby('td.name');
-      $query->condition('tn.xid', $nids);
+      $query->condition('tn.xid', $xids);
       $query->addTag('term_access');
       $vocabs = array_filter($this->options['vocabularies']);
       if (!empty($this->options['limit']) && !empty($vocabs)) {

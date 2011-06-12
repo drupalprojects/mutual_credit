@@ -28,7 +28,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     $transaction = $form_state['#transaction'];
   }
   $form = transaction_form($form, $form_state, $transaction);
-
+  $form['creator']['#type'] = 'hidden';
   $form['xid']['#type'] = 'hidden';
   $form['type']['#type'] = 'hidden';
   $form['type']['#value'] = $webform->name;
@@ -68,25 +68,34 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   }
   //to avoid the theme_wrappers being put on later in form_pre_render_conditional_form_element()
   unset($form['cid']['#title'], $form['cid']['#description']);
-
+ 
   //particpants
   if ($webform->data['aspect'] == 3) {
     //payer
     $form['payer']['#type'] = strtok($webform->data['payer']['args'], ':');
     $form['payer']['#args'] = array(strtok(':'));
     $form['payer']['#multiple'] = $webform->data['payer']['multiple'];
+    //this could be put in the config
+    $form['payer']['#me'] = TRUE;
     mcapi_webform_default_value($form['payer'], $webform->data['payer']);
     
     //payee;
     $form['payee']['#type'] = strtok($webform->data['payee']['args'], ':');
     $form['payee']['#args'] = array(strtok(':'));
+    //this could be put in the config
+    $form['payee']['#me'] = TRUE;
     mcapi_webform_default_value($form['payee'], $webform->data['payee']);
+
     foreach (array('payer', 'payee') as $participant) {
       if ($webform->data[$participant]['multiple']) {
-        $form[$participant.'_uid']['#multiple'] = TRUE;
+        $form[$participant]['#multiple'] = TRUE;
+        if (isset($form_state['#transactions'])) {//second time around
+          $form[$participant]['#default_value'] = $form_state['#transactions'][$participant];
+        }
+        $form[$participant]['#element_validate'] = array();
         $form['#submit'] = array('mcapi_webforms_multiple_submit'); //replaces default submit handler
         $form['#validate'] = array('mcapi_webforms_multiple_validate');
-        continue; //because only one can be multiple
+        break; //because only one can be multiple
       }
     }
   }
@@ -108,6 +117,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     );
     //if we are loading the page from blank, or rebuilding the form, we set the default values here,
     mcapi_webform_default_value($form['direction'], $webform->data['direction']);
+    //if we are loading the page from blank, or rebuilding the form, we set the default values h
     //however if we are editing an existing transaction,
     //we have to show the transaction owner and derive the direction and partner from the payer and payee
     if ($transaction->xid) {
@@ -120,7 +130,6 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
         $form['direction']['#default_value'] = 'incoming';
       }
     }
-    debug($form['2ndperson']);
     unset($form['payer'], $form['payee']);
     //this validation function must run BEFORE the main one in the API, which requires payer and payee
     array_unshift($form['#validate'], 'mcapi_webforms_validate_2ndperson');
@@ -135,24 +144,21 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   $form['amount']['#default_value'] = $transaction->quantity;
   $form['amount']['#chars'] =  !empty($webform->data['amount']['chars']) ? $webform->data['amount']['chars'] : 6;
   mcapi_webform_default_value($form['amount'], $webform->data['amount']);
-  $replacement_id = $webform->name .'-amount';
-  //for AJAX rebuilding, we overwrite $transaction with the form state values,
-  $form['amount']['#webform_id'] = $replacement_id;
+  $form['amount']['#id'] = $webform->name .'-amount';
+  $form['amount']['#cid'] = $form['cid']['#default_value'];
   $form['#prefix'] = "<style>.amount div{display:inline;}</style>";
-
   //description
   mcapi_webform_default_value($form['description'], $webform->data['description']);
-
   //save button
   if (strpos($webform->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
-    $form['buttons']['submit']['#src'] = ($webform->data['submission']['button']);
+    $form['buttons']['submit']['#src'] = $webform->data['submission']['button'];
   }
   else {
     $form['buttons']['submit']['#value'] = $webform->data['submission']['button'];
   }
   if ($form_state['step'] > 1) {
-    $form['back'] = array(
+    $form['buttons']['back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
     );
@@ -160,6 +166,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   //this may help with the validation and submission
   $form_state['#webform'] =  $webform;
   $form['#theme'] = 'mcapi_webform';
+  $form['#contextual_links']['mcapi_webforms'] = array('admin/accounting/webforms/list', array($webform->name));
   array_unshift($form['#submit'], 'mcapi_webforms_form_presubmit');
   $form['#validate'][] = 'mcapi_webforms_validate';
   //custom properties
@@ -233,7 +240,7 @@ function mcapi_webform_prepare_tokens(&$form, &$form_state) {
     //unset all the fields in the form, having derived their token values
     //all that data is in $form_state['storage'] by now
     foreach ($form['#tokens'] as $token => $fieldname) {
-      $form['#replacements'][ '['.$token.']'] = mcapi_element_markup_render($form[$fieldname]);
+      $form['#replacements'][ '['.$fieldname.']'] = mcapi_element_markup_render($form[$fieldname]);
       //we can unset the field in step 2 because the transaction has already been stored
       //in $form_state['#transaction'] in validation of step 1
       unset($form[$fieldname]);
@@ -255,6 +262,9 @@ function mcapi_hide_form_children(&$element) {
  * nesting function to remove the outer theme wrapper put on by the element processing.
  */
 function mcapi_webform_remove_theme_wrapper(&$field){
+  if (in_array($field['#type'], array('checkbox', 'radio'))) {
+    return;
+  }
   if (isset($field['#theme_wrappers'])) {
     $field['#theme_wrappers'] = array();
   }
@@ -399,35 +409,24 @@ function validate_mcapi_amount_field(&$element, &$form_state, $form) {
       }
     }
   }
-  //only worth validating division if we have a currency id
-  //division field should be < 100 and if divisions are defined in the currency, one of the them
-  //(in fact the 'select' form widget should verify that)
-  if (isset($form_state['values']['cid']) && $division) {
-    $currency = currency_load($form_state['values']['cid']);
-    if (!$currency->divisions_conf) {
-      form_error($element[$subfield], t("Integer values only for '@fieldname'", array('@fieldname' => $element[$subfield]['#title'])));
-    }
-    if (is_array($currency->divisions)) {
-      if (!$currency->divisions[$element['division']['#value']]) {
-        form_error($element['division'], t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
-      }
-    }
-    elseif ($currency->divisions == 00 && $element['division']['#value'] >99) {
-      form_error($element['division'], t("Division must be less than 100", array('@fieldname' => $element['#title'])));
-    }
-  }
 
-  if ($element['#required'] == TRUE && !$element['integer']['#value'] && !$element['division']['#value']) {
+  $float =  mcapi_amount_value($element);
+  $temp = $element['#value'];
+  $element['#value'] = $float;
+  mcapi_validate_quantity($element, $form_state);
+  $element['#value'] = $temp;
+
+  if ($element['#required'] == TRUE && !$element['integer']['#value'] && empty($element['division']['#value'])) {
     form_error($element, t('Quantity cannot be zero'));
   }
   //CRITICAL write this value to form_state where it will be incorporated into the writable object
   //the form validation should check if this is > 0
-  $form_state['values']['quantity'] = mcapi_amount_value($element);
+  $form_state['values']['quantity'] = $float;
 }
 
 
 function mcapi_webforms_ajax_amount($form, &$form_state) {
-  return $form['amount'];
+  return $form['amount']['#children'];
 }
 
 
@@ -443,8 +442,7 @@ function theme_mcapi_amount($variables) {
   else {
     $output = drupal_render($element['integer']);
   }
-  $id = $element['#webform_id'];
-  return '<span class="amount" id = "'. $element['#webform_id'].'">'. $output .'</span>';
+  return '<span class="amount" id = "'. $element['#id'].'">'. $output .'</span>';
 }
 
 
@@ -478,37 +476,37 @@ function mcapi_webforms_validate_2ndperson($form, &$form_state) {
  * these replace and incorporate the ones on the default form 
  */
 function mcapi_webforms_multiple_validate($form, &$form_state) {
-  //$transaction = clone($form_state['#transaction']);
   $payers = (array)$form_state['values']['payer'];
   $payees = (array)$form_state['values']['payee'];
   foreach ($payees as $payee) {
     foreach ($payers as $payer) {
       $form_state['values']['payer'] = $payer;
       $form_state['values']['payee'] = $payee;
+      $form_state['values']['xid'] = NULL;
       transaction_form_validate($form, $form_state);
       $validatids[] = $form_state['#transaction']->xid;
     }
   }
   //this object will only work in the following submit handler
-  $form_state['#transactions'] = (object)array(
+  $form_state['#transactions'] = array(
     'xids' => $validatids,
     'payer' => $payers,
     'payee' => $payees
   );
 }
+
 /*
  * submit callback to replace the default
  */
 function mcapi_webforms_multiple_submit($form, &$form_state) {
-  $transactions = transaction_controller('load', $form_state['#transactions']->xids);
-  debug($transactions);
+  $transactions = transaction_controller('load', $form_state['#transactions']['xids']);
   foreach ($transactions as $transaction) {
     $transaction->state = $form_state['#transaction']->state;
     $form_state['#transaction'] = $transaction;
     transaction_all_submit($form, $form_state);
   }
-  $message = t('Multiple transaction, xids: @xids', array(implode(', ', $form_state['#transactions']->xids)));
-  watchdog('mutual_credit', $message);
+  $message = t('Multiple transaction, ids: @xids', array('@xids' => implode(', ', $form_state['#transactions']['xids'])));
+  watchdog('mcapi', $message);
   if (user_access('access site reports') && module_exists('dblog')) {
     $form_state['redirect'] = 'admin/reports/dblog';
   }
@@ -518,6 +516,13 @@ function mcapi_webforms_multiple_submit($form, &$form_state) {
 }
 
 function mcapi_webforms_validate($form, &$form_state) {
+  //don't validate if it's ajax
+  if (current_path() == 'system/ajax') {
+    return;
+  }
+  elseif (!empty($form_state['clicked_button']['#submit']) && in_array('mcapi_transaction_erase_confirm_form', $form_state['clicked_button']['#submit'])) {
+    return;
+  }
   //go back if that button was pressed
   if (isset($form_state['values']['back']) && $form_state['values']['op'] == $form_state['values']['back']) {
     $form_state['rebuild'] = TRUE;
@@ -547,8 +552,11 @@ function mcapi_webforms_form_presubmit($form, &$form_state) {
 
 //ascertains whether the active path corresponds to this webform
 function _is_this_webform($webform) {
+
   $parts = explode('/', current_path());
+  if ($parts[2] = 'formedit') return TRUE;
   $map = explode('/', $webform->path);
+  debug($parts);debug($map);
   foreach($map as $key => $part) {
     if (strpos($part, '%') === 0) $parts[$key] = $part;
   }

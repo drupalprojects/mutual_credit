@@ -48,15 +48,6 @@ function mcapi_help($section) {
   }
 }
 
-/*
- * Needed for the views 2 module
- */
-function mcapi_views_api() {
-  return array(
-    'api' => '3.0-alpha1', //TODO update this to v3
-    'path' => drupal_get_path('module', 'mcapi') .'/views',
-  );
-}
 
 /**
  * implements hook_menu()
@@ -77,6 +68,17 @@ function mcapi_menu_alter(&$items) {
   //but we do want to manage the fields for two entity types on one page.
   $items['admin/accounting/currency/edit/fields']['title'] = 'Currency fields';
   $items['admin/accounting/transaction/edit/fields']['title'] = 'Transaction fields';
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function mcapi_admin_paths() {
+  return array(
+    'admin/accounting*' => TRUE,
+    'currency*'
+  );
+
 }
 
 /*
@@ -297,12 +299,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
         'transaction' => NULL,
         'view_mode' => 'certificate',
       )
-    ),
-    //expecting something from a views table
-    'balances' => array(
-      'variables' => array(
-        'balances' => array() //array with cid for keys
-      )
     )
   );
   return $items;
@@ -314,7 +310,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
  */
 function mcapi_format_money($quantity, $cid) {
   $currency = currency_load($cid);
-  $subdivision = NULL;
+  $subdivision = '00';
   //the static variable saves processing the icon every time
   $formats = &drupal_static(__FUNCTION__);
   if (!isset($formats[$cid])) {
@@ -328,24 +324,21 @@ function mcapi_format_money($quantity, $cid) {
     }
     $formats[$cid] = str_replace('@icon', isset($props) ? theme('image', $props) : '', $currency->format);
   }
-  switch (gettype($quantity)) {
-    case 'array': 
-      $integer = array_shift($quantity);
-      $subdivision = array_shift($quantity);
-      break;
-    case 'string':
-      $integer = $quantity;
-      break;
-    default:
-      $integer = abs(intval($quantity));
-      if ($currency->divisions) {
-        $fraction = fmod($quantity, 1) * 100;
-        if (is_array($currency->divisions)) {
-          $subdivision = $currency->divisions[$fraction];
-        }
-        else $subdivision = $fraction;
+  if (is_array($quantity)) {
+    $integer = array_shift($quantity);
+    $subdivision = array_shift($quantity);
+  }
+  elseif (is_numeric($quantity)) {
+    $num = $quantity + 0;
+    $integer = intval($num);
+    if ($num != $integer && $currency->divisions) {
+      $fraction = str_pad(fmod($quantity, 1) * 100, 2, '0');
+      if (is_array($currency->divisions)) {
+        $subdivision = $currency->divisions[$fraction];
       }
+      else $subdivision = $fraction;
     }
+  }
   return strtr(
     $formats[$cid],
     array(
@@ -356,19 +349,6 @@ function mcapi_format_money($quantity, $cid) {
   );
 }
 
-/*
-function template_preprocess_balances(&$vars) {
-  $currencies = currencies_load();
-  foreach ($vars['balances'] as $cid => $amounts) {
-    $vars['currencies'][$cid] = $currencies[$cid];
-    foreach ($amounts as $key => $quantity) {
-      if ($key != 'count') {
-        $vars['balances'][$cid][$key] = mcapi_format_money($quantity, $cid);
-      }
-    }
-  }
-}
-*/
 
 /**
  * Implements hook_entity_info()
@@ -396,7 +376,7 @@ function currency_label($currency) {
  * this is used to as a menu loader, so can't be in an inc file
  */
 function transaction_load($xid) {
-  $transaction = array_pop(mcapi_controller('transaction', 'load', array(array($xid))));
+  $transaction = array_pop(transaction_controller('load', array($xid)));
   return $transaction;
 }
 
@@ -482,10 +462,6 @@ function transaction_view($transaction, $view_mode = 'certificate') {
     '#transaction' => $transaction,
     '#view_mode' => $view_mode,
   );
-
-  if (!empty($node->nid) && !($view_mode == 'certificate')) {
-    $build['#contextual_links']['transaction'] = array('transaction', array($transaction->xid));
-  }
   return $build;
 }
 
@@ -498,8 +474,8 @@ function template_preprocess_transaction(&$arguments) {
   $arguments['theme_hook_suggestion'] = 'transaction__' . $transaction->cid;
   $arguments += array(
     'description' => $transaction->description,
-    'payer' => theme('username', array('account' => user_load($transaction->payer))),
-    'payee' => theme('username', array('account' => user_load($transaction->payee))),
+    'payer' => format_username(user_load($transaction->payer)),
+    'payee' => format_username(user_load($transaction->payee)),
     'amount' => mcapi_format_money($transaction->quantity, $transaction->cid),
     'state' => $transaction->state,
     'recorded' => format_date($transaction->created, 'medium'),
@@ -517,57 +493,6 @@ function mcapi_get_tokens() {
     $tokens[] = "[transaction:$token]";
   }
   return implode(', ', $tokens);
-}
-
-
-function mcapi_views_pre_render(&$view) {
-  if ($view->name == 'balances') {
-    $view->style_plugin->definition['theme'] = 'balances';
-  }
-}
-
-
-/*
- * implements hook_query_TAG_alter
- * the saved view adds the tag 'transaction_access'
- * this modifies the query only to show the transactions visible to the user.
- * in practice, this means filtering by currency firstly
- * but currencies with view control based on who traded is more complicated
- */
-function mcapi_query_transaction_access_alter(&$query) {
-  $uid = $GLOBALS['user']->uid;
-  //what currencies can the current user see?
-  $currencies = currency_choose('view', $uid);
-  $eachcurrency = db_or();
-  foreach ($currencies as $currency) {
-    switch ($currency->extra['privacy']) {
-      case 1: //show only transactions in currencies that authenticated user can see
-        if (!$GLOBALS['user']->uid) continue;
-        //if you are logged in, then its the same as if there were no restrictions
-      case 0: //in effect, no restrictions
-        $eachcurrency->condition('cid', $currency->cid);
-        break;
-      case 2: //show only transactions in currencies where I have a cached balance
-        $cached = transaction_controller('get_cache', $uid);
-        if (isset($cached[$currency->cid]) || user_access('manage all transactions')) {
-          $eachcurrency->condition('cid', $currency->cid);
-        }
-        break;
-      case 3: //participants, creator, accountant and user 1
-        if (!user_access('manage all transactions')) continue;
-        //and if you do have permission, then that's like privacy being 4, for this currency.
-      case 4: //only participants
-        $eachcurrency->condition(db_and()
-          ->condition('cid', $currency->cid)
-          ->condition(db_or()
-            ->condition('payer', $uid)
-            ->condition('payee', $uid)
-            ->condition('creator', $uid)
-          )
-        );
-    }
-  }
-  $query->condition($eachcurrency);
 }
 
 /*
@@ -706,4 +631,15 @@ function mcapi_transaction_states($field = 'name'){
     $states += $function($arg);
   }
   return $states;
+}
+
+
+/*
+ * Implements views hook_views_api
+ */
+function mcapi_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi') .'/views',
+  );
 }

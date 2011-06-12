@@ -15,7 +15,7 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
    * switches database to load transactions
    * returns an error if the transaction id is invalid
    */
-  public function load($ids = array(), $conditions = array()) {print_r($ids);
+  public function load($ids = array(), $conditions = array()) {
     $entities = array();
     $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
 
@@ -27,7 +27,6 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
         $ids = array_keys(array_diff_key($passed_ids, $entities));
       }
     }
-
 
     if ($ids === FALSE || $ids || ($conditions && !$passed_ids)) {
       db_set_active(variable_get('mcapi_db_read', 'default'));
@@ -135,7 +134,7 @@ class TransactionEntityController extends MCAPIEntityController {
     }
     if (isset($transaction->validating)) return;
 
-    balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
+    //balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
     module_invoke_all('entity_'.$function, 'transaction', $transaction);
     return $transaction;
   }
@@ -157,7 +156,7 @@ class TransactionEntityController extends MCAPIEntityController {
         $transaction->modifier = $GLOBALS['user']->uid;
         try{
           mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
-          balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
+          //balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
@@ -169,7 +168,7 @@ class TransactionEntityController extends MCAPIEntityController {
           $query = db_delete('mcapi_transactions')
           ->condition('xid', $transaction->xid)
           ->execute();
-          balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
+          //balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           throw $e;
@@ -178,7 +177,15 @@ class TransactionEntityController extends MCAPIEntityController {
     }
     return $transaction;
   }
-
+  /*
+   * change the state of a transaction.
+   * This does not count as updating it, which is subject to permissions
+   */
+  public function state($transaction) {
+    db_query("UPDATE {mcapi_transactions} SET state = :state WHERE xid = :xid", array(':state' => $transaction->state, ':xid' => $transaction->xid));
+    module_invoke_all('entity_update', 'transaction', $transaction);
+    return $transaction;
+  }
   /*
    * alternative to using views
    * Get a list of transactions for a user, between unixtimes
@@ -220,6 +227,8 @@ class TransactionEntityController extends MCAPIEntityController {
    * $cids can be an array or a currency id
    * every cid asked for will return list of values, even if it doesn't exist in the db.
    */
+  /*
+   * this is withdrawn from the api for now
   public function get_cache($uid) {
     db_set_active(variable_get('mcapi_db', 'default'));
     return db_select('mcapi_cache', 'c')
@@ -229,10 +238,14 @@ class TransactionEntityController extends MCAPIEntityController {
     ->fetchAllAssoc('cid', PDO::FETCH_ASSOC);
     db_set_active();
   }
+   *
+   */
 
   /*
    * get the total of all incoming and outgoing finished transactions up to and including the given xid
    */
+  /*
+   * withdrawn for now
   public function get_running_balance($xid, $uid, $cid) {
     //new dbAPI has no SUM
     $outgoing = db_query(
@@ -245,7 +258,11 @@ class TransactionEntityController extends MCAPIEntityController {
     );
     return db_result($income) - db_result($outgoing);
   }
+   *
+   */
 
+  /*
+   * withdrawn for now
   public function count($conditions = array()) {
     $query = db_select('mcapi_transactions');
     foreach ($conditions as $field => $value) {
@@ -253,6 +270,8 @@ class TransactionEntityController extends MCAPIEntityController {
     }
     return $query->countquery()->execute()->fetchField();
   }
+   *
+   */
 
   /*
    * create a transaction, either the first moment at validation
@@ -293,7 +312,7 @@ class TransactionEntityController extends MCAPIEntityController {
         //remove the xid and insert the transaction anew
         unset($transaction->xid);
         $this->insert($transaction); //will give a new xid
-        $old->extra['became'] = $transaction->xid; debug($old);
+        $old->extra['became'] = $transaction->xid;
         //then erase the old one
         $this->erase($old);
         break;
@@ -359,7 +378,7 @@ class CurrencyEntityController extends MCAPIEntityController {
   }
 }
 
-
+/*
 //refreshes a cache of all the transactions,
 function balances_recalc($cid, $uids, $test = FALSE) {
   foreach($uids as $uid) {
@@ -391,7 +410,7 @@ function balances_recalc($cid, $uids, $test = FALSE) {
   }
   db_set_active();
 }
-
+*/
 
 
 /*
