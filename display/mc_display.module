@@ -93,7 +93,6 @@ function show_balances($account, $cids) {
   foreach($cids as $cid) {
     $cache = mc_balances($account, $cid);
     $balances[$cid] = $cache;
-    $currencies[$cid] = node_load($cid);
   }
   return theme('balances', $balances);
 }
@@ -341,22 +340,6 @@ function mc_validate_strtotime(&$element, $form_state) {
   }
 }
 
-function mc_currency_picker($currencies, $defaults, $multiple = FALSE) {
-  //there's a function for this somewhere in this package
-  foreach ($currencies as $nid => $currency) {
-    $options[$nid] = $currency->title;
-  }
-
-  $widget = array(
-    '#title' => $multiple ? t('Pick currencies') : t('Pick currency'),
-    '#description' => t('Choose one or more currencies by holding down CTRL'),
-    '#type' => 'select',
-    '#options' => $options,
-    '#multiple' => $multiple,
-    '#default_value' => $defaults[cids],
-  );
-  return $widget;
-}
 
 /*
  * PREPROCESSING FUNCTIONS

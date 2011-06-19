@@ -83,7 +83,6 @@ function mc_signatures_schema() {
  */
 function mc_signatures_update_6001($ret = array()) {
   db_add_primary_key($ret, 'mc_unsigned', array('nid', 'uid'));
-  db_drop_unique_key($ret, 'mc_unsigned', 'nid_uid');
   return array();
 }
 

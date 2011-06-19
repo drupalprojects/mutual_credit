@@ -340,6 +340,45 @@ function mcapi_user($op, &$edit, &$account, $category = NULL) {
   }
 }
 
+function mcapi_action_info() {
+  return array(
+    'record_exchange_action' => array(
+      'type' => 'node',
+      'description' => t('Record Exchange'),
+      'configurable' => TRUE,
+      'hooks' => array('any' => TRUE),
+    )
+  );
+}
+/*
+ * Callback for action config
+ */
+function record_exchange_action_form($context) {
+  //this form should really have a validation function to ensure that at least one participant is provided
+  $form = mcapi_form_exchange((object)$context);
+  unset($form['state']);
+  $form['quantity']['#required'] = TRUE;
+  return $form;
+}
+/*
+ * submit callback for action config
+ */
+function record_exchange_action_submit($form, $form_state) {
+  return $form_state['values'];
+}
+/*
+ * callback to execute the action
+ */
+function record_exchange_action($node, $context) {
+  $options['title'] = $context['title'];
+  $result = mcapi_add_node(
+    !empty($context['payer_uid']) ? $context['payer_uid'] : $GLOBALS['user']->uid,
+    !empty($context['payee_uid']) ? $context['payee_uid'] : $GLOBALS['user']->uid,
+    $context['quantity'], 
+    $options
+  );
+}
+
 function mcapi_theme() {
   $items = array(
     'money' => array(

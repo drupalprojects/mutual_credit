@@ -222,3 +222,24 @@ function currencies_load() {
   }
   return $currencies;
 }
+
+function mc_currency_picker($default_cid = 0){
+  $result = db_query("SELECT nid, title from {node} WHERE type = 'currency'");
+  while ($c = db_fetch_object($result)) {
+    $currencies[$c->nid] = $c->title;
+  }
+  if (!$default_cid) {
+    $default_cid = key($currencies);
+  }
+  if (!isset($currencies[$default_cid])){
+    drupal_set_message('Bad default supplied to currency_picker', 'error');
+  }
+  return array(
+    '#title' => t('Currency'),
+    '#description' => t('Choose from all the available currencies'),
+    '#type' => 'select',
+    '#options' => $currencies,
+    '#default_value' => $default_cid,
+    '#required' => TRUE,
+  );
+}

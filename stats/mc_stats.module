@@ -133,14 +133,7 @@ function mc_stats_block_configure($delta) {
       '#default_value' => isset($settings['description']) ? $settings['description'] : '',
       '#weight' => -1,
     ),
-    'cid' => array(
-      '#title' => t('Currency ID'),
-      '#description' => t('Choose currency'),
-      '#type' => 'select',
-      '#options' => _currency_chooser(),
-      '#default_value' => isset($settings['cid']) ? $settings['cid'] : '',
-      '#required' => TRUE,
-    ),
+    'cid' => mc_currency_picker($settings['cid']),
     'measure' => array(
       '#title' => t('The statistic being displayed'),
       '#type' => 'select',
@@ -173,14 +166,14 @@ function mc_stats_block_configure($delta) {
     )
   );
   //we set other parts of the form, depending on the scope
-  if (in_array($delta, $scopes['user'])) {
+  if (isset($scopes['user']) && in_array($delta, $scopes['user'])) {
     $form['measure']['#options'] += array(
       'income' => t('Gross income'),
       'outgoing' => t('Gross expenditure'),
       'promiscuity' => t('Promiscuity'),
     );
   }
-  elseif (in_array($delta, $scopes['historic'])) {
+  elseif (isset($scopes['historic']) && in_array($delta, $scopes['historic'])) {
     unset($form['from']);
     unset($form['to']);
     $form['limit']['#options'] += array(3 => 3, 6 => 6, 12 => 12);
@@ -510,14 +503,6 @@ function _get_clump_expression($interval) {
     case 'm': return 'first hour of this month';
     case 'Y': return 'first hour of this year';
   }
-}
-
-function _currency_chooser(){
-  $result = db_query("SELECT nid, title from {node} WHERE type = 'currency'");
-  while ($c = db_fetch_object($result)) {
-    $currencies[$c->nid] = $c->title;
-  }
-  return $currencies;
 }
 
 
