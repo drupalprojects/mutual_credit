@@ -2,10 +2,9 @@
 //Id;
 
 function mcapi_views_views_default_views() {
-  
   $view = new view;
   $view->name = 'user_trades';
-  $view->description = '';
+  $view->description = 'trading stats for individual users';
   $view->tag = 'mcapi';
   $view->base_table = 'mcapi_index';
   $view->human_name = 'user_trades';
@@ -68,10 +67,11 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['expenditure']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['expenditure']['hide_empty'] = 0;
   $handler->display->display_options['fields']['expenditure']['empty_zero'] = 0;
-  /* Field: Transaction index: Income */
+  /* Field: SUM(Transaction index: Income) */
   $handler->display->display_options['fields']['income']['id'] = 'income';
   $handler->display->display_options['fields']['income']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['income']['field'] = 'income';
+  $handler->display->display_options['fields']['income']['group_type'] = 'sum';
   $handler->display->display_options['fields']['income']['label'] = 'Gross income';
   $handler->display->display_options['fields']['income']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['income']['alter']['make_link'] = 0;
@@ -110,9 +110,10 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['php']['element_default_classes'] = 0;
   $handler->display->display_options['fields']['php']['hide_empty'] = 0;
   $handler->display->display_options['fields']['php']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['php']['hide_alter_empty'] = 0;
   $handler->display->display_options['fields']['php']['use_php_setup'] = 0;
   $handler->display->display_options['fields']['php']['php_value'] = 'return $row->income - $row->expenditure;';
-  $handler->display->display_options['fields']['php']['php_output'] = '<?php print mcapi_format_money($value, $data->cid); ?>';
+  $handler->display->display_options['fields']['php']['php_output'] = '<?php print theme("worth_field", array("worth" => array("quantity" => $value, "currcode"=> $row->currcode))); ?>';
   $handler->display->display_options['fields']['php']['use_php_click_sortable'] = '1';
   $handler->display->display_options['fields']['php']['php_click_sortable'] = '';
   /* Field: COUNT(Transaction index: 2nd Person) */
@@ -138,58 +139,50 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['uid2_1']['hide_empty'] = 0;
   $handler->display->display_options['fields']['uid2_1']['empty_zero'] = 0;
   $handler->display->display_options['fields']['uid2_1']['format_plural'] = 0;
+  /* Field: Transaction index: Currency */
+  $handler->display->display_options['fields']['currcode']['id'] = 'currcode';
+  $handler->display->display_options['fields']['currcode']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['currcode']['field'] = 'currcode';
+  $handler->display->display_options['fields']['currcode']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['currcode']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['currcode']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['currcode']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['currcode']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['currcode']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['currcode']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['currcode']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['currcode']['hide_alter_empty'] = 0;
   /* Contextual filter: Transaction index: 1st user */
   $handler->display->display_options['arguments']['uid1']['id'] = 'uid1';
   $handler->display->display_options['arguments']['uid1']['table'] = 'mcapi_index';
   $handler->display->display_options['arguments']['uid1']['field'] = 'uid1';
-  $handler->display->display_options['arguments']['uid1']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['uid1']['default_action'] = 'default';
+  $handler->display->display_options['arguments']['uid1']['default_argument_type'] = 'user';
+  $handler->display->display_options['arguments']['uid1']['default_argument_options']['user'] = FALSE;
   $handler->display->display_options['arguments']['uid1']['default_argument_skip_url'] = 0;
   $handler->display->display_options['arguments']['uid1']['summary']['number_of_records'] = '0';
   $handler->display->display_options['arguments']['uid1']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
-  /* Filter criterion: User: Created date */
-  $handler->display->display_options['filters']['created_1']['id'] = 'created_1';
-  $handler->display->display_options['filters']['created_1']['table'] = 'users';
-  $handler->display->display_options['filters']['created_1']['field'] = 'created';
-  $handler->display->display_options['filters']['created_1']['operator'] = 'between';
-  $handler->display->display_options['filters']['created_1']['value']['type'] = 'offset';
-  $handler->display->display_options['filters']['created_1']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['created_1']['expose']['operator_id'] = 'created_1_op';
-  $handler->display->display_options['filters']['created_1']['expose']['label'] = 'Created between';
-  $handler->display->display_options['filters']['created_1']['expose']['operator'] = 'created_1_op';
-  $handler->display->display_options['filters']['created_1']['expose']['identifier'] = 'created_1';
-  $handler->display->display_options['filters']['created_1']['expose']['multiple'] = FALSE;
   /* Filter criterion: Transaction index: Currency */
-  $handler->display->display_options['filters']['cid']['id'] = 'cid';
-  $handler->display->display_options['filters']['cid']['table'] = 'mcapi_index';
-  $handler->display->display_options['filters']['cid']['field'] = 'cid';
-  $handler->display->display_options['filters']['cid']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['cid']['expose']['operator_id'] = 'cid_op';
-  $handler->display->display_options['filters']['cid']['expose']['label'] = 'Currency';
-  $handler->display->display_options['filters']['cid']['expose']['operator'] = 'cid_op';
-  $handler->display->display_options['filters']['cid']['expose']['identifier'] = 'cid';
-  $handler->display->display_options['filters']['cid']['expose']['required'] = 1;
-  $handler->display->display_options['filters']['cid']['expose']['multiple'] = 1;
-  $handler->display->display_options['filters']['cid']['expose']['reduce'] = 0;
-  $translatables['user_trades'] = array(
-    t('Master'),
-    t('more'),
-    t('Apply'),
-    t('Reset'),
-    t('Sort by'),
-    t('Asc'),
-    t('Desc'),
-    t('Items per page'),
-    t('- All -'),
-    t('Offset'),
-    t('Promiscuity'),
-    t('Gross expenditure'),
-    t('Gross income'),
-    t('Balance'),
-    t('Trades'),
-    t('All'),
-    t('Created between'),
-  );
+  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
+  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = 'currcode_op';
+  $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
+  $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
+  $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['expose']['required'] = 1;
+  $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
+
 
   $views[$view->name] = $view;
 
@@ -214,7 +207,7 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['style_plugin'] = 'default';
   $handler->display->display_options['row_plugin'] = 'fields';
-  /* Field: COUNT(Transaction: Amount) */
+  /* Field: COUNT(Transaction: value) */
   $handler->display->display_options['fields']['quantity']['id'] = 'quantity';
   $handler->display->display_options['fields']['quantity']['table'] = 'mcapi_transactions';
   $handler->display->display_options['fields']['quantity']['field'] = 'quantity';
@@ -237,7 +230,7 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['quantity']['hide_empty'] = 0;
   $handler->display->display_options['fields']['quantity']['empty_zero'] = 0;
   $handler->display->display_options['fields']['quantity']['format_plural'] = 0;
-  /* Field: SUM(Transaction: Amount) */
+  /* Field: SUM(Transaction: value) */
   $handler->display->display_options['fields']['quantity_1']['id'] = 'quantity_1';
   $handler->display->display_options['fields']['quantity_1']['table'] = 'mcapi_transactions';
   $handler->display->display_options['fields']['quantity_1']['field'] = 'quantity';
@@ -282,15 +275,15 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['uid1']['hide_empty'] = 0;
   $handler->display->display_options['fields']['uid1']['empty_zero'] = 0;
   $handler->display->display_options['fields']['uid1']['format_plural'] = 0;
-  $handler->display->display_options['filters']['cid']['id'] = 'cid';
-  $handler->display->display_options['filters']['cid']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['filters']['cid']['field'] = 'cid';
-  $handler->display->display_options['filters']['cid']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['cid']['expose']['operator_id'] = 'cid_op';
-  $handler->display->display_options['filters']['cid']['expose']['label'] = 'Currency ID';
-  $handler->display->display_options['filters']['cid']['expose']['operator'] = 'cid_op';
-  $handler->display->display_options['filters']['cid']['expose']['identifier'] = 'cid';
-  $handler->display->display_options['filters']['cid']['expose']['reduce'] = 0;
+  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = 'currcode_op';
+  $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency ID';
+  $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
+  $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
   /* Filter criterion: Transaction: created */
   $handler->display->display_options['filters']['created']['id'] = 'created';
   $handler->display->display_options['filters']['created']['table'] = 'mcapi_transactions';
@@ -394,24 +387,23 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['expenditure']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['expenditure']['hide_empty'] = 0;
   $handler->display->display_options['fields']['expenditure']['empty_zero'] = 0;
-  /* Sort criterion: SUM(Transaction index: Expenditure) */
-  $handler->display->display_options['sorts']['expenditure']['id'] = 'expenditure';
-  $handler->display->display_options['sorts']['expenditure']['table'] = 'mcapi_index';
-  $handler->display->display_options['sorts']['expenditure']['field'] = 'expenditure';
-  $handler->display->display_options['sorts']['expenditure']['group_type'] = 'sum';
-  $handler->display->display_options['sorts']['expenditure']['order'] = 'DESC';
+  /* Sort criterion: Transaction index: 2nd Person */
+  $handler->display->display_options['sorts']['uid2']['id'] = 'uid2';
+  $handler->display->display_options['sorts']['uid2']['table'] = 'mcapi_index';
+  $handler->display->display_options['sorts']['uid2']['field'] = 'uid2';
+  $handler->display->display_options['sorts']['uid2']['order'] = 'DESC';
   /* Contextual filter: Transaction index: Currency */
-  $handler->display->display_options['arguments']['cid']['id'] = 'cid';
-  $handler->display->display_options['arguments']['cid']['table'] = 'mcapi_index';
-  $handler->display->display_options['arguments']['cid']['field'] = 'cid';
-  $handler->display->display_options['arguments']['cid']['default_action'] = 'default';
-  $handler->display->display_options['arguments']['cid']['default_argument_type'] = 'php';
-  $handler->display->display_options['arguments']['cid']['default_argument_options']['code'] = '$currencies = currencies_load();
-  return array_shift(array_keys($currencies));';
-  $handler->display->display_options['arguments']['cid']['default_argument_skip_url'] = 0;
-  $handler->display->display_options['arguments']['cid']['summary']['number_of_records'] = '0';
-  $handler->display->display_options['arguments']['cid']['summary']['format'] = 'default_summary';
-  $handler->display->display_options['arguments']['cid']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['currcode']['id'] = 'currcode';
+  $handler->display->display_options['arguments']['currcode']['table'] = 'mcapi_index';
+  $handler->display->display_options['arguments']['currcode']['field'] = 'currcode';
+  $handler->display->display_options['arguments']['currcode']['default_action'] = 'default';
+  $handler->display->display_options['arguments']['currcode']['default_argument_type'] = 'php';
+  $handler->display->display_options['arguments']['currcode']['default_argument_options']['code'] = '$currencies = currencies_load();
+    return array_shift(array_keys($currencies));';
+  $handler->display->display_options['arguments']['currcode']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['currcode']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['currcode']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['currcode']['summary_options']['items_per_page'] = '25';
   /* Filter criterion: User: Name */
   $handler->display->display_options['filters']['uid']['id'] = 'uid';
   $handler->display->display_options['filters']['uid']['table'] = 'users';
@@ -473,11 +465,10 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['uid2']['empty_zero'] = 0;
   $handler->display->display_options['fields']['uid2']['format_plural'] = 0;
   $handler->display->display_options['defaults']['sorts'] = FALSE;
-  /* Sort criterion: COUNT(DISTINCT Transaction index: 2nd Person) */
+  /* Sort criterion: Transaction index: 2nd Person */
   $handler->display->display_options['sorts']['uid2']['id'] = 'uid2';
   $handler->display->display_options['sorts']['uid2']['table'] = 'mcapi_index';
   $handler->display->display_options['sorts']['uid2']['field'] = 'uid2';
-  $handler->display->display_options['sorts']['uid2']['group_type'] = 'count_distinct';
   $handler->display->display_options['sorts']['uid2']['order'] = 'DESC';
 
   /* Display: Volume */
@@ -525,12 +516,11 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['volume']['hide_empty'] = 0;
   $handler->display->display_options['fields']['volume']['empty_zero'] = 0;
   $handler->display->display_options['defaults']['sorts'] = FALSE;
-  /* Sort criterion: SUM(Transaction index: Volume) */
-  $handler->display->display_options['sorts']['volume']['id'] = 'volume';
-  $handler->display->display_options['sorts']['volume']['table'] = 'mcapi_index';
-  $handler->display->display_options['sorts']['volume']['field'] = 'volume';
-  $handler->display->display_options['sorts']['volume']['group_type'] = 'sum';
-  $handler->display->display_options['sorts']['volume']['order'] = 'DESC';
+  /* Sort criterion: Transaction index: 2nd Person */
+  $handler->display->display_options['sorts']['uid2']['id'] = 'uid2';
+  $handler->display->display_options['sorts']['uid2']['table'] = 'mcapi_index';
+  $handler->display->display_options['sorts']['uid2']['field'] = 'uid2';
+  $handler->display->display_options['sorts']['uid2']['order'] = 'DESC';
 
   /* Display: Trades */
   $handler = $view->new_display('block', 'Trades', 'block_3');
@@ -558,7 +548,7 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['uid2']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['uid2']['field'] = 'uid2';
   $handler->display->display_options['fields']['uid2']['group_type'] = 'count';
-  $handler->display->display_options['fields']['uid2']['label'] = 'Trades';
+  $handler->display->display_options['fields']['uid2']['label'] = '';
   $handler->display->display_options['fields']['uid2']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['uid2']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['uid2']['alter']['absolute'] = 0;
@@ -571,17 +561,17 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['uid2']['alter']['strip_tags'] = 0;
   $handler->display->display_options['fields']['uid2']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['uid2']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['uid2']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['uid2']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['uid2']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['uid2']['hide_empty'] = 0;
   $handler->display->display_options['fields']['uid2']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['uid2']['hide_alter_empty'] = 0;
   $handler->display->display_options['fields']['uid2']['format_plural'] = 0;
   $handler->display->display_options['defaults']['sorts'] = FALSE;
-  /* Sort criterion: COUNT(Transaction index: 2nd Person) */
+  /* Sort criterion: Transaction index: 2nd Person */
   $handler->display->display_options['sorts']['uid2']['id'] = 'uid2';
   $handler->display->display_options['sorts']['uid2']['table'] = 'mcapi_index';
   $handler->display->display_options['sorts']['uid2']['field'] = 'uid2';
-  $handler->display->display_options['sorts']['uid2']['group_type'] = 'count';
   $handler->display->display_options['sorts']['uid2']['order'] = 'DESC';
 
   /* Display: Incomes */
@@ -628,44 +618,20 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['income']['hide_empty'] = 0;
   $handler->display->display_options['fields']['income']['empty_zero'] = 0;
   $handler->display->display_options['defaults']['sorts'] = FALSE;
-  /* Sort criterion: SUM(Transaction index: Income) */
-  $handler->display->display_options['sorts']['income']['id'] = 'income';
-  $handler->display->display_options['sorts']['income']['table'] = 'mcapi_index';
-  $handler->display->display_options['sorts']['income']['field'] = 'income';
-  $handler->display->display_options['sorts']['income']['group_type'] = 'sum';
-  $handler->display->display_options['sorts']['income']['order'] = 'DESC';
+  /* Sort criterion: Transaction index: 2nd Person */
+  $handler->display->display_options['sorts']['uid2']['id'] = 'uid2';
+  $handler->display->display_options['sorts']['uid2']['table'] = 'mcapi_index';
+  $handler->display->display_options['sorts']['uid2']['field'] = 'uid2';
+  $handler->display->display_options['sorts']['uid2']['order'] = 'DESC';
 
   /* Display: Expenditure */
   $handler = $view->new_display('block', 'Expenditure', 'block_5');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'expenditures';
-  $translatables['user_rankings'] = array(
-    t('Master'),
-    t('rankings'),
-    t('more'),
-    t('Apply'),
-    t('Reset'),
-    t('Sort by'),
-    t('Asc'),
-    t('Desc'),
-    t('Items per page'),
-    t('- All -'),
-    t('Offset'),
-    t('All'),
-    t('Name'),
-    t('Promiscuity'),
-    t('Volume'),
-    t('Trades'),
-    t('Number of trades'),
-    t('Incomes'),
-    t('incomes'),
-    t('Income'),
-    t('Expenditure'),
-    t('expenditures'),
-  );
+
   $views[$view->name] = $view;
 
-
+  
   $view = new view;
   $view->name = 'balance_history';
   $view->description = 'unixtimes and running balances';
@@ -687,11 +653,11 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['pager']['options']['items_per_page'] = '';
   $handler->display->display_options['style_plugin'] = 'table';
-  $handler->display->display_options['style_options']['grouping'] = 'cid';
+  $handler->display->display_options['style_options']['grouping'] = 'currcode';
   $handler->display->display_options['style_options']['columns'] = array(
     'balance' => 'balance',
     'created' => 'created',
-    'cid' => 'cid',
+    'currcode' => 'currcode',
   );
   $handler->display->display_options['style_options']['default'] = '-1';
   $handler->display->display_options['style_options']['info'] = array(
@@ -705,7 +671,7 @@ function mcapi_views_views_default_views() {
       'align' => '',
       'separator' => '',
     ),
-    'cid' => array(
+    'currcode' => array(
       'sortable' => 0,
       'default_sort_order' => 'asc',
       'align' => '',
@@ -756,31 +722,13 @@ function mcapi_views_views_default_views() {
   $handler->display->display_options['fields']['created']['hide_empty'] = 0;
   $handler->display->display_options['fields']['created']['empty_zero'] = 0;
   $handler->display->display_options['fields']['created']['date_format'] = 'long';
-  /* Field: Transaction index: Currency */
-  $handler->display->display_options['fields']['cid']['id'] = 'cid';
-  $handler->display->display_options['fields']['cid']['table'] = 'mcapi_index';
-  $handler->display->display_options['fields']['cid']['field'] = 'cid';
-  $handler->display->display_options['fields']['cid']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['cid']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['cid']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['cid']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['cid']['element_label_colon'] = 1;
-  $handler->display->display_options['fields']['cid']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['cid']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['cid']['empty_zero'] = 0;
   /* Contextual filter: Transaction index: 1st user */
   $handler->display->display_options['arguments']['uid1']['id'] = 'uid1';
   $handler->display->display_options['arguments']['uid1']['table'] = 'mcapi_index';
   $handler->display->display_options['arguments']['uid1']['field'] = 'uid1';
-  $handler->display->display_options['arguments']['uid1']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['uid1']['default_action'] = 'default';
+  $handler->display->display_options['arguments']['uid1']['default_argument_type'] = 'user';
+  $handler->display->display_options['arguments']['uid1']['default_argument_options']['user'] = FALSE;
   $handler->display->display_options['arguments']['uid1']['default_argument_skip_url'] = 0;
   $handler->display->display_options['arguments']['uid1']['summary']['number_of_records'] = '0';
   $handler->display->display_options['arguments']['uid1']['summary']['format'] = 'default_summary';
@@ -788,24 +736,7 @@ function mcapi_views_views_default_views() {
 
   /* Display: Block */
   $handler = $view->new_display('block', 'Block', 'block');
-  $translatables['balance_history'] = array(
-    t('Master'),
-    t('balance_history'),
-    t('more'),
-    t('Apply'),
-    t('Reset'),
-    t('Sort by'),
-    t('Asc'),
-    t('Desc'),
-    t('Items per page'),
-    t('- All -'),
-    t('Offset'),
-    t('Balance'),
-    t('Created moment'),
-    t('Currency'),
-    t('All'),
-    t('Block'),
-  );
+
   $views[$view->name] = $view;
 
 

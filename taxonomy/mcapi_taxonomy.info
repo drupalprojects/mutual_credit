@@ -13,3 +13,4 @@ files[] = views/views_handler_relationship_transaction_term_data.inc
 
 dependencies[] = mcapi
 dependencies[] = taxonomy
+dependencies[] = taxonomy_entity_index

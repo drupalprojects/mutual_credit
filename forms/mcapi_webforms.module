@@ -135,9 +135,9 @@ function mcapi_webforms_block_view($delta) {
 }
 
 /*
- * Implements hook_block_transaction_info
+ * Implements hook_mcapi_info
  */
-function mcapi_webforms_transaction_info($field) {
+function mcapi_webforms_mcapi_info($field) {
   switch($field) {
     case 'states':
     case 'access':
@@ -160,25 +160,8 @@ function mcapi_webforms_theme($existing, $type, $theme, $path) {
     'mcapi_webform' => array(
       'render element' => 'form',
     ),
-    'mcapi_amount' => array(
-      'render element' => 'amount'
-    )
   );
 }
-/*
- * implements hook_element_info
- * the 'amount' field replaces and populates the single quantity field with two fields for either side of the decimal point
- */
-function mcapi_webforms_element_info() {
-  module_load_include('inc', 'mcapi_webforms');
-  $type['mcapi_amount'] = array(
-    '#input' => TRUE,
-    '#process' => array('form_process_mcapi_amount'),
-    '#theme' => 'mcapi_amount'//maybe this goes without saying?
-  );
-  return $type;
-}
-
 
 /*
  * callback specified in the export_ui plugin
@@ -259,14 +242,14 @@ function mcapi_webform_edit_wrapper($transaction) {
  */
 function mcapi_webform_get_additional_form_fields() {
   //get the names of the additional entity fields
-  $psuedo_form = array();
+  $pseudo_form = array();
   $transaction = new transaction;
   $fs = array();//just a placeholder for form_state
   //add the fields to our imaginary form, and then iterate through them
-  field_attach_form('transaction', $transaction, $psuedo_form, $fs);
+  field_attach_form('transaction', $transaction, $pseudo_form, $fs);
   $fields = array();
-  foreach (element_children($psuedo_form) as $fieldname) {
-    $fields[$fieldname] = $psuedo_form[$fieldname];
+  foreach (element_children($pseudo_form) as $fieldname) {
+    $fields[$fieldname] = $pseudo_form[$fieldname];
   }
   return $fields;
 }

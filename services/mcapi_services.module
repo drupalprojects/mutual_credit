@@ -6,12 +6,25 @@
  * API Wrapper for Xchange Stewards
  * It uses only the mcapi.module for logging transactions and balances.
  * users and currencies are defined outside the system
- * drupal IDs are hidden, using Universal uids ($uuid) and Universal Currency Ids ($ucid)
+ * drupal IDs are hidden, using Universal uids ($uuid) and Universal Currency Ids ($ucurrcode)
  * times are converted to ISO 8601
  * This API is for an outside entity,
  *
  * On installation we need to ensure that currency node body is optional!!!
  */
+
+/**
+ * Implementation of hook_ctools_plugin_api().
+ */
+function mcapi_services_ctools_plugin_api($owner, $api) {
+  if ($owner == 'mcapi' && $api == 'services') {
+    return array(
+      'version' => 3,
+      //'file' => 'services.inc', // Optional parameter to indicate the file name to load.
+      'path' => drupal_get_path('module', 'mcapi_services'), // If specifying the file key, path is required.
+    );
+  }
+}
 
 
 /**
@@ -19,159 +32,86 @@
  */
 function mcapi_services_services_resources() {
   return array(
-    'currency' => array(
+    //the mcapi_access function isn't invoked here - access should be decided on the client side
+    'transaction' => array(
       'create' => array(
-        'help' => t('Create a currency using ucid & symbol'),
-        'callback' => 'mcapi_service_currency_create',
+        'help' => t('create a transaction with payer, payee, ucurrcode, quantity and optional properties'),
+        'callback' => 'mcapi_service_transaction_create',
+        'file' => array('file' => 'inc', 'module' => 'mcapi_services'),
         'access callback' => 'user_access',
-        'access arguments' => array('access content'),
+        'access arguments' => array('transact'),
         'args' => array(
           0 => array(
             'name' => 'data',
             'optional' => FALSE,
             'source' => 'data',
-            'type' => 'struct',//in case incoming is array
-            'description' => t('Universal currency parameters'),
+            'type' => 'struct',
+            'description' => t('Universal currency ID'),
           ),
         ),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
       ),
       'retrieve' => array(
-        'help' => t('Get a currency object from the universal currency id'),
-        'callback' => 'mcapi_service_currency_retrieve',
+        'help' => t('Retrieve a transaction using its xid'),
+        'callback' => 'mcapi_service_transaction_retrieve',
         'access callback' => 'user_access',
-        'access arguments' => array('access content'),
+        'file' => array('file' => 'inc', 'module' => 'mcapi_services'),
+        'access arguments' => array('transact'),
         'args' => array(
           0 => array(
-            'name' => 'nid',
+            'name' => 'xid',
             'optional' => FALSE,
             'source' => array('path' => 0),
             'type' => 'int',
-            'description' => t('Universal currency ID'),
+            'description' => t('Unique transaction ID'),
           )
         ),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
       ),
       'update' => array(
-        'help' => t('Change a currency properties'),
-        'callback' => 'mcapi_service_currency_update',
+        'help' => t('Modify a recorded transaction'),
+        'callback' => 'mcapi_service_transaction_update',
+        'file' => array('file' => 'inc', 'module' => 'mcapi_services'),
         'access callback' => 'user_access',
-        'access arguments' => array('access content'),
+        'access arguments' => array('transact'),
         'args' => array(
           0 => array(
-            'name' => 'ucid',
+            'name' => 'xid',
             'optional' => FALSE,
             'source' => array('path' => 0),
-            'type' => 'varchar',//in case incoming is array
-            'description' => t('Universal currency parameters'),
+            'type' => 'int',
+            'description' => t('Unique transaction ID'),
           ),
           1 => array(
             'name' => 'data',
             'optional' => FALSE,
-            'source' => 'data', //data means all the arguments in one struct
-            '#type' => 'struct',//in case incoming is array
-            '#description' => t('Universal currency parameters'),
-          ),
-        ),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
-      ),
-      'delete' => array(
-        'help' => t('Delete a currency'),
-        'callback' => 'mcapi_service_currency_delete',
-        'access callback' => 'user_access',
-        'access arguments' => array('access content'),
-        'args' => array(
-          0 => array(
-            'name' => 'ucid',
-            'optional' => FALSE,
-            'source' => array('path' => 0),
-            'type' => 'varchar',
-            'description' => t('Universal currency ID'),
-          )
-        ),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
-      ),
-      'index' => array(
-        'help' => t('List all currencies'),
-        'callback' => 'mcapi_service_currencies_list',
-        'access callback' => 'user_access',
-        'access arguments' => array('access content'),
-        'args' => array(),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
-      )
-    ),
-    //the mcapi_access function isn't invoked here - access should be decided on the client side
-    'exchange' => array(
-      'create' => array(
-        'help' => t('create an exchange with payer, payee, ucid, quantity and optional properties'),
-        'callback' => 'mcapi_service_exchange_create',
-        'access callback' => 'user_access',
-        'access arguments' => array('access content'),
-        'args' => array(
-          0 => array(
-            'name' => 'data',
-            'optional' => FALSE,
             'source' => 'data',
             'type' => 'struct',
             'description' => t('Universal currency ID'),
           ),
         ),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
-      ),
-      'retrieve' => array(
-        'help' => t('Retrieve an exchange using its node id'),
-        'callback' => 'mcapi_service_exchange_retrieve',
-        'access callback' => 'user_access',
-        'access arguments' => array('access content'),
-        'args' => array(
-          0 => array(
-            'name' => 'exchnage_id',
-            'optional' => FALSE,
-            'source' => array('path' => 0),
-            'type' => 'int',
-            'description' => t('drupal nid of exchange'),
-          )
-        ),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
-      ),
-      'update' => array(
-        'help' => t('Modify a recorded exchange'),
-        'callback' => 'mcapi_service_exchange_update',
-        'access callback' => 'user_access',
-        'access arguments' => array('access content'),
-        'args' => array(
-          0 => array(
-            'name' => 'data',
-            'optional' => FALSE,
-            'source' => 'data',
-            'type' => 'struct',
-            'description' => t('Universal currency ID'),
-          ),
-        ),
-        'file' => array('file' => 'inc', 'module' => 'mcapi_services')
       ),
       'delete' => array(
-        'help' => t('Erase a recorded exchange.'),
-        'callback' => 'mcapi_service_exchange_delete',
+        'help' => t('Erase a recorded transaction.'),
+        'callback' => 'mcapi_service_transaction_delete',
         'access callback' => 'user_access',
-        'access arguments' => array('access content'),
+        'file' => array('file' => 'inc', 'module' => 'mcapi_services'),
+        'access arguments' => array('transact'),
         'args' => array(
           0 => array(
-            'name' => 'exchange_id',
+            'name' => 'xid',
             'optional' => FALSE,
             'source' => array('path' => 0),
             'type' => 'int',
-            'description' => t('drupal nid of exchange'),
+            'description' => t('Unique transaction ID'),
           )
         )
       ),
-      //call this with POST services/rest/exchanges/get_statement + the three args, ucid=550, ucid=11, rows=4
+      //call this with POST services/rest/transactions/get_statement + the three args, ucurrcode=550, ucurrcode=11, rows=4
       'actions' => array(
         'get_statement' => array(
-          'help' => t("View a user's recent activity, passing the uuid and the ucid"),
-          'callback' => 'mcapi_service_exchange_statement',
+          'help' => t("View a user's recent activity, passing the uuid and the ucurrcode"),
+          'callback' => 'mcapi_service_transaction_statement',
           'access callback' => 'user_access',
-          'access arguments' => array('access content'),
+          'access arguments' => array('transact'),
           'args' => array(
             0 => array(
               'name' => 'uuid',
@@ -181,7 +121,7 @@ function mcapi_services_services_resources() {
               'description' => t('Universal user ID'),
             ),
             1 => array(
-              'name' => 'ucid',
+              'name' => 'ucurrcode',
               'optional' => TRUE,
               'source' => 'data',
               'type' => 'varchar',
@@ -204,7 +144,7 @@ function mcapi_services_services_resources() {
         'help' => t("Get a user's balances, in a given currency"),
         'callback' => 'mcapi_service_user_balances',
         'access callback' => 'user_access',
-        'access arguments' => array('access content'),
+        'access arguments' => array('transact'),
         'args' => array(
           0 => array(
             'name' => 'uuid',
@@ -214,7 +154,7 @@ function mcapi_services_services_resources() {
             'description' => t('Universal user ID'),
           ),
           1 => array(
-            'name' => 'ucid',
+            'name' => 'ucurrcode',
             'optional' => TRUE,
             'source' => 'data',
             'type' => 'varchar',
@@ -227,48 +167,14 @@ function mcapi_services_services_resources() {
   );
 }
 
-function mcapi_services_form_currency_node_form_alter(&$form, $form_state) {
-  $currency = currency_load($form['cid']['#value']);
-  $form['ucid'] = array(
+function mcapi_services_form_currency_form_alter(&$form, $form_state, $currency) {
+  $form['ucurrcode'] = array(
     '#title' => t('Universal currency ID'),
     '#description' => t('What is the unique code of this currency when referenced from outside?'),
     '#type' => 'textfield',
-    '#default_value' => isset($currency->ucid) ? $currency->ucid : '',
+    '#default_value' => isset($currency->ucurrcode) ? $currency->ucurrcode : '',
     '#weight' => -3
   );
-}
-
-
-/*
- * implements hook_entity_insert
- */
-function mcapi_services_currency_insert($currency, $type) {
-  mcapi_services_currency_update($currency, $type);
-}
-
-/*
- * implements hook_entity_update
- */
-function mcapi_services_currency_update($currency, $type) {
-  if ($type == 'currency') {
-    $unid = isset($currency->ucid) ? $currency->ucid : $currency->cid;
-    db_query("REPLACE INTO {mcapi_universal_ids} (did, universal_id, type) VALUES (:did, :u_id, 'currency')",
-      array(
-        ':did' => $currency->cid,
-        ':u_id' => $currency->ucid
-      )
-    );
-  }
-}
-/*
- * implements hook_entity_delete
- */
-function mcapi_services_entity_delete($currency, $type) {
-  if ($type == 'currency') {
-    db_query("DELETE FROM {mcapi_universal_ids} WHERE did = :did AND type = 'currency'",
-      array(':did' => $currency->cid)
-    );
-  }
 }
 
 
@@ -276,10 +182,10 @@ function mcapi_services_entity_delete($currency, $type) {
  * helper functions
  * get the currency object from the universal currency ID
  */
-function mcapi_service_currency_lookup($ucid){
+function mcapi_service_currency_lookup($ucurrcode){
   $currencies = currencies_load();
   foreach ($currencies as $currency) {
-    if ($currency->ucid == $ucid) return $curr;
+    if ($currency->ucurrcode == $ucurrcode) return $curr;
   }
 }
 
@@ -297,7 +203,6 @@ function mcapi_services_form_user_profile_form_alter(&$form, $form_state) {
     '#weight' => 3
   );
 }
-
 function mcapi_services_user_insert(&$edit, $account, $category) {//and update
   db_query("REPLACE INTO {mcapi_universal_ids} (did, universal_id, type) VALUES (:did, :u_id, 'user')",
     array(
@@ -306,13 +211,11 @@ function mcapi_services_user_insert(&$edit, $account, $category) {//and update
     )
   );
 }
-
 function mcapi_services_user_delete(&$edit, $account, $category) {
   db_query("DELETE FROM {mcapi_universal_ids} WHERE did = %d AND type = 'user'",
      array(':utid' => $account->uid)
   );
 }
-
 function mcapi_services_user_view($account, $view_mode, $langcode) {
   $account->content['uuid'] = array(
     '#title' => t('Universal user ID'),
@@ -321,12 +224,13 @@ function mcapi_services_user_view($account, $view_mode, $langcode) {
   );
 }
 
+
 //returns the node or user object
 function mcapi_service_universal_lookup($universal_id, $type){
-  $did = db_result(db_query(
+  $did = db_query(
     "SELECT did FROM {mcapi_universal_ids} WHERE universal_id = :u_id AND type = :type",
     array(':u_id' => $universal_id, ':type' => $type)
-  ));
+  )->fetchField();
   if ($type == 'currency') {
     return currency_load($did);
   }
@@ -336,32 +240,35 @@ function mcapi_service_universal_lookup($universal_id, $type){
 }
 
 
+
 /*
- * implements hook_entity_load
- * adds the universal currency id to the currency
+ * implements hook_entity_insert
  */
-/*
-function mcapi_services_currency_load($currencies) {ddebug_backtrace();
-  foreach ($currencies as $cid => $currency) {
-    $currencies[$cid]->ucid = db_query(
-      "SELECT universal_id FROM {mcapi_universal_ids} WHERE type = 'currency' AND did = :did",
-      array(':did' => $currency->cid)
-    )->fetchField();
-  }
+function mcapi_services_currency_insert($currency, $type) {
+  mcapi_services_currency_update($currency, $type);
 }
 
 /*
- * implements of hook_user_load
- * adds the universal user id  to the user //if it's necessary
+ * implements hook_entity_update
  */
-/*
-function mcapi_services_user_load($users) {
-  $currencies = currencies_load();
-  foreach ($users as $uid => $account) {
-    $users[$uid]->uuid = db_query(
-      "SELECT universal_id FROM {mcapi_universal_ids} WHERE type = 'user' AND did = :did",
-      array(':did' => $uid)
-    )->fetchField();
+function mcapi_services_currency_update($currency, $type) {
+  if ($type == 'currency') {
+    $unid = isset($currency->ucurrcode) ? $currency->ucurrcode : $currency->currcode;
+    db_query("REPLACE INTO {mcapi_universal_ids} (did, universal_id, type) VALUES (:did, :u_id, 'currency')",
+      array(
+        ':did' => $currency->currcode,
+        ':u_id' => $currency->ucurrcode
+      )
+    );
   }
 }
+/*
+ * implements hook_entity_delete
  */
+function mcapi_services_entity_delete($currency, $type) {
+  if ($type == 'currency') {
+    db_query("DELETE FROM {mcapi_universal_ids} WHERE did = :did AND type = 'currency'",
+      array(':did' => $currency->currcode)
+    );
+  }
+}

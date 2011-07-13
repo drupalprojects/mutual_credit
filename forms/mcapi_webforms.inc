@@ -35,40 +35,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   $form['state']['#type'] = 'hidden';
   $form['state']['#value'] = $webform->data['workflow']['outgoing'];
   
-  //currency ID
-  mcapi_webform_default_value($form['cid'], $webform->data['cid']);
-  //otherwise empty radio buttons aren't validated;
-  //$form['cid']['#needs_validation'] = TRUE;
-  //if the ID is 'given' or if there's only one currency available, then this is a single currency form, and this widget isn't shown
-  //if more than one currency is checked and the value was not preset in the form builder, show the field
-  $currencies = currencies_load();
-  if (count($currencies) > 1) {
-    //if any currencies were selected in the settings, then filter out any that weren't
-    if (array_filter($webform->data['cid']['options'])){
-      foreach ($webform->data['cid']['options'] as $cid => $checked) {
-        if (!$checked) unset($currencies[$cid]);
-      }
-    }
-    //prepare the options array
-    foreach ($currencies as $cid => $currency) {
-      $cids[$cid] = $currency->name;
-    }
-    if (empty($webform->data['cid']['preset']) && count($cids) > 1) {
-      $form['cid']['#type'] = $webform->data['cid']['widget'];
-      $form['cid']['#options'] = $cids;
-      $form['cid']['#ajax'] = array(
-        'callback' => 'mcapi_webforms_ajax_amount',
-        'wrapper' => $webform->name .'-amount',
-      );
-    }
-  }
-  if(!isset($form['cid']['#options'])) {
-    $form['cid']['#type'] = 'hidden';
-    $form['cid']['#value'] = isset($webform->data['cid']['preset']) ? $webform->data['cid']['preset'] : key($currencies);
-  }
-  //to avoid the theme_wrappers being put on later in form_pre_render_conditional_form_element()
-  unset($form['cid']['#title'], $form['cid']['#description']);
- 
+  //
   //particpants
   if ($webform->data['aspect'] == 3) {
     //payer
@@ -145,7 +112,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   $form['amount']['#chars'] =  !empty($webform->data['amount']['chars']) ? $webform->data['amount']['chars'] : 6;
   mcapi_webform_default_value($form['amount'], $webform->data['amount']);
   $form['amount']['#id'] = $webform->name .'-amount';
-  $form['amount']['#cid'] = $form['cid']['#default_value'];
+  $form['amount']['#currcode'] = isset($form['currcode']['#default_value']) ? $form['currcode']['#default_value'] : $form['currcode']['#value'];
   $form['#prefix'] = "<style>.amount div{display:inline;}</style>";
   //description
   mcapi_webform_default_value($form['description'], $webform->data['description']);
@@ -208,7 +175,7 @@ function mcapi_webform_default_value(&$element, $settings) {
 
 
 function mcapi_webform_collect_tokens(&$form, &$webform) {
-  $tokens = array('cid', 'description', 'amount');
+  $tokens = array('currcode', 'description', 'amount');
   if ($webform->data['aspect'] == 3) {
     $tokens[] = 'payee';
     $tokens[] = 'payer';
@@ -329,130 +296,6 @@ function mcapi_element_markup_render($element) {
 }
 
 
-
-
-/*
- * Functions for element 'amount'
- */
-
-/*
- * field processor callback, declared in mcapi_webforms_element_info
- */
-function form_process_mcapi_amount($element, $form_state, $form) {
-  $element['#tree'] = TRUE;
-  $size = isset($element['#chars']) ? $element['#chars'] : 4;
-  $element['integer'] = array(
-    '#title' => t('Units'), //this is only ever seen on the error message anyway
-    '#type' => 'textfield',
-    '#default_value' => isset($element['#default_value']) ? intval($element['#default_value']) : 0,
-    '#size' => $size,
-    '#maxlength' => $size,
-    '#theme_wrappers' => array(),
-  );
-  if (!empty($form_state['values']['cid'])) {
-    $cid = $form_state['values']['cid'];
-  }
-  elseif(!empty($form_state['build_info']['args'][1]->cid)) {
-    $cid = $form_state['build_info']['args'][1]->cid;
-  }
-  if (isset($cid)) {
-    $currency = currency_load($cid);
-    $element['#cid'] = $cid;
-    //if any currency on the form has subdivisions then output this field
-    if (!empty($currency->divisions_conf)) {
-      $element['division'] = array(
-        '#title' => t('Fraction'),
-        '#default_value' => isset($element['#default_value']) ? str_pad(fmod($element['#default_value'], 1) * 100, 2, '0', STR_PAD_LEFT) : 0,
-        '#theme_wrappers' => array(),
-      );
-      if ($currency->divisions_conf == '00') {
-        $element['division'] +=  array(
-          '#type' => 'textfield',
-          '#size' => 2,
-          '#maxlength' => 2,
-          '#field_prefix' => '.',
-        );
-      }
-      else{
-        $element['division'] += array(
-          '#options' => $currency->divisions,
-          '#type' => 'select',
-          '#field_prefix' => ':',
-        );
-      }
-    }
-  }
-  $element['#element_validate'] = array('validate_mcapi_amount_field');
-  //we need to tell the theming function what the currency is, if we know
-  return $element;
-}
-
-/*
- * element validation callback
- */
-function validate_mcapi_amount_field(&$element, &$form_state, $form) {
-  $division = NULL;
-  //should be numeric, an integer & positive
-  foreach (array('integer', 'division') as $subfield) {
-    if (isset($element[$subfield]['#value'])) {
-      $$subfield = $element[$subfield]['#value'] + 0;
-      if ($$subfield) {
-        if (!is_numeric($element[$subfield]['#value'])) {
-          form_error($element[$subfield], t("Only numbers allowed for '@fieldname'", array('@fieldname' => $element[$subfield]['#title'])));
-        }
-        if (!is_integer($$subfield)) {
-          form_error($element[$subfield], t("Integer values only for '@fieldname'", array('@fieldname' => $element[$subfield]['#title'])));
-        }
-      }
-      if ($$subfield < 0) {
-        form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element[$subfield]['#name'])));
-      }
-    }
-  }
-
-  $float =  mcapi_amount_value($element);
-  $temp = $element['#value'];
-  $element['#value'] = $float;
-  mcapi_validate_quantity($element, $form_state);
-  $element['#value'] = $temp;
-
-  if ($element['#required'] == TRUE && !$element['integer']['#value'] && empty($element['division']['#value'])) {
-    form_error($element, t('Quantity cannot be zero'));
-  }
-  //CRITICAL write this value to form_state where it will be incorporated into the writable object
-  //the form validation should check if this is > 0
-  $form_state['values']['quantity'] = $float;
-}
-
-
-function mcapi_webforms_ajax_amount($form, &$form_state) {
-  return $form['amount']['#children'];
-}
-
-
-function theme_mcapi_amount($variables) {
-  $element = &$variables['amount'];
-  if (!empty($element['#cid'])) {
-    $parts[] = drupal_render($element['integer']);
-    if (isset($element['division'])) {
-      $parts[] = drupal_render($element['division']);
-    }
-    $output = mcapi_format_money($parts, $element['#cid']);
-  }
-  else {
-    $output = drupal_render($element['integer']);
-  }
-  return '<span class="amount" id = "'. $element['#id'].'">'. $output .'</span>';
-}
-
-
-function mcapi_amount_value($element) {
-  $integer = $element['integer']['#value'];
-  $division = isset($element['division']['#value']) ? $element['division']['#value'] : 0;
-  if ($division) return $integer + $division/100;
-  return $integer;
-}
-
 /*
  * Validation callback
  * set the payer and payee from the 2ndpeson and direction
@@ -551,6 +394,7 @@ function mcapi_webforms_form_presubmit($form, &$form_state) {
 }
 
 //ascertains whether the active path corresponds to this webform
+//not very pretty, but we need to know not to set the page title if this form is in a block
 function _is_this_webform($webform) {
 
   $parts = explode('/', current_path());

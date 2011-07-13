@@ -30,7 +30,7 @@ function mcapi_pending_default_mcapi_webforms() {
       ),
       'outgoing' => '0',
     ),
-    'cid' => array(
+    'currcode' => array(
       'common' => array(
         'preset' => 1,
         'widget' => 'hidden',
@@ -55,11 +55,12 @@ function mcapi_pending_default_mcapi_webforms() {
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
-    'amount' => array(
+    'worth' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 0,
+        'multiple' => 0
       ),
       'chars' => '',
     ),

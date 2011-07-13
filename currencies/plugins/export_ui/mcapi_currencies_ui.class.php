@@ -2,7 +2,8 @@
 /*
  * extends isn't working, which makes this whole file useless
  */
-class mcapi_webform_ui extends ctools_export_ui {
+
+class mcapi_currencies_ui extends ctools_export_ui {
 
   function init($plugin) {
     $prefix_count = count(explode('/', $plugin['menu']['menu prefix']));
@@ -16,7 +17,6 @@ class mcapi_webform_ui extends ctools_export_ui {
       'access arguments' => array($plugin['name'], 'add_template', $prefix_count + 2),
       'type' => MENU_CALLBACK,
     );
-
     return parent::init($plugin);
   }
 
@@ -57,23 +57,19 @@ class mcapi_webform_ui extends ctools_export_ui {
     }
     //first col, name
     $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
-    //second col, path
-    $path = strpos($item->path, '%') ? $item->path : l($item->path, $item->path);
-    $this->rows[$name]['data'][] = array('data' => $path);
-    //third col, storage
+    //second col, format
+    $this->rows[$name]['data'][] = array('data' => theme('worth_field', array('worth' => array('currcode' => $item->currcode, 'quantity' => 99))));
+    //third col, usage
+    $this->rows[$name]['data'][] = array('data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = 1")->fetchField());
+    //fourth col, storage
     $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
-    //first operation, edit
-    $editlink = array_shift($operations);
-    $this->rows[$name]['data'][] = array('data' => theme('links', array('links' => array($editlink))), 'class' => array('ctools-export-ui-storage'));
     //final col, links
-
     // Reorder the operations so that enable is the default action for a templatic views
     if (!empty($operations['enable'])) {
       $operations = array('enable' => $operations['enable']) + $operations;
     }
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
     $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
-
     // Add an automatic mouseover of the description if one exists.
     if (!empty($this->plugin['export']['admin_description'])) {
       $this->rows[$name]['title'] = $item->{$this->plugin['export']['admin_description']};
@@ -95,12 +91,17 @@ class mcapi_webform_ui extends ctools_export_ui {
       $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-name'));
     }
 
-    $header[] = array('data' => t('Path'), 'class' => array('ctools-export-ui-name'));
+    $header[] = array('data' => t('Format'), 'class' => array('ctools-export-ui-name'));
+    $header[] = array('data' => t('Transactions'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
-    $header[] = array('data' => t('Edit'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
 
     return $header;
   }
-}
 
+  function edit_form(&$form, &$form_state) {
+    ctools_include('export');
+    parent::edit_form($form, $form_state);
+  }
+  
+}

@@ -26,8 +26,8 @@ function mcapi_views_views_data() {
       'field' => 'uid1',
     ),
     'mcapi_currencies' => array(
-      'left_field' => 'cid',
-      'field' => 'cid'
+      'left_field' => 'currcode',
+      'field' => 'currcode'
     )
   );
 
@@ -82,7 +82,7 @@ function mcapi_views_views_data() {
       'handler' => 'views_handler_sort',
     )
   );
-  $data['mcapi_index']['cid'] = array(
+  $data['mcapi_index']['currcode'] = array(
     'title' => t('Currency'),
     'help' => t("The currency ID"),
     'field' => array(
@@ -100,7 +100,7 @@ function mcapi_views_views_data() {
     'title' => t('Income'), // The item it appears as on the UI,
     'help' => t('Number of units of currency incoming'),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
+      'handler' => 'views_handler_field_mcapi_quantity_index',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -115,7 +115,7 @@ function mcapi_views_views_data() {
     'title' => t('Expenditure'), // The item it appears as on the UI,
     'help' => t('Number of units of currency outgoing'),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
+      'handler' => 'views_handler_field_mcapi_quantity_index',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -127,10 +127,10 @@ function mcapi_views_views_data() {
     )
   );
   $data['mcapi_index']['diff'] = array(
-    'title' => t('Amount'), // The item it appears as on the UI,
+    'title' => t('value'), // The item it appears as on the UI,
     'help' => t("Change in the users balance"),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
+      'handler' => 'views_handler_field_mcapi_quantity_index',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -144,7 +144,7 @@ function mcapi_views_views_data() {
     'title' => t('Volume'), // The item it appears as on the UI,
     'help' => t("Absolute value of the trade"),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
+      'handler' => 'views_handler_field_mcapi_quantity_index',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -158,7 +158,7 @@ function mcapi_views_views_data() {
     'title' => t('Balance'), // The item it appears as on the UI,
     'help' => t("Running balance after each transaction") . ' (fragile field at the moment)',
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
+      'handler' => 'views_handler_field_mcapi_quantity_index',
     ),
   );
   $data['mcapi_index']['created'] = array(
@@ -186,8 +186,8 @@ function mcapi_views_views_data_alter(&$items) {
   );
 
   $items['mcapi_currencies']['table']['join']['mcapi_index'] = array(
-    'left_field' => 'cid',
-    'field' => 'cid',
+    'left_field' => 'currcode',
+    'field' => 'currcode',
   );
 
   //not doing anything

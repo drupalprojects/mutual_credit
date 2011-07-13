@@ -10,6 +10,10 @@
  */
 class MCAPIEntityController extends DrupalDefaultEntityController {
   /*
+   * This controller actually writes the transaction during validation
+   * with a special state: TRANSACTION_STATE_VALIDATING
+   * When written, the transaction has a unique ID, so we
+   * indicate that the transaction is actually a new transaction with the new property, 'is_new'
    * Adapted from the default entity controller.
    * no support for revisions
    * switches database to load transactions
@@ -62,17 +66,8 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
     }
     return $entities;
   }
-}
 
-class TransactionEntityController extends MCAPIEntityController {
-  /*
-   * This controller actually writes the transaction during validation
-   * with a special state: TRANSACTION_STATE_VALIDATING
-   * When written, the transaction has a unique ID, so we
-   * indicate that the transaction is actually a new transaction with the new property, 'is_new'
-   */
   public function validate($transaction){
-    $currency = currency_load($transaction->cid);
     $state = $transaction->state;
     $transaction->validating = TRUE;
     if (empty($transaction->xid)) {
@@ -123,9 +118,11 @@ class TransactionEntityController extends MCAPIEntityController {
     $transaction->data = $transaction->extra;
     $t = db_transaction();
     //the transaction is actually written during the validation phase, but we still want to run
-    $function = empty($transaction->is_new) ? 'update' : 'insert';
+    if($transaction->is_new) $function = 'insert';
+    elseif (!empty($transaction->validating)) $function = 'state';
+    else $function = 'update';
     try {
-      $this->$function($transaction, !empty($transaction->validating));
+      $this->$function($transaction);
     }
     catch (Exception $e) {
       $t->rollback();
@@ -134,7 +131,7 @@ class TransactionEntityController extends MCAPIEntityController {
     }
     if (isset($transaction->validating)) return;
 
-    //balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
+    //balances_recalc($transaction->currcode, array($transaction->payer, $transaction->payee));
     module_invoke_all('entity_'.$function, 'transaction', $transaction);
     return $transaction;
   }
@@ -144,36 +141,39 @@ class TransactionEntityController extends MCAPIEntityController {
    * there is no error checking on this.
    */
   public function erase($transaction) {
-    $currency = currency_load($transaction->cid);
-    switch ($currency->extra['delete_mode']) {
-      case '0':
-        throw new Exception(t('Deletions not allowed'));
-        break;
-      case '1': //mark deleted
-        debug($transaction);
+    //if there are more than one flows involved, use the minimum value for the update mode
+    foreach ($transaction->worth['und'][0] as $worth) {
+      $modes[] = currency_load($worth['currcode'])->delete_mode;
+    }
+    debug($modes);
+    switch(min($modes)) {
+      case 1: //mark deleted
         $transaction->state = TRANSACTION_STATE_ERASED;
         $transaction->modified = REQUEST_TIME;
         $transaction->modifier = $GLOBALS['user']->uid;
         try{
           mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
-          //balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
+          //balances_recalc($transaction->currcode, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
           throw $e;
         }
         break;
-      case '2': //actually delete
+      case 2: //actually delete
         try {
           $query = db_delete('mcapi_transactions')
           ->condition('xid', $transaction->xid)
           ->execute();
-          //balances_recalc($transaction->cid, array($transaction->payer, $transaction->payee));
+          //balances_recalc($transaction->currcode, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           throw $e;
         }
         module_invoke_all('entity_delete', 'transaction', $transaction);
+      default:
+        throw new Exception(t('Deletions not allowed'));
+        break;
     }
     return $transaction;
   }
@@ -200,7 +200,7 @@ class TransactionEntityController extends MCAPIEntityController {
       'from' => 0,
       'to' => REQUEST_TIME + 1,
       'states' => array(TRANSACTION_STATE_FINISHED),
-      'cid' => NULL
+      'currcode' => NULL
     );
     extract($variables);
     db_set_active(variable_get('mcapi_db_read', 'default'));
@@ -214,8 +214,8 @@ class TransactionEntityController extends MCAPIEntityController {
     ->condition('created', $from, '>')
     ->condition('created', $to,  '<')
     ->orderby('created');
-    if ($cid) {
-      $query->condition('cid', $cid);
+    if ($currcode) {
+      $query->condition('currcode', $currcode);
     }
     return $query->execute()->fetchAll();
   }
@@ -224,8 +224,8 @@ class TransactionEntityController extends MCAPIEntityController {
   /*
    * retrieve all the cached balances for a user, in all the currencies cached.
    * it's not clear what it means if a row doesn't exist here
-   * $cids can be an array or a currency id
-   * every cid asked for will return list of values, even if it doesn't exist in the db.
+   * $currcodes can be an array or a currency id
+   * every currcode asked for will return list of values, even if it doesn't exist in the db.
    */
   /*
    * this is withdrawn from the api for now
@@ -235,7 +235,7 @@ class TransactionEntityController extends MCAPIEntityController {
     ->fields('c')
     ->condition('uid', $uid)
     ->execute()
-    ->fetchAllAssoc('cid', PDO::FETCH_ASSOC);
+    ->fetchAllAssoc('currcode', PDO::FETCH_ASSOC);
     db_set_active();
   }
    *
@@ -246,7 +246,7 @@ class TransactionEntityController extends MCAPIEntityController {
    */
   /*
    * withdrawn for now
-  public function get_running_balance($xid, $uid, $cid) {
+  public function get_running_balance($xid, $uid, $currcode) {
     //new dbAPI has no SUM
     $outgoing = db_query(
       "SELECT SUM(quantity) from {mcapi_exchanges} WHERE payer_uid = $uid AND state = :state AND xid <= $xid",
@@ -295,14 +295,15 @@ class TransactionEntityController extends MCAPIEntityController {
 
   /*
    * This controller makes no use of the entity revision control facility
+   * $force_update is for the special case of a validated transaction which is being written
    */
-  function update($transaction, $force_replace = FALSE) {
-    $currency = currency_load($transaction->cid);
-    //special case. This prevents writing a new row on validation
-    //instead we validate by updating the row
-    $mode = $currency->extra['update_mode'];
-    if ($force_replace && $mode == 1) $mode = 2;
-    switch($mode) {
+  function update($transaction) {
+    //if there are more than one flows involved, use the minimum value for the update mode
+    foreach ($transaction->worth['und'][0] as $worth) {
+      $modes[] = currency_load($worth['currcode'])->update_mode;
+    }
+    debug($modes);
+    switch(min($modes)) {
       case 0:
         throw new Exception(t('Updates not allowed'));
       case 1:
@@ -332,88 +333,8 @@ class TransactionEntityController extends MCAPIEntityController {
 }
 
 /*
- * The currency entity has its own CRUD operations
- */
-class CurrencyEntityController extends MCAPIEntityController {
-
-  public function load($cids = array(), $conditions = array()) {
-    $currencies = parent::load($cids, $conditions);
-    module_load_include('inc', 'mcapi');
-    foreach($currencies as $key => $currency) {
-      //does this need to be done here, for every currency on every page_load?
-      $currencies[$key]->divisions = _currency_divisions_array($currency->divisions_conf);
-    }
-    return $currencies;
-  }
-
-  public function save($currency) {
-    $function = isset($currency->cid) && $currency->cid ? 'update' : 'insert';
-    cache_clear_all('currencies', 'cache');
-    $currency->data = $currency->extra;
-    $currency = $this->$function($currency, TRUE);
-    module_invoke_all('entity_'.$function, 'currency', $currency);
-  }
-
-  public function delete($currency) {
-    //check that there are no transactions in this currency
-    if (db_query("SELECT xid FROM {mcapi_transactions} WHERE cid = :cid", array(':cid' => $currency->cid))->fetchField()) {
-      throw new Exception(t('Cannot delete currency without first deleting all transactions using that currency'));
-    }
-    db_query("DELETE FROM {mcapi_currencies} WHERE cid = :cid", array(':cid' => $currency->cid));
-    field_attach_delete('currency', $currency);
-  }
-  
-  function insert($currency) {
-    $table = 'mcapi_currencies';
-    $success = mcapi_write_record($table, $currency);
-    if (!$success) {
-      throw new Exception(t('failed to write to @name table', array('@name' => $table)));
-    }
-    field_attach_insert('currency', $currency);
-  }
-
-  function update($currency) {
-    mcapi_write_record('mcapi_currencies', $currency, array('cid'));
-    field_attach_update('currency', $currency);
-  }
-}
-
-/*
-//refreshes a cache of all the transactions,
-function balances_recalc($cid, $uids, $test = FALSE) {
-  foreach($uids as $uid) {
-    $in = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payee = :uid AND state = :state AND cid = :cid",
-      array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
-      ->fetchAssoc();
-    $out = db_query("SELECT sum(quantity) total, count(quantity) count FROM {mcapi_transactions} WHERE payer = :uid AND state = :state AND cid = :cid",
-      array(':uid' => $uid, ':state' => TRANSACTION_STATE_FINISHED, ':cid' => $cid))
-      ->fetchAssoc();
-    $in['total'] = floatval($in['total']);
-    $out['total'] = floatval($out['total']);
-
-    $row = array(
-      'uid' => $uid,
-      'cid' => $cid,
-      'cleared_balance' => $in['total'] - $out['total'],
-      'gross_in' => $in['total'],
-      'gross_out' =>$out['total'],
-      'count' => intval($in['count'] + $out['count']),
-    );
-    //we HAVE to know already if this row already exists because drupal_write_record is trying to be efficient and this caching mechanism is counter-intuitive
-    if ($exists = db_query("SELECT uid FROM {mcapi_cache} WHERE cid = $cid AND uid = $uid")->fetchField()) {
-      mcapi_write_record('mcapi_cache', $row, array('cid', 'uid'));
-    }
-    else{
-      debug('creating cache row');
-      debug(db_insert('mcapi_cache')->fields($row)->execute());
-    }
-  }
-  db_set_active();
-}
-*/
-
-
-/*
+ * wrapper for drupal_write_record
+ * writes to the database(s) specified by the entity controller settings
  */
 function mcapi_write_record($table, &$record, $primary_keys = array()) {
   //we need to ensure the schema is cached before calling mcapi_write_record

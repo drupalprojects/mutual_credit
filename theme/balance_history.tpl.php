@@ -11,7 +11,7 @@ define ('MAX_CHART_POINTS', 140);
   *
   * $account = User Obj
   * $histories = array(
-  *   '$cid' = array(
+  *   '$currcode' = array(
   *     '$unixtime' => $balance
   *     '$unixtime' => $balance
   *     etc...
@@ -22,8 +22,8 @@ $dimensions = array('x' => 250, 'y' => 200);
 $lines = $line_styles = $line_colors = $maxes = $mins = array();
 
 //this loop draws one line for each currency
-foreach ($histories as $cid => $history){
-  $currency = node_load($cid);
+foreach ($histories as $currcode => $history){
+  $currency = node_load($currcode);
   $times = array();
   $values = array();
   $first_time = array_shift(array_keys($history));
@@ -61,7 +61,7 @@ foreach ($histories as $cid => $history){
       $bal = array_shift($history);
       $all_points[$previous_time] = $bal;
     }
-    unset($points[$cid]);
+    unset($points[$currcode]);
     //$all_points now contains a value for every pixel time interval, ready for sampling
     //we reverse this array to be sure to sample the final value, which may be only a few seconds ago, so might otherwsie be sampled out
     $reverse_points = array_reverse($all_points, TRUE);
@@ -80,13 +80,13 @@ foreach ($histories as $cid => $history){
     $times = array_keys($values);
   }
   //make the url encoded line from the x and y values
-  $lines['mainline'. $cid] = implode(',',$times) .'|'. implode(',', $values);
-  $line_styles['mainline'.$cid] = 2;
+  $lines['mainline'. $currcode] = implode(',',$times) .'|'. implode(',', $values);
+  $line_styles['mainline'.$currcode] = 2;
 
   $maxes[] = max($values);
   $mins[] = min($values);
   
-  $line_colors['mainline'. $cid] = $currency->data['color'];
+  $line_colors['mainline'. $currcode] = $currency->data['color'];
   $curr_names[] = $currency->title;
 }
 //drupal_set_message('<pre>'.print_r($lines, 1).'</pre>');

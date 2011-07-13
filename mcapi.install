@@ -10,7 +10,6 @@
  * Implements hook_install().
  */
 function mcapi_install() {
-  variable_set('comment_transactions', 0);
 
   //permit authenticated user to trade by default
   if (!user_roles(FALSE, 'transact')) {
@@ -19,31 +18,29 @@ function mcapi_install() {
     ->fields(array('module' => 'mcapi'))
     ->execute();
   }
-  drupal_set_message(t('By default, authenticated user has been given permission to transact.'));
+  drupal_set_message(t("Authenticated user has been granted 'transact' permission."));
 
   //here we set all the module weights together
   //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
   //could all these be done in one query?
-  db_update('system')->fields(array('weight' => 0))->condition('name', 'mcapi')->execute();
-  db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi_webforms')->execute();
-  db_update('system')->fields(array('weight' => 1))->condition('name', 'mcapi_limits')->execute();
-  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_services')->execute();
-  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_pending')->execute();
-  db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_limits_equation')->execute();
-  db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_display')->execute();
+  db_update('system')->fields(array('weight' => -1))->condition('name', 'mcapi')->execute(); //before ctools
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_currencies')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_webforms')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_limits')->execute();
+  db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_services')->execute();
+  db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_pending')->execute();
+  db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_limits_equation')->execute();
+  db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_display')->execute();
 
   //allow the body field to be added to currencies and transactions
-  $data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField());
-  foreach (array('currency', 'transaction') as $ent) {
-    if (!in_array($ent, $data['entity_types'])) {
-      $data['entity_types'][] = $ent;
+  if ($data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField())) {
+    foreach (array('currency', 'transaction') as $ent) {
+      if (!in_array($ent, $data['entity_types'])) {
+        $data['entity_types'][] = $ent;
+      }
     }
-  }
-  $data_col = serialize($data);
-  db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
-
-  if (module_exists('image')) {
-    mcapi_modules_enabled(array('image'));
+    $data_col = serialize($data);
+    db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
   }
 }
 
@@ -64,55 +61,48 @@ function mcapi_uninstall() {
     ->condition('vid', $vid)
     ->execute();
   }
-  /* this doesn't work, perhaps because the controller has been disabled
-  //delete all the currencies properly, with their field data
-  module_load_include('inc', 'mcapi', 'entities');
-  $controller = entity_get_controller('currency');
-  $result = db_query("SELECT cid from {mcapi_currencies}");
-  while ($cid = $result->Fetchfield()) {
-    $controller->delete($cid);
-  }
+  /*
    * So instead we're going to manually delete the fields
    * Except the instances don't delete unless they are mentioned in the fields' "bundles" property, which is undocumented.
    * IN fact we can't even retrieve the instances here, possibly because the entity is already gone
    * So we delete the instances manually
    */
+  $fields = db_query("SELECT {field_name} FROM {field_config_instance} WHERE entity_type = 'transaction'")->fetchCol();
+  foreach ($fields as $fieldname) {
+    //this is temporary!!! might delete fields in use by other entities.
+    //field_delete_field($fieldname);
+    //db_query("DROP table 'field_data_$fieldname'");
+  }
   //lose the currency entity fields and instances
-  db_query("DELETE FROM field_config_instance WHERE entity_type = 'currency'");
-  db_query("DELETE FROM field_data_body WHERE entity_type = 'currency'");
-  db_query("DELETE FROM field_revision_body WHERE entity_type = 'currency'");
-  //db_query("DELETE FROM file_usage WHERE type = 'currency'");
-  
+  //db_query("DELETE FROM {field_config} WHERE type = 'worth'");
+  db_query("DELETE FROM {field_config_instance} WHERE entity_type = 'transaction'");
+  db_query("DELETE FROM {field_data_body} WHERE entity_type = 'transaction'");
+  db_query("DELETE FROM {field_revision_body} WHERE entity_type = 'transaction'");
 
+  //this is a hack. Without it the re-installation breaks
+  //db_query("UPDATE field_config SET deleted = 0 WHERE type = 'worth_field'");
+  
   variable_del('mcapi_controller');
   variable_del('mcapi_db_read');
   variable_del('mcapi_db_write');
+  variable_del('currency_default');
+  cache_clear_all('currencies', 'cache');
 }
 
 /**
  * Implements hook_enable
  */
 function mcapi_enable() {
-  //we need to refresht this variable because it's not set on installation
-  //$drupal_static_fast['entity_info'] = &drupal_static('entity_get_info');
-  //$drupal_static_fast['entity_info'] = array();
   global $language;
-  $langcode = $language->language;
-  cache_clear_all("entity_info:$langcode", 'cache');
-  module_load_include('inc', 'mcapi');
+  cache_clear_all("entity_info:".$language->language, 'cache');
   //this seems to have been omitted from core...
   menu_rebuild();
-  drupal_set_message(t('A default currency will be created the first time you visit !link',
-    array('!link' => l('admin/accounting', 'admin/accounting'))
-  ), 'warning');
 }
 
 /**
  * Implements of hook_schema)()
  */
 function mcapi_schema() {
-  //the schema has two modes, depending on whether we store the amounts as integers or floats.
-  module_load_include('inc', 'mcapi');
   $numeric = array(
     'type' => 'numeric',
     'size' => 'normal',
@@ -135,22 +125,13 @@ function mcapi_schema() {
       'payer' => array(
         'description' => 'the user id of the payer',
         'type' => 'int',
-        'size' => 'normal',
+        'size' => 'small',
       ),
       'payee' => array(
         'description' => 'the user id of the payee',
         'type' => 'int',
-        'size' => 'normal',
+        'size' => 'small',
       ),
-      'cid' => array(
-        'description' => 'the nid of the currency used',
-        'type' => 'int',
-        'size' => 'normal',
-      ),
-      'quantity' => $numeric + array(
-        'description' => 'the number of units transferred',
-      ),
-      //views is likely to want to see this, but it can have many uses
       'type' => array(
         'description' => 'The type of transaction, types are provided by modules',
         'type' => 'varchar',
@@ -161,12 +142,6 @@ function mcapi_schema() {
         'type' => 'int',
         'size' => 'normal',
       ),
-        /*
-      'parent' => array(
-        'description' => 'nid of parent transaction',
-        'type' => 'int',
-        'size' => 'normal',
-      ),*/
       'data' => array(
         'description' => 'nonessential info not fitting into existing fields',
         'type' => 'text',
@@ -176,7 +151,7 @@ function mcapi_schema() {
       'creator' => array(
         'description' => 'the user id of the creator',
         'type' => 'int',
-        'size' => 'normal',
+        'size' => 'small',
       ),
       'created' => array(
         'description' => "Unixtime that the transaction was recorded",
@@ -186,7 +161,7 @@ function mcapi_schema() {
       'modifier' => array(
         'description' => 'the user id of the modifier',
         'type' => 'int',
-        'size' => 'normal',
+        'size' => 'small',
       ),
       'modified' => array(
         'description' => "Unixtime that the transaction was modified",
@@ -196,155 +171,10 @@ function mcapi_schema() {
     ),
     'primary key' => array('xid'),
   );
-
-  $schema['mcapi_currencies'] = array(
-    'description' => 'metadata for currencies, in addition to name and title',
-    'fields' => array(
-      'cid' => array(
-        'description' => 'the unique currency ID',
-        'type' => 'serial',
-        'size' => 'normal',
-      ),
-      'uid' => array(
-        'description' => 'the creator of the currency',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 1,
-      ),
-      'name' => array(
-        'description' => 'the name of the currency',
-        'type' => 'varchar',
-        'length' => '64',
-        'not null' => TRUE
-      ),
-      'divisions_conf' => array(
-        'description' => 'fractions of the currency unit',
-        'type' => 'text',
-        'size' => 'small',
-      ),
-      'format' => array(
-        'description' => "How to display the amount using normal characters",
-        'type' => 'varchar',
-        'length' => '64',
-        'default' => '@minus<strong>Cc</strong>@integer:@subdivision',
-      ),
-      'data' => array(
-        'description' => 'nonessential info not fitting into existing fields',
-        'type' => 'text',
-        'serialize' => TRUE,
-      ),
-    ),
-    'primary key' => array('cid'),
-    'unique keys' => array(
-      'name' => array('name')
-    )
-  );
   return $schema;
 }
 
 
-
-function mcapi_modules_enabled($modules) {
-  $fields = field_read_fields();
-  if (in_array('image', $modules)) {
-    $instance = field_info_instance('currency', 'field_image', 'currency');
-    if (empty($instance)) {
-      $currency_icon = array(
-        'field_name' => 'field_image',
-        'entity_type' => 'currency',
-        'label' => 'Icon',
-        'bundle' => 'currency',
-        'description' => t('A small graphical representation of the currency'),
-        'required' => FALSE,
-        'settings' => array(
-          'file_directory' => 'field/image',
-          'file_extensions' => 'png gif jpg jpeg',
-          'max_filesize' => '2048',
-          'max_resolution' => '20x20',
-          'min_resolution' => '12x12',
-          'alt_field' => FALSE,
-          'title_field' => TRUE,
-        ),
-        'display' => array(
-          'default' => array(
-            'label' => 'hidden',
-            'type' => 'image',
-            'settings' => array('image_style' => 'curr_icon', 'image_link' => ''),
-            'weight' => -1,
-          ),
-        ),
-      );
-      field_create_instance($currency_icon);
-    }
-    $instance = field_info_instance('currency', 'body', 'currency');
-    if (empty($instance)) {
-      $rationale = array(
-        'field_name' => 'body',
-        'entity_type' => 'currency',
-        'bundle' => 'currency',
-        'label' => t('Rationale'),
-        'widget_type' => 'text_textarea_with_summary',
-        'description' => t('What are the monetary credentials of this currency?'),
-        'settings' => array(
-          'default' => array(
-            'label' => 'hidden',
-            'type' => 'text_default',
-          ),
-        )
-      );
-      field_create_instance($rationale);
-    }
-  }
-}
-
-function mcapi_modules_disabled($modules) {
-  $fields = field_read_fields();
-  if (in_array('image', $modules)) {
-    field_delete_field('curr_icon');
-  }
-  if (in_array('contact', $modules)) {
-    field_delete_field('notify_threshhold');
-  }
-}
-
-function check_default_currency() {
-  $count = db_select('mcapi_currencies', 'c')->fields('c')->countquery()->execute()->fetchField();
-  if ($count) return;
-  
-  $currency = array(
-    'name' => t('Community Coins'),
-    'divisions_conf' => '00',
-    'format' => '@minus<strong>Cc</strong>@integer:@subdivision',
-    'body' => array (
-      'und' => array (
-        0 => array (
-          'value' => t('Richard Douthwaite poses these questions:') . theme('item_list', array('items' => array(
-            t('Who issues the money?'),
-            t('Why do they issue it?'),
-            t('Where is the money created?'),
-            t('What gives the money its value?'),
-            t('How is the money created?'),
-            t('When is the money created?'),
-          ), 'title' => NULL, 'type' => 'ol')),
-          'format' => 'filtered_html',
-        ),
-      ),
-    ),
-    'extra' => array(
-      'delete_mode' => 2,
-      'update_mode' => 2,
-      'user_editable_mode' => 2,
-      'write_validate' => TRUE,
-      'privacy' => 2,
-      'access_callback' => 'user_access',
-    )
-  );
-  currency_controller('save', (object)$currency);
-  
-  $new_curr = db_select('mcapi_currencies', 'c')->fields('c', array('cid', 'name'))->execute()->fetch();
-  drupal_set_message(t('Your default currency is @name.', array('@name' => $new_curr->name)));
-  drupal_set_message(t('N.B. The default currency does not allow negative balances: !edit', array('!edit' => l(t('edit'), 'currency/' . $new_curr->cid . '/edit'))));
-}
 
 /*
  *
@@ -406,4 +236,69 @@ function mcapi_controller_options_form($form_state) {
 function mcapi_controller_options_form_ajax($form, $form_state) {
   $form['master_slave']['mcapi_db_read']['#options'] = array_filter($form_state['values']['mcapi_db_write']);
   return $form['master_slave'];
+}
+
+
+/**
+ * Implements hook_field_schema().
+ */
+function mcapi_field_schema($field) {
+  if ($field['type'] == 'worth_field') {
+    return array(
+      'columns' => array(
+        'currcode' => array(
+          'description' => 'The currency ID',
+          'type' => 'varchar',
+          'length' => '8',
+        ),
+        'quantity' => array(
+          'description' => 'Price',
+          'type' => 'numeric',
+          'size' => 'normal',
+          'precision' => 8,
+          'scale' => 2
+        )
+      )
+    );
+  }
+}
+
+
+function mcapi_modules_enabled($modules) {
+  //we need to run the field hooks to create the field.
+  if (in_array('mcapi', $modules)) {
+    $field = field_read_field('worth', array('include_inactive' => TRUE));
+    if (!$field) { debug("creating field 'worth'");
+      $field = array(
+        'field_name' => 'worth',
+        'type' => 'worth_field',
+        'entity_types' => array('transaction'),
+      );
+      field_create_field($field);
+    }
+    else {
+      debug("activating preexisting field 'worth'");
+      db_query("UPDATE {field_config} SET active = 1 WHERE field_name = 'worth'");
+    }
+    // Create the instance if needed.
+    if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
+      $instance = array(
+        'field_name' => 'worth',
+        'label' => 'Value',
+        'entity_type' => 'transaction',
+        'bundle' => 'transaction',
+        'settings' => array(),
+        'required' => TRUE,
+        'display' => array(
+          'default' => array(
+            'label' => 'hidden',
+            'type' => 'text_default',
+            'weight' => 0,
+          ),
+        ),
+      );
+      debug('creating instance of field worth');
+      field_create_instance($instance);
+    }
+  }
 }

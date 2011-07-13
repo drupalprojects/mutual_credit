@@ -17,32 +17,30 @@ function mcapi_limits_equation_form_currency_form_alter(&$form, $form_state) {
  * e.g. 10+@gross_in+@gross_out+@trades
  */
 function limits_equations($currency, $uid) {
-  $cached = transaction_controller('get_cache', $uid, $currency->cid);
+  $cached = transaction_controller('get_cache', $uid, $currency->currcode);
   foreach (array('max', 'min') as $limit) {
     $limits[$limit] = mcapi_limits_equation_parse(
       $currency->limits_equations[$limit],
-      db_query("SELECT gross_in, gross_out, count as trades from {mcapi_cache} WHERE uid = $uid AND cid = $currency->cid")->fetchAssoc()
+      db_query("SELECT gross_in, gross_out, count as trades from {mcapi_cache} WHERE uid = $uid AND currcode = $currency->currcode")->fetchAssoc()
     );
   }
   return $limits;
 }
 
-function limits_equations_form($form, $form_state, $currency = NULL) {
-  $saved = isset($currency->extra['limits_equations']) ? $currency->extra['limits_equations'] : array('min' => NULL, 'max' => NULL);
-
+function limits_equations_form($currency, array $defaults) {
   return array(
     'min' => array(
       '#title' => t('Formula to calculate minimum limit'),
       '#description' => t('Use the following tokens:') . ' '. t('@gross_in, @gross_out, @trades'),
       '#type' => 'textfield',
-      '#default_value' => isset($passed['min']) ? $passed['min'] : $saved['min'],
+      '#default_value' => isset($defaults['min']) ? $defaults['min'] : '-',
       '#element_validate' => array('mcapi_limits_equation_validate'),
     ),
     'max' => array(
       '#title' => t('Formula to calculate maximum limit'),
       '#description' => t('Use the following tokens:') . ' '. t('@gross_in, @gross_out, @trades'),
       '#type' => 'textfield',
-      '#default_value' => isset($passed['max']) ? $passed['max'] : $saved['max'],
+      '#default_value' => isset($defaults['max']) ? $defaults['max'] : '-',
       '#element_validate' => array('mcapi_limits_equation_validate'),
     ),
   );

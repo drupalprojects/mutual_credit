@@ -106,15 +106,15 @@ function mcapi_taxonomy_views_default_views() {
   $handler->display->display_options['filters']['created_1']['expose']['remember'] = 1;
   $handler->display->display_options['filters']['created_1']['expose']['multiple'] = FALSE;
   /* Filter criterion: Transaction: Currency ID */
-  $handler->display->display_options['filters']['cid']['id'] = 'cid';
-  $handler->display->display_options['filters']['cid']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['filters']['cid']['field'] = 'cid';
-  $handler->display->display_options['filters']['cid']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['cid']['expose']['operator_id'] = 'cid_op';
-  $handler->display->display_options['filters']['cid']['expose']['label'] = 'Currency ID';
-  $handler->display->display_options['filters']['cid']['expose']['operator'] = 'cid_op';
-  $handler->display->display_options['filters']['cid']['expose']['identifier'] = 'cid';
-  $handler->display->display_options['filters']['cid']['expose']['reduce'] = 0;
+  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = 'currcode_op';
+  $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency ID';
+  $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
+  $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
   /* Filter criterion: Transaction: Involved user (must be exposed) */
   $handler->display->display_options['filters']['participant']['id'] = 'participant';
   $handler->display->display_options['filters']['participant']['table'] = 'mcapi_transactions';

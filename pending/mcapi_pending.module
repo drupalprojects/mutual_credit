@@ -52,19 +52,22 @@ function has_pending($account) {
 //is the current user permitted to sign on behalf of that user
 function mcapi_pending_sign_access($transaction) {
   //check the transaction is pending and the given account needs to sign it.
-  if ($transaction->state != TRANSACTION_STATE_PENDING || !db_select('mcapi_unsigned', 'u')
-    ->fields('u')
-    ->condition('xid', $transaction->xid)
-    ->condition('uid', $GLOBALS['user']->uid)
-    ->countQuery()
-    ->execute()
-    ->fetchField()
-  ) {
-    return FALSE;
-  }
+  if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
+  $count = db_query(
+    "SELECT count(xid) FROM {mcapi_unsigned} WHERE xid = :xid AND uid = :uid",
+    array(':xid' => $transaction->xid, ':uid' => $GLOBALS['user']->uid)
+  )->fetchfield();
+  if ($count) return FALSE;
+  
   //check the current user has permission to sign, by virtue of being one of the transactees
   if (in_array($GLOBALS['user']->uid, $transaction->pending)) return TRUE;
-  //there may also be a case for proxy signing here
+  //check the user is permitted as an admin.
+  if (user_access('manage all transactions')) {
+    $currency = currency_load($transaction->currcode);
+    if ($currency->pending['signoff']) {
+      return TRUE;
+    }
+  }
 }
 
 //menu access callback
@@ -72,7 +75,6 @@ function mcapi_pending_sign_access($transaction) {
 function mcapi_pending_signoff_access($transaction) {
   if ($transaction->state == TRANSACTION_STATE_PENDING) {
     if (user_access('manage all transactions')) return TRUE;
-  //$currency = currency_load($transaction->cid);
   }
 }
 /*
@@ -84,18 +86,19 @@ function mcapi_access_pending($op, $transaction, $account, $currency) {
   $owner = $transaction->creator == $account->uid;
   switch ($op) {
     case 'view'://users can always view their own pages
-      switch ($currency->extra['privacy']) {
+      switch ($currency->pending['access']) {
         case 0: return $participated;
         case 1: return $participated || $accountant;
-        case 2: $callback = $currency->extra['access_callback'];
+        case 2: debug('Currency access option 2 needs sorting out');return TRUE;
+          $callback = isset($currency->access_callback) ? $currency->access_callback : 'user_access';
           return $callback('view', $currency, $GLOBALS['user']->uid);
         case 2: return $GLOBALS['user']->uid;
         case 3: return TRUE;
     }
     case 'update':
     case 'erase':
-      if ($currency->extra['update_mode'] < 1) return;
-      switch ($currency->extra['user_editable_mode']) {
+      if (empty($currency->pending['update_mode'])) return;
+      switch ($currency->user_editable_mode) {
         case 1: return $account->uid == $currency->uid;
         case 2: return $owner;
         case 3: return $participated;
@@ -103,13 +106,10 @@ function mcapi_access_pending($op, $transaction, $account, $currency) {
   }
 }
 
-function mcapi_pending_transaction_info($prop) {
+function mcapi_pending_mcapi_info($prop) {
   $info = array(
     'states' => array(
       TRANSACTION_STATE_PENDING => t('Pending'),
-    ),
-    'access' => array(
-      TRANSACTION_STATE_PENDING => 'mcapi_access_pending',
     ),
     'types' => array(),
   );
@@ -194,7 +194,7 @@ function mcapi_pending_entity_save($transaction) {
  * Will implement hook_entity_delete or some such
  */
 function mcapi_pending_entity_delete($entity, $type) {
-  if ($type = transaction && !empty($entity->pending)) {
+  if ($type = 'transaction' && !empty($entity->pending)) {
     db_query("DELETE FROM {mcapi_unsigned} WHERE xid = ".$transaction->xid);
   }
   //recalc_pending($transaction);
@@ -212,41 +212,17 @@ function mcapi_sign($transaction, $uid) {
   transaction_controller('state', $transaction);
 }
 
-/*
- * calculates pending difference for both users from scratch and saves to cache
- */
-/*
-function recalc_pending($transaction) {
-  $cid = $transaction->cid;
-  //calculate pending balances and save in cache table
-  foreach (array($transaction->payer, $transaction->payee) as $uid) {
-    //can these two queries be combined into one?
-    $pend_out = db_query("SELECT sum(quantity) from {mcapi_transactions} WHERE payer = :uid AND state = :state AND cid = :cid",
-      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid)
-    )->fetchField();
-    $pend_in = db_query("SELECT sum(quantity) from {mcapi_transactions} WHERE payee = :uid AND state = :state AND cid = :cid",
-      array(':uid' => $uid, ':state' => TRANSACTION_STATE_PENDING, ':cid' => $cid)
-    )->fetchField();
 
-    db_query("UPDATE {mcapi_cache} SET pending_dif = :pending WHERE uid = $uid AND cid = $cid",
-      array(':pending' => $pend_in - $pend_out)
-    );
-  }
-}
- *
- */
-
-function mcapi_pending_form_currency_form_alter(&$form, $form_state) {
-  $cid = !empty($form_state['values']['cid']) ? currency_load($form_state['values']['cid']) : $form['cid']['#value'];
-  $currency = $cid ? currency_load($cid) : NULL;
-  $form['editable'] = array(
+function mcapi_pending_mcapi_currency_form($form_state, $currency) {
+  $form['pending'] = array(
     '#title' => t('Pending state access'),
     '#description' => t('Only applies if editing is permitted by accounting standards.').' (AJAX needed!)',
     '#type' => 'fieldset',
-    '#group' => 'additional_settings',
+    '#collapsible' => TRUE,
+    '#collapsed' => isset($form_state['values']['pending']['access']),
     '#weight' => 4,
-    'pending_access' => array(
-      '#title' => t('Permissions to correct'),
+    'access' => array(
+      '#title' => t('Permissions to modfy pending transactions'),
       '#type' => 'radios',
       '#options' => array(
         0 => t("Only users with '@permission' can correct pending transactions", array('@permission' => t('manage all transactions'))),
@@ -254,25 +230,26 @@ function mcapi_pending_form_currency_form_alter(&$form, $form_state) {
         2 => t('Only Transaction owner can correct pending transactions'),
         3 => t('Both participants can correct pending transactions'),
       ),
-      '#default_value' => !empty($form_state['values']['pending_access']) ?
-        $form_state['values']['pending_access'] :
-        (isset($currency->extra['pending_access']) ?
-          $currency->extra['pending_access'] : 0),
+      '#default_value' => !empty($form_state['values']['pending']['access']) ?
+        $form_state['values']['pending']['access'] :
+        (isset($currency->pending['access']) ?
+          $currency->pending['access'] : 0),
       '#weight' => 4
     ),
-    'pending_signoff' => array(
+    'signoff' => array(
       '#title' => t('Permissions to sign off transactions'),
       '#type' => 'radios',
       '#options' => array(
         0 => t("Only signatories can sign their names", array('@permission' => t('manage all transactions'))),
         1 => t("Users with permission to 'manage all transactions' can sign off transactions"),
       ),
-      '#default_value' => !empty($form_state['values']['pending_signoff']) ?
-        $form_state['values']['pending_signoff'] :
-        (isset($currency->extra['pending_signoff']) ? $currency->extra['pending_signoff'] : 0),
+      '#default_value' => !empty($form_state['values']['pending']['signoff']) ?
+        $form_state['values']['pending']['signoff'] :
+        (isset($currency->pending['signoff']) ? $currency->pending['signoff'] : 0),
       '#weight' => 4
     )
   );
+  return $form;
 }
 
 
@@ -414,12 +391,12 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
   if ($webform->path == 'transaction/%transaction/sign/%user_uid_optional') {
     $form['path']['#disabled'] = TRUE;
     $form['aspect']['#disabled'] = TRUE;
-    foreach(array('output', 'cid', 'description', 'payer', 'payee', 'amount', 'step-2', 'workflow') as $fieldname) {
+    foreach(array('output', 'currcode', 'description', 'payer', 'payee', 'worth', 'step-2', 'workflow') as $fieldname) {
       $form[$fieldname]['#access'] = FALSE;
     }
     $form['webform_fields'] = array(
       '#type' => 'markup',
-      '#value' => t('Use the following tokens: @tokens', array('@tokens' => '[payer], [payee], [description], [amount]')),
+      '#value' => t('Use the following tokens: @tokens', array('@tokens' => '[payer], [payee], [description], [worth]')),
     );
   }
   else{
@@ -427,6 +404,7 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
       'callback' => 'mcapi_webforms_ajax_settings',
       'wrapper' => 'form-wrapper'
     );
+    //this might need isset()...
     if ($form['workflow']['outgoing']['#default_value'] == TRANSACTION_STATE_PENDING ) {
       foreach (array('payer', 'payee', '2ndperson') as $participant) {
         if (isset($form[$participant])) {
@@ -438,17 +416,6 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
           );
         }
       }
-      $form['#validate'][] = 'mcapi_webform_pending_validate';
     }
   }
-}
-/*
- * Validate callback for webforms editing page
- * Ensures that pending forms will require signatures.
- */
-function mcapi_webform_pending_validate(&$element, $form_state) {
-  foreach (array('payer', 'payee', '2ndperson') as $participant) {
-    if (!empty($form_state['values'][$participant]['signature'])) return;
-  }
-  form_error($element, t('Pending transactions require that the payer, payee or 2ndperson sign the transaction'));
 }

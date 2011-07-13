@@ -141,51 +141,14 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#weight' => 5,
   );
 
+  //this section of the form allows the admin to handle the individual fields of the transaction form.
+  //the fields are handled here one in each tab, each field having some common settings and some specific ones.
   $form['webform_fields'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 6,
     '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
   );
-
-  $options = currency_select(currency_choose('initiate', 1));//that's uid 1 to make all currencies available
-  if (count($options) > 1) {
-    //special settings for cid
-    $form['cid'] = mcapi_webform_prefill_fields($webform, 'cid', t('Currency ID'));
-    $form['cid']['options'] = array(
-      '#title' => t('Limit choosable currencies to'),
-      '#description' => t('To not limit, check nothing.'),
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => isset($webform->data['cid']['options']) ? $webform->data['cid']['options'] : array(),
-    );
-    $form['cid']['widget'] = array(
-      '#title' => t('Widget'),
-      '#type' => 'radios',
-      '#options' => array(
-        'select' => t('Dropdown select box'),
-        'radios' => t('Radio buttons')
-      ),
-      '#default_value' => empty($webform->data['cid']['widget']) ? 'select' : $webform->data['cid']['widget']
-    );
-  }
-  else {
-    if (count($options) == 1) {
-      $form['cid']['common'] = array(
-        'preset' => array(
-          '#type' => 'value',
-          '#value' => array_pop(array_keys($options))
-        ),
-        'widget' => array(
-          '#value' => 'hidden',
-          '#type' => 'value',
-        ),
-        'required' => array(
-          '#value' => FALSE,
-          '#type' => 'value'
-        )
-      );
-    }
-  }
+  //the participants of the transaction are either payer/payee or 1stperson/2ndperson. This is called the 'aspect' of the form.
   $aspect = isset($form_state['values']['aspect']) ? $form_state['values']['aspect'] : $form['aspect']['#default_value'] ;
   if ($aspect == 3) {
     //special settings for payer and payee
@@ -244,25 +207,41 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     );
     $form['direction']['common']['preset']['#description'] = t("Either 'incoming' or 'outgoing'");
   }
-  
-  //special settings for amount
-  $form['amount'] = mcapi_webform_prefill_fields($webform, 'amount', t('Amount'));
-  $form['amount']['chars'] = array(
-    '#title' => t('Character width of the integer field'),
-    '#description' => t('Integer html width and maxlength attributes'),
-    '#type' => 'textfield',
-    '#default_value' => $webform->data['amount']['chars'],
-    '#size' => 2,
-    '#element_validate' => array('_element_validate_integer'),
-  );
 
   //special settings for description
   $form['description'] = mcapi_webform_prefill_fields($webform, 'description', t('Description'));
-  
+
+  //these are the field api fields which may have been added to the transaction entity
   $additional_fields = mcapi_webform_get_additional_form_fields();
+  //unset($additional_fields['worth']);
   foreach ($additional_fields as $name => $field) {
     $form[$name] = mcapi_webform_prefill_fields_additional($webform, $name, $field);
   }
+
+  //leaving this till last because its the hardest.
+  //the previous form elements each used the textfield widget to supply the default values.
+  //but for the value we want to use the worth widget.
+  //however because this isn't an entity form and
+  // webform isn't an entity to which the 'worth' field is attached, we shall have to call the widget and handle the data more manually
+  //first of all, treat it just like the other fields, above.
+  $form['worth'] = mcapi_webform_prefill_fields($webform, 'worth', t('Worth'));
+debug($webform);
+  //now change the widget for the default value
+  $form['worth']['common']['preset'] = mcapi_field_widget_form (array() ,array(), array() ,array(), 'und', array($webform->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
+  $form['worth']['common']['preset']['#element_validate'] = array('mcapi_webform_validate_worth');
+  debug($form['worth']['common']['preset']);
+
+  //we know about one additional_field, which is the value
+  $form['value']['#prefix'] = t('This form builder is for transfers in any one, but only one currency');
+
+  $form['worth']['common']['preset']['#type'] = 'worth_field';
+//debug($form['worth']);
+
+
+
+
+
+
 
   $form['submission'] = array(
     '#title' => t('Form submission'),
@@ -395,14 +374,16 @@ function mcapi_webforms_ajax_settings($form, &$form_state) {
 /*
  * wrapper function to build default settings form for additional fields
  */
-function mcapi_webform_prefill_fields_additional(&$webform, $key, $field) {
-  $element = _get_deepest_child($field);
-  $form = mcapi_webform_prefill_fields($webform, $key, $element['#title']);
-  if (!empty($element['#required'])) {
-    $form['common']['required']['#default_value'] = TRUE;
-    $form['common']['required']['#disabled'] = TRUE;
+function mcapi_webform_prefill_fields_additional($webform, $key, $field) {
+  //of course we want to ignore wrappers and fieldsets which help organise the webform
+  //and assume there's only one element per wrapper
+  $subelement = _get_deepest_child($field);
+  $element = mcapi_webform_prefill_fields($webform, $key, isset($subelement['#title']) ? $subelement['#title'] : t('Additional field'));
+  if (!empty($subelement['#required'])) {
+    $element['common']['required']['#default_value'] = TRUE;
+    $element['common']['required']['#disabled'] = TRUE;
   }
-  return $form;
+  return $element;
 }
 
 function mcapi_webforms_template_validate(&$element, &$form_state) {
@@ -437,4 +418,9 @@ function mcapi_edit_webform_submit($form, &$form_state) {
 }
 
 function mcapi_path_validate(&$element, $form_state) {
+}
+
+function mcapi_webform_validate_worth(&$element, &$form_state) {
+  debug($element);
+  debug($form_state['values']);
 }

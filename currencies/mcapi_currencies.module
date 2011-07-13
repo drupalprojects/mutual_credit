@@ -1,0 +1,158 @@
+<?php
+//replaces the variable 'default_currency' with an array of ctools exportable objects
+
+/*
+ * Implements ctools hook_ctools_plugin_directory
+ */
+function mcapi_currencies_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/export_ui';//directory
+  }
+}
+/*
+ * Implements ctools hook_ctools_plugin_api
+ */
+function mcapi_currencies_ctools_plugin_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi_currencies'),
+  );
+}
+
+function mcapi_currencies_menu() {
+
+  $items['currency/add'] = array(
+    'title' => 'Declare currency',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('currency_form'),
+    'access arguments' => array('declare currency'),
+    'type' => MENU_CALLBACK,
+    'file' => 'mcapi.inc',
+  );
+  $items['currency/%currency/edit'] = array(
+    'title' => 'Modify currency',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('currency_form', 1),
+    'access callback' => array('currency_access'),
+    'access arguments' => array('edit', 1),
+    'type' => MENU_CALLBACK,
+    'file' => 'mcapi.inc',
+  );
+  //this is supposed to be for development purposes only, and may not apply to some controllers
+  $items['admin/accounting/refresh/%currency'] = array(
+    'title' => 'Modify currency',
+    'page callback' => 'mcapi_balances_refresh',
+    'page arguments' => array(3),
+    'access arguments' => array('configure all currencies'),
+    'type' => MENU_CALLBACK,
+    'file' => 'mcapi.inc',
+  );
+  return $items;
+}
+/*
+ * Implements hook_menu_alter
+ * Gets rid of the menu item for editing the default currency variable
+ * which has been replaced by the ctools item
+ */
+function mcapi_currencies_menu_alter(&$items) {
+  unset($items['admin/accounting/currency']);
+}
+
+
+/*
+ * Implements ctools export_ui callback
+ */
+function mcapi_currencies_form(&$form, &$form_state) {
+  ctools_include('export'); //this is needed to load up the existing currency, at least on an ajax reload
+  form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
+  $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
+  if (empty($currency->name)) {
+    $currency = currency_default();
+    $currency->username = $GLOBALS['user']->name;
+    $currency->name = '';
+    $currency->format = '';
+    $currency->currcode = user_password();
+  }
+  else {
+    drupal_set_title( !empty($currency->name) ? $title = t("Edit currency '@name'", array('@name' => $currency->name)) : t('Declare currency') );
+  }
+  $form['#currency'] = $currency;
+
+
+  _mcapi_currency_form($form, $form_state, $currency);
+
+  $form['name']['#element_validate'] = array('mcapi_currency_validate_name');
+
+  $owner = empty($form_state['values']['username']) ? $currency->username : $form_state['values']['username'];
+  $owner = array_pop(user_load_multiple(array(), array('name' => $owner)))->name;
+  $form['username'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Declared by'),
+    '#maxlength' => 60,
+    '#autocomplete_path' => 'user/autocomplete',
+    '#default_value' => $owner,
+    '#element_validate' => array('mcapi_validate_username'),
+    '#required' => TRUE,
+    '#weight' => 4
+  );
+
+  //nasty design flaw around radio buttons which means ajax rebuilds them wrong
+  if (arg(0) == 'system') {
+    unset($form['accounting']['update_mode']['#title']);
+  }
+
+  if (isset($currency->currcode)) {
+    $form['buttons']['submit']['#value'] = t('Update');
+  }
+}
+
+function mcapi_currencies_permission() {
+  return array(
+    'configure all currencies' => array(
+      'title' => t('Configure all currencies'),
+      'description' => t('Edit the properties of any currency')
+    ),
+    'declare currency' => array(
+      'title' => t('Declare currency'),
+      'description' => t('Create a new currency'),
+    )
+  );
+}
+
+
+function transaction_validate_currency_access($form, $form_state) {debug('need to check each transactee can use this/these currencies');
+  $transaction = &$form_state['#transaction'];
+  $currency = currency_load($transaction->currcode);
+  $participants = array('payer', 'payer');
+  foreach ($participants as $participant) {
+    if (!currency_access('use', $currency, $transaction->$participant)) {
+      form_set_error($participant, t("!name is not permitted to use @currency", array(
+        '!name' => format_username(user_load($transaction->$participant)),
+        '@currency' => $currency->name
+      )));
+    }
+  }
+}
+
+
+
+  /*
+ * load a webform by name, using ctools
+ */
+function currencies_load_all() {
+  ctools_include('export');
+  $all = ctools_export_crud_load_all('mcapi_currencies');
+  //unpack them
+  foreach($all as $name => $row) {
+    $currencies[$name] = $row->data;
+  }
+  return $currencies;
+}
+
+/*
+ * forces a reload of currencies into the cache and static variable
+ */
+function clear_currency_cache(){
+  cache_clear_all('currencies', 'cache');
+  drupal_static_reset('currencies');
+}

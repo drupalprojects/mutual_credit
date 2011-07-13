@@ -56,7 +56,7 @@ function mcapi_mail_entity_update($type, $transaction) {
 }
 //calculates whether to send mail, according to user preferences, and builds and sends
 function mcapi_mail_send($op, $transaction) {
-  $currency = currency_load($transaction->cid);
+  $currency = currency_load($transaction->currcode);
   if (module_exists('mcapi_webforms')) {
     $webform = mcapi_webforms_load($transaction->type);
     $subject = $webform->data['email_template']['subject'];
@@ -116,7 +116,7 @@ function _mcapi_mail_text($key, $language = NULL, $variables = array(), $replace
       case 'body':
         $text =  t("[user:name],
 
-A transaction for [transaction:amount] has been saved with [transaction:partner]
+A transaction for [transaction:worth] has been saved with [transaction:partner]
 
 More details can be found at
 [transaction:uri]

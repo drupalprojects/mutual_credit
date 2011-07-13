@@ -1,19 +1,12 @@
 <?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
+module_load_include('field.inc', 'mcapi');
+
 /**
  * @file
- * transactions and currencies are fieldable entities, balances & other stats are in a cache table exposed to views.
+ * transactions  are fieldable entities, balances & other stats are in a cache table exposed to views.
  *
- * This .module file contains only the hooks and functions which might be called when the module is passive
- * If the module is doing anything requiring mutual_credit functionality as generating a block or a page, the inc is included
- *
- * NOTES ON THE TRANSACTION QUANTITY
- * Quantity is stored as a decimal in the DB for easy calculation
- * The transaction object stores the amount as a decimal fraction
- * In preprocessing  an hour currency the decimal is multiplied by 0.6 to become hours:minutes,
- * The theme_money function then attaches the icon or currency name
- *
- *
+ * This .module file contains only the hooks and functions which might be called when the module isn't actively required
  *
  */
 
@@ -31,7 +24,7 @@ function mcapi_help($section) {
   switch ($section) {
     case 'admin/help#transaction':
       return t('Defines a contentType called transactions, manages them and does the accounting.');
-    case 'admin/accounting/acknowledgements':
+    case 'admin/accounting':
       return '<p>'. t("This module, its development and implementations at !cforge,", array('!cforge' => l('Community Forge', 'http://communityforge.net')))  .' '.
         t("have been the full time commitment of one person since Spring 2008, and a second person since spring 2009.") . ' '.
         t("The results of this work are offered freely to all.") .'</p><p>'.
@@ -101,23 +94,18 @@ function mcapi_forms($form_id, $args) {
  */
 function mcapi_hook_info() {
   return array(
-    'transaction_info' => array()
+    'mcapi_info' => array(),
+    'mcapi_access' => array(),
   );
 }
 
-function mcapi_transaction_info($prop) {
+function mcapi_mcapi_info($prop) {
   $info = array(
     'states' => array(
       'unset' => t('Unset'),//this should never reach the database
       TRANSACTION_STATE_FINISHED => t('Finished'),
-      //TRANSACTION_STATE_ERASED => t('Erased'), //internal use only
-      //TRANSACTION_STATE_VALIDATING => t('Validating') //internal use only
-    ),
-    //access needs to have the same array keys as 'states'
-    'access' => array(
-      TRANSACTION_STATE_FINISHED => 'mcapi_access_finished',
-      TRANSACTION_STATE_ERASED => 'mcapi_access_erased',
-      TRANSACTION_STATE_VALIDATING => 'mcapi_access_validating',
+      TRANSACTION_STATE_ERASED => t('Erased'), //internal use only
+      TRANSACTION_STATE_VALIDATING => t('Validating') //internal use only
     ),
     'types' => array(
       'unspecified'
@@ -139,19 +127,11 @@ function mcapi_permission() {
   return array(
     'transact' => array(
       'title' => t('Transact'),
-      'description' => t('Use unrestricted currencies'),
+      'description' => t("Register exchanges with other members, subject each currency's permissions"),
     ),
     'manage all transactions' => array(
       'title' => t('Manage all transactions'),
       'description' => t('Retrospectively manage transactions'),
-    ),
-    'configure all currencies' => array(
-      'title' => t('Configure all currencies'),
-      'description' => t('Edit the properties of any currency'),
-    ),
-    'declare currency' => array(
-      'title' => t('Declare currency'),
-      'description' => t('Create a new currency'),
     ),
   );
 }
@@ -159,129 +139,24 @@ function mcapi_permission() {
 /**
  * special access function for transactions - NOT hook implementation
  * $ops can be array('view', 'update', 'erase')
- * User 1 cannot update or delete if the currency type doesn't allow
+ * Note some settings may even restric access to user 1
+ * this function assumes all transactions are public
  */
-function transaction_access($op, $transaction, $account = NULL) {if (!$transaction)ddebug_backtrace();
-  static $states;
+function transaction_access($op, $transaction, $account = NULL) {
+  module_load_include('admin.inc', 'mcapi', 'currencies');
+  if (module_exists('mcapi_access')) {
+    mcapi_access($op, $transaction, $account);
+  }
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-  $currency = currency_load($transaction->cid);
-  if (!$states) {
-    $states = mcapi_transaction_states('access');
+  foreach ($transaction->worth['und'] as $flow) {
+    $currency = currency_load($flow['currcode']);
+    $states = $currency->$op;
+    $function = $states[$transaction->state];
+    if (!$function($transaction, $account, $currency)) return;
   }
-  $function = $states[$transaction->state];
-  return $function($op, $transaction, $account, $currency);
-}
-
-function mcapi_access_finished($op, $transaction, $account, $currency) {
-  $participated = $account->uid == $transaction->payee || $account->uid == $transaction->payer;
-  $owner = $transaction->creator == $account->uid;
-  $accountant = user_access('manage all transactions');
-  switch ($op) {
-    case 'view'://users can always view their own pages
-      switch ($currency->extra['privacy']) {
-        case 0: return $participated;
-        case 1: return $participated || $accountant;
-        case 2: $callback = $currency->extra['access_callback'];
-          return $callback('view', $currency, $GLOBALS['user']->uid);
-        case 2: return $GLOBALS['user']->uid;
-        case 3: return TRUE;
-    }
-    case 'update':
-      if ($currency->extra['update_mode'] < 1) return;
-      switch ($currency->extra['user_editable_mode']) {
-        case 0:
-        case 1:
-        case 2: return $accountant;
-        case 3: return $accountant || $participated;
-      }
-    case 'erase':
-      if ($currency->extra['delete_mode'] < 1) return;
-      switch($currency->extra['user_editable_mode']) {
-        case 0: return $accountant;
-        case 1: return $accountant;
-        case 2: return $accountant;
-        case 3: return $accountant || $participated;
-      }
-  }
-}
-
-function mcapi_access_erased($op, $transaction, $account, $currency) {
-  switch ($op) {
-    case 'view':
-      return user_access('manage all transactions');
-    }
-}
-function mcapi_access_validating($op, $transaction, $account, $currency) {
-  return $GLOBALS['user']->uid == $transaction->creator;
-}
-
-/*
- * determine whether a user has permission to use/edit a currency
- * This could get rather complicated, and vary from system to system
- * Right now 
- * 
- */
-function currency_access($op, $currency, $uid = NULL) {
-  if (!$currency) {ddebug_backtrace();return FALSE;}
-  
-  if (empty($uid)) $uid = $GLOBALS['user']->uid;
-  switch ($op) {
-    case 'edit':
-      return $uid == $currency->uid || user_access('configure all currencies');
-    case 'view'://which is to say, view transactions in
-      switch($currency->extra['privacy']) {
-        case 0: return TRUE;
-        case 1: return currency_access('use', $currency, $uid);
-        case 2: return NULL; //can't be calculated here
-        case 3: return NULL;
-      }
-      //I"m not yet sure exactly what a user of the currency is?
-      //does it denote the right to use, which is thus far not stored in the db
-      //or does it denote that user has used?
-    case 'use':
-    case 'initiate':
-      $function = $currency->extra['access_callback'];
-      return $function == 'user_access' ? user_access('transact', user_load($uid)) : $function($op, $currency, $uid);
-  }
-}
-/*
- * determines which currencies a user can use
- */
-function currency_choose($op, $uid) {
-  $currencies = currencies_load();
-  foreach ($currencies as $currency) {
-    if (currency_access($op, $currency, $uid)) {
-      $currencies[$currency->cid] = $currency;
-    }
-  }
-  return $currencies;
-}
-function currency_select($currencies) {
-  foreach ($currencies as $currency) {
-    $selection[$currency->cid] = $currency->name;
-  }
-  return $selection;
-}
-
-/*
- * callback function for currency usage
- * viral spread means that anyone can use the currency, but only after someone has traded with them first.
- * So this function just returns true for 'initiate' if the user created or has used the currency
- * $ops can be
- * 'view' meaning view transactions in that currency
- * 'initiate' meaning start transactions in that currency
- * 'use' meaning you can have a balance
- */
-function currencies_access_viral($op, $currency, $uid) {
-  //return all the currencies which the user has ever used, or created
-  if ($currency->uid == $uid || $op == 'use') return TRUE;
-  if ($op == 'initiate' || $op == 'view') {
-    return db_query('SELECT xid FROM mcapi_transactions WHERE payer = :payer or payee = :payee',
-       array(':payer' => $uid, ':payee' => $uid)
-    )->execute()->fetchField();
-  }
+  return TRUE;
 }
 
 
@@ -299,54 +174,17 @@ function mcapi_theme($existing, $type, $theme, $path) {
         'transaction' => NULL,
         'view_mode' => 'certificate',
       )
+    ),
+    'worth_field' => array(
+      'variables' => array(
+        'worth' => array()
+      )
+    ),
+    'worth_widget' => array(
+      'render element' => 'element'
     )
   );
   return $items;
-}
-
-/*
- * This function might merit a 'mode' later on
- * $quantity should be a float, integer, array or string - it matters which
- */
-function mcapi_format_money($quantity, $cid) {
-  $currency = currency_load($cid);
-  $subdivision = '00';
-  //the static variable saves processing the icon every time
-  $formats = &drupal_static(__FUNCTION__);
-  if (!isset($formats[$cid])) {
-    if (strpos($currency->format, '@icon') !== FALSE) {
-      foreach($currency->field_image as $lang) {
-        foreach ($lang as $props) {
-          $props['path'] = $props['uri'];
-          continue 2;
-        }
-      }
-    }
-    $formats[$cid] = str_replace('@icon', isset($props) ? theme('image', $props) : '', $currency->format);
-  }
-  if (is_array($quantity)) {
-    $integer = array_shift($quantity);
-    $subdivision = array_shift($quantity);
-  }
-  elseif (is_numeric($quantity)) {
-    $num = $quantity + 0;
-    $integer = intval($num);
-    if ($num != $integer && $currency->divisions) {
-      $fraction = str_pad(fmod($quantity, 1) * 100, 2, '0');
-      if (is_array($currency->divisions)) {
-        $subdivision = $currency->divisions[$fraction];
-      }
-      else $subdivision = $fraction;
-    }
-  }
-  return strtr(
-    $formats[$cid],
-    array(
-      '@minus' => $quantity < 0 ? '-' :'',
-      '@integer' => $integer,
-      '@subdivision' => $subdivision
-    )
-  );
 }
 
 
@@ -369,41 +207,6 @@ function transaction_label($transaction){
 function currency_label($currency) {
   return $currency->name;
 }
-
-
-/**
- * load a single transaction, from the $xid
- * this is used to as a menu loader, so can't be in an inc file
- */
-function transaction_load($xid) {
-  $transaction = array_pop(transaction_controller('load', array($xid)));
-  return $transaction;
-}
-
-function currency_load($cid) {
-  $currencies = &drupal_static('currencies');
-  if (!$currencies) {
-    $currencies = refresh_currs();
-  }
-  return $currencies[$cid];
-}
-function currencies_load() {
-  $currencies = &drupal_static('currencies');
-  if (!$currencies) {
-    $currencies = refresh_currs();
-  }
-  return $currencies;
-}
-function refresh_currs(){
-  $currencies = &drupal_static('currencies');
-  if (!$currencies) {
-    $currencies = currency_controller('load', FALSE);
-    cache_set('currencies', $currencies);
-  }
-  return $currencies;
-}
-
-
 
 /*
  * takes an array of objects, with the nid as array keys and returns an array with just the titles
@@ -448,15 +251,15 @@ function mcapi_image_default_styles() {
  * build a render array for the transaction
  * not sure if this is needed
  */
-function transaction_view($transaction, $view_mode = 'certificate') {
+function transaction_view($transaction, $view_mode = 'certificate') {debug($transaction);
   //this is almost certainly a full page view, so I dare to set the title here
   $page_title = t('Transaction Certificate #@xid', array('@xid' => $transaction->xid));
   drupal_set_title($page_title);
-
+  $entities =  array($transaction->xid => $transaction);
   // This is only needed if there are fields on the transaction entity
-  field_attach_prepare_view('transaction', array($transaction->xid => $transaction), 'default');
+  field_attach_prepare_view('transaction', $entities, 'default');
+  entity_prepare_view('transaction', $entities);
 
-  entity_prepare_view('transaction', array($transaction->xid => $transaction));
   $build = array(
     '#theme' => 'transaction',
     '#transaction' => $transaction,
@@ -470,17 +273,20 @@ function transaction_view($transaction, $view_mode = 'certificate') {
  */
 function template_preprocess_transaction(&$arguments) {
   $transaction = $arguments['transaction'];
-
-  $arguments['theme_hook_suggestion'] = 'transaction__' . $transaction->cid;
   $arguments += array(
     'description' => $transaction->description,
     'payer' => format_username(user_load($transaction->payer)),
     'payee' => format_username(user_load($transaction->payee)),
-    'amount' => mcapi_format_money($transaction->quantity, $transaction->cid),
     'state' => $transaction->state,
     'recorded' => format_date($transaction->created, 'medium'),
     'type' => $transaction->type
   );
+  if (variable_get('mcapi_mixed_transactions', 0)) {
+    $arguments['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
+  }
+  foreach($transaction->worth['und'] as $delta => $worth) {
+    $arguments['worths'][] = theme('worth_field', array('worth' => $transaction->worth['und'][$delta]));
+  }
 }
 
 // this shouldn't be necessary, but how else to get a dynamic list of tokens?
@@ -514,36 +320,12 @@ function transaction_entity_builder($entity_type, $entity, $form, &$form_state) 
  */
 function transaction_all_submit($form, &$form_state) {
   //if (!empty($form_state['rebuild'])) return;
-  $transaction = transaction_controller('save', $form_state['#transaction'], TRUE);
+  $transaction = transaction_save($form_state['#transaction'], TRUE);
   if ($transaction) {
     field_attach_submit('transaction', $transaction, $form, $form_state);
   }
 }
 
-/*
- * this creates a nice default object, nicer than 'new stdClass'
- * but should I go ahead put a load of methods in here?
- * and how should this object be extended with other variables?
- * is there some kind of hook
- */
-class currency {
-  //these fields correspond to the datbase fields, but what to do with the fields which live serialized in $data?
-  //and why use this to create objects when the entitycontroller fetches existing objects from the database result?
-  //should this be in the entity controller?
-  //could do with some advice
-  public $cid;
-  public $name;
-  public $format;
-  public $divisions_conf;
-  public $extra = array();
-  public $uid;
-
-  //this runs every time a 'new currency' is created
-  //but what about when the currency is loaded from the db
-  public function __construct(){
-    $this->uid = $GLOBALS['user']->uid;
-  }
-}
 class transaction {
   //these fields correspond to the datbase fields, but what to do with the fields which live serialized in $data?
   //and why use this to create objects when the entitycontroller fetches existing objects from the database result?
@@ -553,82 +335,76 @@ class transaction {
   public $description;
   public $payer;
   public $payee;
-  public $cid;
-  public $quantity;
+  public $worth;
   public $type;
   public $state;
   public $extra = array();
   public $creator;
   public $created;
-  public $modifer;
+  public $modifier;
   public $modified;
 
-  //this runs every time a 'new currency' is created
-  //but what about when the currency is loaded from the db
+  //this runs every time a 'new transaction' is created
   public function __construct(){
     $this->creator = $GLOBALS['user']->uid;
     $this->state = 'unset';//this isn't one of the declared states and should cause an error if saved
     $this->type = 'unspecified';
     $this->extra = array();
+    $this->worth = array(
+      'und' => array(
+        0 => array(
+          'currcode' => '',
+          'quantity' => 0
+        )
+      )
+    );
   }
 }
+
 
 /*
  * INTERNAL API FOR MODULE DEVELOPERS
  * entity controllers must work comply
  *
  * This is where we interface with the entity controller
- * array transaction_controller('load', array(94), $conditions)
- * object transaction_controller('validate', $transaction)
- * object transaction_controller('save', $transaction)
- * array transaction_controller('get_cache', $uid)
- * //array transaction_controller('statement', $uid, $from, $to)
- * NULL transaction_controller('erase', $transaction)
- * float get_running_balance($xid, $uid, $cid)
- * int transaction_controller('count', $conditions)
- * and
- * array currency_controller('load', array(94), $conditions)
- * array currency_controller('save', $transaction)
- * NULL currency_controller('delete', $transaction) //only if there are no transactions left
- *
+ * array transaction_load(array(94), $conditions)
+ * object transaction_validate($transaction)
+ * object transaction_save($transaction)
+ * NULL transaction_erase($transaction)
  */
 
-//all this business with func_get_args is a bit horrible as it means, I think, we can't pass references.
-//so all calls to these functions need to expect a return;
-function transaction_controller() {
-  $args = func_get_args();
-  $function = array_shift($args);
-  return mcapi_controller('transaction', $function, $args);
+
+/**
+ * load a single transaction, from the $xid
+ * this is used to as a menu loader, so can't be in an inc file
+ */
+function transaction_load($xid) {
+  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+  $transactions = entity_get_controller('transaction')->load(array($xid));
+  return array_pop($transactions);
+}
+function transaction_validate($transaction) {
+  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+  return entity_get_controller('transaction')->validate($transaction);
+}
+function transaction_save($transaction) {
+  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+  return entity_get_controller('transaction')->save($transaction);
+}
+function transaction_erase($transaction) {
+  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+  return entity_get_controller('transaction')->erase($transaction);
 }
 
-function currency_controller() {
-  $args = func_get_args();
-  $function = array_shift($args);
-  return mcapi_controller('currency', $function, $args);
-}
-function mcapi_controller($entity_type, $function, $args) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
-  $method = array(entity_get_controller($entity_type), $function);
-  try{
-    $result = call_user_func_array($method, $args);
-  }
-  catch (Exception $e) {
-    drupal_set_message($e, 'error');
-    drupal_set_message('That was a caught exception');
-    return;
-  }
-  return $result;
-}
 
 //module_invoke_all uses array_merge and loses the keys.
 //so this function retrives the states using module_implements instead
 // takes either 'names' or 'access'
-function mcapi_transaction_states($field = 'name'){
+function mcapi_transaction_states(){
   $states = array();
-  $arg = $field == 'name' ? 'states' : 'access';
-  foreach (module_implements('transaction_info') as $module) {
-    $function = $module .'_transaction_info';
-    $states += $function($arg);
+  foreach (module_implements('mcapi_info') as $module) {
+    $function = $module .'_mcapi_info';
+    $states += $function('states');
   }
   return $states;
 }
@@ -643,3 +419,153 @@ function mcapi_views_api() {
     'path' => drupal_get_path('module', 'mcapi') .'/views',
   );
 }
+
+/*
+ * Implements hook_action_info
+ */
+function mcapi_action_info() {
+  return array(
+    'record_exchange_action' => array(
+      'type' => 'node',
+      'label' => t('Record Exchange'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+    )
+  );
+}
+/*
+ * Callback for action config
+ */
+function record_exchange_action_form($context) {
+  $transaction = new transaction;
+  if (isset($context['description'])) {
+    $transaction->description = $context['description'];
+    $transaction->payer = $context['payer'];
+    $transaction->payee = $context['payee'];
+    $transaction->worth = array(
+      'und' => array(
+        0 => array(
+          'currcode' => $context['currcode'],
+          'quantity' => $context['quantity']
+        )
+      )
+    );
+  }
+  //make a new transaction, and fill in from the defaults
+  //$transaction->description = $context['description'];
+  //this form should really have a validation function to ensure that at least one participant is provided
+  module_load_include('inc', 'mcapi');
+  $form['template'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('transaction template'),
+    '#description' => t('Leave one of the users blank to be replaced by the logged in user.').' '. t('Please ignore the additional fields...'),
+    'transaction' => transaction_form(array(), array('values' => $context), $transaction)
+  );
+
+  //I just can't figure out how to handle attached fields here
+  //it seems to rely on the form_state, which might mean invoking transaction_form in a different way
+  unset($form['template']['transaction']['buttons']);
+  //these need to be set
+  unset($form['template']['transaction']['state']);
+  unset($form['template']['transaction']['creator']);
+  unset($form['template']['transaction']['type']);
+  //tweak the form
+  $form['template']['transaction']['description']['#required'] = TRUE;
+  $form['template']['transaction']['worth']['#required'] = TRUE;
+  $form['template']['transaction']['#description'] = TRUE;
+  return $form;
+}
+/*
+ * submit callback for action config
+ */
+function record_exchange_action_submit($form, $form_state) {
+  return $form_state['values'];
+}
+/*
+ * callback to execute the action
+ */
+function record_exchange_action($node, $context) {
+  $transaction = new transaction;
+  $transaction->currcode = $context['currcode'];
+  $transaction->description = $context['description'];
+  $transaction->worth = $context['worth'];
+  $transaction->payer = $context['payer'];
+  $transaction->payee = $context['payee'];
+  $transaction->state = TRANSACTION_STATE_FINISHED; //NEED TO GET RID OF UNSET STATE
+
+    if (empty($transaction->payer)) {
+      $transaction->payer = $node->uid;
+    }
+    elseif (empty($transaction->payee)) {
+      $transaction->payee = $node->uid;
+    }
+debug($transaction);
+  transaction_save((object)$transaction);
+}
+/*
+ * implements hook_trigger_info
+ */
+function mcapi_trigger_info() {
+  return array(
+    'mcapi' => array(
+      'transaction_record' => array(
+        'label' => t('Record a new transaction in the database.'),
+      ),
+      'transaction_modify' => array(
+        'label' => t('Editing a transaction which already exists.'),
+      ),
+      'transaction_erase' => array(
+        'label' => t('Erase or delete a transaction.'),
+      ),
+    ),
+  );
+}
+
+/*
+ * validate callback for user id fields
+ * borrowed from node_validate, where it really should have been a reusable function like this.
+ * this is in the main module file where it can be found by both currency form and transaction form.
+ */
+function mcapi_validate_username(&$element, $form_state) {
+  $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
+  if (empty($value)) return;
+  foreach ($values as $value) {
+    $account = user_load_by_name($value);
+    if ($account->uid) continue;
+    form_error($element, t('The username %name does not exist.', array('%name' => $value)));
+  }
+}
+
+/*
+ * return one currency object
+ */
+function currency_load($currcode) {
+  $currencies = currencies_load();
+  if (isset($currencies[$currcode])) return $currencies[$currcode];
+  throw new Exception("Invalid currency requested: ".$currcode);
+}
+/*
+ * Load all the currencies from cache filter
+ * then optionally return them filtered for which ones an account can use.
+ */
+function currencies_load($account = NULL) {
+  $currencies = &drupal_static('currencies');
+  if (!$currencies) {//first time this page request.
+    $cache = cache_get('currencies');
+    if ($cache) $currencies = $cache->data;
+    else {
+      module_load_include('admin.inc', 'mcapi', 'currencies');
+      $currencies = currencies_recache();
+    }
+  }
+  if (empty($account)) return $currencies;
+   module_load_include('admin.inc', 'mcapi', 'currencies');
+  foreach ($currencies as $currcode => $currency) {
+    if (currency_access('use', $currency, $account)) {
+      $filtered[$currcode] = $currency;
+    }
+  }
+  return $filtered;
+}
+
+

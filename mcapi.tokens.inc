@@ -44,8 +44,9 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $name = user_load($transaction->modifier)->name;
         $replacements[$original] = $sanitize ? filter_xss($name) : $name;
         break;
-      case 'amount':
-        $replacements[$original] = mcapi_format_money($transaction->quantity, $transaction->cid);
+      case 'worth':
+        //could this be done with a render array?
+        $replacements[$original] = theme('worth_field', array('worth' => array('quantity' => $transaction->quantity, 'currcode' => $transaction->currcode)));
         break;
       case 'description':
         $replacements[$original] = $transaction->description;

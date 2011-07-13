@@ -17,30 +17,31 @@
  * $recorded        // date formatted using drupal's 'medium' date format
  * $payer           // name linked to payer profile
  * $payee           // name linked to payee profile
- * $amount          // formatted quantity.
+ * $worths          // an array of formatted transaction values (in different currencies)
  *
  * need to do some more work on the icon size
  * for now, you might want to include your own large-size graphic instead
  * using $transaction->quantity
- * tip: $currency = currency_load($transaction->cid);
+ * tip: $currency = currency_load($transaction->currcode);
  *
- *
+ * This template doesn't use normal template syntax because it's based on a sentence structure and needs to retain a coherent translatable string
  */
 
+$replacements = array(
+  '@recorded' => $recorded,
+  '!payer' => $payer,
+  '!payee' => $payee,
+  '!worth' => implode(',', $worths),
+  '@description' => $description,
+);
+
 if ($view_mode == 'summary') {
-  $replacements = array(
-    '@recorded' => $recorded,
-    '!payer' => $payer,
-    '!payee' => $payee,
-    '!amount' => $amount,
-    '@description' => $description,
-  );
   switch ($transaction->state) {
     case TRANSACTION_STATE_FINISHED:
-      print t("On @recorded, !payer gave !payee !amount for '@description'", $replacements);
+      print t("On @recorded, !payer gave !payee !worth for '@description'", $replacements);
       break;
     case TRANSACTION_STATE_ERASED:
-      print t("On @recorded, !payer did not give !payee !amount for '@description'. (DELETED)'", $replacements);
+      print t("On @recorded, !payer did not give !payee !worth for '@description'. (DELETED)'", $replacements);
       break;
   }
   return;
@@ -48,9 +49,9 @@ if ($view_mode == 'summary') {
 else {
   $date = t('On @date', array('@date' => $recorded));
   $movement = $state == TRANSACTION_STATE_FINISHED ?
-    t('!payer <strong>paid</strong> !payee', array('!payer' => $payer, '!payee' => $payee)) :
-    t('!payer <strong>will pay</strong> !payee', array('!payer' => $payer, '!payee' => $payee));
-  $sum = t('the sum of !amount', array('!amount' => '</p><p style="font-size:250%">'.$amount));
+    t('!payer <strong>paid</strong> !payee', $replacements) :
+    t('!payer <strong>will pay</strong> !payee', $replacements);
+  $sum = t('the sum of !worth', array('!worth' => '<p style="font-size:250%;">'. implode(',', $worths) .'</p>'));
   $reason = t('for !reason', array('!reason' => '<strong>'.$description.'</strong>'));
 
 

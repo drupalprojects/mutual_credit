@@ -16,7 +16,7 @@ function mcapi_views_data() {
     'field' => 'xid',
     'title' => t('Transactions'),
     'help' => t('Records of transactions between users'),
-//    'access query tag' => 'transaction_access',
+    'access query tag' => 'transaction_access_views',
     'defaults' => array(
       'field' => 'description',
     ),
@@ -83,10 +83,10 @@ function mcapi_views_data() {
     ),
   );
   $data['mcapi_transactions']['quantity'] = array(
-    'title' => t('Amount'), // The item it appears as on the UI,
+    'title' => t('value'), // The item it appears as on the UI,
     'help' => t('Number of units of currency transferred'),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_amount',
+      'handler' => 'views_handler_field_mcapi_value',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -108,7 +108,7 @@ function mcapi_views_data() {
       'handler' => 'views_handler_filter_mcapi_state',
     ),
   );
-  $data['mcapi_transactions']['cid'] = array(
+  $data['mcapi_transactions']['currcode'] = array(
     'title' => t('Currency ID'),
     'help' => t('The currency the transaction was denominated in'),
     'field' => array(
@@ -219,55 +219,9 @@ function mcapi_views_data_alter(&$items) {
 }
 
 
-
-
 //shorten the user select text boxes on the exposed views form
 //this could also be done by css but I'm not creating a file just for that
 function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payee']['#size'] = 30;
   $form['payer']['#size'] = 30;
-}
-
-
-/**
- * Field handler to provide simple renderer that allows linking to a user.
- */
-class views_handler_field_transactions extends views_handler_field {
-
-  function option_definition() {
-    $options = parent::option_definition();
-    $options['link_to_transaction'] = array('default' => TRUE);
-    return $options;
-  }
-
-  /**
-   * Provide link to transaction option
-   */
-  function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
-    $form['link_to_transaction'] = array(
-      '#title' => t('Link this field to its transaction'),
-      '#description' => t('This will override any other link you have set.'),
-      '#type' => 'checkbox',
-      '#default_value' => $this->options['link_to_transaction'],
-    );
-  }
-  function query(){
-    parent::query();
-    if (!empty($this->options['link_to_transaction'])) {
-      $this->add_additional_fields(array('xid'));
-    }
-  }
-
-  function render_link($data, $values) {
-    if (!empty($this->options['link_to_transaction']) && user_access('access user profiles') && $values->{$this->aliases['xid']} && $data !== NULL && $data !== '') {
-      $this->options['alter']['make_link'] = TRUE;
-      $this->options['alter']['path'] = "transaction/" . $values->{$this->aliases['xid']};
-    }
-    return $data;
-  }
-
-  function render($values) {debug('views_handler_field_transactions');
-    return $this->render_link(check_plain($values->{$this->field_alias}), $values);
-  }
 }

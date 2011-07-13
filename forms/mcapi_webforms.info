@@ -14,3 +14,4 @@ files[] = plugins/export_ui/mcapi_webform_ui.class.php
 
 dependencies[] = mcapi
 dependencies[] = ctools
+dependencies[] = user_chooser

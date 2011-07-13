@@ -9,3 +9,13 @@ files[] = default.controller
 files[] = mcapi.module
 files[] = mcapi.inc
 files[] = mcapi.install
+
+
+files[] = views/views_handler_field_mcapi_description.inc
+files[] = views/views_handler_field_transaction_links.inc
+files[] = views/views_handler_field_mcapi_trader.inc
+files[] = views/views_handler_field_mcapi_value.inc
+files[] = views/views_handler_field_mcapi_state.inc
+files[] = views/views_handler_filter_mcapi_state.inc
+files[] = views/views_handler_filter_mcapi_currency.inc
+files[] = views/views_handler_filter_mcapi_types.inc

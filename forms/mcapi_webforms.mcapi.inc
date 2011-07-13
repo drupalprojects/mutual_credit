@@ -30,9 +30,9 @@ function mcapi_webforms_default_mcapi_webforms() {
       'outgoing' => '0',
     ),
     'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-cid',
+      'webform_fields__active_tab' => 'edit-currcode',
     ),
-    'cid' => array(
+    'currcode' => array(
       'common' => array(
         'preset' => '1',
         'disable' => 0,
@@ -128,9 +128,9 @@ Amount: [amount]<br />',
       'outgoing' => '0',
     ),
     'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-cid',
+      'webform_fields__active_tab' => 'edit-currcode',
     ),
-    'cid' => array(
+    'currcode' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
@@ -227,7 +227,7 @@ for [description]<br />',
     'webform_fields' => array(
       'webform_fields__active_tab' => 'edit-amount',
     ),
-    'cid' => array(
+    'currcode' => array(
       'common' => array(
         'preset' => 1,
         'widget' => 'hidden',
@@ -324,7 +324,7 @@ for<br />
     'webform_fields' => array(
       'webform_fields__active_tab' => 'edit-amount',
     ),
-    'cid' => array(
+    'currcode' => array(
       'common' => array(
         'preset' => 1,
         'widget' => 'hidden',
@@ -421,7 +421,7 @@ for<br />
     'webform_fields' => array(
       'webform_fields__active_tab' => 'edit-payer',
     ),
-    'cid' => array(
+    'currcode' => array(
       'common' => array(
         'preset' => 1,
         'widget' => 'hidden',
