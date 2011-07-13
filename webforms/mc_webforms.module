@@ -196,7 +196,7 @@ function mc_webforms_elements() {
 /**
  * http://api.drupal.org/api/function/hook_block/6
  */
-function mc_webforms_block($op = 'list', $delta = 0, $edit = array()) {drupal_set_message( $op);
+function mc_webforms_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
     case 'list':
       return mc_webforms_block_list();

@@ -296,6 +296,7 @@ function mcapi_nodeapi(&$node, $op) {
         mcapi_notify($op, $node);
         break;
       case 'delete':
+        debug($node);
         mcapi_update_balances($node);
     }
   }

@@ -447,7 +447,7 @@ function _refresh_mc_cache($uid, $cid) {
 
 function _get_transactions($uid, $cid, $states = array(EXCHANGE_STATE_FINISHED, EXCHANGE_STATE_PENDING)) {
   $fields = array('n.uid', 'n.title', 'n.nid', 'e.payer_uid', 'e.payee_uid', 'e.quantity', 'e.state', 'n.created', 'e.exchange_type', 'e.cid');
-
+if (!$uid) ddebug_backtrace();
   foreach ($states as $state) {
     $state_filters[] = "e.state = " . $state;
   }

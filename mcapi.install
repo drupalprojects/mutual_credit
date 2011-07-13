@@ -33,14 +33,12 @@ function mcapi_install() {
     $perm .= ', exchange';
     db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", array(':perm'=>$perm, ':rid' => DRUPAL_AUTHENTICATED_RID));
   }
-  if (!variable_get('mc_subtypes', NULL)) {
-    variable_set('mc_subtypes', array(
-      1 => t('Claim'),
-      2 => t('Gift'),
-      4 => t('Invoice'),
-      8 => t('Pay')
-    ));
-  }
+  variable_set('mc_subtypes', array(
+    1 => t('Claim'),
+    2 => t('Gift'),
+    4 => t('Invoice'),
+    8 => t('Pay')
+  ));
   //here we set all the module weights together
   db_query("UPDATE {system} SET weight = -1 WHERE name = 'mcapi'");
   db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_webform_1stparty'");

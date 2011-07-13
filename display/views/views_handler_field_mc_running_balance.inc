@@ -11,9 +11,7 @@ class views_handler_field_mc_running_balance extends views_handler_field {
   function construct() {
     parent::construct();
     //this is added by something else, at least usually
-    //$this->additional_fields['cid'] = 'cid';
-
-    //THIS DOESN'T WORK but would be nice for hiding pending running balances
+    $this->additional_fields['cid'] = 'cid';
     $this->additional_fields['state'] = 'state';
   }
 
@@ -39,9 +37,8 @@ class views_handler_field_mc_running_balance extends views_handler_field {
   }
   
   function query() {
-    //this is needed because the address of this function implies a db field which doesn't exist
-    //see mc_display.views.inc $data['mc_exchanges']['participant']
     $this->ensure_my_table();
+    $this->add_additional_fields();
   }
 
   function render($values) {
