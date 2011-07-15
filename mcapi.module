@@ -10,6 +10,9 @@ module_load_include('field.inc', 'mcapi');
  *
  */
 
+function mcapi_form_alter(&$form, $form_state, $form_id) {
+  //$form['#action'] = 'system/ajax';
+}
 
 //states are mutually exclusive
 define ('TRANSACTION_STATE_FINISHED', 0);
@@ -58,6 +61,7 @@ function mcapi_menu_alter(&$items) {
   }
   unset($items['admin/accounting/transaction/edit/display']);
   unset($items['admin/accounting/currency/edit/display']);
+  unset($items['admin/accounting/transaction/fields/worth/delete']);
   //but we do want to manage the fields for two entity types on one page.
   $items['admin/accounting/currency/edit/fields']['title'] = 'Currency fields';
   $items['admin/accounting/transaction/edit/fields']['title'] = 'Transaction fields';
@@ -93,9 +97,11 @@ function mcapi_forms($form_id, $args) {
  * hook for modules to declare new transactions types and states
  */
 function mcapi_hook_info() {
+  module_load_include('inc', 'mcapi');
   return array(
     'mcapi_info' => array(),
     'mcapi_access' => array(),
+    'mcapi_permissions' => array(),
   );
 }
 
@@ -116,7 +122,24 @@ function mcapi_mcapi_info($prop) {
     )
   );
   return $info[$prop];
+}
 
+
+/*
+ * implements hook mcapi_permissions
+ * Declare the access callbacks for (transactions in) currencies
+ * each one must take a $transaction
+ */
+function mcapi_mcapi_permissions() {
+  return array(
+    'mcapi_access_participants_admin' => t('Only the two participants and admin'),
+    'mcapi_access_unrestricted' => t('Anyone, including anonymous users'),
+    'mcapi_access_authenticated' => t('Only authenticated users'),
+    'mcapi_access_participants' => t('Only the two participants'),
+    'mcapi_access_admin' => t("Only admin"),
+    //'mcapi_access_currency' => t('Only users with permission to use this currency'),
+    'mcapi_access_none' => t('Nobody')
+  );
 }
 
 /**
@@ -144,6 +167,7 @@ function mcapi_permission() {
  */
 function transaction_access($op, $transaction, $account = NULL) {
   module_load_include('admin.inc', 'mcapi', 'currencies');
+  module_load_include('inc', 'mcapi');
   if (module_exists('mcapi_access')) {
     mcapi_access($op, $transaction, $account);
   }
@@ -179,6 +203,12 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'variables' => array(
         'worth' => array()
       )
+    ),
+    'worth_fields' => array(
+      'render element' => 'element'
+    ),
+    'worth_widget_currcode' => array(
+      'render element' => 'element'
     ),
     'worth_widget' => array(
       'render element' => 'element'
@@ -542,6 +572,8 @@ function mcapi_validate_username(&$element, $form_state) {
 function currency_load($currcode) {
   $currencies = currencies_load();
   if (isset($currencies[$currcode])) return $currencies[$currcode];
+  return (object)array('name' => t('Please choose...'));
+  //not used for now
   throw new Exception("Invalid currency requested: ".$currcode);
 }
 /*
@@ -567,5 +599,4 @@ function currencies_load($account = NULL) {
   }
   return $filtered;
 }
-
 

@@ -134,7 +134,8 @@ function mcapi_accounting() {
 /**
  * All transaction forms should use this function as a basis using hook_forms
  */
-function transaction_form($form, $form_state, $transaction) {
+function transaction_form($form, &$form_state, $transaction) {
+
   //the currency chooser if needed is done by form_alter
   $form['xid'] = array(
     '#type'=> 'hidden',
@@ -199,7 +200,14 @@ function transaction_form($form, $form_state, $transaction) {
   //I'm just fed up of multistep forms, this will have to wait
   //the following doesn't retrieve default values out of form_state when we come back from step 2
   field_attach_form('transaction', $transaction, $form, $form_state);
-  debug($form['worth']);
+
+  //the default theming for multiple value fields is way over the top, so this module provides a cut down theme callback
+  if (count(element_children($form['worth']['und'])) > 1) {
+    $form['worth']['und']['#theme'] = 'worth_fields';
+    //for some reason the add more button is only heavier than the first element
+    $form['worth']['und']['add_more']['#weight'] = 6;
+  }
+
   $form['buttons']['#weight'] = 25;
 
   $form['buttons']['submit'] = array(
@@ -344,22 +352,6 @@ function mcapi_validate_ttype(&$element, $form_state) {
   form_error($element, t('Invalid transaction type.') .' '. t('Suspected hacking attempt!'));
 }
 
-/*
- * implements hook mcapi_permissions
- * Declare the access callbacks for (transactions in) currencies
- * each one must take a $transaction
- */
-function mcapi_mcapi_permissions() {
-  return array(
-    'mcapi_access_participants_admin' => t('Only the two participants and admin'),
-    'mcapi_access_unrestricted' => t('Anyone, including anonymous users'),
-    'mcapi_access_authenticated' => t('Only authenticated users'),
-    'mcapi_access_participants' => t('Only the two participants'),
-    'mcapi_access_admin' => t("Only admin"),
-    //'mcapi_access_currency' => t('Only users with permission to use this currency'),
-    'mcapi_access_none' => t('Nobody')
-  );
-}
 
 function mcapi_access_unrestricted() {
   return TRUE;

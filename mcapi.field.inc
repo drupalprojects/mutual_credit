@@ -10,6 +10,7 @@ function mcapi_field_info() {
       'settings' => array('allowed_values' => array(), 'allowed_values_function' => ''),
       'default_widget' => 'worth_widget',
       'default_formatter' => 'worth_widget', // This doesn't *have* to be the same name as default_widget's value, this is only coincidence
+      'translatable' => FALSE
     )
   );
 }
@@ -68,44 +69,89 @@ function mcapi_field_is_empty($item, $field) {
 }
 
 /*
- * implements hook_widget_form
+ * implements hook_field_widget_form
  * processes the formAPI item
  * not worrying about addanother right now
  * not passing by reference at all because it isn't necessary
  * and screws up generating the pseudo fields in the webforms module, see _mcapi_edit_webform
  */
 //$settings = $form_state['field'][$instance['field_name']][$langcode]['field']['settings'];
-function mcapi_field_widget_form($form, $form_state, $field, $instance, $langcode, $items, $delta, &$element) {
-  //in case of ajax we'll need something like this to get the default value from the form_state
-//  $default = isset($form_state['values'][$element['#field_name']]) ?
-//    $form_state['values'][$element['#field_name']] :
-//   (isset($items[$delta]) ? $items[$delta] : array('quantity' => 0));
-
+function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
 
   $element['integer'] = array(
     '#title' => t('Units'), //this is only ever seen on the error message anyway
     '#type' => 'textfield',
-    '#default_value' => isset($items[$delta]) ? intval($items[$delta]['quantity']) : 0,//not sure where this comes from yet
     '#size' => 4,
     '#maxlength' => 4,
     '#theme_wrappers' => array(),
   );
 
   $currencies = currencies_load($GLOBALS['user']); //needs to be for this current user
-  //if we know the currency we can format it nicely, otherwise we need to put a select widget
-
-  if (count($currencies) == 1 || isset($element['#currcode'])) {//the widget knows what currency to work in.
+  //if we are not offering a choice of currencies we can format it nicely, otherwise we need to put a select widget
+  if (count($currencies) == 1 || !empty($element['#currcode'])) {//the widget knows what currency to work in.
     $currcode = !empty($element['#currcode']) ? $element['#currcode'] : key($currencies);
     $element['currcode'] = array(
       '#type' => 'hidden',
-      '#default_value' => isset($element['#currcode']) ? $element['#currcode'] : $currcode,
+      '#default_value' => $currcode,
     );
-    $currency = currency_load($currcode);
+    $element['#theme'] = 'worth_widget_currcode';
+  }
+  else{//the widget offers a selection of currencies
+    $element['currcode'] = array(
+      '#type' => 'select',
+      '#options' => currency_select($currencies),
+      '#weight' => -1,
+      '#ajax' => array(
+        'callback' => 'mcapi_ajax_worth',
+        'wrapper' => 'edit-worth-und-'.$delta
+      ),
+    );
+    $element['#theme'] = 'worth_widget';
+  }
+  $element['#element_validate'] = array('validate_worth');
+  $element['#process'] = array('mcapi_field_widget_process');
+  return $element;
+}
+
+/*
+ * form process callback
+ * this is run during the ajax rebuild, whereas hook_field_widget_form isn't
+ * just processes one widget at a time
+ */
+function mcapi_field_widget_process($element, $form_state, $form) {
+  file_put_contents('debug.txt', print_r($form_state, 1));
+  //this isn't working at all, see below
+  $default = !empty($form_state['values'][$element['#field_name']]['und'][$element['#delta']]) ?
+    $form_state['values'][$element['#field_name']]['und'][$element['#delta']] :
+   (isset($element['#value']) ? $element['#value'] : array('quantity' => 0, 'currcode' => '', 'division' => '00'));
+
+  if (arg(0) == 'system') {
+    //'input' works for ajax
+    $default = $form_state['input']['worth']['und'][$element['#delta']];
+  }
+  elseif(isset($form_state['build_info']['args'])) {
+    //this is for the transaction edit form
+    $default = $form_state['build_info']['args'][0]->worth['und'][$element['#delta']];
+  }
+  else {
+    //debug($element); //TEMP MEASURE!
+    //applies if there is only one currency
+    $default['currcode'] = isset($element['currcode']['#default_value']) ? $element['currcode']['#default_value'] : '';
+  }
+
+  debug($default);
+
+  $element['integer']['#default_value'] = intval($default['quantity']);
+  $element['currcode']['#default_value'] = $default['currcode'];
+  //handle the divisions if a currency is selected or chosen
+  if (!empty($default['currcode'])) {
+
+    $currency = currency_load($default['currcode']);
     //if any currency on the form has subdivisions then output this field
-    if (!empty($currency->divisions_setting)) {
+    if (!empty($currency->divisions)) {
       $element['division'] = array(
         '#title' => t('Fraction'),
-        '#default_value' => isset($items[$delta]) ? str_pad(fmod($items[$delta]['quantity'], 1) * 100, 2, '0', STR_PAD_LEFT) : '00',
+        '#default_value' => str_pad(fmod($default['quantity'], 1) * 100, 2, '0', STR_PAD_LEFT),
         '#theme_wrappers' => array(),
       );
       if ($currency->divisions_setting == '00') {
@@ -125,20 +171,17 @@ function mcapi_field_widget_form($form, $form_state, $field, $instance, $langcod
       }
     }
   }
-  else{//the widget offers a selection of currencies
-    $element['currcode'] = array(
-     // '#title' => t('Currency'),
-      '#type' => 'select',
-      '#options' => currency_select($currencies),
-      '#weight' => -1,
-      '#default_value' => isset($items[$delta]) ? $items[$delta]['currcode'] : '',//not sure where this comes from yet
-    );
-  }
-  $element['#element_validate'] = array('validate_worth');
-  $element['#attributes'] = array('id' => 'worth-widget');
-  $element['#theme_wrappers'] = array('form_element');
-  $element['#theme'] = 'worth_widget';
   return $element;
+}
+
+//ajax callback for form widget
+//returns widget formatted according to selected currency
+function mcapi_ajax_worth($form, $form_state) {
+  //set the ajax target wrapper to the id of the element above
+  $trigger = $form_state['triggering_element'];
+  $parent_count = count($trigger['#array_parents']);
+  $delta = $trigger['#array_parents'][$parent_count-2];
+   return $form['worth']['und'][$delta];
 }
 
 /*
@@ -186,7 +229,7 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
 
 /*
  * element validation callback
- * converts the integer & division into one float vale
+ * converts the integer & division into one float value, ready for submission
  */
 function validate_worth(&$element, &$form_state) {
   $division = NULL;
@@ -242,42 +285,55 @@ function theme_worth_field(&$variables) {
 }
 
 
+/*
+ * Default implementation of theme 'worth_fields'
+ */
+function theme_worth_fields(&$variables) {
+  $element = $variables['element'];
+  $children = element_children($element);
+  $element['add_more']['#weight'] = count($children);
+  $output = '';
+  foreach ($children as $key) {
+    $output .= drupal_render($element[$key]);
+  }
+  return $output;
+}
 
 /*
- * Default implementation of theme 'worth_widget'
+ * Default implementation of theme 'worth_widget_currcode'
+ * for when the currency code is fixed
  */
-function theme_worth_widget(&$variables) {
+function theme_worth_widget_currcode($variables) {
   $element = &$variables['element'];
-  if (!empty($element['currcode']['#default_value'])) {
-    debug($variables['element']['currcode']);
-    //there had better be a default_value
-    $format = currency_load($element['currcode']['#default_value'])->format;
-  }
-  else {
-    $format = '@integer';
-  }
-
-  if (isset($element['currcode']['#options'])) {
-    drupal_add_css('#'.$element['currcode']['#id'].'{float:left;}', array('type' => 'inline'));
-     if (empty($element['currcode']['#default_value'])) {
-       $element['currcode']['#options'] = array(t('Choose currency...')) + $element['currcode']['#options'];
-     }
-    //use a neutral format, prefixed by the currency select widget
-    //hopefully the ajax will reload this bit of the form.
-    $format = drupal_render($element['currcode']) . $format;
-  }
+  $currency = currency_load($element['currcode']['#default_value']);
   return strtr(
-    $format,
+   $currency->format, //there better had be a default_value
     array(
       '@minus' => '',
-      '@integer' => drupal_render($variables['element']['integer']),
-      '@subdivision' => !empty($variables['element']['division']) ? drupal_render($variables['element']['division']) : '',
+      '@integer' => drupal_render($element['integer']),
+      '@subdivision' => !empty($element['division']) ? drupal_render($element['division']) : '',
     )
   );
 }
+
+/*
+ * Default implementation of theme 'worth_widget_currcode'
+ * for when the currency code is undetermined
+ * we use a table just to keep disparate form widgets lined up
+ */
+function theme_worth_widget($variables) {
+  $variables['element']['currcode']['#options'] = array(t('Choose currency...')) + $variables['element']['currcode']['#options'];
+  $row = array('data' => array(drupal_render($variables['element']['currcode']), drupal_render($variables['element']['integer'])));
+
+  if (!empty($variables['element']['division'])) {
+    $row['data'][] = drupal_render($variables['element']['division']);
+  }
+  return theme('table', array('rows' => array($row), 'attributes' => array('id' => 'edit-worth-und-'. $variables['element']['#delta'])));
+}
+
 function currency_select($currencies) {
-  foreach ($currencies as $currency) {
-    $selection[$currency->info['currcode']] = $currency->name;
+  foreach ($currencies as $currcode => $currency) {
+    $selection[$currcode] = $currency->name;
   }
   return $selection;
 }
@@ -285,4 +341,21 @@ function currency_select($currencies) {
 function clear_def_cur() {
   cache_clear_all('currencies', 'cache');
   variable_del('currencies_default');
+}
+
+
+/*
+ * implements hook_form_field_ui_field_edit_form_alter
+ * remove the default value from the field settings form
+ */
+function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
+  unset ($form['instance']['default_value_widget']);
+  debug($form);
+  $max = count(currencies_load());
+  $form['field']['cardinality']['#title'] = t('Number of currencies per transaction.');
+  $form['field']['cardinality']['#description'] = "Using more than one is possible, but more work is needed to make this user-friendly, since many ways are possible.";
+  $form['field']['cardinality']['#options'] = array(
+    1 => 1,
+    $max => $max
+  );
 }

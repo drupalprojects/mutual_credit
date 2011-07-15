@@ -9,6 +9,8 @@ module_load_include('inc', 'mcapi');
  * main form builder, starts by building the base form in the mcapi module
  */
 function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user = NULL) {
+  //only show one currency field 
+  $form_state['field']['worth']['und']['items_count'] = 0;
   //reject if the transaction isn't in one of the acceptable states
   //because of a problem rendering checkboxes with value 0, the options were saved using the state names as keys, not the integer constants
   //so we have to look them up again
@@ -102,20 +104,10 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     array_unshift($form['#validate'], 'mcapi_webforms_validate_2ndperson');
   }
   
-  //amount is two subfields, integer and division, and replaces quantity element
-  unset($form['quantity']);
-  $form['amount'] = array();
-  //the mcapi_amount element type writes a 'quantity' float back into the form_state
-  //when we declare it here we are pretending it's a normal field, but in the processing, it becomes 2 fields
-  $form['amount']['#type'] = 'mcapi_amount';
-  $form['amount']['#default_value'] = $transaction->quantity;
-  $form['amount']['#chars'] =  !empty($webform->data['amount']['chars']) ? $webform->data['amount']['chars'] : 6;
-  mcapi_webform_default_value($form['amount'], $webform->data['amount']);
-  $form['amount']['#id'] = $webform->name .'-amount';
-  $form['amount']['#currcode'] = isset($form['currcode']['#default_value']) ? $form['currcode']['#default_value'] : $form['currcode']['#value'];
-  $form['#prefix'] = "<style>.amount div{display:inline;}</style>";
   //description
   mcapi_webform_default_value($form['description'], $webform->data['description']);
+
+  
   //save button
   if (strpos($webform->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -130,6 +122,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
       '#value' => t('Back'),
     );
   }
+
   //this may help with the validation and submission
   $form_state['#webform'] =  $webform;
   $form['#theme'] = 'mcapi_webform';
@@ -185,15 +178,13 @@ function mcapi_webform_collect_tokens(&$form, &$webform) {
     $tokens[] = '2ndperson';
   }
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
-  foreach (mcapi_webform_get_additional_form_fields() as $fieldname => $field) {
-    $tokens[$fieldname] = $fieldname;
-  }
-  return $tokens;
+  $fields = db_query("SELECT field_name FROM {field_config_instance} WHERE bundle = 'transaction' AND deleted = 0")->fetchCol();
+  return $tokens + drupal_map_assoc($fields);
 }
 
 function mcapi_webform_prepare_tokens(&$form, &$form_state) {
   $form['#replacements'] = array();
-  //this way we only render and replace the fields actually used.
+  //this way we only render and replace the fielfds actually used.
   if ($form_state['step'] == 1) {
     foreach ($form['#tokens'] as $fieldname) {
       if (strpos($form['#template'], "[$fieldname]") !== FALSE) {
@@ -236,7 +227,9 @@ function mcapi_webform_remove_theme_wrapper(&$field){
     $field['#theme_wrappers'] = array();
   }
   foreach(element_children($field) as $fieldname) {
-    mcapi_webform_remove_theme_wrapper($field[$fieldname]);
+    if (!empty($field[$fieldname]['#type'])) {
+      mcapi_webform_remove_theme_wrapper($field[$fieldname]);
+    }
   }
 }
 

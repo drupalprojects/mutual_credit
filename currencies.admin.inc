@@ -104,6 +104,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
   unset($states['unset'], $states[-2]);
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_permissions');
+  debug(module_implements('mcapi_permissions'));
   foreach (array('view' => t('View'), 'update' => t('Update'), 'erase' => t('Erase')) as $op => $name) {
     $form[$op] = array(
       '#title' => $name,
@@ -267,8 +268,8 @@ function mcapi_validate_currcode(&$element, $form_state) {
   }
 }
 
-function mcapi_currencies_form_validate() {
-  debug('mcapi_currencies_form_validate');
+function _mcapi_currencies_form_validate() {
+  debug('mcapi_currencies_form_validate function is empty');
 }
 
 
@@ -331,6 +332,10 @@ function mcapi_use_currency() {
 function currencies_recache() {
   if (module_exists('mcapi_currencies')) {
     $currencies = currencies_load_all();
+    //set the max number of currencies you pan pay with on one form
+    $field = field_read_field('worth');
+    $field['cardinality'] = count($currencies);
+    field_update_field($field);
   }
   else {
     module_load_include('admin.inc', 'mcapi', 'currencies');
