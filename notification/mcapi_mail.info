@@ -1,5 +1,5 @@
 ; $Id: 
-name = Mutual Credit mail notifications
+name = Mail notifications
 description = User settings and mail templates for transaction notification
 package = Mutual Credit
 core = 7.x

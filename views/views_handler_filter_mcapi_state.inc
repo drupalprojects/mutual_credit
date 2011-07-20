@@ -19,7 +19,7 @@ class views_handler_filter_mcapi_state extends views_handler_filter {
   }
 
   function get_value_options() {
-    $this->value_options = module_invoke_all('mcapi_info', 'states');
+    $this->value_options = mcapi_transaction_states();
   }
 
   function option_definition() {
@@ -34,19 +34,12 @@ class views_handler_filter_mcapi_state extends views_handler_filter {
       // Initialize the array of possible values for this filter.
       $this->get_value_options();
     }
-    if (!empty($form_state['exposed'])) {
-      // Exposed filter: use a select box to save space.
-      $filter_form_type = 'select';
-    }
-    else {
-      // Configuring a filter: use radios for clarity.
-      $filter_form_type = 'radios';
-    }
     $form['value'] = array(
-      '#type' => $filter_form_type,
+      '#type' => 'select',
       '#title' => t('State'),
       '#options' => $this->value_options,
       '#default_value' => $this->value,
+      '#multiple' => TRUE
     );
     if (!empty($this->options['exposed'])) {
       $identifier = $this->options['expose']['identifier'];
@@ -83,30 +76,5 @@ class views_handler_filter_mcapi_state extends views_handler_filter {
     $this->options['expose']['operator_id'] = '';
     $this->options['expose']['label'] = t('State');
     $this->options['expose']['required'] = TRUE;
-  }
-
-  function query() {
-    $this->ensure_my_table();
-    $field = "$this->table_alias.$this->real_field";
-
-    if (empty($this->value)) {
-      if ($this->accept_null) {
-        $or = db_or()
-          ->condition($field, 0, '=')
-          ->condition($field, NULL, 'IS NULL');
-        $this->query->add_where($this->options['group'], $or);
-      }
-      else {
-        $this->query->add_where($this->options['group'], $field, 0, '=');
-      }
-    }
-    else {
-      if (!empty($this->definition['use equal'])) {
-        $this->query->add_where($this->options['group'], $field, 1, '=');
-      }
-      else {
-        $this->query->add_where($this->options['group'], $field, 0, '<>');
-      }
-    }
   }
 }

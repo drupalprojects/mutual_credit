@@ -68,7 +68,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
         'wrapper' => 'mcapi-currency-form',
       ),
     ),
-    'delete_mode' => array(
+    'erase_mode' => array(
       '#title' => t('Delete mode'),
       '#type' => 'radios',
       '#options' => array(
@@ -76,7 +76,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
         1 => t('Mark deleted'),
         2 => t('Remove all traces from the database (not from backups)'),
       ),
-      '#default_value' => $currency->accounting['delete_mode'],
+      '#default_value' => $currency->accounting['erase_mode'],
       '#weight' => 2,
       '#ajax' => array(
         'callback' => 'currency_form_ajax',
@@ -94,7 +94,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#weight' => 10,
   );
   //alter the options according to what is set
-  if ($currency->accounting['delete_mode'] == 0) {
+  if ($currency->accounting['erase_mode'] == 0) {
     unset($form['accounting']['update_mode']['#options'][1]);
     if ($form['accounting']['update_mode']['#default_value'] == 1) {
       $form['accounting']['update_mode']['#default_value'] = 0;
@@ -104,7 +104,6 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
   unset($states['unset'], $states[-2]);
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_permissions');
-  debug(module_implements('mcapi_permissions'));
   foreach (array('view' => t('View'), 'update' => t('Update'), 'erase' => t('Erase')) as $op => $name) {
     $form[$op] = array(
       '#title' => $name,
@@ -146,8 +145,11 @@ function mcapi_currency_form($form, &$form_state){
   form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
   //by using a hook here instead of form_alter, we leave form_alter available for other
   $preset = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
+  $form['info']['currcode'] = array(
+    '#type' => 'hidden',
+    '#value' => substr(variable_get('site_name', 'drupal7'), 0, 7)
+  );
   _mcapi_currency_form($form, $form_state, $preset);
-
   return $form;
 }
 //validate is in currencies.admin.inc because it's the same for one or many currencies
@@ -156,18 +158,18 @@ function mcapi_currency_form($form, &$form_state){
  * saves the currency as a variable
  */
 function mcapi_currency_form_submit($form, $form_state) {
-  clear_currency_cache();
   //save the currency settings as a single nested array
   $values = $form_state['values'];
   unset($values['form_id'], $values['form_token'], $values['submit'], $values['form_build_id'], $values['buttons']);
   variable_set('currency_default', $values);
+  currencies_recache();
 }
 
 /*
  * callback from ctools export_ui plugin
  */
 function mcapi_currencies_form_submit($form, &$form_state) {
-  clear_currency_cache();
+  currencies_recache();
   //I would have thought this database key would have been provided automacically
   //since the field was created automatically
   $form_state['item']->currcode = $form_state['values']['info']['currcode'];
@@ -227,7 +229,7 @@ function _currency_divisions_array($string) {
  * Validate callback for currency form 'update_mode' element
  */
 function mcapi_currency_validate_update_mode(&$element, $form_state) {
-  if ($element['#value'] == 1 && $form_state['values']['delete_mode'] == 0) {
+  if ($element['#value'] == 1 && $form_state['values']['erase_mode'] == 0) {
     form_error($element, t('Accounting standards') .' '. t('Update mode is incompatible with delete mode'));
   }
 }
@@ -237,22 +239,11 @@ function mcapi_currency_validate_update_mode(&$element, $form_state) {
  * Checks for duplicate currency names
  * may not be necessary with ctools
  */
-function mcapi_currency_validate_name(&$element, $form_state) {debug('skipping old test for duplicate currency name');return;
-  if (!isset($form_state['values']['currcode']) || $form_state['values']['currcode'] == 0) return;
+function mcapi_currency_validate_name(&$element, $form_state) {
   $element['#value'] = check_plain($element['#value']);
   if (!module_exists('mcapi_currencies')) return;
-  $currcode = $form_state['values']['currcode'];
-  //check that the title is unique amongst currencies
-  $count = db_select('mcapi_currencies', 'c')
-  ->fields('c', array('currcode'))
-  ->condition('name', $element['#value'])
-  ->condition('currcode', $currcode, '<>')
-  ->execute()->fetchField();
-  if ($count > 0) {
-    form_set_error($element, t('Another currency called !name already exists.', array(
-      '!name' => l($element['#value'], 'currency/' . $currcode)
-    )));
-  }
+  //should check for dupes but this is tricky actually given this is used for creating and editing.
+  return; //will rely on drupal exception handling
 }
 
 
@@ -268,10 +259,6 @@ function mcapi_validate_currcode(&$element, $form_state) {
   }
 }
 
-function _mcapi_currencies_form_validate() {
-  debug('mcapi_currencies_form_validate function is empty');
-}
-
 
 /*
  * Functions to handle the default currency, if mcapi_currencies isn't installed
@@ -280,13 +267,15 @@ function currency_default() {
   module_load_include('inc', 'mcapi');
   $def = variable_get('currency_default', array(
     //default currency name is taken from the site_name at the moment it's first called
-    'currcode' => substr(variable_get('site_name', 'blah'), 0, 8),
+    'info' => array(//this structure anticipates ctools and mcapi_currencies.module
+      'currcode' => substr(variable_get('site_name', 'blah'), 0, 8)
+    ),
     'name' =>  t('Community Coins'),
     'format' => '@minus<strong>CC</strong>@integer:@subdivision',
     'divisions_setting' => "0|00\n50|30 mins",
     'accounting' => array(
       'update_mode' => 0,
-      'delete_mode' => 0
+      'erase_mode' => 0
     ),
     'creator' => 1,
     'membership_callback' => 'mcapi_use_currency',
@@ -330,6 +319,7 @@ function mcapi_use_currency() {
 
 //put the currencies back in the cache
 function currencies_recache() {
+  cache_clear_all('currencies', 'cache');
   if (module_exists('mcapi_currencies')) {
     $currencies = currencies_load_all();
     //set the max number of currencies you pan pay with on one form
@@ -338,7 +328,6 @@ function currencies_recache() {
     field_update_field($field);
   }
   else {
-    module_load_include('admin.inc', 'mcapi', 'currencies');
     $currency = currency_default();
     $currencies[$currency->currcode] = $currency;
   }

@@ -1,10 +1,11 @@
 <?php
+
 /*
  * This is the form-builder form
  * For every field in the transaction form, this form allows it to be configured.
  * Its not geometrically perfect, but covers a lot of use cases without getting too complicated
  */
-function _mcapi_edit_webform(&$form, &$form_state) {
+function _mcapi_edit_webform(&$form, &$form_state) {debug($form_state['build_info']);
   $webform = &$form_state['item'];
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
@@ -225,9 +226,9 @@ function _mcapi_edit_webform(&$form, &$form_state) {
   // webform isn't an entity to which the 'worth' field is attached, we shall have to call the widget and handle the data more manually
   //first of all, treat it just like the other fields, above.
   $form['worth'] = mcapi_webform_prefill_fields($webform, 'worth', t('Worth'));
-debug($webform);
+  $form_state = array(); //because it must be passed by ref
   //now change the widget for the default value
-  $form['worth']['common']['preset'] = mcapi_field_widget_form (array() ,array(), array() ,array(), 'und', array($webform->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
+  $form['worth']['common']['preset'] = mcapi_field_widget_form(array(), $form_state, array() ,array(), 'und', array($webform->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
   $form['worth']['common']['preset']['#element_validate'] = array('mcapi_webform_validate_worth');
   debug($form['worth']['common']['preset']);
 
@@ -386,41 +387,4 @@ function mcapi_webform_prefill_fields_additional($webform, $key, $field) {
   return $element;
 }
 
-function mcapi_webforms_template_validate(&$element, &$form_state) {
-  $form_state['values']['templates']['template-1'] = filter_xss($element['#value'], array('a', 'p', 'br', 'font', 'style', ));
-}
 
-function mcapi_edit_webform_validate($form, &$form_state) {
-  $values = &$form_state['values'];
-  unset($values['form_id'], $values['form_token'], $values['op'], $values['form_build_id'], $values['submit'], $values['xfid']);
-  //we need to start with an existing ctools object which contains essential default properties
-
-  $webform = empty($form_state['item']) ? ctools_export_crud_new('mcapi_webforms') : $form_state['item'];
-  $webform->name = $values['info']['name'];//this isn't editable at the moment
-  $webform->path = $values['path'];
-  unset($values['name'], $values['path']);
-  $webform->data = $values;
-  $form_state['item'] = $webform;
-}
-/*
- * element validate callback
- * make sure at least one incoming state is chosen for the workflow
- */
-function webform_workflow_incoming_validate(&$element, $form_state) {
-  if (!array_filter($form_state['values']['workflow']['incoming'])) {
-    form_error($element, t('At least one incoming state must be selected'));
-  }
-}
-
-//I think this is completely wrong, but I just couldn't get ctools to work without proper documentation
-function mcapi_edit_webform_submit($form, &$form_state) {
-  $form_state['redirect'] = 'admin/accounting/webforms'; //where the menu_rebuild is run
-}
-
-function mcapi_path_validate(&$element, $form_state) {
-}
-
-function mcapi_webform_validate_worth(&$element, &$form_state) {
-  debug($element);
-  debug($form_state['values']);
-}

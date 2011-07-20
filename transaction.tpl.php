@@ -31,7 +31,7 @@ $replacements = array(
   '@recorded' => $recorded,
   '!payer' => $payer,
   '!payee' => $payee,
-  '!worth' => implode(',', $worths),
+  '!worth' => $worths,
   '@description' => $description,
 );
 
@@ -51,7 +51,7 @@ else {
   $movement = $state == TRANSACTION_STATE_FINISHED ?
     t('!payer <strong>paid</strong> !payee', $replacements) :
     t('!payer <strong>will pay</strong> !payee', $replacements);
-  $sum = t('the sum of !worth', array('!worth' => '<p style="font-size:250%;">'. implode(',', $worths) .'</p>'));
+  $sum = t('the sum of !worth', array('!worth' => '<p style="font-size:250%;">'. $worths .'</p>'));
   $reason = t('for !reason', array('!reason' => '<strong>'.$description.'</strong>'));
 
 

@@ -31,35 +31,39 @@ function mcapi_views_entity_delete($type, $entity) {
 function mcapi_update_index($transaction, $xid = NULL) {
   if ($transaction->state == TRANSACTION_STATE_FINISHED) {
     foreach ($transaction->worth['und'] as $delta => $transfer) {
-      $balance_query = "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = :uid AND currcode = :currcode AND xid <= :xid";
+      $balance_query = "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = :uid AND currcode = :currcode AND xid < :xid";
       $args = array(
-        ':currcode' => $transaction->worth['und'][$delta]['currcode'],
+        ':currcode' => $transfer['currcode'],
         ':xid' => $transaction->xid,
-        ':uid' => $transaction->payer
       );
+      $quant = &$transfer['quantity'];
+
+      $args[':uid'] = $transaction->payee;
+      $balance = db_query($balance_query, $args)->fetchfield();
       db_merge('mcapi_index')
       ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payee))
       ->fields(array(
         'uid2' => $transaction->payer,
         'created' => $transaction->created,
-        'currcode' => $transaction->worth['und'][$delta]['currcode'],
-        'expenditure' => $transaction->worth['und'][$delta]['quantity'],
-        'volume' => $transaction->worth['und'][$delta]['quantity'],
-        'diff' => -$transaction->worth['und'][$delta]['quantity'],
-        'balance' => db_query($balance_query, $args)->fetchfield(),
+        'currcode' => $transfer['currcode'],
+        'expenditure' => $quant,
+        'volume' => $quant,
+        'diff' => -$quant,
+        'balance' => $balance - $quant,
       ))->execute();
 
       $args[':uid'] = $transaction->payer;
+      $balance = db_query($balance_query, $args)->fetchfield();
       db_merge('mcapi_index')
       ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payer))
       ->fields(array(
         'uid2' => $transaction->payee,
         'created' => $transaction->created,
-        'currcode' => $transaction->worth['und'][$delta]['currcode'],
-        'income' => $transaction->worth['und'][$delta]['quantity'],
-        'volume' => $transaction->worth['und'][$delta]['quantity'],
-        'diff' => $transaction->worth['und'][$delta]['quantity'],
-        'balance' => db_query($balance_query, $args)->fetchfield(),
+        'currcode' => $transfer['currcode'],
+        'income' => $quant,
+        'volume' => $quant,
+        'diff' => $quant,
+        'balance' => $balance + $quant,
       ))->execute();
     }
   }
@@ -131,8 +135,8 @@ function mcapi_views_views_api() {
 function mcapi_views_rebuild_index() {
   db_query("TRUNCATE table {mcapi_index}");
   //load all the transactions and then index them
-  $transactions = entity_get_controller('transaction')->load(array(), array('state' => 0));
-  foreach($transactions as $transaction) {debug($transaction);
+  $transactions = transactions_load(array('state' => 0));
+  foreach($transactions as $transaction) {
     mcapi_update_index($transaction);
   }
 }
@@ -150,7 +154,7 @@ function mcapi_views_views_query_alter($view, &$query) {
  * this modifies the query only to show the transactions visible to the user.
  * this is pretty elaborate, but the access control has to be done in the query or views pager won't know how many results there were
  */
-function mcapi_query_transaction_access_views_alter(QueryAlterableInterface $query) {
+function _mcapi_query_transaction_access_views_alter(QueryAlterableInterface $query) {
   $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
   //what currencies can the current user see?
   $currencies = currencies_load();

@@ -7,104 +7,6 @@ function mcapi_webforms_default_mcapi_webforms() {
   $webform = new stdClass;
   $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
   $webform->api_version = 3;
-  $webform->name = '3rdparty';
-  $webform->path = 'transact/3rdparty';
-  $webform->status = 1;
-  $webform->data = array(
-    'info' => array(
-      'name' => '3rdparty',
-    ),
-    'aspect' => '3',
-    'help' => 'Enter the transaction for any two members',
-    'outputs' => array(
-      'access' => 'user_access:manage all transactions',
-      'menu_link' => 'navigation',
-      'use_block' => 1,
-    ),
-    'workflow' => array(
-      'incoming' => array(
-        t('Unset') => t('Unset'),
-        'Finished' => 0,
-        'Template' => 0,
-      ),
-      'outgoing' => '0',
-    ),
-    'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-currcode',
-    ),
-    'currcode' => array(
-      'common' => array(
-        'preset' => '1',
-        'disable' => 0,
-        'required' => 1,
-      ),
-      'options' => array(
-        1 => 0,
-      ),
-      'widget' => 'radios',
-    ),
-    'payer' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-      'args' => 'user_chooser_permissions:transact',
-      'multiple' => 0,
-    ),
-    'payee' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-      'args' => 'user_chooser_permissions:transact',
-      'multiple' => 0,
-    ),
-    'amount' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-      'chars' => '4',
-    ),
-    'description' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-    ),
-    'submission' => array(
-      'button' => 'Submit',
-      'redirect' => 'transaction/#xid',
-    ),
-    'step-1' => array(
-      'title' => '3rd party form',
-      'template' => 'Payer: [payer]<br />
-Payee: [payee]<br />
-Description: [description]<br />
-Amount: [amount]<br />',
-    ),
-    'step-2' => array(
-      'title' => 'are you sure?',
-      'template' => 'Payer: [payer]<br />
-Payee: [payee]<br />
-Description: [description]<br />
-Amount: [amount]<br />',
-    ),
-    'buttons' => array(
-      'submit' => 'Save',
-      'delete' => 'Revert',
-    ),
-  );
-  $webforms[$webform->name] = $webform;
-
-  
-  $webform = new stdClass;
-  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
-  $webform->api_version = 3;
   $webform->name = '1stparty';
   $webform->path = 'transact/1stparty';
   $webform->status = 1;
@@ -121,25 +23,13 @@ Amount: [amount]<br />',
     ),
     'workflow' => array(
       'incoming' => array(
-        t('Unset') => t('Unset'),
+        'Unset' => 'Unset',
         'Finished' => 0,
-        'Template' => 0,
       ),
       'outgoing' => '0',
     ),
     'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-currcode',
-    ),
-    'currcode' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-      'options' => array(
-        1 => 0,
-      ),
-      'widget' => 'radios',
+      'webform_fields__active_tab' => 'edit-worth',
     ),
     '2ndperson' => array(
       'common' => array(
@@ -159,17 +49,20 @@ Amount: [amount]<br />',
       'outgoing' => 'Payment',
       'widget' => 'select',
     ),
-    'amount' => array(
+    'description' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
       ),
-      'chars' => '4',
     ),
-    'description' => array(
+    'worth' => array(
       'common' => array(
-        'preset' => '',
+        'preset' => array(
+          'integer' => '0',
+          'currcode' => 'drupal7',
+          'division' => '0',
+        ),
         'disable' => 0,
         'required' => 1,
       ),
@@ -178,22 +71,130 @@ Amount: [amount]<br />',
       'button' => 'Submit',
       'redirect' => 'transaction/#xid',
     ),
+    'webform_templates' => array(
+      'webform_templates__active_tab' => 'edit-step-2',
+    ),
     'step-1' => array(
       'title' => '1st party form',
       'template' => 'Partner: [2ndperson]<br />
-Direction: [direction]<br />
-Amount: [amount]<br />
-Description: [description]<br />',
+  Direction: [direction]<br />
+  Amount: [worth]<br />
+  Description: [description]<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
-      'template' => '[amount]
-with  [2ndperson]<br />
-for [description]<br />',
+      'template' => '[worth]
+  with  [2ndperson]<br />
+  for [description]<br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
+    ),
+    'templates' => array(
+      'template-1' => 'Partner: [2ndperson]<br />
+  Direction: [direction]<br />
+  Amount: [worth]<br />
+  Description: [description]<br />',
+    ),
+  );
+
+  $webforms[$webform->name] = $webform;
+
+  
+  $webform = new stdClass;
+  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
+  $webform->api_version = 3;
+  $webform->name = '3rdparty';
+  $webform->path = 'transact/3rdparty';
+  $webform->status = 1;
+  $webform->data = array(
+    'info' => array(
+      'name' => '3rdparty',
+    ),
+    'aspect' => '3',
+    'help' => 'Enter the transaction for any two members',
+    'outputs' => array(
+      'access' => 'user_access:manage all transactions',
+      'menu_link' => 'navigation',
+      'use_block' => 1,
+    ),
+    'workflow' => array(
+      'incoming' => array(
+        'Unset' => 'Unset',
+        'Finished' => 0,
+      ),
+      'outgoing' => '0',
+    ),
+    'webform_fields' => array(
+      'webform_fields__active_tab' => 'edit-worth',
+    ),
+    'payer' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+      'args' => 'user_chooser_permissions:transact',
+      'multiple' => 0,
+    ),
+    'payee' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+      'args' => 'user_chooser_permissions:transact',
+      'multiple' => 0,
+    ),
+    'description' => array(
+      'common' => array(
+        'preset' => '',
+        'disable' => 0,
+        'required' => 1,
+      ),
+    ),
+    'worth' => array(
+      'common' => array(
+        'preset' => array(
+          'integer' => '0',
+          'currcode' => 'drupal7',
+          'division' => '0',
+        ),
+        'disable' => 0,
+        'required' => 1,
+      ),
+    ),
+    'submission' => array(
+      'button' => 'Submit',
+      'redirect' => 'transaction/#xid',
+    ),
+    'webform_templates' => array(
+      'webform_templates__active_tab' => 'edit-step-2',
+    ),
+    'step-1' => array(
+      'title' => '3rd party form',
+      'template' => 'Payer: [payer]<br />
+  Payee: [payee]<br />
+  Description: [description]<br />
+  Amount: [worth]<br />',
+    ),
+    'step-2' => array(
+      'title' => 'are you sure?',
+      'template' => 'Payer: [payer]<br />
+  Payee: [payee]<br />
+  Description: [description]<br />
+  Amount: [worth]<br />',
+    ),
+    'buttons' => array(
+      'submit' => 'Save',
+      'delete' => 'Revert',
+    ),
+    'templates' => array(
+      'template-1' => 'Payer: [payer]<br />
+  Payee: [payee]<br />
+  Description: [description]<br />
+  Amount: [worth]<br />',
     ),
   );
   $webforms[$webform->name] = $webform;
@@ -218,21 +219,13 @@ for [description]<br />',
     ),
     'workflow' => array(
       'incoming' => array(
-        t('Unset') => t('Unset'),
+        'Unset' => 'Unset',
         'Finished' => 0,
-        'Template' => 0,
       ),
       'outgoing' => '0',
     ),
     'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-amount',
-    ),
-    'currcode' => array(
-      'common' => array(
-        'preset' => 1,
-        'widget' => 'hidden',
-        'required' => FALSE,
-      ),
+      'webform_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'common' => array(
@@ -252,17 +245,20 @@ for [description]<br />',
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
-    'amount' => array(
+    'description' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
       ),
-      'chars' => '4',
     ),
-    'description' => array(
+    'worth' => array(
       'common' => array(
-        'preset' => '',
+        'preset' => array(
+          'integer' => '0',
+          'currcode' => 'drupal7',
+          'division' => '0',
+        ),
         'disable' => 0,
         'required' => 1,
       ),
@@ -271,29 +267,41 @@ for [description]<br />',
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
+    'webform_templates' => array(
+      'webform_templates__active_tab' => 'edit-step-2',
+    ),
     'step-1' => array(
-      'title' => 'Enter multiple payments',
+      'title' => 'Many pay one',
       'template' => '[payer]<br />
-will pay<br />
-[payee]<br />
-[amount] each<br />
-for<br />
-[description]'
+  will pay<br />
+  [payee]<br />
+  [worth] each<br />
+  for<br />
+  [description]',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
       'template' => '[payer]<br />
-will pay<br />
-[payee]<br />
-[amount] each<br />
-for<br />
-[description]',
+  will pay<br />
+  [payee]<br />
+  [worth] each<br />
+  for<br />
+  [description]',
     ),
     'buttons' => array(
       'submit' => 'Save',
-      'delete' => 'Delete',
+      'delete' => 'Revert',
+    ),
+    'templates' => array(
+      'template-1' => '[payer]<br />
+  will pay<br />
+  [payee]<br />
+  [worth] each<br />
+  for<br />
+  [description]',
     ),
   );
+
   $webforms[$webform->name] = $webform;
 
   $webform = new stdClass;
@@ -315,21 +323,13 @@ for<br />
     ),
     'workflow' => array(
       'incoming' => array(
-        t('Unset') => t('Unset'),
+        'Unset' => 'Unset',
         'Finished' => 0,
-        'Template' => 0,
       ),
       'outgoing' => '0',
     ),
     'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-amount',
-    ),
-    'currcode' => array(
-      'common' => array(
-        'preset' => 1,
-        'widget' => 'hidden',
-        'required' => FALSE,
-      ),
+      'webform_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'common' => array(
@@ -349,17 +349,20 @@ for<br />
       'args' => 'user_chooser_roles:2',
       'multiple' => 1,
     ),
-    'amount' => array(
+    'description' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
       ),
-      'chars' => '4',
     ),
-    'description' => array(
+    'worth' => array(
       'common' => array(
-        'preset' => '',
+        'preset' => array(
+          'integer' => '0',
+          'currcode' => 'drupal7',
+          'division' => '0',
+        ),
         'disable' => 0,
         'required' => 1,
       ),
@@ -368,27 +371,38 @@ for<br />
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
+    'webform_templates' => array(
+      'webform_templates__active_tab' => 'edit-step-2',
+    ),
     'step-1' => array(
-      'title' => 'Enter multiple payments',
+      'title' => 'One pays many',
       'template' => '[payer]<br />
-will pay<br />
-[payee]<br />
-[amount] each<br />
-for<br />
-[description]'
+  will pay<br />
+  [payee]<br />
+  [worth] each<br />
+  for<br />
+  [description]',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
       'template' => '[payer]<br />
-will pay<br />
-[payee]<br />
-[amount] each<br />
-for<br />
-[description]',
+  will pay<br />
+  [payee]<br />
+  [worth] each<br />
+  for<br />
+  [description]',
     ),
     'buttons' => array(
       'submit' => 'Save',
-      'delete' => 'Delete',
+      'delete' => 'Revert',
+    ),
+    'templates' => array(
+      'template-1' => '[payer]<br />
+  will pay<br />
+  [payee]<br />
+  [worth] each<br />
+  for<br />
+  [description]',
     ),
   );
   $webforms[$webform->name] = $webform;
@@ -414,19 +428,11 @@ for<br />
       'incoming' => array(
         'Finished' => 'Finished',
         'Unset' => 0,
-        'Template' => 0,
       ),
       'outgoing' => '0',
     ),
     'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-payer',
-    ),
-    'currcode' => array(
-      'common' => array(
-        'preset' => 1,
-        'widget' => 'hidden',
-        'required' => FALSE,
-      ),
+      'webform_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'common' => array(
@@ -446,17 +452,20 @@ for<br />
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
-    'amount' => array(
+    'description' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
       ),
-      'chars' => '4',
     ),
-    'description' => array(
+    'worth' => array(
       'common' => array(
-        'preset' => '',
+        'preset' => array(
+          'integer' => '0',
+          'currcode' => 'drupal7',
+          'division' => '0',
+        ),
         'disable' => 0,
         'required' => 1,
       ),
@@ -469,38 +478,23 @@ for<br />
       'webform_templates__active_tab' => 'edit-step-1',
     ),
     'step-1' => array(
-      'title' => 'Correct transaction record',
+      'title' => 'Transaction corrected',
       'template' => '[payer] paid [payee]<br />
-  Amount: [amount]<br />
+  Amount: [worth]<br />
   For: [description]<br />',
     ),
     'step-2' => array(
-      'title-2' => '',
-      'template-2' => '',
+      'title' => '',
+      'template' => '',
     ),
     'buttons' => array(
       'submit' => 'Save',
-      'delete' => 'Delete',
+      'delete' => 'Revert',
     ),
-    'email_template' => array(
-      'subject' => 'Exchange recorded with [transaction:partner]',
-      'body' => '[user:name],
-
-A transaction involving you and [transaction:partner] has been corrected.
-The corrected amount is [transaction:amount]
-The corrected description is "[transaction:description]"
-
-To change your notification settings, visit your profile at
-[user:edit-url]
-
-The team at [site:name]',
-      'send' => 0,
-    ),
-    'step-1' => array(
-      'title' => t('Transaction corrected'),
-      'template' => '[payer] paid [payee]<br />
-Amount: [amount]<br />
-For: [description]<br />',
+    'templates' => array(
+      'template-1' => '[payer] paid [payee]<br />
+  Amount: [worth]<br />
+  For: [description]<br />',
     ),
   );
 

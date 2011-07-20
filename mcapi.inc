@@ -200,10 +200,10 @@ function transaction_form($form, &$form_state, $transaction) {
   //I'm just fed up of multistep forms, this will have to wait
   //the following doesn't retrieve default values out of form_state when we come back from step 2
   field_attach_form('transaction', $transaction, $form, $form_state);
-
+  
   //the default theming for multiple value fields is way over the top, so this module provides a cut down theme callback
   if (count(element_children($form['worth']['und'])) > 1) {
-    $form['worth']['und']['#theme'] = 'worth_fields';
+    $form['worth']['und']['#theme'] = 'worth_widget';
     //for some reason the add more button is only heavier than the first element
     $form['worth']['und']['add_more']['#weight'] = 6;
   }
@@ -243,7 +243,7 @@ function transaction_form_validate($form, &$form_state) {
   }
   entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
   $transaction = &$form_state['#transaction'];
-
+  //print_r($form_state);die();
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   try {
     mcapi_transaction_validate($transaction, $form);
@@ -251,7 +251,6 @@ function transaction_form_validate($form, &$form_state) {
   catch (Exception $e) {
    drupal_set_message($e->getMessage(), 'warning');
   }
-  
 }
 /*
  * Universal transaction validation
@@ -284,20 +283,16 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
 }
 
 /*
- * Submit callback for default transaction form
- */
-function transaction_admin_form_submit($form, &$form_state) {
-  if (!isset($form_state['redirect'])) {
-    $form_state['redirect'] = 'transaction/'.$transaction->xid;
-  }
-}
-
-/*
  * validate callback for transaction form participants
  */
 function mcapi_validate_transactor(&$element, $form_state) {
   $account = user_load($element['#value']);
-  return user_access('transact', $account);
+  if (!$account) {
+    form_error($element, t('User does not exist: @user', array('@user' => $element['#value'])));
+  }
+  elseif(!user_access('transact', $account)) {
+    form_error($element, t("User is not permitted to 'transact': @user", array('@user' => $account->name)));
+  }
 }
 
 /*

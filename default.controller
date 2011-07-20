@@ -117,8 +117,8 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
     $transaction->modifier = $GLOBALS['user']->uid;
     $transaction->data = $transaction->extra;
     $t = db_transaction();
-    //the transaction is actually written during the validation phase, but we still want to run
-    if($transaction->is_new) $function = 'insert';
+    //the transaction is actually inserted during the validation phase, after validation the state should be changed
+    if(!empty($transaction->is_new)) $function = 'insert';
     elseif (!empty($transaction->validating)) $function = 'state';
     else $function = 'update';
     try {
@@ -143,7 +143,7 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
   public function erase($transaction) {
     //if there are more than one flows involved, use the minimum value for the update mode
     foreach ($transaction->worth['und'][0] as $worth) {
-      $modes[] = currency_load($worth['currcode'])->delete_mode;
+      $modes[] = currency_load($worth['currcode'])->erase_mode;
     }
     debug($modes);
     switch(min($modes)) {
@@ -299,10 +299,11 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
    */
   function update($transaction) {
     //if there are more than one flows involved, use the minimum value for the update mode
-    foreach ($transaction->worth['und'][0] as $worth) {
-      $modes[] = currency_load($worth['currcode'])->update_mode;
+    foreach ($transaction->worth['und'] as $worth) {
+      $currency = currency_load($worth['currcode']);
+      $modes[] = $currency->accounting['update_mode'];
     }
-    debug($modes);
+    debug($modes);//just to check they make sense
     switch(min($modes)) {
       case 0:
         throw new Exception(t('Updates not allowed'));

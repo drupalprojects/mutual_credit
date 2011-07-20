@@ -46,7 +46,8 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'worth':
         //could this be done with a render array?
-        $replacements[$original] = theme('worth_field', array('worth' => array('quantity' => $transaction->quantity, 'currcode' => $transaction->currcode)));
+        $replacements[$original] = theme('worth_fields', $transaction->worth['und']);
+        debug($replacements[$original]);
         break;
       case 'description':
         $replacements[$original] = $transaction->description;
@@ -91,9 +92,9 @@ function mcapi_token_info() {
       'name' => t('Other user'),
       'description' => t("The user who isn't referred to here."),
     ),
-    'amount' => array(
-      'name' => t('Amount'),
-      'description' => t("The formatted quantity of the transaction"),
+    'worth' => array(
+      'name' => t('Values'),
+      'description' => t("The currency flows"),
     ),
     'description' => array(
       'name' => t('Description'),

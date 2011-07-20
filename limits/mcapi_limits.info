@@ -1,5 +1,5 @@
 ; $Id: 
-name = Mutual Credit Limits
+name = Limit balances
 description = Sets global and personal balance limits for each currency
 package = Mutual Credit
 core = 7.x

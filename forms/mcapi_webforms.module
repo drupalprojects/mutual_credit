@@ -20,6 +20,7 @@ function mcapi_webforms_menu() {
   //one menu callback for each form.
   $webforms = mcapi_webforms_load();
   foreach($webforms as $webform) {
+    if (!empty($webform->disabled)) continue;
     $sections = explode('/',$webform->path);
     //the first ->name is for drupal_get_form, the second is for hook_forms to be more efficient
     //then we add subsequent arguments in an order expected by mcapi_webforms_form
@@ -169,6 +170,7 @@ function mcapi_webforms_theme($existing, $type, $theme, $path) {
 function mcapi_edit_webform(&$form, &$form_state) {
   //I can't think of a better place to put this.
   //menu needs rebuilding when a webform is saved
+  //but I can't mess with the ctools submit handlers
   //were does views do it?
   menu_rebuild();
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_webforms') .'/mcapi_webforms.admin.inc';
@@ -176,7 +178,7 @@ function mcapi_edit_webform(&$form, &$form_state) {
   $form['#tree'] = TRUE;
 
   //this big form builder function is kept in admin.inc
-  module_load_include('admin.inc', 'mcapi_webforms');
+  form_load_include($form_state, 'admin.inc', 'mcapi_webforms');
   return _mcapi_edit_webform($form, $form_state);
 }
 
@@ -254,6 +256,8 @@ function mcapi_webform_get_additional_form_fields() {
   return $fields;
 }
 
+//there is a function very similar to this in form api.
+//it doesn't explore or assume, but takes the parents as an argument.
 function _get_deepest_child($element) {
   $children = element_children($element);
   if (count($children)) {
@@ -261,4 +265,45 @@ function _get_deepest_child($element) {
     return _get_deepest_child($element[$last_child]);
   }
   return $element;
+}
+
+
+
+/*
+ * element validate callback
+ * make sure at least one incoming state is chosen for the workflow
+ * for some reason admin.inc isn't loading up on form submission, despite using form_load_include
+ * so this has to go in the module file until someone wants to sort it out!
+ */
+function webform_workflow_incoming_validate(&$element, $form_state) {
+  if (!array_filter($form_state['values']['workflow']['incoming'])) {
+    form_error($element, t('At least one incoming state must be selected'));
+  }
+}
+
+function mcapi_webform_validate_worth(&$element, &$form_state) {
+  debug($element);
+  debug($form_state['values']);
+}
+function mcapi_path_validate(&$element, $form_state) {
+}
+function mcapi_webforms_template_validate(&$element, &$form_state) {
+  $form_state['values']['templates']['template-1'] = filter_xss($element['#value'], array('a', 'p', 'br', 'font', 'style', ));
+}
+function mcapi_edit_webform_validate($form, &$form_state) {
+  $values = &$form_state['values'];
+  unset($values['form_id'], $values['form_token'], $values['op'], $values['form_build_id'], $values['submit'], $values['xfid']);
+  //we need to start with an existing ctools object which contains essential default properties
+
+  $webform = empty($form_state['item']) ? ctools_export_crud_new('mcapi_webforms') : $form_state['item'];
+  $webform->name = $values['info']['name'];//this isn't editable at the moment
+  $webform->path = $values['path'];
+  unset($values['name'], $values['path']);
+  $webform->data = $values;
+  $form_state['item'] = $webform;
+}
+
+//I think this is completely wrong, but I just couldn't get ctools to work without proper documentation
+function mcapi_edit_webform_submit($form, &$form_state) {
+  $form_state['redirect'] = 'admin/accounting/webforms'; //where the menu_rebuild is run
 }

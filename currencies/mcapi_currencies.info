@@ -1,6 +1,6 @@
 ; $Id: 
-name = Currency Constellation, with ref to John-Francois Noubel
-description = Full multiple currency support
+name = Parallel currency playground
+description = Full multiple currency support. Many currencies in one community, or even in one transaction. Or run overlapping economies.
 package = Mutual Credit
 configure = admin/accounting/currencies
 core = "7.x"

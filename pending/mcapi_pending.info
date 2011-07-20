@@ -1,6 +1,6 @@
 ; $Id:
-name = Mutual Credit Pending transactions
-description = Transactions are created into a pending state and are 'signed' into completion
+name = Pending transactions
+description = Declares a new transaction state, 'pending', and defines forms for signing those transactions.
 package = Mutual Credit
 core = 7.x
 

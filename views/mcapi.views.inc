@@ -82,45 +82,15 @@ function mcapi_views_data() {
       'handler' => 'views_handler_argument'
     ),
   );
-  $data['mcapi_transactions']['quantity'] = array(
-    'title' => t('value'), // The item it appears as on the UI,
-    'help' => t('Number of units of currency transferred'),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_value',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'help' => t('transactions above or below a certain value'),
-      'handler' => 'views_handler_filter_numeric'
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    )
-  );
   $data['mcapi_transactions']['state'] = array(
     'title' => t('State'),
-    'help' => t('Whether the transaction is completed (FALSE) or pending (TRUE)'),
+    'help' => t("Transactions move between states, until they are 'finished'."),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_state',
       'click sortable' => TRUE,
     ),
     'filter' => array(
       'handler' => 'views_handler_filter_mcapi_state',
-    ),
-  );
-  $data['mcapi_transactions']['currcode'] = array(
-    'title' => t('Currency ID'),
-    'help' => t('The currency the transaction was denominated in'),
-    'field' => array(
-      'help' => t("Use this field (check 'exclude') for the theming to work on rating and all quantities in the row"),
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_mcapi_currency',
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
     ),
   );
 

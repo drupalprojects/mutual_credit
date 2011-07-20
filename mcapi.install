@@ -268,7 +268,7 @@ function mcapi_modules_enabled($modules) {
   //we need to run the field hooks to create the field.
   if (in_array('mcapi', $modules)) {
     $field = field_read_field('worth', array('include_inactive' => TRUE));
-    if (!$field) { debug("creating field 'worth'");
+    if (!$field) {
       $field = array(
         'field_name' => 'worth',
         'type' => 'worth_field',
@@ -297,7 +297,6 @@ function mcapi_modules_enabled($modules) {
           ),
         ),
       );
-      debug('creating instance of field worth');
       field_create_instance($instance);
     }
   }

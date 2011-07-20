@@ -106,7 +106,6 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   
   //description
   mcapi_webform_default_value($form['description'], $webform->data['description']);
-
   
   //save button
   if (strpos($webform->data['submission']['button'], '/')) {
@@ -121,6 +120,10 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
       '#type' => 'submit',
       '#value' => t('Back'),
     );
+    //the default validate function, transaction_form_validate will rebuild the entity in form_state
+    //from the elements in the form, not considering that in step 2 of the web form
+    // the transaction elements are not present, but are in form_state storage not form_state values
+    $form['#validate'] = array();
   }
 
   //this may help with the validation and submission
@@ -133,7 +136,8 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   //this tells the theme callback which template to use
   $form['#template'] = $webform->data['step-'. $form_state['step']]['template'];
   //this is rather elaborate, but we NOW have to set the type of fields not being used in the template as hidden
-  $form['#tokens'] = mcapi_webform_collect_tokens($form, $form_state['#webform']);
+  $form['#tokens'] = mcapi_webform_collect_tokens($form_state['#webform']);
+
   //hide the fields which don't appear as tokens
   foreach ($form['#tokens'] as $fieldname) {
     if (strpos($form['#template'], "[$fieldname]") === FALSE) {
@@ -167,19 +171,13 @@ function mcapi_webform_default_value(&$element, $settings) {
 
 
 
-function mcapi_webform_collect_tokens(&$form, &$webform) {
-  $tokens = array('currcode', 'description', 'amount');
-  if ($webform->data['aspect'] == 3) {
-    $tokens[] = 'payee';
-    $tokens[] = 'payer';
-  }
-  else {
-    $tokens[] = 'direction';
-    $tokens[] = '2ndperson';
-  }
+function mcapi_webform_collect_tokens(&$webform) {
+  $tokens = $webform->data['aspect'] == 3 ? array('payee', 'payer') : array('2ndperson', 'direction');
+  $tokens[] = 'description';
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
   $fields = db_query("SELECT field_name FROM {field_config_instance} WHERE bundle = 'transaction' AND deleted = 0")->fetchCol();
-  return $tokens + drupal_map_assoc($fields);
+  //this picks up 'worth' and any other fields on the transaction entity
+  return drupal_map_assoc($tokens) + drupal_map_assoc($fields);
 }
 
 function mcapi_webform_prepare_tokens(&$form, &$form_state) {
@@ -198,7 +196,7 @@ function mcapi_webform_prepare_tokens(&$form, &$form_state) {
     //unset all the fields in the form, having derived their token values
     //all that data is in $form_state['storage'] by now
     foreach ($form['#tokens'] as $token => $fieldname) {
-      $form['#replacements'][ '['.$fieldname.']'] = mcapi_element_markup_render($form[$fieldname]);
+      $form['#replacements'][ '['.$fieldname.']'] = mcapi_element_markup_render($form[$fieldname], $form_state['values']);
       //we can unset the field in step 2 because the transaction has already been stored
       //in $form_state['#transaction'] in validation of step 1
       unset($form[$fieldname]);
@@ -247,44 +245,43 @@ function theme_mcapi_webform($variables) {
 
 
 /*
- * replace form elements with renderable text
+ * replace tokens in stage 2 form with text, based on the form item token used in the template
  */
-function mcapi_element_markup_render($element) {
-  if (!isset($element['#type']) || $element['#type'] == 'container') {
-    return mcapi_element_markup_render(_get_deepest_child($element));
+function mcapi_element_markup_render($element, $fs_values) {
+  //anything without a #type must be a container
+  if (!isset($element['#type'])) {
+    debug($element); //#type not set - what's going on?
+    return;
   }
   switch($element['#type']) {
-    case 'textfield':
-      return $element['#value'];
-    case 'mcapi_amount':
-      return mcapi_amount_value($element);
+    case 'hidden':
+      return;
     case 'user_chooser_roles':
     case 'user_chooser_permissions':
-      if (!isset($element['#options'])) {
-        debug($element);
-      }
-      //on to the next
     case 'radios':
     case 'checkboxes':
     case 'select':
-      if (!is_array($element['#value'])) {
-        return $element['#options'][$element['#value']];
+      $val = $fs_values[$element['#name']];
+      if (is_array($val)) {
+        $val =  implode(', ', $val);
       }
-      else {
-        $vals = array();
-        foreach ($element['#value'] as $key) {
-          $vals[] = $element['#options'][$key];
-        }
-        return implode(', ', $vals);
+      return $val;
+    case 'markup': //in case the form got altered
+    case 'textfield':
+      return $element['#value'];
+    case 'container':
+      //assuming this can only be the 'worth' field, we make a psuedo-element for theming only.
+      $element = $fs_values['worth']['und'] + array('#theme' => 'worth_fields');
+      //also we need to reformat the worth so it has 'quantity', not 'integer and division'
+      foreach(element_children($element) as $childname) {
+        $element[$childname]['quantity'] = $element[$childname]['integer'] + $element[$childname]['division']/100;
       }
-      break;
+      //and don't break...
     case 'submit':
     case 'token':
       return drupal_render($element);
-    case 'hidden':
-      return;
     default:
-      drupal_set_message('Unknown form element in mcapi_element_markup_render:'.$element['#type']);
+      drupal_set_message('Unexpected form element type in mcapi_element_markup_render:'.$element['#type']);
   }
 }
 
@@ -335,7 +332,7 @@ function mcapi_webforms_multiple_validate($form, &$form_state) {
  * submit callback to replace the default
  */
 function mcapi_webforms_multiple_submit($form, &$form_state) {
-  $transactions = transaction_controller('load', $form_state['#transactions']['xids']);
+  $transactions = entity_load('transaction', $form_state['#transactions']['xids']);
   foreach ($transactions as $transaction) {
     $transaction->state = $form_state['#transaction']->state;
     $form_state['#transaction'] = $transaction;

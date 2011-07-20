@@ -68,7 +68,7 @@ function mcapi_currencies_form(&$form, &$form_state) {
   $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
   if (empty($currency->name)) {
     $currency = currency_default();
-    $currency->username = $GLOBALS['user']->name;
+    $currency->uid = $GLOBALS['user']->uid;
     $currency->name = '';
     $currency->format = '';
     $currency->currcode = user_password();
@@ -82,15 +82,15 @@ function mcapi_currencies_form(&$form, &$form_state) {
   _mcapi_currency_form($form, $form_state, $currency);
 
   $form['name']['#element_validate'] = array('mcapi_currency_validate_name');
-
-  $owner = empty($form_state['values']['username']) ? $currency->username : $form_state['values']['username'];
-  $owner = array_pop(user_load_multiple(array(), array('name' => $owner)))->name;
-  $form['username'] = array(
+  $passed = empty($form_state['values']['uid']) ? $currency->uid : $form_state['values']['uid'];
+  $owner = empty($passed) ? $GLOBALS['user']->uid : $passed;
+  $owner = user_load($owner);
+  $form['uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Declared by'),
     '#maxlength' => 60,
     '#autocomplete_path' => 'user/autocomplete',
-    '#default_value' => $owner,
+    '#default_value' => $owner->name,
     '#element_validate' => array('mcapi_validate_username'),
     '#required' => TRUE,
     '#weight' => 4
@@ -151,8 +151,16 @@ function currencies_load_all() {
 
 /*
  * forces a reload of currencies into the cache and static variable
+ * not for use by script. Instead use currencies_recache in currencies.admin.inc
  */
 function clear_currency_cache(){
   cache_clear_all('currencies', 'cache');
   drupal_static_reset('currencies');
+}
+
+/*
+ * callback declared in mcapi_currencies_ui.class.php
+ */
+function mcapi_currencies_form_validate() {
+  //debug('mcapi_currencies_form_validate function is empty');
 }

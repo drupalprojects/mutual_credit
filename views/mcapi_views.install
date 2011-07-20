@@ -35,10 +35,9 @@ function mcapi_views_schema() {
       ),
       'currcode' => array(
         'description' => 'the currency id, where there is more than one currency',
-        'type' => 'int',
-        'size' => 'normal',
+        'type' => 'varchar',
+        'length' => '8',
         'not null' => TRUE,
-        'default' => 0,
       ),
       'income' => array(
         'description' => 'the number of units incoming',

@@ -1,6 +1,6 @@
 ; $Id: 
-name = Mutual Credit Views
-description = Full views integration and some default views to get started
+name = Views deeper integration
+description = A transaction index, full views integration (awaiting taxonomy) and some default views to get started
 package = Mutual Credit
 core = "7.x"
 
@@ -10,10 +10,10 @@ dependencies[] = views
 files[] = mcapi_views.install
 
 ; Views handlers refering to the index table
-files[] = views/views_handler_argument_mcapi_dates_various.inc
-files[] = views/views_handler_argument_mcapi_participant.inc
-files[] = views/views_handler_argument_mcapi_user_transations.inc
-files[] = views/views_handler_field_mcapi_other_participant.inc
-files[] = views/views_handler_field_mcapi_quantity_index.inc
-files[] = views/views_handler_filter_mcapi_role_current_user.inc
-files[] = views/views_handler_filter_mcapi_other_participant.inc
+files[] = views_handler_argument_mcapi_dates_various.inc
+files[] = views_handler_argument_mcapi_participant.inc
+files[] = views_handler_argument_mcapi_user_transations.inc
+files[] = views_handler_field_mcapi_other_participant.inc
+files[] = views_handler_field_mcapi_quantity_index.inc
+files[] = views_handler_filter_mcapi_role_current_user.inc
+files[] = views_handler_filter_mcapi_other_participant.inc

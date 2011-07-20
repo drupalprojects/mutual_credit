@@ -1,5 +1,5 @@
 ; $Id: 
-name = Mutual Credit transaction forms
+name = Forms and form builder UI
 description = Highly configurable webforms generator for recording transactions
 package = Mutual Credit
 core = 7.x

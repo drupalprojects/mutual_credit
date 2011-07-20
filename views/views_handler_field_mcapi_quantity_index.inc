@@ -20,7 +20,12 @@ class views_handler_field_mcapi_quantity_index extends views_handler_field {
   }
 
   function render($values) {
-   //currcode field is injected using the views alter hook in the module
-   return theme('worth_field', array('worth' => array('quantity' => $values->{$this->field_alias}, 'currcode' => $values->currcode)));
+    return array(
+      '#theme' => 'worth_field',
+      '#currcode' => $values->currcode,
+      '#quantity' => $values->{$this->field_alias}
+    );
+    //currcode field is injected using the views alter hook in the module
+    return theme('worth_field', array('worth' => array('quantity' => $values->{$this->field_alias}, 'currcode' => $values->currcode)));
   }
 }

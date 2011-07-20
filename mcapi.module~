@@ -1,6 +1,6 @@
 <?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
-module_load_include('field.inc', 'mcapi');
+module_load_include('field.inc', 'mcapi')
 
 /**
  * @file
@@ -168,21 +168,17 @@ function mcapi_permission() {
 function transaction_access($op, $transaction, $account = NULL) {
   module_load_include('admin.inc', 'mcapi', 'currencies');
   module_load_include('inc', 'mcapi');
+  if (module_exists('mcapi_access')) {
+    mcapi_access($op, $transaction, $account);
+  }
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-  //check we can use each of the currencies in the transaction
   foreach ($transaction->worth['und'] as $flow) {
     $currency = currency_load($flow['currcode']);
-    if ($op == 'update' && !$currency->accounting['update_mode']) {
-      return FALSE;
-    }
-    elseif($op == 'erase' && !$currency->accounting['erase_mode']) {
-      return FALSE;
-    }
     $states = $currency->$op;
     $function = $states[$transaction->state];
-    if (!$function($transaction, $account, $currency)) return FALSE;
+    if (!$function($transaction, $account, $currency)) return;
   }
   return TRUE;
 }
@@ -205,8 +201,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
     ),
     'worth_field' => array(
       'variables' => array(
-        'currcode' => '',
-        'quantity' => 0
+        'worth' => array()
       )
     ),
     'worth_fields' => array(
@@ -215,7 +210,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
     'worth_widget_currcode' => array(
       'render element' => 'element'
     ),
-    'worth_widgets' => array(
+    'worth_widget' => array(
       'render element' => 'element'
     )
   );
@@ -243,12 +238,50 @@ function currency_label($currency) {
   return $currency->name;
 }
 
+/*
+ * takes an array of objects, with the nid as array keys and returns an array with just the titles
+ * for preparing form field select options
+ * Seems a bit random, but there you go...
+ */
+function mcapi_title_selector($objects, $title_key, $zero_val = 'unspecified') {
+  $options = array();
+  if ($zero_val && count($objects) > 1) {
+    $options[] = $zero_val;
+  }
+  foreach ($objects as $id => $object) {
+    if (is_array($object)) {
+      $options[$id] = $object[$title_key];
+    }
+    else {
+      $options[$id] = $object->$title_key;
+    }
+  }
+  return $options;
+}
+
+/**
+ * Implements hook_image_default_styles().
+ */
+function mcapi_image_default_styles() {
+  return array(
+    'curr_icon' => array(
+      'effects' => array(
+        array(
+          'name' => 'image_scale',
+          'data' => array('width' => 16, 'height' => 16, 'upscale' => 0),
+          'weight' => 0,
+        ),
+      ),
+    )
+  );
+}
+
 
 /**
  * build a render array for the transaction
  * not sure if this is needed
  */
-function transaction_view($transaction, $view_mode = 'certificate') {
+function transaction_view($transaction, $view_mode = 'certificate') {debug($transaction);
   //this is almost certainly a full page view, so I dare to set the title here
   $page_title = t('Transaction Certificate #@xid', array('@xid' => $transaction->xid));
   drupal_set_title($page_title);
@@ -266,11 +299,11 @@ function transaction_view($transaction, $view_mode = 'certificate') {
 }
 
 /*
- * make the transactionn variables into something which can be nicely themed
+ * make the transaction variables into something which can be nicely themed
  */
-function template_preprocess_transaction(&$variables) {
-  $transaction = $variables['transaction'];
-  $variables += array(
+function template_preprocess_transaction(&$arguments) {
+  $transaction = $arguments['transaction'];
+  $arguments += array(
     'description' => $transaction->description,
     'payer' => format_username(user_load($transaction->payer)),
     'payee' => format_username(user_load($transaction->payee)),
@@ -278,12 +311,12 @@ function template_preprocess_transaction(&$variables) {
     'recorded' => format_date($transaction->created, 'medium'),
     'type' => $transaction->type
   );
-  //choose the transaction theme template based on the first currency of the transaction
   if (variable_get('mcapi_mixed_transactions', 0)) {
-    $variables['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
+    $arguments['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
   }
-  $transaction->worth['und']['#theme'] = 'worth_fields';
-  $variables['worths'] = drupal_render($transaction->worth['und']);
+  foreach($transaction->worth['und'] as $delta => $worth) {
+    $arguments['worths'][] = theme('worth_field', array('worth' => $transaction->worth['und'][$delta]));
+  }
 }
 
 // this shouldn't be necessary, but how else to get a dynamic list of tokens?
@@ -316,12 +349,10 @@ function transaction_entity_builder($entity_type, $entity, $form, &$form_state) 
  * $form_state['#transaction'] was created in the validation stage
  */
 function transaction_all_submit($form, &$form_state) {
+  //if (!empty($form_state['rebuild'])) return;
   $transaction = transaction_save($form_state['#transaction'], TRUE);
   if ($transaction) {
     field_attach_submit('transaction', $transaction, $form, $form_state);
-  }
-  if (!isset($form_state['redirect'])) {
-    $form_state['redirect'] = 'transaction/'.$transaction->xid;
   }
 }
 
@@ -366,8 +397,7 @@ class transaction {
  * entity controllers must work comply
  *
  * This is where we interface with the entity controller
- * object transaction_load(array(94))
- * array transactions_load($conditions) e.g array('state' => 0)
+ * array transaction_load(array(94), $conditions)
  * object transaction_validate($transaction)
  * object transaction_save($transaction)
  * NULL transaction_erase($transaction)
@@ -382,10 +412,6 @@ function transaction_load($xid) {
   module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
   $transactions = entity_get_controller('transaction')->load(array($xid));
   return array_pop($transactions);
-}
-function transactions_load($conditions) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
-  return entity_get_controller('transaction')->load(array(), $conditions);
 }
 function transaction_validate($transaction) {
   module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
@@ -530,15 +556,12 @@ function mcapi_trigger_info() {
  * borrowed from node_validate, where it really should have been a reusable function like this.
  * this is in the main module file where it can be found by both currency form and transaction form.
  */
-function mcapi_validate_username(&$element, &$form_state) {
+function mcapi_validate_username(&$element, $form_state) {
   $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
-  if (!array_filter($values)) return;
+  if (empty($value)) return;
   foreach ($values as $value) {
     $account = user_load_by_name($value);
-    if ($account->uid) {
-      form_set_value($element, $account->uid, $form_state);
-      continue;
-    }
+    if ($account->uid) continue;
     form_error($element, t('The username %name does not exist.', array('%name' => $value)));
   }
 }
@@ -546,12 +569,12 @@ function mcapi_validate_username(&$element, &$form_state) {
 /*
  * return one currency object
  */
-function currency_load($currcode = 0) {
+function currency_load($currcode) {
   $currencies = currencies_load();
-  if (isset($currencies[$currcode])) {
-    return $currencies[$currcode];
-  }
+  if (isset($currencies[$currcode])) return $currencies[$currcode];
   return (object)array('name' => t('Please choose...'));
+  //not used for now
+  throw new Exception("Invalid currency requested: ".$currcode);
 }
 /*
  * Load all the currencies from cache filter
