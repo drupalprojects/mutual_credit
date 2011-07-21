@@ -329,7 +329,7 @@ function currencies_recache() {
   }
   else {
     $currency = currency_default();
-    $currencies[$currency->currcode] = $currency;
+    $currencies[$currency->info['currcode']] = $currency;
   }
   foreach($currencies as $currcode => $currency) {
     $currency->divisions = _currency_divisions_array($currency->divisions_setting);

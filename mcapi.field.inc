@@ -120,9 +120,10 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
  * tricky bit is setting the field[#default_value]s which are sometimes raw field data and sometimes from the db
  */
 function mcapi_field_widget_process($element, $form_state, $form) {
+  $default = array();
   if (empty($element['currcode']['#options'])) {
     //applies if there is only one currency
-    $default['currcode'] = isset($element['currcode']['#default_value']) ? $element['currcode']['#default_value'] : '';
+    $default['currcode'] = isset($element['currcode']['#default_value']) ? $element['currcode']['#default_value'] : default_currency()->info['currcode'];
   }
   //if (arg(0) == 'system') {
   if (!empty($form_state['input']['worth']['und'][$element['#delta']])) {//'input' works for ajax AND multistep
@@ -146,42 +147,43 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   }
   else {
     //debug('setting defaults manually');
-    $default = array('integer' => 0, 'division' => 0);
-    if ($element['currcode']['#options']) {
+    $default += array('integer' => 0, 'division' => 0);
+    if (!empty($element['currcode']['#options'])) {
       $cids = array_keys($element['currcode']['#options']);
       $default['currcode'] = $cids[$element['#delta']];
     }
   }
 
   $element['integer']['#default_value'] = intval($default['integer']);
-  $element['currcode']['#default_value'] = $default['currcode'];
+  if (!empty($default['currcode'])) {
+    $element['currcode']['#default_value'] = $default['currcode'];
+    $currency = currency_load($default['currcode']);
 
-  $currency = currency_load($default['currcode']);
-  //if any currency on the form has subdivisions then output this field
-  if (!empty($currency->divisions)) {
-    $element['division'] = array(
-      '#title' => t('Fraction'),
-      //'#default_value' => ,
-      '#default_value' => $default['division'],
-      '#theme_wrappers' => array(),
-    );
-    if ($currency->divisions_setting == '00') {
-      $element['division'] +=  array(
-        '#type' => 'textfield',
-        '#size' => 2,
-        '#maxlength' => 2,
-        '#field_prefix' => '.',
+    //if any currency on the form has subdivisions then output this field
+    if (!empty($currency->divisions)) {
+      $element['division'] = array(
+        '#title' => t('Fraction'),
+        //'#default_value' => ,
+        '#default_value' => $default['division'],
+        '#theme_wrappers' => array(),
       );
-    }
-    else{
-      $element['division'] += array(
-        '#options' => $currency->divisions,
-        '#type' => 'select',
-        '#field_prefix' => ':',
-      );
+      if ($currency->divisions_setting == '00') {
+        $element['division'] +=  array(
+          '#type' => 'textfield',
+          '#size' => 2,
+          '#maxlength' => 2,
+          '#field_prefix' => '.',
+        );
+      }
+      else{
+        $element['division'] += array(
+          '#options' => $currency->divisions,
+          '#type' => 'select',
+          '#field_prefix' => ':',
+        );
+      }
     }
   }
-
   return $element;
 }
 
@@ -288,7 +290,7 @@ function theme_worth_field(&$variables) {
 /*
  * Default implementation of theme 'worth_fields'
  */
-function theme_worth_fields(&$variables) {ddebug_backtrace();
+function theme_worth_fields(&$variables) {
   $element = $variables['element'];
   $output = '';
   foreach (element_children($element) as $delta) {

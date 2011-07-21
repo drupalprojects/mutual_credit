@@ -230,7 +230,6 @@ function _mcapi_edit_webform(&$form, &$form_state) {debug($form_state['build_inf
   //now change the widget for the default value
   $form['worth']['common']['preset'] = mcapi_field_widget_form(array(), $form_state, array() ,array(), 'und', array($webform->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
   $form['worth']['common']['preset']['#element_validate'] = array('mcapi_webform_validate_worth');
-  debug($form['worth']['common']['preset']);
 
   //we know about one additional_field, which is the value
   $form['value']['#prefix'] = t('This form builder is for transfers in any one, but only one currency');

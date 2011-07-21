@@ -175,7 +175,7 @@ function transaction_form($form, &$form_state, $transaction) {
     '#required' => TRUE,
     '#weight' => 15
   );
-  $states = module_invoke_all('mcapi_info', 'states');
+  $states = mcapi_transaction_states();
   //perhaps 'unset' doesn't have to be a state?
   unset($states['unset']);
   $form['state'] = array(

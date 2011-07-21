@@ -182,7 +182,9 @@ function transaction_access($op, $transaction, $account = NULL) {
     }
     $states = $currency->$op;
     $function = $states[$transaction->state];
-    if (!$function($transaction, $account, $currency)) return FALSE;
+    if (function_exists($function)) {
+      if (!$function($transaction, $account, $currency)) return FALSE;
+    }
   }
   return TRUE;
 }
@@ -192,12 +194,10 @@ function transaction_access($op, $transaction, $account = NULL) {
  * implements hook_theme
  */
 function mcapi_theme($existing, $type, $theme, $path) {
-  $path .='/theme';
   $items = array(
     'transaction' => array(
       'template' => 'transaction',
       'pattern' => 'transaction__',
-      'path' => $path,
       'variables' => array(
         'transaction' => NULL,
         'view_mode' => 'certificate',
