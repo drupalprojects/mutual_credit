@@ -322,7 +322,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
   $form['mc_signatures_wrapper']['mc_signatures_notification_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Mail subject'),
-    '#default_value' => variable_get('mc_signatures_notification_subject', ''),
+    '#default_value' => _mc_signatures_mail_template('mc_signatures_notification_subject'),
     '#description' => t('If set, overrides default subject.') .' '. t('Tokens may be used.'),
     '#required' => TRUE,
     '#weight' => 1
@@ -330,7 +330,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
   $form['mc_signatures_wrapper']['mc_signatures_notification_body'] = array(
     '#type' => 'textarea',
     '#title' => t('Request to sign'),
-    '#default_value' => variable_get('mc_signatures_notification_body', t("Click here to add your signature and finalise the exchange: !sign_link")),
+    '#default_value' =>_mc_signatures_mail_template('mc_signatures_notification_body'),
     '#description' => t("Request to signatories to sign new exchanges") .' '. t('Tokens may be used as above, plus !sign_link'),
     '#required' => TRUE,
     '#weight' => 2
@@ -345,7 +345,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
   $form['mc_signatures_signoff_wrapper']['mc_signatures_signoff_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Mail subject'),
-    '#default_value' => variable_get('mc_signatures_signoff_subject', ''),
+    '#default_value' => _mc_signatures_mail_template('mc_signatures_signoff_subject'),
     '#description' => t('If set, overrides default subject.') .' '. t('Tokens may be used.'),
     '#required' => TRUE,
     '#weight' => 1
@@ -353,7 +353,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
   $form['mc_signatures_signoff_wrapper']['mc_signatures_signoff_body'] = array(
     '#type' => 'textarea',
     '#title' => t('Exchange is signed off.'),
-    '#default_value' => variable_get('mc_signatures_signoff_body', t("The following exchange has been signed off and your balance updated.")),
+    '#default_value' => mc_signatures_mail_template('mc_signatures_signoff_body'),
     '#description' => t('Tokens may be used.'),
     '#required' => TRUE,
     '#weight' => 2
@@ -395,8 +395,9 @@ function mc_signatures_signoff_notify($exchange) {
  */
 function mc_signatures_mail_alter(&$message) {
   if (substr($message['id'],0,9) == 'mcapimail' && mc_signatures_notifiable($message['params']['exchange'], $message['params']['recipient'])) {
-    $subject = variable_get('mc_signatures_notification_subject', '');
-    $body = variable_get('mc_signatures_notification_body', '');
+    drupal_set_message('altering mail for signatures');
+    $subject = _mc_signatures_mail_template('mc_signatures_notification_subject');
+    $body = _mc_signatures_mail_template('mc_signatures_notification_body');
     $variables = mc_mail_tokens($message['params']['recipient'], $message['language'], $message['params']['exchange']);
     $variables['!sign_link'] = url('exchange/'. $message['params']['exchange']->nid . '/sign/'. $message['params']['recipient']->uid, array('absolute' => TRUE));
     $message['subject'] = strtr($subject, $variables);
@@ -407,8 +408,8 @@ function mc_signatures_mail_alter(&$message) {
 
 function mc_signatures_mail($key, &$message, $params)  {
   //there's only one key: signoff
-  $subject = variable_get('mc_signatures_signoff_subject', '');
-  $body = variable_get('mc_signatures_signoff_body', '');
+  $subject = _mc_signatures_mail_template('mc_signatures_signoff_subject');
+  $body = mc_signatures_mail_template('mc_signatures_signoff_body');
 
   $variables = mc_mail_tokens($message['params']['recipient'], $message['language'], $message['params']['exchange']);
   $variables['!sign_link'] = url('exchange/'. $params['exchange']->nid . '/sign/'. $params['recipient']->uid, array('absolute' => TRUE));
@@ -420,19 +421,12 @@ function mc_signatures_mail($key, &$message, $params)  {
  */
 function mc_signatures_notifiable($exchange, $recipient) {
   if (//alter only messages where the recipient is one of the remaining signatories
-    $exchange->state = EXCHANGE_STATE_PENDING && 
+    $exchange->state == EXCHANGE_STATE_PENDING &&
     is_array($exchange->mc_unsigned) &&
     in_array($recipient->uid, $exchange->mc_unsigned) &&
     $recipient->mc_notification_throttle > 0) {
+    echo 'notifiable';
     return TRUE;
-  }
-}
-
-
-//on the admin/mc page just check that mail templates are filled in
-function mc_signatures_form_cforge_report_form_alter() {
-  if (!variable_get('mc_signatures_notification_subject', 0) || !variable_get('mc_signatures_notification_body', 0)) {
-    drupal_set_message(t('Mail notification templates need to be written: !link', array('!link' => l('admin/mc/notification', 'admin/mc/notification'))), 'warning');
   }
 }
 
@@ -442,4 +436,19 @@ function mc_convert_state_checkbox(&$form) {
   $form['state']['#type'] = 'checkbox';
   $form['state']['#title'] = t('Require signatures');
   unset($form['state']['#description']);
+}
+
+function _mc_signatures_mail_template($key) {
+  $template = variable_get($key, '');
+  if ($template) return $template;
+  switch($key) {
+    case 'mc_signatures_signoff_body':
+      return t("The following exchange has been signed off and your balance updated.");
+    case 'mc_signatures_signoff_subject':
+      return t('An exchange has been completed');
+    case 'mc_signatures_notification_body':
+      return t("Click here to add your signature and finalise the exchange: !sign_link");
+    case 'mc_signatures_notification_subject':
+      return t('Your signature is needed');
+  }
 }

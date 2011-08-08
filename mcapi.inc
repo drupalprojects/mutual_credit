@@ -331,7 +331,6 @@ function currency_list() {
 }
 
 
-
 //return the max and min limits, by overriding currency limits with personal ones
 //if $cid is not supplied an array of currencies is returned.
 function user_limits($account, $cid){
@@ -352,16 +351,6 @@ function user_limits($account, $cid){
 }
 
 function mc_admin_menu_block_page() {
-  //run some checks
-  if (!variable_get('mc_notification_subject', 0) || !variable_get('mc_notification_body', 0)) {
-    //the mc_signatures variables go unchecked, however.
-    drupal_set_message(
-      t('Mail notification templates need to be written: !link',
-        array('!link' => l('admin/mc/notification', 'admin/mc/notification'))),
-      'warning'
-    );
-  }
-
   module_load_include('admin.inc', 'system');
   return drupal_get_form('cforge_report_form') .
     system_admin_menu_block_page();
@@ -465,6 +454,24 @@ if (!$uid) ddebug_backtrace();
   return db_query($query, $args);
 }
 
+function _mcapi_default_mails($key) {
+  $template = variable_get($key, '');
+  if ($template) return $template;
+  switch ($key) {
+    case 'mc_notification_subject':
+      return t('Notification from !site');
+    case 'mc_notification_body':
+      return t("Dear !username,") ."\n\n". t('A new exchange has been recorded.');
+    case 'mc_notification_update_subject':
+      return t('Notification from !site');
+    case 'mc_notification_update_body':
+      return t("Dear !username,") ."\n\n". t("An exchange involving you has been edited");
+    default:
+      ddebug_backtrace();
+      die('unknown mail key:'.$key);
+  }
+}
+
 function mc_mail_template() {
   $form['mc_notification_throttle_default'] = notification_throttle();
   $form['mc_notification_throttle_default']['#weight'] = -6;
@@ -488,7 +495,7 @@ function mc_mail_template() {
     '#title' => t('Mail subject'),
     '#description' => t('Tokens may be used.'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('mc_notification_subject', 'Notification from !site'),
+    '#default_value' => _mcapi_default_mails('mc_notification_subject'),
     '#weight' => 1,
     '#required' => TRUE
   );
@@ -496,7 +503,7 @@ function mc_mail_template() {
     '#title' => t('Mail body'),
     '#description' => t('Tokens may be used.'),
     '#type' => 'textarea',
-    '#default_value' => variable_get('mc_notification_body', "Dear !username,\n\nA new exchange has been recorded."),
+    '#default_value' => _mcapi_default_mails('mc_notification_body'),
     '#weight' => 2,
     '#required' => TRUE
   );
@@ -513,7 +520,7 @@ function mc_mail_template() {
     '#title' => t('Mail subject'),
     '#description' => t('Tokens may be used.'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('mc_notification_update_subject', t('Notification from !site')),
+    '#default_value' => _mcapi_default_mails('mc_notification_update_subject'),
     '#weight' => 1,
     '#required' => TRUE
   );
@@ -521,7 +528,7 @@ function mc_mail_template() {
     '#title' => t('Mail body'),
     '#description' => t('Tokens may be used.'),
     '#type' => 'textarea',
-    '#default_value' => variable_get('mc_notification_update_body', t("Dear !username,") ."\n\n". t("An exchange involving you has been edited")),
+    '#default_value' => _mcapi_default_mails('mc_notification_update_body'),
     '#weight' => 2,
     '#required' => TRUE
   );
@@ -542,7 +549,9 @@ function mcapi_notify($op, $exchange) {
     elseif ($throttle < 1) {//for the other user
       continue; 
     }
-
+    //because this node might not be properly loaded.
+    //We can't reload node at this stage because this mail operation is already called from a nodeapi 'insert/update'
+    $exchange->taxonomy = taxonomy_node_get_terms($exchange);
     $message = drupal_mail(
       'mcapimail',
       $op,
@@ -550,8 +559,7 @@ function mcapi_notify($op, $exchange) {
       user_preferred_language($account),
       array(//params
         'recipient' => $account,
-        //reload the exchange especially for the sake of $node->taxonomy
-        'exchange' => node_load($exchange->nid),
+        'exchange' => $exchange,
         'send' => NULL //will be set elsewhere
       ),
       NULL, //sender defaults to site_mail
@@ -571,21 +579,9 @@ function mcapi_notify($op, $exchange) {
 function mcapimail_mail($key, &$message, $params) {
   //Setting of 2 means that users don't want to be notified of their own activity.
   if ($key == 'delete') return;
-  $subject = variable_get('mc_notification_subject', '');
-  switch ($key) {
-    case 'update':
-      $body = 'mc_notification_update_body';
-      break;
-    case 'insert':
-      $body = 'mc_notification_body';
-      break;
-  }
-  if (!$subject || !$body) {
-    drupal_set_message('Notification mail templates are not set.' .' '. t('Notification not sent'));
-    return;
-  }
-  $body = variable_get($body, '');
-
+  $subject = _mcapi_default_mails('mc_notification_subject');
+  $body_template = $key == 'update' ? 'mc_notification_update_body' : 'mc_notification_body';
+  $body = _mcapi_default_mails($body_template);
   $variables = mc_mail_tokens($params['recipient'], $message['language'], $params['exchange']);
   $message['subject'] = strtr($subject, $variables);
   $message['body'] = strtr($body, $variables);

@@ -165,6 +165,7 @@ function mc_multiple_form($form_state, $fields) {
       }
     }
   }
+  mc_webforms_extra_fields($form, $form_state);
 
   $form['preview'] = array (
     '#type' => 'submit',

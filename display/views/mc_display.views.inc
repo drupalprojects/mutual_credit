@@ -245,12 +245,12 @@ function mc_display_views_data() {
   );
   $data['mc_cache']['count'] = array(
     'title' => t('Number of exchanges.'),
+    'help' => ' ('. t('One result for per currency per user.') .')',
     'field' => array(
-      'help' => t('Number of exchanges.') .' ('. t('Returns one row for each currency.') .')',
       'handler' => 'views_handler_field_mc_amount',
       'click sortable' => TRUE,
     ),
-    'filter ' => array(
+    'filter' => array(
       'handler' => 'views_handler_filter_numeric',
     ),
     'sort' => array(
