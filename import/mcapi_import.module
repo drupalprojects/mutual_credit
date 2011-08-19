@@ -149,20 +149,24 @@ function check_users(&$rows) {
 if (!function_exists('str_getcsv')) { 
 function str_getcsv($input, $delimiter = ",", $enclosure = '"', $escape = "\\") {
   $rows = explode("\n", $input);
-  $headers = explode($delimiter, array_shift($rows));
+  $headers = csv2array(array_shift($rows));
   $all = array();
   while ($row = array_shift($rows)){
-    $entry=array();
     $values = explode($delimiter, $row);
-    $i=0;
-    foreach($values as $v){
-      if ($i < count($headers)) $entry[trim($headers[$i], "\"\r")] = trim($v, "\"\r");
-      $i++;
-    }
-    $data[] = $entry;
-  }
+    $data[] = array_combine($headers, csv2array($row));
+  };
   return $data;
 }}
+
+
+function csv2array($input, $delimiter = ",", $enclosure = '"', $escape = "\\") {
+  $input = trim($input);
+  $fields=explode($enclosure.$delimiter.$enclosure, substr($input, 1, -1));
+  foreach ($fields as $key => $value) {
+    $fields[$key]=str_replace($escape.$enclosure, $enclosure, $value);
+  }
+  return($fields);
+} 
 
 /*
  * Fields for user_import module NEARLY WORKS!!
