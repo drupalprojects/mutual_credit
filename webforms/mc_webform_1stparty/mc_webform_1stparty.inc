@@ -52,7 +52,7 @@ function mc_build_1stparty_form(&$form, $values = NULL) {
     '#required' => TRUE,
     '#ahah' => array(),
   );
-  if (count($available_exchange_subtypes) == 1 && count($currencies) == 1) {
+  if (count($available_exchange_subtypes) == 1) {
     //fill in the one possible value and let the field remain hidden
     list($key, $val) = each($available_exchange_subtypes);
     $form['exchange_type']['#default_value'] = $key;
@@ -62,9 +62,7 @@ function mc_build_1stparty_form(&$form, $values = NULL) {
   //show the field with all its options
   elseif (count($available_exchange_subtypes) > 1) {
     $form['exchange_type']['#options'] += $available_exchange_subtypes;
-    //$form['exchange_type']['#hidden'] = FALSE;
   }
-
 
   //now we know the exchange_type we know whether the completer is payer or payee
   switch (substr($form['exchange_type']['#default_value'], 0, 8)) {

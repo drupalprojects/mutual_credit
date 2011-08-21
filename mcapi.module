@@ -277,12 +277,8 @@ function mcapi_delete($node) {
 }
 
 function mcapi_view($node, $teaser = FALSE, $page = FALSE) {
-  //exchanges are handled in the node-exchange.tpl.php which calls its own preprocessor function
-  //and node-currency.tpl.php
-  //this seems simpler and tidier than using hook_view to crudely set $node->content['body']['#value']
-  if ($node->type == 'currency') {
-    //have to do this or the $node->body is overwritten with empty $content. See node_view()
-    $node->content['body']['#value'] = $node->body;
+  if (!empty($node->body)) {
+    $node->content['body']['#value'] = "<p>$node->body</p>";
   }
   return $node;
 }

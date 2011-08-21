@@ -38,6 +38,7 @@ $message = t('I exchanged<br />!description<br />with<br />!trader<br />and now 
 
 print '<p>'. $message .'</p>
 <p style="clear:left">';
+if (isset($body))  print $body;
 
 print $taxonomy;
 print $hidden;

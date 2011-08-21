@@ -53,6 +53,8 @@ $reason = t('for !reason', array('!reason' => '<strong>'.$title.'</strong>'));
    <p><?php print $movement; ?></p>
    <p><?php print $sum; ?> </p>
   <p><?php print $reason; ?>
+  
+<?php if (isset($body))  print $body; ?>
   <?php
     //links are used by the webforms module for edit/complete/delete actions
     print $links;
