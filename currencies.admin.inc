@@ -3,7 +3,7 @@
 /*
  * builds that part of the currency edit form which is common in all circumstances
  */
-function _mcapi_currency_form(&$form, &$form_state, $currency) {
+function _mcapi_currency_form(&$form, &$form_state) {
   //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
   if (isset($form_state['values'])) {
     $currency = (object)$form_state['values'];
@@ -14,7 +14,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#title' => t('Name of currency'),
     '#description' => t('Use the plural'),
     '#type' => 'textfield',
-    '#default_value' => $currency->name,
+    '#default_value' => $form['#currency']->name,
     //'#default_value' => empty($form_state['values']['name']) ? strval($currency->name) : $form_state['values']['name'],
     '#weight' => -1
   );
@@ -23,7 +23,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @minus, @integer, @subdivision ' .
        t('For example to display -$45:23 AUS, enter @minus@integer:@subdivision AUS'),
     '#type' => 'textfield',
-    '#default_value' => $currency->format,
+    '#default_value' => $form['#currency']->format,
     //'#default_value' => empty($form_state['values']['format']) ? strval($currency->format) : $form_state['values']['format'],
     '#element_validate' => array('mcapi_currency_validate_format'),
     '#required' => TRUE,
@@ -34,7 +34,9 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#description' => t('Leave blank to use integers. "00" to use hundredths.') . t('To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') . '<br />' .
       '<pre>0|/.<br />25|1/4<br />50|1/2<br />75|3/4</pre>',
     '#type' => 'textarea',
-    '#default_value' => $currency->divisions_setting,
+    '#cols' => 60,
+    '#rows' => 4,
+    '#default_value' => $form['#currency']->divisions_setting,
     //'#default_value' => empty($form_state['values']['divisions_conf']) ? strval($currency->divisions_conf) : $form_state['values']['divisions_conf'],
     '#element_validate' => array('mcapi_currency_validate_divisions'),
     '#weight' => 5
@@ -49,7 +51,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#description' => t('More or less formal accounting standards can be determined.') .' '.
       t('Not all combinations are meaningful!'),
     '#type' => 'fieldset',
-    '#weight' => 0,
+    '#weight' => -1,
     '#group' => 'additional_settings',
     'update_mode' => array(
       '#title' => t('Update mode'),
@@ -60,7 +62,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
         2 => t("Update same record"),
         //3 => t("Use entity versioning the same transaction (not available)"),
       ),
-      '#default_value' => $currency->accounting['update_mode'],
+      '#default_value' => $form['#currency']->accounting['update_mode'],
       '#weight' => 1,
       '#element_validate' => array('mcapi_currency_validate_update_mode'),
       '#ajax' => array(
@@ -76,7 +78,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
         1 => t('Mark deleted'),
         2 => t('Remove all traces from the database (not from backups)'),
       ),
-      '#default_value' => $currency->accounting['erase_mode'],
+      '#default_value' => $form['#currency']->accounting['erase_mode'],
       '#weight' => 2,
       '#ajax' => array(
         'callback' => 'currency_form_ajax',
@@ -90,11 +92,11 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#description' => t('Determine which users are permitted to use this currency'),
     '#type' => 'select',
     '#options' => module_invoke_all('mcapi_access'),
-    '#default_value' => $currency->membership_callback,
+    '#default_value' => $form['#currency']->membership_callback,
     '#weight' => 10,
   );
   //alter the options according to what is set
-  if ($currency->accounting['erase_mode'] == 0) {
+  if ($form['#currency']->accounting['erase_mode'] == 0) {
     unset($form['accounting']['update_mode']['#options'][1]);
     if ($form['accounting']['update_mode']['#default_value'] == 1) {
       $form['accounting']['update_mode']['#default_value'] = 0;
@@ -104,7 +106,13 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
   unset($states['unset'], $states[-2]);
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_permissions');
-  foreach (array('view' => t('View'), 'update' => t('Update'), 'erase' => t('Erase')) as $op => $name) {
+  //some of the following tabs depend on settings, above
+  $operations = array(
+    'view' => t('View'),
+    'update' => $form['accounting']['update_mode']['#default_value'] ? t('Update') : NULL,
+    'erase' => $form['#currency']->accounting['erase_mode'] ? t('Erase') : NULL
+  );
+  foreach (array_filter($operations) as $op => $name) {
     $form[$op] = array(
       '#title' => $name,
       '#description' => t('Determine who can @name transactions in the following states:', array('@name' => t($name))),
@@ -112,7 +120,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
       '#group' => 'additional_settings',
       '#weight' => $i++,
     );
-    $defaults = $currency->$op;
+    $defaults = $form['#currency']->$op;
     foreach ($states as $constant => $state) {
       $form[$op][$constant] = array(
         '#title' => $state,
@@ -144,12 +152,12 @@ function currency_form_ajax(&$form, &$form_state) {
 function mcapi_currency_form($form, &$form_state){
   form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
   //by using a hook here instead of form_alter, we leave form_alter available for other
-  $preset = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
+  $form['#currency'] = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
   $form['info']['currcode'] = array(
     '#type' => 'hidden',
-    '#value' => substr(variable_get('site_name', 'drupal7'), 0, 7)
+    '#value' => empty($form['#currency']->info['currcode']) ? substr(variable_get('site_name', 'drupal7'), 0, 7) : $form['#currency']->info['currcode'],
   );
-  _mcapi_currency_form($form, $form_state, $preset);
+  _mcapi_currency_form($form, $form_state);
   return $form;
 }
 //validate is in currencies.admin.inc because it's the same for one or many currencies
@@ -283,14 +291,6 @@ function currency_default() {
       0 => 'mcapi_access_authenticated',
       -1 => 'mcapi_access_none'
     ),
-    'update' => array(
-      0 => 'mcapi_access_admin',
-      -1 => 'mcapi_access_none'
-    ),
-    'erase' => array(
-      0 => 'mcapi_access_admin',
-      -1 => 'mcapi_access_none'
-    )
   ));
   return (object)$def;
 }

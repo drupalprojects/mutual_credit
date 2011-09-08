@@ -5,7 +5,6 @@
  */
 //maybe this could be skipped in favour of exposing transaction_load directly
 function mcapi_service_transaction_retrieve($xid){
-  echo http_build_query(array('data' => transaction_load($xid)));
   return transaction_load($xid);
 }
 function mcapi_service_transaction_create($data) {
@@ -31,7 +30,6 @@ function mcapi_service_transaction_save($data) {
       )
     ),
     'transaction_type' => $data['transaction_type'],
-    'description' => $data['description'],
     'state' => TRANSACTION_STATE_FINISHED
   );
   if (isset($data['xid'])) {
@@ -57,7 +55,7 @@ function mcapi_service_transaction_delete($xid){
 /*
 function mcapi_service_transaction_statement($uuid, $ucurrcode, $count){
   $account = mcapi_service_universal_lookup($uuid, 'user');
-  $currency = mcapi_service_universal_lookup($ucurrcode, 'currency');
+  $currency = currency_load($ucurrcode, 'currency');
   //there might be an intermediary function here, or a view could be invoked., or more parameters could be passed
   $rows = entity_get_controller('transaction')->transaction_list(array('uid' => $account->uid));
   return array_slice($rows, 0, $count);
@@ -78,6 +76,7 @@ function mcapi_service_user_balances($uuid) {
  * Simple validation function just checks for presence of all parameters
  */
 function mcapi_service_validate_object($data, $type) {
+  print_r($data);
   $data = (object)$data; //this shouldn't be necessary actually becuase restserver getControllerArguments does it
   switch($type) {
     case 'currency':

@@ -28,7 +28,6 @@ function mcapi_views_default_views() {
   $handler->display->display_options['style_plugin'] = 'table';
   $handler->display->display_options['style_options']['columns'] = array(
     'created' => 'created',
-    'description' => 'description',
     'payee' => 'payee',
     'payer' => 'payer',
     'type' => 'type',
@@ -38,18 +37,6 @@ function mcapi_views_default_views() {
   );
   $handler->display->display_options['style_options']['default'] = 'created';
   $handler->display->display_options['style_options']['info'] = array(
-    'description' => array(
-      'sortable' => 0,
-      'default_sort_order' => 'asc',
-      'align' => '',
-      'separator' => '',
-    ),
-    'description_1' => array(
-      'sortable' => 0,
-      'default_sort_order' => 'asc',
-      'align' => '',
-      'separator' => '',
-    ),
     'participant' => array(
       'sortable' => 0,
       'default_sort_order' => 'asc',
@@ -122,10 +109,6 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['created']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['created']['hide_empty'] = 0;
   $handler->display->display_options['fields']['created']['empty_zero'] = 0;
-  /* Field: Transaction: Description */
-  $handler->display->display_options['fields']['description']['id'] = 'description';
-  $handler->display->display_options['fields']['description']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['description']['field'] = 'description';
   /* Field: Transaction: Payee */
   $handler->display->display_options['fields']['payee']['id'] = 'payee';
   $handler->display->display_options['fields']['payee']['table'] = 'mcapi_transactions';
@@ -227,17 +210,6 @@ function mcapi_views_default_views() {
   $handler->display->display_options['sorts']['created']['field'] = 'created';
   $handler->display->display_options['sorts']['created']['order'] = 'DESC';
   $handler->display->display_options['sorts']['created']['granularity'] = 'minute';
-  /* Filter criterion: Transaction: Description */
-  $handler->display->display_options['filters']['description']['id'] = 'description';
-  $handler->display->display_options['filters']['description']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['filters']['description']['field'] = 'description';
-  $handler->display->display_options['filters']['description']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['description']['expose']['operator_id'] = 'description_op';
-  $handler->display->display_options['filters']['description']['expose']['label'] = 'Description';
-  $handler->display->display_options['filters']['description']['expose']['use_operator'] = 1;
-  $handler->display->display_options['filters']['description']['expose']['operator'] = 'description_op';
-  $handler->display->display_options['filters']['description']['expose']['identifier'] = 'description';
-  $handler->display->display_options['filters']['description']['expose']['multiple'] = FALSE;
   /* Filter criterion: Transaction: Payee */
   $handler->display->display_options['filters']['payee']['id'] = 'payee';
   $handler->display->display_options['filters']['payee']['table'] = 'mcapi_transactions';
@@ -316,6 +288,19 @@ function mcapi_views_default_views() {
   $handler->display->display_options['filters']['worth_quantity']['expose']['identifier'] = 'worth_quantity';
   $handler->display->display_options['filters']['worth_quantity']['expose']['multiple'] = FALSE;
 
+  /* Contextual filter: Transaction : Involved user */
+  $handler->display->display_options['arguments']['participant']['id'] = 'participant';
+  $handler->display->display_options['arguments']['participant']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['arguments']['participant']['field'] = 'participant';
+  $handler->display->display_options['arguments']['participant']['default_action'] = 'not found';
+  $handler->display->display_options['arguments']['participant']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['participant']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['participant']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['participant']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['participant']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['participant']['break_phrase'] = 0;
+  $handler->display->display_options['arguments']['participant']['not'] = 0;
+
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['path'] = 'admin/accounting/transactions';
@@ -326,5 +311,8 @@ function mcapi_views_default_views() {
   $handler->display->display_options['menu']['name'] = 'management';
 
   $views[$view->name] = $view;
+  
+
+
   return $views;
 }

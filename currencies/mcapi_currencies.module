@@ -62,24 +62,22 @@ function mcapi_currencies_menu_alter(&$items) {
 /*
  * Implements ctools export_ui callback
  */
-function mcapi_currencies_form(&$form, &$form_state) {
+function mcapi_currencies_form($form, &$form_state) {
   ctools_include('export'); //this is needed to load up the existing currency, at least on an ajax reload
   form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
-  $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
+  $form['#currency'] = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
   if (empty($currency->name)) {
-    $currency = currency_default();
-    $currency->uid = $GLOBALS['user']->uid;
-    $currency->name = '';
-    $currency->format = '';
-    $currency->currcode = user_password();
+    $form['#currency'] = currency_default();
+    $form['#currency']->uid = $GLOBALS['user']->uid;
+    $form['#currency']->name = '';
+    $form['#currency']->format = '';
+    $form['#currency']->currcode = user_password();
   }
   else {
-    drupal_set_title( !empty($currency->name) ? $title = t("Edit currency '@name'", array('@name' => $currency->name)) : t('Declare currency') );
+    drupal_set_title( !empty($form['#currency']->name) ? $title = t("Edit currency '@name'", array('@name' => $form['#currency']->name)) : t('Declare currency') );
   }
-  $form['#currency'] = $currency;
 
-
-  _mcapi_currency_form($form, $form_state, $currency);
+  _mcapi_currency_form($form, $form_state);
 
   $form['name']['#element_validate'] = array('mcapi_currency_validate_name');
   $passed = empty($form_state['values']['uid']) ? $currency->uid : $form_state['values']['uid'];
@@ -163,4 +161,23 @@ function clear_currency_cache(){
  */
 function mcapi_currencies_form_validate() {
   //debug('mcapi_currencies_form_validate function is empty');
+}
+/*
+ * returns a form element for picking a currency
+ */
+function currency_picker_element($default_currcode, $multiple = FALSE, $options = array()) {
+  if (empty($options)) {
+    $currencies = currencies_load();
+    foreach ($currencies as $currcode => $currency) {
+      $options['currcode'] = $currency->name;
+    }
+  }
+
+  return array(
+    '#title' => t('Currency'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default' => $default_currcode,
+    '#multiple' => $multiple,
+  );
 }

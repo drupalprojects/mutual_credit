@@ -5,7 +5,7 @@
  * For every field in the transaction form, this form allows it to be configured.
  * Its not geometrically perfect, but covers a lot of use cases without getting too complicated
  */
-function _mcapi_edit_webform(&$form, &$form_state) {debug($form_state['build_info']);
+function _mcapi_edit_webform(&$form, &$form_state) {
   $webform = &$form_state['item'];
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
@@ -209,9 +209,6 @@ function _mcapi_edit_webform(&$form, &$form_state) {debug($form_state['build_inf
     $form['direction']['common']['preset']['#description'] = t("Either 'incoming' or 'outgoing'");
   }
 
-  //special settings for description
-  $form['description'] = mcapi_webform_prefill_fields($webform, 'description', t('Description'));
-
   //these are the field api fields which may have been added to the transaction entity
   $additional_fields = mcapi_webform_get_additional_form_fields();
   //unset($additional_fields['worth']);
@@ -226,9 +223,9 @@ function _mcapi_edit_webform(&$form, &$form_state) {debug($form_state['build_inf
   // webform isn't an entity to which the 'worth' field is attached, we shall have to call the widget and handle the data more manually
   //first of all, treat it just like the other fields, above.
   $form['worth'] = mcapi_webform_prefill_fields($webform, 'worth', t('Worth'));
-  $form_state = array(); //because it must be passed by ref
+  $pseudo_form_state = array(); //because it must be passed by ref
   //now change the widget for the default value
-  $form['worth']['common']['preset'] = mcapi_field_widget_form(array(), $form_state, array() ,array(), 'und', array($webform->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
+  $form['worth']['common']['preset'] = mcapi_field_widget_form(array(), $pseudo_form_state, array() ,array(), 'und', array($webform->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
   $form['worth']['common']['preset']['#element_validate'] = array('mcapi_webform_validate_worth');
 
   //we know about one additional_field, which is the value

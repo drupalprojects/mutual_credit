@@ -80,7 +80,7 @@ function mcapi_pending_signoff_access($transaction) {
 /*
  * Transaction access callback from mcapi module.
  */
-function mcapi_access_pending($op, $transaction, $account, $currency) {
+function mcapi_access_pending($op, $transaction, $account, $currency) {debug('pending access function IS used!');
   if (user_access('manage all transactions')) return TRUE;
   $participated = $account->uid == $transaction->payee || $account->uid == $transaction->payer;
   $owner = $transaction->creator == $account->uid;
@@ -391,12 +391,12 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
   if ($webform->path == 'transaction/%transaction/sign/%user_uid_optional') {
     $form['path']['#disabled'] = TRUE;
     $form['aspect']['#disabled'] = TRUE;
-    foreach(array('output', 'currcode', 'description', 'payer', 'payee', 'worth', 'step-2', 'workflow') as $fieldname) {
+    foreach(array('output', 'currcode', 'payer', 'payee', 'worth', 'step-2', 'workflow') as $fieldname) {
       $form[$fieldname]['#access'] = FALSE;
     }
     $form['webform_fields'] = array(
       '#type' => 'markup',
-      '#value' => t('Use the following tokens: @tokens', array('@tokens' => '[payer], [payee], [description], [worth]')),
+      '#value' => t('Use the following tokens: @tokens', array('@tokens' => '[payer], [payee], [worth]')),
     );
   }
   else{

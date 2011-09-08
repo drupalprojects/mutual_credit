@@ -3,11 +3,11 @@
 
 function mcapi_views_views_default_views() {
   $view = new view;
-  $view->name = 'user_trades';
+  $view->name = 'user_trade_summary';
   $view->description = 'trading stats for individual users';
   $view->tag = 'mcapi';
   $view->base_table = 'mcapi_index';
-  $view->human_name = 'user_trades';
+  $view->human_name = 'User trading summary';
   $view->core = 7;
   $view->api_version = '3.0-alpha1';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -279,10 +279,232 @@ function mcapi_views_views_default_views() {
     t('Page'),
   );
 
+  $views[$view->name] = $view;
+
+
+  $view = new view;
+  $view->name = 'user_trades';
+  $view->description = '';
+  $view->tag = 'mcapi';
+  $view->base_table = 'mcapi_transactions';
+  $view->human_name = 'User trades';
+  $view->core = 7;
+  $view->api_version = '3.0';
+  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+
+  /* Display: Master */
+  $handler = $view->new_display('default', 'Master', 'default');
+  $handler->display->display_options['title'] = 'Recent transactions';
+  $handler->display->display_options['use_more_text'] = 'plus';
+  $handler->display->display_options['access']['type'] = 'none';
+  $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
+  $handler->display->display_options['query']['options']['query_comment'] = FALSE;
+  $handler->display->display_options['exposed_form']['type'] = 'basic';
+  $handler->display->display_options['exposed_form']['options']['exposed_sorts_label'] = 'Trier par';
+  $handler->display->display_options['pager']['type'] = 'full';
+  $handler->display->display_options['pager']['options']['items_per_page'] = '25';
+  $handler->display->display_options['pager']['options']['expose']['items_per_page_label'] = 'Éléments par page';
+  $handler->display->display_options['pager']['options']['expose']['offset_label'] = 'Décalage';
+  $handler->display->display_options['style_plugin'] = 'table';
+  $handler->display->display_options['style_options']['grouping'] = 'state';
+  $handler->display->display_options['style_options']['columns'] = array(
+    'payee' => 'payee',
+    'payer' => 'payer',
+    'state' => 'state',
+  );
+  $handler->display->display_options['style_options']['default'] = '-1';
+  $handler->display->display_options['style_options']['info'] = array(
+    'payee' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+    ),
+    'payer' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+    ),
+    'state' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+    ),
+  );
+  $handler->display->display_options['style_options']['override'] = 1;
+  $handler->display->display_options['style_options']['sticky'] = 0;
+  $handler->display->display_options['style_options']['empty_table'] = 0;
+  /* Champ: Transaction : State */
+  $handler->display->display_options['fields']['state']['id'] = 'state';
+  $handler->display->display_options['fields']['state']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['state']['field'] = 'state';
+  $handler->display->display_options['fields']['state']['label'] = '';
+  $handler->display->display_options['fields']['state']['exclude'] = TRUE;
+  $handler->display->display_options['fields']['state']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['state']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['state']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['state']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['state']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['state']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['state']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['state']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['state']['hide_alter_empty'] = 0;
+  /* Champ: Transaction : created */
+  $handler->display->display_options['fields']['created']['id'] = 'created';
+  $handler->display->display_options['fields']['created']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['created']['field'] = 'created';
+  $handler->display->display_options['fields']['created']['label'] = 'le';
+  $handler->display->display_options['fields']['created']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['created']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['created']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['created']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['created']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['created']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['created']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['created']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['created']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['created']['date_format'] = 'short';
+  /* Champ: Transaction : ce participant */
+  $handler->display->display_options['fields']['payer']['id'] = 'payer';
+  $handler->display->display_options['fields']['payer']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['payer']['field'] = 'payer';
+  $handler->display->display_options['fields']['payer']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['payer']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['payer']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['payer']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['payer']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['payer']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['payer']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['payer']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['payer']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['payer']['link_to_trader'] = 1;
+  /* Champ: Transaction : avec */
+  $handler->display->display_options['fields']['payee']['id'] = 'payee';
+  $handler->display->display_options['fields']['payee']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['payee']['field'] = 'payee';
+  $handler->display->display_options['fields']['payee']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['payee']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['payee']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['payee']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['payee']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['payee']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['payee']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['payee']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['payee']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['payee']['link_to_trader'] = 1;
+  /* Champ: Transaction : Value */
+  $handler->display->display_options['fields']['worth']['id'] = 'worth';
+  $handler->display->display_options['fields']['worth']['table'] = 'field_data_worth';
+  $handler->display->display_options['fields']['worth']['field'] = 'worth';
+  $handler->display->display_options['fields']['worth']['label'] = 'contre';
+  $handler->display->display_options['fields']['worth']['alter']['alter_text'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['make_link'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['absolute'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['external'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['replace_spaces'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['trim_whitespace'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['nl2br'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['word_boundary'] = 1;
+  $handler->display->display_options['fields']['worth']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['worth']['alter']['strip_tags'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['trim'] = 0;
+  $handler->display->display_options['fields']['worth']['alter']['html'] = 0;
+  $handler->display->display_options['fields']['worth']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['worth']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['worth']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['worth']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['worth']['hide_alter_empty'] = 0;
+  $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
+  $handler->display->display_options['fields']['worth']['field_api_classes'] = 0;
+  /* Contextual filter: Transaction : Involved user */
+  $handler->display->display_options['arguments']['participant']['id'] = 'participant';
+  $handler->display->display_options['arguments']['participant']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['arguments']['participant']['field'] = 'participant';
+  $handler->display->display_options['arguments']['participant']['default_action'] = 'not found';
+  $handler->display->display_options['arguments']['participant']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['participant']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['participant']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['participant']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['participant']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['participant']['break_phrase'] = 0;
+  $handler->display->display_options['arguments']['participant']['not'] = 0;
+  /* Filter criterion: Transaction : State */
+  $handler->display->display_options['filters']['state']['id'] = 'state';
+  $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['filters']['state']['field'] = 'state';
+  $handler->display->display_options['filters']['state']['value'] = array(
+    0 => '0',
+    1 => '1',
+  );
+
+  /* Display: Page */
+  $handler = $view->new_display('page', 'Page', 'page');
+  $handler->display->display_options['path'] = 'user/%/transactions';
+  $handler->display->display_options['menu']['type'] = 'tab';
+  $handler->display->display_options['menu']['title'] = 'Transactions';
+  $handler->display->display_options['menu']['weight'] = '4';
+  $translatables['user_trades1'] = array(
+    t('Master'),
+    t('Recent transactions'),
+    t('plus'),
+    t('Appliquer'),
+    t('Reset'),
+    t('Trier par'),
+    t('Asc'),
+    t('Desc'),
+    t('Éléments par page'),
+    t('- All -'),
+    t('Décalage'),
+    t('le'),
+    t('ce participant'),
+    t('déscription'),
+    t('avec'),
+    t('contre'),
+    t('Tous / Toutes'),
+    t('Page'),
+  );
+  $views[$view->name] = $view;
+
+
   $view = new view;
   $view->name = 'user_rankings';
   $view->description = 'If you have multiple currencies, be sure to change the argument. Also you can add \'between\' dates';
-  $view->tag = 'default';
+  $view->tag = 'mcapi';
   $view->base_table = 'users';
   $view->human_name = 'user_ranking';
   $view->core = 7;

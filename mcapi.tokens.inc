@@ -24,33 +24,30 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = $transaction->xid;
         break;
       case 'payer':
-        $name = user_load($transaction->payer)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
+        $account = user_load($transaction->payer);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
         break;
       case 'payee':
-        $name = user_load($transaction->payee)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
+        $account = user_load($transaction->payee);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
         break;
       case 'partner':
         $uid = $data['user']->uid == $transaction->payee ? $transaction->payee :$transaction->payer;
-        $name = user_load($uid)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
+        $account = user_load($uid);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
         break;
       case 'creator':
-        $name = user_load($transaction->creator)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
+        $account = user_load($transaction->creator);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
         break;
       case 'modifier':
-        $name = user_load($transaction->modifier)->name;
-        $replacements[$original] = $sanitize ? filter_xss($name) : $name;
+        $account = user_load($transaction->modifier);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
         break;
       case 'worth':
         //could this be done with a render array?
         $replacements[$original] = theme('worth_fields', $transaction->worth['und']);
         debug($replacements[$original]);
-        break;
-      case 'description':
-        $replacements[$original] = $transaction->description;
         break;
       case 'summary':
         $replacements[$original] = theme('transaction', array('transaction' => $transaction, 'view_mode' => 'summary'));

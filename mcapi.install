@@ -34,13 +34,80 @@ function mcapi_install() {
 
   //allow the body field to be added to currencies and transactions
   if ($data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField())) {
-    foreach (array('currency', 'transaction') as $ent) {
-      if (!in_array($ent, $data['entity_types'])) {
-        $data['entity_types'][] = $ent;
-      }
+    if (!in_array('transaction', $data['entity_types'])) {
+      $data['entity_types'][] = 'transaction';
     }
     $data_col = serialize($data);
     db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
+  }
+
+  if (!field_read_field('worth', array('include_inactive' => TRUE))) {
+    $field = array(
+      'field_name' => 'worth',
+      'type' => 'worth_field',
+      'entity_types' => array('transaction', 'node', 'user'),
+    );
+    field_create_field($field);
+  }
+  else {
+    debug("activating preexisting field 'worth'");
+    db_query("UPDATE {field_config} SET active = 1 WHERE field_name = 'worth'");
+  }
+  // Create the instance if needed.
+  if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
+    $instance = array(
+      'field_name' => 'worth',
+      'label' => t('Value'),
+      'entity_type' => 'transaction',
+      'bundle' => 'transaction',
+      'settings' => array(),
+      'required' => TRUE,
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'text_default',
+          'weight' => 0,
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+
+  //add the body field
+  if (!field_read_instance('transaction', 'body', 'transaction', array('include_inactive' => TRUE))) {
+    field_create_instance(array(
+      'label' => 'Details',
+      'settings' => array(
+        'text_processing' => '0',
+        'display_summary' => 0,
+      ),
+      'required' => 1,
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'text_default',
+          'weight' => 3,
+          'settings' => array(),
+          'module' => 'text',
+        ),
+      ),
+      'widget' => array(
+        'weight' => 3,
+        'type' => 'text_textarea_with_summary',
+        'module' => 'text',
+        'active' => 1,
+        'settings' => array(
+          'rows' => '3',
+          'summary_rows' => 1,
+        ),
+      ),
+      'description' => '',
+      'default_value' => NULL,
+      'field_name' => 'body',
+      'entity_type' => 'transaction',
+      'bundle' => 'transaction',
+      'deleted' => '0',
+    ));
   }
 }
 
@@ -50,7 +117,14 @@ function mcapi_install() {
  * Remove any tables or variables that the module sets.
  */
 function mcapi_uninstall() {
-  $view_ids = db_query("SELECT vid FROM {views_view} WHERE name LIKE 'mcapi_%'");
+  //delete all the entities manually if there are less than 400.
+  //This will gracefully handle all the stuff spread around by the field API
+  $xids = db_query("SELECT xid FROM (mcapi_transactions)")->fetchCol();
+  foreach ($xids as $xid) {
+    module_invoke_all('entity_delete', transaction_load($xid), 'transaction');
+  }
+  //delete all the views this module declared
+  $view_ids = db_query("SELECT vid FROM {views_view} WHERE tag = 'mcapi'");
   while ($vid = $view_ids->fetchField()) {
     // TODO Please review the conversion of this statement to the D7 database API syntax.
     /* db_query("DELETE FROM {views_view} WHERE vid = %d", $vid) */
@@ -61,26 +135,10 @@ function mcapi_uninstall() {
     ->condition('vid', $vid)
     ->execute();
   }
-  /*
-   * So instead we're going to manually delete the fields
-   * Except the instances don't delete unless they are mentioned in the fields' "bundles" property, which is undocumented.
-   * IN fact we can't even retrieve the instances here, possibly because the entity is already gone
-   * So we delete the instances manually
-   */
-  $fields = db_query("SELECT {field_name} FROM {field_config_instance} WHERE entity_type = 'transaction'")->fetchCol();
-  foreach ($fields as $fieldname) {
-    //this is temporary!!! might delete fields in use by other entities.
-    //field_delete_field($fieldname);
-    //db_query("DROP table 'field_data_$fieldname'");
-  }
-  //lose the currency entity fields and instances
-  //db_query("DELETE FROM {field_config} WHERE type = 'worth'");
-  db_query("DELETE FROM {field_config_instance} WHERE entity_type = 'transaction'");
-  db_query("DELETE FROM {field_data_body} WHERE entity_type = 'transaction'");
-  db_query("DELETE FROM {field_revision_body} WHERE entity_type = 'transaction'");
 
-  //this is a hack. Without it the re-installation breaks
-  //db_query("UPDATE field_config SET deleted = 0 WHERE type = 'worth_field'");
+  //truncate the tables containing field_api data
+  db_query('TRUNCATE table {field_data_worth}');
+  db_query('TRUNCATE table {field_revision_worth}');
   
   variable_del('mcapi_controller');
   variable_del('mcapi_db_read');
@@ -117,11 +175,11 @@ function mcapi_schema() {
         'type' => 'serial',
         'size' => 'normal',
       ),
-      'description' => array(
+/*      'description' => array(
         'description' => 'a brief description of what was exchanged',
         'type' => 'text',
         'size' => 'small',
-      ),
+      ),*/
       'payer' => array(
         'description' => 'the user id of the payer',
         'type' => 'int',
@@ -260,44 +318,5 @@ function mcapi_field_schema($field) {
         )
       )
     );
-  }
-}
-
-
-function mcapi_modules_enabled($modules) {
-  //we need to run the field hooks to create the field.
-  if (in_array('mcapi', $modules)) {
-    $field = field_read_field('worth', array('include_inactive' => TRUE));
-    if (!$field) {
-      $field = array(
-        'field_name' => 'worth',
-        'type' => 'worth_field',
-        'entity_types' => array('transaction'),
-      );
-      field_create_field($field);
-    }
-    else {
-      debug("activating preexisting field 'worth'");
-      db_query("UPDATE {field_config} SET active = 1 WHERE field_name = 'worth'");
-    }
-    // Create the instance if needed.
-    if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
-      $instance = array(
-        'field_name' => 'worth',
-        'label' => 'Value',
-        'entity_type' => 'transaction',
-        'bundle' => 'transaction',
-        'settings' => array(),
-        'required' => TRUE,
-        'display' => array(
-          'default' => array(
-            'label' => 'hidden',
-            'type' => 'text_default',
-            'weight' => 0,
-          ),
-        ),
-      );
-      field_create_instance($instance);
-    }
   }
 }

@@ -225,18 +225,12 @@ function mcapi_services_user_view($account, $view_mode, $langcode) {
 }
 
 
-//returns the node or user object
+//returns the drupal user object. used to return currency nodes from $ucid
 function mcapi_service_universal_lookup($universal_id, $type){
   $did = db_query(
     "SELECT did FROM {mcapi_universal_ids} WHERE universal_id = :u_id AND type = :type",
     array(':u_id' => $universal_id, ':type' => $type)
   )->fetchField();
-  if ($type == 'currency') {
-    return currency_load($did);
-  }
-  elseif ($type == 'user') {
-    return user_load($did);
-  }
 }
 
 

@@ -18,27 +18,10 @@ function mcapi_views_data() {
     'help' => t('Records of transactions between users'),
     'access query tag' => 'transaction_access_views',
     'defaults' => array(
-      'field' => 'description',
+      'field' => 'xid',
     ),
   );
 
-  $data['mcapi_transactions']['description'] = array(
-    'title' => t('Description'), // The item it appears as on the UI,
-    'field' => array(
-      'help' => t('The substance of the transaction.'),
-      'handler' => 'views_handler_field_mcapi_description',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_string',
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_string',
-    ),
-  );
   $data['mcapi_transactions']['xid'] = array(
     'title' => t('Transaction ID'), // The item it appears as on the UI,
     'field' => array(
@@ -90,7 +73,7 @@ function mcapi_views_data() {
       'click sortable' => TRUE,
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_mcapi_state',
+      'handler' => 'views_handler_filter_mcapi_states',
     ),
   );
 
@@ -165,6 +148,20 @@ function mcapi_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
+
+  $data['mcapi_transactions']['participant'] = array(
+    'argument' => array(
+      'title' => t('Involved user'),
+      'help' => t('Show only those exchanges in which a user was involved'),
+      'handler' => 'views_handler_argument_mcapi_participant',
+    ),
+    'field' => array(
+      'title' => t('Other user'),
+      'help' => t("Show the other user who wasn't passed in the views argument"),
+      'handler' => 'views_handler_field_mcapi_completer',
+      'click sortable' => TRUE
+    )
+  );
   $data['mcapi_transactions']['links'] = array(
     'title' => t('Admin links'),
     'help' => t("Edit and delete links"),
@@ -172,7 +169,6 @@ function mcapi_views_data() {
       'handler' => 'views_handler_field_mcapi_links',
     )
   );
-
   return $data;
 }
 

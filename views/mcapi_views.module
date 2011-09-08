@@ -5,18 +5,18 @@
  * Module keeps a cache of transactions which is optimised for views to interrogate
  */
 
-define ('GOOGLE_CHARTS_URI', 'http://chart.apis.google.com/chart?');
+//define ('GOOGLE_CHARTS_URI', 'http://chart.apis.google.com/chart?');
 
-function mcapi_views_entity_insert($type, $entity) {
+function mcapi_views_entity_insert($entity, $type) {
   if ($type == 'transaction') mcapi_update_index($entity);
   //then we'll need to recalc the running balances of everything after that
 }
-function mcapi_views_entity_update($type, $entity) {
+function mcapi_views_entity_update($entity, $type) {
   if ($type == 'transaction') mcapi_update_index($entity, $entity->xid);
   //then we'll need to recalc the running balances of everything after that
 }
 
-function mcapi_views_entity_delete($type, $entity) {
+function mcapi_views_entity_delete($entity, $type) {
   if ($type == 'transaction') {
     db_query("DELETE FROM {mcapi_index} WHERE xid = :xid", array(':xid' => $entity->xid));
   }
@@ -135,7 +135,7 @@ function mcapi_views_views_api() {
 function mcapi_views_rebuild_index() {
   db_query("TRUNCATE table {mcapi_index}");
   //load all the transactions and then index them
-  $transactions = transactions_load(array('state' => 0));
+  $transactions = transaction_load_multiple(NULL, array('state' => 0));
   foreach($transactions as $transaction) {
     mcapi_update_index($transaction);
   }

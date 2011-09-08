@@ -62,7 +62,8 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
       }
     }
     if (!count($entities)) {
-      throw new Exception(t('Invalid entity ID: @ids', array('@ids' => implode(', ', $ids))));
+      ddebug_backtrace();
+      //throw new Exception(t('Invalid entity ID: @ids', array('@ids' => implode(', ', $ids))));
     }
     return $entities;
   }
@@ -129,10 +130,9 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
       watchdog_exception('mcapi', $e);
       throw $e;
     }
-    if (isset($transaction->validating)) return;
+    if (isset($transaction->validating) || $function == 'state') return;
 
-    //balances_recalc($transaction->currcode, array($transaction->payer, $transaction->payee));
-    module_invoke_all('entity_'.$function, 'transaction', $transaction);
+    module_invoke_all('entity_'.$function, $transaction, 'transaction');
     return $transaction;
   }
 
@@ -142,10 +142,9 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
    */
   public function erase($transaction) {
     //if there are more than one flows involved, use the minimum value for the update mode
-    foreach ($transaction->worth['und'][0] as $worth) {
-      $modes[] = currency_load($worth['currcode'])->erase_mode;
+    foreach ($transaction->worth['und'] as $worth) {
+      $modes[] = currency_load($worth['currcode'])->accounting['erase_mode'];
     }
-    debug($modes);
     switch(min($modes)) {
       case 1: //mark deleted
         $transaction->state = TRANSACTION_STATE_ERASED;
@@ -153,7 +152,6 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
         $transaction->modifier = $GLOBALS['user']->uid;
         try{
           mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
-          //balances_recalc($transaction->currcode, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
@@ -165,12 +163,11 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
           $query = db_delete('mcapi_transactions')
           ->condition('xid', $transaction->xid)
           ->execute();
-          //balances_recalc($transaction->currcode, array($transaction->payer, $transaction->payee));
         }
         catch (Exception $e) {
           throw $e;
         }
-        module_invoke_all('entity_delete', 'transaction', $transaction);
+        module_invoke_all('entity_delete', $transaction, 'transaction');
       default:
         throw new Exception(t('Deletions not allowed'));
         break;
@@ -183,8 +180,27 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
    */
   public function state($transaction) {
     db_query("UPDATE {mcapi_transactions} SET state = :state WHERE xid = :xid", array(':state' => $transaction->state, ':xid' => $transaction->xid));
-    module_invoke_all('entity_update', 'transaction', $transaction);
+    module_invoke_all('entity_update', $transaction, 'transaction');
     return $transaction;
+  }
+
+  /*
+   * get_balance
+   * this is currently only used for the limits module
+   * using views would be impractical
+   */
+  public function balance($currcode, $uid, $states = array(TRANSACTION_STATE_FINISHED)) {
+    debug(func_get_args());
+    $states = implode(',', $states);
+    $income = db_query("SELECT SUM(worth_quantity)
+      FROM {mcapi_transactions} t
+      LEFT JOIN field_data_worth w ON t.xid = w.entity_id AND w.worth_currcode = '$currcode'
+      WHERE state in ($states) AND t.payer = $uid");
+    $outgoings = db_query("SELECT SUM(worth_quantity)
+      FROM {mcapi_transactions} t
+      LEFT JOIN field_data_worth w ON t.xid = w.entity_id AND w.worth_currcode = '$currcode'
+      WHERE state in ($states) AND t.payee = $uid");
+    return $income->fetchField() - $outgoings->fetchField();
   }
   /*
    * alternative to using views
@@ -194,8 +210,9 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
    * to //unixtime
    * states array, defaults to array(0) which is completed transactions only
    * no pager is provided in this function
+   * views is much better
    */
-  public function get_period($uid, $variables){
+  public function get_period($uid, $variables) {
     $variables += array(
       'from' => 0,
       'to' => REQUEST_TIME + 1,
@@ -222,74 +239,21 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
   
 
   /*
-   * retrieve all the cached balances for a user, in all the currencies cached.
-   * it's not clear what it means if a row doesn't exist here
-   * $currcodes can be an array or a currency id
-   * every currcode asked for will return list of values, even if it doesn't exist in the db.
-   */
-  /*
-   * this is withdrawn from the api for now
-  public function get_cache($uid) {
-    db_set_active(variable_get('mcapi_db', 'default'));
-    return db_select('mcapi_cache', 'c')
-    ->fields('c')
-    ->condition('uid', $uid)
-    ->execute()
-    ->fetchAllAssoc('currcode', PDO::FETCH_ASSOC);
-    db_set_active();
-  }
-   *
-   */
-
-  /*
-   * get the total of all incoming and outgoing finished transactions up to and including the given xid
-   */
-  /*
-   * withdrawn for now
-  public function get_running_balance($xid, $uid, $currcode) {
-    //new dbAPI has no SUM
-    $outgoing = db_query(
-      "SELECT SUM(quantity) from {mcapi_exchanges} WHERE payer_uid = $uid AND state = :state AND xid <= $xid",
-      array(':state' => TRANSACTION_STATE_FINISHED)
-    );
-    $income = db_query(
-      "SELECT SUM(quantity) from {mcapi_exchanges} WHERE payee_uid = $uid AND state = :state AND xid <= $xid",
-      array(':state' => TRANSACTION_STATE_FINISHED)
-    );
-    return db_result($income) - db_result($outgoing);
-  }
-   *
-   */
-
-  /*
-   * withdrawn for now
-  public function count($conditions = array()) {
-    $query = db_select('mcapi_transactions');
-    foreach ($conditions as $field => $value) {
-      $query->condition($field, $value);
-    }
-    return $query->countquery()->execute()->fetchField();
-  }
-   *
-   */
-
-  /*
    * create a transaction, either the first moment at validation
    */
   function insert($transaction) {
     $transaction->creator = $GLOBALS['user']->uid;
     $transaction->created = REQUEST_TIME;
-    $table = 'mcapi_transactions';
     if (empty($transaction->xid)) {
-      $success = mcapi_write_record($table, $transaction);
+      $success = mcapi_write_record('mcapi_transactions', $transaction);
       field_attach_insert('transaction', $transaction);
     }
     else {
-      $success = mcapi_write_record($table, $transaction, 'xid');
+      $success = mcapi_write_record('mcapi_transactions', $transaction, 'xid');
       field_attach_update('transaction', $transaction);
     }
     if (!$success) {
-      throw new Exception(t('failed to write to table @tablename', array('@tablename' => $table)));
+      throw new Exception(t('failed to write to table @tablename', array('@tablename' => 'mcapi_transactions')));
     }
   }
 
@@ -303,10 +267,9 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
       $currency = currency_load($worth['currcode']);
       $modes[] = $currency->accounting['update_mode'];
     }
-    debug($modes);//just to check they make sense
     switch(min($modes)) {
       case 0:
-        throw new Exception(t('Updates not allowed'));
+        throw new Exception(t('This currency does not allow transaction updates.'));
       case 1:
         $old = transaction_load($transaction->xid);
         $transaction->extra['formerly'] = $transaction->xid;
@@ -324,7 +287,7 @@ class MCAPIEntityController extends DrupalDefaultEntityController {
         }
         catch (Exception $e) {
           //getting an error: Cannot access protected property Exception::$message
-          //$e->message .= ' '. t('Database failed to update transaction record.');
+          $e->getMessage .= ' '. t('Database failed to update transaction record.');
           throw $e;
         }
         field_attach_update('transaction', $transaction);

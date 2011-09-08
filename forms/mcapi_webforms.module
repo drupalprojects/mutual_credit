@@ -60,6 +60,7 @@ function mcapi_webforms_menu_alter(&$items) {
   $items['admin/accounting/webforms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
 }
 
+
 /**
  * Implements hook_admin_paths().
  */
@@ -79,6 +80,7 @@ function mcapi_webforms_forms($form_id, $args) {
   //perhaps it should just return an array of all forms as the examples indicate?
   if (!count($args)) return;
   if ($webform = mcapi_webforms_load($form_id)) {
+    module_load_include('inc', 'mcapi_webforms');
     //ensure there is a transaction object in arg 1
     return array(
       $form_id => array(
@@ -128,8 +130,10 @@ function mcapi_webforms_block_view($delta) {
   $webform = mcapi_webforms_load($delta);
   //it's generally a bad idea to show the form in block on its own page
   if (current_path() == $webform->path) return;
+  $form = drupal_get_form($delta, $webform);
+  if (!$form) return;
   return array(
-    'title' => $webform->data['templates']['title-1'],
+    'subject' => isset($webform->data['templates']['step-1']['title']) ? $webform->data['templates']['step-1']['title'] : '<none>',
     'content' => drupal_get_form($delta, $webform)//delta is the $webform->machine_name
   );
   module_load_include('inc', 'mcapi_webforms');
@@ -282,11 +286,13 @@ function webform_workflow_incoming_validate(&$element, $form_state) {
 }
 
 function mcapi_webform_validate_worth(&$element, &$form_state) {
-  debug($element);
-  debug($form_state['values']);
+  //debug($element);
+  //debug($form_state['values']);
 }
+
 function mcapi_path_validate(&$element, $form_state) {
 }
+
 function mcapi_webforms_template_validate(&$element, &$form_state) {
   $form_state['values']['templates']['template-1'] = filter_xss($element['#value'], array('a', 'p', 'br', 'font', 'style', ));
 }

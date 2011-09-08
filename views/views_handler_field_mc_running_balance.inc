@@ -22,7 +22,7 @@ class views_handler_field_mc_running_balance extends views_handler_field {
       if ($key !== FALSE) {
         $uid = $this->view->args[$key];
         $quantity = mcapi_controller('transaction', 'get_running_balance', array($values['xid'], $uid,  $values->mc_exchanges_currcode));
-        return mcapi_field_format_money($quantity, $values->mc_exchanges_currcode);
+        return theme('worth_field', array('worth' => array('quantity' => $quantity, 'currcode' => $values->mc_exchanges_currcode)));
       }
     }
   }

@@ -13,12 +13,12 @@ function mcapi_entity_info_inc() {
     'label' => t('Transaction'),
     'controller class' => 'MCAPIEntityController', //inherits from default: DrupalEntityControllerInterface
     'base table' => 'mcapi_transactions',
-    'load_hook' => 'transaction_load',
+    //'load_hook' => 'transaction_load',
     'uri callback' => 'transaction_uri', //what is this for???
     'label callback' => 'transaction_label',
     'fieldable' => TRUE,
     'translation' => array(
-      'locale' => FALSE,
+      'locale' => module_exists('i18n_field') //this concerns the body field only, which is untranslatable by default
     ),
     'entity keys' => array(
       'id' => 'xid',
@@ -27,7 +27,9 @@ function mcapi_entity_info_inc() {
       'transaction' => array(
         'label' => t('Transaction'),
         'admin' => array(
+          //not sure what the difference is between these
           'path' => 'admin/accounting/transaction',
+          'real path' => 'admin/accounting/transaction',
           'access arguments' => array('manage all transactions'),
         )
       ),
@@ -135,20 +137,9 @@ function mcapi_accounting() {
  * All transaction forms should use this function as a basis using hook_forms
  */
 function transaction_form($form, &$form_state, $transaction) {
-
-  //the currency chooser if needed is done by form_alter
   $form['xid'] = array(
     '#type'=> 'hidden',
     '#value' => intval($transaction->xid)
-  );
-
-  $form['description'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Reason for transaction'),
-    '#default_value' => $transaction->description,
-    '#element_validate' => array('mcapi_validate_title'),
-    '#weight' => 3,
-    '#attributes' => array('style' => 'width:100%;')
   );
   $form['payer'] = array(
     '#type' => 'textfield',
@@ -197,9 +188,15 @@ function transaction_form($form, &$form_state, $transaction) {
     '#weight' => 20,
   );
   //TODO
-  //I'm just fed up of multistep forms, this will have to wait
+  //I'm just fed up of multistep forms
   //the following doesn't retrieve default values out of form_state when we come back from step 2
-  field_attach_form('transaction', $transaction, $form, $form_state);
+  try {
+    field_attach_form('transaction', $transaction, $form, $form_state);
+  }
+  catch (Exception $e) {
+    drupal_set_message(t('Cannot build transaction form:').' '. $e->getMessage(), 'error');
+    return array();
+  }
   
   //the default theming for multiple value fields is way over the top, so this module provides a cut down theme callback
   if (count(element_children($form['worth']['und'])) > 1) {
@@ -361,7 +358,7 @@ function mcapi_access_participants_admin($transaction, $account, $currency) {
   return mcapi_access_participants($transaction, $account) || mcapi_access_admin($transaction, $account, $currency);
 }
 function mcapi_access_admin($transaction, $account, $currency) {
-  return user_access('manage all transactions', $account) || $account->uid == $currency->uid;
+  return user_access('manage all transactions', $account);
 }
 function mcapi_access_participants($transaction, $account) {
   return in_array($account->uid, array($transaction->payer, $transaction->payee));

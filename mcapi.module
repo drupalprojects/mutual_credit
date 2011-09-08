@@ -10,10 +10,6 @@ module_load_include('field.inc', 'mcapi');
  *
  */
 
-function mcapi_form_alter(&$form, $form_state, $form_id) {
-  //$form['#action'] = 'system/ajax';
-}
-
 //states are mutually exclusive
 define ('TRANSACTION_STATE_FINISHED', 0);
 define ('TRANSACTION_STATE_ERASED', -1);
@@ -65,17 +61,6 @@ function mcapi_menu_alter(&$items) {
   //but we do want to manage the fields for two entity types on one page.
   $items['admin/accounting/currency/edit/fields']['title'] = 'Currency fields';
   $items['admin/accounting/transaction/edit/fields']['title'] = 'Transaction fields';
-}
-
-/**
- * Implements hook_admin_paths().
- */
-function mcapi_admin_paths() {
-  return array(
-    'admin/accounting*' => TRUE,
-    'currency*'
-  );
-
 }
 
 /*
@@ -174,19 +159,18 @@ function transaction_access($op, $transaction, $account = NULL) {
   //check we can use each of the currencies in the transaction
   foreach ($transaction->worth['und'] as $flow) {
     $currency = currency_load($flow['currcode']);
-    if ($op == 'update' && !$currency->accounting['update_mode']) {
-      return FALSE;
-    }
-    elseif($op == 'erase' && !$currency->accounting['erase_mode']) {
+    //access denied for transaction if ANY of the currencies denies it.
+    if (empty($currency->$op)) {
       return FALSE;
     }
     $states = $currency->$op;
+    if (!isset($states[$transaction->state])) drupal_set_message('Have you set transaction state permissions on this currency?');
     $function = $states[$transaction->state];
     if (function_exists($function)) {
-      if (!$function($transaction, $account, $currency)) return FALSE;
+      if ($function($transaction, $account, $currency)) return TRUE;
     }
   }
-  return TRUE;
+  return FALSE;
 }
 
 
@@ -237,7 +221,7 @@ function transaction_uri($transaction) {
   );
 }
 function transaction_label($transaction){
-  return $transaction->description;
+  return t('Transaction #@xid', array('@xid' => $transaction->xid));
 }
 function currency_label($currency) {
   return $currency->name;
@@ -245,8 +229,7 @@ function currency_label($currency) {
 
 
 /**
- * build a render array for the transaction
- * not sure if this is needed
+ * build a render array for ONE transaction
  */
 function transaction_view($transaction, $view_mode = 'certificate') {
   //this is almost certainly a full page view, so I dare to set the title here
@@ -257,21 +240,21 @@ function transaction_view($transaction, $view_mode = 'certificate') {
   field_attach_prepare_view('transaction', $entities, 'default');
   entity_prepare_view('transaction', $entities);
 
+  debug($entities);
   $build = array(
     '#theme' => 'transaction',
-    '#transaction' => $transaction,
+    '#transaction' => array_pop($entities),
     '#view_mode' => $view_mode,
   );
   return $build;
 }
 
 /*
- * make the transactionn variables into something which can be nicely themed
+ * make the transaction variables into something which can be nicely themed
  */
 function template_preprocess_transaction(&$variables) {
   $transaction = $variables['transaction'];
   $variables += array(
-    'description' => $transaction->description,
     'payer' => format_username(user_load($transaction->payer)),
     'payee' => format_username(user_load($transaction->payee)),
     'state' => $transaction->state,
@@ -282,8 +265,13 @@ function template_preprocess_transaction(&$variables) {
   if (variable_get('mcapi_mixed_transactions', 0)) {
     $variables['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
   }
+  //theme the worth field(s) and make them a variable
   $transaction->worth['und']['#theme'] = 'worth_fields';
   $variables['worths'] = drupal_render($transaction->worth['und']);
+
+  //make the description available in the right language
+  $variables['description'] = $transaction->body;
+  field_attach_preprocess('transaction', $transaction, $transaction->body, $variables);
 }
 
 // this shouldn't be necessary, but how else to get a dynamic list of tokens?
@@ -302,7 +290,6 @@ function mcapi_get_tokens() {
  * Callback to help build transaction entity from $form_state
  */
 function transaction_entity_builder($entity_type, $entity, $form, &$form_state) {
-  $entity->description = isset($form_state['values']['description']) ?  $form_state['values']['description'] : t('no description given');
   $entity->state = isset($form_state['values']['state']) ?  $form_state['values']['state'] : TRANSACTION_STATE_FINISHED; //shouldn't really be omitted
   $entity->creator = isset($form_state['values']['creator']) ?  $form_state['values']['creator'] : $GLOBALS['user']->uid;
   $entity->created = REQUEST_TIME;
@@ -331,7 +318,6 @@ class transaction {
   //should this be in the entity controller?
   //could do with some advice
   public $xid;
-  public $description;
   public $payer;
   public $payee;
   public $worth;
@@ -383,9 +369,9 @@ function transaction_load($xid) {
   $transactions = entity_get_controller('transaction')->load(array($xid));
   return array_pop($transactions);
 }
-function transactions_load($conditions) {
+function transaction_load_multiple($xids = array(), $conditions, $reset = FALSE) {
   module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
-  return entity_get_controller('transaction')->load(array(), $conditions);
+  return entity_load('transaction', $xids, $conditions, $reset);
 }
 function transaction_validate($transaction) {
   module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
@@ -442,8 +428,7 @@ function mcapi_action_info() {
  */
 function record_exchange_action_form($context) {
   $transaction = new transaction;
-  if (isset($context['description'])) {
-    $transaction->description = $context['description'];
+  if (isset($context['worth'])) {
     $transaction->payer = $context['payer'];
     $transaction->payee = $context['payee'];
     $transaction->worth = array(
@@ -456,7 +441,6 @@ function record_exchange_action_form($context) {
     );
   }
   //make a new transaction, and fill in from the defaults
-  //$transaction->description = $context['description'];
   //this form should really have a validation function to ensure that at least one participant is provided
   module_load_include('inc', 'mcapi');
   $form['template'] = array(
@@ -474,7 +458,6 @@ function record_exchange_action_form($context) {
   unset($form['template']['transaction']['creator']);
   unset($form['template']['transaction']['type']);
   //tweak the form
-  $form['template']['transaction']['description']['#required'] = TRUE;
   $form['template']['transaction']['worth']['#required'] = TRUE;
   $form['template']['transaction']['#description'] = TRUE;
   return $form;
@@ -491,7 +474,6 @@ function record_exchange_action_submit($form, $form_state) {
 function record_exchange_action($node, $context) {
   $transaction = new transaction;
   $transaction->currcode = $context['currcode'];
-  $transaction->description = $context['description'];
   $transaction->worth = $context['worth'];
   $transaction->payer = $context['payer'];
   $transaction->payee = $context['payee'];
@@ -548,7 +530,7 @@ function mcapi_validate_username(&$element, &$form_state) {
  */
 function currency_load($currcode = 0) {
   $currencies = currencies_load();
-  if (isset($currencies[$currcode])) {
+  if (!empty($currencies[$currcode])) {
     return $currencies[$currcode];
   }
   return (object)array('name' => t('Please choose...'));
@@ -568,7 +550,8 @@ function currencies_load($account = NULL) {
     }
   }
   if (empty($account)) return $currencies;
-   module_load_include('admin.inc', 'mcapi', 'currencies');
+  module_load_include('admin.inc', 'mcapi', 'currencies');
+  $filtered = array();
   foreach ($currencies as $currcode => $currency) {
     if (currency_access('use', $currency, $account)) {
       $filtered[$currcode] = $currency;

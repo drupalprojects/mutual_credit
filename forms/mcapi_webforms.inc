@@ -9,6 +9,12 @@ module_load_include('inc', 'mcapi');
  * main form builder, starts by building the base form in the mcapi module
  */
 function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user = NULL) {
+  if (!empty($webform->disabled)) {
+    throw new Exception(t('webform @name is disabled', array(
+      '@name' => $webform->name,
+    )));
+  }
+  form_load_include($form_state, 'inc', 'mcapi_webforms');
   //only show one currency field 
   $form_state['field']['worth']['und']['items_count'] = 0;
   //reject if the transaction isn't in one of the acceptable states
@@ -30,6 +36,14 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     $transaction = $form_state['#transaction'];
   }
   $form = transaction_form($form, $form_state, $transaction);
+  if (!$form) return array();
+  //remove the label of the 'Worth' field, which is required by field API, but clutter in this context
+  //if this were done when the field was constructed (not sure where that is) it would apply to everywhere the field was used
+  //if it was done in form alter we would have to check the form_id
+  foreach (element_children($form['worth']['und']) as $key) {
+    unset($form['worth']['und'][$key]['#title']);
+  }
+
   $form['creator']['#type'] = 'hidden';
   $form['xid']['#type'] = 'hidden';
   $form['type']['#type'] = 'hidden';
@@ -37,7 +51,6 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   $form['state']['#type'] = 'hidden';
   $form['state']['#value'] = $webform->data['workflow']['outgoing'];
   
-  //
   //particpants
   if ($webform->data['aspect'] == 3) {
     //payer
@@ -104,9 +117,6 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     array_unshift($form['#validate'], 'mcapi_webforms_validate_2ndperson');
   }
   
-  //description
-  mcapi_webform_default_value($form['description'], $webform->data['description']);
-  
   //save button
   if (strpos($webform->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -125,7 +135,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
     // the transaction elements are not present, but are in form_state storage not form_state values
     $form['#validate'] = array();
   }
-
+  $form['#action'] = url($webform->path);
   //this may help with the validation and submission
   $form_state['#webform'] =  $webform;
   $form['#theme'] = 'mcapi_webform';
@@ -173,7 +183,6 @@ function mcapi_webform_default_value(&$element, $settings) {
 
 function mcapi_webform_collect_tokens(&$webform) {
   $tokens = $webform->data['aspect'] == 3 ? array('payee', 'payer') : array('2ndperson', 'direction');
-  $tokens[] = 'description';
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
   $fields = db_query("SELECT field_name FROM {field_config_instance} WHERE bundle = 'transaction' AND deleted = 0")->fetchCol();
   //this picks up 'worth' and any other fields on the transaction entity
@@ -258,6 +267,7 @@ function mcapi_element_markup_render($element, $fs_values) {
       return;
     case 'user_chooser_roles':
     case 'user_chooser_permissions':
+      return format_username(user_load($element['#value']));
     case 'radios':
     case 'checkboxes':
     case 'select':
@@ -274,7 +284,10 @@ function mcapi_element_markup_render($element, $fs_values) {
       $element = $fs_values['worth']['und'] + array('#theme' => 'worth_fields');
       //also we need to reformat the worth so it has 'quantity', not 'integer and division'
       foreach(element_children($element) as $childname) {
-        $element[$childname]['quantity'] = $element[$childname]['integer'] + $element[$childname]['division']/100;
+        $element[$childname]['quantity'] = $element[$childname]['integer'];
+        if (!empty($element[$childname]['division'])) {
+          $element[$childname]['quantity'] += $element[$childname]['division']/100;
+        }
       }
       //and don't break...
     case 'submit':
@@ -386,11 +399,10 @@ function mcapi_webforms_form_presubmit($form, &$form_state) {
 //ascertains whether the active path corresponds to this webform
 //not very pretty, but we need to know not to set the page title if this form is in a block
 function _is_this_webform($webform) {
-
   $parts = explode('/', current_path());
-  if ($parts[2] = 'formedit') return TRUE;
+  if (!empty($parts[2]) && $parts[2] == 'formedit') return TRUE;
   $map = explode('/', $webform->path);
-  debug($parts);debug($map);
+//  debug($parts);debug($map);
   foreach($map as $key => $part) {
     if (strpos($part, '%') === 0) $parts[$key] = $part;
   }

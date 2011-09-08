@@ -179,7 +179,6 @@ function mcapi_views_views_data() {
 }
 
 function mcapi_views_views_data_alter(&$items) {
-
   $items['mcapi_transactions']['table']['join']['mcapi_index'] = array(
     'left_field' => 'xid',
     'field' => 'xid'

@@ -26,22 +26,20 @@
  *
  * This template doesn't use normal template syntax because it's based on a sentence structure and needs to retain a coherent translatable string
  */
-
 $replacements = array(
   '@recorded' => $recorded,
   '!payer' => $payer,
   '!payee' => $payee,
   '!worth' => $worths,
-  '@description' => $description,
 );
 
 if ($view_mode == 'summary') {
   switch ($transaction->state) {
     case TRANSACTION_STATE_FINISHED:
-      print t("On @recorded, !payer gave !payee !worth for '@description'", $replacements);
+      print t("On @recorded, !payer gave !payee !worth", $replacements);
       break;
     case TRANSACTION_STATE_ERASED:
-      print t("On @recorded, !payer did not give !payee !worth for '@description'. (DELETED)'", $replacements);
+      print t("On @recorded, !payer did not give !payee !worth. (DELETED)'", $replacements);
       break;
   }
   return;
@@ -52,16 +50,12 @@ else {
     t('!payer <strong>paid</strong> !payee', $replacements) :
     t('!payer <strong>will pay</strong> !payee', $replacements);
   $sum = t('the sum of !worth', array('!worth' => '<p style="font-size:250%;">'. $worths .'</p>'));
-  $reason = t('for !reason', array('!reason' => '<strong>'.$description.'</strong>'));
-
-
 ?>
 
 <div class="exchange">
   <p><?php print $date; ?></p>
    <p><?php print $movement; ?></p>
    <p><?php print $sum; ?> </p>
-  <p><?php print $reason; ?></p>
 </div>
 
 <?php } ?>
