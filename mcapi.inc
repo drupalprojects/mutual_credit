@@ -265,10 +265,13 @@ function mcapi_node_presave_currency(&$node) {
   if (!empty($node->divisions) && is_string($node->divisions)) {
     $node->data['divisions'] = array();
     $lines = array_filter(explode("\n", $node->divisions));
+    //ensure all the array keys are saved as humbers
     if (count($lines)) {
       foreach($lines as $line) {
         $vals = explode('|', $line);
-        $node->data['divisions'][$vals[0]] = trim($vals[1]);
+        $key  = intval($vals[0]);
+        $val = trim($vals[1]);
+        $node->data['divisions'][$key] = $val;
       }
     }
   }

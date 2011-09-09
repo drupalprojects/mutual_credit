@@ -353,7 +353,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
   $form['mc_signatures_signoff_wrapper']['mc_signatures_signoff_body'] = array(
     '#type' => 'textarea',
     '#title' => t('Exchange is signed off.'),
-    '#default_value' => mc_signatures_mail_template('mc_signatures_signoff_body'),
+    '#default_value' => _mc_signatures_mail_template('mc_signatures_signoff_body'),
     '#description' => t('Tokens may be used.'),
     '#required' => TRUE,
     '#weight' => 2
@@ -409,7 +409,7 @@ function mc_signatures_mail_alter(&$message) {
 function mc_signatures_mail($key, &$message, $params)  {
   //there's only one key: signoff
   $subject = _mc_signatures_mail_template('mc_signatures_signoff_subject');
-  $body = mc_signatures_mail_template('mc_signatures_signoff_body');
+  $body = _mc_signatures_mail_template('mc_signatures_signoff_body');
 
   $variables = mc_mail_tokens($message['params']['recipient'], $message['language'], $message['params']['exchange']);
   $variables['!sign_link'] = url('exchange/'. $params['exchange']->nid . '/sign/'. $params['recipient']->uid, array('absolute' => TRUE));
@@ -425,7 +425,6 @@ function mc_signatures_notifiable($exchange, $recipient) {
     is_array($exchange->mc_unsigned) &&
     in_array($recipient->uid, $exchange->mc_unsigned) &&
     $recipient->mc_notification_throttle > 0) {
-    echo 'notifiable';
     return TRUE;
   }
 }

@@ -93,7 +93,6 @@ function mcapi_views_api() {
  * http://api.drupal.org/api/function/hook_node_info/6
  */
 function mcapi_node_info(){
-  variable_set('comment_exchange', 0);
   variable_set('comment_currency', 0);
   return array(
     'currency' => array(
@@ -425,11 +424,12 @@ function mcapi_theme_registry_alter(&$items) {
 }
 
 
-function theme_money($quant, $cid, $richtext=TRUE) {
+function theme_money($quant, $cid, $richtext = TRUE) {
   static $currencies;
   if (!isset($currencies[$cid])) {
     $currencies[$cid] = node_load($cid);
   }
+  $subdivision = '';
   $integer = abs(intval($quant));
   if ($currencies[$cid]->sub) {
     $fraction = 100 * round(abs($quant) - abs($integer), 2);
@@ -438,7 +438,7 @@ function theme_money($quant, $cid, $richtext=TRUE) {
     }
     else $subdivision = $fraction;
   }
-  $sign = $quant < 0 ? '-' :'';
+  $sign = $quant < 0 ? '-' : '';
   $icon = isset($currencies[$cid]->icon) ? theme('image', $currencies[$cid]->icon) : '';
 
   return strtr(
@@ -447,7 +447,7 @@ function theme_money($quant, $cid, $richtext=TRUE) {
       '@minus' => $sign,
       '@integer' => $integer,
       '@icon' => $icon,
-      '@subdivision' => $subdivision ? $subdivision : '00'
+      '@subdivision' => $subdivision
     )
   );
 }
