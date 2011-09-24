@@ -395,7 +395,6 @@ function mc_signatures_signoff_notify($exchange) {
  */
 function mc_signatures_mail_alter(&$message) {
   if (substr($message['id'],0,9) == 'mcapimail' && mc_signatures_notifiable($message['params']['exchange'], $message['params']['recipient'])) {
-    drupal_set_message('altering mail for signatures');
     $subject = _mc_signatures_mail_template('mc_signatures_notification_subject');
     $body = _mc_signatures_mail_template('mc_signatures_notification_body');
     $variables = mc_mail_tokens($message['params']['recipient'], $message['language'], $message['params']['exchange']);
