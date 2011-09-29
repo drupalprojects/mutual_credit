@@ -548,7 +548,7 @@ function mc_validate_title(&$element, $form_state) {
   if (!check_plain($element['#value'])) {
     form_error($element, t('Plain text only in exchange descriptions.'));
   }
-  $min = db_result(db_query("SELECT min_word_count FROM {node_type} WHERE type = 'exchange'"));
+  $min = intval(db_result(db_query("SELECT min_word_count FROM {node_type} WHERE type = 'exchange'")));
   if ($min && str_word_count($element['#value']) < $min) {
     form_error($element, t('Please describe the exchange with at least @count words', array('@count' => $min)));
   }
