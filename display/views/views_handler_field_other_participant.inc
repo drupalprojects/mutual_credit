@@ -31,32 +31,39 @@ class views_handler_field_other_participant extends views_handler_field {
       );
     }
   }
+  
+  function query() {
+    $this->ensure_my_table();
+  }
 
-  function render_link($data, $values) {
+  function render($values) {
+    return $this->render_link($values->participant);
+  }
+
+  function render_link($data) {
     $name = theme('username', user_load($data));
     if (!$this->options['link_to_other']) {
       $name = strip_tags($name);
     }
     return $name;
   }
-  
-  function query() {
-    //this is needed because the address of this function implies a db field which doesn't exist
-    //see mc_display.views.inc $data['mc_exchanges']['participant']
-    $this->ensure_my_table();
-  }
+}
 
-  function render($values) {
-    if (isset($this->view->argument['participant']) && count($this->view->args)) {
-      $key = array_search('participant', array_keys($this->view->argument));
-      if ($key !== FALSE) {
-        $uid = $this->view->args[$key];
-        $result = $values->mc_exchanges_payee_uid == $uid ?
-          $values->mc_exchanges_payer_uid :
-          $values->mc_exchanges_payee_uid;
-        return $this->render_link($result, $values);
-      }
+
+
+function mcapi_views_query_alter(&$view, &$query) {
+  if (isset($view->argument['participant']) && count($view->args)) {
+    $key = array_search('participant', array_keys($view->argument));
+    if ($key !== FALSE) {
+      $query->fields['other'] = array(
+        'field' => 'if (payer_uid = '.$view->args[$key].', payee_uid, payer_uid)',
+        'table' => '',
+        'alias' => 'participant'
+      );
     }
-    return '-';
+  }
+  if (array_intersect(array('unknown ASC', 'unknown DESC'), $query->orderby)) {
+    $query->orderby = array('participant');
+    unset($query->fields['unknown']);
   }
 }

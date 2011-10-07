@@ -150,13 +150,13 @@ function mc_display_views_data() {
     'argument' => array(
       'title' => t('Involved user'),
       'help' => t('Show only those exchanges in which a user was involved'),
-      'handler' => 'views_handler_argument_mcapi_starter',
+      'handler' => 'views_handler_argument_mc_participant',
     ),
     'field' => array(
       'title' => t('Other user'),
       'help' => t("Show the other user who wasn't passed in the views argument"),
-      'handler' => 'views_handler_field_mcapi_completer',
-      'click sortable' => TRUE
+      'handler' => 'views_handler_field_other_participant',
+      'click sortable' => TRUE 
     )
   );
   $data['mc_exchanges']['running_balance'] = array(

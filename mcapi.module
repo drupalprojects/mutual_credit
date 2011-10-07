@@ -93,7 +93,6 @@ function mcapi_views_api() {
  * http://api.drupal.org/api/function/hook_node_info/6
  */
 function mcapi_node_info(){
-  variable_set('comment_currency', 0);
   return array(
     'currency' => array(
       'name' => t('currency'),
@@ -115,6 +114,7 @@ function mcapi_node_info(){
       'locked' => TRUE
     )
   );
+  variable_set('comment_currency', 0);
 }
 
 /**
