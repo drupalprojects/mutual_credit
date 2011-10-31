@@ -5,9 +5,6 @@
  */
 function _mcapi_currency_form(&$form, &$form_state) {
   //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
-  if (isset($form_state['values'])) {
-    $currency = (object)$form_state['values'];
-  }
   $form['#tree'] = TRUE;
 
   $form['name'] = array(
@@ -15,7 +12,6 @@ function _mcapi_currency_form(&$form, &$form_state) {
     '#description' => t('Use the plural'),
     '#type' => 'textfield',
     '#default_value' => $form['#currency']->name,
-    //'#default_value' => empty($form_state['values']['name']) ? strval($currency->name) : $form_state['values']['name'],
     '#weight' => -1
   );
   $form['format'] = array(
@@ -24,7 +20,6 @@ function _mcapi_currency_form(&$form, &$form_state) {
        t('For example to display -$45:23 AUS, enter @minus@integer:@subdivision AUS'),
     '#type' => 'textfield',
     '#default_value' => $form['#currency']->format,
-    //'#default_value' => empty($form_state['values']['format']) ? strval($currency->format) : $form_state['values']['format'],
     '#element_validate' => array('mcapi_currency_validate_format'),
     '#required' => TRUE,
     '#weight' => 3
@@ -37,55 +32,68 @@ function _mcapi_currency_form(&$form, &$form_state) {
     '#cols' => 60,
     '#rows' => 4,
     '#default_value' => $form['#currency']->divisions_setting,
-    //'#default_value' => empty($form_state['values']['divisions_conf']) ? strval($currency->divisions_conf) : $form_state['values']['divisions_conf'],
     '#element_validate' => array('mcapi_currency_validate_divisions'),
     '#weight' => 5
   );
-  
+
+  $operations['view'] = t('View');
   $form['additional_settings'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 15,
   );
-  $form['accounting'] = array(
-    '#title' => t('Accounting standards'),
-    '#description' => t('More or less formal accounting standards can be determined.') .' '.
-      t('Not all combinations are meaningful!'),
-    '#type' => 'fieldset',
-    '#weight' => -1,
-    '#group' => 'additional_settings',
-    'update_mode' => array(
-      '#title' => t('Update mode'),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t("Can't update"),
-        1 => t("Delete and create a new transaction"),
-        2 => t("Update same record"),
-        //3 => t("Use entity versioning the same transaction (not available)"),
+  if (isset($form['#currency']->accounting)) { //not all engines will do this
+    $form['accounting'] = array(
+      '#title' => t('Accounting standards'),
+      '#description' => t('More or less formal accounting standards can be determined.') .' '.
+        t('Not all combinations are meaningful!'),
+      '#type' => 'fieldset',
+      '#weight' => -1,
+      '#group' => 'additional_settings',
+      'update_mode' => array(
+        '#title' => t('Update mode'),
+        '#type' => 'radios',
+        '#options' => array(
+          0 => t("Can't update"),
+          1 => t("Delete and create a new transaction"),
+          2 => t("Update same record"),
+          //3 => t("Use entity versioning the same transaction (not available)"),
+        ),
+        '#default_value' => $form['#currency']->accounting['update_mode'],
+        '#weight' => 1,
+        '#element_validate' => array('mcapi_currency_validate_update_mode'),
+        '#ajax' => array(
+          'callback' => 'currency_form_ajax',
+          'wrapper' => 'mcapi-currency-form',
+        ),
       ),
-      '#default_value' => $form['#currency']->accounting['update_mode'],
-      '#weight' => 1,
-      '#element_validate' => array('mcapi_currency_validate_update_mode'),
-      '#ajax' => array(
-        'callback' => 'currency_form_ajax',
-        'wrapper' => 'mcapi-currency-form',
-      ),
-    ),
-    'erase_mode' => array(
-      '#title' => t('Delete mode'),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t("Can't delete"),
-        1 => t('Mark deleted'),
-        2 => t('Remove all traces from the database (not from backups)'),
-      ),
-      '#default_value' => $form['#currency']->accounting['erase_mode'],
-      '#weight' => 2,
-      '#ajax' => array(
-        'callback' => 'currency_form_ajax',
-        'wrapper' => 'mcapi-currency-form',
-      ),
-    )
-  );
+      'erase_mode' => array(
+        '#title' => t('Delete mode'),
+        '#type' => 'radios',
+        '#options' => array(
+          0 => t("Can't delete"),
+          1 => t('Mark deleted'),
+          2 => t('Remove all traces from the database (not from backups)'),
+        ),
+        '#default_value' => $form['#currency']->accounting['erase_mode'],
+        '#weight' => 2,
+        '#ajax' => array(
+          'callback' => 'currency_form_ajax',
+          'wrapper' => 'mcapi-currency-form',
+        ),
+      )
+    );
+
+    //alter the options according to what is set
+    if ($form['#currency']->accounting['erase_mode'] == 0) {
+      unset($form['accounting']['update_mode']['#options'][1]);
+      if ($form['accounting']['update_mode']['#default_value'] == 1) {
+        $form['accounting']['update_mode']['#default_value'] = 0;
+      }
+    }
+
+    $operations['update'] = $form['accounting']['update_mode']['#default_value'] ? t('Update') : NULL;
+    $operations['erase'] =  $form['#currency']->accounting['erase_mode'] ? t('Erase') : NULL;
+  }
   //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
   $form['membership_callback'] = array(
     '#title' => t('Membership'),
@@ -95,23 +103,10 @@ function _mcapi_currency_form(&$form, &$form_state) {
     '#default_value' => $form['#currency']->membership_callback,
     '#weight' => 10,
   );
-  //alter the options according to what is set
-  if ($form['#currency']->accounting['erase_mode'] == 0) {
-    unset($form['accounting']['update_mode']['#options'][1]);
-    if ($form['accounting']['update_mode']['#default_value'] == 1) {
-      $form['accounting']['update_mode']['#default_value'] = 0;
-    }
-  }
   $states = mcapi_transaction_states();
   unset($states['unset'], $states[-2]);
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_permissions');
-  //some of the following tabs depend on settings, above
-  $operations = array(
-    'view' => t('View'),
-    'update' => $form['accounting']['update_mode']['#default_value'] ? t('Update') : NULL,
-    'erase' => $form['#currency']->accounting['erase_mode'] ? t('Erase') : NULL
-  );
   foreach (array_filter($operations) as $op => $name) {
     $form[$op] = array(
       '#title' => $name,
@@ -160,6 +155,7 @@ function mcapi_currency_form($form, &$form_state){
   _mcapi_currency_form($form, $form_state);
   return $form;
 }
+
 //validate is in currencies.admin.inc because it's the same for one or many currencies
 /*
  * Submit callback for mcapi_currency_form
@@ -320,6 +316,10 @@ function mcapi_use_currency() {
 //put the currencies back in the cache
 function currencies_recache() {
   cache_clear_all('currencies', 'cache');
+
+  $currency = currency_default();
+  $currencies[$currency->info['currcode']] = $currency;
+
   if (module_exists('mcapi_currencies')) {
     $currencies = currencies_load_all();
     //set the max number of currencies you pan pay with on one form
@@ -327,16 +327,13 @@ function currencies_recache() {
     $field['cardinality'] = count($currencies);
     field_update_field($field);
   }
-  else {
-    $currency = currency_default();
-    $currencies[$currency->info['currcode']] = $currency;
-  }
   foreach($currencies as $currcode => $currency) {
     $currency->divisions = _currency_divisions_array($currency->divisions_setting);
   }
   cache_set('currencies', $currencies);
   return $currencies;
 }
+
 
 
 /*

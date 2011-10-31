@@ -64,7 +64,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
   );
   $form['help'] = array(
     '#title' => t('Help'),
-    '#description' => t('A quick description for the administrator'),
+    '#description' => t('A quick description of the form, for the administrator'),
     '#type' => 'textfield',
     '#default_value' => isset($webform->data['help']) ? $webform->data['help'] : '',
     '#maxlength' => 255,

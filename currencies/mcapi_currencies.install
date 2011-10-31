@@ -1,17 +1,22 @@
 <?php
 
-function mcapi_currencies_install() {
-  module_load_include('admin.inc', 'mcapi', 'currencies');
-  $cur = currency_default();
-  $cur->uid = 1;
-  $fields = array(
-    'currcode' => $cur->currcode,
-    'data' => serialize($cur),
-  );
+function mcapi_currencies_enable() {
+  if (db_query("SELECT count(currcode) FROM {mcapi_currencies}")->fetchField() < 2) {
+    module_load_include('admin.inc', 'mcapi', 'currencies');
+    $currency = currency_default();
+    $currency->uid = 1;
+    $fields = array(
+      'currcode' => $currency->info['currcode'],
+      'data' => serialize($currency),
+    );
+    db_insert('mcapi_currencies')
+      ->fields($fields)
+      ->execute();
+    debug('saved first of many currencies');
+  }
+}
 
-  db_insert('mcapi_currencies')
-    ->fields($fields)
-    ->execute();
+function mcapi_currencies_disable() {
   cache_clear_all('currencies', 'cache');
 }
 

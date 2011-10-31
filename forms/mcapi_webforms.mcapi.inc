@@ -49,7 +49,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'outgoing' => 'Payment',
       'widget' => 'select',
     ),
-    'description' => array(
+    'body' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
@@ -79,13 +79,13 @@ function mcapi_webforms_default_mcapi_webforms() {
       'template' => 'Partner: [2ndperson]<br />
   Direction: [direction]<br />
   Amount: [worth]<br />
-  Description: [description]<br />',
+  [body]<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
       'template' => '[worth]
   with  [2ndperson]<br />
-  for [description]<br />',
+  for [body]<br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
@@ -95,7 +95,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'template-1' => 'Partner: [2ndperson]<br />
   Direction: [direction]<br />
   Amount: [worth]<br />
-  Description: [description]<br />',
+  [body]<br />',
     ),
   );
 
@@ -147,7 +147,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
-    'description' => array(
+    'body' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
@@ -176,14 +176,14 @@ function mcapi_webforms_default_mcapi_webforms() {
       'title' => '3rd party form',
       'template' => 'Payer: [payer]<br />
   Payee: [payee]<br />
-  Description: [description]<br />
+  [body]<br />
   Amount: [worth]<br />',
     ),
     'step-2' => array(
       'title' => 'are you sure?',
       'template' => 'Payer: [payer]<br />
   Payee: [payee]<br />
-  Description: [description]<br />
+  [body]<br />
   Amount: [worth]<br />',
     ),
     'buttons' => array(
@@ -193,7 +193,7 @@ function mcapi_webforms_default_mcapi_webforms() {
     'templates' => array(
       'template-1' => 'Payer: [payer]<br />
   Payee: [payee]<br />
-  Description: [description]<br />
+  [body]<br />
   Amount: [worth]<br />',
     ),
   );
@@ -214,7 +214,7 @@ function mcapi_webforms_default_mcapi_webforms() {
     'help' => '',
     'outputs' => array(
       'access' => 'user_access:manage all transactions',
-      'menu_link' => 'management',
+      'menu_link' => 'navigation',
       'use_block' => 0,
     ),
     'workflow' => array(
@@ -245,7 +245,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
-    'description' => array(
+    'body' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
@@ -277,7 +277,7 @@ function mcapi_webforms_default_mcapi_webforms() {
   [payee]<br />
   [worth] each<br />
   for<br />
-  [description]',
+  [body]',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
@@ -286,7 +286,7 @@ function mcapi_webforms_default_mcapi_webforms() {
   [payee]<br />
   [worth] each<br />
   for<br />
-  [description]',
+  [body]',
     ),
     'buttons' => array(
       'submit' => 'Save',
@@ -298,7 +298,7 @@ function mcapi_webforms_default_mcapi_webforms() {
   [payee]<br />
   [worth] each<br />
   for<br />
-  [description]',
+  [body]',
     ),
   );
 
@@ -318,7 +318,7 @@ function mcapi_webforms_default_mcapi_webforms() {
     'help' => '',
     'outputs' => array(
       'access' => 'user_access:manage all transactions',
-      'menu_link' => 'management',
+      'menu_link' => 'navigation',
       'use_block' => 0,
     ),
     'workflow' => array(
@@ -349,7 +349,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_roles:2',
       'multiple' => 1,
     ),
-    'description' => array(
+    'body' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
@@ -381,7 +381,7 @@ function mcapi_webforms_default_mcapi_webforms() {
   [payee]<br />
   [worth] each<br />
   for<br />
-  [description]',
+  [body]',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
@@ -390,7 +390,7 @@ function mcapi_webforms_default_mcapi_webforms() {
   [payee]<br />
   [worth] each<br />
   for<br />
-  [description]',
+  [body]',
     ),
     'buttons' => array(
       'submit' => 'Save',
@@ -402,7 +402,7 @@ function mcapi_webforms_default_mcapi_webforms() {
   [payee]<br />
   [worth] each<br />
   for<br />
-  [description]',
+  [body]',
     ),
   );
   $webforms[$webform->name] = $webform;
@@ -452,7 +452,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
-    'description' => array(
+    'body' => array(
       'common' => array(
         'preset' => '',
         'disable' => 0,
@@ -481,7 +481,7 @@ function mcapi_webforms_default_mcapi_webforms() {
       'title' => 'Transaction corrected',
       'template' => '[payer] paid [payee]<br />
   Amount: [worth]<br />
-  For: [description]<br />',
+  For: [body]<br />',
     ),
     'step-2' => array(
       'title' => '',
@@ -494,7 +494,7 @@ function mcapi_webforms_default_mcapi_webforms() {
     'templates' => array(
       'template-1' => '[payer] paid [payee]<br />
   Amount: [worth]<br />
-  For: [description]<br />',
+  For: [body]<br />',
     ),
   );
 

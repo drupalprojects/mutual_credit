@@ -57,9 +57,16 @@ function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $l
   foreach($items as $delta => $item) {
     $element[$delta] = array(
       '#theme' => 'worth_field',
-      '#quantity' => $item['quantity'],
       '#currcode' => $item['currcode'],
     );
+    //just for rendering the 2nd stage of the transaction form, which is a form item rendered as text, we have to check
+    if (isset($item['quantity'])) {//normal
+      $element[$delta]['#quantity'] = $item['quantity'];
+    }
+    else {//widget as text
+      $element[$delta]['#quantity']  = $item['integer'] + $item['division']/100;
+    }
+
   }
   return $element;
 }
@@ -88,7 +95,6 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
   $currencies = empty($element['#currcode']) ?
     currencies_load($GLOBALS['user']) : //needs to be for this current user
     array($element['#currcode'] => currency_load($element['#currcode']));
-
   switch (count($currencies)) {
     case 0: throw new Exception (t('No currencies available to user.'));
     case 1:
@@ -156,10 +162,8 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   //in despair, now retrieving from the special form_state object created at step 1 validation
   elseif(!empty($form_state['#transaction'])) {
     $default = $form_state['#transaction']->worth['und'][$element['#delta']];
-  //debug($default);
   }
   else {
-    //debug('setting defaults manually');
     $default += array('integer' => 0, 'division' => 0);
     if (!empty($element['currcode']['#options'])) {
       //and setting the default currency according to the delta value of this widget
@@ -289,16 +293,16 @@ function theme_worth_field(&$variables) {
   if (!$variables['currcode']) return '';
   $num = $variables['quantity'] + 0;
   $integer = abs(intval($num));
-  $currency =  currency_load($variables['currcode']);
+  $currency = currency_load($variables['currcode']);
   if ($num != $integer) {
-    $divisions = $currency->divisions;
-    if (is_array($divisions)) {
-      $subdivision = $divisions[str_pad(fmod(abs($num), 1) * 100, 2, '0')];
+    $hundredths = round(fmod(abs($num), 1), 2) * 100;
+    if (is_array($currency->divisions)) {
+      $subdivision = $currency->divisions[$hundredths];
     }
-    else $subdivision = abs($num);
+    else $subdivision = $hundredths;
   }
   return strtr(
-   $currency->format,
+    $currency->format,
     array(
       '@minus' => $num < 0 ? '-' :'',
       '@integer' => $integer,
@@ -349,7 +353,7 @@ function theme_worth_widget_currcode($variables) {
  * for when the currency code is undetermined
  * we use a table just to keep disparate form widgets lined up
  */
-function theme_worth_widgets($variables) {   ddebug_backtrace();
+function theme_worth_widgets($variables) {
   $element = &$variables['element'];
   //$element['currcode']['#options'] = array(t('Choose currency...')) + $element['currcode']['#options'];
   $row = array('data' => array(drupal_render($variables['element']['currcode']), drupal_render($variables['element']['integer'])));
@@ -360,7 +364,7 @@ function theme_worth_widgets($variables) {   ddebug_backtrace();
   return theme('table', array(
     'rows' => array($row),
     'attributes' => array('id' => 'edit-worth-und-'. $variables['element']['#delta']),
-    'caption' => $element['#title']
+    'caption' => empty($element['#title']) ? '' : $element['#title'],
   ));
 }
 

@@ -62,11 +62,7 @@ class mcapi_webform_ui extends ctools_export_ui {
     $this->rows[$name]['data'][] = array('data' => $path);
     //third col, storage
     $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
-    //first operation, edit
-    $editlink = array_shift($operations);
-    $this->rows[$name]['data'][] = array('data' => theme('links', array('links' => array($editlink))), 'class' => array('ctools-export-ui-storage'));
-    //final col, links
-
+    
     // Reorder the operations so that enable is the default action for a templatic views
     if (!empty($operations['enable'])) {
       $operations = array('enable' => $operations['enable']) + $operations;
@@ -97,7 +93,6 @@ class mcapi_webform_ui extends ctools_export_ui {
 
     $header[] = array('data' => t('Path'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
-    $header[] = array('data' => t('Edit'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
 
     return $header;

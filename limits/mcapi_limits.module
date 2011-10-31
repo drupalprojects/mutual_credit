@@ -204,8 +204,12 @@ function mcapi_limits_user_presave(&$edit, $account, $category) {
   $currencies = currencies_load($account->uid);
   foreach($currencies as $currcode => $currency) {
     if (isset($currency->limits['limits_callback']) && $currency->limits['limits_callback'] == 'limits_personal') {
-      $edit['data']['limits_personal'][$currcode]['min'] = $edit['min-'.$currcode];
-      $edit['data']['limits_personal'][$currcode]['max'] = $edit['max-'.$currcode];
+      if (isset($edit['min-'.$currcode])) {
+        $edit['data']['limits_personal'][$currcode]['min'] = $edit['min-'.$currcode];
+      }
+      if (isset($edit['max-'.$currcode])) {
+        $edit['data']['limits_personal'][$currcode]['max'] = $edit['max-'.$currcode];
+      }
     }
   }
 }
@@ -230,13 +234,13 @@ function mcapi_limits_validate_minmax(&$element, $form_state) {
   }
 }
 
-
 /*
  * inject the limit checker function into the transaction form
  */
 function mcapi_limits_form_transaction_form_alter(&$form, $form_state) {
   $form['#validate'][] = 'limits_transaction_form_validate';
 }
+
 /*
  * validate callback which checks that the transaction doesn't take anyone beyond their limits
  */
@@ -258,44 +262,46 @@ function limits_transaction_form_validate(&$form, $form_state) {
  * This is a drupal function, but the checking could just as easily be done through the entity controller.
  */
 function mcapi_limit_check($transaction) {
-  $currcode = $transaction->currcode;
-  $payer = $transaction->payer;
-  $payee = $transaction->payee;
-  $difference = $transaction->quantity;
-  $messages = array();
+  foreach ($transaction->worth['und'] as $flow) {
+    $currcode = $flow['currcode'];
+    $difference = $flow['quantity'];
+    $payer = $transaction->payer;
+    $payee = $transaction->payee;
+    $messages = array();
 
-  //check that the payee isn't going over their max limit
-  $limits = limits_get($currcode, $payee);
-  if (is_numeric($limits['max'])) {
-    $balance = entity_get_controller('transaction')
-      ->balance($currcode, $payee, $states = array(TRANSACTION_STATE_FINISHED));
-    $payee_projected = $balance + $difference;
-    $surplus = $payee_projected - $limits['max'];
-    if ($surplus > 0) {
-      $messages[] .= t('Transaction would take @username !quant above the maximum balance of !max.',
-        array(
-          '@username' => strip_tags(format_username(user_load($payee))),
-          '!quant' => theme('money', array('quantity' => $surplus, 'currcode' => $currcode, $richtext = FALSE)),
-          '!max' => theme('money', array('quantity' => $limits['max'], 'currcode' => $currcode, $richtext = FALSE))
-        )
-      );
+    //check that the payee isn't going over their max limit
+    $limits = limits_get($currcode, $payee);
+    if (is_numeric($limits['max'])) {
+      $balance = entity_get_controller('transaction')
+        ->balance($payee, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
+      $payee_projected = $balance + $difference;
+      $surplus = $payee_projected - $limits['max'];
+      if ($surplus > 0) {
+        $messages[] .= t('Transaction would take @username !quant above the maximum balance of !max.',
+          array(
+            '@username' => strip_tags(format_username(user_load($payee))),
+            '!quant' => theme('worth_field', array('quantity' => $surplus, 'currcode' => $currcode)),
+            '!max' => theme('worth_field', array('quantity' => $limits['max'], 'currcode' => $currcode))
+          )
+        );
+      }
     }
-  }
-  //check that the payer isn't going below their min limit
-  $limits = limits_get($currcode, $payer);
-  if (is_numeric($limits['min'])) {
-    $balance = entity_get_controller('transaction')
-      ->balance($currcode, $payer, $states = array(TRANSACTION_STATE_FINISHED));
-    $payer_projected = $balance - $difference;
-    $deficit = $limits['min'] - $payer_projected;
-    if ($deficit > 0) {
-      $messages[] .= t('Transaction would take @username !quant below the minimum balance of !min.',
-        array(
-          '@username' => strip_tags(format_username(user_load(user_load($payer)))),
-          '!quant' => mcapi_field_format_money($deficit, $currcode),
-          '!min' => mcapi_field_format_money($limits['min'], $currcode)
-        )
-      );
+    //check that the payer isn't going below their min limit
+    $limits = limits_get($currcode, $payer);
+    if (is_numeric($limits['min'])) {
+      $balance = entity_get_controller('transaction')
+        ->balance($payer, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
+      $payer_projected = $balance - $difference;
+      $deficit = $limits['min'] - $payer_projected;
+      if ($deficit > 0) {
+        $messages[] .= t('Transaction would take @username !quant below the minimum balance of !min.',
+          array(
+            '@username' => strip_tags(format_username(user_load($payer))),
+            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $deficit)),
+            '!min' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['min'])),
+          )
+        );
+      }
     }
   }
   if (count($messages)) {
@@ -324,7 +330,7 @@ function mcapi_limits_views_api() {
  */
 function show_balance_limits($account, $currcode) {
   $balance = entity_get_controller('transaction')
-    ->balance($currcode, $account->uid, $states = array(TRANSACTION_STATE_FINISHED));
+    ->balance($account->uid, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
   $limits = limits_get($currcode, $account->uid);
   //this chart makes no sense if there isn't a max (or min) limit
   if (!is_numeric($limits['max']) || !is_numeric($limits['min'])) {

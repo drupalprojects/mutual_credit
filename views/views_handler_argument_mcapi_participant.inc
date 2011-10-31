@@ -26,7 +26,7 @@ class views_handler_argument_mcapi_participant extends views_handler_argument_nu
     return $titles;
   }
 
-  function query() {
+  function query($group_by = FALSE) {
     $this->ensure_my_table();
     $this->query->add_where_expression(0, "$this->table_alias.payer = $this->argument OR $this->table_alias.payee = $this->argument");
   }

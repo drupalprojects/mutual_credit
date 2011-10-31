@@ -1,18 +1,32 @@
 <?php
 //$Id
+//define ('GOOGLE_CHARTS_URI', 'http://chart.apis.google.com/chart?');
 
 /*
  * Module keeps a cache of transactions which is optimised for views to interrogate
  */
 
-//define ('GOOGLE_CHARTS_URI', 'http://chart.apis.google.com/chart?');
+/*
+ * implements hook_requirements
+ * tests that the transaction controller is default. i.e. using drupal
+ */
+function mcapi_views_requirements() {
+  $controller = variable_get('mcapi_controller', 'mcapi');
+  $requirements['transaction_controller'] = array(
+    'title' => 'Transaction controller',
+    'value' => 'mcapi_views module does not work with contoller: '.$controller,
+    'severity' => $controller == 'mcapi' ? REQUIREMENT_INFO : REQUIREMENT_ERROR,
+  );
+  return $requirements;
+}
+
 
 function mcapi_views_entity_insert($entity, $type) {
-  if ($type == 'transaction') mcapi_update_index($entity);
+  if ($type == 'transaction') update_mcapi_index($entity);
   //then we'll need to recalc the running balances of everything after that
 }
 function mcapi_views_entity_update($entity, $type) {
-  if ($type == 'transaction') mcapi_update_index($entity, $entity->xid);
+  if ($type == 'transaction') update_mcapi_index($entity, $entity->xid);
   //then we'll need to recalc the running balances of everything after that
 }
 
@@ -28,7 +42,7 @@ function mcapi_views_entity_delete($entity, $type) {
  * Cacheing is done at the display level
  * This function merely clears those caches
  */
-function mcapi_update_index($transaction, $xid = NULL) {
+function update_mcapi_index($transaction, $xid = NULL) {
   if ($transaction->state == TRANSACTION_STATE_FINISHED) {
     foreach ($transaction->worth['und'] as $delta => $transfer) {
       $balance_query = "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = :uid AND currcode = :currcode AND xid < :xid";
@@ -40,6 +54,8 @@ function mcapi_update_index($transaction, $xid = NULL) {
 
       $args[':uid'] = $transaction->payee;
       $balance = db_query($balance_query, $args)->fetchfield();
+      $balance = mcapi_user_balance($transaction->payee, $transfer['currcode']);
+
       db_merge('mcapi_index')
       ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payee))
       ->fields(array(
@@ -54,6 +70,7 @@ function mcapi_update_index($transaction, $xid = NULL) {
 
       $args[':uid'] = $transaction->payer;
       $balance = db_query($balance_query, $args)->fetchfield();
+      $balance = mcapi_user_balance($transaction->payee, $transfer['currcode']);
       db_merge('mcapi_index')
       ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payer))
       ->fields(array(
@@ -137,7 +154,7 @@ function mcapi_views_rebuild_index() {
   //load all the transactions and then index them
   $transactions = transaction_load_multiple(NULL, array('state' => 0));
   foreach($transactions as $transaction) {
-    mcapi_update_index($transaction);
+    update_mcapi_index($transaction);
   }
 }
 

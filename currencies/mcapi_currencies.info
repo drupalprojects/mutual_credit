@@ -7,7 +7,8 @@ core = "7.x"
 
 dependencies[] = mcapi
 dependencies[] = ctools
+;dependencies[] = mcapi_currencies
 
-;files[] = mcapi_currencies.install
+files[] = mcapi_currencies.install
 files[] = plugins/export_ui/export_ui.inc
 files[] = plugins/export_ui/mcapi_currencies_ui.class.php

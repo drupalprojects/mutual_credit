@@ -11,7 +11,6 @@
  *
  * $transaction     //entity object
  * $view_mode       // either 'summary' or 'certificate'
- * $description     //
  * $type            //
  * $state           // 1 = pending, 0 = completed, -1 = erased
  * $recorded        // date formatted using drupal's 'medium' date format

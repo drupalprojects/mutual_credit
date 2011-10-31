@@ -5,19 +5,8 @@ package = Mutual Credit
 configure = admin/accounting
 core = 7.x
 
-files[] = default.controller
+files[] = mcapi.controller
 files[] = mcapi.inc
 files[] = mcapi.install
 files[] = mcapi.field.inc
 files[] = mcapi.tokens.inc
-
-
-files[] = views/views_handler_argument_mcapi_participant.inc
-files[] = views/views_handler_field_mcapi_completer.inc
-files[] = views/views_handler_field_mcapi_links.inc
-files[] = views/views_handler_field_mcapi_trader.inc
-files[] = views/views_handler_field_mcapi_value.inc
-files[] = views/views_handler_field_mcapi_state.inc
-files[] = views/views_handler_filter_mcapi_states.inc
-files[] = views/views_handler_filter_mcapi_currency.inc
-files[] = views/views_handler_filter_mcapi_types.inc

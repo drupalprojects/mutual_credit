@@ -141,6 +141,7 @@ function mcapi_webforms_form($form, &$form_state, $transaction, $webform, $user 
   $form['#theme'] = 'mcapi_webform';
   $form['#contextual_links']['mcapi_webforms'] = array('admin/accounting/webforms/list', array($webform->name));
   array_unshift($form['#submit'], 'mcapi_webforms_form_presubmit');
+  array_push($form['#submit'], 'mcapi_webforms_form_presubmit');
   $form['#validate'][] = 'mcapi_webforms_validate';
   //custom properties
   //this tells the theme callback which template to use
@@ -255,19 +256,15 @@ function theme_mcapi_webform($variables) {
 
 /*
  * replace tokens in stage 2 form with text, based on the form item token used in the template
+ * this is tricky because we have a formAPI element, and need to pull a sensible text value from it.
  */
 function mcapi_element_markup_render($element, $fs_values) {
-  //anything without a #type must be a container
-  if (!isset($element['#type'])) {
-    debug($element); //#type not set - what's going on?
-    return;
-  }
   switch($element['#type']) {
     case 'hidden':
       return;
     case 'user_chooser_roles':
     case 'user_chooser_permissions':
-      return format_username(user_load($element['#value']));
+      return format_username(user_load($fs_values[$element['#name']]));
     case 'radios':
     case 'checkboxes':
     case 'select':
@@ -279,17 +276,17 @@ function mcapi_element_markup_render($element, $fs_values) {
     case 'markup': //in case the form got altered
     case 'textfield':
       return $element['#value'];
+
+    //all the fieldAPI fields appear here as container - the need to be handled quite differently
     case 'container':
-      //assuming this can only be the 'worth' field, we make a psuedo-element for theming only.
-      $element = $fs_values['worth']['und'] + array('#theme' => 'worth_fields');
-      //also we need to reformat the worth so it has 'quantity', not 'integer and division'
-      foreach(element_children($element) as $childname) {
-        $element[$childname]['quantity'] = $element[$childname]['integer'];
-        if (!empty($element[$childname]['division'])) {
-          $element[$childname]['quantity'] += $element[$childname]['division']/100;
-        }
+      foreach(element_children($element['und']) as $childname) {
+        $fieldname = $element['und']['#field_name'];
+        $field = field_info_field($fieldname);
+        $instance = field_info_instance('transaction', $fieldname, 'transaction');
+        $function  = $field['module'] . '_field_formatter_view';
+        $renderable[] = $function('transaction', NULL, NULL, $instance, 'und', $fs_values[$fieldname]['und'], $instance['display']['default']);
       }
-      //and don't break...
+      return drupal_render($renderable);
     case 'submit':
     case 'token':
       return drupal_render($element);
@@ -388,6 +385,11 @@ function mcapi_webforms_validate($form, &$form_state) {
  */
 function mcapi_webforms_form_presubmit($form, &$form_state) {
   $form_state['values'] = $form_state['storage'];
+}
+/*
+ * Last submit callback for default transaction form
+ */
+function mcapi_webforms_form_postsubmit($form, &$form_state) {
   //look for the webform object for the redirect
   $form_state['redirect'] = str_replace(
     '#xid',

@@ -11,9 +11,8 @@
 function mcapi_entity_info_inc() {
   $entities['transaction'] = array(
     'label' => t('Transaction'),
-    'controller class' => 'MCAPIEntityController', //inherits from default: DrupalEntityControllerInterface
+    'controller class' => variable_get('mcapi_controller', 'mcapi') .'_EntityController',
     'base table' => 'mcapi_transactions',
-    //'load_hook' => 'transaction_load',
     'uri callback' => 'transaction_uri', //what is this for???
     'label callback' => 'transaction_label',
     'fieldable' => TRUE,
@@ -280,15 +279,15 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
 }
 
 /*
- * validate callback for transaction form participants
+ * validate callback for transaction form participants - accepts uid only
  */
 function mcapi_validate_transactor(&$element, $form_state) {
   $account = user_load($element['#value']);
-  if (!$account) {
-    form_error($element, t('User does not exist: @user', array('@user' => $element['#value'])));
+  if (!$account->uid) {
+    form_error($element, t('User ID does not exist: @user', array('@user' => $element['#value'])));
   }
   elseif(!user_access('transact', $account)) {
-    form_error($element, t("User is not permitted to 'transact': @user", array('@user' => $account->name)));
+    form_error($element, t("User ID is not permitted to 'transact': @user", array('@user' => $account->name)));
   }
 }
 

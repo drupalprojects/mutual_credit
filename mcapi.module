@@ -84,11 +84,18 @@ function mcapi_forms($form_id, $args) {
 function mcapi_hook_info() {
   module_load_include('inc', 'mcapi');
   return array(
+    'transaction_controller' => array(),
     'mcapi_info' => array(),
     'mcapi_access' => array(),
     'mcapi_permissions' => array(),
   );
 }
+
+/*
+ * implements hook_transaction_controller
+ * the presence of this hook indicates there is a .controller file
+ */
+function mcapi_transaction_controller(){}
 
 function mcapi_mcapi_info($prop) {
   $info = array(
@@ -239,8 +246,6 @@ function transaction_view($transaction, $view_mode = 'certificate') {
   // This is only needed if there are fields on the transaction entity
   field_attach_prepare_view('transaction', $entities, 'default');
   entity_prepare_view('transaction', $entities);
-
-  debug($entities);
   $build = array(
     '#theme' => 'transaction',
     '#transaction' => array_pop($entities),
@@ -254,13 +259,11 @@ function transaction_view($transaction, $view_mode = 'certificate') {
  */
 function template_preprocess_transaction(&$variables) {
   $transaction = $variables['transaction'];
-  $variables += array(
-    'payer' => format_username(user_load($transaction->payer)),
-    'payee' => format_username(user_load($transaction->payee)),
-    'state' => $transaction->state,
-    'recorded' => format_date($transaction->created, 'medium'),
-    'type' => $transaction->type
-  );
+  $variables['payer'] = format_username(user_load($transaction->payer));
+  $variables['payee'] = format_username(user_load($transaction->payee));
+  $variables['state'] = $transaction->state;
+  $variables['recorded'] = format_date($transaction->created, 'medium');
+  $variables['type'] = $transaction->type;
   //choose the transaction theme template based on the first currency of the transaction
   if (variable_get('mcapi_mixed_transactions', 0)) {
     $variables['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
@@ -364,26 +367,30 @@ class transaction {
  * load a single transaction, from the $xid
  * this is used to as a menu loader, so can't be in an inc file
  */
+//if this isn't done globally, entity_crud_get_info in the contributed entity module, tries to load the controller without loading the file
+module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
+
 function transaction_load($xid) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
   $transactions = entity_get_controller('transaction')->load(array($xid));
   return array_pop($transactions);
 }
 function transaction_load_multiple($xids = array(), $conditions, $reset = FALSE) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
   return entity_load('transaction', $xids, $conditions, $reset);
 }
 function transaction_validate($transaction) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
   return entity_get_controller('transaction')->validate($transaction);
 }
 function transaction_save($transaction) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
   return entity_get_controller('transaction')->save($transaction);
 }
 function transaction_erase($transaction) {
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+  if (is_int($transaction)) {
+    $transaction = transaction_load($transaction);
+  }
   return entity_get_controller('transaction')->erase($transaction);
+}
+function mcapi_user_balance($uid, $currcode = NULL, $states = array(TRANSACTION_STATE_FINISHED), $xid = NULL) {
+  return entity_get_controller('transaction')->balance($uid, $currcode, $states, $xid);
 }
 
 
@@ -397,17 +404,6 @@ function mcapi_transaction_states(){
     $states += $function('states');
   }
   return $states;
-}
-
-
-/*
- * Implements views hook_views_api
- */
-function mcapi_views_api() {
-  return array(
-    'api' => 3,
-    'path' => drupal_get_path('module', 'mcapi') .'/views',
-  );
 }
 
 /*
@@ -543,7 +539,9 @@ function currencies_load($account = NULL) {
   $currencies = &drupal_static('currencies');
   if (!$currencies) {//first time this page request.
     $cache = cache_get('currencies');
-    if ($cache) $currencies = $cache->data;
+    if ($cache) {
+      $currencies = $cache->data;
+    }
     else {
       module_load_include('admin.inc', 'mcapi', 'currencies');
       $currencies = currencies_recache();
