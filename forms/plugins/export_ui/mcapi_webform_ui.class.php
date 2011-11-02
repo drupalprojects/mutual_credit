@@ -57,10 +57,12 @@ class mcapi_webform_ui extends ctools_export_ui {
     }
     //first col, name
     $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
-    //second col, path
+    //second col, help
+    $this->rows[$name]['data'][] = array('data' => check_plain($item->data['help']), 'class' => array('ctools-export-ui-name'));
+    //third col, path
     $path = strpos($item->path, '%') ? $item->path : l($item->path, $item->path);
     $this->rows[$name]['data'][] = array('data' => $path);
-    //third col, storage
+    //fourth col, storage
     $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
     
     // Reorder the operations so that enable is the default action for a templatic views
@@ -83,18 +85,11 @@ class mcapi_webform_ui extends ctools_export_ui {
    * table, override this method to set up the table header.
    */
   function list_table_header() {
-    $header = array();
-    if (!empty($this->plugin['export']['admin_title'])) {
-      $header[] = array('data' => t('Title'), 'class' => array('ctools-export-ui-title'));
-    }
-    else{
-      $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-name'));
-    }
-
+    $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-name'));
+    $header[] = array('data' => t('Help'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Path'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
-
     return $header;
   }
 }

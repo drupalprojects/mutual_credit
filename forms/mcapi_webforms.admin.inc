@@ -206,7 +206,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       ),
       '#default_value' => isset($webform->data['direction']['widget']) ? $webform->data['direction']['widget'] : 'outgoing',
     );
-    $form['direction']['common']['preset']['#description'] = t("Either 'incoming' or 'outgoing'");
+    $form['direction']['common']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
   }
 
   //these are the field api fields which may have been added to the transaction entity
