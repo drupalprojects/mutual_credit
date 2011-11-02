@@ -40,74 +40,6 @@ function mcapi_install() {
     $data_col = serialize($data);
     db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
   }
-  if (!field_read_field('worth', array('include_inactive' => TRUE))) {
-    $field = array(
-      'field_name' => 'worth',
-      'type' => 'worth_field',
-      'entity_types' => array('transaction', 'node', 'user'),
-    );
-    field_create_field($field);
-  }
-  else {
-    debug("activating preexisting field 'worth'");
-    db_query("UPDATE {field_config} SET active = 1 WHERE field_name = 'worth'");
-  }
-  // Create the instance if needed.
-  if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
-    $instance = array(
-      'field_name' => 'worth',
-      'label' => t('Value'),
-      'entity_type' => 'transaction',
-      'bundle' => 'transaction',
-      'settings' => array(),
-      'required' => TRUE,
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'text_default',
-          'weight' => 0,
-        ),
-      ),
-    );
-    field_create_instance($instance);
-  }
-
-  //add the body field
-  if (!field_read_instance('transaction', 'body', 'transaction', array('include_inactive' => TRUE))) {
-    field_create_instance(array(
-      'label' => 'Details',
-      'settings' => array(
-        'text_processing' => '0',
-        'display_summary' => 0,
-      ),
-      'required' => 1,
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'text_default',
-          'weight' => 3,
-          'settings' => array(),
-          'module' => 'text',
-        ),
-      ),
-      'widget' => array(
-        'weight' => 3,
-        'type' => 'text_long',
-        'module' => 'text',
-        'active' => 1,
-        'settings' => array(
-          'rows' => '3',
-          'summary_rows' => 1,
-        ),
-      ),
-      'description' => '',
-      'default_value' => NULL,
-      'field_name' => 'body',
-      'entity_type' => 'transaction',
-      'bundle' => 'transaction',
-      'deleted' => '0',
-    ));
-  }
 }
 
 /**
@@ -116,10 +48,10 @@ function mcapi_install() {
  */
 function mcapi_uninstall() {
   //delete all the entities manually if there are less than 400.
-  //This will gracefully handle all the stuff spread around by the field API
+  //however it doesn't work because the table has already been removed...
   $xids = db_query("SELECT xid FROM (mcapi_transactions)")->fetchCol();
   foreach ($xids as $xid) {
-    module_invoke_all('entity_delete', transaction_load($xid), 'transaction');
+    //module_invoke_all('entity_delete', transaction_load($xid), 'transaction');
   }
   //delete all the views this module declared
   if (module_exists('views')) {
@@ -152,6 +84,8 @@ function mcapi_uninstall() {
  */
 function mcapi_enable() {
   global $language;
+
+  mcapi_check_fields();
   cache_clear_all("entity_info:".$language->language, 'cache');
   //this seems to have been omitted from core...
   menu_rebuild();
@@ -229,6 +163,76 @@ function mcapi_schema() {
   return $schema;
 }
 
+function mcapi_check_fields() {
+  if (!field_read_field('worth', array('include_inactive' => TRUE))) {
+    $field = array(
+      'field_name' => 'worth',
+      'type' => 'worth_field',
+      'entity_types' => array('transaction', 'node', 'user'),
+    );
+    field_create_field($field);
+  }
+  else {
+    debug("activating preexisting field 'worth'");
+    db_query("UPDATE {field_config} SET active = 1 WHERE field_name = 'worth'");
+  }
+  // Create the instance if needed.
+  if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
+    $instance = array(
+      'field_name' => 'worth',
+      'label' => t('Value'),
+      'entity_type' => 'transaction',
+      'bundle' => 'transaction',
+      'settings' => array(),
+      'required' => TRUE,
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'text_default',
+          'weight' => 0,
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+
+  //add the body field
+  if (!field_read_instance('transaction', 'body', 'transaction', array('include_inactive' => TRUE))) {
+    field_create_instance(array(
+      'label' => 'Details',
+      'settings' => array(
+        'text_processing' => '0',
+        'display_summary' => 0,
+      ),
+      'required' => 1,
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'text_default',
+          'weight' => 3,
+          'settings' => array(),
+          'module' => 'text',
+        ),
+      ),
+      'widget' => array(
+        'weight' => 3,
+        'type' => 'text_long',
+        'module' => 'text',
+        'active' => 1,
+        'settings' => array(
+          'rows' => '3',
+          'summary_rows' => 1,
+        ),
+      ),
+      'description' => '',
+      'default_value' => NULL,
+      'field_name' => 'body',
+      'entity_type' => 'transaction',
+      'bundle' => 'transaction',
+      'deleted' => '0',
+    ));
+  }
+}
 
 
 /*
