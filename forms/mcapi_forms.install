@@ -53,7 +53,7 @@ function mcapi_forms_schema() {
       'identifier' => 'mcapi_form',
       'api' => array(
         'owner' => 'mcapi_forms',
-        'api' => 'mcapi',
+        'api' => 'mcapiform',
         'minimum_version' => 3,
         'current_version' => 3,
       ),
