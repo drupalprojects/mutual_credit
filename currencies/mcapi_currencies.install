@@ -109,7 +109,7 @@ function mcapi_currencies_schema() {
       'identifier' => 'currency',
       'api' => array(
         'owner' => 'mcapi_currencies',
-        'api' => 'mcapi',
+        'api' => 'currencies',
         'minimum_version' => 3,
         'current_version' => 3,
       ),

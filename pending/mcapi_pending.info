@@ -6,6 +6,6 @@ core = 7.x
 
 files[] = mcapi_pending.module
 files[] = mcapi_pending.install
-files[] = mcapi_pending.mcapi.inc
+files[] = mcapi_pending.mcapiform.inc
 
 dependencies[] = mcapi

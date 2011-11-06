@@ -5,8 +5,8 @@
  * For every field in the transaction form, this form allows it to be configured.
  * Its not geometrically perfect, but covers a lot of use cases without getting too complicated
  */
-function _mcapi_edit_webform(&$form, &$form_state) {
-  $webform = &$form_state['item'];
+function _edit_mcapi_form(&$form, &$form_state) {
+  $mcapi_form = &$form_state['item'];
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
   $roles = user_roles(TRUE);
@@ -24,7 +24,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
   $form['#suffix'] = '</div>';
   //I think ctools is supposed to be handling this
   $form['info']['name']['#type'] = 'machine_name';
-  $form['info']['name']['#machine_name']['exists'] = 'mcapi_webforms_load';
+  $form['info']['name']['#machine_name']['exists'] = 'mcapi_forms_load';
 
   $options = array(
     3 => t('3rd Party'),
@@ -35,11 +35,11 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#description' => t('Whether this is completed by a 3rd party or a participant.'),
     '#type' => 'radios',
     '#options' => $options,
-    '#default_value' => isset($webform->data['aspect']) ? $webform->data['aspect'] : 3,
+    '#default_value' => isset($mcapi_form->data['aspect']) ? $mcapi_form->data['aspect'] : 3,
     '#weight' => 1,
     //this ajax only works once then the form #id increments to ctools-export-ui-edit-item-form--2
     '#ajax' => array(
-      'callback' => 'mcapi_webforms_ajax_settings',
+      'callback' => 'mcapi_forms_ajax_settings',
       'wrapper' => 'form-wrapper'
     ),
   );
@@ -52,13 +52,13 @@ function _mcapi_edit_webform(&$form, &$form_state) {
 
   $form['xfid'] = array(
     '#type' => 'hidden',
-    '#value' => isset($webform->xfid) ?$webform->xfid : ''
+    '#value' => isset($mcapi_form->xfid) ?$mcapi_form->xfid : ''
   );
   $form['path'] = array(
     '#title' => t('Path'),
     '#description' => t("Url of this form. Use optional literals '%transaction' and '%user'. See !url documentation for advanced usage", array('!url' => l('hook_menu','http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
     '#type' => 'textfield',
-    '#default_value' => isset($webform->path) ? $webform->path : '',
+    '#default_value' => isset($mcapi_form->path) ? $mcapi_form->path : '',
     '#required' => TRUE,
     '#weight' => 2
   );
@@ -66,7 +66,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#title' => t('Help'),
     '#description' => t('A quick description of the form, for the administrator'),
     '#type' => 'textfield',
-    '#default_value' => isset($webform->data['help']) ? $webform->data['help'] : '',
+    '#default_value' => isset($mcapi_form->data['help']) ? $mcapi_form->data['help'] : '',
     '#maxlength' => 255,
     '#weight' => 3
   );
@@ -75,13 +75,13 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($webform->name),
+    '#collapsed' => !empty($mcapi_form->name),
     '#weight' => 4,
     'access' =>array(
       '#title' => t('Access control'),
       '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
       '#type' => 'select',
-      '#default_value' => isset($webform->data['outputs']['access']) ? $webform->data['outputs']['access'] : 'currency',
+      '#default_value' => isset($mcapi_form->data['outputs']['access']) ? $mcapi_form->data['outputs']['access'] : 'currency',
       '#options' => $access_options,
       '#element_validate' => array(),
     ),
@@ -89,7 +89,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       '#title' => t('Menu link location'),
       '#description' => t('Choose the menu, or menu item-type.') .' '. t("For more info, see 'type' info at !link", array('!link' => l('drupal.org', 'http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
       '#type' => 'select',
-      '#default_value' => isset($webform->data['outputs']['menu_link']) ? $webform->data['outputs']['menu_link'] : 'MENU_CALLBACK',
+      '#default_value' => isset($mcapi_form->data['outputs']['menu_link']) ? $mcapi_form->data['outputs']['menu_link'] : 'MENU_CALLBACK',
       '#options' => $menus+ array(
         MENU_CALLBACK => t('No menu item'),
         MENU_LOCAL_TASK => 'MENU_LOCAL_TASK',
@@ -103,7 +103,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       '#description' => t('The block is named according the path.') .' '.
         t('Remember that blocks have their own caching and access control.'),
       '#type' => 'checkbox',
-      '#default_value' => isset($webform->data['outputs']['use_block']) ? $webform->data['outputs']['use_block'] : '',
+      '#default_value' => isset($mcapi_form->data['outputs']['use_block']) ? $mcapi_form->data['outputs']['use_block'] : '',
       '#element_validate' => array(),
     )
   );
@@ -120,15 +120,15 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#description' => t('Beyond simply creating and editing transactions, these forms move the transactions between states'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($webform->name),
+    '#collapsed' => !empty($mcapi_form->name),
     'incoming' => array(
       '#title' => t('Allow only incoming states'),
       '#description' => t('Form will not build if incoming transaction is in the wrong state'),
       //this should be checkboxes, but there's a problem with checkboxes and select multiple for values with a key of 0
       '#type' => 'checkboxes',
       '#options' => drupal_map_assoc($incoming_options),
-      '#default_value' => isset($webform->data['workflow']['incoming']) ? $webform->data['workflow']['incoming'] : array('Unset'),
-      '#element_validate' => array('webform_workflow_incoming_validate'),
+      '#default_value' => isset($mcapi_form->data['workflow']['incoming']) ? $mcapi_form->data['workflow']['incoming'] : array('Unset'),
+      '#element_validate' => array('mcapi_form_workflow_incoming_validate'),
       '#weight' => 1,
     ),
     'outgoing' => array(
@@ -136,7 +136,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       '#description' => t('Transaction will be submitted in this state'),
       '#type' => 'select',
       '#options' => $outgoing_options,
-      '#default_value' => empty($webform->data['workflow']['outgoing']) ? TRANSACTION_STATE_FINISHED : $webform->data['workflow']['outgoing'],
+      '#default_value' => empty($mcapi_form->data['workflow']['outgoing']) ? TRANSACTION_STATE_FINISHED : $mcapi_form->data['workflow']['outgoing'],
       '#weight' => 3,
     ),
     '#weight' => 5,
@@ -144,7 +144,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
 
   //this section of the form allows the admin to handle the individual fields of the transaction form.
   //the fields are handled here one in each tab, each field having some common settings and some specific ones.
-  $form['webform_fields'] = array(
+  $form['mcapi_form_fields'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 6,
     '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
@@ -154,7 +154,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
   if ($aspect == 3) {
     //special settings for payer and payee
     foreach (array('payer' => t('Payer ID'), 'payee' => t('Payee ID')) as $key => $name) {
-      $form[$key] = mcapi_webform_prefill_fields($webform, $key, $name);
+      $form[$key] = mcapi_form_prefill_fields($mcapi_form, $key, $name);
       $form[$key]['#widget'] = 'user_chooser';//this is the only option that will work right now
       $form[$key]['args'] = array(
         '#title' => t('Users to choose from'),
@@ -163,19 +163,19 @@ function _mcapi_edit_webform(&$form, &$form_state) {
         )),
         '#type' => 'select',
         '#options' => $user_chooser_options,
-        '#default_value' => isset($webform->data[$key]['args']) ? $webform->data[$key]['args'] : 'mcapi_access_check_roles:2'
+        '#default_value' => isset($mcapi_form->data[$key]['args']) ? $mcapi_form->data[$key]['args'] : 'mcapi_access_check_roles:2'
       );
       $form[$key]['preset']['#description'] = t('Use [self] to preset with the logged in user');
       $form[$key]['multiple'] = array(
         '#title' => t('Multiple users'),
         '#description' => t('Allow multiple users and repeat the transaction for each of them'),
         '#type' => 'checkbox',
-        '#default_value' => isset($webform->data[$key]['multiple']) ? $webform->data[$key]['multiple'] : FALSE,
+        '#default_value' => isset($mcapi_form->data[$key]['multiple']) ? $mcapi_form->data[$key]['multiple'] : FALSE,
       );
     }
   }
   else {//1st person form shows one field only, presuming the current user initiates the transaction
-    $form['2ndperson'] = mcapi_webform_prefill_fields($webform, '2ndperson', t('2nd Person'));
+    $form['2ndperson'] = mcapi_form_prefill_fields($mcapi_form, '2ndperson', t('2nd Person'));
     $form['2ndperson']['#widget'] = 'user_chooser';//this is the only option that will work right now
     $form['2ndperson']['args'] = array(
       '#title' => t('Users to choose from'),
@@ -184,18 +184,18 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       )),
       '#type' => 'select',
       '#options' => $user_chooser_options,
-      '#default_value' => isset($webform->data['2ndperson']['args']) ? $webform->data['2ndperson']['args'] : 'mcapi_access_check_roles:2'
+      '#default_value' => isset($mcapi_form->data['2ndperson']['args']) ? $mcapi_form->data['2ndperson']['args'] : 'mcapi_access_check_roles:2'
     );
-    $form['direction'] = mcapi_webform_prefill_fields($webform, 'direction', t('Direction'));
+    $form['direction'] = mcapi_form_prefill_fields($mcapi_form, 'direction', t('Direction'));
     $form['direction']['incoming'] = array(
       '#title' => t('Name of incoming transaction'),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['direction']['incoming']) ? $webform->data['direction']['incoming'] : t('Request'),
+      '#default_value' => isset($mcapi_form->data['direction']['incoming']) ? $mcapi_form->data['direction']['incoming'] : t('Request'),
     );
     $form['direction']['outgoing'] = array(
       '#title' => t('Name of outgoing transaction'),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['direction']['outgoing']) ? $webform->data['direction']['outgoing'] : t('Payment'),
+      '#default_value' => isset($mcapi_form->data['direction']['outgoing']) ? $mcapi_form->data['direction']['outgoing'] : t('Payment'),
     );
     $form['direction']['widget'] = array(
       '#title' => t('Widget'),
@@ -204,29 +204,29 @@ function _mcapi_edit_webform(&$form, &$form_state) {
         'select' => t('Dropdown select box'),
         'radios' => t('Radio buttons')
       ),
-      '#default_value' => isset($webform->data['direction']['widget']) ? $webform->data['direction']['widget'] : 'outgoing',
+      '#default_value' => isset($mcapi_form->data['direction']['widget']) ? $mcapi_form->data['direction']['widget'] : 'outgoing',
     );
     $form['direction']['common']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
   }
 
   //these are the field api fields which may have been added to the transaction entity
-  $additional_fields = mcapi_webform_get_additional_form_fields();
+  $additional_fields = mcapi_form_get_additional_form_fields();
   //unset($additional_fields['worth']);
   foreach ($additional_fields as $name => $field) {
-    $form[$name] = mcapi_webform_prefill_fields_additional($webform, $name, $field);
+    $form[$name] = mcapi_form_prefill_fields_additional($mcapi_form, $name, $field);
   }
 
   //leaving this till last because its the hardest.
   //the previous form elements each used the textfield widget to supply the default values.
   //but for the value we want to use the worth widget.
   //however because this isn't an entity form and
-  // webform isn't an entity to which the 'worth' field is attached, we shall have to call the widget and handle the data more manually
+  //mcapi_form isn't an entity to which the 'worth' field is attached, we shall have to call the widget and handle the data more manually
   //first of all, treat it just like the other fields, above.
-  $form['worth'] = mcapi_webform_prefill_fields($webform, 'worth', t('Worth'));
+  $form['worth'] = mcapi_form_prefill_fields($mcapi_form, 'worth', t('Worth'));
   $pseudo_form_state = array(); //because it must be passed by ref
   //now change the widget for the default value
-  $form['worth']['common']['preset'] = mcapi_field_widget_form(array(), $pseudo_form_state, array() ,array(), 'und', array($webform->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
-  $form['worth']['common']['preset']['#element_validate'] = array('mcapi_webform_validate_worth');
+  $form['worth']['common']['preset'] = mcapi_field_widget_form(array(), $pseudo_form_state, array() ,array(), 'und', array($mcapi_form->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
+  $form['worth']['common']['preset']['#element_validate'] = array('mcapi_form_validate_worth');
 
   //we know about one additional_field, which is the value
   $form['value']['#prefix'] = t('This form builder is for transfers in any one, but only one currency');
@@ -245,12 +245,12 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($webform->name),
+    '#collapsed' => !empty($mcapi_form->name),
     'button' => array(
       '#title' => t('Save button'),
       '#description' => t("The text to appear on the 'save' button, or the absolute url of an image"),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['submission']['button']) ? $webform->data['submission']['button'] : t('Submit'),
+      '#default_value' => isset($mcapi_form->data['submission']['button']) ? $mcapi_form->data['submission']['button'] : t('Submit'),
       '#required' => TRUE,
     ),
     'redirect' => array(
@@ -260,7 +260,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
         t("E.g. the transaction's own page is 'transaction/#xid'."),
       )),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['submission']['redirect']) ? $webform->data['submission']['redirect'] : '',
+      '#default_value' => isset($mcapi_form->data['submission']['redirect']) ? $mcapi_form->data['submission']['redirect'] : '',
       '#element_validate' => array('mcapi_path_validate'),
       '#required' => TRUE,
       '#weight' => 1,
@@ -268,7 +268,7 @@ function _mcapi_edit_webform(&$form, &$form_state) {
     '#weight' => 20,
   );
 
-  $form['webform_templates'] = array(
+  $form['mcapi_form_templates'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 7,
     '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
@@ -280,21 +280,21 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       t('Allowed tags are:') .' a, p, br, font, style'
     )),
     '#type' => 'fieldset',
-    '#group' => 'webform_templates',
+    '#group' => 'mcapi_form_templates',
     '#weight' => 1,
     'title' => array(
       '#title' => t('Title'),
       '#description' => t('For use in block title and menu links.') .' '. t('Plain text only.'),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['step-1']['title']) ? $webform->data['step-1']['title'] : '',
+      '#default_value' => isset($mcapi_form->data['step-1']['title']) ? $mcapi_form->data['step-1']['title'] : '',
       '#required' => TRUE
     ),
     'template' => array(
       '#title' => t('Main form'),
       '#type' => 'textarea',
-      '#rows' => isset($webform->data['step-1']['template']) ? count(explode("\n", $webform->data['step-1']['template'])) : 5,
-      '#default_value' => isset($webform->data['step-1']['template']) ? $webform->data['step-1']['template'] : '',
-      '#element_validate' => array('mcapi_webforms_template_validate'),
+      '#rows' => isset($mcapi_form->data['step-1']['template']) ? count(explode("\n", $mcapi_form->data['step-1']['template'])) : 5,
+      '#default_value' => isset($mcapi_form->data['step-1']['template']) ? $mcapi_form->data['step-1']['template'] : '',
+      '#element_validate' => array('mcapi_forms_template_validate'),
       '#required' => TRUE,
     ),
   );
@@ -305,34 +305,34 @@ function _mcapi_edit_webform(&$form, &$form_state) {
       t('Allowed tags are:') .' a, p, br, font, style'
     )),
     '#type' => 'fieldset',
-    '#group' => 'webform_templates',
+    '#group' => 'mcapi_form_templates',
     '#weight' => 2,
     'title' => array(
       '#title' => t('Title'),
       '#description' => t('Plain text only.'),
       '#type' => 'textfield',
-      '#default_value' => isset($webform->data['step-2']['title']) ? $webform->data['step-2']['title'] : '',
+      '#default_value' => isset($mcapi_form->data['step-2']['title']) ? $mcapi_form->data['step-2']['title'] : '',
     ),
     'template' =>  array(
       '#title' => t('Confirmation page (optional)'),
       '#description' => t('This page will be shown after the transaction has validated but before the form is submitted.') .' '.
         t("Two more tokens are available here, '@certificate' and '@summary'", array('@certificate' => '[certificate]', '@summary' => '[summary]')),
       '#type' => 'textarea',
-      '#rows' => isset($webform->data['step-2']['template']) ? count(explode("\n", $webform->data['step-2']['template'])) : 5,
-      '#default_value' => isset($webform->data['step-2']['template']) ? $webform->data['step-2']['template'] : '',
+      '#rows' => isset($mcapi_form->data['step-2']['template']) ? count(explode("\n", $mcapi_form->data['step-2']['template'])) : 5,
+      '#default_value' => isset($mcapi_form->data['step-2']['template']) ? $mcapi_form->data['step-2']['template'] : '',
       '#weight' => 2,
     )
   );
 }
 
 
-function mcapi_webform_prefill_fields($webform, $key, $name) {
+function mcapi_form_prefill_fields($mcapi_form, $key, $name) {
   static $w;
   return array(
     '#title' => "[$key]",
     '#description' => t("Settings for @field", array('@field' => $name)),
     '#type' => 'fieldset',
-    '#group' => 'webform_fields',
+    '#group' => 'mcapi_form_fields',
     '#weight' => $w++,
     'common' => array(
       '#title' => t('Common properties'),//this isn't showing, and nor is the border
@@ -344,38 +344,38 @@ function mcapi_webform_prefill_fields($webform, $key, $name) {
         '#title' => t('Hard set value'),
         '#description' => t('overrides incoming values'),
         '#type' => 'textfield',
-        '#default_value' => isset($webform->data[$key]['common']['preset']) ? $webform->data[$key]['common']['preset'] : '',
+        '#default_value' => isset($mcapi_form->data[$key]['common']['preset']) ? $mcapi_form->data[$key]['common']['preset'] : '',
         '#size' => 3,
       ),
       'disable' => array(
         '#title' => t('Grey out field if value is passed'),
         '#type' => 'checkbox',
         '#return_value' => TRUE,
-        '#default_value' => isset($webform->data[$key]['common']['disable']) ? $webform->data[$key]['common']['disable'] : 'edit',
+        '#default_value' => isset($mcapi_form->data[$key]['common']['disable']) ? $mcapi_form->data[$key]['common']['disable'] : 'edit',
         '#weight' => 1,
       ),
       'required' => array(
         '#title' => t('Required'),
         '#description' => t('Form should fail validation if no value is submitted.'),
         '#type' => 'checkbox',
-        '#default_value' => isset($webform->data[$key]['common']['required']) ? $webform->data[$key]['common']['required'] : '',
+        '#default_value' => isset($mcapi_form->data[$key]['common']['required']) ? $mcapi_form->data[$key]['common']['required'] : '',
         '#weight' => 10
       ),
     ),
   );
 }
 
-function mcapi_webforms_ajax_settings($form, &$form_state) {
+function mcapi_forms_ajax_settings($form, &$form_state) {
   return $form;
 }
 /*
  * wrapper function to build default settings form for additional fields
  */
-function mcapi_webform_prefill_fields_additional($webform, $key, $field) {
-  //of course we want to ignore wrappers and fieldsets which help organise the webform
+function mcapi_form_prefill_fields_additional($mcapi_form, $key, $field) {
+  //of course we want to ignore wrappers and fieldsets which help organise the form
   //and assume there's only one element per wrapper
   $subelement = _get_deepest_child($field);
-  $element = mcapi_webform_prefill_fields($webform, $key, isset($subelement['#title']) ? $subelement['#title'] : t('Additional field'));
+  $element = mcapi_form_prefill_fields($mcapi_form, $key, isset($subelement['#title']) ? $subelement['#title'] : t('Additional field'));
   if (!empty($subelement['#required'])) {
     $element['common']['required']['#default_value'] = TRUE;
     $element['common']['required']['#disabled'] = TRUE;

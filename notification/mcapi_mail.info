@@ -5,7 +5,7 @@ package = Mutual Credit
 core = 7.x
 
 files[] = mcapi_mail.module
-files[] = mcapi_mail.mcapi.inc
+files[] = mcapi_mail.mcapiform.inc
 
 dependencies[] = mcapi
-dependencies[] = mcapi_webforms
+dependencies[] = mcapi_forms

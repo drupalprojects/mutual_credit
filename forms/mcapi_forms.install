@@ -1,18 +1,12 @@
 <?php
 
-function mcapi_webforms_install() {
-  
-}
-function mcapi_webforms_uninstall() {
-
-}
 
 /**
  * Implementation of hook_schema().
  */
-function mcapi_webforms_schema() {
+function mcapi_forms_schema() {
   $schema = array();
-  $schema['mcapi_webforms'] = array(
+  $schema['mcapi_forms'] = array(
     'description' => 'Stores endpoint information for services',
     'fields' => array(
       'xfid' => array(
@@ -35,7 +29,7 @@ function mcapi_webforms_schema() {
         'not null'    => TRUE,
       ),
       'status' => array(
-       'description' => 'Webform is enabled.',
+       'description' => 'Form is enabled.',
        'type'        => 'int',
        'length'      => 2,
        'not null'    => TRUE,
@@ -56,14 +50,14 @@ function mcapi_webforms_schema() {
     'export' => array(
       'key' => 'name',
       'primary key' => 'xfid',
-      'identifier' => 'webform',
+      'identifier' => 'mcapi_form',
       'api' => array(
-        'owner' => 'mcapi_webforms',
+        'owner' => 'mcapi_forms',
         'api' => 'mcapi',
         'minimum_version' => 3,
         'current_version' => 3,
       ),
-      'default hook' => 'default_mcapi_webforms',
+      'default hook' => 'default_mcapi_forms',
       //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
       'admin_title' => 'name' //this converts the form field into machine_name I think
     ),

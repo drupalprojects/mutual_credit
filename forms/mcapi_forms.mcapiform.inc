@@ -3,14 +3,14 @@
 /*
  * Implements ctools hook mcapi_default_forms
  */
-function mcapi_webforms_default_mcapi_webforms() {
-  $webform = new stdClass;
-  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
-  $webform->api_version = 3;
-  $webform->name = '1stparty';
-  $webform->path = 'transact/1stparty';
-  $webform->status = 1;
-  $webform->data = array(
+function mcapi_forms_default_mcapi_forms() {
+  $mcapi_form = new stdClass;
+  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
+  $mcapi_form->api_version = 3;
+  $mcapi_form->name = '1stparty';
+  $mcapi_form->path = 'transact/1stparty';
+  $mcapi_form->status = 1;
+  $mcapi_form->data = array(
     'info' => array(
       'name' => '1stparty',
     ),
@@ -28,8 +28,8 @@ function mcapi_webforms_default_mcapi_webforms() {
       ),
       'outgoing' => '0',
     ),
-    'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-worth',
+    'mcapi_form_fields' => array(
+      'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     '2ndperson' => array(
       'common' => array(
@@ -49,13 +49,6 @@ function mcapi_webforms_default_mcapi_webforms() {
       'outgoing' => 'Payment',
       'widget' => 'select',
     ),
-    'body' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-    ),
     'worth' => array(
       'common' => array(
         'preset' => array(
@@ -71,21 +64,19 @@ function mcapi_webforms_default_mcapi_webforms() {
       'button' => 'Submit',
       'redirect' => 'transaction/#xid',
     ),
-    'webform_templates' => array(
-      'webform_templates__active_tab' => 'edit-step-2',
+    'mcapi_form_templates' => array(
+      'mcapi_form_templates__active_tab' => 'edit-step-2',
     ),
     'step-1' => array(
       'title' => '1st party form',
       'template' => 'Partner: [2ndperson]<br />
   Direction: [direction]<br />
-  Amount: [worth]<br />
-  [body]<br />',
+  Amount: [worth]<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
       'template' => '[worth]
-  with  [2ndperson]<br />
-  for [body]<br />',
+  with  [2ndperson]<br /><br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
@@ -94,21 +85,20 @@ function mcapi_webforms_default_mcapi_webforms() {
     'templates' => array(
       'template-1' => 'Partner: [2ndperson]<br />
   Direction: [direction]<br />
-  Amount: [worth]<br />
-  [body]<br />',
+  Amount: [worth]<br />',
     ),
   );
 
-  $webforms[$webform->name] = $webform;
+  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
 
   
-  $webform = new stdClass;
-  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
-  $webform->api_version = 3;
-  $webform->name = '3rdparty';
-  $webform->path = 'transact/3rdparty';
-  $webform->status = 1;
-  $webform->data = array(
+  $mcapi_form = new stdClass;
+  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapi_form->api_version = 3;
+  $mcapi_form->name = '3rdparty';
+  $mcapi_form->path = 'transact/3rdparty';
+  $mcapi_form->status = 1;
+  $mcapi_form->data = array(
     'info' => array(
       'name' => '3rdparty',
     ),
@@ -126,8 +116,8 @@ function mcapi_webforms_default_mcapi_webforms() {
       ),
       'outgoing' => '0',
     ),
-    'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-worth',
+    'mcapi_form_fields' => array(
+      'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'common' => array(
@@ -147,13 +137,6 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
-    'body' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-    ),
     'worth' => array(
       'common' => array(
         'preset' => array(
@@ -169,21 +152,19 @@ function mcapi_webforms_default_mcapi_webforms() {
       'button' => 'Submit',
       'redirect' => 'transaction/#xid',
     ),
-    'webform_templates' => array(
-      'webform_templates__active_tab' => 'edit-step-2',
+    'mcapi_form_templates' => array(
+      'mcapi_form_templates__active_tab' => 'edit-step-2',
     ),
     'step-1' => array(
       'title' => '3rd party form',
       'template' => 'Payer: [payer]<br />
   Payee: [payee]<br />
-  [body]<br />
   Amount: [worth]<br />',
     ),
     'step-2' => array(
       'title' => 'are you sure?',
       'template' => 'Payer: [payer]<br />
   Payee: [payee]<br />
-  [body]<br />
   Amount: [worth]<br />',
     ),
     'buttons' => array(
@@ -193,20 +174,19 @@ function mcapi_webforms_default_mcapi_webforms() {
     'templates' => array(
       'template-1' => 'Payer: [payer]<br />
   Payee: [payee]<br />
-  [body]<br />
   Amount: [worth]<br />',
     ),
   );
-  $webforms[$webform->name] = $webform;
+  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
 
 
-  $webform = new stdClass;
-  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
-  $webform->api_version = 3;
-  $webform->name = 'many2one';
-  $webform->path = 'transact/many2one';
-  $webform->status = 1;
-  $webform->data = array(
+  $mcapi_form = new stdClass;
+  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapi_form->api_version = 3;
+  $mcapi_form->name = 'many2one';
+  $mcapi_form->path = 'transact/many2one';
+  $mcapi_form->status = 1;
+  $mcapi_form->data = array(
     'info' => array(
       'name' => 'many2one',
     ),
@@ -224,8 +204,8 @@ function mcapi_webforms_default_mcapi_webforms() {
       ),
       'outgoing' => '0',
     ),
-    'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-worth',
+    'mcapi_form_fields' => array(
+      'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'common' => array(
@@ -245,13 +225,6 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
-    'body' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-    ),
     'worth' => array(
       'common' => array(
         'preset' => array(
@@ -267,26 +240,22 @@ function mcapi_webforms_default_mcapi_webforms() {
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
-    'webform_templates' => array(
-      'webform_templates__active_tab' => 'edit-step-2',
+    'mcapi_form_templates' => array(
+      'mcapi_form_templates__active_tab' => 'edit-step-2',
     ),
     'step-1' => array(
       'title' => 'Many pay one',
       'template' => '[payer]<br />
   will pay<br />
   [payee]<br />
-  [worth] each<br />
-  for<br />
-  [body]',
+  [worth] each<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
       'template' => '[payer]<br />
   will pay<br />
   [payee]<br />
-  [worth] each<br />
-  for<br />
-  [body]',
+  [worth] each<br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
@@ -296,21 +265,19 @@ function mcapi_webforms_default_mcapi_webforms() {
       'template-1' => '[payer]<br />
   will pay<br />
   [payee]<br />
-  [worth] each<br />
-  for<br />
-  [body]',
+  [worth] each',
     ),
   );
 
-  $webforms[$webform->name] = $webform;
+  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
 
-  $webform = new stdClass;
-  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
-  $webform->api_version = 3;
-  $webform->name = 'one2many';
-  $webform->path = 'transact/one2many';
-  $webform->status = 1;
-  $webform->data = array(
+  $mcapi_form = new stdClass;
+  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapi_form->api_version = 3;
+  $mcapi_form->name = 'one2many';
+  $mcapi_form->path = 'transact/one2many';
+  $mcapi_form->status = 1;
+  $mcapi_form->data = array(
     'info' => array(
       'name' => 'one2many',
     ),
@@ -328,8 +295,8 @@ function mcapi_webforms_default_mcapi_webforms() {
       ),
       'outgoing' => '0',
     ),
-    'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-worth',
+    'mcapi_form_fields' => array(
+      'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'common' => array(
@@ -349,13 +316,6 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_roles:2',
       'multiple' => 1,
     ),
-    'body' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-    ),
     'worth' => array(
       'common' => array(
         'preset' => array(
@@ -371,26 +331,22 @@ function mcapi_webforms_default_mcapi_webforms() {
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
-    'webform_templates' => array(
-      'webform_templates__active_tab' => 'edit-step-2',
+    'mcapi_form_templates' => array(
+      'mcapi_form_templates__active_tab' => 'edit-step-2',
     ),
     'step-1' => array(
       'title' => 'One pays many',
       'template' => '[payer]<br />
   will pay<br />
   [payee]<br />
-  [worth] each<br />
-  for<br />
-  [body]',
+  [worth] each<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
       'template' => '[payer]<br />
   will pay<br />
   [payee]<br />
-  [worth] each<br />
-  for<br />
-  [body]',
+  [worth] each<br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
@@ -400,20 +356,18 @@ function mcapi_webforms_default_mcapi_webforms() {
       'template-1' => '[payer]<br />
   will pay<br />
   [payee]<br />
-  [worth] each<br />
-  for<br />
-  [body]',
+  [worth] each',
     ),
   );
-  $webforms[$webform->name] = $webform;
+  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
 
-  $webform = new stdClass;
-  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
-  $webform->api_version = 3;
-  $webform->name = 'correction';
-  $webform->path = 'transaction/%transaction/correction';
-  $webform->status = 1;
-  $webform->data = array(
+  $mcapi_form = new stdClass;
+  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapi_form->api_version = 3;
+  $mcapi_form->name = 'correction';
+  $mcapi_form->path = 'transaction/%transaction/correction';
+  $mcapi_form->status = 1;
+  $mcapi_form->data = array(
     'info' => array(
       'name' => 'correction',
     ),
@@ -431,8 +385,8 @@ function mcapi_webforms_default_mcapi_webforms() {
       ),
       'outgoing' => '0',
     ),
-    'webform_fields' => array(
-      'webform_fields__active_tab' => 'edit-worth',
+    'mcapi_form_fields' => array(
+      'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'common' => array(
@@ -452,13 +406,6 @@ function mcapi_webforms_default_mcapi_webforms() {
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
-    'body' => array(
-      'common' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
-    ),
     'worth' => array(
       'common' => array(
         'preset' => array(
@@ -474,14 +421,13 @@ function mcapi_webforms_default_mcapi_webforms() {
       'button' => 'Submit',
       'redirect' => 'transaction/#xid',
     ),
-    'webform_templates' => array(
-      'webform_templates__active_tab' => 'edit-step-1',
+    'mcapi_form_templates' => array(
+      'mcapi_form_templates__active_tab' => 'edit-step-1',
     ),
     'step-1' => array(
       'title' => 'Transaction corrected',
       'template' => '[payer] paid [payee]<br />
-  Amount: [worth]<br />
-  For: [body]<br />',
+  Amount: [worth]<br />',
     ),
     'step-2' => array(
       'title' => '',
@@ -493,11 +439,10 @@ function mcapi_webforms_default_mcapi_webforms() {
     ),
     'templates' => array(
       'template-1' => '[payer] paid [payee]<br />
-  Amount: [worth]<br />
-  For: [body]<br />',
+  Amount: [worth]<br />',
     ),
   );
 
-  $webforms[$webform->name] = $webform;
-  return $webforms;
+  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
+  return $mcapi_forms;
 }

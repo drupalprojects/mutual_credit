@@ -1,7 +1,4 @@
 <?php
-/*
- * extends isn't working, which makes this whole file useless
- */
 
 class mcapi_currencies_ui extends ctools_export_ui {
 

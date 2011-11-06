@@ -16,8 +16,8 @@ function _mcapi_currency_form(&$form, &$form_state) {
   );
   $form['format'] = array(
     '#title' => t('Display format'),
-    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @minus, @integer, @subdivision ' .
-       t('For example to display -$45:23 AUS, enter @minus@integer:@subdivision AUS'),
+    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @minus, @integer, @subdivision. ' .
+       t('For example, "@a" shows as "@b"', array('@a' => '@minus@integer:@subdivision AUS', '@b' => '-99:99 AUS')),
     '#type' => 'textfield',
     '#default_value' => $form['#currency']->format,
     '#element_validate' => array('mcapi_currency_validate_format'),

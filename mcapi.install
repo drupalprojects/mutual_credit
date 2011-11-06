@@ -25,7 +25,7 @@ function mcapi_install() {
   //could all these be done in one query?
   db_update('system')->fields(array('weight' => -1))->condition('name', 'mcapi')->execute(); //before ctools
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_currencies')->execute();
-  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_webforms')->execute();
+  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_forms')->execute();
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_limits')->execute();
   db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_services')->execute();
   db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_pending')->execute();
@@ -164,6 +164,7 @@ function mcapi_schema() {
 }
 
 function mcapi_check_fields() {
+  field_associate_fields('mcapi');
   if (!field_read_field('worth', array('include_inactive' => TRUE))) {
     $field = array(
       'field_name' => 'worth',
@@ -194,43 +195,6 @@ function mcapi_check_fields() {
       ),
     );
     field_create_instance($instance);
-  }
-
-  //add the body field
-  if (!field_read_instance('transaction', 'body', 'transaction', array('include_inactive' => TRUE))) {
-    field_create_instance(array(
-      'label' => 'Details',
-      'settings' => array(
-        'text_processing' => '0',
-        'display_summary' => 0,
-      ),
-      'required' => 1,
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'text_default',
-          'weight' => 3,
-          'settings' => array(),
-          'module' => 'text',
-        ),
-      ),
-      'widget' => array(
-        'weight' => 3,
-        'type' => 'text_long',
-        'module' => 'text',
-        'active' => 1,
-        'settings' => array(
-          'rows' => '3',
-          'summary_rows' => 1,
-        ),
-      ),
-      'description' => '',
-      'default_value' => NULL,
-      'field_name' => 'body',
-      'entity_type' => 'transaction',
-      'bundle' => 'transaction',
-      'deleted' => '0',
-    ));
   }
 }
 

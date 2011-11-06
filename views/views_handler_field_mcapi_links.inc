@@ -42,7 +42,7 @@ class views_handler_field_mcapi_links extends views_handler_field {
         );
       }
     }
-    if (module_exists('mcapi_webforms')) {
+    if (module_exists('mcapi_forms')) {
       if (transaction_access('update', $transaction)) {
         $links[] = array(
           'title' => t('Edit'),

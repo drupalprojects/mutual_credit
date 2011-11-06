@@ -81,7 +81,7 @@ function mcapi_field_is_empty($item) {
 /*
  * implements hook_field_widget_form
  * not passing by reference at all because it isn't necessary
- * and screws up generating the pseudo fields in the webforms module, see _mcapi_edit_webform
+ * and screws up generating the pseudo fields in the mcapi_forms module, see _mcapi_edit_form
  */
 function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $element['#delta'] = $delta;

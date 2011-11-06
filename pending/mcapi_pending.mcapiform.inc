@@ -1,17 +1,17 @@
 <?php
 
 /*
- * Implements ctools hook default_mcapi_webforms
+ * Implements ctools hook default_mcapi_forms
  */
-function mcapi_pending_default_mcapi_webforms() {
+function mcapi_pending_default_mcapi_forms() {
 
-  $webform = new stdClass;
-  $webform->disabled = FALSE; /* Edit this to true to make a default webform disabled initially */
-  $webform->api_version = 3;
-  $webform->name = 'add_my_signature';
-  $webform->path = 'transaction/%transaction/sign';
-  $webform->status = 1;
-  $webform->data = array(
+  $mcapi_form = new stdClass;
+  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
+  $mcapi_form->api_version = 3;
+  $mcapi_form->name = 'add_my_signature';
+  $mcapi_form->path = 'transaction/%transaction/sign';
+  $mcapi_form->status = 1;
+  $mcapi_form->data = array(
     'info' => array(
       'name' => 'add_my_signature',
     ),
@@ -110,22 +110,22 @@ The team at drupal7',
     )
   );
 
-  $webforms[$webform->name] = $webform;
-  return $webforms;
+  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
+  return $mcapi_forms;
 }
 
 
 /*
- * Implements hook_default_mcapi_webforms_alter
- * changes all default webforms which create new transactions to create them pending instead
+ * Implements hook_default_mcapi_forms_alter
+ * changes all default mcapi_forms which create new transactions to create them pending instead
  */
-function mcapi_pending_default_mcapi_webforms_alter(&$webforms) {
-  foreach ($webforms as $path => $webform) {
-    if ($webform->data['workflow']['incoming'][t('Unset')] == t('Unset')) {
-      $webform->data['workflow']['outgoing'] = TRANSACTION_STATE_PENDING;
+function mcapi_pending_default_mcapi_forms_alter(&$mcapi_forms) {
+  foreach ($mcapi_forms as $path => $mcapi_form) {
+    if ($mcapi_form->data['workflow']['incoming'][t('Unset')] == t('Unset')) {
+      $mcapi_form->data['workflow']['outgoing'] = TRANSACTION_STATE_PENDING;
       foreach (array('payer', 'payee', '2ndperson') as $participant) {
-        if (isset($webform->data[$participant])) {
-          $webforms[$path]->data[$participant]['signature'] = TRUE;
+        if (isset($mcapi_form->data[$participant])) {
+          $mcapi_forms[$path]->data[$participant]['signature'] = TRUE;
         }
       }
     }

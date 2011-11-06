@@ -39,19 +39,18 @@ Rather than writing hundreds on the transaction form, it can be configured to ac
 Note how the default settings are the strictest accounting standards possible, with no editing and no deleting of transactions
 When editing the accounting standards, the access operations (edit, delete) appear as extra tabs. Careful the AJAX is a bit flakey on that form.
 
-Visit admin/accounting/webforms
-No similarity intended to the http://drupal.org/project/webform
+Visit admin/accounting/forms
 Design the forms for users to create and edit transactions
-N.B It is possible to create invalid webforms, and I advise editing an existing one before creating a new one.
+N.B It is possible to create invalid transaction forms, and I advise editing an existing one before creating a new one.
 Create menu links to the forms and/or wrap them in blocks.
 Note that some modules alter existing forms or create new ones.
 Like views, you can create new ones from scratch or modify or clone the ones provided. They can be exported and bundled in code with a distribution.
-The webform essentially moves transactions between states, offering an opportunity to show or edit the values.
+The form essentially moves transactions between states, offering an opportunity to show or edit the values.
 However if is not a serious workflow system.
 Each field will do its own validation, then there is form-level validation.
 If there is a confirmation page, it will take the whole page, even if the original form was in a block.
-You can tell the webform which page to redirect to.
-It should be possible to create webforms in a few minutes for specific purposes
+You can tell the form which page to redirect to.
+It should be possible to create forms in a few minutes for specific purposes
 Would appreciate some feedback on the whole form creation process.
 
 Visit admin/accounting/record
@@ -65,7 +64,7 @@ Visit admin/people/permissions
 Note that these are general permissions, but there is a whole internal permission system in the currency definitions
 
 Visit admin/accounting/transaction/edit/fields
-Notice that transaction entity is fieldable. Fields added in this way will automatically be available to the webform template and in views
+Notice that transaction entity is fieldable. Fields added in this way will automatically be available to the form template and in views
 You can add fields (including taxonomy) to transactions: admin/accounting/transaction/edit/fields
 
 Limits
@@ -90,13 +89,13 @@ or at least drupal/views caching needs to be used, especially on large systems
 Further set up
 
 Email notifications
-The mail notification module adds a tab to the webforms which allows composition of the email template for each webform used.
-It also adds a notification option for each party in the webform.
+The mail notification module adds a tab to the mcapi_forms which allows composition of the email template for each form used.
+It also adds a notification option for each party in the form.
 Users themselves on their user profiles decide when to be notified.
 Do test this, espcially when used in conjunction with the pending module
 
 Now you can start assembling the pieces according to the needs of your site.
-The first level of architecture is in menus, blocks, views, webforms
+The first level of architecture is in menus, blocks, views, mcapi_forms
 For more ideas visit demo.communityforge.net
 The cforge_custom installation profile which makes the demo module, is available her http://code.google.com/p/cforge-custom/
 
@@ -110,7 +109,7 @@ Intended for webshops and skilled Drupal developers
 1. Triggering payments.
 2. Master/Slave transaction storage
 3. internal API
-4. Exporting currencies and webforms
+4. Exporting currencies and mcapi_forms
 5. i18n
 6. theming
 

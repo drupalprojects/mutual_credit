@@ -2,7 +2,7 @@
 /*
  * extends isn't working, which makes this whole file useless
  */
-class mcapi_webform_ui extends ctools_export_ui {
+class mcapi_forms_ui extends ctools_export_ui {
 
   function init($plugin) {
     $prefix_count = count(explode('/', $plugin['menu']['menu prefix']));

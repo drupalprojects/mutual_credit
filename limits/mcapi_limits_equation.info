@@ -1,5 +1,5 @@
 ; $Id: 
-name = Mutual Credit Limits equation
+name = Limits equation
 description = Use an equation to set each member's balance limits
 package = Mutual Credit
 core = 7.x

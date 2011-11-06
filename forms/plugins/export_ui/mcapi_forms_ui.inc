@@ -2,7 +2,7 @@
 $plugin = array(
   // The name of the table as found in the schema in hook_install. This
   // must be an exportable type with the 'export' section defined.
-  'schema' => 'mcapi_webforms',
+  'schema' => 'mcapi_forms',
 
   // The access permission to use. If not provided it will default to
   // 'administer site configuration'
@@ -13,23 +13,23 @@ $plugin = array(
   // to admin/structure and the item will default to the plugin name.
   'menu' => array(
     'menu prefix' => 'admin/accounting',
-    'menu item' => 'webforms',
+    'menu item' => 'mcapi_forms',
     // Title of the top level menu. Note this should not be translated,
     // as the menu system will translate it.
-    'menu title' => 'Webform',
+    'menu title' => 'Transaction form builder',
     // Description of the top level menu, which is usually needed for
     // menu items in an administration list. Will be translated
     // by the menu system.
-    'menu description' => 'Administer webforms',
+    'menu description' => 'Administer transaction forms',
   ),
 
   // These are required to provide proper strings for referring to the
   // actual type of exportable. "proper" means it will appear at the
   // beginning of a sentence.
-  'title singular' => t('mcapi webform'),
-  'title singular proper' => t('Mcapi webform'),
-  'title plural' => t('mcapi webforms'),
-  'title plural proper' => t('Mcapi webforms'),
+  'title singular' => t('transaction form'),
+  'title singular proper' => t('Transaction form'),
+  'title plural' => t('transaction forms'),
+  'title plural proper' => t('Transaction forms'),
 
   // This will provide you with a form for editing the properties on your
   // exportable, with validate and submit handler.
@@ -41,9 +41,9 @@ $plugin = array(
   //
   // All callbacks will accept &$form and &$form_state as arguments.
   'form' => array(
-    'settings' => 'mcapi_edit_webform',
-    'validate' => 'mcapi_edit_webform_validate',
-    'submit' => 'mcapi_edit_webform_submit',
+    'settings' => 'mcapi_edit_mcapi_form',
+    'validate' => 'mcapi_edit_mcapi_form_validate',
+    'submit' => 'mcapi_edit_mcapi_form_submit',
   ),
   'strings' => array(
     'confirmation' => array(
@@ -57,5 +57,5 @@ $plugin = array(
       ),
     ),
   ),
-  'handler' => 'mcapi_webform_ui',
+  'handler' => 'mcapi_forms_ui',
 );

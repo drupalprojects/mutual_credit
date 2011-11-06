@@ -1,0 +1,17 @@
+; $Id: 
+name = Forms and form builder UI
+description = Exportable transaction form builder
+package = Mutual Credit
+core = 7.x
+configure = admin/accounting/forms
+
+files[] = mcapi_forms.install
+files[] = mcapi_forms.module
+files[] = mcapi_forms.inc
+files[] = mcapi_forms.mcapiform.inc
+files[] = plugins/export_ui/mcapi_forms_ui.inc
+files[] = plugins/export_ui/mcapi_forms_ui.class.php
+
+dependencies[] = mcapi
+dependencies[] = ctools
+dependencies[] = user_chooser
