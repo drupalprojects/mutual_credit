@@ -3,7 +3,7 @@
 /*
  * Implements ctools hook mcapi_default_forms
  */
-function mcapi_forms_default_mcapi_forms() {
+function mcapi_forms_default_mcapiforms() {
   $mcapi_form = new stdClass;
   $mcapi_form->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
   $mcapi_form->api_version = 3;
@@ -191,7 +191,7 @@ function mcapi_forms_default_mcapi_forms() {
       'name' => 'many2one',
     ),
     'aspect' => '3',
-    'help' => '',
+    'help' => t('Make many transactions with different payers'),
     'outputs' => array(
       'access' => 'user_access:manage all transactions',
       'menu_link' => 'navigation',
@@ -282,7 +282,7 @@ function mcapi_forms_default_mcapi_forms() {
       'name' => 'one2many',
     ),
     'aspect' => '3',
-    'help' => '',
+    'help' => t('Make many transactions with different payees'),
     'outputs' => array(
       'access' => 'user_access:manage all transactions',
       'menu_link' => 'navigation',

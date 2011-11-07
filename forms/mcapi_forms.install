@@ -7,7 +7,7 @@
 function mcapi_forms_schema() {
   $schema = array();
   $schema['mcapi_forms'] = array(
-    'description' => 'Stores endpoint information for services',
+    'description' => 'Ctools table for mcapi forms',
     'fields' => array(
       'xfid' => array(
         'type'        => 'serial',
@@ -50,14 +50,14 @@ function mcapi_forms_schema() {
     'export' => array(
       'key' => 'name',
       'primary key' => 'xfid',
-      'identifier' => 'mcapi_form',
+      'identifier' => 'mcapiforms',
       'api' => array(
-        'owner' => 'mcapi_forms',
-        'api' => 'mcapiform',
+        'owner' => 'mcapiforms',
+        'api' => 'mcapiforms',
         'minimum_version' => 3,
         'current_version' => 3,
       ),
-      'default hook' => 'default_mcapi_forms',
+      'default hook' => 'default_mcapiforms',
       //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
       'admin_title' => 'name' //this converts the form field into machine_name I think
     ),

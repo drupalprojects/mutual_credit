@@ -1,21 +1,5 @@
 <?php
 
-function mcapi_currencies_enable() {
-  if (db_query("SELECT count(currcode) FROM {mcapi_currencies}")->fetchField() < 2) {
-    module_load_include('admin.inc', 'mcapi', 'currencies');
-    $currency = currency_default();
-    $currency->uid = 1;
-    $fields = array(
-      'currcode' => $currency->info['currcode'],
-      'data' => serialize($currency),
-    );
-    db_insert('mcapi_currencies')
-      ->fields($fields)
-      ->execute();
-    debug('saved first of many currencies');
-  }
-}
-
 function mcapi_currencies_disable() {
   cache_clear_all('currencies', 'cache');
 }
@@ -108,12 +92,12 @@ function mcapi_currencies_schema() {
       'primary key' => 'currcode',
       'identifier' => 'currency',
       'api' => array(
-        'owner' => 'mcapi_currencies',
-        'api' => 'currencies',
+        'owner' => 'mcapicurrencies',
+        'api' => 'mcapicurrencies',
         'minimum_version' => 3,
         'current_version' => 3,
       ),
-      'default hook' => 'default_mcapi_currencies',
+      'default hook' => 'default_mcapicurrencies',
       //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
       'admin_title' => 'currcode' //this converts the form field into machine_name I think
     )

@@ -16,7 +16,6 @@ class mcapi_forms_ui extends ctools_export_ui {
       'access arguments' => array($plugin['name'], 'add_template', $prefix_count + 2),
       'type' => MENU_CALLBACK,
     );
-
     return parent::init($plugin);
   }
 

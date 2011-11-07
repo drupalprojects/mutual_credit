@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Implements ctools hook default_mcapi_forms
+ * Implements ctools hook default_mcapiforms
  */
-function mcapi_pending_default_mcapi_forms() {
+function mcapi_pending_default_mcapiforms() {
 
   $mcapi_form = new stdClass;
   $mcapi_form->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
@@ -116,10 +116,10 @@ The team at drupal7',
 
 
 /*
- * Implements hook_default_mcapi_forms_alter
+ * Implements hook_default_mcapiforms_alter
  * changes all default mcapi_forms which create new transactions to create them pending instead
  */
-function mcapi_pending_default_mcapi_forms_alter(&$mcapi_forms) {
+function mcapi_pending_default_mcapiforms_alter(&$mcapi_forms) {
   foreach ($mcapi_forms as $path => $mcapi_form) {
     if ($mcapi_form->data['workflow']['incoming'][t('Unset')] == t('Unset')) {
       $mcapi_form->data['workflow']['outgoing'] = TRANSACTION_STATE_PENDING;

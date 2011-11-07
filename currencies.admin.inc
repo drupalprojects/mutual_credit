@@ -150,7 +150,7 @@ function mcapi_currency_form($form, &$form_state){
   $form['#currency'] = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
   $form['info']['currcode'] = array(
     '#type' => 'hidden',
-    '#value' => empty($form['#currency']->info['currcode']) ? substr(variable_get('site_name', 'drupal7'), 0, 7) : $form['#currency']->info['currcode'],
+    '#value' => empty($form['#currency']->info['currcode']) ? substr(variable_get('site_name', 'error'), 0, 7) : $form['#currency']->info['currcode'],
   );
   _mcapi_currency_form($form, $form_state);
   return $form;
@@ -272,7 +272,7 @@ function currency_default() {
   $def = variable_get('currency_default', array(
     //default currency name is taken from the site_name at the moment it's first called
     'info' => array(//this structure anticipates ctools and mcapi_currencies.module
-      'currcode' => substr(variable_get('site_name', 'blah'), 0, 8)
+      'currcode' => 'def_'. substr(variable_get('site_name', 'error'), 0, 4)
     ),
     'name' =>  t('Community Coins'),
     'format' => '@minus<strong>CC</strong>@integer:@subdivision',
