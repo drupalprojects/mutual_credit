@@ -119,6 +119,7 @@ function mcapi_schema() {
         'type' => 'int',
         'size' => 'small',
       ),
+      //quantity is done, perhaps controversially, but the field API
       'type' => array(
         'description' => 'The type of transaction, types are provided by modules',
         'type' => 'varchar',

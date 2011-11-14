@@ -153,7 +153,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $transaction->modified = REQUEST_TIME;
         $transaction->modifier = $GLOBALS['user']->uid;
         try{
-          $this->mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
+          mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
         }
         catch (Exception $e) {
           $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
@@ -253,11 +253,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     $transaction->creator = $GLOBALS['user']->uid;
     $transaction->created = REQUEST_TIME;
     if (empty($transaction->xid)) {
-      $success = $this->mcapi_write_record('mcapi_transactions', $transaction);
+      $success = mcapi_write_record('mcapi_transactions', $transaction);
       field_attach_insert('transaction', $transaction);
     }
     else {
-      $success = $this->mcapi_write_record('mcapi_transactions', $transaction, 'xid');
+      $success = mcapi_write_record('mcapi_transactions', $transaction, 'xid');
       field_attach_update('transaction', $transaction);
     }
     if (!$success) {
@@ -291,7 +291,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         break;
       case 2:
         try {
-          $this->mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
+          mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
         }
         catch (Exception $e) {
           //getting an error: Cannot access protected property Exception::$message
