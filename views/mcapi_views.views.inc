@@ -17,7 +17,6 @@ function mcapi_views_views_data() {
       'field' => 'xid',
     ),
   );
-
   $data['mcapi_transactions']['xid'] = array(
     'title' => t('Transaction ID'), // The item it appears as on the UI,
     'field' => array(
@@ -32,33 +31,23 @@ function mcapi_views_views_data() {
     )
   );
   $data['mcapi_transactions']['payer'] = array(
-    'title' => t('Payer'), // The item it appears as on the UI,
+    'title' => t('Payer'),
     'help' => t('The user who gave currency in the transaction.'),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_trader',
-      'click sortable' => TRUE,
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'field' => 'uid',
+      'label' => t('Payer'),
     ),
-    'filter' => array(
-      'help' => t('Show only transactions where the specified user paid'),
-      'handler' => 'views_handler_filter_user_name'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument'
-    )
   );
   $data['mcapi_transactions']['payee'] = array(
     'title' => t('Payee'),
-    'help' => t('The user who received currency in the transaction.'),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_trader',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'help' => t('Show only transactions where the specified user was paid'),
-      'handler' => 'views_handler_filter_user_name'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument'
+    'help' => t('The user who gave currency in the transaction.'),
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'field' => 'uid',
+      'label' => t('Payee'),
     ),
   );
   $data['mcapi_transactions']['state'] = array(
@@ -87,15 +76,11 @@ function mcapi_views_views_data() {
   $data['mcapi_transactions']['creator'] = array(
     'title' => t('Creator'),
     'help' => t('The user who first created the transaction.'),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_trader',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_user_name'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument'
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'field' => 'uid',
+      'label' => t('Creator'),
     ),
   );
   $data['mcapi_transactions']['created'] = array(
@@ -113,21 +98,17 @@ function mcapi_views_views_data() {
     ),
     'argument' => array(
       'field' => 'created',
-      'handler' => 'views_handler_argument_mcapi_created_year_month',
+      'handler' => 'views_handler_argument_mcapi_dates_various',
     )
   );
   $data['mcapi_transactions']['modifer'] = array(
     'title' => t('Modifier'),
     'help' => t('The user who last touched the transaction.'),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_trader',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_user_name'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument'
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'field' => 'uid',
+      'label' => t('Modifier'),
     ),
   );
   $data['mcapi_transactions']['modified'] = array(
@@ -143,20 +124,6 @@ function mcapi_views_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_date',
     ),
-  );
-
-  $data['mcapi_transactions']['participant'] = array(
-    'argument' => array(
-      'title' => t('Involved user'),
-      'help' => t('Show only those exchanges in which a user was involved'),
-      'handler' => 'views_handler_argument_mcapi_participant',
-    ),
-    'field' => array(
-      'title' => t('Other user'),
-      'help' => t("Show the other user who wasn't passed in the views argument"),
-      'handler' => 'views_handler_field_mcapi_participant',
-      'click sortable' => TRUE
-    )
   );
   $data['mcapi_transactions']['balance'] = array(
     'help' => t("Sum of all transactions since started. Requires the 'participant' argument"),
@@ -201,39 +168,14 @@ function mcapi_views_views_data() {
   $data['mcapi_index']['table']['group'] = t('Transaction index');
   $data['mcapi_index']['table']['base'] = array(
     'database' => variable_get('mcapi_db_read', 'default'),
-    'field' => 'uid',
+    'field' => 'xid',
     'title' => t('Transaction totals'),
-    'help' => t('Balances of users.'),
-    'defaults' => array('xid')
+    'help' => t('Transaction totals'),
+    'access query tag' => 'transaction_access_views',
+    'defaults' => array('diff')
   );
 
-  $data['mcapi_index']['table']['join'] = array(
-    //doesn't do anything that I can see, instead using relationship which must be added manually
-    'mcapi_transactions' => array(
-      'left_field' => 'xid',
-      'field' => 'xid',
-    ),
-    'users' => array(
-      'left_field' => 'uid',
-      'field' => 'uid1',
-    ),
-    'mcapi_currencies' => array(
-      'left_field' => 'currcode',
-      'field' => 'currcode'
-    )
-  );
-
-  $data['mcapi_index']['xid'] = array(
-    'title' => t('Transactions'), // The item it appears as on the UI,
-    'relationship' => array(
-      'help' => t('Shows more transaction fields'),
-      'handler' => 'views_handler_relationship',
-      'base' => 'mcapi_transactions',
-      'base field' => 'xid',
-      'field' => 'xid',
-      'label' => t('transactions'),
-    )
-  );
+/*
   $data['mcapi_index']['delta'] = array(
     'title' => t('delta'), // The item it appears as on the UI,
     'filter' => array(
@@ -241,51 +183,41 @@ function mcapi_views_views_data() {
       'handler' => 'views_handler_filter_boolean_operator'
     ),
   );
+ *
+ */
   $data['mcapi_index']['uid1'] = array(
     'title' => t('1st user'), // The item it appears as on the UI,
     'help' => t('The the transactor, whose perspective we are looking from'),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_trader',
-      'click sortable' => TRUE,
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'field' => 'uid',
+      'label' => t('1st user'),
     ),
-    'filter' => array(
-      'help' => t('Show only transactions where the specified user paid'),
-      'handler' => 'views_handler_filter_user_name'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument'
-    )
   );
   $data['mcapi_index']['uid2'] = array(
-    'title' => t('2nd Person'),
+    'title' => t('2nd user'),
     'help' => t("The transactee"),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_trader',
-      'click sortable' => TRUE,
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'field' => 'uid',
+      'label' => t('2nd user'),
     ),
-    'filter' => array(
-      'help' => t('Show only transactions where the specified user paid'),
-      'handler' => 'views_handler_filter_user_name'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    )
   );
   $data['mcapi_index']['currcode'] = array(
     'title' => t('Currency'),
     'help' => t("The currency ID"),
     'field' => array(
-      'handler' => 'views_handler_field',
+      //this needs a custom handler
+      'handler' => 'views_handler_field_mcapi_index_currcode',
       'click sortable' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument',
     ),
     'filter' => array(
        'handler' => 'views_handler_filter_mcapi_currency'
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument',
     ),
   );
   $data['mcapi_index']['income'] = array(
@@ -319,7 +251,7 @@ function mcapi_views_views_data() {
     )
   );
   $data['mcapi_index']['diff'] = array(
-    'title' => t('value'), // The item it appears as on the UI,
+    'title' => t('Value'), // The item it appears as on the UI,
     'help' => t("Change in the users balance"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_quantity_index',
@@ -365,55 +297,21 @@ function mcapi_views_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_date',
     ),
+    'argument' => array(
+      'handler' => 'views_handler_argument_mcapi_dates_various'
+    )
   );
   
   return $data;
 }
 
-function mcapi_views_views_data_alter(&$items) {
-  $items['mcapi_transactions']['table']['join']['mcapi_index'] = array(
-    'left_field' => 'xid',
-    'field' => 'xid'
-  );
-
-  $items['mcapi_currencies']['table']['join']['mcapi_index'] = array(
-    'left_field' => 'currcode',
-    'field' => 'currcode',
-  );
-
-  //not doing anything
-  $items['mcapi_transactions']['xid']['relationship'] = array(
-    'help' => t('Shows more transaction fields'),
-    'handler' => 'views_handler_relationship',
-    'base' => 'mcapi_index',
-    'base field' => 'xid',
-    'field' => 'xid',
-    'label' => t('transactions'),
-  );
-
-  /*
-  $items['users']['table']['join']['mcapi_index'] = array(
-    'left_field' => 'uid1',
-    'field' => 'uid',
-  );
-  $items['users']['table']['join']['mcapi_index'] = array(
-    'left_field' => 'uid1',
-    'field' => 'uid',
-  );
-   */
-}
-
-
 /*
  * implements views hook_views_data_alter
  */
 function mcapi_views_data_alter(&$items) {
-  //not sure if this does anything
-  $items['users']['table']['join']['mcapi_transactions'] = array(
-    'left_table' => 'mcapi_transactions',
-    'left_field' => 'creator',
-    'field' => 'uid',
-  );
+  //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
+  $items['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
+
 }
 
 

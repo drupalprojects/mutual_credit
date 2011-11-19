@@ -298,8 +298,9 @@ function mcapi_forms_template_validate(&$element, &$form_state) {
   $form_state['values']['templates']['template-1'] = filter_xss($element['#value'], array('a', 'p', 'br', 'font', 'style', ));
 }
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
+  form_state_values_clean($form_state);
   $values = &$form_state['values'];
-  unset($values['form_id'], $values['form_token'], $values['op'], $values['form_build_id'], $values['submit'], $values['xfid']);
+  unset($values['xfid']);
   //we need to start with an existing ctools object which contains essential default properties
 
   $mcapi_form = empty($form_state['item']) ? ctools_export_crud_new('mcapi_forms') : $form_state['item'];
@@ -314,3 +315,6 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
 function mcapi_edit_mcapi_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/accounting/forms'; //where the menu_rebuild is run
 }
+
+
+

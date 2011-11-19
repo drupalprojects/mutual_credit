@@ -27,7 +27,13 @@ class views_handler_argument_mcapi_participant extends views_handler_argument_nu
   }
 
   function query($group_by = FALSE) {
+    debug($this);//to find out the table name
     $this->ensure_my_table();
-    $this->query->add_where_expression(0, "$this->table_alias.payer = $this->argument OR $this->table_alias.payee = $this->argument");
+    if ($table == 'mcapi_transactions') {
+      $this->query->add_where_expression(0, "$this->table_alias.payer = $this->argument OR $this->table_alias.payee = $this->argument");
+    }
+    else {
+      $this->query->add_where_expression(0, "$this->table_alias.payer = $this->argument OR $this->table_alias.payee = $this->argument");
+    }
   }
 }

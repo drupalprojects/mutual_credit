@@ -16,7 +16,7 @@ function _mcapi_currency_form(&$form, &$form_state) {
   );
   $form['format'] = array(
     '#title' => t('Display format'),
-    '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @minus, @integer, @subdivision. ' .
+    '#description' => t('Write an expression to control the display of the currency using html, css and the following tokens:') .'@minus, @integer, @subdivision.<br />' .
        t('For example, "@a" shows as "@b"', array('@a' => '@minus@integer:@subdivision AUS', '@b' => '-99:99 AUS')),
     '#type' => 'textfield',
     '#default_value' => $form['#currency']->format,
@@ -121,11 +121,13 @@ function _mcapi_currency_form(&$form, &$form_state) {
         '#title' => $state,
         '#type' => 'select',
         '#options' => $options,
-        '#default_value' => $defaults[$constant],
+        '#default_value' => isset($defaults[$constant]) ? $defaults[$constant] : TRANSACTION_STATE_FINISHED,
         '#weight' => $j++,
       );
     }
   }
+
+  $form['#submit'][] = 'currencies_recache';
   $form['buttons'] = array(
     '#weight' => 20,
     'submit' => array(
@@ -162,22 +164,11 @@ function mcapi_currency_form($form, &$form_state){
  * saves the currency as a variable
  */
 function mcapi_currency_form_submit($form, $form_state) {
-  //save the currency settings as a single nested array
-  $values = $form_state['values'];
-  unset($values['form_id'], $values['form_token'], $values['submit'], $values['form_build_id'], $values['buttons']);
-  variable_set('currency_default', $values);
-  currencies_recache();
-}
 
-/*
- * callback from ctools export_ui plugin
- */
-function mcapi_currencies_form_submit($form, &$form_state) {
-  currencies_recache();
-  //I would have thought this database key would have been provided automacically
-  //since the field was created automatically
-  $form_state['item']->currcode = $form_state['values']['info']['currcode'];
-  $form_state['item']->data = (object)$form_state['values'];
+  //save the currency settings as a single nested array
+  $values = form_state_values_clean($form_state);
+  variable_set('currency_default', $values);
+  register_shutdown_function('currencies_recache');
 }
 
 
@@ -287,6 +278,10 @@ function currency_default() {
       0 => 'mcapi_access_authenticated',
       -1 => 'mcapi_access_none'
     ),
+    'update' => array(
+      0 => 'mcapi_access_none',
+      -1 => 'mcapi_access_none'
+    ),
   ));
   return (object)$def;
 }
@@ -322,9 +317,9 @@ function currencies_recache() {
 
   if (module_exists('mcapi_currencies')) {
     $currencies = currencies_load_all();
-    //set the max number of currencies you pan pay with on one form
     $field = field_read_field('worth');
-    $field['cardinality'] = count($currencies);
+    //this variable isn't set anywhere yet, partly because no suitable settings page exists yet
+    $field['cardinality'] = variable_get('mcapi_currencies_multiple', 0) ? count($currencies) : 1;
     field_update_field($field);
   }
   foreach($currencies as $currcode => $currency) {

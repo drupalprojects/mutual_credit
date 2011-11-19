@@ -36,9 +36,10 @@ function mcapi_install() {
   if ($data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField())) {
     if (!in_array('transaction', $data['entity_types'])) {
       $data['entity_types'][] = 'transaction';
+      $data_col = serialize($data);
+      db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
+      debug('Enabled body field to be applied to transaction bundles');
     }
-    $data_col = serialize($data);
-    db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
   }
 }
 
@@ -71,7 +72,7 @@ function mcapi_uninstall() {
   //truncate the tables containing field_api data
   db_query('TRUNCATE table {field_data_worth}');
   db_query('TRUNCATE table {field_revision_worth}');
-  
+
   variable_del('mcapi_controller');
   variable_del('mcapi_db_read');
   variable_del('mcapi_db_write');
@@ -165,6 +166,7 @@ function mcapi_schema() {
 }
 
 function mcapi_check_fields() {
+  _field_info_collate_types(TRUE);
   field_associate_fields('mcapi');
   if (!field_read_field('worth', array('include_inactive' => TRUE))) {
     $field = array(
@@ -285,15 +287,202 @@ function mcapi_field_schema($field) {
   }
 }
 
-function _mcapi_update_7000() {
-  module_enable(array('mcapi_limits'));
-  //first of all we need to tweak the currency objects, which used to be nodes and now are views.
-  $old_currency = db_query("SELECT * FROM {mc_currencies} c LEFT JOIN {node} n ON c.nid = n.nid")->fetch();
-  $old_currency->data = unserialize($old_currency->data);
-  $currency = array_pop(currencies_load());
-  $currency->info['currcode'] = substr($old_currency->title, 0, 8);
+/*
+ * implements hook_update_n
+ * copy the currency definitions into the new variable, or the new table
+ */
+function mcapi_update_7000() {
+  db_query("DELETE FROM {menu_links} WHERE link_path = 'transaction/add'");
+  module_enable(array('mcapi_limits', 'text'));
+  db_drop_table('mc_cache');
+  db_rename_table('mc_unsigned', 'mcapi_unsigned');
+  mcapi_check_fields();
+
+  //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
+  $currencies = db_query("SELECT * FROM {mc_currencies} c LEFT JOIN {node} n ON c.nid = n.nid ORDER BY c.nid")->fetchAllAssoc('nid');
+  $def = mcapi_update_currency(current($currencies));
+  variable_set('currency_default', (array)$def);
+  if (count($currencies) > 1) {
+    module_enable(array('mcapi_currencies'));
+   //drupal_install_schema('mcapi_currencies');
+    foreach ($currencies as $nid => $cur) {
+      $cur = mcapi_update_currency($cur);
+      $name = $cur->info['currcode'];
+      $row = array('currcode' => $cur->info['currcode'], 'data' => $cur);
+      drupal_write_record('mcapi_currencies', $row);
+      $currs[$nid] = $cur->info['currcode'];
+    }
+    drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($currencies))));
+  }
+  else {
+    drupal_set_message('The default currency has been upgraded');
+  }
+}
+
+/*
+ * implements hook_update_n
+ * add the description field to the transaction entity
+ */
+function mcapi_update_7001() {
+  mcapi_check_fields();
+  //add the description field, which was intrinsic in v2
+  field_create_field(array(
+    'entity_types' => array(
+      'transaction',
+    ),
+    'settings' => array(),
+    'field_name' => 'transaction_description',
+    'type' => 'text',
+    'module' => 'text',
+    'active' => '1',
+    'locked' => '0',
+    'cardinality' => '1',
+    'columns' => array(
+      'value' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ),
+      'summary' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ),
+      'format' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'bundles' => array(
+      'transaction' => array(
+        'transaction',
+      ),
+    ),
+  ));
+  $instance = array(
+    'field_name' => 'transaction_description',
+    'label' => t('Description'),
+    'entity_type' => 'transaction',
+    'bundle' => 'transaction',
+    'settings' => array(),
+    'required' => TRUE,
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'type' => 'text_default',
+        'weight' => 0,
+      ),
+    ),
+    'widget' => array(
+      'weight' => '3',
+      'type' => 'text_textfield',
+      'settings' => array(
+        'rows' => '1'
+      )
+    )
+  );
+  field_create_instance($instance);
+
+  //now we delete the views from the old version
+  $oldviews = array('mc_exchanges_all');
+  foreach ($oldviews as $view) {
+    $view = views_ui_cache_load($viewname);
+    if ($view){
+      $view->delete();
+      views_object_cache_clear('view', $viewname);
+    }
+  }
+  //cleanup
+  variable_del('mc_tabs_css');
+}
+
+/*
+ * implements hook_update_n
+ * migrate the transactions to the new data structure
+ */
+function mcapi_update_7002() {
+  //we could gradually transform the table using the db api, but it's easier just to make a new table and migrate the transactions accross.
+  drupal_install_schema('mcapi');
+
+  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
+
+  //convert each old transaction into a transaction object
+  $transactions = db_query("SELECT * FROM {mc_exchanges} x
+    LEFT JOIN {node} n on n.nid = x.nid
+    LEFT JOIN {node_revision} v on n.vid = v.vid"
+  )->fetchAllAssoc('nid');
+
+  $currs = db_query("SELECT nid, title FROM {node} ORDER BY nid ASC")->fetchAllKeyed();
+  foreach ($transactions as $xid => $old) {
+    switch($old->exchange_type) {
+      case 'outgoing signed':
+      case 'incoming signed':
+      case 'outgoing direct':
+      case 'incoming direct':
+        $type = '1stparty'; break;
+      case 'onetomany':
+      case 'onetoall':
+        $type = 'one2many'; break;
+      case 'manytoone':
+      case 'alltoone':
+        $type = 'one2many'; break;
+      default:
+        $type = '3rdparty';
+    }
+    $transaction = array(
+      'xid' => $old->nid,
+      'payer' => $old->payer_uid,
+      'payee' => $old->payee_uid,
+      'state' => $old->state,
+      'created' => $old->created,
+      'creator' => $old->uid,
+      'modified' => $old->changed,
+      'modifier' => $old->uid,
+      'type' => $type,
+      'data' => array(),
+      'worth' => array(
+        'und' => array(
+          0 => array(
+            'quantity' => $old->quantity,
+            'currcode' => str_replace(' ', '_', substr($currs[$old->cid], 0, 8)),
+          )
+        )
+      ),
+      'transaction_description' => array(
+        'und' => array(
+          0 => array(
+            'value' => $old->title
+          )
+        )
+      ),
+      'is_new' => TRUE
+    );
+    $transaction = (object)$transaction;
+    //bypasses the transaction controller
+    $success = mcapi_write_record($transaction);
+    field_attach_insert('transaction', $transaction);
+  }
+
+  drupal_set_message('Transactions have been imported via the default controller.
+    If transactions were categorised, the categories have not been upgraded
+    Any other cck fields which had been added to the transaction node-type have not been upgraded, (unless via core).'
+  );
+  module_load_include('admin.inc', 'mcapi', 'currencies');
+  currencies_recache();
+  registry_rebuild();
+  menu_rebuild();
+  db_drop_table('mc_currencies');
+}
+
+function mcapi_update_currency($old_currency) {
+  //get the default currency for this module, and populate with the old default currency
+  module_load_include('admin.inc', 'mcapi', 'currencies');
+  $currency = currency_default();
+  $currency->info['currcode'] = str_replace(' ', '_', substr($old_currency->title, 0, 8));
   $currency->name = $old_currency->title;
-  $currency->format = $old_currency->symbol;
+  $currency->format = str_replace(array('[', ']', '@icon'), array('@', '', ''), $old_currency->symbol);
+  $currency->uid = $old_currency->uid;
   //convert the divisions from the saved value to a string
   if (is_array($old_currency->data['divisions'])) {
     while (list($key, $val) = each($old_currency->data['divisions'])) {
@@ -306,67 +495,5 @@ function _mcapi_update_7000() {
   $currency->limits_personal['min'] = $old_currency->min;
   $currency->limits_personal['max'] = $old_currency->max;
   $currency->accounting['update_mode'] = 2;
-
-  variable_set('currency_default', (array)$currency);
-  module_load_include('admin.inc', 'mcapi', 'currencies');
-  currencies_recache();
-  //and make sure the new currency is visible
-  drupal_set_message('The default currency has been upgraded');
-
-  drupal_set_message('If transactions were categorised, the categories have not been upgraded
-    Any other cck fields which had been added to the transaction node-type have not been upgraded, unless via core.
-    Transactions have been imported via the default controller.');
-  //set up the new transaction table
-  drupal_install_schema('mcapi');
-  mcapi_install();
-
-  module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
-  //convert each old transaction into a transaction object
-  $transactions = db_query("SELECT * FROM {mc_exchanges} x
-    LEFT JOIN {node} n on n.nid = x.nid
-    LEFT JOIN {node_revision} v on n.vid = v.vid")->fetchAllAssoc('nid');
-  foreach ($transactions as $xid => $old) {
-    $transaction = array(
-      'xid' => $old->nid,
-      'payer' => $old->payer_uid,
-      'payee' => $old->payee_uid,
-      'state' => $old->state,
-      'created' => $old->created,
-      'creator' => $old->uid,
-      'modified' => $old->changed,
-      'modifier' => $old->uid,
-      'type' => $old->exchange_type,
-      'data' => array(),
-      'worth' => array(
-        'und' => array(
-          0 => array(
-            'quantity' => $old->quantity,
-            'currcode' => $currency->info['currcode'] /* need to update currency codes */
-          )
-        )
-      ),
-      'body' => array(
-        'und' => array(
-          0 => array(
-            'value' => $old->title
-          )
-        )
-      ),
-      'is_new' => TRUE
-    );
-    $transaction = (object)$transaction;
-    //this only works once, as an insert
-    mcapi_write_record('mcapi_transactions', $transaction);
-    field_attach_update('transaction', $transaction);
-  }
-  //now we delete the views from the old version
-  $oldviews = array('mc_exchanges_all');
-  foreach ($oldviews as $view) {
-    $view = views_ui_cache_load($viewname);
-    if ($view){
-      $view->delete();
-      views_object_cache_clear('view', $viewname);
-    }
-  }
+  return $currency;
 }
-

@@ -39,6 +39,9 @@ Rather than writing hundreds on the transaction form, it can be configured to ac
 Note how the default settings are the strictest accounting standards possible, with no editing and no deleting of transactions
 When editing the accounting standards, the access operations (edit, delete) appear as extra tabs. Careful the AJAX is a bit flakey on that form.
 
+Visit admin/accounting/transaction/fields
+If you want to add a description, or a date, or an image to your transaction contenttype, enable the appropriate modules and add and configure those fields here.
+
 Visit admin/accounting/forms
 Design the forms for users to create and edit transactions
 N.B It is possible to create invalid transaction forms, and I advise editing an existing one before creating a new one.

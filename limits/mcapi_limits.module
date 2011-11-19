@@ -10,9 +10,11 @@ function limits_get($currcode, $uid){
 }
 
 /*
- * Implements hook mcapi_currency_form
+ * Implements hook_form_FORMID_alter
+ * This ctools form is used accross the board. Not sure the best way to narrow it down
  */
-function mcapi_limits_form_mcapi_currency_form_alter(&$form, &$form_state) {
+function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+  if (empty($form['#currency'])) return;
   $limits_callback = isset($form['#currency']->limits['limits_callback']) ? $form['#currency']->limits['limits_callback'] : 'limits_none';
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
   $form['limits'] = array(
@@ -110,7 +112,7 @@ function limits_none_form($currency, array $defaults) {
 
 //limits callback - returns the min an max limits for that currency for that user
 function limits_global($currency, $uid) {
-  return $currency->limits['limits_settings'];
+  return $currency->limits['limits_global'];
 }
 function limits_global_form($currency, array $defaults) {
   if (isset($currency->limits['limits_global'])) {
@@ -328,23 +330,24 @@ function mcapi_limits_views_api() {
 /*
  * callback to return themed balance limits
  */
-function show_balance_limits($account, $currcode) {
-  $balance = entity_get_controller('transaction')
-    ->balance($account->uid, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
+function show_balance_limits($account, $currcode, $adjust = FALSE) {
   $limits = limits_get($currcode, $account->uid);
+
   //this chart makes no sense if there isn't a max (or min) limit
   if (!is_numeric($limits['max']) || !is_numeric($limits['min'])) {
     drupal_set_message(t('Balance limits requires minimum and maximum balances for currency: !link', array('!link' => l('admin/accounting/currency', 'admin/accounting/currency'))));
-    return;
+    return array();
   }
   return array(
     '#theme' => 'balance_limits',
     '#currency' => currency_load($currcode),
     '#min' => $limits['min'],
-    '#balance' => $balance,
-    '#max' => $limits['max']
+    '#max' => $limits['max'],
+    '#balance' => entity_get_controller('transaction')->balance($account->uid, $currcode, $states = array(TRANSACTION_STATE_FINISHED)),
+    '#adjust' => $adjust
   );
 }
+
 /*
  * Implements views hook_block_list
  */
@@ -359,36 +362,48 @@ function mcapi_limits_block_info() {
  * Implements views hook_block_view
  */
 function mcapi_limits_block_view($delta) {
-  if (arg(0) != 'user') return;
-  $account = user_uid_optional_load(arg(1));
+  $account = arg(0) == 'user' ? user_uid_optional_load(arg(1)) : $GLOBALS['user'];
+
   if (!user_access('view all balances') && !$account->uid == $GLOBALS['user']->uid) return;
   module_load_include('admin.inc', 'mcapi', 'currencies');
-  $values = variable_get('block_'.$delta, array());
-  if (!isset($values['currcodes']) || !count($values['currcodes'])) {
-    $values['currcodes'] = array_keys(currencies_load());
+  $settings = mcapi_limits_block_settings('block_'.$delta);
+  if (empty($settings['currcodes'])) {
+    $settings['currcodes'] = array_keys(currencies_load());
   }
-  $output = '';
-  foreach ($values['currcodes'] as $currcode) {
-    $output[] = show_balance_limits($account, $currcode);
+  foreach ($settings['currcodes'] as $currcode) {
+    $output[] = show_balance_limits($account, $currcode, $settings['adjust']);
   }
   return array(
     'subject' => t("@user's limits", array('@user' => strip_tags(format_username($account)))),
     'content' => $output
   );
-  break;
 }
 
 
 /*
  * Implements views hook_block_configure
  */
-function mcapi_limits_block_configure($edit) {
+function mcapi_limits_block_configure($delta) {
+  $settings = mcapi_limits_block_settings('block_'.$delta);
   if (module_exists('mcapi_currencies')) {
-    return currency_picker_element($edit['currcodes']);
+    $form['currcodes'] = currency_picker_element($settings['currcodes'], TRUE);
   }
+  $form['adjust'] = array(
+    '#title' => t('Take account of balance'),
+    '#description' => t('add the balance to the limits, showing the available limits'),
+    '#type' => 'checkbox',
+    '#default_value' => $settings['adjust']
+  );
+  return $form;
 }
 function mcapi_limits_block_save($delta, $values) {
-  variable_set('block_'.$delta, $values);
+  variable_set(
+    'block_'.$delta,
+    array(
+      'currcodes' => $values['currcodes'],
+      'adjust' => $values['adjust']
+    )
+  );
 }
 
 /*
@@ -404,23 +419,16 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
         'min' => 0,
         'balance' => 0,
         'max' => 0,
+        'adjust' => FALSE
       )
     )
   );
 }
-
-
-
-//this was in case we wanted to do form level validation using ['limits_callback'].'_form_validate'
-//the name of this validate function would need to be included in mcapi_limits_form_currency_form_alter
-//$form['#validate'][] = 'limits_subform_validate'
-/*
-function limits_subform_validate($form, &$form_state) {
-  if ($form_state['values']['limits_callback']) {
-    $form_callback = $form_state['values']['limits_callback'].'_form_validate';
-    if (function_exists($form_callback)) {
-      $form_callback($form_state);
-    }
-  }
+function mcapi_limits_block_settings($delta) {
+  $settings = variable_get($delta, array());
+  return $settings ? $settings : array('currcodes' => array_keys(currencies_load()), 'adjust' => FALSE);
 }
- */
+
+function mcapi_limits_update_7001() {
+  variable_del('block_balance_limits');
+}

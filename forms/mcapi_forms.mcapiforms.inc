@@ -28,11 +28,8 @@ function mcapi_forms_default_mcapiforms() {
       ),
       'outgoing' => '0',
     ),
-    'mcapi_form_fields' => array(
-      'mcapi_form_fields__active_tab' => 'edit-worth',
-    ),
     '2ndperson' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -40,7 +37,7 @@ function mcapi_forms_default_mcapiforms() {
       'args' => 'user_chooser_permissions:transact',
     ),
     'direction' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -50,7 +47,7 @@ function mcapi_forms_default_mcapiforms() {
       'widget' => 'select',
     ),
     'worth' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => array(
           'integer' => '0',
           'currcode' => 'drupal7',
@@ -120,7 +117,7 @@ function mcapi_forms_default_mcapiforms() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -129,7 +126,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 0,
     ),
     'payee' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -138,7 +135,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 0,
     ),
     'worth' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => array(
           'integer' => '0',
           'currcode' => 'drupal7',
@@ -208,7 +205,7 @@ function mcapi_forms_default_mcapiforms() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -217,7 +214,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 1,
     ),
     'payee' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -226,7 +223,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 0,
     ),
     'worth' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => array(
           'integer' => '0',
           'currcode' => 'drupal7',
@@ -299,7 +296,7 @@ function mcapi_forms_default_mcapiforms() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -308,7 +305,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 0,
     ),
     'payee' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 1,
@@ -317,7 +314,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 1,
     ),
     'worth' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => array(
           'integer' => '0',
           'currcode' => 'drupal7',
@@ -389,7 +386,7 @@ function mcapi_forms_default_mcapiforms() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => TRUE,
         'required' => 1,
@@ -398,7 +395,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 0,
     ),
     'payee' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => TRUE,
         'required' => 1,
@@ -407,7 +404,7 @@ function mcapi_forms_default_mcapiforms() {
       'multiple' => 0,
     ),
     'worth' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => array(
           'integer' => '0',
           'currcode' => 'drupal7',

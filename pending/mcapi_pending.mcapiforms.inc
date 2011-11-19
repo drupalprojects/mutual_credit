@@ -31,14 +31,14 @@ function mcapi_pending_default_mcapiforms() {
       'outgoing' => '0',
     ),
     'currcode' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => 1,
         'widget' => 'hidden',
         'required' => FALSE,
       ),
     ),
     'payer' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 0,
@@ -47,7 +47,7 @@ function mcapi_pending_default_mcapiforms() {
       'multiple' => 0,
     ),
     'payee' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 0,
@@ -56,7 +56,7 @@ function mcapi_pending_default_mcapiforms() {
       'multiple' => 0,
     ),
     'worth' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 0,
@@ -65,7 +65,7 @@ function mcapi_pending_default_mcapiforms() {
       'chars' => '',
     ),
     'description' => array(
-      'common' => array(
+      'shared' => array(
         'preset' => '',
         'disable' => 0,
         'required' => 0,

@@ -39,7 +39,7 @@ function mcapi_views_entity_delete($entity, $type) {
 
 /*
  * To reduce the number of permutations of data which could be cached,
- * Cacheing is done at the display level
+ * Caching is done for each transaction, and views does most of the work
  * This function merely clears those caches
  */
 function update_mcapi_index($transaction, $xid = NULL) {
@@ -54,8 +54,6 @@ function update_mcapi_index($transaction, $xid = NULL) {
 
       $args[':uid'] = $transaction->payee;
       $balance = db_query($balance_query, $args)->fetchfield();
-      $balance = mcapi_user_balance($transaction->payee, $transfer['currcode']);
-
       db_merge('mcapi_index')
       ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payee))
       ->fields(array(
@@ -70,7 +68,6 @@ function update_mcapi_index($transaction, $xid = NULL) {
 
       $args[':uid'] = $transaction->payer;
       $balance = db_query($balance_query, $args)->fetchfield();
-      $balance = mcapi_user_balance($transaction->payee, $transfer['currcode']);
       db_merge('mcapi_index')
       ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payer))
       ->fields(array(

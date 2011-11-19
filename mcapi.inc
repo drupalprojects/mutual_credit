@@ -186,6 +186,9 @@ function transaction_form($form, &$form_state, $transaction) {
     '#required' => TRUE,
     '#weight' => 20,
   );
+
+  $fields = mcapi_form_get_additional_form_fields();
+
   //TODO
   //I'm just fed up of multistep forms
   //the following doesn't retrieve default values out of form_state when we come back from step 2
@@ -196,7 +199,7 @@ function transaction_form($form, &$form_state, $transaction) {
     drupal_set_message(t('Cannot build transaction form:').' '. $e->getMessage(), 'error');
     return array();
   }
-  
+
   //the default theming for multiple value fields is way over the top, so this module provides a cut down theme callback
   if (count(element_children($form['worth']['und'])) > 1) {
     $form['worth']['und']['#theme'] = 'worth_widget';

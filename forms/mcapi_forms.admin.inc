@@ -1,11 +1,14 @@
 <?php
 
+module_load_include('inc', 'mcapi_forms');
+
 /*
  * This is the form-builder form
  * For every field in the transaction form, this form allows it to be configured.
  * Its not geometrically perfect, but covers a lot of use cases without getting too complicated
  */
 function _edit_mcapi_form(&$form, &$form_state) {
+  form_load_include($form_state, 'inc', 'mcapi');//contains the validation functions for the default form elements
   $mcapi_form = &$form_state['item'];
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
@@ -142,8 +145,11 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#weight' => 5,
   );
 
+  //load the transaction form so we can use all the fields here to set the defaults
+  $transaction_fields = transaction_form($form, $form_state, new transaction);
+
   //this section of the form allows the admin to handle the individual fields of the transaction form.
-  //the fields are handled here one in each tab, each field having some common settings and some specific ones.
+  //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
   $form['mcapi_form_fields'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 6,
@@ -154,7 +160,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   if ($aspect == 3) {
     //special settings for payer and payee
     foreach (array('payer' => t('Payer ID'), 'payee' => t('Payee ID')) as $key => $name) {
-      $form[$key] = mcapi_form_prefill_fields($mcapi_form, $key, $name);
+      $form[$key] = _mcapi_form_shared($mcapi_form->data, $transaction_fields[$key], $key);
       $form[$key]['#widget'] = 'user_chooser';//this is the only option that will work right now
       $form[$key]['args'] = array(
         '#title' => t('Users to choose from'),
@@ -175,7 +181,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     }
   }
   else {//1st person form shows one field only, presuming the current user initiates the transaction
-    $form['2ndperson'] = mcapi_form_prefill_fields($mcapi_form, '2ndperson', t('2nd Person'));
+    $form['2ndperson'] = _mcapi_form_shared($mcapi_form->data, $transaction_fields['payer'], '2ndperson');
     $form['2ndperson']['#widget'] = 'user_chooser';//this is the only option that will work right now
     $form['2ndperson']['args'] = array(
       '#title' => t('Users to choose from'),
@@ -186,7 +192,11 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#options' => $user_chooser_options,
       '#default_value' => isset($mcapi_form->data['2ndperson']['args']) ? $mcapi_form->data['2ndperson']['args'] : 'mcapi_access_check_roles:2'
     );
-    $form['direction'] = mcapi_form_prefill_fields($mcapi_form, 'direction', t('Direction'));
+
+    $direction_widget = _macpi_forms_direction_widget($mcapi_form->data['direction']);
+    $form['direction'] = _mcapi_form_shared($mcapi_form->data, $direction_widget, 'direction');
+
+    //not sure these are ever used...
     $form['direction']['incoming'] = array(
       '#title' => t('Name of incoming transaction'),
       '#type' => 'textfield',
@@ -206,33 +216,17 @@ function _edit_mcapi_form(&$form, &$form_state) {
       ),
       '#default_value' => isset($mcapi_form->data['direction']['widget']) ? $mcapi_form->data['direction']['widget'] : 'outgoing',
     );
-    $form['direction']['common']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
-  }
+    $form['direction']['shared']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
 
+  }
   //these are the field api fields which may have been added to the transaction entity
   $additional_fields = mcapi_form_get_additional_form_fields();
-  //unset($additional_fields['worth']);
-  foreach ($additional_fields as $name => $field) {
-    $form[$name] = mcapi_form_prefill_fields_additional($mcapi_form, $name, $field);
+  foreach ($additional_fields as $fieldname => $field) {
+    $form[$fieldname] = _mcapi_form_shared($mcapi_form->data, $transaction_fields[$fieldname], $fieldname);
   }
 
-  //leaving this till last because its the hardest.
-  //the previous form elements each used the textfield widget to supply the default values.
-  //but for the value we want to use the worth widget.
-  //however because this isn't an entity form and
-  //mcapi_form isn't an entity to which the 'worth' field is attached, we shall have to call the widget and handle the data more manually
-  //first of all, treat it just like the other fields, above.
-  $form['worth'] = mcapi_form_prefill_fields($mcapi_form, 'worth', t('Worth'));
-  $pseudo_form_state = array(); //because it must be passed by ref
-  //now change the widget for the default value
-  $form['worth']['common']['preset'] = mcapi_field_widget_form(array(), $pseudo_form_state, array() ,array(), 'und', array($mcapi_form->data['worth']['common']['preset']), 0, $form['worth']['common']['preset']);
-  $form['worth']['common']['preset']['#element_validate'] = array('mcapi_form_validate_worth');
-
   //we know about one additional_field, which is the value
-  $form['value']['#prefix'] = t('This form builder is for transfers in any one, but only one currency');
-
-  $form['worth']['common']['preset']['#type'] = 'worth_field';
-//debug($form['worth']);
+  //$form['value']['#prefix'] = t('This form builder is for transfers in any one, but only one currency');
 
 
 
@@ -326,61 +320,70 @@ function _edit_mcapi_form(&$form, &$form_state) {
 }
 
 
-function mcapi_form_prefill_fields($mcapi_form, $key, $name) {
+function _mcapi_form_shared($mcapi_form_fields, $default_field, $key) {
   static $w;
-  return array(
+  $element = array(
     '#title' => "[$key]",
-    '#description' => t("Settings for @field", array('@field' => $name)),
+    '#description' => t("Settings for '@field' field", array('@field' => $key)),
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_fields',
     '#weight' => $w++,
-    'common' => array(
-      '#title' => t('Common properties'),//this isn't showing, and nor is the border
-      '#description' =>  '<strong>'.t('Common properties') .'</strong> '.t('What to do with passed parameters'),
+    'shared' => array(
+      '#title' => t('shared properties'),//this isn't showing, and nor is the border
+      '#description' =>  '<strong>'.t('shared properties') .'</strong> '.t('What to do with passed parameters'),
       '#type' => 'fieldset',
       '#attributes' => array('style' => 'border:thin solid gray;width:300px;'),
       '#weight' => -5,
       'preset' => array(
         '#title' => t('Hard set value'),
         '#description' => t('overrides incoming values'),
-        '#type' => 'textfield',
-        '#default_value' => isset($mcapi_form->data[$key]['common']['preset']) ? $mcapi_form->data[$key]['common']['preset'] : '',
-        '#size' => 3,
-      ),
+      ) + $default_field,
       'disable' => array(
         '#title' => t('Grey out field if value is passed'),
         '#type' => 'checkbox',
         '#return_value' => TRUE,
-        '#default_value' => isset($mcapi_form->data[$key]['common']['disable']) ? $mcapi_form->data[$key]['common']['disable'] : 'edit',
+        '#default_value' => isset($mcapi_form_fields[$key]['shared']['disable']) ? $mcapi_form_fields[$key]['shared']['disable'] : 'edit',
         '#weight' => 1,
       ),
       'required' => array(
         '#title' => t('Required'),
         '#description' => t('Form should fail validation if no value is submitted.'),
         '#type' => 'checkbox',
-        '#default_value' => isset($mcapi_form->data[$key]['common']['required']) ? $mcapi_form->data[$key]['common']['required'] : '',
+        '#default_value' => isset($mcapi_form_fields[$key]['shared']['required']) ? $mcapi_form_fields[$key]['shared']['required'] : '',
         '#weight' => 10
       ),
     ),
   );
+  //set the defaults from the saved object
+  if (isset($default_field['und'][0]['#columns'])) {//for formAPI fields
+    foreach ($default_field['und'][0]['#columns'] as $column) {
+      if (!empty($mcapi_form_fields[$key]['shared']['preset']['und'][0][$column])) {
+        $element['shared']['preset']['und'][0][$column]['#default_value'] = $mcapi_form_fields[$key]['shared']['preset']['und'][0][$column];
+      }
+    }
+  }
+  else { //for transaction entity fields
+    $element['shared']['preset']['#default_value'] = $mcapi_form_fields[$key]['shared']['preset'];
+  }
+
+  if (!empty($default_field['#required'])) {
+    $element['shared']['required']['#default_value'] = TRUE;
+    $element['shared']['required']['#disabled'] = TRUE;
+  }
+  mcapi_unrequire_recursive($element['shared']);
+  return $element;
 }
 
 function mcapi_forms_ajax_settings($form, &$form_state) {
   return $form;
 }
-/*
- * wrapper function to build default settings form for additional fields
- */
-function mcapi_form_prefill_fields_additional($mcapi_form, $key, $field) {
-  //of course we want to ignore wrappers and fieldsets which help organise the form
-  //and assume there's only one element per wrapper
-  $subelement = _get_deepest_child($field);
-  $element = mcapi_form_prefill_fields($mcapi_form, $key, isset($subelement['#title']) ? $subelement['#title'] : t('Additional field'));
-  if (!empty($subelement['#required'])) {
-    $element['common']['required']['#default_value'] = TRUE;
-    $element['common']['required']['#disabled'] = TRUE;
-  }
-  return $element;
-}
 
+function mcapi_unrequire_recursive(&$array) {
+  unset($array['#required']);
+  foreach($array as $key => &$val) {
+    if (is_array($val)) {
+      mcapi_unrequire_recursive($val);
+    }
+  }
+}
 

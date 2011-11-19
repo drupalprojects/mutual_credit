@@ -271,10 +271,6 @@ function template_preprocess_transaction(&$variables) {
   //theme the worth field(s) and make them a variable
   $transaction->worth['und']['#theme'] = 'worth_fields';
   $variables['worths'] = drupal_render($transaction->worth['und']);
-
-  //make the description available in the right language
-  $variables['description'] = $transaction->body;
-  field_attach_preprocess('transaction', $transaction, $transaction->body, $variables);
 }
 
 // this shouldn't be necessary, but how else to get a dynamic list of tokens?
@@ -338,6 +334,8 @@ class transaction {
     $this->state = 'unset';//this isn't one of the declared states and should cause an error if saved
     $this->type = 'unspecified';
     $this->extra = array();
+
+/* worth is a fieldAPI field and might not be needed here
     $this->worth = array(
       'und' => array(
         0 => array(
@@ -346,7 +344,7 @@ class transaction {
         )
       )
     );
-  }
+*/
 }
 
 

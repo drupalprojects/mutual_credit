@@ -46,6 +46,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       foreach ($conditions as $field => $value) {
         $query->condition('base.' . $field, $value);
       }
+      $query->orderBy('created', 'ASC');
       $queried_entities = $query->execute()->fetchAllAssoc($this->idKey);
       //extract the serialized data into 'extra' property
       foreach ($queried_entities as $key => $entity) {
@@ -153,7 +154,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $transaction->modified = REQUEST_TIME;
         $transaction->modifier = $GLOBALS['user']->uid;
         try{
-          mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
+          mcapi_write_record($transaction, array('xid'));
         }
         catch (Exception $e) {
           $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
@@ -253,11 +254,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     $transaction->creator = $GLOBALS['user']->uid;
     $transaction->created = REQUEST_TIME;
     if (empty($transaction->xid)) {
-      $success = mcapi_write_record('mcapi_transactions', $transaction);
+      $success = mcapi_write_record($transaction);
       field_attach_insert('transaction', $transaction);
     }
     else {
-      $success = mcapi_write_record('mcapi_transactions', $transaction, 'xid');
+      $success = mcapi_write_record($transaction, 'xid');
       field_attach_update('transaction', $transaction);
     }
     if (!$success) {
@@ -291,7 +292,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         break;
       case 2:
         try {
-          mcapi_write_record('mcapi_transactions', $transaction, array('xid'));
+          mcapi_write_record($transaction, array('xid'));
         }
         catch (Exception $e) {
           //getting an error: Cannot access protected property Exception::$message
@@ -309,15 +310,15 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
  * wrapper for drupal_write_record
  * writes to the database(s) specified by the entity controller settings
  */
-function mcapi_write_record($table, &$record, $primary_keys = array()) {
+function mcapi_write_record(&$record, $primary_keys = array()) {
   //we need to ensure the schema is cached before calling mcapi_write_record
   //Otherwise it may try to retrieve the schema from the wrong database
-  drupal_get_schema($table);
+  drupal_get_schema('mcapi');
   foreach (variable_get('mcapi_db_write', array('default')) as $connection) {
     db_set_active($connection);
     try{
       $ts[] = db_transaction();
-      $success = drupal_write_record($table, $record, $primary_keys);
+      $success = drupal_write_record('mcapi_transactions', $record, $primary_keys);
     }
     catch (Exception $e) {
       foreach ($ts as $db_transaction) {
@@ -327,9 +328,8 @@ function mcapi_write_record($table, &$record, $primary_keys = array()) {
       foreach ($primary_keys as $keyname) {
         $keys[$keyname] = $record->$keyname;
       }
-      $newmessage = t("Failed to write to table '@table' on database '@database', using keys: @keys",
+      $newmessage = t("Failed to write to table 'mcapi_transactions' on database '@database', using keys: @keys",
         array(
-          '@table' => $table,
           '@database' => $connection,
           '@keys' => '<pre>'.print_r($primary_keys, 1).'</pre>'
         )

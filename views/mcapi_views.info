@@ -1,4 +1,4 @@
-; $Id: 
+; $Id:
 name = Views for transactions
 description = A transaction index, full views integration (awaiting taxonomy) and some default views to get started
 package = Mutual Credit
@@ -12,26 +12,23 @@ files[] = mcapi_views.install
 files[] = mcapi_views.views.inc
 files[] = mcapi_views.views_default.inc
 
-; Views handlers refering to the main transaction table
-files[] = views_handler_argument_mcapi_participant.inc
-files[] = views_handler_field_mcapi_participant.inc
+; Views handlers useful for the main transaction table
+;files[] = views_handler_argument_mcapi_participant.inc
+files[] = views_handler_argument_mcapi_dates_various.inc
 files[] = views_handler_field_mcapi_balance.inc
+files[] = views_handler_field_mcapi_index_currcode.inc
 files[] = views_handler_field_mcapi_links.inc
-files[] = views_handler_field_mcapi_trader.inc
-files[] = views_handler_field_mcapi_value.inc
+;files[] = views_handler_field_mcapi_participant.inc
+files[] = views_handler_field_mcapi_username.inc
 files[] = views_handler_field_mcapi_state.inc
+files[] = views_handler_field_mcapi_value.inc
 files[] = views_handler_field_transaction_link.inc
 files[] = views_handler_field_transaction_link_edit.inc
-files[] = views_handler_filter_mcapi_states.inc
 files[] = views_handler_filter_mcapi_currency.inc
+files[] = views_handler_filter_mcapi_states.inc
 files[] = views_handler_filter_mcapi_types.inc
-files[] = views_handler_sort_mcapi_balance.inc
 
-; Views handlers refering to the index table
+; Views handlers refering only to the index table
 files[] = views_handler_field_mcapi_quantity_index.inc
-files[] = views_handler_argument_mcapi_dates_various.inc
-files[] = views_handler_argument_mcapi_participant.inc
-files[] = views_handler_argument_mcapi_user_transations.inc
-files[] = views_handler_field_mcapi_other_participant.inc
+files[] = views_handler_filter_mcapi_currency.inc
 files[] = views_handler_filter_mcapi_role_current_user.inc
-files[] = views_handler_filter_mcapi_other_participant.inc

@@ -8,14 +8,9 @@ module_load_include('inc', 'mcapi');
 /*
  * main form builder, starts by building the base form in the mcapi module
  */
-function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form, $user = NULL) {
-  if (!empty($mcapi_form->disabled)) {
-    throw new Exception(t('Transaction form @name is disabled', array(
-      '@name' => $mcapi_form->name,
-    )));
-  }
+function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-  //only show one currency field 
+  //only show one currency field
   $form_state['field']['worth']['und']['items_count'] = 0;
   //reject if the transaction isn't in one of the acceptable states
   //because of a problem rendering checkboxes with value 0, the options were saved using the state names as keys, not the integer constants
@@ -35,7 +30,18 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form, $user 
   if (isset($form_state['#transaction'])) {
     $transaction = $form_state['#transaction'];
   }
+
+  //put the additional field preset values into the transaction object so they end up in the form
+  foreach (mcapi_form_get_additional_form_fields() as $fieldname => $field) {
+    //this assumes undetermined language and only one preset value!!!
+    foreach ($field['und'][0]['#columns'] as $column) {  
+      //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
+      $transaction->{$fieldname}['und'][0][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][0][$column];
+    }
+  }
+  //debug($transaction);
   $form = transaction_form($form, $form_state, $transaction);
+
   if (!$form) return array();
   //remove the label of the 'Worth' field, which is required by field API, but clutter in this context
   //if this were done when the field was constructed (not sure where that is) it would apply to everywhere the field was used
@@ -90,15 +96,11 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form, $user 
     $form['2ndperson']['#type'] = strtok($mcapi_form->data['2ndperson']['args'], ':');
     $form['2ndperson']['#args'] = array(strtok(':'));
     mcapi_form_default_value($form['2ndperson'], $mcapi_form->data['2ndperson']);
-    $form['direction'] = array(
-      '#type' => $mcapi_form->data['direction']['widget'],
-      '#options' => array(
-        'incoming' => $mcapi_form->data['direction']['incoming'],
-        'outgoing' => $mcapi_form->data['direction']['outgoing']
-      )
-    );
+    $form['direction'] = _macpi_forms_direction_widget($mcapi_form->data['direction']);
+
     //if we are loading the page from blank, or rebuilding the form, we set the default values here,
     mcapi_form_default_value($form['direction'], $mcapi_form->data['direction']);
+
     //if we are loading the page from blank, or rebuilding the form, we set the default values h
     //however if we are editing an existing transaction,
     //we have to show the transaction owner and derive the direction and partner from the payer and payee
@@ -116,7 +118,14 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form, $user 
     //this validation function must run BEFORE the main one in the API, which requires payer and payee
     array_unshift($form['#validate'], 'mcapi_forms_validate_2ndperson');
   }
-  
+
+  //we now modify the transaction form fields according to the form settings for each field
+  foreach (mcapi_form_get_additional_form_fields() as $fieldname => $field) {
+    $form[$fieldname]['#disabled'] = $mcapi_form->data[$fieldname]['shared']['disable'];
+    $form[$fieldname]['#required'] = $mcapi_form->data[$fieldname]['shared']['required'];
+  }
+
+
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -141,7 +150,8 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form, $user 
   $form['#theme'] = 'mcapi_form';
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
   array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
-  array_push($form['#submit'], 'mcapi_forms_form_presubmit');
+  array_push($form['#submit'], 'mcapi_forms_form_presubmit');//can't remember why use array_push and not just [] operator
+  $form['#submit'][] = 'menu_rebuild';
   $form['#validate'][] = 'mcapi_forms_validate';
   //custom properties
   //this tells the theme callback which template to use
@@ -164,18 +174,18 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form, $user 
 //determine the fields '#default_value' according to the settings on the form object
 //remember that it is already populated from the form_state build arguments
 function mcapi_form_default_value(&$element, $settings) {
-  if (!empty($settings['common']['preset'])) {
-    $element['#default_value'] = $settings['common']['preset'];
+  if (!empty($settings['shared']['preset'])) {
+    $element['#default_value'] = $settings['shared']['preset'];
   }
   if (!empty($element['#default_value'])) {
-    if (!empty($settings['common']['disable']) == 'disable') {
+    if (!empty($settings['shared']['disable']) == 'disable') {
       $element['#disabled'] = TRUE;
     }
   }
-  if (!empty($settings['common']['preset_required']) && !$element['#default_value']) {
+  if (!empty($settings['shared']['preset_required']) && !$element['#default_value']) {
     drupal_set_message(t('Default needed for field: @field', array('@field' => $element['#title'])));
   }
-  $element['#required'] = intval($settings['common']['required']);
+  $element['#required'] = intval($settings['shared']['required']);
   $element['#theme_wrappers'] = array();
   unset($element['#weight']);
 }
@@ -409,4 +419,14 @@ function _is_this_mcapi_form($mcapi_form) {
     if (strpos($part, '%') === 0) $parts[$key] = $part;
   }
   return $parts == $map;
+}
+
+function _macpi_forms_direction_widget($data) {
+  return array(
+    '#type' => $data['widget'],
+    '#options' => array(
+      'incoming' => $data['incoming'],
+      'outgoing' => $data['outgoing']
+    )
+  );
 }
