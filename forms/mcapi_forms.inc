@@ -32,23 +32,18 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form) {
   }
 
   //put the additional field preset values into the transaction object so they end up in the form
-  foreach (mcapi_form_get_additional_form_fields() as $fieldname => $field) {
+  foreach (mcapi_form_get_formAPI_fields() as $fieldname => $field) {
     //this assumes undetermined language and only one preset value!!!
-    foreach ($field['und'][0]['#columns'] as $column) {  
-      //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
-      $transaction->{$fieldname}['und'][0][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][0][$column];
+    foreach ($field['und'][0]['#columns'] as $column) {
+      if (empty($form_state['#transaction'])) {
+        //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
+        $transaction->{$fieldname}['und'][0][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][0][$column];
+      }
     }
   }
-  //debug($transaction);
   $form = transaction_form($form, $form_state, $transaction);
 
   if (!$form) return array();
-  //remove the label of the 'Worth' field, which is required by field API, but clutter in this context
-  //if this were done when the field was constructed (not sure where that is) it would apply to everywhere the field was used
-  //if it was done in form alter we would have to check the form_id
-  foreach (element_children($form['worth']['und']) as $key) {
-    unset($form['worth']['und'][$key]['#title']);
-  }
 
   $form['creator']['#type'] = 'hidden';
   $form['xid']['#type'] = 'hidden';
@@ -57,7 +52,7 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form) {
   $form['state']['#type'] = 'hidden';
   $form['state']['#value'] = $mcapi_form->data['workflow']['outgoing'];
   
-  //particpants
+  //participants
   if ($mcapi_form->data['aspect'] == 3) {
     //payer
     $form['payer']['#type'] = strtok($mcapi_form->data['payer']['args'], ':');
@@ -118,13 +113,14 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form) {
     //this validation function must run BEFORE the main one in the API, which requires payer and payee
     array_unshift($form['#validate'], 'mcapi_forms_validate_2ndperson');
   }
-
   //we now modify the transaction form fields according to the form settings for each field
-  foreach (mcapi_form_get_additional_form_fields() as $fieldname => $field) {
+  foreach (mcapi_form_get_formAPI_fields() as $fieldname => $field) {
     $form[$fieldname]['#disabled'] = $mcapi_form->data[$fieldname]['shared']['disable'];
     $form[$fieldname]['#required'] = $mcapi_form->data[$fieldname]['shared']['required'];
   }
 
+  mcapi_unset_recursive($form, '#title');
+  mcapi_unset_recursive($form, '#description');
 
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
@@ -150,7 +146,7 @@ function mcapi_forms_form($form, &$form_state, $transaction, $mcapi_form) {
   $form['#theme'] = 'mcapi_form';
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
   array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
-  array_push($form['#submit'], 'mcapi_forms_form_presubmit');//can't remember why use array_push and not just [] operator
+  array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
   $form['#submit'][] = 'menu_rebuild';
   $form['#validate'][] = 'mcapi_forms_validate';
   //custom properties
@@ -187,6 +183,7 @@ function mcapi_form_default_value(&$element, $settings) {
   }
   $element['#required'] = intval($settings['shared']['required']);
   $element['#theme_wrappers'] = array();
+
   unset($element['#weight']);
 }
 
@@ -207,6 +204,8 @@ function mcapi_form_prepare_tokens(&$form, &$form_state) {
     foreach ($form['#tokens'] as $fieldname) {
       if (strpos($form['#template'], "[$fieldname]") !== FALSE) {
         mcapi_form_remove_theme_wrapper($form[$fieldname]);
+        mcapi_unset_recursive($form[$fieldname], '#prefix');
+        mcapi_unset_recursive($form[$fieldname], '#suffix');
         $form['#replacements']["[$fieldname]"] = drupal_render($form[$fieldname]);
       }
       //otherwise it was already hidden when the form was built
@@ -398,12 +397,13 @@ function mcapi_forms_form_presubmit($form, &$form_state) {
 }
 /*
  * Last submit callback for default transaction form
+ * this has to be after the transaction id is created and before the end of form processing
  */
 function mcapi_forms_form_postsubmit($form, &$form_state) {
   //look for the mcapi_form object for the redirect
   $form_state['redirect'] = str_replace(
-    '#xid',
-    $form_state['#transaction']->xid,
+    array('%xid', '%uid'),
+    array($form_state['#transaction']->xid, $GLOBALS['user']->uid),
     $form_state['#mcapi_form']->data['submission']['redirect']
   );
 }
@@ -414,7 +414,6 @@ function _is_this_mcapi_form($mcapi_form) {
   $parts = explode('/', current_path());
   if (!empty($parts[2]) && $parts[2] == 'formedit') return TRUE;
   $map = explode('/', $mcapi_form->path);
-//  debug($parts);debug($map);
   foreach($map as $key => $part) {
     if (strpos($part, '%') === 0) $parts[$key] = $part;
   }
@@ -429,4 +428,14 @@ function _macpi_forms_direction_widget($data) {
       'outgoing' => $data['outgoing']
     )
   );
+}
+
+
+function mcapi_unset_recursive(&$array, $prop) {
+  unset($array[$prop]);
+  foreach($array as $key => &$val) {
+    if (is_array($val)) {
+      mcapi_unset_recursive($val, $prop);
+    }
+  }
 }

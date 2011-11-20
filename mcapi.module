@@ -1,6 +1,7 @@
 <?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
 module_load_include('field.inc', 'mcapi');
+module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
 
 /**
  * @file
@@ -302,6 +303,7 @@ function transaction_entity_builder($entity_type, $entity, $form, &$form_state) 
  * $form_state['#transaction'] was created in the validation stage
  */
 function transaction_all_submit($form, &$form_state) {
+  ddebug_backtrace();
   $transaction = transaction_save($form_state['#transaction'], TRUE);
   if ($transaction) {
     field_attach_submit('transaction', $transaction, $form, $form_state);
@@ -334,17 +336,7 @@ class transaction {
     $this->state = 'unset';//this isn't one of the declared states and should cause an error if saved
     $this->type = 'unspecified';
     $this->extra = array();
-
-/* worth is a fieldAPI field and might not be needed here
-    $this->worth = array(
-      'und' => array(
-        0 => array(
-          'currcode' => '',
-          'quantity' => 0
-        )
-      )
-    );
-*/
+  }
 }
 
 
@@ -365,10 +357,9 @@ class transaction {
  * load a single transaction, from the $xid
  * this is used to as a menu loader, so can't be in an inc file
  */
-//if this isn't done globally, entity_crud_get_info in the contributed entity module, tries to load the controller without loading the file
-module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
 
 function transaction_load($xid) {
+  //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
   $transactions = entity_get_controller('transaction')->load(array($xid));
   return array_pop($transactions);
 }
@@ -479,8 +470,7 @@ function record_exchange_action($node, $context) {
     elseif (empty($transaction->payee)) {
       $transaction->payee = $node->uid;
     }
-debug($transaction);
-  transaction_save((object)$transaction);
+  transaction_save($transaction);
 }
 /*
  * implements hook_trigger_info

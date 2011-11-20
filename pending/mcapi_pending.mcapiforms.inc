@@ -73,7 +73,7 @@ function mcapi_pending_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Yes',
-      'redirect' => 'transaction/#xid',
+      'redirect' => 'transaction/%xid',
     ),
     'step-1' => array(
       'title' => 'Sign this transaction',

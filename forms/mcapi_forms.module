@@ -3,7 +3,6 @@
 /*
  * Permitted users can design their own transaction forms, hopefully all valid!
  */
-//define('TRANSACTION_STATE_TEMPLATE', -3);
 
 function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
@@ -50,6 +49,8 @@ function mcapi_forms_menu() {
   }
   return $items;
 }
+
+
 /*
  * implements hook_menu_alter
  * alters the menu item provided by ctools so it can be used for context
@@ -247,7 +248,7 @@ function mcapi_form_edit_wrapper($transaction) {
 /*
  * return an array of fields added to the transaction entity,  - critically, keyed by machine_name
  */
-function mcapi_form_get_additional_form_fields() {
+function mcapi_form_get_formAPI_fields() {
   //get the names of the additional entity fields
   $pseudo_form = array();
   $transaction = new transaction;

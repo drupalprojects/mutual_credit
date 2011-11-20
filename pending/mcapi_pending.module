@@ -53,16 +53,20 @@ function has_pending($account) {
 function mcapi_pending_sign_access($transaction) {
   //check the transaction is pending and the given account needs to sign it.
   if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
+  if (empty($transaction->pending)) {drupal_set_message('no signatories'); ddebug_backtrace();}
+
   $count = db_query(
     "SELECT count(xid) FROM {mcapi_unsigned} WHERE xid = :xid AND uid = :uid",
     array(':xid' => $transaction->xid, ':uid' => $GLOBALS['user']->uid)
   )->fetchfield();
   if ($count) return FALSE;
   
-  //check the current user has permission to sign, by virtue of being one of the transactees
+  //check the user is listed as a signatory
   if (in_array($GLOBALS['user']->uid, $transaction->pending)) return TRUE;
-  //check the user is permitted as an admin.
+  //else check the user is permitted as an admin.
   if (user_access('manage all transactions')) {
+    return TRUE;
+    ///this needs reworking...
     $currency = currency_load($transaction->currcode);
     if ($currency->pending['signoff']) {
       return TRUE;

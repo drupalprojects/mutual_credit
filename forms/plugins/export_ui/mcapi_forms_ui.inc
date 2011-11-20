@@ -13,7 +13,7 @@ $plugin = array(
   // to admin/structure and the item will default to the plugin name.
   'menu' => array(
     'menu prefix' => 'admin/accounting',
-    'menu item' => 'mcapi_forms',
+    'menu item' => 'forms',
     // Title of the top level menu. Note this should not be translated,
     // as the menu system will translate it.
     'menu title' => 'Transaction form builder',

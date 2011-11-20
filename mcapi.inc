@@ -187,7 +187,7 @@ function transaction_form($form, &$form_state, $transaction) {
     '#weight' => 20,
   );
 
-  $fields = mcapi_form_get_additional_form_fields();
+  $fields = mcapi_form_get_formAPI_fields();
 
   //TODO
   //I'm just fed up of multistep forms
@@ -242,7 +242,6 @@ function transaction_form_validate($form, &$form_state) {
   }
   entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
   $transaction = &$form_state['#transaction'];
-  //print_r($form_state);die();
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   try {
     mcapi_transaction_validate($transaction, $form);
@@ -256,7 +255,7 @@ function transaction_form_validate($form, &$form_state) {
  * called from transaction_form_validate
  */
 function mcapi_transaction_validate($transaction, &$form = NULL){
-  //no usecase is currently envisaged where someone might pay themselves
+  //no usecase is currently envisaged where someone might pay themselves in oine currency in one transaction
   if ($transaction->payer > 0) {
     if ($transaction->payer == $transaction->payee) {
       form_set_error('', t('A transaction must involve two different users'));
@@ -276,7 +275,7 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
 
   if ($transaction->payer && $transaction->payee) {
     //this concerns rules and database integrity, so we hand it off to the db controller
-    //we're checking the balances, and trial-entering the transaction in the db
+    //it checks the balances, and trial-entering the transaction in the db
     $transaction = transaction_validate($transaction);
   }
 }
@@ -285,12 +284,14 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
  * validate callback for transaction form participants - accepts uid only
  */
 function mcapi_validate_transactor(&$element, $form_state) {
-  $account = user_load($element['#value']);
+  $uid = &$element['#value'];
+  if (empty($uid)) return;
+  $account = user_load($uid);
   if (!$account->uid) {
-    form_error($element, t('User ID does not exist: @user', array('@user' => $element['#value'])));
+    form_error($element, t('User ID does not exist: @user', array('@user' => $uid)));
   }
   elseif(!user_access('transact', $account)) {
-    form_error($element, t("User ID is not permitted to 'transact': @user", array('@user' => $account->name)));
+    form_error($element, t("User ID is not permitted to 'transact': @user", array('@user' => format_username($account))));
   }
 }
 

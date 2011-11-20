@@ -59,7 +59,7 @@ function mcapi_forms_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/#xid',
+      'redirect' => 'transaction/%xid',
     ),
     'mcapi_form_templates' => array(
       'mcapi_form_templates__active_tab' => 'edit-step-2',
@@ -147,7 +147,7 @@ function mcapi_forms_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/#xid',
+      'redirect' => 'transaction/%xid',
     ),
     'mcapi_form_templates' => array(
       'mcapi_form_templates__active_tab' => 'edit-step-2',
@@ -416,7 +416,7 @@ function mcapi_forms_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/#xid',
+      'redirect' => 'transaction/%xid',
     ),
     'mcapi_form_templates' => array(
       'mcapi_form_templates__active_tab' => 'edit-step-1',

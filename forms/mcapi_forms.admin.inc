@@ -220,19 +220,10 @@ function _edit_mcapi_form(&$form, &$form_state) {
 
   }
   //these are the field api fields which may have been added to the transaction entity
-  $additional_fields = mcapi_form_get_additional_form_fields();
+  $additional_fields = mcapi_form_get_formAPI_fields();
   foreach ($additional_fields as $fieldname => $field) {
     $form[$fieldname] = _mcapi_form_shared($mcapi_form->data, $transaction_fields[$fieldname], $fieldname);
   }
-
-  //we know about one additional_field, which is the value
-  //$form['value']['#prefix'] = t('This form builder is for transfers in any one, but only one currency');
-
-
-
-
-
-
 
   $form['submission'] = array(
     '#title' => t('Form submission'),
@@ -250,8 +241,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
     'redirect' => array(
       '#title' => t('Destination'),
       '#description' => implode('<br />', array(
-        t("Use token '#xid' to refer to the transaction id."),
-        t("E.g. the transaction's own page is 'transaction/#xid'."),
+        t("Use token '%xid' to refer to the transaction ID, and %uid for the current user ID"),
+        t("E.g. the transaction's own page is 'transaction/%xid'."),
       )),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form->data['submission']['redirect']) ? $mcapi_form->data['submission']['redirect'] : '',
@@ -320,7 +311,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
 }
 
 
-function _mcapi_form_shared($mcapi_form_fields, $default_field, $key) {
+function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   static $w;
   $element = array(
     '#title' => "[$key]",
@@ -370,20 +361,10 @@ function _mcapi_form_shared($mcapi_form_fields, $default_field, $key) {
     $element['shared']['required']['#default_value'] = TRUE;
     $element['shared']['required']['#disabled'] = TRUE;
   }
-  mcapi_unrequire_recursive($element['shared']);
+  mcapi_unset_recursive($element['shared'], '#required');
   return $element;
 }
 
 function mcapi_forms_ajax_settings($form, &$form_state) {
   return $form;
 }
-
-function mcapi_unrequire_recursive(&$array) {
-  unset($array['#required']);
-  foreach($array as $key => &$val) {
-    if (is_array($val)) {
-      mcapi_unrequire_recursive($val);
-    }
-  }
-}
-
