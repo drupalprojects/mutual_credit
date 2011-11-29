@@ -6,6 +6,10 @@ core = 7.x
 
 files[] = mcapi_pending.module
 files[] = mcapi_pending.install
-files[] = mcapi_pending.mcapiforms.inc
+files[] = mcapi_pending.mcapiforms_default.inc
+files[] = mcapi_pending.views_default.inc
+files[] = mcapi_pending.views.inc
+files[] = views_handler_field_mcapi_sign.inc
+files[] = views_handler_filter_mcapi_signed.inc
 
 dependencies[] = mcapi

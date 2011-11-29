@@ -6,7 +6,7 @@
  * creates a table for storing signatures needed on pending transactions
  */
 function mcapi_pending_schema() {
-  $schema['mcapi_unsigned'] = array(
+  $schema['mcapi_signatures'] = array(
     'description' => 'signatories needed on pending transactions',
     'fields' => array(
       'xid' => array(
@@ -18,6 +18,11 @@ function mcapi_pending_schema() {
         'description' => t('the uid of the signatory'),
         'type' => 'int',
         'size' => 'normal',
+      ),
+      'pending' => array(
+        'description' => t('whether it is awaiting a signature'),
+        'type' => 'int',
+        'size' => 'small',
       )
     ),
     'primary key' => array('xid', 'uid')

@@ -3,30 +3,30 @@
 /*
  * Implements ctools hook default_mcapiforms
  */
-function mcapi_pending_default_mcapiforms() {
+function mcapi_pending_mcapiforms_default() {
 
-  $mcapi_form = new stdClass;
-  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
-  $mcapi_form->api_version = 3;
-  $mcapi_form->name = 'add_my_signature';
-  $mcapi_form->path = 'transaction/%transaction/sign';
-  $mcapi_form->status = 1;
-  $mcapi_form->data = array(
+  $mcapiform = new stdClass;
+  $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
+  $mcapiform->api_version = 3;
+  $mcapiform->name = 'add_my_signature';
+  $mcapiform->status = 1;
+  $mcapiform->data = array(
     'info' => array(
       'name' => 'add_my_signature',
     ),
-    'aspect' => '3',
+    'perspective' => '3',
     'help' => 'to sign a pending transaction',
-    'outputs' => array(
+    'architecture' => array(
+      'path' => 'transaction/%transaction/sign',
       'access' => 'mcapi_access_check_roles:2',
       'menu_link' => 'devel',
       'use_block' => 0,
     ),
     'workflow' => array(
       'incoming' => array(
-        'Pending' => 'Pending',
-        'Unset' => 0,
-        'Finished' => 0,
+        'pending' => 'Pending',
+        'unset' => 0,
+        'finished' => 0,
       ),
       'outgoing' => '0',
     ),
@@ -73,13 +73,12 @@ function mcapi_pending_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Yes',
-      'redirect' => 'transaction/%xid',
+      'redirect' => 'transaction/%transaction',
     ),
     'step-1' => array(
       'title' => 'Sign this transaction',
       'template' => 'Do you want to sign this transaction?
-  [description]<br />
-  [amount]',
+[worth]',
     ),
     'step-2' => array(
       'title' => '',
@@ -91,27 +90,11 @@ function mcapi_pending_default_mcapiforms() {
     ),
     'templates' => array(
       'template-1' => 'Do you want to sign this transaction?
-  [description]<br />
-  [amount]',
-    ),
-    'email_template' => array(
-      'subject' => 'Exchange saved with [transaction:partner]',
-      'body' => '[user:name],
-
-Your transaction with [transaction:partner] has been signed
-
-More details can be found at
-[transaction:uri]
-
-To change your notification settings, visit your profile at
-[user:edit-url]
-
-The team at drupal7',
+[worth]',
     )
   );
-
-  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
-  return $mcapi_forms;
+  $mcapiforms[$mcapiform->name] = $mcapiform;
+  return $mcapiforms;
 }
 
 
@@ -119,13 +102,14 @@ The team at drupal7',
  * Implements hook_default_mcapiforms_alter
  * changes all default mcapi_forms which create new transactions to create them pending instead
  */
-function mcapi_pending_default_mcapiforms_alter(&$mcapi_forms) {
-  foreach ($mcapi_forms as $path => $mcapi_form) {
-    if ($mcapi_form->data['workflow']['incoming'][t('Unset')] == t('Unset')) {
-      $mcapi_form->data['workflow']['outgoing'] = TRANSACTION_STATE_PENDING;
+function mcapi_pending_mcapiforms_default_alter(&$mcapiforms) {
+  foreach ($mcapiforms as $path => $mcapiform) {
+    if (!empty($mcapiform->data['workflow']['incoming']['unset'])) {
+      $names[] = $mcapiform->name;
+      $mcapiform->data['workflow']['outgoing'] = TRANSACTION_STATE_PENDING;
       foreach (array('payer', 'payee', '2ndperson') as $participant) {
-        if (isset($mcapi_form->data[$participant])) {
-          $mcapi_forms[$path]->data[$participant]['signature'] = TRUE;
+        if (isset($mcapiform->data[$participant])) {
+          $mcapiforms[$path]->data[$participant]['signature'] = TRUE;
         }
       }
     }
