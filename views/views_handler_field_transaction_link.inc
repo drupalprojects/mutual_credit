@@ -36,10 +36,10 @@ class views_handler_field_transaction_link extends views_handler_field {
 
   function render($values) {
     $value = $this->get_value($values, 'xid');
-    return $this->render_link($this->sanitize_value($value), $values);
+    return $this->render_link($this->sanitize_value($value));
   }
 
-  function render_link($data, $values) {
+  function render_link($data) {
     $this->options['alter']['make_link'] = TRUE;
     $this->options['alter']['path'] = "transaction/$data";
     $text = !empty($this->options['text']) ? $this->options['text'] : t('view');

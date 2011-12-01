@@ -18,34 +18,25 @@ function mcapi_forms_menu() {
   );
   //one menu callback for each form.
   $mcapi_forms = mcapi_forms_load();
+  module_load_include('inc', 'mcapi_forms');
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
-    $sections = explode('/',$mcapi_form->path);
-    //the first ->name is for drupal_get_form, the second is for hook_forms to be more efficient
-    //then we add subsequent arguments in an order expected by mcapi_forms_form
-    $page_args = array(
-      $mcapi_form->name,
-      array_search('%transaction', $sections),
-      array_search('%user', $sections)
-    );
-    $item = array(
-      'title' => $mcapi_form->data['step-1']['title'],
-      'description' => $mcapi_form->data['help'], //this will be help
-      'page callback' => 'drupal_get_form',
-      'page arguments' => $page_args,
-      'access callback' => strtok($mcapi_form->data['outputs']['access'], ':'),
+    $menu = $mcapi_form->data['architecture'];
+    //in case the form needs to load a transaction, extract it from the path
+    $parts = explode('/', $menu['path']);
+    $args = array();
+    if ($key = array_search('%transaction', $parts)) $args[] = $key;
+
+    $items[$menu['path']] = array(
+      'title' => mcapi_form_template($mcapi_form, 1)->title,
+      'page callback' => 'mcapi_get_form',
+      'page arguments' => array_merge(array($mcapi_form), $args),//2nd and subsequent are are the $form_state['build_info']
+      'access callback' => strtok($menu['access'], ':'),
       'access arguments' => array(strtok(':')),
+      'menu name' => is_numeric($menu['menu_link']) ? 'navigation' : $menu['menu_link'],
+      'type' =>is_numeric($menu['menu_link']) ? $menu['menu_link'] : MENU_NORMAL_ITEM,
       'file' => 'mcapi_forms.inc',
     );
-
-    if (is_numeric($mcapi_form->data['outputs']['menu_link'])) {
-      $item['type'] = $mcapi_form->data['outputs']['menu_link'];
-    }
-    else {
-      $item['type'] = MENU_NORMAL_ITEM;
-      $item['menu_name'] = $mcapi_form->data['outputs']['menu_link'];
-    }
-    $items[$mcapi_form->path] = $item;
   }
   return $items;
 }
@@ -76,37 +67,10 @@ function mcapi_forms_admin_paths() {
  * args[2] is a loaded user (optional)
  * args added here are not put into $form_state[build_info][args]
  */
-function mcapi_forms_forms($form_id, $args) {
-  //this function only need bother return anything if the first arg is passed
-  //perhaps it should just return an array of all forms as the examples indicate?
-  if (!count($args)) return;
-  if ($mcapi_form = mcapi_forms_load($form_id)) {
-    module_load_include('inc', 'mcapi_forms');
-    //ensure there is a transaction object in arg 1
-    return array(
-      $form_id => array(
-        'callback' => 'mcapi_forms_form',
-        'callback arguments' => array(
-          0 => empty($args[0]->xid) ?  new transaction : $args[0],
-          1 => $mcapi_form
-        )
-      )
-    );
-  }
+function mcapi_get_form($mcapi_form, $transaction = NULL) {
+  module_load_include('inc', 'mcapi_forms');
+  return drupal_get_form('mcapi_forms_form', $mcapi_form, $transaction ? $transaction : new_transaction());
 }
-
-/*
- * Implements hook_permissions
- */
-function mcapi_forms_permissions() {
-  return array(
-    'design transaction forms' => array(
-      'title' => t('Design transaction forms'),
-      'description' => t('Create and edit the forms used to record and edit transactions'),
-    )
-  );
-}
-
 /*
  * Implements hook_block_info
  */
@@ -114,9 +78,9 @@ function mcapi_forms_block_info() {
   $mcapi_forms = mcapi_forms_load();
   $blocks = array();
   foreach ($mcapi_forms as $mcapi_form) {
-    if ($mcapi_form->data['outputs']['use_block']) {
+    if ($mcapi_form->data['architecture']['use_block'] && empty($mcapi_form->disabled)) {
       $blocks[$mcapi_form->name] = array(
-        'info' => $mcapi_form->data['step-1']['title'],
+        'info' => $mcapi_form->name,
         'cache' => DRUPAL_CACHE_PER_USER
       );
     }
@@ -135,28 +99,33 @@ function mcapi_forms_block_view($delta) {
   $form = drupal_get_form($delta, $mcapi_form);
   if (!$form) return;
   return array(
-    'subject' => isset($mcapi_form->data['templates']['step-1']['title']) ? $mcapi_form->data['templates']['step-1']['title'] : '<none>',
+    'subject' => mcapi_form_template($mcapi_form)->title,
     'content' => drupal_get_form($delta, $mcapi_form)//delta is the $mcapi_form->machine_name
   );
   module_load_include('inc', 'mcapi_forms');
 }
 
 /*
- * Implements hook_mcapi_info
+ * Implements hook_mcapi_info_types
  */
-function mcapi_forms_mcapi_info($field) {
-  switch($field) {
-    case 'states':
-    case 'access':
-      return array();
-      //return array(TRANSACTION_STATE_TEMPLATE => t('Template'));
-    case 'types':
-      $mcapi_forms = mcapi_forms_load();
-      foreach($mcapi_forms as $mcapi_form) {
-        $types[] = $mcapi_form->name;
-      }
-      return $types;
+function mcapi_forms_mcapi_info_types() {
+  $mcapi_forms = mcapi_forms_load();
+  foreach($mcapi_forms as $mcapi_form) {
+    $types[] = $mcapi_form->name;
   }
+  return $types;
+}
+
+/*
+ * Implements hook_mcapi_info_drupal_permissions
+ */
+function mcapi_forms_mcapi_info_drupal_permissions() {
+  return array(
+    'design transaction forms' => array(
+      'title' => t('Design transaction forms'),
+      'description' => t('Create and edit the forms used to record and edit transactions'),
+    )
+  );
 }
 
 /*
@@ -193,6 +162,11 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
  */
 function mcapi_forms_load($name = NULL) {
   ctools_include('export');
+  //TODO it seems terribly inefficient, but loading one form here necessitates
+  //loading all the defauls, altering them, overriding them with the database versions,
+  //then choosing the named one, with no apparent recourse to ctools cache
+  //Shurely there's a better way?
+  //I believe views has its own cache so maybe not
   $results = ctools_export_crud_load_all('mcapi_forms');
   if ($name) {
     if (!empty($results[$name])) {
@@ -251,7 +225,7 @@ function mcapi_form_edit_wrapper($transaction) {
 function mcapi_form_get_formAPI_fields() {
   //get the names of the additional entity fields
   $pseudo_form = array();
-  $transaction = new transaction;
+  $transaction = new_transaction();
   $fs = array();//just a placeholder for form_state
   //add the fields to our imaginary form, and then iterate through them
   field_attach_form('transaction', $transaction, $pseudo_form, $fs);
@@ -272,8 +246,6 @@ function _get_deepest_child($element) {
   }
   return $element;
 }
-
-
 
 /*
  * element validate callback
@@ -306,8 +278,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
 
   $mcapi_form = empty($form_state['item']) ? ctools_export_crud_new('mcapi_forms') : $form_state['item'];
   $mcapi_form->name = $values['info']['name'];//this isn't editable at the moment
-  $mcapi_form->path = $values['path'];
-  unset($values['name'], $values['path']);
+  unset($values['name']);
   $mcapi_form->data = $values;
   $form_state['item'] = $mcapi_form;
 }
@@ -317,5 +288,26 @@ function mcapi_edit_mcapi_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/accounting/forms'; //where the menu_rebuild is run
 }
 
+/*
+ * implements hook_form_FORMID_alter
+ */
+function mcapi_forms_form_system_theme_settings_alter(&$form, $form_state) {
+  $form['tab_element'] = array(
+    '#title' => t('Tab element'),
+    '#description' => t("Write a css identifier for the div which 'List, Settings' on this page. Don't forget the leading . or #. Then it can be hidden on stage 2 of the transaction form"),
+    '#type' => 'textfield',
+    '#default_value' => $form_state['input']['tab_element'] ? $form_state['input']['tab_element'] : 'tabs',
+  );
+}
 
+/*
+ * The second stage of the transaction should NOT show the tabs such as view, edit etc
+ */
+function mcapi_hide_tabs() {
+  $data = array(
+    '#tag' => 'style',
+    '#value' => theme_get_setting('tab_element') .'{display:none;}'
+  );
+  drupal_add_html_head($data, 'hide_tabs');
+}
 

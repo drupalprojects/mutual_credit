@@ -1,5 +1,5 @@
 ; $Id:
-name = Mutual Credit API
+name = Mutual Credit Accounting
 description = Defines transaction entity with a swoppable controller, a default currency, 'worth' field, and the forms, views theme callbacks for basic manipulation
 package = Mutual Credit
 configure = admin/accounting

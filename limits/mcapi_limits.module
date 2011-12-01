@@ -8,13 +8,18 @@ function limits_get($currcode, $uid){
     return $callback($currency, $uid);
   }
 }
-
 /*
  * Implements hook_form_FORMID_alter
- * This ctools form is used accross the board. Not sure the best way to narrow it down
+ * alter the currency edit form - needs different formid if mcapi_currencies is installed
  */
+function mcapi_limits_form_mcapi_currency_form_alter(&$form, &$form_state) {
+  mcapi_currencies_alter_form($form, $form_state);
+}
 function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
-  if (empty($form['#currency'])) return;
+  mcapi_currencies_alter_form($form, $form_state);
+}
+function mcapi_currencies_alter_form(&$form, &$form_state) {
+  if (!isset($form['#currency'])) return;
   $limits_callback = isset($form['#currency']->limits['limits_callback']) ? $form['#currency']->limits['limits_callback'] : 'limits_none';
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
   $form['limits'] = array(
@@ -237,19 +242,23 @@ function mcapi_limits_validate_minmax(&$element, $form_state) {
 }
 
 /*
+ * implements hook_form_alter
  * inject the limit checker function into the transaction form
  */
-function mcapi_limits_form_transaction_form_alter(&$form, $form_state) {
-  $form['#validate'][] = 'limits_transaction_form_validate';
+
+function mcapi_limits_form_alter(&$form, $form_state, $form_id) {
+  //this is the only way I can think of to check whether this is a transaction form
+  if (isset($form['type']['#value']) && $form['type']['#value'] == $form_id) {
+    $form['#validate'][] = 'limits_transaction_form_validate';
+  }
 }
 
 /*
  * validate callback which checks that the transaction doesn't take anyone beyond their limits
  */
 function limits_transaction_form_validate(&$form, $form_state) {
-  //fortunately the $form_state already contains a $transaction object
   try {
-    mcapi_limit_check($form_state['#transaction'], $form_state['#transaction']->state);
+    mcapi_limit_check($form_state['transaction'], $form_state['transaction']->state);
   }
   catch (Exception $e) {
     form_set_error('quantity', $e->getMessage());
@@ -273,6 +282,7 @@ function mcapi_limit_check($transaction) {
 
     //check that the payee isn't going over their max limit
     $limits = limits_get($currcode, $payee);
+    debug($limits);
     if (is_numeric($limits['max'])) {
       $balance = entity_get_controller('transaction')
         ->balance($payee, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
@@ -431,4 +441,22 @@ function mcapi_limits_block_settings($delta) {
 
 function mcapi_limits_update_7001() {
   variable_del('block_balance_limits');
+}
+
+
+/*
+ * Implements variable module's hook_variable_info
+ * only block settings really
+ */
+function mcapi_limits_variable_info() {
+  foreach (mcapi_limits_block_info() as $varname -> $info) {
+    $vars[$varname] = array(
+      'type' => 'array',
+      'title' => $info['info'],
+      'default' => array(),
+      'description' => t('Block settings'),
+      'required' => FALSE,
+    );
+  }
+  return $vars;
 }

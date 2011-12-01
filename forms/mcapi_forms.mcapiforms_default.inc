@@ -3,28 +3,37 @@
 /*
  * Implements ctools hook mcapi_default_forms
  */
-function mcapi_forms_default_mcapiforms() {
-  $mcapi_form = new stdClass;
-  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
-  $mcapi_form->api_version = 3;
-  $mcapi_form->name = '1stparty';
-  $mcapi_form->path = 'transact/1stparty';
-  $mcapi_form->status = 1;
-  $mcapi_form->data = array(
+function mcapi_forms_mcapiforms_default() {
+  $forms = array('1stparty', '3rdparty', 'one2many', 'many2one', 'correction');
+  foreach ($forms as $form_id) {
+    $function = 'mcapiform_default_'.$form_id;
+    $mcapiforms[$form_id] = $function();
+  }
+  return $mcapiforms;
+}
+
+function mcapiform_default_1stparty() {
+  $mcapiform = new stdClass;
+  $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
+  $mcapiform->api_version = 3;
+  $mcapiform->name = '1stparty';
+  $mcapiform->status = 1;
+  $mcapiform->data = array(
     'info' => array(
       'name' => '1stparty',
     ),
-    'aspect' => '1',
+    'perspective' => '1',
     'help' => 'Enter your trading partner and direction of the payment',
-    'outputs' => array(
+    'architecture' => array(
+      'path' => 'transact/1stparty',
       'access' => 'user_access:transact',
       'menu_link' => 'navigation',
       'use_block' => 1,
     ),
     'workflow' => array(
       'incoming' => array(
-        'Unset' => 'Unset',
-        'Finished' => 0,
+        'unset' => 'Unset',
+        'finished' => 0,
       ),
       'outgoing' => '0',
     ),
@@ -59,7 +68,7 @@ function mcapi_forms_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/%xid',
+      'redirect' => 'transaction/%transaction',
     ),
     'mcapi_form_templates' => array(
       'mcapi_form_templates__active_tab' => 'edit-step-2',
@@ -85,31 +94,31 @@ function mcapi_forms_default_mcapiforms() {
   Amount: [worth]<br />',
     ),
   );
+  return $mcapiform;
+}
 
-  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
-
-  
-  $mcapi_form = new stdClass;
-  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
-  $mcapi_form->api_version = 3;
-  $mcapi_form->name = '3rdparty';
-  $mcapi_form->path = 'transact/3rdparty';
-  $mcapi_form->status = 1;
-  $mcapi_form->data = array(
+function mcapiform_default_3rdparty() {
+  $mcapiform = new stdClass;
+  $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapiform->api_version = 3;
+  $mcapiform->name = '3rdparty';
+  $mcapiform->status = 1;
+  $mcapiform->data = array(
     'info' => array(
       'name' => '3rdparty',
     ),
-    'aspect' => '3',
+    'perspective' => '3',
     'help' => 'Enter the transaction for any two members',
-    'outputs' => array(
+    'architecture' => array(
+      'path' => 'transact/3rdparty',
       'access' => 'user_access:manage all transactions',
       'menu_link' => 'navigation',
       'use_block' => 1,
     ),
     'workflow' => array(
       'incoming' => array(
-        'Unset' => 'Unset',
-        'Finished' => 0,
+        'unset' => 'Unset',
+        'finished' => 0,
       ),
       'outgoing' => '0',
     ),
@@ -147,7 +156,7 @@ function mcapi_forms_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/%xid',
+      'redirect' => 'transaction/%transaction',
     ),
     'mcapi_form_templates' => array(
       'mcapi_form_templates__active_tab' => 'edit-step-2',
@@ -174,30 +183,32 @@ function mcapi_forms_default_mcapiforms() {
   Amount: [worth]<br />',
     ),
   );
-  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
+  return $mcapiform;
+}
 
-
-  $mcapi_form = new stdClass;
-  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
-  $mcapi_form->api_version = 3;
-  $mcapi_form->name = 'many2one';
-  $mcapi_form->path = 'transact/many2one';
-  $mcapi_form->status = 1;
-  $mcapi_form->data = array(
+function mcapiform_default_many2one() {
+  $mcapiform = new stdClass;
+  $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapiform->api_version = 3;
+  $mcapiform->name = 'many2one';
+  $mcapiform->path = 'transact/many2one';
+  $mcapiform->status = 1;
+  $mcapiform->data = array(
     'info' => array(
       'name' => 'many2one',
     ),
-    'aspect' => '3',
+    'perspective' => '3',
     'help' => t('Make many transactions with different payers'),
-    'outputs' => array(
+    'architecture' => array(
+      'path' => 'transact/many2one',
       'access' => 'user_access:manage all transactions',
       'menu_link' => 'navigation',
       'use_block' => 0,
     ),
     'workflow' => array(
       'incoming' => array(
-        'Unset' => 'Unset',
-        'Finished' => 0,
+        'unset' => 'Unset',
+        'finished' => 0,
       ),
       'outgoing' => '0',
     ),
@@ -265,30 +276,32 @@ function mcapi_forms_default_mcapiforms() {
   [worth] each',
     ),
   );
+  return $mcapiform;
+}
 
-  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
-
-  $mcapi_form = new stdClass;
-  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
-  $mcapi_form->api_version = 3;
-  $mcapi_form->name = 'one2many';
-  $mcapi_form->path = 'transact/one2many';
-  $mcapi_form->status = 1;
-  $mcapi_form->data = array(
+function mcapiform_default_one2many() {
+  $mcapiform = new stdClass;
+  $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapiform->api_version = 3;
+  $mcapiform->name = 'one2many';
+  $mcapiform->path = 'transact/one2many';
+  $mcapiform->status = 1;
+  $mcapiform->data = array(
     'info' => array(
       'name' => 'one2many',
     ),
-    'aspect' => '3',
+    'perspective' => '3',
     'help' => t('Make many transactions with different payees'),
-    'outputs' => array(
+    'architecture' => array(
+      'path' => 'transact/one2many',
       'access' => 'user_access:manage all transactions',
       'menu_link' => 'navigation',
       'use_block' => 0,
     ),
     'workflow' => array(
       'incoming' => array(
-        'Unset' => 'Unset',
-        'Finished' => 0,
+        'unset' => 'Unset',
+        'finished' => 0,
       ),
       'outgoing' => '0',
     ),
@@ -356,29 +369,31 @@ function mcapi_forms_default_mcapiforms() {
   [worth] each',
     ),
   );
-  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
+  return $mcapiform;
+}
 
-  $mcapi_form = new stdClass;
-  $mcapi_form->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
-  $mcapi_form->api_version = 3;
-  $mcapi_form->name = 'correction';
-  $mcapi_form->path = 'transaction/%transaction/correction';
-  $mcapi_form->status = 1;
-  $mcapi_form->data = array(
+function mcapiform_default_correction() {
+  $mcapiform = new stdClass;
+  $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
+  $mcapiform->api_version = 3;
+  $mcapiform->name = 'correction';
+  $mcapiform->status = 1;
+  $mcapiform->data = array(
     'info' => array(
       'name' => 'correction',
     ),
-    'aspect' => '3',
+    'perspective' => '3',
     'help' => 'To change the participants, please erase or counter this transaction and make a new one',
-    'outputs' => array(
+    'architecture' => array(
+      'path' => 'transaction/%transaction/correction',
       'access' => 'user_access:transact',
       'menu_link' => '0',
       'use_block' => 0,
     ),
     'workflow' => array(
       'incoming' => array(
-        'Finished' => 'Finished',
-        'Unset' => 0,
+        'finished' => 'Finished',
+        'unset' => 0,
       ),
       'outgoing' => '0',
     ),
@@ -416,7 +431,7 @@ function mcapi_forms_default_mcapiforms() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/%xid',
+      'redirect' => 'transaction/%transaction',
     ),
     'mcapi_form_templates' => array(
       'mcapi_form_templates__active_tab' => 'edit-step-1',
@@ -439,7 +454,5 @@ function mcapi_forms_default_mcapiforms() {
   Amount: [worth]<br />',
     ),
   );
-
-  $mcapi_forms[$mcapi_form->name] = $mcapi_form;
-  return $mcapi_forms;
+  return $mcapiform;
 }

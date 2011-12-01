@@ -2,11 +2,11 @@
 
 function mcapi_pending_views_default_views() {
   $view = new view;
-  $view->name = 'pending_test';
+  $view->name = 'signatures';
   $view->description = '';
   $view->tag = 'default';
   $view->base_table = 'mcapi_transactions';
-  $view->human_name = 'pending test';
+  $view->human_name = 'signatures needed';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -113,10 +113,10 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['filters']['uid']['operator'] = 'in';
   $handler->display->display_options['filters']['uid']['value'] = '1';
   /* Filter criterion: Signatures: Whether the signature has happened */
-  $handler->display->display_options['filters']['signed']['id'] = 'signed';
-  $handler->display->display_options['filters']['signed']['table'] = 'mcapi_signatures';
-  $handler->display->display_options['filters']['signed']['field'] = 'signed';
-  $handler->display->display_options['filters']['signed']['value'] = '';
+  $handler->display->display_options['filters']['pending']['id'] = 'pending';
+  $handler->display->display_options['filters']['pending']['table'] = 'mcapi_signatures';
+  $handler->display->display_options['filters']['pending']['field'] = 'pending';
+  $handler->display->display_options['filters']['pending']['value'] = '1';
   /* Filter criterion: Transaction: State */
   $handler->display->display_options['filters']['state']['id'] = 'state';
   $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
@@ -126,7 +126,7 @@ function mcapi_pending_views_default_views() {
   );
 
   /* Display: my pending */
-  $handler = $view->new_display('block', 'my pending', 'block_1');
+  $handler = $view->new_display('block', 'my pending', 'my_pending');
   $handler->display->display_options['title'] = 'My signature needed';
   $handler->display->display_options['display_description'] = 'current user pending signature';
   $handler->display->display_options['defaults']['header'] = FALSE;
@@ -141,7 +141,7 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['block_description'] = 'My pending';
 
   /* Display: user pending */
-  $handler = $view->new_display('block', 'user pending', 'block_2');
+  $handler = $view->new_display('block', 'user pending', 'user_pending');
   $handler->display->display_options['title'] = 'Pending user signature';
   $handler->display->display_options['display_description'] = 'Signature needed';
   $handler->display->display_options['defaults']['arguments'] = FALSE;
@@ -160,11 +160,11 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['arguments']['uid']['not'] = 0;
   $handler->display->display_options['defaults']['filters'] = FALSE;
   /* Filter criterion: Signatures: Whether the signature has happened */
-  $handler->display->display_options['filters']['signed']['id'] = 'signed';
-  $handler->display->display_options['filters']['signed']['table'] = 'mcapi_signatures';
-  $handler->display->display_options['filters']['signed']['field'] = 'signed';
-  $handler->display->display_options['filters']['signed']['value'] = '';
-  $handler->display->display_options['filters']['signed']['group'] = 0;
+  $handler->display->display_options['filters']['pending']['id'] = 'pending';
+  $handler->display->display_options['filters']['pending']['table'] = 'mcapi_signatures';
+  $handler->display->display_options['filters']['pending']['field'] = 'pending';
+  $handler->display->display_options['filters']['pending']['value'] = '1';
+  $handler->display->display_options['filters']['pending']['group'] = 0;
   /* Filter criterion: Transaction: State */
   $handler->display->display_options['filters']['state']['id'] = 'state';
   $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';

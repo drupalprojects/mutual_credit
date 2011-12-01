@@ -14,13 +14,13 @@ module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
 //states are mutually exclusive
 define ('TRANSACTION_STATE_FINISHED', 0);
 define ('TRANSACTION_STATE_ERASED', -1);
-define ('TRANSACTION_STATE_VALIDATING', -2);
+define ('TRANSACTION_STATE_INITIATED', -2);
 
 
 /**
  * implements hook_help()
  */
-function mcapi_help($section) {
+function mcapi_help($section, $arg) {
   switch ($section) {
     case 'admin/help#transaction':
       return t('Defines a contentType called transactions, manages them and does the accounting.');
@@ -36,11 +36,16 @@ function mcapi_help($section) {
           t("allying with us to build a global complementary currency ecosystem"),
           t("offering board and lodging for a month or two")
         )));
+      case 'admin/config/system/actions/configure':
+        //have to look up arg to know which action this is
+        return implode('. ', array('<p>'.
+          t('Some actions on the site may trigger new transactions. '),
+          t('This feature has not yet been deployed, and cannot yet use tokens') . '</p>'
+          ));
       case 'admin/accounting/record':
         return t('This is a base form provided for administration purposes only. For end-users, there are forms provided by other modules');
   }
 }
-
 
 /**
  * implements hook_menu()
@@ -69,7 +74,7 @@ function mcapi_menu_alter(&$items) {
  */
 function mcapi_forms($form_id, $args) {
   if (empty($args[0]->xid)) {
-    $args[0] = new transaction;
+    $args[0] = new_transaction();
   }
  
   $forms['transaction_admin_form'] = array(
@@ -80,58 +85,17 @@ function mcapi_forms($form_id, $args) {
 }
 
 /*
- * hook for modules to declare new transactions types and states
+ * hook for modules to declare new_transaction()s types and states
  */
 function mcapi_hook_info() {
   module_load_include('inc', 'mcapi');
   return array(
     'transaction_controller' => array(),
-    'mcapi_info' => array(),
-    'mcapi_access' => array(),
-    'mcapi_permissions' => array(),
-  );
-}
-
-/*
- * implements hook_transaction_controller
- * the presence of this hook indicates there is a .controller file
- */
-function mcapi_transaction_controller(){}
-
-function mcapi_mcapi_info($prop) {
-  $info = array(
-    'states' => array(
-      'unset' => t('Unset'),//this should never reach the database
-      TRANSACTION_STATE_FINISHED => t('Finished'),
-      TRANSACTION_STATE_ERASED => t('Erased'), //internal use only
-      TRANSACTION_STATE_VALIDATING => t('Validating') //internal use only
-    ),
-    'types' => array(
-      'unspecified'
-    ),
-    //this is experimental
-    'controllers' => array(
-      'default'
-    )
-  );
-  return $info[$prop];
-}
-
-
-/*
- * implements hook mcapi_permissions
- * Declare the access callbacks for (transactions in) currencies
- * each one must take a $transaction
- */
-function mcapi_mcapi_permissions() {
-  return array(
-    'mcapi_access_participants_admin' => t('Only the two participants and admin'),
-    'mcapi_access_unrestricted' => t('Anyone, including anonymous users'),
-    'mcapi_access_authenticated' => t('Only authenticated users'),
-    'mcapi_access_participants' => t('Only the two participants'),
-    'mcapi_access_admin' => t("Only admin"),
-    //'mcapi_access_currency' => t('Only users with permission to use this currency'),
-    'mcapi_access_none' => t('Nobody')
+    'mcapi_info_states' => array(),
+    'mcapi_info_types' => array(),
+    'mcapi_info_access' => array(),
+    'mcapi_info_permissions' => array(),
+    'mcapi_info_drupal_permissions' => array(),
   );
 }
 
@@ -140,6 +104,52 @@ function mcapi_mcapi_permissions() {
  * This hook can supply permissions that the module defines,
  */
 function mcapi_permission() {
+  return module_invoke_all('mcapi_info_drupal_permissions');
+}
+
+
+/*
+ * implements mcapi hook_info_controller
+ * the presence of this hook indicates there is a .controller file
+ * with the name MODULE.controller
+ */
+function mcapi_transaction_controller(){}
+
+/*
+ * implements mcapi hook_info_states
+ * DON"T call this hook directly as the keys will be lost. use mcapi_states()
+ */
+function mcapi_mcapi_info_states() {
+  return array(
+    'unset' => t('Unset'),//this should never reach the database
+    //must be defined with lower case
+    TRANSACTION_STATE_FINISHED => t('finished'),
+    TRANSACTION_STATE_ERASED => t('erased'), //internal use only
+    TRANSACTION_STATE_INITIATED => t('initiated') //internal use only
+  );
+}
+function mcapi_states() {
+  $states = array();
+  foreach(module_implements('mcapi_info_states') as $module) {
+    $function = $module . '_mcapi_info_states';
+    $states += $function('states');
+  }
+  return $states;
+}
+
+/*
+ * implements mcapi hook_info_types
+ */
+function mcapi_mcapi_info_types() {
+  return array('unspecified', 'auto');
+}
+
+/*
+ * implements mcapi hook_info_permissions
+ * make permissions appear altogether on the permissions page
+ */
+function mcapi_mcapi_info_drupal_permissions() {
+  //use this hook to 
   return array(
     'transact' => array(
       'title' => t('Transact'),
@@ -148,13 +158,31 @@ function mcapi_permission() {
     'manage all transactions' => array(
       'title' => t('Manage all transactions'),
       'description' => t('Retrospectively manage transactions'),
-    ),
+    )
+  );
+}
+
+/*
+ * implements hook mcapi_permissions
+ * each callback refers to 2 functions - itself and CALLBACK_views
+ * Declare the access callbacks for (transactions in) currencies
+ * each callback takes a $transaction
+ */
+function mcapi_mcapi_info_permissions() {
+  return array(
+    'mcapi_access_participants_admin' => t('Only the two participants and admin'),
+    'mcapi_access_unrestricted' => t('Anyone, including anonymous users'),
+    'mcapi_access_authenticated' => t('Only authenticated users'),
+    'mcapi_access_participants' => t('Only the two participants'),
+    'mcapi_access_admin' => t("Only admin"),
+    'mcapi_access_creator' => t('Only the transaction creator'),
+    'mcapi_access_none' => t('Nobody')
   );
 }
 
 /**
  * special access function for transactions - NOT hook implementation
- * $ops can be array('view', 'update', 'erase')
+ * $op can be array('view', 'update', 'erase', 'admin')
  * Note some settings may even restric access to user 1
  * this function assumes all transactions are public
  */
@@ -172,13 +200,38 @@ function transaction_access($op, $transaction, $account = NULL) {
       return FALSE;
     }
     $states = $currency->$op;
-    if (!isset($states[$transaction->state])) drupal_set_message('Have you set transaction state permissions on this currency?');
+    if (!isset($states[$transaction->state])) {
+      drupal_set_message(
+        t('Currency @name has no permission set for op @op & state @state',
+          array('@name' => $flow['currcode'], '@op' => $op, '@state' => $transaction->state)
+        ),
+        'warning',
+        FALSE
+      );
+      return FALSE;
+    }
     $function = $states[$transaction->state];
     if (function_exists($function)) {
       if ($function($transaction, $account, $currency)) return TRUE;
     }
   }
   return FALSE;
+}
+/*
+ * menu access callback for the transaction tab for admin editing
+ * only shows if the user owns all currencies in the transaction
+ * and if both currencies allow transaction updates
+ */
+function transaction_adminedit($transaction) {
+  if (!user_access('manage all transactions')) return FALSE;
+  foreach ($transaction->worth['und'] as $flow) {
+    $currency = currency_load($flow['currcode']);
+    $states = $currency->update;
+    $function = $states[$transaction->state];
+    if (function_exists($function)) {
+      if ($function($transaction, $GLOBALS['user'], $currency)) return TRUE;
+    }
+  }
 }
 
 
@@ -223,7 +276,7 @@ function mcapi_entity_info(){
   return mcapi_entity_info_inc();
 }
 
-function transaction_uri($transaction) {
+function transaction_uri($transaction) {ddebug_backtrace();//would be interesting to know when this is used
   return array(
     'path' => 'transaction/' . $transaction->xid,
   );
@@ -235,43 +288,41 @@ function currency_label($currency) {
   return $currency->name;
 }
 
+function transaction_menu_title($transaction) {
+  return t('Transaction certificate #@xid', array('@xid' => $transaction->xid));
+}
 
 /**
+ * menu callback
  * build a render array for ONE transaction
+ * $view mode can also be 'sentence'
  */
 function transaction_view($transaction, $view_mode = 'certificate') {
-  //this is almost certainly a full page view, so I dare to set the title here
-  $page_title = t('Transaction Certificate #@xid', array('@xid' => $transaction->xid));
-  drupal_set_title($page_title);
-  $entities =  array($transaction->xid => $transaction);
-  // This is only needed if there are fields on the transaction entity
-  field_attach_prepare_view('transaction', $entities, 'default');
-  entity_prepare_view('transaction', $entities);
-  $build = array(
+  entity_prepare_view('transaction', array($transaction->xid => $transaction));
+  field_attach_prepare_view('transaction', array($transaction->xid => $transaction), 'default');
+  $transaction->additional = field_attach_view('transaction', $transaction, $view_mode);
+  return array(
     '#theme' => 'transaction',
-    '#transaction' => array_pop($entities),
+    '#transaction' => $transaction,
     '#view_mode' => $view_mode,
   );
-  return $build;
 }
 
 /*
  * make the transaction variables into something which can be nicely themed
  */
 function template_preprocess_transaction(&$variables) {
-  $transaction = $variables['transaction'];
+  $transaction = &$variables['transaction'];
   $variables['payer'] = format_username(user_load($transaction->payer));
   $variables['payee'] = format_username(user_load($transaction->payee));
   $variables['state'] = $transaction->state;
   $variables['recorded'] = format_date($transaction->created, 'medium');
   $variables['type'] = $transaction->type;
   //choose the transaction theme template based on the first currency of the transaction
-  if (variable_get('mcapi_mixed_transactions', 0)) {
-    $variables['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
+  $variables['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
+  foreach (element_children($transaction->additional) as $key) {
+    $variables[$key] = drupal_render($transaction->additional[$key]);
   }
-  //theme the worth field(s) and make them a variable
-  $transaction->worth['und']['#theme'] = 'worth_fields';
-  $variables['worths'] = drupal_render($transaction->worth['und']);
 }
 
 // this shouldn't be necessary, but how else to get a dynamic list of tokens?
@@ -300,43 +351,31 @@ function transaction_entity_builder($entity_type, $entity, $form, &$form_state) 
  * form submit callback from the base transaction form, hence used by all forms
  * hence must be in .module file
  * this is what actually saves the data
- * $form_state['#transaction'] was created in the validation stage
+ * $form_state['transaction'] was created in the validation stage
  */
 function transaction_all_submit($form, &$form_state) {
-  ddebug_backtrace();
-  $transaction = transaction_save($form_state['#transaction'], TRUE);
+  $transaction = transaction_save($form_state['transaction'], TRUE);
   if ($transaction) {
     field_attach_submit('transaction', $transaction, $form, $form_state);
   }
   if (!isset($form_state['redirect'])) {
     $form_state['redirect'] = 'transaction/'.$transaction->xid;
   }
+  //execute the hook / or trigger ????
 }
 
-class transaction {
-  //these fields correspond to the datbase fields, but what to do with the fields which live serialized in $data?
-  //and why use this to create objects when the entitycontroller fetches existing objects from the database result?
-  //should this be in the entity controller?
-  //could do with some advice
-  public $xid;
-  public $payer;
-  public $payee;
-  public $worth;
-  public $type;
-  public $state;
-  public $extra = array();
-  public $creator;
-  public $created;
-  public $modifier;
-  public $modified;
 
-  //this runs every time a 'new transaction' is created
-  public function __construct(){
-    $this->creator = $GLOBALS['user']->uid;
-    $this->state = 'unset';//this isn't one of the declared states and should cause an error if saved
-    $this->type = 'unspecified';
-    $this->extra = array();
-  }
+  //this runs every time a 'new_transaction()' is created
+function new_transaction() {
+  return (object) array(
+    'xid' => NULL,
+    'payer' => NULL,
+    'payee' => NULL,
+    'creator' => $GLOBALS['user']->uid,
+    'state' => 'unset',//this isn't one of the declared states and should cause an error if saved
+    'type' => 'unspecified',
+    'extra' => array()
+  );
 }
 
 
@@ -346,10 +385,12 @@ class transaction {
  *
  * This is where we interface with the entity controller
  * object transaction_load(array(94))
- * array transactions_load($conditions) e.g array('state' => 0)
+ * array transaction_load_multiple($conditions) e.g array('state' => 0)
  * object transaction_validate($transaction)
  * object transaction_save($transaction)
  * NULL transaction_erase($transaction)
+ * NULL transaction_state($transaction, $newstate);
+ * NULL mcapi_user_balance($transaction)
  */
 
 
@@ -363,7 +404,7 @@ function transaction_load($xid) {
   $transactions = entity_get_controller('transaction')->load(array($xid));
   return array_pop($transactions);
 }
-function transaction_load_multiple($xids = array(), $conditions, $reset = FALSE) {
+function transaction_load_multiple($xids = array(), $conditions = array(), $reset = FALSE) {
   return entity_load('transaction', $xids, $conditions, $reset);
 }
 function transaction_validate($transaction) {
@@ -378,22 +419,13 @@ function transaction_erase($transaction) {
   }
   return entity_get_controller('transaction')->erase($transaction);
 }
+function transaction_state($transaction) {
+  return entity_get_controller('transaction')->state($transaction);
+}
 function mcapi_user_balance($uid, $currcode = NULL, $states = array(TRANSACTION_STATE_FINISHED), $xid = NULL) {
   return entity_get_controller('transaction')->balance($uid, $currcode, $states, $xid);
 }
 
-
-//module_invoke_all uses array_merge and loses the keys.
-//so this function retrives the states using module_implements instead
-// takes either 'names' or 'access'
-function mcapi_transaction_states(){
-  $states = array();
-  foreach (module_implements('mcapi_info') as $module) {
-    $function = $module .'_mcapi_info';
-    $states += $function('states');
-  }
-  return $states;
-}
 
 /*
  * Implements hook_action_info
@@ -412,37 +444,20 @@ function mcapi_action_info() {
  * Callback for action config
  */
 function record_exchange_action_form($context) {
-  $transaction = new transaction;
-  if (isset($context['worth'])) {
-    $transaction->payer = $context['payer'];
-    $transaction->payee = $context['payee'];
-    $transaction->worth = array(
-      'und' => array(
-        0 => array(
-          'currcode' => $context['currcode'],
-          'quantity' => $context['quantity']
-        )
-      )
-    );
-  }
-  //make a new transaction, and fill in from the defaults
+  //make a new_transaction(), and fill in from the defaults
   //this form should really have a validation function to ensure that at least one participant is provided
   module_load_include('inc', 'mcapi');
+  $values = array('values' => $context);
   $form['template'] = array(
     '#type' => 'fieldset',
     '#title' => t('transaction template'),
-    '#description' => t('Leave one of the users blank to be replaced by the logged in user.').' '. t('Please ignore the additional fields...'),
-    'transaction' => transaction_form(array(), array('values' => $context), $transaction)
+    'transaction' => transaction_form(array(), $values, new_transaction())
   );
 
   //I just can't figure out how to handle attached fields here
   //it seems to rely on the form_state, which might mean invoking transaction_form in a different way
-  unset($form['template']['transaction']['buttons']);
+  //unset($form['template']['transaction']['buttons']);
   //these need to be set
-  unset($form['template']['transaction']['state']);
-  unset($form['template']['transaction']['creator']);
-  unset($form['template']['transaction']['type']);
-  //tweak the form
   $form['template']['transaction']['worth']['#required'] = TRUE;
   $form['template']['transaction']['#description'] = TRUE;
   return $form;
@@ -457,7 +472,7 @@ function record_exchange_action_submit($form, $form_state) {
  * callback to execute the action
  */
 function record_exchange_action($node, $context) {
-  $transaction = new transaction;
+  $transaction = new_transaction();
   $transaction->currcode = $context['currcode'];
   $transaction->worth = $context['worth'];
   $transaction->payer = $context['payer'];
@@ -479,7 +494,7 @@ function mcapi_trigger_info() {
   return array(
     'mcapi' => array(
       'transaction_record' => array(
-        'label' => t('Record a new transaction in the database.'),
+        'label' => t('Record a new_transaction() in the database.'),
       ),
       'transaction_modify' => array(
         'label' => t('Editing a transaction which already exists.'),
@@ -546,3 +561,22 @@ function currencies_load($account = NULL) {
   return $filtered;
 }
 
+/*
+ * Implements variable module's hook_variable_info
+ */
+function mcapi_variable_info() {
+  $vars['mcapi_controller'] = array(
+    'type' => 'string',
+    'title' => t('Transaction entity controller'),
+    'default' => 'mcapi',
+    'description' => t('The module that controls how the transactions are read and written to the database.'),
+    'required' => TRUE,
+  );
+  $vars['currency_default'] = array(
+    'type' => 'unknown',
+    'title' => t('Default currency'),
+    'description' => t('The currency when mcapi_currencies is not installed'),
+    'required' => TRUE,
+  );
+  return $vars;
+}

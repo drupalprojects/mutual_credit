@@ -25,29 +25,27 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'payer':
         $account = user_load($transaction->payer);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'payee':
         $account = user_load($transaction->payee);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'partner':
         $uid = $data['user']->uid == $transaction->payee ? $transaction->payee :$transaction->payer;
         $account = user_load($uid);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'creator':
         $account = user_load($transaction->creator);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'modifier':
         $account = user_load($transaction->modifier);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_user($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'worth':
-        //could this be done with a render array?
-        $replacements[$original] = theme('worth_fields', $transaction->worth['und']);
-        debug($replacements[$original]);
+        $replacements[$original] = theme('worth_fields', array('element' => pretheme_worth_render_array($transaction->worth['und'])));
         break;
       case 'summary':
         $replacements[$original] = theme('transaction', array('transaction' => $transaction, 'view_mode' => 'summary'));
@@ -64,6 +62,18 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
     }
   }
   return $replacements;
+}
+
+//this is really nasty, but not sure where this is supposed to happen
+//particularly in the mail this gets called with the raw data, not the render array
+function pretheme_worth_render_array($worth_fields) {
+  foreach ($worth_fields as $field) {
+    $render[] = array(
+      '#currcode' => $field['currcode'],
+      '#quantity' => $field['quantity']
+    );
+  }
+  return $render;
 }
 
 function mcapi_token_info() {

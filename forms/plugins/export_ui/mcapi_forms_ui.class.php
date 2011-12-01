@@ -59,7 +59,10 @@ class mcapi_forms_ui extends ctools_export_ui {
     //second col, help
     $this->rows[$name]['data'][] = array('data' => check_plain($item->data['help']), 'class' => array('ctools-export-ui-name'));
     //third col, path
-    $path = strpos($item->path, '%') ? $item->path : l($item->path, $item->path);
+    $path = $item->data['architecture']['path'];
+    if (!strpos($path, '%') && empty($item->disabled)) {
+      $path = l($path, $path);
+    }
     $this->rows[$name]['data'][] = array('data' => $path);
     //fourth col, storage
     $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 

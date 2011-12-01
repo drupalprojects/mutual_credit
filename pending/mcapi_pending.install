@@ -1,6 +1,14 @@
 <?php
 //Id;
 
+
+function mcapi_pending_uninstall() {
+  if (module_exists('views')) {
+    views_delete_view(views_get_view('signatures'));
+  }
+  
+}
+
 /**
  * Implementation of hook_schema)().
  * creates a table for storing signatures needed on pending transactions

@@ -75,14 +75,10 @@ function mcapi_pending_mcapiforms_default() {
       'button' => 'Yes',
       'redirect' => 'transaction/%transaction',
     ),
-    'step-1' => array(
+    'step-2' => array(
       'title' => 'Sign this transaction',
       'template' => 'Do you want to sign this transaction?
 [worth]',
-    ),
-    'step-2' => array(
-      'title' => '',
-      'template' => '',
     ),
     'buttons' => array(
       'submit' => 'Save',

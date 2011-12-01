@@ -61,7 +61,7 @@ class mcapi_currencies_ui extends ctools_export_ui {
       '#quantity' => 99.00
     ));
     //third col, usage
-    $this->rows[$name]['data'][] = array('data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = 1")->fetchField());
+    $this->rows[$name]['data'][] = array('data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField());
     //fourth col, storage
     $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
     //final col, links

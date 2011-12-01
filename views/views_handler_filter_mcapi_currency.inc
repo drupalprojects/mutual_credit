@@ -19,14 +19,7 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
       // Initialize the array of possible values for this filter.
       $this->get_value_options();
     }
-    $form['value'] = array(
-      '#type' => 'select',
-      '#title' => t('Currency'),
-      '#description' => t('Show only transactions in this currency'),
-      '#options' => $this->value_options,
-      '#default_value' => $this->value,
-      '#multiple' => TRUE
-    );
+    $form['value'] = currency_picker_element($this->value, TRUE, $this->value_options);
     if (!empty($this->options['exposed'])) {
       $identifier = $this->options['expose']['identifier'];
       if (!empty($form_state['exposed']) && !isset($form_state['input'][$identifier])) {

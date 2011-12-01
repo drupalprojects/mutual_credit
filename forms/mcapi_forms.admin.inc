@@ -9,7 +9,9 @@ module_load_include('inc', 'mcapi_forms');
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');//contains the validation functions for the default form elements
-  $mcapi_form = &$form_state['item'];
+  $mcapi_form = &$form_state['item']->data;
+  $form_id = $form_state['item']->name;
+
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
   $roles = user_roles(TRUE);
@@ -29,62 +31,49 @@ function _edit_mcapi_form(&$form, &$form_state) {
   $form['info']['name']['#type'] = 'machine_name';
   $form['info']['name']['#machine_name']['exists'] = 'mcapi_forms_load';
 
-  $options = array(
+  $perspectives = array(
     3 => t('3rd Party'),
     1 => t('1st Party')
   );
-  $form['aspect'] = array(
-    '#title' => t('Aspect'),
-    '#description' => t('Whether this is completed by a 3rd party or a participant.'),
-    '#type' => 'radios',
-    '#options' => $options,
-    '#default_value' => isset($mcapi_form->data['aspect']) ? $mcapi_form->data['aspect'] : 3,
-    '#weight' => 1,
-    //this ajax only works once then the form #id increments to ctools-export-ui-edit-item-form--2
-    '#ajax' => array(
-      'callback' => 'mcapi_forms_ajax_settings',
-      'wrapper' => 'form-wrapper'
-    ),
-  );
   //to cover up the fact that we can only reload the form once
-  if (isset($form_state['values']['aspect'])) {
+  if (isset($form_state['values']['perspective'])) {
     //only include the selected option
-    $form['aspect']['#options'] = array($form_state['values']['aspect'] => $options[$form_state['values']['aspect']]);
-    $form['aspect']['#description'] = 'Technical limitations prohibit this being flipped more than once. Reload the whole page to change it back';
+    $form['perspective']['#options'] = array($form_state['values']['perspective'] => $perspectives[$form_state['values']['perspective']]);
+    $form['perspective']['#description'] = 'Technical limitations prohibit this being flipped more than once. Reload the whole page to change it back';
   }
 
   $form['xfid'] = array(
     '#type' => 'hidden',
-    '#value' => isset($mcapi_form->xfid) ?$mcapi_form->xfid : ''
-  );
-  $form['path'] = array(
-    '#title' => t('Path'),
-    '#description' => t("Url of this form. Use optional literals '%transaction' and '%user'. See !url documentation for advanced usage", array('!url' => l('hook_menu','http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
-    '#type' => 'textfield',
-    '#default_value' => isset($mcapi_form->path) ? $mcapi_form->path : '',
-    '#required' => TRUE,
-    '#weight' => 2
+    '#value' => isset($form_state['item']->xfid) ? $form_state['item']->xfid : ''
   );
   $form['help'] = array(
     '#title' => t('Help'),
     '#description' => t('A quick description of the form, for the administrator'),
     '#type' => 'textfield',
-    '#default_value' => isset($mcapi_form->data['help']) ? $mcapi_form->data['help'] : '',
+    '#default_value' => isset($mcapi_form['help']) ? $mcapi_form['help'] : '',
     '#maxlength' => 255,
     '#weight' => 3
   );
-  $form['outputs'] = array(
-    '#title' => t('Output'),
+  $form['architecture'] = array(
+    '#title' => t('Architecture'),
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($mcapi_form->name),
-    '#weight' => 4,
+    '#collapsed' => !empty($form_id),
+    '#weight' => 3,
+    'path' => array(
+      '#title' => t('Path'),
+      '#description' => t("Url of this form. Use optional literals '%transaction' and '%user'. See !url documentation for advanced usage", array('!url' => l('hook_menu','http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
+      '#type' => 'textfield',
+      '#default_value' => isset($mcapi_form['architecture']['path']) ? $mcapi_form['architecture']['path'] : '',
+      '#required' => TRUE,
+      '#weight' => 2
+    ),
     'access' =>array(
       '#title' => t('Access control'),
       '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
       '#type' => 'select',
-      '#default_value' => isset($mcapi_form->data['outputs']['access']) ? $mcapi_form->data['outputs']['access'] : 'currency',
+      '#default_value' => isset($mcapi_form['architecture']['access']) ? $mcapi_form['architecture']['access'] : 'currency',
       '#options' => $access_options,
       '#element_validate' => array(),
     ),
@@ -92,7 +81,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Menu link location'),
       '#description' => t('Choose the menu, or menu item-type.') .' '. t("For more info, see 'type' info at !link", array('!link' => l('drupal.org', 'http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
       '#type' => 'select',
-      '#default_value' => isset($mcapi_form->data['outputs']['menu_link']) ? $mcapi_form->data['outputs']['menu_link'] : 'MENU_CALLBACK',
+      '#default_value' => isset($mcapi_form['architecture']['menu_link']) ? $mcapi_form['architecture']['menu_link'] : 'MENU_CALLBACK',
       '#options' => $menus+ array(
         MENU_CALLBACK => t('No menu item'),
         MENU_LOCAL_TASK => 'MENU_LOCAL_TASK',
@@ -102,35 +91,39 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#element_validate' => array(),
     ),
     'use_block' =>  array(
-      '#title' => t('Output block'),
+      '#title' => t('Manifest block'),
       '#description' => t('The block is named according the path.') .' '.
         t('Remember that blocks have their own caching and access control.'),
       '#type' => 'checkbox',
-      '#default_value' => isset($mcapi_form->data['outputs']['use_block']) ? $mcapi_form->data['outputs']['use_block'] : '',
+      '#default_value' => isset($mcapi_form['architecture']['use_block']) ? $mcapi_form['architecture']['use_block'] : '',
       '#element_validate' => array(),
     )
   );
-  
-  $outgoing_options = mcapi_transaction_states();
-  unset($outgoing_options[-2]);//as far as forms are concerned, TRANSACTION_STATE_VALIDATING is invisible
+
+  $states = mcapi_states();
+  unset($states[TRANSACTION_STATE_INITIATED]);//as far as forms are concerned, this state is invisible
+  //theme_checkboxes fails with array keys of zero, so we have to use the untranslated state names insteead
+  foreach ($states as $state) {
+    $outgoing_options[strtolower($state)] = t($state); //horrible to translate a variable, but must be done.
+  }
   $incoming_options = $outgoing_options;
-  unset($incoming_options[-1]);//erase transactions should never be editable
+  unset($incoming_options['erased']);//erase transactions should never be editable //TODO modify currency permission fieldset to that effect
   unset($outgoing_options['unset']);
   $outgoing_options['null'] = '('.t('inherit').')';
-  
+
   $form['workflow'] = array(
-    '#title' => t('Workflow'),
+    '#title' => t('State flow'),
     '#description' => t('Beyond simply creating and editing transactions, these forms move the transactions between states'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($mcapi_form->name),
+    '#collapsed' => !empty($form_id),
     'incoming' => array(
       '#title' => t('Allow only incoming states'),
       '#description' => t('Form will not build if incoming transaction is in the wrong state'),
       //this should be checkboxes, but there's a problem with checkboxes and select multiple for values with a key of 0
       '#type' => 'checkboxes',
-      '#options' => drupal_map_assoc($incoming_options),
-      '#default_value' => isset($mcapi_form->data['workflow']['incoming']) ? $mcapi_form->data['workflow']['incoming'] : array('Unset'),
+      '#options' => $incoming_options,
+      '#default_value' => isset($mcapi_form['workflow']['incoming']) ? $mcapi_form['workflow']['incoming'] : array('Unset'),
       '#element_validate' => array('mcapi_form_workflow_incoming_validate'),
       '#weight' => 1,
     ),
@@ -139,14 +132,27 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#description' => t('Transaction will be submitted in this state'),
       '#type' => 'select',
       '#options' => $outgoing_options,
-      '#default_value' => empty($mcapi_form->data['workflow']['outgoing']) ? TRANSACTION_STATE_FINISHED : $mcapi_form->data['workflow']['outgoing'],
+      '#default_value' => empty($mcapi_form['workflow']['outgoing']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['workflow']['outgoing'],
       '#weight' => 3,
     ),
+    '#weight' => 4,
+  );
+  $form['perspective'] = array(
+    '#title' => t('perspective'),
+    '#description' => t('Whether this is completed by a 3rd party or a participant.'),
+    '#type' => 'radios',
+    '#options' => $perspectives,
+    '#default_value' => isset($mcapi_form['perspective']) ? $mcapi_form['perspective'] : 3,
     '#weight' => 5,
+    //this ajax only works once then the form #id increments to ctools-export-ui-edit-item-form--2
+    '#ajax' => array(
+      'callback' => 'mcapi_forms_ajax_settings',
+      'wrapper' => 'form-wrapper'
+    ),
   );
 
   //load the transaction form so we can use all the fields here to set the defaults
-  $transaction_fields = transaction_form($form, $form_state, new transaction);
+  $transaction_fields = transaction_form($form, $form_state, new_transaction());
 
   //this section of the form allows the admin to handle the individual fields of the transaction form.
   //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
@@ -155,12 +161,12 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#weight' => 6,
     '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
   );
-  //the participants of the transaction are either payer/payee or 1stperson/2ndperson. This is called the 'aspect' of the form.
-  $aspect = isset($form_state['values']['aspect']) ? $form_state['values']['aspect'] : $form['aspect']['#default_value'] ;
-  if ($aspect == 3) {
+  //the participants of the transaction are either payer/payee or 1stperson/2ndperson. This is called the 'perspective' of the form.
+  $perspective = isset($form_state['values']['perspective']) ? $form_state['values']['perspective'] : $form['perspective']['#default_value'] ;
+  if ($perspective == 3) {
     //special settings for payer and payee
     foreach (array('payer' => t('Payer ID'), 'payee' => t('Payee ID')) as $key => $name) {
-      $form[$key] = _mcapi_form_shared($mcapi_form->data, $transaction_fields[$key], $key);
+      $form[$key] = _mcapi_form_shared($mcapi_form, $transaction_fields[$key], $key);
       $form[$key]['#widget'] = 'user_chooser';//this is the only option that will work right now
       $form[$key]['args'] = array(
         '#title' => t('Users to choose from'),
@@ -169,19 +175,19 @@ function _edit_mcapi_form(&$form, &$form_state) {
         )),
         '#type' => 'select',
         '#options' => $user_chooser_options,
-        '#default_value' => isset($mcapi_form->data[$key]['args']) ? $mcapi_form->data[$key]['args'] : 'mcapi_access_check_roles:2'
+        '#default_value' => isset($mcapi_form[$key]['args']) ? $mcapi_form[$key]['args'] : 'mcapi_access_check_roles:2'
       );
       $form[$key]['preset']['#description'] = t('Use [self] to preset with the logged in user');
       $form[$key]['multiple'] = array(
         '#title' => t('Multiple users'),
         '#description' => t('Allow multiple users and repeat the transaction for each of them'),
         '#type' => 'checkbox',
-        '#default_value' => isset($mcapi_form->data[$key]['multiple']) ? $mcapi_form->data[$key]['multiple'] : FALSE,
+        '#default_value' => isset($mcapi_form[$key]['multiple']) ? $mcapi_form[$key]['multiple'] : FALSE,
       );
     }
   }
   else {//1st person form shows one field only, presuming the current user initiates the transaction
-    $form['2ndperson'] = _mcapi_form_shared($mcapi_form->data, $transaction_fields['payer'], '2ndperson');
+    $form['2ndperson'] = _mcapi_form_shared($mcapi_form, $transaction_fields['payer'], '2ndperson');
     $form['2ndperson']['#widget'] = 'user_chooser';//this is the only option that will work right now
     $form['2ndperson']['args'] = array(
       '#title' => t('Users to choose from'),
@@ -190,22 +196,21 @@ function _edit_mcapi_form(&$form, &$form_state) {
       )),
       '#type' => 'select',
       '#options' => $user_chooser_options,
-      '#default_value' => isset($mcapi_form->data['2ndperson']['args']) ? $mcapi_form->data['2ndperson']['args'] : 'mcapi_access_check_roles:2'
+      '#default_value' => isset($mcapi_form['2ndperson']['args']) ? $mcapi_form['2ndperson']['args'] : 'mcapi_access_check_roles:2'
     );
 
-    $direction_widget = _macpi_forms_direction_widget($mcapi_form->data['direction']);
-    $form['direction'] = _mcapi_form_shared($mcapi_form->data, $direction_widget, 'direction');
-
+    $direction_widget = _macpi_forms_direction_widget($mcapi_form['direction']);
+    $form['direction'] = _mcapi_form_shared($mcapi_form, $direction_widget, 'direction');
     //not sure these are ever used...
     $form['direction']['incoming'] = array(
       '#title' => t('Name of incoming transaction'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form->data['direction']['incoming']) ? $mcapi_form->data['direction']['incoming'] : t('Request'),
+      '#default_value' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
     );
     $form['direction']['outgoing'] = array(
       '#title' => t('Name of outgoing transaction'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form->data['direction']['outgoing']) ? $mcapi_form->data['direction']['outgoing'] : t('Payment'),
+      '#default_value' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment'),
     );
     $form['direction']['widget'] = array(
       '#title' => t('Widget'),
@@ -214,7 +219,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         'select' => t('Dropdown select box'),
         'radios' => t('Radio buttons')
       ),
-      '#default_value' => isset($mcapi_form->data['direction']['widget']) ? $mcapi_form->data['direction']['widget'] : 'outgoing',
+      '#default_value' => isset($mcapi_form['direction']['widget']) ? $mcapi_form['direction']['widget'] : 'outgoing',
     );
     $form['direction']['shared']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
 
@@ -222,7 +227,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   //these are the field api fields which may have been added to the transaction entity
   $additional_fields = mcapi_form_get_formAPI_fields();
   foreach ($additional_fields as $fieldname => $field) {
-    $form[$fieldname] = _mcapi_form_shared($mcapi_form->data, $transaction_fields[$fieldname], $fieldname);
+    $form[$fieldname] = _mcapi_form_shared($mcapi_form, $transaction_fields[$fieldname], $fieldname);
   }
 
   $form['submission'] = array(
@@ -230,22 +235,22 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($mcapi_form->name),
+    '#collapsed' => !empty($form_id),
     'button' => array(
       '#title' => t('Save button'),
       '#description' => t("The text to appear on the 'save' button, or the absolute url of an image"),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form->data['submission']['button']) ? $mcapi_form->data['submission']['button'] : t('Submit'),
+      '#default_value' => isset($mcapi_form['submission']['button']) ? $mcapi_form['submission']['button'] : t('Submit'),
       '#required' => TRUE,
     ),
     'redirect' => array(
       '#title' => t('Destination'),
       '#description' => implode('<br />', array(
-        t("Use token '%xid' to refer to the transaction ID, and %uid for the current user ID"),
-        t("E.g. the transaction's own page is 'transaction/%xid'."),
+        t("Use token '%transaction' to refer to the transaction ID, and %user for the current user ID"),
+        t("E.g. the transaction's own page is 'transaction/%transaction'."),
       )),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form->data['submission']['redirect']) ? $mcapi_form->data['submission']['redirect'] : '',
+      '#default_value' => isset($mcapi_form['submission']['redirect']) ? $mcapi_form['submission']['redirect'] : '',
       '#element_validate' => array('mcapi_path_validate'),
       '#required' => TRUE,
       '#weight' => 1,
@@ -271,14 +276,14 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Title'),
       '#description' => t('For use in block title and menu links.') .' '. t('Plain text only.'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form->data['step-1']['title']) ? $mcapi_form->data['step-1']['title'] : '',
+      '#default_value' => isset($mcapi_form['step-1']['title']) ? $mcapi_form['step-1']['title'] : '',
       '#required' => TRUE
     ),
     'template' => array(
       '#title' => t('Main form'),
       '#type' => 'textarea',
-      '#rows' => isset($mcapi_form->data['step-1']['template']) ? count(explode("\n", $mcapi_form->data['step-1']['template'])) : 5,
-      '#default_value' => isset($mcapi_form->data['step-1']['template']) ? $mcapi_form->data['step-1']['template'] : '',
+      '#rows' => isset($mcapi_form['step-1']['template']) ? count(explode("\n", $mcapi_form['step-1']['template'])) : 5,
+      '#default_value' => isset($mcapi_form['step-1']['template']) ? $mcapi_form['step-1']['template'] : '',
       '#element_validate' => array('mcapi_forms_template_validate'),
       '#required' => TRUE,
     ),
@@ -296,18 +301,19 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Title'),
       '#description' => t('Plain text only.'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form->data['step-2']['title']) ? $mcapi_form->data['step-2']['title'] : '',
+      '#default_value' => isset($mcapi_form['step-2']['title']) ? $mcapi_form['step-2']['title'] : '',
     ),
     'template' =>  array(
       '#title' => t('Confirmation page (optional)'),
       '#description' => t('This page will be shown after the transaction has validated but before the form is submitted.') .' '.
         t("Two more tokens are available here, '@certificate' and '@summary'", array('@certificate' => '[certificate]', '@summary' => '[summary]')),
       '#type' => 'textarea',
-      '#rows' => isset($mcapi_form->data['step-2']['template']) ? count(explode("\n", $mcapi_form->data['step-2']['template'])) : 5,
-      '#default_value' => isset($mcapi_form->data['step-2']['template']) ? $mcapi_form->data['step-2']['template'] : '',
+      '#rows' => isset($mcapi_form['step-2']['template']) ? count(explode("\n", $mcapi_form['step-2']['template'])) : 5,
+      '#default_value' => isset($mcapi_form['step-2']['template']) ? $mcapi_form['step-2']['template'] : '',
       '#weight' => 2,
     )
   );
+  $form['#submit'][] = 'menu_rebuild';
 }
 
 
@@ -346,15 +352,16 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
     ),
   );
   //set the defaults from the saved object
+  $preset = &$mcapi_form_fields[$key]['shared']['preset'];
   if (isset($default_field['und'][0]['#columns'])) {//for formAPI fields
     foreach ($default_field['und'][0]['#columns'] as $column) {
-      if (!empty($mcapi_form_fields[$key]['shared']['preset']['und'][0][$column])) {
-        $element['shared']['preset']['und'][0][$column]['#default_value'] = $mcapi_form_fields[$key]['shared']['preset']['und'][0][$column];
+      if (isset($preset['und']) && isset($preset['und'][0][$column])) {
+        $element['shared']['preset']['und'][0][$column]['#default_value'] = $preset['und'][0][$column];
       }
     }
   }
   else { //for transaction entity fields
-    $element['shared']['preset']['#default_value'] = $mcapi_form_fields[$key]['shared']['preset'];
+    $element['shared']['preset']['#default_value'] = $preset;
   }
 
   if (!empty($default_field['#required'])) {

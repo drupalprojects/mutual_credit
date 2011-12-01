@@ -3,10 +3,13 @@
 
 class views_handler_field_mcapi_state extends views_handler_field {
 
+  private $states;
+
+  function __construct() {
+    $this->states = mcapi_states();
+  }
+
   function render($values) {
-    static $lookup;
-    $lookup = mcapi_transaction_states();
-    $value = $this->get_value($values);
-    return $lookup[$value];
+    return $this->states[$this->get_value($values)];
   }
 }

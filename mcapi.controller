@@ -13,7 +13,7 @@
 class mcapi_EntityController extends DrupalDefaultEntityController {
   /*
    * This controller actually writes the transaction during validation
-   * with a special state: TRANSACTION_STATE_VALIDATING
+   * with a special state: TRANSACTION_STATE_INITIATED
    * When written, the transaction has a unique ID, so we
    * indicate that the transaction is actually a new transaction with the new property, 'is_new'
    * Adapted from the default entity controller.
@@ -64,10 +64,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $this->cacheSet($queried_entities);
       }
     }
-    if (!count($entities)) {//this should never happen
-      ddebug_backtrace();
-      //throw new Exception(t('Invalid entity ID: @ids', array('@ids' => implode(', ', $ids))));
-    }
     return $entities;
   }
 
@@ -77,7 +73,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     if (empty($transaction->xid)) {
       $transaction->is_new = TRUE;
       //temporarily change the transaction state so that validated transaction left hanging DO leave a trace.
-      $transaction->state = TRANSACTION_STATE_VALIDATING;
+      $transaction->state = TRANSACTION_STATE_INITIATED;
     }
     $t = db_transaction();
     try {

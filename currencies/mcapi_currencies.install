@@ -90,16 +90,17 @@ function mcapi_currencies_schema() {
       'key' => 'currcode',
       'key name' => t('Universal currency code (8 chars, immutable)'),
       'primary key' => 'currcode',
-      'identifier' => 'currency',
+      'identifier' => 'mcapicurrency',
       'api' => array(
         'owner' => 'mcapicurrencies',
-        'api' => 'mcapicurrencies',
+        'api' => 'mcapicurrencies_default',
         'minimum_version' => 3,
         'current_version' => 3,
       ),
-      'default hook' => 'default_mcapicurrencies',
+      'default hook' => 'mcapicurrencies_default',
       //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
-      'admin_title' => 'currcode' //this converts the form field into machine_name I think
+      'admin_title' => 'currcode', //this converts the form field into machine_name I think
+      'bulk export' => TRUE,
     )
   );
   return $schema;

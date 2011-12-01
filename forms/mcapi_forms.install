@@ -5,7 +5,6 @@
  * Implementation of hook_schema().
  */
 function mcapi_forms_schema() {
-  $schema = array();
   $schema['mcapi_forms'] = array(
     'description' => 'Ctools table for mcapi forms',
     'fields' => array(
@@ -18,12 +17,6 @@ function mcapi_forms_schema() {
       ),
       'name' => array(
         'description' => 'The unique, machine readable name of the form.',
-        'type'        => 'varchar',
-        'length'      => 63,
-        'not null'    => TRUE,
-      ),
-      'path' => array(
-        'description' => 'Internal path',
         'type'        => 'varchar',
         'length'      => 63,
         'not null'    => TRUE,
@@ -45,22 +38,25 @@ function mcapi_forms_schema() {
     'primary key' => array('xfid'),
     'unique keys' => array(
       'name' => array('name'),
-      'path' => array('path'),
     ),
     'export' => array(
       'key' => 'name',
       'primary key' => 'xfid',
-      'identifier' => 'mcapiforms',
+      'identifier' => 'mcapiform',
       'api' => array(
         'owner' => 'mcapiforms',
-        'api' => 'mcapiforms',
+        'api' => 'mcapiforms_default',
         'minimum_version' => 3,
         'current_version' => 3,
       ),
-      'default hook' => 'default_mcapiforms',
+      'default hook' => 'mcapiforms_default',
       //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
       'admin_title' => 'name' //this converts the form field into machine_name I think
     ),
   );
   return $schema;
+}
+
+function mcapi_forms_update_7000() {
+  db_drop_field('mcapi_forms', 'path');
 }

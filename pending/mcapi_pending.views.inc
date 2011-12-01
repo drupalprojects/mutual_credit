@@ -50,11 +50,11 @@ function mcapi_pending_views_data() {
       'label' => t('Signatory'),
     ),
   );
-  $data['mcapi_signatures']['signed'] = array(
-    'title' => t('Whether the signature has happened'),
+  $data['mcapi_signatures']['pending'] = array(
+    'title' => t('Signature is pending'),
     'filter' => array(
       'help' => t('If the user has permission'),
-      'handler' => 'views_handler_filter_mcapi_signed',
+      'handler' => 'views_handler_filter_boolean_operator',
     )
   );
   $data['mcapi_signatures']['sign'] = array(

@@ -3,6 +3,14 @@ function mcapi_views_install() {
   mcapi_views_rebuild_index();
 }
 
+function mcapi_views_uninstall() {
+  $views = db_query("SELECT name from {views_view} WHERE base_table = 'mcapi_index'")->fetchCol();
+  foreach ($views as $viewname) {
+    $view = views_get_view($viewname);
+    views_delete_view($view);
+  }
+}
+
 function mcapi_views_schema() {
   $numeric = array(
     'type' => 'numeric',

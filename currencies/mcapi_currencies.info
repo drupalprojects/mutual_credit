@@ -9,6 +9,6 @@ dependencies[] = mcapi
 dependencies[] = ctools
 
 files[] = mcapi_currencies.install
-files[] = mcapi_currencies.mcapicurrencies.inc
+files[] = mcapi_currencies.mcapicurrencies_default.inc
 files[] = plugins/export_ui/mcapi_currencies_ui.inc
 files[] = plugins/export_ui/mcapi_currencies_ui.class.php

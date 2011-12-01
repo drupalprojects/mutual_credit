@@ -103,10 +103,10 @@ function _mcapi_currency_form(&$form, &$form_state) {
     '#default_value' => $form['#currency']->membership_callback,
     '#weight' => 10,
   );
-  $states = mcapi_transaction_states();
-  unset($states['unset'], $states[-2]);
+  $states = mcapi_states();
+  unset($states['unset']);
   $i = 0; $j = 0;
-  $options = module_invoke_all('mcapi_permissions');
+  $options = module_invoke_all('mcapi_info_permissions');
   foreach (array_filter($operations) as $op => $name) {
     $form[$op] = array(
       '#title' => $name,
@@ -127,7 +127,6 @@ function _mcapi_currency_form(&$form, &$form_state) {
     }
   }
 
-  $form['#submit'][] = 'currencies_recache';
   $form['buttons'] = array(
     '#weight' => 20,
     'submit' => array(
@@ -158,6 +157,14 @@ function mcapi_currency_form($form, &$form_state){
   return $form;
 }
 
+/*
+ * implements hook_form_FORMID_alter
+ * because if you add #submit handlers before this then it doesn't do so automatically
+ */
+function mcapi_form_mcapi_currency_form_alter() {
+  $form['#submit'][] = 'currencies_recache';
+}
+
 //validate is in currencies.admin.inc because it's the same for one or many currencies
 /*
  * Submit callback for mcapi_currency_form
@@ -165,9 +172,9 @@ function mcapi_currency_form($form, &$form_state){
  */
 function mcapi_currency_form_submit($form, $form_state) {
 
-  //save the currency settings as a single nested array
-  $values = form_state_values_clean($form_state);
-  variable_set('currency_default', $values);
+  //save the currency settings as a nested array, exactly as they came out of the form
+  form_state_values_clean($form_state);
+  variable_set('currency_default', $form_state['values']);
   register_shutdown_function('currencies_recache');
 }
 
@@ -224,7 +231,7 @@ function _currency_divisions_array($string) {
  * Validate callback for currency form 'update_mode' element
  */
 function mcapi_currency_validate_update_mode(&$element, $form_state) {
-  if ($element['#value'] == 1 && $form_state['values']['erase_mode'] == 0) {
+  if ($element['#value'] == 1 && $form_state['values']['accounting']['erase_mode'] == 0) {
     form_error($element, t('Accounting standards') .' '. t('Update mode is incompatible with delete mode'));
   }
 }
@@ -269,18 +276,28 @@ function currency_default() {
     'format' => '@minus<strong>CC</strong>@integer:@subdivision',
     'divisions_setting' => "0|00\n50|30 mins",
     'accounting' => array(
-      'update_mode' => 0,
-      'erase_mode' => 0
+      'update_mode' => 1,
+      'erase_mode' => 1
     ),
     'creator' => 1,
     'membership_callback' => 'mcapi_use_currency',
     'view' => array(
+      1 => 'mcapi_access_participants_admin',
       0 => 'mcapi_access_authenticated',
-      -1 => 'mcapi_access_none'
+      -1 => 'mcapi_access_none',
+      -2 => 'mcapi_access_admin'
     ),
     'update' => array(
+      1 => 'mcapi_access_creator',
       0 => 'mcapi_access_none',
-      -1 => 'mcapi_access_none'
+      -1 => 'mcapi_access_none',
+      -2 => 'mcapi_access_admin'
+    ),
+    'erase' => array(
+      1 => 'mcapi_access_none',
+      0 => 'mcapi_access_none',
+      -1 => 'mcapi_access_none',
+      -2 => 'mcapi_access_admin'
     ),
   ));
   return (object)$def;

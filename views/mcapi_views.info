@@ -13,22 +13,20 @@ files[] = mcapi_views.views.inc
 files[] = mcapi_views.views_default.inc
 
 ; Views handlers useful for the main transaction table
-;files[] = views_handler_argument_mcapi_participant.inc
 files[] = views_handler_argument_mcapi_dates_various.inc
-files[] = views_handler_field_mcapi_balance.inc
 files[] = views_handler_field_mcapi_index_currcode.inc
 files[] = views_handler_field_mcapi_links.inc
-;files[] = views_handler_field_mcapi_participant.inc
-files[] = views_handler_field_mcapi_username.inc
 files[] = views_handler_field_mcapi_state.inc
-files[] = views_handler_field_mcapi_value.inc
+files[] = views_handler_field_mcapi_sentence.inc
+files[] = views_handler_field_mcapi_users_balance.inc
 files[] = views_handler_field_transaction_link.inc
 files[] = views_handler_field_transaction_link_edit.inc
 files[] = views_handler_filter_mcapi_currency.inc
 files[] = views_handler_filter_mcapi_states.inc
 files[] = views_handler_filter_mcapi_types.inc
+files[] = views_plugin_row_transaction.inc
 
-; Views handlers refering only to the index table
+; Views handlers refering to the index table only
 files[] = views_handler_field_mcapi_quantity_index.inc
 files[] = views_handler_filter_mcapi_currency.inc
 files[] = views_handler_filter_mcapi_role_current_user.inc

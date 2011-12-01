@@ -19,7 +19,7 @@ class views_handler_filter_mcapi_states extends views_handler_filter_in_operator
   }
 
   function get_value_options() {
-    $this->value_options = mcapi_transaction_states();
+    $this->value_options = mcapi_states();
   }
 
   function option_definition() {

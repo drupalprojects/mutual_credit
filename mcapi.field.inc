@@ -42,7 +42,7 @@ function mcapi_field_widget_info() {
  */
 function mcapi_field_formatter_info() {
   return array(
-    'worth_widgets' => array(
+    'worth_fields' => array(
       'label' => t('Worth'),
       'field types' => array('worth_field'),
     )
@@ -53,7 +53,7 @@ function mcapi_field_formatter_info() {
  * prepare a render array containing all
  */
 function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
-  $element = array();
+  $element = array('#theme' => 'worth_fields');
   foreach($items as $delta => $item) {
     $element[$delta] = array(
       '#theme' => 'worth_field',
@@ -63,6 +63,7 @@ function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $l
   }
   return $element;
 }
+
 /*
  * implements hook_field_is_empty
  * tests to see if a field is empty
@@ -77,12 +78,13 @@ function mcapi_field_is_empty($item) {
  * and screws up generating the pseudo fields in the mcapi_forms module, see _mcapi_edit_form
  */
 function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+//  debug(func_get_args());
   $element['#delta'] = $delta;
   $item = &$items[$delta];
   $element['quantity'] = array(
     '#title' => t('Units'), //this is only ever seen on the error message anyway
     '#type' => 'textfield',
-    '#default_value' => empty($item['quantity']) ? 0 : $item['quantity'],
+    '#default_value' => empty($item['quantity']) ? 0 : ($item['quantity']),
     '#size' => 4,
     '#maxlength' => 4,
     '#theme_wrappers' => array(),
@@ -130,10 +132,10 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   if (empty($element['currcode']['#options'])) {
     //applies if there is only one currency
     if (isset($element['currcode']['#default_value'])) {
-      $default['currcode'] = $element['currcode']['#default_value'];
+      //$default['currcode'] = $element['currcode']['#default_value'];
     }
     else {
-      $default['currcode'] = currency_default()->info['currcode'];
+      //$default['currcode'] = currency_default()->info['currcode'];
     }
   }
   //rather too many permutations here, not helped by the number of ways in which the element default values could be passed
@@ -145,17 +147,12 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   }
   //submitted entity
   elseif(!empty($element['#field_name']) && !empty($form_state['values'][$element['#field_name']])) {
-    $default = $form_state['values'][$element['#field_name']]['und'][$element['#delta']];
+    //$default = $form_state['values'][$element['#field_name']]['und'][$element['#delta']];
   }
   //entity for building or rebuilding form
   elseif(!empty($element['#field_name']) && !empty($form_state['build_info']['args'][0]->{$element['#field_name']})) {
     // if this is a entity form, assume arg 0 is the transaction and we know what the defaults are.
-    $default = $form_state['build_info']['args'][0]->{$element['#field_name']}['und'][$element['#delta']];
-  }
-  //in despair, now retrieving from the special form_state object created at step 1 validation
-  elseif(!empty($form_state['#transaction'])) {
-    $default = $form_state['#transaction']->worth['und'][$element['#delta']];
-
+    //$default = $form_state['build_info']['args'][0]->{$element['#field_name']}['und'][$element['#delta']];
   }
 
   //in some cases because of the different ways the worth value comes in - from the widget or from the db
@@ -167,34 +164,34 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   if (!empty($default['quantity'])) {
     $element['quantity']['#default_value'] = $default['quantity'];
   }
-  if (!empty($default['currcode'])) {
-    $element['currcode']['#default_value'] = $default['currcode'];
-    $currency = currency_load($default['currcode']);
 
-    //if any currency on the form has subdivisions then output this field
-    if (!empty($currency->divisions)) {
-      $element['division'] = array(
-        '#title' => t('Fraction'),
-        //'#default_value' => ,
-        '#default_value' => empty($default['division']) ? 0 : $default['division'],
-        '#theme_wrappers' => array(),
+
+  $currency = currency_load($element['currcode']['#default_value']);//this should always be available
+  if (!empty($currency->divisions)) {
+    $element['division'] = array(
+      '#title' => t('Fraction'),
+      '#theme_wrappers' => array(),
+    );
+    if ($currency->divisions_setting == '00') {
+      $element['division'] +=  array(
+        '#type' => 'textfield',
+        '#size' => 2,
+        '#maxlength' => 2,
+        '#field_prefix' => '.',
       );
-      if ($currency->divisions_setting == '00') {
-        $element['division'] +=  array(
-          '#type' => 'textfield',
-          '#size' => 2,
-          '#maxlength' => 2,
-          '#field_prefix' => '.',
-        );
-      }
-      else{
-        $element['division'] += array(
-          '#options' => $currency->divisions,
-          '#type' => 'select',
-          '#field_prefix' => ':',
-        );
-      }
     }
+    else{
+      $element['division'] += array(
+        '#options' => $currency->divisions,
+        '#type' => 'select',
+        '#field_prefix' => ':',
+      );
+    }
+
+    //sort out the form widget for divisions, firstly by making the quantity field an integer
+    $val = $element['quantity']['#default_value'];
+    $element['quantity']['#default_value'] = intval($val);
+    $element['division']['#default_value'] = 100*(round($val - intval($val), 2));
   }
   return $element;
 }
@@ -273,7 +270,7 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
 /*
  * Default implementation of theme 'worth_field'
  */
-function theme_worth_field(&$variables) { 
+function theme_worth_field(&$variables) {
   if (!$variables['currcode']) return '';
   $num = $variables['quantity'] + 0;
   $integer = abs(intval($num));
@@ -298,19 +295,13 @@ function theme_worth_field(&$variables) {
 
 /*
  * Default implementation of theme 'worth_fields'
+ * puts a comma between each of several fields
  */
 function theme_worth_fields(&$variables) {
-  $element = $variables['element'];
-  $output = '';
-  foreach (element_children($element) as $delta) {
-    $subelement = array(
-      '#theme' => 'worth_field',
-      '#currcode' => $element[$delta]['currcode'],
-      '#quantity' => $element[$delta]['quantity']
-    );
-    $elements[] = drupal_render($subelement);
+  foreach (element_children($variables['element']) as $delta) {
+    $elements[] = drupal_render($variables['element'][$delta]);
   }
-  return implode("<br />\n", $elements);
+  return implode(", ", $elements);
 }
 
 /*

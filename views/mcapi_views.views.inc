@@ -125,19 +125,6 @@ function mcapi_views_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
-  $data['mcapi_transactions']['balance'] = array(
-    'help' => t("Sum of all transactions since started. Requires the 'participant' argument"),
-    'field' => array(
-      'title' => t('Running balance'),
-      'handler' => 'views_handler_field_mcapi_balance',
-      'click sortable' => TRUE
-    ),
-    'sort' => array(
-      'title' => t('Running balance'),
-      'handler' => 'views_handler_sort_mcapi_balance',
-    )
-  );
-
   $data['mcapi_transactions']['view_transaction'] = array(
     'field' => array(
       'title' => t('Link'),
@@ -175,16 +162,6 @@ function mcapi_views_views_data() {
     'defaults' => array('diff')
   );
 
-/*
-  $data['mcapi_index']['delta'] = array(
-    'title' => t('delta'), // The item it appears as on the UI,
-    'filter' => array(
-      'help' => t('Choose 0 to select every transaction once'),
-      'handler' => 'views_handler_filter_boolean_operator'
-    ),
-  );
- *
- */
   $data['mcapi_index']['uid1'] = array(
     'title' => t('1st user'), // The item it appears as on the UI,
     'help' => t('The the transactor, whose perspective we are looking from'),
@@ -203,21 +180,6 @@ function mcapi_views_views_data() {
       'base' => 'users',
       'field' => 'uid',
       'label' => t('2nd user'),
-    ),
-  );
-  $data['mcapi_index']['currcode'] = array(
-    'title' => t('Currency'),
-    'help' => t("The currency ID"),
-    'field' => array(
-      //this needs a custom handler
-      'handler' => 'views_handler_field_mcapi_index_currcode',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-       'handler' => 'views_handler_filter_mcapi_currency'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument',
     ),
   );
   $data['mcapi_index']['income'] = array(
@@ -301,6 +263,37 @@ function mcapi_views_views_data() {
       'handler' => 'views_handler_argument_mcapi_dates_various'
     )
   );
+
+  if (module_exists('mcapi_currencies')) {
+    $data['mcapi_index']['currcode'] = array(
+      'title' => t('Currency'),
+      'help' => t("The currency ID"),
+      'field' => array(
+        //this needs a custom handler
+        'handler' => 'views_handler_field_mcapi_index_currcode',
+        'click sortable' => TRUE,
+      ),
+      'filter' => array(
+         'handler' => 'views_handler_filter_mcapi_currency'
+      ),
+      'argument' => array(
+        'handler' => 'views_handler_argument',
+      ),
+    );
+  }
+  
+  //this is a powerful way for virtual field balances to be accessible to views based on the user table
+  //however it does require a query for each row which calls on a special API function
+  //so writing more of these might not be the best way
+  //also filter and sort handlers won't work on a virtual field
+  $data['users']['current_balance'] = array(
+    'title' => t('Current balance'),
+    'field' => array(
+      'help' => t("The balance for each user"),
+      'handler' => 'views_handler_field_mcapi_users_balance',
+      'click sortable' => TRUE
+    )
+  );
   
   return $data;
 }
@@ -320,4 +313,26 @@ function mcapi_views_data_alter(&$items) {
 function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payee']['#size'] = 30;
   $form['payer']['#size'] = 30;
+}
+
+
+
+/**
+ * Implements hook_views_plugins().
+ * can't get this working
+ */
+function mcapi_views_plugins() {
+  return array(
+    'module' => 'views', // This just tells our themes are elsewhere.
+    'row' => array(
+      'transaction' => array(
+        'title' => t('Transaction'),
+        'help' => t('The spacious, decorated, transaction certificate'),
+        'handler' => 'views_plugin_row_transaction',
+        'base' => array('mcapi_transactions'),//plugin will only be available when this is the base table
+        'uses options' => TRUE,
+        'type' => 'normal',
+      )
+    )
+  );
 }

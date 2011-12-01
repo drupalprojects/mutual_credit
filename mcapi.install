@@ -10,15 +10,8 @@
  * Implements hook_install().
  */
 function mcapi_install() {
-
-  //permit authenticated user to trade by default
-  if (!user_roles(FALSE, 'transact')) {
-    db_merge('role_permission')
-    ->key(array('permission' => 'transact', 'rid' => DRUPAL_AUTHENTICATED_RID))
-    ->fields(array('module' => 'mcapi'))
-    ->execute();
-  }
-  drupal_set_message(t("Authenticated user has been granted 'transact' permission."));
+  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('transact'));
+  drupal_set_message(t("For ease of setup, authenticated user has been granted 'transact' permission."));
 
   //here we set all the module weights together
   //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
@@ -27,10 +20,10 @@ function mcapi_install() {
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_currencies')->execute();
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_forms')->execute();
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_limits')->execute();
-  db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_services')->execute();
   db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_pending')->execute();
   db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_limits_equation')->execute();
-  db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_display')->execute();
+  db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_views')->execute();
+  db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_notification')->execute();
 
   //allow the body field to be added to currencies and transactions
   if ($data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField())) {
@@ -48,12 +41,6 @@ function mcapi_install() {
  * Remove any tables or variables that the module sets.
  */
 function mcapi_uninstall() {
-  //delete all the entities manually if there are less than 400.
-  //however it doesn't work because the table has already been removed...
-  $xids = db_query("SELECT xid FROM (mcapi_transactions)")->fetchCol();
-  foreach ($xids as $xid) {
-    //module_invoke_all('entity_delete', transaction_load($xid), 'transaction');
-  }
   //delete all the views this module declared
   if (module_exists('views')) {
     $view_ids = db_query("SELECT vid FROM {views_view} WHERE tag = 'mcapi'");
@@ -192,7 +179,7 @@ function mcapi_check_fields() {
       'display' => array(
         'default' => array(
           'label' => 'hidden',
-          'type' => 'text_default',
+          'type' => 'worth_fields',
           'weight' => 0,
         ),
       ),

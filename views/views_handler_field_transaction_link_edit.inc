@@ -5,24 +5,24 @@
 class views_handler_field_transaction_link_edit extends views_handler_field_transaction_link {
   function construct() {
     parent::construct();
-    $this->additional_fields['creator'] = 'creator';
-    $this->additional_fields['payer'] = 'payer';
-    $this->additional_fields['payer'] = 'payee';
-    $this->additional_fields['state'] = 'state';
+    //$this->additional_fields['creator'] = 'creator';
+    //$this->additional_fields['payer'] = 'payer';
+    //$this->additional_fields['payer'] = 'payee';
+    //$this->additional_fields['state'] = 'state';
   }
 
-  function render_link($data, $values) {
+  function render_link($data) {
     // ensure user has access to edit this transaction.
-    $transaction = transaction_load($this->get_value($values, 'xid'));
+    $transaction = transaction_load($data);
     if (!transaction_access('update', $transaction)) {
-      return;
+      return '';
     }
 
     $this->options['alter']['make_link'] = TRUE;
     $this->options['alter']['path'] = "transaction/$transaction->xid/edit";
     $this->options['alter']['query'] = drupal_get_destination();
 
-    $text = !empty($this->options['text']) ? $this->options['text'] : t('edit');
+    $text = !empty($this->options['text']) ? $this->options['text'] : t('edit (admin)');
     return $text;
   }
 }

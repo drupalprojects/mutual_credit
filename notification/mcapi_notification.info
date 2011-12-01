@@ -1,11 +1,11 @@
 ; $Id: 
-name = Mail notifications
+name = Notifications
 description = User settings and mail templates for transaction notification
 package = Mutual Credit
 core = 7.x
 
 files[] = mcapi_mail.module
-files[] = mcapi_mail.mcapiforms.inc
+files[] = mcapi_mail.mcapiforms_default.inc
 
 dependencies[] = mcapi
 dependencies[] = mcapi_forms

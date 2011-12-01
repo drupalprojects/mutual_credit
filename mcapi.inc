@@ -38,8 +38,8 @@ function mcapi_entity_info_inc() {
         'label' => t('Certificate'),
         'custom settings' => FALSE,
       ),
-      'summary' => array(
-        'label' => t('Summary'),
+      'sentence' => array(
+        'label' => t('sentence'),
         'custom settings' => FALSE,
       ),
     )
@@ -59,7 +59,7 @@ function mcapi_menu_inc() {
   );
   $items['admin/accounting/record'] = array(
     'title' => 'Record transaction',
-    'description' => 'Set all the properties manually on a new transaction',
+    'description' => 'Set all the properties manually on a new_transaction()',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_admin_form'),
     'access arguments' => array('manage all transactions'),
@@ -82,6 +82,8 @@ function mcapi_menu_inc() {
     'file' => 'mcapi.install',
   );
   $items['transaction/%transaction'] = array(
+    'title callback' => 'transaction_menu_title',
+    'title arguments' => array(1),
     'title' => 'Transaction certificate',
     // The page callback also invokes drupal_set_title() in case
     // the menu router's title is overridden by a menu link.
@@ -104,8 +106,8 @@ function mcapi_menu_inc() {
     'title' => 'Admin edit',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_admin_form', 1),
-    'access callback' => 'transaction_access',
-    'access arguments' => array('update', 1),
+    'access callback' => 'transaction_adminedit',
+    'access arguments' => array(1),
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
     'file' => 'mcapi.inc',
@@ -138,7 +140,7 @@ function mcapi_accounting() {
 function transaction_form($form, &$form_state, $transaction) {
   $form['xid'] = array(
     '#type'=> 'hidden',
-    '#value' => intval($transaction->xid)
+    '#value' => $transaction->xid
   );
   $form['payer'] = array(
     '#type' => 'textfield',
@@ -156,16 +158,18 @@ function transaction_form($form, &$form_state, $transaction) {
     '#element_validate' => array('mcapi_validate_transactor'),
     '#weight' => 9,
   );
+  $types = module_invoke_all('mcapi_info_types');
+  unset($types[array_search('unspecified', $types)]);
   $form['type'] = array(
     '#title' => t('Transaction type'),
-    '#options' => drupal_map_assoc(module_invoke_all('mcapi_info', 'types')),
+    '#options' => drupal_map_assoc($types),
     '#type' => 'select',
-    '#default_value' => $transaction->type,
+    '#default_value' => $transaction->type ? $transaction->type : 'auto',
     '#element_validate' => array('mcapi_validate_ttype'),
     '#required' => TRUE,
     '#weight' => 15
   );
-  $states = mcapi_transaction_states();
+  $states = mcapi_states();
   //perhaps 'unset' doesn't have to be a state?
   unset($states['unset']);
   $form['state'] = array(
@@ -187,8 +191,6 @@ function transaction_form($form, &$form_state, $transaction) {
     '#weight' => 20,
   );
 
-  $fields = mcapi_form_get_formAPI_fields();
-
   //TODO
   //I'm just fed up of multistep forms
   //the following doesn't retrieve default values out of form_state when we come back from step 2
@@ -199,7 +201,6 @@ function transaction_form($form, &$form_state, $transaction) {
     drupal_set_message(t('Cannot build transaction form:').' '. $e->getMessage(), 'error');
     return array();
   }
-
   //the default theming for multiple value fields is way over the top, so this module provides a cut down theme callback
   if (count(element_children($form['worth']['und'])) > 1) {
     $form['worth']['und']['#theme'] = 'worth_widget';
@@ -232,16 +233,16 @@ function transaction_form($form, &$form_state, $transaction) {
  * which also means it can validate partially completed forms
  */
 function transaction_form_validate($form, &$form_state) {
-  if (empty($form_state['#transaction'])) {
+  if (empty($form_state['transaction'])) {
     if (!empty($form_state['values']['xid'])) {
-      $form_state['#transaction'] = transaction_load($form_state['values']['xid']);
+      $form_state['transaction'] = transaction_load($form_state['values']['xid']);
     }
     else {
-      $form_state['#transaction'] = new transaction;
+      $form_state['transaction'] = new_transaction();
     }
   }
-  entity_form_submit_build_entity('transaction', $form_state['#transaction'], $form, $form_state);
-  $transaction = &$form_state['#transaction'];
+  entity_form_submit_build_entity('transaction', $form_state['transaction'], $form, $form_state);
+  $transaction = &$form_state['transaction'];
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   try {
     mcapi_transaction_validate($transaction, $form);
@@ -334,8 +335,9 @@ function mcapi_validate_title(&$element, $form_state) {
  * Validate callback for transaction form 'state' element
  */
 function mcapi_validate_state(&$element, $form_state) {
-  if (!in_array($element['#value'], mcapi_transaction_states())) return;
-  form_error($element, t('Invalid transaction state.') .' '. t('Suspected hacking attempt!'));
+  $states = mcapi_states();
+  if (isset($states[$element['#value']])) return;
+  form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['#value'])));
 }
 
 /*
@@ -343,8 +345,8 @@ function mcapi_validate_state(&$element, $form_state) {
  */
 function mcapi_validate_ttype(&$element, $form_state) {
   // _element_validate() checks select widgets in the same way
-  if (in_array( $element['#value'], module_invoke_all('mcapi_info', 'types'))) return;
-  form_error($element, t('Invalid transaction type.') .' '. t('Suspected hacking attempt!'));
+  if (in_array( $element['#value'], module_invoke_all('mcapi_info_types'))) return;
+  form_error($element, t('Invalid transaction type.'));
 }
 
 
@@ -353,6 +355,9 @@ function mcapi_access_unrestricted() {
 }
 function mcapi_access_none() {
   return FALSE;
+}
+function mcapi_access_creator($transaction, $account) {
+  return $transaction->creator == $account->uid;
 }
 function mcapi_access_authenticated($transaction, $account) {
   return $account->uid;
@@ -366,11 +371,6 @@ function mcapi_access_admin($transaction, $account, $currency) {
 function mcapi_access_participants($transaction, $account) {
   return in_array($account->uid, array($transaction->payer, $transaction->payee));
 }
-/*
-function mcapi_access_currency($transaction, $account, $currency) {
-  return currency_access($currency, $account);
-}
-*/
 
 function mcapi_membership_transact($currency, $account) {
   return user_access('transact', $account);

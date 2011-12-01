@@ -20,7 +20,6 @@ function mcapi_currencies_ctools_plugin_api() {
 }
 
 function mcapi_currencies_menu() {
-
   $items['currency/add'] = array(
     'title' => 'Declare currency',
     'page callback' => 'drupal_get_form',
@@ -38,17 +37,9 @@ function mcapi_currencies_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'mcapi.inc',
   );
-  //this is supposed to be for development purposes only, and may not apply to some controllers
-  $items['admin/accounting/refresh/%currency'] = array(
-    'title' => 'Modify currency',
-    'page callback' => 'mcapi_balances_refresh',
-    'page arguments' => array(3),
-    'access arguments' => array('configure all currencies'),
-    'type' => MENU_CALLBACK,
-    'file' => 'mcapi.inc',
-  );
   return $items;
 }
+
 /*
  * Implements hook_menu_alter
  * Gets rid of the menu item for editing the default currency variable
@@ -105,7 +96,20 @@ function mcapi_currencies_form(&$form, &$form_state) {
   }
 }
 
-function mcapi_currencies_permission() {
+/*
+ * implements hook_form_FORMID_alter
+ * because if you add #submit handlers before this then it doesn't do so automatically
+ */
+function mcapi_form_mcapi_currencies_form_alter() {
+  $form['#submit'][] = 'currencies_recache';
+}
+
+
+
+/*
+ * Implements hook_mcapi_info_drupal_permissions
+ */
+function mcapi_currencies_mcapi_info_permissions() {
   return array(
     'configure all currencies' => array(
       'title' => t('Configure all currencies'),
@@ -119,8 +123,9 @@ function mcapi_currencies_permission() {
 }
 
 
+
 function transaction_validate_currency_access($form, $form_state) {debug('need to check each transactee can use this/these currencies');
-  $transaction = &$form_state['#transaction'];
+  $transaction = &$form_state['transaction'];
   $currency = currency_load($transaction->currcode);
   $participants = array('payer', 'payer');
   foreach ($participants as $participant) {
@@ -166,7 +171,6 @@ function mcapi_currencies_form_validate() {
  * callback from ctools export_ui plugin
  */
 function mcapi_currencies_form_submit($form, &$form_state) {
-  currencies_recache();
   form_state_values_clean($form_state);
   //I would have thought this database key would have been provided automacically
   //since the field was created automatically
