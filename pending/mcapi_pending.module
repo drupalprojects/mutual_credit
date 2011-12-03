@@ -354,7 +354,6 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
     //disable the fields that would change the meaning of the form.
     $form['workflow']['outgoing']['#type'] = 'hidden';
     $form['workflow']['incoming']['#disabled'] = TRUE;
-    $form['#validate'][] = 'mcapi_add_signatories';
   }
 }
 

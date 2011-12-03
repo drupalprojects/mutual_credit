@@ -442,7 +442,7 @@ function _mcapi_form_in_block($mcapi_form) {
 
 function _macpi_forms_direction_widget($data) {
   return array(
-    '#type' => $data['widget'],
+    '#type' => $data['widget'] ? $data['widget'] : 'select',
     '#options' => array(
       'incoming' => $data['incoming'],
       'outgoing' => $data['outgoing']

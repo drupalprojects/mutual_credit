@@ -198,19 +198,23 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#options' => $user_chooser_options,
       '#default_value' => isset($mcapi_form['2ndperson']['args']) ? $mcapi_form['2ndperson']['args'] : 'mcapi_access_check_roles:2'
     );
-
     $direction_widget = _macpi_forms_direction_widget($mcapi_form['direction']);
+    $options = array(
+      'outgoing' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
+      'incoming' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment')
+    );
     $form['direction'] = _mcapi_form_shared($mcapi_form, $direction_widget, 'direction');
+    $form['direction']['shared']['preset']['#options'] = $options;
     //not sure these are ever used...
     $form['direction']['incoming'] = array(
       '#title' => t('Name of incoming transaction'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
+      '#default_value' => $options['incoming'],
     );
     $form['direction']['outgoing'] = array(
       '#title' => t('Name of outgoing transaction'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment'),
+      '#default_value' => $options['outgoing'],
     );
     $form['direction']['widget'] = array(
       '#title' => t('Widget'),
@@ -277,15 +281,12 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#description' => t('For use in block title and menu links.') .' '. t('Plain text only.'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['step-1']['title']) ? $mcapi_form['step-1']['title'] : '',
-      '#required' => TRUE
     ),
     'template' => array(
       '#title' => t('Main form'),
       '#type' => 'textarea',
       '#rows' => isset($mcapi_form['step-1']['template']) ? count(explode("\n", $mcapi_form['step-1']['template'])) : 5,
       '#default_value' => isset($mcapi_form['step-1']['template']) ? $mcapi_form['step-1']['template'] : '',
-      '#element_validate' => array('mcapi_forms_template_validate'),
-      '#required' => TRUE,
     ),
   );
   $form['step-2'] = array(
@@ -313,6 +314,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#weight' => 2,
     )
   );
+  $form['#validate'][] = 'mcapi_forms_template_validate';
   $form['#submit'][] = 'menu_rebuild';
 }
 
@@ -374,4 +376,33 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
 
 function mcapi_forms_ajax_settings($form, &$form_state) {
   return $form;
+}
+
+
+/*
+ * form validation callback for edit_mcapi_form
+ */
+function mcapi_forms_template_validate($form, &$form_state) {
+  if (empty($form['step-1']['template']['#value']) && empty($form['step-2']['template']['#value'])) {
+    form_set_error('template-1', t('The form template is empty'));
+  }
+  foreach (array('1', '2') as $num) {
+    $form_state['values']['step-1']['template'] = filter_xss($form['step-'.$num]['template']['#value'], array('a', 'p', 'br', 'font', 'style'));
+    //each template must have a title
+    if (!empty($form_state['values']['step-'.$num]['template']) && empty ($form_state['values']['step-'.$num]['template'])) {
+      form_set_error(t('Every template must have a title'));
+    }
+  }
+}
+
+/*
+ * element validate callback
+ * make sure at least one incoming state is chosen for the workflow
+ * for some reason admin.inc isn't loading up on form submission, despite using form_load_include
+ * so this has to go in the module file until someone wants to sort it out!
+ */
+function mcapi_form_workflow_incoming_validate(&$element, $form_state) {
+  if (!array_filter($form_state['values']['workflow']['incoming'])) {
+    form_error($element, t('At least one incoming state must be selected'));
+  }
 }

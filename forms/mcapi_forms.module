@@ -247,17 +247,6 @@ function _get_deepest_child($element) {
   return $element;
 }
 
-/*
- * element validate callback
- * make sure at least one incoming state is chosen for the workflow
- * for some reason admin.inc isn't loading up on form submission, despite using form_load_include
- * so this has to go in the module file until someone wants to sort it out!
- */
-function mcapi_form_workflow_incoming_validate(&$element, $form_state) {
-  if (!array_filter($form_state['values']['workflow']['incoming'])) {
-    form_error($element, t('At least one incoming state must be selected'));
-  }
-}
 
 function mcapi_form_validate_worth(&$element, &$form_state) {
   //debug($element);
@@ -267,9 +256,6 @@ function mcapi_form_validate_worth(&$element, &$form_state) {
 function mcapi_path_validate(&$element, $form_state) {
 }
 
-function mcapi_forms_template_validate(&$element, &$form_state) {
-  $form_state['values']['templates']['template-1'] = filter_xss($element['#value'], array('a', 'p', 'br', 'font', 'style', ));
-}
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   form_state_values_clean($form_state);
   $values = &$form_state['values'];

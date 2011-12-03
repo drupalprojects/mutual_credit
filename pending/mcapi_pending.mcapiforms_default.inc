@@ -24,11 +24,11 @@ function mcapi_pending_mcapiforms_default() {
     ),
     'workflow' => array(
       'incoming' => array(
-        'pending' => 'Pending',
+        'pending' => 'pending',
         'unset' => 0,
         'finished' => 0,
       ),
-      'outgoing' => '0',
+      'outgoing' => 'pending',
     ),
     'currcode' => array(
       'shared' => array(
