@@ -43,14 +43,25 @@ function mcapi_forms_form($form, &$form_state) {
     drupal_set_title(mcapi_form_template($mcapi_form)->title);
   }
   //build for the first time
+  //TODO this assumes the entity language is 'und'etermined
   if (empty($transaction->worth)) {
     //put the additional field preset values into the transaction object so they end up in the form
+    //tricky stuff because different fields have different internal structures
     foreach (mcapi_form_get_formAPI_fields() as $fieldname => $field) {
-      //this assumes undetermined language and only one preset value!!!
-      foreach ($field['und'][0]['#columns'] as $column) {
+      if (isset($field['und']['#columns'])) {
         if (empty($form_state['transaction']) && isset($mcapi_form->data[$fieldname]['shared']['preset']['und'])) {
           //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
           $transaction->{$fieldname}['und'][0][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][0][$column];
+        }
+      }
+      else {
+        foreach (element_children($field['und']) as $delta) {
+          foreach ($field['und'][$delta]['#columns'] as $column) {
+            if (empty($form_state['transaction']) && isset($mcapi_form->data[$fieldname]['shared']['preset']['und'])) {
+              //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
+              $transaction->{$fieldname}['und'][$delta][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][$delta][$column];
+            }
+          }
         }
       }
     }
@@ -133,8 +144,9 @@ function mcapi_forms_form($form, &$form_state) {
   }
   //we now modify the transaction form fields according to the form settings for each field
   foreach (mcapi_form_get_formAPI_fields() as $fieldname => $field) {
-    $form[$fieldname]['#disabled'] = $mcapi_form->data[$fieldname]['shared']['disable'];
-    $form[$fieldname]['#required'] = $mcapi_form->data[$fieldname]['shared']['required'];
+    //@ needed in case the form builder wasn't saved since the field was added
+    $form[$fieldname]['#disabled'] = @$mcapi_form->data[$fieldname]['shared']['disable'];
+    $form[$fieldname]['#required'] = @$mcapi_form->data[$fieldname]['shared']['required'];
   }
 
   mcapi_unset_recursive($form, '#title');

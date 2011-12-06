@@ -43,7 +43,7 @@ $plugin = array(
   'form' => array(
     'settings' => 'mcapi_edit_mcapi_form',
     'validate' => 'mcapi_edit_mcapi_form_validate',
-    'submit' => 'mcapi_edit_mcapi_form_submit',
+    //'submit'   => 'mcapi_edit_mcapi_form_submit',
   ),
   'strings' => array(
     'confirmation' => array(

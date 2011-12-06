@@ -24,6 +24,14 @@ function mcapi_notification_form_ctools_export_ui_edit_item_form_alter(&$form, $
   ) + mcapi_notification_fields($preset);
 }
 
+function mcapi_unique_mail_subjects($element, $form_state) {
+  foreach (mcapi_forms_load() as $mcapi_form) {
+    if (@$mcapi_form->data['email_template']['subject'] == $element['#value']) {
+      form_error($element, t('Mail subject line is the same as for form @formname', array('@formname' => $mcapi_form->name)));
+    }
+  }
+}
+
 /*
  * implements hook_form_FORMID_alter
  */
@@ -109,13 +117,13 @@ The team at [site:name]");
  * this module will email users with notifications about transactions in which they are involved
  */
 function mcapi_notification_form_user_profile_form_alter(&$form, $form_state) {
-  foreach (mcapi_forms_load() as $mcapi_form) {
-    $subjects[$mcapi_form->name] = $mcapi_form->data['email_template']['subject'];
-  }
-  $newforms = array_diff_key($subjects, $data['mutual_credit_mail']);
-  $moreorless = round(count(array_filter($data['mutual_credit_mail']))/count($data['mutual_credit_mail']), 0);
-  debug($moreorless);
   $data = &$form['#user']->data;
+  foreach (mcapi_forms_load() as $mcapi_form) {
+    if (!empty($mcapi_form->data['email_template']['subject'])) {
+      $subjects[$mcapi_form->name] = $mcapi_form->data['email_template']['subject'];
+    }
+  }
+
   $form['mutual_credit_notifications'] = array(
     '#title' => t('Transaction notifications'),
     '#description' => t('The system will inform you when you are involved in transactions'),
@@ -162,10 +170,11 @@ function mcapi_notification_fields($preset) {
   return array(
     'subject' => array(
       '#title' => t('Subject'),
-      '#description' => t('This string is also used on the user profile page to determine if they want to receive this mail'),
+      '#description' => t('This string must be unique because it used on the user profile page to determine which forms send them mail'),
       '#type' => 'textfield',
       '#default_value' => empty($preset['subject']) ? _mcapi_notification_text('subject') : $preset['subject'],
       '#maxlength' => 180,
+      '#element_validate' => array('mcapi_unique_mail_subjects')
     ),
     'body' => array(
       '#title' => t('Body'),

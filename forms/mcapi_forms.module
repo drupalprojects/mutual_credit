@@ -143,11 +143,6 @@ function mcapi_forms_theme($existing, $type, $theme, $path) {
  * callback specified in the export_ui plugin
  */
 function mcapi_edit_mcapi_form(&$form, &$form_state) {
-  //I can't think of a better place to put this.
-  //menu needs rebuilding when a form is saved
-  //but I can't mess with the ctools submit handlers
-  //were does views do it?
-  menu_rebuild();
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_forms') .'/mcapi_forms.admin.inc';
   $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
   $form['#tree'] = TRUE;
@@ -155,6 +150,14 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
   //this big form builder function is kept in admin.inc
   form_load_include($form_state, 'admin.inc', 'mcapi_forms');
   return _edit_mcapi_form($form, $form_state);
+}
+/*
+ * implements hook_form_FORMID_alter
+ */
+function mcapi_forms_form_mcapi_edit_mcapi_form_alter(&$form, &$form_state) {
+  $form['#validate'][] = 'mcapi_forms_template_validate';
+  $form['#submit'][] = 'menu_rebuild';
+  $form_state['redirect'] = 'admin/accounting/forms';
 }
 
 /*
@@ -219,6 +222,7 @@ function mcapi_form_edit_wrapper($transaction) {
     return drupal_get_form('transaction_admin_form', $transaction);
   }
 }
+
 /*
  * return an array of fields added to the transaction entity,  - critically, keyed by machine_name
  */
@@ -254,25 +258,29 @@ function mcapi_form_validate_worth(&$element, &$form_state) {
 }
 
 function mcapi_path_validate(&$element, $form_state) {
+
 }
 
+/*
+ * validate callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
+ * the $form_state[item] is the object to be saved, derived from $form_state[values]
+ */
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   form_state_values_clean($form_state);
-  $values = &$form_state['values'];
-  unset($values['xfid']);
   //we need to start with an existing ctools object which contains essential default properties
-
-  $mcapi_form = empty($form_state['item']) ? ctools_export_crud_new('mcapi_forms') : $form_state['item'];
-  $mcapi_form->name = $values['info']['name'];//this isn't editable at the moment
-  unset($values['name']);
-  $mcapi_form->data = $values;
-  $form_state['item'] = $mcapi_form;
+  if (empty($form_state['item'])) {
+    $form_state['item'] = ctools_export_crud_new('mcapi_forms');
+  }
+  $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
+  unset($form_state['values']['name'], $form_state['values']['xfid']);
+  $form_state['item']->data = $form_state['values'];
 }
 
-//I think this is completely wrong, but I just couldn't get ctools to work without proper documentation
-function mcapi_edit_mcapi_form_submit($form, &$form_state) {
-  $form_state['redirect'] = 'admin/accounting/forms'; //where the menu_rebuild is run
-}
+/*
+ * submit callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
+ * NOT NEEDED
+function mcapi_edit_mcapi_form_submit($form, &$form_state) {}
+ */
 
 /*
  * implements hook_form_FORMID_alter
@@ -296,4 +304,3 @@ function mcapi_hide_tabs() {
   );
   drupal_add_html_head($data, 'hide_tabs');
 }
-

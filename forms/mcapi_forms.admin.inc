@@ -314,8 +314,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#weight' => 2,
     )
   );
-  $form['#validate'][] = 'mcapi_forms_template_validate';
-  $form['#submit'][] = 'menu_rebuild';
 }
 
 
