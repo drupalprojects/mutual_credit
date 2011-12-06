@@ -1,7 +1,0 @@
-; $Id: 
-name = Services integration
-description = Perform transaction operations using a web API (unfinished)
-package = Mutual credit
-core = "7.x"
-dependencies[] = mcapi
-dependencies[] = services
