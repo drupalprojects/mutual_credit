@@ -187,7 +187,6 @@ function mcapi_forms_form($form, &$form_state) {
   $form['#template'] = mcapi_form_template($mcapi_form, $form_state['step'])->template;
   //this is rather elaborate and early, but we NOW have to set the type of fields not being used in the template as hidden
   $form['#tokens'] = mcapi_form_collect_tokens($mcapi_form);
-
   //hide the fields which don't appear as tokens
   foreach ($form['#tokens'] as $fieldname) {
     if (strpos($form['#template'], "[$fieldname]") === FALSE) {
@@ -225,7 +224,7 @@ function mcapi_form_default_value(&$element, $settings) {
 function mcapi_form_collect_tokens(&$mcapi_form) {
   $tokens = $mcapi_form->data['perspective'] == 3 ? array('payee', 'payer') : array('2ndperson', 'direction');
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
-  $fields = mcapi_form_get_formAPI_fields();
+  $fields = array_keys(mcapi_form_get_formAPI_fields());
   //this picks up 'worth' and any other fields on the transaction entity
   return drupal_map_assoc($tokens) + drupal_map_assoc($fields);
 }
