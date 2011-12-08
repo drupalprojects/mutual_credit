@@ -25,8 +25,8 @@ function mcapi_install() {
   db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_views')->execute();
   db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_notification')->execute();
 
-  //allow the body field to be added to currencies and transactions
-  if ($data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField())) {
+  if (module_exists('text')) {
+    $data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField());
     if (!in_array('transaction', $data['entity_types'])) {
       $data['entity_types'][] = 'transaction';
       $data_col = serialize($data);
@@ -57,8 +57,8 @@ function mcapi_uninstall() {
   }
 
   //truncate the tables containing field_api data
-  db_query('TRUNCATE table {field_data_worth}');
-  db_query('TRUNCATE table {field_revision_worth}');
+  //db_query('TRUNCATE table {field_data_worth}');
+  //db_query('TRUNCATE table {field_revision_worth}');
 
   variable_del('mcapi_controller');
   variable_del('mcapi_db_read');
@@ -196,7 +196,7 @@ function mcapi_controller_options_form($form_state) {
   cache_clear_all('*', 'cache');
   $controllers = module_implements('transaction_controller');
   $form['mcapi_controller'] = array(
-    '#title' => 'Entity controller file',
+    '#title' => 'Entity controller module',
     '#description' => t('Choose which module, with a .controller file, to use.'),
     '#type' => 'radios',
     '#options' => drupal_map_assoc($controllers),

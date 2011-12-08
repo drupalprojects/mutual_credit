@@ -109,7 +109,7 @@ function mcapi_form_mcapi_currencies_form_alter() {
 /*
  * Implements hook_mcapi_info_drupal_permissions
  */
-function mcapi_currencies_mcapi_info_permissions() {
+function mcapi_currencies_mcapi_info_drupal_permissions() {
   return array(
     'configure all currencies' => array(
       'title' => t('Configure all currencies'),

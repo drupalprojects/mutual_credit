@@ -225,7 +225,7 @@ function mcapi_form_default_value(&$element, $settings) {
 function mcapi_form_collect_tokens(&$mcapi_form) {
   $tokens = $mcapi_form->data['perspective'] == 3 ? array('payee', 'payer') : array('2ndperson', 'direction');
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
-  $fields = db_query("SELECT field_name FROM {field_config_instance} WHERE bundle = 'transaction' AND deleted = 0")->fetchCol();
+  $fields = mcapi_form_get_formAPI_fields();
   //this picks up 'worth' and any other fields on the transaction entity
   return drupal_map_assoc($tokens) + drupal_map_assoc($fields);
 }

@@ -39,7 +39,6 @@ function mcapi_pending_menu() {
 }
 
 function mcapi_pending_menu_alter(&$items) {
-  if (!isset($items['transaction/%transaction/sign'])) {debug('transaction/%transaction/sign not hooked'); return;}
   //this menu item is generated from the transaction form-in-code
   //it can ONLY be seen by signatories
   $new = array(
@@ -198,6 +197,7 @@ function mcapi_pending_views_api() {
 
 /*
  * Implements ctools hook_ctools_plugin_api
+ * not sure if this is needed
  */
 function mcapi_pending_ctools_plugin_api() {
   return array(

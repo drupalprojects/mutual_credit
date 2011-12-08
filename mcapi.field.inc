@@ -20,7 +20,7 @@ function mcapi_field_info() {
  * prevents editing of the worth field attached to the transaction entity.
  */
 function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
-  if ($form['#entity_type'] == 'transaction') {
+  if ($form['#entity_type'] == 'transaction' && isset($form['fields']['worth'])) {
     $form['fields']['worth']['type']['#type'] = 'markup';
     $form['fields']['worth']['widget_type']['#type'] = 'markup';
   }
@@ -92,10 +92,11 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
   $currencies = empty($element['#currcode']) ?
     currencies_load($GLOBALS['user']) : //needs to be for this current user
     array($element['#currcode'] => currency_load($element['#currcode']));
+
+  $currcode = !empty($element['#currcode']) ? $element['#currcode'] : key($currencies);
   switch (count($currencies)) {
     case 0: throw new Exception (t('No currencies available to user.'));
     case 1:
-      $currcode = !empty($element['#currcode']) ? $element['#currcode'] : key($currencies);
       $element['currcode'] = array(
         '#type' => 'hidden',
         '#default_value' => $currcode,
@@ -106,7 +107,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
       $element['currcode'] = array(
         '#type' => 'select',
         '#options' => currency_select($currencies),
-        '#default_value' => $item['currcode'],
+        '#default_value' => $currcode,
         '#weight' => -1,
         '#ajax' => array(
           'callback' => 'mcapi_ajax_worth',
@@ -128,17 +129,6 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
  * tricky bit is setting the field[#default_value]s which are sometimes raw field data and sometimes from the db, sometimes passed in
  */
 function mcapi_field_widget_process($element, $form_state, $form) {
-  $default = array();
-  if (empty($element['currcode']['#options'])) {
-    //applies if there is only one currency
-    if (isset($element['currcode']['#default_value'])) {
-      //$default['currcode'] = $element['currcode']['#default_value'];
-    }
-    else {
-      //$default['currcode'] = currency_default()->info['currcode'];
-    }
-  }
-  //rather too many permutations here, not helped by the number of ways in which the element default values could be passed
   //usually this would have been done in the form build, but ajax needs a chance to change it, and ajax has pulled the $form out of cache
   //ajax
   if (!empty($form_state['input']['worth']['und'][$element['#delta']])) {//'input' works for ajax AND multistep
@@ -164,9 +154,9 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   if (!empty($default['quantity'])) {
     $element['quantity']['#default_value'] = $default['quantity'];
   }
-
-
-  $currency = currency_load($element['currcode']['#default_value']);//this should always be available
+  
+  $currcode = empty($default['currcode']) ? $element['currcode']['#default_value'] : $default['currcode'];
+  $currency = currency_load($currcode);//this should always be available
   if (!empty($currency->divisions)) {
     $element['division'] = array(
       '#title' => t('Fraction'),

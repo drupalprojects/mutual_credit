@@ -38,6 +38,7 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
+  debug($items);
   return $items;
 }
 
