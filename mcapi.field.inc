@@ -258,6 +258,30 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
 }
 
 /*
+ * called by mcapi_theme, which implements hook_theme
+ */
+function mcapi_theme_fields() {
+  return array(
+    'worth_field' => array(
+      'variables' => array(
+        'currcode' => '',
+        'quantity' => 0
+      )
+    ),
+    'worth_fields' => array(
+      'render element' => 'element'
+    ),
+    'worth_widget_currcode' => array(
+      'render element' => 'element'
+    ),
+    'worth_widgets' => array(
+      'render element' => 'element'
+    )
+  );
+  return $items;
+}
+
+/*
  * Default implementation of theme 'worth_field'
  */
 function theme_worth_field(&$variables) {

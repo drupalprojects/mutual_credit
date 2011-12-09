@@ -2,6 +2,8 @@
 
 /*
  * Implements ctools hook mcapi_default_forms
+ * N.B. Because ctools doesn't seem to run cache as well as might be expected, this is called any time a form is needed
+ * Also: these are saved in the menu item arguments which may cause unexpected cacheing behaviour
  */
 function mcapi_forms_mcapiforms_default() {
   $forms = array('1stparty', '3rdparty', 'one2many', 'many2one', 'correction');
@@ -30,13 +32,6 @@ function mcapiform_default_1stparty() {
       'menu_link' => 'navigation',
       'use_block' => 1,
     ),
-    'workflow' => array(
-      'incoming' => array(
-        'unset' => 'Unset',
-        'finished' => 0,
-      ),
-      'outgoing' => '0',
-    ),
     '2ndperson' => array(
       'shared' => array(
         'preset' => '',
@@ -58,15 +53,19 @@ function mcapiform_default_1stparty() {
     'worth' => array(
       'shared' => array(
         'preset' => array(
-          'integer' => '0',
-          'currcode' => 'drupal7',
-          'division' => '0',
+          'und' => array(
+            0 => array(
+              'currcode' => 'def_drup',
+              'quantity' => '1',
+            ),
+          ),
         ),
         'disable' => 0,
         'required' => 1,
       ),
     ),
     'submission' => array(
+      'outgoing' => 'finished',
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),
@@ -115,13 +114,6 @@ function mcapiform_default_3rdparty() {
       'menu_link' => 'navigation',
       'use_block' => 1,
     ),
-    'workflow' => array(
-      'incoming' => array(
-        'unset' => 'Unset',
-        'finished' => 0,
-      ),
-      'outgoing' => '0',
-    ),
     'mcapi_form_fields' => array(
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
@@ -146,15 +138,19 @@ function mcapiform_default_3rdparty() {
     'worth' => array(
       'shared' => array(
         'preset' => array(
-          'integer' => '0',
-          'currcode' => 'drupal7',
-          'division' => '0',
+          'und' => array(
+            0 => array(
+              'currcode' => 'def_drup',
+              'quantity' => '0',
+            ),
+          ),
         ),
         'disable' => 0,
         'required' => 1,
       ),
     ),
     'submission' => array(
+      'outgoing' => 'finished',
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),
@@ -205,13 +201,6 @@ function mcapiform_default_many2one() {
       'menu_link' => 'navigation',
       'use_block' => 0,
     ),
-    'workflow' => array(
-      'incoming' => array(
-        'unset' => 'Unset',
-        'finished' => 0,
-      ),
-      'outgoing' => '0',
-    ),
     'mcapi_form_fields' => array(
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
@@ -236,15 +225,19 @@ function mcapiform_default_many2one() {
     'worth' => array(
       'shared' => array(
         'preset' => array(
-          'integer' => '0',
-          'currcode' => 'drupal7',
-          'division' => '0',
+          'und' => array(
+            0 => array(
+              'currcode' => 'def_drup',
+              'quantity' => '0',
+            ),
+          ),
         ),
         'disable' => 0,
         'required' => 1,
       ),
     ),
     'submission' => array(
+      'outgoing' => 'finished',
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
@@ -298,13 +291,6 @@ function mcapiform_default_one2many() {
       'menu_link' => 'navigation',
       'use_block' => 0,
     ),
-    'workflow' => array(
-      'incoming' => array(
-        'unset' => 'Unset',
-        'finished' => 0,
-      ),
-      'outgoing' => '0',
-    ),
     'mcapi_form_fields' => array(
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
@@ -329,15 +315,19 @@ function mcapiform_default_one2many() {
     'worth' => array(
       'shared' => array(
         'preset' => array(
-          'integer' => '0',
-          'currcode' => 'drupal7',
-          'division' => '0',
+          'und' => array(
+            0 => array(
+              'currcode' => 'def_drup',
+              'quantity' => '0',
+            ),
+          ),
         ),
         'disable' => 0,
         'required' => 1,
       ),
     ),
     'submission' => array(
+      'outgoing' => 'finished',
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
@@ -387,15 +377,8 @@ function mcapiform_default_correction() {
     'architecture' => array(
       'path' => 'transaction/%transaction/correction',
       'access' => 'user_access:transact',
-      'menu_link' => '0',
-      'use_block' => 0,
-    ),
-    'workflow' => array(
-      'incoming' => array(
-        'finished' => 'Finished',
-        'unset' => 0,
-      ),
-      'outgoing' => '0',
+      'menu_link' => 'finished',
+      'use_block' => 'finished',
     ),
     'mcapi_form_fields' => array(
       'mcapi_form_fields__active_tab' => 'edit-worth',
@@ -421,15 +404,19 @@ function mcapiform_default_correction() {
     'worth' => array(
       'shared' => array(
         'preset' => array(
-          'integer' => '0',
-          'currcode' => 'drupal7',
-          'division' => '0',
+          'und' => array(
+            0 => array(
+              'currcode' => 'def_drup',
+              'quantity' => '0',
+            ),
+          ),
         ),
         'disable' => 0,
         'required' => 1,
       ),
     ),
     'submission' => array(
+      'outgoing' => '',
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),

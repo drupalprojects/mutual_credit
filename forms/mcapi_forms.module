@@ -7,17 +7,10 @@
 function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
-  $items['transaction/%transaction/formedit'] = array(
-    'title' => 'Modify transaction',
-    'page callback' => 'mcapi_form_edit_wrapper',
-    'page arguments' => array(1), //+ we need the right form object
-    'access callback' => 'transaction_access',
-    'access arguments' => array('update', 1), //+ the right form object
-    'type' => MENU_LOCAL_ACTION,
-    'file' => 'mcapi_forms.inc',
-  );
   //one menu callback for each form.
   $mcapi_forms = mcapi_forms_load();
+  $editform = $mcapi_forms['correction'];
+  unset($mcapi_forms['correction']); //see below
   module_load_include('inc', 'mcapi_forms');
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
@@ -26,7 +19,6 @@ function mcapi_forms_menu() {
     $parts = explode('/', $menu['path']);
     $args = array();
     if ($key = array_search('%transaction', $parts)) $args[] = $key;
-
     $items[$menu['path']] = array(
       'title' => mcapi_form_template($mcapi_form, 1)->title,
       'page callback' => 'mcapi_get_form',
@@ -38,10 +30,17 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
-  debug($items);
+  $items['transaction/%transaction/formedit'] = array(
+    'title' => 'Modify transaction',
+    'page callback' => 'mcapi_get_form',
+    'page arguments' => array($editform, 1), //+ we need the right form object
+    'access callback' => 'transaction_access',
+    'access arguments' => array('update', 1), //+ the right form object
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'mcapi_forms.inc',
+  );
   return $items;
 }
-
 
 /*
  * implements hook_menu_alter
@@ -152,6 +151,7 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
   form_load_include($form_state, 'admin.inc', 'mcapi_forms');
   return _edit_mcapi_form($form, $form_state);
 }
+
 /*
  * implements hook_form_FORMID_alter
  */
@@ -210,21 +210,6 @@ function mcapi_access_check_roles($rid) {
 }
 
 /*
- * menu callback
- * determines which form to use to edit the transaction,
- * on the basis of the transaction 'type', which is the form name
- */
-function mcapi_form_edit_wrapper($transaction) {
-  if ( $mcapi_form = mcapi_forms_load($transaction->type)) {
-    return drupal_get_form('mcapi_forms_form', $transaction, $mcapi_form);
-  }
-  else {
-    drupal_set_message(t('Appropriate transaction editing form not found: @formname; reverting to admin edit form', array('@formname' => $transaction->type)), 'warning');
-    return drupal_get_form('transaction_admin_form', $transaction);
-  }
-}
-
-/*
  * return an array of fields added to the transaction entity,  - critically, keyed by machine_name
  */
 function mcapi_form_get_formAPI_fields() {
@@ -239,27 +224,6 @@ function mcapi_form_get_formAPI_fields() {
     $fields[$fieldname] = $pseudo_form[$fieldname];
   }
   return $fields;
-}
-
-//there is a function very similar to this in form api.
-//it doesn't explore or assume, but takes the parents as an argument.
-function _get_deepest_child($element) {
-  $children = element_children($element);
-  if (count($children)) {
-    $last_child = array_pop($children);
-    return _get_deepest_child($element[$last_child]);
-  }
-  return $element;
-}
-
-
-function mcapi_form_validate_worth(&$element, &$form_state) {
-  //debug($element);
-  //debug($form_state['values']);
-}
-
-function mcapi_path_validate(&$element, $form_state) {
-
 }
 
 /*
@@ -305,3 +269,8 @@ function mcapi_hide_tabs() {
   );
   drupal_add_html_head($data, 'hide_tabs');
 }
+
+/*
+ * this needs a bit of thought...
+ */
+function mcapi_path_validate(&$element, &$form_state) {}

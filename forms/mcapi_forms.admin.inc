@@ -111,32 +111,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
   unset($outgoing_options['unset']);
   $outgoing_options['null'] = '('.t('inherit').')';
 
-  $form['workflow'] = array(
-    '#title' => t('State flow'),
-    '#description' => t('Beyond simply creating and editing transactions, these forms move the transactions between states'),
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => !empty($form_id),
-    'incoming' => array(
-      '#title' => t('Allow only incoming states'),
-      '#description' => t('Form will not build if incoming transaction is in the wrong state'),
-      //this should be checkboxes, but there's a problem with checkboxes and select multiple for values with a key of 0
-      '#type' => 'checkboxes',
-      '#options' => $incoming_options,
-      '#default_value' => isset($mcapi_form['workflow']['incoming']) ? $mcapi_form['workflow']['incoming'] : array('Unset'),
-      '#element_validate' => array('mcapi_form_workflow_incoming_validate'),
-      '#weight' => 1,
-    ),
-    'outgoing' => array(
-      '#title' => t('Save to state'),
-      '#description' => t('Transaction will be submitted in this state'),
-      '#type' => 'select',
-      '#options' => $outgoing_options,
-      '#default_value' => empty($mcapi_form['workflow']['outgoing']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['workflow']['outgoing'],
-      '#weight' => 3,
-    ),
-    '#weight' => 4,
-  );
   $form['perspective'] = array(
     '#title' => t('perspective'),
     '#description' => t('Whether this is completed by a 3rd party or a participant.'),
@@ -240,6 +214,14 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => !empty($form_id),
+    'outgoing' => array(
+      '#title' => t('Save to state'),
+      '#description' => t('Transaction will be submitted in this state'),
+      '#type' => 'select',
+      '#options' => $outgoing_options,
+      '#default_value' => empty($mcapi_form['submission']['outgoing']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['submission']['outgoing'],
+      '#weight' => 3,
+    ),
     'button' => array(
       '#title' => t('Save button'),
       '#description' => t("The text to appear on the 'save' button, or the absolute url of an image"),
@@ -390,17 +372,5 @@ function mcapi_forms_template_validate($form, &$form_state) {
     if (!empty($form_state['values']['step-'.$num]['template']) && empty ($form_state['values']['step-'.$num]['template'])) {
       form_set_error(t('Every template must have a title'));
     }
-  }
-}
-
-/*
- * element validate callback
- * make sure at least one incoming state is chosen for the workflow
- * for some reason admin.inc isn't loading up on form submission, despite using form_load_include
- * so this has to go in the module file until someone wants to sort it out!
- */
-function mcapi_form_workflow_incoming_validate(&$element, $form_state) {
-  if (!array_filter($form_state['values']['workflow']['incoming'])) {
-    form_error($element, t('At least one incoming state must be selected'));
   }
 }

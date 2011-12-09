@@ -251,6 +251,7 @@ function transaction_form_validate($form, &$form_state) {
    drupal_set_message($e->getMessage(), 'warning');
   }
 }
+
 /*
  * Universal transaction validation
  * called from transaction_form_validate
@@ -375,3 +376,4 @@ function mcapi_access_participants($transaction, $account) {
 function mcapi_membership_transact($currency, $account) {
   return user_access('transact', $account);
 }
+

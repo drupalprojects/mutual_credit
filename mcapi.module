@@ -240,7 +240,7 @@ function transaction_adminedit($transaction) {
  * implements hook_theme
  */
 function mcapi_theme($existing, $type, $theme, $path) {
-  $items = array(
+  return array(
     'transaction' => array(
       'template' => 'transaction',
       'pattern' => 'transaction__',
@@ -248,24 +248,8 @@ function mcapi_theme($existing, $type, $theme, $path) {
         'transaction' => NULL,
         'view_mode' => 'certificate',
       )
-    ),
-    'worth_field' => array(
-      'variables' => array(
-        'currcode' => '',
-        'quantity' => 0
-      )
-    ),
-    'worth_fields' => array(
-      'render element' => 'element'
-    ),
-    'worth_widget_currcode' => array(
-      'render element' => 'element'
-    ),
-    'worth_widgets' => array(
-      'render element' => 'element'
     )
-  );
-  return $items;
+  ) + mcapi_theme_fields();
 }
 
 
@@ -425,86 +409,6 @@ function transaction_state($transaction) {
 }
 function mcapi_user_balance($uid, $currcode = NULL, $states = array(TRANSACTION_STATE_FINISHED), $xid = NULL) {
   return entity_get_controller('transaction')->balance($uid, $currcode, $states, $xid);
-}
-
-
-/*
- * Implements hook_action_info
- */
-function mcapi_action_info() {
-  return array(
-    'record_exchange_action' => array(
-      'type' => 'node',
-      'label' => t('Record Exchange'),
-      'configurable' => TRUE,
-      'triggers' => array('any'),
-    )
-  );
-}
-/*
- * Callback for action config
- */
-function record_exchange_action_form($context) {
-  //make a new_transaction(), and fill in from the defaults
-  //this form should really have a validation function to ensure that at least one participant is provided
-  module_load_include('inc', 'mcapi');
-  $values = array('values' => $context);
-  $form['template'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('transaction template'),
-    'transaction' => transaction_form(array(), $values, new_transaction())
-  );
-
-  //I just can't figure out how to handle attached fields here
-  //it seems to rely on the form_state, which might mean invoking transaction_form in a different way
-  //unset($form['template']['transaction']['buttons']);
-  //these need to be set
-  $form['template']['transaction']['worth']['#required'] = TRUE;
-  $form['template']['transaction']['#description'] = TRUE;
-  return $form;
-}
-/*
- * submit callback for action config
- */
-function record_exchange_action_submit($form, $form_state) {
-  return $form_state['values'];
-}
-/*
- * callback to execute the action
- */
-function record_exchange_action($node, $context) {
-  $transaction = new_transaction();
-  $transaction->currcode = $context['currcode'];
-  $transaction->worth = $context['worth'];
-  $transaction->payer = $context['payer'];
-  $transaction->payee = $context['payee'];
-  $transaction->state = TRANSACTION_STATE_FINISHED; //NEED TO GET RID OF UNSET STATE
-
-    if (empty($transaction->payer)) {
-      $transaction->payer = $node->uid;
-    }
-    elseif (empty($transaction->payee)) {
-      $transaction->payee = $node->uid;
-    }
-  transaction_save($transaction);
-}
-/*
- * implements hook_trigger_info
- */
-function mcapi_trigger_info() {
-  return array(
-    'mcapi' => array(
-      'transaction_record' => array(
-        'label' => t('Record a new_transaction() in the database.'),
-      ),
-      'transaction_modify' => array(
-        'label' => t('Editing a transaction which already exists.'),
-      ),
-      'transaction_erase' => array(
-        'label' => t('Erase or delete a transaction.'),
-      ),
-    ),
-  );
 }
 
 /*
@@ -718,3 +622,4 @@ function _mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$q
   //debug($query->__toString());
   $query->condition($or_currcodes);
 }
+

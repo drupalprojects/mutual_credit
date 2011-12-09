@@ -1,0 +1,8 @@
+; $Id: 
+name = Auto-transaction
+description = Create a transaction when something happens (experimental)
+package = Mutual Credit
+core = 7.x
+
+
+dependencies[] = mcapi

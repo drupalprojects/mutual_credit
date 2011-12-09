@@ -24,10 +24,6 @@ function mcapi_forms_form($form, &$form_state) {
   //because of a problem rendering checkboxes with value 0, the options were saved using the state names as keys, not the integer constants
   //so we have to look them up again
   $all_states = mcapi_states();
-  if (!in_array($all_states[$form_state['build_info']['args'][1]->state], $mcapi_form->data['workflow']['incoming']) && !$form_state['rebuild']) {
-    drupal_set_message(t('Configuration error: this form cannot edit a transaction in state: @state', array('@state' => $transaction->state)));
-    return;
-  }
   //manage the multistep form.
   //under certain circumstances, we may start at step2 with the form_state storage prefilled, otherwise not
   if (empty($mcapi_form->data['step-1']['title'])) {
@@ -44,14 +40,17 @@ function mcapi_forms_form($form, &$form_state) {
   }
   //build for the first time
   //TODO this assumes the entity language is 'und'etermined
+  //there might be an easier way to populate these fields with defaults
   if (empty($transaction->worth)) {
     //put the additional field preset values into the transaction object so they end up in the form
     //tricky stuff because different fields have different internal structures
     foreach (mcapi_form_get_formAPI_fields() as $fieldname => $field) {
       if (isset($field['und']['#columns'])) {
-        if (empty($form_state['transaction']) && isset($mcapi_form->data[$fieldname]['shared']['preset']['und'])) {
-          //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
-          $transaction->{$fieldname}['und'][0][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][0][$column];
+        foreach ($field['und']['#columns'] as $column) {
+          if (empty($form_state['transaction']) && isset($mcapi_form->data[$fieldname]['shared']['preset']['und'])) {
+            //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
+            $transaction->{$fieldname}['und'][0][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][$column];
+          }
         }
       }
       else {
@@ -77,7 +76,8 @@ function mcapi_forms_form($form, &$form_state) {
   //because of the problem with the settings form not being able to store 0 as a checkbox key
   //the saved value is the strtolower of the state name
   //so here we have to do a reverse lookup
-  $form['state']['#value'] = array_search($mcapi_form->data['workflow']['outgoing'], $all_states);
+
+  $form['state']['#value'] = array_search($mcapi_form->data['submission']['outgoing'], $all_states);
   $form['state']['#type'] = 'hidden';
   
   //participants
@@ -331,7 +331,8 @@ function mcapi_element_markup_render($element, $fs_values) {
     case 'token':
       return drupal_render($element);
     default:
-      drupal_set_message('Unexpected form element type in mcapi_element_markup_render:'.$element['#type']);
+      drupal_set_message('Unexpected form element type in mcapi_element_markup_render');
+      ddebug_backtrace();die();
   }
 }
 
