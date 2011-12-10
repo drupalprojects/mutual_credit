@@ -22,14 +22,6 @@ function mcapi_pending_mcapiforms_default() {
       'menu_link' => 'devel',
       'use_block' => 0,
     ),
-    'workflow' => array(
-      'incoming' => array(
-        'pending' => 'pending',
-        'unset' => 0,
-        'finished' => 0,
-      ),
-      'outgoing' => 'pending',
-    ),
     'currcode' => array(
       'shared' => array(
         'preset' => 1,
@@ -72,6 +64,7 @@ function mcapi_pending_mcapiforms_default() {
       ),
     ),
     'submission' => array(
+      'outgoing' => 'pending',
       'button' => 'Yes',
       'redirect' => 'transaction/%transaction',
     ),
@@ -96,18 +89,13 @@ function mcapi_pending_mcapiforms_default() {
 
 /*
  * Implements hook_default_mcapiforms_alter
- * changes all default mcapi_forms which create new transactions to create them pending instead
+ * changes all other default mcapi_forms to output as pending instead
  */
 function mcapi_pending_mcapiforms_default_alter(&$mcapiforms) {
-  foreach ($mcapiforms as $path => $mcapiform) {
-    if (!empty($mcapiform->data['workflow']['incoming']['unset'])) {
-      $names[] = $mcapiform->name;
-      $mcapiform->data['workflow']['outgoing'] = TRANSACTION_STATE_PENDING;
-      foreach (array('payer', 'payee', '2ndperson') as $participant) {
-        if (isset($mcapiform->data[$participant])) {
-          $mcapiforms[$path]->data[$participant]['signature'] = TRUE;
-        }
-      }
+  foreach ($mcapiforms as $name => $mcapiform) {
+    if ($name == 'add_my_signature') continue;
+    if ($mcapiform->data['submission']['outgoing'] == 'finished') {
+      $mcapiform->data['submission']['outgoing'] = TRANSACTION_STATE_PENDING;
     }
   }
 }

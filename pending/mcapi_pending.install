@@ -1,6 +1,9 @@
 <?php
 //Id;
 
+function mcapi_pending_install() {
+  //todo: go through each of the currencies and make sure they have a pending permissions value
+}
 
 function mcapi_pending_uninstall() {
   if (module_exists('views')) {

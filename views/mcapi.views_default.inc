@@ -322,16 +322,19 @@ $handler->display->display_options['filters']['worth_quantity']['expose']['use_o
 $handler->display->display_options['filters']['worth_quantity']['expose']['operator'] = 'worth_quantity_op';
 $handler->display->display_options['filters']['worth_quantity']['expose']['identifier'] = 'worth_quantity';
 $handler->display->display_options['filters']['worth_quantity']['expose']['multiple'] = FALSE;
-/* Filter criterion: Transaction: Value (worth:currcode) */
-$handler->display->display_options['filters']['worth_currcode']['id'] = 'worth_currcode';
-$handler->display->display_options['filters']['worth_currcode']['table'] = 'field_data_worth';
-$handler->display->display_options['filters']['worth_currcode']['field'] = 'worth_currcode';
-$handler->display->display_options['filters']['worth_currcode']['exposed'] = TRUE;
-$handler->display->display_options['filters']['worth_currcode']['expose']['operator_id'] = '';
-$handler->display->display_options['filters']['worth_currcode']['expose']['label'] = 'Currency';
-$handler->display->display_options['filters']['worth_currcode']['expose']['operator'] = 'worth_currcode_op';
-$handler->display->display_options['filters']['worth_currcode']['expose']['identifier'] = 'worth_currcode';
-$handler->display->display_options['filters']['worth_currcode']['expose']['reduce'] = 0;
+
+if (module_exists('mcapi_currency')) {
+  /* Filter criterion: Transaction: Value (worth:currcode) */
+  $handler->display->display_options['filters']['worth_currcode']['id'] = 'worth_currcode';
+  $handler->display->display_options['filters']['worth_currcode']['table'] = 'field_data_worth';
+  $handler->display->display_options['filters']['worth_currcode']['field'] = 'worth_currcode';
+  $handler->display->display_options['filters']['worth_currcode']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['worth_currcode']['expose']['operator_id'] = '';
+  $handler->display->display_options['filters']['worth_currcode']['expose']['label'] = 'Currency';
+  $handler->display->display_options['filters']['worth_currcode']['expose']['operator'] = 'worth_currcode_op';
+  $handler->display->display_options['filters']['worth_currcode']['expose']['identifier'] = 'worth_currcode';
+  $handler->display->display_options['filters']['worth_currcode']['expose']['reduce'] = 0;
+}
 
 /* Display: Page */
 $handler = $view->new_display('page', 'Page', 'page');

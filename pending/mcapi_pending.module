@@ -344,7 +344,7 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
   //check that this is actually a transaction form
   if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
   //add the checbox to each participant field to say whether their signature is required
-  $form['workflow']['outgoing']['#ajax'] = array(
+  $form['submission']['outgoing']['#ajax'] = array(
     'callback' => 'mcapi_forms_ajax_settings',
     'wrapper' => 'form-wrapper'
   );
@@ -352,8 +352,7 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
   if ($form['architecture']['path']['#default_value'] == 'transaction/%transaction/sign') {
     $form['architecture']['path']['#disabled'] = TRUE;
     //disable the fields that would change the meaning of the form.
-    $form['workflow']['outgoing']['#type'] = 'hidden';
-    $form['workflow']['incoming']['#disabled'] = TRUE;
+    $form['submission']['outgoing']['#type'] = 'hidden';
   }
 }
 
