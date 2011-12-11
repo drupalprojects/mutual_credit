@@ -20,10 +20,6 @@ function mcapi_forms_form($form, &$form_state) {
   }
   //only show one currency field
   $form_state['field']['worth']['und']['items_count'] = 0;
-  //reject if the transaction isn't in one of the acceptable states
-  //because of a problem rendering checkboxes with value 0, the options were saved using the state names as keys, not the integer constants
-  //so we have to look them up again
-  $all_states = mcapi_states();
   //manage the multistep form.
   //under certain circumstances, we may start at step2 with the form_state storage prefilled, otherwise not
   if (empty($mcapi_form->data['step-1']['title'])) {
@@ -73,11 +69,7 @@ function mcapi_forms_form($form, &$form_state) {
   $form['type']['#type'] = 'hidden';
   $form['type']['#value'] = $mcapi_form->name;
 
-  //because of the problem with the settings form not being able to store 0 as a checkbox key
-  //the saved value is the strtolower of the state name
-  //so here we have to do a reverse lookup
-
-  $form['state']['#value'] = array_search($mcapi_form->data['submission']['outgoing'], $all_states);
+  $form['state']['#value'] = $mcapi_form->data['submission']['state'];
   $form['state']['#type'] = 'hidden';
   
   //participants

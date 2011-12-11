@@ -65,7 +65,7 @@ function mcapiform_default_1stparty() {
       ),
     ),
     'submission' => array(
-      'outgoing' => 'finished',
+      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),
@@ -150,7 +150,7 @@ function mcapiform_default_3rdparty() {
       ),
     ),
     'submission' => array(
-      'outgoing' => 'finished',
+      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),
@@ -237,7 +237,7 @@ function mcapiform_default_many2one() {
       ),
     ),
     'submission' => array(
-      'outgoing' => 'finished',
+      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
@@ -327,7 +327,7 @@ function mcapiform_default_one2many() {
       ),
     ),
     'submission' => array(
-      'outgoing' => 'finished',
+      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Submit',
       'redirect' => 'transactions',
     ),
@@ -416,7 +416,7 @@ function mcapiform_default_correction() {
       ),
     ),
     'submission' => array(
-      'outgoing' => '',
+      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),

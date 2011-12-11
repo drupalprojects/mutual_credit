@@ -100,17 +100,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     )
   );
 
-  $states = mcapi_states();
-  unset($states[TRANSACTION_STATE_INITIATED]);//as far as forms are concerned, this state is invisible
-  //theme_checkboxes fails with array keys of zero, so we have to use the untranslated state names insteead
-  foreach ($states as $state) {
-    $outgoing_options[strtolower($state)] = t($state); //horrible to translate a variable, but must be done.
-  }
-  $incoming_options = $outgoing_options;
-  unset($incoming_options['erased']);//erase transactions should never be editable //TODO modify currency permission fieldset to that effect
-  unset($outgoing_options['unset']);
-  $outgoing_options['null'] = '('.t('inherit').')';
-
   $form['perspective'] = array(
     '#title' => t('perspective'),
     '#description' => t('Whether this is completed by a 3rd party or a participant.'),
@@ -214,12 +203,12 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => !empty($form_id),
-    'outgoing' => array(
+    'state' => array(
       '#title' => t('Save to state'),
       '#description' => t('Transaction will be submitted in this state'),
       '#type' => 'select',
-      '#options' => $outgoing_options,
-      '#default_value' => empty($mcapi_form['submission']['outgoing']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['submission']['outgoing'],
+      '#options' => array_diff_key(mcapi_states(), array(TRANSACTION_STATE_INITIATED => TRUE, 'unset' => TRUE)),
+      '#default_value' => empty($mcapi_form['submission']['state']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['submission']['state'],
       '#weight' => 3,
     ),
     'button' => array(

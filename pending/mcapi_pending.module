@@ -352,7 +352,7 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
   if ($form['architecture']['path']['#default_value'] == 'transaction/%transaction/sign') {
     $form['architecture']['path']['#disabled'] = TRUE;
     //disable the fields that would change the meaning of the form.
-    $form['submission']['outgoing']['#type'] = 'hidden';
+    $form['submission']['state']['#type'] = 'hidden';
   }
 }
 

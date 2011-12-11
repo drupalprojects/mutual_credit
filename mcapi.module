@@ -145,11 +145,10 @@ function mcapi_mcapi_info_types() {
 }
 
 /*
- * implements mcapi hook_info_permissions
+ * implements mcapi hook_mcapi_info_drupal_permissions
  * make permissions appear altogether on the permissions page
  */
 function mcapi_mcapi_info_drupal_permissions() {
-  //use this hook to 
   return array(
     'transact' => array(
       'title' => t('Transact'),

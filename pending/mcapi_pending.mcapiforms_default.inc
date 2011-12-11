@@ -64,7 +64,7 @@ function mcapi_pending_mcapiforms_default() {
       ),
     ),
     'submission' => array(
-      'outgoing' => 'pending',
+      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Yes',
       'redirect' => 'transaction/%transaction',
     ),
@@ -94,7 +94,7 @@ function mcapi_pending_mcapiforms_default() {
 function mcapi_pending_mcapiforms_default_alter(&$mcapiforms) {
   foreach ($mcapiforms as $name => $mcapiform) {
     if ($name == 'add_my_signature') continue;
-    if ($mcapiform->data['submission']['outgoing'] == 'finished') {
+    if ($mcapiform->data['submission']['state'] == TRANSACTION_STATE_FINISHED) {
       $mcapiform->data['submission']['outgoing'] = TRANSACTION_STATE_PENDING;
     }
   }

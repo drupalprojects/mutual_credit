@@ -107,7 +107,6 @@ function _mcapi_currency_form(&$form, &$form_state) {
   unset($states['unset']);
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_info_permissions');
-  debug($options);
   foreach (array_filter($operations) as $op => $name) {
     $form[$op] = array(
       '#title' => $name,
