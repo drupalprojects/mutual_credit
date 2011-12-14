@@ -313,6 +313,7 @@ function theme_worth_field(&$variables) {
  */
 function theme_worth_fields(&$variables) {
   foreach (element_children($variables['element']) as $delta) {
+    $variables['element'][$delta]['#theme'] = 'worth_field';
     $elements[] = drupal_render($variables['element'][$delta]);
   }
   return implode(", ", $elements);

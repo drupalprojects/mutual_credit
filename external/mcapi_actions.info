@@ -5,4 +5,4 @@ package = Mutual Credit
 core = 7.x
 
 
-dependencies[] = mcapi
+dependencies[] = mcapi_forms

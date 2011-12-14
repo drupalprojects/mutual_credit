@@ -32,7 +32,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'partner':
-        $uid = $data['user']->uid == $transaction->payee ? $transaction->payee :$transaction->payer;
+        $uid = $data['user']->uid == $transaction->payee ? $transaction->payer :$transaction->payee;
         $account = user_load($uid);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;

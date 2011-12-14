@@ -4,6 +4,10 @@
  * Permitted users can design their own transaction forms, hopefully all valid!
  */
 
+
+/*
+ * implements hook_menu
+ */
 function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
@@ -71,6 +75,7 @@ function mcapi_get_form($mcapi_form, $transaction = NULL) {
   module_load_include('inc', 'mcapi_forms');
   return drupal_get_form('mcapi_forms_form', $mcapi_form, $transaction ? $transaction : new_transaction());
 }
+
 /*
  * Implements hook_block_info
  */
@@ -157,28 +162,33 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
  */
 function mcapi_forms_form_mcapi_edit_mcapi_form_alter(&$form, &$form_state) {
   $form['#validate'][] = 'mcapi_forms_template_validate';
-  $form['#submit'][] = 'menu_rebuild';
+  $form['#submit'][] = 'cache_clear_mcapi_forms';
   $form_state['redirect'] = 'admin/accounting/forms';
 }
 
 /*
  * load an mcapi_form by name, using ctools
+ * it seems that ctools isn't doing any cacheing
  */
 function mcapi_forms_load($name = NULL) {
   ctools_include('export');
-  //TODO it seems terribly inefficient, but loading one form here necessitates
-  //loading all the defauls, altering them, overriding them with the database versions,
-  //then choosing the named one, with no apparent recourse to ctools cache
-  //Shurely there's a better way?
-  //I believe views has its own cache so maybe not
-  $results = ctools_export_crud_load_all('mcapi_forms');
-  if ($name) {
-    if (!empty($results[$name])) {
-      return $results[$name];
-    }
-    return;
+  if ($cached = cache_get('mcapi_forms')) {
+    $items = $cached->data;
   }
-  return $results;
+  else {
+    debug('reloading mcapi forms and rebuilding menu');
+    $items = ctools_export_crud_load_all('mcapi_forms');
+    drupal_alter('mcapi_forms', $items);
+    cache_set('mcapi_forms', $items);
+    menu_rebuild();
+  }
+  if ($name) {
+    if (isset($items[$name])) {
+      return $items[$name];
+    }
+    throw new Exception("no such mcapi form: ".$name);
+  }
+  return $items;
 }
 
 /*
@@ -274,3 +284,8 @@ function mcapi_hide_tabs() {
  * this needs a bit of thought...
  */
 function mcapi_path_validate(&$element, &$form_state) {}
+
+function cache_clear_mcapi_forms() {
+  debug('clearing mcapi form cache');
+  cache_clear_all('mcapi_forms', 'cache');
+}

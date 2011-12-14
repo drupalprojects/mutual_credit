@@ -68,7 +68,7 @@ function mcapi_forms_form($form, &$form_state) {
   $form['xid']['#type'] = 'hidden';
   $form['type']['#type'] = 'hidden';
   $form['type']['#value'] = $mcapi_form->name;
-
+  
   $form['state']['#value'] = $mcapi_form->data['submission']['state'];
   $form['state']['#type'] = 'hidden';
   
@@ -296,7 +296,9 @@ function mcapi_element_markup_render($element, $fs_values) {
       return;
     case 'user_chooser_roles':
     case 'user_chooser_permissions':
-      return format_username(user_load($fs_values[$element['#name']]));
+      $uids = is_array($fs_values[$element['#name']]) ? $fs_values[$element['#name']] : array($fs_values[$element['#name']]);
+      $conditions =  array('uid' => $uids);
+      return format_username(user_load_multiple(NULL, $conditions));
     case 'radios':
     case 'checkboxes':
     case 'select':

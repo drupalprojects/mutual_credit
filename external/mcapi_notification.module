@@ -2,10 +2,20 @@
 // $Id: 
 
 /*
- * This module was programmed first, to work with the forms module,
- * so it puts a submit handler in the forms and takes its cue from there.
- * However it should work just well with actions and triggers, or rules, with just a bit of integration
+ * Injects mail template into each mcapi_form
+ * Puts the title of each mcapi form mail on the user profile, so the user can can choose which mails to receive
+ * Then puts a submit callback on each transaction form, which handles the mail sending, using tokens
  */
+
+/*
+ * implements hook_help
+ */
+function mcapi_forms_help($path) {
+  if ($path == 'admin/accounting/forms') {
+    return t('Disable any forms not in use');
+  }
+}
+
 /*
  * Tabs on the currency edit form to compose the notification emails
  */
@@ -131,8 +141,8 @@ function mcapi_notification_form_user_profile_form_alter(&$form, $form_state) {
     '#description' => t('The system will inform you when you are involved in transactions'),
     '#type' => 'fieldset',
     'mutual_credit_mail' => array(
-      '#title' => t('Mail me when'),
-      '#description' => t('Choose when to receive mail notifications'),
+      '#title' => t('Notifications by mail'),
+      '#description' => t('Choose which mails you want to receive'),
       '#type' => 'checkboxes',
       '#options' => $subjects,
       '#default_value' => isset($data['mutual_credit_mail']) ? $data['mutual_credit_mail'] : array()
@@ -163,7 +173,7 @@ function mcapi_notification_user_presave(&$edit, $account, $category) {
 function mcapi_notification_ctools_plugin_api() {
   return array(
     'api' => 3,
-    'path' => drupal_get_path('module', 'mcapi_mail'),
+    'path' => drupal_get_path('module', 'mcapi_notification'),
   );
 }
  */
@@ -185,4 +195,36 @@ function mcapi_notification_fields($preset) {
       '#rows' => 10
     )
   );
+}
+/*
+ * implements hook_install
+ */
+function mcapi_notification_install() {
+  cache_clear_all('mcapi_forms', 'cache');
+}
+
+
+/*
+ * Alters mcapi_forms after loading from code OR database
+ * adds the mail template to ALL mcapi orms, both in code and in database
+ */
+function mcapi_notification_mcapi_forms_alter(&$mcapiforms) {
+  foreach ($mcapiforms as $name => $mcapi_form) {
+    if (empty($mcapi_form->data['email_template'])) {
+      //we'll give some unique names for the forms we know about
+      switch ($name) {
+        case '1stparty': $subject = '[transaction:creator] recorded a transaction'; break;
+        case '3rdparty': $subject = 'Transaction recorded with [transaction:partner]'; break;
+        case 'correction': $subject = 'Transaction with [transaction:partner] altered'; break;
+        case 'one2many': $subject = 'Mass payment from [transaction:payer]'; break;
+        case 'many2one': $subject = 'Mass payment to [transaction:payee]'; break;
+        case 'add_my_signature': $subject = '[transaction:xid] signed by [user:name]'; break;
+        default: debug($name);
+      }
+      $mcapiforms[$name]->data['email_template'] = array(
+        'subject' => $name . ': '. _mcapi_mail_text('subject'),//this ensures it is unique
+        'body' => _mcapi_mail_text('body')
+      );
+    }
+  }
 }

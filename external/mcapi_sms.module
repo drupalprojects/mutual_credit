@@ -1,0 +1,288 @@
+<?php
+// $Id:
+
+/*
+ * sms_send($number, $message, $options = array());
+ * sms_incoming($number, $message, $options = array());
+ */
+
+/**
+ * implements hook_help
+ */
+function mcapi_sms_help($path) {
+  switch($path) {
+    case 'admin/mc/sms':
+      return t('Define the SMS syntax for recording exchanges');
+    case 'smsdemo':
+      return mcapi_sms_help_demo();
+  }
+}
+
+/**
+ * implements hook_menu
+ */
+function mcapi_sms_menu() {
+  $items['admin/smsframework/mcapi'] = array(
+    'title' => 'Complementary currencies',
+    'description' => 'Define the SMS syntax for recording exchanges',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mcapi_sms_settings'),
+    'access arguments' => array('configure currencies'),
+    'weight' => 5
+  );
+  return $items;
+}
+/*
+ * implements hook_perm
+ */
+function mcapi_sms_mcapi_info_drupal_permissions() {
+  return array(
+    'transact via sms' => array(
+      'title' => t('Transact via sms'),
+      'description' => t("Register new transactions over SMS"),
+    )
+  );
+}
+
+/*
+ * implements hook_perm
+ */
+function mcapi_sms_mcapi_info_types() {
+  return array('via sms incoming', 'via sms outgoing');
+}
+
+function mcapi_sms_settings(){
+  $tokens = array('%user', '%amount', '%description (optional)');
+  if (count(currencies_load()) > 1) {
+    $tokens[] = '%currency';
+  }
+  $form['requests'] = array(
+    '#title' => t('Incoming messages from phones'),
+    '#description' => t('Define the form of the text messages.') .' '.
+      t("Try to include variations and get feedback from your users as to what works.") .' '.
+      t("Use the following tokens:") .' '.
+      theme('item_list', $tokens) .' '.
+      t("Put the longer ones first"),
+    '#type' => 'fieldset',
+    '#weight' => -2
+  );
+  //these variable names double up as the callback functions
+  $form['requests']['mcapi_sms_expressions_incoming'] = array(
+    '#title' => t('Expressions for recording an incoming transfer'),
+    '#type' => 'textarea',
+    '#rows' => 3,
+    '#element_validate' => array('validate_sms_templates'),
+    '#default_value' => variable_get('mcapi_sms_expressions_incoming', ''),
+  );
+  $form['requests']['mcapi_sms_expressions_outgoing'] = array(
+    '#title' => t('Expressions for recording an outgoing transfer'),
+    '#description' => t('One per line.'),
+    '#type' => 'textarea',
+    '#rows' => 3,
+    '#element_validate' => array('validate_sms_templates'),
+    '#default_value' => variable_get('mcapi_sms_expressions_outgoing', ''),
+  );
+
+  $form['requests']['mcapi_sms_pending'] = array(
+    '#title' => t('Exchanges triggered by SMS require confirmation?'),
+    '#description' => t("Check this for new exchanges to be created as pending."),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('mcapi_sms_pending', 0),
+    '#weight' => 5
+  );
+  $form['responses'] = array(
+    '#title' => t('Responses'),
+    '#description' => t('Messages send to phones') .' '.
+      t("Try to include variations and get feedback from your users as to what works.") .' '.
+      t("Use the following tokens:") .' '.
+      theme('item_list', $tokens) .' '.
+      t("Put the longer ones first"),
+    '#type' => 'fieldset',
+    '#weight' => -2
+  );
+  $form['mcapi_sms_success'] = array(
+    '#title' => t('Response for a successful exchange'),
+    '#description' => t("Leave blank for no response, or put [inherit] "),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('mcapi_sms_success', ''),
+    '#weight' => -1
+  );
+  $form['mcapi_sms_expressions_statement'] = array(
+    '#title' => t('Response for a successful exchange'),
+    '#description' => t("Leave blank for no response, or put [inherit] "),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('mcapi_sms_expressions_statement', ''),
+    '#weight' => -1
+  );
+  $form['mcapi_sms_syntax_error'] = array(
+    '#title' => t('Error response'),
+    '#description' => t("Response in case the message doesn't fit any of the above templates"),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('mcapi_sms_syntax_error', ''),
+    '#weight' => 0
+  );
+
+  return system_settings_form($form);
+}
+
+function validate_sms_templates(&$element, &$form_state) {
+  $templates = explode("\n", $element['#value']);
+  foreach($templates as $template) {
+    foreach (array('%amount', '%user') as $token) {
+      if (strpos($template, $token) === FALSE) {
+        form_error($element, t("'@template' should include '@token'", array('@template'=> $template, '@token' => $token)));
+      }
+    }
+  }
+}
+
+/*
+ * implementation of hook 'sms_incoming'
+ * $op = 'pre process', 'process', 'post process'
+ */
+//sms_incoming('234567879012', 'pay 3 to 3');
+function mcapi_sms_sms_incoming($op, $number, $message) {
+  switch ($op) {
+    case 'process':
+      $callback = mcapi_sms_parse($number, $message);
+  }
+  debug($callback); //what to do with this variable?
+}
+
+/*
+ * Parse the sms and decide which syntax to use
+ */
+function mcapi_sms_parse($number, $message) {
+  $variables = array('mcapi_sms_expressions_incoming', 'mcapi_sms_expressions_outgoing');
+  $translations = array(
+    '%amount' => '([0-9.]+)',
+    '%user' => '([^ ]+)',
+    '%description' =>  '(.*)',
+    '%currency' => '([a-z]+)'
+  );
+  foreach ($variables as $callback) {
+    $expressions = explode("\n", variable_get($callback, ''));
+    foreach($expressions as $expression) {
+    $expression = trim($expression); //get the linebreak off it yuk
+      $pattern = '/'.strtr($expression, $translations) .'/i';
+      preg_match($pattern, $message, $matches);
+      if (count($matches)) {
+        array_shift($matches);
+        preg_match_all("/%[^ ]*/", $expression, $keys);
+        $values = array_combine($keys[0], $matches);
+        $values['message'] = $message;
+        $callback($number, $values);
+        return;
+      }
+    }
+  }
+  //send an error if the message is not parsed
+  sms_send($number, variable_get('mcapi_sms_syntax_error', t('Syntax error')));
+}
+
+//values is an array keyed by the tokens
+function mcapi_sms_expressions_incoming($number, $values) {
+  if ($payer_uid = _sms_validate_trader($values['%user'], $number) && $payee_uid = sms_user_get_uid($number)) {
+    if (!user_access('transact via sms', user_load($payee_uid))) {
+      sms_send($number, t('You do not have permission to trade via SMS'));
+      return;
+    }
+    $options['exchange_type'] = 'via sms incoming';
+    $options['uid'] = $payee_uid;
+    sms_transaction_insert($payer_uid, $payee_uid, $options, $values);
+  }
+}
+
+//values is an array keyed by the tokens
+function mcapi_sms_expressions_outgoing($number, $values) {
+  if ($payee_uid = _sms_validate_trader($values['%user'], $number) && $payer_uid = sms_user_get_uid($number)) {
+    if (!user_access('transact via sms', user_load($payer_uid))) {
+      sms_send($number, t('You do not have permission to trade via SMS'));
+      return;
+    }
+    $options['exchange_type'] = 'via sms outgoing';
+    $options['uid'] = $payer_uid;
+    sms_transaction_insert($payer_uid, $payee_uid, $options, $values);
+  }
+}
+
+/*
+ * check that the parsed trader is actually a user who is permitted to trade
+ * this is similar to a function in user_chooser
+ */
+function _sms_validate_trader($val, $number) {
+  $uid = db_select('users', 'u')
+  ->fields('u', array('uid'))
+  ->condition('uid', 0, '!=')
+  ->condition(db_or()
+    ->condition('uid', $val)
+    ->condition('name', $val)
+    ->condition('mail', $val)
+  )
+  ->execute()->fetchField();
+  if ($uid) return $uid;
+  sms_send($number, t('Unknown trader: @val', array('@val' => $val)));
+}
+
+function sms_transaction_insert($payer_uid, $payee_uid, $options, $values) {
+  if (!$payer_uid || !$payee_uid) {//this should never happen
+    watchdog('mcapi_sms', "problem identifying exchange participants. Payer: $payer_uid, Payee: $payee_uid");
+  }
+  $options['title'] = isset($values['%description']) ? $values['%description'] : 'SMS: '.$values['message'];
+  $options['state'] = variable_get('mcapi_sms_pending', 0) ? EXCHANGE_STATE_PENDING : EXCHANGE_STATE_FINISHED;
+  if (isset($values['%currency'])) {
+    $options['cid'] = lookup_currency_by_name($values['%currency']);
+  }
+  else {
+    // assume there's only one currency on the system
+    $currency = array_pop(currencies_load());
+    $options['cid'] = $currency->nid;
+  }
+
+  $result = mcapi_add_node($payer_uid, $payee_uid, $values['%amount'], $options);
+  if ($result->success) {
+    $message = t('Your new balance is @num', array('@num' => db_result(db_query("SELECT cleared_balance FROM {mc_cache} where uid = %d", $options['uid']))));
+  }
+  else {
+    foreach (array('error', 'warning') as $type) {
+      if (isset($result->messages[$type])) {
+        $message = $result->messages[$type][0];
+        break;
+      }
+    }
+  }
+  sms_send($number, $message);
+}
+
+function mcapi_sms_help_demo() {
+  $variables = array('mcapi_sms_expressions_incoming', 'mcapi_sms_expressions_outgoing');
+  $code = '<pre>'.variable_get('mcapi_sms_expressions_incoming', '') .'</pre>';
+  $code .= '<pre>'.variable_get('mcapi_sms_expressions_outgoing', '') .'</pre>';
+  $result = db_query("SELECT u.uid, u.name, u.mail FROM {sms_user} sms LEFT JOIN {users} u ON sms.uid = u.uid");
+  while ($account = db_fetch_array($result)) {
+    $items[] = implode(', ', $account);
+  }
+  $example = implode(',', $items);
+
+  $help = "<p>This page shows how its possible to record exchanges by sending an SMS to the web server.</p>
+    <h4>1. Gateway</h4>
+    <p>First you need to access a gateway <A href=\"http://drupal.org/node/362258\">for your country</a>.
+      It may be necessary to write a drupal module for one of the gateways available in your country.
+      This demo has no gateway - When you enter a message below and the result appears on screen,
+    <h4>2. The template for the text message</h4>
+    <p>Drupal has been configured to expect messages with the following templates, for payments and requests respectively')
+    $code
+    <p>Use one of these as the basis for your test SMS.</p>
+    <h4>3. what to replace the tokens with SMS</h4>
+    <p><strong>%amount</strong> should be replaced by any number. Just use an integer for now, but it depends how your currency is configured.</p>
+    <p><strong>%description</strong> can be anything you like.
+    <p><strong>%user</strong> should be replaced by a username, user number, or email. Possible values on this demo are: $example";
+  return $help;
+}
+
+/*
+ * this is for the demo only, should be in a seperate module, really
+ */
+function mcapi_sms_form_sms_browser_gateway_incoming_form_alter(&$form, $form_state) {
+  $form['number']['#access'] = user_access('edit all exchanges');
+}
