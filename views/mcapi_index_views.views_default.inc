@@ -817,37 +817,8 @@ function mcapi_getview_balance_history() {
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
-  $handler->display->display_options['pager']['type'] = 'full';
-  $handler->display->display_options['pager']['options']['items_per_page'] = '';
+  $handler->display->display_options['pager']['type'] = 'none';
   $handler->display->display_options['style_plugin'] = 'table';
-  $handler->display->display_options['style_options']['grouping'] = 'currcode';
-  $handler->display->display_options['style_options']['columns'] = array(
-    'balance' => 'balance',
-    'created' => 'created',
-    'currcode' => 'currcode',
-  );
-  $handler->display->display_options['style_options']['default'] = '-1';
-  $handler->display->display_options['style_options']['info'] = array(
-    'balance' => array(
-      'align' => '',
-      'separator' => '',
-    ),
-    'created' => array(
-      'sortable' => 0,
-      'default_sort_order' => 'asc',
-      'align' => '',
-      'separator' => '',
-    ),
-    'currcode' => array(
-      'sortable' => 0,
-      'default_sort_order' => 'asc',
-      'align' => '',
-      'separator' => '',
-    ),
-  );
-  $handler->display->display_options['style_options']['override'] = 1;
-  $handler->display->display_options['style_options']['sticky'] = 0;
-  $handler->display->display_options['style_options']['empty_table'] = 0;
   /* Relationship: Transaction index: 1st user */
   $handler->display->display_options['relationships']['uid1']['id'] = 'uid1';
   $handler->display->display_options['relationships']['uid1']['table'] = 'mcapi_index';
@@ -857,6 +828,7 @@ function mcapi_getview_balance_history() {
   $handler->display->display_options['fields']['balance']['id'] = 'balance';
   $handler->display->display_options['fields']['balance']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['balance']['field'] = 'balance';
+  $handler->display->display_options['fields']['balance']['label'] = '';
   $handler->display->display_options['fields']['balance']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['balance']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['balance']['alter']['absolute'] = 0;
@@ -864,19 +836,21 @@ function mcapi_getview_balance_history() {
   $handler->display->display_options['fields']['balance']['alter']['replace_spaces'] = 0;
   $handler->display->display_options['fields']['balance']['alter']['trim_whitespace'] = 0;
   $handler->display->display_options['fields']['balance']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['balance']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['balance']['alter']['ellipsis'] = 1;
+  $handler->display->display_options['fields']['balance']['alter']['word_boundary'] = 0;
+  $handler->display->display_options['fields']['balance']['alter']['ellipsis'] = 0;
   $handler->display->display_options['fields']['balance']['alter']['strip_tags'] = 0;
   $handler->display->display_options['fields']['balance']['alter']['trim'] = 0;
   $handler->display->display_options['fields']['balance']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['balance']['element_label_colon'] = 1;
-  $handler->display->display_options['fields']['balance']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['balance']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['balance']['element_default_classes'] = 0;
   $handler->display->display_options['fields']['balance']['hide_empty'] = 0;
   $handler->display->display_options['fields']['balance']['empty_zero'] = 0;
-  /* Field: Transaction index: Created */
+  $handler->display->display_options['fields']['balance']['hide_alter_empty'] = 0;
+  /* Field: Transaction index: Created moment */
   $handler->display->display_options['fields']['created']['id'] = 'created';
   $handler->display->display_options['fields']['created']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['created']['field'] = 'created';
+  $handler->display->display_options['fields']['created']['label'] = 'Created';
   $handler->display->display_options['fields']['created']['alter']['alter_text'] = 0;
   $handler->display->display_options['fields']['created']['alter']['make_link'] = 0;
   $handler->display->display_options['fields']['created']['alter']['absolute'] = 0;
@@ -893,7 +867,12 @@ function mcapi_getview_balance_history() {
   $handler->display->display_options['fields']['created']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['created']['hide_empty'] = 0;
   $handler->display->display_options['fields']['created']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['created']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['created']['date_format'] = 'long';
+  /* Sort criterion: Transaction index: Created moment */
+  $handler->display->display_options['sorts']['created']['id'] = 'created';
+  $handler->display->display_options['sorts']['created']['table'] = 'mcapi_index';
+  $handler->display->display_options['sorts']['created']['field'] = 'created';
   /* Contextual filter: User: Uid */
   $handler->display->display_options['arguments']['uid']['id'] = 'uid';
   $handler->display->display_options['arguments']['uid']['table'] = 'users';
@@ -919,6 +898,11 @@ function mcapi_getview_balance_history() {
   $handler->display->display_options['arguments']['currcode']['summary']['number_of_records'] = '0';
   $handler->display->display_options['arguments']['currcode']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['currcode']['summary_options']['items_per_page'] = '25';
+
+  /* Display: Block */
+  $handler = $view->new_display('block', 'Block', 'block');
+  $handler->display->display_options['block_description'] = 'Running balance';
+
 
   /* Display: Block */
   $handler = $view->new_display('block', 'Block', 'block');

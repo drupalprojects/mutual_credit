@@ -213,18 +213,21 @@ function mcapi_currency_validate_divisions(&$element, $form_state) {
  * This could possibly be configured, stored and retrieved better
  * How does the list module do it?
  */
-function _currency_divisions_array($string) {
+function _currency_divisions_array(&$currency) {
+  if (empty($currency->divisions_setting)) return;
+  $string = $currency->divisions_setting;
   if (strpos($string, '|')) {
     $lines = explode("\n", $string);
     foreach($lines as $line) {
       $array = explode('|', $line);
       $allowed[$array[0]] = $array[1];
     }
-    return $allowed;
+    $currency->divisions = $allowed;
   }
   elseif ($string == '00') {
-    return '00';
+    $currency->divisions = $string;
   }
+  else $currency->divisions = NULL;
 }
 
 /*
@@ -328,19 +331,19 @@ function mcapi_use_currency() {
 //put the currencies back in the cache
 function currencies_recache() {
   cache_clear_all('currencies', 'cache');
-
-  $currency = currency_default();
-  $currencies[$currency->info['currcode']] = $currency;
-
   if (module_exists('mcapi_currencies')) {
     $currencies = currencies_load_all();
-    $field = field_read_field('worth');
     //this variable isn't set anywhere yet, partly because no suitable settings page exists yet
-    $field['cardinality'] = variable_get('mcapi_currencies_multiple', 0) ? count($currencies) : 1;
-    field_update_field($field);
+    if ($cardinality = variable_get('mcapi_currencies_multiple', 0)) {
+      $field = field_read_field('worth');
+      $field['cardinality'] = $cardinality ? count($currencies) : 1;
+      field_update_field($field);
+    }
   }
-  foreach($currencies as $currcode => $currency) {
-    $currency->divisions = _currency_divisions_array($currency->divisions_setting);
+  else {
+    $currency = currency_default();
+    _currency_divisions_array($currency);
+    $currencies[$currency->info['currcode']] = $currency;
   }
   cache_set('currencies', $currencies);
   return $currencies;

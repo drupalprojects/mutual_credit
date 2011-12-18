@@ -27,8 +27,8 @@ function mcapi_entity_info_inc() {
         'label' => t('Transaction'),
         'admin' => array(
           //not sure what the difference is between these
-          'path' => 'admin/accounting/transaction',
-          'real path' => 'admin/accounting/transaction',
+          'path' => 'admin/accounting',
+          'real path' => 'admin/accounting',
           'access arguments' => array('manage all transactions'),
         )
       ),

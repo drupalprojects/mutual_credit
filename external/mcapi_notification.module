@@ -37,6 +37,7 @@ function mcapi_notification_form_ctools_export_ui_edit_item_form_alter(&$form, $
 
 function mcapi_unique_mail_subjects($element, $form_state) {
   foreach (mcapi_forms_load() as $mcapi_form) {
+    if ($mcapi_form->name == $form_state['values']['info']['name']) continue;
     if (@$mcapi_form->data['email_template']['subject'] == $element['#value']) {
       form_error($element, t('Mail subject line is the same as for form @formname', array('@formname' => $mcapi_form->name)));
     }

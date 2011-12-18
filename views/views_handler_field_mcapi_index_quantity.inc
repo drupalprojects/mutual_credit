@@ -4,10 +4,10 @@
 /**
  * @file
  * Field handler to show quantities IN THE INDEX TABLE
- * NB this doesn't apply to the worth_field
+ * NB this doesn't apply to the worth_field linked to the mcapi_transactions table, but to the mcapi_index table only.
  * @ingroup views_field_handlers
  */
-class views_handler_field_mcapi_quantity_index extends views_handler_field {
+class views_handler_field_mcapi_index_quantity extends views_handler_field {
 
   function query() {
     $this->ensure_my_table();

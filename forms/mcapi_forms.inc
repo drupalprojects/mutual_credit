@@ -11,56 +11,41 @@ module_load_include('inc', 'mcapi');
 function mcapi_forms_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
   $mcapi_form = &$form_state['build_info']['args'][0];
-  //use the transaction which passed validation if it exists
-  if (isset($form_state['transaction'])){
-    $transaction = &$form_state['transaction'];
-  }
-  else {
+  
+  //we need to determine how to load up the transaction and which step the form is in.
+  //step 1 of the form is a form, and step 2 is a confirmation page. These may be renamed later for clarity
+  //Some forms may go straight to step 2
+  if (empty($form_state['step'])) {
+    //use the transaction whose xid was passed via the url, and pulled fresh from the database
     $transaction = &$form_state['build_info']['args'][1];
+    $form_state['storage'] = array();
+    if (empty($mcapi_form->data['step-1']['title'])) {
+      $form_state['step'] = 2;
+      $form_state['transaction'] = $transaction;
+      $form_state['values'] = $form_state['storage'];
+    }
+    else {
+      $form_state['step'] = 1;
+      $instances = field_info_instances('transaction', 'transaction');
+      //get the default contents of the fields from the form settings
+      foreach ($instances as $instance) {
+        $transaction->{$instance['field_name']} = $mcapi_form->data[$instance['field_name']]['shared']['preset'];
+      }
+    }
+  } 
+  elseif (isset($form_state['transaction'])) {
+    //use the transaction which passed validation in a previous step of the form
+    $transaction = &$form_state['transaction'];
+    //the form state was incremented as it was submit the first time.
   }
+
   //only show one currency field
   $form_state['field']['worth']['und']['items_count'] = 0;
-  //manage the multistep form.
-  //under certain circumstances, we may start at step2 with the form_state storage prefilled, otherwise not
-  if (empty($mcapi_form->data['step-1']['title'])) {
-    $form_state['step'] = 2;
-    $form_state['transaction'] = $transaction;
-    $form_state['values'] = $form_state['storage'] = array();
-  }
-  elseif (empty($form_state['step'])) {
-    $form_state['step'] = 1;
-    $form_state['storage'] = array();
-  }
   if (!_mcapi_form_in_block($mcapi_form)) {
     drupal_set_title(mcapi_form_template($mcapi_form)->title);
   }
+
   //build for the first time
-  //TODO this assumes the entity language is 'und'etermined
-  //there might be an easier way to populate these fields with defaults
-  if (empty($transaction->worth)) {
-    //put the additional field preset values into the transaction object so they end up in the form
-    //tricky stuff because different fields have different internal structures
-    foreach (mcapi_form_get_formAPI_fields() as $fieldname => $field) {
-      if (isset($field['und']['#columns'])) {
-        foreach ($field['und']['#columns'] as $column) {
-          if (empty($form_state['transaction']) && isset($mcapi_form->data[$fieldname]['shared']['preset']['und'])) {
-            //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
-            $transaction->{$fieldname}['und'][0][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][$column];
-          }
-        }
-      }
-      else {
-        foreach (element_children($field['und']) as $delta) {
-          foreach ($field['und'][$delta]['#columns'] as $column) {
-            if (empty($form_state['transaction']) && isset($mcapi_form->data[$fieldname]['shared']['preset']['und'])) {
-              //@prevents a warning in case the column wasn't rendered as a field, like text->format sometimes isn't
-              $transaction->{$fieldname}['und'][$delta][$column] = @$mcapi_form->data[$fieldname]['shared']['preset']['und'][$delta][$column];
-            }
-          }
-        }
-      }
-    }
-  }
   $form = transaction_form($form, $form_state, $transaction);
   if (!$form) return array();
 
@@ -135,7 +120,7 @@ function mcapi_forms_form($form, &$form_state) {
     array_unshift($form['#validate'], 'mcapi_forms_validate_2ndperson');
   }
   //we now modify the transaction form fields according to the form settings for each field
-  foreach (mcapi_form_get_formAPI_fields() as $fieldname => $field) {
+  foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
     //@ needed in case the form builder wasn't saved since the field was added
     $form[$fieldname]['#disabled'] = @$mcapi_form->data[$fieldname]['shared']['disable'];
     $form[$fieldname]['#required'] = @$mcapi_form->data[$fieldname]['shared']['required'];
@@ -216,7 +201,7 @@ function mcapi_form_default_value(&$element, $settings) {
 function mcapi_form_collect_tokens(&$mcapi_form) {
   $tokens = $mcapi_form->data['perspective'] == 3 ? array('payee', 'payer') : array('2ndperson', 'direction');
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
-  $fields = array_keys(mcapi_form_get_formAPI_fields());
+  $fields = array_keys(field_info_instances('transaction', 'transaction'));
   //this picks up 'worth' and any other fields on the transaction entity
   return drupal_map_assoc($tokens) + drupal_map_assoc($fields);
 }
@@ -241,7 +226,6 @@ function mcapi_form_prepare_tokens(&$form, &$form_state) {
       $form['#replacements'][ '['.$fieldname.']'] = mcapi_element_markup_render($form[$fieldname], $form_state['values']);
       //we can unset the field in step 2 because the transaction has already been stored
       //in $form_state['transaction'] in validation of step 1
-      unset($form[$fieldname]);
     }
   }
   return $form;
@@ -290,15 +274,15 @@ function theme_mcapi_form($variables) {
  * replace tokens in stage 2 form with text, based on the form item token used in the template
  * this is tricky because we have a formAPI element, and need to pull a sensible text value from it.
  */
-function mcapi_element_markup_render($element, $fs_values) {
+function mcapi_element_markup_render(&$element, $fs_values) {
+  $element['#printed'] = TRUE;
   switch($element['#type']) {
     case 'hidden':
       return;
     case 'user_chooser_roles':
     case 'user_chooser_permissions':
       $uids = is_array($fs_values[$element['#name']]) ? $fs_values[$element['#name']] : array($fs_values[$element['#name']]);
-      $conditions =  array('uid' => $uids);
-      return format_username(user_load_multiple(NULL, $conditions));
+      return mcapi_format_usernames(user_load_multiple($uids));
     case 'radios':
     case 'checkboxes':
     case 'select':
@@ -311,7 +295,7 @@ function mcapi_element_markup_render($element, $fs_values) {
     case 'textfield':
       return $element['#value'];
 
-    //all the fieldAPI fields appear here as container - the need to be handled quite differently
+    //all the fieldAPI fields appear here as container, here we take the form fields and convert them to a render array
     case 'container':
       foreach(element_children($element['und']) as $childname) {
         $fieldname = $element['und']['#field_name'];
@@ -325,8 +309,7 @@ function mcapi_element_markup_render($element, $fs_values) {
     case 'token':
       return drupal_render($element);
     default:
-      drupal_set_message('Unexpected form element type in mcapi_element_markup_render');
-      ddebug_backtrace();die();
+      drupal_set_message('Unexpected form element type in mcapi_element_markup_render: '.$element['#type'] , 'error');
   }
 }
 
@@ -486,4 +469,11 @@ function mcapi_form_template($mcapi_form, $step = 0) {
   }
   if (isset($steps[$step])) return $steps[$step];
   return array_shift($steps);
+}
+
+function mcapi_forms_field_widget_form_alter($element, $form_state, $context) {
+//  ddebug_backtrace();
+  //debug($element['#field_name']);
+  //debug($form_state['build_info']['args'][0]->data);
+
 }

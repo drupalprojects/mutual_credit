@@ -23,10 +23,7 @@ class mcapi_forms_ui extends ctools_export_ui {
    * Build a row based on the item.
    *
    * By default all of the rows are placed into a table by the render
-   * method, so this is building up a row suitable for theme('table').
-   * This doesn't have to be true if you override both.
-   *
-   * but what I want, is to add the object->path, as a link, to the table
+   * method, so this is building up each row suitable for theme('table').
    */
   function list_build_row($item, &$form_state, $operations) {
     // Set up sorting
@@ -70,6 +67,10 @@ class mcapi_forms_ui extends ctools_export_ui {
     // Reorder the operations so that enable is the default action for a templatic views
     if (!empty($operations['enable'])) {
       $operations = array('enable' => $operations['enable']) + $operations;
+    }
+    //we might want to add a hidden field for this so forms can declare themselves undisableable
+    if ($name == 'add_my_signature') {
+      unset($operations['disable']);
     }
     if ($name == 'correction') unset($operations['disable']);//mcapi_forms_menu expects this
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));

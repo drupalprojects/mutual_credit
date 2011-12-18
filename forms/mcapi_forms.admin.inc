@@ -63,19 +63,11 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#weight' => 3,
     'path' => array(
       '#title' => t('Path'),
-      '#description' => t("Url of this form. Use optional literals '%transaction' and '%user'. See !url documentation for advanced usage", array('!url' => l('hook_menu','http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
+      '#description' => t("unique path of this form. (without leading slash)"),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['architecture']['path']) ? $mcapi_form['architecture']['path'] : '',
       '#required' => TRUE,
-      '#weight' => 2
-    ),
-    'access' =>array(
-      '#title' => t('Access control'),
-      '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
-      '#type' => 'select',
-      '#default_value' => isset($mcapi_form['architecture']['access']) ? $mcapi_form['architecture']['access'] : 'currency',
-      '#options' => $access_options,
-      '#element_validate' => array(),
+      '#weight' => 1
     ),
     'menu_link' =>array(
       '#title' => t('Menu link location'),
@@ -89,9 +81,19 @@ function _edit_mcapi_form(&$form, &$form_state) {
         MENU_LOCAL_ACTION => 'MENU_LOCAL_ACTION'
       ),
       '#element_validate' => array(),
+      '#weight' => 2
+    ),
+    'access' =>array(
+      '#title' => t('Access control'),
+      '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
+      '#type' => 'select',
+      '#default_value' => isset($mcapi_form['architecture']['access']) ? $mcapi_form['architecture']['access'] : 'currency',
+      '#options' => $access_options,
+      '#element_validate' => array(),
+      '#weight' => 3
     ),
     'use_block' =>  array(
-      '#title' => t('Manifest block'),
+      '#title' => t('Make block available'),
       '#description' => t('The block is named according the path.') .' '.
         t('Remember that blocks have their own caching and access control.'),
       '#type' => 'checkbox',
@@ -192,7 +194,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
 
   }
   //these are the field api fields which may have been added to the transaction entity
-  $additional_fields = mcapi_form_get_formAPI_fields();
+  $additional_fields = field_info_instances('transaction', 'transaction');
   foreach ($additional_fields as $fieldname => $field) {
     $form[$fieldname] = _mcapi_form_shared($mcapi_form, $transaction_fields[$fieldname], $fieldname);
   }
@@ -356,8 +358,10 @@ function mcapi_forms_template_validate($form, &$form_state) {
     form_set_error('template-1', t('The form template is empty'));
   }
   foreach (array('1', '2') as $num) {
-    $form_state['values']['step-1']['template'] = filter_xss($form['step-'.$num]['template']['#value'], array('a', 'p', 'br', 'font', 'style'));
-    //each template must have a title
+    if (isset($form['step-'.$num]['template']['#value'])) {
+      $form_state['values']['step-1']['template'] = filter_xss($form['step-'.$num]['template']['#value'], array('a', 'p', 'br', 'font', 'style'));
+    }
+      //each template must have a title
     if (!empty($form_state['values']['step-'.$num]['template']) && empty ($form_state['values']['step-'.$num]['template'])) {
       form_set_error(t('Every template must have a title'));
     }

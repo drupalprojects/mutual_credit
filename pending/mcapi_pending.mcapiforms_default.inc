@@ -95,7 +95,7 @@ function mcapi_pending_mcapiforms_default_alter(&$mcapiforms) {
   foreach ($mcapiforms as $name => $mcapiform) {
     if ($name == 'add_my_signature') continue;
     if ($mcapiform->data['submission']['state'] == TRANSACTION_STATE_FINISHED) {
-      $mcapiform->data['submission']['outgoing'] = TRANSACTION_STATE_PENDING;
+      $mcapiform->data['submission']['state'] = TRANSACTION_STATE_PENDING;
     }
   }
 }

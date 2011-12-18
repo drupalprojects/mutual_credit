@@ -3,7 +3,7 @@
 
 function mcapi_pending_install() {
   //todo: go through each of the currencies and make sure they have a pending permissions value
-  debug(t('Pending state is now available. Adjust any non-default transaction forms to save into the pending state: !link',
+  drupal_set_message(t('Pending state is now available. Adjust any non-default transaction forms to save into the pending state: !link',
     array('!link' => l('admin/accounting/forms', 'admin/accounting/forms'))
   ));
 }

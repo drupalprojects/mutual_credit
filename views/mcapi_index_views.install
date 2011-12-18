@@ -1,15 +1,18 @@
 <?php
 function mcapi_index_views_install() {
 
-  db_query("DROP TABLE IF EXISTS mcapi_index");
+  db_query("DROP TABLE IF EXISTS {mcapi_index}");
   db_query(
-    "CREATE ALGORITHM = UNDEFINED VIEW  `mcapi_index` AS SELECT t.xid, t.payer AS uid1, t.payee AS uid2, 0 AS income, w.worth_quantity AS expenditure, - w.worth_quantity AS diff, w.worth_quantity AS volume, w.worth_currcode AS currcode, t.created
-FROM mcapi_transactions t
-RIGHT JOIN field_data_worth w ON t.xid = w.entity_id
-UNION
-SELECT t.xid, t.payee AS uid1, t.payer AS uid2, w.worth_quantity AS income, 0 AS expenditure, w.worth_quantity AS diff, w.worth_quantity AS volume, w.worth_currcode AS currcode, t.created
-FROM mcapi_transactions t
-RIGHT JOIN field_data_worth w ON t.xid = w.entity_id"
+    "CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS 
+      SELECT t.xid, t.payer AS uid1, t.payee AS uid2, 0 AS income, w.worth_quantity AS expenditure,
+          - w.worth_quantity AS diff, w.worth_quantity AS volume, w.worth_currcode AS currcode, t.created
+        FROM {mcapi_transactions} t
+        RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
+      UNION
+        SELECT t.xid, t.payee AS uid1, t.payer AS uid2, w.worth_quantity AS income, 0 AS expenditure,
+          w.worth_quantity AS diff, w.worth_quantity AS volume, w.worth_currcode AS currcode, t.created
+        FROM {mcapi_transactions} t
+      RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id"
     );
 }
 

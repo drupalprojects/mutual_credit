@@ -146,21 +146,23 @@ function mcapi_forms_theme($existing, $type, $theme, $path) {
 
 /*
  * callback specified in the export_ui plugin
+ * the formID is actually ctools_export_ui_edit_item_form
  */
 function mcapi_edit_mcapi_form(&$form, &$form_state) {
+
+  //this big form builder function is kept in admin.inc
+  form_load_include($form_state, 'admin.inc', 'mcapi_forms');
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_forms') .'/mcapi_forms.admin.inc';
   $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
   $form['#tree'] = TRUE;
 
-  //this big form builder function is kept in admin.inc
-  form_load_include($form_state, 'admin.inc', 'mcapi_forms');
   return _edit_mcapi_form($form, $form_state);
 }
 
 /*
  * implements hook_form_FORMID_alter
  */
-function mcapi_forms_form_mcapi_edit_mcapi_form_alter(&$form, &$form_state) {
+function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   $form['#validate'][] = 'mcapi_forms_template_validate';
   $form['#submit'][] = 'cache_clear_mcapi_forms';
   $form_state['redirect'] = 'admin/accounting/forms';
@@ -176,7 +178,6 @@ function mcapi_forms_load($name = NULL) {
     $items = $cached->data;
   }
   else {
-    debug('reloading mcapi forms and rebuilding menu');
     $items = ctools_export_crud_load_all('mcapi_forms');
     drupal_alter('mcapi_forms', $items);
     cache_set('mcapi_forms', $items);
@@ -219,22 +220,6 @@ function mcapi_access_check_roles($rid) {
   return in_array($rid, $roles);
 }
 
-/*
- * return an array of fields added to the transaction entity,  - critically, keyed by machine_name
- */
-function mcapi_form_get_formAPI_fields() {
-  //get the names of the additional entity fields
-  $pseudo_form = array();
-  $transaction = new_transaction();
-  $fs = array();//just a placeholder for form_state
-  //add the fields to our imaginary form, and then iterate through them
-  field_attach_form('transaction', $transaction, $pseudo_form, $fs);
-  $fields = array();
-  foreach (element_children($pseudo_form) as $fieldname) {
-    $fields[$fieldname] = $pseudo_form[$fieldname];
-  }
-  return $fields;
-}
 
 /*
  * validate callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
@@ -286,6 +271,18 @@ function mcapi_hide_tabs() {
 function mcapi_path_validate(&$element, &$form_state) {}
 
 function cache_clear_mcapi_forms() {
-  debug('clearing mcapi form cache');
   cache_clear_all('mcapi_forms', 'cache');
+}
+
+/*
+ * implements hook_form_field_ui_field_edit_form_alter
+ * ensures that no field on the transaction entity is required
+ * because this should be handled through this module
+ */
+function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
+  if ($form['#instance']['entity_type'] == 'transaction') {
+    $form['instance']['required']['#type'] = 'hidden';
+    $form['instance']['required']['#value'] = FALSE;
+  }
+
 }

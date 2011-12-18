@@ -12,3 +12,4 @@ files[] = mcapi_index_views.views.inc
 files[] = mcapi_index_views.views_default.inc
 files[] = views_handler_field_mcapi_index_currcode.inc
 files[] = views_handler_field_mcapi_index_quantity.inc
+files[] = views_handler_field_mcapi_index_balance.inc

@@ -57,16 +57,16 @@ function mcapi_menu() {
 function mcapi_menu_alter(&$items) {
   foreach (array_keys($items) as $key) {
     //we don't need to see the page for arranging the bundle fields,
-    if (substr($key, 0, 41) == 'admin/accounting/transaction/edit/display' || substr($key, 0, 38) == 'admin/accounting/currency/edit/display') {
+    if (substr($key, 0, 41) == 'admin/accounting/edit/display' || substr($key, 0, 38) == 'admin/accounting/currency/edit/display') {
       unset($items[$key]);
     }
   }
-  unset($items['admin/accounting/transaction/edit/display']);
+  unset($items['admin/accounting/edit/display']);
   unset($items['admin/accounting/currency/edit/display']);
-  unset($items['admin/accounting/transaction/fields/worth/delete']);
+  unset($items['admin/accounting/fields/worth/delete']);
   //but we do want to manage the fields for two entity types on one page.
   $items['admin/accounting/currency/edit/fields']['title'] = 'Currency fields';
-  $items['admin/accounting/transaction/edit/fields']['title'] = 'Transaction fields';
+  $items['admin/accounting/edit/fields']['title'] = 'Transaction fields';
 }
 
 /*
@@ -226,6 +226,7 @@ function transaction_adminedit($transaction) {
   module_load_include('inc', 'mcapi');
   foreach ($transaction->worth['und'] as $flow) {
     $currency = currency_load($flow['currcode']);
+    if (empty($currency->update))return;
     $states = $currency->update;
     $function = $states[$transaction->state];
     if (function_exists($function)) {
@@ -622,3 +623,13 @@ function _mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$q
   $query->condition($or_currcodes);
 }
 
+
+/*
+ * Bit of a one off, this one
+ */
+function mcapi_format_usernames($accounts) {
+  foreach($accounts as $account) {
+    $names[] = format_username($account);
+  }
+  return implode(' & ' ,$names);
+}

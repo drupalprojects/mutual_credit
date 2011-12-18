@@ -65,10 +65,6 @@ class mcapi_currencies_ui extends ctools_export_ui {
     //fourth col, storage
     $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
     //final col, links
-    // Reorder the operations so that enable is the default action for a templatic views
-    if (!empty($operations['enable'])) {
-      $operations = array('enable' => $operations['enable']) + $operations;
-    }
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
     $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
     // Add an automatic mouseover of the description if one exists.

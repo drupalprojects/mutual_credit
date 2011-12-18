@@ -41,12 +41,9 @@ function mcapi_pending_menu() {
 function mcapi_pending_menu_alter(&$items) {
   //this menu item is generated from the transaction form-in-code
   //it can ONLY be seen by signatories
-  $new = array(
-    'access callback' => 'mcapi_pending_signatories_access',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_ACTION,
-  );
-  $items['transaction/%transaction/sign'] = $new + $items['transaction/%transaction/sign'];
+  $items['transaction/%transaction/sign']['access callback'] = 'mcapi_pending_signatories_access';
+  $items['transaction/%transaction/sign']['access arguments'] = array(1);
+  $items['transaction/%transaction/sign']['type'] = MENU_LOCAL_ACTION;
 }
 
 function has_pending($account) {
@@ -232,18 +229,6 @@ function mcapi_get_signatories($xid = NULL, $uid = NULL) {
 
 
 /*
- * Bit of a one off, this one
- */
-function mcapi_format_usernames($accounts) {
-  foreach($accounts as $account) {
-    $names[] = format_username($account);
-  }
-  $output = implode(' & ' ,$names);
-  return $output;
-}
-
-
-/*
  * implements hook_form_FORMID_alter
  * bumps the signature form up to stage 2, where the fields are rendered as text
  */
@@ -258,7 +243,6 @@ function mcapi_pending_form_mcapi_forms_form_alter(&$form, &$form_state) {
 
 function add_my_signature_submit($form, &$form_state) {
   //remove the signatory from the transaction
-  debug($form_state['transaction']);
   if ($form_state['transaction']->state = TRANSACTION_STATE_PENDING) {
     mcapi_sign($form_state['transaction'], $GLOBALS['user']->uid);
   }
@@ -336,24 +320,29 @@ function mcapi_signall_confirm_form_submit($form, &$form_state) {
  *
  * Implements hook_form_FORM_ID_alter
  * modifies its own form to hide exceptional fields
- * adds ajax to the state selector
- * then if the state is set to pending, this inserts the checkboxes to require signatures in transaction forms
  *
  */
 function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   //check that this is actually a transaction form
-  if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
-  //add the checbox to each participant field to say whether their signature is required
-  $form['submission']['outgoing']['#ajax'] = array(
-    'callback' => 'mcapi_forms_ajax_settings',
-    'wrapper' => 'form-wrapper'
-  );
-  //disable the path field for the pending form
-  if ($form['architecture']['path']['#default_value'] == 'transaction/%transaction/sign') {
-    $form['architecture']['path']['#disabled'] = TRUE;
-    //disable the fields that would change the meaning of the form.
-    $form['submission']['state']['#type'] = 'hidden';
+//  if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
+  if ($form_state['item']->name != 'add_my_signature') return;
+
+  $form['architecture']['path']['#disabled'] = TRUE;
+  //disable the fields that would change the meaning of the form.
+  $form['submission']['state']['#type'] = 'hidden';
+  $form['submission']['state']['#value'] = 0;
+  $form['architecture']['use_block']['#type'] = 'hidden';
+  $form['architecture']['menu_link']['#type'] = 'hidden';
+  $form['architecture']['menu_link']['#value'] = 0;
+  $form['perspective']['#type'] = 'hidden';
+  $form['perspective']['#value'] = 3;
+  $instances = field_info_instances('transaction', 'transaction');
+    mcapi_disable_recursive($form['payer']);
+    mcapi_disable_recursive($form['payee']);
+  foreach ($instances as $instance) {
+    mcapi_disable_recursive($form[$instance['field_name']]);
   }
+  unset($form['step-1']);
 }
 
 /*
@@ -378,3 +367,10 @@ function mcapi_check_integrity() {
   }
 }
 
+
+function mcapi_disable_recursive(&$array) {
+  $array['#disabled'] = TRUE;
+  foreach(element_children($array) as $fieldname) {
+    mcapi_disable_recursive($array[$fieldname]);
+  }
+}

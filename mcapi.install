@@ -31,7 +31,6 @@ function mcapi_install() {
       $data['entity_types'][] = 'transaction';
       $data_col = serialize($data);
       db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
-      debug('Enabled body field to be applied to transaction bundles');
     }
   }
 }
@@ -164,7 +163,6 @@ function mcapi_check_fields() {
     field_create_field($field);
   }
   else {
-    debug("activating preexisting field 'worth'");
     db_query("UPDATE {field_config} SET active = 1 WHERE field_name = 'worth'");
   }
   // Create the instance if needed.
@@ -208,7 +206,7 @@ function mcapi_controller_options_form($form_state) {
   );
 
   global $databases;
-  if (variable_get('mcapi_controller', 'mcapi') == 'mcapi') {
+  if (count($databases) > 1) {
     foreach($databases as $key => $data) {
       $options[$key] = $key;
     }
@@ -228,7 +226,7 @@ function mcapi_controller_options_form($form_state) {
         t("the database should be appropriate for the controller."),
       '#type' => 'checkboxes',
       '#options' => $options,
-      '#default_value' => variable_get('mcapi_db_write', array('default'=>'default')),
+      '#default_value' => variable_get('mcapi_db_write', array('default' => 'default')),
       '#ajax' => array(
         'callback' => 'mcapi_controller_options_form_ajax',
         'wrapper' => 'master-slave',

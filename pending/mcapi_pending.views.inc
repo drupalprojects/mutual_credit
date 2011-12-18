@@ -67,16 +67,3 @@ function mcapi_pending_views_data() {
 
   return $data;
 }
-
-
-function ________mcapi_pending_views_data_alter(&$data) {
-  //make a join with the transactions table
-  $data['mcapi_transactions']['table']['join'] = array(
-    'mcapi_signatures' => array(
-      'left_field' => 'xid',
-      'field' => 'xid',
-      'type' => 'RIGHT',
-    ),
-  );
-  debug($data['mcapi_transactions']['table']);
-}

@@ -22,7 +22,7 @@ function mcapi_index_views_views_data() {
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'users',
-      'field' => 'uid',
+      'field' => 'uid1',
       'label' => t('1st user'),
     ),
   );
@@ -32,7 +32,7 @@ function mcapi_index_views_views_data() {
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'users',
-      'field' => 'uid',
+      'field' => 'uid2',
       'label' => t('2nd user'),
     ),
   );
@@ -40,7 +40,7 @@ function mcapi_index_views_views_data() {
     'title' => t('Income'), // The item it appears as on the UI,
     'help' => t('Number of units of currency incoming'),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_quantity_index',
+      'handler' => 'views_handler_field_mcapi_index_quantity',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -55,7 +55,7 @@ function mcapi_index_views_views_data() {
     'title' => t('Expenditure'), // The item it appears as on the UI,
     'help' => t('Number of units of currency outgoing'),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_quantity_index',
+      'handler' => 'views_handler_field_mcapi_index_quantity',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -70,7 +70,7 @@ function mcapi_index_views_views_data() {
     'title' => t('Value'), // The item it appears as on the UI,
     'help' => t("Change in the users balance"),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_quantity_index',
+      'handler' => 'views_handler_field_mcapi_index_quantity',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -84,7 +84,7 @@ function mcapi_index_views_views_data() {
     'title' => t('Volume'), // The item it appears as on the UI,
     'help' => t("Absolute value of the trade"),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_quantity_index',
+      'handler' => 'views_handler_field_mcapi_index_quantity',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -96,9 +96,9 @@ function mcapi_index_views_views_data() {
   );
   $data['mcapi_index']['balance'] = array(
     'title' => t('Balance'), // The item it appears as on the UI,
-    'help' => t("Indexed running balance after each transaction") . ' (fragile field at the moment)',
+    'help' => t("Indexed running balance after each transaction. (1 database query per row)"),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_quantity_index',
+      'handler' => 'views_handler_field_mcapi_index_balance',
     ),
   );
   $data['mcapi_index']['created'] = array(

@@ -78,7 +78,6 @@ function mcapi_field_is_empty($item) {
  * and screws up generating the pseudo fields in the mcapi_forms module, see _mcapi_edit_form
  */
 function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-//  debug(func_get_args());
   $element['#delta'] = $delta;
   $item = &$items[$delta];
   $element['quantity'] = array(
@@ -104,15 +103,10 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
       $element['#theme'] = 'worth_widget_currcode';
       break;
     default:
-      $element['currcode'] = array(
-        '#type' => 'select',
-        '#options' => currency_select($currencies),
-        '#default_value' => $currcode,
-        '#weight' => -1,
-        '#ajax' => array(
-          'callback' => 'mcapi_ajax_worth',
-          'wrapper' => 'edit-worth-und-'.$delta
-        ),
+      $element['currcode'] = currency_picker_element($currcode, NULL, $currencies);
+      $element['currcode']['#ajax'] = array(
+        'callback' => 'mcapi_ajax_worth',
+        'wrapper' => 'edit-worth-und-'.$delta
       );
       $element['#theme'] = 'worth_widgets';
   }

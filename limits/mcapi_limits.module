@@ -282,7 +282,6 @@ function mcapi_limit_check($transaction) {
 
     //check that the payee isn't going over their max limit
     $limits = limits_get($currcode, $payee);
-    debug($limits);
     if (is_numeric($limits['max'])) {
       $balance = entity_get_controller('transaction')
         ->balance($payee, $currcode, $states = array(TRANSACTION_STATE_FINISHED));

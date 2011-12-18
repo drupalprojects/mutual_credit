@@ -124,7 +124,7 @@ function mcapi_currencies_mcapi_info_drupal_permissions() {
 
 
 
-function transaction_validate_currency_access($form, $form_state) {debug('need to check each transactee can use this/these currencies');
+function transaction_validate_currency_access($form, $form_state) {
   $transaction = &$form_state['transaction'];
   $currency = currency_load($transaction->currcode);
   $participants = array('payer', 'payer');
@@ -143,13 +143,15 @@ function currencies_load_all() {
   ctools_include('export');
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them
-  foreach($all as $name => $row) {
-    if (empty($row->disabled)) {
-      $currencies[$name] = $row->data;
+  foreach($all as $name => $currency) {
+    if (empty($currency->disabled)) {
+      _currency_divisions_array($currency->data);
+      $currencies[$name] = $currency->data;
     }
   }
   return $currencies;
 }
+
 
 /*
  * forces a reload of currencies into the cache and static variable
@@ -182,19 +184,22 @@ function mcapi_currencies_form_submit($form, &$form_state) {
 /*
  * returns a form element for picking a currency
  */
-function currency_picker_element($default_value, $multiple = FALSE, $options = array()) {
-  if (empty($options)) {
-    $currencies = currencies_load();
-    foreach ($currencies as $currcode => $currency) {
-      $options[$currcode] = $currency->name;
-    }
-  }
-
+function currency_picker_element($default_value, $multiple = FALSE, $currencies = array()) {
   return array(
     '#title' => t('Currency'),
     '#type' => 'select',
-    '#options' => $options,
+    '#options' => currency_picker_element_options($currencies),
     '#default_value' => $default_value,
     '#multiple' => $multiple,
   );
+}
+
+function currency_picker_element_options($currencies = array()) {
+  if (empty($currencies)) {
+    $currencies = currencies_load();
+  }
+  foreach ($currencies as $currency) {
+    $options[$currency->info['currcode']] = $currency->name;
+  }
+  return $options;
 }

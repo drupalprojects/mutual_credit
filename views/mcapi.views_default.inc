@@ -309,7 +309,7 @@ $handler->display->display_options['filters']['state']['expose']['operator_id'] 
 $handler->display->display_options['filters']['state']['expose']['label'] = 'State';
 $handler->display->display_options['filters']['state']['expose']['operator'] = 'state_op';
 $handler->display->display_options['filters']['state']['expose']['identifier'] = 'state';
-$handler->display->display_options['filters']['state']['expose']['required'] = 1;
+$handler->display->display_options['filters']['state']['expose']['required'] = 0;
 $handler->display->display_options['filters']['state']['expose']['reduce'] = 0;
 /* Filter criterion: Transaction: Value (worth:quantity) */
 $handler->display->display_options['filters']['worth_quantity']['id'] = 'worth_quantity';

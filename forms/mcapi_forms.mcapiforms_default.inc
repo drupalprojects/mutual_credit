@@ -55,7 +55,7 @@ function mcapiform_default_1stparty() {
         'preset' => array(
           'und' => array(
             0 => array(
-              'currcode' => 'def_drup',
+              'currcode' => current(currencies_load())->info['currcode'],
               'quantity' => '1',
             ),
           ),
@@ -140,7 +140,7 @@ function mcapiform_default_3rdparty() {
         'preset' => array(
           'und' => array(
             0 => array(
-              'currcode' => 'def_drup',
+              'currcode' => current(currencies_load())->info['currcode'],
               'quantity' => '0',
             ),
           ),
@@ -227,7 +227,7 @@ function mcapiform_default_many2one() {
         'preset' => array(
           'und' => array(
             0 => array(
-              'currcode' => 'def_drup',
+              'currcode' => current(currencies_load())->info['currcode'],
               'quantity' => '0',
             ),
           ),
@@ -317,7 +317,7 @@ function mcapiform_default_one2many() {
         'preset' => array(
           'und' => array(
             0 => array(
-              'currcode' => 'def_drup',
+              'currcode' => current(currencies_load())->info['currcode'],
               'quantity' => '0',
             ),
           ),
@@ -406,7 +406,7 @@ function mcapiform_default_correction() {
         'preset' => array(
           'und' => array(
             0 => array(
-              'currcode' => 'def_drup',
+              'currcode' => current(currencies_load())->info['currcode'],
               'quantity' => '0',
             ),
           ),

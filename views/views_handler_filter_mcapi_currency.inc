@@ -7,10 +7,7 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
 
   //this is waiting for a suitable hook function so that modules can declare their own exchange types.
   function get_value_options() {
-    $currencies = currencies_load();
-    foreach ($currencies as $currcode => $c) {
-      $this->value_options[$currcode] = $c->name;
-    }
+    $this->value_options[$currcode] = currency_picker_element_options();
   }
 
 
