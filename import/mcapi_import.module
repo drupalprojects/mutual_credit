@@ -17,7 +17,7 @@ function mcapi_import_menu() {
     'title' => 'Import Tools',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_balances_form'),
-    'access arguments' => array('configure economy'),
+    'access arguments' => array('configure currencies'),
     'weight' => 5
   );
   $items['admin/mc/import/balances'] = array(
@@ -29,8 +29,7 @@ function mcapi_import_menu() {
     'title' => 'LAUNCH MAIL',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('launch_form'),
-    'access arguments' => array('configure economy'),
-    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('configure currencies'),
     'weight' => -50
   );
   return $items;
@@ -294,12 +293,19 @@ function launch_form_submit($form, $form_state) {
   foreach(array_keys($traders->data) as $uid){
     change_and_mail(user_load($uid));
   }
-  drupal_set_message('Your users have now been notified');
+  mcapi_delete_menu_link();
   drupal_uninstall_modules('mcapi_import');
+  drupal_set_message('Your users have now been notified');
 }
 
 function change_and_mail($account) {
   _user_mail_notify('password_reset', $account);
+}
+
+function mcapi_delete_menu_link() {
+  $result = db_query("SELECT mlid FROM {menu_links} WHERE module = 'mcapi_import'");
+  $mlid = db_result($result);
+  menu_link_delete($mlid);
 }
 
 /**
