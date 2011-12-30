@@ -1047,16 +1047,17 @@ function mcapi_getview_user_transactions_index() {
   $handler->display->display_options['arguments']['uid1']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   /* Filter criterion: Transaction index: Currency */
-  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
-  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
-  $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
-  $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
-  $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
-
+  if (count(currencies_load()) >1 ) {
+    $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
+    $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
+    $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
+    $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
+    $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
+    $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
+  }
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['path'] = 'user/%/statement';
@@ -1254,20 +1255,20 @@ function mcapi_getview_user_trade() {
   $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid']['not'] = 0;
-  /* Filter criterion: Transaction index: Currency */
-  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
-  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['value'] = array(
-    'andyhour' => 'andyhour',
-  );
-  $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
-  $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
-  $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
-  $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['expose']['required'] = 1;
-  $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
+  if (count(currencies_load()) >1 ) {
+    /* Filter criterion: Transaction index: Currency */
+    $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
+    $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['value'] = array('All' => 'All');
+    $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
+    $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
+    $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
+    $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
+    $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
+  }
+
   /* Filter criterion: Transaction index: Value */
   $handler->display->display_options['filters']['diff']['id'] = 'diff';
   $handler->display->display_options['filters']['diff']['table'] = 'mcapi_index';
@@ -1306,20 +1307,6 @@ function mcapi_getview_user_trade() {
   $handler->display->display_options['header']['area_1']['format'] = '2';
   $handler->display->display_options['header']['area_1']['tokenize'] = 0;
   $handler->display->display_options['defaults']['filters'] = FALSE;
-  /* Filter criterion: Transaction index: Currency */
-  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
-  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['value'] = array(
-    'andyhour' => 'andyhour',
-  );
-  $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
-  $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
-  $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
-  $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['expose']['required'] = 1;
-  $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
   /* Filter criterion: Transaction index: Value */
   $handler->display->display_options['filters']['diff']['id'] = 'diff';
   $handler->display->display_options['filters']['diff']['table'] = 'mcapi_index';
@@ -1331,6 +1318,7 @@ function mcapi_getview_user_trade() {
     'default' => 0,
   );
   $handler->display->display_options['attachment_position'] = 'after';
+  $handler->display->display_options['inherit_exposed_filters'] = 1;
 
   return $view;
 }

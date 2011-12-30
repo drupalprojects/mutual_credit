@@ -245,10 +245,8 @@ function mcapi_limits_validate_minmax(&$element, $form_state) {
  * implements hook_form_alter
  * inject the limit checker function into the transaction form
  */
-
 function mcapi_limits_form_alter(&$form, $form_state, $form_id) {
-  //this is the only way I can think of to check whether this is a transaction form
-  if (isset($form['type']['#value']) && $form['type']['#value'] == $form_id) {
+  if ($form_id == 'mcapi_forms_form') {
     $form['#validate'][] = 'limits_transaction_form_validate';
   }
 }

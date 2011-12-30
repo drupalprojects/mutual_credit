@@ -29,7 +29,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   $form['#suffix'] = '</div>';
   //I think ctools is supposed to be handling this
   $form['info']['name']['#type'] = 'machine_name';
-  $form['info']['name']['#machine_name']['exists'] = 'mcapi_forms_load';
+  $form['info']['name']['#machine_name']['exists'] = 'mcapi_forms_exists';
 
   $perspectives = array(
     3 => t('3rd Party'),
@@ -366,4 +366,9 @@ function mcapi_forms_template_validate($form, &$form_state) {
       form_set_error(t('Every template must have a title'));
     }
   }
+}
+
+function mcapi_forms_exists($machine_name, $element, &$form_state) {
+  $forms = mcapi_forms_load();
+  return isset($forms['machine_name']);
 }

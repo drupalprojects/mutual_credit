@@ -102,9 +102,10 @@ function mcapi_index_views_views_api() {
   );
 }
 
-
-
-
+/*
+ * implements hook_views_query_alter
+ * adds the currency code field to queries which is necessary for theming
+ */
 function mcapi_index_views_views_query_alter($view, &$query) {
   if (in_array('mcapi_index', array_keys($query->table_queue))) {
     //this index table needs to have the currency code field put in automatically

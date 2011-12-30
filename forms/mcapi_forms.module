@@ -149,13 +149,11 @@ function mcapi_forms_theme($existing, $type, $theme, $path) {
  * the formID is actually ctools_export_ui_edit_item_form
  */
 function mcapi_edit_mcapi_form(&$form, &$form_state) {
-
   //this big form builder function is kept in admin.inc
   form_load_include($form_state, 'admin.inc', 'mcapi_forms');
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_forms') .'/mcapi_forms.admin.inc';
   $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
   $form['#tree'] = TRUE;
-
   return _edit_mcapi_form($form, $form_state);
 }
 
@@ -163,6 +161,7 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
  * implements hook_form_FORMID_alter
  */
 function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+  if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
   $form['#validate'][] = 'mcapi_forms_template_validate';
   $form['#submit'][] = 'cache_clear_mcapi_forms';
   $form_state['redirect'] = 'admin/accounting/forms';
