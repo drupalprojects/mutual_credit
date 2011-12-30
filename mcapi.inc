@@ -33,6 +33,7 @@ function mcapi_entity_info_inc() {
         )
       ),
     ),
+    'view callback' => 'transaction_view', //used by entity module
     'view modes' => array(
       'certificate' => array(
         'label' => t('Certificate'),

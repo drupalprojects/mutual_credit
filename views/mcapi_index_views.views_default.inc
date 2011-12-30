@@ -1287,7 +1287,7 @@ function mcapi_getview_user_trade() {
   $handler->display->display_options['header']['area']['content'] = '<h4>Income</h4>';
   $handler->display->display_options['header']['area']['format'] = '2';
   $handler->display->display_options['header']['area']['tokenize'] = 0;
-  $handler->display->display_options['path'] = 'user/%/trade';
+  $handler->display->display_options['path'] = 'user/%/transactions';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Transactions';
   $handler->display->display_options['menu']['description'] = 'Income, Expenditure';

@@ -279,18 +279,25 @@ function transaction_menu_title($transaction) {
 
 /**
  * menu callback
- * build a render array for ONE transaction
- * $view mode can also be 'sentence'
+ * build a render array any number of transactions
+ * compatible with $entity_info['view callback'] from entity module
+ * first arg can be one or an array
  */
-function transaction_view($transaction, $view_mode = 'certificate') {
-  entity_prepare_view('transaction', array($transaction->xid => $transaction));
-  field_attach_prepare_view('transaction', array($transaction->xid => $transaction), 'default');
-  $transaction->additional = field_attach_view('transaction', $transaction, $view_mode);
-  return array(
-    '#theme' => 'transaction',
-    '#transaction' => $transaction,
-    '#view_mode' => $view_mode,
-  );
+function transaction_view($transactions, $view_mode = 'certificate', $langcode = 'und') {
+  if (!is_array($transactions)) {
+    $transactions = array($transactions->xid => $transactions);
+  }
+  entity_prepare_view('transaction', $transactions);
+  field_attach_prepare_view('transaction', $transactions, 'default');
+  foreach ($transactions as $transaction) {
+    $transaction->additional = field_attach_view('transaction', $transaction, $view_mode);
+    $renderable[] = array(
+      '#theme' => 'transaction',
+      '#transaction' => $transaction,
+      '#view_mode' => $view_mode,
+    );
+  }
+  return $renderable;
 }
 
 /*
