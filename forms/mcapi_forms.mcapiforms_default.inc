@@ -42,7 +42,7 @@ function mcapiform_default_1stparty() {
     ),
     'direction' => array(
       'shared' => array(
-        'preset' => '',
+        'preset' => 'outgoing',
         'disable' => 0,
         'required' => 1,
       ),

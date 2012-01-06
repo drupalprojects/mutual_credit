@@ -165,8 +165,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
     );
     $direction_widget = _macpi_forms_direction_widget($mcapi_form['direction']);
     $options = array(
-      'outgoing' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
-      'incoming' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment')
+      'incoming' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
+      'outgoing' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment')
     );
     $form['direction'] = _mcapi_form_shared($mcapi_form, $direction_widget, 'direction');
     $form['direction']['shared']['preset']['#options'] = $options;

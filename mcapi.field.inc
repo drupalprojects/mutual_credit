@@ -340,7 +340,6 @@ function theme_worth_widget_currcode($variables) {
  */
 function theme_worth_widgets($variables) {
   $element = &$variables['element'];
-  //$element['currcode']['#options'] = array(t('Choose currency...')) + $element['currcode']['#options'];
   $row = array('data' => array(drupal_render($variables['element']['currcode']), drupal_render($variables['element']['quantity'])));
 
   if (!empty($variables['element']['division'])) {

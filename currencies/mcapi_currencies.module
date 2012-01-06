@@ -188,7 +188,7 @@ function currency_picker_element($default_value, $multiple = FALSE, $currencies 
   return array(
     '#title' => t('Currency'),
     '#type' => 'select',
-    '#options' => empty($currencies) ? currency_picker_element_options() : $currencies,
+    '#options' => currency_picker_element_options($currencies),
     '#default_value' => $default_value,
     '#multiple' => $multiple,
   );
