@@ -365,17 +365,18 @@ function mcapi_getview_user_transactions() {
   $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid']['not'] = 0;
-  /* Filter criterion: Transaction index: Currency */
-  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
-  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
-  $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
-  $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
-  $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
-
+  if (module_exists('mcapi_currencies')) {
+    /* Filter criterion: Transaction index: Currency */
+    $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
+    $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
+    $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
+    $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
+    $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
+    $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
+  }
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['path'] = 'user/%/trades';

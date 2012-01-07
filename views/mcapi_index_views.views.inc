@@ -137,3 +137,17 @@ function mcapi_index_views_views_data() {
   }
   return $data;
 }
+
+/*
+ * implements hook_views_data_alter
+ * anything (field) that is joined to mcapi_transactions should be joined to mcapi_index also
+ * except worth field, which is copied in the table already
+ */
+function mcapi_index_views_views_data_alter(&$data) {
+  foreach ($data as $handler => $info) {
+    if (in_array($handler, array('field_data_worth', 'mcapi_signatures'))) continue;
+    if (isset($info['table']['join']['mcapi_transactions'])) {
+      $data[$handler]['table']['join']['mcapi_index'] = $info['table']['join']['mcapi_transactions'];
+    }
+  }
+}

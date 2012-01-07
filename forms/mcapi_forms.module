@@ -103,9 +103,9 @@ function mcapi_forms_block_view($delta) {
   if (current_path() == $mcapi_form->path) return;
   $form = drupal_get_form($delta, $mcapi_form);
   if (!$form) return;
-  return array(
+  return array(//if these seem inverted its because drupal_get_form loads the inc file
+    'content' => drupal_get_form($delta, $mcapi_form),//delta is the $mcapi_form->machine_name
     'subject' => mcapi_form_template($mcapi_form)->title,
-    'content' => drupal_get_form($delta, $mcapi_form)//delta is the $mcapi_form->machine_name
   );
   module_load_include('inc', 'mcapi_forms');
 }

@@ -26,8 +26,8 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
   function render($values) {
     if (empty($this->uid)) {
       $arg = array_search('uid', array_keys($this->view->argument));
+      if (empty($arg)) throw new Exception('Views running balance requires uid argument');
       $this->uid = $this->view->args[$arg];
-      if (empty($this->uid)) return;
     }
     return array(
       '#theme' => 'worth_field',
