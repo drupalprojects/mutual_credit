@@ -7,19 +7,19 @@ function mcapi_index_views_install() {
       SELECT t.xid, t.payer AS uid1, t.payee AS uid2, 0 AS income, w.worth_quantity AS expenditure,
           - w.worth_quantity AS diff, w.worth_quantity AS volume, w.worth_currcode AS currcode, t.created
         FROM {mcapi_transactions} t
-        WHERE state = 0
         RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
-      UNION
-        SELECT t.xid, t.payee AS uid1, t.payer AS uid2, w.worth_quantity AS income, 0 AS expenditure,
+        WHERE state = 0
+    UNION
+      SELECT t.xid, t.payee AS uid1, t.payer AS uid2, w.worth_quantity AS income, 0 AS expenditure,
           w.worth_quantity AS diff, w.worth_quantity AS volume, w.worth_currcode AS currcode, t.created
         FROM {mcapi_transactions} t
-        WHERE state = 0
-      RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id"
+        RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
+        WHERE state = 0"
   );
 }
 
 function mcapi_index_views_uninstall() {
-  db_query("DROP TABLE IF EXISTS mcapi_index");
+  db_query("DROP TABLE IF EXISTS mcapi_index; DROP VIEW IF EXISTS {mcapi_index}");
   $views = db_query("SELECT name from {views_view} WHERE base_table = 'mcapi_index'")->fetchCol();
   foreach ($views as $viewname) {
     $view = views_get_view($viewname);

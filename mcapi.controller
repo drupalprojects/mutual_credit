@@ -198,7 +198,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     //when we joing the tables like this, half of all values will be NULL, and NULL values do not add
     //so these NULL values need to be selected as 0 before adding
     //there may well be a more elegant way
-    $query = "SELECT SUM(COALESCE(w1.worth_quantity, 0)) - SUM(COALESCE(w2.worth_quantity, 0))
+    $query = "SELECT SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0))
       FROM {mcapi_transactions} t
       LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
       LEFT JOIN {field_data_worth} w2 ON t.xid = w2.entity_id AND w2.worth_currcode = '$currcode' AND t.payee = $uid

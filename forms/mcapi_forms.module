@@ -11,11 +11,11 @@
 function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
-  //one menu callback for each form.
-  $mcapi_forms = mcapi_forms_load();
+  $mcapi_forms = mcapi_forms_load(NULL, TRUE);
   $editform = $mcapi_forms['correction'];
   unset($mcapi_forms['correction']); //see below
   module_load_include('inc', 'mcapi_forms');
+  //one menu callback for each form.
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
     $menu = $mcapi_form->data['architecture'];
@@ -172,15 +172,16 @@ function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_s
  * it seems that ctools isn't doing any cacheing
  */
 function mcapi_forms_load($name = NULL) {
-  ctools_include('export');
-  if ($cached = cache_get('mcapi_forms')) {
-    $items = $cached->data;
-  }
-  else {
+  $cached = cache_get('mcapi_forms');
+  if (empty($cached)) {
+    ctools_include('export');
     $items = ctools_export_crud_load_all('mcapi_forms');
     drupal_alter('mcapi_forms', $items);
     cache_set('mcapi_forms', $items);
     menu_rebuild();
+  }
+  else {
+    $items = &$cached->data;
   }
   if ($name) {
     if (isset($items[$name])) {

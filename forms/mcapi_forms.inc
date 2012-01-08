@@ -29,7 +29,10 @@ function mcapi_forms_form($form, &$form_state) {
       $instances = field_info_instances('transaction', 'transaction');
       //get the default contents of the fields from the form settings
       foreach ($instances as $instance) {
-        $transaction->{$instance['field_name']} = $mcapi_form->data[$instance['field_name']]['shared']['preset'];
+        //The transaction might contain new fields not known about by the saved form
+        if (!empty($mcapi_form->data[$instance['field_name']]['shared']['preset'])) {
+          $transaction->{$instance['field_name']} = $mcapi_form->data[$instance['field_name']]['shared']['preset'];
+        }
       }
     }
   } 
@@ -376,7 +379,7 @@ function mcapi_forms_multiple_submit($form, &$form_state) {
   }
 }
 
-function mcapi_forms_validate($form, &$form_state) {
+function mcapi_forms_validate($form, &$form_state) {debug($form_state['values']);
   //don't validate if it's ajax
   if (current_path() == 'system/ajax') {
     return;

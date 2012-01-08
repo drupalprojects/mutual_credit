@@ -19,6 +19,13 @@ function mcapi_index_views_views_data() {
   $data['mcapi_index']['uid1'] = array(
     'title' => t('1st user'), // The item it appears as on the UI,
     'help' => t('The the transactor, whose perspective we are looking from'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument',
+      'click sortable' => TRUE,
+    ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'users',
@@ -29,6 +36,13 @@ function mcapi_index_views_views_data() {
   $data['mcapi_index']['uid2'] = array(
     'title' => t('2nd user'),
     'help' => t("The transactee"),
+    'field' => array(
+      'handler' => 'views_handler_field',
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument',
+      'click sortable' => TRUE,
+    ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'users',
