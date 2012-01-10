@@ -342,9 +342,6 @@ function show_balance_limits($account, $currcode, $adjust = FALSE) {
 
   //this chart makes no sense if there isn't a max (or min) limit
   if (!is_numeric($limits['max']) || !is_numeric($limits['min'])) {
-    //not sure a warning message is required here...
-    $path = "admin/accounting/currency/list/$currcode/edit";
-    drupal_set_message(t('Balance limits requires minimum and maximum balances for currency: !link', array('!link' => l($path, $path))));
     return array();
   }
   return array(

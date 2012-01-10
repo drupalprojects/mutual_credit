@@ -4,6 +4,8 @@
  * In this file we build the form, using the object cached in ctools
  */
 module_load_include('inc', 'mcapi');
+define('MCAPIFORM_STEP_ENTER', 1);
+define('MCAPIFORM_STEP_CONFIRM', 2);
 
 /*
  * main form builder, starts by building the base form in the mcapi module
@@ -19,13 +21,13 @@ function mcapi_forms_form($form, &$form_state) {
     //use the transaction whose xid was passed via the url, and pulled fresh from the database
     $transaction = &$form_state['build_info']['args'][1];
     $form_state['storage'] = array();
-    if (empty($mcapi_form->data['step-1']['title'])) {
-      $form_state['step'] = 2;
+    if (empty($mcapi_form->data['step-'.MCAPIFORM_STEP_ENTER]['title'])) {
+      $form_state['step'] = MCAPIFORM_STEP_CONFIRM;
       $form_state['transaction'] = $transaction;
       $form_state['values'] = $form_state['storage'];
     }
     else {
-      $form_state['step'] = 1;
+      $form_state['step'] = MCAPIFORM_STEP_ENTER;
       $instances = field_info_instances('transaction', 'transaction');
       //get the default contents of the fields from the form settings
       foreach ($instances as $instance) {
@@ -122,11 +124,13 @@ function mcapi_forms_form($form, &$form_state) {
     //this validation function must run BEFORE the main one in the API, which requires payer and payee
     array_unshift($form['#validate'], 'mcapi_forms_validate_2ndperson');
   }
+  debug(array_keys($mcapi_form->data));
   //we now modify the transaction form fields according to the form settings for each field
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
     //@ needed in case the form builder wasn't saved since the field was added
     $form[$fieldname]['#disabled'] = @$mcapi_form->data[$fieldname]['shared']['disable'];
     $form[$fieldname]['#required'] = @$mcapi_form->data[$fieldname]['shared']['required'];
+    mcapi_form_default_value($form[$fieldname], @$mcapi_form->data[$fieldname]);
   }
 
   mcapi_unset_recursive($form, '#title');
@@ -139,7 +143,7 @@ function mcapi_forms_form($form, &$form_state) {
   else {
     $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
-  if ($form_state['step'] > 1) {
+  if ($form_state['step'] > MCAPIFORM_STEP_CONFIRM && !empty($form_state['values'])) {
     $form['buttons']['back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
@@ -211,7 +215,7 @@ function mcapi_form_collect_tokens(&$mcapi_form) {
 
 function mcapi_form_prepare_tokens(&$form, &$form_state) {
   $form['#replacements'] = array();
-  if ($form_state['step'] == 1) { //step 1 means we render it as a form
+  if ($form_state['step'] == MCAPIFORM_STEP_ENTER) { //step 1 means we render it as a form
     foreach ($form['#tokens'] as $fieldname) {
       if (strpos($form['#template'], "[$fieldname]") !== FALSE) {
         mcapi_form_remove_theme_wrapper($form[$fieldname]);
@@ -379,7 +383,7 @@ function mcapi_forms_multiple_submit($form, &$form_state) {
   }
 }
 
-function mcapi_forms_validate($form, &$form_state) {debug($form_state['values']);
+function mcapi_forms_validate($form, &$form_state) {
   //don't validate if it's ajax
   if (current_path() == 'system/ajax') {
     return;
@@ -393,9 +397,9 @@ function mcapi_forms_validate($form, &$form_state) {debug($form_state['values'])
     $form_state['step']--;
   }
   //if step 2 template is available add a step and rebuild the form
-  elseif (strlen($form_state['build_info']['args'][0]->data['step-2']['template'])) {
+  elseif (strlen($form_state['build_info']['args'][0]->data['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) {
     //Submission errors will not prevent the form advancing.
-    $form_state['rebuild'] = $form_state['step'] == 1 ? TRUE : FALSE;
+    $form_state['rebuild'] = $form_state['step'] == MCAPIFORM_STEP_ENTER ? TRUE : FALSE;
     $form_state['step']++;
   }
   $form_state['storage'] += $form_state['values'];
@@ -465,7 +469,7 @@ function mcapi_direction_validate(&$element, &$form_state) {
  * Some forms will have one step or the other, some will have both
  */
 function mcapi_form_template($mcapi_form, $step = 0) {
-  foreach (array(1, 2) as $key) {
+  foreach (array(MCAPIFORM_STEP_ENTER, MCAPIFORM_STEP_CONFIRM) as $key) {
     if (!empty($mcapi_form->data['step-'.$key]['title'])) {
       $steps[$key] = (object)$mcapi_form->data['step-'.$key];
     }

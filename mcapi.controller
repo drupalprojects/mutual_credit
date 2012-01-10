@@ -49,6 +49,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       $query->orderBy('created', 'ASC');
       $queried_entities = $query->execute()->fetchAllAssoc($this->idKey);
       //extract the serialized data into 'extra' property
+      //there isn't acutally a use for the extra property at the moment.
       foreach ($queried_entities as $key => $entity) {
         $queried_entities[$key]->extra = unserialize($queried_entities[$key]->data);
         unset($queried_entities[$key]->data);

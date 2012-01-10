@@ -65,7 +65,6 @@ function mcapi_forms_admin_paths() {
 }
 
 /*
- * implements hook_forms
  * args[0] is a transaction
  * args[1] is the form name
  * args[2] is a loaded user (optional)

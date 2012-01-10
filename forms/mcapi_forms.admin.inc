@@ -240,8 +240,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#weight' => 7,
     '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
   );
-  $form['step-1'] = array(
-    '#title' => t('Step 1 form'),
+  $form['step-'.MCAPIFORM_STEP_ENTER] = array(
+    '#title' => t('Data entry step'),
     '#description' => implode(' ', array(
       t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
       t('Allowed tags are:') .' a, p, br, font, style'
@@ -253,17 +253,17 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Title'),
       '#description' => t('For use in block title and menu links.') .' '. t('Plain text only.'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['step-1']['title']) ? $mcapi_form['step-1']['title'] : '',
+      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['title']) ? $mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['title'] : '',
     ),
     'template' => array(
       '#title' => t('Main form'),
       '#type' => 'textarea',
-      '#rows' => isset($mcapi_form['step-1']['template']) ? count(explode("\n", $mcapi_form['step-1']['template'])) : 5,
-      '#default_value' => isset($mcapi_form['step-1']['template']) ? $mcapi_form['step-1']['template'] : '',
+      '#rows' => isset($mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template']) ? count(explode("\n", $mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template'])) : 5,
+      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template']) ? $mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template'] : '',
     ),
   );
-  $form['step-2'] = array(
-    '#title' => t('Step-2 form (optional)'),
+  $form['step-'.MCAPIFORM_STEP_CONFIRM] = array(
+    '#title' => t('Data confirmation step'),
     '#description' => implode(' ', array(
       t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
       t('Allowed tags are:') .' a, p, br, font, style'
@@ -275,15 +275,15 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Title'),
       '#description' => t('Plain text only.'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['step-2']['title']) ? $mcapi_form['step-2']['title'] : '',
+      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['title']) ? $mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['title'] : '',
     ),
     'template' =>  array(
       '#title' => t('Confirmation page (optional)'),
       '#description' => t('This page will be shown after the transaction has validated but before the form is submitted.') .' '.
         t("Two more tokens are available here, '@certificate' and '@summary'", array('@certificate' => '[certificate]', '@summary' => '[summary]')),
       '#type' => 'textarea',
-      '#rows' => isset($mcapi_form['step-2']['template']) ? count(explode("\n", $mcapi_form['step-2']['template'])) : 5,
-      '#default_value' => isset($mcapi_form['step-2']['template']) ? $mcapi_form['step-2']['template'] : '',
+      '#rows' => isset($mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template']) ? count(explode("\n", $mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) : 5,
+      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template']) ? $mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template'] : '',
       '#weight' => 2,
     )
   );
@@ -354,12 +354,12 @@ function mcapi_forms_ajax_settings($form, &$form_state) {
  * form validation callback for edit_mcapi_form
  */
 function mcapi_forms_template_validate($form, &$form_state) {
-  if (empty($form['step-1']['template']['#value']) && empty($form['step-2']['template']['#value'])) {
+  if (empty($form['step-'.MCAPIFORM_STEP_ENTER]['template']['#value']) && empty($form['step-'.MCAPIFORM_STEP_CONFIRM]['template']['#value'])) {
     form_set_error('template-1', t('The form template is empty'));
   }
   foreach (array('1', '2') as $num) {
     if (isset($form['step-'.$num]['template']['#value'])) {
-      $form_state['values']['step-1']['template'] = filter_xss($form['step-'.$num]['template']['#value'], array('a', 'p', 'br', 'font', 'style'));
+      $form_state['values']['step-'.MCAPIFORM_STEP_ENTER]['template'] = filter_xss($form['step-'.$num]['template']['#value'], array('a', 'p', 'br', 'font', 'style'));
     }
       //each template must have a title
     if (!empty($form_state['values']['step-'.$num]['template']) && empty ($form_state['values']['step-'.$num]['template'])) {
