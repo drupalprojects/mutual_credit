@@ -81,15 +81,12 @@ function mcapi_form_exchange_inc($form, $node) {
       //there is no use case for this, because erased exchanges have no entry in the node table
       //EXCHANGE_STATE_ERASED => t('erased'),
     ),
-    //'#element_validate' => array('mc_validate_state'),
     '#weight' => 18
   );
   return $form;
 }
 
 function mcapi_form_currency(&$node) {
-  //TODO
-  //add a maximum transaction size per currency
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Currency name'),
@@ -188,20 +185,13 @@ function mcapi_form_currency(&$node) {
       '1' => t('Enable fractions').'...'
     )
   );
-  if (is_array($node->data['divisions']) && count($node->data['divisions'])) {
-    $divisions = array();
-    while (list($key,$val) = each($node->data['divisions'])) {
-      $divisions[] = $key . '|'. $val;
-    }
-    $divisions = implode("\n", $divisions);
-  }
   $form['sub_divisions']['divisions'] = array(
     '#type' => 'textarea',
     '#title' => t('Fractions visible in form'),
     '#description' => '<p>'. t("Only applies when 'database storage' is set to 'fractions'.") .' '.
       t('Leave blank to use hundredths. To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') .'</p>' .
       '<pre>0| exactly<br />50| half an hour',
-    '#default_value' => isset($divisions) ? $divisions : '',
+    '#default_value' => $node->data['divisions'],
     '#element_validate' => array('mc_validate_currency_divisions'),
     '#rows' => 4,
   );
@@ -253,28 +243,9 @@ function theme_currency_range($currency) {
   return theme('table', $header, $rows);
 }
 
-
-//expects the settings array to be already validated, and just converts.
-function mc_convert_division_array($value) {
-
-  return $array;
-}
-
-function mcapi_node_presave_currency(&$node) {
+function mcapi_node_presave_currency(&$node) {//this $node is just the form values
   $node->data['color'] = $node->color;
-  if (!empty($node->divisions) && is_string($node->divisions)) {
-    $node->data['divisions'] = array();
-    $lines = array_filter(explode("\n", $node->divisions));
-    //ensure all the array keys are saved as humbers
-    if (count($lines)) {
-      foreach($lines as $line) {
-        $vals = explode('|', $line);
-        $key  = intval($vals[0]);
-        $val = trim($vals[1]);
-        $node->data['divisions'][$key] = $val;
-      }
-    }
-  }
+  $node->data['divisions'] = $node->divisions;
   if (isset($node->upload_icon)) {
     $file = $node->upload_icon;
     //it was parked in the temp directory in the validation phase
@@ -355,38 +326,8 @@ function user_limits($account, $cid){
 
 function mc_admin_menu_block_page() {
   module_load_include('admin.inc', 'system');
-  return drupal_get_form('cforge_report_form') .
-    system_admin_menu_block_page();
+  return system_admin_menu_block_page();
 }
-
-function cforge_report_form() {
-  $form = array(
-    'cforge_report' => array(
-      '#type' => 'radios',
-      '#title' => t('At the very least, please report your site stats to Community Forge.'),
-      '#default_value' => variable_get('cforge_report', TRUE),
-      '#options' => array(
-        0 => t('Send no data.'),
-        1 => t('Report our site data to Community Forge only.'),
-        2 => t('Report our site data to anyone who is interested')
-      ),
-      '#weight' => -5,
-      '#description' => t("Be part of a wider network of local currency comunities by sharing a few key pieces of information with us.").' '.
-        t("No data about individual users or transactions will be sent.") .' '.
-        t("e.g. site_name, site_url, number of active traders, number of transactions.") .' '.
-        t("These stats motivate us and can be used to promote our work. We seek your trust and will not abuse this information.")
-    )
-  );
-  //we're just putting this here for lack of anywhere else at the moment
-  $form['maintenance']['refresh'] = array(
-    '#type' => 'submit',
-    '#value' => t("Recalculate balances"),
-    '#submit' => array('mc_balances_refresh'),
-    '#weight' => 5,
-  );
-  return system_settings_form($form);
-}
-
 
 function mc_balances_refresh() {
   db_query("TRUNCATE table {mc_cache}");
@@ -622,7 +563,7 @@ function notification_throttle() {
 }
 
 //this applies to subdivisions
-function theme_currency_division_array($settings_array) {
+function theme_currency_division_array($settings_array) {print_r($settings_array());
   if (!is_array($settings_array)) return $settings_array;
   if (count($settings_array)) {
     foreach ($settings_array as $key => $row) {

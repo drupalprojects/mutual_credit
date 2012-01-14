@@ -183,19 +183,24 @@ function mcapi_perm() {
  */
 function mcapi_load($node) {
   //retrieve the extra fields from the node-specific tables, and return them to be added to the node
-  if ($node->type == 'exchange') {
-    $fields = db_fetch_array(db_query('SELECT * FROM {mc_exchanges} WHERE nid = %d',
-      array(':nid' => $node->nid)
-    ));
-  }
-  else {
-    $fields = db_fetch_array(db_query('SELECT * FROM {mc_currencies} WHERE nid = %d',
-      array(':nid' => $node->nid)
-    ));
-  }
+  $table = $node->type == 'exchange' ? 'mc_exchanges' : 'mc_currencies';
+  $fields = db_fetch_array(db_query("SELECT * FROM {$table} WHERE nid = $node->nid"));
   //while drupal_write record and schema API will serialize an array into a serialized field
   //it can't unserialize them on the way out of the db since there is no function drupal_read_record
   $fields['data'] = unserialize($fields['data']);
+  if ($node->type == 'currency') {
+    $fields['divisions'] = array();
+    $lines = array_filter(explode("\n", $fields['data']['divisions']));
+    //ensure all the array keys are saved as humbers
+    if (count($lines)) {
+      foreach($lines as $line) {
+        $vals = explode('|', $line);
+        $key  = intval($vals[0]);
+        $val = trim($vals[1]);
+        $fields['divisions'][$key] = $val;
+      }
+    }
+  }
   return $fields;
 }
 
@@ -437,8 +442,8 @@ function theme_money($quant, $cid, $richtext = TRUE) {
   $integer = abs(intval($quant));
   if ($currencies[$cid]->sub) {
     $fraction = 100 * round(abs($quant) - abs($integer), 2);
-    if (is_array($currencies[$cid]->data['divisions'])) {
-      $subdivision = $currencies[$cid]->data['divisions'][$fraction];
+    if (count($currencies[$cid]->divisions)) {
+      $subdivision = $currencies[$cid]->divisions[$fraction];
     }
     else $subdivision = $fraction;
   }
@@ -640,7 +645,7 @@ function mc_validate_quantity(&$element, &$form_state) {
     $division = ($value - intval($value))*100;
     if ($division) {
       if ($currency->sub) {
-        if ($division && isset($currency->data['divisions']) && !isset($currency->data['divisions'][$division])) {
+        if ($division && isset($currency->divisions) && !isset($currency->divisions[$division])) {echo 1;
           form_error($element, t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
         }
       }

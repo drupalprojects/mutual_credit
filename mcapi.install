@@ -47,8 +47,7 @@ function mcapi_install() {
   db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_multiple'");
   db_query("UPDATE {system} SET weight = 2 WHERE name = 'mc_signatures'");
 
-  $dir = file_directory_path() . '/currencies';
-  if (!is_dir($dir)) mkdir($dir);
+  mkdir(file_directory_path() . '/currencies');
 }
 
 /**
@@ -509,8 +508,20 @@ function mcapi_update_6004() {
   return $ret;
 }
 
-function ____mcapi_update_6005() {
-  $dir = file_directory_path() . '/currencies';
-  if (!is_dir($dir)) mkdir($dir);;
+function mcapi_update_6005() {
+  mkdir(file_directory_path() . '/currencies');
+  foreach(currencies_load() as $node) {
+    $data = &$node->data;
+    if (is_array($data['divisions']) && count($data['divisions'])) {
+      while (list($key,$val) = each($node->data['divisions'])) {
+        $data['divisions'] = $key . '|'. $val;
+      }
+      $data['divisions'] = implode("\n", $data['divisions']);
+    }
+    else{
+      $data['divisions'] = NULL;
+    }
+    db_query("UPDATE {mc_currencies} SET data = '%s' WHERE nid = $node->nid", serialize($data));
+  }
   return array();
 }
