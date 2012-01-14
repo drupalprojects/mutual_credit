@@ -88,7 +88,7 @@ function import_transactions_form_submit($form, &$form_state) {
   $rows = parse_getcsv($form_state['values']['data']);
   foreach ($rows as $row) {
     $time = strtotime($row['time']) + 1;//extra second to nudge it into the intended day
-    mcapi_add_node(
+    $result = mcapi_add_node(
       $row['payer'],
       $row['payee'], 
       $row['quantity'],
@@ -101,13 +101,15 @@ function import_transactions_form_submit($form, &$form_state) {
     );
     $earliest[$row['payer']][] = $time;
     $earliest[$row['payee']][] = $time;
+    $nids[] = $result->node->nid;
   }
   //we also want to ensure the user created dates are before the earliest transaction
   foreach ($earliest as $uid => $unixtimes) {
     $unixtimes[] = db_result(db_query("SELECT created from {users} WHERE uid = $uid")) - 3600*24;
     db_query("UPDATE {users} SET created = %d WHERE uid = $uid", min($unixtimes));
   }
-  
+  //hack the changed time for each node
+  db_query("UPDATE {node} SET changed = created WHERE nid IN (%s)", implode(',', $nids));
   mc_balances_refresh();
   mcapi_import_finish('done');
 }

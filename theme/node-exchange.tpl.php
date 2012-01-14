@@ -34,11 +34,13 @@ extract(mc_preprocess_exchange($node));
 
 $currency = node_load($cid);
 
-$page_title = t('Exchange Certificate #@nid', array('@nid' => $nid));
-if ($state == EXCHANGE_STATE_PENDING) {
-  $page_title .= '-'. strtoupper(t('pending'));
+if (arg(0) == 'node') {
+  $page_title = t('Exchange Certificate #@nid', array('@nid' => $nid));
+  if ($state == EXCHANGE_STATE_PENDING) {
+    $page_title .= '-'. strtoupper(t('pending'));
+  }
+  drupal_set_title($page_title);
 }
-drupal_set_title($page_title);
 
 $date = t('On @date', array('@date' => $submitted));
 $movement = $state == EXCHANGE_STATE_PENDING ? 

@@ -156,7 +156,7 @@ function deduce_signatures(&$node) {
       $node->mc_unsigned = array($node->payee_uid, $node->payer_uid);
       break;
     default:
-      drupal_set_message("function deduce_signatures doesn't know exchange_type: ".$node->exchange_type,  'error');
+      drupal_set_message("No signatories added: function deduce_signatures doesn't know exchange_type: ".$node->exchange_type,  'error');
   }
 }
 function save_signatures($node) {
