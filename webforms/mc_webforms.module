@@ -227,7 +227,7 @@ function mc_webforms_block_configure() {
     )
   );
 }
-function mc_webforms_block_save($delta, $edit) {print_r($edit);
+function mc_webforms_block_save($delta, $edit) {
   variable_set('mc_webform_3rdparty_form_cid', $edit['cid']);
 }
 
@@ -325,8 +325,8 @@ function validate_mc_quantity_field(&$element, &$form_state) {
     if (!$currency->sub) {
       form_error($element[$subfield], t("Integer values only for '@fieldname'", array('@fieldname' => $element[$subfield]['#title'])));
     }
-    if (count($currency->data['divisions'])) {
-      if (!$currency->data['divisions'][$division]) {
+    if (count($currency->divisions)) {
+      if (!$currency->divisions[$division]) {
         form_error($element['division'], t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
       }
     }
@@ -368,7 +368,6 @@ function field_process_mc_quantity($element, $edit, &$form_state, &$form) {
   if ($sub = get_common_currency_properties($form['#currencies'], 'sub')){
     $divisions = get_common_currency_properties($form['#currencies'], 'divisions');
   }
-
   $def_integer = intval($element['#default_value']);
   $def_division = '';
   //I don't think it's supposed to be done like this...
