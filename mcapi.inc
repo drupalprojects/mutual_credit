@@ -439,7 +439,7 @@ function _refresh_mc_cache($uid, $cid) {
 
 function _get_transactions($uid, $cid, $states = array(EXCHANGE_STATE_FINISHED, EXCHANGE_STATE_PENDING)) {
   $fields = array('n.uid', 'n.title', 'n.nid', 'e.payer_uid', 'e.payee_uid', 'e.quantity', 'e.state', 'n.created', 'e.exchange_type', 'e.cid');
-if (!$uid) ddebug_backtrace();
+  if (!$uid) ddebug_backtrace();
   foreach ($states as $state) {
     $state_filters[] = "e.state = " . $state;
   }
@@ -464,14 +464,11 @@ function _mcapi_default_mails($key) {
     case 'mc_notification_subject':
       return t('Notification from !site');
     case 'mc_notification_body':
-      return t("Dear !username,") ."\n\n". t('A new exchange has been recorded.');
+      return t("Dear !username,") ."\n\n". t('A new exchange has been recorded.') ."\n\n!exchange_uri\n\n". variable_get('site_name', '');
     case 'mc_notification_update_subject':
       return t('Notification from !site');
     case 'mc_notification_update_body':
-      return t("Dear !username,") ."\n\n". t("An exchange involving you has been edited");
-    default:
-      ddebug_backtrace();
-      die('unknown mail key:'.$key);
+      return t("Dear !username,") ."\n\n". t("An exchange involving you has been edited") ."\n\n!exchange_uri\n\n". variable_get('site_name', '');
   }
 }
 
@@ -488,7 +485,7 @@ function mc_mail_template() {
   );
 
   $form['mc_notification_wrapper'] = array(
-    '#title' => t('Newly recorded exchanges template'),
+    '#title' => t('New completed exchange notification template'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
@@ -512,7 +509,7 @@ function mc_mail_template() {
   );
 
   $form['mc_notification_update_wrapper'] = array(
-    '#title' => t('Updated exchanges template'),
+    '#title' => t('Updated exchanges notification template'),
     '#description' => t('not required for many use cases'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,

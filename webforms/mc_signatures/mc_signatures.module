@@ -313,7 +313,7 @@ function mc_signoff($nid) {
 
 function mc_signatures_form_mc_mail_template_alter(&$form) {
   $form['mc_signatures_wrapper'] = array(
-    '#title' => t('Request to sign template'),
+    '#title' => t('Request to sign notification template'),
     '#type' => 'fieldset',
     '#weight' => -2,
     '#collapsible' => TRUE,
@@ -336,7 +336,7 @@ function mc_signatures_form_mc_mail_template_alter(&$form) {
     '#weight' => 2
   );
   $form['mc_signatures_signoff_wrapper'] = array(
-    '#title' => t('Exchange is completed'),
+    '#title' => t('Exchange is completed notification template'),
     '#type' => 'fieldset',
     '#weight' => -2,
     '#collapsible' => TRUE,
@@ -441,11 +441,11 @@ function _mc_signatures_mail_template($key) {
   if ($template) return $template;
   switch($key) {
     case 'mc_signatures_signoff_body':
-      return t("The following exchange has been signed off and your balance updated.");
+      return t("The following exchange has been signed off and your balance updated."). "\n\n!exchange_uri\n\n" . variable_get('site_name', '');
     case 'mc_signatures_signoff_subject':
       return t('An exchange has been completed');
     case 'mc_signatures_notification_body':
-      return t("Click here to add your signature and finalise the exchange: !sign_link");
+      return t("Click to add your signature and finalise the exchange:"). "\n\n!sign_link\n\n" . variable_get('site_name', '');
     case 'mc_signatures_notification_subject':
       return t('Your signature is needed');
   }

@@ -39,7 +39,6 @@ function mc_3rdparty_form($form_state, $prefill = NULL) {
         '#value' => '<style>'. $selector. '{display:none;}</style>',
       );
     }
-    $form['hide_tabs'];
     $form['#redirect'] = 'user';
   }
   return $form;

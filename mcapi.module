@@ -166,9 +166,8 @@ function mcapi_access($op, $node, $account = NULL) {
   switch ($op) {
     case 'view'://users can always view their own pages
       return user_access('view all exchanges') || $participant;
-    case 'update': //this is the permission used by node_access
-      return $participant && (
-        user_access('edit own finished exchanges') || $node->state == EXCHANGE_STATE_PENDING);
+    case 'update': 
+      return ($account->uid == $node->uid && $node->state == EXCHANGE_STATE_PENDING);
     case 'delete':
       //pending exchanges can be deleted only by the node owner
       return $node->uid == $account->uid && $node->state == EXCHANGE_STATE_PENDING;
@@ -337,28 +336,44 @@ function mcapi_user($op, &$edit, &$account, $category = NULL) {
 
 function mcapi_action_info() {
   return array(
-    'record_exchange_action' => array(
-      'type' => 'node',
-      'description' => t('Record Exchange'),
+    'mcapi_autopay_from' => array(
+      'description' => t('Automatically pay a user from a given account'),
+      'type' => 'user',
       'configurable' => TRUE,
-      'hooks' => array('any' => TRUE),
-    )
+      'hooks' => array(),
+    ),
+    'mcapi_autopay_to' => array(
+      'description' => t('Automatically charge a user to a given account'),
+      'type' => 'user',
+      'configurable' => TRUE,
+      'hooks' => array(),
+    ),
   );
 }
 /*
- * Callback for action config
+ * Callbacks for action config
  */
-function record_exchange_action_form($context) {
+function mcapi_autopay_from_form($context) {
   //this form should really have a validation function to ensure that at least one participant is provided
   $form = mcapi_form_exchange((object)$context);
-  unset($form['state']);
+  unset($form['payee'], $form['state']);
+  $form['quantity']['#required'] = TRUE;
+  return $form;
+}
+function mcapi_autopay_to_form($context) {
+  //this form should really have a validation function to ensure that at least one participant is provided
+  $form = mcapi_form_exchange((object)$context);
+  unset($form['payer'], $form['state']);
   $form['quantity']['#required'] = TRUE;
   return $form;
 }
 /*
  * submit callback for action config
  */
-function record_exchange_action_submit($form, $form_state) {
+function mcapi_autopay_from_submit($form, $form_state) {
+  return $form_state['values'];
+}
+function mcapi_autopay_to_submit($form, $form_state) {
   return $form_state['values'];
 }
 /*
