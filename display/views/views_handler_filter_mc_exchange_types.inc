@@ -8,9 +8,7 @@ class views_handler_filter_mc_exchange_types extends views_handler_filter_many_t
   function get_value_options() {
     $types = module_invoke_all('exchange_type_info');
     foreach ($types as $type => $info) {
-      if ($info['title']) {
-        $this->value_options[$type] = $info['title'];
-      }
+      $this->value_options[$type] = $info['title'];
     }
   }
 }

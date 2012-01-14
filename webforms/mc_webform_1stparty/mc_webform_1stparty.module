@@ -73,18 +73,20 @@ function mc_webform_1stparty_menu_alter(&$items) {
  */
 function mc_webform_1stparty_exchange_type_info() {
   $titles = variable_get('mc_subtypes', array());
-  $types = array(
-    'incoming direct' => array(
+  if ($titles[INCOMING_DIRECT]) {
+    $types['incoming direct'] = array(
       'title' => $titles[INCOMING_DIRECT],
       'edit' => 'mc_edit_form',
       'bitmask' => INCOMING_DIRECT
-    ),
-    'outgoing direct' => array(
+    );
+  }
+  if ($titles[OUTGOING_DIRECT]) {
+    $types['outgoing direct'] = array(
       'title' => $titles[OUTGOING_DIRECT],
       'edit' => 'mc_edit_form',
       'bitmask' => OUTGOING_DIRECT
-    )
-  );
+    );
+  }
   return $types;
 }
 

@@ -38,6 +38,15 @@ function mcapi_import_menu() {
   return $items;
 }
 
+function mcapi_import_exchange_type_info() {
+  return array(
+    'mcapi_import' => array(
+      'title' => 'imported',
+      'edit' => 'mc_edit_form'
+    )
+  );
+}
+
 /*
  * form called by menu
  */
@@ -50,6 +59,18 @@ function import_transactions_form() {
   $form['#prefix'] .= "\n<p>".t("This tool assumes there is only one currency in the system." ) . '</p>';
   $form['#prefix'] .= "\n<p>".t("The first line of the field should read: !code", array('!code' => '<blockquote>"time","payer","payee","description","quantity"</blockquote>"')) . '</p>';
 
+  
+  $types = module_invoke_all('exchange_type_info');
+  foreach ($types as $type => $info) {
+    $options[$type] = $info['title'];
+  }
+  $form['exchange_type'] = array(
+    '#title' => t('Exchange type'),
+    '#description' => t('This is mostly a hidden property, but useful for filtering transactions with.') .' '.
+       t("Views will not be able to filter by this type if the mcapi_import module is disabled."),
+    '#type' => 'select',
+    '#options' => $options
+  );
   $form['data'] = array (
     '#type' => 'textarea',
     '#title' => 'paste data',
@@ -96,7 +117,7 @@ function import_transactions_form_submit($form, &$form_state) {
         'created' => $time,
         'changed' => $time,
         'title' => $row['description'],
-        'exchange_type' => 'mcapi_import',
+        'exchange_type' => $form_state['values']['exchange_type'],
       )
     );
     $earliest[$row['payer']][] = $time;

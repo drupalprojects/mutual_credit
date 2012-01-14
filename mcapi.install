@@ -508,7 +508,10 @@ function mcapi_update_6004() {
   return $ret;
 }
 
-function mcapi_update_6005() {
+/*
+ * test with care on one site only!!!
+ */
+function _________mcapi_update_6005() {
   mkdir(file_directory_path() . '/currencies');
   foreach(currencies_load() as $node) {
     $data = &$node->data;

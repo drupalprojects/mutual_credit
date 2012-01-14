@@ -342,9 +342,8 @@ function refresh_trader_names() {
 
 //because each exchangetype has it's own edit form this implements a new HOOK
 function mc_edit_forms($node) {
-  $hook = 'exchange_type_info';
-  foreach (module_implements($hook) as $module) {
-    $function = $module .'_'. $hook;
+  foreach (module_implements('exchange_type_info') as $module) {
+    $function = $module .'_exchange_type_info';
     $types = $function ($node->exchange_type);
     $edit_callback = &$types[$node->exchange_type]['edit'];
     if (function_exists($edit_callback)) {
