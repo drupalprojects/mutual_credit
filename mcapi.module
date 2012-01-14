@@ -60,17 +60,6 @@ function mcapi_help($section) {
         ' !username, !site, !uri, !uri_brief, !mailto, !date, !login_uri, !edit_uri, !login_url, !creator, !exchange_uri, !summary</p>';
   }
 }
-/**
- * http://api.drupal.org/api/function/hook_init/6
- *
- */
-function mcapi_cron() {
-  //this is for the voluntary reporting function
-  if (variable_get('cforge_report', 1)) {
-    module_load_include('install', 'mcapi');
-    cforge_report();
-  }
-}
 
 /**
  * http://api.drupal.org/api/function/hook_init/6
