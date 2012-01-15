@@ -256,6 +256,31 @@ function get_trader_list() {
   }
   return $data->data;
 }
+function mc_webforms_form_user_admin_account_alter(&$form, $form_alter) {
+  $form['#submit'][] = 'refresh_trader_names';
+}
+function refresh_trader_names() {
+  //This funcntion must never by anon, because it retrives non-names from theme_username and caches them
+  if (!$GLOBALS['user']->uid) return;
+  module_load_include('inc', 'mcapi');
+  $uids = get_trader_uids();
+  $pattern = variable_get('mc_trader_selector', '%uid | %theme_username');
+  $names = array();
+  foreach ($uids as $uid) {
+    $account = user_load($uid);
+    //in drupal 7 we'll allow any user field...
+    $replacements = array(
+      '%uid' => $account->uid,
+      '%name' => $account->name,
+      '%email' => $account->mail,
+      '%theme_username' => strip_tags(theme('username', $account))
+    );
+    $names[$account->uid] = strtr($pattern, $replacements);
+  }
+  natcasesort($names);
+  cache_set('mc_trader_list', $names);
+  return $names;
+}
 
 /**
  * http://api.drupal.org/api/function/hook_link/6

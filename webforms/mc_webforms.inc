@@ -316,30 +316,6 @@ function mc_build_webform(&$form, $values = NULL) {
   $form['buttons']['submit']['#value'] = t('Next');
 }
 
-//somehow this funcntion is being called by anon, which produces non-names from theme_username
-function refresh_trader_names() {
-  if (!$GLOBALS['user']->uid) return;
-  module_load_include('inc', 'mcapi');
-  $uids = get_trader_uids();
-  $pattern = variable_get('mc_trader_selector', '%uid | %theme_username');
-  $names = array();
-  foreach ($uids as $uid) {
-    $account = user_load($uid);
-    //in drupal 7 we'll allow any user field...
-    $replacements = array(
-      '%uid' => $account->uid,
-      '%name' => $account->name,
-      '%email' => $account->mail,
-      '%theme_username' => strip_tags(theme('username', $account))
-    );
-    $names[$account->uid] = strtr($pattern, $replacements);
-  }
-  natcasesort($names);
-  cache_set('mc_trader_list', $names);
-  return $names;
-}
-
-
 //because each exchangetype has it's own edit form this implements a new HOOK
 function mc_edit_forms($node) {
   foreach (module_implements('exchange_type_info') as $module) {

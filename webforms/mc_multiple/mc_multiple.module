@@ -125,6 +125,7 @@ function mc_multiple_form($form_state, $fields) {
   }
   $form = mcapi_form_exchange($node);
 
+  $form['quantity']['#description'] = t("If the currency permits divisions, express them with a decimal point and hundredths. E.g. 1 hour 30 mins = '1.50'");
   //need to be explicit because these because this function is called from hook_forms
   //$form['quantity']['#element_validate']['']
   $form['#validate'] = array('mc_multiple_form_validate');

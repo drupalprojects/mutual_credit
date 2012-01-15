@@ -592,10 +592,16 @@ function theme_exchange_summary($node) {
   }
 }
 function get_trader_uids() {
-  if ($roles = user_roles(TRUE, 'exchange')) {
-    $where = array('status = 1',  'u.uid > 0');
-    if (!$roles[DRUPAL_AUTHENTICATED_RID]) {
-      $where[] = 'rid in ('. implode(', ', array_keys($roles)) .')';
+  //can't use user_roles() here because it matches with mysql LIKE which gives inaccurate results
+  $result = db_query("SELECT r.rid FROM role r INNER JOIN permission p ON r.rid = p.rid WHERE p.perm LIKE '%%exchange,%%' ORDER BY r.name");
+  while ($rid = db_result($result)) {
+    $rids[] = $rid;
+  }
+  $where = array('status = 1',  'u.uid > 0');
+
+  if (count($rids)) {
+    if (!in_array(DRUPAL_AUTHENTICATED_RID, $rids)) {
+      $where[] = 'rid in ('. implode(', ', $rids) .')';
     }
     $results = db_query("SELECT DISTINCT u.uid
       FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid
