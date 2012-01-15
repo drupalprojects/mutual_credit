@@ -457,13 +457,20 @@ function _mc_signatures_mail_template($key) {
   $template = variable_get($key, '');
   if ($template) return $template;
   switch($key) {
-    case 'mc_signatures_signoff_body':
-      return t("The following exchange has been signed off and your balance updated."). "\n\n!exchange_uri\n\n" . variable_get('site_name', '');
-    case 'mc_signatures_signoff_subject':
-      return t('An exchange has been completed');
-    case 'mc_signatures_notification_body':
-      return t("Click to add your signature and finalise the exchange:"). "\n\n!sign_link\n\n" . variable_get('site_name', '');
     case 'mc_signatures_notification_subject':
-      return t('Your signature is needed');
+      return t('Please confirm the following exchange on !site');
+
+    case 'mc_signatures_notification_body':
+      return t("Dear !username,") ."\n\n".
+        t("!creator recorded an exchange on !site.\nPlease click the link below to sign the transaction:"). "\n\n!sign_link\n\n" .
+        t("If you are unable to access the transaction with the above link, please log into the site !login_url, and go to your profile page to confirm.") ."\n\n".
+        t("The team at !site");
+
+    case 'mc_signatures_signoff_subject':
+      return t('Notification of a transaction confirmation on !site');
+
+    case 'mc_signatures_signoff_body':
+      return t("Dear !username,") ."\n\n".
+        t("For your information, the following transaction has been signed"). "\n\n!summary\n\n" . t("The team at !site");;
   }
 }

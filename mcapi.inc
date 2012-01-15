@@ -403,15 +403,22 @@ function _mcapi_default_mails($key) {
   if ($template) return $template;
   switch ($key) {
     case 'mc_notification_subject':
-      return t('Notification from !site');
+      return t('An exchange with !username was recorded and your balance updated');
+
     case 'mc_notification_body':
-      return t("Dear !username,") ."\n\n". t('A new exchange has been recorded.') ."\n\n!exchange_uri\n\n". variable_get('site_name', '');
+      return t("Dear !username,") ."\n\n". 
+        t('The following exchange was recorded on !site by !creator') ."\n\n!summary\n\n".
+        t('Your balance has been updated.') ."\n\n". t("The team at !site");
+
     case 'mc_notification_update_subject':
-      return t('Notification from !site');
+      return t('An exchange was edited on !site');
+
     case 'mc_notification_update_body':
-      return t("Dear !username,") ."\n\n". t("An exchange involving you has been edited") ."\n\n!exchange_uri\n\n". variable_get('site_name', '');
+      return t("Dear !username,") ."\n\n". t("For your information, this exchange recorded previously, has been edited") ."\n\n!summary\n\n".
+        t("The team at !site");
   }
 }
+
 
 function mc_mail_template() {
   $form['mc_notification_throttle_default'] = notification_throttle();
