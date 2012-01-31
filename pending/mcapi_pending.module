@@ -351,8 +351,10 @@ function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
  */
 function mcapi_pending_block_info_alter(&$blocks) {
   //because this view requires an argument which probably comes from the url
-  $blocks['views']['signatures-user_pending']['visibility'] = 1;
-  $blocks['views']['signatures-user_pending']['pages'] = 'user*';
+  if (isset($blocks['views']['signatures-user_pending'])) {
+    $blocks['views']['signatures-user_pending']['visibility'] = 1;
+    $blocks['views']['signatures-user_pending']['pages'] = 'user*';
+  }
 }
 
 function mcapi_check_integrity() {
