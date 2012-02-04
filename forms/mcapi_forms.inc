@@ -124,7 +124,6 @@ function mcapi_forms_form($form, &$form_state) {
     //this validation function must run BEFORE the main one in the API, which requires payer and payee
     array_unshift($form['#validate'], 'mcapi_forms_validate_2ndperson');
   }
-  debug(array_keys($mcapi_form->data));
   //we now modify the transaction form fields according to the form settings for each field
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
     //@ needed in case the form builder wasn't saved since the field was added

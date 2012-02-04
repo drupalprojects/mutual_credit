@@ -184,11 +184,11 @@ function mcapi_currencies_form_submit($form, &$form_state) {
 /*
  * returns a form element for picking a currency
  */
-function currency_picker_element($default_value, $multiple = FALSE, $currencies = array()) {
+function currency_picker_element($default_value, $multiple = FALSE, $options = array()) {
   return array(
     '#title' => t('Currency'),
     '#type' => 'select',
-    '#options' => currency_picker_element_options($currencies),
+    '#options' => $options,
     '#default_value' => $default_value,
     '#multiple' => $multiple,
   );

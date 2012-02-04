@@ -103,7 +103,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
       $element['#theme'] = 'worth_widget_currcode';
       break;
     default:
-      $element['currcode'] = currency_picker_element($currcode, NULL, $currencies);
+      $element['currcode'] = currency_picker_element($currcode, NULL, currency_picker_element_options($currencies));
       $element['currcode']['#ajax'] = array(
         'callback' => 'mcapi_ajax_worth',
         'wrapper' => 'edit-worth-und-'.$delta
@@ -280,9 +280,9 @@ function mcapi_theme_fields() {
  */
 function theme_worth_field(&$variables) {
   if (!$variables['currcode']) return '';
+  $currency = currency_load($variables['currcode']);
   $num = $variables['quantity'] + 0;
   $integer = abs(intval($num));
-  $currency = currency_load($variables['currcode']);
   if ($num != $integer) {
     $hundredths = round(fmod(abs($num), 1), 2) * 100;
     if (is_array($currency->divisions)) {

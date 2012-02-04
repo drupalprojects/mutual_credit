@@ -181,7 +181,7 @@ function mcapi_getview_user_transactions_summary() {
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
 
   /* Display: Block */
-  $handler = $view->new_display('block', 'Block', 'block_1');
+  $handler = $view->new_display('block', 'Block', 'user_summ_per_curr');
   $handler->display->display_options['block_description'] = 'User transactions summary per currency';
 
   /* Display: Page */

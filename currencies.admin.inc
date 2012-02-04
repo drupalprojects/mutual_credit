@@ -1,6 +1,21 @@
 <?php
 
 /*
+ * menu callback for editing a currency
+ */
+function mcapi_currency_form($form, &$form_state){
+  form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
+  //by using a hook here instead of form_alter, we leave form_alter available for other
+  $form['#currency'] = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
+  $form['info']['currcode'] = array(
+    '#type' => 'hidden',
+    '#value' => empty($form['#currency']->info['currcode']) ? substr(variable_get('site_name', 'error'), 0, 7) : $form['#currency']->info['currcode'],
+  );
+  _mcapi_currency_form($form, $form_state);
+  return $form;
+}
+
+/*
  * builds that part of the currency edit form which is common in all circumstances
  */
 function _mcapi_currency_form(&$form, &$form_state) {
@@ -141,22 +156,6 @@ function currency_form_ajax(&$form, &$form_state) {
   return $form;
 }
 
-
-/*
- * menu callback for editing a currency
- */
-function mcapi_currency_form($form, &$form_state){
-  form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
-  //by using a hook here instead of form_alter, we leave form_alter available for other
-  $form['#currency'] = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
-  $form['info']['currcode'] = array(
-    '#type' => 'hidden',
-    '#value' => empty($form['#currency']->info['currcode']) ? substr(variable_get('site_name', 'error'), 0, 7) : $form['#currency']->info['currcode'],
-  );
-  _mcapi_currency_form($form, $form_state);
-  return $form;
-}
-
 /*
  * implements hook_form_FORMID_alter
  * because if you add #submit handlers before this then it doesn't do so automatically
@@ -171,7 +170,6 @@ function mcapi_form_mcapi_currency_form_alter() {
  * saves the currency as a variable
  */
 function mcapi_currency_form_submit($form, $form_state) {
-
   //save the currency settings as a nested array, exactly as they came out of the form
   form_state_values_clean($form_state);
   variable_set('currency_default', $form_state['values']);
@@ -214,7 +212,6 @@ function mcapi_currency_validate_divisions(&$element, $form_state) {
  * How does the list module do it?
  */
 function _currency_divisions_array(&$currency) {
-  if (empty($currency->divisions_setting)) return;
   $string = $currency->divisions_setting;
   if (strpos($string, '|')) {
     $lines = explode("\n", $string);
