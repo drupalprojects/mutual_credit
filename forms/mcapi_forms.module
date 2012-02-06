@@ -233,6 +233,17 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
   unset($form_state['values']['name'], $form_state['values']['xfid']);
   $form_state['item']->data = $form_state['values'];
+  //need to check that all required fields exist in the form.
+  if (strlen($form_state['item']->data['step-1']['template'])) {
+    foreach ($form_state['item']->data as $name => $prop) {
+      if (isset($prop['shared']['required']) && $prop['shared']['required']) {  
+        if (strpos($form_state['item']->data['step-1']['template'], $name) == FALSE) {
+          form_error($form['step-1']['template'], t('Required fields must be used in the form Step 1'));
+        }
+      }
+    }
+  }
+//  die('end');
 }
 
 /*
