@@ -27,7 +27,7 @@ function mcapi_install() {
 
   if (module_exists('text')) {
     $data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField());
-    if (!in_array('transaction', $data['entity_types'])) {
+    if (is_array($data['entity_types']) && !in_array('transaction', $data['entity_types'])) {
       $data['entity_types'][] = 'transaction';
       $data_col = serialize($data);
       db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();

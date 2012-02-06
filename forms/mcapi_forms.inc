@@ -43,7 +43,6 @@ function mcapi_forms_form($form, &$form_state) {
     $transaction = &$form_state['transaction'];
     //the form state was incremented as it was submit the first time.
   }
-
   //only show one currency field
   $form_state['field']['worth']['und']['items_count'] = 0;
   if (!_mcapi_form_in_block($mcapi_form)) {
@@ -172,7 +171,7 @@ function mcapi_forms_form($form, &$form_state) {
   //this is rather elaborate and early, but we NOW have to set the type of fields not being used in the template as hidden
   $form['#tokens'] = mcapi_form_collect_tokens($mcapi_form);
   //hide the fields which don't appear as tokens
-  foreach ($form['#tokens'] as $fieldname) {
+  foreach ($form['#tokens'] as $token => $fieldname) {
     if (strpos($form['#template'], "[$fieldname]") === FALSE) {
       mcapi_hide_form_children($form[$fieldname]);
     }
@@ -239,12 +238,17 @@ function mcapi_form_prepare_tokens(&$form, &$form_state) {
 }
 
 /*
- * nesting function to hide the form elements within form elements
+ * nesting function to hide the deepest children
  */
 function mcapi_hide_form_children(&$element) {
-  $element['#type'] = 'hidden';
-  foreach(element_children($element) as $subfield) {
-    mcapi_hide_form_children($element[$subfield]);
+  $children = element_children($element);
+  if (count($children)) {
+    foreach($children as $child) {
+      mcapi_hide_form_children($element[$child]);
+    }
+  }
+  else {
+    if (isset($element['#type']) && $element['#type'] != 'container') $element['#type'] = 'hidden';
   }
 }
 /*
@@ -274,8 +278,6 @@ function theme_mcapi_form($variables) {
   $form['#template'] .= drupal_render_children($form);
   return strtr($form['#template'], $form['#replacements']);
 }
-
-
 
 /*
  * replace tokens in stage 2 form with text, based on the form item token used in the template

@@ -2,7 +2,7 @@
 //Id;
 
 function mcapi_index_views_views_default_views() {
-  $viewnames = array('user_transactions_summary', 'user_transactions', 'user_transactions_index', 'user_rankings', 'balance_history', 'user_trade');
+  $viewnames = array('user_transactions_summary', 'statement', 'user_rankings', 'balance_history', 'profit_loss');//missing 'user_transactions_index', 
   foreach ($viewnames as $viewname) {
     $function  = 'mcapi_getview_'.$viewname;
     $views[$viewname] = $function();
@@ -186,7 +186,7 @@ function mcapi_getview_user_transactions_summary() {
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
-  $translatables['user_trade_summary'] = array(
+  $translatables['profit_loss_summary'] = array(
     t('Master'),
     t('more'),
     t('Apply'),
@@ -208,13 +208,13 @@ function mcapi_getview_user_transactions_summary() {
   return $view;
 }
 
-function mcapi_getview_user_transactions() {
+function mcapi_getview_statement() {
   $view = new view;
-  $view->name = 'user_transactions';
+  $view->name = 'statement';
   $view->description = 'shows trades of one user, with otheruser field and running balance (reads transaction index table)';
   $view->tag = 'default';
   $view->base_table = 'mcapi_index';
-  $view->human_name = 'User transactions';
+  $view->human_name = 'Statement';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -362,11 +362,11 @@ function mcapi_getview_user_transactions() {
   }
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
-  $handler->display->display_options['path'] = 'user/%/trades';
+  $handler->display->display_options['path'] = 'user/%/statement';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Trades';
   $handler->display->display_options['menu']['weight'] = '0';
-  $translatables['user_transactions'] = array(
+  $translatables['statement'] = array(
     t('Master'),
     t('User transactions'),
     t('more'),
@@ -1069,13 +1069,13 @@ function mcapi_getview_user_transactions_index() {
 
 }
 
-function mcapi_getview_user_trade() {
+function mcapi_getview_profit_loss() {
   $view = new view;
-  $view->name = 'user_trade';
+  $view->name = 'profit_loss';
   $view->description = 'income and expenditure in separate tables';
   $view->tag = 'default';
   $view->base_table = 'mcapi_index';
-  $view->human_name = 'Trade';
+  $view->human_name = 'Profit & Loss';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -1269,7 +1269,7 @@ function mcapi_getview_user_trade() {
   $handler->display->display_options['header']['area']['content'] = '<h4>Income</h4>';
   $handler->display->display_options['header']['area']['format'] = '2';
   $handler->display->display_options['header']['area']['tokenize'] = 0;
-  $handler->display->display_options['path'] = 'user/%/transactions';
+  $handler->display->display_options['path'] = 'user/%/profit_loss';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Transactions';
   $handler->display->display_options['menu']['description'] = 'Income, Expenditure';

@@ -243,7 +243,6 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
       }
     }
   }
-//  die('end');
 }
 
 /*

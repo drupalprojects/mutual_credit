@@ -16,9 +16,6 @@ function mcapi_entity_info_inc() {
     'uri callback' => 'transaction_uri', //what is this for???
     'label callback' => 'transaction_label',
     'fieldable' => TRUE,
-    'translation' => array(
-      'locale' => module_exists('i18n_field') //this concerns the body field only, which is untranslatable by default
-    ),
     'entity keys' => array(
       'id' => 'xid',
     ),
@@ -54,7 +51,6 @@ function mcapi_menu_inc() {
     'description' => 'Member to member transactions',
     'page callback' => 'mcapi_accounting',
     'access arguments' => array('manage all transactions'),
-    //'position' => 'right',
     'file' => 'mcapi.inc',
     'weight' => 2
   );
