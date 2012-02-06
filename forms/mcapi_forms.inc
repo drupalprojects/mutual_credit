@@ -100,6 +100,7 @@ function mcapi_forms_form($form, &$form_state) {
     ) + $form['payee'];
     $form['2ndperson']['#type'] = strtok($mcapi_form->data['2ndperson']['args'], ':');
     $form['2ndperson']['#args'] = array(strtok(':'));
+    $form['2ndperson']['#me'] = FALSE;
     mcapi_form_default_value($form['2ndperson'], $mcapi_form->data['2ndperson']);
     $form['direction'] = _macpi_forms_direction_widget($mcapi_form->data['direction']);
     $form['direction']['#element_validate'][] = 'mcapi_direction_validate';
