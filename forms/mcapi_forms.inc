@@ -248,7 +248,7 @@ function mcapi_hide_form_children(&$element) {
     }
   }
   else {
-    if (isset($element['#type']) && $element['#type'] != 'container') $element['#type'] = 'hidden';
+    $element['#type'] = 'hidden';
   }
 }
 /*
