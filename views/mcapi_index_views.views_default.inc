@@ -32,29 +32,31 @@ function mcapi_getview_user_transactions_summary() {
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['style_plugin'] = 'default';
   $handler->display->display_options['row_plugin'] = 'fields';
-  /* Field: Transaction index: Currency */
-  $handler->display->display_options['fields']['currcode']['id'] = 'currcode';
-  $handler->display->display_options['fields']['currcode']['table'] = 'mcapi_index';
-  $handler->display->display_options['fields']['currcode']['field'] = 'currcode';
-  $handler->display->display_options['fields']['currcode']['label'] = '';
-  $handler->display->display_options['fields']['currcode']['alter']['alter_text'] = 1;
-  $handler->display->display_options['fields']['currcode']['alter']['text'] = '<strong>[currcode]</strong>';
-  $handler->display->display_options['fields']['currcode']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['currcode']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['currcode']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['currcode']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['currcode']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['currcode']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['currcode']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['currcode']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['currcode']['hide_alter_empty'] = 0;
+  if (module_exists('mcapi_currencies')) {
+    /* Field: Transaction index: Currency */
+    $handler->display->display_options['fields']['currcode']['id'] = 'currcode';
+    $handler->display->display_options['fields']['currcode']['table'] = 'mcapi_index';
+    $handler->display->display_options['fields']['currcode']['field'] = 'currcode';
+    $handler->display->display_options['fields']['currcode']['label'] = '';
+    $handler->display->display_options['fields']['currcode']['alter']['alter_text'] = 1;
+    $handler->display->display_options['fields']['currcode']['alter']['text'] = '<strong>[currcode]</strong>';
+    $handler->display->display_options['fields']['currcode']['alter']['make_link'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['absolute'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['external'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['replace_spaces'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['trim_whitespace'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['nl2br'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['word_boundary'] = 1;
+    $handler->display->display_options['fields']['currcode']['alter']['ellipsis'] = 1;
+    $handler->display->display_options['fields']['currcode']['alter']['strip_tags'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['trim'] = 0;
+    $handler->display->display_options['fields']['currcode']['alter']['html'] = 0;
+    $handler->display->display_options['fields']['currcode']['element_label_colon'] = FALSE;
+    $handler->display->display_options['fields']['currcode']['element_default_classes'] = 1;
+    $handler->display->display_options['fields']['currcode']['hide_empty'] = 0;
+    $handler->display->display_options['fields']['currcode']['empty_zero'] = 0;
+    $handler->display->display_options['fields']['currcode']['hide_alter_empty'] = 0;
+  }
   /* Field: SUM(Transaction index: Value) */
   $handler->display->display_options['fields']['diff']['id'] = 'diff';
   $handler->display->display_options['fields']['diff']['table'] = 'mcapi_index';
