@@ -245,7 +245,6 @@ function theme_currency_range($currency) {
 
 function mcapi_node_presave_currency(&$node) {//this $node is just the form values
   $node->data['color'] = $node->color;
-  $node->data['divisions'] = $node->divisions;
   if (isset($node->upload_icon)) {
     $file = $node->upload_icon;
     //it was parked in the temp directory in the validation phase
@@ -260,6 +259,7 @@ function mcapi_node_presave_currency(&$node) {//this $node is just the form valu
   elseif ($node->icon == '') {
     unset($node->icon); //otherwise it will overwrite the icon with blank
   }
+  $node->data['divisions'] = $node->divisions;
 }
 
 function mc_preprocess_exchange($node) {
@@ -414,7 +414,7 @@ function _mcapi_default_mails($key) {
       return t('An exchange was edited on !site');
 
     case 'mc_notification_update_body':
-      return t("Dear !username,") ."\n\n". t("For your information, this exchange recorded previously, has been edited") ."\n\n!summary\n\n".
+      return t("Dear !username,") ."\n\n". t("For your information, this exchange recorded previously, has been edited:") ."\n\n!summary\n\n".
         t("The team at !site");
   }
 }
@@ -600,7 +600,7 @@ function theme_exchange_summary($node) {
 }
 function get_trader_uids() {
   //can't use user_roles() here because it matches with mysql LIKE which gives inaccurate results
-  $result = db_query("SELECT r.rid FROM role r INNER JOIN permission p ON r.rid = p.rid WHERE p.perm LIKE '%%exchange,%%' ORDER BY r.name");
+  $result = db_query("SELECT r.rid FROM {role} r INNER JOIN {permission} p ON r.rid = p.rid WHERE p.perm LIKE '%%exchange,%%' ORDER BY r.name");
   while ($rid = db_result($result)) {
     $rids[] = $rid;
   }
