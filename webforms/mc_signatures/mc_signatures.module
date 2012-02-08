@@ -5,6 +5,8 @@
  * 'Signatories' is an added property of pending exchanges
  *  mc_webforms module half expects this to be present.
  */
+define('INCOMING_SIGNED', 4);
+define('OUTGOING_SIGNED', 8);
 
 function mc_signatures_menu() {
   $items['exchange/%node/sign/%user_uid_optional'] = array(
@@ -220,21 +222,6 @@ function mc_signatures_form_alter($form, $form_state, $form_id) {
   }
 }
 
-  if ($titles[INCOMING_DIRECT]) {
-    $types['incoming direct'] = array(
-      'title' => $titles[INCOMING_DIRECT],
-      'edit' => 'mc_edit_form',
-      'bitmask' => INCOMING_DIRECT
-    );
-  }
-  if ($titles[OUTGOING_DIRECT]) {
-    $types['outgoing direct'] = array(
-      'title' => $titles[OUTGOING_DIRECT],
-      'edit' => 'mc_edit_form',
-      'bitmask' => OUTGOING_DIRECT
-    );
-  }
-
 /*
  * Implementation of the webforms hook, hook_exchange_type_info
  */
@@ -247,13 +234,14 @@ function mc_signatures_exchange_type_info() {
       'bitmask' => INCOMING_SIGNED
     );
   }
-  if ($titles[INCOMING_SIGNED]) {
+  if ($titles[OUTGOING_SIGNED]) {
     $types['outgoing signed'] = array(
       'title' => $titles[OUTGOING_SIGNED],
       'edit' => 'mc_edit_form',
       'bitmask' => OUTGOING_SIGNED
     );
   }
+  return $types;
 }
 
 //in many cases, we rely on this function to set the value of the field, which is often hidden
