@@ -83,16 +83,12 @@ function mcapi_enable() {
       'type' => 'currency',
       'status' => TRUE,
       'uid' => 1,
+      'icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png',
+      'color' => '00ff00',
+      'divisions' => "0|00\n25|15 mins\n50|30 mins\n75|45 mins",
+      'subtype_bitmask' => 3
     );
     node_save($currency);
-
-    db_query("INSERT INTO {mc_currencies} (nid, max, min, data, icon) VALUES (%d, NULL, NULL, '%s', '%s')",
-      array(
-        ':nid' => $currency->nid,
-        ':data' => serialize(array('color' => '00ff00', 'divisions' => '', 'subtype_bitmask' => 3)),
-        ':icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png'
-      )
-    );
 
     drupal_set_message(t('Your defult currency is @name. !edit', array(
       '@name' => $currency->title,
@@ -380,13 +376,12 @@ function mc_upgrade($cid) {
 
 function migrate_exchanges() {
   //this isn't selecting properly...
-  $cid = db_result(db_query("SELECT nid FROM {mc_currencies}"));
   $result = db_query("SELECT nid, payer_uid, payee_uid, cid, quantity, transaction_type as exchange_type, state, quality as rating
     FROM {cc_transactions}
     WHERE state > -1");
   while ($transaction = db_fetch_object($result)) {
     $transaction->exchange_type = mcapi_upgrade_exchange_types($transaction->exchange_type);
-    $transaction->cid = $cid;
+    $transaction->cid = db_result(db_query("SELECT nid FROM {mc_currencies}"));
     drupal_write_record('mc_exchanges', $transaction);
   }
   module_load_include('inc', 'mcapi');
@@ -407,28 +402,6 @@ function mcapi_upgrade_exchange_types($old) {
   );
   if (isset($conversion[$old]))return $conversion[$old];
   else return '3rdparty';
-}
-
-
-function cforge_report() {
-  module_load_include('inc', 'mcapi');
-  $traders = get_trader_uids();
-  $data = array(
-    'server' => $_SERVER["HTTP_HOST"],
-    'site_name' => urlencode(variable_get('site_name', 'site_name')),
-    'site_mail' => variable_get('site_mail', 'site_mail'),
-    'user_count' => count($traders),
-    'version' => db_result(db_query("SELECT schema_version from {system} WHERE name = 'mcapi'")),
-    'transactions_last_month' => db_result(db_query("SELECT COUNT(*) from {node} WHERE created > %d and type = 'transaction'", strtotime('-1 month'))),
-    'public' => variable_get('cforge_report', 1) -1,
-  );
-
-  foreach ($data as $key => $val) {
-    $args[] = $key . '=' . $val;
-  }
-  $url = 'http://www.communityforge.net/registration.php?'. urlencode(implode('&', $args));
-  $reply = drupal_http_request($url);
-  drupal_set_message($reply->data);
 }
 
 function mcapi_update_6001() {
@@ -511,20 +484,18 @@ function mcapi_update_6004() {
 /*
  * test with care on one site only!!!
  */
-function _________mcapi_update_6005() {
-  mkdir(file_directory_path() . '/currencies');
+function mcapi_update_6005() {
+  @mkdir(file_directory_path() . '/currencies');
   foreach(currencies_load() as $node) {
     $data = &$node->data;
     if (is_array($data['divisions']) && count($data['divisions'])) {
-      while (list($key,$val) = each($node->data['divisions'])) {
-        $data['divisions'] = $key . '|'. $val;
+      while (list($key,$val) = each($data['divisions'])) {
+        $divisions[] = $key . '|'. $val;
       }
-      $data['divisions'] = implode("\n", $data['divisions']);
+      $divisions = implode("\n", $divisions);
+      $data['divisions'] = $divisions;
+      db_query("UPDATE {mc_currencies} SET data = '%s' WHERE nid = $node->nid", serialize($data));
     }
-    else{
-      $data['divisions'] = NULL;
-    }
-    db_query("UPDATE {mc_currencies} SET data = '%s' WHERE nid = $node->nid", serialize($data));
   }
   return array();
 }

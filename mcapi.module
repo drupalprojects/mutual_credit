@@ -206,7 +206,7 @@ function mcapi_load($node) {
 
 
 /**
- * http://api.drupal.org/api/function/hook_form/6
+ * implements hook_form
  * Because we have a special multistep form creating the exchanges, this hook_form is only used for node editing
  */
 function mcapi_form(&$node) {
@@ -229,31 +229,23 @@ function mcapi_form(&$node) {
 
 
 /**
- * http://api.drupal.org/api/function/hook_insert/6
+ * implements node hook_insert
  */
 function mcapi_insert(&$node) {
-  if ($node->type == 'exchange') {
-    drupal_write_record('mc_exchanges', $node);
-  }
-  else {
-    drupal_write_record('mc_currencies', $node);
-  }
+  $table = $node->type == 'exchange'? 'mc_exchanges' : 'mc_currencies';
+  drupal_write_record($table, $node);
 }
 
 /**
- * http://api.drupal.org/api/function/hook_update/6
+ * implements node hook_update
  */
 function mcapi_update($node) {
-  if ($node->type == 'exchange') {
-    drupal_write_record('mc_exchanges', $node, array('nid'));
-  }
-  else {
-    drupal_write_record('mc_currencies', $node, array('nid'));
-  }
+  $table = $node->type == 'exchange'? 'mc_exchanges' : 'mc_currencies';
+  drupal_write_record($table, $node, array('nid'));
 }
 
 /**
- * http://api.drupal.org/api/function/hook_delete/6
+ * implements node hook_delete
  */
 function mcapi_delete($node) {
   if ($node->type == 'exchange') {
