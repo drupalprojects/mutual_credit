@@ -489,8 +489,8 @@ function mcapi_validate($node) {
       return;
     }
     if (!count(form_get_errors()) && $node->payer_uid && $node->payee_uid) {
-      $errors[] = mc_api_check_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid));
-      $errors[] = mc_api_check_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid));
+      $errors[] = mc_api_check_user_limits(user_load($node->payer_uid), -$node->quantity, intval($node->cid), $node->nid);
+      $errors[] = mc_api_check_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid), $node->nid);
       $errors = array_filter($errors);
       if (count($errors)) {
         //users with 'edit all exchanges' permission only get a warning about balance limits

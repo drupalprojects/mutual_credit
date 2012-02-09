@@ -72,7 +72,7 @@ function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
  * this is also called during exchange validation
  * static variable is in case 2 exchanges are being processed in one go.
  */
-function mc_api_check_user_limits($account, $difference, $cid) {
+function mc_api_check_user_limits($account, $difference, $cid, $nid = NULL) {
   module_load_include('inc', 'mcapi');
   static $projected_totals;
   $uid = &$account->uid;
@@ -83,6 +83,16 @@ function mc_api_check_user_limits($account, $difference, $cid) {
   $limits = user_limits($account, $cid);
   $balances = db_fetch_array(db_query("SELECT cleared_balance, pending_dif FROM {mc_cache} WHERE uid = %d and cid = %d", array(':uid' => $uid, ':cid' => $cid)));
   $balance = $balances['cleared_balance'] + $balances['pending_dif'];
+
+  //bit of an afterthought this
+  //if the node is already saved, we adjust the retrived the balance without counting the saved node
+  if ($nid) {
+    $exchange = node_load($nid);
+    if ($exchange->state == EXCHANGE_STATE_FINISHED) {
+      $sign = $account->uid == $exchange->payer_uid ? 1 : -1;
+      $balance += $sign*$exchange->quantity;
+    }
+  }
   $projected_totals[$uid] += $balance + $difference;
 
   $messages = array();
