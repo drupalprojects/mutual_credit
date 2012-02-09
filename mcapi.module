@@ -189,8 +189,11 @@ function mcapi_load($node) {
   //it can't unserialize them on the way out of the db since there is no function drupal_read_record
   $fields['data'] = unserialize($fields['data']);
   if ($node->type == 'currency') {
+    if (is_string($fields['data']['divisions'])) {//a bad upgrade meant this bit of data was broken
+      $lines = array_filter(explode("\n", $fields['data']['divisions']));
+    }
+    else $lines = array();
     $fields['divisions'] = array();
-    $lines = array_filter(explode("\n", $fields['data']['divisions']));
     //ensure all the array keys are saved as humbers
     if (count($lines)) {
       foreach($lines as $line) {

@@ -46,8 +46,8 @@ function mcapi_install() {
   db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_webform_1stparty'");
   db_query("UPDATE {system} SET weight = 1 WHERE name = 'mc_multiple'");
   db_query("UPDATE {system} SET weight = 2 WHERE name = 'mc_signatures'");
-
-  mkdir(file_directory_path() . '/currencies');
+  $cur_dir = file_directory_path() . '/currencies';
+  if (!is_dir($cur_dir))mkdir($cur_dir);
 }
 
 /**
@@ -75,18 +75,21 @@ function mcapi_uninstall() {
 }
 
 function mcapi_enable() {
+  $module_path = drupal_get_path('module', 'mcapi');
   //by using enable instead of install, we have access to node hooks
   if (!db_result(db_query("SELECT count(nid) FROM {mc_currencies}"))) {
+    include_once($module_path .'/mcapi.module');
     $currency = (object)array(
       'title' => 'Community Coins',
       'body' => t('This is the default currency'),
       'type' => 'currency',
       'status' => TRUE,
       'uid' => 1,
-      'icon' => drupal_get_path('module', 'mcapi') .'/theme/cc.png',
+      'icon' => $module_path .'/theme/cc.png',
       'color' => '00ff00',
       'divisions' => "0|00\n25|15 mins\n50|30 mins\n75|45 mins",
-      'subtype_bitmask' => 3
+      'subtype_bitmask' => 3,
+      'symbol' => '@minus@icon@integer @subdivision'
     );
     node_save($currency);
 
