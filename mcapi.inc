@@ -570,7 +570,7 @@ function notification_throttle() {
 }
 
 //this applies to subdivisions
-function theme_currency_division_array($settings_array) {print_r($settings_array());
+function theme_currency_division_array($settings_array) {
   if (!is_array($settings_array)) return $settings_array;
   if (count($settings_array)) {
     foreach ($settings_array as $key => $row) {
