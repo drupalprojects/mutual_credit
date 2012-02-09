@@ -2,8 +2,9 @@
 // $Id: mc_webform_1stparty.module,v 1.1.2.2 2010/12/06 13:19:46 hutch Exp $
 
 //these are bitmasks, so saved as one number in currency sub-types
-define('INCOMING_SIGNED', 4);
-define('OUTGOING_SIGNED', 8);
+
+define('INCOMING_DIRECT', 1);
+define('OUTGOING_DIRECT', 2);
 
 function mc_webform_1stparty_help($path) {
   switch($path) {
@@ -219,7 +220,6 @@ function mc_1stparty_form($form_state, $prefill = NULL) {
   else {
     $values = array();
   }
-
   if ($form_state['storage']['step'] == 1){
     //get the default exchange form, with defaults
     $passed_currencies = $values['cid'] ? array($values['cid'] => node_load($values['cid'])) : get_currencies_for_1stparty();

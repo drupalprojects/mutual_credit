@@ -224,9 +224,7 @@ function mc_webform_settings() {
     '#title' => t('Widget for selecting users'),
     '#default_value' => variable_get('mc_trader_selector', '%uid | %theme_username'),
     '#weight' => 2,
-    '#description' => t("Leave blank for autocomplete (reccommended above about 150 users).") .' '.
-      t('Otherwise, specify how each row of the dropdown box should be formatted.') .' '.
-      t('Use the following tokens: %uid, %username, %email, %theme_username') .' '.
+    '#description' => t('Use the following tokens: %uid, %username, %email, %theme_username') .' '.
       t('Dropdown list will be ordered alphabetically.') .' '.
       t('In Drupal 7 any user field will be allowed')
   );

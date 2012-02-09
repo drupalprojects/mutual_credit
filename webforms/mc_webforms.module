@@ -18,8 +18,6 @@
  * so that the divisions fields and confirm checkboxes can be re-loaded
  */
 
-define('INCOMING_DIRECT', 1);
-define('OUTGOING_DIRECT', 2);
 
 /**
  * http://api.drupal.org/api/function/hook_help/6
@@ -263,22 +261,27 @@ function refresh_trader_names() {
   //This funcntion must never by anon, because it retrives non-names from theme_username and caches them
   if (!$GLOBALS['user']->uid) return;
   module_load_include('inc', 'mcapi');
-  $uids = get_trader_uids();
-  $pattern = variable_get('mc_trader_selector', '%uid | %theme_username');
   $names = array();
-  foreach ($uids as $uid) {
-    $account = user_load($uid);
-    //in drupal 7 we'll allow any user field...
-    $replacements = array(
-      '%uid' => $account->uid,
-      '%name' => $account->name,
-      '%email' => $account->mail,
-      '%theme_username' => strip_tags(theme('username', $account))
-    );
-    $names[$account->uid] = strtr($pattern, $replacements);
+  $uids = get_trader_uids();
+  if (count($uids) < 2) {
+    drupal_set_message(t("At least 2 users must have '@perm' permission before exchanges can occur"));
   }
-  natcasesort($names);
-  cache_set('mc_trader_list', $names);
+  else {
+    $pattern = variable_get('mc_trader_selector', '%uid | %theme_username');
+    foreach ($uids as $uid) {
+      $account = user_load($uid);
+      $replacements = array(
+        '%uid' => $account->uid,
+        '%name' => $account->name,
+        '%username' => $account->name,
+        '%email' => $account->mail,
+        '%theme_username' => strip_tags(theme('username', $account))
+      );
+      $names[$account->uid] = strtr($pattern, $replacements);
+    }
+    natcasesort($names);
+    cache_set('mc_trader_list', $names);
+  }
   return $names;
 }
 
@@ -350,10 +353,8 @@ function validate_mc_quantity_field(&$element, &$form_state) {
     if (!$currency->sub) {
       form_error($element[$subfield], t("Integer values only for '@fieldname'", array('@fieldname' => $element[$subfield]['#title'])));
     }
-    if (count($currency->divisions)) {
-      if (!$currency->divisions[$division]) {
-        form_error($element['division'], t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
-      }
+    if (count($currency->divisions) && !isset($currency->divisions[$division])) {
+      form_error($element['division'], t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
     }
   }
   //the form validation should check if this is > 0
@@ -385,7 +386,10 @@ function field_process_mc_quantity($element, $edit, &$form_state, &$form) {
   unset($element['#value']);//because we are using the element_children and it breaks if quantity is preset
   $element['#tree'] = TRUE;
   if (isset($form_state['values']['cid']) && $form_state['values']['cid'] > 0) {
-    $currency = $form['#currencies'][$form['cid']['#value']];
+    //if we know the currency or it has already been selected, reduce the options to 1 currency
+    $cid = $form_state['values']['cid'];
+    $currency = $form['#currencies'][$cid];
+    $form['#currencies'] = array($cid => $currency);
     //this is picked up at in theme_mc_quantity
     $element['#single_currency_name'] = $currency->title;
   }
