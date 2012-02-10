@@ -163,15 +163,12 @@ function deduce_signatures(&$node) {
 }
 function save_signatures($node) {
   //this module assumes that every pending exchange is awaiting at least one signature
+  if (!count($node->mc_unsigned)) return;
   //clear all the completers ready for re-adding
   if (isset($node->nid)) {
     _clear_unsigned('nid', $node->nid);
   }
   $rows = array();
-  if (!count($node->mc_unsigned)) {
-    drupal_set_message(t("This exchange is pending, but has no signatories"), 'error');
-    return;
-  }
   foreach ($node->mc_unsigned as $uid) {
     $rows[] = '('. $node->nid .', '. $uid .')';
   }

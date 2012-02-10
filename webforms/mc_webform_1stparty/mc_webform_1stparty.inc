@@ -307,14 +307,20 @@ function theme_subtype_names($element){
     theme('table', array('', t('Incoming'), t('Outgoing')), $rows);
 }
 
-//this is really easy. can do more like this
+
 //assumes that types to be converted are 'offer' and 'want'
 function mc_prepopulate_1stparty($node, $type) {
   $prefill = array(
     'title' => $node->title,
     'completer' => $node->uid,
   );
-  $prefill['exchange_type'] = $type == 'offer' ? 'outgoing direct' : 'incoming direct';
+  $type_defs = module_invoke_all('exchange_type_info');
+  $dir = $type == 'offer' ? 'outgoing' : 'incoming';
+  //gets the first available exchange type in the right direction
+  foreach (array_keys($type_defs) as $exchange_type) {
+    if (substr($exchange_type, 0,8) == $dir) break;
+  }
+  $prefill['exchange_type'] = $exchange_type;
 
   return drupal_get_form('mc_1stparty_form', $prefill);
 }
