@@ -113,10 +113,8 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         unset($transaction->{$instance['field_name']}[LANGUAGE_NONE]['add_more']);
       }
     }//end of bugfix
-
     $transaction->modified = REQUEST_TIME;
     $transaction->modifier = $GLOBALS['user']->uid;
-    $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
     $t = db_transaction();
     //the transaction is actually inserted during the validation phase, after validation the state should be changed
     if(!empty($transaction->is_new)) $function = 'insert';
@@ -277,13 +275,12 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       case 0:
         throw new Exception(t('This currency does not allow transaction updates.'));
       case 1:
-        $old = transaction_load($transaction->xid);
-        $transaction->extra['formerly'] = $transaction->xid;
-        $old->extra = $transaction->extra;
+        $old = clone(transaction_load($transaction->xid));
+        $transaction->extra['former_xid'] = $transaction->xid;
         //remove the xid and insert the transaction anew
         unset($transaction->xid);
         $this->insert($transaction); //will give a new xid
-        $old->extra['became'] = $transaction->xid;
+        $old->extra['became_xid'] = $transaction->xid;
         //then erase the old one
         $this->erase($old);
         break;
@@ -308,6 +305,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
  * writes to the database(s) specified by the entity controller settings
  */
 function mcapi_write_record(&$record, $primary_keys = array()) {
+  $record->data = (isset($record->extra)) ? $record->extra : array();
   //we need to ensure the schema is cached before calling mcapi_write_record
   //Otherwise it may try to retrieve the schema from the wrong database
   drupal_get_schema('mcapi');

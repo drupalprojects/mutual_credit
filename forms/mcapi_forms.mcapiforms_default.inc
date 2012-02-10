@@ -375,7 +375,7 @@ function mcapiform_default_correction() {
     'perspective' => '3',
     'help' => 'To change the participants, please erase or counter this transaction and make a new one',
     'architecture' => array(
-      'path' => 'transaction/%transaction/correction',
+      'path' => 'transaction/%transaction/formedit',
       'access' => 'user_access:transact',
       'menu_link' => 'finished',
       'use_block' => 'finished',
@@ -424,7 +424,7 @@ function mcapiform_default_correction() {
       'mcapi_form_templates__active_tab' => 'edit-step-1',
     ),
     'step-1' => array(
-      'title' => 'Transaction corrected',
+      'title' => 'Altering transaction',
       'template' => '[payer] paid [payee]<br />
   Amount: [worth]<br />',
     ),

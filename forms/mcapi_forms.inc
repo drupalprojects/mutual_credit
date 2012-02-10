@@ -21,16 +21,15 @@ function mcapi_forms_form($form, &$form_state) {
     //use the transaction whose xid was passed via the url, and pulled fresh from the database
     $transaction = &$form_state['build_info']['args'][1];
     $form_state['storage'] = array();
-    if (empty($mcapi_form->data['step-'.MCAPIFORM_STEP_ENTER]['title'])) {
+    $form_state['step'] = MCAPIFORM_STEP_ENTER;
+    if (empty($mcapi_form->data['step-'.MCAPIFORM_STEP_ENTER]['title'])) {//if we are jumping to confirmation step
       $form_state['step'] = MCAPIFORM_STEP_CONFIRM;
       $form_state['transaction'] = $transaction;
       $form_state['values'] = $form_state['storage'];
     }
-    else {
-      $form_state['step'] = MCAPIFORM_STEP_ENTER;
-      $instances = field_info_instances('transaction', 'transaction');
+    elseif (empty($transaction->xid)) {
       //get the default contents of the fields from the form settings
-      foreach ($instances as $instance) {
+      foreach (field_info_instances('transaction', 'transaction') as $instance) {
         //The transaction might contain new fields not known about by the saved form
         if (!empty($mcapi_form->data[$instance['field_name']]['shared']['preset'])) {
           $transaction->{$instance['field_name']} = $mcapi_form->data[$instance['field_name']]['shared']['preset'];
@@ -131,9 +130,6 @@ function mcapi_forms_form($form, &$form_state) {
     $form[$fieldname]['#required'] = @$mcapi_form->data[$fieldname]['shared']['required'];
     mcapi_form_default_value($form[$fieldname], @$mcapi_form->data[$fieldname]);
   }
-
-  mcapi_unset_recursive($form, '#title');
-  mcapi_unset_recursive($form, '#description');
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -173,7 +169,7 @@ function mcapi_forms_form($form, &$form_state) {
   //hide the fields which don't appear as tokens
   foreach ($form['#tokens'] as $token => $fieldname) {
     if (strpos($form['#template'], "[$fieldname]") === FALSE) {
-      mcapi_hide_form_children($form[$fieldname]);
+      mcapi_element_children_value($form[$fieldname], '#type', 'hidden');
     }
   }
   //Only after processing, can we render the tokens and replace them into the template,
@@ -196,7 +192,9 @@ function mcapi_form_default_value(&$element, $settings) {
   if (!empty($settings['shared']['preset_required']) && !$element['#default_value']) {
     drupal_set_message(t('Default needed for field: @field', array('@field' => $element['#title'])));
   }
-  $element['#required'] = intval($settings['shared']['required']);
+  if (intval($settings['shared']['required'])) {
+    mcapi_element_children_value($element, '#required', TRUE);
+  }
   $element['#theme_wrappers'] = array();
 
   unset($element['#weight']);
@@ -212,15 +210,19 @@ function mcapi_form_collect_tokens(&$mcapi_form) {
   return drupal_map_assoc($tokens) + drupal_map_assoc($fields);
 }
 
-function mcapi_form_prepare_tokens(&$form, &$form_state) {
+function mcapi_form_prepare_tokens($form, &$form_state) {
   $form['#replacements'] = array();
   if ($form_state['step'] == MCAPIFORM_STEP_ENTER) { //step 1 means we render it as a form
     foreach ($form['#tokens'] as $fieldname) {
       if (strpos($form['#template'], "[$fieldname]") !== FALSE) {
+        $element = $form[$fieldname];//make a copy, because removing the title breaks the error handling
         mcapi_form_remove_theme_wrapper($form[$fieldname]);
-        mcapi_unset_recursive($form[$fieldname], '#prefix');
-        mcapi_unset_recursive($form[$fieldname], '#suffix');
-        $form['#replacements']["[$fieldname]"] = drupal_render($form[$fieldname]);
+        mcapi_unset_recursive($element, '#prefix');
+        mcapi_unset_recursive($element, '#suffix');
+        mcapi_unset_recursive($element, '#title');
+        mcapi_unset_recursive($element, '#description');
+        $form['#replacements']["[$fieldname]"] = drupal_render($element);
+        $form[$fieldname]['#printed'] = TRUE;
       }
       //otherwise it was already hidden when the form was built
     }
@@ -235,37 +237,6 @@ function mcapi_form_prepare_tokens(&$form, &$form_state) {
     }
   }
   return $form;
-}
-
-/*
- * nesting function to hide the deepest children
- */
-function mcapi_hide_form_children(&$element) {
-  $children = element_children($element);
-  if (count($children)) {
-    foreach($children as $child) {
-      mcapi_hide_form_children($element[$child]);
-    }
-  }
-  else {
-    $element['#type'] = 'hidden';
-  }
-}
-/*
- * nesting function to remove the outer theme wrapper put on by the element processing.
- */
-function mcapi_form_remove_theme_wrapper(&$field){
-  if (in_array($field['#type'], array('checkbox', 'radio'))) {
-    return;
-  }
-  if (isset($field['#theme_wrappers'])) {
-    $field['#theme_wrappers'] = array();
-  }
-  foreach(element_children($field) as $fieldname) {
-    if (!empty($field[$fieldname]['#type'])) {
-      mcapi_form_remove_theme_wrapper($field[$fieldname]);
-    }
-  }
 }
 
 /*
@@ -447,17 +418,6 @@ function _macpi_forms_direction_widget($data) {
     )
   );
 }
-
-
-function mcapi_unset_recursive(&$array, $prop) {
-  unset($array[$prop]);
-  foreach($array as $key => &$val) {
-    if (is_array($val)) {
-      mcapi_unset_recursive($val, $prop);
-    }
-  }
-}
-
 function mcapi_direction_validate(&$element, &$form_state) {
   if (empty($element['#value'])) {
     //can't do usual form_error things because we are stripping the theme wrappers from the form elements to make the templating work better
@@ -485,4 +445,45 @@ function mcapi_forms_field_widget_form_alter($element, $form_state, $context) {
   //debug($element['#field_name']);
   //debug($form_state['build_info']['args'][0]->data);
 
+}
+
+
+//The following recursive functions aren't very elegant, but I can't 'find a more drupalish way of doing them
+/*
+ * nesting function to set values wherever in the element
+ */
+function mcapi_element_children_value(&$element, $name, $value) {
+  $children = element_children($element);
+  if (count($children)) {
+    foreach($children as $child) {
+      mcapi_element_children_value($element[$child], $name, $value);
+    }
+  }
+  else {
+    $element[$name] = $value;
+  }
+}
+/*
+ * nesting function to remove the outer theme wrapper put on by the element processing.
+ */
+function mcapi_form_remove_theme_wrapper(&$field){
+  if (in_array($field['#type'], array('checkbox', 'radio'))) {
+    return;
+  }
+  if (isset($field['#theme_wrappers'])) {
+    $field['#theme_wrappers'] = array();
+  }
+  foreach(element_children($field) as $fieldname) {
+    if (!empty($field[$fieldname]['#type'])) {
+      mcapi_form_remove_theme_wrapper($field[$fieldname]);
+    }
+  }
+}
+function mcapi_unset_recursive(&$array, $prop) {
+  unset($array[$prop]);
+  foreach($array as $key => &$val) {
+    if (is_array($val)) {
+      mcapi_unset_recursive($val, $prop);
+    }
+  }
 }
