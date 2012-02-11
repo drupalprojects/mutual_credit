@@ -47,7 +47,8 @@ function mcapi_index_views_rebuild_index() {
 }
 function update_mcapi_index($transaction, $xid = NULL) {
   if ($transaction->state == TRANSACTION_STATE_FINISHED) {
-    foreach ($transaction->worth['und'] as $delta => $transfer) {
+  $flows = current($transaction->worth);
+    foreach ($flows as $delta => $transfer) {
       $balance_query = "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = :uid AND currcode = :currcode AND xid < :xid";
       $args = array(
         ':currcode' => $transfer['currcode'],

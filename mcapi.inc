@@ -198,11 +198,12 @@ function transaction_form($form, &$form_state, $transaction) {
     drupal_set_message(t('Cannot build transaction form:').' '. $e->getMessage(), 'error');
     return array();
   }
+  $lang = current(element_children($form['worth'])); //assumes only one language
   //the default theming for multiple value fields is way over the top, so this module provides a cut down theme callback
-  if (count(element_children($form['worth']['und'])) > 1) {
-    $form['worth']['und']['#theme'] = 'worth_widget';
+  if (count(element_children($form['worth'][$lang])) > 1) {
+    $form['worth'][$lang]['#theme'] = 'worth_widget';
     //for some reason the add more button is only heavier than the first element
-    $form['worth']['und']['add_more']['#weight'] = 6;
+    $form['worth'][$lang]['add_more']['#weight'] = 6;
   }
 
   $form['buttons']['#weight'] = 25;

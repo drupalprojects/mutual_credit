@@ -271,7 +271,8 @@ function limits_transaction_form_validate(&$form, $form_state) {
  * This is a drupal function, but the checking could just as easily be done through the entity controller.
  */
 function mcapi_limit_check($transaction) {
-  foreach ($transaction->worth['und'] as $flow) {
+  $flows = current($transaction->worth);
+  foreach ($flows as $flow) {
     $currcode = $flow['currcode'];
     $difference = $flow['quantity'];
     $payer = $transaction->payer;

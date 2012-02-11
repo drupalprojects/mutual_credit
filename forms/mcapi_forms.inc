@@ -42,8 +42,10 @@ function mcapi_forms_form($form, &$form_state) {
     $transaction = &$form_state['transaction'];
     //the form state was incremented as it was submit the first time.
   }
+
+  $lang = current(element_children($transaction->worth)); //assumes value is in one language only
   //only show one currency field
-  $form_state['field']['worth']['und']['items_count'] = 0;
+  $form_state['field']['worth'][$lang]['items_count'] = 0;
   if (!_mcapi_form_in_block($mcapi_form)) {
     drupal_set_title(mcapi_form_template($mcapi_form)->title);
   }
@@ -277,12 +279,13 @@ function mcapi_element_markup_render(&$element, $fs_values) {
 
     //all the fieldAPI fields appear here as container, here we take the form fields and convert them to a render array
     case 'container':
-      foreach(element_children($element['und']) as $childname) {
-        $fieldname = $element['und']['#field_name'];
+      $lang = current(element_children($element)); //assumes value is in one language only
+      foreach(element_children($element[$lang]) as $childname) {
+        $fieldname = $element[$lang]['#field_name'];
         $field = field_info_field($fieldname);
         $instance = field_info_instance('transaction', $fieldname, 'transaction');
         $function  = $field['module'] . '_field_formatter_view';
-        $renderable[] = $function('transaction', NULL, NULL, $instance, 'und', $fs_values[$fieldname]['und'], $instance['display']['default']);
+        $renderable[] = $function('transaction', NULL, NULL, $instance, $lang, $fs_values[$fieldname][$lang], $instance['display']['default']);
       }
       return drupal_render($renderable);
     case 'submit':

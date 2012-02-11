@@ -140,8 +140,9 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    */
   public function erase($transaction) {
     //if there are more than one flows involved, use the minimum value for the update mode
-    foreach ($transaction->worth['und'] as $worth) {
-      $modes[] = currency_load($worth['currcode'])->accounting['erase_mode'];
+    $flows = current($transaction->worth);
+    foreach ($flows as $flow) {
+      $modes[] = currency_load($flow['currcode'])->accounting['erase_mode'];
     }
     switch(min($modes)) {
       case 1: //mark deleted
@@ -267,8 +268,9 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    */
   function update($transaction) {
     //if there are more than one flows involved, use the minimum value for the update mode
-    foreach ($transaction->worth['und'] as $worth) {
-      $currency = currency_load($worth['currcode']);
+    $flows = current($transaction->worth);
+    foreach ($flows as $flow) {
+      $currency = currency_load($flow['currcode']);
       $modes[] = $currency->accounting['update_mode'];
     }
     switch(min($modes)) {

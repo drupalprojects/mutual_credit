@@ -326,10 +326,11 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   );
   //set the defaults from the saved object
   $preset = &$mcapi_form_fields[$key]['shared']['preset'];
-  if (isset($default_field['und'][0]['#columns'])) {//for formAPI fields
-    foreach ($default_field['und'][0]['#columns'] as $column) {
-      if (isset($preset['und']) && isset($preset['und'][0][$column])) {
-        $element['shared']['preset']['und'][0][$column]['#default_value'] = $preset['und'][0][$column];
+  $lang = current(element_children($default_field)); //assumes value is in one language only
+  if (isset($default_field[$lang][0]['#columns'])) {//for formAPI fields
+    foreach ($default_field[$lang][0]['#columns'] as $column) {
+      if (isset($preset[$lang]) && isset($preset[$lang][0][$column])) {
+        $element['shared']['preset'][$lang][0][$column]['#default_value'] = $preset[$lang][0][$column];
       }
     }
   }

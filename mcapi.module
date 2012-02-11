@@ -191,8 +191,9 @@ function transaction_access($op, $transaction, $account = NULL) {
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-  //check we can use each of the currencies in the transaction
-  foreach ($transaction->worth['und'] as $flow) {
+  //assuming only one language, but we don't know which
+  $flows = current($transaction->worth);
+  foreach ($flows as $flow) {
     $currency = currency_load($flow['currcode']);
     //access denied for transaction if ANY of the currencies denies it.
     if (empty($currency->$op)) {
@@ -224,7 +225,8 @@ function transaction_access($op, $transaction, $account = NULL) {
 function transaction_adminedit($transaction) {
   if (!user_access('manage all transactions')) return FALSE;
   module_load_include('inc', 'mcapi');
-  foreach ($transaction->worth['und'] as $flow) {
+  $flows = current($transaction->worth);
+  foreach ($flows as $flow) {
     $currency = currency_load($flow['currcode']);
     if (empty($currency->update))return;
     $states = $currency->update;
@@ -311,7 +313,8 @@ function template_preprocess_transaction(&$variables) {
   $variables['recorded'] = format_date($transaction->created, 'medium');
   $variables['type'] = $transaction->type;
   //choose the transaction theme template based on the first currency of the transaction
-  $variables['theme_hook_suggestion'] = 'transaction__' . $transaction->worth['und'][0]['currcode'];
+  $flows = current($transaction->worth);
+  $variables['theme_hook_suggestion'] = 'transaction__' . $flows[0]['currcode'];
   foreach (element_children($transaction->additional) as $key) {
     $variables[$key] = drupal_render($transaction->additional[$key]);
   }
