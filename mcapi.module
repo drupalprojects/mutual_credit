@@ -191,9 +191,9 @@ function transaction_access($op, $transaction, $account = NULL) {
   if (empty($account)) {
     $account = $GLOBALS['user'];
   }
-  //assuming only one language, but we don't know which
-  $flows = current($transaction->worth);
-  foreach ($flows as $flow) {
+  reset($transaction->worth);
+  //current() gives us the first language, and we're assuming there's only one.
+  foreach (current($transaction->worth) as $flow) {
     $currency = currency_load($flow['currcode']);
     //access denied for transaction if ANY of the currencies denies it.
     if (empty($currency->$op)) {
@@ -262,8 +262,8 @@ function mcapi_entity_info(){
   module_load_include('inc', 'mcapi');
   return mcapi_entity_info_inc();
 }
-
-function transaction_uri($transaction) {ddebug_backtrace();//would be interesting to know when this is used
+//I don't believe this callback, part of the entity definition, has any purpose
+function transaction_uri($transaction) {
   return array(
     'path' => 'transaction/' . $transaction->xid,
   );
@@ -274,7 +274,6 @@ function transaction_label($transaction){
 function currency_label($currency) {
   return $currency->name;
 }
-
 function transaction_menu_title($transaction) {
   return t('Transaction certificate #@xid', array('@xid' => $transaction->xid));
 }

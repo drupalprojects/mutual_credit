@@ -271,14 +271,22 @@ function limits_transaction_form_validate(&$form, $form_state) {
  * This is a drupal function, but the checking could just as easily be done through the entity controller.
  */
 function mcapi_limit_check($transaction) {
+  reset($transaction->worth);
   $flows = current($transaction->worth);
-  foreach ($flows as $flow) {
+  foreach ($flows as $delta => $flow) {
     $currcode = $flow['currcode'];
     $difference = $flow['quantity'];
     $payer = $transaction->payer;
     $payee = $transaction->payee;
     $messages = array();
-
+    debug($transaction);
+    if ($transaction->state == TRANSACTION_STATE_FINISHED) {
+      //the difference is between this value and the saved one
+      $saved_flow = current(transaction_load($transaction->xid))->worth;
+      debug($saved_flow);
+      $difference -= $saved_flow[$delta]['quantity'];
+    }
+    debug($difference);
     //check that the payee isn't going over their max limit
     $limits = limits_get($currcode, $payee);
     if (is_numeric($limits['max'])) {
@@ -435,11 +443,6 @@ function mcapi_limits_block_settings($delta) {
   $settings = variable_get($delta, array());
   return $settings ? $settings : array('currcodes' => array_keys(currencies_load()), 'adjust' => FALSE);
 }
-
-function mcapi_limits_update_7001() {
-  variable_del('block_balance_limits');
-}
-
 
 /*
  * Implements variable module's hook_variable_info

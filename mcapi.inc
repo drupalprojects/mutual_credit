@@ -207,13 +207,28 @@ function transaction_form($form, &$form_state, $transaction) {
   }
 
   $form['buttons']['#weight'] = 25;
-
-  $form['buttons']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Record'),
-  );
   if ($transaction->xid) {
-    $form['buttons']['submit']['#value'] = t('Update');
+    $form['buttons']['update'] = array(
+      '#type' => 'submit',
+      '#value' => t('Update'),
+      '#access' => transaction_access('update', $transaction)
+    );
+    $form['buttons']['erase']=array(
+      '#theme' => 'link',
+      '#path' => 'transaction/'. $transaction->xid .'/erase',
+      '#text' => t('Erase'),
+      '#access' => transaction_access('erase', $transaction),
+      '#options' => array(
+        'attributes' => array(),
+        'html' => FALSE
+      ),
+    );
+  }
+  else {
+    $form['buttons']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Record'),
+    );
   }
   $form['#entity_builders'][] = 'transaction_entity_builder';
   $form['#validate'] = array('transaction_form_validate');

@@ -175,10 +175,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
   }
   /*
    * change the state of a transaction.
-   * This does not count as updating it, which is subject to permissions
+   * This does not count as updating it, which is subject to different permissions
    */
   public function state($transaction) {
     db_query("UPDATE {mcapi_transactions} SET state = :state WHERE xid = :xid", array(':state' => $transaction->state, ':xid' => $transaction->xid));
+    //not sure it's appropriate to run update here, when the entity is treating a state change as distinct from an update
     module_invoke_all('entity_update', $transaction, 'transaction');
     return $transaction;
   }

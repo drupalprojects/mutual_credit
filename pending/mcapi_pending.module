@@ -56,10 +56,6 @@ function has_pending($account) {
 function mcapi_pending_signatories_access($transaction) {
   //check the transaction is pending and the given account needs to sign it.
   if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
-  //checking (just for development)
-  if (!count(array_filter($transaction->pending_signatures))) {
-    drupal_set_message('no signatories');
-  }
   //check the user is listed as a signatory
   if (!empty($transaction->pending_signatures[$GLOBALS['user']->uid])) return TRUE;
 }
@@ -164,18 +160,26 @@ function mcapi_pending_entity_delete($entity, $type) {
 /*
  * removes one signatory from the transaction object and resaves the transaction
  */
-function mcapi_sign($transaction, $uid) {
+function mcapi_sign(&$transaction, $uids) {
+  if (is_numeric($uids)) {
+    $uids = array($uids);
+  }
+  foreach ($uids as $uid) {
+    _mcapi_sign($transaction, $uid);
+  }
+  $remaining = array_filter($transaction->pending_signatures);
+  if (empty($remaining)) {
+    $transaction->state = TRANSACTION_STATE_FINISHED;
+    transaction_state($transaction);
+    drupal_set_message(t("Transaction #@xid is signed off.", array('@xid' => $transaction->xid)));
+  }
+  else {
+    drupal_set_message(t("@num signatures remaining on transaction #@xid", array('@num' => count($remaining), '@xid' => $transaction->xid)));
+  }
+}
+function _mcapi_sign(&$transaction, $uid) {
   if ($transaction->pending_signatures[$uid] == 1) {
     $transaction->pending_signatures[$uid] = 0;
-    $remaining = array_filter($transaction->pending_signatures);
-    if (empty($remaining)) {
-      $transaction->state = TRANSACTION_STATE_FINISHED;
-      transaction_state($transaction, $transaction->state);
-      drupal_set_message(t("Transaction #@xid is signed off.", array('@xid' => $transaction->xid)));
-    }
-    else {
-      drupal_set_message(t("@num signatures remaining on transaction #@xid", array('@num' => count($remaining), '@xid' => $transaction->xid)));
-    }
   }
   else {
     drupal_set_message(t('Transaction #@xid is already signed'), array('@xid' => $transaction->xid));
@@ -244,7 +248,7 @@ function mcapi_pending_form_mcapi_forms_form_alter(&$form, &$form_state) {
 function add_my_signature_submit($form, &$form_state) {
   //remove the signatory from the transaction
   if ($form_state['transaction']->state = TRANSACTION_STATE_PENDING) {
-    mcapi_sign($form_state['transaction'], $GLOBALS['user']->uid);
+    mcapi_sign($form_state['transaction'], array($GLOBALS['user']->uid));
   }
 }
 
@@ -279,10 +283,8 @@ function mcapi_signoff_confirm_form($form, $form_state, $transaction) {
 function mcapi_signoff_confirm_form_submit($form, &$form_state) {
   $xid = &$form_state['values']['xid'];
   $signatories = array_filter(mcapi_get_signatories($xid));
-  foreach (array_keys($signatories) as $uid) {
-    mcapi_sign(transaction_load($xid), $uid);
-  }
-  drupal_set_message(t("Transaction #@xid is signed off.", array('@xid' => $xid)));
+  $transaction = transaction_load($xid);
+  mcapi_sign($transaction, array_keys($signatories));
   $form_state['redirect'] = 'transaction/'. $xid;
 }
 
@@ -309,7 +311,7 @@ function mcapi_signall_confirm_form_submit($form, &$form_state) {
   $transactions = transaction_controller('load', mcapi_get_signatories(NULL, $uid));
   //sign them one by one
   foreach ($transactions as $transaction) {
-    mcapi_sign($transaction, $uid);
+    mcapi_sign($transaction, array($uid));
   }
   $form_state['redirect'] = 'user';
 }
