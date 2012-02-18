@@ -78,20 +78,26 @@ function mcapi_enable() {
   $module_path = drupal_get_path('module', 'mcapi');
   //by using enable instead of install, we have access to node hooks
   if (!db_result(db_query("SELECT count(nid) FROM {mc_currencies}"))) {
-    include_once($module_path .'/mcapi.module');
     $currency = (object)array(
       'title' => 'Community Coins',
       'body' => t('This is the default currency'),
       'type' => 'currency',
       'status' => TRUE,
       'uid' => 1,
-      'icon' => $module_path .'/theme/cc.png',
-      'color' => '00ff00',
-      'divisions' => "0|00\n25|15 mins\n50|30 mins\n75|45 mins",
-      'subtype_bitmask' => 3,
-      'symbol' => '@minus@icon@integer @subdivision'
     );
     node_save($currency);
+    //save the extra fields separately because the node hooks haven't been initiated yet
+    $props = array(
+      'nid' => $currency->nid,
+      'icon' => $module_path .'/theme/cc.png',
+      'symbol' => '@minus@icon@integer @subdivision',
+      'data' => array(
+        'color' => '00ff00',
+        'subtype_bitmask' => 3,
+        'divisions' => "0|00\n25|15 mins\n50|30 mins\n75|45 mins"
+      )
+    );
+    drupal_write_record('mc_currencies', $props, array('nid'));
 
     drupal_set_message(t('Your defult currency is @name. !edit', array(
       '@name' => $currency->title,
@@ -407,6 +413,14 @@ function mcapi_upgrade_exchange_types($old) {
   else return '3rdparty';
 }
 
+function mc_balances_refresh() {
+  module_load_include('inc', 'mcapi');
+  db_query("TRUNCATE table {mc_cache}");
+  _refresh_mc_cache();
+  drupal_set_message(t('Flushed balance cache'));
+  //need to tell the stats module to rebuild.
+}
+
 function mcapi_update_6001() {
   $ret = array();
   db_query("UPDATE {permission} SET perm = REPLACE(perm, 'configure economy', 'configure currencies') ");
@@ -485,7 +499,7 @@ function mcapi_update_6004() {
 }
 
 /*
- * test with care on one site only!!!
+ * this isn't working very well - you may need to resave the currency
  */
 function mcapi_update_6005() {
   @mkdir(file_directory_path() . '/currencies');
@@ -495,10 +509,18 @@ function mcapi_update_6005() {
       while (list($key,$val) = each($data['divisions'])) {
         $divisions[] = $key . '|'. $val;
       }
-      $divisions = implode("\n", $divisions);
-      $data['divisions'] = $divisions;
+      $data['divisions'] = implode("\n", $divisions);
       db_query("UPDATE {mc_currencies} SET data = '%s' WHERE nid = $node->nid", serialize($data));
     }
   }
+  return array();
+}
+/*
+ * there was integrity problem when users were deleted
+ * this is now solved so we rebuild the balance cache
+ */
+function mcapi_update_6006() {
+  module_load_include('inc', 'mcapi');
+  mc_balances_refresh();
   return array();
 }
