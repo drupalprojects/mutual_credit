@@ -131,6 +131,7 @@ function import_transactions_form_submit($form, &$form_state) {
   }
   //hack the changed time for each node
   db_query("UPDATE {node} SET changed = created WHERE nid IN (%s)", implode(',', $nids));
+  module_load_include('install', 'mcapi');
   mc_balances_refresh();
   mcapi_import_finish('done');
 }
@@ -185,6 +186,7 @@ function import_balances_form_submit($form, &$form_state) {
   foreach ($rows as $key=>$stats) {
     mcapi_import_balances_member($stats['UserID'], $stats['Balance'], $stats['GrossIncome']);
   }
+  module_load_include('install', 'mcapi');
   mc_balances_refresh();
 }
 

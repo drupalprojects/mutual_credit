@@ -329,73 +329,61 @@ function mc_admin_menu_block_page() {
   return system_admin_menu_block_page();
 }
 
-function mc_balances_refresh() {
-  db_query("TRUNCATE table {mc_cache}");
-  //get a list of all the users and all the currencies they have traded in
-  foreach (array_keys(currencies_load()) as $cid) {
-    foreach (get_trader_uids() as $uid) {
-      _refresh_mc_cache($uid, $cid);
-    }
-  }
-  drupal_set_message(t('Flushed balance cache'));
-  //need to tell the stats module to rebuild.
-}
-
 //refreshes a cache of all the exchanges, calculates the running balances and other totals
 //this is an unusual kind of cache which should never be empty, because some functions access the cache table directly
-//for this reason this function REPLACES rows.ƒ
-function _refresh_mc_cache($uid, $cid) {
-  $results = _get_transactions($uid, $cid);
-
+//for this reason this function REPLACES rows.
+//in v3, this is handled completely differently!
+function _refresh_mc_cache($uid = 0, $cid = 0) {
   $cleared_balance = $pending_dif = $gross_out = $gross_in = $count = 0;
-
+  $results = _get_transactions($uid, $cid);
+  //collate them
+  $users = array();
   while ($exchange = db_fetch_object($results)) {
-    $count++;
-    //add to or subtract from the running balances
-    if ($exchange->payer_uid == $uid) {
-      if ($exchange->state == EXCHANGE_STATE_FINISHED) {
-        $cleared_balance -= $exchange->quantity;
-        $gross_out += $exchange->quantity;
-      }
-      else {
-        $pending_dif -= $exchange->quantity;
-      }
+    $cid = &$exchange->cid;
+    $q = &$exchange->quantity;
+    $payer = &$users[$exchange->payer_uid][$cid];
+    $payee = &$users[$exchange->payee_uid][$cid];
+    if ($exchange->state == EXCHANGE_STATE_FINISHED) {
+      $payer['cleared_balance'] -= $q;
+      $payee['cleared_balance'] += $q;
+      $payer['gross_out'] += $q;
+      $payee['gross_in'] += $q;
+      $payer['count']++;
+      $payee['count']++;
     }
     else {
-      if ($exchange->state == EXCHANGE_STATE_FINISHED) {
-        $cleared_balance += $exchange->quantity;
-        $gross_in += $exchange->quantity;
-      }
-      else {
-        $pending_dif += $exchange->quantity;
-      }
+      $payer['pending_dif'] -= $q;
+      $payee['pending_dif'] += $q;
     }
-    $exchange->balance = $cleared_balance;
   }
-  db_query("REPLACE INTO {mc_cache} (uid, cid, cleared_balance, pending_dif, gross_in, gross_out, count)
-    VALUES (%d, %d, %f, %f, %f, %f, %d)",
-    array($uid, $cid, $cleared_balance, $pending_dif, $gross_in, $gross_out, $count)
-  );
+  foreach ($users as $uid => $by_cur) {
+    foreach ($by_cur as $curr_id => $values) {
+      db_query("REPLACE INTO {mc_cache} (uid, cid, cleared_balance, pending_dif, gross_in, gross_out, count)
+        VALUES (%d, %d, %f, %f, %f, %f, %d)",
+        array($uid, $curr_id, $values['cleared_balance'], $values['pending_dif'], $values['gross_in'], $values['gross_out'], $values['count'])
+      );
+    }
+  }
 }
 
-function _get_transactions($uid, $cid, $states = array(EXCHANGE_STATE_FINISHED, EXCHANGE_STATE_PENDING)) {
-  $fields = array('n.uid', 'n.title', 'n.nid', 'e.payer_uid', 'e.payee_uid', 'e.quantity', 'e.state', 'n.created', 'e.exchange_type', 'e.cid');
-  if (!$uid) ddebug_backtrace();
+function _get_transactions($uid = 0, $cid = 0, $states = array(EXCHANGE_STATE_FINISHED, EXCHANGE_STATE_PENDING)) {
   foreach ($states as $state) {
     $state_filters[] = "e.state = " . $state;
   }
   $filters[] = '('. implode(' OR ', $state_filters) .' )';
-  $filters[] = " e.cid = $cid ";
-  $filters[] = "(payer_uid = $uid OR payee_uid = $uid)";
-
-  $query = "SELECT ". implode(', ', $fields) ."
+  if ($cid) {
+    $filters[] = " e.cid = $cid ";
+  }
+  if ($uid) {
+    $filters[] = "(payer_uid = $uid OR payee_uid = $uid)";
+  }
+  return db_query("SELECT n.uid, n.title, n.nid, e.payer_uid, e.payee_uid, e.quantity, e.state, n.created, e.exchange_type, e.cid
     FROM {node} n
     LEFT JOIN {mc_exchanges} e ON e.nid = n.nid
     WHERE n.type = 'exchange'
-    AND %s
-    ORDER BY n.created ASC";
-  $args = array(implode(' AND ', $filters));
-  return db_query($query, $args);
+    AND ".implode(' AND ', $filters)."
+    ORDER BY n.created ASC"
+  );
 }
 
 function _mcapi_default_mails($key) {

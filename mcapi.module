@@ -290,14 +290,14 @@ function mcapi_nodeapi(&$node, $op) {
 
 
 /**
- * http://api.drupal.org/api/function/hook_user/6
- * This hook is required for modules to define one or more node types.
+ * implements hook_user
  */
 function mcapi_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'form':
       if ($category != 'account') return;
     case 'register':
+      $form = array();
       if (variable_get('mc_notification_option', TRUE)) {
         if (!module_exists('contact')) { //buggers up if the fieldset is declared twice
           $form['contact']['#type'] = 'fieldset';
@@ -310,12 +310,8 @@ function mcapi_user($op, &$edit, &$account, $category = NULL) {
           isset($account->mc_notification_throttle) ?
           $account->mc_notification_throttle :
           MC_NOTIFICATION_DEFAULT_LEVEL;
-      return $form;
       }
-      break;
-    case 'delete':
-      db_query("DELETE from {mc_cache} WHERE uid = %d", array(':uid' => $account->uid));
-      break;
+      return $form;
     case 'load':
       if (!variable_get('mc_notification_option', TRUE) || !isset($account->mc_notification_throttle)) {
         $account->mc_notification_throttle = variable_get('mc_notification_throttle_default', MC_NOTIFICATION_DEFAULT_LEVEL);

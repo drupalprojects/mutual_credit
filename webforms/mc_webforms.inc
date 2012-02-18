@@ -22,7 +22,6 @@ function mc_3rdparty_form($form_state, $prefill = NULL) {
     $form = mcapi_form_exchange((object)$values, $passed_currencies);
 
     mc_build_webform($form, $values);
-
     //there are some circumstances the ajax is not needed, but I'm not going to make all the rules now
     //act of choosing the currency updates the form to show the divisions, if the currency has them
     if (!isset($form['cid']['#value'])) {
