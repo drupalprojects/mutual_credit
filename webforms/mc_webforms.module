@@ -258,13 +258,13 @@ function mc_webforms_form_user_admin_account_alter(&$form, $form_alter) {
   $form['#submit'][] = 'refresh_trader_names';
 }
 function refresh_trader_names() {
-  //This funcntion must never by anon, because it retrives non-names from theme_username and caches them
+  //This function must never by anon, because it retrives non-names from theme_username and caches them
   if (!$GLOBALS['user']->uid) return;
   module_load_include('inc', 'mcapi');
   $names = array();
   $uids = get_trader_uids();
   if (count($uids) < 2) {
-    drupal_set_message(t("At least 2 users must have '@perm' permission before exchanges can occur"));
+    drupal_set_message(t("At least 2 users must have '@perm' permission before exchanges can occur"), 'error');
   }
   else {
     $pattern = variable_get('mc_trader_selector', '%uid | %theme_username');

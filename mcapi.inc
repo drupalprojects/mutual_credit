@@ -588,7 +588,7 @@ function theme_exchange_summary($node) {
 }
 function get_trader_uids() {
   //can't use user_roles() here because it matches with mysql LIKE which gives inaccurate results
-  $result = db_query("SELECT r.rid FROM {role} r INNER JOIN {permission} p ON r.rid = p.rid WHERE p.perm LIKE '%%exchange,%%' ORDER BY r.name");
+  $result = db_query("SELECT distinct(rid) FROM {permission} WHERE perm LIKE '%%exchange,%%' OR perm = 'exchange'");
   while ($rid = db_result($result)) {
     $rids[] = $rid;
   }
