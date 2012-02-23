@@ -335,10 +335,10 @@ function mc_admin_menu_block_page() {
 //in v3, this is handled completely differently!
 function _refresh_mc_cache($uid = 0, $cid = 0) {
   $cleared_balance = $pending_dif = $gross_out = $gross_in = $count = 0;
-  $results = _get_transactions($uid, $cid);
+  $result = _get_transactions($uid, $cid);
   //collate them
   $users = array();
-  while ($exchange = db_fetch_object($results)) {
+  while ($exchange = db_fetch_object($result)) {
     $cid = &$exchange->cid;
     $q = &$exchange->quantity;
     $payer = &$users[$exchange->payer_uid][$cid];
@@ -356,6 +356,8 @@ function _refresh_mc_cache($uid = 0, $cid = 0) {
       $payee['pending_dif'] += $q;
     }
   }
+  //if we are doing this for one user, which is mostly the case, exclude all the other users
+  if ($uid)$users = array($uid => $users[$uid]);
   foreach ($users as $uid => $by_cur) {
     foreach ($by_cur as $curr_id => $values) {
       db_query("REPLACE INTO {mc_cache} (uid, cid, cleared_balance, pending_dif, gross_in, gross_out, count)
