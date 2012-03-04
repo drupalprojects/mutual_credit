@@ -73,8 +73,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     $transaction->validating = TRUE;
     if (empty($transaction->xid)) {
       $transaction->is_new = TRUE;
-      //temporarily change the transaction state so that validated transaction left hanging DO leave a trace.
-      $transaction->state = TRANSACTION_STATE_INITIATED;
     }
     $t = db_transaction();
     try {

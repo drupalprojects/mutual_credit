@@ -121,11 +121,10 @@ function mcapi_transaction_controller(){}
  */
 function mcapi_mcapi_info_states() {
   return array(
-    'unset' => t('Unset'),//this should never reach the database
+    TRANSACTION_STATE_INITIATED => t('Unset'),//internal use only
     //must be defined with lower case
     TRANSACTION_STATE_FINISHED => t('finished'),
     TRANSACTION_STATE_ERASED => t('erased'), //internal use only
-    TRANSACTION_STATE_INITIATED => t('initiated') //internal use only
   );
 }
 function mcapi_states() {
@@ -183,7 +182,6 @@ function mcapi_mcapi_info_permissions() {
  * special access function for transactions - NOT hook implementation
  * $op can be array('view', 'update', 'erase', 'admin')
  * Note some settings may even restric access to user 1
- * this function assumes all transactions are public
  */
 function transaction_access($op, $transaction, $account = NULL) {
   module_load_include('admin.inc', 'mcapi', 'currencies');

@@ -119,7 +119,7 @@ function _mcapi_currency_form(&$form, &$form_state) {
     '#weight' => 10,
   );
   $states = mcapi_states();
-  unset($states['unset']);
+  unset($states[TRANSACTION_STATE_INITIATED]);
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_info_permissions');
   foreach (array_filter($operations) as $op => $name) {

@@ -236,9 +236,9 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   //need to check that all required fields exist in the form.
   if (strlen($form_state['item']->data['step-1']['template'])) {
     foreach ($form_state['item']->data as $name => $prop) {
-      if (isset($prop['shared']['required']) && $prop['shared']['required']) {  
+      if (!empty($prop['shared']['required']) && empty($prop['shared']['preset'])) {
         if (strpos($form_state['item']->data['step-1']['template'], $name) == FALSE) {
-          form_error($form['step-1']['template'], t('Required fields must be used in the form Step 1'));
+          form_error($form['step-1']['template'], t("Required field '@name' must be used in the form Step 1", array('@name' => $name)));
         }
       }
     }
@@ -256,10 +256,12 @@ function mcapi_edit_mcapi_form_submit($form, &$form_state) {}
  */
 function mcapi_forms_form_system_theme_settings_alter(&$form, $form_state) {
   $form['tab_element'] = array(
-    '#title' => t('Tab element'),
-    '#description' => t("Write a css identifier for the div which 'List, Settings' on this page. Don't forget the leading . or #. Then it can be hidden on stage 2 of the transaction form"),
+    '#title' => t('Css menu tab identifier'),
+    '#description' => t("The second stage of the the transaction form works best when the menu tabs are hidden.") .' '. 
+      t("Write the css identifier for the div on this page containing the menu items which 'List', 'Update' & 'Settings'.") .' '.
+      t("Don't forget the leading . or #"),
     '#type' => 'textfield',
-    '#default_value' => $form_state['input']['tab_element'] ? $form_state['input']['tab_element'] : 'tabs',
+    '#default_value' => theme_get_setting('tab_element')
   );
 }
 

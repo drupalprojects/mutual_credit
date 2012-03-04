@@ -167,8 +167,7 @@ function transaction_form($form, &$form_state, $transaction) {
     '#weight' => 15
   );
   $states = mcapi_states();
-  //perhaps 'unset' doesn't have to be a state?
-  unset($states['unset']);
+  unset($states[TRANSACTION_STATE_INITIATED]);
   $form['state'] = array(
     '#type' => 'radios',
     '#title' => t('State'),
@@ -206,8 +205,8 @@ function transaction_form($form, &$form_state, $transaction) {
     $form['worth'][$lang]['add_more']['#weight'] = 6;
   }
 
-  $form['buttons']['#weight'] = 25;
-  if ($transaction->xid) {
+  $saved_transaction = &$form_state['build_info']['args'][1];
+  if ($saved_transaction->xid && $saved_transaction->state > -1) {
     $form['buttons']['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
@@ -230,6 +229,7 @@ function transaction_form($form, &$form_state, $transaction) {
       '#value' => t('Record'),
     );
   }
+  $form['buttons']['#weight'] = 25;
   $form['#entity_builders'][] = 'transaction_entity_builder';
   $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_all_submit');
@@ -302,7 +302,7 @@ function mcapi_validate_transactor(&$element, $form_state) {
   $uid = &$element['#value'];
   if (empty($uid)) return;
   $account = user_load($uid);
-  if (!$account->uid) {
+  if (empty($account->uid)) {
     form_error($element, t('User ID does not exist: @user', array('@user' => $uid)));
   }
   elseif(!user_access('transact', $account)) {
