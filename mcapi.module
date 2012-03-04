@@ -14,7 +14,7 @@ module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
 //states are mutually exclusive
 //the convention is that states > 0 are counted
 define ('TRANSACTION_STATE_FINISHED', 1);
-define ('TRANSACTION_STATE_ERASED', -3);
+define ('TRANSACTION_STATE_ERASED', 0);
 define ('TRANSACTION_STATE_INITIATED', -2);
 
 

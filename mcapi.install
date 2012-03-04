@@ -465,8 +465,9 @@ function mcapi_update_7003() {
   db_query("UPDATE {mcapi_transactions} set state = state + 10"); //to avoid clashes
   db_query("UPDATE {mcapi_transactions} SET state = 1 WHERE state = 10");//move finished state from 0
   db_query("UPDATE {mcapi_transactions} SET state = -1 WHERE state = 11");//move pending state from 1
-  db_query("UPDATE {mcapi_transactions} SET state = -3 WHERE state = 9");//move erased state from 1
+  db_query("UPDATE {mcapi_transactions} SET state = 0 WHERE state = 9");//move erased state from 1
   db_query("UPDATE {mcapi_transactions} SET state = -2 WHERE state = 8");//keep initiated state at -2
+  DRUPAL_SET_MESSAGE('Check all views involving the transaction->state filter or arguments','warning');
 }
 
 function mcapi_update_currency($old_currency) {
