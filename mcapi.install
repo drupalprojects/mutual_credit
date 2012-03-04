@@ -460,6 +460,15 @@ function mcapi_update_7002() {
   db_drop_table('mc_currencies');
 }
 
+//change the constants behind the transaction states
+function mcapi_update_7003() {
+  db_query("UPDATE {mcapi_transactions} set state = state + 10"); //to avoid clashes
+  db_query("UPDATE {mcapi_transactions} SET state = 1 WHERE state = 10");//move finished state from 0
+  db_query("UPDATE {mcapi_transactions} SET state = -1 WHERE state = 11");//move pending state from 1
+  db_query("UPDATE {mcapi_transactions} SET state = -3 WHERE state = 9");//move erased state from 1
+  db_query("UPDATE {mcapi_transactions} SET state = -2 WHERE state = 8");//keep initiated state at -2
+}
+
 function mcapi_update_currency($old_currency) {
   //get the default currency for this module, and populate with the old default currency
   module_load_include('admin.inc', 'mcapi', 'currencies');

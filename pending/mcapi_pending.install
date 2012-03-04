@@ -11,7 +11,9 @@ function mcapi_pending_install() {
 function mcapi_pending_uninstall() {
   if (module_exists('views')) {
     $view = views_get_view('signatures');
-    views_delete_view($view);
+    if($view) {
+      views_delete_view($view);
+    }
   }
 }
 
