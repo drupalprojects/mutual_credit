@@ -186,7 +186,7 @@ function mc_display_block_list($delta) {
   if (module_exists('mc_user_limits')) {
     $blocks['balance_limits'] = array(
       'info' => 'MC '. t("Limits for user"),
-      'visibility' => 2,
+      'visibility' => 0,
       'pages' => 'exchange/*'
     );
   }

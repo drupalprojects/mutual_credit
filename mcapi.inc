@@ -339,10 +339,9 @@ function _refresh_mc_cache($uid = 0, $cid = 0) {
   //collate them
   $users = array();
   while ($exchange = db_fetch_object($result)) {
-    $cid = &$exchange->cid;
     $q = &$exchange->quantity;
-    $payer = &$users[$exchange->payer_uid][$cid];
-    $payee = &$users[$exchange->payee_uid][$cid];
+    $payer = &$users[$exchange->payer_uid][$exchange->cid];
+    $payee = &$users[$exchange->payee_uid][$exchange->cid];
     if ($exchange->state == EXCHANGE_STATE_FINISHED) {
       $payer['cleared_balance'] -= $q;
       $payee['cleared_balance'] += $q;
@@ -357,12 +356,20 @@ function _refresh_mc_cache($uid = 0, $cid = 0) {
     }
   }
   //if we are doing this for one user, which is mostly the case, exclude all the other users
-  if ($uid)$users = array($uid => $users[$uid]);
-  foreach ($users as $uid => $by_cur) {
-    foreach ($by_cur as $curr_id => $values) {
+  if ($uid) {
+    if ($users[$uid]) {
+      $users = array($uid => $users[$uid]);
+    }
+    elseif ($cid) {
+      //create a null row if there are no transactions for the given user
+      $users = array($uid => array($cid => array('cleared_balance' => 0, 'pending_dif' => 0, 'gross_in' => 0, 'gross_out' => 0, 'count' => 0)));
+    }
+  }
+  while (list($user_id, $row) = each($users)) {
+    foreach ($row as $curr_id => $values) {
       db_query("REPLACE INTO {mc_cache} (uid, cid, cleared_balance, pending_dif, gross_in, gross_out, count)
         VALUES (%d, %d, %f, %f, %f, %f, %d)",
-        array($uid, $curr_id, $values['cleared_balance'], $values['pending_dif'], $values['gross_in'], $values['gross_out'], $values['count'])
+        array($user_id, $curr_id, $values['cleared_balance'], $values['pending_dif'], $values['gross_in'], $values['gross_out'], $values['count'])
       );
     }
   }

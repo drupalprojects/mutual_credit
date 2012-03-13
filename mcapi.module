@@ -433,7 +433,7 @@ function theme_money($quant, $cid, $richtext = TRUE) {
   $integer = abs(intval($quant));
   if ($currencies[$cid]->sub) {
     $fraction = 100 * round(abs($quant) - abs($integer), 2);
-    if (count($currencies[$cid]->divisions)) {
+    if (isset($currencies[$cid]->divisions[$fraction])) {
       $subdivision = $currencies[$cid]->divisions[$fraction];
     }
     else $subdivision = $fraction;
