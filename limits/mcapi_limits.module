@@ -279,14 +279,11 @@ function mcapi_limit_check($transaction) {
     $payer = $transaction->payer;
     $payee = $transaction->payee;
     $messages = array();
-    debug($transaction);
     if ($transaction->state == TRANSACTION_STATE_FINISHED) {
       //the difference is between this value and the saved one
       $saved_flow = current(transaction_load($transaction->xid))->worth;
-      debug($saved_flow);
       $difference -= $saved_flow[$delta]['quantity'];
     }
-    debug($difference);
     //check that the payee isn't going over their max limit
     $limits = limits_get($currcode, $payee);
     if (is_numeric($limits['max'])) {

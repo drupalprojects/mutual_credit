@@ -360,12 +360,12 @@ function mcapi_pending_block_info_alter(&$blocks) {
 }
 
 function mcapi_check_integrity() {
-  $xids = db_query("SELECT t.xid FROM {mcapi_transactions} t LEFT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 1 AND t.state = 0")->fetchCol();
+  $xids = db_query("SELECT t.xid FROM {mcapi_transactions} t LEFT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 1 AND t.state = :state", array(':state' => TRANSACTION_STATE_FINISHED))->fetchCol();
   if (count($xids)){
     drupal_set_message('Some completed transactions still have signatures pending, please report to matslats: '. implode(', ', $xids), 'warning');
   }
 
-  $xids = db_query("SELECT s.xid FROM {mcapi_transactions} t RIGHT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 0 AND t.state = 1")->fetchCol();
+  $xids = db_query("SELECT s.xid FROM {mcapi_transactions} t RIGHT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 0 AND t.state = :state", array(':state' => TRANSACTION_STATE_PENDING))->fetchCol();
   if (count($xids)) {
     drupal_set_message('Some pending transactions have no signatures pending, please report to matslats: '. implode(', ', $xids), 'warning');
   }
