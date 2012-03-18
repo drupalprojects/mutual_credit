@@ -1,8 +1,8 @@
 ; $Id: 
-name = Auto-transaction
-description = Create a transaction when something happens (experimental)
+name = Auto-transaction (INCOMPLETE)
+description = Create a transaction when something happens
 package = Mutual Credit
 core = 7.x
-
+configure = admin/config/actions
 
 dependencies[] = mcapi_forms

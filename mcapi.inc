@@ -167,7 +167,6 @@ function transaction_form($form, &$form_state, $transaction) {
     '#weight' => 15
   );
   $states = mcapi_states();
-  unset($states[TRANSACTION_STATE_INITIATED]);
   $form['state'] = array(
     '#type' => 'radios',
     '#title' => t('State'),
@@ -206,7 +205,7 @@ function transaction_form($form, &$form_state, $transaction) {
   }
 
   $saved_transaction = &$form_state['build_info']['args'][1];
-  if ($saved_transaction->xid && $saved_transaction->state > -1) {
+  if (isset($saved_transaction->xid) && $saved_transaction->state > -1) {
     $form['buttons']['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
@@ -261,7 +260,32 @@ function transaction_form_validate($form, &$form_state) {
     mcapi_transaction_validate($transaction, $form);
   }
   catch (Exception $e) {
-   drupal_set_message($e->getMessage(), 'warning');
+    $message = $e->getMessage();
+    //parse balance limits error
+    if (module_exists('mcapi_limits')) {
+      if (strpos($message, '>')) {
+        list($excess, $limit, $currcode) = explode('>', $message);
+        $message = t('Transaction would take @username !quant above the maximum balance of !max',
+          array(
+            '@username' => strip_tags(format_username(user_load($transaction->payee))),
+            '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
+            '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
+          )
+        );
+      }
+      elseif (strpos($message, '<')) {
+        list($excess, $limit, $currcode) = explode('<', $message);
+        $message = t('Transaction would take @username !quant below the minimum balance of !min',
+          array(
+            '@username' => strip_tags(format_username(user_load($transaction->payer))),
+            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
+            '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
+          )
+        );
+      }
+    }
+    //if iit doesn't show red it probably because the wrapper is stripped off the form element
+    form_error($form['worth'], $message);
   }
 }
 
@@ -300,7 +324,7 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
  */
 function mcapi_validate_transactor(&$element, $form_state) {
   $uid = &$element['#value'];
-  if (empty($uid)) return;
+  if (is_null($uid)) return;
   $account = user_load($uid);
   if (empty($account->uid)) {
     form_error($element, t('User ID does not exist: @user', array('@user' => $uid)));
@@ -348,10 +372,18 @@ function mcapi_validate_title(&$element, $form_state) {
 /*
  * Validate callback for transaction form 'state' element
  */
-function mcapi_validate_state(&$element, $form_state) {
-  $states = mcapi_states();
-  if (isset($states[$element['#value']])) return;
-  form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['#value'])));
+function mcapi_validate_state(&$element, &$form_state) {
+  $val = &$element['$value'];
+  if ($val == TRANSACTION_STATE_UNSAVED) return;
+  if (empty($val) && empty($form_state['values']['xid'])) {
+    form_set_value($element, TRANSACTION_STATE_UNSAVED, $form_state);
+  }
+  else{
+    $states = mcapi_states();
+    if (!isset($states[$val])) {
+      form_error($element, t('Invalid transaction state: @value.', array('@value' => $val)));
+    }
+  }
 }
 
 /*

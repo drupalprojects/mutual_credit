@@ -31,7 +31,7 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
     foreach ($currcodes as $currcode) {
       $elements[$currcode] = array(
         '#theme' => 'worth_field',
-        '#quantity' => mcapi_user_balance($values->uid, $currcode, array(TRANSACTION_STATE_FINISHED)),
+        '#quantity' => transaction_totals($values->uid, $currcode),
         '#currcode' => $currcode
       );
     }

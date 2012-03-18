@@ -95,22 +95,26 @@ function mcapi_schema() {
         'description' => 'the unique transaction ID',
         'type' => 'serial',
         'size' => 'normal',
+        'not null' => TRUE,
       ),
       'payer' => array(
         'description' => 'the user id of the payer',
         'type' => 'int',
         'size' => 'small',
+        'not null' => TRUE,
       ),
       'payee' => array(
         'description' => 'the user id of the payee',
         'type' => 'int',
         'size' => 'small',
+        'not null' => TRUE,
       ),
       //quantity is done, perhaps controversially, but the field API
       'type' => array(
         'description' => 'The type of transaction, types are provided by modules',
         'type' => 'varchar',
         'length' => '32',
+        'not null' => TRUE,
       ),
       'state' => array(
         'description' => "completed, pending, disputed, etc",
@@ -129,21 +133,25 @@ function mcapi_schema() {
         'description' => 'the user id of the creator',
         'type' => 'int',
         'size' => 'small',
+        'not null' => TRUE,
       ),
       'created' => array(
         'description' => "Unixtime that the transaction was recorded",
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
       ),
       'modifier' => array(
         'description' => 'the user id of the modifier',
         'type' => 'int',
         'size' => 'small',
+        'not null' => TRUE,
       ),
       'modified' => array(
         'description' => "Unixtime that the transaction was modified",
         'type' => 'int',
         'size' => 'normal',
+        'not null' => TRUE,
       ),
     ),
     'primary key' => array('xid'),
@@ -388,7 +396,6 @@ function mcapi_update_7001() {
  */
 function mcapi_update_7002() {
   //we could gradually transform the table using the db api, but it's easier just to make a new table and migrate the transactions accross.
-  drupal_install_schema('mcapi');
 
   module_load_include('controller', 'mcapi', variable_get('mcapi_controller', 'default'));
 
@@ -460,6 +467,8 @@ function mcapi_update_7002() {
   db_drop_table('mc_currencies');
 }
 
+
+
 //change the constants behind the transaction states
 function mcapi_update_7003() {
   db_query("UPDATE {mcapi_transactions} set state = state + 10"); //to avoid clashes
@@ -467,7 +476,11 @@ function mcapi_update_7003() {
   db_query("UPDATE {mcapi_transactions} SET state = -1 WHERE state = 11");//move pending state from 1
   db_query("UPDATE {mcapi_transactions} SET state = 0 WHERE state = 9");//move erased state from 1
   db_query("UPDATE {mcapi_transactions} SET state = -2 WHERE state = 8");//keep initiated state at -2
-  DRUPAL_SET_MESSAGE('Check all views involving the transaction->state filter or arguments','warning');
+  menu_rebuild(); //this is important for refreshing the transaction forms
+  drupal_set_message('The transaction state values have changed. This causes some knock on effects so it might be a good time to reinstall completely');
+  drupal_set_message('Check all views involving the transaction->state filter or arguments','warning');
+  drupal_set_message('Check all transaction forms output states','warning');
+  drupal_set_message('Edit all currencies where it says view, update & erase, ','warning');
 }
 
 function mcapi_update_currency($old_currency) {

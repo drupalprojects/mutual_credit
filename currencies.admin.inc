@@ -2,6 +2,8 @@
 
 /*
  * menu callback for editing a currency
+ * NB best not to alter this FORM_ID coz it changes when mcapi_currencies is installed
+ * instead use hook_currency_innerform_alter
  */
 function mcapi_currency_form($form, &$form_state){
   form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
@@ -11,14 +13,14 @@ function mcapi_currency_form($form, &$form_state){
     '#type' => 'hidden',
     '#value' => empty($form['#currency']->info['currcode']) ? substr(variable_get('site_name', 'error'), 0, 7) : $form['#currency']->info['currcode'],
   );
-  _mcapi_currency_form($form, $form_state);
+  _mcapi_currency_innerform($form, $form_state);
   return $form;
 }
 
 /*
  * builds that part of the currency edit form which is common in all circumstances
  */
-function _mcapi_currency_form(&$form, &$form_state) {
+function _mcapi_currency_innerform(&$form, &$form_state) {
   //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
   $form['#tree'] = TRUE;
 
@@ -119,7 +121,6 @@ function _mcapi_currency_form(&$form, &$form_state) {
     '#weight' => 10,
   );
   $states = mcapi_states();
-  unset($states[TRANSACTION_STATE_INITIATED]);
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_info_permissions');
   foreach (array_filter($operations) as $op => $name) {
@@ -150,6 +151,8 @@ function _mcapi_currency_form(&$form, &$form_state) {
       '#weight' => 20
     )
   );
+  //we use a special alter hook here because the form name is different depending on whether mcapi_currencies is installed
+  drupal_alter('currency_innerform', $form, $form_state);
 }
 
 function currency_form_ajax(&$form, &$form_state) {
@@ -173,6 +176,7 @@ function mcapi_currency_form_submit($form, $form_state) {
   //save the currency settings as a nested array, exactly as they came out of the form
   form_state_values_clean($form_state);
   variable_set('currency_default', $form_state['values']);
+  drupal_set_message(t('Your default currency has been saved.'));
   register_shutdown_function('currencies_recache');
 }
 

@@ -13,7 +13,6 @@
 class mcapi_EntityController extends DrupalDefaultEntityController {
   /*
    * This controller actually writes the transaction during validation
-   * with a special state: TRANSACTION_STATE_INITIATED
    * When written, the transaction has a unique ID, so we
    * indicate that the transaction is actually a new transaction with the new property, 'is_new'
    * Adapted from the default entity controller.
@@ -76,12 +75,16 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     }
     $t = db_transaction();
     try {
+      mcapi_controller_validate_transaction_fields($transaction);
+      $transaction->state = TRANSACTION_STATE_VALIDATED;
       $this->save($transaction);
     }
     catch (Exception $e){
-      //if the validation fails, we add the error message to the transaction object
-      //THIS IS NOT TESTED BECAUSE VALIDATION SHOULDN'T FAIL AT THIS LATE STAGE
+      //if the validation fails at this stage when everything should be validated
+      //we should put it in watchdog because it means some form somewhere needs tightening up
+      //unfortunately at this point we don't know what form it is.
       $transaction->extra['error'] = $e->getMessage();
+      watchdog('mcapi', '@message', array('@message' => $e->getMessage()), WATCHDOG_ALERT);
       throw $e;
     }
     if (empty($transaction->is_new)) {
@@ -152,21 +155,17 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         }
         catch (Exception $e) {
           $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
+          $e->code = 'mark_del';
           throw $e;
         }
         break;
       case 2: //actually delete
-        try {
-          $query = db_delete('mcapi_transactions')
-          ->condition('xid', $transaction->xid)
-          ->execute();
-        }
-        catch (Exception $e) {
-          throw $e;
-        }
+        $query = db_delete('mcapi_transactions')
+        ->condition('xid', $transaction->xid)
+        ->execute();
         module_invoke_all('entity_delete', $transaction, 'transaction');
       default:
-        throw new Exception(t('Deletions not allowed'));
+        throw new Exception(t('Deletions not allowed'), 'no_del');
         break;
     }
     return $transaction;
@@ -186,25 +185,48 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * get_balance
    * this is currently used for the limits module and for the views handler per-row
    * caching running balances is dangerous because they would all need recalculating any time a transaction changed state
+   * $options can be array(
+   *   states => array(TRANSACTION_STATE_FINISHED)
+   *   before_xid => 0
+   *   after_xid => 0
+   *   before_time => 0
+   *   after_time => 0
    */
-  public function balance($uid, $currcode = NULL, $states = array(0), $xid = NULL) {
-    $states = implode(',', $states);
-    if (!$currcode) {
-      $def_curr = variable_get('currency_default', array());
-      $currcode = $def_curr['info']['currcode'];
-    }
+  public function sums($uid, $currcode, $options = array()) {
+    $options += array(
+      'states' => array(TRANSACTION_STATE_FINISHED),
+      'before_xid' => NULL,
+      'after_xid' => 0,
+      'before_time' => NULL,
+      'after_time' => 0
+    );
     //this COALESCE is only tested for mysql.
     //when we joing the tables like this, half of all values will be NULL, and NULL values do not add
     //so these NULL values need to be selected as 0 before adding
     //there may well be a more elegant way
-    $query = "SELECT SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0))
+    $query = "SELECT
+      SUM(COALESCE(w2.worth_quantity, 0)) as gross_in,
+      SUM(COALESCE(w1.worth_quantity, 0)) as gross_out,
+      SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0)) as balance,
+      COUNT(t.xid) as count
       FROM {mcapi_transactions} t
       LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
       LEFT JOIN {field_data_worth} w2 ON t.xid = w2.entity_id AND w2.worth_currcode = '$currcode' AND t.payee = $uid
-      WHERE t.state in ($states)";
-    if (is_numeric($xid)) ($query .= " AND t.xid <= $xid");
-
-    return db_query($query)->fetchField();
+      WHERE t.state in (:states)
+        AND t.created > :after_time
+        AND t.xid > :after_xid";
+    if ($options['before_xid'] > 0) {
+      $query .= " AND t.xid <= ".$options['before_xid'];
+    }
+    if ($options['before_time'] > 0) {
+      $query .= " AND t.created <= ".$options['before_time'];
+    }
+    $replacements = array(
+      ':states' => implode(',', $options['states']),
+      ':after_xid' => $options['after_xid'],
+      ':after_time' => $options['after_time']
+    );
+    return db_query($query, $replacements)->fetchAssoc();
   }
   /*
    * alternative to using views
@@ -249,15 +271,12 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     $transaction->creator = $GLOBALS['user']->uid;
     $transaction->created = REQUEST_TIME;
     if (empty($transaction->xid)) {
-      $success = mcapi_write_record($transaction);
+      mcapi_write_record($transaction);
       field_attach_insert('transaction', $transaction);
     }
     else {
-      $success = mcapi_write_record($transaction, 'xid');
+      mcapi_write_record($transaction, 'xid');
       field_attach_update('transaction', $transaction);
-    }
-    if (!$success) {
-      throw new Exception(t('failed to write to table @tablename', array('@tablename' => 'mcapi_transactions')));
     }
   }
 
@@ -265,7 +284,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * This controller makes no use of the entity revision control facility
    * $force_update is for the special case of a validated transaction which is being written
    */
-  function update($transaction) {
+  function update($transaction) {ddebug_backtrace();
     //if there are more than one flows involved, use the minimum value for the update mode
     $flows = current($transaction->worth);
     foreach ($flows as $flow) {
@@ -314,30 +333,45 @@ function mcapi_write_record(&$record, $primary_keys = array()) {
     db_set_active($connection);
     try{
       $ts[] = db_transaction();
-      $success = drupal_write_record('mcapi_transactions', $record, $primary_keys);
+      if(!drupal_write_record('mcapi_transactions', $record, $primary_keys)) {
+        throw new Exception();
+      }
     }
     catch (Exception $e) {
       foreach ($ts as $db_transaction) {
         $db_transaction->rollback();
       }
       db_set_active();
+      $keys = array();
       foreach ($primary_keys as $keyname) {
         $keys[$keyname] = $record->$keyname;
       }
+      $keys = implode(',', $keys);
       $newmessage = t("Failed to write to table 'mcapi_transactions' on database '@database', using keys: @keys",
         array(
           '@database' => $connection,
           '@keys' => '<pre>'.print_r($primary_keys, 1).'</pre>'
         )
       );
-      throw new Exception ($newmessage);
+      $replacements = array('@tablename' => 'mcapi_transactions', '@keys' => $keys, '@database' => $connection);
+      if ($keys) {
+        watchdog('Failed to update table @tablename of database @database using keys: @keys', $replacements, WATCHDOG_CRITICAL);
+        throw new Exception(t('Failed to update table @tablename of database @database using keys: @keys', $replacements), 'upd_fail');
+      }
+      else {
+        watchdog('Failed to insert into table @tablename of database @database', $replacements, WATCHDOG_CRITICAL);
+        throw new Exception(t('Failed to insert into table @tablename of database @database', $replacements), 'ins_fail');
+      }
     }
   }
   db_set_active();
-  return $success;
 }
 
-function mcapi_currency_form_alter($form, $form_state) {
+/*
+ * implements hook_currency_innerform_alter
+ * Expects $form['#currency']
+ */
+function mcapi_currency_innerform_alter(&$form, &$form_state) {
   $form['accounting'] = array(
     '#title' => t('Accounting standards'),
     '#description' => t('More or less formal accounting standards can be determined.') .' '.
@@ -378,4 +412,12 @@ function mcapi_currency_form_alter($form, $form_state) {
       ),
     )
   );
+}
+
+function mcapi_controller_validate_transaction_fields($transaction) {
+  foreach ($transaction->worth['und'] as $worth) {
+    if (!is_numeric($worth['quantity'])) {
+      throw new Exception(t('Illegal quantity: @val', array('@val' => print_r($worth, 1))), 'inv_qty');
+    }
+  }
 }

@@ -6,7 +6,8 @@
  * when building the initial page, the $currency is passed, AJAX builds use form_state
  * When called via AJAX, the $settings_form should contain '#value' not '#default_value', not sure why
  */
-function limits_settings_subform(&$form, $form_state, $currency) {
+function limits_settings_subform(&$form, $form_state) {
+  $currency = &$form['#currency'];
   //I'm not very happy about the way the ajax loads are populated by the previous value,
   //but I've been a couple of hours fumbling and we can live with it.
   //the default values are correct even in the form_alter, but on processing,
@@ -42,65 +43,6 @@ function limits_settings_subform(&$form, $form_state, $currency) {
   return $form['limits'][$limits_callback];
 }
 
-
-/*
- * validate callback which checks that the transaction doesn't take anyone beyond their limits
- */
-function limits_transaction_form_validate(&$form, $form_state) {
-  try {
-    mcapi_limit_check($form_state['transaction']);
-  }
-  catch (Exception $e) {
-    form_set_error('quantity', $e->getMessage());
-  }
-}
-
-
-/*
- * limit checker
- * checks a transaction to see if the proposed payment will push participant beyond balance limits
- * $transaction = A transaction object
- * $state = Whether to compare with finished or pending balances.
- * This is a drupal function, but the checking could just as easily be done through the entity controller.
- */
-function mcapi_limit_check($transaction) {
-  reset($transaction->worth);
-  $flows = current($transaction->worth);
-  foreach ($flows as $delta => $flow) {
-    $currcode = $flow['currcode'];
-    $difference = $flow['quantity'];
-    $payer = $transaction->payer;
-    $payee = $transaction->payee;
-    $messages = array();
-    if ($transaction->state == TRANSACTION_STATE_FINISHED) {
-      //the difference is between this value and the saved one
-      $saved_flow = current(transaction_load($transaction->xid))->worth;
-      $difference -= $saved_flow[$delta]['quantity'];
-    }
-    //check that the payee isn't going over their max limit
-    $limits = limits_get($currcode, $payee);
-    if (is_numeric($limits['max'])) {
-      $balance = entity_get_controller('transaction')
-        ->balance($payee, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
-      $payee_projected = $balance + $difference;
-      $surplus = $payee_projected - $limits['max'];
-      if ($surplus > 0) {
-        throw new Exception($payee_projected .'>'.$limits['max']);
-      }
-    }
-    //check that the payer isn't going below their min limit
-    $limits = limits_get($currcode, $payer);
-    if (is_numeric($limits['min'])) {
-      $balance = entity_get_controller('transaction')
-        ->balance($payer, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
-      $payer_projected = $balance - $difference;
-      $deficit = $limits['min'] - $payer_projected;
-      if ($deficit > 0) {
-        throw new Exception($payer_projected .'<'.$limits['min']);
-      }
-    }
-  }
-}
 
 
 /*
@@ -162,18 +104,27 @@ function limits_personal_form($currency, array $defaults) {
  * has tokens
  * @gross_in gross income
  * @gross_out gross spending
+ * @balance number of trades
  * @trades number of trades
  * e.g. 10+@gross_in+@gross_out+@trades
  */
 function limits_equations($currency, $uid) {
-  $cached = transaction_controller('get_cache', $uid, $currency->currcode);
-  foreach (array('max', 'min') as $limit) {
-    $limits[$limit] = mcapi_limits_equation_parse(
-      $currency->limits_equations[$limit],
-      db_query("SELECT gross_in, gross_out, count as trades from {mcapi_cache} WHERE uid = $uid AND currcode = $currency->currcode")->fetchAssoc()
-    );
-  }
-  return $limits;
+  $sums = transaction_totals($uid, $currency->info['currcode']);
+  $formula_max = $currency->limits['limits_equations']['max'];
+  $formula_min = $currency->limits['limits_equations']['min'];
+  $tokens = array('@gross_in', '@gross_out', '@balance', '@trades');
+  $replacements = array(
+    $sums['gross_in'], 
+    $sums['gross_out'], 
+    $sums['balance'], 
+    $sums['count'],
+  );
+  $formula_max = str_replace($tokens, $replacements, $formula_max);
+  $formula_min = str_replace($tokens, $replacements, $formula_min);
+  return array(
+    'max' => eval('return '. $formula_max .';'),
+    'min' => eval('return '. $formula_min .';'),
+  );
 }
 
 function limits_equations_form($currency, array $defaults) {

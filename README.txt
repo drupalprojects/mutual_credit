@@ -102,6 +102,9 @@ The first level of architecture is in menus, blocks, views, mcapi_forms
 For more ideas visit demo.communityforge.net
 The cforge_custom installation profile which makes the demo module, is available her http://code.google.com/p/cforge-custom/
 
+N.B. Entity API module http://drupal.org/project/entity
+At time of writing, Feb 2012, Entity module looks like it is the way forward. However my attempt to depend on it has failed owing to poor documentation. Since all the CRUD controls are already written, views handlers also, there is little benefit to reworking everything to suit entity API at present.
+
 
 ***********************
 **  ADVANCED SETUP   **
@@ -125,3 +128,4 @@ Voice activated transactions
 iphone app
 Intertrading
 Google charts
+

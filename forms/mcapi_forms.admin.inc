@@ -209,7 +209,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Save to state'),
       '#description' => t('Transaction will be submitted in this state'),
       '#type' => 'select',
-      '#options' => array_diff_key(mcapi_states(), array(TRANSACTION_STATE_INITIATED => TRUE)),
+      '#options' => mcapi_states(),
       '#default_value' => empty($mcapi_form['submission']['state']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['submission']['state'],
       '#weight' => 3,
     ),

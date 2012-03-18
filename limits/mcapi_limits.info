@@ -4,8 +4,8 @@ description = Sets global and personal balance limits for each currency
 package = Mutual Credit
 core = 7.x
 
-files[] = mcapi_limits.module
 dependencies[] = mcapi
 
+files[] = mcapi_limits.inc
 files[] = views/views_handler_field_mcapi_min.inc
 files[] = views/views_handler_field_mcapi_max.inc

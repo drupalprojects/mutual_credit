@@ -256,7 +256,7 @@ $handler->display->display_options['filters']['state']['id'] = 'state';
 $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
 $handler->display->display_options['filters']['state']['field'] = 'state';
 $handler->display->display_options['filters']['state']['value'] = array(
-  0 => TRANSACTION_STATE_COMPLETED,
+  0 => TRANSACTION_STATE_FINISHED,
 );
 $handler->display->display_options['filters']['state']['exposed'] = TRUE;
 $handler->display->display_options['filters']['state']['expose']['operator_id'] = '';

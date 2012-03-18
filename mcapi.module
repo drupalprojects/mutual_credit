@@ -15,8 +15,8 @@ module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
 //the convention is that states > 0 are counted
 define ('TRANSACTION_STATE_FINISHED', 1);
 define ('TRANSACTION_STATE_ERASED', 0);
-define ('TRANSACTION_STATE_INITIATED', -2);
-
+define ('TRANSACTION_STATE_UNSAVED', -2);
+define ('TRANSACTION_STATE_VALIDATED', -3);
 
 /**
  * implements hook_help()
@@ -122,10 +122,11 @@ function mcapi_transaction_controller(){}
  */
 function mcapi_mcapi_info_states() {
   return array(
-    TRANSACTION_STATE_INITIATED => t('Unset'),//internal use only
+    //TRANSACTION_STATE_UNSAVED => t('unsaved'),//internal use only, never saved in db, and not reported
     //must be defined with lower case
     TRANSACTION_STATE_FINISHED => t('finished'),
-    TRANSACTION_STATE_ERASED => t('erased'), //internal use only
+    TRANSACTION_STATE_ERASED => t('erased'),
+    TRANSACTION_STATE_VALIDATED => t('validated'),
   );
 }
 function mcapi_states() {
@@ -365,7 +366,7 @@ function new_transaction() {
     'payer' => NULL,
     'payee' => NULL,
     'creator' => $GLOBALS['user']->uid,
-    'state' => 'unset',//this isn't one of the declared states and should cause an error if saved
+    'state' => TRANSACTION_STATE_UNSAVED,
     'type' => 'unspecified',
     'extra' => array()
   );
@@ -375,6 +376,9 @@ function new_transaction() {
 /*
  * INTERNAL API FOR MODULE DEVELOPERS
  * entity controllers must work comply
+ * These need to be better unified as regards exception handling
+ * but I don't have much experience on that
+ * for now, all validates must be done within try{}
  *
  * This is where we interface with the entity controller
  * object transaction_load(array(94))
@@ -383,7 +387,7 @@ function new_transaction() {
  * object transaction_save($transaction)
  * NULL transaction_erase($transaction)
  * NULL transaction_state($transaction, $newstate);
- * NULL mcapi_user_balance($transaction)
+ * NULL transaction_totals($transaction)
  */
 
 
@@ -394,29 +398,48 @@ function new_transaction() {
 
 function transaction_load($xid) {
   //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
-  $transactions = entity_get_controller('transaction')->load(array($xid));
+  $transactions = entity_get_controller('transaction')->load(array(intval($xid)));
   return array_pop($transactions);
 }
 function transaction_load_multiple($xids = array(), $conditions = array(), $reset = FALSE) {
   return entity_load('transaction', $xids, $conditions, $reset);
 }
-function transaction_validate($transaction) {
-  return entity_get_controller('transaction')->validate($transaction);
+/*
+ * produces exceptions with the following error codes
+ * 'no_del' => Deletion not allowed in this currency
+ * 'ins_fail' => Failed to insert into db table
+ * 'upd_fail' => Failed to update db_table
+ * 'inv_qty' => non numeric quantity
+ */
+function transaction_validate(stdClass $transaction) {
+  //always sets the transaction->state to TRANSACTION_STATE_VALIDATED
+  $transaction = entity_get_controller('transaction')->validate($transaction);
+  if (module_exists('mcapi_limits')) {
+    //this will throw an exception
+    mcapi_limit_check($transaction);
+  }
 }
-function transaction_save($transaction) {
+function transaction_save(stdClass $transaction) {
   return entity_get_controller('transaction')->save($transaction);
 }
-function transaction_erase($transaction) {
+function transaction_erase($transaction) {//will accept int or object
   if (is_int($transaction)) {
     $transaction = transaction_load($transaction);
   }
-  return entity_get_controller('transaction')->erase($transaction);
+  if (is_object($transaction)) {
+    return entity_get_controller('transaction')->erase($transaction);
+  }
+  throw Exception('Wrong type passed to transaction_erase');
 }
-function transaction_state($transaction) {
+function transaction_state(stdClass $transaction) {
   return entity_get_controller('transaction')->state($transaction);
 }
-function mcapi_user_balance($uid, $currcode = NULL, $states = array(TRANSACTION_STATE_FINISHED), $xid = NULL) {
-  return entity_get_controller('transaction')->balance($uid, $currcode, $states, $xid);
+function transaction_totals($uid, $currcode = NULL, $options = array()) {
+  if (!$currcode) $currcode = key(load_currencies());
+  $options += array(
+    'states' => array(TRANSACTION_STATE_FINISHED),
+  );
+  return entity_get_controller('transaction')->sums($uid, $currcode, $options);
 }
 
 /*

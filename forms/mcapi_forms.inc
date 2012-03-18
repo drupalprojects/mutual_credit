@@ -374,9 +374,11 @@ function mcapi_forms_validate($form, &$form_state) {
   }
   //if step 2 template is available add a step and rebuild the form
   elseif (strlen($form_state['build_info']['args'][0]->data['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) {
-    //Submission errors will not prevent the form advancing.
-    $form_state['rebuild'] = $form_state['step'] == MCAPIFORM_STEP_ENTER ? TRUE : FALSE;
-    $form_state['step']++;
+    if (!form_get_errors()) {
+      //Submission errors will not prevent the form advancing.
+      $form_state['rebuild'] = $form_state['step'] == MCAPIFORM_STEP_ENTER ? TRUE : FALSE;
+      $form_state['step']++;
+    }
   }
   $form_state['storage'] += $form_state['values'];
 }
