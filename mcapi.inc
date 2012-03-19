@@ -253,6 +253,7 @@ function transaction_form_validate($form, &$form_state) {
       $form_state['transaction'] = new_transaction();
     }
   }
+  form_state_values_clean($form_state);
   entity_form_submit_build_entity('transaction', $form_state['transaction'], $form, $form_state);
   $transaction = &$form_state['transaction'];
   field_attach_form_validate('transaction', $transaction, $form, $form_state);

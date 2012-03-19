@@ -395,7 +395,6 @@ function new_transaction() {
  * load a single transaction, from the $xid
  * this is used to as a menu loader, so can't be in an inc file
  */
-
 function transaction_load($xid) {
   //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
   $transactions = entity_get_controller('transaction')->load(array(intval($xid)));
@@ -435,7 +434,7 @@ function transaction_state(stdClass $transaction) {
   return entity_get_controller('transaction')->state($transaction);
 }
 function transaction_totals($uid, $currcode = NULL, $options = array()) {
-  if (!$currcode) $currcode = key(load_currencies());
+  if (!$currcode) $currcode = key(currencies_load());
   $options += array(
     'states' => array(TRANSACTION_STATE_FINISHED),
   );

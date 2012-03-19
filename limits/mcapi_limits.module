@@ -7,6 +7,7 @@
 //and vice versa
 
 //retrieves the max and min limits from the mcapi_cache table
+//putting the balance in produces a different array with spending and earning capacity - both numbers positive.
 function limits_get($currcode, $uid){
   module_load_include('inc', 'mcapi_limits');
   $currency = currency_load($currcode);
@@ -14,6 +15,17 @@ function limits_get($currcode, $uid){
     $callback = $currency->limits['limits_callback'];
     return $callback($currency, $uid);
   }
+  drupal_set_message(t('Currency @curr_name has an illegal callback set to determine transaction limits: @callback', array(
+    '@curr_name' => $currency->title,
+    '@callback' => $currency->limits['limits_callback']
+  )));
+}
+function limits_get_adjusted($currcode, $uid, $balance) {
+  $limits = limits_get($currcode, $uid);
+  return array(
+    'spend_limit' => $limits['max'] - $balance,
+    'earn_limit' => abs($limits['min'] - $balance)
+  );
 }
 
 /*
@@ -34,15 +46,14 @@ function mcapi_limit_check($transaction) {
     $messages = array();
     if ($transaction->state == TRANSACTION_STATE_FINISHED) {
       //the difference is between this value and the saved one
-      $saved_flow = current(transaction_load($transaction->xid))->worth;
+      $saved_flow = transaction_load($transaction->xid)->worth['und'];
       $difference -= $saved_flow[$delta]['quantity'];
     }
     //check that the payee isn't going over their max limit
     $limits = limits_get($currcode, $payee);
     if (is_numeric($limits['max'])) {
-      $balance = entity_get_controller('transaction')
-        ->balance($payee, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
-      $payee_projected = $balance + $difference;
+      $totals = transaction_totals($payee, $currcode);
+      $payee_projected = $totals['balance'] + $difference;
       $surplus = $payee_projected - $limits['max'];
       if ($surplus > 0) {
         throw new Exception($surplus .'>'.$limits['max']. '>' .$currcode);
@@ -51,9 +62,8 @@ function mcapi_limit_check($transaction) {
     //check that the payer isn't going below their min limit
     $limits = limits_get($currcode, $payer);
     if (is_numeric($limits['min'])) {
-      $balance = entity_get_controller('transaction')
-        ->balance($payer, $currcode, $states = array(TRANSACTION_STATE_FINISHED));
-      $payer_projected = $balance - $difference;
+      $totals = transaction_totals($payer, $currcode);
+      $payer_projected = $totals['balance'] - $difference;
       $deficit = $limits['min'] - $payer_projected;
       if ($deficit > 0) {
         throw new Exception($deficit .'<'.$limits['min']. '<' .$currcode);
@@ -162,30 +172,61 @@ function mcapi_limits_views_api() {
   );
 }
 
-/*
- * display limits (as a google-o-meter)
- * NB google-o-meter is technically obselete
- * and is no longer documented on the charts API
- */
 
+/*
+ * Implements hook_theme
+ */
+function mcapi_limits_theme($existing, $type, $theme, $path){
+  //the block names are the same as the theme callbacks
+  return array(
+    //similar to balance limits, but only shows one currency
+    'balance_limits' => array(
+      'template' => 'balance_limits',
+      'variables' => array(
+        'currency' => '',
+        'min' => 0,
+        'balance' => 0,
+        'max' => 0
+      )
+    ),
+    'trading_limits' => array(
+      'template' => 'balance_limits',
+      'variables' => array(
+        'currency' => '',
+        'min' => 0,
+        'balance' => 0,
+        'max' => 0
+      )
+    )
+  );
+}
 /*
  * callback to return themed balance limits
  */
-function show_balance_limits($account, $currcode, $adjust = 0) {
-  module_load_include('inc', 'mcapi_limits');
-  $limits = limits_get($currcode, $account->uid);
+function show_balance_limits($account, $currcode) {
+  $limits = extract(limits_get($currcode, $account->uid));
+  $sums = extract(transaction_totals($account->uid, $currcode));
 
   //this chart makes no sense if there isn't a max (or min) limit
-  if (!is_numeric($limits['max']) || !is_numeric($limits['min'])) {
+  if (!is_numeric($max) || !is_numeric($min)) {
     return array();
   }
-  $sums = transaction_totals($account->uid, $currcode);
   return array(
     '#theme' => 'balance_limits',
     '#currency' => currency_load($currcode),
-    '#min' => $limits['min'] + $adjust,
-    '#max' => $limits['max'] + $adjust,
+    '#min' => $min,
+    '#max' => $max,
     '#balance' => $sums['balance'],
+  );
+}
+function show_trading_limits($account, $currcode) {
+  extract(transaction_totals($account->uid, $currcode));
+  extract(limits_get_adjusted($currcode, $account->uid, $balance));
+  return array(
+    '#theme' => 'trading_limits',
+    '#currency' => currency_load($currcode),
+    '#spend_limit' => $spend_limit,
+    '#earn_limit' => $earn_limit,
   );
 }
 
@@ -193,8 +234,12 @@ function show_balance_limits($account, $currcode, $adjust = 0) {
  * Implements views hook_block_list
  */
 function mcapi_limits_block_info() {
+  //the block names are the same as the theme callbacks
   $blocks['balance_limits'] = array(
     'info' => 'MC '. t("Balance limits")
+  );
+  $blocks['trading_limits'] = array(
+    'info' => 'MC '. t("Trading limits (adjusted for the balance)")
   );
   return $blocks;
 }
@@ -211,8 +256,9 @@ function mcapi_limits_block_view($delta) {
   if (empty($settings['currcodes'])) {
     $settings['currcodes'] = array_keys(currencies_load());
   }
+  $function = 'show_'.$delta;
   foreach ($settings['currcodes'] as $currcode) {
-    $output[] = show_balance_limits($account, $currcode, $settings['adjust']);
+    $output[] = $function($account, $currcode);
   }
   return array(
     'subject' => t("@user's limits", array('@user' => strip_tags(format_username($account)))),
@@ -255,23 +301,6 @@ function mcapi_limits_block_settings($delta) {
   return $settings ? $settings : array('currcodes' => array_keys(currencies_load()), 'adjust' => FALSE);
 }
 
-/*
- * Implements hook_theme
- */
-function mcapi_limits_theme($existing, $type, $theme, $path){
-  return array(
-    //similar to balance limits, but only shows one currency
-    'balance_limits' => array(
-      'template' => 'balance_limits',
-      'variables' => array(
-        'currency' => '',
-        'min' => 0,
-        'balance' => 0,
-        'max' => 0
-      )
-    )
-  );
-}
 
 /*
  * Implements variable module's hook_variable_info

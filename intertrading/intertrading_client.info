@@ -1,0 +1,12 @@
+; $Id: 
+name = Intertrading client
+description = Connect to an intertrading server and exchange with other drupal instances
+package = Mutual Credit
+core = "7.x"
+
+configure = admin/accounting/intertrade
+
+dependencies[] = mcapi
+dependencies[] = mcapi_limits
+dependencies[] = mcapi_index_views
+
