@@ -29,7 +29,8 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#description' => t('Use the plural'),
     '#type' => 'textfield',
     '#default_value' => $form['#currency']->name,
-    '#weight' => -1
+    '#weight' => -1,
+    '#maxlength' => 8
   );
   $form['format'] = array(
     '#title' => t('Display format'),
