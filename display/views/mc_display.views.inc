@@ -652,7 +652,7 @@ function mc_exchanges_all_view() {
   $handler = $view->new_display('page', t('Filter exchanges'), 'page_2');
   $types = module_invoke_all('exchange_type_info');
   foreach ($types as $type => $info) {
-    $options[$type] = $info['title'];
+    $options[$type] = $type;
   }
   $handler->override_option('filters', array(
     'type' => array(
