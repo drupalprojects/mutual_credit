@@ -75,6 +75,7 @@ function mcapi_uninstall() {
 }
 
 function mcapi_enable() {
+  drupal_get_schema(NULL, TRUE);
   $module_path = drupal_get_path('module', 'mcapi');
   //by using enable instead of install, we have access to node hooks
   if (!db_result(db_query("SELECT count(nid) FROM {mc_currencies}"))) {
@@ -84,11 +85,9 @@ function mcapi_enable() {
       'type' => 'currency',
       'status' => TRUE,
       'uid' => 1,
-    );
-    node_save($currency);
-    //save the extra fields separately because the node hooks haven't been initiated yet
-    $props = array(
-      'nid' => $currency->nid,
+      'min' => -100,
+      'max' => 100,
+      'sub' => 1,
       'icon' => $module_path .'/theme/cc.png',
       'symbol' => '@minus@icon@integer @subdivision',
       'data' => array(
@@ -97,7 +96,9 @@ function mcapi_enable() {
         'divisions' => "0|00\n25|15 mins\n50|30 mins\n75|45 mins"
       )
     );
-    drupal_write_record('mc_currencies', $props, array('nid'));
+    node_save($currency);
+    drupal_write_record('mc_currencies', $currency);
+
 
     drupal_set_message(t('Your defult currency is @name. !edit', array(
       '@name' => $currency->title,
@@ -116,10 +117,7 @@ function mcapi_enable() {
 
 /**
  * Implementation of hook_schema)().
- * http://api.drupal.org/api/function/hook_schema/6
- * You don't have to deal with the different SQL dialects for table creation and alteration of the supported database engines.
  */
-//TODO what about storing all this info in the user table instead?
 function mcapi_schema() {
   //the schema has two modes, depending on whether we store the amounts as integers or floats.
   module_load_include('inc', 'mcapi');

@@ -27,10 +27,9 @@
 function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
   static $result;
   module_load_include('inc', 'mcapi');
-
+  //this also validates...
   $exchange = build_exchange_node($payer_uid, $payee_uid, $quantity, $options);
-  //implementations of this hook should provide pre-built exchanges
-  //NOT TESTED YET
+
   $result = new stdClass();
   $result->success = FALSE;
   if (count(drupal_get_messages('error', FALSE))) {
