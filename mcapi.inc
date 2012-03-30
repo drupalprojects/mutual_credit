@@ -5,7 +5,7 @@
  * @file
  * This file contains all functions to view exchange content
  */
-function mcapi_form_exchange_inc($form, $node) {
+function _mcapi_form_exchange($form, $node) {
   //set the currency if there's only one to choose from, or it is given in the node
   if (!empty($node->cid)) {
     if ($form['#currencies'][$node->cid]) {
@@ -203,6 +203,12 @@ function mcapi_form_currency(&$node) {
     '#maxlength' => 6,
     '#description' => t("The value of the currency in relation to other currencies in the same trading network (not yet operational)")
   );
+  $form['zero'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Allow zero value exchanges'),
+    '#default_value' => $node->data['zero'],
+    '#description' => t("To acknowledge exchanges without counting them")
+  );
   return $form;
 }
 
@@ -219,6 +225,7 @@ function theme_currency_node_form($form) {
   $output .='</div><div style = "width:49%; float:right;">';
   $output .= drupal_render($form['visual']);
   $output .= drupal_render($form['sub_divisions']);
+  $output .= drupal_render($form['zero']);
   $output .= "</div>";
   $buttons = drupal_render($form['buttons']);
   // Everything else gets rendered here, and is displayed before the admin form
@@ -260,6 +267,7 @@ function mcapi_node_presave_currency(&$node) {//this $node is just the form valu
     unset($node->icon); //otherwise it will overwrite the icon with blank
   }
   $node->data['divisions'] = $node->divisions;
+  $node->data['zero'] = $node->zero;
 }
 
 function mc_preprocess_exchange($node) {
@@ -633,8 +641,9 @@ function get_trader_uids() {
 function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
   global $user;
   //although mcapi.module allows it, this version of the API will not allow zero value exchanges
-  if (!$quantity) {
-    drupal_set_message(t('Cannot create a zero value exchange'), 'error');
+  $currency = $node->cid ? node_load($node->cid) : array_pop(currencies_load());
+  if (exchange_validate_zero($quantity, $currency)) {
+    drupal_set_message(t('Zero values not allowed'), 'error');
     return;
   }
   if (!isset($options['title'])) {
@@ -646,7 +655,7 @@ function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
     'payer_uid' => $payer_uid,
     'quantity' => $quantity,
    //default $options
-    'cid' => array_pop(array_keys(currencies_load())),
+    'cid' => $currency->cid,
     'title' => t('no description given'),  //shouldn't really be omitted
     'state' => EXCHANGE_STATE_FINISHED, //shouldn't really be omitted
     'exchange_type' => 'api unspecified', //shouldn't really be omitted
@@ -661,4 +670,10 @@ function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
   $node = (object)$node;
   mcapi_validate($node);
   return $node;
+}
+
+function exchange_validate_zero($quant, $currency) {
+  if ($value == 0 && !$currency->data['zero']) {
+    return TRUE;
+  }
 }

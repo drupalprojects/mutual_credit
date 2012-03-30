@@ -345,11 +345,11 @@ function validate_mc_quantity_field(&$element, &$form_state) {
       }
     }
   }
+  $currency = node_load($form_state['values']['cid']);
   //only worth validating division if we have a currency id
   //division field should be < 100 and if divisions are defined in the currency, one of the them
   //(in fact the 'select' form widget should verify that)
-  if (isset($form_state['values']['cid']) && $division) {
-    $currency = node_load($form_state['values']['cid']);
+  if (isset($currency) && $division) {
     if (!$currency->sub) {
       form_error($element[$subfield], t("Integer values only for '@fieldname'", array('@fieldname' => $element[$subfield]['#title'])));
     }
@@ -357,8 +357,12 @@ function validate_mc_quantity_field(&$element, &$form_state) {
       form_error($element['division'], t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
     }
   }
+  $quantity = $integer + $division/100;
+  if (exchange_validate_zero($quant, $currency)) {
+    form_error($element['integer'], t('Zero values not allowed'));
+  }
   //the form validation should check if this is > 0
-  $form_state['values']['quantity'] = $integer + $division/100;;
+  $form_state['values']['quantity'] = $quantity;
 }
 
 //create the exchange node print the errors

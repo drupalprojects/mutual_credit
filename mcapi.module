@@ -511,9 +511,6 @@ function mcapi_validate($node) {
         if (!$node->payer_uid && !$node->payee_uid) {
           form_set_error('payer_uid', t('Payee or payer required for completed exchange'));
         }
-        if (!$node->quantity) {
-          form_set_error('quantity', t('Quantity required for completed exchange'));
-        }
         if (!$node->title) {
           form_set_error('title', t('Description required for completed exchange'));
         }
@@ -627,12 +624,13 @@ function mc_validate_currency_divisions(&$element, $form_state) {
  */
 function mc_validate_quantity(&$element, &$form_state) {
   $value = $element['#value'] + 0;
-  //null values allowed
-  if (!$value) return;
   if ($value < 0 ) {
     form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element['#title'])));
   }
   if (isset($form_state['values']['cid']) && $currency = node_load($form_state['values']['cid'])) {
+    if (exchange_check_zero($quant, $currency)) {
+      form_error($element, t('Zero values not allowed'));
+    }
     $division = ($value - intval($value))*100;
     if ($division) {
       if ($currency->sub) {
@@ -712,7 +710,7 @@ function mcapi_form_exchange($node, $currencies = array()) {
   }
   module_load_include('inc', 'mcapi');
   //this is in the other file purely for optimisation
-  return mcapi_form_exchange_inc($form, $node);
+  return _mcapi_form_exchange($form, $node);
 }
 
 
