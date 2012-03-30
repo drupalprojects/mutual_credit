@@ -13,7 +13,7 @@ function mc_webform_1stparty_requirements($phase) {
   if ($phase == 'install') {
     $req[] = array(
       'title' => t("MCAPI should be installed first"),
-      'description' => t('This module required that a currency node already exists. One has now been created, please install mutual credit 1stparty module again'),
+      'description' => t('This module required that a currency node already exists. One should now have been created, please install mc_webform_1stparty module again'),
       'severity' => module_exists('mcapi') ? REQUIREMENT_OK : REQUIREMENT_ERROR,
     );
   }

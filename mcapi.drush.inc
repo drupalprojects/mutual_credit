@@ -17,6 +17,12 @@ function mcapi_drush_help($section) {
   switch ($section) {
     case 'drush:mcapi-balances':
       return dt("rebuild the mc_cache table");
+    case 'drush:mcapi-wipeslate':
+      return dt("erase all transactions");
+    case 'drush:mcapi-purge':
+      return dt("delete all erased transactions");
+    case 'drush:mcapi-jubilee':
+      return dt("rebalance the system (not implemented)");
   }
 }
 
@@ -39,6 +45,14 @@ function mcapi_drush_command() {
     'callback' => 'drush_mcapi_balances',
     'description' => dt('Truncate the mc_cache table and rebuild it by adding up all transactions'),
   );
+  $items['mcapi-wipeslate'] = array(
+    'callback' => 'drush_mcapi_wipeslate',
+    'description' => dt('Erase all transactions (remove the row in the node table and set state to -1)'),
+  );
+  $items['mcapi-purge'] = array(
+    'callback' => 'drush_mcapi_purge',
+    'description' => dt('Delete all transactions in state -1'),
+  );
   return $items;
 }
 
@@ -48,3 +62,23 @@ function drush_mcapi_balances() {
   mc_balances_refresh();
 }
 
+function drush_mcapi_wipeslate($hard = TRUE) {
+  global $user;
+  if ($user->uid == 0) {
+    drush_print('User 0 cannot delete exchanges');
+    return;
+  }
+  if ($hard) {
+    $result = db_query("SELECT nid FROM {node} WHERE type = 'exchange'");
+    while($nid = db_result($result)) {
+      $nids[] = $nid;
+      node_delete($nid);
+    }
+  }
+  $count = count($nids);
+}
+
+function drush_mcapi_purge() {
+  $result = db_query("DELETE FROM {mc_exchanges} WHERE state = %d", EXCHANGE_STATE_ERASED);
+  drush_print('removed traces of erased nodes');
+}
