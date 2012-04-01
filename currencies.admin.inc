@@ -23,14 +23,13 @@ function mcapi_currency_form($form, &$form_state){
 function _mcapi_currency_innerform(&$form, &$form_state) {
   //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
   $form['#tree'] = TRUE;
-
+  $form['info']['currcode']['#maxlength'] = 8;
   $form['name'] = array(
     '#title' => t('Name of currency'),
     '#description' => t('Use the plural'),
     '#type' => 'textfield',
     '#default_value' => $form['#currency']->name,
     '#weight' => -1,
-    '#maxlength' => 8
   );
   $form['format'] = array(
     '#title' => t('Display format'),
@@ -42,9 +41,16 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#required' => TRUE,
     '#weight' => 3
   );
+  $form['zero'] = array(
+    '#title' => t('Allow zero value transactions'),
+    '#description' => t('Some projects may want to record an acknowledgement without a payment'),
+    '#type' => 'checkbox',
+    '#default_value' => $form['#currency']->zero,
+    '#weight' => 4,
+  );
   $form['divisions_setting'] = array(
     '#title' => t('Allowed divisions'),
-    '#description' => t('Leave blank to use integers. "00" to use hundredths.') . t('To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') . '<br />' .
+    '#description' => t('Leave blank to use integers. "01" to use hundredths.') . t('To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') . '<br />' .
       '<pre>0|/.<br />25|1/4<br />50|1/2<br />75|3/4</pre>',
     '#type' => 'textarea',
     '#cols' => 60,
@@ -127,7 +133,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
   foreach (array_filter($operations) as $op => $name) {
     $form[$op] = array(
       '#title' => $name,
-      '#description' => t('Determine who can @name transactions in the following states:', array('@name' => t($name))),
+      '#description' => t('Determine who can @name transactions in the following states:', array('@name' => $name)),
       '#type' => 'fieldset',
       '#group' => 'additional_settings',
       '#weight' => $i++,
@@ -190,7 +196,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 
 function mcapi_currency_validate_divisions(&$element, $form_state) {
   $divisions = $element['#value'];
-  if ($divisions == '00' || $divisions == '') return;
+  if ($divisions == '01' || $divisions == '') return;
   $lines = explode("\n", $divisions);
   if (count($lines) < 2) {
     form_error($element, t("There should be at least two lines in field '@fieldname'", array('@fieldname' => $element['#title'])));
@@ -226,7 +232,7 @@ function _currency_divisions_array(&$currency) {
     }
     $currency->divisions = $allowed;
   }
-  elseif ($string == '00') {
+  elseif ($string == '01') {//this means hundredths
     $currency->divisions = $string;
   }
   else $currency->divisions = NULL;
@@ -279,7 +285,8 @@ function currency_default() {
     ),
     'name' =>  t('Community Coins'),
     'format' => '@minus<strong>CC</strong>@integer:@subdivision',
-    'divisions_setting' => "0|00\n50|30 mins",
+    'zero' => 0,
+    'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
     'accounting' => array(
       'update_mode' => 1,
       'erase_mode' => 1

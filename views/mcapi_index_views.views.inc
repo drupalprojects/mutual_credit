@@ -23,7 +23,7 @@ function mcapi_index_views_views_data() {
       'handler' => 'views_handler_field',
     ),
     'argument' => array(
-      'handler' => 'views_handler_argument',
+      'handler' => 'views_handler_argument_numeric',
       'click sortable' => TRUE,
     ),
     'relationship' => array(
@@ -40,7 +40,7 @@ function mcapi_index_views_views_data() {
       'handler' => 'views_handler_field',
     ),
     'argument' => array(
-      'handler' => 'views_handler_argument',
+      'handler' => 'views_handler_argument_numeric',
       'click sortable' => TRUE,
     ),
     'relationship' => array(
@@ -169,4 +169,23 @@ function mcapi_index_views_views_data_alter(&$data) {
       }
     }
   }
+}
+
+
+/**
+ * Implements hook_views_plugins().
+ * can't get this working
+ */
+function mcapi_index_views_views_plugins() {
+  return array(
+    'module' => 'views', // This just tells our themes are elsewhere.
+    'access' => array(
+      'arg1user' => array(
+        'title' => t('Arg 1 user'),
+        'help' => t('Access will be granted to only if the user is in arg 1'),
+        'handler' => 'views_plugin_access_user_arg1',
+        'uses options' => FALSE,
+      ),
+    )
+  );
 }

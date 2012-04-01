@@ -24,7 +24,7 @@ function mcapi_actions_action_info() {
 function record_exchange_action_form($context) {
   //make a new_transaction(), and fill in from the defaults
   $values = array('values' => $context);
-  $transaction_form = transaction_form(array(), $values, new_transaction());
+  $transaction_form = transaction_form(array(), $values);
   unset($transaction_form['buttons']);
   $form['template'] = array(
     '#type' => 'fieldset',

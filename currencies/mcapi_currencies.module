@@ -81,7 +81,7 @@ function mcapi_currencies_form(&$form, &$form_state) {
     '#maxlength' => 60,
     '#autocomplete_path' => 'user/autocomplete',
     '#default_value' => $owner->name,
-    '#element_validate' => array('mcapi_validate_username'),
+    '#element_validate' => array('mcapi_validate_usernames'),
     '#required' => TRUE,
     '#weight' => 4
   );

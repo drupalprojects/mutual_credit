@@ -237,7 +237,7 @@ function mcapi_get_signatories($xid = NULL, $uid = NULL) {
  * bumps the signature form up to stage 2, where the fields are rendered as text
  */
 function mcapi_pending_form_mcapi_forms_form_alter(&$form, &$form_state) {
-  if ($form_state['build_info']['args'][0]->name != 'add_my_signature') return;
+  if ($form_state['build_info']['args'][1]->name != 'add_my_signature') return;
   $form_state['step']++;
 
   array_unshift($form['#submit'], 'add_my_signature_submit');

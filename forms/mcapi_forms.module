@@ -9,24 +9,38 @@
  * implements hook_menu
  */
 function mcapi_forms_menu() {
+  module_load_include('inc', 'mcapi_forms');
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
   $mcapi_forms = mcapi_forms_load(NULL, TRUE);
-  $editform = $mcapi_forms['correction'];
+
+  $items['transaction/%transaction/formedit'] = array(
+    'title' => 'Modify transaction',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mcapi_forms_form', 1, $mcapi_forms['correction']), //+ we need the right form object
+    'access callback' => 'transaction_access',
+    'access arguments' => array('update', 1), //+ the right form object
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'mcapi_forms.inc',
+  );
   unset($mcapi_forms['correction']); //see below
-  module_load_include('inc', 'mcapi_forms');
+  
   //one menu callback for each form.
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
     $menu = $mcapi_form->data['architecture'];
-    //in case the form needs to load a transaction, extract it from the path
-    $parts = explode('/', $menu['path']);
-    $args = array();
-    if ($key = array_search('%transaction', $parts)) $args[] = $key;
+    
     $items[$menu['path']] = array(
-      'title' => mcapi_form_template($mcapi_form, 1)->title,
-      'page callback' => 'mcapi_get_form',
-      'page arguments' => array_merge(array($mcapi_form), $args),//2nd and subsequent are are the $form_state['build_info']
+      'title' => 'Record transaction',
+      'title callback' => 'mcapi_form_title',
+      'title arguments' => array($mcapi_form),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array(//2nd and subsequent are are the $form_state['build_info']
+        0 => 'mcapi_forms_form',
+        //in case the form needs to load a transaction, extract it from the path
+        1 => array_search('%transaction', explode('/', $menu['path'])),
+        2 => $mcapi_form
+      ),
       'access callback' => strtok($menu['access'], ':'),
       'access arguments' => array(strtok(':')),
       'menu name' => is_numeric($menu['menu_link']) ? 'navigation' : $menu['menu_link'],
@@ -34,15 +48,6 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
-  $items['transaction/%transaction/formedit'] = array(
-    'title' => 'Modify transaction',
-    'page callback' => 'mcapi_get_form',
-    'page arguments' => array($editform, 1), //+ we need the right form object
-    'access callback' => 'transaction_access',
-    'access arguments' => array('update', 1), //+ the right form object
-    'type' => MENU_LOCAL_ACTION,
-    'file' => 'mcapi_forms.inc',
-  );
   return $items;
 }
 
@@ -56,7 +61,6 @@ function mcapi_forms_menu_alter(&$items) {
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
 }
 
-
 /**
  * Implements hook_admin_paths().
  */
@@ -65,14 +69,15 @@ function mcapi_forms_admin_paths() {
 }
 
 /*
- * args[0] is a transaction
- * args[1] is the form name
- * args[2] is a loaded user (optional)
- * args added here are not put into $form_state[build_info][args]
+ * implements hook_forms
+ * $args is an mcapi_form and an optional transaction
  */
-function mcapi_get_form($mcapi_form, $transaction = NULL) {
-  module_load_include('inc', 'mcapi_forms');
-  return drupal_get_form('mcapi_forms_form', $mcapi_form, $transaction ? $transaction : new_transaction());
+function mcapi_forms_forms($form_id, $args) {
+  $forms['mcapi_forms_form'] = array(
+    'callback' => 'transaction_form',
+    'callback arguments' => $args
+  );
+  return $forms;
 }
 
 /*
@@ -150,6 +155,7 @@ function mcapi_forms_theme($existing, $type, $theme, $path) {
 function mcapi_edit_mcapi_form(&$form, &$form_state) {
   //this big form builder function is kept in admin.inc
   form_load_include($form_state, 'admin.inc', 'mcapi_forms');
+  form_load_include($form_state, 'inc', 'mcapi');//contains the validation functions for the default form elements
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_forms') .'/mcapi_forms.admin.inc';
   $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
   $form['#tree'] = TRUE;
@@ -168,7 +174,7 @@ function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_s
 
 /*
  * load an mcapi_form by name, using ctools
- * it seems that ctools isn't doing any cacheing
+ * it seems that ctools isn't doing any caching
  */
 function mcapi_forms_load($name = NULL) {
   $cached = cache_get('mcapi_forms');
@@ -221,37 +227,6 @@ function mcapi_access_check_roles($rid) {
 
 
 /*
- * validate callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
- * the $form_state[item] is the object to be saved, derived from $form_state[values]
- */
-function mcapi_edit_mcapi_form_validate($form, &$form_state) {
-  form_state_values_clean($form_state);
-  //we need to start with an existing ctools object which contains essential default properties
-  if (empty($form_state['item'])) {
-    $form_state['item'] = ctools_export_crud_new('mcapi_forms');
-  }
-  $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
-  unset($form_state['values']['name'], $form_state['values']['xfid']);
-  $form_state['item']->data = $form_state['values'];
-  //need to check that all required fields exist in the form.
-  if (strlen($form_state['item']->data['step-1']['template'])) {
-    foreach ($form_state['item']->data as $name => $prop) {
-      if (!empty($prop['shared']['required']) && empty($prop['shared']['preset'])) {
-        if (strpos($form_state['item']->data['step-1']['template'], $name) == FALSE) {
-          form_error($form['step-1']['template'], t("Required field '@name' must be used in the form Step 1", array('@name' => $name)));
-        }
-      }
-    }
-  }
-}
-
-/*
- * submit callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
- * NOT NEEDED
-function mcapi_edit_mcapi_form_submit($form, &$form_state) {}
- */
-
-/*
  * implements hook_form_FORMID_alter
  */
 function mcapi_forms_form_system_theme_settings_alter(&$form, $form_state) {
@@ -296,4 +271,9 @@ function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
     $form['instance']['required']['#value'] = FALSE;
   }
 
+}
+
+
+function mcapi_form_get_title($mcapi_form) {
+  return mcapi_form_template($mcapi_form, 1)->title;
 }

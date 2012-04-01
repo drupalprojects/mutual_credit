@@ -85,7 +85,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
     '#type' => 'textfield',
     '#default_value' => empty($item['quantity']) ? 0 : ($item['quantity']),
     '#size' => 4,
-    '#maxlength' => 4,
+    '#maxlength' => 6,
     '#theme_wrappers' => array(),
   );
   $currencies = empty($element['#currcode']) ?
@@ -156,7 +156,7 @@ function mcapi_field_widget_process($element, $form_state, $form) {
       '#title' => t('Fraction'),
       '#theme_wrappers' => array(),
     );
-    if ($currency->divisions_setting == '00') {
+    if ($currency->divisions_setting == '01') {
       $element['division'] +=  array(
         '#type' => 'textfield',
         '#size' => 2,
@@ -197,6 +197,7 @@ function mcapi_ajax_worth($form, $form_state) {
  * $element[#value] should already be set
  */
 function worth_widget_validate(&$element, &$form_state) {
+  $currcode = &$element['currcode']['#value'];
   $division = NULL;
   foreach (array('quantity', 'division') as $subfield) {
     if (isset($element[$subfield]['#value'])) {
@@ -211,30 +212,42 @@ function worth_widget_validate(&$element, &$form_state) {
       }
     }
   }
-
   $value = $element['quantity']['#value'];
+  $currency = currency_load($currcode);
+  if ($value == 0 && !$currency->zero) {
+    form_error($element, t('Zero transactions not allowed in @currency', array('@name' => $currency->name)));
+  }
+
   if ($division) $value += $division/100;
   //this affects form_state only, which later is used to set $element['#value']
   form_set_value(
     $element,
-    array('currcode' => $element['currcode']['#value'], 'quantity' => $value),
+    array('currcode' => $currcode, 'quantity' => $value),
     $form_state
   );
-  if (!$division) return;
-  //check that the divisions are valid
-  $currency = currency_load($element['currcode']['#value']);
-  if ($currency->divisions == '00') return;
-  if (isset($currency->divisions[$division])) return;
+  if ($division) {
+    //check that the divisions are valid
+    
+    if ($currency->divisions == '01') return;
+    if (isset($currency->divisions[$division])) return;
 
-  $errors[$field['field_name']]['und'][$delta][] = array(
-    'error' => 'invalid_fraction',
-    'message' => t('Only certain centiles are permitted for @name', array('@name' => $currency->name)),
-  );
+    form_error($element, t('Only certain centiles are permitted for @name', array('@name' => $currency->name)));
+  }
+  //now check that the value is within the max limit, if specified
+  //this isn't used at time of writing.
+  if (!empty($element['#max'][$currcode])) {
+    if ($value > $element['#max'][$currcode]) {
+      $replacements = array(
+        '!amount' => theme('worth_field', array('quantity' => $element['#max'][$currcode], 'currcode' => $currcode))
+      );
+      form_error($element, t('The maximum value is !amount', $replacements));
+    }
+  }
 }
 
 /*
  * implements hook_field_validate
- * check if ithe current user has permission to use the currency in this flow.
+ * check if the current user has permission to use the currency in this flow.
  * runs AFTER worth_widget_validate
  * each item is an array(currcode => varchar, quantity => quantity, division => integer)
  * Pays particular attention to the currcodes
@@ -248,6 +261,7 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
         'message' => t('This currency does not exist, or you do not have permission to use it'),
       );
     }
+
   }
 }
 

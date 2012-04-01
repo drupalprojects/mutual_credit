@@ -14,7 +14,7 @@ function mcapi_getview_user_transactions_summary() {
   $view = new view;
   $view->name = 'user_transactions_summaries';
   $view->description = 'per currency transaction summary for individual users';
-  $view->tag = 'mcapi';
+  $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = 'User transaction summaries';
   $view->core = 7;
@@ -213,8 +213,8 @@ function mcapi_getview_user_transactions_summary() {
 function mcapi_getview_statement() {
   $view = new view;
   $view->name = 'statement';
-  $view->description = 'shows trades of one user, with otheruser field and running balance (reads transaction index table)';
-  $view->tag = 'default';
+  $view->description = 'shows trades of one user, with otheruser field and running balance. (not working because of apparent views error)';
+  $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = 'Statement';
   $view->core = 7;
@@ -398,7 +398,7 @@ function mcapi_getview_user_rankings() {
   $view = new view;
   $view->name = 'user_rankings';
   $view->description = 'If you have multiple currencies, be sure to change the argument. Also you can add \'between\' dates';
-  $view->tag = 'mcapi';
+  $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = 'user_ranking';
   $view->core = 7;
@@ -789,7 +789,7 @@ function mcapi_getview_balance_history() {
   $view = new view;
   $view->name = 'running_balance';
   $view->description = t('Unixtimes and running balances');
-  $view->tag = 'mcapi';
+  $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = t('Running balance');
   $view->core = 7;
@@ -916,7 +916,7 @@ function mcapi_getview_user_transactions_index() {
   $view = new view;
   $view->name = 'user_transactions_index';
   $view->description = 'statement of one user, with otheruser field and running balance (reads transaction index table)';
-  $view->tag = 'default';
+  $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = 'User transactions';
   $view->core = 7;
@@ -1075,7 +1075,7 @@ function mcapi_getview_profit_loss() {
   $view = new view;
   $view->name = 'profit_loss';
   $view->description = 'income and expenditure in separate tables';
-  $view->tag = 'default';
+  $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = 'Profit & Loss';
   $view->core = 7;

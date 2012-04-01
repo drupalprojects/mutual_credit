@@ -56,7 +56,7 @@ function mcapi_menu_inc() {
   );
   $items['admin/accounting/record'] = array(
     'title' => 'Record transaction',
-    'description' => 'Set all the properties manually on a new_transaction()',
+    'description' => 'Set all the properties manually on a new transaction',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_admin_form'),
     'access arguments' => array('manage all transactions'),
@@ -134,7 +134,7 @@ function mcapi_accounting() {
 /**
  * All transaction forms should use this function as a basis using hook_forms
  */
-function transaction_form($form, &$form_state, $transaction) {
+function _transaction_form($form, &$form_state, $transaction) {
   $form['xid'] = array(
     '#type'=> 'hidden',
     '#value' => $transaction->xid
@@ -144,7 +144,8 @@ function transaction_form($form, &$form_state, $transaction) {
     '#title' => t('Account number to be debited'),
     '#description' => t('A username, email, or user ID'),
     '#default_value' => $transaction->payer,
-    '#element_validate' => array('mcapi_validate_transactor'),
+    '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
+    '#autocomplete_path' => 'user/autocomplete',
     '#weight' => 6,
   );
   $form['payee'] = array(
@@ -152,7 +153,8 @@ function transaction_form($form, &$form_state, $transaction) {
     '#title' => t('Account number to be credited'),
     '#description' => t('A username, email, or user ID'),
     '#default_value' => $transaction->payee,
-    '#element_validate' => array('mcapi_validate_transactor'),
+    '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
+    '#autocomplete_path' => 'user/autocomplete',
     '#weight' => 9,
   );
   $types = module_invoke_all('mcapi_info_types');
@@ -181,7 +183,7 @@ function transaction_form($form, &$form_state, $transaction) {
     '#title' => t('Recorded by'),
     '#autocomplete_path' => 'user/autocomplete',
     '#default_value' => empty($form_state['values']['creator']) ? user_load($transaction->creator)->name : user_load($form_state['values']['creator'])->name,
-    '#element_validate' => array('mcapi_validate_username'),
+    '#element_validate' => array('mcapi_validate_usernames'),
     '#required' => TRUE,
     '#weight' => 20,
   );
@@ -204,8 +206,7 @@ function transaction_form($form, &$form_state, $transaction) {
     $form['worth'][$lang]['add_more']['#weight'] = 6;
   }
 
-  $saved_transaction = &$form_state['build_info']['args'][1];
-  if (isset($saved_transaction->xid) && $saved_transaction->state > -1) {
+  if (@$form_state['build_info']['args'][0]->state == TRANSACTION_STATE_FINISHED) {
     $form['buttons']['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
@@ -230,7 +231,7 @@ function transaction_form($form, &$form_state, $transaction) {
   }
   $form['buttons']['#weight'] = 25;
   $form['#entity_builders'][] = 'transaction_entity_builder';
-  $form['#validate'] = array('transaction_form_validate');
+  $form['#validate'] = array('transaction_first_form_validate');
   $form['#submit'] = array('transaction_all_submit');
   $form_state['redirect'] = 'user';
   return $form;
@@ -239,62 +240,34 @@ function transaction_form($form, &$form_state, $transaction) {
 /*
  * standard form-level validation callback for ALL transaction forms
  * fields have already been validated individually
- * Anything that validates in this function should work in the database
- * Even if the form wasn't properly designed in all respects.
- * This validation process allows NULL fields.
- * which also means it can validate partially completed forms
+ * By this time each of the form values should be well enough validated not to fail on writing to db
+ *
  */
-function transaction_form_validate($form, &$form_state) {
-  if (empty($form_state['transaction'])) {
-    if (!empty($form_state['values']['xid'])) {
-      $form_state['transaction'] = transaction_load($form_state['values']['xid']);
-    }
-    else {
-      $form_state['transaction'] = new_transaction();
-    }
-  }
+function transaction_first_form_validate($form, &$form_state) {
   form_state_values_clean($form_state);
-  entity_form_submit_build_entity('transaction', $form_state['transaction'], $form, $form_state);
-  $transaction = &$form_state['transaction'];
+  if ($form_state['values']['xid']) $transaction = transaction_load($form_state['values']['xid']);
+  elseif(isset($form_state['transaction'])) $transaction = $form_state['transaction'];
+  else $transaction = new stdClass;
+  
+  //this populates $transaction with the form values
+  entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   try {
-    mcapi_transaction_validate($transaction, $form);
+    mcapi_transaction_validate($transaction);
   }
   catch (Exception $e) {
-    $message = $e->getMessage();
-    //parse balance limits error
-    if (module_exists('mcapi_limits')) {
-      if (strpos($message, '>')) {
-        list($excess, $limit, $currcode) = explode('>', $message);
-        $message = t('Transaction would take @username !quant above the maximum balance of !max',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payee))),
-            '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
-            '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
-          )
-        );
-      }
-      elseif (strpos($message, '<')) {
-        list($excess, $limit, $currcode) = explode('<', $message);
-        $message = t('Transaction would take @username !quant below the minimum balance of !min',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payer))),
-            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
-            '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
-          )
-        );
-      }
-    }
-    //if iit doesn't show red it probably because the wrapper is stripped off the form element
-    form_error($form['worth'], $message);
+    form_set_error('', $e->getMessage());
   }
+  //save the value where other transaction validators can find it
+  $form_state['transaction'] = $transaction;
 }
 
 /*
- * Universal transaction validation
- * called from transaction_form_validate
+ * General validation of transaction object
+ * This function will allow some blank fields, although at the moment of writing
+ * there is no use case for blank fields
  */
-function mcapi_transaction_validate($transaction, &$form = NULL){
+function mcapi_transaction_validate($transaction){
   //no usecase is currently envisaged where someone might pay themselves in oine currency in one transaction
   if ($transaction->payer > 0) {
     if ($transaction->payer == $transaction->payee) {
@@ -306,8 +279,7 @@ function mcapi_transaction_validate($transaction, &$form = NULL){
     $required = array('payer', 'payee',  'type');
     foreach ($required as $fieldname) {
       if (!$transaction->$fieldname) {
-        $title = empty($form[$fieldname]['#title']) ? $fieldname : $form[$fieldname]['#title'];
-        form_set_error($fieldname, t("@fieldname required for completed transaction", array('@fieldname' => $title)));
+        form_set_error($fieldname, t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
       }
     }
   }
@@ -372,6 +344,7 @@ function mcapi_validate_title(&$element, $form_state) {
 
 /*
  * Validate callback for transaction form 'state' element
+ * This must happen BEFORE transaction_validate is called
  */
 function mcapi_validate_state(&$element, &$form_state) {
   $val = &$element['$value'];

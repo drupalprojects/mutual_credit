@@ -226,7 +226,7 @@ function _sms_validate_trader($val, $number) {
 
 function sms_transaction_insert($payer_uid, $payee_uid, $options, $values) {
   if (!$payer_uid || !$payee_uid) {//this should never happen
-    watchdog('mcapi_sms', "problem identifying exchange participants. Payer: $payer_uid, Payee: $payee_uid");
+    watchdog('mcapi_sms', "problem identifying exchange participants. Payer: @payer, Payee: @payee", array('@payer'=> $payer_uid, '@payee' => $payee_uid));
   }
   $options['title'] = isset($values['%description']) ? $values['%description'] : 'SMS: '.$values['message'];
   $options['state'] = variable_get('mcapi_sms_pending', 0) ? EXCHANGE_STATE_PENDING : EXCHANGE_STATE_FINISHED;

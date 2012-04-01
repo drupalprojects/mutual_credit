@@ -211,3 +211,34 @@ function mcapi_limits_validate_minmax(&$element, $form_state) {
     }
   }
 }
+
+
+/*
+ * callback to return themed balance limits
+ */
+function show_balance_limits($account, $currcode) {
+  $limits = extract(limits_get($currcode, $account->uid));
+  extract(transaction_totals($account->uid, $currcode));
+
+  //this chart makes no sense if there isn't a max (or min) limit
+  if (!is_numeric($max) || !is_numeric($min)) {
+    return array();
+  }
+  return array(
+    '#theme' => 'balance_limits',
+    '#currency' => currency_load($currcode),
+    '#min' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $min)),
+    '#max' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $max)),
+    '#balance' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $balance))
+  );
+}
+function show_trading_limits($account, $currcode) {
+  extract(transaction_totals($account->uid, $currcode));
+  extract(limits_get_adjusted($currcode, $account->uid, $balance));
+  return array(
+    '#theme' => 'trading_limits',
+    '#currency' => currency_load($currcode),
+    '#spend_limit' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $spend_limit)),
+    '#earn_limit' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $earn_limit)),
+  );
+}

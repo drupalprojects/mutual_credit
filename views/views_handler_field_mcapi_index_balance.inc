@@ -8,8 +8,7 @@
  * @ingroup views_field_handlers
  */
 class views_handler_field_mcapi_index_balance extends views_handler_field {
-
-  //I think in all cases, this field will be used for the same user on every row
+  
   var $uid;
 
   function construct() {

@@ -8,7 +8,7 @@ module_load_include('inc', 'mcapi_forms');
  * Its not geometrically perfect, but covers a lot of use cases without getting too complicated
  */
 function _edit_mcapi_form(&$form, &$form_state) {
-  form_load_include($form_state, 'inc', 'mcapi');//contains the validation functions for the default form elements
+  debug($form_state['build_info']['args']);
   $mcapi_form = &$form_state['item']->data;
   $form_id = $form_state['item']->name;
 
@@ -117,7 +117,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   );
 
   //load the transaction form so we can use all the fields here to set the defaults
-  $transaction_fields = transaction_form($form, $form_state, new_transaction());
+  $transaction_fields = transaction_form($form, $form_state);
 
   //this section of the form allows the admin to handle the individual fields of the transaction form.
   //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
@@ -196,9 +196,10 @@ function _edit_mcapi_form(&$form, &$form_state) {
   //these are the field api fields which may have been added to the transaction entity
   $additional_fields = field_info_instances('transaction', 'transaction');
   foreach ($additional_fields as $fieldname => $field) {
+    mcapi_unset_recursive($transaction_fields[$fieldname], '#required');
+    mcapi_unset_recursive($transaction_fields[$fieldname], '#element_validate');
     $form[$fieldname] = _mcapi_form_shared($mcapi_form, $transaction_fields[$fieldname], $fieldname);
   }
-
   $form['submission'] = array(
     '#title' => t('Form submission'),
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
@@ -209,7 +210,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Save to state'),
       '#description' => t('Transaction will be submitted in this state'),
       '#type' => 'select',
-      '#options' => mcapi_states(),
+      '#options' => array_merge(array('' => t('Unchanged')), mcapi_states()),
       '#default_value' => empty($mcapi_form['submission']['state']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['submission']['state'],
       '#weight' => 3,
     ),
@@ -292,6 +293,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
 
 function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   static $w;
+  mcapi_unset_recursive($default_field, '#element_validate');
   $element = array(
     '#title' => "[$key]",
     '#description' => t("Settings for '@field' field", array('@field' => $key)),
@@ -373,3 +375,35 @@ function mcapi_forms_exists($machine_name, $element, &$form_state) {
   $forms = mcapi_forms_load();
   return isset($forms['machine_name']);
 }
+
+
+/*
+ * validate callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
+ * the $form_state[item] is the object to be saved, derived from $form_state[values]
+ */
+function mcapi_edit_mcapi_form_validate($form, &$form_state) {
+  form_state_values_clean($form_state);
+  //we need to start with an existing ctools object which contains essential default properties
+  if (empty($form_state['item'])) {
+    $form_state['item'] = ctools_export_crud_new('mcapi_forms');
+  }
+  $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
+  unset($form_state['values']['name'], $form_state['values']['xfid']);
+  $form_state['item']->data = $form_state['values'];
+  //need to check that all required fields exist in the form.
+  if (strlen($form_state['item']->data['step-1']['template'])) {
+    foreach ($form_state['item']->data as $name => $prop) {
+      if (!empty($prop['shared']['required']) && empty($prop['shared']['preset'])) {
+        if (strpos($form_state['item']->data['step-1']['template'], $name) == FALSE) {
+          form_error($form['step-1']['template'], t("Required field '@name' must be used in the form Step 1", array('@name' => $name)));
+        }
+      }
+    }
+  }
+}
+
+/*
+ * submit callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
+ * NOT NEEDED
+function mcapi_edit_mcapi_form_submit($form, &$form_state) {}
+ */

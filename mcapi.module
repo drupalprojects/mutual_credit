@@ -15,8 +15,8 @@ module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
 //the convention is that states > 0 are counted
 define ('TRANSACTION_STATE_FINISHED', 1);
 define ('TRANSACTION_STATE_ERASED', 0);
-define ('TRANSACTION_STATE_UNSAVED', -2);
-define ('TRANSACTION_STATE_VALIDATED', -3);
+define ('TRANSACTION_STATE_UNSAVED', NULL); //before the transaction ever reaches the db
+define ('TRANSACTION_STATE_VALIDATED', -2);
 
 /**
  * implements hook_help()
@@ -74,15 +74,19 @@ function mcapi_menu_alter(&$items) {
  * implements hook_forms
  */
 function mcapi_forms($form_id, $args) {
-  if (empty($args[0]->xid)) {
-    $args[0] = new_transaction();
-  }
- 
   $forms['transaction_admin_form'] = array(
     'callback' => 'transaction_form',
     'callback arguments' => $args
   );
   return $forms;
+}
+
+function transaction_form($form, &$form_state) {
+  form_load_include($form_state, 'inc', 'mcapi');
+  //the incoming transaction is either from $form_state, or from the build arguments or an empty object
+  $transaction = @$form_state['transaction'] ? $form_state['transaction'] : (
+    @$form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] : new_transaction());
+  return _transaction_form($form, $form_state, $transaction);
 }
 
 /*
@@ -372,10 +376,9 @@ function new_transaction() {
   );
 }
 
-
 /*
  * INTERNAL API FOR MODULE DEVELOPERS
- * entity controllers must work comply
+ *
  * These need to be better unified as regards exception handling
  * but I don't have much experience on that
  * for now, all validates must be done within try{}
@@ -390,7 +393,6 @@ function new_transaction() {
  * NULL transaction_totals($transaction)
  */
 
-
 /**
  * load a single transaction, from the $xid
  * this is used to as a menu loader, so can't be in an inc file
@@ -403,32 +405,19 @@ function transaction_load($xid) {
 function transaction_load_multiple($xids = array(), $conditions = array(), $reset = FALSE) {
   return entity_load('transaction', $xids, $conditions, $reset);
 }
-/*
- * produces exceptions with the following error codes
- * 'no_del' => Deletion not allowed in this currency
- * 'ins_fail' => Failed to insert into db table
- * 'upd_fail' => Failed to update db_table
- * 'inv_qty' => non numeric quantity
- */
 function transaction_validate(stdClass $transaction) {
   //always sets the transaction->state to TRANSACTION_STATE_VALIDATED
-  $transaction = entity_get_controller('transaction')->validate($transaction);
-  if (module_exists('mcapi_limits')) {
-    //this will throw an exception
-    mcapi_limit_check($transaction);
-  }
+  return entity_get_controller('transaction')->validate($transaction);
 }
+//don't forget to field_attach_submit when calling this
 function transaction_save(stdClass $transaction) {
   return entity_get_controller('transaction')->save($transaction);
 }
 function transaction_erase($transaction) {//will accept int or object
-  if (is_int($transaction)) {
-    $transaction = transaction_load($transaction);
+  if (!is_object($transaction)) {
+    throw new Exception('Wrong type passed to transaction_erase');
   }
-  if (is_object($transaction)) {
-    return entity_get_controller('transaction')->erase($transaction);
-  }
-  throw Exception('Wrong type passed to transaction_erase');
+  return entity_get_controller('transaction')->erase($transaction);
 }
 function transaction_state(stdClass $transaction) {
   return entity_get_controller('transaction')->state($transaction);
@@ -446,16 +435,19 @@ function transaction_totals($uid, $currcode = NULL, $options = array()) {
  * borrowed from node_validate, where it really should have been a reusable function like this.
  * this is in the main module file where it can be found by both currency form and transaction form.
  */
-function mcapi_validate_username(&$element, &$form_state) {
+function mcapi_validate_usernames(&$element, &$form_state) {
   $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
   if (!array_filter($values)) return;
   foreach ($values as $value) {
-    $account = user_load_by_name($value);
-    if ($account->uid) {
-      form_set_value($element, $account->uid, $form_state);
-      continue;
+    if (!is_numeric($value)) {
+      $uid = user_load_by_name($value)->uid;
+      if ($uid) {
+        form_set_value($element, $uid, $form_state);
+      }
+      else {
+        form_error($element, t('The username %name does not exist.', array('%name' => $value)));
+      }
     }
-    form_error($element, t('The username %name does not exist.', array('%name' => $value)));
   }
 }
 
@@ -489,6 +481,13 @@ function currencies_load($account = NULL) {
   module_load_include('admin.inc', 'mcapi', 'currencies');
   $filtered = array();
   foreach ($currencies as $currcode => $currency) {
+    //temp measure to update currency division format
+    //TODO remove this after while.
+    if ($currency->divisions == '00') {
+      drupal_set_message('the currency format has changed. Please change your currency divisions field from 00 to 01');
+      drupal_goto('admin/accounting/currency');
+    }
+
     if (currency_access('use', $currency, $account)) {
       $filtered[$currcode] = $currency;
     }
@@ -532,24 +531,6 @@ function mcapi_views_api() {
 
 
 
-/*
- * implements hook_form_alter
- * renames the exposed filters on views forms
- */
-function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
-  $description = t('Comma separated usernames');
-  $form['payee']['#description'] = $description;
-  $form['payer']['#description'] = $description;
-}
-
-
-/*
- * implements views hook_views_data_alter
- */
-function mcapi_views_data_alter(&$items) {
-  //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
-  $items['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
-}
 
 //must return a condition objectmcapi_transactions.state
 function mcapi_access_unrestricted_views($state){

@@ -56,9 +56,9 @@ function mcapi_notification_form_mcapi_forms_form_alter(&$form) {
  * submit callback ONLY for mcapi_forms
  */
 function mcapi_form_mail_handle ($form, $form_state) {
-  $form_id = $form_state['build_info']['args'][0]->name;
-  $template = isset($form_state['build_info']['args'][0]->data['email_template']) ?
-    $form_state['build_info']['args'][0]->data['email_template'] :
+  $form_id = $form_state['build_info']['args'][1]->name;
+  $template = isset($form_state['build_info']['args'][1]->data['email_template']) ?
+    $form_state['build_info']['args'][1]->data['email_template'] :
     array('subject' => _mcapi_mail_text('subject'), 'body' => _mcapi_mail_text('body'));
   //get the preferences for payer and payee, for this form
   foreach (array('payer', 'payee') as $uid) {

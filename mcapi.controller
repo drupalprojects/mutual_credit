@@ -114,13 +114,15 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         unset($transaction->{$instance['field_name']}[LANGUAGE_NONE]['add_more']);
       }
     }//end of bugfix
+    
     $transaction->modified = REQUEST_TIME;
     $transaction->modifier = $GLOBALS['user']->uid;
     $t = db_transaction();
     //the transaction is actually inserted during the validation phase, after validation the state should be changed
-    if(!empty($transaction->is_new)) $function = 'insert';
-    elseif (!empty($transaction->validating)) $function = 'state';
+    if (isset($transaction->is_new)) $function = 'insert';
+    elseif (isset($transaction->validating)) $function = 'state';
     else $function = 'update';
+
     try {
       $this->$function($transaction);
     }
@@ -205,9 +207,9 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     //so these NULL values need to be selected as 0 before adding
     //there may well be a more elegant way
     $query = "SELECT
-      SUM(COALESCE(w2.worth_quantity, 0)) as gross_in,
-      SUM(COALESCE(w1.worth_quantity, 0)) as gross_out,
-      SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0)) as balance,
+      COALESCE(SUM(COALESCE(w2.worth_quantity, 0)), 0) as gross_in,
+      COALESCE(SUM(COALESCE(w1.worth_quantity, 0)), 0) as gross_out,
+      COALESCE(SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0)), 0) as balance,
       COUNT(t.xid) as count
       FROM {mcapi_transactions} t
       LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
@@ -271,11 +273,13 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     $transaction->creator = $GLOBALS['user']->uid;
     $transaction->created = REQUEST_TIME;
     if (empty($transaction->xid)) {
+      //this is probably done during validation
       mcapi_write_record($transaction);
       field_attach_insert('transaction', $transaction);
     }
     else {
-      mcapi_write_record($transaction, 'xid');
+      //this is part of creating the transaction process, but after validation
+      mcapi_write_record($transaction, array('xid'));
       field_attach_update('transaction', $transaction);
     }
   }
@@ -284,7 +288,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * This controller makes no use of the entity revision control facility
    * $force_update is for the special case of a validated transaction which is being written
    */
-  function update($transaction) {ddebug_backtrace();
+  function update($transaction) {
     //if there are more than one flows involved, use the minimum value for the update mode
     $flows = current($transaction->worth);
     foreach ($flows as $flow) {
@@ -415,6 +419,7 @@ function mcapi_currency_innerform_alter(&$form, &$form_state) {
 }
 
 function mcapi_controller_validate_transaction_fields($transaction) {
+  //should really validate every field that needs to go in the data base
   foreach ($transaction->worth['und'] as $worth) {
     if (!is_numeric($worth['quantity'])) {
       throw new Exception(t('Illegal quantity: @val', array('@val' => print_r($worth, 1))));

@@ -483,6 +483,13 @@ function mcapi_update_7003() {
   drupal_set_message('Edit all currencies where it says view, update & erase, ','warning');
 }
 
+function mcapi_update_7004() {
+  db_query("UPDATE {mcapi_transactions} SET state = -2 WHERE state = -3");
+}
+
+function __mcapi_update_7005() {
+  }
+
 function mcapi_update_currency($old_currency) {
   //get the default currency for this module, and populate with the old default currency
   module_load_include('admin.inc', 'mcapi', 'currencies');

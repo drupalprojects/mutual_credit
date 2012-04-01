@@ -8,23 +8,28 @@ define('MCAPIFORM_STEP_ENTER', 1);
 define('MCAPIFORM_STEP_CONFIRM', 2);
 
 /*
- * main form builder, starts by building the base form in the mcapi module
+ * main form builder, for this module, using the transaction_form as a base
+ * build_info args are 0=> transaction, 1 => mcapi_form
  */
-function mcapi_forms_form($form, &$form_state) {
+function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-  $mcapi_form = &$form_state['build_info']['args'][0];
+  $mcapi_form = &$form_state['build_info']['args'][1];
+  //set the page title if this form is not being displayed in a block
+  if (!_mcapi_form_in_block($mcapi_form)) {
+    //I wonder if there is an easier way? Perhaps a block would have different build_info args
+    drupal_set_title(mcapi_form_template($mcapi_form)->title);
+  }
+  $transaction = @$form_state['transaction'] ? $form_state['transaction'] : (
+    @$form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] : new_transaction());
   
   //we need to determine how to load up the transaction and which step the form is in.
   //step 1 of the form is a form, and step 2 is a confirmation page. These may be renamed later for clarity
   //Some forms may go straight to step 2
   if (empty($form_state['step'])) {
-    //use the transaction whose xid was passed via the url, and pulled fresh from the database
-    $transaction = &$form_state['build_info']['args'][1];
     $form_state['storage'] = array();
     $form_state['step'] = MCAPIFORM_STEP_ENTER;
     if (empty($mcapi_form->data['step-'.MCAPIFORM_STEP_ENTER]['title'])) {//if we are jumping to confirmation step
       $form_state['step'] = MCAPIFORM_STEP_CONFIRM;
-      $form_state['transaction'] = $transaction;
       $form_state['values'] = $form_state['storage'];
     }
     elseif (empty($transaction->xid)) {
@@ -36,32 +41,19 @@ function mcapi_forms_form($form, &$form_state) {
         }
       }
     }
-  } 
-  elseif (isset($form_state['transaction'])) {
-    //use the transaction which passed validation in a previous step of the form
-    $transaction = &$form_state['transaction'];
-    //the form state was incremented as it was submit the first time.
   }
 
   $lang = current(element_children($transaction->worth)); //assumes value is in one language only
   //only show one currency field
   $form_state['field']['worth'][$lang]['items_count'] = 0;
-  if (!_mcapi_form_in_block($mcapi_form)) {
-    drupal_set_title(mcapi_form_template($mcapi_form)->title);
-  }
-
-  //build for the first time
-  $form = transaction_form($form, $form_state, $transaction);
-  if (!$form) return array();
 
   $form['creator']['#type'] = 'hidden';
   $form['xid']['#type'] = 'hidden';
   $form['type']['#type'] = 'hidden';
   $form['type']['#value'] = $mcapi_form->name;
   
-  $form['state']['#value'] = $mcapi_form->data['submission']['state'];
+  $form['state']['#value'] = strlen($mcapi_form->data['submission']['state']) ? $mcapi_form->data['submission']['state'] : $transaction->state;
   $form['state']['#type'] = 'hidden';
-  
   //participants
   if ($mcapi_form->data['perspective'] == 3) {
     //payer
@@ -177,7 +169,6 @@ function mcapi_forms_form($form, &$form_state) {
   //Only after processing, can we render the tokens and replace them into the template,
   //which is used instead of custom form theming
   $form['#after_build'] = array('mcapi_form_prepare_tokens');
-  return $form;
 }
 
 //determine the fields '#default_value' according to the settings on the form object
@@ -349,8 +340,7 @@ function mcapi_forms_multiple_submit($form, &$form_state) {
     $form_state['transaction'] = $transaction;
     transaction_all_submit($form, $form_state);
   }
-  $message = t('Multiple transaction, ids: @xids', array('@xids' => implode(', ', $form_state['transactions']['xids'])));
-  watchdog('mcapi', $message);
+  watchdog('mcapi', 'Multiple transaction, ids: @xids', array('@xids' => implode(', ', $form_state['transactions']['xids'])));
   if (user_access('access site reports') && module_exists('dblog')) {
     $form_state['redirect'] = 'admin/reports/dblog';
   }
@@ -373,7 +363,7 @@ function mcapi_forms_validate($form, &$form_state) {
     $form_state['step']--;
   }
   //if step 2 template is available add a step and rebuild the form
-  elseif (strlen($form_state['build_info']['args'][0]->data['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) {
+  elseif (strlen($form_state['build_info']['args'][1]->data['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) {
     if (!form_get_errors()) {
       //Submission errors will not prevent the form advancing.
       $form_state['rebuild'] = $form_state['step'] == MCAPIFORM_STEP_ENTER ? TRUE : FALSE;
@@ -445,14 +435,6 @@ function mcapi_form_template($mcapi_form, $step = 0) {
   return array_shift($steps);
 }
 
-function mcapi_forms_field_widget_form_alter($element, $form_state, $context) {
-//  ddebug_backtrace();
-  //debug($element['#field_name']);
-  //debug($form_state['build_info']['args'][0]->data);
-
-}
-
-
 //The following recursive functions aren't very elegant, but I can't 'find a more drupalish way of doing them
 /*
  * nesting function to set values wherever in the element
@@ -484,7 +466,7 @@ function mcapi_form_remove_theme_wrapper(&$field){
     }
   }
 }
-function mcapi_unset_recursive(&$array, $prop) {
+function mcapi_unset_recursive(array &$array, $prop) {
   unset($array[$prop]);
   foreach($array as $key => &$val) {
     if (is_array($val)) {

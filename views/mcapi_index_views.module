@@ -21,79 +21,6 @@ function mcapi_index_views_requirements() {
 }
 
 /*
- * These hooks are needed only if the index table is a normal db table, not a mysql view
-function mcapi_index_views_entity_insert($entity, $type) {
-  if ($type == 'transaction') update_mcapi_index($entity);
-  //then we'll need to recalc the running balances of everything after that
-}
-function mcapi_index_views_entity_update($entity, $type) {
-  if ($type == 'transaction') update_mcapi_index($entity, $entity->xid);
-  //then we'll need to recalc the running balances of everything after that
-}
-
-function mcapi_index_views_entity_delete($entity, $type) {
-  if ($type == 'transaction') {
-    db_query("DELETE FROM {mcapi_index} WHERE xid = :xid", array(':xid' => $entity->xid));
-  }
-  //then we'll need to recalc the running balances of everything after that
-}
-function mcapi_index_views_rebuild_index() {
-  db_query("TRUNCATE table {mcapi_index}");
-  //load all the transactions and then index them
-  $transactions = transaction_load_multiple(NULL, array('state' => 0));
-  foreach($transactions as $transaction) {
-    update_mcapi_index($transaction);
-  }
-}
-function update_mcapi_index($transaction, $xid = NULL) {
-  if ($transaction->state == TRANSACTION_STATE_FINISHED) {
-  $flows = current($transaction->worth);
-    foreach ($flows as $delta => $transfer) {
-      $balance_query = "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = :uid AND currcode = :currcode AND xid < :xid";
-      $args = array(
-        ':currcode' => $transfer['currcode'],
-        ':xid' => $transaction->xid,
-      );
-      $quant = &$transfer['quantity'];
-
-      $args[':uid'] = $transaction->payee;
-      $balance = db_query($balance_query, $args)->fetchfield();
-      db_merge('mcapi_index')
-      ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payee))
-      ->fields(array(
-        'uid2' => $transaction->payer,
-        'created' => $transaction->created,
-        'currcode' => $transfer['currcode'],
-        'expenditure' => $quant,
-        'volume' => $quant,
-        'diff' => -$quant,
-        'balance' => $balance - $quant,
-      ))->execute();
-
-      $args[':uid'] = $transaction->payer;
-      $balance = db_query($balance_query, $args)->fetchfield();
-      db_merge('mcapi_index')
-      ->key(array('xid' =>$transaction->xid, 'uid1' => $transaction->payer))
-      ->fields(array(
-        'uid2' => $transaction->payee,
-        'created' => $transaction->created,
-        'currcode' => $transfer['currcode'],
-        'income' => $quant,
-        'volume' => $quant,
-        'diff' => $quant,
-        'balance' => $balance + $quant,
-      ))->execute();
-    }
-  }
-  else {
-    //only completed transactions are indexed
-    mcapi_index_views_entity_delete('transaction', $transaction);
-  }
-}
- *
- */
-
-/*
  * Implements views hook_views_api
  */
 function mcapi_index_views_views_api() {
@@ -112,4 +39,8 @@ function mcapi_index_views_views_query_alter($view, &$query) {
     //this index table needs to have the currency code field put in automatically
     $query->add_field('mcapi_index', 'currcode', 'currcode');
   }
+}
+
+function views_plugin_access_user_arg_check() {
+  return $GLOBALS['user']->uid == arg(1) || user_access('manage all transactions');
 }
