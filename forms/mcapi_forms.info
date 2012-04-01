@@ -1,7 +1,7 @@
 ; $Id: 
 name = Forms and form builder UI
 description = Exportable transaction form builder
-package = Mutual Credit
+package = Community Accounting
 core = 7.x
 configure = admin/accounting/forms
 

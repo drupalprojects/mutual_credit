@@ -1,7 +1,7 @@
 ; $Id: 
 name = Notifications
 description = User settings and mail templates for transaction notification
-package = Mutual Credit
+package = Community Accounting
 core = 7.x
 
 files[] = mcapi_mail.module

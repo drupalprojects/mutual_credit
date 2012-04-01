@@ -1,7 +1,7 @@
 ; $Id: 
 name = Currency constellation
 description = Full multiple currency support. Many currencies in one community, or even in one transaction. Or run overlapping economies.
-package = Mutual Credit
+package = Community Accounting
 configure = admin/accounting/currencies
 core = "7.x"
 

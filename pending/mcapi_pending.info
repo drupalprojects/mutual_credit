@@ -1,7 +1,7 @@
 ; $Id:
 name = Pending transactions
 description = Declares a new transaction state, 'pending', and defines forms for signing those transactions.
-package = Mutual Credit
+package = Community Accounting
 core = 7.x
 
 files[] = mcapi_pending.module

@@ -1,7 +1,7 @@
 ; $Id: mc_sms.info,v 1.1.2.1 2010/12/06 13:19:46 hutch Exp $
 name = SMS transactions
 description = Untested with SMS module!! Trigger exchanges from your phone using SMS
-package = Mutual Credit
+package = Community Accounting
 core = "7.x"
 dependencies[] = mcapi
 dependencies[] = sms_user

@@ -1,7 +1,7 @@
 ; $Id:
 name = Views for transactions
 description = A transaction index using a mysql VIEW, with powerful views integration and some example views
-package = Mutual Credit
+package = Community Accounting
 core = "7.x"
 
 dependencies[] = mcapi
@@ -13,3 +13,4 @@ files[] = mcapi_index_views.views_default.inc
 files[] = views_handler_field_mcapi_index_currcode.inc
 files[] = views_handler_field_mcapi_index_quantity.inc
 files[] = views_handler_field_mcapi_index_balance.inc
+files[] = views_plugin_access_user_arg1.inc

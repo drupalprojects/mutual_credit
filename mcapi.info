@@ -1,7 +1,7 @@
 ; $Id:
 name = Mutual Credit Accounting
 description = Defines transaction entity with a swoppable controller, a default currency, 'worth' field, and the forms, views theme callbacks for basic manipulation
-package = Mutual Credit
+package = Community Accounting
 configure = admin/accounting
 core = 7.x
 

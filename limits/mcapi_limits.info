@@ -1,7 +1,7 @@
 ; $Id: 
 name = Limit balances
 description = Sets global and personal balance limits for each currency
-package = Mutual Credit
+package = Community Accounting
 core = 7.x
 
 dependencies[] = mcapi
