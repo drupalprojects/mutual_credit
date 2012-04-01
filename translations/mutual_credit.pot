@@ -819,7 +819,7 @@ msgid "Please visit admin/build/trigger and check the transaction notification a
 msgstr ""
 
 #: mcapi.info:0
-msgid "Mutual Credit API"
+msgid "Community Accounting"
 msgstr ""
 
 #: mcapi.info:0

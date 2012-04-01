@@ -3,7 +3,7 @@ description = Import exchange history and users including Carried forward balanc
 core = "6.x"
 dependencies[] = mcapi
 dependencies[] = user_import
-package = Mutual Credit
+package = Community Accounting
 files[] = mcapi_import.module
 ; Information added by drupal.org packaging script on 2010-12-16
 version = "6.x-2.x-dev"

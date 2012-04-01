@@ -1,5 +1,5 @@
 ; $Id: 
 name = MC Statistics
 description = Provides configurable blocks and caches their contents.
-package = Mutual Credit
+package = Community Accounting
 core = "6.x"
