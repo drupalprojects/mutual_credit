@@ -109,21 +109,17 @@ function limits_personal_form($currency, array $defaults) {
  * e.g. 10+@gross_in+@gross_out+@trades
  */
 function limits_equations($currency, $uid) {
-  $sums = transaction_totals($uid, $currency->info['currcode']);
-  $formula_max = $currency->limits['limits_equations']['max'];
-  $formula_min = $currency->limits['limits_equations']['min'];
-  $tokens = array('@gross_in', '@gross_out', '@balance', '@trades');
-  $replacements = array(
-    $sums['gross_in'], 
-    $sums['gross_out'], 
-    $sums['balance'], 
-    $sums['count'],
+  $values = (array)transaction_totals($uid, $currency->info['currcode']);
+  sort($values);
+  $replacements = array_combine(
+    array('@balance', '@gross_in', '@gross_out', '@trades'),//sorted as declared
+    $values
   );
-  $formula_max = str_replace($tokens, $replacements, $formula_max);
-  $formula_min = str_replace($tokens, $replacements, $formula_min);
+  $max_formula = strtr($currency->limits['limits_equations']['max'], $replacements);
+  $min_formula = strtr($currency->limits['limits_equations']['min'], $replacements);
   return array(
-    'max' => eval('return '. $formula_max .';'),
-    'min' => eval('return '. $formula_min .';'),
+    'max' => eval('return $max_formula;'),
+    'min' => eval('return $min_formula;'),
   );
 }
 

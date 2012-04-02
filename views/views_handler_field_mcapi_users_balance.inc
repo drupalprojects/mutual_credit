@@ -42,10 +42,9 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
     $key = $this->options['total'];
     $elements = array('#theme' => 'worth_fields');
     foreach ($currcodes as $currcode) {
-      $totals = transaction_totals($values->uid, $currcode);
       $elements[$currcode] = array(
         '#theme' => 'worth_field',
-        '#quantity' => $totals[$key],
+        '#quantity' => transaction_totals($values->uid, $currcode)->$key,
         '#currcode' => $currcode
       );
     }

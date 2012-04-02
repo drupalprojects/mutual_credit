@@ -390,7 +390,7 @@ function new_transaction() {
  * object transaction_save($transaction)
  * NULL transaction_erase($transaction)
  * NULL transaction_state($transaction, $newstate);
- * NULL transaction_totals($transaction)
+ * array transaction_totals($transaction)
  */
 
 /**
@@ -427,7 +427,8 @@ function transaction_totals($uid, $currcode = NULL, $options = array()) {
   $options += array(
     'states' => array(TRANSACTION_STATE_FINISHED),
   );
-  return entity_get_controller('transaction')->sums($uid, $currcode, $options);
+  //convert it to an object for cleaner syntax in php5
+  return (object)entity_get_controller('transaction')->sums($uid, $currcode, $options);
 }
 
 /*

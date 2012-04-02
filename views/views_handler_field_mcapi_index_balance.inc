@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Field handler to retrive the running balance by adding the previous transactions
+ * Field handler to retrieve the running balance by adding the previous transactions
  * NB this doesn't apply to the worth_field and mcapi_transactions table, only to the transaction_index table
  * @ingroup views_field_handlers
  */

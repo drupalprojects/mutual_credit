@@ -102,8 +102,7 @@ function mcapi_limit_check($payer_uid, $payee_uid, $flows, $adjust_flows = 0) {
     //check that the payee isn't going over their max limit
     $limits = limits_get($currcode, $payee_uid);
     if (is_numeric($limits['max'])) {
-      $totals = transaction_totals($payee_uid, $currcode);
-      $payee_projected = $totals['balance'] + $difference;
+      $payee_projected = transaction_totals($payee_uid, $currcode)->balance + $difference;
       $surplus = $payee_projected - $limits['max'];
       if ($surplus > 0) {
         throw new Exception($surplus .'>'.$limits['max']. '>' .$currcode);
@@ -112,8 +111,7 @@ function mcapi_limit_check($payer_uid, $payee_uid, $flows, $adjust_flows = 0) {
     //check that the payer isn't going below their min limit
     $limits = limits_get($currcode, $payer_uid);
     if (is_numeric($limits['min'])) {
-      $totals = transaction_totals($payer_uid, $currcode);
-      $payer_projected = $totals['balance'] - $difference;
+      $payer_projected = transaction_totals($payer_uid, $currcode) - $difference;
       $deficit = $limits['min'] - $payer_projected;
       if ($deficit > 0) {
         throw new Exception($deficit .'<'.$limits['min']. '<' .$currcode);
