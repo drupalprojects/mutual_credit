@@ -183,8 +183,16 @@ function mcapi_perm() {
  */
 function mcapi_load($node) {
   //retrieve the extra fields from the node-specific tables, and return them to be added to the node
-  $table = $node->type == 'exchange' ? 'mc_exchanges' : 'mc_currencies';
-  $fields = db_fetch_array(db_query("SELECT * FROM {$table} WHERE nid = $node->nid"));
+  if ($node->type == 'exchange') {
+    $fields = db_fetch_array(db_query('SELECT * FROM {mc_exchanges} WHERE nid = %d',
+      array(':nid' => $node->nid)
+    ));
+  }
+  else {
+    $fields = db_fetch_array(db_query('SELECT * FROM {mc_currencies} WHERE nid = %d',
+      array(':nid' => $node->nid)
+    ));
+  }
   //while drupal_write record and schema API will serialize an array into a serialized field
   //it can't unserialize them on the way out of the db since there is no function drupal_read_record
   $fields['data'] = unserialize($fields['data']);
@@ -628,7 +636,7 @@ function mc_validate_quantity(&$element, &$form_state) {
     form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element['#title'])));
   }
   if (isset($form_state['values']['cid']) && $currency = node_load($form_state['values']['cid'])) {
-    if (exchange_check_zero($quant, $currency)) {
+    if (exchange_validate_zero($quant, $currency)) {
       form_error($element, t('Zero values not allowed'));
     }
     $division = ($value - intval($value))*100;
