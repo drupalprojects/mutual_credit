@@ -1,6 +1,5 @@
 <?php
 //$Id
-//define ('GOOGLE_CHARTS_URI', 'http://chart.apis.google.com/chart?');
 
 /*
  * Module keeps a cache of transactions which is optimised for views to interrogate

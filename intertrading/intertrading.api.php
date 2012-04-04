@@ -9,6 +9,8 @@
  * Therefore in addition to ensuring proper accounting, we must be much more careful about who is issuing (spending it into circulation).
  * Mutual credit networks, just like mutual credit, depend for stability on all credit issued by members being redeemable in principle
  * So in addition to sound accounting and payment protocols, members must submit to governance.
+ * This may be of interest
+ * http://timebanks.org/wp-content/uploads/2011/08/Key-Indicators-of-TimeBank-Participation.pdf
  *
  * This is an open API, which means we must protect against clients spoofing all their reported data.
  * So as with p2p mutual credit, we will keep a central registry of transactions between servers.
@@ -100,6 +102,7 @@ array (
   //relative value of the currency against 1 tick. One tick might be 1 minute, and an hour currency would be 60 ticks
   'ticks' => FLOAT,
   //OPTIONAL FIELDS
+  'fractions' => mixed, //01 means cents OR list of acceptable centilesseparated by pipe|
   //The name of the site
   'name' => STRING, 63,
   //Toggle whether all this data should be visible to the public
@@ -161,7 +164,7 @@ array(
 
 /*
  * Try transaction : Server Request
- * http://myserver.com/transaction/try  >>replayed to>> http://client2.com/transaction/remote/receive
+ * http://myserver.com/transaction/try  >>replayed to>> http://client2.com/intertrade
  * POST the following fields
  */
 array(
@@ -188,6 +191,7 @@ array(
  * this is an ad hoc extenstion of the http status codes
  * http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
  * $args is an array, keyed by the preceding @words
+ * The actual strings below are not definitive
  */
 /*
      1: "Transaction would exceed your system's max limits on server by @quantity", $args
@@ -204,10 +208,17 @@ array(
      13: 'Field @fieldname contains invalid characters', $args
      14: 'Your Intertrading ratio (balance/volume) exceeds @num%: @balance / @volume', $args
      15: 'Type error in field @fieldname. Should be a @type.', $args
+     16: 'Your exchange is not permitted on the intertrading network.
+     17: 'Wrong key'
+     18: 'not enough data to authenticate'
     //failure of remote client
      20: "server failed to authenticate with remote client"
      21: "Transaction would exceed remote client's max intertrading limits"
      22: "Transaction would exceed remote client's min intertrading limits"
      23: "Transaction would exceed remote client's min account limits"
      24: "Transaction would exceed remote client's max account limits"
+     25: "Misc validation error on remote client: @message", $args);
+     26: "Server not found: @server", $args);
+     27: "@message", $args
+    default: return t('Unknown error code: @code', array('@code' => $code));
   */

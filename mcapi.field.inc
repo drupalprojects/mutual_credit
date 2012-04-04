@@ -125,57 +125,54 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
 function mcapi_field_widget_process($element, $form_state, $form) {
   //usually this would have been done in the form build, but ajax needs a chance to change it, and ajax has pulled the $form out of cache
   //ajax
-  if (!empty($form_state['input']['worth']['und'][$element['#delta']])) {//'input' works for ajax AND multistep
-    //'input' is from the raw widgets
+  if (empty($form_state['input']['worth']['und'][$element['#delta']])) {
+    $default = array(
+      'quantity' => 0,
+      'division' => 0,
+      'currcode' => $element['currcode']['#default_value'] ? $element['currcode']['#default_value'] : key(currencies_load())
+    );
+  }
+  else {//'input' is the raw input from widgets; works for ajax AND multistep forms
     $default = $form_state['input']['worth']['und'][$element['#delta']];
   }
-  //submitted entity
-  elseif(!empty($element['#field_name']) && !empty($form_state['values'][$element['#field_name']])) {
-    //$default = $form_state['values'][$element['#field_name']]['und'][$element['#delta']];
-  }
-  //entity for building or rebuilding form
-  elseif(!empty($element['#field_name']) && !empty($form_state['build_info']['args'][0]->{$element['#field_name']})) {
-    // if this is a entity form, assume arg 0 is the transaction and we know what the defaults are.
-    //$default = $form_state['build_info']['args'][0]->{$element['#field_name']}['und'][$element['#delta']];
-  }
-
+  $currency = currency_load($default['currcode']);//this should always be available
+  //
   //in some cases because of the different ways the worth value comes in - from the widget or from the db
   //the worth value is in a different format. We need the division field here if the currency requires it
   if (!empty($default['division'])) {
-    $default['division'] = str_pad(fmod($default['quantity'], 1) * 100, 2, '0', STR_PAD_LEFT);
+    $default['quantity'] += $default['division'] / 100;
   }
-  //now set the defaults if necessary
-  if (!empty($default['quantity'])) {
+
+  //now $default['quantity'] is a float, whichever format it arrived in.
+  //if we are using divisions, then alter the quantity widget to be an integer and put the divisions in a new widget
+  if (empty($currency->divisions)) {
     $element['quantity']['#default_value'] = $default['quantity'];
   }
-  
-  $currcode = empty($default['currcode']) ? $element['currcode']['#default_value'] : $default['currcode'];
-  $currency = currency_load($currcode);//this should always be available
-  if (!empty($currency->divisions)) {
-    $element['division'] = array(
-      '#title' => t('Fraction'),
-      '#theme_wrappers' => array(),
-    );
+  else {
+    $element['quantity']['#default_value'] = intval($default['quantity']);
+    $div = 100*(round($default['quantity'] - intval($default['quantity']), 2));
     if ($currency->divisions_setting == '01') {
-      $element['division'] +=  array(
+      $element['division'] =  array(
+        '#title' => t('Fraction'),
         '#type' => 'textfield',
         '#size' => 2,
         '#maxlength' => 2,
         '#field_prefix' => '.',
+        '#default_value' => $div,
+        '#theme_wrappers' => array(),
       );
     }
     else{
-      $element['division'] += array(
+      $element['division'] = array(
+        '#title' => t('Fraction'),
         '#options' => $currency->divisions,
         '#type' => 'select',
         '#field_prefix' => ':',
+        '#default_value' => $div,
+        '#theme_wrappers' => array(),
       );
     }
 
-    //sort out the form widget for divisions, firstly by making the quantity field an integer
-    $val = $element['quantity']['#default_value'];
-    $element['quantity']['#default_value'] = intval($val);
-    $element['division']['#default_value'] = 100*(round($val - intval($val), 2));
   }
   return $element;
 }
@@ -198,6 +195,7 @@ function mcapi_ajax_worth($form, $form_state) {
  */
 function worth_widget_validate(&$element, &$form_state) {
   $currcode = &$element['currcode']['#value'];
+  $currency = currency_load($currcode);
   $division = NULL;
   foreach (array('quantity', 'division') as $subfield) {
     if (isset($element[$subfield]['#value'])) {
@@ -213,12 +211,11 @@ function worth_widget_validate(&$element, &$form_state) {
     }
   }
   $value = $element['quantity']['#value'];
-  $currency = currency_load($currcode);
+  if ($division) $value += $division/100;
   if ($value == 0 && !$currency->zero) {
     form_error($element, t('Zero transactions not allowed in @currency', array('@name' => $currency->name)));
   }
 
-  if ($division) $value += $division/100;
   //this affects form_state only, which later is used to set $element['#value']
   form_set_value(
     $element,

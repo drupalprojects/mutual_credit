@@ -6,14 +6,16 @@
 function limits_get($currcode, $uid){
   module_load_include('inc', 'mcapi_limits');
   $currency = currency_load($currcode);
-  if (isset($currency->limits['limits_callback']) && function_exists($currency->limits['limits_callback'])) {
-    $callback = $currency->limits['limits_callback'];
-    return $callback($currency, $uid);
+  if (isset($currency->limits['limits_callback'])) {
+    if (function_exists($currency->limits['limits_callback'])) {
+      $callback = $currency->limits['limits_callback'];
+      return $callback($currency, $uid);
+    }
+    drupal_set_message(t('@currency has an illegal callback set to determine transaction limits: @callback', array(
+      '@currency' => $currency->name,
+      '@callback' => $currency->limits['limits_callback']
+    )));
   }
-  drupal_set_message(t('Currency @curr_name has an illegal callback set to determine transaction limits: @callback', array(
-    '@curr_name' => $currency->name,
-    '@callback' => $currency->limits['limits_callback']
-  )));
 }
 function limits_get_adjusted($currcode, $uid, $balance) {
   $limits = limits_get($currcode, $uid);

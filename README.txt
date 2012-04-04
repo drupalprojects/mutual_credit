@@ -4,7 +4,7 @@ This document contains the following
 ** Advanced setup **
 ** Testing procedure **
 
-This is a work in progress and may not be entirely up-to-date!
+This document is a work in progress and may not be entirely up-to-date!
 For a high level account of the architecture and intention of this module,
 please see http://matslats.net/mutual-credit-architecture-3
 
@@ -14,9 +14,6 @@ Consequently it can be used as straight mutual credit, as the name implies, or f
 Nonetheless, be warned; many lessons have already been learned about currency design and the process of encouraging communities to adopt them.
 Fools rush in where angels fear to tread!
 A badly managed money system can cause people to lose out and create bad feeling and resistance to future innovation.
-
-
-Where defaults have been appropriate, the timebanking model has been preferred
 
 ***********************
 **  BASIC SETUP   **
@@ -30,6 +27,7 @@ Optionally enable the other modules in the Complementary Currencies Section.
 The present author has also written, based on the needs of many groups
 uid_login - for LETS groups who commonly use their User ID
 autocategorise - a way of bringing consistency to items provided by many users in a closed vocabulary
+offers_wants - a simple-to-setup directory of categorised offers (and wants)
 
 Visit admin/accounting/currency
 There is one currency in the system until the 'currency constellation' module is installed.
@@ -126,6 +124,5 @@ Intended for webshops and skilled Drupal developers
 SMS
 Voice activated transactions
 iphone app
-Intertrading
 Google charts
 

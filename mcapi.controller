@@ -5,7 +5,9 @@
  * the class should be named thus:
  * MODULENAME_EntityController
  */
-
+define('MCPI_CURRENCY_UPDATE_NONE', 0);
+define('MCPI_CURRENCY_UPDATE_HARD', 2);
+define('MCPI_CURRENCY_UPDATE_SOFT', 1);
 
 /*
  * The transaction entity has its own CRUD operations
@@ -295,10 +297,8 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       $currency = currency_load($flow['currcode']);
       $modes[] = $currency->accounting['update_mode'];
     }
-    switch(min($modes)) {
-      case 0:
-        throw new Exception(t('This currency does not allow transaction updates.'));
-      case 1:
+    switch(min($modes)) {//choose the most rigourous accounting standard
+      case MCPI_CURRENCY_UPDATE_HARD:
         $old = clone(transaction_load($transaction->xid));
         $transaction->extra['former_xid'] = $transaction->xid;
         //remove the xid and insert the transaction anew
@@ -308,7 +308,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         //then erase the old one
         $this->erase($old);
         break;
-      case 2:
+      case MCPI_CURRENCY_UPDATE_SOFT:
         try {
           mcapi_write_record($transaction, array('xid'));
         }
@@ -319,6 +319,10 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         }
         field_attach_update('transaction', $transaction);
         break;
+      //safe default
+      case MCPI_CURRENCY_UPDATE_NONE:
+      default:
+        throw new Exception(t('This currency does not allow transaction updates.'));
     }
   }
 }
@@ -387,9 +391,9 @@ function mcapi_currency_innerform_alter(&$form, &$form_state) {
       '#title' => t('Update mode'),
       '#type' => 'radios',
       '#options' => array(
-        0 => t("Can't update"),
-        1 => t("Delete and create a new transaction"),
-        2 => t("Update same record"),
+        MCPI_CURRENCY_UPDATE_NONE => t("Can't update"),
+        MCPI_CURRENCY_UPDATE_SOFT => t("Update same record"),
+        MCPI_CURRENCY_UPDATE_HARD => t("Erase and create a new transaction"),
         //3 => t("Use entity versioning the same transaction (not available)"),
       ),
       '#default_value' => $form['#currency']->accounting['update_mode'],

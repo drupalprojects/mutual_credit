@@ -40,6 +40,9 @@ function mcapi_drush_command() {
   $items['mcapi-wipeslate'] = array(
     'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Erase all transactions according to the currency settings'),
+    'options' => array(
+      '--purge' => 'Completely remove'
+    ),
   );
   $items['mcapi-purge'] = array(
     'callback' => 'drush_mcapi_purge',
@@ -62,6 +65,9 @@ function drush_mcapi_wipeslate() {
   }
   $count = count($xids);
   drush_print("erased $count transactions");
+  if (drush_get_option('purge')) {
+    drush_mcapi_purge();
+  }
 }
 
 

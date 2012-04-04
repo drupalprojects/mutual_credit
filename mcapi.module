@@ -352,7 +352,7 @@ function transaction_entity_builder($entity_type, $entity, $form, &$form_state) 
  * $form_state['transaction'] was created in the validation stage
  */
 function transaction_all_submit($form, &$form_state) {
-  $transaction = transaction_save($form_state['transaction'], TRUE);
+  $transaction = transaction_save($form_state['transaction']);
   if ($transaction) {
     field_attach_submit('transaction', $transaction, $form, $form_state);
   }
@@ -422,6 +422,11 @@ function transaction_erase($transaction) {//will accept int or object
 function transaction_state(stdClass $transaction) {
   return entity_get_controller('transaction')->state($transaction);
 }
+//returns an objectwith properties
+//->balance
+//->gross_in
+//->gross_out
+//->count
 function transaction_totals($uid, $currcode = NULL, $options = array()) {
   if (!$currcode) $currcode = key(currencies_load());
   $options += array(

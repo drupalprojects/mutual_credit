@@ -31,15 +31,15 @@ function mcapi_forms_menu() {
     $menu = $mcapi_form->data['architecture'];
     
     $items[$menu['path']] = array(
-      'title' => 'Record transaction',
-      'title callback' => 'mcapi_form_title',
+      'title' => mcapi_form_get_title($mcapi_form),
+      'title callback' => 'mcapi_form_get_title',
       'title arguments' => array($mcapi_form),
       'page callback' => 'drupal_get_form',
       'page arguments' => array(//2nd and subsequent are are the $form_state['build_info']
         0 => 'mcapi_forms_form',
         //in case the form needs to load a transaction, extract it from the path
-        1 => array_search('%transaction', explode('/', $menu['path'])),
-        2 => $mcapi_form
+        //1 => array_search('%transaction', explode('/', $menu['path'])),
+        //2 => $mcapi_form
       ),
       'access callback' => strtok($menu['access'], ':'),
       'access arguments' => array(strtok(':')),
@@ -48,6 +48,7 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
+
   return $items;
 }
 
@@ -275,5 +276,6 @@ function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
 
 
 function mcapi_form_get_title($mcapi_form) {
-  return mcapi_form_template($mcapi_form, 1)->title;
+  $template = mcapi_form_template($mcapi_form, 1);
+  return $template->title;
 }
