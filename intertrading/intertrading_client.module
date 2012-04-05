@@ -24,6 +24,7 @@ function intertrading_client_menu() {
     'page arguments' => array('remote_incoming_form'),
     'access arguments' => array('intertrade'),
     'menu_name' => 'main-menu',
+    'type' => MENU_LOCAL_TASK,
     'file' => 'mcapi.inc',
     'file path' => drupal_get_path('module', 'mcapi'),
     'weight' => 1
@@ -250,7 +251,7 @@ function intertrading_handshake() {
   if ($result->code == 'OK') {
     //if the result is good then save the key
     variable_set('intertrading_key', $data['new_key']);
-    $result->message = t('You have access to the intertrading network');
+    $result->message = t('You have an account on the intertrading server.');
   }
   drupal_set_message($result->message, $result->code == 'OK' ? 'status' : 'warning');
 }
@@ -267,7 +268,9 @@ function _intertrading_handshake() {
     $stats['divisions'] = $currency->divisions == '01' ? '01' : implode('|', array_keys($currency->divisions));
   }
   $stats['name'] = variable_get('site_name', '');
-  $stats['visibility'] = user_access('access statement', user_load(0));
+  $stats['visibility'] = db_query('SELECT rid FROM {role_permission} WHERE rid = :rid AND permission = :perm',
+    array(':rid' => DRUPAL_ANONYMOUS_RID, ':perm' => 'access statement')
+  );
   $stats['logo'] = theme_get_setting('logo_path');
   $stats['lat'] = variable_get('site_lat', 0);
   $stats['lon'] = variable_get('site_lon', 0);
@@ -442,12 +445,13 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
   $form['type']['#value'] = $incoming ? 'remote receipt' : 'remote payment';
   $form['type']['#type'] = 'hidden';
 
-  //unset($remote_params['sites'][$_SERVER['SERVER_NAME']]);
+  $sites = &$form_state['server_params']->args['sites'];
+  unset($sites[$_SERVER['SERVER_NAME']]);
   $form['dest_url'] = array(
     '#title' => t('Remote exchange'),
     '#description' => l(t('Not listed?'), 'intertrading/help'),
     '#type' => 'select',
-    '#options' => $form_state['server_params']->args['sites'],
+    '#options' => $sites,
     '#weight' => -10,
   );
   $form['dest_acc'] = array(
@@ -544,11 +548,10 @@ function intertrading_transaction_form_submit($form, $form_state) {
 function intertrading_check_key() {
   $post = intertrading_get_post();
   if (empty($post) || $_GET['q'] != 'intertrade' || $GLOBALS['user']->uid) {
-    intertrading_error($post, $_GET['q'], $GLOBALS['user']->uid);
     return FALSE;
   }
   if ($post['key'] != variable_get('intertrading_key', '')) {
-    intertrading_error('server passed wrong key to client2', $post,  variable_get('intertrading_key', ''));
+    watchdog('intertrading', 'server passed wrong key to this client', array(), WATCHDOG_ERROR);
     intertrading_respond(20, array('@server' => $_SERVER['SERVER_NAME'], '@message' => 'wrong key'));
   }
   $GLOBALS['user'] = user_load(variable_get('intertrading_uid', 0));
@@ -593,7 +596,11 @@ function intertrading_client2_receive() {
       $code = 25;
       $args = array('@message' => $message . print_r($transaction, 1));
     }
-    intertrading_error('client2 object failed to validate the transaction', $code, $transaction);
+
+    watchdog('intertrading', '@message: @transaction', array(
+      '@message' => intertrading_error_codes($code, $args),
+      '@transaction' => print_r($transaction, 1)
+    ), WATCHDOG_ERROR);
     //we should really convert the excess here
     intertrading_respond($code, $args);
   }

@@ -8,7 +8,6 @@ module_load_include('inc', 'mcapi_forms');
  * Its not geometrically perfect, but covers a lot of use cases without getting too complicated
  */
 function _edit_mcapi_form(&$form, &$form_state) {
-  debug($form_state['build_info']['args']);
   $mcapi_form = &$form_state['item']->data;
   $form_id = $form_state['item']->name;
 

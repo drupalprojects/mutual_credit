@@ -16,8 +16,9 @@ function intertrading_json_request($url, $params) {
     )
   );
   $return = new stdClass;
-  $data = drupal_json_decode($result->data);
+  $data = json_decode($result->data);
   if (count($data) && is_array($data)) {
+    array_walk_recursive($data, 'urldecode_m');
     $return->code = array_shift($data);
     $return->args = $data;
     if ($result->code == 200) {//valid intertrading result
@@ -27,19 +28,18 @@ function intertrading_json_request($url, $params) {
       }
       else {
         $return->message = intertrading_error_codes($return->code, $return->args);
-        watchdog('intertrading', '@message', array('@message' => $return->message));
+        watchdog('intertrading', '@message', array('@message' => $return->message), WATCHDOG_NOTICE);
       }
     }
     else {//this could mean a 500 error or something
-      intertrading_error('Unexpected result from '.$url, $result);
-      $return->message = t('Server reports:'). $result->data;
+      watchdog('intertrading', 'Unexpected result from @url: @result', array('@url' => $url, '@result' => print_r($result, 1)), WATCHDOG_NOTICE);
+      $return->message = t('Server reports: '). $result->data;
     }
   }
   //http status codes failure
   else {
     $args = array('@message' => drupal_json_decode($result->data));
-
-    watchdog('intertrading', "Server failed to authenticate with @server; http status @status", $args);
+    watchdog('intertrading', "Server failed to authenticate with @server; http status @status", $args, WATCHDOG_ERROR);
     $return  = array(
       'code' => 27,
       'message' => intertrading_error_codes(27, $args),
@@ -53,7 +53,10 @@ function intertrading_json_request($url, $params) {
 
 function intertrading_get_post() {
   if (count($_POST)) return $_POST;
-  if (isset($GLOBALS['HTTP_RAW_POST_DATA'])) return drupal_get_query_array($GLOBALS['HTTP_RAW_POST_DATA']);
+  if (isset($GLOBALS['HTTP_RAW_POST_DATA'])) {
+    $string = str_replace('&amp;', '&', $GLOBALS['HTTP_RAW_POST_DATA']);
+    return drupal_get_query_array($string);
+  }
   return array();
 }
 
@@ -128,7 +131,7 @@ function intertrading_error() {
   foreach (func_get_args() as $arg) {
     $strings[] = print_r($arg, 1);
   }
-  file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
+  //file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
 }
 
 
@@ -164,4 +167,8 @@ function intertrading_error_codes($code, $args = array()) {
     case 27: return $args['@message'];
     default: return t('Unknown error code @code: @args', array('@code' => $code, '@args' => print_r($args, 1)));
   }
+}
+
+function urldecode_m(&$var, $key) {
+  $var = urldecode($var);
 }
