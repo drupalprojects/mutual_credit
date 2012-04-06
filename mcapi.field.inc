@@ -88,11 +88,16 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
     '#maxlength' => 6,
     '#theme_wrappers' => array(),
   );
-  $currencies = empty($element['#currcode']) ?
-    currencies_load($GLOBALS['user']) : //needs to be for this current user
-    array($element['#currcode'] => currency_load($element['#currcode']));
+  //get the range of currencies known to this form
+  if ($item['#currcode']) {
+    $currencies = array($item['#currcode'] => currency_load($item['#currcode']));
+    $currcode = $item['#currcode'];
+  }
+  else {
+    $currencies = currencies_load();
+    $currcode = !empty($element['#currcode']) ? $element['#currcode'] : key($currencies);
+  }
 
-  $currcode = !empty($element['#currcode']) ? $element['#currcode'] : key($currencies);
   switch (count($currencies)) {
     case 0: throw new Exception (t('No currencies available to user.'));
     case 1:

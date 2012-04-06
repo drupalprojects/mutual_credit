@@ -213,19 +213,17 @@ function mcapi_limits_validate_minmax(&$element, $form_state) {
  * callback to return themed balance limits
  */
 function show_balance_limits($account, $currcode) {
-  $limits = extract(limits_get($currcode, $account->uid));
-  extract(transaction_totals($account->uid, $currcode));
-
+  $limits = limits_get($currcode, $account->uid);
   //this chart makes no sense if there isn't a max (or min) limit
-  if (!is_numeric($max) || !is_numeric($min)) {
+  if (empty($limits['max']) && empty($limits['min'])) {
     return array();
   }
   return array(
     '#theme' => 'balance_limits',
     '#currency' => currency_load($currcode),
-    '#min' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $min)),
-    '#max' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $max)),
-    '#balance' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $balance))
+    '#min' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['min'])),
+    '#max' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['max'])),
+    '#balance' => theme('worth_field', array('currcode' => $currcode, 'quantity' => transaction_totals($account->uid, $currcode)->balance))
   );
 }
 function show_trading_limits($account, $currcode) {

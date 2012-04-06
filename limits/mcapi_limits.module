@@ -17,12 +17,16 @@ function limits_get($currcode, $uid){
     )));
   }
 }
-function limits_get_adjusted($currcode, $uid, $balance) {
-  $limits = limits_get($currcode, $uid);
-  return array(
-    'spend_limit' => $limits['max'] - $balance,
-    'earn_limit' => abs($limits['min'] - $balance)
-  );
+function limits_get_adjusted($currcode, $uid, $balance = NULL) {
+  $adjusted = array();
+  if ($limits = limits_get($currcode, $uid)) {
+    if ($balance === NULL) {
+      $balance = transaction_totals($uid, $currcode)->balance;
+    }
+    $adjusted['spend_limit'] = $limits['max'] - $balance;
+    $adjusted['earn_limit'] = $limits['min'] + $balance;
+  }
+  return $adjusted;
 }
 /*
  * implements hook_form_FORM_ID_alter
@@ -278,6 +282,7 @@ function mcapi_limits_block_view($delta) {
   if (empty($settings['currcodes'])) {
     $settings['currcodes'] = array_keys(currencies_load());
   }
+  $output = array();
   $function = 'show_'.$delta;
   foreach ($settings['currcodes'] as $currcode) {
     $output[] = $function($account, $currcode);
@@ -329,7 +334,7 @@ function mcapi_limits_block_settings($delta) {
  * only block settings really
  */
 function mcapi_limits_variable_info() {
-  foreach (mcapi_limits_block_info() as $varname -> $info) {
+  foreach (mcapi_limits_block_info() as $varname => $info) {
     $vars[$varname] = array(
       'type' => 'array',
       'title' => $info['info'],

@@ -421,20 +421,6 @@ function mcapi_direction_validate(&$element, &$form_state) {
 }
 
 
-/*
- * the first step is always rendered as a form, and the second step as text
- * Some forms will have one step or the other, some will have both
- */
-function mcapi_form_template($mcapi_form, $step = 0) {
-  foreach (array(MCAPIFORM_STEP_ENTER, MCAPIFORM_STEP_CONFIRM) as $key) {
-    if (!empty($mcapi_form->data['step-'.$key]['title'])) {
-      $steps[$key] = (object)$mcapi_form->data['step-'.$key];
-    }
-  }
-  if (isset($steps[$step])) return $steps[$step];
-  return array_shift($steps);
-}
-
 //The following recursive functions aren't very elegant, but I can't 'find a more drupalish way of doing them
 /*
  * nesting function to set values wherever in the element

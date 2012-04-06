@@ -15,10 +15,12 @@
  */
 function mcapi_drush_help($section) {
   switch ($section) {
-    case 'drush:mcapi-wipeslate':
+    case 'mcapi:mcapi-wipeslate':
       return dt('Erase all transactions according to the currency settings');
     case 'drush:mcapi-purge':
       return dt('Completely remove all references to transactions in state TRANSACTION_STATE_ERASED');
+    case 'drush:mcapi-nodedel':
+      return dt('remove the exchange nodes following the d6 upgrade');
   }
 }
 
@@ -40,6 +42,8 @@ function mcapi_drush_command() {
   $items['mcapi-wipeslate'] = array(
     'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Erase all transactions according to the currency settings'),
+    'drupal dependencies' => array('mcapi'),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
     'options' => array(
       '--purge' => 'Completely remove'
     ),
@@ -47,6 +51,14 @@ function mcapi_drush_command() {
   $items['mcapi-purge'] = array(
     'callback' => 'drush_mcapi_purge',
     'description' => dt('Completely remove all references to transactions in state TRANSACTION_STATE_ERASED'),
+    'drupal dependencies' => array('mcapi'),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+  );
+  $items['mcapi-nodedel'] = array(
+    'callback' => 'drush_mcapi_delnodes',
+    'description' => dt('remove the exchange nodes following the d6 upgrade'),
+    'drupal dependencies' => array('mcapi'),
+    'bootstrap' => DRUPAL_BOOTSTRAP_DATABASE,
   );
   return $items;
 }
@@ -98,3 +110,12 @@ function transaction_delete_multiple($xids) {
   db_delete('mcapi_transactions')->condition('xid', $xids)->execute();
 }
 
+function drush_mcapi_delnodes() {
+  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'exchange'")->fetchCol();
+  $nids = implode(', ', $nodes);
+  db_query("DELETE FROM {node} WHERE nid in ($nids)");
+  db_query("DELETE FROM {node_revision} WHERE nid in ($nids)");
+  db_query("DELETE FROM {node_access} WHERE nid in ($nids)");
+  db_query("DELETE FROM {node_comment_statistics} WHERE nid in ($nids)");
+  drush_print('Deleted all traces of exchange nodes from Drupal 6.');
+}

@@ -84,8 +84,8 @@ function mcapi_forms($form_id, $args) {
 function transaction_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
   //the incoming transaction is either from $form_state, or from the build arguments or an empty object
-  $transaction = @$form_state['transaction'] ? $form_state['transaction'] : (
-    @$form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] : new_transaction());
+  $transaction = isset($form_state['transaction']) ? $form_state['transaction'] : (
+    isset($form_state['build_info']['args'][0]) ? $form_state['build_info']['args'][0] : new_transaction());
   return _transaction_form($form, $form_state, $transaction);
 }
 
@@ -194,6 +194,10 @@ function transaction_access($op, $transaction, $account = NULL) {
   module_load_include('inc', 'mcapi');
   if (empty($account)) {
     $account = $GLOBALS['user'];
+  }
+  if (!isset($transaction->worth)) {
+    drupal_set_message(t('Invalid transaction; access denied', array('@var' => $transaction)), 'error');
+    return FALSE;
   }
   reset($transaction->worth);
   //current() gives us the first language, and we're assuming there's only one.

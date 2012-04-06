@@ -456,6 +456,9 @@ function mcapi_update_7002() {
     field_attach_insert('transaction', $transaction);
   }
 
+  db_query("UPDATE {field_config_instance} SET entity = 'transaction', bundle = 'transaction' where bundle = 'exchange'");
+  //we also need to update any taxonomy terms
+
   drupal_set_message('Transactions have been imported via the default controller.
     If transactions were categorised, the categories have not been upgraded
     Any other cck fields which had been added to the transaction node-type have not been upgraded, (unless via core).'
