@@ -271,7 +271,7 @@ function mcapi_transaction_validate($transaction){
   //no usecase is currently envisaged where someone might pay themselves in oine currency in one transaction
   if ($transaction->payer > 0) {
     if ($transaction->payer == $transaction->payee) {
-      form_set_error('', t('A transaction must involve two different users'));
+      throw new Exception(t('A transaction must involve two different users'));
     }
   }
   //a transaction can only be complete if all these fields are filled in.
@@ -279,12 +279,12 @@ function mcapi_transaction_validate($transaction){
     $required = array('payer', 'payee',  'type');
     foreach ($required as $fieldname) {
       if (!$transaction->$fieldname) {
-        form_set_error($fieldname, t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
+        throw new Exception(t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
       }
     }
   }
   if (count(form_get_errors())) return;
-
+  //now validate the transaction object in the database
   if ($transaction->payer && $transaction->payee) {
     //this concerns rules and database integrity, so we hand it off to the db controller
     //it checks the balances, and trial-entering the transaction in the db
