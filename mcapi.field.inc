@@ -88,7 +88,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
     '#maxlength' => 6,
     '#theme_wrappers' => array(),
   );
-  //get the range of currencies known to this form
+  //get the range of currencies known to this form, and $currcode is the default
   if ($item['#currcode']) {
     $currencies = array($item['#currcode'] => currency_load($item['#currcode']));
     $currcode = $item['#currcode'];
@@ -97,24 +97,22 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
     $currencies = currencies_load();
     $currcode = !empty($element['#currcode']) ? $element['#currcode'] : key($currencies);
   }
-
-  switch (count($currencies)) {
-    case 0: throw new Exception (t('No currencies available to user.'));
-    case 1:
-      $element['currcode'] = array(
-        '#type' => 'hidden',
-        '#default_value' => $currcode,
-      );
-      $element['#theme'] = 'worth_widget_currcode';
-      break;
-    default:
-      $element['currcode'] = currency_picker_element($currcode, NULL, currency_picker_element_options($currencies));
-      $element['currcode']['#ajax'] = array(
-        'callback' => 'mcapi_ajax_worth',
-        'wrapper' => 'edit-worth-und-'.$delta
-      );
-      $element['#theme'] = 'worth_widgets';
+  if (count($currencies) == 1) {
+    $element['currcode'] = array(
+      '#type' => 'hidden',
+      '#default_value' => $currcode,
+    );
+    $element['#theme'] = 'worth_widget_currcode';
   }
+  else {//many currencies
+    $element['currcode'] = currency_picker_element($currcode, NULL, currency_picker_element_options($currencies));
+    $element['currcode']['#ajax'] = array(
+      'callback' => 'mcapi_ajax_worth',
+      'wrapper' => 'edit-worth-und-'.$delta
+    );
+    $element['#theme'] = 'worth_widgets';
+  }
+
   $element['#element_validate'] = array('worth_widget_validate');
   $element['#process'] = array('mcapi_field_widget_process');
   return $element;
