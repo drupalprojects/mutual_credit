@@ -9,7 +9,7 @@ function limits_get($currcode, $uid){
   if (isset($currency->limits['limits_callback'])) {
     if (function_exists($currency->limits['limits_callback'])) {
       $callback = $currency->limits['limits_callback'];
-      return $callback($currency, $uid);
+      return array_filter($callback($currency, $uid), 'is_numeric');
     }
     drupal_set_message(t('@currency has an illegal callback set to determine transaction limits: @callback', array(
       '@currency' => $currency->name,
@@ -23,11 +23,12 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
     if ($balance === NULL) {
       $balance = transaction_totals($uid, $currcode)->balance;
     }
-    $adjusted['spend_limit'] = $limits['max'] - $balance;
-    $adjusted['earn_limit'] = $limits['min'] + $balance;
+    if ($limits['min']) $adjusted['spend_limit'] = $limits['min'] + $balance;
+    if ($limits['max']) $adjusted['earn_limit'] = $limits['max'] - $balance;
   }
   return $adjusted;
 }
+
 /*
  * implements hook_form_FORM_ID_alter
  * if we know the direction of the transaction we can use the worth field #max property to set the limit
@@ -147,6 +148,7 @@ function mcapi_limits_currency_innerform_alter(&$form, &$form_state) {
       '#title' => t('Method'),
       '#description' => t('How will the limits be determined?'),
       '#type' => 'select',
+      //TODO this needs its own hook!
       '#options' => array(
         'limits_none' => t('No limits'),
         'limits_global' => t('Everyone has the same limits, stated below'),
@@ -244,12 +246,11 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
       )
     ),
     'trading_limits' => array(
-      'template' => 'balance_limits',
+      'template' => 'trading_limits',
       'variables' => array(
         'currency' => '',
-        'min' => 0,
-        'balance' => 0,
-        'max' => 0
+        'earn_limit' => 0,
+        'spend_limit' => 0
       )
     )
   );

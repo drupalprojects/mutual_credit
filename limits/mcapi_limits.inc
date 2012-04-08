@@ -49,10 +49,7 @@ function limits_settings_subform(&$form, $form_state) {
  * NO LIMITS
  */
 function limits_none($currency, $uid) {
-  return array(
-    'max' => NULL,
-    'min' => NULL,
-  );
+  return array();
 }
 function limits_none_form($currency, array $defaults) {
   return array();

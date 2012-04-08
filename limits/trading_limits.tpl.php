@@ -7,7 +7,7 @@
  */
 ?>
 
-<?php print t('Spending limit:') . ' '. $min; ?>
+<?php if ($spend_limit) print t('Spending limit:') . ' '. $spend_limit; ?>
 <br />
-<?php print t('Receiving limit:') . ' '. $max; ?>
-<br />
+<?php if ($earn_limit) print t('Receiving limit:') . ' '. $earn_limit; ?>
+

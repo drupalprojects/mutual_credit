@@ -9,7 +9,7 @@
 
 print t('Balance:') .' '. $balance; ?>
 <br />
-<?php print t('Min:') . ' '. $min; ?>
+<?php if ($min) print t('Min:') . ' '. $min; ?>
 <br />
-<?php print t('Max:') . ' '. $max; ?>
+<?php if ($max) print t('Max:') . ' '. $max; ?>
 <br />
