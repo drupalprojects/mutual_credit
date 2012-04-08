@@ -28,48 +28,43 @@ class mcapi_currencies_ui extends ctools_export_ui {
    */
   function list_build_row($item, &$form_state, $operations) {
     // Set up sorting
-    $name = $item->{$this->plugin['export']['key']};
+    $machine_name = $item->{$this->plugin['export']['key']};
 
     switch ($form_state['values']['order']) {
       case 'disabled':
-        $this->sorts[$name] = empty($item->disabled) . $name;
+        $this->sorts[$machine_name] = empty($item->disabled) . $machine_name;
         break;
       case 'title':
-        $this->sorts[$name] = $item->{$this->plugin['export']['admin_title']};
+        $this->sorts[$machine_name] = $item->{$this->plugin['export']['admin_title']};
         break;
       case 'name':
-        $this->sorts[$name] = $name;
+        $this->sorts[$machine_name] = $machine_name;
         break;
       case 'storage':
-        $this->sorts[$name] = $item->type . $name;
+        $this->sorts[$machine_name] = $item->type . $machine_name;
         break;
     }
 
-    $this->rows[$name]['data'] = array();
-    $this->rows[$name]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
-
-    // If we have an admin title, make it the first row.
-    if (!empty($this->plugin['export']['admin_title'])) {
-      $this->rows[$name]['data'][] = array('data' => check_plain($item->{$this->plugin['export']['admin_title']}), 'class' => array('ctools-export-ui-title'));
-    }
-    //first col, name
-    $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
+    $this->rows[$machine_name]['data'] = array();
+    $this->rows[$machine_name]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
+    //first col, Name
+    $this->rows[$machine_name]['data'][] = array('data' => check_plain($item->data->name), 'class' => array('ctools-export-ui-title'));
     //second col, format
-    $this->rows[$name]['data'][] = array('data' => array(
+    $this->rows[$machine_name]['data'][] = array('data' => array(
       '#theme' =>'worth_field',
       '#currcode' => $item->currcode,
       '#quantity' => 99.00
     ));
     //third col, usage
-    $this->rows[$name]['data'][] = array('data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField());
+    $this->rows[$machine_name]['data'][] = array('data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField());
     //fourth col, storage
-    $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
+    $this->rows[$machine_name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage'));
     //final col, links
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
-    $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
+    $this->rows[$machine_name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
     // Add an automatic mouseover of the description if one exists.
     if (!empty($this->plugin['export']['admin_description'])) {
-      $this->rows[$name]['title'] = $item->{$this->plugin['export']['admin_description']};
+      $this->rows[$machine_name]['title'] = $item->{$this->plugin['export']['admin_description']};
     }
   }
 
