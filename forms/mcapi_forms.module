@@ -29,17 +29,17 @@ function mcapi_forms_menu() {
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
     $menu = $mcapi_form->data['architecture'];
-    
+    $page_arg1 = strpos($menu['path'], '%transaction') ? array_search('%transaction', explode('/', $menu['path'])) : new_transaction();
     $items[$menu['path']] = array(
       'title' => '',
       'title callback' => 'mcapi_menu_return_title',
       'title arguments' => array(mcapi_form_get_title($mcapi_form)),
       'page callback' => 'drupal_get_form',
       'page arguments' => array(//2nd and subsequent are are the $form_state['build_info']
-        0 => 'mcapi_forms_form',
+        'mcapi_forms_form',
         //in case the form needs to load a transaction, extract it from the path
-        //1 => array_search('%transaction', explode('/', $menu['path'])),
-        //2 => $mcapi_form
+        $page_arg1,
+        $mcapi_form//we put the whole form in the menu item because ctools performance is very poor
       ),
       'access callback' => strtok($menu['access'], ':'),
       'access arguments' => array(strtok(':')),
