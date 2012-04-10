@@ -192,6 +192,10 @@ function mcapi_currency_validate_format(&$element, $form_state) {
   if (!strpos($element['#value'], '@integer')) {
     form_error($element, t("Currency format must contain token '@integer'"));
   }
+  //we also need to check that the format field contains the divisions token
+  if (!empty($form_state['values']['divisions_setting']) && !strpos($element['#value'], '@subdivision')) {
+    form_error($element, t("Currency format must contain token '@subdivision'"));
+  }
 }
 
 function mcapi_currency_validate_divisions(&$element, $form_state) {
@@ -214,6 +218,7 @@ function mcapi_currency_validate_divisions(&$element, $form_state) {
       );
     }
   }
+
 }
 
 /*
@@ -353,6 +358,24 @@ function currencies_recache() {
     $currency = currency_default();
     _currency_divisions_array($currency);
     $currencies[$currency->info['currcode']] = $currency;
+  }
+  //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
+  $states = mcapi_states();
+  $functions = array_keys(module_invoke_all('mcapi_info_permissions'));
+  foreach ($currencies as $currcode => $currency) {
+    foreach (array('update', 'erase', 'view') as $op) {
+      foreach ($states as $state => $name) {
+        $callbacks = &$currencies[$currcode]->$op;
+        debug($callbacks, $name);
+        if (!in_array($callbacks[$state], $functions)) {
+          drupal_set_message(t(
+            "Currency 2nd_cur has no permission set for op '@op' and state @state",
+            array('@op' => $op, '@state' => $name)
+          ), 'warning', FALSE);
+          $callbacks[$state] = 'mcapi_access_participants';
+        }
+      }
+    }
   }
   cache_set('currencies', $currencies);
   return $currencies;

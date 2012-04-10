@@ -24,7 +24,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
 
   function render($values) {
     if (empty($this->uid)) {
-      $arg = array_search('uid', array_keys($this->view->argument));
+      $arg = array_search('uid1', array_keys($this->view->argument));
       if ($arg === FALSE) {
         drupal_set_message('Views running balance requires uid argument', 'error'); return 'error';
       }

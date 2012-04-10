@@ -47,21 +47,16 @@ class mcapi_forms_ui extends ctools_export_ui {
     $this->rows[$name]['data'] = array();
     $this->rows[$name]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
 
-    // If we have an admin title, make it the first row.
-    if (!empty($this->plugin['export']['admin_title'])) {
-      $this->rows[$name]['data'][] = array('data' => check_plain($item->{$this->plugin['export']['admin_title']}), 'class' => array('ctools-export-ui-title'));
-    }
     //first col, name
     $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
-    //second col, help
-    $this->rows[$name]['data'][] = array('data' => check_plain($item->data['help']), 'class' => array('ctools-export-ui-name'));
-    //third col, path
+    
+    //second col, path
     $path = $item->data['architecture']['path'];
     if (!strpos($path, '%') && empty($item->disabled)) {
       $path = l($path, $path);
     }
     $this->rows[$name]['data'][] = array('data' => $path);
-    //fourth col, storage
+    //third col, storage
     $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
     
     // Reorder the operations so that enable is the default action for a templatic views
@@ -90,7 +85,7 @@ class mcapi_forms_ui extends ctools_export_ui {
    */
   function list_table_header() {
     $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-name'));
-    $header[] = array('data' => t('Help'), 'class' => array('ctools-export-ui-name'));
+    //$header[] = array('data' => t('Help'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Path'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));

@@ -45,7 +45,7 @@ function mcapi_drush_command() {
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
     'options' => array(
-      '--purge' => 'Completely remove'
+      'purge' => 'Completely remove'
     ),
   );
   $items['mcapi-purge'] = array(
@@ -65,10 +65,6 @@ function mcapi_drush_command() {
 
 
 function drush_mcapi_wipeslate() {
-  if ($GLOBALS['user']->uid == 0) {
-    drush_print('User 0 cannot delete exchanges');
-    return;
-  }
   //how to do "are you sure?" messages in drush!
   $xids = db_query("SELECT xid FROM {mcapi_transactions}")->fetchCol();
   $transactions = transaction_load_multiple($xids);
@@ -84,10 +80,6 @@ function drush_mcapi_wipeslate() {
 
 
 function drush_mcapi_purge() {
-  if ($GLOBALS['user']->uid == 0) {
-    drush_print('User 0 cannot delete exchanges');
-    return;
-  }
   //how to do "are you sure?" messages in drush!
   $xids = db_query("SELECT xid FROM {mcapi_transactions} WHERE state = :state", array(':state' => TRANSACTION_STATE_ERASED))->fetchCol();
   transaction_delete_multiple($xids);
@@ -95,7 +87,7 @@ function drush_mcapi_purge() {
   drush_print("completely removed $count transactions");
   if ($xid = db_query("SELECT xid FROM {mcapi_transactions}")->fetchfield()) return;
   db_query("ALTER TABLE {mcapi_transactions} AUTO_INCREMENT = 1");
-  drush_print('reset transaction counter');
+  drush_print('reset auto-increment-transaction ID');
   
 }
 

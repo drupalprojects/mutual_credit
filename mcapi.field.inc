@@ -89,7 +89,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
     '#theme_wrappers' => array(),
   );
   //get the range of currencies known to this form, and $currcode is the default
-  if ($item['#currcode']) {
+  if (isset($item['#currcode'])) {
     $currencies = array($item['#currcode'] => currency_load($item['#currcode']));
     $currcode = $item['#currcode'];
   }
@@ -128,32 +128,29 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
 function mcapi_field_widget_process($element, $form_state, $form) {
   //usually this would have been done in the form build, but ajax needs a chance to change it, and ajax has pulled the $form out of cache
   //ajax
-  if (empty($form_state['input']['worth']['und'][$element['#delta']])) {
-    $default = array(
+  if (isset($form_state['input']['worth']['und'][$element['#delta']])) {
+    $default_worth = $form_state['input']['worth']['und'][$element['#delta']];
+  }
+  elseif (isset($form_state['transaction']->worth['und'][$element['#delta']])) {
+   $default_worth = $form_state['transaction']->worth['und'][$element['#delta']];
+  }
+  else {
+    $default_worth = array(
       'quantity' => 0,
       'division' => 0,
       'currcode' => $element['currcode']['#default_value'] ? $element['currcode']['#default_value'] : key(currencies_load())
     );
   }
-  else {//'input' is the raw input from widgets; works for ajax AND multistep forms
-    $default = $form_state['input']['worth']['und'][$element['#delta']];
-  }
-  $currency = currency_load($default['currcode']);//this should always be available
-  //
-  //in some cases because of the different ways the worth value comes in - from the widget or from the db
-  //the worth value is in a different format. We need the division field here if the currency requires it
-  if (!empty($default['division'])) {
-    $default['quantity'] += $default['division'] / 100;
-  }
-
-  //now $default['quantity'] is a float, whichever format it arrived in.
-  //if we are using divisions, then alter the quantity widget to be an integer and put the divisions in a new widget
+  $currency = currency_load($default_worth['currcode']);
+  //reduce quantity fields into one floatval
+  $quantity = $default_worth['quantity'] += @$default_worth['division'] / 100;
+  //now generate the form fields
   if (empty($currency->divisions)) {
-    $element['quantity']['#default_value'] = $default['quantity'];
+    $element['quantity']['#default_value'] = $quantity;
   }
   else {
-    $element['quantity']['#default_value'] = intval($default['quantity']);
-    $div = 100*(round($default['quantity'] - intval($default['quantity']), 2));
+    $element['quantity']['#default_value'] = intval($quantity);
+    $div = 100*(round($quantity - intval($quantity), 2));
     if ($currency->divisions_setting == '01') {
       $element['division'] =  array(
         '#title' => t('Fraction'),

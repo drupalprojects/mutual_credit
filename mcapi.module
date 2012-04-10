@@ -203,32 +203,17 @@ function transaction_access($op, $transaction, $account = NULL) {
   //current() gives us the first language, and we're assuming there's only one.
   foreach (current($transaction->worth) as $flow) {
     $currency = currency_load($flow['currcode']);
-    //access denied for transaction if ANY of the currencies denies it.
-    if (empty($currency->$op)) {
-      return FALSE;
-    }
-    $states = $currency->$op;
-    if (!isset($states[$transaction->state])) {
-      drupal_set_message(
-        t('Currency @name has no permission set for op @op & state @state',
-          array('@name' => $flow['currcode'], '@op' => $op, '@state' => $transaction->state)
-        ),
-        'warning',
-        FALSE
-      );
-      return FALSE;
-    }
-    $function = $states[$transaction->state];
-    if (function_exists($function)) {
-      if ($function($transaction, $account, $currency)) return TRUE;
-    }
+    $callbacks = &$currency->$op;
+    $function = $callbacks[$transaction->state];
+    if ($function($transaction, $account, $currency) == 0) return FALSE;
   }
-  return FALSE;
+  return TRUE;
 }
 /*
  * menu access callback for the transaction tab for admin editing
  * only shows if the user owns all currencies in the transaction
  * and if both currencies allow transaction updates
+ * this is rather heavy to process but hey
  */
 function transaction_adminedit($transaction) {
   if (!user_access('manage all transactions')) return FALSE;
@@ -237,8 +222,8 @@ function transaction_adminedit($transaction) {
   foreach ($flows as $flow) {
     $currency = currency_load($flow['currcode']);
     if (empty($currency->update))return;
-    $states = $currency->update;
-    $function = $states[$transaction->state];
+    $callbacks = &$currency->update;
+    $function = $callbacks[$transaction->state];
     if (function_exists($function)) {
       if ($function($transaction, $GLOBALS['user'], $currency)) return TRUE;
     }
@@ -359,6 +344,7 @@ function transaction_all_submit($form, &$form_state) {
   $transaction = transaction_save($form_state['transaction']);
   if ($transaction) {
     field_attach_submit('transaction', $transaction, $form, $form_state);
+    module_invoke_all('entity_insert', $transaction, 'transaction');
   }
   if (!isset($form_state['redirect'])) {
     $form_state['redirect'] = 'transaction/'.$transaction->xid;

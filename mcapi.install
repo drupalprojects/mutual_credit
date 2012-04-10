@@ -304,6 +304,7 @@ function mcapi_update_7000() {
       $row = array('currcode' => $cur->info['currcode'], 'data' => $cur);
       drupal_write_record('mcapi_currencies', $row);
       $currs[$nid] = $cur->info['currcode'];
+      //need to do something with the old currency nodes
     }
     drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($currencies))));
   }
