@@ -122,7 +122,7 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
   $handler->display->display_options['filters']['state']['field'] = 'state';
   $handler->display->display_options['filters']['state']['value'] = array(
-    1 => '1',
+    1 => TRANSACTION_STATE_PENDING,
   );
 
   /* Display: my pending */
@@ -170,7 +170,7 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
   $handler->display->display_options['filters']['state']['field'] = 'state';
   $handler->display->display_options['filters']['state']['value'] = array(
-    1 => '1',
+    1 => TRANSACTION_STATE_PENDING,
   );
   $handler->display->display_options['filters']['state']['group'] = 0;
   $handler->display->display_options['block_description'] = 'User pending';
