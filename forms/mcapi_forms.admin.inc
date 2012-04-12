@@ -9,7 +9,6 @@ module_load_include('inc', 'mcapi_forms');
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   $mcapi_form = &$form_state['item']->data;
-  $form_id = $form_state['item']->name;
 
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
@@ -58,7 +57,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($form_id),
+    '#collapsed' => empty($mcapi_form),
     '#weight' => 3,
     'path' => array(
       '#title' => t('Path'),
@@ -204,7 +203,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($form_id),
+    '#collapsed' => empty($mcapi_form),
     'state' => array(
       '#title' => t('Save to state'),
       '#description' => t('Transaction will be submitted in this state'),

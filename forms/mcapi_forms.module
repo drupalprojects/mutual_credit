@@ -4,6 +4,8 @@
  * Permitted users can design their own transaction forms, hopefully all valid!
  */
 
+define('MCAPIFORM_STEP_ENTER', 1);
+define('MCAPIFORM_STEP_CONFIRM', 2);
 
 /*
  * implements hook_menu
@@ -81,6 +83,16 @@ function mcapi_forms_forms($form_id, $args) {
   return $forms;
 }
 
+function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
+  form_load_include($form_state, 'inc', 'mcapi_forms');
+  //set the page title if this form is not being displayed in a block
+  if (!_mcapi_form_in_block($form_state['build_info']['args'][1])) {
+    //I wonder if there is an easier way? Perhaps a block would have different build_info args
+    drupal_set_title(mcapi_form_get_title($mcapi_form));
+  }
+  _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
+}
+
 /*
  * Implements hook_block_info
  */
@@ -105,12 +117,10 @@ function mcapi_forms_block_view($delta) {
   //load the form and check access first
   $mcapi_form = mcapi_forms_load($delta);
   //it's generally a bad idea to show the form in block on its own page
-  if (current_path() == $mcapi_form->path) return;
-  $form = drupal_get_form($delta, $mcapi_form);
-  if (!$form) return;
+  if (current_path() == $mcapi_form->data['architecture']['path']) return;
   return array(//if these seem inverted its because drupal_get_form loads the inc file
-    'content' => drupal_get_form($delta, $mcapi_form),//delta is the $mcapi_form->machine_name
-    'subject' => mcapi_form_template($mcapi_form)->title,
+    'subject' => mcapi_form_get_title($mcapi_form),
+    'content' => drupal_get_form('mcapi_forms_form', new_transaction(), $mcapi_form),
   );
   module_load_include('inc', 'mcapi_forms');
 }

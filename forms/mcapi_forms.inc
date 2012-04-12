@@ -4,26 +4,18 @@
  * In this file we build the form, using the object cached in ctools
  */
 module_load_include('inc', 'mcapi');
-define('MCAPIFORM_STEP_ENTER', 1);
-define('MCAPIFORM_STEP_CONFIRM', 2);
 
 /*
  * main form builder, for this module, using the transaction_form as a base
  * build_info args are 0=> transaction, 1 => mcapi_form
  */
-function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state) {
-  form_load_include($form_state, 'inc', 'mcapi_forms');
-  $mcapi_form = &$form_state['build_info']['args'][1];
-  //set the page title if this form is not being displayed in a block
-  if (!_mcapi_form_in_block($mcapi_form)) {
-    //I wonder if there is an easier way? Perhaps a block would have different build_info args
-    drupal_set_title(mcapi_form_template($mcapi_form)->title);
-  }
+function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   $transaction = @$form_state['transaction'] ? $form_state['transaction'] : (
     @$form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] : new_transaction());
-  
   //we need to determine how to load up the transaction and which step the form is in.
   //step 1 of the form is a form, and step 2 is a confirmation page. These may be renamed later for clarity
+  $mcapi_form = &$form_state['build_info']['args'][1];
+  
   //Some forms may go straight to step 2
   if (empty($form_state['step'])) {
     $form_state['storage'] = array();
@@ -132,16 +124,17 @@ function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state) {
   else {
     $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
+  //some adjustements for the confirmation step
   if ($form_state['step'] > MCAPIFORM_STEP_CONFIRM && !empty($form_state['values'])) {
+    mcapi_hide_tabs();
     $form['buttons']['back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
     );
     //the default validate function, transaction_form_validate will rebuild the entity in form_state
-    //from the elements in the form, not considering that in step 2 of the web form
-    // the transaction elements are not present, but are in form_state storage not form_state values
+    //not considering that in step 2 of the web form  the transaction elements are not present,
+    //but are in form_state storage not form_state values
     $form['#validate'] = array();
-    mcapi_hide_tabs();
   }
   if ($transaction->xid) {
     mcapi_forms_redirect_replace($mcapi_form->data['architecture']['path'], $transaction->xid, $GLOBALS['user']->uid);
@@ -311,6 +304,7 @@ function mcapi_forms_validate_2ndperson($form, &$form_state) {
  * these replace and incorporate the ones on the default form 
  */
 function mcapi_forms_multiple_validate($form, &$form_state) {
+  module_load_include('inc', 'mcapi');
   $payers = (array)$form_state['values']['payer'];
   $payees = (array)$form_state['values']['payee'];
   foreach ($payees as $payee) {
