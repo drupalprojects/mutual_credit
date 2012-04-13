@@ -118,13 +118,14 @@ function mcapi_limit_check($payer_uid, $payee_uid, $flows, $adjust_flows = 0) {
     //check that the payer isn't going below their min limit
     $limits = limits_get($currcode, $payer_uid);
     if (isset($limits['min']) && is_numeric($limits['min'])) {
-      $payer_projected = transaction_totals($payer_uid, $currcode) - $difference;
+      $payer_projected = transaction_totals($payer_uid, $currcode)->balance - $difference;
       $deficit = $limits['min'] - $payer_projected;
       if ($deficit > 0) {
         throw new Exception($deficit .'<'.$limits['min']. '<' .$currcode);
       }
     }
   }
+  debug('limits checked ok');
 }
 
 /*
@@ -173,7 +174,7 @@ function mcapi_limits_currency_innerform_alter(&$form, &$form_state) {
 //put the fields on the user form
 function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
   if (!user_access('manage all transactions')) return;
-  module_load_include('inc', 'mcapi_limits');
+  form_load_include($form_state, 'inc', 'mcapi_limits');
   //get all the currencies with personal limits, so as to display config fields on the user profile form
   $currencies = currencies_load($form['#user']);
   foreach ($currencies as $currcode => $currency) {

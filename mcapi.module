@@ -324,15 +324,6 @@ function mcapi_get_tokens() {
   return implode(', ', $tokens);
 }
 
-/*
- * Callback to help build transaction entity from $form_state
- */
-function transaction_entity_builder($entity_type, $entity, $form, &$form_state) {
-  $entity->state = isset($form_state['values']['state']) ?  $form_state['values']['state'] : TRANSACTION_STATE_FINISHED; //shouldn't really be omitted
-  $entity->creator = isset($form_state['values']['creator']) ?  $form_state['values']['creator'] : $GLOBALS['user']->uid;
-  $entity->created = REQUEST_TIME;
-}
-
 
 /*
  * form submit callback from the base transaction form, hence used by all forms
@@ -342,6 +333,8 @@ function transaction_entity_builder($entity_type, $entity, $form, &$form_state) 
  */
 function transaction_all_submit($form, &$form_state) {
   $transaction = transaction_save($form_state['transaction']);
+  $entity->modified = REQUEST_TIME;
+  $entity->state = $form_state['values']['state'];
   if ($transaction) {
     field_attach_submit('transaction', $transaction, $form, $form_state);
     module_invoke_all('entity_insert', $transaction, 'transaction');
@@ -360,6 +353,7 @@ function new_transaction() {
     'payer' => NULL,
     'payee' => NULL,
     'creator' => $GLOBALS['user']->uid,
+    'created' => REQUEST_TIME,
     'state' => TRANSACTION_STATE_UNSAVED,
     'type' => 'unspecified',
     'extra' => array()

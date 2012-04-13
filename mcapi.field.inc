@@ -136,8 +136,8 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   }
   else {
     $default_worth = array(
-      'quantity' => 0,
-      'division' => 0,
+      'quantity' => @$element['quantity']['#default_value'],
+      'division' => @$element['division']['#default_value'],
       'currcode' => $element['currcode']['#default_value'] ? $element['currcode']['#default_value'] : key(currencies_load())
     );
   }

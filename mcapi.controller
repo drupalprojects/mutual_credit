@@ -93,7 +93,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       $t->rollback();
     }
     unset($transaction->validating);
-    $transaction->state = $state;
     return $transaction;
   }
 
@@ -216,7 +215,8 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       FROM {mcapi_transactions} t
       LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
       LEFT JOIN {field_data_worth} w2 ON t.xid = w2.entity_id AND w2.worth_currcode = '$currcode' AND t.payee = $uid
-      WHERE t.state in (:states)
+      WHERE (t.payer = $uid OR t.payee = $uid)
+        AND t.state in (:states)
         AND t.created > :after_time
         AND t.xid > :after_xid";
     if ($options['before_xid'] > 0) {

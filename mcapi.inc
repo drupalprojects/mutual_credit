@@ -30,6 +30,7 @@ function mcapi_entity_info_inc() {
         )
       ),
     ),
+    'load hook' => 'mcapi_xaction_load',//this avoids conflict with commerce module
     'view callback' => 'transaction_view', //used by entity module
     'view modes' => array(
       'certificate' => array(
@@ -230,7 +231,6 @@ function _transaction_form($form, &$form_state, $transaction) {
     );
   }
   $form['buttons']['#weight'] = 25;
-  $form['#entity_builders'][] = 'transaction_entity_builder';
   $form['#validate'] = array('transaction_first_form_validate');
   $form['#submit'] = array('transaction_all_submit');
   $form_state['redirect'] = 'user';
@@ -249,10 +249,10 @@ function transaction_first_form_validate($form, &$form_state) {
   elseif(isset($form_state['transaction'])) $transaction = $form_state['transaction'];
   else $transaction = new stdClass;
   
-  //this populates $transaction with the form values
-  entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-  field_attach_form_validate('transaction', $transaction, $form, $form_state);
+  //this populates $transaction with the form values and validates it.
   try {
+    entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+    field_attach_form_validate('transaction', $transaction, $form, $form_state);
     mcapi_transaction_validate($transaction);
   }
   catch (Exception $e) {
@@ -275,7 +275,7 @@ function mcapi_transaction_validate($transaction){
     }
   }
   //a transaction can only be complete if all these fields are filled in.
-  if ($transaction->state == TRANSACTION_STATE_FINISHED) {
+  if ($transaction->state >= TRANSACTION_STATE_FINISHED) {
     $required = array('payer', 'payee',  'type');
     foreach ($required as $fieldname) {
       if (!$transaction->$fieldname) {
@@ -286,8 +286,7 @@ function mcapi_transaction_validate($transaction){
   if (count(form_get_errors())) return;
   //now validate the transaction object in the database
   if ($transaction->payer && $transaction->payee) {
-    //this concerns rules and database integrity, so we hand it off to the db controller
-    //it checks the balances, and trial-entering the transaction in the db
+    //now hand it off to the entity controller, perhaps for a test write
     $transaction = transaction_validate($transaction);
   }
 }
