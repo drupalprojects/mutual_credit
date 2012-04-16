@@ -35,7 +35,7 @@ function mcapi_forms_menu() {
     $items[$menu['path']] = array(
       'title' => '',
       'title callback' => 'mcapi_menu_return_title',
-      'title arguments' => array(mcapi_form_get_title($mcapi_form)),
+      'title arguments' => array(mcapi_form_get_title($mcapi_form), 1),
       'page callback' => 'drupal_get_form',
       'page arguments' => array(//2nd and subsequent are are the $form_state['build_info']
         'mcapi_forms_form',
@@ -85,10 +85,11 @@ function mcapi_forms_forms($form_id, $args) {
 
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
+  $mcapi_form = &$form_state['build_info']['args'][1];
   //set the page title if this form is not being displayed in a block
-  if (!_mcapi_form_in_block($form_state['build_info']['args'][1])) {
+  if (!_mcapi_form_in_block($mcapi_form)) {
     //I wonder if there is an easier way? Perhaps a block would have different build_info args
-    drupal_set_title(mcapi_form_get_title($mcapi_form));
+    drupal_set_title(mcapi_form_get_title($mcapi_form), 1);
   }
   _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
 }

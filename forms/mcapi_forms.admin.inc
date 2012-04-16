@@ -163,6 +163,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     );
     $direction_widget = _macpi_forms_direction_widget($mcapi_form['direction']);
     $options = array(
+      '' => t('--No preset--'),
       'incoming' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
       'outgoing' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment')
     );
@@ -198,6 +199,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
     mcapi_unset_recursive($transaction_fields[$fieldname], '#element_validate');
     $form[$fieldname] = _mcapi_form_shared($mcapi_form, $transaction_fields[$fieldname], $fieldname);
   }
+  debug($form['worth']);
+
   $form['submission'] = array(
     '#title' => t('Form submission'),
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
