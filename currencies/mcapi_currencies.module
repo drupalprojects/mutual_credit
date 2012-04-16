@@ -72,15 +72,14 @@ function mcapi_currencies_form(&$form, &$form_state) {
   _mcapi_currency_innerform($form, $form_state);
 
   $form['name']['#element_validate'] = array('mcapi_currency_validate_name');
-  $passed = empty($form_state['values']['uid']) ? $currency->uid : $form_state['values']['uid'];
-  $owner = empty($passed) ? $GLOBALS['user']->uid : $passed;
-  $owner = user_load($owner);
+  $owner = !empty($form_state['values']['uid']) ? $form_state['values']['uid'] :
+    isset($currency->uid) ? $currency->uid : $GLOBALS['user']->uid;
   $form['uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Declared by'),
     '#maxlength' => 60,
     '#autocomplete_path' => 'user/autocomplete',
-    '#default_value' => $owner->name,
+    '#default_value' => user_load($owner)->name,
     '#element_validate' => array('mcapi_validate_usernames'),
     '#required' => TRUE,
     '#weight' => 4

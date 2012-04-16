@@ -11,7 +11,8 @@ function mcapi_currency_form($form, &$form_state){
   $form['#currency'] = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
   $form['info']['currcode'] = array(
     '#type' => 'hidden',
-    '#value' => empty($form['#currency']->info['currcode']) ? substr(variable_get('site_name', 'error'), 0, 7) : $form['#currency']->info['currcode'],
+    '#default_value' => $form['#currency']->info['currcode'],
+    '#element_validate' => 'form_validate_machine_name'
   );
   _mcapi_currency_innerform($form, $form_state);
   return $form;
@@ -286,7 +287,7 @@ function currency_default() {
   $def = variable_get('currency_default', array(
     //default currency name is taken from the site_name at the moment it's first called
     'info' => array(//this structure anticipates ctools and mcapi_currencies.module
-      'currcode' => 'def_'. substr(variable_get('site_name', 'error'), 0, 4)
+    'currcode' => 'def_'. strtolower(substr(variable_get('site_name', 'error'), 0, 4)),
     ),
     'name' =>  t('Community Coins'),
     'format' => '@minus<strong>CC</strong>@integer:@subdivision',
@@ -366,7 +367,6 @@ function currencies_recache() {
     foreach (array('update', 'erase', 'view') as $op) {
       foreach ($states as $state => $name) {
         $callbacks = &$currencies[$currcode]->$op;
-        debug($callbacks, $name);
         if (!in_array($callbacks[$state], $functions)) {
           drupal_set_message(t(
             "Currency 2nd_cur has no permission set for op '@op' and state @state",
