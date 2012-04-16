@@ -332,13 +332,13 @@ function mcapi_get_tokens() {
  * $form_state['transaction'] was created in the validation stage
  */
 function transaction_all_submit($form, &$form_state) {
-  $transaction = transaction_save($form_state['transaction']);
-  $entity->modified = REQUEST_TIME;
-  $entity->state = $form_state['values']['state'];
-  if ($transaction) {
-    field_attach_submit('transaction', $transaction, $form, $form_state);
-    module_invoke_all('entity_insert', $transaction, 'transaction');
-  }
+  $transaction = &$form_state['transaction']; ;
+  $transaction->modified = REQUEST_TIME;
+  $transaction->state = $form_state['values']['state'];
+  $transaction = transaction_save($transaction);
+  field_attach_submit('transaction', $transaction, $form, $form_state);
+  module_invoke_all('entity_insert', $transaction, 'transaction');
+
   if (!isset($form_state['redirect'])) {
     $form_state['redirect'] = 'transaction/'.$transaction->xid;
   }

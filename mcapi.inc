@@ -258,6 +258,7 @@ function transaction_first_form_validate($form, &$form_state) {
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
   }
+
   //save the value where other transaction validators can find it
   $form_state['transaction'] = $transaction;
 }

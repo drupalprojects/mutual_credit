@@ -125,7 +125,6 @@ function mcapi_limit_check($payer_uid, $payee_uid, $flows, $adjust_flows = 0) {
       }
     }
   }
-  debug('limits checked ok');
 }
 
 /*

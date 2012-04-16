@@ -193,7 +193,8 @@ function mcapi_ajax_worth($form, $form_state) {
  * adds division to quantity ready for as a 'worth' value
  * $element[#value] should already be set
  */
-function worth_widget_validate(&$element, &$form_state) {
+function worth_widget_validate(&$element, &$form_state, $form) {
+  if ($form['#form_id'] == 'field_ui_field_edit_form') return;
   $currcode = &$element['currcode']['#value'];
   $currency = currency_load($currcode);
   $division = NULL;
@@ -224,7 +225,6 @@ function worth_widget_validate(&$element, &$form_state) {
   );
   if ($division) {
     //check that the divisions are valid
-    
     if ($currency->divisions == '01') return;
     if (isset($currency->divisions[$division])) return;
 
@@ -392,6 +392,26 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
     $form['field']['cardinality']['#options'] = array(
       1 => 1,
       $max => $max
+    );
+  }
+  //change the cardinality field because there is only one worth value possible per currency
+  $currcodes = count(currencies_load());
+  if ($currcodes == 1) {
+    $form['field']['cardinality'] = array(
+      '#type' => 'hidden',
+      '#value' => 1
+    );
+  }
+  else {
+    $form['field']['cardinality'] = array(
+      '#title' => t('Payments per transaction'),
+      '#description' => t('Maximum one per currency'),
+      '#type' => 'radios',
+      '#options' => array(
+        1 => t('Choose one currency'),
+        $currcodes => t('One field per currency')
+      ),
+      '#default_value' => $form['field']['cardinality']['#default_value']
     );
   }
 }
