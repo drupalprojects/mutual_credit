@@ -25,17 +25,20 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
   function render($values) {
     if (empty($this->uid)) {
       $arg = array_search('uid1', array_keys($this->view->argument));
-      if ($arg === FALSE) {
-        drupal_set_message('Views running balance requires uid argument', 'error'); return 'error';
+      if (is_numeric($arg)) {
+        $this->uid = $this->view->args[$arg];
       }
-      $this->uid = $this->view->args[$arg];
+      else {
+        drupal_set_message("Running balance requies  contextual filter 'Transaction index: 1st user'", 'error');
+        return 'error';
+      }
     }
     return array(
       '#theme' => 'worth_field',
       '#currcode' => $values->currcode,
       '#quantity' => db_query(
         "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = $this->uid AND xid <= :xid AND currcode = '$values->currcode'",
-        array(':xid' => $values->xid)
+        array(':xid' => intval($values->xid))
       )->fetchField()
     );
   }
