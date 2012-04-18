@@ -883,19 +883,17 @@ function mcapi_getview_profit_loss() {
   $handler->display->display_options['sorts']['created']['table'] = 'mcapi_index';
   $handler->display->display_options['sorts']['created']['field'] = 'created';
   $handler->display->display_options['sorts']['created']['order'] = 'DESC';
-  /* Contextual filter: User: Uid */
-  $handler->display->display_options['arguments']['uid']['id'] = 'uid';
-  $handler->display->display_options['arguments']['uid']['table'] = 'users';
-  $handler->display->display_options['arguments']['uid']['field'] = 'uid';
-  $handler->display->display_options['arguments']['uid']['relationship'] = 'uid1';
-  $handler->display->display_options['arguments']['uid']['default_action'] = 'not found';
-  $handler->display->display_options['arguments']['uid']['default_argument_type'] = 'fixed';
-  $handler->display->display_options['arguments']['uid']['default_argument_skip_url'] = 0;
-  $handler->display->display_options['arguments']['uid']['summary']['number_of_records'] = '0';
-  $handler->display->display_options['arguments']['uid']['summary']['format'] = 'default_summary';
-  $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
-  $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
-  $handler->display->display_options['arguments']['uid']['not'] = 0;
+  /* Contextual filter: Transaction index: 1st user */
+  $handler->display->display_options['arguments']['uid1']['id'] = 'uid1';
+  $handler->display->display_options['arguments']['uid1']['table'] = 'mcapi_index';
+  $handler->display->display_options['arguments']['uid1']['field'] = 'uid1';
+  $handler->display->display_options['arguments']['uid1']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['uid1']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['uid1']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['uid1']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['uid1']['break_phrase'] = 0;
+  $handler->display->display_options['arguments']['uid1']['not'] = 0;
   if (module_exists('mcapi_currencies')) {
     /* Filter criterion: Transaction index: Currency */
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';

@@ -31,7 +31,7 @@ function mcapi_forms_menu() {
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
     $menu = $mcapi_form->data['architecture'];
-    $page_arg1 = strpos($menu['path'], '%transaction') ? array_search('%transaction', explode('/', $menu['path'])) : new_transaction();
+    $page_arg1 = strpos($menu['path'], '%transaction') ?  : NULL;
     $items[$menu['path']] = array(
       'title' => '',
       'title callback' => 'mcapi_menu_return_title',
@@ -40,7 +40,7 @@ function mcapi_forms_menu() {
       'page arguments' => array(//2nd and subsequent are are the $form_state['build_info']
         'mcapi_forms_form',
         //in case the form needs to load a transaction, extract it from the path
-        $page_arg1,
+        array_search('%transaction', explode('/', $menu['path'])),//may return NULL
         $mcapi_form//we put the whole form in the menu item because ctools performance is very poor
       ),
       'access callback' => strtok($menu['access'], ':'),
@@ -76,20 +76,22 @@ function mcapi_forms_admin_paths() {
  * $args is an mcapi_form and an optional transaction
  */
 function mcapi_forms_forms($form_id, $args) {
-  $forms['mcapi_forms_form'] = array(
-    'callback' => 'transaction_form',
-    'callback arguments' => $args
-  );
+  if ($form_id == 'mcapi_forms_form') {
+    $forms['mcapi_forms_form'] = array(
+      'callback' => 'transaction_form',
+      'callback arguments' => $args
+    );
+  }
   return $forms;
 }
 
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-  $mcapi_form = &$form_state['build_info']['args'][1];
+  $args = &$form_state['build_info']['args'];
   //set the page title if this form is not being displayed in a block
-  if (!_mcapi_form_in_block($mcapi_form)) {
+  if (!_mcapi_form_in_block($args[1])) {
     //I wonder if there is an easier way? Perhaps a block would have different build_info args
-    drupal_set_title(mcapi_form_get_title($mcapi_form), 1);
+    drupal_set_title(mcapi_form_get_title($args[1]), 1);
   }
   _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
 }

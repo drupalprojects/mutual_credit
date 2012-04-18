@@ -86,27 +86,32 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['2ndperson']['#args'] = array(strtok(':'));
     $form['2ndperson']['#me'] = FALSE;
     mcapi_form_default_value($form['2ndperson'], $mcapi_form->data['2ndperson']);
-    $form['direction'] = _macpi_forms_direction_widget($mcapi_form->data['direction']);
-    $form['direction']['#element_validate'][] = 'mcapi_direction_validate';
 
+    $form['direction'] = array(
+      '#type' => $mcapi_form->data['direction']['widget'] ? $mcapi_form->data['direction']['widget'] : 'select',
+      '#options' => array(
+        'incoming' => $mcapi_form->data['direction']['incoming'],
+        'outgoing' => $mcapi_form->data['direction']['outgoing']
+      ),
+    );
     //if we are loading the page from blank, or rebuilding the form, we set the default values here,
     mcapi_form_default_value($form['direction'], $mcapi_form->data['direction']);
-
-    //if we are loading the page from blank, or rebuilding the form, we set the default values h
+    //if we are loading the page from blank, or rebuilding the form, we set the default values here
     //however if we are editing an existing transaction,
     //we have to show the transaction owner and derive the direction and partner from the payer and payee
+
     if ($transaction->xid) {
       if ($transaction->creator == $transaction->payer) {
         $form['2ndperson']['#default_value'] = $transaction->payee;
         $form['direction']['#default_value'] = 'outgoing';
       }
       else{
-        $form['2ndperson']['#default_value'] = $transaction->payer;
+        $form['2ndperson'] = $transaction->payer;
         $form['direction']['#default_value'] = 'incoming';
       }
     }
     unset($form['payer'], $form['payee']);
-    //this validation function must run BEFORE the main one in the API, which requires payer and payee
+    //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
     array_unshift($form['#validate'], 'mcapi_forms_validate_2ndperson');
   }
   //we now modify the transaction form fields according to the form settings for each field
@@ -131,9 +136,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       '#type' => 'submit',
       '#value' => t('Back'),
     );
-    //the default validate function, transaction_form_validate will rebuild the entity in form_state
-    //not considering that in step 2 of the web form  the transaction elements are not present,
-    //but are in form_state storage not form_state values
+    //bypass the default transaction validate function, transaction_form_validate which rebuilds the transaction entity from form_state
+    //not considering that in step 2 of the web form  the transaction elements are in $form_state['storage] not $form_state values
     $form['#validate'] = array();
   }
   if ($transaction->xid) {
@@ -287,16 +291,16 @@ function mcapi_element_markup_render(&$element, $fs_values) {
  * BEFORE $form_state['transaction'] is created
  */
 function mcapi_forms_validate_2ndperson($form, &$form_state) {
-  global $user;
   $values = &$form_state['values'];
   if ($values['direction'] == 'incoming') {
     $values['payer'] = $values['2ndperson'];
-    $values['payee'] = $user->uid;
+    $values['payee'] = $GLOBALS['user']->uid;
   }
-  else {
-    $values['payer'] = $user->uid;
+  elseif ($values['direction'] == 'outgoing') {
+    $values['payer'] = $GLOBALS['user']->uid;
     $values['payee'] = $values['2ndperson'];
   }
+  else {print_r($values); die();}
 }
 
 /*
@@ -396,22 +400,6 @@ function _mcapi_form_in_block($mcapi_form) {
     if (strpos($part, '%') === 0) $parts[$key] = $part;
   }
   return $parts != $map;
-}
-
-function _macpi_forms_direction_widget($data) {
-  return array(
-    '#type' => $data['widget'] ? $data['widget'] : 'select',
-    '#options' => array(
-      'incoming' => $data['incoming'],
-      'outgoing' => $data['outgoing']
-    )
-  );
-}
-function mcapi_direction_validate(&$element, &$form_state) {
-  if (empty($element['#value'])) {
-    //can't do usual form_error things because we are stripping the theme wrappers from the form elements to make the templating work better
-    drupal_set_message(t('Which way is the transaction going?'), 'error');
-  }
 }
 
 

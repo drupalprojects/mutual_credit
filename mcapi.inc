@@ -174,7 +174,7 @@ function _transaction_form($form, &$form_state, $transaction) {
     '#type' => 'radios',
     '#title' => t('State'),
     '#description' => t('Finished transactions cannot have empty values.'),
-    '#default_value' => $transaction->state,
+    '#default_value' => is_null($transaction->state) ? TRANSACTION_STATE_FINISHED : $transaction->state,
     '#options' => $states,
     '#element_validate' => array('mcapi_validate_state'),
     '#weight' => 18
@@ -248,7 +248,6 @@ function transaction_first_form_validate($form, &$form_state) {
   if ($form_state['values']['xid']) $transaction = transaction_load($form_state['values']['xid']);
   elseif(isset($form_state['transaction'])) $transaction = $form_state['transaction'];
   else $transaction = new stdClass;
-  
   //this populates $transaction with the form values and validates it.
   try {
     entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);

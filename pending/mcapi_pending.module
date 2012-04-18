@@ -61,7 +61,7 @@ function mcapi_pending_signatories_access($transaction) {
 }
 
 //menu access callback
-//can the current user sign off the given transaction
+//can the current user 'sign off' any (pending) transaction
 function mcapi_pending_signoff_access($transaction) {
   if ($transaction->state == TRANSACTION_STATE_PENDING) {
     if (user_access('manage all transactions')) return TRUE;

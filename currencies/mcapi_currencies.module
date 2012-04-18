@@ -183,15 +183,18 @@ function mcapi_currencies_form_submit($form, &$form_state) {
 /*
  * returns a form element for picking a currency
  */
-function currency_picker_element($default_value, $multiple = FALSE, $options = array()) {
+function currency_picker_element($default, $multiple = FALSE, $options = array()) {
   if (empty($options)) {
     $options = currency_picker_element_options();
+  }
+  if($default == 0) {
+    $options  = array(0 => 'Please choose...') + $options;
   }
   return array(
     '#title' => t('Currency'),
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => $default_value,
+    '#default_value' => $default,
     '#multiple' => $multiple,
   );
 }
@@ -201,8 +204,7 @@ function currency_picker_element_options($currencies = array()) {
     $currencies = currencies_load();
   }
   foreach ($currencies as $currency) {
-    $options[$currency->info['currcode']] =
-      $currency->name;
+    $options[$currency->info['currcode']] = $currency->name;
   }
   return $options;
 }

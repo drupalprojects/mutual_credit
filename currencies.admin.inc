@@ -44,7 +44,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
   );
   $form['zero'] = array(
     '#title' => t('Allow zero value transactions'),
-    '#description' => t('Some projects may want to record an acknowledgement without a payment'),
+    '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
     '#type' => 'checkbox',
     '#default_value' => $form['#currency']->zero,
     '#weight' => 4,

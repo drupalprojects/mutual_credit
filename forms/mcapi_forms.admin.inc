@@ -199,7 +199,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     mcapi_unset_recursive($transaction_fields[$fieldname], '#element_validate');
     $form[$fieldname] = _mcapi_form_shared($mcapi_form, $transaction_fields[$fieldname], $fieldname);
   }
-  debug($form['worth']);
 
   $form['submission'] = array(
     '#title' => t('Form submission'),
