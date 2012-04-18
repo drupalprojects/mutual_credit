@@ -48,6 +48,9 @@ function mcapi_drush_command() {
   $items['mcapi-wipeslate'] = array(
     'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Erase all transactions (remove the row in the node table and set state to -1)'),
+    'options' => array(
+      'purge' => 'Completely remove'
+    ),
   );
   $items['mcapi-purge'] = array(
     'callback' => 'drush_mcapi_purge',
@@ -63,11 +66,6 @@ function drush_mcapi_balances() {
 }
 
 function drush_mcapi_wipeslate($hard = TRUE) {
-  global $user;
-  if ($user->uid == 0) {
-    drush_print('User 0 cannot delete exchanges');
-    return;
-  }
   if ($hard) {
     $result = db_query("SELECT nid FROM {node} WHERE type = 'exchange'");
     while($nid = db_result($result)) {
@@ -75,10 +73,19 @@ function drush_mcapi_wipeslate($hard = TRUE) {
       node_delete($nid);
     }
   }
-  $count = count($nids);
+  $count = count($xids);
+  drush_print("erased $count transactions");
+  if (drush_get_option('purge')) {
+    drush_mcapi_purge();
+  }
 }
 
 function drush_mcapi_purge() {
   $result = db_query("DELETE FROM {mc_exchanges} WHERE state = %d", EXCHANGE_STATE_ERASED);
+  drush_print("completely removed erased transactions");
+  if ($xid = db_result(db_query("SELECT nid FROM {mc_exchanges}"))) return;
+  db_query("ALTER TABLE {mc_exchanges} AUTO_INCREMENT = 1");
+  drush_print('reset auto-increment-transaction ID');
+  
   drush_print('removed traces of erased nodes');
 }

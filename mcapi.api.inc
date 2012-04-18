@@ -29,12 +29,11 @@ function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
   module_load_include('inc', 'mcapi');
   //this also validates...
   $exchange = build_exchange_node($payer_uid, $payee_uid, $quantity, $options);
-
   $result = new stdClass();
   $result->success = FALSE;
-  if (count(drupal_get_messages('error', FALSE))) {
+  if (count(form_get_errors())) {
     $result->nodes = $exchanges;
-    $result->messages['error'][] = t('Exchange failed validation');
+    $result->messages['error'] = form_get_errors();
     return $result;
   }
   else {
@@ -93,7 +92,7 @@ function mc_api_check_user_limits($account, $difference, $cid, $nid = NULL) {
     }
   }
   $projected_totals[$uid] += $balance + $difference;
-
+  
   $messages = array();
   if (is_numeric($limits['max']) && (float)$difference > 0) {
     $surplus = $projected_totals[$uid] - $limits['max'];

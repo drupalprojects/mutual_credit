@@ -655,7 +655,7 @@ function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
     'payer_uid' => $payer_uid,
     'quantity' => $quantity,
    //default $options
-    'cid' => $currency->cid,
+    'cid' => $currency->nid,
     'title' => t('no description given'),  //shouldn't really be omitted
     'state' => EXCHANGE_STATE_FINISHED, //shouldn't really be omitted
     'exchange_type' => 'api unspecified', //shouldn't really be omitted
@@ -672,8 +672,9 @@ function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
   return $node;
 }
 
+//returns true if the quant is zero and the currency doesn't permit zeros
 function exchange_validate_zero($quant, $currency) {
-  if ($value == 0 && !$currency->data['zero']) {
+  if ($quant == 0 && !$currency->data['zero']) {
     return TRUE;
   }
 }

@@ -500,7 +500,6 @@ function mcapi_validate($node) {
       $errors[] = mc_api_check_user_limits(user_load($node->payee_uid), +$node->quantity, intval($node->cid), $node->nid);
       $errors = array_filter($errors);
       if (count($errors)) {
-
         foreach ($errors as $error) {
           form_set_error('quantity', $error);
         }
@@ -627,7 +626,7 @@ function mc_validate_quantity(&$element, &$form_state) {
     form_error($element, t("Negative values not allowed for '@fieldname'", array('@fieldname' => $element['#title'])));
   }
   if (isset($form_state['values']['cid']) && $currency = node_load($form_state['values']['cid'])) {
-    if (exchange_validate_zero($quant, $currency)) {
+    if (exchange_validate_zero($value, $currency)) {
       form_error($element, t('Zero values not allowed'));
     }
     $division = ($value - intval($value))*100;
