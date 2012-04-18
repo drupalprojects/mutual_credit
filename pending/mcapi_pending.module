@@ -239,8 +239,9 @@ function mcapi_get_signatories($xid = NULL, $uid = NULL) {
 function mcapi_pending_form_mcapi_forms_form_alter(&$form, &$form_state) {
   if ($form_state['build_info']['args'][1]->name != 'add_my_signature') return;
   $form_state['step']++;
-
-  array_unshift($form['#submit'], 'add_my_signature_submit');
+  //replace the transaction_all_submit callback because we only want to change the state
+  $key = array_search('transaction_all_submit', $form['#submit']);
+  $form['#submit'][$key] = 'add_my_signature_submit';
   unset($form['buttons']['delete']);
 }
 

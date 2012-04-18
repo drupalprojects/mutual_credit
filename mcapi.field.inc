@@ -102,17 +102,21 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
  */
 function mcapi_field_widget_process($element, $form_state, $form) {
   //determine the values for each of the three subfields, integer, division, currcode
-  //deal with any submitted values from ajax
-  if (isset($form_state['input']['worth']['und'][$element['#delta']])) {
-    $default_vals = $form_state['input']['worth']['und'][$element['#delta']];
-  }//or prefilled values from a previous step
-  elseif (isset($form_state['transaction']->worth['und'][$element['#delta']])) {
-    $quant = number_format($form_state['transaction']->worth['und'][$element['#delta']]['quantity'], 2, '.', '');
-    list($default_vals['integer'], $default_vals['division']) = explode('.', $quant);
-    $default_vals['currcode'] = $form_state['transaction']->worth['und'][$element['#delta']]['currcode'];
+  //these are handled in order of priority as the default values could come from different sources
+  //deal with any submitted values from ajax, or the back button
+  if (isset($form_state['transaction']->worth['und'][$element['#delta']])) {
+    $value = &$form_state['transaction']->worth['und'][$element['#delta']];
+    $default_vals['currcode'] = $value['currcode'];
+    list($default_vals['integer'], $default_vals['division']) = explode('.', number_format($value['quantity'], 2, '.', ''));
   }
+  //or prefilled values from a previous step
+  elseif (isset($form_state['input']['worth']['und'][$element['#delta']])) {
+    //actually if we are coming via the back button
+    $default_vals = $form_state['input']['worth']['und'][$element['#delta']];
+  }
+  //or from the passed $element
   else {
-    @list($default_vals['integer'], $default_vals['division']) = explode('.', $element['#quantity']);
+    list($default_vals['integer'], $default_vals['division']) = explode('.', number_format($element['#quantity'], 2, '.', ''));
     $default_vals['currcode'] = isset($element['#currcode']) ? $element['#currcode'] : '';
   }
   //if this widget knows about one currency, or this element has more than one $item, then hide the curr chooser
@@ -427,7 +431,7 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
  * element validation callback, based on element_validate_integer_positive
  */
 function element_validate_integer_worth($element, &$form_state) {
-  $value = $element['#value'];
+  $value = $element['#value'] + 0;
   if (!empty($value) && (!is_numeric($value) || intval($value) != $value || $value <= 0)) {
     form_error($element, t('%name must be a positive integer.', array('%name' => $element['#title'])));
   }

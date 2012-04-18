@@ -76,13 +76,13 @@ function mcapi_forms_admin_paths() {
  * $args is an mcapi_form and an optional transaction
  */
 function mcapi_forms_forms($form_id, $args) {
-  if ($form_id == 'mcapi_forms_form') {
-    $forms['mcapi_forms_form'] = array(
-      'callback' => 'transaction_form',
-      'callback arguments' => $args
-    );
-  }
+  if ($form_id != 'mcapi_forms_form') return;
+  $forms['mcapi_forms_form'] = array(
+    'callback' => 'transaction_form',
+    'callback arguments' => $args
+  );
   return $forms;
+  
 }
 
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {

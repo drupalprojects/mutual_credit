@@ -130,7 +130,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
   //some adjustements for the confirmation step
-  if ($form_state['step'] > MCAPIFORM_STEP_CONFIRM && !empty($form_state['values'])) {
+  if ($form_state['step'] > MCAPIFORM_STEP_ENTER && !empty($form_state['values'])) {
     mcapi_hide_tabs();
     $form['buttons']['back'] = array(
       '#type' => 'submit',
@@ -346,7 +346,10 @@ function mcapi_forms_multiple_submit($form, &$form_state) {
     $form_state['redirect'] = 'transaction/'. $transaction->xid;
   }
 }
-
+/*
+ * form validation callback
+ * handles the steps
+ */
 function mcapi_forms_validate($form, &$form_state) {
   //don't validate if it's ajax
   if (current_path() == 'system/ajax') {
