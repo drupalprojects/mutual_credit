@@ -358,7 +358,7 @@ function validate_mc_quantity_field(&$element, &$form_state) {
     }
   }
   $quantity = $integer + $division/100;
-  if (exchange_validate_zero($quant, $currency)) {
+  if (exchange_validate_zero($quantity, $currency)) {
     form_error($element['integer'], t('Zero values not allowed'));
   }
   //the form validation should check if this is > 0
