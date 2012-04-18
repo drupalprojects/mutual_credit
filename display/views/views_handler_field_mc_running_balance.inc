@@ -31,7 +31,8 @@ class views_handler_field_mc_running_balance extends views_handler_field {
           FROM {mc_exchanges} e LEFT JOIN {node} n ON n.nid = e.nid
           WHERE payer_uid = $uid 
             AND n.nid <= ".$values->{$this->aliases['nid']}."
-            AND cid = ".$values->{$this->aliases['cid']};
+            AND cid = ".$values->{$this->aliases['cid']} ."
+            AND state = ". EXCHANGE_STATE_FINISHED;
         $outgoing = db_result(db_query($query));
         $query = str_replace('payer', 'payee', $query);
         $income = db_result(db_query($query));

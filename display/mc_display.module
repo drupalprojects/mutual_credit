@@ -194,13 +194,18 @@ function mc_display_block_list($delta) {
 }
 
 function mc_display_block_view($delta) {
-  $uid = $GLOBALS['user']->uid;
-  if (!$uid) return;
   $edit = variable_get('block_'.$delta, array());
+  //which users data are we showing?
+  if (arg(0) == 'user') {
+    $uid = user_uid_optional_load(arg(1));
+  }
+  if ($edit['src'] == 'current') {
+    $uid = $GLOBALS['user']->uid;
+  }
+  if (!$uid) return;
+  $account = user_load($uid);
   switch ($delta) {
     case 'mc_balance_history':
-      if (arg(0) !='user') return;
-      $account = user_uid_optional_load(arg(1));
       if (!user_access('view all balances') && !$account->uid == $uid) return;
       if (!isset($edit['cids'])) {
         $edit['cids'] = array_keys(currencies_load());
@@ -213,8 +218,6 @@ function mc_display_block_view($delta) {
       break;
 
     case 'mc_balances':
-      if (arg(0) != 'user') return;
-      $account = user_uid_optional_load(arg(1));
       if (!user_access('view all balances') && !$account->uid == $uid) return;
       if (!isset($edit['cid'])) {
         $edit['cids'] = array_keys(currencies_load());
@@ -226,8 +229,6 @@ function mc_display_block_view($delta) {
       break;
 
     case 'balance_limits':
-      if (arg(0) != 'user') return;
-      $account = user_uid_optional_load(arg(1));
       if (!user_access('view all balances') && !$account->uid == $uid) return;
       if (!isset($edit['cid'])) {
         $edit['cids'] = array_keys(currencies_load());
@@ -239,8 +240,6 @@ function mc_display_block_view($delta) {
       break;
 
     case 'balance_ometer':
-      if (arg(0) != 'user') return;
-      $account = user_uid_optional_load(arg(1));
       if (!user_access('view all balances') && !$account->uid == $uid) return;
       if (!isset($edit['cids'])) {
         $edit['cids'] = array_keys(currencies_load());
@@ -269,6 +268,17 @@ function mc_display_block_view($delta) {
 function mc_display_block_configure($delta){
   $edit = variable_get('block_'.$delta, array());
   $currencies = currencies_load();
+  //in all cases there is an option asking which user to display.
+  $form['src'] = array(
+    '#type' => 'radios',
+    '#title' => t('Which user to display'),
+    '#options' => array(
+      'current' => t('The logged in user'),
+      'profile' => t('The user whose page is being viewed')
+    ),
+    '#default_value' => $edit['src'] ? $edit['src'] : 'profile'
+  );
+
   switch($delta) {
     case 'mc_balance_history':
       $form['start_time'] = array(
@@ -321,11 +331,12 @@ function mc_display_block_configure($delta){
       }
       break;
   }
+  print_r($form);
   return $form;
 }
 function mc_display_block_save($delta, $values) {
   //save each of the fields, if they exist
-  $fields = array('cids', 'start_time', 'extent', 'per_page');
+  $fields = array('cids', 'start_time', 'extent', 'per_page', 'src');
   foreach ($fields as $field) {
     if ($values[$field]) {
       $edit[$field] = $values[$field];
@@ -395,9 +406,9 @@ function get_balance_history($account, $cid, $since = NULL) {
   );
   $exchanges = mc_api_user_exchanges($account->uid, $cid, $options);
   $points = array();
-  //make the first point for each currency
-  if (!$since) {
-    $points = array($account->created => 0);
+  //if the account->created is not zero, we'll use that as the starting point
+  if (!$since && $account->created > 0) {
+    $points[$account->created] = 0;
   }
   foreach($exchanges as $exchange) {
     //one point per exchange produces diagaonal lines

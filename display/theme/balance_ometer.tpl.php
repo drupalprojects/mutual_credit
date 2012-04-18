@@ -26,14 +26,13 @@ $params = array(
   'chds' => $min .','. $max,
   //'chxr' => '1,'.$account->balances[$cid]['limit_min'] .','. $account->balances[$cid]['limit_max'] .'25',
   'chd' => 't:'.$balance,
-  'chxl' => '1:|'. $min ."|". $max,
+  'chxl' => '1:|'. strip_tags(theme('money', $min, $currency->nid)) ."|". strip_tags(theme('money', $max, $currency->nid)),
   'chco' => implode(',', $colors),
-  'chl' => $balance,
+  'chl' => strip_tags(theme('money', $balance, $currency->nid)),
   //'chtt' => $currency->title,
   'chxs' => '0,000000|1,000000',
   'chf' => 'bg,s,FFFFFFFF'
 );
-
 
 //cleaner than http_build_query
 foreach ($params as $key=>$val) {
