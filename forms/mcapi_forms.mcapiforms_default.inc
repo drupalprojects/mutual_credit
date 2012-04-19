@@ -33,31 +33,21 @@ function mcapiform_default_1stparty() {
       'use_block' => 1,
     ),
     '2ndperson' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_permissions:transact',
     ),
     'direction' => array(
-      'shared' => array(
-        'preset' => 'outgoing',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => 'outgoing',
       'incoming' => 'Request',
       'outgoing' => 'Payment',
       'widget' => 'select',
     ),
     'worth' => array(
-      'shared' => array(
-        'preset' => array(
-          'und' => array(
-            0 => array(
-              'currcode' => current(currencies_load())->info['currcode'],
-              'quantity' => '1',
-            ),
+      'preset' => array(
+        'und' => array(
+          0 => array(
+            'currcode' => current(currencies_load())->info['currcode'],
+            'quantity' => '1',
           ),
         ),
         'disable' => 0,
@@ -118,35 +108,23 @@ function mcapiform_default_3rdparty() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
     'payee' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
     'worth' => array(
-      'shared' => array(
-        'preset' => array(
-          'und' => array(
-            0 => array(
-              'currcode' => current(currencies_load())->info['currcode'],
-              'quantity' => '0',
-            ),
+      'preset' => array(
+        'und' => array(
+          0 => array(
+            'currcode' => current(currencies_load())->info['currcode'],
+            'quantity' => '0',
           ),
         ),
-        'disable' => 0,
-        'required' => 1,
       ),
     ),
     'submission' => array(
@@ -205,36 +183,24 @@ function mcapiform_default_many2one() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_roles:2',
       'multiple' => 1,
     ),
     'payee' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
     'worth' => array(
-      'shared' => array(
-        'preset' => array(
-          'und' => array(
-            0 => array(
-              'currcode' => current(currencies_load())->info['currcode'],
-              'quantity' => '0',
-            ),
-          ),
-        ),
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => array(
+        'und' => array(
+          0 => array(
+            'currcode' => current(currencies_load())->info['currcode'],
+            'quantity' => '0',
+          )
+        )
+      )
     ),
     'submission' => array(
       'state' => TRANSACTION_STATE_FINISHED,
@@ -295,36 +261,24 @@ function mcapiform_default_one2many() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
     'payee' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_roles:2',
       'multiple' => 1,
     ),
     'worth' => array(
-      'shared' => array(
-        'preset' => array(
-          'und' => array(
-            0 => array(
-              'currcode' => current(currencies_load())->info['currcode'],
-              'quantity' => '0',
-            ),
-          ),
-        ),
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => array(
+        'und' => array(
+          0 => array(
+            'currcode' => current(currencies_load())->info['currcode'],
+            'quantity' => '0',
+          )
+        )
+      )
     ),
     'submission' => array(
       'state' => TRANSACTION_STATE_FINISHED,
@@ -384,36 +338,24 @@ function mcapiform_default_correction() {
       'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => TRUE,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
     'payee' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => TRUE,
-        'required' => 1,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_permissions:transact',
       'multiple' => 0,
     ),
     'worth' => array(
-      'shared' => array(
-        'preset' => array(
-          'und' => array(
-            0 => array(
-              'currcode' => current(currencies_load())->info['currcode'],
-              'quantity' => '0',
-            ),
-          ),
-        ),
-        'disable' => 0,
-        'required' => 1,
-      ),
+      'preset' => array(
+        'und' => array(
+          0 => array(
+            'currcode' => current(currencies_load())->info['currcode'],
+            'quantity' => '0',
+          )
+        )
+      )
     ),
     'submission' => array(
       'state' => TRANSACTION_STATE_FINISHED,

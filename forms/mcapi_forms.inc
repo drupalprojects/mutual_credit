@@ -28,8 +28,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       //get the default contents of the fields from the form settings
       foreach (field_info_instances('transaction', 'transaction') as $instance) {
         //The transaction might contain new fields not known about by the saved form
-        if (!empty($mcapi_form->data[$instance['field_name']]['shared']['preset'])) {
-          $transaction->{$instance['field_name']} = $mcapi_form->data[$instance['field_name']]['shared']['preset'];
+        if (!empty($mcapi_form->data[$instance['field_name']]['preset'])) {
+          $transaction->{$instance['field_name']} = $mcapi_form->data[$instance['field_name']]['preset'];
         }
       }
     }
@@ -54,14 +54,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['payer']['#multiple'] = $mcapi_form->data['payer']['multiple'];
     //this could be put in the config
     $form['payer']['#me'] = TRUE;
-    mcapi_form_default_value($form['payer'], $mcapi_form->data['payer']);
+    mcapi_form_default_value($form['payer'][''], $mcapi_form->data['payer']['preset']);
     
     //payee;
     $form['payee']['#type'] = strtok($mcapi_form->data['payee']['args'], ':');
     $form['payee']['#args'] = array(strtok(':'));
     //this could be put in the config
     $form['payee']['#me'] = TRUE;
-    mcapi_form_default_value($form['payee'], $mcapi_form->data['payee']);
+    mcapi_form_default_value($form['payee'], $mcapi_form->data['payee']['preset']);
 
     foreach (array('payer', 'payee') as $participant) {
       if ($mcapi_form->data[$participant]['multiple']) {
@@ -85,7 +85,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['2ndperson']['#type'] = strtok($mcapi_form->data['2ndperson']['args'], ':');
     $form['2ndperson']['#args'] = array(strtok(':'));
     $form['2ndperson']['#me'] = FALSE;
-    mcapi_form_default_value($form['2ndperson'], $mcapi_form->data['2ndperson']);
+    $form['2ndperson']['#required'] = TRUE;
+    mcapi_form_default_value($form['2ndperson'], $mcapi_form->data['2ndperson']['preset']);
 
     $form['direction'] = array(
       '#type' => $mcapi_form->data['direction']['widget'] ? $mcapi_form->data['direction']['widget'] : 'select',
@@ -93,9 +94,10 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
         'incoming' => $mcapi_form->data['direction']['incoming'],
         'outgoing' => $mcapi_form->data['direction']['outgoing']
       ),
+      '#required' => TRUE
     );
     //if we are loading the page from blank, or rebuilding the form, we set the default values here,
-    mcapi_form_default_value($form['direction'], $mcapi_form->data['direction']);
+    mcapi_form_default_value($form['direction'], $mcapi_form->data['direction']['preset']);
     //if we are loading the page from blank, or rebuilding the form, we set the default values here
     //however if we are editing an existing transaction,
     //we have to show the transaction owner and derive the direction and partner from the payer and payee
@@ -117,9 +119,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   //we now modify the transaction form fields according to the form settings for each field
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
     //@ needed in case the form builder wasn't saved since the field was added
-    $form[$fieldname]['#disabled'] = @$mcapi_form->data[$fieldname]['shared']['disable'];
-    $form[$fieldname]['#required'] = @$mcapi_form->data[$fieldname]['shared']['required'];
-    mcapi_form_default_value($form[$fieldname], @$mcapi_form->data[$fieldname]);
+    mcapi_form_default_value($form[$fieldname], @$mcapi_form->data[$fieldname]['preset']);
   }
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
@@ -170,26 +170,24 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
 
 //determine the fields '#default_value' according to the settings on the form object
 //remember that it is already populated from the form_state build arguments
-function mcapi_form_default_value(&$element, $settings) {
-  if (!empty($settings['shared']['preset'])) {
-    $element['#default_value'] = $settings['shared']['preset'];
-  }
-  if (!empty($element['#default_value'])) {
-    if (!empty($settings['shared']['disable']) == 'disable') {
-      $element['#disabled'] = TRUE;
-    }
-  }
-  if (!empty($settings['shared']['preset_required']) && !$element['#default_value']) {
-    drupal_set_message(t('Default needed for field: @field', array('@field' => $element['#title'])));
-  }
-  if (intval($settings['shared']['required'])) {
-    mcapi_element_children_value($element, '#required', TRUE);
-  }
-  $element['#theme_wrappers'] = array();
-
+function mcapi_form_default_value(&$element, $preset) {
+  $element = array_replace_recursive($element, mcapi_recursive_make_default($preset));
   unset($element['#weight']);
+  $element['#theme_wrappers'] = array();
 }
-
+/*
+ * utility function
+ * Takes an array and converts every deepest value into an array('#default_value' => $value);
+ */
+function mcapi_recursive_make_default($value) {
+  if (is_array($value)) {
+    foreach ($value as $key => $val) {
+      $value[$key] = mcapi_recursive_make_default($val);
+    }
+    return $value;
+  }
+  return array('#default_value' => $value);
+}
 
 
 function mcapi_form_collect_tokens(&$mcapi_form) {

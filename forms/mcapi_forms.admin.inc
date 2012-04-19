@@ -161,14 +161,20 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#options' => $user_chooser_options,
       '#default_value' => isset($mcapi_form['2ndperson']['args']) ? $mcapi_form['2ndperson']['args'] : 'mcapi_access_check_roles:2'
     );
-    $direction_widget = _macpi_forms_direction_widget($mcapi_form['direction']);
+    $form['direction'] = array(
+      '#type' => 'radios',
+      '#options' => array(
+        'incoming' => t('Incoming'),
+        'outgoing' => t('Outgoing'),
+      ),
+    );
     $options = array(
       '' => t('--No preset--'),
       'incoming' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
       'outgoing' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment')
     );
-    $form['direction'] = _mcapi_form_shared($mcapi_form, $direction_widget, 'direction');
-    $form['direction']['shared']['preset']['#options'] = $options;
+    $form['direction'] = _mcapi_form_shared($mcapi_form, $form['direction'], 'direction');
+    $form['direction']['preset']['#options'] = $options;
     //not sure these are ever used...
     $form['direction']['incoming'] = array(
       '#title' => t('Name of incoming transaction'),
@@ -182,14 +188,14 @@ function _edit_mcapi_form(&$form, &$form_state) {
     );
     $form['direction']['widget'] = array(
       '#title' => t('Widget'),
-      '#type' => 'select',
+      '#type' => 'radios',
       '#options' => array(
         'select' => t('Dropdown select box'),
         'radios' => t('Radio buttons')
       ),
-      '#default_value' => isset($mcapi_form['direction']['widget']) ? $mcapi_form['direction']['widget'] : 'outgoing',
+      '#default_value' => isset($mcapi_form['direction']['widget']) ? $mcapi_form['direction']['widget'] : 'radios',
     );
-    $form['direction']['shared']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
+    $form['direction']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
 
   }
   //these are the field api fields which may have been added to the transaction entity
@@ -296,55 +302,31 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   mcapi_unset_recursive($default_field, '#element_validate');
   $element = array(
     '#title' => "[$key]",
-    '#description' => t("Settings for '@field' field", array('@field' => $key)),
+    '#description' => t("Edit instance settings.", array('@field' => $key)),
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_fields',
     '#weight' => $w++,
-    'shared' => array(
-      '#title' => t('shared properties'),//this isn't showing, and nor is the border
-      '#description' =>  '<strong>'.t('shared properties') .'</strong> '.t('What to do with passed parameters'),
-      '#type' => 'fieldset',
-      '#attributes' => array('style' => 'border:thin solid gray;width:300px;'),
-      '#weight' => -5,
-      'preset' => array(
-        '#title' => t('Hard set value'),
-        '#description' => t('overrides incoming values'),
-      ) + $default_field,
-      'disable' => array(
-        '#title' => t('Grey out field if value is passed'),
-        '#type' => 'checkbox',
-        '#return_value' => TRUE,
-        '#default_value' => isset($mcapi_form_fields[$key]['shared']['disable']) ? $mcapi_form_fields[$key]['shared']['disable'] : 'edit',
-        '#weight' => 1,
-      ),
-      'required' => array(
-        '#title' => t('Required'),
-        '#description' => t('Form should fail validation if no value is submitted.'),
-        '#type' => 'checkbox',
-        '#default_value' => isset($mcapi_form_fields[$key]['shared']['required']) ? $mcapi_form_fields[$key]['shared']['required'] : '',
-        '#weight' => 10
-      ),
-    ),
+    'preset' => array(
+      '#title' => t('Hard set value'),
+      '#description' => t('overrides incoming values'),
+    ) + $default_field,
   );
   //set the defaults from the saved object
-  $preset = &$mcapi_form_fields[$key]['shared']['preset'];
+  $preset = &$mcapi_form_fields[$key]['preset'];
   $lang = current(element_children($default_field)); //assumes value is in one language only
   if (isset($default_field[$lang][0]['#columns'])) {//for formAPI fields
+    $element['#description'] = l(t("Edit instance settings."), 'admin/accounting/fields/'.$default_field[$lang][0]['#field_name']);
     foreach ($default_field[$lang][0]['#columns'] as $column) {
       if (isset($preset[$lang]) && isset($preset[$lang][0][$column])) {
-        $element['shared']['preset'][$lang][0][$column]['#default_value'] = $preset[$lang][0][$column];
+        $element['preset'][$lang][0][$column]['#default_value'] = $preset[$lang][0][$column];
       }
     }
   }
   else { //for transaction entity fields
-    $element['shared']['preset']['#default_value'] = $preset;
+    $element['#description'] = t("This field is required");
+    $element['preset']['#default_value'] = $preset;
   }
-
-  if (!empty($default_field['#required'])) {
-    $element['shared']['required']['#default_value'] = TRUE;
-    $element['shared']['required']['#disabled'] = TRUE;
-  }
-  mcapi_unset_recursive($element['shared'], '#required');
+  mcapi_unset_recursive($element, '#required');
   return $element;
 }
 
@@ -393,7 +375,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   //need to check that all required fields exist in the form.
   if (strlen($form_state['item']->data['step-1']['template'])) {
     foreach ($form_state['item']->data as $name => $prop) {
-      if (!empty($prop['shared']['required']) && empty($prop['shared']['preset'])) {
+      if (!empty($prop['required']) && empty($prop['preset'])) {
         if (strpos($form_state['item']->data['step-1']['template'], $name) == FALSE) {
           form_error($form['step-1']['template'], t("Required field '@name' must be used in the form Step 1", array('@name' => $name)));
         }

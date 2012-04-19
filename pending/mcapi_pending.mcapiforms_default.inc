@@ -23,45 +23,24 @@ function mcapi_pending_mcapiforms_default() {
       'use_block' => 0,
     ),
     'currcode' => array(
-      'shared' => array(
-        'preset' => 1,
-        'widget' => 'hidden',
-        'required' => FALSE,
-      ),
+      'preset' => 1,
     ),
     'payer' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 0,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
     'payee' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 0,
-      ),
+      'preset' => '',
       'args' => 'user_chooser_roles:2',
       'multiple' => 0,
     ),
     'worth' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 0,
-        'multiple' => 0
-      ),
+      'preset' => '',
       'chars' => '',
     ),
     'description' => array(
-      'shared' => array(
-        'preset' => '',
-        'disable' => 0,
-        'required' => 0,
-      ),
+      'preset' => '',
     ),
     'submission' => array(
       'state' => TRANSACTION_STATE_FINISHED,

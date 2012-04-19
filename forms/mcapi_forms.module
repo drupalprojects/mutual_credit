@@ -31,7 +31,6 @@ function mcapi_forms_menu() {
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
     $menu = $mcapi_form->data['architecture'];
-    $page_arg1 = strpos($menu['path'], '%transaction') ?  : NULL;
     $items[$menu['path']] = array(
       'title' => '',
       'title callback' => 'mcapi_menu_return_title',
@@ -173,6 +172,11 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_forms') .'/mcapi_forms.admin.inc';
   $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
   $form['#tree'] = TRUE;
+  $form['advice'] = array(
+    '#type' => 'markup',
+    '#markup' => t('Test your form before enabling for users!'),
+    '#weight' => 25
+  );
   return _edit_mcapi_form($form, $form_state);
 }
 
@@ -274,18 +278,6 @@ function cache_clear_mcapi_forms() {
   cache_clear_all('mcapi_forms', 'cache');
 }
 
-/*
- * implements hook_form_field_ui_field_edit_form_alter
- * ensures that no field on the transaction entity is required
- * because this should be handled through this module
- */
-function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
-  if ($form['#instance']['entity_type'] == 'transaction') {
-    $form['instance']['required']['#type'] = 'hidden';
-    $form['instance']['required']['#value'] = FALSE;
-  }
-
-}
 
 function mcapi_menu_return_title($title) {
   return $title;
