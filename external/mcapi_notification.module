@@ -55,8 +55,10 @@ function mcapi_notification_form_mcapi_forms_form_alter(&$form) {
 /*
  * submit callback ONLY for mcapi_forms
  */
-function mcapi_form_mail_handle ($form, $form_state) {
+function mcapi_form_mail_handle ($form, $form_state, $form_id) {
+  debug($form_id);
   $form_id = $form_state['build_info']['args'][1]->name;
+  debug($form_id);
   $template = isset($form_state['build_info']['args'][1]->data['email_template']) ?
     $form_state['build_info']['args'][1]->data['email_template'] :
     array('subject' => _mcapi_mail_text('subject'), 'body' => _mcapi_mail_text('body'));
@@ -65,6 +67,7 @@ function mcapi_form_mail_handle ($form, $form_state) {
     //check if the user wants notification from this form
     $recipient = user_load($form_state['transaction']->$uid);
     $mail_settings = $recipient->data['mutual_credit_mail'] ? $recipient->data['mutual_credit_mail'] : array();
+  debug($mail_settings);
     $actives = array_filter($mail_settings);
     if (isset($actives[$form_id])) {
       //check that the user isn't sending to himself unwantedly
@@ -209,7 +212,7 @@ function mcapi_notification_install() {
  * Alters mcapi_forms after loading from code OR database
  * adds the mail template to ALL mcapi orms, both in code and in database
  */
-function mcapi_notification_mcapi_forms_alter(&$mcapiforms) {
+function mcapi_notification_mcapiforms_default_alter(&$mcapiforms) {
   foreach ($mcapiforms as $name => $mcapi_form) {
     if (empty($mcapi_form->data['email_template'])) {
       //we'll give some unique names for the forms we know about
