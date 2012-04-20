@@ -62,7 +62,7 @@ function mcapi_currencies_form(&$form, &$form_state) {
     $currency = currency_default();
     $currency->uid = $GLOBALS['user']->uid;
     $currency->name = '';
-    $currency->format = '';
+    $currency->display['format'] = '';
     $currency->currcode = user_password();
   }
   else {
@@ -143,10 +143,8 @@ function currencies_load_all() {
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them
   foreach($all as $name => $currency) {
-    if (empty($currency->disabled)) {
-      _currency_divisions_array($currency->data);
-      $currencies[$name] = $currency->data;
-    }
+    if (!empty($currency->disabled)) continue;
+    $currencies[$name] = $currency->data;
   }
   return $currencies;
 }

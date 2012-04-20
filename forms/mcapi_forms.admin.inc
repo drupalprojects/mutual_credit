@@ -1,6 +1,5 @@
 <?php
-
-module_load_include('inc', 'mcapi_forms');
+include ('mcapi_forms.inc');
 
 /*
  * This is the form-builder form
@@ -9,7 +8,6 @@ module_load_include('inc', 'mcapi_forms');
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   $mcapi_form = &$form_state['item']->data;
-
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
   $roles = user_roles(TRUE);
@@ -124,7 +122,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#weight' => 6,
     '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
   );
-  //the participants of the transaction are either payer/payee or 1stperson/2ndperson. This is called the 'perspective' of the form.
+  //the participants of the transaction are either payer/payee or 1stperson/secondperson. This is called the 'perspective' of the form.
   $perspective = isset($form_state['values']['perspective']) ? $form_state['values']['perspective'] : $form['perspective']['#default_value'] ;
   if ($perspective == 3) {
     //special settings for payer and payee
@@ -150,16 +148,16 @@ function _edit_mcapi_form(&$form, &$form_state) {
     }
   }
   else {//1st person form shows one field only, presuming the current user initiates the transaction
-    $form['2ndperson'] = _mcapi_form_shared($mcapi_form, $transaction_fields['payer'], '2ndperson');
-    $form['2ndperson']['#widget'] = 'user_chooser';//this is the only option that will work right now
-    $form['2ndperson']['args'] = array(
+    $form['secondperson'] = _mcapi_form_shared($mcapi_form, $transaction_fields['payer'], 'secondperson');
+    $form['secondperson']['#widget'] = 'user_chooser';//this is the only option that will work right now
+    $form['secondperson']['args'] = array(
       '#title' => t('Users to choose from'),
       '#description' => t('Configure this widget more at !link',
          array('!link' => l('admin/config/people/user_chooser', 'admin/config/people/user_chooser', array('attributes'=>array('target'=> '_blank')))
       )),
       '#type' => 'select',
       '#options' => $user_chooser_options,
-      '#default_value' => isset($mcapi_form['2ndperson']['args']) ? $mcapi_form['2ndperson']['args'] : 'mcapi_access_check_roles:2'
+      '#default_value' => isset($mcapi_form['secondperson']['args']) ? $mcapi_form['secondperson']['args'] : 'mcapi_access_check_roles:2'
     );
     $form['direction'] = array(
       '#type' => 'radios',
@@ -314,19 +312,21 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   //set the defaults from the saved object
   $preset = &$mcapi_form_fields[$key]['preset'];
   $lang = current(element_children($default_field)); //assumes value is in one language only
-  if (isset($default_field[$lang][0]['#columns'])) {//for formAPI fields
+  if (is_array($preset) && isset($default_field[$lang][0]['#columns'])) {//for formAPI fields
     $element['#description'] = l(t("Edit instance settings."), 'admin/accounting/fields/'.$default_field[$lang][0]['#field_name']);
-    foreach ($default_field[$lang][0]['#columns'] as $column) {
-      if (isset($preset[$lang]) && isset($preset[$lang][0][$column])) {
-        $element['preset'][$lang][0][$column]['#default_value'] = $preset[$lang][0][$column];
+    unset($default_field[$lang]['add_more']);
+    foreach (element_children($default_field[$lang]) as $delta) {
+      foreach (element_children($default_field[$lang][$delta]) as $subfieldname) {
+        if (!empty($preset[$lang][$delta][$subfieldname])) {
+          $element['preset'][$lang][$delta][$subfieldname]['#default_value'] = $preset[$lang][$delta][$subfieldname];
+        }
       }
     }
   }
-  else { //for transaction entity fields
+  else { //for transaction entity main fields like payer, state etc
     $element['#description'] = t("This field is required");
     $element['preset']['#default_value'] = $preset;
   }
-  mcapi_unset_recursive($element, '#required');
   return $element;
 }
 
@@ -371,12 +371,14 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   }
   $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
   unset($form_state['values']['name'], $form_state['values']['xfid']);
+
   $form_state['item']->data = $form_state['values'];
+  $mcapiform = &$form_state['item']->data;
   //need to check that all required fields exist in the form.
-  if (strlen($form_state['item']->data['step-1']['template'])) {
-    foreach ($form_state['item']->data as $name => $prop) {
+  if (!empty($mcapiform['step-1']) && strlen($mcapiform['step-1']['template'])) {
+    foreach ($mcapiform as $name => $prop) {
       if (!empty($prop['required']) && empty($prop['preset'])) {
-        if (strpos($form_state['item']->data['step-1']['template'], $name) == FALSE) {
+        if (strpos($mcapiform['step-1']['template'], $name) == FALSE) {
           form_error($form['step-1']['template'], t("Required field '@name' must be used in the form Step 1", array('@name' => $name)));
         }
       }

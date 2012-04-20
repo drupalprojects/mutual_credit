@@ -18,6 +18,11 @@ define ('TRANSACTION_STATE_ERASED', 0);
 define ('TRANSACTION_STATE_UNSAVED', NULL); //before the transaction ever reaches the db
 define ('TRANSACTION_STATE_VALIDATED', -2);
 
+define ('CURRENCY_DIVISION_MODE_NONE', 0);
+define ('CURRENCY_DIVISION_MODE_CENTS_INLINE', 1);
+define ('CURRENCY_DIVISION_MODE_CENTS_FIELD', 2);
+define ('CURRENCY_DIVISION_MODE_CUSTOM', 3);
+
 /**
  * implements hook_help()
  */
@@ -471,13 +476,6 @@ function currencies_load($account = NULL) {
   module_load_include('admin.inc', 'mcapi', 'currencies');
   $filtered = array();
   foreach ($currencies as $currcode => $currency) {
-    //temp measure to update currency division format
-    //TODO remove this after while.
-    if ($currency->divisions == '00') {
-      drupal_set_message('the currency format has changed. Please change your currency divisions field from 00 to 01');
-      drupal_goto('admin/accounting/currency');
-    }
-
     if (currency_access('use', $currency, $account)) {
       $filtered[$currcode] = $currency;
     }

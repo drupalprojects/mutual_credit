@@ -12,7 +12,7 @@ function mcapi_currency_form($form, &$form_state){
   $form['info']['currcode'] = array(
     '#type' => 'hidden',
     '#default_value' => $form['#currency']->info['currcode'],
-    '#element_validate' => 'form_validate_machine_name'
+    '#element_validate' => array('form_validate_machine_name')
   );
   _mcapi_currency_innerform($form, $form_state);
   return $form;
@@ -32,39 +32,59 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#default_value' => $form['#currency']->name,
     '#weight' => -1,
   );
-  $form['format'] = array(
+
+  $form['membership_callback'] = array(
+    '#title' => t('Membership'),
+    '#description' => t('Determine which users are permitted to use this currency'),
+    '#type' => 'select',
+    '#options' => module_invoke_all('mcapi_access'),
+    '#default_value' => $form['#currency']->membership_callback,
+    '#weight' => 3,
+  );
+
+  $form['display'] = array(
+    '#title' => t('Appearance'),
+    '#type' => 'fieldset',
+    '#weight' => 5
+  );
+  $form['display']['format'] = array(
     '#title' => t('Display format'),
-    '#description' => t('Write an expression to control the display of the currency using html, css and the following tokens:') .'@minus, @integer, @subdivision.<br />' .
-       t('For example, "@a" shows as "@b"', array('@a' => '@minus@integer:@subdivision AUS', '@b' => '-99:99 AUS')),
+    '#description' => t('Write an expression to control the display of the currency using html, css and the following tokens:') .'@minus, @integer, @subdivision.' .' '.
+       t('For example, !a shows as !b', array('!a' => '<em>@minus@integer:@subdivision AUS</em>', '!b' => '<em>-99:99 AUS</em>')),
     '#type' => 'textfield',
-    '#default_value' => $form['#currency']->format,
+    '#default_value' => $form['#currency']->display['format'],
     '#element_validate' => array('mcapi_currency_validate_format'),
     '#required' => TRUE,
-    '#weight' => 3
+    '#weight' => 1
   );
-  $form['zero'] = array(
-    '#title' => t('Allow zero value transactions'),
-    '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
-    '#type' => 'checkbox',
-    '#default_value' => $form['#currency']->zero,
-    '#weight' => 4,
+  $form['display']['divisions'] = array(
+    '#title' => t('Subdivisions'),
+    '#type' => 'select',
+    '#options' => array(
+      CURRENCY_DIVISION_MODE_NONE => t('Integer values only'),
+      CURRENCY_DIVISION_MODE_CENTS_INLINE => t('Cents in separate field'),
+      CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in same field, with decimal point'),
+      CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions, below')
+    ),
+    '#default_value' => $form['#currency']->display['divisions'],
+    '#weight' => 2
   );
-  $form['divisions_setting'] = array(
-    '#title' => t('Allowed divisions'),
-    '#description' => t('Leave blank to use integers. "01" to use hundredths.') . t('To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') . '<br />' .
-      '<pre>0|/.<br />25|1/4<br />50|1/2<br />75|3/4</pre>',
+  $form['display']['divisions_allowed'] = array(
+    '#title' => t('Allowed subdivisions'),
+    '#description' => t('On each line put "hundredths| visible text". The visible text replaces the @subdivision in the display format, above.'),
     '#type' => 'textarea',
     '#cols' => 60,
     '#rows' => 4,
-    '#default_value' => $form['#currency']->divisions_setting,
+    '#resizable' => FALSE,
+    '#default_value' => isset($form['#currency']->display['divisions_allowed']) ? $form['#currency']->display['divisions_allowed'] : "0|/.\n25|1/4\n50|1/2\n75|3/4",
     '#element_validate' => array('mcapi_currency_validate_divisions'),
-    '#weight' => 5
+    '#weight' => 3
   );
 
   $operations['view'] = t('View');
   $form['additional_settings'] = array(
     '#type' => 'vertical_tabs',
-    '#weight' => 15,
+    '#weight' => 10,
   );
   if (isset($form['#currency']->accounting)) { //not all engines will do this
     $form['accounting'] = array(
@@ -86,6 +106,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
         '#default_value' => $form['#currency']->accounting['update_mode'],
         '#weight' => 1,
         '#element_validate' => array('mcapi_currency_validate_update_mode'),
+        //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
         '#ajax' => array(
           'callback' => 'currency_form_ajax',
           'wrapper' => 'mcapi-currency-form',
@@ -119,15 +140,6 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     $operations['update'] = $form['accounting']['update_mode']['#default_value'] ? t('Update') : NULL;
     $operations['erase'] =  $form['#currency']->accounting['erase_mode'] ? t('Erase') : NULL;
   }
-  //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
-  $form['membership_callback'] = array(
-    '#title' => t('Membership'),
-    '#description' => t('Determine which users are permitted to use this currency'),
-    '#type' => 'select',
-    '#options' => module_invoke_all('mcapi_access'),
-    '#default_value' => $form['#currency']->membership_callback,
-    '#weight' => 10,
-  );
   $states = mcapi_states();
   $i = 0; $j = 0;
   $options = module_invoke_all('mcapi_info_permissions');
@@ -150,6 +162,13 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
       );
     }
   }
+  $form['zero'] = array(
+    '#title' => t('Allow zero value transactions'),
+    '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
+    '#type' => 'checkbox',
+    '#default_value' => $form['#currency']->zero,
+    '#weight' => 15,
+  );
 
   $form['buttons'] = array(
     '#weight' => 20,
@@ -194,15 +213,15 @@ function mcapi_currency_validate_format(&$element, $form_state) {
     form_error($element, t("Currency format must contain token '@integer'"));
   }
   //we also need to check that the format field contains the divisions token
-  if (!empty($form_state['values']['divisions_setting']) && !strpos($element['#value'], '@subdivision')) {
+  if (!empty($form_state['values']['divisions_allowed']) && !strpos($element['#value'], '@subdivision')) {
     form_error($element, t("Currency format must contain token '@subdivision'"));
   }
 }
 
 function mcapi_currency_validate_divisions(&$element, $form_state) {
-  $divisions = $element['#value'];
-  if ($divisions == '01' || $divisions == '') return;
-  $lines = explode("\n", $divisions);
+  if ($form_state['values']['display']['divisions'] != CURRENCY_DIVISION_MODE_CUSTOM) return;
+  $allowed = $element['#value'];
+  $lines = explode("\n", $allowed);
   if (count($lines) < 2) {
     form_error($element, t("There should be at least two lines in field '@fieldname'", array('@fieldname' => $element['#title'])));
   }
@@ -219,30 +238,8 @@ function mcapi_currency_validate_divisions(&$element, $form_state) {
       );
     }
   }
-
 }
 
-/*
- * When we need to know the currency divisions, this function converts them
- * from the multiline string of the configuration to a nice array
- * This could possibly be configured, stored and retrieved better
- * How does the list module do it?
- */
-function _currency_divisions_array(&$currency) {
-  $string = $currency->divisions_setting;
-  if (strpos($string, '|')) {
-    $lines = explode("\n", $string);
-    foreach($lines as $line) {
-      $array = explode('|', $line);
-      $allowed[$array[0]] = $array[1];
-    }
-    $currency->divisions = $allowed;
-  }
-  elseif ($string == '01') {//this means hundredths
-    $currency->divisions = $string;
-  }
-  else $currency->divisions = NULL;
-}
 
 /*
  * Validate callback for currency form 'update_mode' element
@@ -284,15 +281,17 @@ function mcapi_validate_currcode(&$element, $form_state) {
  */
 function currency_default() {
   module_load_include('inc', 'mcapi');
-  $def = variable_get('currency_default', array(
+  $currency = variable_get('currency_default', array(
     //default currency name is taken from the site_name at the moment it's first called
     'info' => array(//this structure anticipates ctools and mcapi_currencies.module
     'currcode' => 'def_'. strtolower(substr(variable_get('site_name', 'error'), 0, 4)),
     ),
     'name' =>  t('Community Coins'),
-    'format' => '@minus<strong>CC</strong>@integer:@subdivision',
-    'zero' => 0,
-    'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
+    'display' => array(
+      'format' => '@minus<strong>CC</strong>@integer:@subdivision',
+      'divisions' => '',
+      'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
+    ),
     'accounting' => array(
       'update_mode' => 1,
       'erase_mode' => 1
@@ -317,8 +316,10 @@ function currency_default() {
       -1 => 'mcapi_access_none',
       -2 => 'mcapi_access_admin'
     ),
+    'zero' => 0,
   ));
-  return (object)$def;
+  $currency = (object)$currency;
+  return $currency;
 }
 
 /*
@@ -348,22 +349,24 @@ function currencies_recache() {
   cache_clear_all('currencies', 'cache');
   if (module_exists('mcapi_currencies')) {
     $currencies = currencies_load_all();
-    //this variable isn't set anywhere yet, partly because no suitable settings page exists yet
-    if ($cardinality = variable_get('mcapi_currencies_multiple', 0)) {
-      $field = field_read_field('worth');
-      $field['cardinality'] = $cardinality ? count($currencies) : 1;
-      field_update_field($field);
-    }
   }
   else {
     $currency = currency_default();
-    _currency_divisions_array($currency);
     $currencies[$currency->info['currcode']] = $currency;
   }
-  //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
   $states = mcapi_states();
   $functions = array_keys(module_invoke_all('mcapi_info_permissions'));
   foreach ($currencies as $currcode => $currency) {
+    $divisions = array();
+    //convert the divisions_allowed into an array
+    if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
+      foreach(explode("\n", $currency->display['divisions_allowed']) as $line) {
+        list($cent, $display) = explode('|', $line);
+        $divisions[$cent] = $display;
+      }
+    }
+    $currencies[$currcode]->display['divisions_allowed'] = $divisions;
+    //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     foreach (array('update', 'erase', 'view') as $op) {
       foreach ($states as $state => $name) {
         $callbacks = &$currencies[$currcode]->$op;
@@ -380,8 +383,6 @@ function currencies_recache() {
   cache_set('currencies', $currencies);
   return $currencies;
 }
-
-
 
 /*
  * Implements hook_mcapi_access

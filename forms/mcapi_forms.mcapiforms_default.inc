@@ -32,7 +32,7 @@ function mcapiform_default_1stparty() {
       'menu_link' => 'navigation',
       'use_block' => 1,
     ),
-    '2ndperson' => array(
+    'secondperson' => array(
       'preset' => '',
       'args' => 'user_chooser_permissions:transact',
     ),
@@ -64,21 +64,21 @@ function mcapiform_default_1stparty() {
     ),
     'step-1' => array(
       'title' => '1st party form',
-      'template' => 'Partner: [2ndperson]<br />
+      'template' => 'Partner: [secondperson]<br />
   Direction: [direction]<br />
   Amount: [worth]<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
       'template' => '[worth]
-  with  [2ndperson]<br /><br />',
+  with  [secondperson]<br /><br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
     ),
     'templates' => array(
-      'template-1' => 'Partner: [2ndperson]<br />
+      'template-1' => 'Partner: [secondperson]<br />
   Direction: [direction]<br />
   Amount: [worth]<br />',
     ),

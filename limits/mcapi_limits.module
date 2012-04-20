@@ -50,7 +50,7 @@ function mcapi_limits_form_transaction_form_alter(&$form, &$form_state) {
  * new exception($difference, '>', $limit)
  * and vice versa
  */
-function limits_form_validate(&$form, &$form_state) {debug('limits_form_validate');
+function limits_form_validate(&$form, &$form_state) {
   if (count(form_get_errors())) return;
   $transaction = &$form_state['transaction'];
   reset($transaction->worth);

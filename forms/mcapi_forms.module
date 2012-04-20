@@ -61,6 +61,7 @@ function mcapi_forms_menu_alter(&$items) {
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/forms/list/%';
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
+  $items['admin/accounting/display']['type'] == MENU_CALLBACK;
 }
 
 /**
@@ -75,7 +76,6 @@ function mcapi_forms_admin_paths() {
  * $args is an mcapi_form and an optional transaction
  */
 function mcapi_forms_forms($form_id, $args) {
-  if ($form_id != 'mcapi_forms_form') return;
   $forms['mcapi_forms_form'] = array(
     'callback' => 'transaction_form',
     'callback arguments' => $args

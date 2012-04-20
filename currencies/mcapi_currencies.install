@@ -98,6 +98,7 @@ function mcapi_currencies_schema() {
         'current_version' => 3,
       ),
       'default hook' => 'mcapicurrencies_default',
+      //'load all callback' => 'currencies_ctools_load_all',
       //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
       'admin_title' => 'currcode', //this converts the form field into machine_name I think
       'bulk export' => TRUE,

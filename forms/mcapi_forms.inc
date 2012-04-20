@@ -10,12 +10,11 @@ module_load_include('inc', 'mcapi');
  * build_info args are 0=> transaction, 1 => mcapi_form
  */
 function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
-  $transaction = @$form_state['transaction'] ? $form_state['transaction'] : (
-    @$form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] : new_transaction());
-  //we need to determine how to load up the transaction and which step the form is in.
-  //step 1 of the form is a form, and step 2 is a confirmation page. These may be renamed later for clarity
   $mcapi_form = &$form_state['build_info']['args'][1];
-  
+  $transaction = isset($form_state['transaction']) ? $form_state['transaction'] : (
+    $form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] :
+    new_transaction_presets($mcapi_form->data)
+  );
   //Some forms may go straight to step 2
   if (empty($form_state['step'])) {
     $form_state['storage'] = array();
@@ -54,14 +53,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['payer']['#multiple'] = $mcapi_form->data['payer']['multiple'];
     //this could be put in the config
     $form['payer']['#me'] = TRUE;
-    mcapi_form_default_value($form['payer'][''], $mcapi_form->data['payer']['preset']);
+    $form['payer']['#default_value'] = $transaction->payer;
     
     //payee;
     $form['payee']['#type'] = strtok($mcapi_form->data['payee']['args'], ':');
     $form['payee']['#args'] = array(strtok(':'));
     //this could be put in the config
     $form['payee']['#me'] = TRUE;
-    mcapi_form_default_value($form['payee'], $mcapi_form->data['payee']['preset']);
+    $form['payee']['#default_value'] = $transaction->payee;
 
     foreach (array('payer', 'payee') as $participant) {
       if ($mcapi_form->data[$participant]['multiple']) {
@@ -79,14 +78,13 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   else {
     //I-thou exchanges
     //this section cannot be used to edit existing transactions
-    $form['2ndperson'] = array(
-      '#default_value' => isset($form_state['values']['2ndperson']) ? $form_state['values']['2ndperson'] : ''
+    $form['secondperson'] = array(
+      '#default_value' => isset($form_state['values']['secondperson']) ? $form_state['values']['secondperson'] : ''
     ) + $form['payee'];
-    $form['2ndperson']['#type'] = strtok($mcapi_form->data['2ndperson']['args'], ':');
-    $form['2ndperson']['#args'] = array(strtok(':'));
-    $form['2ndperson']['#me'] = FALSE;
-    $form['2ndperson']['#required'] = TRUE;
-    mcapi_form_default_value($form['2ndperson'], $mcapi_form->data['2ndperson']['preset']);
+    $form['secondperson']['#type'] = strtok($mcapi_form->data['secondperson']['args'], ':');
+    $form['secondperson']['#args'] = array(strtok(':'));
+    $form['secondperson']['#me'] = FALSE;
+    $form['secondperson']['#required'] = TRUE;
 
     $form['direction'] = array(
       '#type' => $mcapi_form->data['direction']['widget'] ? $mcapi_form->data['direction']['widget'] : 'select',
@@ -94,33 +92,34 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
         'incoming' => $mcapi_form->data['direction']['incoming'],
         'outgoing' => $mcapi_form->data['direction']['outgoing']
       ),
+      //if we are loading the page from blank, or rebuilding the form, we set the default values here,
+      '#default_value' => $transaction->secondperson,
       '#required' => TRUE
     );
-    //if we are loading the page from blank, or rebuilding the form, we set the default values here,
-    mcapi_form_default_value($form['direction'], $mcapi_form->data['direction']['preset']);
     //if we are loading the page from blank, or rebuilding the form, we set the default values here
     //however if we are editing an existing transaction,
     //we have to show the transaction owner and derive the direction and partner from the payer and payee
-
-    if ($transaction->xid) {
+    if (!empty($transaction->xid)) {
       if ($transaction->creator == $transaction->payer) {
-        $form['2ndperson']['#default_value'] = $transaction->payee;
+        $form['secondperson']['#default_value'] = $transaction->payee;
         $form['direction']['#default_value'] = 'outgoing';
       }
       else{
-        $form['2ndperson'] = $transaction->payer;
+        $form['secondperson']['#default_value'] = $transaction->payer;
         $form['direction']['#default_value'] = 'incoming';
       }
     }
     unset($form['payer'], $form['payee']);
     //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
-    array_unshift($form['#validate'], 'mcapi_forms_validate_2ndperson');
+    array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
   }
+
   //we now modify the transaction form fields according to the form settings for each field
-  foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
-    //@ needed in case the form builder wasn't saved since the field was added
-    mcapi_form_default_value($form[$fieldname], @$mcapi_form->data[$fieldname]['preset']);
+  foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
+    $default = mcapi_recursive_default_value($transaction->$fieldname);
+    $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
   }
+
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -168,30 +167,36 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   $form['#after_build'] = array('mcapi_form_prepare_tokens');
 }
 
-//determine the fields '#default_value' according to the settings on the form object
-//remember that it is already populated from the form_state build arguments
-function mcapi_form_default_value(&$element, $preset) {
-  $element = array_replace_recursive($element, mcapi_recursive_make_default($preset));
-  unset($element['#weight']);
-  $element['#theme_wrappers'] = array();
+
+function new_transaction_presets($mcapi_formdata) {
+  $transaction = new_transaction();
+  //this transaction is used to store defaults for the form building, so it has unusual fields
+  $fields = $mcapi_formdata['perspective'] == 1 ? array('secondperson', 'direction') : $fields = array('payer', 'payee');
+  $fields = array_merge($fields, array_keys(field_info_instances('transaction', 'transaction')));
+  foreach($fields as $field) {
+    $transaction->$field = $mcapi_formdata[$field]['preset'];
+  }
+  debug($transaction, 'this should not run on the confirmation page');
+  return $transaction;
 }
+
 /*
  * utility function
  * Takes an array and converts every deepest value into an array('#default_value' => $value);
  */
-function mcapi_recursive_make_default($value) {
+function mcapi_recursive_default_value($value) {
   if (is_array($value)) {
     foreach ($value as $key => $val) {
-      $value[$key] = mcapi_recursive_make_default($val);
+      $result[$key] = mcapi_recursive_default_value($val);
     }
-    return $value;
+    return $result;
   }
   return array('#default_value' => $value);
 }
 
 
 function mcapi_form_collect_tokens(&$mcapi_form) {
-  $tokens = $mcapi_form->data['perspective'] == 3 ? array('payee', 'payer') : array('2ndperson', 'direction');
+  $tokens = $mcapi_form->data['perspective'] == 3 ? array('payee', 'payer') : array('secondperson', 'direction');
   //before the children are themed, we need to remove the wrappers from deep within the additional fields.
   $fields = array_keys(field_info_instances('transaction', 'transaction'));
   //this picks up 'worth' and any other fields on the transaction entity
@@ -209,6 +214,7 @@ function mcapi_form_prepare_tokens($form, &$form_state) {
         mcapi_unset_recursive($element, '#suffix');
         mcapi_unset_recursive($element, '#title');
         mcapi_unset_recursive($element, '#description');
+        unset($element['#weight']);
         $form['#replacements']["[$fieldname]"] = drupal_render($element);
         $form[$fieldname]['#printed'] = TRUE;
       }
@@ -266,13 +272,12 @@ function mcapi_element_markup_render(&$element, $fs_values) {
     //all the fieldAPI fields appear here as container, here we take the form fields and convert them to a render array
     case 'container':
       $lang = current(element_children($element)); //assumes value is in one language only
-      foreach(element_children($element[$lang]) as $childname) {
-        $fieldname = $element[$lang]['#field_name'];
-        $field = field_info_field($fieldname);
-        $instance = field_info_instance('transaction', $fieldname, 'transaction');
-        $function  = $field['module'] . '_field_formatter_view';
-        $renderable[] = $function('transaction', NULL, NULL, $instance, $lang, $fs_values[$fieldname][$lang], $instance['display']['default']);
-      }
+      $fieldname = $element[$lang]['#field_name'];
+      $field = field_info_field($fieldname);
+      $instance = field_info_instance('transaction', $fieldname, 'transaction');
+      $function  = $field['module'] . '_field_formatter_view';
+      $renderable[] = $function('transaction', NULL, NULL, $instance, $lang, $fs_values[$fieldname][$lang], $instance['display']['default']);
+
       return drupal_render($renderable);
     case 'submit':
     case 'token':
@@ -288,15 +293,15 @@ function mcapi_element_markup_render(&$element, $fs_values) {
  * set the payer and payee from the 2ndpeson and direction
  * BEFORE $form_state['transaction'] is created
  */
-function mcapi_forms_validate_2ndperson($form, &$form_state) {
+function mcapi_forms_validate_secondperson($form, &$form_state) {
   $values = &$form_state['values'];
   if ($values['direction'] == 'incoming') {
-    $values['payer'] = $values['2ndperson'];
+    $values['payer'] = $values['secondperson'];
     $values['payee'] = $GLOBALS['user']->uid;
   }
   elseif ($values['direction'] == 'outgoing') {
     $values['payer'] = $GLOBALS['user']->uid;
-    $values['payee'] = $values['2ndperson'];
+    $values['payee'] = $values['secondperson'];
   }
   else {print_r($values); die();}
 }
