@@ -156,7 +156,8 @@ function mcapi_access($op, $node, $account = NULL) {
     case 'view'://users can always view their own pages
       return user_access('view all exchanges') || $participant;
     case 'update': 
-      return ($account->uid == $node->uid && $node->state == EXCHANGE_STATE_PENDING);
+      return ($account->uid == $node->uid && $node->state == EXCHANGE_STATE_PENDING) ||
+      ($participant && user_access('edit own finished exchanges'));
     case 'delete':
       //pending exchanges can be deleted only by the node owner
       return $node->uid == $account->uid && $node->state == EXCHANGE_STATE_PENDING;
