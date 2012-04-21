@@ -6,7 +6,6 @@
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $replacements = array();
   if ($type != 'transaction' || empty($data['transaction'])) return $replacements;
-
   $transaction = &$data['transaction'];
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
@@ -99,14 +98,6 @@ function mcapi_token_info() {
       'name' => t('Other user'),
       'description' => t("The user who isn't referred to here."),
     ),
-    'worth' => array(
-      'name' => t('Values'),
-      'description' => t("The currency flows"),
-    ),
-    'description' => array(
-      'name' => t('Description'),
-      'description' => t("A short desciption of the transaction"),
-    ),
     'summary' => array(
       'name' => t('Summary'),
       'description' => t("A one line description of the transaction. (An entity view mode)"),
@@ -132,6 +123,13 @@ function mcapi_token_info() {
       'description' => t("When the transaction was last modified"),
     ),
   );
+
+  foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
+    $transaction[$fieldname] = array(
+      'name' => $field['label'],
+      'description' => $field['description']
+    );
+  }
   return array(
     'types' => $types,
     'tokens' => array('transaction' => $transaction),

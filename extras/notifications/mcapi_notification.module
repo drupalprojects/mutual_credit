@@ -26,8 +26,9 @@ function mcapi_notification_form_ctools_export_ui_edit_item_form_alter(&$form, $
     '#title' => t('Mail notification'),
     '#description' => implode(' ', array(
       t('Edit the e-mail to members who wish to be notified when this form completes.'),
-      t('Available variables are: [site:name], [site:url], [user:name], [user:mail], [site:login-url], [site:url-brief], [user:edit-url], [user:one-time-login-url], [user:cancel-url].'),
-      mcapi_get_tokens()
+      t("'user' is the recipient of the mail."),
+      t('Available variables are: ') . '[site:name], [site:url], [user:name], [user:mail], [site:login-url], [site:url-brief], [user:edit-url], [user:one-time-login-url], [user:cancel-url].',
+      implode(', ', matslats_list_tokens('site', 'user', 'transaction'))
     )),
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_templates',
@@ -48,33 +49,28 @@ function mcapi_unique_mail_subjects($element, $form_state) {
  * implements hook_form_FORMID_alter
  */
 function mcapi_notification_form_mcapi_forms_form_alter(&$form) {
-  $form['#submit'][] = 'mcapi_form_mail_handle';
+  $form['#submit'][] = 'mcapiform_mail_handle';
 }
-
 
 /*
  * submit callback ONLY for mcapi_forms
  */
-function mcapi_form_mail_handle ($form, $form_state, $form_id) {
-  debug($form_id);
-  $form_id = $form_state['build_info']['args'][1]->name;
-  debug($form_id);
-  $template = isset($form_state['build_info']['args'][1]->data['email_template']) ?
-    $form_state['build_info']['args'][1]->data['email_template'] :
+function mcapiform_mail_handle($form, $form_state) {
+  $mcapiform = $form_state['build_info']['args'][1];
+  $template = isset($mcapiform->data['email_template']) ? $mcapiform->data['email_template'] :
     array('subject' => _mcapi_mail_text('subject'), 'body' => _mcapi_mail_text('body'));
   //get the preferences for payer and payee, for this form
   foreach (array('payer', 'payee') as $uid) {
     //check if the user wants notification from this form
     $recipient = user_load($form_state['transaction']->$uid);
     $mail_settings = $recipient->data['mutual_credit_mail'] ? $recipient->data['mutual_credit_mail'] : array();
-  debug($mail_settings);
     $actives = array_filter($mail_settings);
-    if (isset($actives[$form_id])) {
+    if (isset($actives[$mcapiform->name])) {
       //check that the user isn't sending to himself unwantedly
       if (!$recipient->data['mutual_credit_mail_to_self'] && $recipient->uid == $GLOBALS['user']->uid) continue;
       drupal_mail(
         'mcapimail',
-        $form_id,
+        $mcapiform->name,
         $recipient->mail,
         user_preferred_language($recipient),
         array(
@@ -96,6 +92,7 @@ function mcapimail_mail($key, &$message, $params) {
   $variables = array(
     'transaction' => &$params['transaction'],
     'user' => &$params['recipient']
+    //I guess 'site' doesn't need to be sent
   );
   // We do not sanitize the token replacement, since the output of this
   // replacement is intended for an e-mail message, not a web browser.
@@ -223,7 +220,6 @@ function mcapi_notification_mcapiforms_default_alter(&$mcapiforms) {
         case 'one2many': $subject = 'Mass payment from [transaction:payer]'; break;
         case 'many2one': $subject = 'Mass payment to [transaction:payee]'; break;
         case 'add_my_signature': $subject = '[transaction:xid] signed by [user:name]'; break;
-        default: debug($name);
       }
       $mcapiforms[$name]->data['email_template'] = array(
         'subject' => $name . ': '. _mcapi_mail_text('subject'),//this ensures it is unique

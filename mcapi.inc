@@ -1,10 +1,6 @@
 <?php
 // $Id: mcapi.inc,v 1.1.2.7 2010/12/22 19:30:29 matslats Exp $
 
-//it is initialised at the moment that this file is included.
-//this includes the controller file
-
-
 /*
  * this is called by the hook mcapi_entity_info
  */
@@ -63,14 +59,6 @@ function mcapi_menu_inc() {
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.inc',
   );
-  $items['admin/accounting/currency'] = array(
-    'title' => 'Currency configuration',
-    'description' => 'Name and appearance of the default currency',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_currency_form'),
-    'access arguments' => array('manage all transactions'),
-    'file' => 'currencies.admin.inc'
-  );
   $items['admin/accounting/entity_controller'] = array(
     'title' => 'Entity controller',
     'description' => "Choose which lump of code reads and writes your transaction data.",
@@ -78,6 +66,23 @@ function mcapi_menu_inc() {
     'page arguments' => array('mcapi_controller_options_form'),
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.install',
+  );
+  $items['admin/accounting/currencies/add'] = array(
+    'title' => 'Declare currency',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('currency_form'),
+    'access arguments' => array('declare currency'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'currencies.inc'
+  );
+  $items['admin/accounting/currencies/%currency/edit'] = array(
+    'title' => 'Modify currency',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('currency_form', 3),
+    'access callback' => 'currency_access',
+    'access arguments' => array('edit', 1),
+    'type' => MENU_CALLBACK,
+    'file' => 'currencies.inc'
   );
   $items['transaction/%transaction'] = array(
     'title callback' => 'transaction_menu_title',

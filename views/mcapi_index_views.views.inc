@@ -132,23 +132,21 @@ function mcapi_index_views_views_data() {
     )
   );
 
-  if (module_exists('mcapi_currencies')) {
-    $data['mcapi_index']['currcode'] = array(
-      'title' => t('Currency'),
-      'help' => t("The currency ID"),
-      'field' => array(
-        //this needs a custom handler
-        'handler' => 'views_handler_field_mcapi_index_currcode',
-        'click sortable' => TRUE,
-      ),
-      'filter' => array(
-         'handler' => 'views_handler_filter_mcapi_currency'
-      ),
-      'argument' => array(
-        'handler' => 'views_handler_argument',
-      ),
-    );
-  }
+  $data['mcapi_index']['currcode'] = array(
+    'title' => t('Currency'),
+    'help' => t("The currency ID"),
+    'field' => array(
+      //this needs a custom handler
+      'handler' => 'views_handler_field_mcapi_index_currcode',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+       'handler' => 'views_handler_filter_mcapi_currency'
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument',
+    ),
+  );
   return $data;
 }
 

@@ -6,7 +6,7 @@ $plugin = array(
 
   // The access permission to use. If not provided it will default to
   // 'administer site configuration'
-  'access' => 'manage all transactions',
+  'access' => 'configure all currencies',
 
   // You can actually define large chunks of the menu system here. Nothing
   // is required here. If you leave out the values, the prefix will default
@@ -33,9 +33,9 @@ $plugin = array(
   //
   // All callbacks will accept &$form and &$form_state as arguments.
   'form' => array(
-    'settings' => 'mcapi_currencies_form',
-    'validate' => 'mcapi_currencies_form_validate',
-    'submit' => 'mcapi_currencies_form_submit',
+    'settings' => 'mcapi_currency_form',
+    'validate' => 'mcapi_currency_form_validate',
+    'submit' => 'mcapi_currency_form_submit',
   ),
   'strings' => array(
     'confirmation' => array(
@@ -49,5 +49,5 @@ $plugin = array(
       ),
     ),
   ),
-  'handler' => 'mcapi_currencies_ui',
+  'handler' => 'mcapi_ui',
 );

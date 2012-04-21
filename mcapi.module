@@ -1,7 +1,7 @@
 <?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
-module_load_include('field.inc', 'mcapi');
-module_load_include('controller', variable_get('mcapi_controller', 'mcapi'));
+include('mcapi.field.inc');
+include(variable_get('mcapi_controller', 'mcapi').'.controller');
 
 /**
  * @file
@@ -63,15 +63,13 @@ function mcapi_menu() {
 function mcapi_menu_alter(&$items) {
   foreach (array_keys($items) as $key) {
     //we don't need to see the page for arranging the bundle fields,
-    if (substr($key, 0, 41) == 'admin/accounting/edit/display' || substr($key, 0, 38) == 'admin/accounting/currency/edit/display') {
+    if (substr($key, 0, 41) == 'admin/accounting/edit/display') {
       unset($items[$key]);
     }
   }
   unset($items['admin/accounting/edit/display']);
-  unset($items['admin/accounting/currency/edit/display']);
   unset($items['admin/accounting/fields/worth/delete']);
   //but we do want to manage the fields for two entity types on one page.
-  $items['admin/accounting/currency/edit/fields']['title'] = 'Currency fields';
   $items['admin/accounting/edit/fields']['title'] = 'Transaction fields';
 }
 
@@ -92,6 +90,26 @@ function transaction_form($form, &$form_state) {
   $transaction = isset($form_state['transaction']) ? $form_state['transaction'] : (
     empty($form_state['build_info']['args'][0]) ? new_transaction() : $form_state['build_info']['args'][0]);
   return _transaction_form($form, $form_state, $transaction);
+}
+
+/*
+ * menu callback for editing a currency, determined by the ctools export_plugin
+ */
+function mcapi_currency_form(&$form, &$form_state){
+  form_load_include($form_state, 'inc', 'mcapi', 'currencies');
+  $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
+  if (empty($currency->name)) {
+    $currency = current(currencies_load);
+    $currency->uid = $GLOBALS['user']->uid;
+    $currency->display['format'] = '';
+  }
+  else {
+    drupal_set_title( !empty($currency->name) ? $title = t("Edit currency '@name'", array('@name' => $currency->name)) : t('Declare currency') );
+  }
+  if (isset($form_state['values']['uid'])) {
+    $currency->uid = $form_state['values']['uid'];
+  }
+  _mcapi_currency_form($form, $form_state, $currency);
 }
 
 /*
@@ -167,6 +185,14 @@ function mcapi_mcapi_info_drupal_permissions() {
     'manage all transactions' => array(
       'title' => t('Manage all transactions'),
       'description' => t('Retrospectively manage transactions'),
+    ),
+    'configure all currencies' => array(
+      'title' => t('Configure all currencies'),
+      'description' => t('Edit the properties of any currency')
+    ),
+    'declare currency' => array(
+      'title' => t('Declare currency'),
+      'description' => t('Create a new currency'),
     )
   );
 }
@@ -195,7 +221,7 @@ function mcapi_mcapi_info_permissions() {
  * Note some settings may even restric access to user 1
  */
 function transaction_access($op, $transaction, $account = NULL) {
-  module_load_include('admin.inc', 'mcapi', 'currencies');
+  module_load_include('inc', 'mcapi', 'currencies');
   module_load_include('inc', 'mcapi');
   if (empty($account)) {
     $account = $GLOBALS['user'];
@@ -317,16 +343,15 @@ function template_preprocess_transaction(&$variables) {
   }
 }
 
-// this shouldn't be necessary, but how else to get a dynamic list of tokens?
-function mcapi_get_tokens() {
-  module_load_include('tokens.inc', 'mcapi');
-  $info = mcapi_token_info();
-  $markers = array_keys($info['tokens']['transaction']);
-  $tokens = array();
-  foreach ($markers as $token) {
-    $tokens[] = "[transaction:$token]";
+// this shouldn't be necessary, but how else to get a list of tokens, in groups, for including on form field descriptions?
+function matslats_list_tokens($type1, $type2) {
+  $info = token_info();
+  foreach(func_get_args() as $type) {
+    foreach($info['tokens'][$type] as $tok => $data) {
+      $tokens[] = "[$type:$tok]";
+    }
   }
-  return implode(', ', $tokens);
+  return $tokens;
 }
 
 
@@ -341,13 +366,15 @@ function transaction_all_submit($form, &$form_state) {
   $transaction->modified = REQUEST_TIME;
   $transaction->state = $form_state['values']['state'];
   $transaction = transaction_save($transaction);
+  /*
+  //the following are not called here but in the transaction controller.
+  //this is because the controller has it's own understanding of 'update' and erase
   field_attach_submit('transaction', $transaction, $form, $form_state);
-  module_invoke_all('entity_insert', $transaction, 'transaction');
-
+  module_invoke_all('entity_'.$op, $transaction, 'transaction');
+  */
   if (!isset($form_state['redirect'])) {
     $form_state['redirect'] = 'transaction/'.$transaction->xid;
   }
-  //execute the hook / or trigger ????
 }
 
 
@@ -460,20 +487,20 @@ function currency_load($currcode = 0) {
  * Load all the currencies from cache filter
  * then optionally return them filtered for which ones an account can use.
  */
-function currencies_load($account = NULL) {
+function currencies_load($account = NULL, $refresh = FALSE) {
   $currencies = &drupal_static('currencies');
+  if ($refresh) unset($currencies);
   if (!$currencies) {//first time this page request.
-    $cache = cache_get('currencies');
-    if ($cache) {
+    if ($cache = cache_get('currencies')) {
       $currencies = $cache->data;
     }
     else {
-      module_load_include('admin.inc', 'mcapi', 'currencies');
-      $currencies = currencies_recache();
+      module_load_include('inc', 'mcapi', 'currencies');
+      $currencies = currencies_load_all();
     }
   }
   if (empty($account)) return $currencies;
-  module_load_include('admin.inc', 'mcapi', 'currencies');
+  module_load_include('inc', 'mcapi', 'currencies');
   $filtered = array();
   foreach ($currencies as $currcode => $currency) {
     if (currency_access('use', $currency, $account)) {
@@ -494,16 +521,28 @@ function mcapi_variable_info() {
     'description' => t('The module that controls how the transactions are read and written to the database.'),
     'required' => TRUE,
   );
-  $vars['currency_default'] = array(
-    'type' => 'unknown',
-    'title' => t('Default currency'),
-    'description' => t('The currency when mcapi_currencies is not installed'),
-    'required' => TRUE,
-  );
   return $vars;
 }
 
+/*
+ * Implements ctools hook_ctools_plugin_api
+ */
+function mcapi_ctools_plugin_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi'),
+  );
+}
 
+
+/*
+ * Implements ctools hook_ctools_plugin_directory
+ */
+function mcapi_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/export_ui';//directory
+  }
+}
 /*
  * Implements views hook_views_api
  */
@@ -513,6 +552,7 @@ function mcapi_views_api() {
     'path' => drupal_get_path('module', 'mcapi') . '/views',
   );
 }
+
 
 //================
 //this could all go in a views.inc file I think
@@ -631,4 +671,127 @@ function mcapi_format_usernames($accounts) {
     $names[] = format_username($account);
   }
   return implode(' & ' ,$names);
+}
+
+/*
+ * returns a form element for picking a currency
+ */
+function currency_picker_element($default = NULL, $multiple = FALSE, $picker_options = array()) {
+  if (empty($picker_options)) {
+    $picker_options = currency_picker_element_options();
+  }
+  if (count($picker_options) == 1) {
+    return array(
+      '#type' => 'hidden',
+      '#value' => key($picker_options)
+    );
+  }
+  if($default == NULL) {
+    $picker_options  = array(0 => 'Please choose...') + $picker_options;
+  }
+  return array(
+    '#title' => t('Currency'),
+    '#type' => 'select',
+    '#options' => $picker_options,
+    '#default_value' => $default,
+    '#multiple' => $multiple,
+  );
+}
+//build a key value array of currency codes and currency names
+function currency_picker_element_options($currencies = array()) {
+  if (empty($currencies)) {
+    $currencies = currencies_load();
+  }
+  foreach ($currencies as $currency) {
+    $options[$currency->info['currcode']] = $currency->name;
+  }
+  return $options;
+}
+
+/*
+ * Actions and triggers - all this needs testing
+ */
+
+/*
+ * Implements hook_action_info
+ */
+function mcapi_action_info() {
+  module_load_include('inc', 'mcapi');
+  return array(
+    'record_exchange_action' => array(
+      'type' => 'node',
+      'label' => t('Record Exchange'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+    )
+  );
+}
+/*
+ * Callback for action config
+ * odd that form_state isn't passed
+ * this means we can't do form_load_include
+ */
+function record_exchange_action_form($context) {
+  //make a new_transaction(), and fill in from the defaults
+  $values = array('values' => $context);
+  $transaction_form = transaction_form(array(), $values);
+  unset($transaction_form['buttons']);
+  $form['template'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('transaction template'),
+    'transaction' => $transaction_form
+  );
+
+  //I just can't figure out how to handle attached fields here
+  //it seems to rely on the form_state, which might mean invoking transaction_form in a different way
+  //unset($form['template']['transaction']['buttons']);
+  //these need to be set
+  $form['template']['transaction']['worth']['#required'] = TRUE;
+  $form['template']['transaction']['#description'] = TRUE;
+
+  //this form should really have a validation function to ensure that at least one participant is provided
+  return $form;
+}
+/*
+ * submit callback for action config
+ */
+function record_exchange_action_submit($form, $form_state) {
+  return $form_state['values'];
+}
+/*
+ * callback to execute the action
+ */
+function record_exchange_action($node, $context) {
+  $transaction = new_transaction();
+  $transaction->currcode = $context['currcode'];
+  $transaction->worth = $context['worth'];
+  $transaction->payer = $context['payer'];
+  $transaction->payee = $context['payee'];
+  $transaction->state = TRANSACTION_STATE_FINISHED; //NEED TO GET RID OF UNSET STATE
+
+    if (empty($transaction->payer)) {
+      $transaction->payer = $node->uid;
+    }
+    elseif (empty($transaction->payee)) {
+      $transaction->payee = $node->uid;
+    }
+  transaction_save($transaction);
+}
+/*
+ * implements hook_trigger_info
+ */
+function mcapi_trigger_info() {
+  return array(
+    'mcapi' => array(
+      'transaction_record' => array(
+        'label' => t('Record a new_transaction() in the database.'),
+      ),
+      'transaction_modify' => array(
+        'label' => t('Editing a transaction which already exists.'),
+      ),
+      'transaction_erase' => array(
+        'label' => t('Erase or delete a transaction.'),
+      ),
+    ),
+  );
 }

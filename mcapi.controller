@@ -166,6 +166,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $query = db_delete('mcapi_transactions')
         ->condition('xid', $transaction->xid)
         ->execute();
+        field_attach_delete('transaction', $transaction);
         module_invoke_all('entity_delete', $transaction, 'transaction');
       default:
         throw new Exception(t('Deletions not allowed'));

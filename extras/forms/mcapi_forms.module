@@ -300,3 +300,13 @@ function mcapi_form_template($mcapi_form, $step = 0) {
   if (isset($steps[$step])) return $steps[$step];
   return array_shift($steps);
 }
+
+
+function mcapi_forms_form_form_ui_field_edit_form_alter(&$form, $form_state) {
+  //because default values are best set in the forms
+  unset($form['instance']['default_value_widget']);
+  //because this module removes the #theme_wrapper from form elements, so the title is invisible anyway
+  unset($form['instance']['label']);
+  //ditto
+  unset($form['instance']['description']);
+}

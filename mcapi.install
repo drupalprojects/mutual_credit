@@ -17,7 +17,6 @@ function mcapi_install() {
   //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
   //could all these be done in one query?
   db_update('system')->fields(array('weight' => -1))->condition('name', 'mcapi')->execute(); //before ctools
-  db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_currencies')->execute();
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_forms')->execute();
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_limits')->execute();
   db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_pending')->execute();
@@ -31,6 +30,58 @@ function mcapi_install() {
       $data['entity_types'][] = 'transaction';
       $data_col = serialize($data);
       db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
+    }
+  }
+  //add an icon and description field if those modules are enabled
+
+  $fields = field_read_fields();
+  if (in_array('image', $modules)) {
+    $instance = field_info_instance('currency', 'field_image', 'currency');
+    if (empty($instance)) {
+      $currency_icon = array(
+        'field_name' => 'field_image',
+        'entity_type' => 'currency',
+        'label' => 'Icon',
+        'bundle' => 'currency',
+        'description' => t('A small graphical representation of the currency'),
+        'required' => FALSE,
+        'settings' => array(
+          'file_directory' => 'field/image',
+          'file_extensions' => 'png gif jpg jpeg',
+          'max_filesize' => '2048',
+          'max_resolution' => '20x20',
+          'min_resolution' => '12x12',
+          'alt_field' => FALSE,
+          'title_field' => TRUE,
+        ),
+        'display' => array(
+          'default' => array(
+            'label' => 'hidden',
+            'type' => 'image',
+            'settings' => array('image_style' => 'curr_icon', 'image_link' => ''),
+            'weight' => -1,
+          ),
+        ),
+      );
+      field_create_instance($currency_icon);
+    }
+    $instance = field_info_instance('currency', 'body', 'currency');
+    if (empty($instance)) {
+      $rationale = array(
+        'field_name' => 'body',
+        'entity_type' => 'currency',
+        'bundle' => 'currency',
+        'label' => t('Rationale'),
+        'widget_type' => 'text_textarea_with_summary',
+        'description' => t('What are the monetary credentials of this currency?'),
+        'settings' => array(
+          'default' => array(
+            'label' => 'hidden',
+            'type' => 'text_default',
+          ),
+        )
+      );
+      field_create_instance($rationale);
     }
   }
 }
@@ -76,6 +127,9 @@ function mcapi_enable() {
   cache_clear_all("entity_info:".$language->language, 'cache');
   //this seems to have been omitted from core...
   menu_rebuild();
+}
+function mcapi_disable() {
+  cache_clear_all('currencies', 'cache');
 }
 
 /**
@@ -155,6 +209,43 @@ function mcapi_schema() {
       ),
     ),
     'primary key' => array('xid'),
+  );
+
+  $schema['mcapi_currencies'] = array(
+    'description' => 'metadata for currencies, in addition to name and title',
+    'fields' => array(
+      'currcode' => array(
+        'description' => 'the unique currency ID',
+        'type' => 'varchar',
+        'length' => '8',
+      ),
+      'data' => array(
+        'description' => 'the currency object',
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('currcode'),
+    'unique keys' => array(
+      'name' => array('currcode')
+    ),
+    'export' => array(
+      'key' => 'currcode',
+      'key name' => t('Universal currency code (8 chars, immutable)'),
+      'primary key' => 'currcode',
+      'identifier' => 'mcapicurrency',
+      'api' => array(
+        'owner' => 'mcapicurrencies',
+        'api' => 'mcapicurrencies_default',
+        'minimum_version' => 3,
+        'current_version' => 3,
+      ),
+      'default hook' => 'mcapicurrencies_default',
+      //'load all callback' => 'currencies_ctools_load_all',
+      //'object' => 'stdClass', //not sure that this is the best way... see ctools_export_new_object
+      'admin_title' => 'currcode', //this converts the form field into machine_name I think
+      'bulk export' => TRUE,
+    )
   );
   return $schema;
 }
@@ -293,24 +384,18 @@ function mcapi_update_7000() {
 
   //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
   $currencies = db_query("SELECT * FROM {mc_currencies} c LEFT JOIN {node} n ON c.nid = n.nid ORDER BY c.nid")->fetchAllAssoc('nid');
-  $def = mcapi_update_currency(current($currencies));
-  variable_set('currency_default', (array)$def);
-  if (count($currencies) > 1) {
-    module_enable(array('mcapi_currencies'));
-   //drupal_install_schema('mcapi_currencies');
-    foreach ($currencies as $nid => $cur) {
-      $cur = mcapi_update_currency($cur);
-      $name = $cur->info['currcode'];
-      $row = array('currcode' => $cur->info['currcode'], 'data' => $cur);
-      drupal_write_record('mcapi_currencies', $row);
-      $currs[$nid] = $cur->info['currcode'];
-      //need to do something with the old currency nodes
-    }
-    drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($currencies))));
+
+  foreach ($currencies as $nid => $oldcur) {
+    $cur = mcapi_update_currency($oldcur);
+    $row = array(
+      'currcode' => $cur->info['currcode'],
+      'data' => $cur
+    );
+    drupal_write_record('mcapi_currencies', $row);
+    $currs[$nid] = $cur->info['currcode'];
+    //need to do something with the old currency nodes
   }
-  else {
-    drupal_set_message('The default currency has been upgraded');
-  }
+  drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($currencies))));
 }
 
 /*
@@ -464,11 +549,6 @@ function mcapi_update_7002() {
     If transactions were categorised, the categories have not been upgraded
     Any other cck fields which had been added to the transaction node-type have not been upgraded, (unless via core).'
   );
-  module_load_include('admin.inc', 'mcapi', 'currencies');
-  currencies_recache();
-  registry_rebuild();
-  menu_rebuild();
-  db_drop_table('mc_currencies');
 }
 
 
@@ -480,15 +560,13 @@ function mcapi_update_7003() {
   db_query("UPDATE {mcapi_transactions} SET state = -1 WHERE state = 11");//move pending state from 1
   db_query("UPDATE {mcapi_transactions} SET state = 0 WHERE state = 9");//move erased state from 1
   db_query("UPDATE {mcapi_transactions} SET state = -2 WHERE state = 8");//keep initiated state at -2
-  menu_rebuild(); //this is important for refreshing the transaction forms
-  drupal_set_message('The transaction state values have changed. This causes some knock on effects so it might be a good time to reinstall completely');
-  drupal_set_message('Check all views involving the transaction->state filter or arguments','warning');
-  drupal_set_message('Check all transaction forms output states','warning');
-  drupal_set_message('Edit all currencies where it says view, update & erase, ','warning');
 }
 
 function mcapi_update_7004() {
   db_query("UPDATE {mcapi_transactions} SET state = -2 WHERE state = -3");
+  currencies_load(NULL, TRUE);
+  registry_rebuild();
+  menu_rebuild();
 }
 
 function __mcapi_update_7005() {
@@ -496,7 +574,7 @@ function __mcapi_update_7005() {
 
 function mcapi_update_currency($old_currency) {
   //get the default currency for this module, and populate with the old default currency
-  module_load_include('admin.inc', 'mcapi', 'currencies');
+  require_once('currencies.inc');
   $currency = currency_default();
   $currency->info['currcode'] = str_replace(' ', '_', substr($old_currency->title, 0, 8));
   $currency->name = $old_currency->title;

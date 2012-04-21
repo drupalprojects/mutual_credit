@@ -16,6 +16,3 @@ However a more usable option is provided which assumes that the logged in user i
 
 2) The 3rd party transactions have an option to allow multiple payers OR multiple payees.
 
-Future
-
-Might want to put the UI in its own module, like views and others, although it's all in the admin.inc file, currently 18k

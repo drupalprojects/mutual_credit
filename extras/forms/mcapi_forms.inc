@@ -176,7 +176,6 @@ function new_transaction_presets($mcapi_formdata) {
   foreach($fields as $field) {
     $transaction->$field = $mcapi_formdata[$field]['preset'];
   }
-  debug($transaction, 'this should not run on the confirmation page');
   return $transaction;
 }
 
@@ -303,7 +302,6 @@ function mcapi_forms_validate_secondperson($form, &$form_state) {
     $values['payer'] = $GLOBALS['user']->uid;
     $values['payee'] = $values['secondperson'];
   }
-  else {print_r($values); die();}
 }
 
 /*

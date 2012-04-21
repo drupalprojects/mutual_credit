@@ -67,6 +67,9 @@
 /*
  * Each Client is configured to know the $server url.
  * Then the client and server can have following conversations
+ * Help
+ * Client Request:
+ * Server Response: A description of the rules and ethics on that server + account stats
  *
  * Handshake
  * Client Request: Announces to server, refreshes key, and sends statement data
@@ -87,9 +90,30 @@
  */
 
 //API SPECIFICS
+/*
+ * Help : Client Request
+ * http://myserver.com/intertrading/help/json
+ * POST the handshake array (optional)
+ */
 
 /*
- * Handshake : Client
+ * Help : Server Response :
+ * Returns OK or http error code specified below
+ * or on success this JSON array:
+ */
+array(
+  '@message' => STRING, //html,
+  '@status' => ENUM, // -1 means no account, 0 means blocked, 1 means trading
+  //following arguments are passed if there is handshake
+  '@balance' => INTEGER, //in the base unit i.e. minutes
+  '@min' => INTEGER, //in the base unit i.e. minutes
+  '@max' => INTEGER, //in the base unit i.e. minutes
+  '@count' => INTEGER, //number of transactions
+  '@keymatch' => BOOLEAN //whether the stored key is the same as the given one.
+);
+
+/*
+ * Handshake : Client Request
  * http://myserver.com/exchange/handshake
  * typically called only after it is changed, maybe on cron to update the key
  * POST 2 authentication fields + the report fields (below), + the following
@@ -101,8 +125,14 @@ array (
   'api' => 1.0,
   //relative value of the currency against 1 tick. One tick might be 1 minute, and an hour currency would be 60 ticks
   'ticks' => FLOAT,
+  //the date of the first trade in the system, in case age of the system is needed for membership criteria
+  'first_trade',
+  //Number of traders
+  'traders' => INTEGER,
+  //number of transactions in the last 30 days
+  'transactions' => INTEGER,
   //OPTIONAL FIELDS
-  'fractions' => mixed, //01 means cents OR list of acceptable centilesseparated by pipe|
+  'divisions' => mixed, //01 means cents OR list of acceptable centilesseparated by pipe|
   //The name of the site
   'name' => STRING, 63,
   //Toggle whether all this data should be visible to the public
@@ -128,10 +158,6 @@ array (
  * POST 2 authentication fields + the following
  */
 array(
-  //Number of traders
-  'traders' => INTEGER,
-  //number of transactions in the last 30 days
-  'transactions' => INTEGER,
   //Last 365 days volume
   'volume' => FLOAT,
   //the largest negative balance - an indicator of deficit spending, a common problem

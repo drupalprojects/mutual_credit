@@ -1,27 +1,12 @@
 <?php
 
-/*
- * menu callback for editing a currency
- * NB best not to alter this FORM_ID coz it changes when mcapi_currencies is installed
- * instead use hook_currency_innerform_alter
- */
-function mcapi_currency_form($form, &$form_state){
-  form_load_include($form_state, 'admin.inc', 'mcapi', 'currencies');
-  //by using a hook here instead of form_alter, we leave form_alter available for other
-  $form['#currency'] = isset($form_state['values']) ? (object)$form_state['values'] : currency_default();
+
+function _mcapi_currency_form(&$form, &$form_state, $currency){
   $form['info']['currcode'] = array(
     '#type' => 'hidden',
-    '#default_value' => $form['#currency']->info['currcode'],
+    '#default_value' => $currency->info['currcode'],
     '#element_validate' => array('form_validate_machine_name')
   );
-  _mcapi_currency_innerform($form, $form_state);
-  return $form;
-}
-
-/*
- * builds that part of the currency edit form which is common in all circumstances
- */
-function _mcapi_currency_innerform(&$form, &$form_state) {
   //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
   $form['#tree'] = TRUE;
   $form['info']['currcode']['#maxlength'] = 8;
@@ -29,16 +14,18 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#title' => t('Name of currency'),
     '#description' => t('Use the plural'),
     '#type' => 'textfield',
-    '#default_value' => $form['#currency']->name,
+    '#default_value' => $currency->name,
     '#weight' => -1,
   );
+  //need to do a live machine name preview here, like views does
+  //http://api.drupal.org/api/drupal/includes%21form.inc/function/form_process_machine_name/7
 
   $form['membership_callback'] = array(
     '#title' => t('Membership'),
     '#description' => t('Determine which users are permitted to use this currency'),
     '#type' => 'select',
     '#options' => module_invoke_all('mcapi_access'),
-    '#default_value' => $form['#currency']->membership_callback,
+    '#default_value' => $currency->membership_callback,
     '#weight' => 3,
   );
 
@@ -52,7 +39,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#description' => t('Write an expression to control the display of the currency using html, css and the following tokens:') .'@minus, @integer, @subdivision.' .' '.
        t('For example, !a shows as !b', array('!a' => '<em>@minus@integer:@subdivision AUS</em>', '!b' => '<em>-99:99 AUS</em>')),
     '#type' => 'textfield',
-    '#default_value' => $form['#currency']->display['format'],
+    '#default_value' => $currency->display['format'],
     '#element_validate' => array('mcapi_currency_validate_format'),
     '#required' => TRUE,
     '#weight' => 1
@@ -66,7 +53,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
       CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in same field, with decimal point'),
       CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions, below')
     ),
-    '#default_value' => $form['#currency']->display['divisions'],
+    '#default_value' => $currency->display['divisions'],
     '#weight' => 2
   );
   $form['display']['divisions_allowed'] = array(
@@ -76,7 +63,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#cols' => 60,
     '#rows' => 4,
     '#resizable' => FALSE,
-    '#default_value' => isset($form['#currency']->display['divisions_allowed']) ? $form['#currency']->display['divisions_allowed'] : "0|/.\n25|1/4\n50|1/2\n75|3/4",
+    '#default_value' => isset($currency->display['divisions_allowed']) ? $currency->display['divisions_allowed'] : "0|/.\n25|1/4\n50|1/2\n75|3/4",
     '#element_validate' => array('mcapi_currency_validate_divisions'),
     '#weight' => 3
   );
@@ -86,7 +73,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
-  if (isset($form['#currency']->accounting)) { //not all engines will do this
+  if (isset($currency->accounting)) { //not all engines will do this
     $form['accounting'] = array(
       '#title' => t('Accounting standards'),
       '#description' => t('More or less formal accounting standards can be determined.') .' '.
@@ -103,7 +90,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
           2 => t("Update same record"),
           //3 => t("Use entity versioning the same transaction (not available)"),
         ),
-        '#default_value' => $form['#currency']->accounting['update_mode'],
+        '#default_value' => $currency->accounting['update_mode'],
         '#weight' => 1,
         '#element_validate' => array('mcapi_currency_validate_update_mode'),
         //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
@@ -120,7 +107,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
           1 => t('Mark deleted'),
           2 => t('Remove all traces from the database (not from backups)'),
         ),
-        '#default_value' => $form['#currency']->accounting['erase_mode'],
+        '#default_value' => $currency->accounting['erase_mode'],
         '#weight' => 2,
         '#ajax' => array(
           'callback' => 'currency_form_ajax',
@@ -130,7 +117,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     );
 
     //alter the options according to what is set
-    if ($form['#currency']->accounting['erase_mode'] == 0) {
+    if ($currency->accounting['erase_mode'] == 0) {
       unset($form['accounting']['update_mode']['#options'][1]);
       if ($form['accounting']['update_mode']['#default_value'] == 1) {
         $form['accounting']['update_mode']['#default_value'] = 0;
@@ -138,7 +125,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     }
 
     $operations['update'] = $form['accounting']['update_mode']['#default_value'] ? t('Update') : NULL;
-    $operations['erase'] =  $form['#currency']->accounting['erase_mode'] ? t('Erase') : NULL;
+    $operations['erase'] =  $currency->accounting['erase_mode'] ? t('Erase') : NULL;
   }
   $states = mcapi_states();
   $i = 0; $j = 0;
@@ -151,7 +138,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
       '#group' => 'additional_settings',
       '#weight' => $i++,
     );
-    $defaults = $form['#currency']->$op;
+    $defaults = $currency->$op;
     foreach ($states as $constant => $state) {
       $form[$op][$constant] = array(
         '#title' => $state,
@@ -166,7 +153,7 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
     '#title' => t('Allow zero value transactions'),
     '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
     '#type' => 'checkbox',
-    '#default_value' => $form['#currency']->zero,
+    '#default_value' => $currency->zero,
     '#weight' => 15,
   );
 
@@ -178,33 +165,30 @@ function _mcapi_currency_innerform(&$form, &$form_state) {
       '#weight' => 20
     )
   );
-  //we use a special alter hook here because the form name is different depending on whether mcapi_currencies is installed
-  drupal_alter('currency_innerform', $form, $form_state);
+
+  $form['uid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Declared by'),
+    '#maxlength' => 60,
+    '#autocomplete_path' => 'user/autocomplete',
+    '#default_value' => $currency->uid ? user_load($currency->uid)->name : $GLOBALS['user']->name,
+    '#element_validate' => array('mcapi_validate_usernames'),
+    '#required' => TRUE,
+    '#weight' => 4
+  );
+
+  //nasty design flaw around radio buttons which means ajax rebuilds them wrong
+  if (arg(0) == 'system') {
+    unset($form['accounting']['update_mode']['#title']);
+  }
+
+  if (isset($currency->currcode)) {
+    $form['buttons']['submit']['#value'] = t('Update');
+  }
 }
 
 function currency_form_ajax(&$form, &$form_state) {
   return $form;
-}
-
-/*
- * implements hook_form_FORMID_alter
- * because if you add #submit handlers before this then it doesn't do so automatically
- */
-function mcapi_form_mcapi_currency_form_alter() {
-  $form['#submit'][] = 'currencies_recache';
-}
-
-//validate is in currencies.admin.inc because it's the same for one or many currencies
-/*
- * Submit callback for mcapi_currency_form
- * saves the currency as a variable
- */
-function mcapi_currency_form_submit($form, $form_state) {
-  //save the currency settings as a nested array, exactly as they came out of the form
-  form_state_values_clean($form_state);
-  variable_set('currency_default', $form_state['values']);
-  drupal_set_message(t('Your default currency has been saved.'));
-  register_shutdown_function('currencies_recache');
 }
 
 
@@ -250,18 +234,6 @@ function mcapi_currency_validate_update_mode(&$element, $form_state) {
   }
 }
 
-/*
- * Called from the formAPI
- * Checks for duplicate currency names
- * may not be necessary with ctools
- */
-function mcapi_currency_validate_name(&$element, $form_state) {
-  $element['#value'] = check_plain($element['#value']);
-  if (!module_exists('mcapi_currencies')) return;
-  //should check for dupes but this is tricky actually given this is used for creating and editing.
-  return; //will rely on drupal exception handling
-}
-
 
 /*
  * Validate callback for transaction form 'currcode' element
@@ -273,53 +245,6 @@ function mcapi_validate_currcode(&$element, $form_state) {
       form_error($element, t('Invalid currency specified: @num', array('@num' => $element['#value'])));
     }
   }
-}
-
-
-/*
- * Functions to handle the default currency, if mcapi_currencies isn't installed
- */
-function currency_default() {
-  module_load_include('inc', 'mcapi');
-  $currency = variable_get('currency_default', array(
-    //default currency name is taken from the site_name at the moment it's first called
-    'info' => array(//this structure anticipates ctools and mcapi_currencies.module
-    'currcode' => 'def_'. strtolower(substr(variable_get('site_name', 'error'), 0, 4)),
-    ),
-    'name' =>  t('Community Coins'),
-    'display' => array(
-      'format' => '@minus<strong>CC</strong>@integer:@subdivision',
-      'divisions' => '',
-      'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
-    ),
-    'accounting' => array(
-      'update_mode' => 1,
-      'erase_mode' => 1
-    ),
-    'uid' => 1,
-    'membership_callback' => 'mcapi_use_currency',
-    'view' => array(
-      1 => 'mcapi_access_participants_admin',
-      0 => 'mcapi_access_authenticated',
-      -1 => 'mcapi_access_none',
-      -2 => 'mcapi_access_admin'
-    ),
-    'update' => array(
-      1 => 'mcapi_access_creator',
-      0 => 'mcapi_access_none',
-      -1 => 'mcapi_access_none',
-      -2 => 'mcapi_access_admin'
-    ),
-    'erase' => array(
-      1 => 'mcapi_access_none',
-      0 => 'mcapi_access_none',
-      -1 => 'mcapi_access_none',
-      -2 => 'mcapi_access_admin'
-    ),
-    'zero' => 0,
-  ));
-  $currency = (object)$currency;
-  return $currency;
 }
 
 /*
@@ -337,52 +262,7 @@ function currency_access($op, $currency, $account = NULL) {
       return $uid == $currency->uid || user_access('configure all currencies');
   }
 }
-/*
- * currency membership callback
- */
-function mcapi_use_currency() {
-  return user_access('transact');
-}
 
-//put the currencies back in the cache
-function currencies_recache() {
-  cache_clear_all('currencies', 'cache');
-  if (module_exists('mcapi_currencies')) {
-    $currencies = currencies_load_all();
-  }
-  else {
-    $currency = currency_default();
-    $currencies[$currency->info['currcode']] = $currency;
-  }
-  $states = mcapi_states();
-  $functions = array_keys(module_invoke_all('mcapi_info_permissions'));
-  foreach ($currencies as $currcode => $currency) {
-    $divisions = array();
-    //convert the divisions_allowed into an array
-    if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
-      foreach(explode("\n", $currency->display['divisions_allowed']) as $line) {
-        list($cent, $display) = explode('|', $line);
-        $divisions[$cent] = $display;
-      }
-    }
-    $currencies[$currcode]->display['divisions_allowed'] = $divisions;
-    //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
-    foreach (array('update', 'erase', 'view') as $op) {
-      foreach ($states as $state => $name) {
-        $callbacks = &$currencies[$currcode]->$op;
-        if (!in_array($callbacks[$state], $functions)) {
-          drupal_set_message(t(
-            "Currency 2nd_cur has no permission set for op '@op' and state @state",
-            array('@op' => $op, '@state' => $name)
-          ), 'warning', FALSE);
-          $callbacks[$state] = 'mcapi_access_participants';
-        }
-      }
-    }
-  }
-  cache_set('currencies', $currencies);
-  return $currencies;
-}
 
 /*
  * Implements hook_mcapi_access
@@ -392,4 +272,87 @@ function mcapi_mcapi_access() {
   return array(
     'mcapi_use_currency' => t("According to permission '@perm'", array('@perm' => t('transact')))
   );
+}
+
+/*
+ * currency membership callback
+ */
+function mcapi_use_currency() {
+  return user_access('transact');
+}
+
+
+
+function transaction_validate_currency_access($form, $form_state) {
+  $transaction = &$form_state['transaction'];
+  $currency = currency_load($transaction->currcode);
+  $participants = array('payer', 'payer');
+  foreach ($participants as $participant) {
+    if (!currency_access('use', $currency, $transaction->$participant)) {
+      form_set_error($participant, t("!name is not permitted to use @currency", array(
+        '!name' => format_username(user_load($transaction->$participant)),
+        '@currency' => $currency->name
+      )));
+    }
+  }
+}
+
+
+function currencies_load_all() {
+  ctools_include('export');
+  $states = mcapi_states();
+  $functions = array_keys(module_invoke_all('mcapi_info_permissions'));
+  $all = ctools_export_crud_load_all('mcapi_currencies');
+  //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
+  foreach($all as $currcode => $currency_ctools_obj) {
+    if (!empty($currency_ctools_obj->disabled)) continue;
+    $currency = $currency_ctools_obj->data;
+    //convert the divisions_allowed into an array
+    $divisions = array();
+    if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
+      foreach(explode("\n", $currency->display['divisions_allowed']) as $line) {
+        list($cent, $display) = explode('|', $line);
+        $divisions[$cent] = $display;
+      }
+    }
+    $currency->display['divisions_allowed'] = $divisions;
+    //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
+    foreach (array('update', 'erase', 'view') as $op) {
+      foreach ($states as $state => $name) {
+        $callbacks = $currency->$op;
+        if (!in_array($callbacks[$state], $functions)) {
+          drupal_set_message(t(
+            "Currency @name has no permission set for op '@op' and state @state",
+            array('@op' => $op, '@state' => $name, '@name' => $currcode)
+          ), 'warning', FALSE);
+          $callbacks[$state] = 'mcapi_access_participants';
+        }
+      }
+    }
+
+    $currencies[$currcode] = $currency;
+  }
+  return $currencies;
+}
+function mcapi_currency_form_validate(&$form, &$form_state) {
+  
+}
+
+/*
+ * Submit callback for mcapi_currency_form
+ * saves the currency as a variable
+ */
+function mcapi_currency_form_submit($form, $form_state) {
+  form_state_values_clean($form_state);
+  //I would have thought this database key would have been provided automacically
+  //since the field was created automatically
+  $currcode = &$form_state['values']['info']['currcode'];
+  $form_state['item']->currcode = empty($currcode) ?  : $currcode;
+  $form_state['item']->data = (object)$form_state['values'];
+  register_shutdown_function('currencies_load_refresh');
+}
+
+//utility callback (takes no args)
+function currencies_load_refresh() {
+  currencies_load(NULL, TRUE);
 }

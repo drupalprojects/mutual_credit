@@ -1,6 +1,6 @@
 <?php
 
-class mcapi_currencies_ui extends ctools_export_ui {
+class mcapi_ui extends ctools_export_ui {
 
   function init($plugin) {
     $prefix_count = count(explode('/', $plugin['menu']['menu prefix']));

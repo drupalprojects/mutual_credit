@@ -8,6 +8,7 @@
 //requests the 2ndclient and parses the results
 //keeps them in a format that can be forwarded to the first client
 function intertrading_json_request($url, $params) {
+
   $result = drupal_http_request(
     $url,
     array(
@@ -15,8 +16,10 @@ function intertrading_json_request($url, $params) {
       'data' => http_build_query($params)
     )
   );
+
+  
   $return = new stdClass;
-  $data = json_decode($result->data);
+  $data = json_decode($result->data, TRUE);
   if (count($data) && is_array($data)) {
     array_walk_recursive($data, 'urldecode_m');
     $return->code = array_shift($data);
@@ -38,13 +41,14 @@ function intertrading_json_request($url, $params) {
   }
   //http status codes failure
   else {
-    $args = array('@message' => drupal_json_decode($result->data));
-    watchdog('intertrading', "Server failed to authenticate with @server; http status @status", $args, WATCHDOG_ERROR);
+    debug($result);
+    $args = array('@client' => $url, '@status' => $result->code);
     $return  = array(
       'code' => 27,
       'message' => intertrading_error_codes(27, $args),
       'args' => $args
     );
+    watchdog('intertrading', "@message", array('@message' => $return['message']), WATCHDOG_ERROR);
   }
   return (object)$return;
 }
@@ -52,12 +56,14 @@ function intertrading_json_request($url, $params) {
 
 
 function intertrading_get_post() {
-  if (count($_POST)) return $_POST;
-  if (isset($GLOBALS['HTTP_RAW_POST_DATA'])) {
+  $post = array();
+  if (count($_POST)) $post = $_POST;
+  elseif (isset($GLOBALS['HTTP_RAW_POST_DATA'])) {
     $string = str_replace('&amp;', '&', $GLOBALS['HTTP_RAW_POST_DATA']);
-    return drupal_get_query_array($string);
+    $post = drupal_get_query_array($string);
   }
-  return array();
+  array_walk_recursive($post, 'urldecode_m');
+  return $post;
 }
 
 
@@ -81,7 +87,7 @@ function intertrading_validate_transaction_post(&$data) {
   }
   foreach ($fields as $fieldname) {
     if (empty($data[$fieldname])) {
-      intertrading_respond(8,  array('@value' => $data[$field], '@fieldname' => $fieldname));
+      intertrading_respond(8,  array('@value' => $data[$fieldname], '@fieldname' => $fieldname));
     }
     intertrading_xss_validate($data[$fieldname], $fieldname);
   }
@@ -126,11 +132,12 @@ function intertrading_mimic_form_state_values($creator, $payer, $payee, $type, $
 
 
 function intertrading_error() {
-  $strings[] = '-';
-  $strings[] = variable_get('site_name', 'blah') .'...'. date('D H:i:s');
+  $args = func_get_args();
+  $args[] = debug_backtrace();
   foreach (func_get_args() as $arg) {
     $strings[] = print_r($arg, 1);
   }
+  watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
   //file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
 }
 
@@ -146,25 +153,26 @@ function intertrading_error_codes($code, $args = array()) {
     case 5: return t('Problem saving transaction on server: @message', $args);
     case 6: return t('Unknown account & failed to create a new account on intertrading server');
     case 7: return t('Diagnostics from server: @message', $args);
-    case 8: return t('Invalid transaction field: @fieldname: @value', $args);
+    case 8: return t('Transaction field @fieldname is invalid: : @value', $args);
     //failure to authenticate or validate handshake with server
     case 11: return t('Missing config field: @fieldname', $args);
     case 12: return t('Field @fieldname should be @operator 0: @val', $args);
     case 13: return t('Field @fieldname contains invalid characters', $args);
     case 14: return t('Your Intertrading ratio (balance/volume) exceeds @num%: @balance / @volume', $args);
     case 15: return t("Type error in field '@fieldname'. Should be a @type.", $args);
-    case 16: return t("Your exchange is not permitted on the intertrading network.");
+    case 16: return t("Your exchange is exists, but is blocked on the intertrading network.");
     case 17: return t("Wrong key");
-    case 18: return t("not enough data to authenticate");
+    case 18: return t("Not enough data to authenticate");
     //failure of remote client
-    case 20: return t("Server failed to connect with @server; returned: @message", $args);
+    case 20: return t("Failed to connect with @server; returned: @message", $args);
     case 21: return t("Transaction would exceed remote client's max intertrading limits by @quantity", $args);
     case 22: return t("Transaction would exceed remote client's min intertrading limits by @quantity, $args");
     case 23: return t("Transaction would exceed remote client's min account limits by @quantity, $args");
     case 24: return t("Transaction would exceed remote client's max account limits by @quantity", $args);
     case 25: return t("Misc validation error on remote client: @message", $args);
     case 26: return t("server not found: @server", $args);
-    case 27: return $args['@message'];
+    case 27: return t("Server failed to connect to @client; http status @status", $args);
+    case 28: return t("Unknown mail on @client: @mail", $args);
     default: return t('Unknown error code @code: @args', array('@code' => $code, '@args' => print_r($args, 1)));
   }
 }

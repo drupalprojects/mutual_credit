@@ -32,7 +32,7 @@ function mcapi_getview_user_transactions_summary() {
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['style_plugin'] = 'default';
   $handler->display->display_options['row_plugin'] = 'fields';
-  if (module_exists('mcapi_currencies')) {
+  if (count(currencies_load()) > 1) {
     /* Field: Transaction index: Currency */
     $handler->display->display_options['fields']['currcode']['id'] = 'currcode';
     $handler->display->display_options['fields']['currcode']['table'] = 'mcapi_index';
@@ -235,7 +235,7 @@ function mcapi_getview_statement() {
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid1']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid1']['not'] = 0;
-  if (module_exists('mcapi_currencies')) {
+  if (count(currencies_load()) > 1) {
     /* Filter criterion: Transaction index: Currency */
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
@@ -344,7 +344,7 @@ function mcapi_getview_user_rankings() {
   $handler->display->display_options['fields']['expenditure']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['expenditure']['hide_empty'] = 0;
   $handler->display->display_options['fields']['expenditure']['empty_zero'] = 0;
-  if (module_exists('mcapi_currencies')) {
+  if (count(currencies_load()) > 1) {
     /* Contextual filter: Transaction index: Currency */
     $handler->display->display_options['arguments']['currcode']['id'] = 'currcode';
     $handler->display->display_options['arguments']['currcode']['table'] = 'mcapi_index';
@@ -615,7 +615,7 @@ function mcapi_getview_balance_history() {
   $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid']['not'] = 0;
-  if (module_exists('mcapi_currencies')) {
+  if (count(currencies_load()) > 1) {
     /* Contextual filter: Transaction index: Currency */
     $handler->display->display_options['arguments']['currcode']['id'] = 'currcode';
     $handler->display->display_options['arguments']['currcode']['table'] = 'mcapi_index';
@@ -724,7 +724,7 @@ function mcapi_getview_user_transactions_index() {
   $handler->display->display_options['arguments']['uid1']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   /* Filter criterion: Transaction index: Currency */
-  if (module_exists('mcapi_currencies')) {
+  if (count(currencies_load()) > 1) {
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
     $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
