@@ -349,7 +349,9 @@ function theme_worth_widget($variables) {
       ));
     }
   }
-  return theme('form_element', array('element' => $element));
+  return $element['#children'];
+  //lets not take anything for granted, especially after mcapiforms has removed theme_wrappers
+  //return theme('form_element', array('element' => $element));
 }
 
 /*

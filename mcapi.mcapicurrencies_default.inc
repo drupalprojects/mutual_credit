@@ -8,12 +8,12 @@ function mcapi_mcapicurrencies_default() {
   $currency->disabled = FALSE; /* Edit this to true to make a default currency disabled initially */
   $currency->api_version = 3;
   $currency->currcode = 'def_'. strtolower(substr(variable_get('site_name', 'error'), 0, 4));
-  $currency->data = array(
+  $currency->data = (object)array(
     //default currency name is taken from the site_name at the moment it's first called
     'info' => array(//this wierd structure is for ctools benefit
       'currcode' => $currency->currcode,
     ),
-    'name' =>  t('Community Coins'),
+    'human_name' =>  t('Community Coins'),
     'display' => array(
       'format' => '@minus<strong>CC</strong>@integer:@subdivision',
       'divisions' => '',

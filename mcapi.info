@@ -26,5 +26,5 @@ files[] = views/views_handler_filter_mcapi_currency.inc
 files[] = views/views_plugin_row_transaction.inc
 
 files[] = currencies/mcapi.mcapicurrencies_default.inc
-files[] = currencies/ctools_plugins/export_ui/mcapi_ui.inc
-files[] = currencies/ctools_plugins/export_ui/mcapi_ui.class.php
+files[] = plugins/export_ui/mcapi_ui.inc
+files[] = plugins/export_ui/mcapi_ui.class.php

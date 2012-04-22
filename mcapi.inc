@@ -67,14 +67,6 @@ function mcapi_menu_inc() {
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.install',
   );
-  $items['admin/accounting/currencies/add'] = array(
-    'title' => 'Declare currency',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('currency_form'),
-    'access arguments' => array('declare currency'),
-    'type' => MENU_LOCAL_ACTION,
-    'file' => 'currencies.inc'
-  );
   $items['admin/accounting/currencies/%currency/edit'] = array(
     'title' => 'Modify currency',
     'page callback' => 'drupal_get_form',

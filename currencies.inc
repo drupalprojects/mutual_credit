@@ -2,24 +2,19 @@
 
 
 function _mcapi_currency_form(&$form, &$form_state, $currency){
-  $form['info']['currcode'] = array(
-    '#type' => 'hidden',
-    '#default_value' => $currency->info['currcode'],
-    '#element_validate' => array('form_validate_machine_name')
-  );
+
   //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
   $form['#tree'] = TRUE;
   $form['info']['currcode']['#maxlength'] = 8;
-  $form['name'] = array(
+  $form['human_name'] = array(
     '#title' => t('Name of currency'),
     '#description' => t('Use the plural'),
     '#type' => 'textfield',
-    '#default_value' => $currency->name,
+    '#default_value' => $currency->human_name,
     '#weight' => -1,
   );
   //need to do a live machine name preview here, like views does
   //http://api.drupal.org/api/drupal/includes%21form.inc/function/form_process_machine_name/7
-
   $form['membership_callback'] = array(
     '#title' => t('Membership'),
     '#description' => t('Determine which users are permitted to use this currency'),

@@ -67,8 +67,10 @@ function mcapi_menu_alter(&$items) {
       unset($items[$key]);
     }
   }
-  unset($items['admin/accounting/edit/display']);
+  unset($items['admin/accounting/display']);
+  unset($items['admin/accounting/display/default']);
   unset($items['admin/accounting/fields/worth/delete']);
+  debug($items['admin/accounting/currencies/add']);
   //but we do want to manage the fields for two entity types on one page.
   $items['admin/accounting/edit/fields']['title'] = 'Transaction fields';
 }
@@ -99,7 +101,7 @@ function mcapi_currency_form(&$form, &$form_state){
   form_load_include($form_state, 'inc', 'mcapi', 'currencies');
   $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
   if (empty($currency->name)) {
-    $currency = current(currencies_load);
+    $currency = current(currencies_load());
     $currency->uid = $GLOBALS['user']->uid;
     $currency->display['format'] = '';
   }
@@ -266,7 +268,7 @@ function transaction_adminedit($transaction) {
  * implements hook_theme
  */
 function mcapi_theme($existing, $type, $theme, $path) {
-  return array(
+  $items = array(
     'transaction' => array(
       'template' => 'transaction',
       'pattern' => 'transaction__',
@@ -276,6 +278,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
       )
     )
   ) + mcapi_theme_fields();
+  return $items;
 }
 
 
