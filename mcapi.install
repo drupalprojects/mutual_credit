@@ -517,6 +517,12 @@ function mcapi_update_7004() {
   registry_rebuild();
   menu_rebuild();
 }
+function mcapi_update_7005() {
+  if (!db_query("SELECT status FROM {system} where name = 'mcapi_currencies'")->fetchField()) {
+    db_create_table('mcapi_currencies', drupal_get_schema('mcapi_currencies'));  
+  }
+  db_query("DELETE FROM {system} WHERE name = 'mcapi_currencies'");
+}
 
 function __mcapi_update_7005() {
   }
