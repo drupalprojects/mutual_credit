@@ -200,3 +200,105 @@ function mcapi_views_data_alter(&$items) {
   //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
   $items['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
 }
+
+
+//must return a condition objectmcapi_transactions.state
+function mcapi_access_unrestricted_views($state){
+  $condition = db_and();
+  return $condition->condition('mcapi_transactions.state', $state);
+}
+//must return a condition objectmcapi_transactions.state
+function mcapi_access_creator_views($state){
+  $condition = db_and();
+  return $condition->condition('mcapi_transactions.creator', $GLOBALS['user']->uid);
+}
+function mcapi_access_authenticated_views($state){
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition(0, $GLOBALS['user']->uid, '<>');
+  return $condition;
+}
+function mcapi_access_none_views($state){
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition(0, 1);//which is to say, FALSE
+  return $condition;
+}
+function mcapi_access_participants_admin_views($state) {
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  $subcondition = db_or();
+  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
+  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
+  $subcondition->condition(1, user_access('administer all transactions'));
+  $condition->condition($subcondition);
+  return $condition;
+}
+function mcapi_access_admin_views($state) {
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition(1, user_access('administer all transactions'));
+  return $condition;
+}
+function mcapi_access_participants_views($state) {
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  $subcondition = db_or();
+  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
+  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
+  $condition->condition($subcondition);
+  return $condition;
+}
+
+//this isn't working without the $currency, which the others do not need
+function mcapi_access_currency_views($state) {
+  $condition = db_and();
+  return $condition->condition('mcapi_transactions.state', $state);
+}
+
+
+/*
+ * implements hook_query_TAG_alter
+ * the saved view adds the tag 'transaction_access'
+ * this modifies the query only to show the transactions visible to the user.
+ * this is pretty elaborate, but the access control has to be done in the query or views pager won't know how many results there were
+ */
+function _mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$query) {
+  $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
+  //what currencies can the current user see?
+  $currencies = currencies_load();
+  //WHERE (
+  //  (
+  //    tw.field_worth_currcode = 1
+  //  ) AND (//$currcode_and_states
+  //    (
+  //      (
+  //        mcapi_transactions.state = 0
+  //      ) AND (// $state_and_callback
+  //        callback
+  //      )
+  //    ) OR (//$state_or_state
+  //      (
+  //        mcapi_transactions.state = 1
+  //      ) AND (// $state_and_callback
+  //        callback
+  //      )
+  //   )
+  // ) OR ( //$or_currcodes
+  //  currcode = 2 ...
+  $or_currcodes = db_or();
+  foreach ($currencies as $currency) {
+    $currcode_and_states = db_and();
+    $currcode_and_states->condition('tw.worth_currcode', $currency->currcode);
+    //note for views we are only interested in viewing permission
+    $state_or_state = db_or();
+    foreach ($currency->view as $state => $callback) {
+      $callback .= '_views';
+      $state_and_callback = $callback($state);
+      $state_or_state->condition($state_and_callback);
+    }
+    $currcode_and_states->condition($state_or_state);
+    $or_currcodes->condition($currcode_and_states);
+  }
+  $query->condition($or_currcodes);
+}

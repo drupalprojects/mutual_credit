@@ -32,58 +32,6 @@ function mcapi_install() {
       db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
     }
   }
-  //add an icon and description field if those modules are enabled
-
-  $fields = field_read_fields();
-  if (in_array('image', $modules)) {
-    $instance = field_info_instance('currency', 'field_image', 'currency');
-    if (empty($instance)) {
-      $currency_icon = array(
-        'field_name' => 'field_image',
-        'entity_type' => 'currency',
-        'label' => 'Icon',
-        'bundle' => 'currency',
-        'description' => t('A small graphical representation of the currency'),
-        'required' => FALSE,
-        'settings' => array(
-          'file_directory' => 'field/image',
-          'file_extensions' => 'png gif jpg jpeg',
-          'max_filesize' => '2048',
-          'max_resolution' => '20x20',
-          'min_resolution' => '12x12',
-          'alt_field' => FALSE,
-          'title_field' => TRUE,
-        ),
-        'display' => array(
-          'default' => array(
-            'label' => 'hidden',
-            'type' => 'image',
-            'settings' => array('image_style' => 'curr_icon', 'image_link' => ''),
-            'weight' => -1,
-          ),
-        ),
-      );
-      field_create_instance($currency_icon);
-    }
-    $instance = field_info_instance('currency', 'body', 'currency');
-    if (empty($instance)) {
-      $rationale = array(
-        'field_name' => 'body',
-        'entity_type' => 'currency',
-        'bundle' => 'currency',
-        'label' => t('Rationale'),
-        'widget_type' => 'text_textarea_with_summary',
-        'description' => t('What are the monetary credentials of this currency?'),
-        'settings' => array(
-          'default' => array(
-            'label' => 'hidden',
-            'type' => 'text_default',
-          ),
-        )
-      );
-      field_create_instance($rationale);
-    }
-  }
 }
 
 /**
@@ -278,6 +226,7 @@ function mcapi_check_fields() {
           'label' => 'hidden',
           'type' => 'worth_fields',
           'weight' => 0,
+          'module' => 'mcapi'
         ),
       ),
     );

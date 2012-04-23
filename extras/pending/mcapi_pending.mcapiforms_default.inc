@@ -50,7 +50,7 @@ function mcapi_pending_mcapiforms_default() {
     'step-2' => array(
       'title' => 'Sign this transaction',
       'template' => 'Do you want to sign this transaction?
-[worth]',
+[mcapiform:worth]',
     ),
     'buttons' => array(
       'submit' => 'Save',
@@ -58,7 +58,7 @@ function mcapi_pending_mcapiforms_default() {
     ),
     'templates' => array(
       'template-1' => 'Do you want to sign this transaction?
-[worth]',
+[mcapiform:worth]',
     )
   );
   $mcapiforms[$mcapiform->name] = $mcapiform;

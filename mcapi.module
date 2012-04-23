@@ -67,10 +67,7 @@ function mcapi_menu_alter(&$items) {
       unset($items[$key]);
     }
   }
-  unset($items['admin/accounting/display']);
-  unset($items['admin/accounting/display/default']);
   unset($items['admin/accounting/fields/worth/delete']);
-  debug($items['admin/accounting/currencies/add']);
   //but we do want to manage the fields for two entity types on one page.
   $items['admin/accounting/edit/fields']['title'] = 'Transaction fields';
 }
@@ -100,7 +97,8 @@ function transaction_form($form, &$form_state) {
 function mcapi_currency_form(&$form, &$form_state){
   form_load_include($form_state, 'inc', 'mcapi', 'currencies');
   $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
-  if (empty($currency->name)) {
+
+  if (empty($currency->human_name)) {
     $currency = current(currencies_load());
     $currency->uid = $GLOBALS['user']->uid;
     $currency->display['format'] = '';
@@ -347,7 +345,7 @@ function template_preprocess_transaction(&$variables) {
 }
 
 // this shouldn't be necessary, but how else to get a list of tokens, in groups, for including on form field descriptions?
-function matslats_list_tokens($type1, $type2) {
+function matslats_list_tokens($type1, $type2 = NULL) {
   $info = token_info();
   foreach(func_get_args() as $type) {
     foreach($info['tokens'][$type] as $tok => $data) {
@@ -355,29 +353,6 @@ function matslats_list_tokens($type1, $type2) {
     }
   }
   return $tokens;
-}
-
-
-/*
- * form submit callback from the base transaction form, hence used by all forms
- * hence must be in .module file
- * this is what actually saves the data
- * $form_state['transaction'] was created in the validation stage
- */
-function transaction_all_submit($form, &$form_state) {
-  $transaction = &$form_state['transaction']; ;
-  $transaction->modified = REQUEST_TIME;
-  $transaction->state = $form_state['values']['state'];
-  $transaction = transaction_save($transaction);
-  /*
-  //the following are not called here but in the transaction controller.
-  //this is because the controller has it's own understanding of 'update' and erase
-  field_attach_submit('transaction', $transaction, $form, $form_state);
-  module_invoke_all('entity_'.$op, $transaction, 'transaction');
-  */
-  if (!isset($form_state['redirect'])) {
-    $form_state['redirect'] = 'transaction/'.$transaction->xid;
-  }
 }
 
 
@@ -557,115 +532,6 @@ function mcapi_views_api() {
 }
 
 
-//================
-//this could all go in a views.inc file I think
-
-
-
-
-//must return a condition objectmcapi_transactions.state
-function mcapi_access_unrestricted_views($state){
-  $condition = db_and();
-  return $condition->condition('mcapi_transactions.state', $state);
-}
-//must return a condition objectmcapi_transactions.state
-function mcapi_access_creator_views($state){
-  $condition = db_and();
-  return $condition->condition('mcapi_transactions.creator', $GLOBALS['user']->uid);
-}
-function mcapi_access_authenticated_views($state){
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(0, $GLOBALS['user']->uid, '<>');
-  return $condition;
-}
-function mcapi_access_none_views($state){
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(0, 1);//which is to say, FALSE
-  return $condition;
-}
-function mcapi_access_participants_admin_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $subcondition = db_or();
-  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
-  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
-  $subcondition->condition(1, user_access('administer all transactions'));
-  $condition->condition($subcondition);
-  return $condition;
-}
-function mcapi_access_admin_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(1, user_access('administer all transactions'));
-  return $condition;
-}
-function mcapi_access_participants_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $subcondition = db_or();
-  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
-  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
-  $condition->condition($subcondition);
-  return $condition;
-}
-//this isn't working without the $currency, which the others do not need
-//perhaps it doesn't belong here
-function mcapi_access_currency_views($state) {
-  $condition = db_and();
-  return $condition->condition('mcapi_transactions.state', $state);
-}
-
-
-/*
- * implements hook_query_TAG_alter
- * the saved view adds the tag 'transaction_access'
- * this modifies the query only to show the transactions visible to the user.
- * this is pretty elaborate, but the access control has to be done in the query or views pager won't know how many results there were
- */
-function _mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$query) {
-  $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
-  //what currencies can the current user see?
-  $currencies = currencies_load();
-  //WHERE (
-  //  (
-  //    tw.field_worth_currcode = 1
-  //  ) AND (//$currcode_and_states
-  //    (
-  //      (
-  //        mcapi_transactions.state = 0
-  //      ) AND (// $state_and_callback
-  //        callback
-  //      )
-  //    ) OR (//$state_or_state
-  //      (
-  //        mcapi_transactions.state = 1
-  //      ) AND (// $state_and_callback
-  //        callback
-  //      )
-  //   )
-  // ) OR ( //$or_currcodes
-  //  currcode = 2 ...
-  $or_currcodes = db_or();
-  foreach ($currencies as $currency) {
-    $currcode_and_states = db_and();
-    $currcode_and_states->condition('tw.worth_currcode', $currency->currcode);
-    //note for views we are only interested in viewing permission
-    $state_or_state = db_or();
-    foreach ($currency->view as $state => $callback) {
-      $callback .= '_views';
-      $state_and_callback = $callback($state);
-      $state_or_state->condition($state_and_callback);
-    }
-    $currcode_and_states->condition($state_or_state);
-    $or_currcodes->condition($currcode_and_states);
-  }
-  //debug($query->__toString());
-  $query->condition($or_currcodes);
-}
-
-
 /*
  * Bit of a one off, this one
  */
@@ -678,35 +544,39 @@ function mcapi_format_usernames($accounts) {
 
 /*
  * returns a form element for picking a currency
+ * if $picker_options is an array of currencies keyed by currcode, it returns a select
+ * if $picker_options is NULL it returns a hidden field
  */
-function currency_picker_element($default = NULL, $multiple = FALSE, $picker_options = array()) {
-  if (empty($picker_options)) {
-    $picker_options = currency_picker_element_options();
+function currency_picker_element($default = NULL, $multiple = FALSE, $currencies = NULL) {
+  if (is_array($currencies)) {
+    $options = _currency_picker_element_options($currencies);
   }
-  if (count($picker_options) == 1) {
+  if (empty($options) || count($options) < 2) {
+    if (empty($default)) $default = key(currencies_load());
     return array(
       '#type' => 'hidden',
-      '#value' => key($picker_options)
+      '#value' => $default
     );
   }
-  if($default == NULL) {
-    $picker_options  = array(0 => 'Please choose...') + $picker_options;
-  }
+
   return array(
     '#title' => t('Currency'),
     '#type' => 'select',
-    '#options' => $picker_options,
+    '#options' =>  array(0 => 'Please choose...') + $options,
     '#default_value' => $default,
     '#multiple' => $multiple,
+    '#required' => TRUE,
   );
 }
 //build a key value array of currency codes and currency names
-function currency_picker_element_options($currencies = array()) {
+//$currencies is an array of the form returned by currencies_load
+//if $currencies is empty, it will assume you mean all currencies
+function _currency_picker_element_options($currencies = array()) {
   if (empty($currencies)) {
     $currencies = currencies_load();
   }
-  foreach ($currencies as $currency) {
-    $options[$currency->info['currcode']] = $currency->name;
+  foreach ($currencies as $currcode => $currency) {
+    $options[$currcode] = $currency->human_name;
   }
   return $options;
 }

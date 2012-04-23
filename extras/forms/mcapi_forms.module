@@ -61,7 +61,8 @@ function mcapi_forms_menu_alter(&$items) {
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/forms/list/%';
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
-  $items['admin/accounting/display']['type'] == MENU_CALLBACK;
+  unset($items['admin/accounting/display']);
+  unset($items['admin/accounting/display/default']);
 }
 
 /**
@@ -86,12 +87,20 @@ function mcapi_forms_forms($form_id, $args) {
 
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-  $args = &$form_state['build_info']['args'];
+  $mcapiform = &$form_state['build_info']['args'][1];
   //set the page title if this form is not being displayed in a block
-  if (!_mcapi_form_in_block($args[1])) {
-    //I wonder if there is an easier way? Perhaps a block would have different build_info args
-    drupal_set_title(mcapi_form_get_title($args[1]), 1);
+  //ascertains whether the active path corresponds to this mcapi_form
+  $parts = explode('/', current_path());
+  if (!empty($parts[2]) && $parts[2] == 'formedit') return;
+  //reverse calculate the path
+  $map = explode('/', $mcapiform->data['architecture']['path']);
+  foreach($map as $key => $part) {
+    if (strpos($part, '%') === 0) $parts[$key] = $part;
   }
+  if ($parts == $map) {
+    drupal_set_title(mcapi_form_get_title($mcapiform), 1);
+  }
+
   _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
 }
 
@@ -302,7 +311,7 @@ function mcapi_form_template($mcapi_form, $step = 0) {
 }
 
 
-function mcapi_forms_form_form_ui_field_edit_form_alter(&$form, $form_state) {
+function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   //because default values are best set in the forms
   unset($form['instance']['default_value_widget']);
   //because this module removes the #theme_wrapper from form elements, so the title is invisible anyway

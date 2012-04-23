@@ -197,13 +197,8 @@ function _transaction_form($form, &$form_state, $transaction) {
     return array();
   }
   $lang = current(element_children($form['worth'])); //assumes only one language
-  //the default theming for multiple value fields is way over the top, so this module provides a cut down theme callback
-  if (count(element_children($form['worth'][$lang])) > 1) {
-    $form['worth'][$lang]['#theme'] = 'worth_widget';
-    //for some reason the add more button is only heavier than the first element
-    $form['worth'][$lang]['add_more']['#weight'] = 6;
-  }
-
+  unset($form['worth'][$lang]['add_more']);
+  
   if (@$form_state['build_info']['args'][0]->state == TRANSACTION_STATE_FINISHED) {
     $form['buttons']['update'] = array(
       '#type' => 'submit',
@@ -259,9 +254,30 @@ function transaction_first_form_validate($form, &$form_state) {
 }
 
 /*
+ * form submit callback from the base transaction form, hence used by all forms
+ * hence must be in .module file
+ * this is what actually saves the data
+ * $form_state['transaction'] was created in the validation stage
+ */
+function transaction_all_submit($form, &$form_state) {
+  $transaction = &$form_state['transaction']; ;
+  $transaction->modified = REQUEST_TIME;
+  $transaction->state = $form_state['values']['state'];
+  $transaction = transaction_save($transaction);
+  /*
+  //the following are not called here but in the transaction controller.
+  //this is because the controller has it's own understanding of 'update' and erase
+  field_attach_submit('transaction', $transaction, $form, $form_state);
+  module_invoke_all('entity_'.$op, $transaction, 'transaction');
+  */
+  if (!isset($form_state['redirect'])) {
+    $form_state['redirect'] = 'transaction/'.$transaction->xid;
+  }
+}
+
+
+/*
  * General validation of transaction object
- * This function will allow some blank fields, although at the moment of writing
- * there is no use case for blank fields
  */
 function mcapi_transaction_validate($transaction){
   //no usecase is currently envisaged where someone might pay themselves in oine currency in one transaction

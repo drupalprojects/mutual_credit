@@ -323,7 +323,6 @@ function mcapi_signall_confirm_form_submit($form, &$form_state) {
  *
  * Implements hook_form_FORM_ID_alter
  * modifies its own form to hide exceptional fields
- *
  */
 function mcapi_pending_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   //check that this is actually a transaction form
@@ -360,15 +359,18 @@ function mcapi_pending_block_info_alter(&$blocks) {
   }
 }
 
+function mcapi_pending_cron() {
+  mcapi_check_integrity();
+}
 function mcapi_check_integrity() {
   $xids = db_query("SELECT t.xid FROM {mcapi_transactions} t LEFT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 1 AND t.state = :state", array(':state' => TRANSACTION_STATE_FINISHED))->fetchCol();
   if (count($xids)){
-    drupal_set_message('Some completed transactions still have signatures pending, please report to matslats: '. implode(', ', $xids), 'warning');
+    watchdog('mcapi_pending', 'Some completed transactions still have signatures pending, please report to matslats: @xids'. array('@xids' => implode(', ', $xids)), WATCHDOG_ERROR);
   }
 
   $xids = db_query("SELECT s.xid FROM {mcapi_transactions} t RIGHT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 0 AND t.state = :state", array(':state' => TRANSACTION_STATE_PENDING))->fetchCol();
   if (count($xids)) {
-    drupal_set_message('Some pending transactions have no signatures pending, please report to matslats: '. implode(', ', $xids), 'warning');
+    watchdog('mcapi_pending', 'Some pending transactions have no signatures pending, please report to matslats: @xids'. array('@xids' => implode(', ', $xids)), WATCHDOG_ERROR);
   }
 }
 

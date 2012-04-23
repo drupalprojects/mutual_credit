@@ -19,7 +19,9 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $access_options[t('Permissions')]['user_access:'.$perm] = strip_tags($info['title']);
     $user_chooser_options[t('Permissions')]['user_chooser_permissions:'.$perm] = strip_tags($info['title']);
   }
-  $menus = db_select('menu_custom', 'm')->fields('m', array('menu_name', 'title'))->execute()->fetchAllKeyed();
+  $menus = module_exists('menu') ? 
+    db_select('menu_custom', 'm')->fields('m', array('menu_name', 'title'))->execute()->fetchAllKeyed() :
+    array();
 
   $form['#prefix'] = '<div id = "form-wrapper">';
   $form['#suffix'] = '</div>';
@@ -247,9 +249,10 @@ function _edit_mcapi_form(&$form, &$form_state) {
   );
   $form['step-'.MCAPIFORM_STEP_ENTER] = array(
     '#title' => t('Data entry step'),
-    '#description' => implode(' ', array(
+    '#description' => implode("\n<br /> ", array(
       t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
-      t('Allowed tags are:') .' a, p, br, font, style'
+      t('Allowed tokens are:') .implode(', ', matslats_list_tokens('mcapiform')),
+      t('Allowed HTML tags are:') .' a, p, br, font, style'
     )),
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_templates',

@@ -28,19 +28,19 @@ function mcapi_mcapicurrencies_default() {
     'view' => array(
       1 => 'mcapi_access_participants_admin',
       0 => 'mcapi_access_authenticated',
-      -1 => 'mcapi_access_none',
+      -1 => 'mcapi_access_participants_admin',
       -2 => 'mcapi_access_admin'
     ),
     'update' => array(
       1 => 'mcapi_access_creator',
       0 => 'mcapi_access_none',
-      -1 => 'mcapi_access_none',
+      -1 => 'mcapi_access_creator',
       -2 => 'mcapi_access_admin'
     ),
     'erase' => array(
       1 => 'mcapi_access_none',
       0 => 'mcapi_access_none',
-      -1 => 'mcapi_access_none',
+      -1 => 'mcapi_access_creator',
       -2 => 'mcapi_access_admin'
     ),
     'zero' => 0,

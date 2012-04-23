@@ -17,17 +17,6 @@ function mcapi_field_info() {
 }
 
 /*
- * Imlements hook_form_form_ID_alter
- * prevents editing of the worth field attached to the transaction entity.
- */
-function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
-  if ($form['#entity_type'] == 'transaction' && isset($form['fields']['worth'])) {
-    $form['fields']['worth']['type']['#type'] = 'markup';
-    $form['fields']['worth']['widget_type']['#type'] = 'markup';
-  }
-}
-
-/*
  * implements hook_field_widget_info
  */
 function mcapi_field_widget_info() {
@@ -93,20 +82,21 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
     '#default_value' => $default_vals['main_quant'],
     '#size' => 4,
     '#maxlength' => 6,
-    '#element_validate' => array('element_validate_integer_worth')
+    '#element_validate' => array('element_validate_integer_worth'),
+    '#weight' => 1
   );
   $currencies = currencies_load();
   if($field['cardinality'] > 1) {//if there are many currency fields, the default for each is set
     $currencies = array_keys(currencies_load($GLOBALS['user']));
     $default_vals['currcode'] = $currencies[$delta];
   }
-  elseif (count($currencies) == 1) {
-    $default_vals['currcode'] = key(currencies_load($GLOBALS['user']));
+  else {//the default is simply the first in the list
+    //$default_vals['currcode'] = key(currencies_load($GLOBALS['user']));
   }
   worth_element_build($element, $default_vals);
   $element['#element_validate'] = array('worth_widget_validate');
   $element['#process'] = array('mcapi_field_widget_process');
-  //$element['#theme'] = 'worth_widget';
+  $element['#theme'] = 'worth_widget';
   return $element;
 }
 
@@ -145,18 +135,33 @@ function mcapi_field_widget_process($element, $form_state, $form) {
  * this function is called from both the form build function and the process function
  */
 function worth_element_build(&$element, $default_vals) {
+  static $cardinality;//because this function usually runs twice per form
+  if (empty($cardinality)) {
+    $field = field_info_field('worth');
+    $cardinality = $field['cardinality'];
+  }
+  $currencies = currencies_load($GLOBALS['user']);
   //if this widget knows about one currency the curr chooser is hidden.
-  $element['currcode'] = currency_picker_element($default_vals['currcode'], NULL, array($default_vals['currcode'] => 1));
-  if ($element['currcode']['#type'] != 'hidden') {
-    $element['#ajax'] = array(
+  if ($cardinality == 1 && count($currencies) > 1) {//in this widget we choose one from all currencies
+    if (empty($default_vals['currcode'])) {
+      $default_vals['currcode'] = '';
+    }
+  }
+  else {//in this widget the currency is already determined, because there will be one widget for each currency
+    if (empty($default_vals['currcode'])) {
+      $default_vals['currcode'] = key(currencies_load());
+      $currencies = NULL;
+    }
+  }
+  //call the standard currency choosing widget
+  $element['currcode'] = currency_picker_element(@$default_vals['currcode'], NULL, $currencies) + array(
+    '#ajax' => array(//seems like the ajax is necessary on the rebuilt form, even if the field is hidden
       'callback' => 'mcapi_ajax_worth',
       'wrapper' => 'edit-worth-und-0'
-    );
-    $element['#required'] = TRUE;
-  }
-  else {
-    $currency = currency_load($default_vals['currcode']);
-
+    ),
+  );
+  if ($element['currcode']['#type'] == 'hidden') {
+    $currency = currency_load($element['currcode']['#value']);
     //Only show the divisions element if we know the currency and it has divisions. We are already showing integers
     if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_FIELD) {
       $element['division_quant'] =  array(
@@ -166,7 +171,8 @@ function worth_element_build(&$element, $default_vals) {
         '#maxlength' => 2,
         '#field_prefix' => '.',
         '#default_value' => $default_vals['division_quant'],
-        '#element_validate' => array('element_validate_integer_worth')
+        '#element_validate' => array('element_validate_integer_worth'),
+        'weight' => 2
       );
     }
     elseif ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM){
@@ -176,7 +182,8 @@ function worth_element_build(&$element, $default_vals) {
         '#type' => 'select',
         '#field_prefix' => ':',
         '#default_value' => $default_vals['division_quant'],
-        '#element_validate' => array('element_validate_integer_worth')
+        '#element_validate' => array('element_validate_integer_worth'),
+        'weight' => 2
       );
     }
     //If the display format requires we can re-join the main part and the division if they belong in one widget
@@ -295,8 +302,10 @@ function mcapi_theme_fields() {
     'worth_widget' => array(
       'render element' => 'element'
     ),
+    'worth_widget_multiple' => array(
+      'render element' => 'element'
+    ),
   );
-  return $items;
 }
 
 /*
@@ -314,6 +323,12 @@ function theme_worth_field(&$variables) {
   //the last <Br> saves us having to identify the container and hackit if many currencies are showing
 }
 
+function theme_worth_widget_multiple($variables) {
+  foreach (element_children($variables['element']) as $key) {
+    $children[] = drupal_render($variables['element']);
+  }
+  return implode('<br />', $children);
+}
 
 /*
  * Default implementation of theme 'worth_widget'
@@ -321,48 +336,18 @@ function theme_worth_field(&$variables) {
  */
 function theme_worth_widget($variables) {
   $element = &$variables['element'];
-  unset($element['add_more']);
-  foreach (element_children($element) as $delta) {
-    if (!empty($element[$delta]['currcode']['#value'])) { // widget formatted for the currency, including divisions
-      $currency = currency_load($element[$delta]['currcode']['#value']);
-      $element['#children'] .= "\n<br />" . drupal_render($element[$delta]['currcode']) . strtr(
-        $currency->display['format'], //there better had be a default_value
-        array(
-          '@minus' => '',//no negative valuesin a form widget
-          '@integer' => drupal_render($element[$delta]['main_quant']),
-          '@subdivision' => !empty($element[$delta]['division_quant']) ? drupal_render($element[$delta]['division_quant']) : '',
-        )
-      );
-      $element['#attributes']['width'] = 100;
-    }
-    else {// widget formatted for undecided currency, with currency chooser, excluding divisions
-      $element[$delta]['#children'] = theme('table', array(
-        'rows' => array(array('data' => array(
-          drupal_render($element[$delta]['currcode']),
-          drupal_render($element[$delta]['main_quant'])
-        ))),
-        'attributes' => array(
-          'id' => 'edit-worth-und-'. $element[$delta]['#delta'],
-          'style' => 'width:10px' //as short as possible
-        ),
-        'caption' => empty($element[$delta]['#title']) ? '' :  $element[$delta]['#title'],
-      ));
-    }
-  }
-  return $element['#children'];
-  //lets not take anything for granted, especially after mcapiforms has removed theme_wrappers
-  //return theme('form_element', array('element' => $element));
-}
+  //if the currcode is set then render according to the currency format, with no widget
+  $format = empty($element['currcode']['#value']) ? '@integer' : currency_load($element['currcode']['#value'])->display['format'];
 
-/*
- * get the names of the given currencies in an array keyed by currcode
- * not currently used
- */
-function currency_select($currencies) {
-  foreach ($currencies as $currcode => $currency) {
-    $selection[$currcode] = $currency->name;
-  }
-  return $selection;
+  $currency = currency_load($element['currcode']['#value']);
+  $output = drupal_render($element['currcode']) . strtr($format,
+    array(
+      '@minus' => '',//no negative valuesin a form widget
+      '@integer' => drupal_render($element['main_quant']),
+      '@subdivision' => !empty($element['division_quant']) ? drupal_render($element['division_quant']) : '',
+    )
+  );
+  return $output;
 }
 
 function clear_def_cur() {
@@ -430,3 +415,15 @@ function currency_explode($number) {
   return explode('.', number_format($number, 2, '.', ''));
 }
 
+
+
+/*
+ * Imlements hook_form_form_ID_alter
+ * prevents editing of the worth field attached to the transaction entity.
+ */
+function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
+  if ($form['#entity_type'] == 'transaction' && isset($form['fields']['worth'])) {
+    $form['fields']['worth']['type']['#type'] = 'markup';
+    $form['fields']['worth']['widget_type']['#type'] = 'markup';
+  }
+}

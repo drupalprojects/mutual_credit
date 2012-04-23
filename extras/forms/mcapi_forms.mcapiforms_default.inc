@@ -64,23 +64,23 @@ function mcapiform_default_1stparty() {
     ),
     'step-1' => array(
       'title' => '1st party form',
-      'template' => 'Partner: [secondperson]<br />
-  Direction: [direction]<br />
-  Amount: [worth]<br />',
+      'template' => 'Partner: [mcapiform:secondperson]<br />
+  Direction: [mcapiform:direction]<br />
+  Amount: [mcapiform:worth]<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
-      'template' => '[worth]
-  with  [secondperson]<br /><br />',
+      'template' => '[mcapiform:worth]
+  with  [mcapiform:secondperson]<br /><br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
     ),
     'templates' => array(
-      'template-1' => 'Partner: [secondperson]<br />
-  Direction: [direction]<br />
-  Amount: [worth]<br />',
+      'template-1' => 'Partner: [mcapiform:secondperson]<br />
+  Direction: [mcapiform:direction]<br />
+  Amount: [mcapiform:worth]<br />',
     ),
   );
   return $mcapiform;
@@ -137,24 +137,24 @@ function mcapiform_default_3rdparty() {
     ),
     'step-1' => array(
       'title' => '3rd party form',
-      'template' => 'Payer: [payer]<br />
-  Payee: [payee]<br />
-  Amount: [worth]<br />',
+      'template' => 'Payer: [mcapiform:payer]<br />
+  Payee: [mcapiform:payee]<br />
+  Amount: [mcapiform:worth]<br />',
     ),
     'step-2' => array(
       'title' => 'are you sure?',
-      'template' => 'Payer: [payer]<br />
-  Payee: [payee]<br />
-  Amount: [worth]<br />',
+      'template' => 'Payer: [mcapiform:payer]<br />
+  Payee: [mcapiform:payee]<br />
+  Amount: [mcapiform:worth]<br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
     ),
     'templates' => array(
-      'template-1' => 'Payer: [payer]<br />
-  Payee: [payee]<br />
-  Amount: [worth]<br />',
+      'template-1' => 'Payer: [mcapiform:payer]<br />
+  Payee: [mcapiform:payee]<br />
+  Amount: [mcapiform:worth]<br />',
     ),
   );
   return $mcapiform;
@@ -212,27 +212,27 @@ function mcapiform_default_many2one() {
     ),
     'step-1' => array(
       'title' => 'Many pay one',
-      'template' => '[payer]<br />
+      'template' => '[mcapiform:payer]<br />
   will pay<br />
-  [payee]<br />
-  [worth] each<br />',
+  [mcapiform:payee]<br />
+  [mcapiform:worth] each<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
-      'template' => '[payer]<br />
+      'template' => '[mcapiform:payer]<br />
   will pay<br />
-  [payee]<br />
-  [worth] each<br />',
+  [mcapiform:payee]<br />
+  [mcapiform:worth] each<br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
     ),
     'templates' => array(
-      'template-1' => '[payer]<br />
+      'template-1' => '[mcapiform:payer]<br />
   will pay<br />
-  [payee]<br />
-  [worth] each',
+  [mcapiform:payee]<br />
+  [mcapiform:worth] each',
     ),
   );
   return $mcapiform;
@@ -290,27 +290,27 @@ function mcapiform_default_one2many() {
     ),
     'step-1' => array(
       'title' => 'One pays many',
-      'template' => '[payer]<br />
+      'template' => '[mcapiform:payer]<br />
   will pay<br />
-  [payee]<br />
-  [worth] each<br />',
+  [mcapiform:payee]<br />
+  [mcapiform:worth] each<br />',
     ),
     'step-2' => array(
       'title' => 'Are you sure?',
-      'template' => '[payer]<br />
+      'template' => '[mcapiform:payer]<br />
   will pay<br />
-  [payee]<br />
-  [worth] each<br />',
+  [mcapiform:payee]<br />
+  [mcapiform:worth] each<br />',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
     ),
     'templates' => array(
-      'template-1' => '[payer]<br />
+      'template-1' => '[mcapiform:payer]<br />
   will pay<br />
-  [payee]<br />
-  [worth] each',
+  [mcapiform:payee]<br />
+  [mcapiform:worth] each',
     ),
   );
   return $mcapiform;
@@ -367,8 +367,8 @@ function mcapiform_default_correction() {
     ),
     'step-1' => array(
       'title' => 'Altering transaction',
-      'template' => '[payer] paid [payee]<br />
-  Amount: [worth]<br />',
+      'template' => '[mcapiform:payer] paid [mcapiform:payee]<br />
+  Amount: [mcapiform:worth]<br />',
     ),
     'step-2' => array(
       'title' => '',
@@ -379,8 +379,8 @@ function mcapiform_default_correction() {
       'delete' => 'Revert',
     ),
     'templates' => array(
-      'template-1' => '[payer] paid [payee]<br />
-  Amount: [worth]<br />',
+      'template-1' => '[mcapiform:payer] paid [mcapiform:payee]<br />
+  Amount: [mcapiform:worth]<br />',
     ),
   );
   return $mcapiform;

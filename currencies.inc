@@ -134,12 +134,12 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
       '#weight' => $i++,
     );
     $defaults = $currency->$op;
-    foreach ($states as $constant => $state) {
-      $form[$op][$constant] = array(
-        '#title' => $state,
+    foreach ($states as $state => $statename) {
+      $form[$op][$state] = array(
+        '#title' => $statename,
         '#type' => 'select',
         '#options' => $options,
-        '#default_value' => isset($defaults[$constant]) ? $defaults[$constant] : TRANSACTION_STATE_FINISHED,
+        '#default_value' => isset($defaults[$state]) ? $defaults[$state] : TRANSACTION_STATE_FINISHED,
         '#weight' => $j++,
       );
     }
@@ -313,8 +313,8 @@ function currencies_load_all() {
     $currency->display['divisions_allowed'] = $divisions;
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     foreach (array('update', 'erase', 'view') as $op) {
+      $callbacks = $currency->$op;
       foreach ($states as $state => $name) {
-        $callbacks = $currency->$op;
         if (!in_array($callbacks[$state], $functions)) {
           drupal_set_message(t(
             "Currency @name has no permission set for op '@op' and state @state",

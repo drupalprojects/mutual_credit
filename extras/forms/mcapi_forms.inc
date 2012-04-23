@@ -119,7 +119,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $default = mcapi_recursive_default_value($transaction->$fieldname);
     $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
   }
-
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -144,27 +143,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   }
   $form['#action'] = url($mcapi_form->data['architecture']['path']);
   //this may help with the validation and submission
-  $form['#theme'] = 'mcapi_form';
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
   array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
   $form['#validate'][] = 'mcapi_forms_validate';
-  //custom properties
-  //this tells the theme callback which template to use.
-  //Careful the steps in the template may not correspond to the actual steps in the form processing
-  //especially if template 1 is blank and the form goes straight to confirmation
+  //some special form properties tell the theme callback which template to use.
   $form['#template'] = mcapi_form_template($mcapi_form, $form_state['step'])->template;
-  //this is rather elaborate and early, but we NOW have to set the type of fields not being used in the template as hidden
-  $form['#tokens'] = mcapi_form_collect_tokens($mcapi_form);
-  //hide the fields which don't appear as tokens
-  foreach ($form['#tokens'] as $token => $fieldname) {
-    if (strpos($form['#template'], "[$fieldname]") === FALSE) {
-      mcapi_element_children_value($form[$fieldname], '#type', 'hidden');
-    }
-  }
-  //Only after processing, can we render the tokens and replace them into the template,
-  //which is used instead of custom form theming
-  $form['#after_build'] = array('mcapi_form_prepare_tokens');
+  $form['#theme'] = 'mcapi_form';
+  $form['#step'] = $form_state['step'];
 }
 
 
@@ -193,45 +179,6 @@ function mcapi_recursive_default_value($value) {
   return array('#default_value' => $value);
 }
 
-
-function mcapi_form_collect_tokens(&$mcapi_form) {
-  $tokens = $mcapi_form->data['perspective'] == 3 ? array('payee', 'payer') : array('secondperson', 'direction');
-  //before the children are themed, we need to remove the wrappers from deep within the additional fields.
-  $fields = array_keys(field_info_instances('transaction', 'transaction'));
-  //this picks up 'worth' and any other fields on the transaction entity
-  return drupal_map_assoc($tokens) + drupal_map_assoc($fields);
-}
-
-function mcapi_form_prepare_tokens($form, &$form_state) {
-  $form['#replacements'] = array();
-  if ($form_state['step'] == MCAPIFORM_STEP_ENTER) { //step 1 means we render it as a form
-    foreach ($form['#tokens'] as $fieldname) {
-      if (strpos($form['#template'], "[$fieldname]") !== FALSE) {
-        $element = $form[$fieldname];//make a copy, because removing the title breaks the error handling
-        mcapi_form_remove_theme_wrapper($form[$fieldname]);
-        mcapi_unset_recursive($element, '#prefix');
-        mcapi_unset_recursive($element, '#suffix');
-        mcapi_unset_recursive($element, '#title');
-        mcapi_unset_recursive($element, '#description');
-        unset($element['#weight']);
-        $form['#replacements']["[$fieldname]"] = drupal_render($element);
-        $form[$fieldname]['#printed'] = TRUE;
-      }
-      //otherwise it was already hidden when the form was built
-    }
-  }
-  else { //step 2 means we render all the form fields as text
-    //unset all the fields in the form, having derived their token values
-    //all that data is in $form_state['storage'] by now
-    foreach ($form['#tokens'] as $token => $fieldname) {
-      $form['#replacements'][ '['.$fieldname.']'] = mcapi_element_markup_render($form[$fieldname], $form_state['values']);
-      //we can unset the field in step 2 because the transaction has already been stored
-      //in $form_state['transaction'] in validation of step 1
-    }
-  }
-  return $form;
-}
-
 /*
  * $variables consists of the usual suspects plus
  * $template
@@ -239,61 +186,18 @@ function mcapi_form_prepare_tokens($form, &$form_state) {
  */
 function theme_mcapi_form($variables) {
   $form = &$variables['form'];
-  $form['#template'] .= drupal_render_children($form);
-  return strtr($form['#template'], $form['#replacements']);
+  $buttons = drupal_render($form['buttons']);
+  mcapi_unset_recursive($form, '#theme_wrappers');
+  //render the visible stuff first
+  $output = token_replace($form['#template'], $form, array('sanitize' => FALSE));
+  return $output .= $buttons;
 }
-
-/*
- * replace tokens in stage 2 form with text, based on the form item token used in the template
- * this is tricky because we have a formAPI element, and need to pull a sensible text value from it.
- */
-function mcapi_element_markup_render(&$element, $fs_values) {
-  $element['#printed'] = TRUE;
-  switch($element['#type']) {
-    case 'hidden':
-      return;
-    case 'user_chooser_roles':
-    case 'user_chooser_permissions':
-      $uids = is_array($fs_values[$element['#name']]) ? $fs_values[$element['#name']] : array($fs_values[$element['#name']]);
-      return mcapi_format_usernames(user_load_multiple($uids));
-    case 'radios':
-    case 'checkboxes':
-    case 'select':
-      $val = $fs_values[$element['#name']];
-      if (is_array($val)) {
-        $val =  implode(', ', $val);
-      }
-      return $val;
-    case 'markup': //in case the form got altered
-    case 'textfield':
-      return $element['#value'];
-
-    //all the fieldAPI fields appear here as container, here we take the form fields and convert them to a render array
-    case 'container':
-      $lang = current(element_children($element)); //assumes value is in one language only
-      $fieldname = $element[$lang]['#field_name'];
-      $field = field_info_field($fieldname);
-      $instance = field_info_instance('transaction', $fieldname, 'transaction');
-      $function  = $field['module'] . '_field_formatter_view';
-      $renderable[] = $function('transaction', NULL, NULL, $instance, $lang, $fs_values[$fieldname][$lang], $instance['display']['default']);
-
-      return drupal_render($renderable);
-    case 'submit':
-    case 'token':
-      return drupal_render($element);
-    default:
-      drupal_set_message('Unexpected form element type in mcapi_element_markup_render: '.$element['#type'] , 'error');
-  }
-}
-
-
 /*
  * Validation callback
  * set the payer and payee from the 2ndpeson and direction
  * BEFORE $form_state['transaction'] is created
  */
 function mcapi_forms_validate_secondperson($form, &$form_state) {
-  $values = &$form_state['values'];
   if ($values['direction'] == 'incoming') {
     $values['payer'] = $values['secondperson'];
     $values['payee'] = $GLOBALS['user']->uid;
@@ -393,35 +297,7 @@ function mcapi_forms_redirect_replace(&$url, $xid, $uid) {
   $url = str_replace(array('%transaction', '%user'), array($xid, $uid), $url);
 }
 
-//ascertains whether the active path corresponds to this mcapi_form
-//not very pretty, but we need to know not to set the page title if this form is in a block
-function _mcapi_form_in_block($mcapi_form) {
-  $parts = explode('/', current_path());
-  if (!empty($parts[2]) && $parts[2] == 'formedit') return FALSE;
-  //reverse calculate the path
-  $map = explode('/', $mcapi_form->data['architecture']['path']);
-  foreach($map as $key => $part) {
-    if (strpos($part, '%') === 0) $parts[$key] = $part;
-  }
-  return $parts != $map;
-}
 
-
-//The following recursive functions aren't very elegant, but I can't 'find a more drupalish way of doing them
-/*
- * nesting function to set values wherever in the element
- */
-function mcapi_element_children_value(&$element, $name, $value) {
-  $children = element_children($element);
-  if (count($children)) {
-    foreach($children as $child) {
-      mcapi_element_children_value($element[$child], $name, $value);
-    }
-  }
-  else {
-    $element[$name] = $value;
-  }
-}
 /*
  * nesting function to remove the outer theme wrapper put on by the element processing.
  */
