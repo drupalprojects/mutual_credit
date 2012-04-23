@@ -341,8 +341,9 @@ function mcapi_currency_form_submit($form, $form_state) {
   form_state_values_clean($form_state);
   //I would have thought this database key would have been provided automacically
   //since the field was created automatically
-  $currcode = &$form_state['values']['info']['currcode'];
-  $form_state['item']->currcode = empty($currcode) ?  : $currcode;
+  if (empty($form_state['item']->currcode)) {
+    $form_state['item']->currcode = $form_state['values']['info']['currcode'];
+  }
   $form_state['item']->data = (object)$form_state['values'];
   register_shutdown_function('currencies_load_refresh');
 }
