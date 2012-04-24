@@ -450,16 +450,17 @@ function mcapi_validate_usernames(&$element, &$form_state) {
     }
   }
 }
-
 /*
  * return one currency object
  */
-function currency_load($currcode = 0) {
-  $currencies = currencies_load();
+function currency_load($currcode) {
+  $currencies = &drupal_static('currencies');
+  if (empty($currencies))currencies_load();
   if (!empty($currencies[$currcode])) {
     return $currencies[$currcode];
   }
-  return (object)array('name' => t('Please choose...'));
+  watchdog('mcapi', 'Nonexistent currency @currcode requested from list: @list',
+    array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1)));
 }
 /*
  * Load all the currencies from cache filter
@@ -468,7 +469,7 @@ function currency_load($currcode = 0) {
 function currencies_load($account = NULL, $refresh = FALSE) {
   $currencies = &drupal_static('currencies');
   if ($refresh) unset($currencies);
-  if (!$currencies) {//first time this page request.
+  if (empty($currencies)) {//first time this page request.
     if ($cache = cache_get('currencies')) {
       $currencies = $cache->data;
     }
@@ -573,7 +574,7 @@ function currency_picker_element($default = NULL, $multiple = FALSE, $currencies
 //if $currencies is empty, it will assume you mean all currencies
 function _currency_picker_element_options($currencies = array()) {
   if (empty($currencies)) {
-    $currencies = currencies_load();
+    $currencies = &drupal_static('currencies');
   }
   foreach ($currencies as $currcode => $currency) {
     $options[$currcode] = $currency->human_name;

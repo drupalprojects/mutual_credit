@@ -37,8 +37,12 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
       '#theme' => 'worth_field',
       '#currcode' => $values->currcode,
       '#quantity' => db_query(
-        "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = $this->uid AND xid <= :xid AND currcode = '$values->currcode'",
-        array(':xid' => intval($values->xid))
+        "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = :uid AND xid <= :xid AND currcode = :currcode",
+        array(
+          ':xid' => intval($values->xid),
+          ':uid' => $this->uid,
+          ':currcode' => $values->currcode
+        )
       )->fetchField()
     );
   }

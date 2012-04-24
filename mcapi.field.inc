@@ -172,7 +172,7 @@ function worth_element_build(&$element, $default_vals) {
         '#field_prefix' => '.',
         '#default_value' => $default_vals['division_quant'],
         '#element_validate' => array('element_validate_integer_worth'),
-        'weight' => 2
+        '#weight' => 2
       );
     }
     elseif ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM){
@@ -183,7 +183,7 @@ function worth_element_build(&$element, $default_vals) {
         '#field_prefix' => ':',
         '#default_value' => $default_vals['division_quant'],
         '#element_validate' => array('element_validate_integer_worth'),
-        'weight' => 2
+        '#weight' => 2
       );
     }
     //If the display format requires we can re-join the main part and the division if they belong in one widget
@@ -315,7 +315,7 @@ function mcapi_theme_fields() {
 function theme_worth_field(&$variables) {
   $currency = currency_load($variables['currcode']);
   $replacements['@minus'] = $variables['quantity'] < 0 ? '-' :'';
-  list($replacements['@integer'], $replacements['@subdivision']) = currency_explode($variables['quantity']);
+  list($replacements['@integer'], $replacements['@subdivision'], $replacements['"sign']) = currency_explode($variables['quantity']);
   if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
     $replacements['@subdivision'] = $currency->display['divisions_allowed'][intval($replacements['@subdivision'])];
   }
@@ -411,8 +411,9 @@ function mcapi_ajax_worth($form, $form_state) {
 }
 
 //utility function
+//returns an array of integer, hundredths, and minus sign if applicable
 function currency_explode($number) {
-  return explode('.', number_format($number, 2, '.', ''));
+  return array_merge(explode('.', number_format(abs($number), 2, '.', '')), array($number < 0 ? '-' : ''));
 }
 
 

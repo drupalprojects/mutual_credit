@@ -280,7 +280,7 @@ function _intertrading_handshake() {
   $stats['transactions'] = db_query(
     "SELECT COUNT(xid) from {mcapi_transactions} t
     LEFT JOIN {field_data_worth} fw ON t.xid = fw.entity_id
-    WHERE t.state = :state AND fw.worth_currcode = '$currcode' AND created > :created",
+    WHERE t.state = :state AND fw.worth_currcode = '$currency->currcode' AND created > :created",
     array(':state' => TRANSACTION_STATE_FINISHED, ':created' => strtotime('-30 days'))
   )->FetchField();
 

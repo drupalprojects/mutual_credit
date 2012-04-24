@@ -144,12 +144,14 @@ function mcapi_views_data() {
       'handler' => 'views_handler_field_mcapi_links',
     )
   );
+}
 
-
-  //this is a powerful way for virtual field balances to be accessible to views based on the user table
+/*
+ * implements hook_views_data_alter
+ * this is a powerful way for virtual field balances to be accessible to views based on the user table
+ */
+function mcapi_views_data_alter(&$data) {
   //however it does require a query for each row which calls on a special API function
-  //so writing more of these might not be the best way
-  //also filter and sort handlers won't work on a virtual field
   $data['users']['current_balance'] = array(
     'title' => t('Current balance'),
     'field' => array(
@@ -158,7 +160,8 @@ function mcapi_views_data() {
       'click sortable' => TRUE
     )
   );
-  return $data;
+  //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
+  $items['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
 }
 
 /**
@@ -196,7 +199,7 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
 /*
  * implements views hook_views_data_alter
  */
-function mcapi_views_data_alter(&$items) {
+function _mcapi_views_data_alter(&$items) {
   //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
   $items['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
 }

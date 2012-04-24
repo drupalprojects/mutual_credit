@@ -345,6 +345,8 @@ function mcapi_write_record(&$record, $primary_keys = array()) {
       if(!drupal_write_record('mcapi_transactions', $record, $primary_keys)) {
         throw new Exception();
       }
+      ddebug_backtrace();
+      debug($record);
     }
     catch (Exception $e) {
       foreach ($ts as $db_transaction) {

@@ -7,7 +7,7 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
 
   //this is waiting for a suitable hook function so that modules can declare their own exchange types.
   function get_value_options() {
-    $this->value_options = currency_picker_element_options();
+    $this->value_options = _currency_picker_element_options();
   }
 
 
@@ -16,7 +16,15 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
       // Initialize the array of possible values for this filter.
       $this->get_value_options();
     }
-    $form['value'] = currency_picker_element($this->value, TRUE, $this->value_options);
+    foreach ($this->value_options as $currcode) {
+      $currencies[$currcode] = currency_load($currcode);
+    }
+    $form['value'] = currency_picker_element($this->value, TRUE, $currcode);
+    if (empty($element['#options'])) {
+      drupal_set_message("Don't expose the currcode filter if you only have one currency", 'warning');
+      return;
+    }
+
     if (!empty($this->options['exposed'])) {
       $identifier = $this->options['expose']['identifier'];
       if (!empty($form_state['exposed']) && !isset($form_state['input'][$identifier])) {
