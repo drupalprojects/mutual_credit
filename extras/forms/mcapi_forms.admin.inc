@@ -302,7 +302,7 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   static $w;
   mcapi_unset_recursive($default_field, '#element_validate');
   $element = array(
-    '#title' => "[$key]",
+    '#title' => "[mcapiform:$key]",
     '#description' => t("Edit instance settings.", array('@field' => $key)),
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_fields',
@@ -342,16 +342,35 @@ function mcapi_forms_ajax_settings($form, &$form_state) {
  * form validation callback for edit_mcapi_form
  */
 function mcapi_forms_template_validate($form, &$form_state) {
-  if (empty($form['step-'.MCAPIFORM_STEP_ENTER]['template']['#value']) && empty($form['step-'.MCAPIFORM_STEP_CONFIRM]['template']['#value'])) {
+  $values = &$form_state['values'];
+  //filter the templates and check that each one with a body has a title
+  foreach (array(MCAPIFORM_STEP_ENTER, MCAPIFORM_STEP_CONFIRM) as $step) {
+    $stepname = 'step-'.$step;
+    if (isset($values[$stepname]['template'])) {
+      $values[$stepname]['template'] = filter_xss($values[$stepname]['template'], array('a', 'p', 'br', 'font', 'style'));
+    }
+    //each template must have a title
+    if (!empty($values[$stepname]['template'])) {
+      if (empty ($values[$stepname]['title'])) {
+        form_set_error($stepname, t('Every template must have a title'));
+      }
+      else $notempty = TRUE;
+    }
+  }
+  //check that at least step1 template or step2 template has text
+  if (empty($notempty)) {
     form_set_error('template-1', t('The form template is empty'));
   }
-  foreach (array('1', '2') as $num) {
-    if (isset($form['step-'.$num]['template']['#value'])) {
-      $form_state['values']['step-'.MCAPIFORM_STEP_ENTER]['template'] = filter_xss($form['step-'.$num]['template']['#value'], array('a', 'p', 'br', 'font', 'style'));
-    }
-      //each template must have a title
-    if (!empty($form_state['values']['step-'.$num]['template']) && empty ($form_state['values']['step-'.$num]['template'])) {
-      form_set_error(t('Every template must have a title'));
+  if (empty($values['step-'.MCAPIFORM_STEP_ENTER]['template'])) return;
+  
+  //check that direction widget is visible if its 1st person and direction is not preset
+  $required_fields = array('worth');
+  $required_fields += $values['perspective'] == 1 ? array('secondperson', 'direction') : array('payer', 'payee');
+  foreach ($required_fields as $fieldname) {
+    if (empty($values[$fieldname]['preset']) && strpos($values['step-'.MCAPIFORM_STEP_ENTER]['template'], "[mcapiform:$fieldname]") === FALSE) {
+      form_set_error('step-'.MCAPIFORM_STEP_ENTER, t('Either preset @tokenname, or include that token in the data entry step.',
+        array('@tokenname' => "[mcapiform:$fieldname]")
+      ));
     }
   }
 }

@@ -33,6 +33,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       }
     }
   }
+  $form['#step'] = $form_state['step'];
 
   $lang = current(element_children($transaction->worth)); //assumes value is in one language only
   //only show one currency field
@@ -54,9 +55,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       $form[$participant]['#me'] = TRUE;
       if ($mcapi_form->data[$participant]['multiple']) {
         $form[$participant]['#multiple'] = TRUE;
-        if (isset($form_state['transactions'])) {//second time around
-          $form[$participant]['#default_value'] = $form_state['transactions'][$participant];
-        }
         //don't forget that user_chooser adds its validation function at the processing stage
         $form[$participant]['#element_validate'] = array();
       }
@@ -69,7 +67,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //I-thou exchanges
     //this section cannot be used to edit existing transactions
     $form['secondperson'] = array(
-      '#default_value' => isset($form_state['values']['secondperson']) ? $form_state['values']['secondperson'] : ''
+      '#default_value' => isset($form_state['values']['secondperson']) ? $form_state['values']['secondperson'] : $transaction->secondperson
     ) + $form['payee'];
     $form['secondperson']['#type'] = strtok($mcapi_form->data['secondperson']['args'], ':');
     $form['secondperson']['#args'] = array(strtok(':'));
@@ -83,7 +81,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
         'outgoing' => $mcapi_form->data['direction']['outgoing']
       ),
       //if we are loading the page from blank, or rebuilding the form, we set the default values here,
-      '#default_value' => $transaction->secondperson,
+      '#default_value' => $transaction->direction,
       '#required' => TRUE
     );
     //if we are loading the page from blank, or rebuilding the form, we set the default values here
@@ -103,7 +101,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
     array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
   }
-
   //we now modify the transaction form fields according to the form settings for each field
   foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
     if (isset($transaction->$fieldname)) {
@@ -120,7 +117,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
   //some adjustements for the confirmation step
-  if ($form_state['step'] > MCAPIFORM_STEP_ENTER && !empty($form_state['values'])) {
+  if ($form['#step'] > MCAPIFORM_STEP_ENTER && !empty($form_state['values'])) {
     mcapi_hide_tabs();
     $form['buttons']['back'] = array(
       '#type' => 'submit',
@@ -130,15 +127,13 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //not considering that in step 2 of the web form  the transaction elements are in $form_state['storage] not $form_state values
     $form['#validate'] = array();
   }
-  //this gets confused when there are tokens in the path. But why would there be tokens in the path?
-  //$form['#action'] = url($mcapi_form->data['architecture']['path']);
 
   //this may help with the validation and submission
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
   //some special form properties tell the theme callback which template to use.
-  $form['#template'] = mcapi_form_template($mcapi_form, $form_state['step'])->template;
+  $form['#template'] = mcapi_form_template($mcapi_form, $form['#step'])->template;
   $form['#theme'] = 'mcapi_form';
-  $form['#step'] = $form_state['step'];
+
   //we do this at the end because we need to completely overwrite the #validate and #submit handlers
   if (!empty($form['payer']['#multiple']) || !empty($form['payee']['#multiple'])) {
     $form['#validate'] = array('transactions_first_form_validate');////replaces default submit handler
@@ -220,7 +215,7 @@ function transactions_first_form_validate($form, &$form_state) {
     $form_state_1['values'] = $fs_values;
     $transaction = new_transaction();
     try {
-    //populate the core transaction values from $form_state
+      //populate the core transaction values from $form_state
       field_attach_form_validate('transaction', $transaction, $form, $form_state_1);
       entity_form_submit_build_entity('transaction', $transaction, $form, $form_state_1);
       mcapi_transaction_validate($transaction);
