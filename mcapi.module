@@ -104,7 +104,7 @@ function mcapi_currency_form(&$form, &$form_state){
     $currency->display['format'] = '';
   }
   else {
-    drupal_set_title( !empty($currency->name) ? $title = t("Edit currency '@name'", array('@name' => $currency->name)) : t('Declare currency') );
+    drupal_set_title( !empty($currency->human_name) ? $title = t("Edit currency '@name'", array('@name' => $currency->human_name)) : t('Declare currency') );
   }
   if (isset($form_state['values']['uid'])) {
     $currency->uid = $form_state['values']['uid'];
@@ -297,7 +297,7 @@ function transaction_label($transaction){
   return t('Transaction #@xid', array('@xid' => $transaction->xid));
 }
 function currency_label($currency) {
-  return $currency->name;
+  return $currency->human_name;
 }
 function transaction_menu_title($transaction) {
   return t('Transaction certificate #@xid', array('@xid' => $transaction->xid));
@@ -314,7 +314,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $langcode =
     $transactions = array($transactions->xid => $transactions);
   }
   entity_prepare_view('transaction', $transactions);
-  field_attach_prepare_view('transaction', $transactions, 'default');
+  field_attach_prepare_view('transaction', $transactions, $view_mode);
   foreach ($transactions as $transaction) {
     $transaction->additional = field_attach_view('transaction', $transaction, $view_mode);
     $renderable[] = array(
@@ -339,12 +339,13 @@ function template_preprocess_transaction(&$variables) {
   //choose the transaction theme template based on the first currency of the transaction
   $flows = current($transaction->worth);
   $variables['theme_hook_suggestion'] = 'transaction__' . $flows[0]['currcode'];
-  foreach (element_children($transaction->additional) as $key) {
-    $variables[$key] = drupal_render($transaction->additional[$key]);
+  foreach (element_children($transaction->additional) as $fieldname) {
+    $variables[$fieldname] = drupal_render($transaction->additional[$fieldname]);
+    $variables['additional'][$fieldname] = $variables[$fieldname];//this is used for default theme implementation
   }
 }
 
-// this shouldn't be necessary, but how else to get a list of tokens, in groups, for including on form field descriptions?
+// how else to get a list of tokens for including on form field descriptions?
 function matslats_list_tokens($type1, $type2 = NULL) {
   $info = token_info();
   foreach(func_get_args() as $type) {
@@ -559,11 +560,13 @@ function currency_picker_element($default = NULL, $multiple = FALSE, $currencies
       '#value' => $default
     );
   }
-
+  if (!$multiple) {
+    $options = array(0 => 'Please choose...') + $options;
+  }
   return array(
     '#title' => t('Currency'),
     '#type' => 'select',
-    '#options' =>  array(0 => 'Please choose...') + $options,
+    '#options' =>  $options,
     '#default_value' => $default,
     '#multiple' => $multiple,
     '#required' => TRUE,

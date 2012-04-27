@@ -29,6 +29,9 @@ class mcapi_ui extends ctools_export_ui {
   function list_build_row($item, &$form_state, $operations) {
     // Set up sorting
     $currcode = $item->{$this->plugin['export']['key']};
+    if ($currcode == 'def_drup') {
+      unset($operations['disable'], $operations['delete']);
+    }
 
     switch ($form_state['values']['order']) {
       case 'disabled':

@@ -15,7 +15,6 @@ function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
   $mcapi_forms = mcapi_forms_load(NULL, TRUE);
-
   $items['transaction/%transaction/formedit'] = array(
     'title' => 'Modify transaction',
     'page callback' => 'drupal_get_form',
@@ -26,7 +25,6 @@ function mcapi_forms_menu() {
     'file' => 'mcapi_forms.inc',
   );
   unset($mcapi_forms['correction']); //see below
-  
   //one menu callback for each form.
   foreach($mcapi_forms as $mcapi_form) {
     if (!empty($mcapi_form->disabled)) continue;
@@ -49,7 +47,6 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
-
   return $items;
 }
 
@@ -91,7 +88,6 @@ function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id)
   //set the page title if this form is not being displayed in a block
   //ascertains whether the active path corresponds to this mcapi_form
   $parts = explode('/', current_path());
-  if (!empty($parts[2]) && $parts[2] == 'formedit') return;
   //reverse calculate the path
   $map = explode('/', $mcapiform->data['architecture']['path']);
   foreach($map as $key => $part) {
@@ -133,7 +129,6 @@ function mcapi_forms_block_view($delta) {
     'subject' => mcapi_form_get_title($mcapi_form),
     'content' => drupal_get_form('mcapi_forms_form', new_transaction(), $mcapi_form),
   );
-  module_load_include('inc', 'mcapi_forms');
 }
 
 /*
@@ -210,7 +205,7 @@ function mcapi_forms_load($name = NULL) {
     $items = ctools_export_crud_load_all('mcapi_forms');
     drupal_alter('mcapi_forms', $items);
     cache_set('mcapi_forms', $items);
-    menu_rebuild();
+    menu_rebuild();//beware as mcapi_forms_menu calls this function
   }
   else {
     $items = &$cached->data;

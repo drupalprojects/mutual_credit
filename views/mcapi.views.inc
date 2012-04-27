@@ -144,6 +144,7 @@ function mcapi_views_data() {
       'handler' => 'views_handler_field_mcapi_links',
     )
   );
+  return $data;
 }
 
 /*
@@ -161,7 +162,7 @@ function mcapi_views_data_alter(&$data) {
     )
   );
   //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
-  $items['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
+  $data['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
 }
 
 /**
@@ -196,13 +197,6 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
 }
 
 
-/*
- * implements views hook_views_data_alter
- */
-function _mcapi_views_data_alter(&$items) {
-  //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
-  $items['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
-}
 
 
 //must return a condition objectmcapi_transactions.state

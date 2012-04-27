@@ -9,7 +9,6 @@ function mcapi_pending_mcapiforms_default() {
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
   $mcapiform->api_version = 3;
   $mcapiform->name = 'add_my_signature';
-  $mcapiform->status = 1;
   $mcapiform->data = array(
     'info' => array(
       'name' => 'add_my_signature',

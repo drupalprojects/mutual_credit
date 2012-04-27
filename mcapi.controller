@@ -120,10 +120,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     $transaction->modifier = $GLOBALS['user']->uid;
     $t = db_transaction();
     //the transaction is actually inserted during the validation phase, after validation the state should be changed
-    if (isset($transaction->is_new)) $function = 'insert';
-    elseif (isset($transaction->validating)) $function = 'state';
-    else $function = 'update';
-
+    $function = (isset($transaction->is_new) || empty($transaction->xid)) ? 'insert' : 'update';
     try {
       $this->$function($transaction);
     }
@@ -345,8 +342,6 @@ function mcapi_write_record(&$record, $primary_keys = array()) {
       if(!drupal_write_record('mcapi_transactions', $record, $primary_keys)) {
         throw new Exception();
       }
-      ddebug_backtrace();
-      debug($record);
     }
     catch (Exception $e) {
       foreach ($ts as $db_transaction) {

@@ -12,7 +12,7 @@ function limits_get($currcode, $uid){
       return array_filter($callback($currency, $uid), 'is_numeric');
     }
     drupal_set_message(t('@currency has an illegal callback set to determine transaction limits: @callback', array(
-      '@currency' => $currency->name,
+      '@currency' => $currency->human_name,
       '@callback' => $currency->limits['limits_callback']
     )));
   }
@@ -181,7 +181,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
     if (isset($currency->limits['limits_personal'])){
       $form['limits_personal'][$currcode] = array(
          '#type' => 'fieldset',
-         '#title' => $currency->name,
+         '#title' => $currency->human_name,
          '#attributes' => array('style' => 'float:left;')
       );
       $fields = min_max_fields(limits_get($currcode, $form['#user']->uid));

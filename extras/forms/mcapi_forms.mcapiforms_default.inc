@@ -19,7 +19,6 @@ function mcapiform_default_1stparty() {
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
   $mcapiform->api_version = 3;
   $mcapiform->name = '1stparty';
-  $mcapiform->status = 1;
   $mcapiform->data = array(
     'info' => array(
       'name' => '1stparty',
@@ -91,7 +90,6 @@ function mcapiform_default_3rdparty() {
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
   $mcapiform->api_version = 3;
   $mcapiform->name = '3rdparty';
-  $mcapiform->status = 1;
   $mcapiform->data = array(
     'info' => array(
       'name' => '3rdparty',
@@ -166,7 +164,6 @@ function mcapiform_default_many2one() {
   $mcapiform->api_version = 3;
   $mcapiform->name = 'many2one';
   $mcapiform->path = 'transact/many2one';
-  $mcapiform->status = 1;
   $mcapiform->data = array(
     'info' => array(
       'name' => 'many2one',
@@ -244,7 +241,6 @@ function mcapiform_default_one2many() {
   $mcapiform->api_version = 3;
   $mcapiform->name = 'one2many';
   $mcapiform->path = 'transact/one2many';
-  $mcapiform->status = 1;
   $mcapiform->data = array(
     'info' => array(
       'name' => 'one2many',
@@ -321,7 +317,6 @@ function mcapiform_default_correction() {
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
   $mcapiform->api_version = 3;
   $mcapiform->name = 'correction';
-  $mcapiform->status = 1;
   $mcapiform->data = array(
     'info' => array(
       'name' => 'correction',

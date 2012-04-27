@@ -46,7 +46,6 @@ function mcapi_field_formatter_info() {
  * in this module they are different coz we save the float but the form may show 2 fields
  */
 function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
-  $element = array('#theme' => 'worth_fields');
   foreach($items as $delta => $item) {
     if (!isset($item['quantity'])) {
       $item['quantity'] = $item['main_quant'];
@@ -250,14 +249,14 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
       if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division])) {
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'mcapi_invalid_division',//this is not working as intended
-          'message' => t('Only certain centiles are permitted for @name', array('@name' => $currency->name)),
+          'message' => t('Only certain centiles are permitted for @name', array('@name' => $currency->human_name)),
         );
       }
     }
     if ($item['quantity'] <= 0 && empty($currency->zero)) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
         'error' => 'mcapi_invalid_zero',//this is not working as intended
-        'message' =>  t('Zero value transactions not allowed in @currency', array('@currency' => $currency->name))
+        'message' =>  t('Zero value transactions not allowed in @currency', array('@currency' => $currency->human_name))
       );
     }
 
@@ -299,6 +298,9 @@ function mcapi_theme_fields() {
         'quantity' => 0
       )
     ),
+    'worth_field_multiple' => array(
+      'render element' => 'items'
+    ),
     'worth_widget' => array(
       'render element' => 'element'
     ),
@@ -311,6 +313,9 @@ function mcapi_theme_fields() {
 /*
  * Default implementation of theme 'worth_field'
  * Converts the quantity into tokens and replaces them into the currency display format
+ * $variables should have keys
+ * 'quantity'
+ * 'currcode'
  */
 function theme_worth_field(&$variables) {
   $currency = currency_load($variables['currcode']);
@@ -321,6 +326,15 @@ function theme_worth_field(&$variables) {
   }
   return strtr($currency->display['format'], $replacements) .'<br />';
   //the last <Br> saves us having to identify the container and hackit if many currencies are showing
+}
+
+function theme_worth_field_multiple($variables) {
+  $items = &$variables['items'];
+  $output = array();
+  foreach ($items as $item) {
+    $output[] = theme('worth_field', $item);
+  }
+  return implode('<br />', $output);
 }
 
 function theme_worth_widget_multiple($variables) {

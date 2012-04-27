@@ -286,7 +286,7 @@ function transaction_validate_currency_access($form, $form_state) {
     if (!currency_access('use', $currency, $transaction->$participant)) {
       form_set_error($participant, t("!name is not permitted to use @currency", array(
         '!name' => format_username(user_load($transaction->$participant)),
-        '@currency' => $currency->name
+        '@currency' => $currency->human_name
       )));
     }
   }

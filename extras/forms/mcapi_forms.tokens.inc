@@ -43,6 +43,7 @@ function mcapi_forms_tokens($type, $tokens, array $form, array $options = array(
 /*
  * replace tokens in stage 2 form with text, based on the form item token used in the template
  * this is tricky because we have a formAPI element, and need to pull a sensible text value from it.
+ * especially tricky with Field API fields, but we do the best we can.
  */
 function mcapi_element_markup_render(&$element) {
   $element['#printed'] = TRUE;
@@ -69,7 +70,7 @@ function mcapi_element_markup_render(&$element) {
       return drupal_render($renderable);
     case 'textfield':
     default:
-      debug("Mcapi forms doesn't know how to render ".$element['#type']);
+      drupal_set_message("Mcapi forms doesn't know how to render ".$element['#type'], 'error');
       return serialize($element['#value']);
   }
 }
@@ -78,7 +79,8 @@ function mcapi_extract_element_values($element) {
   $items = array();
   foreach (element_children($element) as $key) {
     foreach ($element[$key]['#columns'] as $column) {
-      $items[$key][$column] = isset($element[$key][$column]['#default_value']) ? $element[$key][$column]['#default_value'] : $element[$key][$column]['#value'];
+      $items[$key][$column] = isset($element[$key][$column]['#value']) ? $element[$key][$column]['#value'] : 
+        (isset($element[$key][$column]['#default_value']) ? $element[$key][$column]['#default_value'] : NULL);
     }
   }
   return $items;
@@ -135,10 +137,9 @@ function mcapi_forms_token_info() {
  * nesting function to set values wherever in the element
  */
 function mcapi_element_children_value(&$element, $name, $value) {
-  $children = element_children($element);
-  if (count($children)) {
-    foreach($children as $child) {
-      mcapi_element_children_value($element[$child], $name, $value);
+  if (is_array($element) && $fieldnames = element_children($element)) {
+    foreach($fieldnames as $fieldname) {
+      mcapi_element_children_value($element[$fieldname], $name, $value);
     }
   }
   else {

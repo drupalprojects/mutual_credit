@@ -47,31 +47,21 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   $form['state']['#type'] = 'hidden';
   //participants
   if ($mcapi_form->data['perspective'] == 3) {
-    //payer
-    $form['payer']['#type'] = strtok($mcapi_form->data['payer']['args'], ':');
-    $form['payer']['#args'] = array(strtok(':'));
-    $form['payer']['#multiple'] = $mcapi_form->data['payer']['multiple'];
-    //this could be put in the config
-    $form['payer']['#me'] = TRUE;
-    $form['payer']['#default_value'] = $transaction->payer;
-    
-    //payee;
-    $form['payee']['#type'] = strtok($mcapi_form->data['payee']['args'], ':');
-    $form['payee']['#args'] = array(strtok(':'));
-    //this could be put in the config
-    $form['payee']['#me'] = TRUE;
-    $form['payee']['#default_value'] = $transaction->payee;
-
     foreach (array('payer', 'payee') as $participant) {
+      $form[$participant]['#type'] = strtok($mcapi_form->data[$participant]['args'], ':');
+      $form[$participant]['#args'] = array(strtok(':'));
+      //this could be put in the config
+      $form[$participant]['#me'] = TRUE;
       if ($mcapi_form->data[$participant]['multiple']) {
         $form[$participant]['#multiple'] = TRUE;
         if (isset($form_state['transactions'])) {//second time around
           $form[$participant]['#default_value'] = $form_state['transactions'][$participant];
         }
+        //don't forget that user_chooser adds its validation function at the processing stage
         $form[$participant]['#element_validate'] = array();
-        $form['#submit'] = array('mcapi_forms_multiple_submit'); //replaces default submit handler
-        $form['#validate'] = array('mcapi_forms_multiple_validate');
-        break; //because only one can be multiple
+      }
+      else {
+        $form[$participant]['#default_value'] = $transaction->$participant;
       }
     }
   }
@@ -116,7 +106,9 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
 
   //we now modify the transaction form fields according to the form settings for each field
   foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
-    $default = mcapi_recursive_default_value($transaction->$fieldname);
+    if (isset($transaction->$fieldname)) {
+      $default = mcapi_recursive_default_value($transaction->$fieldname);
+    }
     $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
   }
   //save button
@@ -138,19 +130,23 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //not considering that in step 2 of the web form  the transaction elements are in $form_state['storage] not $form_state values
     $form['#validate'] = array();
   }
-  if ($transaction->xid) {
-    mcapi_forms_redirect_replace($mcapi_form->data['architecture']['path'], $transaction->xid, $GLOBALS['user']->uid);
-  }
-  $form['#action'] = url($mcapi_form->data['architecture']['path']);
+  //this gets confused when there are tokens in the path. But why would there be tokens in the path?
+  //$form['#action'] = url($mcapi_form->data['architecture']['path']);
+
   //this may help with the validation and submission
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
-  array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
-  array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
-  $form['#validate'][] = 'mcapi_forms_validate';
   //some special form properties tell the theme callback which template to use.
   $form['#template'] = mcapi_form_template($mcapi_form, $form_state['step'])->template;
   $form['#theme'] = 'mcapi_form';
   $form['#step'] = $form_state['step'];
+  //we do this at the end because we need to completely overwrite the #validate and #submit handlers
+  if (!empty($form['payer']['#multiple']) || !empty($form['payee']['#multiple'])) {
+    $form['#validate'] = array('transactions_first_form_validate');////replaces default submit handler
+    $form['#submit'] = array('mcapi_forms_multiple_submit'); //replaces default submit handler
+  }
+  $form['#validate'][] = 'mcapi_forms_validate';
+  array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
+  array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
 }
 
 
@@ -160,7 +156,9 @@ function new_transaction_presets($mcapi_formdata) {
   $fields = $mcapi_formdata['perspective'] == 1 ? array('secondperson', 'direction') : $fields = array('payer', 'payee');
   $fields = array_merge($fields, array_keys(field_info_instances('transaction', 'transaction')));
   foreach($fields as $field) {
-    $transaction->$field = $mcapi_formdata[$field]['preset'];
+    if (isset($mcapi_formdata[$field]['preset'])) {
+      $transaction->$field = $mcapi_formdata[$field]['preset'];
+    }
   }
   return $transaction;
 }
@@ -171,6 +169,7 @@ function new_transaction_presets($mcapi_formdata) {
  */
 function mcapi_recursive_default_value($value) {
   if (is_array($value)) {
+    $result = array();
     foreach ($value as $key => $val) {
       $result[$key] = mcapi_recursive_default_value($val);
     }
@@ -207,53 +206,71 @@ function mcapi_forms_validate_secondperson($form, &$form_state) {
     $values['payer'] = $GLOBALS['user']->uid;
     $values['payee'] = $values['secondperson'];
   }
-  debug($values);
-
 }
 
 /*
  * multiple participant form execution callbacks
- * these replace and incorporate the ones on the default form 
+ * this replaces the normal form-level transaction form validation function
+ * transaction_first_form_validate
+ *
  */
-function mcapi_forms_multiple_validate($form, &$form_state) {
-  module_load_include('inc', 'mcapi');
-  $payers = (array)$form_state['values']['payer'];
-  $payees = (array)$form_state['values']['payee'];
-  foreach ($payees as $payee) {
-    foreach ($payers as $payer) {
-      $form_state['values']['payer'] = $payer;
-      $form_state['values']['payee'] = $payee;
-      $form_state['values']['xid'] = NULL;
-      transaction_form_validate($form, $form_state);
-      $validatids[] = $form_state['transaction']->xid;
+function transactions_first_form_validate($form, &$form_state) {
+  $form_state_1 = $form_state;
+  foreach (mcapi_fan_multiple_participants($form_state) as $fs_values) {
+    $form_state_1['values'] = $fs_values;
+    $transaction = new_transaction();
+    try {
+    //populate the core transaction values from $form_state
+      field_attach_form_validate('transaction', $transaction, $form, $form_state_1);
+      entity_form_submit_build_entity('transaction', $transaction, $form, $form_state_1);
+      mcapi_transaction_validate($transaction);
+      /* if validation failed and the same form was resubmitted, we would either have to
+      abandon all the previous saved-validated transactions and make a new set or
+      match the previously validated xids with the newly submitted form data.
+      for this reason we're not going to validate these transactions in the database
+      Just do form level validation and then write them for the first time in the submit handler */
+      //mcapi_transaction_validate($transaction);
+    }
+    catch (Exception $e) {
+      form_set_error('', $e->getMessage());
     }
   }
-  //this object will only work in the following submit handler
-  $form_state['transactions'] = array(
-    'xids' => $validatids,
-    'payer' => $payers,
-    'payee' => $payees
-  );
+  //and unlike in the main form, we therefore don't save the xids for submission
 }
 
-/*
- * submit callback to replace the default
- */
 function mcapi_forms_multiple_submit($form, &$form_state) {
-  $transactions = entity_load('transaction', $form_state['transactions']['xids']);
-  foreach ($transactions as $transaction) {
-    $transaction->state = $form_state['transaction']->state;
-    $form_state['transaction'] = $transaction;
-    transaction_all_submit($form, $form_state);
-  }
-  watchdog('mcapi', 'Multiple transaction, ids: @xids', array('@xids' => implode(', ', $form_state['transactions']['xids'])));
-  if (user_access('access site reports') && module_exists('dblog')) {
-    $form_state['redirect'] = 'admin/reports/dblog';
-  }
-  else {
-    $form_state['redirect'] = 'transaction/'. $transaction->xid;
+  $form_state_1 = $form_state;
+  foreach (mcapi_fan_multiple_participants($form_state) as $fs_values) {
+    $form_state_1['values'] = $fs_values;
+    $form_state_1['input'] = $fs_values;
+    try {
+      $transaction = new_transaction();
+      entity_form_submit_build_entity('transaction', $transaction, $form, $form_state_1);
+      $transaction->modified = REQUEST_TIME;
+      $transaction->state = $form_state['values']['state'];
+      transaction_save($transaction);
+    }
+    catch (Exception $e) {
+      form_set_error('', t('Transaction not properly saved: @message', array('@message' => $e->getMessage())));
+    }
   }
 }
+
+
+function mcapi_fan_multiple_participants($form_state) {
+  form_state_values_clean($form_state);
+  foreach ((array)$form_state['values']['payee'] as $payee) {
+    foreach ((array)$form_state['values']['payer'] as $payer) {
+      $values = $form_state['values'];
+      $values['payer'] = $payer;
+      $values['payee'] = $payee;
+      $all_values[] = $values;
+    }
+  }
+  return $all_values;
+}
+
+
 /*
  * form validation callback
  * handles the steps
@@ -284,6 +301,7 @@ function mcapi_forms_validate($form, &$form_state) {
 
 /*
  * First submit callback for default transaction form
+ * copies anything in $form_state[storage] back to form_state[values]
  */
 function mcapi_forms_form_presubmit($form, &$form_state) {
   $form_state['values'] = $form_state['storage'];
@@ -292,14 +310,15 @@ function mcapi_forms_form_presubmit($form, &$form_state) {
  * Last submit callback for default transaction form
  * this has to be after the transaction id is created and before the end of form processing
  */
-function mcapi_forms_form_postsubmit($form, &$form_state) {
+function mcapi_forms_form_postsubmit($form, &$form_state) { return;
   //look for the mcapi_form object for the redirect
-  mcapi_forms_redirect_replace($form_state['redirect'], $form_state['transaction']->xid, $GLOBALS['user']->uid);
-}
-function mcapi_forms_redirect_replace(&$url, $xid, $uid) {
-  $url = str_replace(array('%transaction', '%user'), array($xid, $uid), $url);
-}
 
+  $form_state['redirect'] = str_replace(
+    array('%transaction', '%user'),
+    array($form_state['transaction']->xid, $GLOBALS['user']->uid),
+    $form_state['build_info']['args'][1]->data['submission']['redirect']
+  );
+}
 
 /*
  * nesting function to remove the outer theme wrapper put on by the element processing.
@@ -331,21 +350,6 @@ function mcapi_unset_recursive(array &$array, $prop) {
  */
 if (!function_exists('array_replace_recursive')) {
   function array_replace_recursive($array, $array1) {
-    function recurse($array, $array1) {
-      foreach ($array1 as $key => $value) {
-        // create new key in $array, if it is empty or not an array
-        if (!isset($array[$key]) || (isset($array[$key]) && !is_array($array[$key]))) {
-          $array[$key] = array();
-        }
-        // overwrite the value in the base array
-        if (is_array($value)) {
-          $value = recurse($array[$key], $value);
-        }
-        $array[$key] = $value;
-      }
-      return $array;
-    }
-
     // handle the arguments, merge one by one
     $args = func_get_args();
     $array = $args[0];
@@ -356,6 +360,20 @@ if (!function_exists('array_replace_recursive')) {
       if (is_array($args[$i])) {
         $array = recurse($array, $args[$i]);
       }
+    }
+    return $array;
+  }
+  function recurse($array, $array1) {
+    foreach ($array1 as $key => $value) {
+      // create new key in $array, if it is empty or not an array
+      if (!isset($array[$key]) || (isset($array[$key]) && !is_array($array[$key]))) {
+        $array[$key] = array();
+      }
+      // overwrite the value in the base array
+      if (is_array($value)) {
+        $value = recurse($array[$key], $value);
+      }
+      $array[$key] = $value;
     }
     return $array;
   }

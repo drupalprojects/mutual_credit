@@ -43,9 +43,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $account = user_load($transaction->modifier);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
-      case 'worth':
-        $replacements[$original] = theme('worth_fields', array('element' => pretheme_worth_render_array($transaction->worth['und'])));
-        break;
       case 'summary':
         $replacements[$original] = theme('transaction', array('transaction' => $transaction, 'view_mode' => 'summary'));
         break;
@@ -58,21 +55,17 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
       case 'modified':
         $replacements[$original] = format_date($transaction->modified, 'medium', '', NULL, $language_code);
         break;
+      case 'worth':
+        //there may be different incoming formats depending on whether we are rending a form or an entity
+        $replacements[$original] = theme('worth_field_multiple', array('items' => $transaction->worth['und']));
+        break;
+      default: //hopefully a field API field
+        //we don't want all the gumph around it, so just render the children
+        $replacements[$original] = drupal_render_children(field_view_field('transaction', $data['transaction'], $name, 'default'));
+        break;
     }
   }
   return $replacements;
-}
-
-//this is really nasty, but not sure where this is supposed to happen
-//particularly in the mail this gets called with the raw data, not the render array
-function pretheme_worth_render_array($worth_fields) {
-  foreach ($worth_fields as $field) {
-    $render[] = array(
-      '#currcode' => $field['currcode'],
-      '#quantity' => $field['quantity']
-    );
-  }
-  return $render;
 }
 
 function mcapi_token_info() {

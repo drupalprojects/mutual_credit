@@ -239,12 +239,18 @@ function transaction_first_form_validate($form, &$form_state) {
   form_state_values_clean($form_state);
   if ($form_state['values']['xid']) $transaction = transaction_load($form_state['values']['xid']);
   elseif(isset($form_state['transaction'])) $transaction = $form_state['transaction'];
-  else $transaction = new stdClass;
-  //this populates $transaction with the form values and validates it.
+  else $transaction = (object)$form_state['values'];
+  //we unusually build the entity and write it in the validation phase
   try {
+    //populate the core transaction values from $form_state
     entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+    //validate the Field API fields
     field_attach_form_validate('transaction', $transaction, $form, $form_state);
+    //validate the transaction qua transaction
     mcapi_transaction_validate($transaction);
+    if (count(form_get_errors())) return;
+    //now hand it off to the entity controller for a test write
+    $transaction = transaction_validate($transaction);
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
@@ -294,12 +300,6 @@ function mcapi_transaction_validate($transaction){
         throw new Exception(t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
       }
     }
-  }
-  if (count(form_get_errors())) return;
-  //now validate the transaction object in the database
-  if ($transaction->payer && $transaction->payee) {
-    //now hand it off to the entity controller, perhaps for a test write
-    $transaction = transaction_validate($transaction);
   }
 }
 

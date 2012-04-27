@@ -12,7 +12,7 @@
  */
 function mcapi_forms_help($path) {
   if ($path == 'admin/accounting/forms') {
-    return t('Disable any forms not in use');
+    return t('Enabled forms will appear on the user profile page for the user to determine whether to be notified');
   }
 }
 
@@ -56,7 +56,8 @@ function mcapi_notification_form_mcapi_forms_form_alter(&$form) {
  * submit callback ONLY for mcapi_forms
  */
 function mcapiform_mail_handle($form, $form_state) {
-  $mcapiform = $form_state['build_info']['args'][1];
+  if(empty($form_state['transaction'])) return;//this is temporary, for multiple transactions
+  $mcapiform = &$form_state['build_info']['args'][1];
   $template = isset($mcapiform->data['email_template']) ? $mcapiform->data['email_template'] :
     array('subject' => _mcapi_mail_text('subject'), 'body' => _mcapi_mail_text('body'));
   //get the preferences for payer and payee, for this form
@@ -132,6 +133,7 @@ function mcapi_notification_form_user_profile_form_alter(&$form, $form_state) {
   $data = &$form['#user']->data;
   $subjects = array();
   foreach (mcapi_forms_load() as $mcapi_form) {
+    if (!empty($mcapi_form->disabled)) continue;
     if (!empty($mcapi_form->data['email_template']['subject'])) {
       $subjects[$mcapi_form->name] = $mcapi_form->data['email_template']['subject'];
     }

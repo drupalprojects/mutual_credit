@@ -52,12 +52,13 @@ else {
     t('!payer <strong>paid</strong> !payee', $replacements) :
     t('!payer <strong>will pay</strong> !payee', $replacements);
   $sum = t('the sum of !worth', array('!worth' => '<p style="font-size:250%;">'. $worth .'</p>'));
+  unset($additional['worth']);
 ?>
 
 <div class="exchange">
   <p><?php print $date; ?></p>
    <p><?php print $movement; ?></p>
    <p><?php print $sum; ?> </p>
+   <p><?php print implode($additional); ?></p>
 </div>
-
 <?php } ?>

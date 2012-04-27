@@ -4,7 +4,7 @@ class views_handler_field_mcapi_sign extends views_handler_field {
 
   function option_definition() {
     $options = parent::option_definition();
-    $options['text'] = array('default' => '', 'translatable' => TRUE);
+    $options['text'] = array('default' => t('Sign'), 'translatable' => TRUE);
     return $options;
   }
 
@@ -13,6 +13,7 @@ class views_handler_field_mcapi_sign extends views_handler_field {
       '#type' => 'textfield',
       '#title' => t('Text to display'),
       '#default_value' => $this->options['text'],
+      '#required' => TRUE
     );
     parent::options_form($form, $form_state);
     // The path is set by render_link function so don't allow to set it.
@@ -29,8 +30,9 @@ class views_handler_field_mcapi_sign extends views_handler_field {
   function render($values) {
     $xid = $values->{$this->aliases['xid']};
     $transaction = transaction_load($xid);
-    if (!mcapi_pending_signatories_access($transaction)) return '';
-    return l($this->options['text'], 'transaction/'. $xid . '/sign');
+    if (mcapi_pending_signatories_access($transaction)) {
+      return l($this->options['text'], 'transaction/'. $xid . '/sign');
+    }
   }
   
 }

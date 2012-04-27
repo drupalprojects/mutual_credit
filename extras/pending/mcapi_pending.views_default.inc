@@ -58,7 +58,7 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['fields']['worth_1']['empty_zero'] = 0;
   $handler->display->display_options['fields']['worth_1']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['worth_1']['click_sort_column'] = 'currcode';
-  $handler->display->display_options['fields']['worth_1']['type'] = 'worth_fields';
+  $handler->display->display_options['fields']['worth_1']['type'] = 'worth_field';
   $handler->display->display_options['fields']['worth_1']['field_api_classes'] = 0;
   /* Field: Transaction: created */
   $handler->display->display_options['fields']['created']['id'] = 'created';

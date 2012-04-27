@@ -542,7 +542,7 @@ function mcapi_update_currency($old_currency) {
   require_once('currencies.inc');
   $currency = currency_default();
   $currency->info['currcode'] = str_replace(' ', '_', substr($old_currency->title, 0, 8));
-  $currency->name = $old_currency->title;
+  $currency->human_name = $old_currency->title;
   $currency->format = str_replace(array('[', ']', '@icon'), array('@', '', ''), $old_currency->symbol);
   $currency->uid = $old_currency->uid;
   //convert the divisions from the saved value to a string
