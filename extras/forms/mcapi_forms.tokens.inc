@@ -137,12 +137,12 @@ function mcapi_forms_token_info() {
  * nesting function to set values wherever in the element
  */
 function mcapi_element_children_value(&$element, $name, $value) {
-  if (is_array($element) && $fieldnames = element_children($element)) {
-    foreach($fieldnames as $fieldname) {
-      mcapi_element_children_value($element[$fieldname], $name, $value);
-    }
-  }
-  else {
+  if (is_array($element)) {
     $element[$name] = $value;
+    if ($fieldnames = element_children($element)) {
+      foreach($fieldnames as $fieldname) {
+        mcapi_element_children_value($element[$fieldname], $name, $value);
+      }
+    }
   }
 }

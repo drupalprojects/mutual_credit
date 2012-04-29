@@ -83,10 +83,11 @@
  * Client Request: sends transaction params
  * Server Response: returns OK or error code
  *
- * and...
+ * Relay transaction
  * Server relays transaction to second client
  * Server Request: relay's transaction to client2
  * Client2 Response: returns OK or error code
+ *
  */
 
 //API SPECIFICS
@@ -104,7 +105,7 @@
 array(
   '@message' => STRING, //html,
   '@status' => ENUM, // -1 means no account, 0 means blocked, 1 means trading
-  //following arguments are passed if there is handshake
+  //following arguments are passed if the account exists
   '@balance' => INTEGER, //in the base unit i.e. minutes
   '@min' => INTEGER, //in the base unit i.e. minutes
   '@max' => INTEGER, //in the base unit i.e. minutes
@@ -210,7 +211,6 @@ array(
  * return OK or error message
  */
 
-//DICTIONARY
 
 /*
  * http error codes

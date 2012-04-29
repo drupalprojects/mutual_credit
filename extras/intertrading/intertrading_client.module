@@ -1,6 +1,9 @@
 <?php
-
-module_load_include('inc', 'intertrading_client', 'intertrading');
+//functions shared with server
+require('intertrading.inc');
+/*
+ * Drupal 7 intertrading client
+ */
 
 define('INTERTRADING_API_VERSION', 1.0);
 define('INTERTRADING_REF_URL', str_replace('www.', '', $_SERVER['SERVER_NAME']));
@@ -36,9 +39,8 @@ function intertrading_client_menu() {
       );
       $items['transact/remote/incoming'] = array(
         'title' => 'Remote claim',
-        'description' => 'Pay someone in another exchange',
-        'page arguments' => array('remote_outgoing_form', $transaction),
         'description' => 'Request credit from another exchange',
+        'page arguments' => array('remote_outgoing_form', $transaction),
         'type' => MENU_DEFAULT_LOCAL_TASK,
         'weight' => 1
       );
@@ -52,6 +54,13 @@ function intertrading_client_menu() {
         'file' => 'mcapi.inc',
         'file path' => drupal_get_path('module', 'mcapi'),
         'weight' => 2
+      );
+      $items['intertrade/replicate'] = array(
+        'title' => 'Replicate transaction history to server',
+        'page callback' => 'report_intertrading_history',
+        'access callback' => 'intertrading_check_key',
+        'access arguments' => array(),
+        'type' => MENU_CALLBACK,
       );
     }
   $items['intertrade'] = array(
@@ -103,6 +112,22 @@ function intertrading_client_forms($form_id, $args) {
 }
 
 /*
+ * access callback for menu items
+ */
+function intertrading_check_key() {
+  $post = intertrading_get_post();
+  if (empty($post) || substr($_GET['q'], 0, 10) != 'intertrade' || $GLOBALS['user']->uid) {
+    return FALSE;
+  }
+  if ($post['key'] != variable_get('intertrading_key', '')) {
+    watchdog('intertrading', 'server passed wrong key to this client', array(), WATCHDOG_ERROR);
+    intertrading_respond(20, array('@server' => INTERTRADING_REF_URL, '@message' => 'wrong key'));
+  }
+  $GLOBALS['user'] = user_load(variable_get('intertrading_uid', 0));
+  return TRUE;
+}
+
+/*
  * menu callback
  * this could be one of three forms, depending on whether the site is set up
  */
@@ -128,8 +153,7 @@ function intertrading_settings() {
     '#required' => TRUE
   );
 
-  $form['intertrading_currcode'] =  currency_picker_element(variable_get('intertrading_uid', 0));
-
+  $form['intertrading_currcode'] =  currency_picker_element(variable_get('intertrading_currcode', 0));
 
   $form['intertrading_ticks'] = array(
     '#title' => 'Ticks',//this is a reference to the forex base comparision unit
@@ -182,7 +206,7 @@ function intertrading_settings_validate(&$form, &$form_state) {
 }
 
 function intertrading_settings_submit($form, $form_state) {
-  $vars = array_keys(intertrading_client_variable_info());
+  $vars = array_keys(intertrading_client_variable_info());//or could use form_state_clean function
   foreach ($vars as $var) {
     variable_set($var, $form_state['values'][$var]);
   }
@@ -263,9 +287,12 @@ function _intertrading_handshake() {
   $stats['mail'] = variable_get('site_mail', '');
   $stats['api'] = INTERTRADING_API_VERSION;
   $stats['ticks'] = variable_get('intertrading_ticks', 0);
-
+  $currcode = variable_get('intertrading_currcode', '');
+  if (!$currcode) {
+    debug('Intertrading requires a currency to be specified'); return;
+  }
   //the rest are optional
-  $currency = currency_load(variable_get('intertrading_currcode', key(currencies_load())));
+  $currency = currency_load($currcode);
   if (isset($currency->divisions)) {
     //divisions is either string '01' or an keyed array
     $stats['divisions'] = $currency->divisions == '01' ? '01' : implode('|', array_keys($currency->divisions));
@@ -280,7 +307,7 @@ function _intertrading_handshake() {
   $stats['transactions'] = db_query(
     "SELECT COUNT(xid) from {mcapi_transactions} t
     LEFT JOIN {field_data_worth} fw ON t.xid = fw.entity_id
-    WHERE t.state = :state AND fw.worth_currcode = '$currency->currcode' AND created > :created",
+    WHERE t.state = :state AND fw.worth_currcode = '$currcode' AND created > :created",
     array(':state' => TRANSACTION_STATE_FINISHED, ':created' => strtotime('-30 days'))
   )->FetchField();
 
@@ -296,15 +323,14 @@ function _intertrading_handshake() {
 }
 
 function _intertrading_report() {
-  $currcode = variable_get('intertrading_currcode', key(currencies_load()));
-  //get active users with permission to trade
-
+  $currcode = variable_get('intertrading_currcode', '');
   $query = "SELECT SUM(fw.worth_quantity) from {mcapi_transactions} t 
     LEFT JOIN {field_data_worth} fw ON t.xid = fw.entity_id
-    WHERE t.state = :state AND fw.worth_currcode = '$currcode' AND created > :created";
+    WHERE t.state = :state AND fw.worth_currcode = :currcode AND created > :created";
   $replacements = array(
     ':state' => TRANSACTION_STATE_FINISHED,
-    ':created' => strtotime('-1 year')
+    ':created' => strtotime('-1 year'),
+    ':currcode' => $currcode
   );
   $stats['volume'] = db_query($query, $replacements)->fetchField();
   //this isn't foolproof. but then nothing is
@@ -565,18 +591,6 @@ function intertrading_transaction_form_submit($form, $form_state) {
 }
 
 
-function intertrading_check_key() {
-  $post = intertrading_get_post();
-  if (empty($post) || $_GET['q'] != 'intertrade' || $GLOBALS['user']->uid) {
-    return FALSE;
-  }
-  if ($post['key'] != variable_get('intertrading_key', '')) {
-    watchdog('intertrading', 'server passed wrong key to this client', array(), WATCHDOG_ERROR);
-    intertrading_respond(20, array('@server' => INTERTRADING_REF_URL, '@message' => 'wrong key'));
-  }
-  $GLOBALS['user'] = user_load(variable_get('intertrading_uid', 0));
-  return TRUE;
-}
 
 function intertrading_client2_receive() {
   $post = intertrading_get_post();
@@ -698,10 +712,6 @@ function intertrading_client_form_transaction_form_alter(&$form, &$form_state) {
 }
 /*
  * implements hook_help
- * Your account status is: No account | blocked | active
-Your account balance is: @minutes
-Your trading limits are: @min @max
-Total transactions: @count since @date
  */
 function intertrading_client_help($path, $args) {
   if ($path == 'admin/accounting/intertrade') {
@@ -711,27 +721,56 @@ function intertrading_client_help($path, $args) {
     }
     $args = &$result->args;
     $args['@name'] = variable_get('site_name', '');
+    $args['!balance'] = theme('worth_field', array('quantity' => $args['@balance'], 'currcode' => variable_get('intertrading_currcode')));
     $statuses = array(
       '-1' => t('No account'),
       '0' => t('Account blocked'),
       '1' => t('Account active')
     );
-    $args['@status'] = $statuses[$args['@status']];
-    $help = $args['@message'];
-    $help .= '<p>'.t('@name account status is: @status', $args);
-    $help .= '<br />'.t('@name account balance is @balance', $result->args);
-    if ($result->args['@min'] && $result->args['@max']) {
-      $help .= '<br />'.t('@name can trade between: @min & @max', $result->args);
-    }
-    else{
-      if ($result->args['@min']) {
-        $help .= '<br />'.t('@name must trade above: @min', $result->args);
+    $help = $args['@message'] . '<hr />';
+    $help .= '<p>'.t('@name account status is: @status', array('@name' => $result->args['@name'], '@status' => $statuses[$args['@status']]));
+    if ($result->args['@status'] != -1) {
+      $help .= '<br />'.t('@name account balance is !balance', $result->args);
+      if ($result->args['@min'] && $result->args['@max']) {
+        $help .= '<br />'.t('@name can trade between: @min & @max', $result->args);
       }
-      elseif($result->args['@min']) {
-        $help .= '<br />'.t('@name must trade below: @min', $result->args);
+      else{
+        if ($result->args['@min']) {
+          $help .= '<br />'.t('@name must trade above: @min', $result->args);
+        }
+        elseif($result->args['@min']) {
+          $help .= '<br />'.t('@name must trade below: @min', $result->args);
+        }
       }
+      $help .= '<br />'.t('Transactions so far: @count', $result->args);
     }
-    $help .= '<br />'.t('Transactions so far: @count', $result->args);
     return $help;
   }
+}
+
+function report_intertrading_history() {
+  $intertrading_uid = variable_get('intertrading_uid', 0);
+  $xids = db_query("SELECT xid FROM {mcapi_transactions} WHERE payer = $intertrading_uid OR payee = $intertrading_uid AND state > 0")
+  ->fetchCol();
+  $transactions = transaction_load_multiple($xids);
+
+  $desc = variable_get('intertrading_description_field', '');
+  foreach ($transactions as $transaction) {
+    $flow = current($transaction->worth);
+    $description = isset($transaction->$desc) ? current($transaction->desc) : array() ;
+    $dir = $transaction->payer == $intertrading_uid ? 'incoming' : 'outgoing';
+    
+    $output[$transaction->xid] = array(
+      'payer' => $dir == 'outgoing' ? user_load($transaction->payer)->mail : 0,
+      'payer_url' => $dir == 'outgoing' ? INTERTRADING_REF_URL : '',
+      'payee' => $dir == 'outgoing' ? 0 : user_load($transaction->payee)->mail,
+      'payee_url' => $dir == 'outgoing' ? '' : INTERTRADING_REF_URL,
+      'src_url' => INTERTRADING_REF_URL, //the url of the client OR blank
+      'dest_url' => '', //the url of the client OR blank
+      'quantity' => $flow[0]['quantity'], //denominated in src units
+      'date' => $transaction->created, //unixtime
+      'description' => empty($description) ? '' : $description[0]['value']
+    );
+  }
+  intertrading_respond('OK', $output);
 }

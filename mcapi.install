@@ -518,19 +518,24 @@ function mcapi_update_7004() {
   menu_rebuild();
 }
 function mcapi_update_7005() {
-  db_query("UPDATE {field_data_worth} SET worth_currcode = LOWER(worth_currcode)");
-  db_query("UPDATE {field_revision_worth} SET worth_currcode = LOWER(worth_currcode)");
   if (!db_query("SELECT status FROM {system} where name = 'mcapi_currencies'")->fetchField()) {
     db_drop_table('mcapi_currencies');//because the module wasn't installed anyway
-    db_create_table('mcapi_currencies', drupal_get_schema('mcapi_currencies'));  
+    db_create_table('mcapi_currencies', drupal_get_schema('mcapi_currencies'));
+    db_query("UPDATE {mcapi_currencies} SET currcode = 'def_drup'");
+    db_query("UPDATE {field_data_worth} SET worth_currcode = 'def_drup'");
+    db_query("UPDATE {field_revision_worth} SET worth_currcode = 'def_drup'");
   }
   else {
-    db_query("UPDATE {mcapi_currencies} SET currcode = LOWER(currcode)");
+    db_query('TRUNCATE {cache_field}');
+    db_query("UPDATE {mcapi_currencies} SET currcode = 'def_drup'");
+    db_query("UPDATE {field_data_worth} SET worth_currcode = 'def_drup'");
+    db_query("UPDATE {field_revision_worth} SET worth_currcode = 'def_drup'");
   }
   db_query("DELETE FROM {system} WHERE name = 'mcapi_currencies'");
   $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
   $instance['display']['default']['module'] = 'mcapi';
   $instance['display']['default']['type'] = 'worth_field';
+  cache_clear('currencies', 'cache');
   field_update_instance($instance);
 }
 

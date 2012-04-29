@@ -152,8 +152,8 @@ function mcapi_pending_entity_save($transaction) {
  * Will implement hook_entity_delete or some such
  */
 function mcapi_pending_entity_delete($entity, $type) {
-  if ($type = 'transaction' && !empty($entity->pending_signatures)) {
-    db_query("DELETE FROM {mcapi_signatures} WHERE xid = ".$transaction->xid);
+  if ($type == 'transaction' && !empty($entity->pending_signatures)) {
+    db_query("DELETE FROM {mcapi_signatures} WHERE xid = :xid", array(':xid' => $transaction->xid));
   }
 }
 

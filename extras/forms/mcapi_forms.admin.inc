@@ -295,6 +295,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#weight' => 2,
     )
   );
+  $form['#submit'][] = 'menu_rebuild';
 }
 
 

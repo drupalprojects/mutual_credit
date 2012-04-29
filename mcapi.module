@@ -92,7 +92,8 @@ function transaction_form($form, &$form_state) {
 }
 
 /*
- * menu callback for editing a currency, determined by the ctools export_plugin
+ * ctools plugin callback for editing a currency, determined by the ctools export_plugin
+ * The form_id is actually ctools_export_ui_edit_item_form
  */
 function mcapi_currency_form(&$form, &$form_state){
   form_load_include($form_state, 'inc', 'mcapi', 'currencies');
@@ -513,8 +514,6 @@ function mcapi_ctools_plugin_api() {
     'path' => drupal_get_path('module', 'mcapi'),
   );
 }
-
-
 /*
  * Implements ctools hook_ctools_plugin_directory
  */

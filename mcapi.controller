@@ -150,14 +150,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $transaction->state = TRANSACTION_STATE_ERASED;
         $transaction->modified = REQUEST_TIME;
         $transaction->modifier = $GLOBALS['user']->uid;
-        try{
-          mcapi_write_record($transaction, array('xid'));
-        }
-        catch (Exception $e) {
-          $e->message .= t('Problem changing state of transaction #@xid to @state', array('@xid' => $transaction->xid, '@state' => $new_state));
-          $e->code = 'mark_del';
-          throw $e;
-        }
+        $this->state($transaction);
         break;
       case 2: //actually delete
         $query = db_delete('mcapi_transactions')
@@ -377,7 +370,9 @@ function mcapi_write_record(&$record, $primary_keys = array()) {
  * implements hook_currency_innerform_alter
  * Expects $form['#currency']
  */
-function mcapi_currency_innerform_alter(&$form, &$form_state) {
+function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+  if (empty($form_state['item']->currcode)) return;
+  $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
   $form['accounting'] = array(
     '#title' => t('Accounting standards'),
     '#description' => t('More or less formal accounting standards can be determined.') .' '.
@@ -390,13 +385,14 @@ function mcapi_currency_innerform_alter(&$form, &$form_state) {
       '#type' => 'radios',
       '#options' => array(
         MCPI_CURRENCY_UPDATE_NONE => t("Can't update"),
+        MCPI_CURRENCY_UPDATE_HARD => t("Delete and create a new transaction"),
         MCPI_CURRENCY_UPDATE_SOFT => t("Update same record"),
-        MCPI_CURRENCY_UPDATE_HARD => t("Erase and create a new transaction"),
         //3 => t("Use entity versioning the same transaction (not available)"),
       ),
-      '#default_value' => $form['#currency']->accounting['update_mode'],
+      '#default_value' => $currency->accounting['update_mode'],
       '#weight' => 1,
       '#element_validate' => array('mcapi_currency_validate_update_mode'),
+      //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
       '#ajax' => array(
         'callback' => 'currency_form_ajax',
         'wrapper' => 'mcapi-currency-form',
@@ -410,7 +406,7 @@ function mcapi_currency_innerform_alter(&$form, &$form_state) {
         1 => t('Mark deleted'),
         2 => t('Remove all traces from the database (not from backups)'),
       ),
-      '#default_value' => $form['#currency']->accounting['erase_mode'],
+      '#default_value' => $currency->accounting['erase_mode'],
       '#weight' => 2,
       '#ajax' => array(
         'callback' => 'currency_form_ajax',
@@ -418,6 +414,22 @@ function mcapi_currency_innerform_alter(&$form, &$form_state) {
       ),
     )
   );
+
+  $operations = array('update' => t('Correct'), 'erase' => t('Erase'));
+  $form += currency_op_settings_tab($currency, $operations);
+  
+  //alter the options according to what is set
+  if ($currency->accounting['erase_mode'] == 0) {
+    unset($form['accounting']['update_mode']['#options'][1]);
+    if ($form['accounting']['update_mode']['#default_value'] == 1) {
+      $form['accounting']['update_mode']['#default_value'] = 0;
+    }
+  }
+  //nasty design flaw around radio buttons which means ajax rebuilds them wrong
+  if (arg(0) == 'system') {
+    unset($form['accounting']['update_mode']['#title']);
+  }
+
 }
 
 function mcapi_controller_validate_transaction_fields($transaction) {

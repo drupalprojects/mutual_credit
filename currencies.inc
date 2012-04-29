@@ -63,87 +63,12 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#weight' => 3
   );
 
-  $operations['view'] = t('View');
   $form['additional_settings'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
-  if (isset($currency->accounting)) { //not all engines will do this
-    $form['accounting'] = array(
-      '#title' => t('Accounting standards'),
-      '#description' => t('More or less formal accounting standards can be determined.') .' '.
-        t('Not all combinations are meaningful!'),
-      '#type' => 'fieldset',
-      '#weight' => -1,
-      '#group' => 'additional_settings',
-      'update_mode' => array(
-        '#title' => t('Update mode'),
-        '#type' => 'radios',
-        '#options' => array(
-          0 => t("Can't update"),
-          1 => t("Delete and create a new transaction"),
-          2 => t("Update same record"),
-          //3 => t("Use entity versioning the same transaction (not available)"),
-        ),
-        '#default_value' => $currency->accounting['update_mode'],
-        '#weight' => 1,
-        '#element_validate' => array('mcapi_currency_validate_update_mode'),
-        //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
-        '#ajax' => array(
-          'callback' => 'currency_form_ajax',
-          'wrapper' => 'mcapi-currency-form',
-        ),
-      ),
-      'erase_mode' => array(
-        '#title' => t('Delete mode'),
-        '#type' => 'radios',
-        '#options' => array(
-          0 => t("Can't delete"),
-          1 => t('Mark deleted'),
-          2 => t('Remove all traces from the database (not from backups)'),
-        ),
-        '#default_value' => $currency->accounting['erase_mode'],
-        '#weight' => 2,
-        '#ajax' => array(
-          'callback' => 'currency_form_ajax',
-          'wrapper' => 'mcapi-currency-form',
-        ),
-      )
-    );
-
-    //alter the options according to what is set
-    if ($currency->accounting['erase_mode'] == 0) {
-      unset($form['accounting']['update_mode']['#options'][1]);
-      if ($form['accounting']['update_mode']['#default_value'] == 1) {
-        $form['accounting']['update_mode']['#default_value'] = 0;
-      }
-    }
-
-    $operations['update'] = $form['accounting']['update_mode']['#default_value'] ? t('Update') : NULL;
-    $operations['erase'] =  $currency->accounting['erase_mode'] ? t('Erase') : NULL;
-  }
-  $states = mcapi_states();
-  $i = 0; $j = 0;
-  $options = module_invoke_all('mcapi_info_permissions');
-  foreach (array_filter($operations) as $op => $name) {
-    $form[$op] = array(
-      '#title' => $name,
-      '#description' => t('Determine who can @name transactions in the following states:', array('@name' => $name)),
-      '#type' => 'fieldset',
-      '#group' => 'additional_settings',
-      '#weight' => $i++,
-    );
-    $defaults = $currency->$op;
-    foreach ($states as $state => $statename) {
-      $form[$op][$state] = array(
-        '#title' => $statename,
-        '#type' => 'select',
-        '#options' => $options,
-        '#default_value' => isset($defaults[$state]) ? $defaults[$state] : TRANSACTION_STATE_FINISHED,
-        '#weight' => $j++,
-      );
-    }
-  }
+  $operations['view'] = t('View');
+  $form += currency_op_settings_tab($currency, $operations);
   $form['zero'] = array(
     '#title' => t('Allow zero value transactions'),
     '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
@@ -180,6 +105,31 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
   if (isset($currency->currcode)) {
     $form['buttons']['submit']['#value'] = t('Update');
   }
+}
+
+function currency_op_settings_tab($currency, $operations) {
+  static $i = 0;
+  static $j = 0;
+  foreach ($operations as $op => $name) {
+    $element[$op] = array(
+      '#title' => $name,
+      '#description' => t('Determine who can @name transactions in the following states:', array('@name' => $name)),
+      '#type' => 'fieldset',
+      '#group' => 'additional_settings',
+      '#weight' => $i++,
+    );
+    $defaults = $currency->$op;
+    foreach (mcapi_states() as $state => $statename) {
+      $element[$op][$state] = array(
+        '#title' => $statename,
+        '#type' => 'select',
+        '#options' => module_invoke_all('mcapi_info_permissions'),
+        '#default_value' => isset($defaults[$state]) ? $defaults[$state] : TRANSACTION_STATE_FINISHED,
+        '#weight' => $j++,
+      );
+    }
+  }
+  return $element;
 }
 
 function currency_form_ajax(&$form, &$form_state) {

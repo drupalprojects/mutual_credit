@@ -7,11 +7,16 @@ core = 7.x
 
 dependencies[] = ctools
 
-files[] = mcapi.controller
 files[] = mcapi.inc
 files[] = mcapi.install
+files[] = mcapi.controller
 files[] = mcapi.field.inc
 files[] = mcapi.tokens.inc
+
+files[] = mcapi.mcapicurrencies_default.inc
+files[] = plugins/export_ui/mcapi_ui.inc
+files[] = plugins/export_ui/mcapi_ui.class.php
+
 files[] = views/mcapi.views.inc
 files[] = views/mcapi.views_default.inc
 files[] = views/views_handler_argument_mcapi_dates_various.inc
@@ -25,6 +30,3 @@ files[] = views/views_handler_filter_mcapi_states.inc
 files[] = views/views_handler_filter_mcapi_currency.inc
 files[] = views/views_plugin_row_transaction.inc
 
-files[] = currencies/mcapi.mcapicurrencies_default.inc
-files[] = plugins/export_ui/mcapi_ui.inc
-files[] = plugins/export_ui/mcapi_ui.class.php

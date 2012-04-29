@@ -8,7 +8,6 @@
 //requests the 2ndclient and parses the results
 //keeps them in a format that can be forwarded to the first client
 function intertrading_json_request($url, $params) {
-
   $result = drupal_http_request(
     $url,
     array(
@@ -17,7 +16,6 @@ function intertrading_json_request($url, $params) {
     )
   );
 
-  
   $return = new stdClass;
   $data = json_decode($result->data, TRUE);
   if (count($data) && is_array($data)) {
@@ -148,8 +146,8 @@ function intertrading_error_codes($code, $args = array()) {
     //transaction
     case 1: return t("Transaction would exceed your system's max limits on server by @quantity", $args);
     case 2: return t("Transaction would exceed your system's min limits on server by @quantity", $args);
-    case 3: return t("Transaction would exceed dest max limits on server by @quantity");
-    case 4: return t("Transaction would exceed dest min limits on server by @quantity");
+    case 3: return t("Transaction would exceed dest max limits on server by @quantity", $args);
+    case 4: return t("Transaction would exceed dest min limits on server by @quantity", $args);
     case 5: return t('Problem saving transaction on server: @message', $args);
     case 6: return t('Unknown account & failed to create a new account on intertrading server');
     case 7: return t('Diagnostics from server: @message', $args);
