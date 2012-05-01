@@ -141,12 +141,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
         '#default_value' => isset($mcapi_form[$key]['args']) ? $mcapi_form[$key]['args'] : 'mcapi_access_check_roles:2'
       );
       $form[$key]['preset']['#description'] = t('Use [self] to preset with the logged in user');
-      $form[$key]['multiple'] = array(
-        '#title' => t('Multiple users'),
-        '#description' => t('Allow multiple users and repeat the transaction for each of them'),
-        '#type' => 'checkbox',
-        '#default_value' => isset($mcapi_form[$key]['multiple']) ? $mcapi_form[$key]['multiple'] : FALSE,
-      );
     }
   }
   else {//1st person form shows one field only, presuming the current user initiates the transaction
@@ -266,7 +260,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     'template' => array(
       '#title' => t('Main form'),
       '#type' => 'textarea',
-      '#rows' => isset($mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template']) ? count(explode("\n", $mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template'])) : 5,
+      '#rows' => 6,
       '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template']) ? $mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template'] : '',
     ),
   );

@@ -118,13 +118,13 @@ function currency_op_settings_tab($currency, $operations) {
       '#group' => 'additional_settings',
       '#weight' => $i++,
     );
-    $defaults = $currency->$op;
     foreach (mcapi_states() as $state => $statename) {
+      $states = isset($currency->$op) ? $currency->$op : array();
       $element[$op][$state] = array(
         '#title' => $statename,
         '#type' => 'select',
         '#options' => module_invoke_all('mcapi_info_permissions'),
-        '#default_value' => isset($defaults[$state]) ? $defaults[$state] : TRANSACTION_STATE_FINISHED,
+        '#default_value' => isset($states[$state]) ? $states[$state] : TRANSACTION_STATE_FINISHED,
         '#weight' => $j++,
       );
     }
@@ -279,13 +279,22 @@ function currencies_load_all() {
   }
   return $currencies;
 }
-function mcapi_currency_form_validate(&$form, &$form_state) {
-  
+//load the default currency and clear some fields, so it can populate the edit form with some discrete defaults
+function default_cur() {
+  $currency = ctools_export_crud_load('mcapi_currencies', 'def_drup')->data;
+  $currency->human_name = '';
+  $currency->display['format'] = '@minus@integer @division';
+  debug($currency);
+  return $currency;
 }
 
+function mcapi_currency_form_validate(){
+  
+}
 /*
  * Submit callback for mcapi_currency_form
- * saves the currency as a variable
+ * declared in plugins/export/mcapi_ui
+ * set the $form_state['item'] for ctools to save
  */
 function mcapi_currency_form_submit($form, $form_state) {
   form_state_values_clean($form_state);

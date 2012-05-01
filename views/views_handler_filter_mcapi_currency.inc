@@ -5,40 +5,33 @@
  */
 class views_handler_filter_mcapi_currency extends views_handler_filter_in_operator {
 
+
   //this is waiting for a suitable hook function so that modules can declare their own exchange types.
   function get_value_options() {
     $this->value_options = _currency_picker_element_options();
   }
 
-
   function value_form(&$form, &$form_state) {
-    if (empty($this->value_options)) {
-      // Initialize the array of possible values for this filter.
-      $this->get_value_options();
-    }
-    foreach ($this->value_options as $currcode) {
-      $currencies[$currcode] = currency_load($currcode);
-    }
-    $form['value'] = currency_picker_element($this->value, TRUE, $currcode);
-    if (empty($element['#options'])) {
-      drupal_set_message("Don't expose the currcode filter if you only have one currency", 'warning');
-      return;
-    }
-
-    if (!empty($this->options['exposed'])) {
-      $identifier = $this->options['expose']['identifier'];
-      if (!empty($form_state['exposed']) && !isset($form_state['input'][$identifier])) {
-        $form_state['input'][$identifier] = $this->value;
-      }
-      // If we're configuring an exposed filter, add an <Any> option.
-      if (empty($form_state['exposed']) || empty($this->options['required'])) {
-        $any_label = variable_get('views_exposed_filter_any_label', 'new_any') == 'old_any' ? '<Any>' : t('- Any -');
-        if ($form['value']['#type'] != 'select') {
-          $any_label = check_plain($any_label);
+    $currencies = currencies_load();
+    if (count($currencies) > 1) {
+      $form['value'] = currency_picker_element($this->value, TRUE, $currencies);
+      if (!empty($this->options['exposed'])) {
+        $identifier = $this->options['expose']['identifier'];
+        if (!empty($form_state['exposed']) && !isset($form_state['input'][$identifier])) {
+          $form_state['input'][$identifier] = $this->value;
         }
-        $form['value']['#options'] = array('All' => $any_label) + $form['value']['#options'];
+        // If we're configuring an exposed filter, add an <Any> option.
+        if (empty($form_state['exposed']) || empty($this->options['required'])) {
+          $any_label = variable_get('views_exposed_filter_any_label', 'new_any') == 'old_any' ? '<Any>' : t('- Any -');
+          if ($form['value']['#type'] != 'select') {
+            $any_label = check_plain($any_label);
+          }
+          $form['value']['#options'] = array('All' => $any_label) + $form['value']['#options'];
+        }
       }
+      return $form;
     }
+    drupal_set_message("Don't expose the currcode filter if you only have one currency", 'warning');
   }
 
   function expose_options() {

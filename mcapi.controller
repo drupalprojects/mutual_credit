@@ -142,6 +142,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
   public function erase($transaction) {
     //if there are more than one flows involved, use the minimum value for the update mode
     $flows = current($transaction->worth);
+    $modes = array(2);
     foreach ($flows as $flow) {
       $modes[] = currency_load($flow['currcode'])->accounting['erase_mode'];
     }
@@ -158,6 +159,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         ->execute();
         field_attach_delete('transaction', $transaction);
         module_invoke_all('entity_delete', $transaction, 'transaction');
+        break;
       default:
         throw new Exception(t('Deletions not allowed'));
         break;
@@ -282,6 +284,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * $force_update is for the special case of a validated transaction which is being written
    */
   function update($transaction) {
+    reset($transaction->worth);
     //if there are more than one flows involved, use the minimum value for the update mode
     $flows = current($transaction->worth);
     foreach ($flows as $flow) {
@@ -371,7 +374,7 @@ function mcapi_write_record(&$record, $primary_keys = array()) {
  * Expects $form['#currency']
  */
 function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
-  if (empty($form_state['item']->currcode)) return;
+  if (empty($form_state['plugin']['handler']) || $form_state['plugin']['handler'] != 'mcapi_ui') return;
   $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
   $form['accounting'] = array(
     '#title' => t('Accounting standards'),
@@ -389,7 +392,7 @@ function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) 
         MCPI_CURRENCY_UPDATE_SOFT => t("Update same record"),
         //3 => t("Use entity versioning the same transaction (not available)"),
       ),
-      '#default_value' => $currency->accounting['update_mode'],
+      '#default_value' => isset($currency->accounting['update_mode']) ? $currency->accounting['update_mode'] : MCPI_CURRENCY_UPDATE_SOFT,
       '#weight' => 1,
       '#element_validate' => array('mcapi_currency_validate_update_mode'),
       //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
@@ -406,7 +409,7 @@ function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) 
         1 => t('Mark deleted'),
         2 => t('Remove all traces from the database (not from backups)'),
       ),
-      '#default_value' => $currency->accounting['erase_mode'],
+      '#default_value' => isset($currency->accounting['erase_mode']) ? $currency->accounting['erase_mode'] : 1,
       '#weight' => 2,
       '#ajax' => array(
         'callback' => 'currency_form_ajax',
@@ -419,7 +422,7 @@ function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) 
   $form += currency_op_settings_tab($currency, $operations);
   
   //alter the options according to what is set
-  if ($currency->accounting['erase_mode'] == 0) {
+  if ($form['accounting']['erase_mode']['#default_value'] == 0) {
     unset($form['accounting']['update_mode']['#options'][1]);
     if ($form['accounting']['update_mode']['#default_value'] == 1) {
       $form['accounting']['update_mode']['#default_value'] = 0;

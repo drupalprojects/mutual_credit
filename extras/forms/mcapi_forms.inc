@@ -53,14 +53,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       $form[$participant]['#args'] = array(strtok(':'));
       //this could be put in the config
       $form[$participant]['#me'] = TRUE;
-      if ($mcapi_form->data[$participant]['multiple']) {
-        $form[$participant]['#multiple'] = TRUE;
-        //don't forget that user_chooser adds its validation function at the processing stage
-        $form[$participant]['#element_validate'] = array();
-      }
-      else {
-        $form[$participant]['#default_value'] = $transaction->$participant;
-      }
+      $form[$participant]['#default_value'] = $transaction->$participant;
     }
   }
   else {
@@ -134,11 +127,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   $form['#template'] = mcapi_form_template($mcapi_form, $form['#step'])->template;
   $form['#theme'] = 'mcapi_form';
 
-  //we do this at the end because we need to completely overwrite the #validate and #submit handlers
-  if (!empty($form['payer']['#multiple']) || !empty($form['payee']['#multiple'])) {
-    $form['#validate'] = array('transactions_first_form_validate');////replaces default submit handler
-    $form['#submit'] = array('mcapi_forms_multiple_submit'); //replaces default submit handler
-  }
   $form['#validate'][] = 'mcapi_forms_validate';
   array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
@@ -147,7 +135,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
 
 function new_transaction_presets($mcapi_formdata) {
   $transaction = new_transaction();
-  //this transaction is used to store defaults for the form building, so it has unusual fields
+  //this transaction is used to store defaults for the form building, so it has pseudo properties which aren't saved
   $fields = $mcapi_formdata['perspective'] == 1 ? array('secondperson', 'direction') : $fields = array('payer', 'payee');
   $fields = array_merge($fields, array_keys(field_info_instances('transaction', 'transaction')));
   foreach($fields as $field) {
@@ -204,69 +192,6 @@ function mcapi_forms_validate_secondperson($form, &$form_state) {
 }
 
 /*
- * multiple participant form execution callbacks
- * this replaces the normal form-level transaction form validation function
- * transaction_first_form_validate
- *
- */
-function transactions_first_form_validate($form, &$form_state) {
-  $form_state_1 = $form_state;
-  foreach (mcapi_fan_multiple_participants($form_state) as $fs_values) {
-    $form_state_1['values'] = $fs_values;
-    $transaction = new_transaction();
-    try {
-      //populate the core transaction values from $form_state
-      field_attach_form_validate('transaction', $transaction, $form, $form_state_1);
-      entity_form_submit_build_entity('transaction', $transaction, $form, $form_state_1);
-      mcapi_transaction_validate($transaction);
-      /* if validation failed and the same form was resubmitted, we would either have to
-      abandon all the previous saved-validated transactions and make a new set or
-      match the previously validated xids with the newly submitted form data.
-      for this reason we're not going to validate these transactions in the database
-      Just do form level validation and then write them for the first time in the submit handler */
-      //mcapi_transaction_validate($transaction);
-    }
-    catch (Exception $e) {
-      form_set_error('', $e->getMessage());
-    }
-  }
-  //and unlike in the main form, we therefore don't save the xids for submission
-}
-
-function mcapi_forms_multiple_submit($form, &$form_state) {
-  $form_state_1 = $form_state;
-  foreach (mcapi_fan_multiple_participants($form_state) as $fs_values) {
-    $form_state_1['values'] = $fs_values;
-    $form_state_1['input'] = $fs_values;
-    try {
-      $transaction = new_transaction();
-      entity_form_submit_build_entity('transaction', $transaction, $form, $form_state_1);
-      $transaction->modified = REQUEST_TIME;
-      $transaction->state = $form_state['values']['state'];
-      transaction_save($transaction);
-    }
-    catch (Exception $e) {
-      form_set_error('', t('Transaction not properly saved: @message', array('@message' => $e->getMessage())));
-    }
-  }
-}
-
-
-function mcapi_fan_multiple_participants($form_state) {
-  form_state_values_clean($form_state);
-  foreach ((array)$form_state['values']['payee'] as $payee) {
-    foreach ((array)$form_state['values']['payer'] as $payer) {
-      $values = $form_state['values'];
-      $values['payer'] = $payer;
-      $values['payee'] = $payee;
-      $all_values[] = $values;
-    }
-  }
-  return $all_values;
-}
-
-
-/*
  * form validation callback
  * handles the steps
  */
@@ -305,14 +230,13 @@ function mcapi_forms_form_presubmit($form, &$form_state) {
  * Last submit callback for default transaction form
  * this has to be after the transaction id is created and before the end of form processing
  */
-function mcapi_forms_form_postsubmit($form, &$form_state) { return;
-  //look for the mcapi_form object for the redirect
-
+function mcapi_forms_form_postsubmit($form, &$form_state) {
   $form_state['redirect'] = str_replace(
     array('%transaction', '%user'),
     array($form_state['transaction']->xid, $GLOBALS['user']->uid),
     $form_state['build_info']['args'][1]->data['submission']['redirect']
   );
+
 }
 
 /*

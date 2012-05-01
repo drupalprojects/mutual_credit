@@ -20,9 +20,9 @@ function mcapi_install() {
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_forms')->execute();
   db_update('system')->fields(array('weight' => 2))->condition('name', 'mcapi_limits')->execute();
   db_update('system')->fields(array('weight' => 3))->condition('name', 'mcapi_pending')->execute();
-  db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_limits_equation')->execute();
   db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_views')->execute();
   db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_notification')->execute();
+  db_update('system')->fields(array('weight' => 5))->condition('name', 'intertrading_client')->execute();
 
   if (module_exists('text')) {
     $data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField());
@@ -518,25 +518,22 @@ function mcapi_update_7004() {
   menu_rebuild();
 }
 function mcapi_update_7005() {
-  if (!db_query("SELECT status FROM {system} where name = 'mcapi_currencies'")->fetchField()) {
+  db_query("UPDATE {field_data_worth} SET worth_currcode = 'def_drup' WHERE SUBSTRING(worth_currcode, 1, 4) = 'def_'");
+  db_query("UPDATE {field_revision_worth} SET worth_currcode = 'def_drup 'WHERE SUBSTRING(worth_currcode, 1, 4) = 'def_'");
+  if (db_query("SELECT status FROM {system} where name = 'mcapi_currencies'")->fetchField() < 1) {
     db_drop_table('mcapi_currencies');//because the module wasn't installed anyway
     db_create_table('mcapi_currencies', drupal_get_schema('mcapi_currencies'));
-    db_query("UPDATE {mcapi_currencies} SET currcode = 'def_drup'");
-    db_query("UPDATE {field_data_worth} SET worth_currcode = 'def_drup'");
-    db_query("UPDATE {field_revision_worth} SET worth_currcode = 'def_drup'");
   }
-  else {
+  else {//the module was installed
     db_query('TRUNCATE {cache_field}');
-    db_query("UPDATE {mcapi_currencies} SET currcode = 'def_drup'");
-    db_query("UPDATE {field_data_worth} SET worth_currcode = 'def_drup'");
-    db_query("UPDATE {field_revision_worth} SET worth_currcode = 'def_drup'");
+    db_query("UPDATE {mcapi_currencies} SET currcode = 'def_drup' WHERE SUBSTRING(currcode, 1, 4) = 'def_'");
   }
   db_query("DELETE FROM {system} WHERE name = 'mcapi_currencies'");
   $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
   $instance['display']['default']['module'] = 'mcapi';
   $instance['display']['default']['type'] = 'worth_field';
-  cache_clear('currencies', 'cache');
   field_update_instance($instance);
+  cache_clear_all('currencies', 'cache');
 }
 
 function __mcapi_update_7005() {

@@ -1,5 +1,10 @@
 <?php
 
+define ('CURRENCY_DIVISION_MODE_NONE', 0);
+define ('CURRENCY_DIVISION_MODE_CENTS_INLINE', 1);
+define ('CURRENCY_DIVISION_MODE_CENTS_FIELD', 2);
+define ('CURRENCY_DIVISION_MODE_CUSTOM', 3);
+
 /*
  * Imlements hook_field_info
  */
@@ -319,13 +324,11 @@ function mcapi_theme_fields() {
  */
 function theme_worth_field(&$variables) {
   $currency = currency_load($variables['currcode']);
-  $replacements['@minus'] = $variables['quantity'] < 0 ? '-' :'';
-  list($replacements['@integer'], $replacements['@subdivision'], $replacements['"sign']) = currency_explode($variables['quantity']);
+  list($replacements['@integer'], $replacements['@subdivision'], $replacements['@minus']) = currency_explode($variables['quantity']);
   if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
     $replacements['@subdivision'] = $currency->display['divisions_allowed'][intval($replacements['@subdivision'])];
   }
-  return strtr($currency->display['format'], $replacements) .'<br />';
-  //the last <Br> saves us having to identify the container and hackit if many currencies are showing
+  return strtr($currency->display['format'], $replacements);
 }
 
 function theme_worth_field_multiple($variables) {
@@ -442,3 +445,4 @@ function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
     $form['fields']['worth']['widget_type']['#type'] = 'markup';
   }
 }
+

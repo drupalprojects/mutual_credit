@@ -73,11 +73,12 @@ function intertrading_respond($code, $data = array()) {
 }
 
 function intertrading_validate_transaction_post(&$data) {
+  $error = NULL;
   if (!is_numeric($data['quantity'])) {
-    intertrading_respond(8,  array('@value' => $data['quantity'], '@fieldname' => 'quantity'));
+    $error = array(8,  array('@value' => $data['quantity'], '@fieldname' => 'quantity'));
   }
   if (!in_array($data['src_url'], array($data['src_url'], $data['payee_url']))) {
-    intertrading_respond(8,  array('@value' => $data['quantity'], '@fieldname' => 'payer_url, payee_url'));
+    $error = array(8,  array('@value' => $data['quantity'], '@fieldname' => 'payer_url, payee_url'));
   }
   $fields = array('payer', 'payee', 'quantity');
   if (variable_get('intertrading_description_required', 1)) {
@@ -85,16 +86,17 @@ function intertrading_validate_transaction_post(&$data) {
   }
   foreach ($fields as $fieldname) {
     if (empty($data[$fieldname])) {
-      intertrading_respond(8,  array('@value' => $data[$fieldname], '@fieldname' => $fieldname));
+      $error = array(8,  array('@value' => $data[$fieldname], '@fieldname' => $fieldname));
     }
-    intertrading_xss_validate($data[$fieldname], $fieldname);
+    $error = intertrading_xss_validate($data[$fieldname], $fieldname);
   }
+  return $error;
 }
 
 function intertrading_xss_validate($val, $fieldname) {
   $filtered = filter_xss($val, array());
   if($val != $filtered) {
-    intertrading_respond(13, array('@fieldname' => $val));
+    return array(13, array('@fieldname' => $val));
   }
 }
 
@@ -135,8 +137,8 @@ function intertrading_error() {
   foreach (func_get_args() as $arg) {
     $strings[] = print_r($arg, 1);
   }
-  watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
-  //file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
+  //watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
+  file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
 }
 
 

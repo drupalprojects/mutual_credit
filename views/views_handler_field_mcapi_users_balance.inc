@@ -20,7 +20,7 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
   }
 
   function options_form(&$form, &$form_state) {
-    $form['currcode'] = currency_picker_element($this->options['currcode'], TRUE);
+    $form['currcode'] = currency_picker_element($default, FALSE, currencies_load());
     
     $form['total'] = array(
       '#title' => t('Aggregate'),
@@ -31,7 +31,8 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
         'gross_in' => t('Gross income'),
         'gross_out' => t('Gross expenditure'),
         'count' => t('Number of transactions'),
-      )
+      ),
+      '#default_value' => $this->options['total']
     );
     parent::options_form($form, $form_state);
   }
