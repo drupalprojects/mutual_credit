@@ -40,57 +40,8 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
  * But unless you know the payer and/payee when you are building the form, it's not so useful.
  */
 function mcapi_limits_form_transaction_form_alter(&$form, &$form_state) {
-  $form['#validate'][] = 'limits_form_validate';
-}
-/*
- * implements element validate callback injected into transaction form
- * I didn't want to generate error messages by this module, at the point of checking, but throw an error and deliver the error message at the form processing level
- * Because i don't know how to pass args into an exception, the limit checker throws coded exceptions, not straight messages
- * if a transaction fails becuase the payee would exceed the max limit, it throws
- * new exception($difference, '>', $limit)
- * and vice versa
- */
-function limits_form_validate(&$form, &$form_state) {
-  if (count(form_get_errors())) return;
-  $transaction = &$form_state['transaction'];
-  reset($transaction->worth);
-  try {
-    mcapi_limit_check(
-      $transaction->payer,
-      $transaction->payee,
-      current($transaction->worth),
-      //if the transaction is finished and hence this is an edit operation, the check function
-      //needs to discount it
-      $transaction->state < 1 ? NULL : current(transaction_load($transaction->xid)->worth)
-    );
-  }
-  catch (Exception $e) {
-    $message = $e->getMessage();
-    //parse balance limits error
-    if (module_exists('mcapi_limits')) {
-      if (strpos($message, '>')) {
-        list($excess, $limit, $currcode) = explode('>', $message);
-        $message = t('Transaction would take @username !quant above the maximum balance of !max',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payee))),
-            '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
-            '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
-          )
-        );
-      }
-      elseif (strpos($message, '<')) {
-        list($excess, $limit, $currcode) = explode('<', $message);
-        $message = t('Transaction would take @username !quant below the minimum balance of !min',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payer))),
-            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
-            '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
-          )
-        );
-      }
-    }
-    form_error($form['worth'], $message);
-  }
+  form_load_include($form_state, 'inc', 'mcapi_limits');
+  $form['#validate'][] = 'transaction_form_limits_validate';
 }
 
 /*
@@ -131,43 +82,42 @@ function mcapi_limit_check($payer_uid, $payee_uid, $flows, $adjust_flows = 0) {
 /*
  * implements hook_currency_form_alter
  */
-function mcapi_limits_currency_innerform_alter(&$form, &$form_state) {
-  if (!isset($form['#currency'])) return;
-  form_load_include($form_state, 'inc', 'mcapi_limits');
-  $limits_callback = isset($form['#currency']->limits['limits_callback']) ? $form['#currency']->limits['limits_callback'] : 'limits_none';
-  //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
-  $form['limits'] = array(
-    '#title' => t('Balance limits'),
-    '#description' => t('Transactions will be rejected which take accounts beyond these limits.') .' '. t('Choose which method to use, and configure it.'),
-    '#type' => 'fieldset',
-    '#weight' => 20,
-    '#group' => 'additional_settings',
-    '#collapsible' => TRUE,
-    '#collapsed' => isset($form['#currency']->limits_callback),
-    //'#group' => 'additional_settings',
-    'limits_callback' => array(
-      '#title' => t('Method'),
-      '#description' => t('How will the limits be determined?'),
-      '#type' => 'select',
-      //TODO this needs its own hook!
-      '#options' => array(
-        'limits_none' => t('No limits'),
-        'limits_global' => t('Everyone has the same limits, stated below'),
-        'limits_personal' => t('Fields on the user profile can override limits stated below.'),
-        'limits_equations' => t('Calculate the limits using an equation and tokens.'),
-      ),
-      '#default_value' => isset($form_state['values']['limits_callback']) ?
-        $form_state['values']['limits_callback'] :
-        $limits_callback,
-      '#weight' => -1,
-      '#ajax' => array(
-        'callback' => 'limits_settings_subform',
-        'wrapper' => 'limits-settings',
+function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+  if (isset($form_state['plugin']['schema']) && $form_state['plugin']['schema'] == 'mcapi_currencies') {
+    form_load_include($form_state, 'inc', 'mcapi_limits');
+    $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
+    //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
+    $form['limits'] = array(
+      '#title' => t('Balance limits'),
+      '#description' => t('Transactions will be rejected which take accounts beyond these limits.') .' '. t('Choose which method to use, and configure it.'),
+      '#type' => 'fieldset',
+      '#weight' => 20,
+      '#group' => 'additional_settings',
+      '#collapsible' => TRUE,
+      '#collapsed' => isset($form['#currency']->limits_callback),
+      //'#group' => 'additional_settings',
+      'limits_callback' => array(
+        '#title' => t('Method'),
+        '#description' => t('How will the limits be determined?'),
+        '#type' => 'select',
+        //TODO this needs its own hook!
+        '#options' => array(
+          'limits_none' => t('No limits'),
+          'limits_global' => t('Everyone has the same limits, stated below'),
+          'limits_personal' => t('Fields on the user profile can override limits stated below.'),
+          'limits_equations' => t('Calculate the limits using an equation and tokens.'),
+        ),
+        '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'no_limits',
+        '#weight' => -1,
+        '#ajax' => array(
+          'callback' => 'limits_settings_subform',
+          'wrapper' => 'limits-settings',
+        )
       )
-    )
-  );
-  limits_settings_subform($form, $form_state);
-  //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
+    );
+    limits_settings_subform($form, $form_state, $currency);
+    //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
+  }
 }
 
 
@@ -204,8 +154,8 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
  * implements hook_user_presave
  */
 function mcapi_limits_user_presave(&$edit, $account, $category) {
-  if ($category != 'account') return;
-  $currencies = currencies_load($account->uid);
+  if ($category != 'account' || empty($account->uid)) return;
+  $currencies = currencies_load($account);
   foreach($currencies as $currcode => $currency) {
     if (isset($currency->limits['limits_callback']) && $currency->limits['limits_callback'] == 'limits_personal') {
       if (isset($edit['min-'.$currcode])) {
@@ -275,19 +225,19 @@ function mcapi_limits_block_info() {
  * Implements views hook_block_view
  */
 function mcapi_limits_block_view($delta) {
-  $account = arg(0) == 'user' ? user_uid_optional_load(arg(1)) : $GLOBALS['user'];
-
-  if (!user_access('view all balances') && !$account->uid == $GLOBALS['user']->uid) return;
-  require_once('mcapi_limits.inc');
+  module_load_include('inc', 'mcapi');
   $settings = mcapi_limits_block_settings('block_'.$delta);
-  if (empty($settings['currcodes'])) {
-    $settings['currcodes'] = array_keys(currencies_load());
-  }
+  $src_uid = $settings['source'] ? user_uid_optional_to_arg(arg(1)) : $GLOBALS['user']->uid;
+  $currcodes = empty($settings['currcodes']) ? array_keys(currencies_load()) : $settings['currcodes'];
   $output = array();
-  $function = 'show_'.$delta;
-  foreach ($settings['currcodes'] as $currcode) {
-    $output[] = $function($account, $currcode);
+  foreach($currcodes as $currcode) {
+    if (!currency_access('user_aggregated_view', $currcode)) continue;
+    require_once('mcapi_limits.inc');
+    $function = 'show_'. $delta;
+    $output[] = $function($src_uid, $currcode);
   }
+  if (empty($output)) return;
+  $account = user_load($src_uid);
   return array(
     'subject' => t("@user's limits", array('@user' => strip_tags(format_username($account)))),
     'content' => $output
@@ -300,14 +250,12 @@ function mcapi_limits_block_view($delta) {
  */
 function mcapi_limits_block_configure($delta) {
   $settings = mcapi_limits_block_settings('block_'.$delta);
-  if (count(currencies_load()) > 1) {
-    $form['currcodes'] = currency_picker_element($settings['currcodes'], TRUE);
-  }
-  $form['adjust'] = array(
-    '#title' => t('Take account of balance'),
-    '#description' => t('add the balance to the limits, showing the available limits'),
+  $form['currcodes'] = currency_picker_element(array_keys(currencies_load()), $settings['currcodes'], TRUE);
+  $form['source'] = array(
+    '#title' => t('Show as part of profile'),
+    '#description' => t('If unchecked, shows for logged in user'),
     '#type' => 'checkbox',
-    '#default_value' => $settings['adjust']
+    '#default_value' => $settings['source']
   );
   return $form;
 }
@@ -320,13 +268,13 @@ function mcapi_limits_block_save($delta, $values) {
     'block_'. $delta,
     array(
       'currcodes' => $values['currcodes'],
-      'adjust' => $values['adjust']
+      'source' => $values['source']
     )
   );
 }
 function mcapi_limits_block_settings($delta) {
   $settings = variable_get($delta, array());
-  return $settings ? $settings : array('currcodes' => array_keys(currencies_load()), 'adjust' => FALSE);
+  return $settings ? $settings : array('currcodes' => array_keys(currencies_load()), 'source' => 0);
 }
 
 

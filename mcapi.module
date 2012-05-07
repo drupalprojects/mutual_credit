@@ -38,14 +38,8 @@ function mcapi_help($section, $arg) {
           t("allying with us to build a global complementary currency ecosystem"),
           t("offering board and lodging for a month or two")
         )));
-      case 'admin/config/system/actions/configure':
-        //have to look up arg to know which action this is
-        return implode('. ', array('<p>'.
-          t('Some actions on the site may trigger new transactions. '),
-          t('This feature has not yet been deployed, and cannot yet use tokens') . '</p>'
-          ));
-      case 'admin/accounting/record':
-        return t('This is a base form provided for administration purposes only. For end-users, there are forms provided by other modules');
+    case 'admin/accounting/record':
+      return t('This is a base form provided for administration purposes only. For end-users, there are forms provided by other modules');
   }
 }
 
@@ -128,7 +122,6 @@ function mcapi_permission() {
   return module_invoke_all('mcapi_info_drupal_permissions');
 }
 
-
 /*
  * implements mcapi hook_info_controller
  * the presence of this hook indicates there is a .controller file
@@ -138,32 +131,60 @@ function mcapi_transaction_controller(){}
 
 /*
  * implements mcapi hook_info_states
- * DON"T call this hook directly as the keys will be lost. use mcapi_states()
+ * DON"T call this hook directly as the keys will be lost. use mcapi_get_states()
  */
 function mcapi_mcapi_info_states() {
   return array(
-    //TRANSACTION_STATE_UNSAVED => t('unsaved'),//internal use only, never saved in db, and not reported
-    //must be defined with lower case
-    TRANSACTION_STATE_FINISHED => t('finished'),
-    TRANSACTION_STATE_ERASED => t('erased'),
-    TRANSACTION_STATE_VALIDATED => t('validated'),
+    TRANSACTION_STATE_FINISHED => array(
+      'name' => t('Finished'),
+      'description' => t('the last state of the workflow')
+    ),
+    TRANSACTION_STATE_ERASED => array(
+      'name' => t('Erased'),
+      'description' => t('marked deleted, but the transaction record remains')
+    ),
+    TRANSACTION_STATE_VALIDATED => array(
+      'name' => t('Validated'),
+      'description' => t('was entered in the form and validated, but not confirmed')
+    )
   );
-}
-function mcapi_states() {
-  $states = array();
-  foreach(module_implements('mcapi_info_states') as $module) {
-    $function = $module . '_mcapi_info_states';
-    $states += $function('states');
-  }
-  return $states;
 }
 
 /*
  * implements mcapi hook_info_types
  */
 function mcapi_mcapi_info_types() {
-  return array('unspecified', 'auto');
+  return array('default');
 }
+
+function mcapi_get_states($return_mode = 'full') {
+  $states = array();
+  foreach(module_implements('mcapi_info_states') as $module) {
+    $function = $module . '_mcapi_info_states';
+    $states += $function('states');
+  }
+  if ($return_mode == '#options') {//suitable for a dropdown
+    foreach ($states as $key => $state) {
+      $options[$key] = $state['name'];
+    }
+    return $options;
+  }
+  elseif ($return_mode == '#description') {
+    foreach ($states as $key => $state) {
+      $desc[] = $state['name'] .' - '. $state['description'] .'.';
+    }
+    return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
+  }
+  return $states;
+}
+//returns the available transaction types in an associative array
+function mcapi_get_types() {
+  foreach (module_invoke_all('mcapi_info_types') as $type) {
+    $types[$type] = $type;
+  }
+  return $types;
+}
+
 
 /*
  * implements mcapi hook_mcapi_info_drupal_permissions
@@ -359,8 +380,9 @@ function new_transaction() {
     'creator' => $GLOBALS['user']->uid,
     'created' => REQUEST_TIME,
     'state' => TRANSACTION_STATE_UNSAVED,
-    'type' => 'unspecified',
-    'extra' => array()
+    'type' => NULL,
+    'extra' => array(),
+    //'worth' => array('und'=> array(0 => array('currcode' => 'def_drup', 'quantity' => 0)))
   );
 }
 
@@ -421,7 +443,20 @@ function transaction_totals($uid, $currcode = NULL, $options = array()) {
     'states' => array(TRANSACTION_STATE_FINISHED),
   );
   //convert it to an object for cleaner syntax in php5
-  return (object)entity_get_controller('transaction')->sums($uid, $currcode, $options);
+  $totals = (object)entity_get_controller('transaction')->sums($uid, $currcode, $options);
+  //just out of interest (needed for intertrading) we'll store the smallest balances
+  if (module_exists('intertrading_client') && $currcode == variable_get('intertrading_currcode', '')){
+    save_smallest($totals->balance, $uid);
+  }
+  return $totals;
+}
+//deficit is an array keyed by by uid, ordered asc
+function save_smallest($balance, $uid) {
+  $deficits = variable_get('mcapi_deficit', array());
+  $deficits[$uid] = $balance;
+  sort($deficits);
+  //save only the most extreme 3
+  variable_set('mcapi_deficit', array_slice($deficits, 0, 3));
 }
 
 /*
@@ -436,6 +471,7 @@ function mcapi_validate_usernames(&$element, &$form_state) {
     if (!is_numeric($value)) {
       $uid = user_load_by_name($value)->uid;
       if ($uid) {
+        $element['#value'] = $uid;
         form_set_value($element, $uid, $form_state);
       }
       else {
@@ -450,11 +486,12 @@ function mcapi_validate_usernames(&$element, &$form_state) {
 function currency_load($currcode) {
   $currencies = &drupal_static('currencies');
   if (empty($currencies))currencies_load();
-  if (!empty($currencies[$currcode])) {
+  if (isset($currencies[$currcode])) {
     return $currencies[$currcode];
   }
   watchdog('mcapi', 'Nonexistent currency @currcode requested from list: @list',
-    array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1)));
+    array('@currcode' => $currcode, '@list' => print_r($currencies, 1)));
+  intertrading_error(print_r(debug_backtrace(), 1));
 }
 /*
  * Load all the currencies from cache filter
@@ -464,7 +501,7 @@ function currencies_load($account = NULL, $refresh = FALSE) {
   $currencies = &drupal_static('currencies');
   if ($refresh) unset($currencies);
   if (empty($currencies)) {//first time this page request.
-    if ($cache = cache_get('currencies')) {
+    if (!$refresh && $cache = cache_get('currencies')) {
       $currencies = $cache->data;
     }
     else {
@@ -474,10 +511,10 @@ function currencies_load($account = NULL, $refresh = FALSE) {
     }
   }
   if (empty($account)) return $currencies;
-  module_load_include('inc', 'mcapi', 'currencies');
+  module_load_include('inc', 'mcapi');
   $filtered = array();
   foreach ($currencies as $currcode => $currency) {
-    if (currency_access('use', $currency, $account)) {
+    if (currency_access('membership', $currcode, $account)) {
       $filtered[$currcode] = $currency;
     }
   }
@@ -536,131 +573,56 @@ function mcapi_format_usernames($accounts) {
   return implode(' & ' ,$names);
 }
 
-/*
- * returns a form element for picking a currency
- * if $picker_options is an array of currencies keyed by currcode, it returns a select
- * if $picker_options is NULL it returns a hidden field
- */
-function currency_picker_element($default = NULL, $multiple = FALSE, $currencies = NULL) {
-  if (is_array($currencies)) {
-    $options = _currency_picker_element_options($currencies);
-  }
-  if (empty($options) || count($options) < 2) {
-    if (empty($default)) $default = key(currencies_load());
-    return array(
-      '#type' => 'hidden',
-      '#value' => $default
-    );
-  }
-  if (!$multiple) {
-    $options = array(0 => 'Please choose...') + $options;
-  }
-  return array(
-    '#title' => t('Currency'),
-    '#type' => 'select',
-    '#options' =>  $options,
-    '#default_value' => $default,
-    '#multiple' => $multiple,
-    '#required' => TRUE,
+function mcapi_entity_property_info() {
+  $info = array();
+  // Add meta-data about the basic node properties.
+  $properties = &$info['transaction']['properties'];
+
+  $properties['xid'] = array(
+    'label' => t("Transaction ID"),
+    'type' => 'integer',
+    'description' => t("The autoincrement database ID of the node."),
+    'schema field' => 'nid',
   );
-}
-//build a key value array of currency codes and currency names
-//$currencies is an array of the form returned by currencies_load
-//if $currencies is empty, it will assume you mean all currencies
-function _currency_picker_element_options($currencies = array()) {
-  if (empty($currencies)) {
-    $currencies = currencies_load();
-  }
-  foreach ($currencies as $currcode => $currency) {
-    $options[$currcode] = $currency->human_name;
-  }
-  return $options;
-}
-
-/*
- * Actions and triggers - all this needs testing
- */
-
-/*
- * Implements hook_action_info
- */
-function mcapi_action_info() {
-  module_load_include('inc', 'mcapi');
-  return array(
-    'record_exchange_action' => array(
-      'type' => 'node',
-      'label' => t('Record Exchange'),
-      'configurable' => TRUE,
-      'triggers' => array('any'),
-    )
+  $properties['type'] = array(
+    'label' => t("Transaction type"),
+    'type' => 'token',
+    'options list' => 'mcapi_get_types',
+    'required' => TRUE,
+    'schema field' => 'type',
   );
-}
-/*
- * Callback for action config
- * odd that form_state isn't passed
- * this means we can't do form_load_include
- */
-function record_exchange_action_form($context) {
-  //make a new_transaction(), and fill in from the defaults
-  $values = array('values' => $context);
-  $transaction_form = transaction_form(array(), $values);
-  unset($transaction_form['buttons']);
-  $form['template'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('transaction template'),
-    'transaction' => $transaction_form
+  $properties['payer'] = array(
+    'label' => t("Payer"),
+    'description' => t("The user ID of the payer"),
+    'schema field' => 'payer',
+    'required' => TRUE,
   );
-
-  //I just can't figure out how to handle attached fields here
-  //it seems to rely on the form_state, which might mean invoking transaction_form in a different way
-  //unset($form['template']['transaction']['buttons']);
-  //these need to be set
-  $form['template']['transaction']['worth']['#required'] = TRUE;
-  $form['template']['transaction']['#description'] = TRUE;
-
-  //this form should really have a validation function to ensure that at least one participant is provided
-  return $form;
-}
-/*
- * submit callback for action config
- */
-function record_exchange_action_submit($form, $form_state) {
-  return $form_state['values'];
-}
-/*
- * callback to execute the action
- */
-function record_exchange_action($node, $context) {
-  $transaction = new_transaction();
-  $transaction->currcode = $context['currcode'];
-  $transaction->worth = $context['worth'];
-  $transaction->payer = $context['payer'];
-  $transaction->payee = $context['payee'];
-  $transaction->state = TRANSACTION_STATE_FINISHED; //NEED TO GET RID OF UNSET STATE
-
-    if (empty($transaction->payer)) {
-      $transaction->payer = $node->uid;
-    }
-    elseif (empty($transaction->payee)) {
-      $transaction->payee = $node->uid;
-    }
-  transaction_save($transaction);
-}
-/*
- * implements hook_trigger_info
- */
-function mcapi_trigger_info() {
-  return array(
-    'mcapi' => array(
-      'transaction_record' => array(
-        'label' => t('Record a new_transaction() in the database.'),
-      ),
-      'transaction_modify' => array(
-        'label' => t('Editing a transaction which already exists.'),
-      ),
-      'transaction_erase' => array(
-        'label' => t('Erase or delete a transaction.'),
-      ),
-    ),
+  $properties['payee'] = array(
+    'label' => t("Payer"),
+    'description' => t("The user ID of the payer"),
+    'schema field' => 'payee',
+    'required' => TRUE,
   );
+  $properties['created'] = array(
+    'label' => t("Unixtime of transaction creation"),
+    'schema field' => 'created',
+  );
+  $properties['creator'] = array(
+    'label' => t("User who created the transaction"),
+    'schema field' => 'creator',
+  );
+  $properties['modified'] = array(
+    'label' => t("User who last modified the transaction"),
+    'schema field' => 'creator',
+  );
+  $properties['modifier'] = array(
+    'label' => t("User who last modified the transaction"),
+    'schema field' => 'creator',
+  );
+  $properties['state'] = array(
+    'label' => t("State"),
+    'description' => t("Workflow state. Greater than zero means it is counted."),
+    'schema field' => 'state',
+  );
+  return $info;
 }

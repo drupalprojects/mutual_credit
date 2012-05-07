@@ -15,6 +15,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] :
     new_transaction_presets($mcapi_form->data)
   );
+
   //Some forms may go straight to step 2
   if (empty($form_state['step'])) {
     $form_state['storage'] = array();
@@ -94,6 +95,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
     array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
   }
+
   //we now modify the transaction form fields according to the form settings for each field
   foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
     if (isset($transaction->$fieldname)) {
@@ -101,6 +103,12 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     }
     $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
   }
+  //specially for the worth field, remove any $items which are not in the default $transaction object
+  //see mcapi_form_validate_worth_preset() for more
+  foreach (element_children($form['worth']['und']) as $delta) {
+    if (empty($transaction->worth['und'][$delta])) unset($form['worth']['und'][$delta]);
+  }
+
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -136,11 +144,11 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
 function new_transaction_presets($mcapi_formdata) {
   $transaction = new_transaction();
   //this transaction is used to store defaults for the form building, so it has pseudo properties which aren't saved
-  $fields = $mcapi_formdata['perspective'] == 1 ? array('secondperson', 'direction') : $fields = array('payer', 'payee');
-  $fields = array_merge($fields, array_keys(field_info_instances('transaction', 'transaction')));
-  foreach($fields as $field) {
-    if (isset($mcapi_formdata[$field]['preset'])) {
-      $transaction->$field = $mcapi_formdata[$field]['preset'];
+  $fieldnames = $mcapi_formdata['perspective'] == 1 ? array('secondperson', 'direction') : array('payer', 'payee');
+  $fieldnames = array_merge($fieldnames, array_keys(field_info_instances('transaction', 'transaction')));
+  foreach($fieldnames as $fieldname) {
+    if (isset($mcapi_formdata[$fieldname]['preset'])) {
+      $transaction->$fieldname = $mcapi_formdata[$fieldname]['preset'];
     }
   }
   return $transaction;

@@ -29,7 +29,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
         $this->uid = $this->view->args[$arg];
       }
       else {
-        drupal_set_message("Running balance requies  contextual filter 'Transaction index: 1st user'", 'error');
+        drupal_set_message("Running balance requires contextual filter 'Transaction index: 1st user'", 'error');
         return 'error';
       }
     }

@@ -75,7 +75,10 @@ function mcapi_pending_signoff_access($transaction) {
 function mcapi_pending_mcapi_info_states() {
   return array(
     //must be defined with lower case
-    TRANSACTION_STATE_PENDING => t('pending'),
+    TRANSACTION_STATE_PENDING => array(
+      'name' => t("Pending"),
+      'description' => t("awaiting signatures before becoming 'finished'."),
+    )
   );
 }
 
@@ -106,7 +109,6 @@ function mcapi_pending_entity_update($transaction, $type) {
  */
 function mcapi_pending_entity_insert($transaction, $type) {
   if ($type != 'transaction' || $transaction->state != TRANSACTION_STATE_PENDING) return;
-  $transaction->pending_signatures = array();
   //load the mcapi_form to check if this transaction has any signatories
   //this is where we actually add the signatures to the transaction object
   if (module_exists('mcapi_forms')) {
@@ -135,8 +137,9 @@ function mcapi_pending_entity_insert($transaction, $type) {
   mcapi_pending_entity_save($transaction);
 }
 
-
 function mcapi_pending_entity_save($transaction) {
+  //need to check because this property isn't systematically declared
+  if (empty($transaction->pending_signatures)) return;
   $rows = array();
   foreach ($transaction->pending_signatures as $uid => $pending) {
     db_merge('mcapi_signatures')->key(array(
@@ -158,7 +161,7 @@ function mcapi_pending_entity_delete($entity, $type) {
 }
 
 /*
- * removes one signatory from the transaction object and resaves the transaction
+ * resaves signatories from the transaction object and changes state if all are signed
  */
 function mcapi_sign(&$transaction, $uids) {
   if (is_numeric($uids)) {
@@ -177,9 +180,11 @@ function mcapi_sign(&$transaction, $uids) {
     drupal_set_message(t("@num signatures remaining on transaction #@xid", array('@num' => count($remaining), '@xid' => $transaction->xid)));
   }
 }
+//removes one signature
 function _mcapi_sign(&$transaction, $uid) {
   if ($transaction->pending_signatures[$uid] == 1) {
     $transaction->pending_signatures[$uid] = 0;
+    mcapi_pending_entity_save($transaction);
   }
   else {
     drupal_set_message(t('Transaction #@xid is already signed'), array('@xid' => $transaction->xid));
@@ -365,12 +370,12 @@ function mcapi_pending_cron() {
 function mcapi_check_integrity() {
   $xids = db_query("SELECT t.xid FROM {mcapi_transactions} t LEFT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 1 AND t.state = :state", array(':state' => TRANSACTION_STATE_FINISHED))->fetchCol();
   if (count($xids)){
-    watchdog('mcapi_pending', 'Some completed transactions still have signatures pending, please report to matslats: @xids'. array('@xids' => implode(', ', $xids)), WATCHDOG_ERROR);
+    watchdog('mcapi_pending', 'Some completed transactions still have signatures pending, please report to matslats: @xids', array('@xids' => implode(', ', $xids)), WATCHDOG_ERROR);
   }
 
   $xids = db_query("SELECT s.xid FROM {mcapi_transactions} t RIGHT JOIN {mcapi_signatures} s ON t.xid = s.xid WHERE s.pending = 0 AND t.state = :state", array(':state' => TRANSACTION_STATE_PENDING))->fetchCol();
   if (count($xids)) {
-    watchdog('mcapi_pending', 'Some pending transactions have no signatures pending, please report to matslats: @xids'. array('@xids' => implode(', ', $xids)), WATCHDOG_ERROR);
+    watchdog('mcapi_pending', 'Some pending transactions have no signatures pending, please report to matslats: @xids', array('@xids' => implode(', ', $xids)), WATCHDOG_ERROR);
   }
 }
 

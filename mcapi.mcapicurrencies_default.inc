@@ -25,7 +25,11 @@ function mcapi_mcapicurrencies_default() {
       'erase_mode' => 1
     ),
     'uid' => 1,
-    'membership_callback' => 'mcapi_use_currency',
+    'access' => array(
+      'membership' => 'mcapi_can_transact',
+      'user_aggregated_view' => 'mcapi_can_transact',
+      'currency_aggregated_view' => 'mcapi_can_transact',
+    ),
     'view' => array(
       1 => 'mcapi_access_participants_admin',
       0 => 'mcapi_access_authenticated',

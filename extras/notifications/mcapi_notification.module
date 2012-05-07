@@ -27,8 +27,7 @@ function mcapi_notification_form_ctools_export_ui_edit_item_form_alter(&$form, $
     '#description' => implode(' ', array(
       t('Edit the e-mail to members who wish to be notified when this form completes.'),
       t("'user' is the recipient of the mail."),
-      t('Available variables are: ') . '[site:name], [site:url], [user:name], [user:mail], [site:login-url], [site:url-brief], [user:edit-url], [user:one-time-login-url], [user:cancel-url].',
-      implode(', ', matslats_list_tokens('site', 'user', 'transaction'))
+      t('Available variables are: ') . implode(', ', matslats_list_tokens('site', 'user', 'transaction'))
     )),
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_templates',

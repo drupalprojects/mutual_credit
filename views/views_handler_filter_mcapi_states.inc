@@ -19,7 +19,7 @@ class views_handler_filter_mcapi_states extends views_handler_filter_in_operator
   }
 
   function get_value_options() {
-    $this->value_options = mcapi_states();
+    $this->value_options = mcapi_get_states('#options');
   }
 
   function option_definition() {
@@ -35,8 +35,9 @@ class views_handler_filter_mcapi_states extends views_handler_filter_in_operator
       $this->get_value_options();
     }
     $form['value'] = array(
-      '#type' => 'select',
       '#title' => t('State'),
+      '#description' => mcapi_get_states('#description'),
+      '#type' => 'select',
       '#options' => $this->value_options,
       '#default_value' => $this->value,
       '#multiple' => TRUE

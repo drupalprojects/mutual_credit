@@ -2,12 +2,62 @@
 
 
 /*
+ * implements element validate callback injected into transaction form
+ * I didn't want to generate error messages by this module, at the point of checking, but throw an error and deliver the error message at the form processing level
+ * Because i don't know how to pass args into an exception, the limit checker throws coded exceptions, not straight messages
+ * if a transaction fails becuase the payee would exceed the max limit, it throws
+ * new exception($difference, '>', $limit)
+ * and vice versa
+ */
+function transaction_form_limits_validate(&$form, &$form_state) {
+  if (count(form_get_errors())) return;
+  $transaction = &$form_state['transaction'];
+  reset($transaction->worth);
+  try {
+    mcapi_limit_check(
+      $transaction->payer,
+      $transaction->payee,
+      current($transaction->worth),
+      //if the transaction is finished and hence this is an edit operation, the check function
+      //needs to discount it
+      $transaction->state < 1 ? NULL : current(transaction_load($transaction->xid)->worth)
+    );
+  }
+  catch (Exception $e) {
+    $message = $e->getMessage();
+    //parse balance limits error
+    if (module_exists('mcapi_limits')) {
+      if (strpos($message, '>')) {
+        list($excess, $limit, $currcode) = explode('>', $message);
+        $message = t('Transaction would take @username !quant above the maximum balance of !max',
+          array(
+            '@username' => strip_tags(format_username(user_load($transaction->payee))),
+            '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
+            '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
+          )
+        );
+      }
+      elseif (strpos($message, '<')) {
+        list($excess, $limit, $currcode) = explode('<', $message);
+        $message = t('Transaction would take @username !quant below the minimum balance of !min',
+          array(
+            '@username' => strip_tags(format_username(user_load($transaction->payer))),
+            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
+            '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
+          )
+        );
+      }
+    }
+    form_error($form['worth'], $message);
+  }
+}
+
+/*
  * callback for the currency edit form
  * when building the initial page, the $currency is passed, AJAX builds use form_state
  * When called via AJAX, the $settings_form should contain '#value' not '#default_value', not sure why
  */
-function limits_settings_subform(&$form, $form_state) {
-  $currency = &$form['#currency'];
+function limits_settings_subform(&$form, $form_state, $currency) {
   //I'm not very happy about the way the ajax loads are populated by the previous value,
   //but I've been a couple of hours fumbling and we can live with it.
   //the default values are correct even in the form_alter, but on processing,
@@ -166,7 +216,7 @@ function min_max_fields($defaults) {
       '#description' => t('Must be less than or equal to zero'),
       '#type' => 'textfield',
       '#default_value' => isset($defaults['min']) ? $defaults['min'] : '-',
-      '#element_validate' => array('mcapi_limits_validate_minmax'),
+      '#element_validate' => array('mcapi_validate_optional_num', 'mcapi_limits_validate_min'),
       '#size' => 7,
       '#maxlength' => 7,
       '#attributes' => array('style' => 'width:inherit;')
@@ -176,7 +226,7 @@ function min_max_fields($defaults) {
       '#description' => t('Must be greater than 0.'),
       '#type' => 'textfield',
       '#default_value' => isset($defaults['max']) ? $defaults['max'] : '',
-      '#element_validate' => array('mcapi_limits_validate_minmax'),
+      '#element_validate' => array('mcapi_validate_optional_num', 'mcapi_limits_validate_max'),
       '#size' => 6,
       '#maxlength' => 6,
       '#weight' => 1,
@@ -185,23 +235,25 @@ function min_max_fields($defaults) {
   );
 }
 
-
-//validate callback for the min and max values on the currency form
-//this could be done in javascript also, on the form
-//values have already been validated as numeric
-function mcapi_limits_validate_minmax(&$element, $form_state) {
+function mcapi_validate_optional_num(&$element, $form_state) {
   if (strlen($element['#value']) && !is_numeric($element['#value'])) {
     form_error($element, t('Limits must be numeric: @value', array('@value' => $element['#value'])));
   }
-  if ($element['#name'] == 'min' && strlen($element['#value'])){
-    if ($element['#value'] > 0) {
-      form_error($element, t('Minimum balance must not be larger than 0'));
-    }
+}
+
+//validate callback subsection of currency form (and sometimes user profile form)
+//this could be done in javascript also, on the form
+function mcapi_limits_validate_min(&$element, $form_state) {
+  if (!empty($element['#value']) && $element['#value'] > 0) {
+    form_error($element, t('Minimum balance must not be larger than 0'));
   }
-  elseif ($element['#name'] == 'max' && strlen($element['#value'])){
-    if ($element['#value'] <= 0) {
-      form_error($element, t('Maximum balance must be larger than 0'));
-    }
+}
+
+//validate callback subsection of currency form (and sometimes user profile form)
+//this could be done in javascript also, on the form
+function mcapi_limits_validate_max(&$element, $form_state) {
+  if (!empty($element['#value']) && $element['#value'] <= 0) {
+    form_error($element, t('Maximum balance must be larger than 0'));
   }
 }
 
@@ -209,8 +261,8 @@ function mcapi_limits_validate_minmax(&$element, $form_state) {
 /*
  * callback to return themed balance limits
  */
-function show_balance_limits($account, $currcode) {
-  $limits = limits_get($currcode, $account->uid);
+function show_balance_limits($uid, $currcode) {
+  $limits = limits_get($currcode, $uid);
   //this chart makes no sense if there isn't a max (or min) limit
   if (empty($limits['max']) && empty($limits['min'])) {
     return array();
@@ -220,12 +272,12 @@ function show_balance_limits($account, $currcode) {
     '#currency' => currency_load($currcode),
     '#min' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['min'])),
     '#max' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['max'])),
-    '#balance' => theme('worth_field', array('currcode' => $currcode, 'quantity' => transaction_totals($account->uid, $currcode)->balance))
+    '#balance' => theme('worth_field', array('currcode' => $currcode, 'quantity' => transaction_totals($uid, $currcode)->balance))
   );
 }
-function show_trading_limits($account, $currcode) {
-  extract(transaction_totals($account->uid, $currcode));
-  extract(limits_get_adjusted($currcode, $account->uid, $balance));
+function show_trading_limits($uid, $currcode) {
+  extract(transaction_totals($uid, $currcode));
+  extract(limits_get_adjusted($currcode, $uid, $balance));
   return array(
     '#theme' => 'trading_limits',
     '#currency' => currency_load($currcode),

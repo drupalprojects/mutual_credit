@@ -11,6 +11,7 @@ function mcapi_entity_info_inc() {
     'base table' => 'mcapi_transactions',
     'uri callback' => 'transaction_uri', //what is this for???
     'label callback' => 'transaction_label',
+    'access callback' => 'transaction_access',
     'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'xid',
@@ -71,8 +72,8 @@ function mcapi_menu_inc() {
     'title' => 'Modify currency',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('currency_form', 3),
-    'access callback' => 'currency_access',
-    'access arguments' => array('edit', 1),
+    'access callback' => 'currency_edit_access',
+    'access arguments' => array(3),
     'type' => MENU_CALLBACK,
     'file' => 'currencies.inc'
   );
@@ -135,7 +136,7 @@ function mcapi_accounting() {
 function _transaction_form($form, &$form_state, $transaction) {
   $form['xid'] = array(
     '#type'=> 'hidden',
-    '#value' => $transaction->xid
+    '#value' => isset($transaction->xid) ? $transaction->xid : 0
   );
   $form['payer'] = array(
     '#type' => 'textfield',
@@ -166,13 +167,12 @@ function _transaction_form($form, &$form_state, $transaction) {
     '#required' => TRUE,
     '#weight' => 15
   );
-  $states = mcapi_states();
   $form['state'] = array(
     '#type' => 'radios',
     '#title' => t('State'),
-    '#description' => t('Finished transactions cannot have empty values.'),
+    '#description' => mcapi_get_states('#description'),
     '#default_value' => is_null($transaction->state) ? TRANSACTION_STATE_FINISHED : $transaction->state,
-    '#options' => $states,
+    '#options' => mcapi_get_states('#options'),
     '#element_validate' => array('mcapi_validate_state'),
     '#weight' => 18
   );
@@ -364,7 +364,7 @@ function mcapi_validate_state(&$element, &$form_state) {
     form_set_value($element, TRANSACTION_STATE_UNSAVED, $form_state);
   }
   else{
-    $states = mcapi_states();
+    $states = mcapi_get_states();
     if (!isset($states[$val])) {
       form_error($element, t('Invalid transaction state: @value.', array('@value' => $val)));
     }
@@ -407,3 +407,59 @@ function mcapi_membership_transact($currency, $account) {
   return user_access('transact', $account);
 }
 
+
+/*
+ * access control wrapper for currency
+ */
+function currency_access($op, $currcode, $account = NULL) {
+  if ($GLOBALS['user']->uid == 1) return TRUE;
+  $function = currency_load($currcode)->access[$op];
+  return $function($op, $account);
+}
+
+/*
+ * currency membership callback
+ */
+function mcapi_can_transact($op, $account = NULL) {
+  return user_access('transact', $account);
+}
+/*
+ * currency membership callback
+ */
+function mcapi_anyone() {
+  return TRUE;
+}
+
+
+/*
+ * returns a form element for picking a currency
+ * if $picker_options is an array of currencies keyed by currcode, it returns a select
+ * if $picker_options is NULL it returns a hidden field
+ */
+function currency_picker_element(array $currcodes, $default = NULL, $multiple = FALSE) {
+  if (empty($currcodes)) drupal_set_message(print_r(debug_backtrace(), 1), 'error');
+  if (count($currcodes) < 2) {
+    return array(
+      '#type' => 'hidden',
+      '#value' => current($currcodes)
+    );
+  }
+  return array(
+    '#title' => t('Currency'),
+    '#type' => 'select',
+    '#options' =>  _currency_picker_element_options($currcodes),
+    '#default_value' => $default,
+    '#multiple' => $multiple,
+    '#required' => TRUE,
+  );
+}
+//build a key value array of currency codes and currency names
+//$currencies is an array of the form returned by currencies_load
+//if $currencies is empty, it will assume you mean all currencies
+function _currency_picker_element_options(array $currcodes) {
+  $currencies = &currencies_load();
+  foreach ($currcodes as $currcode) {
+    $options[$currcode] = $currencies[$currcode]->human_name;
+  }
+  return $options;
+}

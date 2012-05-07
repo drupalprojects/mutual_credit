@@ -370,8 +370,8 @@ function mcapi_write_record(&$record, $primary_keys = array()) {
 }
 
 /*
- * implements hook_currency_innerform_alter
- * Expects $form['#currency']
+ * implements hook_form_FORM_ID_alter
+ * Adds the accounting standards to the currency form
  */
 function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   if (empty($form_state['plugin']['handler']) || $form_state['plugin']['handler'] != 'mcapi_ui') return;

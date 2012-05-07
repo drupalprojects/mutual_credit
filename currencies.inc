@@ -1,8 +1,6 @@
 <?php
 
-
 function _mcapi_currency_form(&$form, &$form_state, $currency){
-
   //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
   $form['#tree'] = TRUE;
   $form['info']['currcode']['#maxlength'] = 8;
@@ -15,14 +13,6 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
   );
   //need to do a live machine name preview here, like views does
   //http://api.drupal.org/api/drupal/includes%21form.inc/function/form_process_machine_name/7
-  $form['membership_callback'] = array(
-    '#title' => t('Membership'),
-    '#description' => t('Determine which users are permitted to use this currency'),
-    '#type' => 'select',
-    '#options' => module_invoke_all('mcapi_access'),
-    '#default_value' => $currency->membership_callback,
-    '#weight' => 3,
-  );
 
   $form['display'] = array(
     '#title' => t('Appearance'),
@@ -44,21 +34,21 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#type' => 'select',
     '#options' => array(
       CURRENCY_DIVISION_MODE_NONE => t('Integer values only'),
-      CURRENCY_DIVISION_MODE_CENTS_INLINE => t('Cents in separate field'),
-      CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in same field, with decimal point'),
+      CURRENCY_DIVISION_MODE_CENTS_INLINE => t('Cents in same field, with decimal point'),
+      CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
       CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions, below')
     ),
     '#default_value' => $currency->display['divisions'],
     '#weight' => 2
   );
-  $form['display']['divisions_allowed'] = array(
+  $form['display']['divisions_setting'] = array(
     '#title' => t('Allowed subdivisions'),
     '#description' => t('On each line put "hundredths| visible text". The visible text replaces the @subdivision in the display format, above.'),
     '#type' => 'textarea',
     '#cols' => 60,
     '#rows' => 4,
     '#resizable' => FALSE,
-    '#default_value' => isset($currency->display['divisions_allowed']) ? $currency->display['divisions_allowed'] : "0|/.\n25|1/4\n50|1/2\n75|3/4",
+    '#default_value' => isset($currency->display['divisions_setting']) ? $currency->display['divisions_setting'] : "0|/.\n25|1/4\n50|1/2\n75|3/4",
     '#element_validate' => array('mcapi_currency_validate_divisions'),
     '#weight' => 3
   );
@@ -67,6 +57,37 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
+  $form['access'] = array(
+    '#title' => 'Access control',
+    '#description' => t('How to determine which users can use and view this currency'),
+    '#type' => 'fieldset',
+    '#group' => 'additional_settings',
+    'membership' => array(
+      '#title' => t('Membership'),
+      '#description' => t('Determine which users are permitted to use this currency'),
+      '#type' => 'select',
+      '#options' => module_invoke_all('mcapi_access'),
+      '#default_value' => $currency->access['membership'],
+      '#weight' => 1,
+    ),
+    'user_aggregated_view' => array(
+      '#title' => t('View aggregated user transaction data'),
+      '#description' => t('Such as balance, gross income, number of transactions'),
+      '#type' => 'select',
+      '#options' => module_invoke_all('mcapi_access'),
+      '#default_value' => $currency->access['user_aggregated_view'],
+      '#weight' => 2,
+    ),
+    'currency_aggregated_view' => array(
+      '#title' => t('View aggregated system data'),
+      '#type' => 'select',
+      '#options' => module_invoke_all('mcapi_access'),
+      '#default_value' => $currency->access['currency_aggregated_view'],
+      '#weight' => 3,
+    ),
+    '#weight' => -1
+  );
+
   $operations['view'] = t('View');
   $form += currency_op_settings_tab($currency, $operations);
   $form['zero'] = array(
@@ -76,7 +97,6 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#default_value' => $currency->zero,
     '#weight' => 15,
   );
-
   $form['buttons'] = array(
     '#weight' => 20,
     'submit' => array(
@@ -85,7 +105,6 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
       '#weight' => 20
     )
   );
-
   $form['uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Declared by'),
@@ -118,13 +137,14 @@ function currency_op_settings_tab($currency, $operations) {
       '#group' => 'additional_settings',
       '#weight' => $i++,
     );
-    foreach (mcapi_states() as $state => $statename) {
+    foreach (mcapi_get_states() as $constant => $state) {
       $states = isset($currency->$op) ? $currency->$op : array();
-      $element[$op][$state] = array(
-        '#title' => $statename,
+      $element[$op][$constant] = array(
+        '#title' => $state['name'],
+        '#description' => $state['description'],
         '#type' => 'select',
         '#options' => module_invoke_all('mcapi_info_permissions'),
-        '#default_value' => isset($states[$state]) ? $states[$state] : TRANSACTION_STATE_FINISHED,
+        '#default_value' => isset($states[$constant]) ? $states[$constant] : TRANSACTION_STATE_FINISHED,
         '#weight' => $j++,
       );
     }
@@ -135,7 +155,6 @@ function currency_op_settings_tab($currency, $operations) {
 function currency_form_ajax(&$form, &$form_state) {
   return $form;
 }
-
 
 function mcapi_currency_validate_format(&$element, $form_state) {
   if (!strpos($element['#value'], '@integer')) {
@@ -191,41 +210,25 @@ function mcapi_validate_currcode(&$element, $form_state) {
     }
   }
 }
-
 /*
- * determine whether a user has permission to use a currency
- * This could get rather complicated, and vary from system to system
- *
+ * menu access callback
+ * access to the ctools currency edit page
  */
-function currency_access($op, $currency, $account = NULL) {
-  if (empty($uid)) $uid = $GLOBALS['user'];
-  switch ($op) {
-    case 'use':
-      $function = $currency->membership_callback;
-      return $function($currency, $account);
-    case 'edit':
-      return $uid == $currency->uid || user_access('configure all currencies');
-  }
+function currency_edit_access($currency) {
+  return user_access('configure all currencies') || $currency->uid == $GLOBALS['user']->uid;
 }
-
-
 /*
  * Implements hook_mcapi_access
  * List callbacks which can be used to determine whether a user can use a currency
+ * Each callback receives an argument $account, which may be NULL
+ * $account can mean either the current user, or another account depending on context
  */
 function mcapi_mcapi_access() {
   return array(
-    'mcapi_use_currency' => t("According to permission '@perm'", array('@perm' => t('transact')))
+    'mcapi_anyone' => t('Anyone'),
+    'mcapi_can_transact' => t("According to permission '@perm'", array('@perm' => t('transact')))
   );
 }
-
-/*
- * currency membership callback
- */
-function mcapi_use_currency() {
-  return user_access('transact');
-}
-
 
 
 function transaction_validate_currency_access($form, $form_state) {
@@ -233,7 +236,7 @@ function transaction_validate_currency_access($form, $form_state) {
   $currency = currency_load($transaction->currcode);
   $participants = array('payer', 'payer');
   foreach ($participants as $participant) {
-    if (!currency_access('use', $currency, $transaction->$participant)) {
+    if (!currency_access('membership', $currency)) {
       form_set_error($participant, t("!name is not permitted to use @currency", array(
         '!name' => format_username(user_load($transaction->$participant)),
         '@currency' => $currency->human_name
@@ -245,7 +248,6 @@ function transaction_validate_currency_access($form, $form_state) {
 
 function currencies_load_all() {
   ctools_include('export');
-  $states = mcapi_states();
   $functions = array_keys(module_invoke_all('mcapi_info_permissions'));
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
@@ -255,7 +257,7 @@ function currencies_load_all() {
     //convert the divisions_allowed into an array
     $divisions = array();
     if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
-      foreach(explode("\n", $currency->display['divisions_allowed']) as $line) {
+      foreach(explode("\n", $currency->display['divisions_setting']) as $line) {
         list($cent, $display) = explode('|', $line);
         $divisions[$cent] = $display;
       }
@@ -264,17 +266,16 @@ function currencies_load_all() {
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     foreach (array('update', 'erase', 'view') as $op) {
       $callbacks = $currency->$op;
-      foreach ($states as $state => $name) {
-        if (!in_array($callbacks[$state], $functions)) {
+      foreach (mcapi_get_states() as $constant => $state) {
+        if (!in_array($callbacks[$constant], $functions)) {
           drupal_set_message(t(
             "Currency @name has no permission set for op '@op' and state @state",
-            array('@op' => $op, '@state' => $name, '@name' => $currcode)
+            array('@op' => $op, '@state' => $state['name'], '@name' => $currcode)
           ), 'warning', FALSE);
           $callbacks[$state] = 'mcapi_access_participants';
         }
       }
     }
-
     $currencies[$currcode] = $currency;
   }
   return $currencies;
@@ -284,7 +285,6 @@ function default_cur() {
   $currency = ctools_export_crud_load('mcapi_currencies', 'def_drup')->data;
   $currency->human_name = '';
   $currency->display['format'] = '@minus@integer @division';
-  debug($currency);
   return $currency;
 }
 

@@ -190,7 +190,6 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
 function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
   $form['#validate'][] = 'mcapi_forms_template_validate';
-  $form['#submit'][] = 'cache_clear_mcapi_forms';
   $form_state['redirect'] = 'admin/accounting/forms';
 }
 
@@ -280,6 +279,8 @@ function mcapi_path_validate(&$element, &$form_state) {}
 
 function cache_clear_mcapi_forms() {
   cache_clear_all('mcapi_forms', 'cache');
+  menu_rebuild();
+  die('rebuilt form in cache_clear_mcapi_forms');
 }
 
 

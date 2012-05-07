@@ -154,9 +154,9 @@ function mcapi_views_data() {
 function mcapi_views_data_alter(&$data) {
   //however it does require a query for each row which calls on a special API function
   $data['users']['current_balance'] = array(
-    'title' => t('Current balance'),
+    'title' => t('Transaction statistic'),
     'field' => array(
-      'help' => t("The balance for each user"),
+      'help' => t("The balance, trading volume, or transaction count for each user"),
       'handler' => 'views_handler_field_mcapi_users_balance',
       'click sortable' => TRUE
     )

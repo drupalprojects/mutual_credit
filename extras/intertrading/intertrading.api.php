@@ -134,8 +134,8 @@ array (
   'transactions' => INTEGER,
   //OPTIONAL FIELDS
   'divisions' => mixed, //01 means cents OR list of acceptable centilesseparated by pipe|
-  //The name of the site
-  'name' => STRING, 63,
+  //The root path e.g. domain.org/mytown?q=
+  'uri' => STRING, 63,
   //Toggle whether all this data should be visible to the public
   'visibility' => BOOLEAN,
   //The absolute url of the logo of the site (optional)
@@ -202,7 +202,7 @@ array(
   'dest_url' => STRING, //'servername.com',
   'src_url' => STRING, //'servername.com',
   'quantity' => FLOAT, //denominated in src units
-  'description' => TEXT, //255 //optional
+  'description' => TEXT, //255
 );
 //going towards the server, the 2 authentication fields should be added
 //on the second leg, towards the 2nd client, that client's key is needed for authentication

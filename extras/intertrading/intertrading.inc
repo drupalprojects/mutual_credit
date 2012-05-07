@@ -15,10 +15,9 @@ function intertrading_json_request($url, $params) {
       'data' => http_build_query($params)
     )
   );
-
   $return = new stdClass;
-  $data = json_decode($result->data, TRUE);
-  if (count($data) && is_array($data)) {
+
+  if (!empty($result->data) &&  $data = json_decode($result->data, TRUE)) {
     array_walk_recursive($data, 'urldecode_m');
     $return->code = array_shift($data);
     $return->args = $data;
@@ -40,15 +39,15 @@ function intertrading_json_request($url, $params) {
   //http status codes failure
   else {
     debug($result);
-    $args = array('@client' => $url, '@status' => $result->code);
-    $return  = array(
-      'code' => 27,
-      'message' => intertrading_error_codes(27, $args),
-      'args' => $args
-    );
-    watchdog('intertrading', "@message", array('@message' => $return['message']), WATCHDOG_ERROR);
+    intertrading_error($result);
+    //this doesn't catch "php_network_getaddresses: getaddrinfo failed: Name or service not known" with code 0
+    $args = array('@client' => $url, '@status' => $result->code, '@error' => strval($result->error));
+    $return->code  = 27;
+    $return->message = intertrading_error_codes(27, $args);
+    $return->args = $args;
+    watchdog('intertrading', "@message", array('@message' => $return->message), WATCHDOG_ERROR);
   }
-  return (object)$return;
+  return $return;
 }
 
 
@@ -80,15 +79,13 @@ function intertrading_validate_transaction_post(&$data) {
   if (!in_array($data['src_url'], array($data['src_url'], $data['payee_url']))) {
     $error = array(8,  array('@value' => $data['quantity'], '@fieldname' => 'payer_url, payee_url'));
   }
-  $fields = array('payer', 'payee', 'quantity');
-  if (variable_get('intertrading_description_required', 1)) {
-    $fields[] = 'description';
-  }
-  foreach ($fields as $fieldname) {
+  foreach (array('payer', 'payee', 'quantity') as $fieldname) {
     if (empty($data[$fieldname])) {
-      $error = array(8,  array('@value' => $data[$fieldname], '@fieldname' => $fieldname));
+      $error = array(8,  array('@value' => '', '@fieldname' => $fieldname));
     }
-    $error = intertrading_xss_validate($data[$fieldname], $fieldname);
+    else {
+      $error = intertrading_xss_validate($data[$fieldname], $fieldname);
+    }
   }
   return $error;
 }
@@ -100,45 +97,45 @@ function intertrading_xss_validate($val, $fieldname) {
   }
 }
 
-
-function intertrading_mimic_form_state_values($creator, $payer, $payee, $type, $quantity, $description) {
-  $values = array(
-    'creator' => $creator,
-    'state' => TRANSACTION_STATE_FINISHED,
-    'payer' => $payer,
-    'payee' => $payee,
-    'type' => $type,
-    'worth' => array(
-      'und' => array(
-        0 => array(
-          'quantity' => $quantity,
-          'currcode' => key(currencies_load())
-        )
-      )
-    ),
+//this is the definitive list of incoming fields.
+function intertrading_handshake_fields() {
+  //each element states its type, for validation, whether it is required, and an optional argument for the validator
+  return array(
+    'src_url' => array('url', TRUE),
+    'mail' => array('mail', TRUE),
+    'ticks' => array('float', TRUE, '>'),
+    'divisions' => array('divisions', FALSE),
+    'api' => array('api', TRUE),
+    'name' => array('string', TRUE, NULL),
+    'visibility' => array('toggle', FALSE), //defaults to off
+    'logo' => array('string', FALSE), //some kind of validation would be nice
+    'lat' => array('float', FALSE),
+    'lon' => array('float', FALSE),
+    'new_key' => array('key', FALSE),
+    'traders' => array('integer', TRUE, '>='),
+    'transactions' => array('integer', TRUE, '>='),
   );
-  if ($fieldname = variable_get('intertrading_description_field', '')) {
-    $values[$fieldname] = array(
-      'und' => array(
-        0 => array(
-          'value' => $description
-        )
-      )
-    );
-  }
-  return $values;
 }
 
-
+function intertrading_report_fields() {
+  return array(
+    'volume' => array('float', TRUE, '>='),
+    'deficit' => array('float', TRUE, '<='),
+    'balance' => array('float', TRUE),
+    'integrity' => array('toggle', TRUE, '>')
+  );
+}
 
 function intertrading_error() {
   $args = func_get_args();
-  $args[] = debug_backtrace();
-  foreach (func_get_args() as $arg) {
+  $call = array_shift(debug_backtrace());
+  $loc = "Called from function <b>".$call['function']."</b> on line <b>". $call['line'] ."</b> in file <b>".$call['file'].'</b>';
+  array_unshift($args, $loc);
+  foreach ($args as $arg) {
     $strings[] = print_r($arg, 1);
   }
-  //watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
-  file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
+  watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
+  //file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
 }
 
 
@@ -171,7 +168,7 @@ function intertrading_error_codes($code, $args = array()) {
     case 24: return t("Transaction would exceed remote client's max account limits by @quantity", $args);
     case 25: return t("Misc validation error on remote client: @message", $args);
     case 26: return t("server not found: @server", $args);
-    case 27: return t("Server failed to connect to @client; http status @status", $args);
+    case 27: return t("Failed to connect: @params", array('@params' => '<pre>'.print_r($args, 1).'</pre>'));
     case 28: return t("Unknown mail on @client: @mail", $args);
     default: return t('Unknown error code @code: @args', array('@code' => $code, '@args' => print_r($args, 1)));
   }

@@ -16,6 +16,7 @@ files[] = mcapi.tokens.inc
 files[] = mcapi.mcapicurrencies_default.inc
 files[] = plugins/export_ui/mcapi_ui.inc
 files[] = plugins/export_ui/mcapi_ui.class.php
+files[] = extras/mcapi.rules.inc
 
 files[] = views/mcapi.views.inc
 files[] = views/mcapi.views_default.inc

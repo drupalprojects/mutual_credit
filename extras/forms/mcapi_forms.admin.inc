@@ -199,6 +199,12 @@ function _edit_mcapi_form(&$form, &$form_state) {
     mcapi_unset_recursive($transaction_fields[$fieldname], '#element_validate');
     $form[$fieldname] = _mcapi_form_shared($mcapi_form, $transaction_fields[$fieldname], $fieldname);
   }
+  //special settings for worth field
+  $field = field_info_field('worth');
+  if ($field['cardinality'] > 1) {
+    $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
+  }
+  //mcapi_unset_recursive($form['worth']['preset']['und'], '#required');
 
   $form['submission'] = array(
     '#title' => t('Form submission'),
@@ -210,7 +216,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Save to state'),
       '#description' => t('Transaction will be submitted in this state'),
       '#type' => 'select',
-      '#options' => array('' => t('Unchanged')) + mcapi_states(),
+      '#options' => array('' => t('Unchanged')) + mcapi_get_states('#options'),
       '#default_value' => empty($mcapi_form['submission']['state']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['submission']['state'],
       '#weight' => 3,
     ),
@@ -298,7 +304,6 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   mcapi_unset_recursive($default_field, '#element_validate');
   $element = array(
     '#title' => "[mcapiform:$key]",
-    '#description' => t("Edit instance settings.", array('@field' => $key)),
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_fields',
     '#weight' => $w++,
@@ -368,6 +373,8 @@ function mcapi_forms_template_validate($form, &$form_state) {
       ));
     }
   }
+
+
 }
 
 function mcapi_forms_exists($machine_name, $element, &$form_state) {
@@ -401,6 +408,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
       }
     }
   }
+  register_shutdown_function('cache_clear_mcapi_forms');
 }
 
 /*
@@ -408,3 +416,22 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
  * NOT NEEDED
 function mcapi_edit_mcapi_form_submit($form, &$form_state) {}
  */
+
+/*
+ * element validate callback for worth field with multiple cardinality
+ * if a default value is provided for any currency(s), then remove all other empty values
+ * before saving it as a preset
+ */
+function mcapi_form_validate_worth_preset(&$element, &$form_state) {
+  //if any of the currencies has been preset with a value, remove the empty ones
+  $items = &$form_state['values']['worth']['preset']['und'];
+  $allempty = TRUE;
+  foreach ($items as $item) {
+    if (!mcapi_field_is_empty($item)) $allempty = FALSE;
+  }
+  if ($allempty) return;
+  //delete the empty items
+  foreach ($items as $delta => $item) {
+    if (mcapi_field_is_empty($item)) unset($items[$delta]);
+  }
+}

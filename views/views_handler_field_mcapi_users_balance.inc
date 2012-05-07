@@ -8,6 +8,7 @@
  * note that this is a bit of a pseudo field, since it makes a separate call to the transaction controller layer.
  */
 class views_handler_field_mcapi_users_balance extends views_handler_field {
+
   function query() {
     $this->ensure_my_table();
   }
@@ -20,7 +21,7 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
   }
 
   function options_form(&$form, &$form_state) {
-    $form['currcode'] = currency_picker_element($default, FALSE, currencies_load());
+    $form['currcode'] = currency_picker_element(array_keys(currencies_load()));
     
     $form['total'] = array(
       '#title' => t('Aggregate'),
@@ -40,13 +41,19 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
   function render($values) {
     $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);
     $key = $this->options['total'];
-    $elements = array('#theme' => 'worth_fields');
+    $elements = array('#theme' => 'worth_field_multiple');
     foreach ($currcodes as $currcode) {
-      $elements[$currcode] = array(
-        '#theme' => 'worth_field',
-        '#quantity' => transaction_totals($values->uid, $currcode)->$key,
-        '#currcode' => $currcode
-      );
+      $quant = transaction_totals($values->uid, $currcode)->$key;
+      if ($key == 'count') {
+        $elements[$currcode] = array('#type' => 'markup', '#markup' => $quant);
+      }
+      else {
+        $elements[$currcode] = array(
+          '#theme' => 'worth_field',
+          '#quantity' => $quant,
+          '#currcode' => $currcode
+        );
+      }
     }
     return $elements;
   }

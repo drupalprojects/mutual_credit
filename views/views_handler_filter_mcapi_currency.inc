@@ -5,16 +5,17 @@
  */
 class views_handler_filter_mcapi_currency extends views_handler_filter_in_operator {
 
-
   //this is waiting for a suitable hook function so that modules can declare their own exchange types.
   function get_value_options() {
-    $this->value_options = _currency_picker_element_options();
+    module_load_include('inc', 'mcapi');
+    $this->value_options = _currency_picker_element_options(array_keys(currencies_load()));
   }
 
   function value_form(&$form, &$form_state) {
-    $currencies = currencies_load();
-    if (count($currencies) > 1) {
-      $form['value'] = currency_picker_element($this->value, TRUE, $currencies);
+    $currcodes = array_keys(currencies_load());
+    if (count($currcodes) > 1) {
+      module_load_include('inc', 'mcapi');
+      $form['value'] = currency_picker_element($currcodes, $this->value, TRUE);
       if (!empty($this->options['exposed'])) {
         $identifier = $this->options['expose']['identifier'];
         if (!empty($form_state['exposed']) && !isset($form_state['input'][$identifier])) {
