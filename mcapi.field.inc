@@ -6,7 +6,7 @@ define ('CURRENCY_DIVISION_MODE_CENTS_FIELD', 2);
 define ('CURRENCY_DIVISION_MODE_CUSTOM', 3);
 
 /*
- * Imlements hook_field_info
+ * Imlements entity module hook_field_info
  */
 function mcapi_field_info() {
   return array(
@@ -16,7 +16,10 @@ function mcapi_field_info() {
       'settings' => array('allowed_values' => array(), 'allowed_values_function' => ''),
       'default_widget' => 'worth_widget',
       'default_formatter' => 'worth_widget',
-      'translatable' => FALSE
+      'translatable' => FALSE,
+      //following properties are for the entity API module
+      'property_type' => 'worth',//don't know what this refers to
+      'property_callbacks' => array('entity_metadata_field_worth_property_callback'),
     )
   );
 }
@@ -123,7 +126,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
  * so this is the stage that formats the divisions sub-widget according to currcode, which may have changed since the form was first built
  * tricky bit is setting the field[#default_value]s which are sometimes raw field data and sometimes from the db, sometimes passed in
  */
-function mcapi_field_widget_process($element, $form_state, $form) {
+function mcapi_field_widget_process($element, &$form_state, $form) {
   //determine the values for each of the three subfields, main_quant, division_quant, currcode
   //these are handled in order of priority as the default values could come from different sources
   //deal with any submitted values from ajax, or the back button
@@ -143,6 +146,7 @@ function mcapi_field_widget_process($element, $form_state, $form) {
   foreach (element_children($element) as $child) {
     $element[$child]['#theme_wrappers'] = array();
   }
+
   //set the weight in case this is a multiple currency form
   return $element;
 }
@@ -151,7 +155,7 @@ function mcapi_field_widget_process($element, $form_state, $form) {
  * and the currcode is sometimes supplied by ajax,
  * and ajax doesn't rebuild the whole form, but only reprocesses it
  * And because sometimes we need the filled form including defaults before processing --when?
- * this function is called from both the form build function and the process function
+ * this function usually runs twice! Called from both the form build function and the process function
  */
 function worth_element_build(&$element, $default_vals) {
   static $cardinality;//because this function usually runs twice per form
@@ -199,7 +203,7 @@ function worth_element_build(&$element, $default_vals) {
     );
   }
   //If the display format requires we can re-join the main part and the division if they belong in one widget
-  if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_INLINE) {
+  if (in_array($currency->display['divisions'], array(CURRENCY_DIVISION_MODE_CENTS_INLINE, CURRENCY_DIVISION_MODE_CENTS_FIELD))) {
     $element['main_quant']['#element_validate'] = array('element_validate_number'); //will do for now
   }
   else {
@@ -222,7 +226,8 @@ function worth_widget_validate(&$element, &$form_state, $form) {
     $value['quantity'] += $element['division_quant']['#value']/100;
   }
   $element['#value'] = $value;
-  //this affects form_state only, which later is used to set $element['#value']
+  //this affects form_state only, which later is used to set $element['#value
+
   form_set_value($element, $value, $form_state);
 }
 
@@ -320,6 +325,17 @@ function mcapi_theme_fields() {
     ),
   );
 }
+/*
+ * implements hook_preprocess_THEMEHOOK
+ * if the form is being rebuilt, on an error, there's no other way to intervene
+ * when the calculated quantity variable is dumped from $form_state['input] into $form
+ */
+function mcapi_preprocess_worth_widget(&$variables) {
+  $element = &$variables['element'];
+  if (isset($element['main_quant']['#value']) && !is_integer($element['main_quant']['#value'])) {
+    list($element['main_quant']['#value'], $element['div_quant']['#value']) = currency_explode($element['main_quant']['#value']);
+  }
+}
 
 /*
  * Default implementation of theme 'worth_field'
@@ -362,7 +378,6 @@ function theme_worth_widget_multiple($variables) {
  */
 function theme_worth_widget($variables) {
   $element = &$variables['element'];
-  
   //output starts with the currency field, whether hidden or showing
   $curr_chooser = drupal_render($element['currcode']);
   if ($element['currcode']['#type'] == 'hidden') {
@@ -451,8 +466,6 @@ function currency_explode($number) {
   return array_merge(explode('.', number_format(abs($number), 2, '.', '')), array($number < 0 ? '-' : ''));
 }
 
-
-
 /*
  * Imlements hook_form_form_ID_alter
  * prevents editing of the worth field attached to the transaction entity.
@@ -464,3 +477,23 @@ function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
   }
 }
 
+/*
+ * integration with the entity module
+ * these two functions present the components of the worth field as an entity property
+ */
+function entity_metadata_field_property_get_mcapi_currcode($data, $options, $name, $type, $info) {
+  print_r($data);
+  foreach ($data['und'] as $delta => $data) {
+    $values[$delta] = $data['currcode'];
+  }
+  return $values;
+}
+function entity_metadata_field_property_get_mcapi_quantity($data, $options, $name, $type, $info) {
+  foreach ($data['und'] as $delta => $data) {
+    $values[$delta] = $data['quantity'];
+  }
+  return $values;
+}
+function entity_metadata_field_worth_get($entity, $options, $name, $type, $info) {
+  return $entity->worth['und'];
+}

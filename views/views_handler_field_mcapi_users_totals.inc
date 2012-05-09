@@ -7,7 +7,7 @@
  * choose ONE currency from a list of options.
  * note that this is a bit of a pseudo field, since it makes a separate call to the transaction controller layer.
  */
-class views_handler_field_mcapi_users_balance extends views_handler_field {
+class views_handler_field_mcapi_users_totals extends views_handler_field {
 
   function query() {
     $this->ensure_my_table();
@@ -21,7 +21,8 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
   }
 
   function options_form(&$form, &$form_state) {
-    $form['currcode'] = currency_picker_element(array_keys(currencies_load()));
+    module_load_include('inc', 'mcapi');
+    $form['currcode'] = currency_picker_element(array_keys(currencies_load()), $this->options['currcode']);
     
     $form['total'] = array(
       '#title' => t('Aggregate'),
@@ -37,6 +38,7 @@ class views_handler_field_mcapi_users_balance extends views_handler_field {
     );
     parent::options_form($form, $form_state);
   }
+
   //note that this requires a separate
   function render($values) {
     $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);

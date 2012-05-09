@@ -216,7 +216,7 @@ function mcapi_check_fields() {
   if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
     $instance = array(
       'field_name' => 'worth',
-      'label' => t('Value'),
+      'label' => t('Worth'),
       'entity_type' => 'transaction',
       'bundle' => 'transaction',
       'settings' => array(),

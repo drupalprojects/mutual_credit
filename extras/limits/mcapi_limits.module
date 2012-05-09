@@ -249,6 +249,7 @@ function mcapi_limits_block_view($delta) {
  * Implements views hook_block_configure
  */
 function mcapi_limits_block_configure($delta) {
+  module_load_include('inc', 'mcapi');
   $settings = mcapi_limits_block_settings('block_'.$delta);
   $form['currcodes'] = currency_picker_element(array_keys(currencies_load()), $settings['currcodes'], TRUE);
   $form['source'] = array(

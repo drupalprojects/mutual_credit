@@ -6,16 +6,19 @@
  */
 function mcapi_views_data() {
   $data = array();
-  $data['mcapi_transactions']['table']['group']  = t('Transaction');
-  $data['mcapi_transactions']['table']['base'] = array(
-    'database' => variable_get('mcapi_db_read', 'default'),
-    'field' => 'xid',
-    'title' => t('Transactions'),
-    'help' => t('Records of transactions between users'),
-    'access query tag' => 'transaction_access_views',
-    'defaults' => array(
+  $data['mcapi_transactions']['table'] = array(
+    'group'  => t('Transaction'),
+    'base' => array(
+      'database' => variable_get('mcapi_db_read', 'default'),
       'field' => 'xid',
+      'title' => t('Transactions'),
+      'help' => t('Records of transactions between users'),
+      'access query tag' => 'transaction_access_views',
+      'defaults' => array(
+        'field' => 'xid',
+      ),
     ),
+    'entity type' => 1,//so the entity module can expose this table
   );
   $data['mcapi_transactions']['xid'] = array(
     'title' => t('Transaction ID'), // The item it appears as on the UI,
@@ -149,15 +152,15 @@ function mcapi_views_data() {
 
 /*
  * implements hook_views_data_alter
- * this is a powerful way for virtual field balances to be accessible to views based on the user table
  */
 function mcapi_views_data_alter(&$data) {
+  //this is a powerful way for virtual field balances to be accessible to views based on the user table
   //however it does require a query for each row which calls on a special API function
   $data['users']['current_balance'] = array(
     'title' => t('Transaction statistic'),
     'field' => array(
       'help' => t("The balance, trading volume, or transaction count for each user"),
-      'handler' => 'views_handler_field_mcapi_users_balance',
+      'handler' => 'views_handler_field_mcapi_users_totals',
       'click sortable' => TRUE
     )
   );

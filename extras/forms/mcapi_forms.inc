@@ -95,7 +95,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
     array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
   }
-
   //we now modify the transaction form fields according to the form settings for each field
   foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
     if (isset($transaction->$fieldname)) {
@@ -103,7 +102,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     }
     $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
   }
-  //specially for the worth field, remove any $items which are not in the default $transaction object
+
+  //specially for the worth field: remove any $items which are not in the default $transaction object
   //see mcapi_form_validate_worth_preset() for more
   foreach (element_children($form['worth']['und']) as $delta) {
     if (empty($transaction->worth['und'][$delta])) unset($form['worth']['und'][$delta]);

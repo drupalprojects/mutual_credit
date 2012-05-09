@@ -1,4 +1,5 @@
 <?php
+
 //shared function between intertrading client and server
 
 /*
@@ -16,7 +17,6 @@ function intertrading_json_request($url, $params) {
     )
   );
   $return = new stdClass;
-
   if (!empty($result->data) &&  $data = json_decode($result->data, TRUE)) {
     array_walk_recursive($data, 'urldecode_m');
     $return->code = array_shift($data);
@@ -28,7 +28,7 @@ function intertrading_json_request($url, $params) {
       }
       else {
         $return->message = intertrading_error_codes($return->code, $return->args);
-        watchdog('intertrading', '@message', array('@message' => $return->message), WATCHDOG_NOTICE);
+        watchdog('intertrading', 'Site @site returned error @message', array('@site' => $url,  '@message' => $return->message), WATCHDOG_NOTICE);
       }
     }
     else {//this could mean a 500 error or something
@@ -38,7 +38,6 @@ function intertrading_json_request($url, $params) {
   }
   //http status codes failure
   else {
-    debug($result);
     intertrading_error($result);
     //this doesn't catch "php_network_getaddresses: getaddrinfo failed: Name or service not known" with code 0
     $args = array('@client' => $url, '@status' => $result->code, '@error' => strval($result->error));
@@ -128,7 +127,8 @@ function intertrading_report_fields() {
 
 function intertrading_error() {
   $args = func_get_args();
-  $call = array_shift(debug_backtrace());
+  $call = debug_backtrace();
+  array_shift($call);
   $loc = "Called from function <b>".$call['function']."</b> on line <b>". $call['line'] ."</b> in file <b>".$call['file'].'</b>';
   array_unshift($args, $loc);
   foreach ($args as $arg) {
@@ -158,7 +158,7 @@ function intertrading_error_codes($code, $args = array()) {
     case 14: return t('Your Intertrading ratio (balance/volume) exceeds @num%: @balance / @volume', $args);
     case 15: return t("Type error in field '@fieldname'. Should be a @type.", $args);
     case 16: return t("Your exchange is exists, but is blocked on the intertrading network.");
-    case 17: return t("Wrong key");
+    case 17: return t("Wrong key: @key", $args);
     case 18: return t("Not enough data to authenticate");
     //failure of remote client
     case 20: return t("Failed to connect with @server; returned: @message", $args);

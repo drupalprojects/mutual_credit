@@ -12,6 +12,7 @@ files[] = mcapi.install
 files[] = mcapi.controller
 files[] = mcapi.field.inc
 files[] = mcapi.tokens.inc
+files[] = mcapi.info.inc
 
 files[] = mcapi.mcapicurrencies_default.inc
 files[] = plugins/export_ui/mcapi_ui.inc
@@ -25,7 +26,7 @@ files[] = views/views_handler_field_mcapi_state.inc
 files[] = views/views_handler_field_transaction_link.inc
 files[] = views/views_handler_field_transaction_link_edit.inc
 files[] = views/views_handler_field_mcapi_links.inc
-files[] = views/views_handler_field_mcapi_users_balance.inc
+files[] = views/views_handler_field_mcapi_users_totals.inc
 files[] = views/views_handler_filter_mcapi_types.inc
 files[] = views/views_handler_filter_mcapi_states.inc
 files[] = views/views_handler_filter_mcapi_currency.inc

@@ -86,7 +86,10 @@ function drush_mcapi_purge() {
   $count = count($xids);
   drush_print("completely removed $count transactions");
   if ($xid = db_query("SELECT xid FROM {mcapi_transactions}")->fetchfield()) return;
-  db_query("ALTER TABLE {mcapi_transactions} AUTO_INCREMENT = 1");
+
+  db_query("TRUNCATE TABLE {field_data_worth}");
+  db_query("TRUNCATE TABLE {field_revision_worth}");
+  db_query("TRUNCATE TABLE {mcapi_transactions}");
   drush_print('reset auto-increment-transaction ID');
   
 }

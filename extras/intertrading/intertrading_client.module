@@ -443,8 +443,8 @@ function intertrading_json_client_request($path, $data = array()) {
     if (!$$varname) {
       return (object)array(
         'code' => -1,
-        t('@varname not set. Configure intertrading at !link', array(
-          '@varname' => $$varname,
+        'message' => t('@varname not set. Configure intertrading at !link', array(
+          '@varname' => $varname,
           '!link' => l('admin/accounting/intertrade', 'admin/accounting/intertrade')
         ))
       );
@@ -676,6 +676,8 @@ function intertrading_client2_receive() {
 }
 
 function intertrading_client_cron(){
+  //resetting the key through a handshake called by cron doesn't seem to work
+  //the server doesn't update the key
   intertrading_handshake();
 }
 
@@ -746,18 +748,19 @@ function intertrading_client_help($path, $args) {
       $args['!balance'] = theme('worth_field', array('quantity' => $args['@balance'], 'currcode' => variable_get('intertrading_currcode')));
 
       $help .= '<br />'.t('@name account balance is !balance', $result->args);
-      if ($result->args['@min'] && $result->args['@max']) {
+      if (isset($result->args['@min']) && isset($result->args['@max'])) {
         $help .= '<br />'.t('@name can trade between: @min & @max', $result->args);
       }
       else{
-        if ($result->args['@min']) {
+        if (isset($result->args['@min'])) {
           $help .= '<br />'.t('@name must trade above: @min', $result->args);
         }
-        elseif($result->args['@min']) {
-          $help .= '<br />'.t('@name must trade below: @min', $result->args);
+        elseif(isset($result->args['@max'])) {
+          $help .= '<br />'.t('@name must trade below: @max', $result->args);
         }
       }
       $help .= '<br />'.t('Transactions so far: @count', $result->args);
+      $help .= '<br />Intertrading key: '. variable_get('intertrading_key', '00');
     }
     return $help;
   }
