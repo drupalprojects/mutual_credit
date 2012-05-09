@@ -7,7 +7,7 @@ require('intertrading.inc');
 
 define('INTERTRADING_API_VERSION', 1.0);
 define('INTERTRADING_REF_URL',
-  str_replace('www.', '', $_SERVER['SERVER_NAME']). str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']) .'/?q=');
+  str_replace('www.', '', @$_SERVER['SERVER_NAME']). str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']) .'/?q=');
 /*
  * implements hook_menu
  */
@@ -771,8 +771,8 @@ function report_intertrading_history() {
   $intertrading_currcode = variable_get('intertrading_currcode', '');
   $xids = db_query("SELECT xid FROM {mcapi_transactions} t 
     LEFT JOIN {field_data_worth} w ON t.xid = w.entity_id
-    WHERE (payer = :uid OR payee = :uid) AND state > 0 AND w.worth_currcode = :currcode",
-      array(':uid' => $intertrading_uid, ':currcode' => $intertrading_currcode))
+    WHERE (payer = :payer OR payee = :payee) AND state > 0 AND w.worth_currcode = :currcode",
+      array(':payer' => $intertrading_uid, ':payee' => $intertrading_uid, ':currcode' => $intertrading_currcode))
   ->fetchCol();
   $transactions = transaction_load_multiple($xids);
   $output = array();
@@ -782,12 +782,15 @@ function report_intertrading_history() {
       $transaction->state == TRANSACTION_STATE_FINISHED;
       transaction_state($transaction);
     }
-    $dir = $transaction->payer == $intertrading_uid ? 'incoming' : 'outgoing';
+
+    $outgoing = FALSE;
+    if ($transaction->payee_uid == $intertrading_uid) $outgoing = TRUE;
+
     $output[$transaction->xid] = array(
-      'payer' => $dir == 'outgoing' ? user_load($transaction->payer)->mail : '',
-      'payer_url' => $dir == 'outgoing' ? INTERTRADING_REF_URL : '',
-      'payee' => $dir == 'outgoing' ? 0 : user_load($transaction->payee)->mail,
-      'payee_url' => $dir == 'outgoing' ? '' : INTERTRADING_REF_URL,
+      'payer' => $outgoing ? user_load($transaction->payer)->mail : '',
+      'payer_url' => $outgoing ? INTERTRADING_REF_URL : '',
+      'payee' =>$outgoing ? 0 : user_load($transaction->payee)->mail,
+      'payee_url' => $outgoing ? '' : INTERTRADING_REF_URL,
       'src_url' => INTERTRADING_REF_URL, //the url of the client OR blank
       'dest_url' => '', //the url of the client OR blank
       'quantity' => transaction_quant($transaction, $intertrading_currcode), //denominated in src units
@@ -799,6 +802,7 @@ function report_intertrading_history() {
     //rendering the children removes the the title field and stuff
     $output[$transaction->xid]['description'] = isset($field) ? strip_tags(drupal_render_children($field)) : '';
   }
+  watchdog('intertrading', 'Uploaded @num transactions to intertrading server', array('@num' => count($output)));
   intertrading_respond('OK', $output);
 }
 
