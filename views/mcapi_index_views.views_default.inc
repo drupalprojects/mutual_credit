@@ -821,19 +821,6 @@ function mcapi_getview_profit_loss() {
   $handler->display->display_options['style_options']['override'] = 1;
   $handler->display->display_options['style_options']['sticky'] = 0;
   $handler->display->display_options['style_options']['empty_table'] = 0;
-  /* Header: Global: Text area */
-  $handler->display->display_options['header']['area']['id'] = 'area';
-  $handler->display->display_options['header']['area']['table'] = 'views';
-  $handler->display->display_options['header']['area']['field'] = 'area';
-  $handler->display->display_options['header']['area']['empty'] = FALSE;
-  $handler->display->display_options['header']['area']['content'] = '<h4>Income</h4>';
-  $handler->display->display_options['header']['area']['format'] = '1';
-  $handler->display->display_options['header']['area']['tokenize'] = 0;
-  /* Header: Global: Text area */
-  $handler->display->display_options['header']['area_1']['id'] = 'area_1';
-  $handler->display->display_options['header']['area_1']['table'] = 'views';
-  $handler->display->display_options['header']['area_1']['field'] = 'area';
-  $handler->display->display_options['header']['area_1']['empty'] = FALSE;
   /* Relationship: Transaction index: 1st user */
   $handler->display->display_options['relationships']['uid1']['id'] = 'uid1';
   $handler->display->display_options['relationships']['uid1']['table'] = 'mcapi_index';
@@ -918,14 +905,7 @@ function mcapi_getview_profit_loss() {
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['defaults']['header'] = FALSE;
-  /* Header: Global: Text area */
-  $handler->display->display_options['header']['area']['id'] = 'area';
-  $handler->display->display_options['header']['area']['table'] = 'views';
-  $handler->display->display_options['header']['area']['field'] = 'area';
-  $handler->display->display_options['header']['area']['empty'] = FALSE;
-  $handler->display->display_options['header']['area']['content'] = '<h4>Income</h4>';
-  $handler->display->display_options['header']['area']['format'] = '2';
-  $handler->display->display_options['header']['area']['tokenize'] = 0;
+  $handler->display->display_options['title'] = 'Income';
   $handler->display->display_options['path'] = 'user/%/profit_loss';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Transactions';
@@ -937,14 +917,7 @@ function mcapi_getview_profit_loss() {
   $handler = $view->new_display('attachment', 'Attachment', 'attachment_1');
   $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['defaults']['header'] = FALSE;
-  /* Header: Global: Text area */
-  $handler->display->display_options['header']['area_1']['id'] = 'area_1';
-  $handler->display->display_options['header']['area_1']['table'] = 'views';
-  $handler->display->display_options['header']['area_1']['field'] = 'area';
-  $handler->display->display_options['header']['area_1']['empty'] = FALSE;
-  $handler->display->display_options['header']['area_1']['content'] = '<h4>Expenditure</h4>';
-  $handler->display->display_options['header']['area_1']['format'] = '2';
-  $handler->display->display_options['header']['area_1']['tokenize'] = 0;
+  $handler->display->display_options['title'] = 'Expenditure';
   $handler->display->display_options['defaults']['filters'] = FALSE;
   /* Filter criterion: Transaction index: Value */
   $handler->display->display_options['filters']['diff']['id'] = 'diff';
@@ -958,6 +931,15 @@ function mcapi_getview_profit_loss() {
   );
   $handler->display->display_options['attachment_position'] = 'after';
   $handler->display->display_options['inherit_exposed_filters'] = 1;
+  $translatables['profit_loss'] = array(
+    t('Transactions'),
+    t('income and expenditure in separate tables'),
+    t('Income, Expenditure'),
+    t('Profit & Loss'),
+    t('Income'),
+    t('Expenditure'),
+    t('Created'),
+  );
 
   return $view;
 }

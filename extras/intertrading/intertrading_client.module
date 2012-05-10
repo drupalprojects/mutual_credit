@@ -611,35 +611,58 @@ function intertrading_transaction_form_submit($form, $form_state) {
 }
 
 
-
+/*
+ * Main function for the server to send a transaction here.
+ * converts, validates and saves the transaction.
+ * returns usual json object format, with OK or an error code
+ */
 function intertrading_client2_receive() {
   $post = intertrading_get_post();
   if ($error = intertrading_validate_transaction_post($post)) {
     intertrading_respond($error[0], $error[1]);
   }
-  //build up the transaction object and validate it.
+intertrading_error($post);
+  //build up the transaction form submission and validate it.
+  //if it wasn't for the description field, we wouldn't have to go through all this form mimicing.
+  //but could just make a transaction entity and handle it directly
   $form_state['build_info']['args'] = array();
   $local_trader_mail = $post['dest_url'] == $post['payer_url'] ? $post['payer'] : $post['payee'];
   if ($local_trader = user_load_by_mail($local_trader_mail)) {
-    $form_state['values'] = intertrading_mimic_form_state_values(
-      $GLOBALS['user']->uid, //should always be the intertrading account
-      $post['dest_url'] == $post['payer_url'] ? $local_trader->uid : variable_get('intertrading_uid', 0),
-      $post['dest_url'] == $post['payee_url'] ? $local_trader->uid : variable_get('intertrading_uid', 0),
-      $post['dest_url'] == $post['payee_url'] ? 'remote receipt' : 'remote payment',
-      $post['quantity'],
-      urldecode($post['description'])
+    $outgoing = $post['dest_url'] == $post['payee_url'];
+    $form_state['values'] = array(
+      'creator' => variable_get('intertrading_uid'),
+      'state' => TRANSACTION_STATE_FINISHED,
+      'payer' => $outgoing ? variable_get('intertrading_uid', 0) : $local_trader->uid,
+      'payee' => $outgoing ? $local_trader->uid : variable_get('intertrading_uid', 0),
+      'type' => $outgoing ? 'remote payment' : 'remote receipt',
+      'worth' => array(
+        'und' => array(
+          0 => array(
+            'quantity' => $post['quantity'],
+            'currcode' => variable_get('intertrading_currcode', '')
+          )
+        )
+      ),
     );
+    if($description_field = variable_get('intertrading_description_field', '')) {
+      $values[$description_field] = array(
+        'und' => array(
+          0 => array(
+            'value' => urldecode($post['description'])
+          )
+        )
+      );
+    }
   }
   else {
     intertrading_respond(28, array('@client' => INTERTRADING_REF_URL, '@mail' => $local_trader_mail));
   }
-
+intertrading_error($form_state);
   try {
     $form_state['transaction'] = (object)$form_state['values'];
     $form = drupal_retrieve_form('transaction_form', $form_state);
     entity_form_submit_build_entity('transaction', $form_state['transaction'], $form, $form_state);
     field_attach_form_validate('transaction', $form_state['transaction'], $form, $form_state);
-
     mcapi_transaction_validate($form_state['transaction']);
   }
   catch (Exception $e) {
@@ -814,35 +837,6 @@ function transaction_quant($transaction, $currcode = NULL) {
   foreach ($flows as $item) {
     if ($item['currcode'] == $currcode) return $item['quantity'];
   }
-}
-
-
-function intertrading_mimic_form_state_values($creator, $payer, $payee, $type, $quantity, $description = '') {
-  $values = array(
-    'creator' => $creator,
-    'state' => TRANSACTION_STATE_FINISHED,
-    'payer' => $payer,
-    'payee' => $payee,
-    'type' => $type,
-    'worth' => array(
-      'und' => array(
-        0 => array(
-          'quantity' => $quantity,
-          'currcode' => variable_get('intertrading_currcode', '')
-        )
-      )
-    ),
-  );
-  if($description_field = variable_get('intertrading_description_field', '')) {
-    $values[$description_field] = array(
-      'und' => array(
-        0 => array(
-          'value' => $description
-        )
-      )
-    );
-  }
-  return $values;
 }
 
 /*
