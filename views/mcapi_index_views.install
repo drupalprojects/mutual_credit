@@ -2,7 +2,7 @@
 function mcapi_index_views_install() {
   db_query("CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS 
       SELECT
-          t.xid,
+          t.serial,
           t.payer AS uid1,
           t.payee AS uid2,
           0 AS income,
@@ -12,11 +12,11 @@ function mcapi_index_views_install() {
           w.worth_currcode AS currcode,
           t.created
         FROM {mcapi_transactions} t
-        RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
+        RIGHT JOIN {field_data_worth} w ON t.serial = w.entity_id
         WHERE state > 0
     UNION
       SELECT
-          t.xid,
+          t.serial,
           t.payee AS uid1,
           t.payer AS uid2,
           w.worth_quantity AS income,
@@ -26,7 +26,7 @@ function mcapi_index_views_install() {
           w.worth_currcode AS currcode,
           t.created
         FROM {mcapi_transactions} t
-        RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
+        RIGHT JOIN {field_data_worth} w ON t.serial = w.entity_id
         WHERE state > 0"
   );
 }
@@ -53,10 +53,10 @@ function ___mcapi_index_views_get_schema() {
   $schema['mcapi_index'] = array(
     'description' => 'enables views to slice and dice the transactions',
     'fields' => array(
-      'xid' => array(
-        'description' => 'the unique transaction ID',
-        'type' => 'int',
-        'size' => 'normal',
+      'serial' => array(
+        'description' => 'the unique serial number',
+        'type' => 'varchar',
+        'size' => '16',
         'not null' => TRUE,
       ),
       'uid1' => array(
@@ -126,7 +126,7 @@ function ___mcapi_index_views_get_schema() {
       ),
     ),
     'unique keys' => array(
-      'xid_uid1' => array('xid', 'uid1')
+      'serial_uid1' => array('serial', 'uid1')
     )
   );
   return $schema;

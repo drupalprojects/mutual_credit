@@ -28,17 +28,17 @@ class views_handler_field_mcapi_links extends views_handler_field {
     //this is needed because the address of this function implies a db field which doesn't exist
     //see mc_display.views.inc $data['mc_exchanges']['participant']
     $this->ensure_my_table();
-    $this->add_additional_fields(array('xid'));
+    $this->add_additional_fields(array('serial'));
   }
 
   function render($values) {
-    $transaction = transaction_load($values->xid);
+    $transaction = transaction_load($values->serial);
     $links = array();
     if ($this->options['include_view']) {
       if (transaction_access('view', $transaction)) {
         $links[] = array(
           'title' => t('View'),
-          'href' => 'transaction/'.$values->xid
+          'href' => 'transaction/'.$values->serial
         );
       }
     }
@@ -46,14 +46,14 @@ class views_handler_field_mcapi_links extends views_handler_field {
       if (transaction_access('update', $transaction)) {
         $links[] = array(
           'title' => t('Edit'),
-          'href' => 'transaction/'.$values->xid.'/formedit'
+          'href' => 'transaction/'.$values->serial.'/formedit'
         );
       }
     }
     if (transaction_access('erase', $transaction)) {
       $links[] = array(
         'title' => t('Delete'), 
-        'href' => 'transaction/'.$values->xid.'/delete'
+        'href' => 'transaction/'.$values->serial.'/delete'
       );
     }
     if (count($links)) return theme('links', array('links' => $links));

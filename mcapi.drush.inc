@@ -66,12 +66,12 @@ function mcapi_drush_command() {
 
 function drush_mcapi_wipeslate() {
   //how to do "are you sure?" messages in drush!
-  $xids = db_query("SELECT xid FROM {mcapi_transactions}")->fetchCol();
-  $transactions = transaction_load_multiple($xids);
+  $serials = db_query("SELECT serial FROM {mcapi_transactions}")->fetchCol();
+  $transactions = transaction_load_multiple($serials);
   foreach ($transactions as $transaction) {
     transaction_erase($transaction);
   }
-  $count = count($xids);
+  $count = count($serials);
   drush_print("erased $count transactions");
   if (drush_get_option('purge')) {
     drush_mcapi_purge();
@@ -81,11 +81,11 @@ function drush_mcapi_wipeslate() {
 
 function drush_mcapi_purge() {
   //how to do "are you sure?" messages in drush!
-  $xids = db_query("SELECT xid FROM {mcapi_transactions} WHERE state = :state", array(':state' => TRANSACTION_STATE_ERASED))->fetchCol();
-  transaction_delete_multiple($xids);
-  $count = count($xids);
+  $serials = db_query("SELECT serial FROM {mcapi_transactions} WHERE state = :state", array(':state' => TRANSACTION_STATE_ERASED))->fetchCol();
+  transaction_delete_multiple($serials);
+  $count = count($serials);
   drush_print("completely removed $count transactions");
-  if ($xid = db_query("SELECT xid FROM {mcapi_transactions}")->fetchfield()) return;
+  if ($serial = db_query("SELECT serial FROM {mcapi_transactions}")->fetchfield()) return;
 
   db_query("TRUNCATE TABLE {field_data_worth}");
   db_query("TRUNCATE TABLE {field_revision_worth}");
@@ -95,14 +95,14 @@ function drush_mcapi_purge() {
 }
 
 //based on node_delete_multiple
-function transaction_delete_multiple($xids) {
-  if (empty ($xids)) return;
-  $transactions = transaction_load_multiple($xids);
+function transaction_delete_multiple($serials) {
+  if (empty ($serials)) return;
+  $transactions = transaction_load_multiple($serials);
   foreach ($transactions as $transaction) {
     module_invoke_all('entity_delete', $transaction, 'transaction');
     field_attach_delete('transaction', $transaction);
   }
-  db_delete('mcapi_transactions')->condition('xid', $xids)->execute();
+  db_delete('mcapi_transactions')->condition('serial', $serials)->execute();
 }
 
 function drush_mcapi_delnodes() {

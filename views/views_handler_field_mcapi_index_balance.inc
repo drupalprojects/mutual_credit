@@ -13,7 +13,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
 
   function construct() {
     parent::construct();
-    $this->additional_fields['xid'] = 'xid';
+    $this->additional_fields['serial'] = 'serial';
   }
 
   function query() {
@@ -39,7 +39,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
       '#quantity' => db_query(
         "SELECT SUM(diff) FROM {mcapi_index} WHERE uid1 = :uid AND xid <= :xid AND currcode = :currcode",
         array(
-          ':xid' => intval($values->xid),
+          ':xid' => intval($values->serial),
           ':uid' => $this->uid,
           ':currcode' => $values->currcode
         )

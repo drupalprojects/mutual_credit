@@ -99,6 +99,12 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => TRUE,
       ),
+      'serial' => array(
+        'description' => 'unique transaction serial number',
+        'type' => 'varchar',
+        'length' => '16',
+        'not null' => FALSE,
+      ),
       'payer' => array(
         'description' => 'the user id of the payer',
         'type' => 'int',
@@ -157,6 +163,19 @@ function mcapi_schema() {
       ),
     ),
     'primary key' => array('xid'),
+    'unique keys' => array(
+      'serial' => array('serial')
+    ),
+    'foreign keys' => array(
+      'payer' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid')
+      ),
+      'payee' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid')
+      )
+    )
   );
 
   $schema['mcapi_currencies'] = array(
@@ -535,9 +554,25 @@ function mcapi_update_7005() {
   field_update_instance($instance);
   cache_clear_all('currencies', 'cache');
 }
-
-function __mcapi_update_7005() {
-  }
+/*
+ * implements hook_update_n
+ * adds the serial field to the transaction table
+ */
+function mcapi_update_7006() {
+  $table = drupal_get_schema('mcapi_transactions');
+  $xid_spec = $table['fields']['xid'];
+  $xid_spec['description'] = 'auto increment database key';
+  db_change_field('mcapi_transactions', 'xid', 'xid', $xid_spec);
+  $spec = array(
+    'description' => 'unique transaction serial number',
+    'type' => 'varchar',
+    'length' => '16',
+    'not null' => FALSE,
+  );
+  db_add_field('mcapi_transactions', 'serial', $spec);
+  db_add_unique_key('mcapi_transactions', 'serial number', array('serial'));
+  db_query('UPDATE {mcapi_transactions} SET serial = xid');
+}
 
 function mcapi_update_currency($old_currency) {
   //get the default currency for this module, and populate with the old default currency

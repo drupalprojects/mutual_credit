@@ -24,7 +24,7 @@ function intertrading_client_menu() {
   if ($currcode = variable_get('intertrading_currcode', NULL)) {
     $transaction =  new_transaction();
     //this attempt to preset has little errect if the field cardinality > 0
-    $transaction->worth['und'][0] = array(
+    $transaction->worth[LANGUAGE_NONE][0] = array(
       'currcode' => variable_get('intertrading_currcode', NULL),
       'quantity' => 0
     );
@@ -295,14 +295,14 @@ function intertrading_handshake() {
 }
 
 function _intertrading_handshake() {
+  $currcode = variable_get('intertrading_currcode', '');
+  if (!$currcode) {
+    drupal_set_message('Intertrading requires a currency to be specified', 'error');
+    return array();
+  }
   $stats['mail'] = variable_get('site_mail', '');
   $stats['api'] = INTERTRADING_API_VERSION;
   $stats['ticks'] = variable_get('intertrading_ticks', 0);
-  $currcode = variable_get('intertrading_currcode', '');
-  if (!$currcode) {
-    drupal_set_message('Intertrading requires a currency to be specified', 'error'); return;
-  }
-  //the rest are optional
   $currency = currency_load($currcode);
   if (isset($currency->divisions)) {
     //divisions is either string '01' or an keyed array
@@ -324,6 +324,7 @@ function _intertrading_handshake() {
 
   $stats['first_trade'] = db_query("SELECT min(created) FROM {mcapi_transactions}")->fetchField();
   $stats['name'] = variable_get('site_name', '');
+  //the rest are optional
   $stats['visibility'] = db_query('SELECT rid FROM {role_permission} WHERE rid = :rid AND permission = :perm',
     array(':rid' => DRUPAL_ANONYMOUS_RID, ':perm' => 'access statement')
   )->fetchField();
@@ -480,7 +481,7 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
             $form['#disabled'] = 1;
           }
           else {
-            $form['worth']['und'][0]['#max'][$currcode] = $form_state['server_params']['earn_limit'];
+            $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['earn_limit'];
             drupal_set_message(t('The most @name can receive is !amount', array(
               '@name' => variable_get('site_name', NULL),
               '!amount' => theme('worth_field', array('quantity' => $form_state['server_params']['earn_limit'], 'currcode' => $currcode))
@@ -495,7 +496,7 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
             $form['#disabled'] = 1;
           }
           else {
-            $form['worth']['und'][0]['#max'][$currcode] = $form_state['server_params']['spend_limit'];
+            $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['spend_limit'];
             drupal_set_message(t('The most @name can pay is !amount', array(
               '@name' => variable_get('site_name', NULL),
               '!amount' => theme('worth_field', array('quantity' => $form_state['server_params']['spend_limit'], 'currcode' => $currcode))
@@ -517,7 +518,7 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
   }
 
   //just ensure that the delta value is 0 (it might not be if there are multiple currencies)
-  $form['worth']['und'][0] = array_shift($form['worth']['und']);
+  $form['worth'][LANGUAGE_NONE][0] = array_shift($form['worth'][LANGUAGE_NONE]);
 
   //for now we'll hide the state
   $form['state']['#access'] = FALSE;
@@ -573,25 +574,24 @@ function intertrading_client_form_remote_outgoing_form_alter(&$form, &$form_stat
  * form validation callback for intertrading_transaction_form
  * if the form has validated so far
  * build the transaction and send it to the intertrading server
- * $form_state['transaction'] is assumed to be set, ready for local saving
  */
 function intertrading_transaction_form_validate($form, $form_state) {
   $values = &$form_state['values'];
   if ($error = user_validate_mail($values['dest_user'])) {
     form_set_error('dest_user', $error);
   }
-
   if (count(form_get_errors())) return;
+  
   $desc_field = variable_get('intertrading_description_field', '');
   $data = array(
     'payer' => $form['#incoming'] ? $values['dest_user'] : user_load($values['payer'])->mail,
     'payer_url' => $form['#incoming'] ? $values['dest_url'] : INTERTRADING_REF_URL,
     'payee' => $form['#incoming'] ? user_load($values['payer'])->mail : $values['dest_user'],
     'payee_url' => $form['#incoming'] ? INTERTRADING_REF_URL :  $values['dest_url'],
-    'quantity' => $values['worth']['und'][0]['quantity'],
+    'quantity' => $values['worth'][LANGUAGE_NONE][0]['quantity'],
     'src_url' => INTERTRADING_REF_URL,
     'dest_url' => $values['dest_url'],
-    'description' => $desc_field ? $values[$desc_field]['und'][0]['value'] : ''
+    'description' => $desc_field ? $values[$desc_field][LANGUAGE_NONE][0]['value'] : ''
   );
 
   //this should overwrite whichever of payer and payee is the local intertrading account
@@ -604,9 +604,10 @@ function intertrading_transaction_form_validate($form, $form_state) {
  * form submit callback for intertrading_transaction_form
  */
 function intertrading_transaction_form_submit($form, $form_state) {
-  $form_state['transaction']->state = TRANSACTION_STATE_FINISHED;
-  transaction_save($form_state['transaction']);
-  drupal_set_message('Success!');
+  $transaction = (object)$form_state['values'];
+  $transaction->state = TRANSACTION_STATE_FINISHED;
+  transaction_save($transaction);
+  drupal_set_message('Transaction saved with remote site.');
   //redirect somewhere
 }
 
@@ -636,7 +637,7 @@ intertrading_error($post);
       'payee' => $outgoing ? $local_trader->uid : variable_get('intertrading_uid', 0),
       'type' => $outgoing ? 'remote payment' : 'remote receipt',
       'worth' => array(
-        'und' => array(
+        LANGUAGE_NONE => array(
           0 => array(
             'quantity' => $post['quantity'],
             'currcode' => variable_get('intertrading_currcode', '')
@@ -646,7 +647,7 @@ intertrading_error($post);
     );
     if($description_field = variable_get('intertrading_description_field', '')) {
       $values[$description_field] = array(
-        'und' => array(
+        LANGUAGE_NONE => array(
           0 => array(
             'value' => urldecode($post['description'])
           )
@@ -657,13 +658,11 @@ intertrading_error($post);
   else {
     intertrading_respond(28, array('@client' => INTERTRADING_REF_URL, '@mail' => $local_trader_mail));
   }
-intertrading_error($form_state);
   try {
-    $form_state['transaction'] = (object)$form_state['values'];
+    $transaction = (object)$form_state['values'];
     $form = drupal_retrieve_form('transaction_form', $form_state);
-    entity_form_submit_build_entity('transaction', $form_state['transaction'], $form, $form_state);
-    field_attach_form_validate('transaction', $form_state['transaction'], $form, $form_state);
-    mcapi_transaction_validate($form_state['transaction']);
+    entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+    transaction_validate($transaction);
   }
   catch (Exception $e) {
     $message = $e->getMessage();
@@ -701,7 +700,7 @@ intertrading_error($form_state);
 function intertrading_client_cron(){
   //resetting the key through a handshake called by cron doesn't seem to work
   //the server doesn't update the key
-  intertrading_handshake();
+  //intertrading_handshake();
 }
 
 /*
@@ -792,12 +791,12 @@ function intertrading_client_help($path, $args) {
 function report_intertrading_history() {
   $intertrading_uid = variable_get('intertrading_uid', 0);
   $intertrading_currcode = variable_get('intertrading_currcode', '');
-  $xids = db_query("SELECT xid FROM {mcapi_transactions} t 
+  $serials = db_query("SELECT serial FROM {mcapi_transactions} t
     LEFT JOIN {field_data_worth} w ON t.xid = w.entity_id
     WHERE (payer = :payer OR payee = :payee) AND state > 0 AND w.worth_currcode = :currcode",
       array(':payer' => $intertrading_uid, ':payee' => $intertrading_uid, ':currcode' => $intertrading_currcode))
   ->fetchCol();
-  $transactions = transaction_load_multiple($xids);
+  $transactions = transaction_load_multiple($serials);
   $output = array();
   foreach ($transactions as $transaction) {
     //ensure all transactions to be imported are 'finished'

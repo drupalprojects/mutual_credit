@@ -104,8 +104,10 @@ function mcapi_pending_entity_update($transaction, $type) {
     mcapi_pending_entity_save($transaction);
   }
 }
+
 /*
  * implements hook_entity_insert
+ * creates entries in the signatures table
  */
 function mcapi_pending_entity_insert($transaction, $type) {
   if ($type != 'transaction' || $transaction->state != TRANSACTION_STATE_PENDING) return;
@@ -143,7 +145,7 @@ function mcapi_pending_entity_save($transaction) {
   $rows = array();
   foreach ($transaction->pending_signatures as $uid => $pending) {
     db_merge('mcapi_signatures')->key(array(
-      'xid' => $transaction->xid,
+      'serial' => $transaction->serial,
       'uid' => $uid
     ))->fields(array(
       'pending' => $pending
@@ -213,16 +215,16 @@ function mcapi_pending_ctools_plugin_api() {
 }
 
 //returns a list of the user objects who are yet to sign
-//will take either an xid or a uid, returns a list of the other
-function mcapi_get_signatories($xid = NULL, $uid = NULL) {
-  if ($xid && $uid) {
+//will take either a serial or a uid, returns a list of the other
+function mcapi_get_signatories($serial = NULL, $uid = NULL) {
+  if ($serial && $uid) {
     drupal_set_message('Bad arguments to mcapi_get_signatories', 'error');
     return;
   }
   $signatures = array();
   $query = db_select('mcapi_signatures', 's')->fields('s');
-  if ($xid) {
-    $results = $query->condition('xid', $xid)->execute()->fetchAll();
+  if ($serial) {
+    $results = $query->condition('serial', $serial)->execute()->fetchAll();
     foreach($results as $signature) {
       $signatures[$signature->uid] = $signature->pending;
     }
@@ -230,7 +232,7 @@ function mcapi_get_signatories($xid = NULL, $uid = NULL) {
   else {
     $results = $query->condition('uid', $uid)->execute()->fetchAll();
     foreach($results as $signature) {
-      $signatures[$signature->xid] = $signature->pending;
+      $signatures[$signature->serial] = $signature->pending;
     }
   }
   return $signatures;
@@ -244,17 +246,20 @@ function mcapi_get_signatories($xid = NULL, $uid = NULL) {
 function mcapi_pending_form_mcapi_forms_form_alter(&$form, &$form_state) {
   if ($form_state['build_info']['args'][1]->name != 'add_my_signature') return;
   $form_state['step']++;
-  //replace the transaction_all_submit callback because we only want to change the state
-  $key = array_search('transaction_all_submit', $form['#submit']);
+  //replace the transaction_form_submit callback because we only want to change the state
+  $key = array_search('transaction_form_submit', $form['#submit']);
   $form['#submit'][$key] = 'add_my_signature_submit';
   unset($form['buttons']['delete']);
 }
 
-
+/*
+ * form submit callback
+ */
 function add_my_signature_submit($form, &$form_state) {
+  $transaction = (object)$form_state['values'];
   //remove the signatory from the transaction
-  if ($form_state['transaction']->state = TRANSACTION_STATE_PENDING) {
-    mcapi_sign($form_state['transaction'], array($GLOBALS['user']->uid));
+  if ($transaction->state = TRANSACTION_STATE_PENDING) {
+    mcapi_sign($transaction, array($GLOBALS['user']->uid));
   }
 }
 
@@ -263,15 +268,17 @@ function add_my_signature_submit($form, &$form_state) {
  * This menu callback is handled differently to the standard signing form
  */
 function mcapi_signoff_confirm_form($form, $form_state, $transaction) {
+  transaction_validate($transaction, TRUE);
+  if (form_get_errors()) return array();
+
   mcapi_hide_tabs();
-  $xid = &$transaction->xid;
   $form = array();
-  $form_state['redirect'] = 'transaction/'. $xid;
+  $form_state['redirect'] = 'transaction/'. $transaction->xid;
   $form['xid'] = array(
     '#type' => 'hidden',
-    '#value' => $xid
+    '#value' => $transaction->xid
   );
-  $signatories = array_filter(mcapi_get_signatories($xid));
+  $signatories = array_filter(mcapi_get_signatories($transaction->xid));
   $users = user_load_multiple(array_keys($signatories));
   $form['#prefix'] = t('Are you sure you want to sign this transaction on behalf of @users?',
     array('@users' => mcapi_format_usernames($users))
@@ -286,12 +293,33 @@ function mcapi_signoff_confirm_form($form, $form_state, $transaction) {
   );
 }
 
+function mcapi_signoff_confirm_form_validate($form, $form_state) {
+  if ($reason = pending_not_signable($form_state['values']['xid'])) {
+    form_set_error('', $reason);
+  }
+}
+
 function mcapi_signoff_confirm_form_submit($form, &$form_state) {
-  $xid = &$form_state['values']['xid'];
-  $signatories = array_filter(mcapi_get_signatories($xid));
-  $transaction = transaction_load($xid);
+  if ($reason = pending_not_signable($form_state['values']['xid'])) {
+    drupal_set_message($reason, 'error');
+  }
+  $transaction = transaction_load($form_state['values']['xid']);
+  $signatories = array_filter(mcapi_get_signatories($transaction->xid));
   mcapi_sign($transaction, array_keys($signatories));
-  $form_state['redirect'] = 'transaction/'. $xid;
+  $form_state['redirect'] = 'transaction/'. $transaction->xid;
+}
+
+function pending_not_signable($xid) {
+  $transaction = transaction_load($xid);
+  $signatories = array_filter(mcapi_get_signatories($transaction->xid));
+  if ($transaction->state != TRANSACTION_STATE_PENDING || empty($signatories)) return FALSE;
+  $transaction->state = TRANSACTION_STATE_FINISHED;
+  try {
+    transaction_validate($transaction);
+  }
+  catch(Exception $e) {
+    return $e->getMessage();
+  }
 }
 
 function mcapi_signall_confirm_form($form, $form_state, $account) {

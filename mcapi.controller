@@ -2,6 +2,7 @@
 // $Id:
 /*
  * This file is included using the function mcapi_controller();
+ * Each function supports the choice of database connections.
  * the class should be named thus:
  * MODULENAME_EntityController
  */
@@ -14,21 +15,19 @@ define('MCPI_CURRENCY_UPDATE_SOFT', 1);
  */
 class mcapi_EntityController extends DrupalDefaultEntityController {
   /*
-   * This controller actually writes the transaction during validation
-   * When written, the transaction has a unique ID, so we
-   * indicate that the transaction is actually a new transaction with the new property, 'is_new'
-   * Adapted from the default entity controller.
+   * This controller test writes the transaction during validation
+   * mostly copied from the node controller
+   * need to see what the entity module has to offer
    * no support for revisions
-   * switches database to load transactions
    * returns an error if the transaction id is invalid
    */
-  public function load($ids = array(), $conditions = array()) {
+  public function load($ids = array(), $conditions = array(), $serial = FALSE) {
     $entities = array();
     $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
 
     //get from cache where available
     if ($this->cache) {
-      $entities += $this->cacheGet($ids, $conditions);
+      //$entities += $this->cacheGet($serials, $conditions);
       // If any entities were loaded, remove them from the ids still to load.
       if ($passed_ids) {
         $ids = array_keys(array_diff_key($passed_ids, $entities));
@@ -37,15 +36,16 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
 
     if ($ids === FALSE || $ids || ($conditions && !$passed_ids)) {
       db_set_active(variable_get('mcapi_db_read', 'default'));
-      $query = db_select($this->entityInfo['base table'], 'base');
+      $query = db_select('mcapi_transactions');
       db_set_active();
-      $query->fields('base', $this->entityInfo['schema_fields_sql']['base table']);
+      $query->fields('mcapi_transactions', $this->entityInfo['schema_fields_sql']['base table']);
       // Build the query.
       if ($ids) {
-        $query->condition("base.{$this->idKey}", $ids, 'IN');
+        $key = $serial ? 'serial' : 'xid';
+        $query->condition("mcapi_transactions.$key", $ids, 'IN');
       }
       foreach ($conditions as $field => $value) {
-        $query->condition('base.' . $field, $value);
+        $query->condition('mcapi_transactions.' . $field, $value);
       }
       $query->orderBy('created', 'ASC');
       $queried_entities = $query->execute()->fetchAllAssoc($this->idKey);
@@ -68,17 +68,16 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     }
     return $entities;
   }
-
+  
   public function validate($transaction){
-    $state = $transaction->state;
-    $transaction->validating = TRUE;
-    if (empty($transaction->xid)) {
-      $transaction->is_new = TRUE;
-    }
-    $t = db_transaction();
-    try {
-      mcapi_controller_validate_transaction_fields($transaction);
-      $transaction->state = TRANSACTION_STATE_VALIDATED;
+    $xid = $transaction->xid;
+    try {  //should really validate every transaction entity property
+      foreach ($transaction->worth['und'] as $worth) {
+        if (!is_numeric($worth['quantity'])) {
+          throw new Exception(t('Illegal quantity: @val', array('@val' => print_r($worth, 1))));
+        }
+      }
+      $t = db_transaction();
       $this->save($transaction);
     }
     catch (Exception $e){
@@ -89,20 +88,14 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       watchdog('mcapi', '@message', array('@message' => $e->getMessage()), WATCHDOG_ALERT);
       throw $e;
     }
-    if (empty($transaction->is_new)) {
-      $t->rollback();
-    }
-    unset($transaction->validating);
+    $t->rollback();
+    $transaction->xid = $xid;
     return $transaction;
   }
 
   /*
-   * update or insert the saved transaction
+   * update or insert the saved transaction according to whether xid is set
    * expects a single, validated transaction object
-   * what the user thinks of as inserting and updating isn't actually what the controller is doing.
-   * because the transaction was actually 'inserted' during the validation phase
-   * So we use the 'is_new' property and run insert a second time
-   * The transaction is only really processed if the validating property is NOT set
    */
   public function save($transaction) {
     //this is only used to fix what I think is a Drupal bug, see mcapi_field_attach_presave
@@ -118,9 +111,10 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     
     $transaction->modified = REQUEST_TIME;
     $transaction->modifier = $GLOBALS['user']->uid;
+    reset($transaction->worth);
     $t = db_transaction();
     //the transaction is actually inserted during the validation phase, after validation the state should be changed
-    $function = (isset($transaction->is_new) || empty($transaction->xid)) ? 'insert' : 'update';
+    $function = empty($transaction->xid) ? 'insert' : 'update';
     try {
       $this->$function($transaction);
     }
@@ -129,9 +123,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       watchdog_exception('mcapi', $e);
       throw $e;
     }
-    if (isset($transaction->validating) || $function == 'state') return;
-
-    module_invoke_all('entity_'.$function, $transaction, 'transaction');
     return $transaction;
   }
 
@@ -144,7 +135,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     $flows = current($transaction->worth);
     $modes = array(2);
     foreach ($flows as $flow) {
-      $modes[] = currency_load($flow['currcode'])->accounting['erase_mode'];
+      $modes[$flow['currcode']] = currency_load($flow['currcode'])->accounting['erase_mode'];
     }
     switch(min($modes)) {
       case 1: //mark deleted
@@ -154,14 +145,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $this->state($transaction);
         break;
       case 2: //actually delete
-        $query = db_delete('mcapi_transactions')
-        ->condition('xid', $transaction->xid)
-        ->execute();
-        field_attach_delete('transaction', $transaction);
-        module_invoke_all('entity_delete', $transaction, 'transaction');
+        $query = db_query("DELETE FROM {mcapi_transactions} WHERE xid = :xid", array(':xid' => $transaction->xid));
         break;
       default:
-        throw new Exception(t('Deletions not allowed'));
+        $currcode = array_search(min($modes), $modes);
+        throw new Exception(t('Currency @name does not allow deletion', array('@name' => currency_load($currcode)->human_name)));
         break;
     }
     return $transaction;
@@ -172,9 +160,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    */
   public function state($transaction) {
     db_query("UPDATE {mcapi_transactions} SET state = :state WHERE xid = :xid", array(':state' => $transaction->state, ':xid' => $transaction->xid));
-    //not sure it's appropriate to run update here, when the entity is treating a state change as distinct from an update
-    module_invoke_all('entity_update', $transaction, 'transaction');
-    return $transaction;
   }
 
   /*
@@ -225,6 +210,16 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     );
     return db_query($query, $replacements)->fetchAssoc();
   }
+
+  public function last_insert($type = '') {
+    $query = "SELECT MAX(serial) FROM {mcapi_transactions} ";
+    $args = array();
+    if ($type) {
+      $query .= 'WHERE type = :type';
+      $args[':type'] = 'type';
+    }
+    return db_query($query, $args)->fetchfield();
+  }
   /*
    * alternative to using views
    * Get a list of transactions for a user, between unixtimes
@@ -267,16 +262,10 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
   function insert($transaction) {
     $transaction->creator = $GLOBALS['user']->uid;
     $transaction->created = REQUEST_TIME;
-    if (empty($transaction->xid)) {
-      //this is probably done during validation
-      mcapi_write_record($transaction);
-      field_attach_insert('transaction', $transaction);
-    }
-    else {
-      //this is part of creating the transaction process, but after validation
-      mcapi_write_record($transaction, array('xid'));
-      field_attach_update('transaction', $transaction);
-    }
+    $serial = mcapi_next_serial($transaction);
+    $transaction->serial = $serial ? $serial : db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
+    
+    mcapi_write_record($transaction);
   }
 
   /*
@@ -284,7 +273,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * $force_update is for the special case of a validated transaction which is being written
    */
   function update($transaction) {
-    reset($transaction->worth);
     //if there are more than one flows involved, use the minimum value for the update mode
     $flows = current($transaction->worth);
     foreach ($flows as $flow) {
@@ -379,7 +367,8 @@ function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) 
   $form['accounting'] = array(
     '#title' => t('Accounting standards'),
     '#description' => t('More or less formal accounting standards can be determined.') .' '.
-      t('Not all combinations are meaningful!'),
+      t('Not all combinations are meaningful!') .' '.
+      t('Transactions with multiple cardinality will go with the most conservative meaning'),
     '#type' => 'fieldset',
     '#weight' => -1,
     '#group' => 'additional_settings',
@@ -433,13 +422,4 @@ function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) 
     unset($form['accounting']['update_mode']['#title']);
   }
 
-}
-
-function mcapi_controller_validate_transaction_fields($transaction) {
-  //should really validate every field that needs to go in the data base
-  foreach ($transaction->worth['und'] as $worth) {
-    if (!is_numeric($worth['quantity'])) {
-      throw new Exception(t('Illegal quantity: @val', array('@val' => print_r($worth, 1))));
-    }
-  }
 }

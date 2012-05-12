@@ -25,10 +25,11 @@ function mcapi_pending_schema() {
   $schema['mcapi_signatures'] = array(
     'description' => 'signatories needed on pending transactions',
     'fields' => array(
-      'xid' => array(
+      'serial' => array(
         'description' => t('the transaction to which this entry is attached'),
-        'type' => 'int',
-        'size' => 'normal',
+        'type' => 'varchar',
+        'length' => 16,
+        'not null' => FALSE,
       ),
       'uid' => array(
         'description' => t('the uid of the signatory'),
@@ -41,7 +42,21 @@ function mcapi_pending_schema() {
         'size' => 'small',
       )
     ),
-    'primary key' => array('xid', 'uid')
+    'primary key' => array('serial', 'uid')
   );
   return $schema;
+}
+
+function mcapi_pending_update_7001() {
+  $xids = db_query("SELECT xid from {mcapi_signatures}")->fetchCol();
+  $spec = array(
+    'description' => t('the transaction to which this entry is attached'),
+    'type' => 'varchar',
+    'length' => 16,
+    'not null' => FALSE,
+  );
+  db_change_field('mcapi_signatures', 'xid', 'serial', $spec);
+  db_drop_primary_key('mcapi_signatures');
+  db_add_unique_key('mcapi_transactions', 'serial number', array('serial', 'uid'));
+  //we don't need to update the serial numbers from the xids because they are the same at this point
 }

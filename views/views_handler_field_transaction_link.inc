@@ -5,7 +5,7 @@
 class views_handler_field_transaction_link extends views_handler_field {
   function construct() {
     parent::construct();
-    $this->additional_fields['xid'] = 'xid';
+    $this->additional_fields['serial'] = 'serial';
   }
 
   function option_definition() {
@@ -35,7 +35,7 @@ class views_handler_field_transaction_link extends views_handler_field {
   }
 
   function render($values) {
-    $value = $this->get_value($values, 'xid');
+    $value = $this->get_value($values, 'serial');
     return $this->render_link($this->sanitize_value($value));
   }
 

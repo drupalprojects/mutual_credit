@@ -19,8 +19,8 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
   foreach ($tokens as $name => $original) {
     switch ($name) {
       // Simple key values on the node.
-      case 'xid':
-        $replacements[$original] = $transaction->xid;
+      case 'serial':
+        $replacements[$original] = $transaction->serial;
         break;
       case 'payer':
         $account = user_load($transaction->payer);
@@ -75,9 +75,9 @@ function mcapi_token_info() {
     'needs-data' => 'transaction',
   );
   $transaction = array(
-    'xid' => array(
-      'name' => t('Transaction ID'),
-      'description' => t("The unique ID of the transaction."),
+    'serial' => array(
+      'name' => t('Unique serial number'),
+      'description' => t("The unique serial number of the transaction."),
     ),
     'payer' => array(
       'name' => t('Payer name'),

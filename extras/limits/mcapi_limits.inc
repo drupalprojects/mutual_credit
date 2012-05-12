@@ -1,56 +1,6 @@
 <?
 
 
-/*
- * implements element validate callback injected into transaction form
- * I didn't want to generate error messages by this module, at the point of checking, but throw an error and deliver the error message at the form processing level
- * Because i don't know how to pass args into an exception, the limit checker throws coded exceptions, not straight messages
- * if a transaction fails becuase the payee would exceed the max limit, it throws
- * new exception($difference, '>', $limit)
- * and vice versa
- */
-function transaction_form_limits_validate(&$form, &$form_state) {
-  if (count(form_get_errors())) return;
-  $transaction = &$form_state['transaction'];
-  reset($transaction->worth);
-  try {
-    mcapi_limit_check(
-      $transaction->payer,
-      $transaction->payee,
-      current($transaction->worth),
-      //if the transaction is finished and hence this is an edit operation, the check function
-      //needs to discount it
-      $transaction->state < 1 ? NULL : current(transaction_load($transaction->xid)->worth)
-    );
-  }
-  catch (Exception $e) {
-    $message = $e->getMessage();
-    //parse balance limits error
-    if (module_exists('mcapi_limits')) {
-      if (strpos($message, '>')) {
-        list($excess, $limit, $currcode) = explode('>', $message);
-        $message = t('Transaction would take @username !quant above the maximum balance of !max',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payee))),
-            '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
-            '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
-          )
-        );
-      }
-      elseif (strpos($message, '<')) {
-        list($excess, $limit, $currcode) = explode('<', $message);
-        $message = t('Transaction would take @username !quant below the minimum balance of !min',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payer))),
-            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
-            '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
-          )
-        );
-      }
-    }
-    form_error($form['worth'], $message);
-  }
-}
 
 /*
  * callback for the currency edit form

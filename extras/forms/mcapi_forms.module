@@ -84,7 +84,7 @@ function mcapi_forms_forms($form_id, $args) {
 
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-  $mcapiform = &$form_state['build_info']['args'][1];
+  $mcapiform = &$form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG];
   //set the page title if this form is not being displayed in a block
   //ascertains whether the active path corresponds to this mcapi_form
   $parts = explode('/', current_path());

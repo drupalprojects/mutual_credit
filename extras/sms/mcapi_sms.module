@@ -205,7 +205,6 @@ function mcapi_sms_expressions($number, $values, $direction) {
     $payee = $other; $payer = $sender;
   }
   $transaction = new_transaction();
-  unset($transaction->xid);
   $transaction->payer = $payer;
   $transaction->payee = $payee;
   $transaction->worth['und'][0]['currcode'] = isset($values['%currency']) ? $values['%currency'] : key(currencies_load());

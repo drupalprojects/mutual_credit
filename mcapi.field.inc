@@ -130,8 +130,8 @@ function mcapi_field_widget_process($element, &$form_state, $form) {
   //determine the values for each of the three subfields, main_quant, division_quant, currcode
   //these are handled in order of priority as the default values could come from different sources
   //deal with any submitted values from ajax, or the back button
-  if (isset($form_state['transaction']->worth['und'][$element['#delta']])) {
-    $value = $form_state['transaction']->worth['und'][$element['#delta']];
+  if (isset($form_state['values']['worth'][LANGUAGE_NONE][$element['#delta']])) {
+    $value = $form_state['values']['worth'][LANGUAGE_NONE][$element['#delta']];
     //$default_vals['currcode'] = $value['currcode'];
     $element['#restrict_currcodes'] = array($value['currcode']);
     list($default_vals['main_quant'], $default_vals['division_quant']) = currency_explode($value['quantity']);
@@ -234,14 +234,16 @@ function worth_widget_validate(&$element, &$form_state, $form) {
 /*
  * implements hook_field_is_empty
  * tests to see if a field is empty
- * $item is the raw field data i.e. integer and division
+ * $item can contain either the raw field data i.e. integer and division or $quantity
  */
 function mcapi_field_is_empty($item) {
+  if (isset($item['quantity'])) return empty($item['quantity']);
   return empty($item['main_quant']) && empty($item['division_quant']);
 }
 
 /*
  * implements hook_field_validate
+ * called from _field_invoke
  * check if the current user has permission to use the currency in this flow.
  * runs AFTER worth_widget_validate
  * each item is an array(currcode => varchar, integer => integer, division => integer)
@@ -350,6 +352,9 @@ function theme_worth_field(&$variables) {
   if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
     $replacements['@subdivision'] = $currency->display['divisions_allowed'][intval($replacements['@subdivision'])];
   }
+  if ($replacements['@integer'] >  999) {//put in the thousands separator
+    $replacements['@integer'] = number_format($replacements['@integer']);
+  }
   return strtr($currency->display['format'], $replacements);
 }
 /*
@@ -457,7 +462,7 @@ function mcapi_ajax_worth($form, $form_state) {
   $trigger = $form_state['triggering_element'];
   $parent_count = count($trigger['#array_parents']);
   $delta = $trigger['#array_parents'][$parent_count-2];
-  return $form['worth']['und'][$delta];
+  return $form['worth'][LANGUAGE_NONE][$delta];
 }
 
 //utility function
@@ -482,18 +487,17 @@ function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
  * these two functions present the components of the worth field as an entity property
  */
 function entity_metadata_field_property_get_mcapi_currcode($data, $options, $name, $type, $info) {
-  print_r($data);
-  foreach ($data['und'] as $delta => $data) {
+  foreach ($data[LANGUAGE_NONE] as $delta => $data) {
     $values[$delta] = $data['currcode'];
   }
   return $values;
 }
 function entity_metadata_field_property_get_mcapi_quantity($data, $options, $name, $type, $info) {
-  foreach ($data['und'] as $delta => $data) {
+  foreach ($data[LANGUAGE_NONE] as $delta => $data) {
     $values[$delta] = $data['quantity'];
   }
   return $values;
 }
 function entity_metadata_field_worth_get($entity, $options, $name, $type, $info) {
-  return $entity->worth['und'];
+  return $entity->worth[LANGUAGE_NONE];
 }

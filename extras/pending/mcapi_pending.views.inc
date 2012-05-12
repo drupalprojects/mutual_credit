@@ -13,7 +13,7 @@ function mcapi_pending_views_data() {
     'help' => t('Signatures needed on pending transactions'),
     'access query tag' => 'transaction_access_views',
     'defaults' => array(
-      'field' => 'xid',
+      'field' => 'serial',
     ),
   );
   $data['mcapi_signatures']['table']['join'] = array(
@@ -24,12 +24,12 @@ function mcapi_pending_views_data() {
     ),
   );
 
-  $data['mcapi_signatures']['xid'] = array(
+  $data['mcapi_signatures']['serial'] = array(
     'title' => t('Signatures'),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'mcapi_transactions',
-      'field' => 'xid',
+      'field' => 'serial',
       'label' => t('Transaction'),
     )
   );

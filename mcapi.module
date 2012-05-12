@@ -16,7 +16,7 @@ include(variable_get('mcapi_controller', 'mcapi').'.controller');
 define ('TRANSACTION_STATE_FINISHED', 1);
 define ('TRANSACTION_STATE_ERASED', 0);
 define ('TRANSACTION_STATE_UNSAVED', NULL); //before the transaction ever reaches the db
-define ('TRANSACTION_STATE_VALIDATED', -2);
+define('TRANSACTION_BUILD_INFO_ARG', 0);
 
 
 /**
@@ -76,8 +76,8 @@ function mcapi_forms($form_id, $args) {
 function transaction_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
   //the incoming transaction is either from $form_state, or from the build arguments or an empty object
-  $transaction = isset($form_state['transaction']) ? $form_state['transaction'] : (
-    empty($form_state['build_info']['args'][0]) ? new_transaction() : $form_state['build_info']['args'][0]);
+  $transaction = isset($form_state['values']) ? (object)$form_state['values'] : (
+    empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? new_transaction() : $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]);
   return _transaction_form($form, $form_state, $transaction);
 }
 
@@ -103,13 +103,20 @@ function mcapi_currency_form(&$form, &$form_state){
  * hook for modules to declare new_transaction()s types and states
  */
 function mcapi_hook_info() {
-  module_load_include('inc', 'mcapi');
+  //not sure why this was throught necessary
+//  module_load_include('inc', 'mcapi');
   return array(
+    //declare new transaction controllers
     'transaction_controller' => array(),
+    //so any module can add validation to the transaction object
+    'transaction_validate' => array(),
+    //declare transaction states
     'mcapi_info_states' => array(),
+    //declare transaction types
     'mcapi_info_types' => array(),
-    'mcapi_info_access' => array(),
+    //declare permissions for transaction access control, per currency per operation
     'mcapi_info_permissions' => array(),
+    //declare permissions to go into the community accounting section of the drupal permissions page
     'mcapi_info_drupal_permissions' => array(),
   );
 }
@@ -142,10 +149,6 @@ function mcapi_mcapi_info_states() {
     TRANSACTION_STATE_ERASED => array(
       'name' => t('Erased'),
       'description' => t('marked deleted, but the transaction record remains')
-    ),
-    TRANSACTION_STATE_VALIDATED => array(
-      'name' => t('Validated'),
-      'description' => t('was entered in the form and validated, but not confirmed')
     )
   );
 }
@@ -313,9 +316,6 @@ function transaction_label($transaction){
 function currency_label($currency) {
   return $currency->human_name;
 }
-function transaction_menu_title($transaction) {
-  return t('Transaction certificate #@xid', array('@xid' => $transaction->xid));
-}
 
 /**
  * menu callback
@@ -374,7 +374,7 @@ function matslats_list_tokens($type1, $type2 = NULL) {
   //this runs every time a 'new_transaction()' is created
 function new_transaction() {
   return (object) array(
-    'xid' => NULL,
+    'xid' => 0,
     'payer' => NULL,
     'payee' => NULL,
     'creator' => $GLOBALS['user']->uid,
@@ -404,33 +404,59 @@ function new_transaction() {
  */
 
 /**
- * load a single transaction, from the $xid
+ * load a single transaction, from its serial number
  * this is used to as a menu loader, so can't be in an inc file
  */
-function transaction_load($xid) {
+function transaction_load($serial) {
   //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
-  $transactions = entity_get_controller('transaction')->load(array(intval($xid)));
-  return array_pop($transactions);
+  $transactions = entity_get_controller('transaction')->load(array($serial), array(), TRUE);
+  return current($transactions);
 }
-function transaction_load_multiple($xids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('transaction', $xids, $conditions, $reset);
+function transaction_load_multiple($serials = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('transaction', $serials, $conditions, $reset);
 }
-function transaction_validate(stdClass $transaction) {
-  //always sets the transaction->state to TRANSACTION_STATE_VALIDATED
-  return entity_get_controller('transaction')->validate($transaction);
+
+//validates any transaction object by implementing a hook and test writing it
+//catches one error at a time
+//returns true on success.
+//On failure either throws an exception or if $form_error flag is set
+//will put the errors into the form processing and return false
+function transaction_validate(stdClass $transaction, $form_error = TRUE) {
+  try {
+    module_invoke_all('transaction_validate', $transaction);
+    $success = entity_get_controller('transaction')->validate($transaction);
+  }
+  catch (exception $e) {
+    if ($form_error) {
+      form_set_error('', $e->getMessage());
+      return FALSE;
+    }
+    else throw $e;
+  }
+  return TRUE;
 }
-//don't forget to field_attach_submit when calling this
+
+//don't forget to field_attach_submit before calling this
 function transaction_save(stdClass $transaction) {
-  return entity_get_controller('transaction')->save($transaction);
+  $op = empty($transaction->serial) ? 'insert' : 'update';
+  entity_get_controller('transaction')->save($transaction);
+  //note that these hook implementations can expect a $transaction->$serials
+  module_invoke_all('entity_'.$op, $transaction, 'transaction');
 }
-function transaction_erase($transaction) {//will accept int or object
+
+function transaction_erase(stdClass $transaction) {
+  if (is_int($transaction)) {
+    $transaction = transaction_load($transaction);
+  }
   if (!is_object($transaction)) {
     throw new Exception('Wrong type passed to transaction_erase');
   }
-  return entity_get_controller('transaction')->erase($transaction);
+  entity_get_controller('transaction')->erase($transaction);
+  module_invoke_all('entity_delete', $transaction, 'transaction');
 }
+//resave the transaction, but only change the state - this is not considered an update
 function transaction_state(stdClass $transaction) {
-  return entity_get_controller('transaction')->state($transaction);
+  entity_get_controller('transaction')->state($transaction);
 }
 //returns an objectwith properties
 //->balance
@@ -450,6 +476,16 @@ function transaction_totals($uid, $currcode = NULL, $options = array()) {
   }
   return $totals;
 }
+
+//call this function immediately before inserting a transaction
+function mcapi_next_serial($transaction) {
+  $map = variable_get('mcapi_serial_numbers', array());
+  if (isset($map[$transaction->type])) {
+    $callback = $map[$transaction->type];
+    return $callback($transaction);
+  }
+}
+
 //deficit is an array keyed by by uid, ordered asc
 function save_smallest($balance, $uid) {
   $deficits = variable_get('mcapi_deficit', array());

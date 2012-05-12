@@ -34,7 +34,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#type' => 'select',
     '#options' => array(
       CURRENCY_DIVISION_MODE_NONE => t('Integer values only'),
-      CURRENCY_DIVISION_MODE_CENTS_INLINE => t('Cents in same field, with decimal point'),
+      CURRENCY_DIVISION_MODE_CENTS_INLINE => t("Cents in same field, delimited by '.'"),
       CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
       CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions, below')
     ),
@@ -230,9 +230,10 @@ function mcapi_mcapi_access() {
   );
 }
 
-
+/*
+//this function is no longer called. and doesn't make much sense anyway
 function transaction_validate_currency_access($form, $form_state) {
-  $transaction = &$form_state['transaction'];
+  $transaction = (object)$form_state['values'];
   $currency = currency_load($transaction->currcode);
   $participants = array('payer', 'payer');
   foreach ($participants as $participant) {
@@ -244,7 +245,7 @@ function transaction_validate_currency_access($form, $form_state) {
     }
   }
 }
-
+*/
 
 function currencies_load_all() {
   ctools_include('export');

@@ -4,7 +4,7 @@ class views_plugin_row_transaction extends views_plugin_row {
 
   // Basic properties that let the row style follow relationships.
   var $base_table = 'mcapi_transactions';
-  var $base_field = 'xid';
+  var $base_field = 'serial';
 
   // Stores the nodes loaded with pre_render.
   var $transactions = array();
@@ -49,11 +49,11 @@ class views_plugin_row_transaction extends views_plugin_row {
   }
 
   function pre_render($values) {
-    $xids = array();
+    $serials = array();
     foreach ($values as $row) {
-      $xids[] = $row->{$this->field_alias};
+      $serials[] = $row->{$this->field_alias};
     }
-    $this->transactions = transaction_load_multiple($xids);
+    $this->transactions = transaction_load_multiple($serials);
   }
 
   function render($row) {

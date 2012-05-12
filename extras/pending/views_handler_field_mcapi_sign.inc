@@ -24,14 +24,14 @@ class views_handler_field_mcapi_sign extends views_handler_field {
 
   function query() {
     $this->ensure_my_table();
-    $this->add_additional_fields(array('xid'));
+    $this->add_additional_fields(array('serial'));
   }
 
   function render($values) {
-    $xid = $values->{$this->aliases['xid']};
-    $transaction = transaction_load($xid);
+    $serial = $values->{$this->aliases['serial']};
+    $transaction = transaction_load($serial);
     if (mcapi_pending_signatories_access($transaction)) {
-      return l($this->options['text'], 'transaction/'. $xid . '/sign');
+      return l($this->options['text'], 'transaction/'. $serial . '/sign');
     }
   }
   

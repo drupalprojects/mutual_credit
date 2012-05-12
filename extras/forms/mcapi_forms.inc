@@ -4,15 +4,17 @@
  * In this file we build the form, using the object cached in ctools
  */
 module_load_include('inc', 'mcapi');
+define('MCAPIFORM_BUILD_INFO_ARG', 1);
 
 /*
  * main form builder, for this module, using the transaction_form as a base
  * build_info args are 0=> transaction, 1 => mcapi_form
  */
 function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
-  $mcapi_form = &$form_state['build_info']['args'][1];
-  $transaction = isset($form_state['transaction']) ? $form_state['transaction'] : (
-    $form_state['build_info']['args'][0] ? $form_state['build_info']['args'][0] :
+  $args = &$form_state['build_info']['args'];
+  $mcapi_form = $args[MCAPIFORM_BUILD_INFO_ARG];
+  $transaction = isset($form_state['values']) ? (object)$form_state['values'] : (
+    $args[TRANSACTION_BUILD_INFO_ARG] ? $args[TRANSACTION_BUILD_INFO_ARG] :
     new_transaction_presets($mcapi_form->data)
   );
 
@@ -36,9 +38,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   }
   $form['#step'] = $form_state['step'];
 
-  $lang = current(element_children($transaction->worth)); //assumes value is in one language only
   //only show one currency field
-  $form_state['field']['worth'][$lang]['items_count'] = 0;
+  $form_state['field']['worth'][LANGUAGE_NONE]['items_count'] = 0;
 
   $form['creator']['#type'] = 'hidden';
   $form['xid']['#type'] = 'hidden';
@@ -185,7 +186,6 @@ function theme_mcapi_form($variables) {
 /*
  * Validation callback
  * set the payer and payee from the 2ndpeson and direction
- * BEFORE $form_state['transaction'] is created
  */
 function mcapi_forms_validate_secondperson($form, &$form_state) {
   $values = &$form_state['values'];
@@ -217,7 +217,7 @@ function mcapi_forms_validate($form, &$form_state) {
     $form_state['step']--;
   }
   //if step 2 template is available add a step and rebuild the form
-  elseif (strlen($form_state['build_info']['args'][1]->data['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) {
+  elseif (strlen($form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]->data['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) {
     if (!form_get_errors()) {
       //Submission errors will not prevent the form advancing.
       $form_state['rebuild'] = $form_state['step'] == MCAPIFORM_STEP_ENTER ? TRUE : FALSE;
@@ -230,6 +230,8 @@ function mcapi_forms_validate($form, &$form_state) {
 /*
  * First submit callback for default transaction form
  * copies anything in $form_state[storage] back to form_state[values]
+ * the $form_state['values'] is step 2 were only needed to render the tokens
+ * the actual transaction values were in $form_state['storage']
  */
 function mcapi_forms_form_presubmit($form, &$form_state) {
   $form_state['values'] = $form_state['storage'];
@@ -241,8 +243,8 @@ function mcapi_forms_form_presubmit($form, &$form_state) {
 function mcapi_forms_form_postsubmit($form, &$form_state) {
   $form_state['redirect'] = str_replace(
     array('%transaction', '%user'),
-    array($form_state['transaction']->xid, $GLOBALS['user']->uid),
-    $form_state['build_info']['args'][1]->data['submission']['redirect']
+    array($form_state['values']['serial'], $GLOBALS['user']->uid),
+    $form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]->data['submission']['redirect']
   );
 
 }

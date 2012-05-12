@@ -9,7 +9,7 @@ function mcapi_index_views_views_data() {
   $data['mcapi_index']['table']['group'] = t('Transaction index');
   $data['mcapi_index']['table']['base'] = array(
     'database' => variable_get('mcapi_db_read', 'default'),
-    'field' => 'xid',
+    'field' => 'serial',
     'title' => t('Transaction totals'),
     'help' => t('Transaction totals'),
     'access query tag' => 'transaction_access_views',

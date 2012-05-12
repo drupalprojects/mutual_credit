@@ -130,13 +130,17 @@ function mcapi_accounting() {
   return system_admin_menu_block_page();
 }
 
+function transaction_menu_title($transaction) {
+  return t('Transaction certificate #@serial', array('@serial' => $transaction->serial));
+}
+
 /**
  * All transaction forms should use this function as a basis using hook_forms
  */
 function _transaction_form($form, &$form_state, $transaction) {
-  $form['xid'] = array(
+  $form['serial'] = array(
     '#type'=> 'hidden',
-    '#value' => isset($transaction->xid) ? $transaction->xid : 0
+    '#value' => isset($transaction->serial) ? $transaction->serial : 0
   );
   $form['payer'] = array(
     '#type' => 'textfield',
@@ -199,7 +203,7 @@ function _transaction_form($form, &$form_state, $transaction) {
   $lang = current(element_children($form['worth'])); //assumes only one language
   unset($form['worth'][$lang]['add_more']);
   
-  if (@$form_state['build_info']['args'][0]->state == TRANSACTION_STATE_FINISHED) {
+  if (@$form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]->state == TRANSACTION_STATE_FINISHED) {
     $form['buttons']['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
@@ -207,7 +211,7 @@ function _transaction_form($form, &$form_state, $transaction) {
     );
     $form['buttons']['erase']=array(
       '#theme' => 'link',
-      '#path' => 'transaction/'. $transaction->xid .'/erase',
+      '#path' => 'transaction/'. $transaction->serial .'/erase',
       '#text' => t('Erase'),
       '#access' => transaction_access('erase', $transaction),
       '#options' => array(
@@ -224,7 +228,7 @@ function _transaction_form($form, &$form_state, $transaction) {
   }
   $form['buttons']['#weight'] = 25;
   $form['#validate'] = array('transaction_first_form_validate');
-  $form['#submit'] = array('transaction_all_submit');
+  $form['#submit'] = array('transaction_form_submit');
   $form_state['redirect'] = 'user';
   return $form;
 }
@@ -237,56 +241,43 @@ function _transaction_form($form, &$form_state, $transaction) {
  */
 function transaction_first_form_validate($form, &$form_state) {
   form_state_values_clean($form_state);
-  if ($form_state['values']['xid']) $transaction = transaction_load($form_state['values']['xid']);
-  elseif(isset($form_state['transaction'])) $transaction = $form_state['transaction'];
-  else $transaction = (object)$form_state['values'];
-  //we unusually build the entity and write it in the validation phase
-  try {
-    //populate the core transaction values from $form_state
-    entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-    //validate the Field API fields
-    field_attach_form_validate('transaction', $transaction, $form, $form_state);
-    //validate the transaction qua transaction
-    mcapi_transaction_validate($transaction);
-    if (count(form_get_errors())) return;
-    //now hand it off to the entity controller for a test write
-    $transaction = transaction_validate($transaction);
-  }
-  catch (Exception $e) {
-    form_set_error('', $e->getMessage());
-  }
-  //save the value where other transaction validators can find it
-  $form_state['transaction'] = $transaction;
+  $transaction = (object)$form_state['values'];
+  //populate the core transaction values from $form_state
+  entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+  //validate the Field API fields
+  field_attach_form_validate('transaction', $transaction, $form, $form_state);
+  if (count(form_get_errors())) return;
+  //validate the transaction qua transaction
+  transaction_validate($transaction, TRUE);
 }
 
 /*
  * form submit callback from the base transaction form, hence used by all forms
  * hence must be in .module file
  * this is what actually saves the data
- * $form_state['transaction'] was created in the validation stage
  */
-function transaction_all_submit($form, &$form_state) {
-  $transaction = &$form_state['transaction']; ;
-  $transaction->modified = REQUEST_TIME;
-  $transaction->state = $form_state['values']['state'];
-  $transaction = transaction_save($transaction);
-  /*
-  //the following are not called here but in the transaction controller.
-  //this is because the controller has it's own understanding of 'update' and erase
-  field_attach_submit('transaction', $transaction, $form, $form_state);
-  module_invoke_all('entity_'.$op, $transaction, 'transaction');
-  */
+function transaction_form_submit($form, &$form_state) {
+  form_state_values_clean($form_state);
+  $transaction = (object)$form_state['values'];
+  $op = isset($transaction->serial) ? 'update' : 'insert';
+  entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+  transaction_save($transaction);
+  $func = 'field_attach_'.$op;
+  $func('transaction', $transaction);
+
   if (!isset($form_state['redirect'])) {
-    $form_state['redirect'] = 'transaction/'.$transaction->xid;
+    $form_state['redirect'] = 'transaction/'.$transaction->serial;
   }
+  $form_state['values']['serial'] = $transaction->serial;
 }
 
 
 /*
- * General validation of transaction object
+ * implements hook_transaction_validate
+ * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
  */
 function mcapi_transaction_validate($transaction){
-  //no usecase is currently envisaged where someone might pay themselves in oine currency in one transaction
+  //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
   if ($transaction->payer > 0) {
     if ($transaction->payer == $transaction->payee) {
       throw new Exception(t('A transaction must involve two different users'));
@@ -323,12 +314,12 @@ function mcapi_validate_transactor(&$element, $form_state) {
  * Couldn't be bothered to provide a theme callack for such a rarely used form.
  */
 function mcapi_transaction_erase_confirm_form($form, $form_state, $transaction){
-  $form['xid'] = array(
+  $form['serial'] = array(
     '#type' => 'hidden',
-    '#value' => $transaction->xid
+    '#value' => $transaction->serial
   );
-  $question = t('Are you sure you want to erase transaction #@xid?', array('@xid' => $transaction->xid));
-  $path = 'transaction/'.$transaction->xid;
+  $question = t('Are you sure you want to erase transaction #@serial?', array('@serial' => $transaction->serial));
+  $path = 'transaction/'.$transaction->serial;
   $description = t('This transaction was confirmed, so the balances of both users will be affected');
   $yes = t('Delete');
   $no = t('Cancel');
@@ -339,8 +330,9 @@ function mcapi_transaction_erase_confirm_form($form, $form_state, $transaction){
  * Submit handler for deleting a transaction
  */
 function mcapi_transaction_erase_confirm_form_submit($form, $form_state) {
-  $transaction = transaction_load($form_state['values']['xid']);
-  transaction_erase($transaction);
+  transaction_erase($form_state['values']['serial']);
+  //fieldapi values are deleted whatever the currency delete mode is
+  field_attach_delete('transaction', $transaction);
   //this could be done better with 'destination' in the url
   drupal_goto('user');
 }
@@ -360,7 +352,7 @@ function mcapi_validate_title(&$element, $form_state) {
 function mcapi_validate_state(&$element, &$form_state) {
   $val = &$element['$value'];
   if ($val == TRANSACTION_STATE_UNSAVED) return;
-  if (empty($val) && empty($form_state['values']['xid'])) {
+  if (empty($val) && empty($form_state['values']['serial'])) {
     form_set_value($element, TRANSACTION_STATE_UNSAVED, $form_state);
   }
   else{

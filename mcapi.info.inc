@@ -6,11 +6,11 @@ function mcapi_entity_property_info() {
   // Add meta-data about the basic node properties.
   $properties = &$info['transaction']['properties'];
 
-  $properties['xid'] = array(
+  $properties['serial'] = array(
     'label' => t("Transaction ID"),
     'type' => 'integer',
-    'description' => t("The autoincrement database ID of the node."),
-    'schema field' => 'xid',
+    'description' => t("The unique serial number of the transaction."),
+    'schema field' => 'serial',
     'getter callback' => 'entity_property_verbatim_get',//this is added by default if not put here
   );
   $properties['type'] = array(
@@ -82,7 +82,7 @@ function entity_metadata_field_worth_property_callback(&$info, $entity_type, $fi
  * implements entity module hook entity_property_PROPERTY_TYPE_info
  * PROPERTY_TYPE is referenced in hook_field_info
  */
-function entity_property_field_item_worth_info() {debug('entity_property_field_item_worth_info');
+function entity_property_field_item_worth_info() {
   return array(
     'currcode' => array(
       'type' => 'text',

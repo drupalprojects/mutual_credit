@@ -55,14 +55,13 @@ function mcapi_notification_form_mcapi_forms_form_alter(&$form) {
  * submit callback ONLY for mcapi_forms
  */
 function mcapiform_mail_handle($form, $form_state) {
-  if(empty($form_state['transaction'])) return;//this is temporary, for multiple transactions
-  $mcapiform = &$form_state['build_info']['args'][1];
+  $mcapiform = &$form_state['build_info']['args'][MCAPIFORM_STEP_CONFIRM];
   $template = isset($mcapiform->data['email_template']) ? $mcapiform->data['email_template'] :
     array('subject' => _mcapi_mail_text('subject'), 'body' => _mcapi_mail_text('body'));
   //get the preferences for payer and payee, for this form
   foreach (array('payer', 'payee') as $uid) {
     //check if the user wants notification from this form
-    $recipient = user_load($form_state['transaction']->$uid);
+    $recipient = user_load($form_state['values'][$uid]);
     $mail_settings = $recipient->data['mutual_credit_mail'] ? $recipient->data['mutual_credit_mail'] : array();
     $actives = array_filter($mail_settings);
     if (isset($actives[$mcapiform->name])) {
@@ -75,7 +74,7 @@ function mcapiform_mail_handle($form, $form_state) {
         user_preferred_language($recipient),
         array(
           'recipient' => $recipient,
-          'transaction' => $form_state['transaction'],
+          'transaction' => (object)$form_state['values'],
           'template' => $template
         ),
         NULL, //defaults to site_mail
@@ -220,7 +219,7 @@ function mcapi_notification_mcapiforms_default_alter(&$mcapiforms) {
         case 'correction': $subject = 'Transaction with [transaction:partner] altered'; break;
         case 'one2many': $subject = 'Mass payment from [transaction:payer]'; break;
         case 'many2one': $subject = 'Mass payment to [transaction:payee]'; break;
-        case 'add_my_signature': $subject = '[transaction:xid] signed by [user:name]'; break;
+        case 'add_my_signature': $subject = 'Transaction [transaction:serial] signed by [user:name]'; break;
       }
       $mcapiforms[$name]->data['email_template'] = array(
         'subject' => $name . ': '. _mcapi_mail_text('subject'),//this ensures it is unique

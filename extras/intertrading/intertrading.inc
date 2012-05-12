@@ -134,8 +134,8 @@ function intertrading_error() {
   foreach ($args as $arg) {
     $strings[] = print_r($arg, 1);
   }
-  watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
-  //file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
+  //watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
+  file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
 }
 
 
