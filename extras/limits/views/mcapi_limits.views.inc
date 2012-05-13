@@ -1,27 +1,15 @@
 <?php
 //$Id:
-/**
- * @file
- * Contains default views for the mcapi module.
- */
 
 /*
- * implements views hook_views_data
+ * implements hook_views_data_alter
  */
-function mcapi_limits_views_data() {
-  $data['mcapi_cache']['min'] = array(
+function mcapi_limits_views_data_alter(&$data) {
+  $data['users']['limits'] = array(
+    'title' => t('Balance limits'),
     'field' => array(
-      'title' => t('Minimum limit'),
-      'help' => t("The minimum balance for a user in a currency"),
-      'handler' => 'views_handler_field_mcapi_min',
-    ),
+      'help' => t("The trading limits for a user in a currency or currencies"),
+      'handler' => 'views_handler_field_mcapi_limits',
+    )
   );
-  $data['mcapi_cache']['max'] = array(
-    'field' => array(
-      'title' => t('Maximum limit'),
-      'help' => t("The maximum balance for a user in a currency"),
-      'handler' => 'views_handler_field_mcapi_max',
-    ),
-  );
-  return $data;
 }

@@ -1,11 +1,10 @@
 ; $Id: 
 name = Limit balances
-description = Sets global and personal balance limits for each currency
+description = Min and max balance limits per user and per currency
 package = Community Accounting
 core = 7.x
 
 dependencies[] = mcapi
 
-files[] = mcapi_limits.inc
-files[] = views/views_handler_field_mcapi_min.inc
-files[] = views/views_handler_field_mcapi_max.inc
+files[] = views/mcapi_limits_views.inc
+files[] = views/views_handler_field_mcapi_limits.inc

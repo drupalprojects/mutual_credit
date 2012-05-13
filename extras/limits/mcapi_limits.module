@@ -116,12 +116,7 @@ function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_
         '#description' => t('How will the limits be determined?'),
         '#type' => 'select',
         //TODO this needs its own hook!
-        '#options' => array(
-          'limits_none' => t('No limits'),
-          'limits_global' => t('Everyone has the same limits, stated below'),
-          'limits_personal' => t('Fields on the user profile can override limits stated below.'),
-          'limits_equations' => t('Calculate the limits using an equation and tokens.'),
-        ),
+        '#options' => module_invoke_all('limits_info'),
         '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'no_limits',
         '#weight' => -1,
         '#ajax' => array(
@@ -133,6 +128,24 @@ function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_
     limits_settings_subform($form, $form_state, $currency);
     //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
   }
+}
+
+function mcapi_limits_hook_info() {
+  return array('limits_info' => array());
+}
+/*
+ * implements hook_limits_info
+ * declare callbacks for determining the balance limits
+ * each callback is a function name for calculating the limts
+ * and must have a settings form function called CALLBACK_form()
+ */
+function mcapi_limits_limits_info() {
+  return array(
+    'limits_none' => t('No limits'),
+    'limits_global' => t('Everyone has the same limits, stated below'),
+    'limits_personal' => t('Fields on the user profile can override limits stated below.'),
+    'limits_equations' => t('Calculate the limits using an equation and tokens.'),
+  );
 }
 
 /*
