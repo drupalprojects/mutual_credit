@@ -80,6 +80,7 @@ function mcapi_pending_mcapi_info_states() {
     TRANSACTION_STATE_PENDING => array(
       'name' => t("Pending"),
       'description' => t("awaiting signatures before becoming 'finished'."),
+      'default_access_callbacks' => array('mcapi_xacc_participants')
     )
   );
 }
@@ -167,8 +168,9 @@ function mcapi_sign($serials, $uids) {
         mcapi_pending_save_signatures($transaction);
       }
       else {
-        drupal_set_message(t('Transaction #@serial is already signed by @name'),
-          array('@serial' => $transaction->serial, '@name' => user_load($uid)->name));
+        drupal_set_message(t('Transaction #@serial is already signed by @name',
+          array('@serial' => $transaction->serial, '@name' => user_load($uid)->name)
+        ));
       }
     }
     if (count(array_filter($transaction->pending_signatures)) == 0) {
@@ -217,13 +219,15 @@ function mcapi_get_signatories($serial = NULL, $uid = NULL) {
     return;
   }
   $signatures = array();
-  $query = db_select('mcapi_signatures', 's')->fields('s', array('serial', 'uid'))->condition('pending', 1);
+  $query = db_select('mcapi_signatures', 's');
   if ($serial) {
-    return $query->condition('serial', $serial)->execute()->fetchAllAssoc('uid');
+    $result = $query->fields('s', array('uid', 'pending'))->condition('serial', $serial)->execute()->fetchAllKeyed(0);
   }
   else {
-    return $query->condition('uid', $uid)->execute()->fetchAllAssoc('serial');
+    $result = $query->fields('s', array('serial'))->condition('pending', 1)->condition('uid', $uid)->execute()->fetchCol();
   }
+ 
+  return $result;
 }
 
 

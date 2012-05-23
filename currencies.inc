@@ -251,15 +251,17 @@ function currencies_load_all() {
     }
     $currency->display['divisions_allowed'] = $divisions;
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
-
-    $callbacks = $currency->transaction_access;
-    foreach (mcapi_get_states() as $constant => $state) {
-      if (!in_array($callbacks[$constant], $functions)) {debug($callbacks, $state);
-        drupal_set_message(t(
-          "Currency @name has no view permission set for state @state",
-          array('@state' => $state['name'], '@name' => $currcode)
-        ), 'warning', FALSE);
-        $callbacks[$state] = 'mcapi_access_participants';
+    foreach (mcapi_get_states() as $constant => $state_info) {
+      foreach ($currency->transaction_access[$constant] as $callback) {
+        if (!in_array($callback, $functions)) {
+          unset($currency->transaction_access[$constant]);
+          drupal_set_message(t('invalid access callback for currency @currname state @state. Using default setting.',
+            array('@curname' => $currency->human_name, '@state' => $state_info['name'])
+          ));
+        }
+      }
+      if (!isset($currency->transaction_access[$constant])) {
+        $currency->transaction_access[$constant] = drupal_map_assoc($state_info['default_access_callbacks']);
       }
     }
     $currencies[$currcode] = $currency;

@@ -48,14 +48,15 @@ function mcapi_pending_schema() {
 }
 
 function mcapi_pending_update_7001() {
-  $xids = db_query("SELECT xid from {mcapi_signatures}")->fetchCol();
   $spec = array(
     'description' => t('the transaction to which this entry is attached'),
     'type' => 'varchar',
     'length' => 16,
     'not null' => FALSE,
   );
-  db_change_field('mcapi_signatures', 'xid', 'serial', $spec);
+  db_add_field('mcapi_signatures', 'serial', $spec);
+  db_query("UPDATE {mcapi_signatures} SET serial = xid");
+  db_drop_field('mcapi_signatures', 'xid');
   db_drop_primary_key('mcapi_signatures');
   db_add_unique_key('mcapi_transactions', 'serial number', array('serial', 'uid'));
   //we don't need to update the serial numbers from the xids because they are the same at this point

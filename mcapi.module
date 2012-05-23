@@ -20,20 +20,22 @@ define('MCPI_CURRENCY_UNDO_REVERSE', 2);
  * Typical procedure might be
  * form validation
  *   //create the transaction object and save the extranneous fields
- *   //take one transaction and create any dependent transactions
- *   module_invoke_all('transactions_presave', array($transaction));
- *   //validate the transactions as a batch
+ *   //use drupal_alter to add any dependent transactions
+ *   $transactions = array($transaction);
+ *   drupal_alter('transactions', $transactions);
  *   transactions_insert($transactions, FALSE)
  *     hook_transaction_validate
  *     EntityController->insert($transactions, FALSE)
  * end form validation
  * form submission
- *   //create the transaction object and save the extranneous fields
- *   //take one transaction and create any dependent transactions
- *   $transactions = module_invoke_all('transactions_presave', array($transaction));//should create no errors this time
+ *   //use drupal_alter to add any dependent transactions
+ *   $transactions = array($transaction);
+ *   drupal_alter('transactions', $transactions);
  *   transactions_insert($transactions, TRUE);
  *     hook_transaction_validate
- *     EntityController->insert($transactions, FALSE)
+ *     EntityController->insert($transactions, TRUE)
+ *     field_attach_insert('transaction', $transaction);
+ *     //run hook_entity_insert
  * end form submission
  *
  */
@@ -116,7 +118,7 @@ function mcapi_currency_form(&$form, &$form_state){
 }
 
 /*
- * hook for modules to declare new_transaction()s types and states
+ * implements hook_hook_info
  */
 function mcapi_hook_info() {
   //not sure why this was throught necessary
@@ -126,8 +128,6 @@ function mcapi_hook_info() {
     'transaction_controller' => array(),
     //so any module can add validation to the transaction object
     'transactions_validate' => array(),
-    //enter 1 transaction, return an array
-    //'transactions_presave' => array(),
     //callbacks for determining access to the currency and aggregated stats
     'currency_access_callbacks' => array(),
     //declare permissions for transaction access control, per currency per operation
@@ -164,11 +164,13 @@ function mcapi_mcapi_info_states() {
   return array(
     TRANSACTION_STATE_FINISHED => array(
       'name' => t('Finished'),
-      'description' => t('the last state of the workflow')
+      'description' => t('the last state of the workflow'),
+      'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
     TRANSACTION_STATE_ERASED => array(
       'name' => t('Undone'),
-      'description' => t('marked deleted, but the transaction record remains')
+      'description' => t('marked deleted, but the transaction record remains'),
+      'default_access_callbacks' => array()
     )
   );
 }
@@ -332,10 +334,14 @@ function transaction_view($transactions, $view_mode = 'certificate') {
   //structure the transactions using serial numbers, assuming the first is always the main one
   $clusters = array();
   foreach($transactions as $transaction) {
-    //render the fieldAPI fields
+    //render the fieldAPI fields.
     $transaction->additional = field_attach_view('transaction', $transaction, $view_mode);
-    //by now $transactions must be keyed by xid if there is more than one
-    field_attach_prepare_view('transaction', array($transaction->xid => $transaction), $view_mode);
+    //$transactions must be keyed by xid if there is more than one
+    //in preview mode this may not be the case
+    //anyway it seems to work without
+    if (!empty($transaction->xid)) {
+      field_attach_prepare_view('transaction', array($transaction->xid => $transaction), $view_mode);
+    }
     if (empty($clusters[$transaction->serial])) {
       $clusters[$transaction->serial] = $transaction;
     }
@@ -408,6 +414,7 @@ function new_transaction() {
  * wrapper around transactions_insert
  * take a transaction and derive any children
  * return the transaction, with ->children
+ * boolean $really means whether this is a test insert or not.
  */
 function transaction_insert_new($transaction, $really) {
   $transactions = array($transaction);

@@ -21,6 +21,7 @@ function mcapi_mcapicurrencies_default() {
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
     ),
     'uid' => 1,
+    'zero' => 0,
     'currency_access' => array(
       'membership' => 'user_access_transact',
       'user_aggregated_view' => 'user_access_transact',
@@ -33,14 +34,13 @@ function mcapi_mcapicurrencies_default() {
       ),
       0 => array(),
       -3 => array(
-        'mcapi_access_admin' => 'mcapi_access_admin',
+        'mcapi_access_accountant' => 'mcapi_access_accountant',
       ),
       -1 => array(
         'mcapi_xacc_participants' => 'mcapi_xacc_participants',
-        'mcapi_access_admin' => 'mcapi_access_admin',
-      ),
-    ),
-    'zero' => 0,
+        'mcapi_access_accountant' => 'mcapi_access_accountant',
+      )
+    )
   );
 
   $currencies[$def_name] = $currency;

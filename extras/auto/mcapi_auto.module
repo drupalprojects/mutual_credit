@@ -15,7 +15,8 @@ function mcapi_auto_mcapi_info_states() {
   return array(
     TRANSACTION_STATE_FORCE_FAILED => array(
       'name' => t('Failed'),
-      'description' => t('Failed validation but forced through by automated process')
+      'description' => t('Failed validation but forced through by automated process'),
+      'default_access_callbacks' => array('mcapi_access_accountant')
     ),
   );
 }
