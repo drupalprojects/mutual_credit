@@ -21,7 +21,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   }
   $menus = module_exists('menu') ? 
     db_select('menu_custom', 'm')->fields('m', array('menu_name', 'title'))->execute()->fetchAllKeyed() :
-    array();
+    drupal_map_assoc(array('navigation', 'user-menu', 'main-menu', 'management'));
 
   $form['#prefix'] = '<div id = "form-wrapper">';
   $form['#suffix'] = '</div>';
@@ -241,61 +241,49 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     '#weight' => 20,
   );
-
-  $form['mcapi_form_templates'] = array(
-    '#type' => 'vertical_tabs',
-    '#weight' => 7,
-    '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
-  );
-  $form['step-'.MCAPIFORM_STEP_ENTER] = array(
-    '#title' => t('Data entry step'),
-    '#description' => implode("\n<br /> ", array(
-      t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
-      t('Allowed tokens are:') .implode(', ', matslats_list_tokens('mcapiform')),
-      t('Allowed HTML tags are:') .' a, p, br, font, style'
-    )),
+  $entity = entity_get_info('transaction');
+  foreach ($entity['view modes'] as $name => $mode) {
+    $view_modes[$name] = $mode['label'];
+  }
+  $form['experience'] = array(
+    '#title' => t('User experience'),
+    '#description' => t('Deteriming how the form and the confirmation work for the user'),
     '#type' => 'fieldset',
-    '#group' => 'mcapi_form_templates',
-    '#weight' => 1,
+    '#weight' => 15,
     'title' => array(
       '#title' => t('Title'),
-      '#description' => t('For use in block title and menu links.') .' '. t('Plain text only.'),
+      '#description' => t('For use in block title and menu links.') .' '. t('Plain text'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['title']) ? $mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['title'] : '',
+      '#default_value' => isset($mcapi_form['experience']['title']) ? $mcapi_form['experience']['title'] : '',
+      '#required' => TRUE
     ),
     'template' => array(
       '#title' => t('Main form'),
+      '#description' => implode("\n<br /> ", array(
+        t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
+        t('Allowed tokens are:') .implode(', ', matslats_list_tokens('mcapiform')),
+        t('Allowed HTML tags are:') .' a, p, br, font, style'
+      )),
       '#type' => 'textarea',
       '#rows' => 6,
-      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template']) ? $mcapi_form['step-'.MCAPIFORM_STEP_ENTER]['template'] : '',
+      '#default_value' => isset($mcapi_form['experience']['template']) ? $mcapi_form['experience']['template'] : '',
+      '#required' => TRUE
     ),
-  );
-  $form['step-'.MCAPIFORM_STEP_CONFIRM] = array(
-    '#title' => t('Data confirmation step'),
-    '#description' => implode(' ', array(
-      t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
-      t('Allowed tags are:') .' a, p, br, font, style'
-    )),
-    '#type' => 'fieldset',
-    '#group' => 'mcapi_form_templates',
-    '#weight' => 2,
-    'title' => array(
-      '#title' => t('Title'),
-      '#description' => t('Plain text only.'),
+    'sure_title' => array(
+      '#title' => t('Confirmation page title'),
+      '#description' => t('Plain text'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['title']) ? $mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['title'] : '',
+      '#default_value' => isset($mcapi_form['experience']['sure_title']) ? $mcapi_form['experience']['sure_title'] : '',
+      '#required' => TRUE
     ),
-    'template' =>  array(
-      '#title' => t('Confirmation page (optional)'),
-      '#description' => t('This page will be shown after the transaction has validated but before the form is submitted.') .' '.
-        t("Two more tokens are available here, '@certificate' and '@summary'", array('@certificate' => '[certificate]', '@summary' => '[summary]')),
-      '#type' => 'textarea',
-      '#rows' => isset($mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template']) ? count(explode("\n", $mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template'])) : 5,
-      '#default_value' => isset($mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template']) ? $mcapi_form['step-'.MCAPIFORM_STEP_CONFIRM]['template'] : '',
-      '#weight' => 2,
+    'sure_format' => array(
+      '#title' => t('Confirmation preview mode'),
+      '#type' => 'radios',
+      '#options' => $view_modes,
+      '#default_value' => isset($mcapi_form['experience']['sure_format']) ? $mcapi_form['experience']['sure_format'] : 'certificate',
+      '#required' => TRUE
     )
   );
-  $form['#submit'][] = 'menu_rebuild';
 }
 
 
@@ -344,37 +332,18 @@ function mcapi_forms_ajax_settings($form, &$form_state) {
 function mcapi_forms_template_validate($form, &$form_state) {
   $values = &$form_state['values'];
   //filter the templates and check that each one with a body has a title
-  foreach (array(MCAPIFORM_STEP_ENTER, MCAPIFORM_STEP_CONFIRM) as $step) {
-    $stepname = 'step-'.$step;
-    if (isset($values[$stepname]['template'])) {
-      $values[$stepname]['template'] = filter_xss($values[$stepname]['template'], array('a', 'p', 'br', 'font', 'style'));
-    }
-    //each template must have a title
-    if (!empty($values[$stepname]['template'])) {
-      if (empty ($values[$stepname]['title'])) {
-        form_set_error($stepname, t('Every template must have a title'));
-      }
-      else $notempty = TRUE;
-    }
-  }
-  //check that at least step1 template or step2 template has text
-  if (empty($notempty)) {
-    form_set_error('template-1', t('The form template is empty'));
-  }
-  if (empty($values['step-'.MCAPIFORM_STEP_ENTER]['template'])) return;
   
   //check that direction widget is visible if its 1st person and direction is not preset
   $required_fields = array('worth');
   $required_fields += $values['perspective'] == 1 ? array('secondperson', 'direction') : array('payer', 'payee');
   foreach ($required_fields as $fieldname) {
-    if (empty($values[$fieldname]['preset']) && strpos($values['step-'.MCAPIFORM_STEP_ENTER]['template'], "[mcapiform:$fieldname]") === FALSE) {
-      form_set_error('step-'.MCAPIFORM_STEP_ENTER, t('Either preset @tokenname, or include that token in the data entry step.',
+    if (empty($values[$fieldname]['preset']) && strpos($values['experience']['template'], "[mcapiform:$fieldname]") === FALSE) {
+      form_set_error('template', t('Either preset @tokenname, or include that token in the template.',
         array('@tokenname' => "[mcapiform:$fieldname]")
       ));
     }
   }
-
-
+  register_shutdown_function('menu_rebuild');
 }
 
 function mcapi_forms_exists($machine_name, $element, &$form_state) {
@@ -388,6 +357,7 @@ function mcapi_forms_exists($machine_name, $element, &$form_state) {
  * the $form_state[item] is the object to be saved, derived from $form_state[values]
  */
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
+
   form_state_values_clean($form_state);
   //we need to start with an existing ctools object which contains essential default properties
   if (empty($form_state['item'])) {
@@ -399,16 +369,16 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   $form_state['item']->data = $form_state['values'];
   $mcapiform = &$form_state['item']->data;
   //need to check that all required fields exist in the form.
-  if (!empty($mcapiform['step-1']) && strlen($mcapiform['step-1']['template'])) {
+  if (!empty($mcapiform['experience']['template'])) {
     foreach ($mcapiform as $name => $prop) {
       if (!empty($prop['required']) && empty($prop['preset'])) {
-        if (strpos($mcapiform['step-1']['template'], $name) == FALSE) {
-          form_error($form['step-1']['template'], t("Required field '@name' must be used in the form Step 1", array('@name' => $name)));
+        if (strpos($mcapiform['experience']['template'], $name) == FALSE) {
+          form_error($form['experience']['template'], t("Required field '@name' must be used in the form template", array('@name' => $name)));
         }
       }
     }
   }
-  register_shutdown_function('cache_clear_mcapi_forms');
+  cache_clear_all('mcapi_forms', 'cache');
 }
 
 /*

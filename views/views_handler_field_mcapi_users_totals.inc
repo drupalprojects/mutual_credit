@@ -39,7 +39,6 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
     parent::options_form($form, $form_state);
   }
 
-  //note that this requires a separate
   function render($values) {
     $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);
     $key = $this->options['total'];

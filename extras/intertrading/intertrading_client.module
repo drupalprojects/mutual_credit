@@ -336,11 +336,10 @@ function _intertrading_handshake() {
 
 function _intertrading_report() {
   $currcode = variable_get('intertrading_currcode', '');
-  $query = "SELECT COALESCE(SUM(fw.worth_quantity), 0) from {mcapi_transactions} t
+  $query = "SELECT COALESCE(SUM(fw.worth_quantity), 0) FROM {mcapi_transactions} t
     LEFT JOIN {field_data_worth} fw ON t.xid = fw.entity_id
-    WHERE t.state = :state AND fw.worth_currcode = :currcode AND created > :created";
+    WHERE t.state > 0 AND fw.worth_currcode = :currcode AND created > :created";
   $replacements = array(
-    ':state' => TRANSACTION_STATE_FINISHED,
     ':created' => strtotime('-1 year'),
     ':currcode' => $currcode
   );
@@ -351,7 +350,7 @@ function _intertrading_report() {
   //getting lots of balances is tricky in mcapi.module coz they are not cached
   if (module_exists('mcapi_index_views')) {
     //but balances can be easily calculated with the index module
-    $bal = db_query("SELECT SUM(diff) FROM {mcapi_index} GROUP BY uid1 ORDER BY SUM(diff) ASC LIMIT 0,1")->fetchField();
+    $bal = db_query("SELECT SUM(diff) FROM {mcapi_index} WHERE currcode = :currcode GROUP BY uid1 ORDER BY SUM(diff) ASC LIMIT 0,1", array(':currcode' => $currcode))->fetchField();
     $stats['deficit'] = floatval($bal);
   }
   else {
@@ -377,12 +376,13 @@ function statement() {
 //this could be made prettier
 function theme_statement($variables) {
   $data = &$variables['data'];
-  unset($data['api'], $data['divisions'], $data['mail'], $data['name'], $data['logo']);
+  unset($data['api'], $data['divisions'], $data['mail'], $data['name'], $data['logo'], $data['first_trade']);
   $currcode = variable_get('intertrading_currcode', key(currencies_load()));
+
   $rows = array();
   $rows['currency_name'] = array(
-    'title' => t('Name of (first) currency'),
-    'value' => currency_load($currcode)->name
+    'title' => t('Name of intertrading currency'),
+    'value' => currency_load($currcode)->human_name
   );
   $rows['lat']['title'] = t('Latitude');
   $rows['lon']['title'] = t('Longitude');
@@ -410,9 +410,8 @@ function theme_statement($variables) {
     'title' => t('Visibility'),
     'value' => $data['visibility'] == 0 ? t('Public') : t('Not public'),
   );
-
   //fill in a load of defaults and anything we missed out
-  foreach ($variables['data'] as $key => $prop) {
+  foreach ($data as $key => $prop) {
     $rows[$key] += array('value' => $prop);
   }
 
@@ -606,7 +605,7 @@ function intertrading_transaction_form_validate($form, $form_state) {
 function intertrading_transaction_form_submit($form, $form_state) {
   $transaction = (object)$form_state['values'];
   $transaction->state = TRANSACTION_STATE_FINISHED;
-  transaction_save($transaction);
+  transaction_save_new($transaction);
   drupal_set_message('Transaction saved with remote site.');
   //redirect somewhere
 }
@@ -622,7 +621,6 @@ function intertrading_client2_receive() {
   if ($error = intertrading_validate_transaction_post($post)) {
     intertrading_respond($error[0], $error[1]);
   }
-intertrading_error($post);
   //build up the transaction form submission and validate it.
   //if it wasn't for the description field, we wouldn't have to go through all this form mimicing.
   //but could just make a transaction entity and handle it directly
@@ -662,7 +660,7 @@ intertrading_error($post);
     $transaction = (object)$form_state['values'];
     $form = drupal_retrieve_form('transaction_form', $form_state);
     entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-    transaction_validate($transaction);
+    transactions_validate(array($transaction));
   }
   catch (Exception $e) {
     $message = $e->getMessage();
@@ -796,14 +794,10 @@ function report_intertrading_history() {
     WHERE (payer = :payer OR payee = :payee) AND state > 0 AND w.worth_currcode = :currcode",
       array(':payer' => $intertrading_uid, ':payee' => $intertrading_uid, ':currcode' => $intertrading_currcode))
   ->fetchCol();
-  $transactions = transaction_load_multiple($serials);
+  $transactions = transactions_load(array(), array('serial', $serials));
   $output = array();
   foreach ($transactions as $transaction) {
-    //ensure all transactions to be imported are 'finished'
-    if ($transaction->state < 1) {
-      $transaction->state == TRANSACTION_STATE_FINISHED;
-      transaction_state($transaction);
-    }
+    transactions_state($transaction->serial, TRANSACTION_STATE_FINISHED);
 
     $outgoing = FALSE;
     if ($transaction->payee_uid == $intertrading_uid) $outgoing = TRUE;

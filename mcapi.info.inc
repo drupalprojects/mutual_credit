@@ -44,16 +44,6 @@ function mcapi_entity_property_info() {
     'label' => t("User who created the transaction"),
     'schema field' => 'creator',
   );
-  $properties['modified'] = array(
-    'label' => t("User who last modified the transaction"),
-    'schema field' => 'creator',
-    'getter callback' => 'entity_property_verbatim_get',
-  );
-  $properties['modifier'] = array(
-    'label' => t("User who last modified the transaction"),
-    'schema field' => 'creator',
-    'getter callback' => 'entity_property_verbatim_get',
-  );
   $properties['state'] = array(
     'label' => t("State"),
     'description' => t("Workflow state. Greater than zero means it is counted."),

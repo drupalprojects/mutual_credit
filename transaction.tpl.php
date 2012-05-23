@@ -24,6 +24,7 @@
  * tip: $currency = currency_load($transaction->currcode);
  *
  * This template doesn't use normal template syntax because it's based on a sentence structure and needs to retain a coherent translatable string
+ * It is rather complex because of the need for translation
  */
 $replacements = array(
   '@recorded' => $recorded,
@@ -33,6 +34,7 @@ $replacements = array(
 );
 
 if ($view_mode == 'sentence') {
+  ?><div class = "transaction-sentence"><?php
   switch ($transaction->state) {
     case TRANSACTION_STATE_FINISHED:
       print t("On @recorded, !payer gave !payee !worth", $replacements);
@@ -41,24 +43,31 @@ if ($view_mode == 'sentence') {
       print t("On @recorded, !payer did not give !payee !worth. (DELETED)'", $replacements);
       break;
     case TRANSACTION_STATE_PENDING:
-      print t("!payer should give !payee !worth.'", $replacements);
+      print t("!payer should give !payee !worth", $replacements);
       break;
   }
-  return;
+  ?></div><?php
 }
 else {
   $date = t('On @date', array('@date' => $recorded));
   $movement = $state == TRANSACTION_STATE_FINISHED ?
     t('!payer <strong>paid</strong> !payee', $replacements) :
     t('!payer <strong>will pay</strong> !payee', $replacements);
-  $sum = t('the sum of !worth', array('!worth' => '<p style="font-size:250%;">'. $worth .'</p>'));
+  $sum = t('the sum of !worth', array('!worth' => '<div style="font-size:250%;">'. $worth .'</div>'));
   unset($additional['worth']);
-?>
+  ?>
 
-<div class="exchange">
-  <p><?php print $date; ?></p>
-   <p><?php print $movement; ?></p>
-   <p><?php print $sum; ?> </p>
-   <p><?php print implode($additional); ?></p>
-</div>
-<?php } ?>
+  <div class="exchange">
+    <p><?php print $date; ?>
+     <br /><br /><?php print $movement; ?>
+     <br /><br /><?php print $sum; ?> </p>
+     <br /><br /><?php print implode($additional); ?></p>
+  </div>
+  <?php
+    if ($children) { ?>
+    <div id="dependent-transactions" style ="border:medium solid grey; text-align:center;">
+      <h3><?php print t('Dependent transactions'); ?></h3>
+      <?php print render ($children); ?>
+    </div>
+    <?php }
+  } ?>

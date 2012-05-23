@@ -16,6 +16,27 @@ function mcapi_index_views_views_data() {
     'defaults' => array('diff')
   );
 
+  $data['mcapi_index']['xid'] = array(
+    'title' => t('Transaction ID'), // The item it appears as on the UI,
+    'field' => array(
+      'help' => t('The Unique database key of the transaction'),
+      'handler' => 'views_handler_field',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+  $data['mcapi_index']['serial'] = array(
+    'title' => t('Unique serial number'), // The item it appears as on the UI,
+    'field' => array(
+      'help' => t('The serial number of the transaction and dependents'),
+      'handler' => 'views_handler_field',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
+  );
+
   $data['mcapi_index']['uid1'] = array(
     'title' => t('1st user'), // The item it appears as on the UI,
     'help' => t('The the transactor, whose perspective we are looking from'),
@@ -146,6 +167,13 @@ function mcapi_index_views_views_data() {
     'argument' => array(
       'handler' => 'views_handler_argument',
     ),
+  );
+  $data['mcapi_index']['links'] = array(
+    'title' => t('Transaction links'),
+    'help' => t("View and undo links"),
+    'field' => array(
+      'handler' => 'views_handler_field_transaction_link',
+    )
   );
   return $data;
 }

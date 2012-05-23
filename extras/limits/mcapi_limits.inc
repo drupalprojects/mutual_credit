@@ -1,6 +1,4 @@
-<?
-
-
+<?php
 
 /*
  * callback for the currency edit form

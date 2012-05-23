@@ -36,22 +36,10 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['relationships']['uid']['table'] = 'mcapi_signatures';
   $handler->display->display_options['relationships']['uid']['field'] = 'uid';
   $handler->display->display_options['relationships']['uid']['required'] = 1;
-  /* Field: Transaction: Value */
+  /* Field: Transaction: Worth */
   $handler->display->display_options['fields']['worth_1']['id'] = 'worth_1';
   $handler->display->display_options['fields']['worth_1']['table'] = 'field_data_worth';
   $handler->display->display_options['fields']['worth_1']['field'] = 'worth';
-  $handler->display->display_options['fields']['worth_1']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['worth_1']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['worth_1']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['worth_1']['alter']['html'] = 0;
   $handler->display->display_options['fields']['worth_1']['element_label_colon'] = 1;
   $handler->display->display_options['fields']['worth_1']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['worth_1']['hide_empty'] = 0;
@@ -65,18 +53,6 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['fields']['created']['table'] = 'mcapi_transactions';
   $handler->display->display_options['fields']['created']['field'] = 'created';
   $handler->display->display_options['fields']['created']['label'] = '';
-  $handler->display->display_options['fields']['created']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['created']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['created']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['created']['alter']['html'] = 0;
   $handler->display->display_options['fields']['created']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['created']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['created']['hide_empty'] = 0;
@@ -88,63 +64,12 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['fields']['sign']['table'] = 'mcapi_signatures';
   $handler->display->display_options['fields']['sign']['field'] = 'sign';
   $handler->display->display_options['fields']['sign']['label'] = '';
-  $handler->display->display_options['fields']['sign']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['sign']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['sign']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['sign']['alter']['html'] = 0;
   $handler->display->display_options['fields']['sign']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['sign']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['sign']['hide_empty'] = 0;
   $handler->display->display_options['fields']['sign']['empty_zero'] = 0;
   $handler->display->display_options['fields']['sign']['hide_alter_empty'] = 0;
   $handler->display->display_options['fields']['sign']['text'] = 'sign this';
-  /* Filter criterion: Signatures: Signatory */
-  $handler->display->display_options['filters']['uid']['id'] = 'uid';
-  $handler->display->display_options['filters']['uid']['table'] = 'mcapi_signatures';
-  $handler->display->display_options['filters']['uid']['field'] = 'uid';
-  $handler->display->display_options['filters']['uid']['operator'] = 'in';
-  $handler->display->display_options['filters']['uid']['value'] = '1';
-  /* Filter criterion: Signatures: Whether the signature has happened */
-  $handler->display->display_options['filters']['pending']['id'] = 'pending';
-  $handler->display->display_options['filters']['pending']['table'] = 'mcapi_signatures';
-  $handler->display->display_options['filters']['pending']['field'] = 'pending';
-  $handler->display->display_options['filters']['pending']['value'] = '1';
-  /* Filter criterion: Transaction: State */
-  $handler->display->display_options['filters']['state']['id'] = 'state';
-  $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['filters']['state']['field'] = 'state';
-  $handler->display->display_options['filters']['state']['value'] = array(
-    1 => TRANSACTION_STATE_PENDING,
-  );
-
-  /* Display: my pending */
-  $handler = $view->new_display('block', 'my pending', 'my_pending');
-  $handler->display->display_options['title'] = 'My signature needed';
-  $handler->display->display_options['display_description'] = 'current user pending signature';
-  $handler->display->display_options['defaults']['header'] = FALSE;
-  /* Header: Global: Text area */
-  $handler->display->display_options['footer']['area']['id'] = 'area';
-  $handler->display->display_options['footer']['area']['table'] = 'views';
-  $handler->display->display_options['footer']['area']['field'] = 'area';
-  $handler->display->display_options['footer']['area']['empty'] = FALSE;
-  $handler->display->display_options['footer']['area']['content'] = '<a href = "/transactions/signall">Sign all</a>';
-  $handler->display->display_options['footer']['area']['format'] = 'plain_text';
-  $handler->display->display_options['footer']['area']['tokenize'] = 0;
-  $handler->display->display_options['block_description'] = 'My pending';
-
-  /* Display: user pending */
-  $handler = $view->new_display('block', 'user pending', 'user_pending');
-  $handler->display->display_options['title'] = 'Pending user signature';
-  $handler->display->display_options['display_description'] = 'Signature needed';
-  $handler->display->display_options['defaults']['arguments'] = FALSE;
   /* Contextual filter: Signatures: Signatory */
   $handler->display->display_options['arguments']['uid']['id'] = 'uid';
   $handler->display->display_options['arguments']['uid']['table'] = 'mcapi_signatures';
@@ -158,13 +83,12 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid']['not'] = 0;
-  $handler->display->display_options['defaults']['filters'] = FALSE;
-  /* Filter criterion: Signatures: Whether the signature has happened */
+  /* Filter criterion: Signatures: Is pending */
   $handler->display->display_options['filters']['pending']['id'] = 'pending';
   $handler->display->display_options['filters']['pending']['table'] = 'mcapi_signatures';
   $handler->display->display_options['filters']['pending']['field'] = 'pending';
   $handler->display->display_options['filters']['pending']['value'] = '1';
-  $handler->display->display_options['filters']['pending']['group'] = 0;
+  $handler->display->display_options['filters']['pending']['group'] = 1;
   /* Filter criterion: Transaction: State */
   $handler->display->display_options['filters']['state']['id'] = 'state';
   $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
@@ -172,8 +96,99 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['filters']['state']['value'] = array(
     1 => TRANSACTION_STATE_PENDING,
   );
-  $handler->display->display_options['filters']['state']['group'] = 0;
+  $handler->display->display_options['filters']['state']['group'] = 1;
+
+  /* Display: my pending */
+  $handler = $view->new_display('block', 'my pending', 'my_pending');
+  $handler->display->display_options['display_description'] = 'current user pending signature';
+  $handler->display->display_options['defaults']['header'] = FALSE;
+  $handler->display->display_options['block_description'] = 'My pending';
+
+  /* Display: user pending */
+  $handler = $view->new_display('block', 'user pending', 'user_pending');
+  $handler->display->display_options['display_description'] = 'Signature needed';
   $handler->display->display_options['block_description'] = 'User pending';
+
+
+  /* Display: i_wait */
+  $handler = $view->new_display('block', 'i_wait', 'block_1');
+  $handler->display->display_options['display_description'] = 'pending transactions needing other signatures';
+  $handler->display->display_options['defaults']['relationships'] = FALSE;
+  /* Relationship: Signatures: Signatory */
+  $handler->display->display_options['relationships']['uid']['id'] = 'uid';
+  $handler->display->display_options['relationships']['uid']['table'] = 'mcapi_signatures';
+  $handler->display->display_options['relationships']['uid']['field'] = 'uid';
+  $handler->display->display_options['relationships']['uid']['required'] = 1;
+  /* Relationship: Transaction: Payee */
+  $handler->display->display_options['relationships']['payee']['id'] = 'payee';
+  $handler->display->display_options['relationships']['payee']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['relationships']['payee']['field'] = 'payee';
+  $handler->display->display_options['relationships']['payee']['required'] = 0;
+  /* Relationship: Transaction: Payer */
+  $handler->display->display_options['relationships']['payer']['id'] = 'payer';
+  $handler->display->display_options['relationships']['payer']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['relationships']['payer']['field'] = 'payer';
+  $handler->display->display_options['relationships']['payer']['required'] = 0;
+  $handler->display->display_options['defaults']['arguments'] = FALSE;
+  $handler->display->display_options['filter_groups']['groups'] = array(
+    1 => 'OR',
+    2 => 'AND',
+  );
+  $handler->display->display_options['defaults']['filters'] = FALSE;
+  /* Filter criterion: User: Current */
+  $handler->display->display_options['filters']['uid_current']['id'] = 'uid_current';
+  $handler->display->display_options['filters']['uid_current']['table'] = 'users';
+  $handler->display->display_options['filters']['uid_current']['field'] = 'uid_current';
+  $handler->display->display_options['filters']['uid_current']['relationship'] = 'payee';
+  $handler->display->display_options['filters']['uid_current']['value'] = '1';
+  $handler->display->display_options['filters']['uid_current']['group'] = 1;
+  /* Filter criterion: User: Current */
+  $handler->display->display_options['filters']['uid_current_1']['id'] = 'uid_current_1';
+  $handler->display->display_options['filters']['uid_current_1']['table'] = 'users';
+  $handler->display->display_options['filters']['uid_current_1']['field'] = 'uid_current';
+  $handler->display->display_options['filters']['uid_current_1']['relationship'] = 'payer';
+  $handler->display->display_options['filters']['uid_current_1']['value'] = '1';
+  $handler->display->display_options['filters']['uid_current_1']['group'] = 1;
+  /* Filter criterion: Signatures: Signatory */
+  $handler->display->display_options['filters']['uid']['id'] = 'uid';
+  $handler->display->display_options['filters']['uid']['table'] = 'mcapi_signatures';
+  $handler->display->display_options['filters']['uid']['field'] = 'uid';
+  $handler->display->display_options['filters']['uid']['value'] = '0';
+  $handler->display->display_options['filters']['uid']['group'] = 2;
+  /* Filter criterion: Transaction: State */
+  $handler->display->display_options['filters']['state']['id'] = 'state';
+  $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['filters']['state']['field'] = 'state';
+  $handler->display->display_options['filters']['state']['value'] = array(
+    1 => TRANSACTION_STATE_PENDING,
+  );
+  $handler->display->display_options['filters']['state']['group'] = 2;
+
+  $translatables['signatures'] = array(
+    t('Master'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('Items per page'),
+    t('- All -'),
+    t('Offset'),
+    t('Signatory'),
+    t('Worth'),
+    t('sign this'),
+    t('All'),
+    t('my pending'),
+    t('My signature needed'),
+    t('current user pending signature'),
+    t('<a href = "/transactions/signall">Sign all</a>'),
+    t('My pending'),
+    t('user pending'),
+    t('Pending user signature'),
+    t('Signature needed'),
+    t('User pending'),
+  );
 
   $views[$view->name] = $view;
 

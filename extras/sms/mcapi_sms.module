@@ -212,14 +212,14 @@ function mcapi_sms_expressions($number, $values, $direction) {
   $transaction->state = variable_get('mcapi_sms_pending', 0) ? TRANSACTION_STATE_PENDING : TRANSACTION_STATE_FINISHED;
   $transaction->type = $type;
   $transaction->creator = $sender;
+  $transactions = array($transaction);
   try {
-    $transaction = transaction_validate($transaction);
+    transaction_insert_new($transaction, TRUE);
   }
   catch (Exception $e) {
     sms_user_send($account->uid, $e->message);
     return;
   }
-  transaction_save($transaction);
   //ideally it will go something like this
   //mcapi_sms_send_statement($uid);
 

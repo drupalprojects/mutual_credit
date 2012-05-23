@@ -145,48 +145,16 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['state']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['state']['hide_empty'] = 0;
   $handler->display->display_options['fields']['state']['empty_zero'] = 0;
-  /* Field: Transaction: Link */
-  $handler->display->display_options['fields']['view_transaction']['id'] = 'view_transaction';
-  $handler->display->display_options['fields']['view_transaction']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['view_transaction']['field'] = 'view_transaction';
-  $handler->display->display_options['fields']['view_transaction']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['view_transaction']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['view_transaction']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['element_label_colon'] = 1;
-  $handler->display->display_options['fields']['view_transaction']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['view_transaction']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['hide_alter_empty'] = 0;
-  $handler->display->display_options['fields']['view_transaction']['text'] = 'view';
-  /* Field: Transaction: Edit link */
-  $handler->display->display_options['fields']['edit_transaction']['id'] = 'edit_transaction';
-  $handler->display->display_options['fields']['edit_transaction']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['edit_transaction']['field'] = 'edit_transaction';
-  $handler->display->display_options['fields']['edit_transaction']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['replace_spaces'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['trim_whitespace'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['alter']['html'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['element_label_colon'] = 1;
-  $handler->display->display_options['fields']['edit_transaction']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['edit_transaction']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['hide_alter_empty'] = 0;
-  $handler->display->display_options['fields']['edit_transaction']['text'] = 'edit this';
+  /* Field: Transaction: Transaction links */
+  $handler->display->display_options['fields']['links']['id'] = 'links';
+  $handler->display->display_options['fields']['links']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['links']['field'] = 'links';
+  $handler->display->display_options['fields']['links']['label'] = '';
+  $handler->display->display_options['fields']['links']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['links']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['links']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['links']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['links']['hide_alter_empty'] = 1;
   /* Field: Transaction: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'mcapi_transactions';
@@ -319,8 +287,6 @@ function mcapi_views_default_views() {
     t('State'),
     t('Link'),
     t('view'),
-    t('Edit link'),
-    t('edit this'),
     t('Type'),
     t('Quantity'),
     t('Page'),

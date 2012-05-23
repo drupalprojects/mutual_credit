@@ -35,7 +35,7 @@ function mcapi_entity_info_inc() {
         'custom settings' => FALSE,
       ),
       'sentence' => array(
-        'label' => t('sentence'),
+        'label' => t('Sentence'),
         'custom settings' => FALSE,
       ),
     )
@@ -85,41 +85,36 @@ function mcapi_menu_inc() {
     // the menu router's title is overridden by a menu link.
     'page callback' => 'transaction_view',
     'page arguments' => array(1),
-    'access callback' => 'transaction_access',
-    'access arguments' => array('view', 1),
-    'file' => 'mcapi.inc',
-  );
-  $items['transaction/%transaction/view'] = array(
-    'title' => 'View',
-    'page callback' => 'transaction_view',
-    'access callback' => 'transaction_access',
-    'access arguments' => array('view', 1),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-    'file' => 'mcapi.inc',
-  );
-  $items['transaction/%transaction/edit'] = array(
-    'title' => 'Admin edit',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('transaction_admin_form', 1),
-    'access callback' => 'transaction_adminedit',
+    'access callback' => 'transaction_view_access',
     'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
     'file' => 'mcapi.inc',
-    'weight' => 1
   );
-  $items['transaction/%transaction/erase'] = array(
-    'title' => 'Erase transaction',
+  $items['transaction/%transaction/undo'] = array(
+    'title' => 'Undo transaction',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_transaction_erase_confirm_form', 1),
-    'access callback' => 'transaction_access',
-    'access arguments' => array('erase', 1),
+    'page arguments' => array('mcapi_transaction_undo_confirm_form', 1),
+    'access callback' => 'transaction_undo_access',
+    'access arguments' => array(1),
     'weight' => 1,
-    'type' => MENU_LOCAL_ACTION,
+    'type' => MENU_CALLBACK,
     'file' => 'mcapi.inc',
   );
   return $items;
+}
+/*
+ * implements hook_menu_alter
+ * (this file is included in mcapi_menu)
+ */
+function mcapi_menu_alter(&$items) {
+  foreach (array_keys($items) as $key) {
+    //we don't need to see the page for arranging the bundle fields,
+    if (substr($key, 0, 41) == 'admin/accounting/edit/display') {
+      unset($items[$key]);
+    }
+  }
+  unset($items['admin/accounting/fields/worth/delete']);
+  //but we do want to manage the fields for two entity types on one page.
+  $items['admin/accounting/edit/fields']['title'] = 'Transaction fields';
 }
 
 /*
@@ -202,32 +197,13 @@ function _transaction_form($form, &$form_state, $transaction) {
   }
   $lang = current(element_children($form['worth'])); //assumes only one language
   unset($form['worth'][$lang]['add_more']);
-  
-  if (@$form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]->state == TRANSACTION_STATE_FINISHED) {
-    $form['buttons']['update'] = array(
-      '#type' => 'submit',
-      '#value' => t('Update'),
-      '#access' => transaction_access('update', $transaction)
-    );
-    $form['buttons']['erase']=array(
-      '#theme' => 'link',
-      '#path' => 'transaction/'. $transaction->serial .'/erase',
-      '#text' => t('Erase'),
-      '#access' => transaction_access('erase', $transaction),
-      '#options' => array(
-        'attributes' => array(),
-        'html' => FALSE
-      ),
-    );
-  }
-  else {
-    $form['buttons']['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Record'),
-    );
-  }
+
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Record'),
+  );
   $form['buttons']['#weight'] = 25;
-  $form['#validate'] = array('transaction_first_form_validate');
+  $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_form_submit');
   $form_state['redirect'] = 'user';
   return $form;
@@ -239,16 +215,21 @@ function _transaction_form($form, &$form_state, $transaction) {
  * By this time each of the form values should be well enough validated not to fail on writing to db
  *
  */
-function transaction_first_form_validate($form, &$form_state) {
+function transaction_form_validate($form, &$form_state) {
   form_state_values_clean($form_state);
   $transaction = (object)$form_state['values'];
   //populate the core transaction values from $form_state
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
-  if (count(form_get_errors())) return;
-  //validate the transaction qua transaction
-  transaction_validate($transaction, TRUE);
+  try{
+    $transactions = transaction_insert_new($transaction, FALSE);
+  }
+  catch (Exception $e) {
+    form_set_error('', $e->getMessage());
+  }
+  //keep a copy of the transaction, and its dependencies
+  $form_state['transactions'] = $transactions;
 }
 
 /*
@@ -259,11 +240,14 @@ function transaction_first_form_validate($form, &$form_state) {
 function transaction_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   $transaction = (object)$form_state['values'];
-  $op = isset($transaction->serial) ? 'update' : 'insert';
+  //build the transaction object from the $form_state[values]
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-  transaction_save($transaction);
-  $func = 'field_attach_'.$op;
-  $func('transaction', $transaction);
+  try{
+    $transactions = transaction_insert_new($transaction, TRUE);
+  }
+  catch (Exception $e) {
+    form_set_error('', $e->getMessage());
+  }
 
   if (!isset($form_state['redirect'])) {
     $form_state['redirect'] = 'transaction/'.$transaction->serial;
@@ -273,22 +257,24 @@ function transaction_form_submit($form, &$form_state) {
 
 
 /*
- * implements hook_transaction_validate
+ * implements hook_transactions_validate
  * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
  */
-function mcapi_transaction_validate($transaction){
-  //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
-  if ($transaction->payer > 0) {
-    if ($transaction->payer == $transaction->payee) {
-      throw new Exception(t('A transaction must involve two different users'));
+function mcapi_transactions_validate($transactions){
+  foreach ($transactions as $transaction) {
+    //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
+    if ($transaction->payer > 0) {
+      if ($transaction->payer == $transaction->payee) {
+        throw new Exception(t('A transaction must involve two different users'));
+      }
     }
-  }
-  //a transaction can only be complete if all these fields are filled in.
-  if ($transaction->state >= TRANSACTION_STATE_FINISHED) {
-    $required = array('payer', 'payee',  'type');
-    foreach ($required as $fieldname) {
-      if (!$transaction->$fieldname) {
-        throw new Exception(t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
+    //a transaction can only be finished if all these fields are filled in.
+    if ($transaction->state >= TRANSACTION_STATE_FINISHED) {
+      $required = array('payer', 'payee',  'type');
+      foreach ($required as $fieldname) {
+        if (!$transaction->$fieldname) {
+          throw new Exception(t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
+        }
       }
     }
   }
@@ -313,26 +299,28 @@ function mcapi_validate_transactor(&$element, $form_state) {
  * Confirmation form before deleting a transaction
  * Couldn't be bothered to provide a theme callack for such a rarely used form.
  */
-function mcapi_transaction_erase_confirm_form($form, $form_state, $transaction){
+function mcapi_transaction_undo_confirm_form($form, $form_state, $transaction){
   $form['serial'] = array(
     '#type' => 'hidden',
     '#value' => $transaction->serial
   );
-  $question = t('Are you sure you want to erase transaction #@serial?', array('@serial' => $transaction->serial));
+  $question = t('Are you sure you want to undo transaction #@serial?', array('@serial' => $transaction->serial));
   $path = 'transaction/'.$transaction->serial;
-  $description = t('This transaction was confirmed, so the balances of both users will be affected');
+  $description = '';
+  if (isset($transaction->children) && count($transaction->children)) {
+    $description = t('This includes dependent transactions');
+  }
   $yes = t('Delete');
   $no = t('Cancel');
-  $name = 'erase_transaction';
+  $name = 'undo_transaction';
   return confirm_form($form, $question, $path, $description, $yes, $no, $name);
 }
 /*
  * Submit handler for deleting a transaction
  */
-function mcapi_transaction_erase_confirm_form_submit($form, $form_state) {
-  transaction_erase($form_state['values']['serial']);
-  //fieldapi values are deleted whatever the currency delete mode is
-  field_attach_delete('transaction', $transaction);
+function mcapi_transaction_undo_confirm_form_submit($form, $form_state) {
+  $transactions = array(transaction_load($form_state['values']['serial']));
+  transactions_undo($transaction);
   //this could be done better with 'destination' in the url
   drupal_goto('user');
 }
@@ -347,7 +335,7 @@ function mcapi_validate_title(&$element, $form_state) {
 
 /*
  * Validate callback for transaction form 'state' element
- * This must happen BEFORE transaction_validate is called
+ * as a form element validation callback, this is assumed to happen BEFORE transactions_validate is called
  */
 function mcapi_validate_state(&$element, &$form_state) {
   $val = &$element['$value'];
@@ -372,56 +360,62 @@ function mcapi_validate_ttype(&$element, $form_state) {
   form_error($element, t('Invalid transaction type.'));
 }
 
+/*
+ * if there are children in the transations, bring the children up to the top,
+ * ensure they have the same serial number as the parent
+ * so all can be processed in parallel
+ */
+function transactions_flatten($transactions) {
+  foreach ($transactions as $transaction) {
+    if (empty($transaction->children)) continue;
+    foreach ($transaction->children as $child) {
+      //$child->serial = $transaction->serial;
+      $transactions[] = $child;
+    }
+    unset($transaction->children);
+  }
+}
 
-function mcapi_access_unrestricted() {
+/*
+ * access callbacks declared in hook_transaction_access and hook_currency_access
+ */
+
+/*
+ * general purpose callbacks require no arguments
+ */
+function mcapi_access_anyone() {
   return TRUE;
 }
-function mcapi_access_none() {
-  return FALSE;
+function mcapi_access_authenticated() {
+  return $GLOBALS['user']->uid;
 }
-function mcapi_access_creator($transaction, $account) {
-  return $transaction->creator == $account->uid;
+function mcapi_access_accountant() {
+  return user_access('manage all transactions');
 }
-function mcapi_access_authenticated($transaction, $account) {
-  return $account->uid;
-}
-function mcapi_access_participants_admin($transaction, $account, $currency) {
-  return mcapi_access_participants($transaction, $account) || mcapi_access_admin($transaction, $account, $currency);
-}
-function mcapi_access_admin($transaction, $account, $currency) {
-  return user_access('manage all transactions', $account);
-}
-function mcapi_access_participants($transaction, $account) {
-  return in_array($account->uid, array($transaction->payer, $transaction->payee));
+/*
+ * transaction_access callbacks
+ */
+function mcapi_xacc_participants($transaction) {
+  return in_array($GLOBALS['user']->uid, array($transaction->payer, $transaction->payee));
 }
 
-function mcapi_membership_transact($currency, $account) {
-  return user_access('transact', $account);
+/*
+ * currency access callback
+ */
+function user_access_transact() {
+  return user_access('transact', $GLOBALS['user']);
 }
-
+function user_access_manage_all_transactions() {
+  return user_access('manage all transactions', $GLOBALS['user']);
+}
 
 /*
  * access control wrapper for currency
  */
 function currency_access($op, $currcode, $account = NULL) {
-  if ($GLOBALS['user']->uid == 1) return TRUE;
-  $function = currency_load($currcode)->access[$op];
-  return $function($op, $account);
+  $function = currency_load($currcode)->currency_access[$op];
+  return $function($account);
 }
-
-/*
- * currency membership callback
- */
-function mcapi_can_transact($op, $account = NULL) {
-  return user_access('transact', $account);
-}
-/*
- * currency membership callback
- */
-function mcapi_anyone() {
-  return TRUE;
-}
-
 
 /*
  * returns a form element for picking a currency

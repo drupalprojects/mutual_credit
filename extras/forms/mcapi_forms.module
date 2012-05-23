@@ -4,9 +4,6 @@
  * Permitted users can design their own transaction forms, hopefully all valid!
  */
 
-define('MCAPIFORM_STEP_ENTER', 1);
-define('MCAPIFORM_STEP_CONFIRM', 2);
-
 /*
  * implements hook_menu
  */
@@ -15,35 +12,24 @@ function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
   $mcapi_forms = mcapi_forms_load(NULL, TRUE);
-  $items['transaction/%transaction/formedit'] = array(
-    'title' => 'Modify transaction',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_forms_form', 1, $mcapi_forms['correction']), //+ we need the right form object
-    'access callback' => 'transaction_access',
-    'access arguments' => array('update', 1), //+ the right form object
-    'type' => MENU_LOCAL_ACTION,
-    'file' => 'mcapi_forms.inc',
-  );
-  unset($mcapi_forms['correction']); //see below
   //one menu callback for each form.
-  foreach($mcapi_forms as $mcapi_form) {
-    if (!empty($mcapi_form->disabled)) continue;
-    $menu = $mcapi_form->data['architecture'];
-    $items[$menu['path']] = array(
-      'title' => '',
-      'title callback' => 'mcapi_menu_return_title',
-      'title arguments' => array(mcapi_form_get_title($mcapi_form), 1),
+  foreach($mcapi_forms as $form) {
+    if (!empty($form->disabled)) continue;
+    $settings = &$form->data;
+    $menu_link = &$settings['architecture']['menu_link'];
+    $items[$settings['architecture']['path']] = array(
+      'title' => empty($settings['experience']['title']) ? $settings['experience']['sure_title'] : $settings['experience']['title'],
       'page callback' => 'drupal_get_form',
       'page arguments' => array(//2nd and subsequent are are the $form_state['build_info']
         'mcapi_forms_form',
         //in case the form needs to load a transaction, extract it from the path
-        array_search('%transaction', explode('/', $menu['path'])),//may return NULL
-        $mcapi_form//we put the whole form in the menu item because ctools performance is very poor
+        array_search('%transaction', explode('/', $settings['architecture']['path'])),//may return NULL
+        $form//we put the whole form in the menu item because ctools performance is very poor
       ),
-      'access callback' => strtok($menu['access'], ':'),
+      'access callback' => strtok($settings['architecture']['access'], ':'),
       'access arguments' => array(strtok(':')),
-      'menu name' => is_numeric($menu['menu_link']) ? 'navigation' : $menu['menu_link'],
-      'type' =>is_numeric($menu['menu_link']) ? $menu['menu_link'] : MENU_NORMAL_ITEM,
+      'menu name' => is_numeric($menu_link) ? 'navigation' :$menu_link,
+      'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
       'file' => 'mcapi_forms.inc',
     );
   }
@@ -93,8 +79,11 @@ function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id)
   foreach($map as $key => $part) {
     if (strpos($part, '%') === 0) $parts[$key] = $part;
   }
+  $titles = &$mcapiform->data['experience'];
   if ($parts == $map) {
-    drupal_set_title(mcapi_form_get_title($mcapiform), 1);
+    drupal_set_title(
+       empty($titles['title']) ? $titles['sure_title'] :$titles['title']
+    );
   }
 
   _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
@@ -170,6 +159,7 @@ function mcapi_forms_theme($existing, $type, $theme, $path) {
  * the formID is actually ctools_export_ui_edit_item_form
  */
 function mcapi_edit_mcapi_form(&$form, &$form_state) {
+  cache_clear_all('mcapi_forms', 'cache');
   //this big form builder function is kept in admin.inc
   form_load_include($form_state, 'admin.inc', 'mcapi_forms');
   form_load_include($form_state, 'inc', 'mcapi');//contains the validation functions for the default form elements
@@ -198,22 +188,16 @@ function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_s
  * it seems that ctools isn't doing any caching
  */
 function mcapi_forms_load($name = NULL) {
-  $cached = cache_get('mcapi_forms');
-  if (empty($cached)) {
+  //$items = cache_get('mcapi_forms');
+  static $items;
+  if (empty($items)) {
     ctools_include('export');
     $items = ctools_export_crud_load_all('mcapi_forms');
     drupal_alter('mcapi_forms', $items);
-    cache_set('mcapi_forms', $items);
-    menu_rebuild();//beware as mcapi_forms_menu calls this function
+    //cache_set('mcapi_forms', $items);
   }
-  else {
-    $items = &$cached->data;
-  }
-  if ($name) {
-    if (isset($items[$name])) {
-      return $items[$name];
-    }
-    throw new Exception("no such mcapi form: ".$name);
+  if ($name && isset($items[$name])) {
+    return $items[$name];
   }
   return $items;
 }
@@ -276,36 +260,6 @@ function mcapi_hide_tabs() {
  * this needs a bit of thought...
  */
 function mcapi_path_validate(&$element, &$form_state) {}
-
-function cache_clear_mcapi_forms() {
-  cache_clear_all('mcapi_forms', 'cache');
-  menu_rebuild();
-  die('rebuilt form in cache_clear_mcapi_forms');
-}
-
-
-function mcapi_menu_return_title($title) {
-  return $title;
-}
-function mcapi_form_get_title($mcapi_form) {
-  $template = mcapi_form_template($mcapi_form, 1);
-  return $template->title;
-}
-
-/*
- * the first step is always rendered as a form, and the second step as text
- * Some forms will have one step or the other, some will have both
- */
-function mcapi_form_template($mcapi_form, $step = 0) {
-  foreach (array(MCAPIFORM_STEP_ENTER, MCAPIFORM_STEP_CONFIRM) as $key) {
-    if (!empty($mcapi_form->data['step-'.$key]['title'])) {
-      $steps[$key] = (object)$mcapi_form->data['step-'.$key];
-    }
-  }
-  if (isset($steps[$step])) return $steps[$step];
-  return array_shift($steps);
-}
-
 
 function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   //because default values are best set in the forms

@@ -6,7 +6,7 @@
  * Also: these are saved in the menu item arguments which may cause unexpected cacheing behaviour
  */
 function mcapi_forms_mcapiforms_default() {
-  $forms = array('1stparty', '3rdparty', 'correction');
+  $forms = array('1stparty', '3rdparty');
   foreach ($forms as $form_id) {
     $function = 'mcapiform_default_'.$form_id;
     $mcapiforms[$form_id] = $function();
@@ -58,28 +58,17 @@ function mcapiform_default_1stparty() {
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),
-    'mcapi_form_templates' => array(
-      'mcapi_form_templates__active_tab' => 'edit-step-2',
-    ),
-    'step-1' => array(
-      'title' => '1st party form',
+    'experience' => array(
+      'title' => 'Make a payment',
       'template' => 'Partner: [mcapiform:secondperson]<br />
-  Direction: [mcapiform:direction]<br />
-  Amount: [mcapiform:worth]<br />',
-    ),
-    'step-2' => array(
-      'title' => 'Are you sure?',
-      'template' => '[mcapiform:worth]
-  with  [mcapiform:secondperson]<br /><br />',
+    Direction: [mcapiform:direction]<br />
+    Amount: [mcapiform:worth]<br />',
+      'sure_title' => 'Are you sure?',
+      'sure_format' => 'certificate',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
-    ),
-    'templates' => array(
-      'template-1' => 'Partner: [mcapiform:secondperson]<br />
-  Direction: [mcapiform:direction]<br />
-  Amount: [mcapiform:worth]<br />',
     ),
   );
   return $mcapiform;
@@ -130,99 +119,19 @@ function mcapiform_default_3rdparty() {
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),
-    'mcapi_form_templates' => array(
-      'mcapi_form_templates__active_tab' => 'edit-step-2',
-    ),
-    'step-1' => array(
-      'title' => '3rd party form',
+    'experience' => array(
+      'title' => 'Record a transaction',
       'template' => 'Payer: [mcapiform:payer]<br />
-  Payee: [mcapiform:payee]<br />
-  Amount: [mcapiform:worth]<br />',
-    ),
-    'step-2' => array(
-      'title' => 'are you sure?',
-      'template' => 'Payer: [mcapiform:payer]<br />
-  Payee: [mcapiform:payee]<br />
-  Amount: [mcapiform:worth]<br />',
+Payee: [mcapiform:payee]<br />
+Amount: [mcapiform:worth]<br />',
+      'sure_title' => 'Are you sure?',
+      'sure_format' => 'certificate',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Revert',
-    ),
-    'templates' => array(
-      'template-1' => 'Payer: [mcapiform:payer]<br />
-  Payee: [mcapiform:payee]<br />
-  Amount: [mcapiform:worth]<br />',
     ),
   );
   return $mcapiform;
 }
 
-function mcapiform_default_correction() {
-  $mcapiform = new stdClass;
-  $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
-  $mcapiform->api_version = 3;
-  $mcapiform->name = 'correction';
-  $mcapiform->data = array(
-    'info' => array(
-      'name' => 'correction',
-    ),
-    'perspective' => '3',
-    'help' => 'To change the participants, please erase or counter this transaction and make a new one',
-    'architecture' => array(
-      'path' => 'transaction/%transaction/formedit',
-      'access' => 'user_access:transact',
-      'menu_link' => 'finished',
-      'use_block' => 'finished',
-    ),
-    'mcapi_form_fields' => array(
-      'mcapi_form_fields__active_tab' => 'edit-worth',
-    ),
-    'payer' => array(
-      'preset' => '',
-      'args' => 'user_chooser_permissions:transact',
-      'multiple' => 0,
-    ),
-    'payee' => array(
-      'preset' => '',
-      'args' => 'user_chooser_permissions:transact',
-      'multiple' => 0,
-    ),
-    'worth' => array(
-      'preset' => array(
-        'und' => array(
-          0 => array(
-            'currcode' => current(currencies_load())->info['currcode'],
-            'quantity' => '0',
-          )
-        )
-      )
-    ),
-    'submission' => array(
-      'state' => TRANSACTION_STATE_FINISHED,
-      'button' => 'Submit',
-      'redirect' => 'transaction/%transaction',
-    ),
-    'mcapi_form_templates' => array(
-      'mcapi_form_templates__active_tab' => 'edit-step-1',
-    ),
-    'step-1' => array(
-      'title' => 'Altering transaction',
-      'template' => '[mcapiform:payer] paid [mcapiform:payee]<br />
-  Amount: [mcapiform:worth]<br />',
-    ),
-    'step-2' => array(
-      'title' => '',
-      'template' => '',
-    ),
-    'buttons' => array(
-      'submit' => 'Save',
-      'delete' => 'Revert',
-    ),
-    'templates' => array(
-      'template-1' => '[mcapiform:payer] paid [mcapiform:payee]<br />
-  Amount: [mcapiform:worth]<br />',
-    ),
-  );
-  return $mcapiform;
-}

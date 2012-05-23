@@ -1,21 +1,48 @@
 <?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
 include('mcapi.field.inc');
-include(variable_get('mcapi_controller', 'mcapi').'.controller');
+
+$controller_mod = variable_get('mcapi_controller', 'mcapi');
+include(drupal_get_path('module', $controller_mod) .'/'. $controller_mod.'.controller');
+
+define('MCPI_CURRENCY_UNDO_DELETE', 0);
+define('MCPI_CURRENCY_UNDO_ERASE', 1);
+define('MCPI_CURRENCY_UNDO_REVERSE', 2);
 
 /**
  * @file
- * transactions  are fieldable entities, balances & other stats are in a cache table exposed to views.
+ * transactions can refer to up to 3 things:
+ *  fieldable entity with one or more 'flows' in different currencies
+ *  one or more of those entities with the same serial number
+ *  a database transaction
  *
- * This .module file contains only the hooks and functions which might be called when the module isn't actively required
+ *
+ * Typical procedure might be
+ * form validation
+ *   //create the transaction object and save the extranneous fields
+ *   //take one transaction and create any dependent transactions
+ *   module_invoke_all('transactions_presave', array($transaction));
+ *   //validate the transactions as a batch
+ *   transactions_insert($transactions, FALSE)
+ *     hook_transaction_validate
+ *     EntityController->insert($transactions, FALSE)
+ * end form validation
+ * form submission
+ *   //create the transaction object and save the extranneous fields
+ *   //take one transaction and create any dependent transactions
+ *   $transactions = module_invoke_all('transactions_presave', array($transaction));//should create no errors this time
+ *   transactions_insert($transactions, TRUE);
+ *     hook_transaction_validate
+ *     EntityController->insert($transactions, FALSE)
+ * end form submission
  *
  */
 
 //states are mutually exclusive
 //the convention is that states > 0 are counted
-define ('TRANSACTION_STATE_FINISHED', 1);
-define ('TRANSACTION_STATE_ERASED', 0);
-define ('TRANSACTION_STATE_UNSAVED', NULL); //before the transaction ever reaches the db
+define('TRANSACTION_STATE_FINISHED', 1);
+define('TRANSACTION_STATE_ERASED', 0);
+define('TRANSACTION_STATE_UNSAVED', NULL); //before the transaction ever reaches the db
 define('TRANSACTION_BUILD_INFO_ARG', 0);
 
 
@@ -49,17 +76,6 @@ function mcapi_help($section, $arg) {
 function mcapi_menu() {
   module_load_include('inc', 'mcapi');
   return mcapi_menu_inc();
-}
-function mcapi_menu_alter(&$items) {
-  foreach (array_keys($items) as $key) {
-    //we don't need to see the page for arranging the bundle fields,
-    if (substr($key, 0, 41) == 'admin/accounting/edit/display') {
-      unset($items[$key]);
-    }
-  }
-  unset($items['admin/accounting/fields/worth/delete']);
-  //but we do want to manage the fields for two entity types on one page.
-  $items['admin/accounting/edit/fields']['title'] = 'Transaction fields';
 }
 
 /*
@@ -109,13 +125,17 @@ function mcapi_hook_info() {
     //declare new transaction controllers
     'transaction_controller' => array(),
     //so any module can add validation to the transaction object
-    'transaction_validate' => array(),
+    'transactions_validate' => array(),
+    //enter 1 transaction, return an array
+    //'transactions_presave' => array(),
+    //callbacks for determining access to the currency and aggregated stats
+    'currency_access_callbacks' => array(),
+    //declare permissions for transaction access control, per currency per operation
+    'transaction_access_callbacks' => array(),
     //declare transaction states
     'mcapi_info_states' => array(),
     //declare transaction types
     'mcapi_info_types' => array(),
-    //declare permissions for transaction access control, per currency per operation
-    'mcapi_info_permissions' => array(),
     //declare permissions to go into the community accounting section of the drupal permissions page
     'mcapi_info_drupal_permissions' => array(),
   );
@@ -147,7 +167,7 @@ function mcapi_mcapi_info_states() {
       'description' => t('the last state of the workflow')
     ),
     TRANSACTION_STATE_ERASED => array(
-      'name' => t('Erased'),
+      'name' => t('Undone'),
       'description' => t('marked deleted, but the transaction record remains')
     )
   );
@@ -218,66 +238,44 @@ function mcapi_mcapi_info_drupal_permissions() {
  * implements hook mcapi_permissions
  * each callback refers to 2 functions - itself and CALLBACK_views
  * Declare the access callbacks for (transactions in) currencies
- * each callback takes a $transaction
+ * each callback takes the following args
+ * $transaction
+ * $account
+ * Multiple callbacks can be selected and access will be granted if any returns TRUE
+ * TODO Update these callbacks in transaction_access_views_alter
  */
-function mcapi_mcapi_info_permissions() {
+function mcapi_transaction_access_callbacks() {
   return array(
-    'mcapi_access_participants_admin' => t('Only the two participants and admin'),
-    'mcapi_access_unrestricted' => t('Anyone, including anonymous users'),
-    'mcapi_access_authenticated' => t('Only authenticated users'),
-    'mcapi_access_participants' => t('Only the two participants'),
-    'mcapi_access_admin' => t("Only admin"),
-    'mcapi_access_creator' => t('Only the transaction creator'),
-    'mcapi_access_none' => t('Nobody')
+    'mcapi_xacc_participants' => t('the participants in the transaction'),
+    'mcapi_access_authenticated' => t('Authenticated users'),
+    'mcapi_access_accountant' => t("Accountants"),
+    'mcapi_access_anyone' => t('General public')
   );
 }
 
 /**
  * special access function for transactions - NOT hook implementation
- * $op can be array('view', 'update', 'erase', 'admin')
- * Note some settings may even restric access to user 1
+ * Grant view access to a transaction based on its state and the specified callback for that currency
  */
-function transaction_access($op, $transaction, $account = NULL) {
-  module_load_include('inc', 'mcapi', 'currencies');
+function transaction_view_access($transaction) {
   module_load_include('inc', 'mcapi');
-  if (empty($account)) {
-    $account = $GLOBALS['user'];
+  foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
+    $callbacks = array_filter(currency_load($flow['currcode'])->transaction_access[$transaction->state]);
+    //see hook_transaction_access_callbacks for a list of these functions
+    foreach ($callbacks as $function) {
+      if ($function($transaction)) return TRUE;
+    }
   }
-  if (!isset($transaction->worth)) {
-    drupal_set_message(t('Invalid transaction; access denied', array('@var' => $transaction)), 'error');
-    return FALSE;
-  }
-  reset($transaction->worth);
-  //current() gives us the first language, and we're assuming there's only one.
-  foreach (current($transaction->worth) as $flow) {
-    $currency = currency_load($flow['currcode']);
-    $callbacks = &$currency->$op;
-    $function = $callbacks[$transaction->state];
-    if ($function($transaction, $account, $currency) == 0) return FALSE;
+  return FALSE;
+}
+
+function transaction_undo_access($transaction) {
+  module_load_include('inc', 'mcapi');
+  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
+    if (!currency_access('undo', $item['currcode'])) return FALSE;
   }
   return TRUE;
 }
-/*
- * menu access callback for the transaction tab for admin editing
- * only shows if the user owns all currencies in the transaction
- * and if both currencies allow transaction updates
- * this is rather heavy to process but hey
- */
-function transaction_adminedit($transaction) {
-  if (!user_access('manage all transactions')) return FALSE;
-  module_load_include('inc', 'mcapi');
-  $flows = current($transaction->worth);
-  foreach ($flows as $flow) {
-    $currency = currency_load($flow['currcode']);
-    if (empty($currency->update))return;
-    $callbacks = &$currency->update;
-    $function = $callbacks[$transaction->state];
-    if (function_exists($function)) {
-      if ($function($transaction, $GLOBALS['user'], $currency)) return TRUE;
-    }
-  }
-}
-
 
 /**
  * implements hook_theme
@@ -307,11 +305,11 @@ function mcapi_entity_info(){
 //I don't believe this callback, part of the entity definition, has any purpose
 function transaction_uri($transaction) {
   return array(
-    'path' => 'transaction/' . $transaction->xid,
+    'path' => 'transaction/' . $transaction->serial,
   );
 }
 function transaction_label($transaction){
-  return t('Transaction #@xid', array('@xid' => $transaction->xid));
+  return t('Transaction #@serial', array('@serial' => $transaction->serial));
 }
 function currency_label($currency) {
   return $currency->human_name;
@@ -323,17 +321,32 @@ function currency_label($currency) {
  * compatible with $entity_info['view callback'] from entity module
  * first arg can be one or an array
  */
-function transaction_view($transactions, $view_mode = 'certificate', $langcode = 'und') {
+function transaction_view($transactions, $view_mode = 'certificate') {
   if (!is_array($transactions)) {
     $transactions = array($transactions->xid => $transactions);
   }
+  if ($view_mode == 'sentence') {
+    drupal_add_css('.transaction-sentence div{display:inline;}', array('type' => 'inline'));
+  }
   entity_prepare_view('transaction', $transactions);
-  field_attach_prepare_view('transaction', $transactions, $view_mode);
-  foreach ($transactions as $transaction) {
+  //structure the transactions using serial numbers, assuming the first is always the main one
+  $clusters = array();
+  foreach($transactions as $transaction) {
+    //render the fieldAPI fields
     $transaction->additional = field_attach_view('transaction', $transaction, $view_mode);
+    //by now $transactions must be keyed by xid if there is more than one
+    field_attach_prepare_view('transaction', array($transaction->xid => $transaction), $view_mode);
+    if (empty($clusters[$transaction->serial])) {
+      $clusters[$transaction->serial] = $transaction;
+    }
+    else {
+      $clusters[$transaction->serial]->children[] = $transaction;
+    }
+  }
+  foreach ($clusters as $cluster) {
     $renderable[] = array(
       '#theme' => 'transaction',
-      '#transaction' => $transaction,
+      '#transaction' => $cluster,
       '#view_mode' => $view_mode,
     );
   }
@@ -356,6 +369,11 @@ function template_preprocess_transaction(&$variables) {
   foreach (element_children($transaction->additional) as $fieldname) {
     $variables[$fieldname] = drupal_render($transaction->additional[$fieldname]);
     $variables['additional'][$fieldname] = $variables[$fieldname];//this is used for default theme implementation
+  }
+  $variables['children'] = array();
+  if (!isset($transaction->children)) return;
+  foreach ($transaction->children as $child) {
+    $variables['children'] = transaction_view($child, 'sentence');
   }
 }
 
@@ -387,6 +405,21 @@ function new_transaction() {
 }
 
 /*
+ * wrapper around transactions_insert
+ * take a transaction and derive any children
+ * return the transaction, with ->children
+ */
+function transaction_insert_new($transaction, $really) {
+  $transactions = array($transaction);
+  //this is where the transaction is likely to acquire children, 
+  //and serial numbers set by contrib modules
+  drupal_alter('transactions', $transactions);
+
+  transactions_insert($transactions, $really);
+  return $transactions;
+}
+
+/*
  * INTERNAL API FOR MODULE DEVELOPERS
  *
  * These need to be better unified as regards exception handling
@@ -394,71 +427,58 @@ function new_transaction() {
  * for now, all validates must be done within try{}
  *
  * This is where we interface with the entity controller
- * object transaction_load(array(94))
- * array transaction_load_multiple($conditions) e.g array('state' => 0)
- * object transaction_validate($transaction)
- * object transaction_save($transaction)
- * NULL transaction_erase($transaction)
- * NULL transaction_state($transaction, $newstate);
- * array transaction_totals($transaction)
+ * array transactions_load($xids = array(), array('serial' => array(AB123, AB124), $clearcache);
+ * try transactions_insert(&$transactions)
+ * try transactions_undo($transaction)
+ * try transaction_state($serials, $newstate);
+ * array transaction_totals($uid, $currcode, $options)
+ * //undocumented
+ * transaction_load($serial)
+ * transaction_delete($serial)
+ *
  */
 
-/**
- * load a single transaction, from its serial number
- * this is used to as a menu loader, so can't be in an inc file
- */
-function transaction_load($serial) {
-  //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
-  $transactions = entity_get_controller('transaction')->load(array($serial), array(), TRUE);
-  return current($transactions);
-}
-function transaction_load_multiple($serials = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('transaction', $serials, $conditions, $reset);
+function transactions_load($xids = array(), $conditions = array(), $reset = FALSE) {
+  $transactions = entity_load('transaction', $xids, $conditions, $reset);
+  module_invoke_all('entity_load', $transactions, 'transaction');
+  return $transactions;
 }
 
-//validates any transaction object by implementing a hook and test writing it
-//catches one error at a time
-//returns true on success.
-//On failure either throws an exception or if $form_error flag is set
-//will put the errors into the form processing and return false
-function transaction_validate(stdClass $transaction, $form_error = TRUE) {
-  try {
-    module_invoke_all('transaction_validate', $transaction);
-    $success = entity_get_controller('transaction')->validate($transaction);
-  }
-  catch (exception $e) {
-    if ($form_error) {
-      form_set_error('', $e->getMessage());
-      return FALSE;
+
+/*
+ * internal API function
+ */
+function transactions_insert(array $transactions, $really = FALSE) {
+  //put all the transactions side by side ready for the entity controller to validate and insert
+  module_invoke_all('transactions_validate', $transactions);
+  entity_get_controller('transaction')->insert($transactions, $really);
+  //we don't insert the fields if we are not $really saving
+  if ($really) {
+    foreach ($transactions as $transaction) {
+      field_attach_insert('transaction', $transaction);
+      module_invoke_all('entity_insert', $transaction, 'transaction');
     }
-    else throw $e;
   }
-  return TRUE;
 }
 
-//don't forget to field_attach_submit before calling this
-function transaction_save(stdClass $transaction) {
-  $op = empty($transaction->serial) ? 'insert' : 'update';
-  entity_get_controller('transaction')->save($transaction);
-  //note that these hook implementations can expect a $transaction->$serials
-  module_invoke_all('entity_'.$op, $transaction, 'transaction');
-}
-
-function transaction_erase(stdClass $transaction) {
-  if (is_int($transaction)) {
-    $transaction = transaction_load($transaction);
+function transactions_undo(array $transactions, $force = FALSE) {
+  entity_get_controller('transaction')->undo($transactions);
+  //depends on the undo mode
+  if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_DELETE) {
+    foreach ($transactions as $transaction) {
+      field_attach_delete('transaction', $transaction);
+      module_invoke_all('entity_delete', $transaction, 'transaction');
+    }
   }
-  if (!is_object($transaction)) {
-    throw new Exception('Wrong type passed to transaction_erase');
-  }
-  entity_get_controller('transaction')->erase($transaction);
-  module_invoke_all('entity_delete', $transaction, 'transaction');
 }
 //resave the transaction, but only change the state - this is not considered an update
-function transaction_state(stdClass $transaction) {
-  entity_get_controller('transaction')->state($transaction);
+function transaction_state(array $serials, $new_state, $really = FALSE) {
+  $transactions = transactions_load(NULL, array('serial' => $serials));
+  module_invoke_all('transactions_validate', $transactions);
+  if (!$really) return;
+  entity_get_controller('transaction')->state($serials, $new_state, $really);
 }
-//returns an objectwith properties
+//returns an object with properties
 //->balance
 //->gross_in
 //->gross_out
@@ -477,14 +497,34 @@ function transaction_totals($uid, $currcode = NULL, $options = array()) {
   return $totals;
 }
 
-//call this function immediately before inserting a transaction
-function mcapi_next_serial($transaction) {
-  $map = variable_get('mcapi_serial_numbers', array());
-  if (isset($map[$transaction->type])) {
-    $callback = $map[$transaction->type];
-    return $callback($transaction);
+/*
+ * API wrapper functions
+ */
+
+/**
+ * load a cluster of transactions sharing a serial number
+ * this is used to as a menu loader, so can't be in an inc file
+ */
+function transaction_load($serial) {
+  static $serials = array();
+  //the menu system alone may call this function several times in one page request
+  if (empty($serials[$serial])) {
+    //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
+    $transactions = transactions_load(array(), array('serial' => $serial));
+    if (empty($transactions))throw new Exception(t('There is no transaction @serial', array('@serial' => $serial)));
+    //take the first one off and make the rest its children, preserving their keys
+    $transactions = array_reverse($transactions, TRUE);
+    $transaction = array_pop($transactions);
+    $transaction->children = $transactions;
+    $serials[$serial] = $transaction;
   }
+  return $serials[$serial];
 }
+
+function transactions_delete($transactions) {
+  transactions_undo($transactions, MCPI_CURRENCY_UNDO_DELETE);
+}
+
 
 //deficit is an array keyed by by uid, ordered asc
 function save_smallest($balance, $uid) {
@@ -527,7 +567,6 @@ function currency_load($currcode) {
   }
   watchdog('mcapi', 'Nonexistent currency @currcode requested from list: @list',
     array('@currcode' => $currcode, '@list' => print_r($currencies, 1)));
-  intertrading_error(print_r(debug_backtrace(), 1));
 }
 /*
  * Load all the currencies from cache filter

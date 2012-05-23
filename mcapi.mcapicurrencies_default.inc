@@ -20,33 +20,25 @@ function mcapi_mcapicurrencies_default() {
       'divisions' => CURRENCY_DIVISION_MODE_CUSTOM,
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
     ),
-    'accounting' => array(
-      'update_mode' => 1,
-      'erase_mode' => 1
-    ),
     'uid' => 1,
-    'access' => array(
-      'membership' => 'mcapi_can_transact',
-      'user_aggregated_view' => 'mcapi_can_transact',
-      'currency_aggregated_view' => 'mcapi_can_transact',
+    'currency_access' => array(
+      'membership' => 'user_access_transact',
+      'user_aggregated_view' => 'user_access_transact',
+      'currency_aggregated_view' => 'mcapi_access_anyone',
+      'undo' => 'user_access_manage_all_transactions',
     ),
-    'view' => array(
-      1 => 'mcapi_access_participants_admin',
-      0 => 'mcapi_access_authenticated',
-      -1 => 'mcapi_access_participants_admin',
-      -2 => 'mcapi_access_admin'
-    ),
-    'update' => array(
-      1 => 'mcapi_access_creator',
-      0 => 'mcapi_access_none',
-      -1 => 'mcapi_access_creator',
-      -2 => 'mcapi_access_admin'
-    ),
-    'erase' => array(
-      1 => 'mcapi_access_none',
-      0 => 'mcapi_access_none',
-      -1 => 'mcapi_access_creator',
-      -2 => 'mcapi_access_admin'
+    'transaction_access' => array(
+      1 => array(
+        'mcapi_access_authenticated' => 'mcapi_access_authenticated',
+      ),
+      0 => array(),
+      -3 => array(
+        'mcapi_access_admin' => 'mcapi_access_admin',
+      ),
+      -1 => array(
+        'mcapi_xacc_participants' => 'mcapi_xacc_participants',
+        'mcapi_access_admin' => 'mcapi_access_admin',
+      ),
     ),
     'zero' => 0,
   );

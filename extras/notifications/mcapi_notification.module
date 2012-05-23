@@ -45,46 +45,6 @@ function mcapi_unique_mail_subjects($element, $form_state) {
 }
 
 /*
- * implements hook_form_FORMID_alter
- */
-function mcapi_notification_form_mcapi_forms_form_alter(&$form) {
-  $form['#submit'][] = 'mcapiform_mail_handle';
-}
-
-/*
- * submit callback ONLY for mcapi_forms
- */
-function mcapiform_mail_handle($form, $form_state) {
-  $mcapiform = &$form_state['build_info']['args'][MCAPIFORM_STEP_CONFIRM];
-  $template = isset($mcapiform->data['email_template']) ? $mcapiform->data['email_template'] :
-    array('subject' => _mcapi_mail_text('subject'), 'body' => _mcapi_mail_text('body'));
-  //get the preferences for payer and payee, for this form
-  foreach (array('payer', 'payee') as $uid) {
-    //check if the user wants notification from this form
-    $recipient = user_load($form_state['values'][$uid]);
-    $mail_settings = $recipient->data['mutual_credit_mail'] ? $recipient->data['mutual_credit_mail'] : array();
-    $actives = array_filter($mail_settings);
-    if (isset($actives[$mcapiform->name])) {
-      //check that the user isn't sending to himself unwantedly
-      if (!$recipient->data['mutual_credit_mail_to_self'] && $recipient->uid == $GLOBALS['user']->uid) continue;
-      drupal_mail(
-        'mcapimail',
-        $mcapiform->name,
-        $recipient->mail,
-        user_preferred_language($recipient),
-        array(
-          'recipient' => $recipient,
-          'transaction' => (object)$form_state['values'],
-          'template' => $template
-        ),
-        NULL, //defaults to site_mail
-        TRUE
-      );
-    }
-  }
-}
-
-/*
  * implements hook_mail
  */
 function mcapimail_mail($key, &$message, $params) {
@@ -216,7 +176,6 @@ function mcapi_notification_mcapiforms_default_alter(&$mcapiforms) {
       switch ($name) {
         case '1stparty': $subject = '[transaction:creator] recorded a transaction'; break;
         case '3rdparty': $subject = 'Transaction recorded with [transaction:partner]'; break;
-        case 'correction': $subject = 'Transaction with [transaction:partner] altered'; break;
         case 'one2many': $subject = 'Mass payment from [transaction:payer]'; break;
         case 'many2one': $subject = 'Mass payment to [transaction:payee]'; break;
         case 'add_my_signature': $subject = 'Transaction [transaction:serial] signed by [user:name]'; break;

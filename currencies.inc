@@ -57,39 +57,66 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
-  $form['access'] = array(
-    '#title' => 'Access control',
-    '#description' => t('How to determine which users can use and view this currency'),
+  $currency_access_callbacks = module_invoke_all('currency_access_callbacks');
+  $form['currency_access'] = array(
+    '#title' => 'Currency access',
+    '#description' => t('Check fewer boxes for efficiency'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
     'membership' => array(
-      '#title' => t('Membership'),
+      '#title' => t('Use currency'),
       '#description' => t('Determine which users are permitted to use this currency'),
-      '#type' => 'select',
-      '#options' => module_invoke_all('mcapi_access'),
-      '#default_value' => $currency->access['membership'],
+      '#type' => 'radios',
+      '#options' => $currency_access_callbacks,
+      '#default_value' => $currency->currency_access['membership'],
       '#weight' => 1,
+    '#prefix' => '<style>.form-type-checkboxes .form-type-checkbox{margin:0;} .form-type-checkbox input{margin:0; padding:0}</style>',
     ),
     'user_aggregated_view' => array(
       '#title' => t('View aggregated user transaction data'),
       '#description' => t('Such as balance, gross income, number of transactions'),
-      '#type' => 'select',
-      '#options' => module_invoke_all('mcapi_access'),
-      '#default_value' => $currency->access['user_aggregated_view'],
+      '#type' => 'radios',
+      '#options' => $currency_access_callbacks,
+      '#default_value' => $currency->currency_access['user_aggregated_view'],
       '#weight' => 2,
     ),
     'currency_aggregated_view' => array(
       '#title' => t('View aggregated system data'),
-      '#type' => 'select',
-      '#options' => module_invoke_all('mcapi_access'),
-      '#default_value' => $currency->access['currency_aggregated_view'],
+      '#type' => 'radios',
+      '#options' => $currency_access_callbacks,
+      '#default_value' => $currency->currency_access['currency_aggregated_view'],
+      '#weight' => 3,
+    ),
+    'undo' => array(
+      '#title' => t('Undo any transaction in this currency'),
+      '#type' => 'radios',
+      '#options' => $currency_access_callbacks,
+      '#default_value' => $currency->currency_access['undo'],
       '#weight' => 3,
     ),
     '#weight' => -1
   );
 
-  $operations['view'] = t('View');
-  $form += currency_op_settings_tab($currency, $operations);
+  static $i = 0;
+  static $j = 0;
+    $form['transaction_access'] = array(
+      '#title' => t('Transaction access'),
+      '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
+      '#type' => 'fieldset',
+      '#group' => 'additional_settings',
+    );
+    foreach (mcapi_get_states() as $constant => $state) {
+      $states = isset($currency->view) ? $currency->view : array();
+      $form['transaction_access'][$constant] = array(
+        '#title' => $state['name'],
+        '#description' => $state['description'],
+        '#type' => 'checkboxes',
+        '#options' => module_invoke_all('transaction_access_callbacks'),
+        '#default_value' => $currency->transaction_access[$constant],
+        '#weight' => $j++,
+      );
+    }
+
   $form['zero'] = array(
     '#title' => t('Allow zero value transactions'),
     '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
@@ -116,41 +143,11 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#weight' => 4
   );
 
-  //nasty design flaw around radio buttons which means ajax rebuilds them wrong
-  if (arg(0) == 'system') {
-    unset($form['accounting']['update_mode']['#title']);
-  }
-
   if (isset($currency->currcode)) {
     $form['buttons']['submit']['#value'] = t('Update');
   }
 }
 
-function currency_op_settings_tab($currency, $operations) {
-  static $i = 0;
-  static $j = 0;
-  foreach ($operations as $op => $name) {
-    $element[$op] = array(
-      '#title' => $name,
-      '#description' => t('Determine who can @name transactions in the following states:', array('@name' => $name)),
-      '#type' => 'fieldset',
-      '#group' => 'additional_settings',
-      '#weight' => $i++,
-    );
-    foreach (mcapi_get_states() as $constant => $state) {
-      $states = isset($currency->$op) ? $currency->$op : array();
-      $element[$op][$constant] = array(
-        '#title' => $state['name'],
-        '#description' => $state['description'],
-        '#type' => 'select',
-        '#options' => module_invoke_all('mcapi_info_permissions'),
-        '#default_value' => isset($states[$constant]) ? $states[$constant] : TRANSACTION_STATE_FINISHED,
-        '#weight' => $j++,
-      );
-    }
-  }
-  return $element;
-}
 
 function currency_form_ajax(&$form, &$form_state) {
   return $form;
@@ -188,17 +185,6 @@ function mcapi_currency_validate_divisions(&$element, $form_state) {
   }
 }
 
-
-/*
- * Validate callback for currency form 'update_mode' element
- */
-function mcapi_currency_validate_update_mode(&$element, $form_state) {
-  if ($element['#value'] == 1 && $form_state['values']['accounting']['erase_mode'] == 0) {
-    form_error($element, t('Accounting standards') .' '. t('Update mode is incompatible with delete mode'));
-  }
-}
-
-
 /*
  * Validate callback for transaction form 'currcode' element
  */
@@ -220,13 +206,13 @@ function currency_edit_access($currency) {
 /*
  * Implements hook_mcapi_access
  * List callbacks which can be used to determine whether a user can use a currency
- * Each callback receives an argument $account, which may be NULL
- * $account can mean either the current user, or another account depending on context
+ * These callbacks, at the moment take no arguments, and check access for the current user
  */
-function mcapi_mcapi_access() {
+function mcapi_currency_access_callbacks() {
   return array(
-    'mcapi_anyone' => t('Anyone'),
-    'mcapi_can_transact' => t("According to permission '@perm'", array('@perm' => t('transact')))
+    'mcapi_access_anyone' => t('Anyone, including anonymous users'),
+    'user_access_transact' => t("According to permission '@perm'", array('@perm' => t('transact'))),
+    'user_access_manage_all_transactions' => t("According to permission '@perm'", array('@perm' => t('Manage all transactions')))
   );
 }
 
@@ -249,7 +235,7 @@ function transaction_validate_currency_access($form, $form_state) {
 
 function currencies_load_all() {
   ctools_include('export');
-  $functions = array_keys(module_invoke_all('mcapi_info_permissions'));
+  $functions = array_keys(module_invoke_all('transaction_access_callbacks'));
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
   foreach($all as $currcode => $currency_ctools_obj) {
@@ -265,16 +251,15 @@ function currencies_load_all() {
     }
     $currency->display['divisions_allowed'] = $divisions;
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
-    foreach (array('update', 'erase', 'view') as $op) {
-      $callbacks = $currency->$op;
-      foreach (mcapi_get_states() as $constant => $state) {
-        if (!in_array($callbacks[$constant], $functions)) {
-          drupal_set_message(t(
-            "Currency @name has no permission set for op '@op' and state @state",
-            array('@op' => $op, '@state' => $state['name'], '@name' => $currcode)
-          ), 'warning', FALSE);
-          $callbacks[$state] = 'mcapi_access_participants';
-        }
+
+    $callbacks = $currency->transaction_access;
+    foreach (mcapi_get_states() as $constant => $state) {
+      if (!in_array($callbacks[$constant], $functions)) {debug($callbacks, $state);
+        drupal_set_message(t(
+          "Currency @name has no view permission set for state @state",
+          array('@state' => $state['name'], '@name' => $currcode)
+        ), 'warning', FALSE);
+        $callbacks[$state] = 'mcapi_access_participants';
       }
     }
     $currencies[$currcode] = $currency;
@@ -289,6 +274,11 @@ function default_cur() {
   return $currency;
 }
 
+/*
+ * Validate callback for mcapi_currency_form
+ * declared in plugins/export/mcapi_ui
+ * set the $form_state['item'] for ctools to save
+ */
 function mcapi_currency_form_validate(){
   
 }

@@ -39,10 +39,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $account = user_load($transaction->creator);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
-      case 'modifier':
-        $account = user_load($transaction->modifier);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
-        break;
       case 'summary':
         $replacements[$original] = theme('transaction', array('transaction' => $transaction, 'view_mode' => 'summary'));
         break;
@@ -51,9 +47,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'created':
         $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
-        break;
-      case 'modified':
-        $replacements[$original] = format_date($transaction->modified, 'medium', '', NULL, $language_code);
         break;
       case 'worth':
         //there may be different incoming formats depending on whether we are rending a form or an entity
@@ -106,14 +99,6 @@ function mcapi_token_info() {
     'creator' => array(
       'name' => t('Creator'),
       'description' => t("The user who first recorded the transaction"),
-    ),
-    'modifier' => array(
-      'name' => t('Modifier'),
-      'description' => t("The user who last changed the transaction"),
-    ),
-    'modified' => array(
-      'name' => t('Created'),
-      'description' => t("When the transaction was last modified"),
     ),
   );
 

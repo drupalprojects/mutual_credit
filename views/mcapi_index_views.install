@@ -2,6 +2,7 @@
 function mcapi_index_views_install() {
   db_query("CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS 
       SELECT
+          t.xid,
           t.serial,
           t.payer AS uid1,
           t.payee AS uid2,
@@ -16,6 +17,7 @@ function mcapi_index_views_install() {
         WHERE state > 0
     UNION
       SELECT
+          t.xid,
           t.serial,
           t.payee AS uid1,
           t.payer AS uid2,

@@ -23,6 +23,7 @@ function mcapi_install() {
   db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_views')->execute();
   db_update('system')->fields(array('weight' => 4))->condition('name', 'mcapi_notification')->execute();
   db_update('system')->fields(array('weight' => 5))->condition('name', 'intertrading_client')->execute();
+  db_update('system')->fields(array('weight' => 5))->condition('name', 'mcapi_auto')->execute();
 
   if (module_exists('text')) {
     $data = unserialize(db_query("SELECT data from {field_config} where field_name = 'body'")->fetchField());
@@ -43,8 +44,6 @@ function mcapi_uninstall() {
   if (module_exists('views')) {
     $view_ids = db_query("SELECT vid FROM {views_view} WHERE tag = 'mcapi'");
     while ($vid = $view_ids->fetchField()) {
-      // TODO Please review the conversion of this statement to the D7 database API syntax.
-      /* db_query("DELETE FROM {views_view} WHERE vid = %d", $vid) */
       db_delete('views_view')
       ->condition('vid', $vid)
       ->execute();
@@ -100,9 +99,9 @@ function mcapi_schema() {
         'not null' => TRUE,
       ),
       'serial' => array(
-        'description' => 'unique transaction serial number',
-        'type' => 'varchar',
-        'length' => '16',
+        'description' => 'unique transaction serial number (integer)',
+        'type' => 'int',
+        'size' => 'normal',
         'not null' => FALSE,
       ),
       'payer' => array(
@@ -149,23 +148,8 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => TRUE,
       ),
-      'modifier' => array(
-        'description' => 'the user id of the modifier',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-      'modified' => array(
-        'description' => "Unixtime that the transaction was modified",
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
     ),
     'primary key' => array('xid'),
-    'unique keys' => array(
-      'serial' => array('serial')
-    ),
     'foreign keys' => array(
       'payer' => array(
         'table' => 'users',
@@ -483,8 +467,6 @@ function mcapi_update_7002() {
       'state' => $old->state,
       'created' => $old->created,
       'creator' => $old->uid,
-      'modified' => $old->changed,
-      'modifier' => $old->uid,
       'type' => $type,
       'data' => array(),
       'worth' => array(
@@ -572,6 +554,10 @@ function mcapi_update_7006() {
   db_add_field('mcapi_transactions', 'serial', $spec);
   db_add_unique_key('mcapi_transactions', 'serial number', array('serial'));
   db_query('UPDATE {mcapi_transactions} SET serial = xid');
+}
+function mcapi_update_7007() {
+  db_drop_field('mcapi_transactions', 'modifier');
+  db_drop_field('mcapi_transactions', 'modified');
 }
 
 function mcapi_update_currency($old_currency) {

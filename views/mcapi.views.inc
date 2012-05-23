@@ -20,18 +20,25 @@ function mcapi_views_data() {
     ),
     'entity type' => 1,//so the entity module can expose this table
   );
-  $data['mcapi_transactions']['serial'] = array(
-    'title' => t('Unique serial number'), // The item it appears as on the UI,
+  $data['mcapi_transactions']['xid'] = array(
+    'title' => t('Transaction ID'), // The item it appears as on the UI,
     'field' => array(
-      'help' => t('The unique ID of the transaction.'),
+      'help' => t('The Unique database key of the transaction'),
       'handler' => 'views_handler_field',
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
     ),
-    'argument' => array(
-      'handler' => 'views_handler_argument',
-    )
+  );
+  $data['mcapi_transactions']['serial'] = array(
+    'title' => t('Unique serial number'), // The item it appears as on the UI,
+    'field' => array(
+      'help' => t('The serial number of the transaction and dependents'),
+      'handler' => 'views_handler_field',
+    ),
+    'sort' => array(
+      'handler' => 'views_handler_sort',
+    ),
   );
   $data['mcapi_transactions']['payer'] = array(
     'title' => t('Payer'),
@@ -124,27 +131,11 @@ function mcapi_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
-  $data['mcapi_transactions']['view_transaction'] = array(
-    'field' => array(
-      'title' => t('Link'),
-      'help' => t('Link to the transaction certificate itself.'),
-      'handler' => 'views_handler_field_transaction_link',
-    ),
-  );
-
-  $data['mcapi_transactions']['edit_transaction'] = array(
-    'field' => array(
-      'title' => t('Edit link'),
-      'help' => t('Provide a simple link to edit the transaction.'),
-      'handler' => 'views_handler_field_transaction_link_edit',
-    ),
-  );
-
   $data['mcapi_transactions']['links'] = array(
-    'title' => t('Admin links'),
-    'help' => t("Edit and delete links"),
+    'title' => t('Transaction links'),
+    'help' => t("View and undo links"),
     'field' => array(
-      'handler' => 'views_handler_field_mcapi_links',
+      'handler' => 'views_handler_field_transaction_link',
     )
   );
   return $data;
@@ -203,28 +194,30 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
 
 
 //must return a condition objectmcapi_transactions.state
-function mcapi_access_unrestricted_views($state){
+function mcapi_xacc_unrestricted_views($state){
   $condition = db_and();
   return $condition->condition('mcapi_transactions.state', $state);
 }
 //must return a condition objectmcapi_transactions.state
-function mcapi_access_creator_views($state){
+function mcapi_xacc_creator_views($state){
   $condition = db_and();
   return $condition->condition('mcapi_transactions.creator', $GLOBALS['user']->uid);
 }
-function mcapi_access_authenticated_views($state){
+//returns conditions that $state = state && the current user ID  > 0
+function mcapi_xacc_authenticated_views($state){
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   $condition->condition(0, $GLOBALS['user']->uid, '<>');
   return $condition;
 }
-function mcapi_access_none_views($state){
+//returns a condition that the current user ID  > 0
+function mcapi_xacc_none_views($state){
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   $condition->condition(0, 1);//which is to say, FALSE
   return $condition;
 }
-function mcapi_access_participants_admin_views($state) {
+function mcapi_xacc_participants_admin_views($state) {
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   $subcondition = db_or();
@@ -234,13 +227,13 @@ function mcapi_access_participants_admin_views($state) {
   $condition->condition($subcondition);
   return $condition;
 }
-function mcapi_access_admin_views($state) {
+function mcapi_xacc_admin_views($state) {
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   $condition->condition(1, user_access('administer all transactions'));
   return $condition;
 }
-function mcapi_access_participants_views($state) {
+function mcapi_xacc_participants_views($state) {
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   $subcondition = db_or();
@@ -251,7 +244,7 @@ function mcapi_access_participants_views($state) {
 }
 
 //this isn't working without the $currency, which the others do not need
-function mcapi_access_currency_views($state) {
+function mcapi_xacc_currency_views($state) {
   $condition = db_and();
   return $condition->condition('mcapi_transactions.state', $state);
 }
@@ -263,7 +256,7 @@ function mcapi_access_currency_views($state) {
  * this modifies the query only to show the transactions visible to the user.
  * this is pretty elaborate, but the access control has to be done in the query or views pager won't know how many results there were
  */
-function _mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$query) {
+function __mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$query) {
   $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
   //what currencies can the current user see?
   $currencies = currencies_load();
@@ -290,12 +283,13 @@ function _mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$q
   foreach ($currencies as $currency) {
     $currcode_and_states = db_and();
     $currcode_and_states->condition('tw.worth_currcode', $currency->currcode);
-    //note for views we are only interested in viewing permission
     $state_or_state = db_or();
-    foreach ($currency->view as $state => $callback) {
-      $callback .= '_views';
-      $state_and_callback = $callback($state);
-      $state_or_state->condition($state_and_callback);
+    foreach ($currency->transaction_access as $state => $callbacks) {
+      foreach ($callbacks as $callback) {
+        $callback .= '_views';
+        $state_and_callback = $callback($state);
+        $state_or_state->condition($state_and_callback);
+      }
     }
     $currcode_and_states->condition($state_or_state);
     $or_currcodes->condition($currcode_and_states);

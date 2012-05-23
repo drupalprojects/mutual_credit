@@ -8,7 +8,7 @@ function mcapi_pending_views_data() {
   $data['mcapi_signatures']['table']['group']  = t('Signatures');
   $data['mcapi_signatures']['table']['base'] = array(
     'database' => variable_get('mcapi_db_read', 'default'),
-    'field' => 'xid',
+    'field' => 'serial',
     'title' => t('Signatures'),
     'help' => t('Signatures needed on pending transactions'),
     'access query tag' => 'transaction_access_views',
@@ -18,8 +18,8 @@ function mcapi_pending_views_data() {
   );
   $data['mcapi_signatures']['table']['join'] = array(
     'mcapi_transactions' => array(
-      'left_field' => 'xid',
-      'field' => 'xid',
+      'left_field' => 'serial',
+      'field' => 'serial',
       'type' => 'LEFT',
     ),
   );
@@ -51,9 +51,9 @@ function mcapi_pending_views_data() {
     ),
   );
   $data['mcapi_signatures']['pending'] = array(
-    'title' => t('Signature is pending'),
+    'title' => t('Is pending'),
     'filter' => array(
-      'help' => t('If the user has permission'),
+      'help' => t('The signature is still pending'),
       'handler' => 'views_handler_filter_boolean_operator',
     )
   );

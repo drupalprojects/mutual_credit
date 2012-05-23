@@ -501,3 +501,23 @@ function entity_metadata_field_property_get_mcapi_quantity($data, $options, $nam
 function entity_metadata_field_worth_get($entity, $options, $name, $type, $info) {
   return $entity->worth[LANGUAGE_NONE];
 }
+
+function mcapi_round($quant, $currcode, $up = FALSE) {
+  $currency = currency_load($currcode);
+  switch ($currency->display['divisions']) {
+    case CURRENCY_DIVISION_MODE_CUSTOM:
+      //calculate the number of hundredths from each division to the fraction, and choose the smallest
+      list($int, $fraction) = array_pad(explode('.', $quant), 2, 0);
+      foreach ($currency->display['divisions_allowed'] as $division) {
+        $diffs[$division] = abs($fraction - $division);
+      }
+      asort($diffs);
+      return "$int.". key($diffs);
+      break;
+    case CURRENCY_DIVISION_MODE_CENTS_FIELD:
+    case CURRENCY_DIVISION_MODE_CENTS_INLINE:
+      $quant = round($quant, 2);
+    case CURRENCY_DIVISION_MODE_NONE:
+      return $quant;
+  }
+}

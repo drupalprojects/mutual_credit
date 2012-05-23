@@ -16,7 +16,7 @@
 function mcapi_drush_help($section) {
   switch ($section) {
     case 'mcapi:mcapi-wipeslate':
-      return dt('Erase all transactions according to the currency settings');
+      return dt('Undo all transactions according to the currency settings');
     case 'drush:mcapi-purge':
       return dt('Completely remove all references to transactions in state TRANSACTION_STATE_ERASED');
     case 'drush:mcapi-nodedel':
@@ -41,7 +41,7 @@ function mcapi_drush_help($section) {
 function mcapi_drush_command() {
   $items['mcapi-wipeslate'] = array(
     'callback' => 'drush_mcapi_wipeslate',
-    'description' => dt('Erase all transactions according to the currency settings'),
+    'description' => dt('Undo all transactions according to the currency settings'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
     'options' => array(
@@ -50,7 +50,7 @@ function mcapi_drush_command() {
   );
   $items['mcapi-purge'] = array(
     'callback' => 'drush_mcapi_purge',
-    'description' => dt('Completely remove all references to transactions in state TRANSACTION_STATE_ERASED'),
+    'description' => dt('Completely remove all references to transactions and attached fields in state TRANSACTION_STATE_ERASED'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
@@ -66,13 +66,10 @@ function mcapi_drush_command() {
 
 function drush_mcapi_wipeslate() {
   //how to do "are you sure?" messages in drush!
-  $serials = db_query("SELECT serial FROM {mcapi_transactions}")->fetchCol();
-  $transactions = transaction_load_multiple($serials);
-  foreach ($transactions as $transaction) {
-    transaction_erase($transaction);
-  }
-  $count = count($serials);
-  drush_print("erased $count transactions");
+  $xids = db_query("SELECT xid FROM {mcapi_transactions}")->fetchCol();
+  entity_get_controller('transaction')->state(transactions_load($xids), TRANSACTION_STATE_ERASED);
+  $count = count($xids);
+  drush_print("undone $count transactions");
   if (drush_get_option('purge')) {
     drush_mcapi_purge();
   }
@@ -81,23 +78,23 @@ function drush_mcapi_wipeslate() {
 
 function drush_mcapi_purge() {
   //how to do "are you sure?" messages in drush!
-  $serials = db_query("SELECT serial FROM {mcapi_transactions} WHERE state = :state", array(':state' => TRANSACTION_STATE_ERASED))->fetchCol();
-  transaction_delete_multiple($serials);
-  $count = count($serials);
+  $transactions = transactions_load(NULL, array('state' => TRANSACTION_STATE_ERASED));
+  entity_get_controller('transaction')->undo($transactions, MCPI_CURRENCY_UNDO_DELETE);
+  $count = count($transactions);
   drush_print("completely removed $count transactions");
-  if ($serial = db_query("SELECT serial FROM {mcapi_transactions}")->fetchfield()) return;
-
+  if ($xid = db_query("SELECT xid FROM {mcapi_transactions}")->fetchfield()) return;
+  
+  //$fields = field_info_instance('transaction', 'field_worth', 'transaction');
   db_query("TRUNCATE TABLE {field_data_worth}");
   db_query("TRUNCATE TABLE {field_revision_worth}");
   db_query("TRUNCATE TABLE {mcapi_transactions}");
-  drush_print('reset auto-increment-transaction ID');
-  
+  drush_print('reset auto-increment-transaction ID on transaction & worth tables. This could cause problems with other fieldAPI fields');
 }
 
 //based on node_delete_multiple
 function transaction_delete_multiple($serials) {
   if (empty ($serials)) return;
-  $transactions = transaction_load_multiple($serials);
+  $transactions = transactions_load(array(), array('serial' => $serials));
   foreach ($transactions as $transaction) {
     module_invoke_all('entity_delete', $transaction, 'transaction');
     field_attach_delete('transaction', $transaction);

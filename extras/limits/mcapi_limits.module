@@ -30,66 +30,75 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
 }
 
 
+
 /*
- * implements mcapi hook_transaction_validate
- * I didn't want to generate error messages by this module, at the point of checking, but throw an error and deliver the error message at the form processing level
- * Because i don't know how to pass args into an exception, the limit checker throws coded exceptions, not straight messages
- * if a transaction fails becuase the payee would exceed the max or min limit,
- * t throws an exception with a normal message, but if you $e->getprevious()->getmessage() you can get more parsable data
+ * implements mcapi hook_transactions_validate
+ * I didn't want to output only readable messages by this module,
+ * but throw data and messages to be handled later
+ * Because i don't know how to pass args into an exception,
+ * the limit checker catches its own Exceptions, parses them,
+ * and throws a new Exception with the previous one as a descendent
+ * the coded form is:
  * i.e. "$difference>$limit" for transactions that would exceed the max
  * i.e. "$difference>$limit" for transactions that would exceed the min
  */
-function mcapi_limits_transaction_validate($transaction) {
-  $existing_worth = empty($transaction->serial) ? array() : transaction_load($transaction->serial)->worth[LANGUAGE_NONE];
-  try {
+function mcapi_limits_transactions_validate(array $transactions) {
+  static $accounts_diff = array();
+  $errors = array();
+  foreach ($transactions as $transaction) {
+    //calculate the potential balances after all transactions have gone through
+    $existing_worth = empty($transaction->serial) ? array() : transaction_load($transaction->serial)->worth[LANGUAGE_NONE];
     foreach ($transaction->worth[LANGUAGE_NONE] as $delta => $flow) {
       $currcode = $flow['currcode'];
       $difference = $flow['quantity'] - @$existing_worth[$delta]['quantity'];
-      //check that the payee isn't going over their max limit
-      $limits = limits_get($currcode, $transaction->payee);
-      if (isset($limits['max']) && is_numeric($limits['max'])) {
-        $payee_projected = transaction_totals($transaction->payee, $currcode)->balance + $difference;
-        $surplus = $payee_projected - $limits['max'];
-        if ($surplus > 0) {
-          throw new Exception($surplus .'>'.$limits['max']. '>' .$currcode);
+      $accounts_diff[$transaction->payee][$currcode][] = $difference;
+      $accounts_diff[$transaction->payer][$currcode][] = $difference;
+    }
+    //then compare the resulting balances for each user with their limits
+    foreach ($accounts_diff as $uid => $percurrency) {
+      foreach ($percurrency as $currcode => $diffs) {
+        $projected = transaction_totals($uid, $currcode)->balance + array_sum($diffs);
+        $limits = limits_get($currcode, $uid);
+        if (isset($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max']) {
+          $surplus = $projected - $limits['max'];
+          $errors[] = $surplus .'>'. $limits['max'] .'>'. $currcode;
         }
-      }
-      //check that the payer isn't going below their min limit
-      $limits = limits_get($currcode, $transaction->payer);
-      if (isset($limits['min']) && is_numeric($limits['min'])) {
-        $payer_projected = transaction_totals($transaction->payer, $currcode)->balance - $difference;
-        $deficit = $limits['min'] - $payer_projected;
-        if ($deficit > 0) {
-          throw new Exception($deficit .'<'.$limits['min']. '<' .$currcode);
+        elseif (isset($limits['min']) && is_numeric($limits['min']) && $projected < $limits['min']) {
+          $payer_projected = transaction_totals($transaction->payer, $currcode)->balance - $difference;
+          $deficit = $limits['min'] - $projected;
+          $errors[] = $deficit .'<'. $limits['min'] .'<'. $currcode;
         }
       }
     }
   }
-  //this will only catch one error at a time
-  catch (Exception $e) {
-    $e->limits = $e->getmessage();
-    //parse balance limits error
-    if (strpos($e->getMessage(), '>')) {
-      list($excess, $limit, $currcode) = explode('>', $e->getMessage());
-      $parsed_message = t('Transaction would take @username !quant above the maximum balance of !max',
-        array(
-          '@username' => strip_tags(format_username(user_load($transaction->payee))),
-          '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
-          '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
-        )
-      );
+  //the only way I can think of to pass both messages and codes back is to nest exceptions
+  try {if (count($errors)) throw new Exception(implode(';', $errors));}
+  catch (exception $e) {
+    $codes = explode(';', $e->getMessage());
+    foreach ($codes as $key => $error) {
+      //parse balance limits error
+      if (strpos($error, '>')) {
+        list($excess, $limit, $currcode) = explode('>', $error);
+        $messages[$error] = t('Transaction would take @username !quant above the maximum balance of !max',
+          array(
+            '@username' => strip_tags(format_username(user_load($transaction->payee))),
+            '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
+            '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
+          )
+        );
+      }
+      elseif (strpos($error, '<')) {
+        list($excess, $limit, $currcode) = explode('<', $error);
+        $messages[$error] = t('Transaction would take @username !quant below the minimum balance of !min',
+          array(
+            '@username' => strip_tags(format_username(user_load($transaction->payer))),
+            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
+            '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
+          )
+        );
+      }
     }
-    elseif (strpos($e->getMessage(), '<')) {
-      list($excess, $limit, $currcode) = explode('<', $e->getMessage());
-      $message = t('Transaction would take @username !quant below the minimum balance of !min',
-        array(
-          '@username' => strip_tags(format_username(user_load($transaction->payer))),
-          '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
-          '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
-        )
-      );
-    }
-    throw new Exception ($message, 0, $e);
+    throw new Exception(implode('<br />', $messages), 0, $e);
   }
 }
 

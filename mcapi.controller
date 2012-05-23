@@ -6,10 +6,6 @@
  * the class should be named thus:
  * MODULENAME_EntityController
  */
-define('MCPI_CURRENCY_UPDATE_NONE', 0);
-define('MCPI_CURRENCY_UPDATE_HARD', 2);
-define('MCPI_CURRENCY_UPDATE_SOFT', 1);
-
 /*
  * The transaction entity has its own CRUD operations
  */
@@ -21,13 +17,13 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * no support for revisions
    * returns an error if the transaction id is invalid
    */
-  public function load($ids = array(), $conditions = array(), $serial = FALSE) {
+  public function load($ids = array(), $conditions = array()) {
     $entities = array();
     $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
 
     //get from cache where available
     if ($this->cache) {
-      //$entities += $this->cacheGet($serials, $conditions);
+      $entities += $this->cacheGet($ids, $conditions);
       // If any entities were loaded, remove them from the ids still to load.
       if ($passed_ids) {
         $ids = array_keys(array_diff_key($passed_ids, $entities));
@@ -41,19 +37,18 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       $query->fields('mcapi_transactions', $this->entityInfo['schema_fields_sql']['base table']);
       // Build the query.
       if ($ids) {
-        $key = $serial ? 'serial' : 'xid';
-        $query->condition("mcapi_transactions.$key", $ids, 'IN');
+        $query->condition("mcapi_transactions.xid", $ids);
       }
       foreach ($conditions as $field => $value) {
         $query->condition('mcapi_transactions.' . $field, $value);
       }
-      $query->orderBy('created', 'ASC');
-      $queried_entities = $query->execute()->fetchAllAssoc($this->idKey);
+      $query->orderBy('xid', 'ASC'); //this ensures that the primary transaction in a cluster is first
+      $queried_entities = $query->execute()->fetchAllAssoc('xid');
       //extract the serialized data into 'extra' property
       //there isn't acutally a use for the extra property at the moment.
-      foreach ($queried_entities as $key => $entity) {
-        $queried_entities[$key]->extra = unserialize($queried_entities[$key]->data);
-        unset($queried_entities[$key]->data);
+      foreach ($queried_entities as $entity) {
+        $entity->extra = unserialize($entity->data);
+        unset($entity->data);
       }
     }
 
@@ -69,101 +64,99 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     return $entities;
   }
   
-  public function validate($transaction){
-    $xid = $transaction->xid;
-    try {  //should really validate every transaction entity property
-      foreach ($transaction->worth['und'] as $worth) {
-        if (!is_numeric($worth['quantity'])) {
-          throw new Exception(t('Illegal quantity: @val', array('@val' => print_r($worth, 1))));
+
+  /*
+   * put an array of transactions in the database
+   * any transactions without a serial number will be assumed to be part of a new cluster
+   * and saved with the same serial number
+   */
+  public function insert(&$transactions, $really = FALSE) {
+    //we need to ensure the schema is cached before calling mcapi_write_record
+    //Otherwise it may try to retrieve the schema from the wrong database
+    drupal_get_schema('mcapi');
+    //for now only the controller knows how to generate and serial numbers for its own
+    //this subsystem system will need reworking if this module expands
+    $serial = db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
+    foreach ($transactions as $transaction) {
+      $transaction->temp = isset($transaction->xid) ? $transaction->xid : 0;
+      $transaction->creator = $GLOBALS['user']->uid;
+      $transaction->created = REQUEST_TIME;
+      //do the best we can in case a serial number isn't yet provided
+      $transaction->serial = empty($transaction->serial) ? $serial : $transaction->serial;
+      $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
+    }
+    //remember transaction might be written to more than one db
+    foreach (array_filter(variable_get('mcapi_db_write', array('default'))) as $connection) {
+      db_set_active($connection);
+      try{
+        $ts[] = db_transaction();
+        foreach ($transactions as $transaction) {
+          if(drupal_write_record('mcapi_transactions', $transaction) != SAVED_NEW) {
+            throw new Exception(
+              t('Failed to insert into table @tablename of database @database',
+              array('@tablename' => 'mcapi_transactions', '@database' => $connection)
+            ));
+          }
         }
       }
-      $t = db_transaction();
-      $this->save($transaction);
-    }
-    catch (Exception $e){
-      //if the validation fails at this stage when everything should be validated
-      //we should put it in watchdog because it means some form somewhere needs tightening up
-      //unfortunately at this point we don't know what form it is.
-      $transaction->extra['error'] = $e->getMessage();
-      watchdog('mcapi', '@message', array('@message' => $e->getMessage()), WATCHDOG_ALERT);
-      throw $e;
-    }
-    $t->rollback();
-    $transaction->xid = $xid;
-    return $transaction;
-  }
-
-  /*
-   * update or insert the saved transaction according to whether xid is set
-   * expects a single, validated transaction object
-   */
-  public function save($transaction) {
-    //this is only used to fix what I think is a Drupal bug, see mcapi_field_attach_presave
-    //removes the 'add more' item from fields with infinite cardinality
-    $instances = array();
-    $instances = _field_invoke_get_instances('transaction', 'transaction', array('deleted' => FALSE));
-    foreach($instances as $instance) {
-      $field = field_info_field($instance['field_name']);
-      if ($field['cardinality'] == -1 && isset($transaction->{$instance['field_name']}[LANGUAGE_NONE]['add_more'])) {
-        unset($transaction->{$instance['field_name']}[LANGUAGE_NONE]['add_more']);
+      catch (Exception $e) {
+        foreach ($ts as $db_transaction) $db_transaction->rollback();
+        db_set_active();
+        throw $e;
       }
-    }//end of bugfix
-    
-    $transaction->modified = REQUEST_TIME;
-    $transaction->modifier = $GLOBALS['user']->uid;
-    reset($transaction->worth);
-    $t = db_transaction();
-    //the transaction is actually inserted during the validation phase, after validation the state should be changed
-    $function = empty($transaction->xid) ? 'insert' : 'update';
-    try {
-      $this->$function($transaction);
     }
-    catch (Exception $e) {
-      $t->rollback();
-      watchdog_exception('mcapi', $e);
-      throw $e;
+    if (!$really) {
+      foreach ($ts as $db_transaction) $db_transaction->rollback();
+      foreach ($transactions as $id => $transaction) {
+        $transactions[$id]->xid = $transaction->temp;
+      }
     }
-    return $transaction;
+    db_set_active();
   }
 
   /*
-   * merely set the state of the exchange, not delete the row
    * there is no error checking on this.
+   * $purge is an undocumented feature, for development only, which forces mode MCPI_CURRENCY_UNDO_DELETE
    */
-  public function erase($transaction) {
-    //if there are more than one flows involved, use the minimum value for the update mode
-    $flows = current($transaction->worth);
-    $modes = array(2);
-    foreach ($flows as $flow) {
-      $modes[$flow['currcode']] = currency_load($flow['currcode'])->accounting['erase_mode'];
+  public function undo($transactions, $mode = FALSE) {
+    if (empty($mode)) {
+      $mode = variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE);
     }
-    switch(min($modes)) {
-      case 1: //mark deleted
-        $transaction->state = TRANSACTION_STATE_ERASED;
-        $transaction->modified = REQUEST_TIME;
-        $transaction->modifier = $GLOBALS['user']->uid;
-        $this->state($transaction);
+    switch($mode) {
+      case MCPI_CURRENCY_UNDO_DELETE: //actually delete
+        foreach ($transactions as $transaction) {
+          $xids[] = $transaction->xid;
+        }
+        $query = db_delete("mcapi_transactions")->condition('xid', $xids)->execute();
         break;
-      case 2: //actually delete
-        $query = db_query("DELETE FROM {mcapi_transactions} WHERE xid = :xid", array(':xid' => $transaction->xid));
+      case MCPI_CURRENCY_UNDO_ERASE: //mark deleted
+        $this->state($transactions, TRANSACTION_STATE_ERASED);
         break;
-      default:
-        $currcode = array_search(min($modes), $modes);
-        throw new Exception(t('Currency @name does not allow deletion', array('@name' => currency_load($currcode)->human_name)));
+      case MCPI_CURRENCY_UNDO_REVERSE:
+        foreach($transactions as $transaction) {
+          $reversed = clone $transaction;
+          $reversed->payer = $transaction->payee;
+          $reversed->payee = $transaction->payer;
+          $reverseds[] = $reversed;
+        }
+        transactions_insert($reverseds);
         break;
     }
     return $transaction;
   }
   /*
-   * change the state of a transaction.
+   * change the state of a transaction and its dependents
    * This does not count as updating it, which is subject to different permissions
    */
-  public function state($transaction) {
-    db_query("UPDATE {mcapi_transactions} SET state = :state WHERE xid = :xid", array(':state' => $transaction->state, ':xid' => $transaction->xid));
+  public function state(array $serials, $new_state) {
+    db_update('mcapi_transactions')
+      ->fields(array('state' => $new_state))
+      ->condition('serial', $serials)
+      ->execute();
   }
 
   /*
-   * get_balance
+   * get some stats by adding up the transactions for a given user
    * this is currently used for the limits module and for the views handler per-row
    * caching running balances is dangerous because they would all need recalculating any time a transaction changed state
    * $options can be array(
@@ -254,172 +247,25 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     }
     return $query->execute()->fetchAll();
   }
-  
 
-  /*
-   * create a transaction, either the first moment at validation
-   */
-  function insert($transaction) {
-    $transaction->creator = $GLOBALS['user']->uid;
-    $transaction->created = REQUEST_TIME;
-    $serial = mcapi_next_serial($transaction);
-    $transaction->serial = $serial ? $serial : db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
+  public function delete() {
     
-    mcapi_write_record($transaction);
-  }
-
-  /*
-   * This controller makes no use of the entity revision control facility
-   * $force_update is for the special case of a validated transaction which is being written
-   */
-  function update($transaction) {
-    //if there are more than one flows involved, use the minimum value for the update mode
-    $flows = current($transaction->worth);
-    foreach ($flows as $flow) {
-      $currency = currency_load($flow['currcode']);
-      $modes[] = $currency->accounting['update_mode'];
-    }
-    switch(min($modes)) {//choose the most rigourous accounting standard
-      case MCPI_CURRENCY_UPDATE_HARD:
-        $old = clone(transaction_load($transaction->xid));
-        $transaction->extra['former_xid'] = $transaction->xid;
-        //remove the xid and insert the transaction anew
-        unset($transaction->xid);
-        $this->insert($transaction); //will give a new xid
-        $old->extra['became_xid'] = $transaction->xid;
-        //then erase the old one
-        $this->erase($old);
-        break;
-      case MCPI_CURRENCY_UPDATE_SOFT:
-        try {
-          mcapi_write_record($transaction, array('xid'));
-        }
-        catch (Exception $e) {
-          //getting an error: Cannot access protected property Exception::$message
-          $e->getMessage .= ' '. t('Database failed to update transaction record.');
-          throw $e;
-        }
-        field_attach_update('transaction', $transaction);
-        break;
-      //safe default
-      case MCPI_CURRENCY_UPDATE_NONE:
-      default:
-        throw new Exception(t('This currency does not allow transaction updates.'));
-    }
   }
 }
 
-
 /*
- * wrapper for drupal_write_record
- * writes to the database(s) specified by the entity controller settings
+ * implements hook_FORM_mcapi_controller_options_form
+ * sets a drupal variable mcapi_controller_delete_mode
  */
-function mcapi_write_record(&$record, $primary_keys = array()) {
-  $record->data = (isset($record->extra)) ? $record->extra : array();
-  //we need to ensure the schema is cached before calling mcapi_write_record
-  //Otherwise it may try to retrieve the schema from the wrong database
-  drupal_get_schema('mcapi');
-  foreach (variable_get('mcapi_db_write', array('default')) as $connection) {
-    db_set_active($connection);
-    try{
-      $ts[] = db_transaction();
-      if(!drupal_write_record('mcapi_transactions', $record, $primary_keys)) {
-        throw new Exception();
-      }
-    }
-    catch (Exception $e) {
-      foreach ($ts as $db_transaction) {
-        $db_transaction->rollback();
-      }
-      db_set_active();
-      $keys = array();
-      foreach ($primary_keys as $keyname) {
-        $keys[$keyname] = $record->$keyname;
-      }
-      $keys = implode(',', $keys);
-      $newmessage = t("Failed to write to table 'mcapi_transactions' on database '@database', using keys: @keys",
-        array(
-          '@database' => $connection,
-          '@keys' => '<pre>'.print_r($primary_keys, 1).'</pre>'
-        )
-      );
-      $replacements = array('@tablename' => 'mcapi_transactions', '@keys' => $keys, '@database' => $connection);
-      if ($keys) {
-        watchdog('Failed to update table @tablename of database @database using keys: @keys', $replacements, WATCHDOG_CRITICAL);
-        throw new Exception(t('Failed to update table @tablename of database @database using keys: @keys', $replacements));
-      }
-      else {
-        watchdog('Failed to insert into table @tablename of database @database', $replacements, WATCHDOG_CRITICAL);
-        throw new Exception(t('Failed to insert into table @tablename of database @database', $replacements));
-      }
-    }
-  }
-  db_set_active();
-}
-
-/*
- * implements hook_form_FORM_ID_alter
- * Adds the accounting standards to the currency form
- */
-function mcapi_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
-  if (empty($form_state['plugin']['handler']) || $form_state['plugin']['handler'] != 'mcapi_ui') return;
-  $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
-  $form['accounting'] = array(
-    '#title' => t('Accounting standards'),
-    '#description' => t('More or less formal accounting standards can be determined.') .' '.
-      t('Not all combinations are meaningful!') .' '.
-      t('Transactions with multiple cardinality will go with the most conservative meaning'),
-    '#type' => 'fieldset',
-    '#weight' => -1,
-    '#group' => 'additional_settings',
-    'update_mode' => array(
-      '#title' => t('Update mode'),
-      '#type' => 'radios',
-      '#options' => array(
-        MCPI_CURRENCY_UPDATE_NONE => t("Can't update"),
-        MCPI_CURRENCY_UPDATE_HARD => t("Delete and create a new transaction"),
-        MCPI_CURRENCY_UPDATE_SOFT => t("Update same record"),
-        //3 => t("Use entity versioning the same transaction (not available)"),
-      ),
-      '#default_value' => isset($currency->accounting['update_mode']) ? $currency->accounting['update_mode'] : MCPI_CURRENCY_UPDATE_SOFT,
-      '#weight' => 1,
-      '#element_validate' => array('mcapi_currency_validate_update_mode'),
-      //TODO: THESE AJAX CALLS ARE ONLY WORKING THE FIRST TIME BECAUSE THE FORM ID IS BEING INCREMENTD EACH TIME
-      '#ajax' => array(
-        'callback' => 'currency_form_ajax',
-        'wrapper' => 'mcapi-currency-form',
-      ),
-    ),
-    'erase_mode' => array(
-      '#title' => t('Delete mode'),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t("Can't delete"),
-        1 => t('Mark deleted'),
-        2 => t('Remove all traces from the database (not from backups)'),
-      ),
-      '#default_value' => isset($currency->accounting['erase_mode']) ? $currency->accounting['erase_mode'] : 1,
-      '#weight' => 2,
-      '#ajax' => array(
-        'callback' => 'currency_form_ajax',
-        'wrapper' => 'mcapi-currency-form',
-      ),
+function mcapi_form_mcapi_controller_options_form_alter(&$form) {
+  $form['mcapi_controller_delete_mode'] = array(
+    '#title' => t('Undo mode'),
+    '#type' => 'radios',
+    '#options' => array(
+      MCPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
+      MCPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
+      MCPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
+    '#default_value' => variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE),
     )
   );
-
-  $operations = array('update' => t('Correct'), 'erase' => t('Erase'));
-  $form += currency_op_settings_tab($currency, $operations);
-  
-  //alter the options according to what is set
-  if ($form['accounting']['erase_mode']['#default_value'] == 0) {
-    unset($form['accounting']['update_mode']['#options'][1]);
-    if ($form['accounting']['update_mode']['#default_value'] == 1) {
-      $form['accounting']['update_mode']['#default_value'] = 0;
-    }
-  }
-  //nasty design flaw around radio buttons which means ajax rebuilds them wrong
-  if (arg(0) == 'system') {
-    unset($form['accounting']['update_mode']['#title']);
-  }
-
 }

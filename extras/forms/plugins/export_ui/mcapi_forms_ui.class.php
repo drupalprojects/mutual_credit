@@ -67,7 +67,6 @@ class mcapi_forms_ui extends ctools_export_ui {
     if ($name == 'add_my_signature') {
       unset($operations['disable']);
     }
-    if ($name == 'correction') unset($operations['disable']);//mcapi_forms_menu expects this
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
     $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
 

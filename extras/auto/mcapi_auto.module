@@ -1,0 +1,242 @@
+<?php
+define('TRANSACTION_STATE_FORCE_FAILED', -3);
+
+/*
+ * implements mcapi hook_info_types
+ */
+function mcapi_auto_mcapi_info_types() {
+  return array('auto');
+}
+
+/*
+ * implements mcapi hook_info_states
+ */
+function mcapi_auto_mcapi_info_states() {
+  return array(
+    TRANSACTION_STATE_FORCE_FAILED => array(
+      'name' => t('Failed'),
+      'description' => t('Failed validation but forced through by automated process')
+    ),
+  );
+}
+
+
+/*
+ * action callback
+ * not possible to pass $transactions array by reference, so the transaction actions simply returns another transaction
+ */
+function mcapi_charge_action($original, $settings) {
+  $currcode = isset($settings['currcode']) ? $settings['currcode'] : 'def_drup';
+  $child = new_transaction();
+  $child->type = 'auto';
+  $child->serial = $original->serial;//note how this is inherited
+  $child->payer = $original->{$settings['source']};
+  $child->payee = $settings['recipient'];
+  $child->state = $original->state;
+  $quant = mcapi_auto_get_quant($settings['rate'], $original->worth[LANGUAGE_NONE][0]['quantity']);
+  $child->worth[LANGUAGE_NONE][0] = array(
+    'quantity' => mcapi_round($quant, $currcode, $settings['round'] == 'up'),
+    'currcode' => $currcode
+  );
+  return $child;
+}
+
+/*
+ * Implements hook_action_info
+ * provides some simple actions, without conditions
+ */
+function mcapi_auto_action_info() {
+  module_load_include('inc', 'mcapi');
+  $items = array(
+    'mcapi_charge_action' => array(
+      'type' => 'transaction',
+      'label' => t('Charge the payee'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+    ),
+    'mcapi_transaction_notify_action' => array(
+      'type' => 'transaction',
+      'label' => t('Notify transactee'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+    )
+  );
+  if (module_exists('mcapi_pending')) {//this could be moved
+    $items['mcapi_transaction_add_signatory_action'] = array(
+      'type' => 'transaction',
+      'label' => t('Add signatory'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+    );
+  }
+  return $items;
+}
+/*
+ * Settings form callback for mcapi_pay_someone_action
+ * odd that form_state isn't passed
+ * this means we can't do form_load_include
+ * $context = array(
+ *  [actions_label] => Record transaction
+ *  [actions_type] => transaction
+ * )
+ */
+function mcapi_charge_action_form($context) {
+  $form['#description'] = t('Assumes the first currency in the transaction');
+  $def_currcode = isset($context['currcode']) ? $context['currcode'] : 'def_drup';
+  $form['currcode'] = currency_picker_element(array_keys(currencies_load()), $def_currcode, FALSE);
+  $form['source'] = array(
+    '#title' => t('Source'),
+    '#type' => 'radios',
+    '#options' => array('payer' => t('Payer'), 'payee' => t('Payee')),
+    '#default_value' => isset($context['source']) ? $context['source'] : 'payer',
+  );
+  $form['recipient'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Account number to be credited'),
+    '#description' => t('A username, email, or user ID'),
+    '#default_value' => isset($context['recipient']) ? $context['recipient'] : 1,
+    '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
+    '#autocomplete_path' => 'user/autocomplete',
+    '#weight' => 1,
+  );
+  $form['rate'] = array(
+    '#title' => t('Rate or amount'),
+    '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity'),
+    '#type' => 'textfield',
+    '#default_value' => isset($context['rate']) ? $context['rate'] : 1,
+    '#element_validate' => array('mcapi_auto_validate_rate'),
+    '#weight' => 2,
+  );
+  $form['round'] = array(
+    '#title' => t('Calculation method'),
+    '#type' => 'radios',
+    '#options' => array('up' => t('Up'), 'down' => t('Down')),
+    '#default_value' => isset($context['round']) ? $context['round'] : 'down',
+    '#weight' => 3,
+  );
+  return $form;
+}
+function mcapi_charge_action_submit($form, $form_state) {
+  return $form_state['values'];
+}
+
+
+
+/*
+ * wrapper around mcapi API function transactions_save
+ * any transaction that fails validation goes into a special state
+ */
+function transaction_auto_save($transactions) {
+  $errors = FALSE;
+  try {
+    transactions_validate($transaction);
+  }
+  catch (Exception $e) {
+    $transactions[$key]->state = TRANSACTION_STATE_FORCE_FAILED;
+    $transactions[$key]->data['fail'] = $e->getMessage();
+    $errors[] = $e->getMessage();
+  }
+  if (!$errors || variable_get('mcapi_auto_error_force', FALSE)) {
+    transaction_insert_new($transaction);
+  }
+  else {
+    drupal_set_message(t('Auto payment was prevented with following messages: !messages'),
+      array('!messages' => implode('<br />', $errors)
+    ));
+    watchdog('mcapi auto', 'Auto payment was prevented with following messages: !messages',
+      array('!messages' => implode('<br />', $errors),
+      WATCHDOG_ALERT
+    ));
+  }
+}
+
+/*
+ * implements hook_trigger_info
+ */
+function mcapi_auto_trigger_info() {
+  return array(
+    'mcapi' => array(
+      'transactions_alter' => array(
+        'label' => t('Modify before saving, and add any child transactions'),
+      ),
+      'entity_insert' => array(
+        'label' => t('A transaction has been created'),
+      ),
+    ),
+  );
+}
+
+/*
+ * The following 3 hook implementations are triggers which when fired, check for actions and then do them.
+ */
+function mcapi_auto_transactions_alter(&$transactions) {
+  $original = &$transactions[0];
+  foreach (trigger_get_assigned_actions('transactions_presave') as $aid => $info) {
+    //each action should return a transaction object
+    $result = actions_do($aid, $original, $info);
+    if (!empty($result[$aid])) {
+      $transactions[] = $result[$aid];
+    }
+  }
+  return $transactions;
+}
+function mcapi_auto_entity_insert($transaction, $type) {
+  if ($type != 'transaction' || $transaction->type == 'auto') return;
+  foreach (trigger_get_assigned_actions('entity_insert') as $aid => $info) {
+    actions_do($aid, $transaction, $info);
+  }
+}
+/*
+ * implements hook_form_trigger_assign_form_alter
+ * adds a helpful comment to the transactions trigger
+ */
+function mcapi_auto_form_trigger_assign_form_alter(&$form, $form_state) {
+  $clarification = t('Actions which create new transactions will not fire the trigger recursively');
+  $form['transactions_presave']['#description'] = $clarification;
+}
+
+function mcapi_auto_validate_rate(&$element, &$form_state) {
+  $quant = mcapi_auto_get_quant($element['#value'], 1);
+  if (!is_numeric($quant)) {
+    form_error($element, t('Does not return a number for transaction quantity 1: @notnum', array('@notnum' => $quant)));
+  }
+}
+function mcapi_auto_get_quant($formula, $base_quant) {
+  if (is_numeric($formula)) return $formula;
+  $proportion = str_replace('%', '', $formula);
+  if (is_numeric($proportion)) {
+    return $base_quant * $proportion/100;
+  }
+  return eval('echo '.str_replace('[q]', $base_quant, $formula).';');
+}
+
+
+
+/*
+ * settings form callback for action mcapi_transaction_notify_action
+ */
+function mcapi_transaction_notify_action_form($context) {
+  $form['recipient'] = array(
+    '#title' => t('Recipient'),
+    '#type' => 'textfield',
+    '#default_value' => empty($context['recipient']) ? '' : $context['recipient'],
+    '#element_validate' => array('mcapi_validate_usernames'),
+    '#autocomplete_path' => 'user/autocomplete',
+    '#required' => TRUE
+  );
+  $form['email_template'] = array(
+    '#title' => t('Mail template'),
+    '#description' => implode(' ', array(
+      t('Edit the e-mail to members who wish to be notified when this form completes.'),
+      t("'user' is the recipient of the mail."),
+      t('Available variables are: ') . implode(', ', matslats_list_tokens('site', 'user', 'transaction'))
+    )),
+    '#type' => 'textarea',
+    '#default_value' => empty($context['email_template']) ? '' : $context['email_template'],
+    '#required' => TRUE,
+    '#weight' => 1
+  );
+  return $form;
+}
+
+//Need a block to bring forced transactions to attention of permitted user

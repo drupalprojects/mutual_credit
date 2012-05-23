@@ -21,43 +21,20 @@ function mcapi_pending_mcapiforms_default() {
       'menu_link' => 'devel',
       'use_block' => 0,
     ),
-    'currcode' => array(
-      'preset' => 1,
-    ),
-    'payer' => array(
-      'preset' => '',
-      'args' => 'user_chooser_roles:2',
-      'multiple' => 0,
-    ),
-    'payee' => array(
-      'preset' => '',
-      'args' => 'user_chooser_roles:2',
-      'multiple' => 0,
-    ),
-    'worth' => array(
-      'preset' => '',
-      'chars' => '',
-    ),
-    'description' => array(
-      'preset' => '',
-    ),
     'submission' => array(
       'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Yes',
       'redirect' => 'transaction/%transaction',
     ),
-    'step-2' => array(
-      'title' => 'Sign this transaction',
-      'template' => 'Do you want to sign this transaction?
-[mcapiform:worth]',
+    'experience' => array(
+      'title' => '',
+      'template' => '',
+      'sure_title' => 'Sign this transaction',
+      'sure_format' => 'certificate',
     ),
     'buttons' => array(
       'submit' => 'Save',
       'delete' => 'Delete',
-    ),
-    'templates' => array(
-      'template-1' => 'Do you want to sign this transaction?
-[mcapiform:worth]',
     )
   );
   $mcapiforms[$mcapiform->name] = $mcapiform;

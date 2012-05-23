@@ -16,15 +16,8 @@ function mcapi_forms_tokens($type, $tokens, array $form, array $options = array(
     $url_options['language'] = $options['language'];
     $language_code = $options['language']->language;
   }
-  if ($form['#step'] == MCAPIFORM_STEP_ENTER) {
-    foreach ($tokens as $name => $original) {
-      $replacements[$original] = drupal_render($form[$name]);
-    }
-  }
-  elseif ($form['#step'] == MCAPIFORM_STEP_CONFIRM) {
-    foreach ($tokens as $name => $original) {
-      $replacements[$original] = mcapi_element_markup_render($form[$name]);
-    }
+  foreach ($tokens as $name => $original) {
+    $replacements[$original] = drupal_render($form[$name]);
   }
   //now, since we couldn't pass the form by reference,
   //we need to render the rest of the form elements
@@ -37,53 +30,6 @@ function mcapi_forms_tokens($type, $tokens, array $form, array $options = array(
     $replacements[$original] .= $item;
   }
   return $replacements;
-}
-
-
-/*
- * replace tokens in stage 2 form with text, based on the form item token used in the template
- * this is tricky because we have a formAPI element, and need to pull a sensible text value from it.
- * especially tricky with Field API fields, but we do the best we can.
- */
-function mcapi_element_markup_render(&$element) {
-  $element['#printed'] = TRUE;
-  switch($element['#type']) {
-    case 'user_chooser_roles':
-    case 'user_chooser_permissions':
-      $def = is_numeric($element['#value']) ? array($element['#value']) : $element['#value'];
-      return mcapi_format_usernames(user_load_multiple($def));
-    case 'radios':
-    case 'checkboxes':
-    case 'select':
-      return is_array($element['#value']) ?
-        implode(', ', $element['#value']) :
-        $element['#options'][$element['#value']];
-    //all the fieldAPI fields appear here as container, here we take the form fields and convert them to a render array
-    case 'container':
-      $lang = current(element_children($element)); //assumes value is in one language only
-      $fieldname = $element[$lang]['#field_name'];
-      $field = field_info_field($fieldname);
-      $instance = field_info_instance('transaction', $fieldname, 'transaction');
-      $function  = $field['module'] . '_field_formatter_view';
-      $items = mcapi_extract_element_values($element[$lang]);
-      $renderable[] = $function('transaction', NULL, NULL, $instance, $lang, $items, $instance['display']['default']);
-      return drupal_render($renderable);
-    case 'textfield':
-    default:
-      drupal_set_message("Mcapi forms doesn't know how to render ".$element['#type'], 'error');
-      return serialize($element['#value']);
-  }
-}
-
-function mcapi_extract_element_values($element) {
-  $items = array();
-  foreach (element_children($element) as $key) {
-    foreach ($element[$key]['#columns'] as $column) {
-      $items[$key][$column] = isset($element[$key][$column]['#value']) ? $element[$key][$column]['#value'] : 
-        (isset($element[$key][$column]['#default_value']) ? $element[$key][$column]['#default_value'] : NULL);
-    }
-  }
-  return $items;
 }
 
 function mcapi_forms_token_info() {
