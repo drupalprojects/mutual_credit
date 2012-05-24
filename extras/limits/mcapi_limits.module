@@ -47,12 +47,10 @@ function mcapi_limits_transactions_validate(array $transactions) {
   $errors = array();
   foreach ($transactions as $transaction) {
     //calculate the potential balances after all transactions have gone through
-    $existing_worth = empty($transaction->serial) ? array() : transaction_load($transaction->serial)->worth[LANGUAGE_NONE];
     foreach ($transaction->worth[LANGUAGE_NONE] as $delta => $flow) {
-      $currcode = $flow['currcode'];
-      $difference = $flow['quantity'] - @$existing_worth[$delta]['quantity'];
-      $accounts_diff[$transaction->payee][$currcode][] = $difference;
-      $accounts_diff[$transaction->payer][$currcode][] = $difference;
+      $currcode = &$flow['currcode'];
+      $accounts_diff[$transaction->payee][$currcode][] = $flow['quantity'];
+      $accounts_diff[$transaction->payer][$currcode][] = -$flow['quantity'];
     }
     //then compare the resulting balances for each user with their limits
     foreach ($accounts_diff as $uid => $percurrency) {
@@ -61,12 +59,11 @@ function mcapi_limits_transactions_validate(array $transactions) {
         $limits = limits_get($currcode, $uid);
         if (isset($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max']) {
           $surplus = $projected - $limits['max'];
-          $errors[] = $surplus .'>'. $limits['max'] .'>'. $currcode;
+          $errors[$uid] = $surplus .'>'. $limits['max'] .'>'. $currcode;
         }
         elseif (isset($limits['min']) && is_numeric($limits['min']) && $projected < $limits['min']) {
-          $payer_projected = transaction_totals($transaction->payer, $currcode)->balance - $difference;
           $deficit = $limits['min'] - $projected;
-          $errors[] = $deficit .'<'. $limits['min'] .'<'. $currcode;
+          $errors[$uid] = $deficit .'<'. $limits['min'] .'<'. $currcode;
         }
       }
     }

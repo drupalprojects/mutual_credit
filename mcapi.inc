@@ -320,7 +320,7 @@ function mcapi_transaction_undo_confirm_form($form, $form_state, $transaction){
  */
 function mcapi_transaction_undo_confirm_form_submit($form, $form_state) {
   $transactions = array(transaction_load($form_state['values']['serial']));
-  transactions_undo($transaction);
+  transactions_undo($transactions);
   //this could be done better with 'destination' in the url
   drupal_goto('user');
 }

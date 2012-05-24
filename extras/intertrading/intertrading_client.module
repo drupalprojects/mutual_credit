@@ -660,7 +660,7 @@ function intertrading_client2_receive() {
     $transaction = (object)$form_state['values'];
     $form = drupal_retrieve_form('transaction_form', $form_state);
     entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-    transactions_validate(array($transaction));
+    transaction_insert_new($transaction, $really);
   }
   catch (Exception $e) {
     $message = $e->getMessage();
@@ -789,36 +789,40 @@ function intertrading_client_help($path, $args) {
 function report_intertrading_history() {
   $intertrading_uid = variable_get('intertrading_uid', 0);
   $intertrading_currcode = variable_get('intertrading_currcode', '');
+  $output = array();
+
   $serials = db_query("SELECT serial FROM {mcapi_transactions} t
     LEFT JOIN {field_data_worth} w ON t.xid = w.entity_id
     WHERE (payer = :payer OR payee = :payee) AND state > 0 AND w.worth_currcode = :currcode",
       array(':payer' => $intertrading_uid, ':payee' => $intertrading_uid, ':currcode' => $intertrading_currcode))
   ->fetchCol();
-  $transactions = transactions_load(array(), array('serial', $serials));
-  $output = array();
-  foreach ($transactions as $transaction) {
-    transactions_state($transaction->serial, TRANSACTION_STATE_FINISHED);
+  
+  if (count($serials)) {
+    $transactions = transactions_load(array(), array('serial', $serials));
+    foreach ($transactions as $transaction) {
+      transactions_state($transaction->serial, TRANSACTION_STATE_FINISHED);
 
-    $outgoing = FALSE;
-    if ($transaction->payee_uid == $intertrading_uid) $outgoing = TRUE;
+      $outgoing = FALSE;
+      if ($transaction->payee_uid == $intertrading_uid) $outgoing = TRUE;
 
-    $output[$transaction->xid] = array(
-      'payer' => $outgoing ? user_load($transaction->payer)->mail : '',
-      'payer_url' => $outgoing ? INTERTRADING_REF_URL : '',
-      'payee' =>$outgoing ? 0 : user_load($transaction->payee)->mail,
-      'payee_url' => $outgoing ? '' : INTERTRADING_REF_URL,
-      'src_url' => INTERTRADING_REF_URL, //the url of the client OR blank
-      'dest_url' => '', //the url of the client OR blank
-      'quantity' => transaction_quant($transaction, $intertrading_currcode), //denominated in src units
-      'date' => $transaction->created, //unixtime
-    );
-    if ($desc = variable_get('intertrading_description_field', '')) {
-      $field = field_view_field('transaction', $transaction, $desc);
+      $output[$transaction->xid] = array(
+        'payer' => $outgoing ? user_load($transaction->payer)->mail : '',
+        'payer_url' => $outgoing ? INTERTRADING_REF_URL : '',
+        'payee' =>$outgoing ? 0 : user_load($transaction->payee)->mail,
+        'payee_url' => $outgoing ? '' : INTERTRADING_REF_URL,
+        'src_url' => INTERTRADING_REF_URL, //the url of the client OR blank
+        'dest_url' => '', //the url of the client OR blank
+        'quantity' => transaction_quant($transaction, $intertrading_currcode), //denominated in src units
+        'date' => $transaction->created, //unixtime
+      );
+      if ($desc = variable_get('intertrading_description_field', '')) {
+        $field = field_view_field('transaction', $transaction, $desc);
+      }
+      //rendering the children removes the the title field and stuff
+      $output[$transaction->xid]['description'] = isset($field) ? strip_tags(drupal_render_children($field)) : '';
     }
-    //rendering the children removes the the title field and stuff
-    $output[$transaction->xid]['description'] = isset($field) ? strip_tags(drupal_render_children($field)) : '';
+    watchdog('intertrading', 'Uploaded @num transactions to intertrading server', array('@num' => count($output)));
   }
-  watchdog('intertrading', 'Uploaded @num transactions to intertrading server', array('@num' => count($output)));
   intertrading_respond('OK', $output);
 }
 

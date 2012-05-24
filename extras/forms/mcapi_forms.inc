@@ -110,13 +110,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     }
   }
   elseif ($form['#step'] == 2) {
+    drupal_set_title($mcapi_form->data['experience']['sure_title']);
     foreach(element_children($form) as $fieldname) {
       if (in_array($fieldname, array('buttons', 'form_id', 'form_build_id', 'form_token'))) continue;
       unset($form[$fieldname]);
     }
     //put the back button only for last step if there are values from step 1
     if (!empty($form_state['values'])) {//coming from step 1
-      $form['#preview'] = transaction_view($form_state['transactions'], 'certificate');
+      $form['#preview'] = transaction_view($form_state['transactions'], $mcapi_form->data['experience']['sure_format']);
       mcapi_hide_tabs();
       $form['buttons']['back'] = array(
         '#type' => 'submit',
@@ -131,12 +132,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     else {//landing directly on step 2
       $form['#preview'] = transaction_view(array($transaction->xid => $transaction), 'certificate');
     }
-
-
-
-
-
-
     //save button
     if (strpos($mcapi_form->data['submission']['button'], '/')) {
       $form['buttons']['submit']['#type'] = 'image_button';

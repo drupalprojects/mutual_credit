@@ -66,9 +66,9 @@ function mcapi_drush_command() {
 
 function drush_mcapi_wipeslate() {
   //how to do "are you sure?" messages in drush!
-  $xids = db_query("SELECT xid FROM {mcapi_transactions}")->fetchCol();
-  entity_get_controller('transaction')->state(transactions_load($xids), TRANSACTION_STATE_ERASED);
-  $count = count($xids);
+  $serials = db_query("SELECT serial FROM {mcapi_transactions}")->fetchCol();
+  entity_get_controller('transaction')->state($serials, TRANSACTION_STATE_ERASED);
+  $count = count($serials);
   drush_print("undone $count transactions");
   if (drush_get_option('purge')) {
     drush_mcapi_purge();
@@ -77,7 +77,7 @@ function drush_mcapi_wipeslate() {
 
 
 function drush_mcapi_purge() {
-  //how to do "are you sure?" messages in drush!
+  //how to do "are you sure?" messages in drush
   $transactions = transactions_load(NULL, array('state' => TRANSACTION_STATE_ERASED));
   entity_get_controller('transaction')->undo($transactions, MCPI_CURRENCY_UNDO_DELETE);
   $count = count($transactions);

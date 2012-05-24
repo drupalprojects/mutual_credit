@@ -68,21 +68,23 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
   /*
    * put an array of transactions in the database
    * any transactions without a serial number will be assumed to be part of a new cluster
-   * and saved with the same serial number
+   * and saved with the SAME serial number
    */
   public function insert(&$transactions, $really = FALSE) {
     //we need to ensure the schema is cached before calling mcapi_write_record
     //Otherwise it may try to retrieve the schema from the wrong database
-    drupal_get_schema('mcapi');
+    drupal_get_schema('mcapi_transactions');
     //for now only the controller knows how to generate and serial numbers for its own
     //this subsystem system will need reworking if this module expands
-    $serial = db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
+    $serial = $this->next_serial(current($transactions));
     foreach ($transactions as $transaction) {
       $transaction->temp = isset($transaction->xid) ? $transaction->xid : 0;
       $transaction->creator = $GLOBALS['user']->uid;
       $transaction->created = REQUEST_TIME;
       //do the best we can in case a serial number isn't yet provided
-      $transaction->serial = empty($transaction->serial) ? $serial : $transaction->serial;
+      if (empty($transaction->serial)) {
+        $transaction->serial = $serial;
+      }
       $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
     }
     //remember transaction might be written to more than one db
@@ -118,8 +120,9 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * there is no error checking on this.
    * $purge is an undocumented feature, for development only, which forces mode MCPI_CURRENCY_UNDO_DELETE
    */
-  public function undo($transactions, $mode = FALSE) {
-    if (empty($mode)) {
+  public function undo($transactions, $mode = NULL) {
+    if ($mode === NULL) {
+      //take the safest as the default
       $mode = variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE);
     }
     switch($mode) {
@@ -137,9 +140,10 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
           $reversed = clone $transaction;
           $reversed->payer = $transaction->payee;
           $reversed->payee = $transaction->payer;
+          $reversed->xid = NULL;
           $reverseds[] = $reversed;
         }
-        transactions_insert($reverseds);
+        transactions_insert($reverseds, TRUE);
         break;
     }
     return $transaction;
@@ -204,15 +208,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     return db_query($query, $replacements)->fetchAssoc();
   }
 
-  public function last_insert($type = '') {
-    $query = "SELECT MAX(serial) FROM {mcapi_transactions} ";
-    $args = array();
-    if ($type) {
-      $query .= 'WHERE type = :type';
-      $args[':type'] = 'type';
-    }
-    return db_query($query, $args)->fetchfield();
-  }
   /*
    * alternative to using views
    * Get a list of transactions for a user, between unixtimes
@@ -246,6 +241,10 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       $query->condition('currcode', $currcode);
     }
     return $query->execute()->fetchAll();
+  }
+
+  public function next_serial($transaction) {
+    return db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
   }
 
   public function delete() {
