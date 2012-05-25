@@ -38,6 +38,14 @@ function mcapi_pending_menu() {
   return $items;
 }
 
+function mcapi_pending_hook_info() {
+  return array(
+    //a signature is added to a transaction
+    //takes args $transaction and $signer_uid
+    'transaction_sign' => array()
+  );
+}
+
 function mcapi_pending_menu_alter(&$items) {
   //this menu item is generated from the transaction form-in-code
   //it can ONLY be seen by signatories
@@ -172,6 +180,7 @@ function mcapi_sign($serials, $uids) {
           array('@serial' => $transaction->serial, '@name' => user_load($uid)->name)
         ));
       }
+      module_invoke_all('transaction_sign', $transaction, $uid);
     }
     if (count(array_filter($transaction->pending_signatures)) == 0) {
       $change_state[] = $serial;
@@ -401,11 +410,6 @@ function mcapi_check_integrity() {
   $serials = db_query("SELECT t.serial FROM {mcapi_transactions} t LEFT JOIN {mcapi_signatures} s ON t.serial = s.serial WHERE s.pending = 1 AND t.state = :state", array(':state' => TRANSACTION_STATE_FINISHED))->fetchCol();
   if (count($serials)){
     watchdog('mcapi_pending', 'Some completed transactions still have signatures pending, please report to matslats: @serials', array('@serials' => implode(', ', $serials)), WATCHDOG_ERROR);
-  }
-
-  $serials = db_query("SELECT s.serial FROM {mcapi_transactions} t RIGHT JOIN {mcapi_signatures} s ON t.serial = s.serial WHERE s.pending = 0 AND t.state = :state", array(':state' => TRANSACTION_STATE_PENDING))->fetchCol();
-  if (count($serials)) {
-    watchdog('mcapi_pending', 'Some pending transactions have no signatures pending, please report to matslats: @serials', array('@serials' => implode(', ', $serials)), WATCHDOG_ERROR);
   }
 }
 
