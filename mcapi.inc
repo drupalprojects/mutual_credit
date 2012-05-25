@@ -247,12 +247,12 @@ function transaction_form_validate($form, &$form_state) {
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   try{
     $transactions = transaction_insert_new($transaction, FALSE);
+    //keep a copy of the built transaction, and its dependencies for validation elsewhere
+    $form_state['transactions'] = $transactions;
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
   }
-  //keep a copy of the transaction, and its dependencies
-  $form_state['transactions'] = $transactions;
 }
 
 /*

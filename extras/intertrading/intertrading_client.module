@@ -590,7 +590,8 @@ function intertrading_transaction_form_validate($form, $form_state) {
     'quantity' => $values['worth'][LANGUAGE_NONE][0]['quantity'],
     'src_url' => INTERTRADING_REF_URL,
     'dest_url' => $values['dest_url'],
-    'description' => $desc_field ? $values[$desc_field][LANGUAGE_NONE][0]['value'] : ''
+    'description' => $desc_field ? $values[$desc_field][LANGUAGE_NONE][0]['value'] : '',
+    'date' => REQUEST_TIME
   );
 
   //this should overwrite whichever of payer and payee is the local intertrading account
@@ -605,7 +606,7 @@ function intertrading_transaction_form_validate($form, $form_state) {
 function intertrading_transaction_form_submit($form, $form_state) {
   $transaction = (object)$form_state['values'];
   $transaction->state = TRANSACTION_STATE_FINISHED;
-  transaction_save_new($transaction);
+  transaction_insert_new($transaction, TRUE);
   drupal_set_message('Transaction saved with remote site.');
   //redirect somewhere
 }
@@ -808,7 +809,7 @@ function report_intertrading_history() {
       $output[$transaction->xid] = array(
         'payer' => $outgoing ? user_load($transaction->payer)->mail : '',
         'payer_url' => $outgoing ? INTERTRADING_REF_URL : '',
-        'payee' =>$outgoing ? 0 : user_load($transaction->payee)->mail,
+        'payee' => $outgoing ? 0 : user_load($transaction->payee)->mail,
         'payee_url' => $outgoing ? '' : INTERTRADING_REF_URL,
         'src_url' => INTERTRADING_REF_URL, //the url of the client OR blank
         'dest_url' => '', //the url of the client OR blank

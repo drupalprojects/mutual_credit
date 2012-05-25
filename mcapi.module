@@ -124,7 +124,6 @@ function mcapi_currency_form(&$form, &$form_state){
  */
 function mcapi_hook_info() {
   //not sure why this was throught necessary
-//  module_load_include('inc', 'mcapi');
   return array(
     //declare new transaction controllers
     'transaction_controller' => array(),
@@ -134,6 +133,8 @@ function mcapi_hook_info() {
     'currency_access_callbacks' => array(),
     //declare permissions for transaction access control, per currency per operation
     'transaction_access_callbacks' => array(),
+    //change of transaction state - takes transaction
+    'transactions_state' => array(),
     //declare transaction states
     'mcapi_info_states' => array(),
     //declare transaction types
@@ -141,6 +142,7 @@ function mcapi_hook_info() {
     //declare permissions to go into the community accounting section of the drupal permissions page
     'mcapi_info_drupal_permissions' => array(),
   );
+  //also note there is hook_transactions_alter before insertion
 }
 
 /**
@@ -481,11 +483,12 @@ function transactions_undo(array $transactions, $force = FALSE) {
   }
 }
 //resave the transaction, but only change the state - this is not considered an update
-function transaction_state(array $serials, $new_state, $really = FALSE) {
+function transactions_state(array $serials, $new_state, $really = FALSE) {
   $transactions = transactions_load(NULL, array('serial' => $serials));
   module_invoke_all('transactions_validate', $transactions);
   if (!$really) return;
   entity_get_controller('transaction')->state($serials, $new_state, $really);
+  module_invoke_all('transactions_state', $transactions);
 }
 //returns an object with properties
 //->balance

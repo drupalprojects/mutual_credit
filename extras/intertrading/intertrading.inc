@@ -27,23 +27,26 @@ function intertrading_json_request($url, $params) {
         
       }
       else {
-        $return->message = intertrading_error_codes($return->code, $return->args);
+        $return->message = html_entity_decode(intertrading_error_codes($return->code, $return->args));
         watchdog('intertrading', 'Site @site returned error @message', array('@site' => $url,  '@message' => $return->message), WATCHDOG_NOTICE);
       }
     }
     else {//this could mean a 500 error or something
       watchdog('intertrading', 'Unexpected result from @url: @result', array('@url' => $url, '@result' => print_r($result, 1)), WATCHDOG_NOTICE);
-      $return->message = t('Server reports: '). $result->data;
+      $return->message = t('Server reports: '). html_entity_decode($result->data);
     }
   }
   //http status codes failure
   else {
     intertrading_error($result);
+    debug($result);
     //this doesn't catch "php_network_getaddresses: getaddrinfo failed: Name or service not known" with code 0
-    $args = array('@client' => $url, '@status' => $result->code, '@error' => strval($result->error));
+    $return->args = array('@client' => $url, '@status' => $result->code);
+    if (isset($result->error)) {
+      $return->args['@error'] = strval($result->error);
+    }
     $return->code  = 27;
-    $return->message = intertrading_error_codes(27, $args);
-    $return->args = $args;
+    $return->message = html_entity_decode(intertrading_error_codes(27, $return->args));
     watchdog('intertrading', "@message", array('@message' => $return->message), WATCHDOG_ERROR);
   }
   return $return;
@@ -140,14 +143,11 @@ function intertrading_error() {
 }
 
 
-function intertrading_error_codes($code, $args = array()) {
+function intertrading_error_codes($code, $args = array()) {debug($args);
   //$code 'OK' should never be passed to this function
   switch ($code) {
     //transaction
-    case 1: return t("Transaction would exceed your system's max limits on server by @quantity", $args);
-    case 2: return t("Transaction would exceed your system's min limits on server by @quantity", $args);
-    case 3: return t("Transaction would exceed dest max limits on server by @quantity", $args);
-    case 4: return t("Transaction would exceed dest min limits on server by @quantity", $args);
+    case 4: return mcapi_limits_exception_parse(unserialize($args['@message']));
     case 5: return t('Problem saving transaction on server: @message', $args);
     case 6: return t('Unknown account & failed to create a new account on intertrading server');
     case 7: return t('Diagnostics from server: @message', $args);

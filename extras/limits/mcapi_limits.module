@@ -55,48 +55,61 @@ function mcapi_limits_transactions_validate(array $transactions) {
     //then compare the resulting balances for each user with their limits
     foreach ($accounts_diff as $uid => $percurrency) {
       foreach ($percurrency as $currcode => $diffs) {
-        $projected = transaction_totals($uid, $currcode)->balance + array_sum($diffs);
+        $balance = transaction_totals($uid, $currcode)->balance;
+        $projected = $balance + array_sum($diffs);
         $limits = limits_get($currcode, $uid);
-        if (isset($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max']) {
-          $surplus = $projected - $limits['max'];
-          $errors[$uid] = $surplus .'>'. $limits['max'] .'>'. $currcode;
+        if (!empty($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max'] && $projected > $balance) {
+          $errors[$uid] = array(
+            '@name' => user_load($uid)->name,
+            '@projected' => $projected,
+            '@excess' => $projected - $limits['max'],
+            '@max' => $limits['max'],
+            '@currcode' => $currcode
+          );
         }
-        elseif (isset($limits['min']) && is_numeric($limits['min']) && $projected < $limits['min']) {
-          $deficit = $limits['min'] - $projected;
-          $errors[$uid] = $deficit .'<'. $limits['min'] .'<'. $currcode;
+        elseif (!empty($limits['min']) && is_numeric($limits['min']) && $projected < $limits['min'] && $projected < $balance) {
+          $errors[$uid] = array(
+            '@name' => user_load($uid)->name,
+            '@projected' => $projected,
+            '@excess' => $limits['min'] - $projected,
+            '@min' => $limits['min'],
+            '@currcode' => $currcode
+          );
         }
       }
     }
   }
   //the only way I can think of to pass both messages and codes back is to nest exceptions
-  try {if (count($errors)) throw new Exception(implode(';', $errors));}
+  try {if (count($errors)) throw new Exception(serialize($errors));}
   catch (exception $e) {
-    $codes = explode(';', $e->getMessage());
-    foreach ($codes as $key => $error) {
-      //parse balance limits error
-      if (strpos($error, '>')) {
-        list($excess, $limit, $currcode) = explode('>', $error);
-        $messages[$error] = t('Transaction would take @username !quant above the maximum balance of !max',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payee))),
-            '!quant' => theme('worth_field', array('quantity' => $excess, 'currcode' => $currcode)),
-            '!max' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode))
-          )
-        );
-      }
-      elseif (strpos($error, '<')) {
-        list($excess, $limit, $currcode) = explode('<', $error);
-        $messages[$error] = t('Transaction would take @username !quant below the minimum balance of !min',
-          array(
-            '@username' => strip_tags(format_username(user_load($transaction->payer))),
-            '!quant' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $excess)),
-            '!min' => theme('worth_field', array('quantity' => $limit, 'currcode' => $currcode)),
-          )
-        );
-      }
-    }
+    $messages = mcapi_limits_exception_parse(unserialize($e->getMessage()));
     throw new Exception(implode('<br />', $messages), 0, $e);
   }
+}
+
+function mcapi_limits_exception_parse($errors) {
+  foreach ($errors as $key => $error) {
+    //parse balance limits error
+    if (isset($error['@max'])) {
+      $messages[] = t('Transaction would take @name !quant above the maximum balance of !max',
+        array(
+          '@name' => $error['@name'],
+          '!quant' => theme('worth_field', array('quantity' => $error['@excess'], 'currcode' => $error['@currcode'])),
+          '!max' => theme('worth_field', array('quantity' => $error['@max'], 'currcode' => $error['@currcode']))
+        )
+      );
+    }
+    if (isset($error['@min'])) {
+      $messages[] = t('Transaction would take @name !quant below the minimum balance of !min',
+        array(
+          '@name' => $error['@name'],
+          '!quant' => theme('worth_field', array('quantity' => $error['@excess'], 'currcode' => $error['@currcode'])),
+          '!min' => theme('worth_field', array('quantity' => $error['@min'], 'currcode' => $error['@currcode'])),
+        )
+      );
+    }
+  }
+  return implode('; ', $messages);
 }
 
 /*

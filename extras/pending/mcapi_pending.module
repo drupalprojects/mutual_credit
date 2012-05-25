@@ -193,7 +193,7 @@ function mcapi_sign($serials, $uids) {
   if (empty($change_state)) return;
   //change the state of the transaction if all signatures are present
   try {
-    transaction_state($change_state, TRANSACTION_STATE_FINISHED, TRUE);
+    transactions_state($change_state, TRANSACTION_STATE_FINISHED, TRUE);
   }
   catch (Exception $e){
     drupal_set_message($e->getMessage());
@@ -269,7 +269,7 @@ function mcapi_signoff_confirm_form($form, $form_state, $transaction) {
   //check that the balances will be ok if we change state
   try {
     $serials = array($transaction->serial);
-    transaction_state($serials, TRANSACTION_STATE_FINISHED, FALSE);
+    transactions_state($serials, TRANSACTION_STATE_FINISHED, FALSE);
   }
   catch (Exception $e) {
     drupal_set_message($e->getMessage(), 'warning');
@@ -324,7 +324,7 @@ function pending_not_signable($serial) {
       throw new Exception(t('Pending transaction has no signatures waiting'));
     }
     $serials = array($serial);
-    transaction_state($serials, TRANSACTION_STATE_FINISHED, TRUE);
+    transactions_state($serials, TRANSACTION_STATE_FINISHED, TRUE);
   }
   catch(Exception $e) {
     return $e->getMessage();
