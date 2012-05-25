@@ -28,7 +28,7 @@ function mcapiform_default_1stparty() {
     'architecture' => array(
       'path' => 'transact/1stparty',
       'access' => 'user_access:transact',
-      'menu_link' => 'navigation',
+      'menu_link' => MENU_DEFAULT_LOCAL_TASK,
       'use_block' => 1,
     ),
     'secondperson' => array(
@@ -88,7 +88,7 @@ function mcapiform_default_3rdparty() {
     'architecture' => array(
       'path' => 'transact/3rdparty',
       'access' => 'user_access:manage all transactions',
-      'menu_link' => 'navigation',
+      'menu_link' => MENU_LOCAL_TASK,
       'use_block' => 1,
     ),
     'mcapi_form_fields' => array(

@@ -35,7 +35,7 @@ function intertrading_client_menu() {
       'page arguments' => array('remote_incoming_form', $transaction),
       'access arguments' => array('intertrade'),
       'menu_name' => 'main-menu',
-      'type' => MENU_SUGGESTED_ITEM,
+      'type' => MENU_LOCAL_TASK,
       'file' => 'mcapi.inc',
       'file path' => drupal_get_path('module', 'mcapi'),
       'weight' => 1

@@ -52,13 +52,29 @@ function mcapi_menu_inc() {
     'file' => 'mcapi.inc',
     'weight' => 2
   );
-  $items['admin/accounting/record'] = array(
-    'title' => 'Record transaction',
-    'description' => 'Set all the properties manually on a new transaction',
+  $items['admin/accounting/transact'] = array(
+    'title' => 'Record transaction (full)',
+    'description' => 'Log a transaction in the database',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_admin_form'),
     'access arguments' => array('manage all transactions'),
+    'menu name' => 'navigation',
     'file' => 'mcapi.inc',
+  );
+  $items['transact'] = array(
+    'title' => 'Record transaction',
+    'description' => 'Log a transaction in the database',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_default_form'),
+    'access arguments' => array('transact'),
+    'file' => 'mcapi.inc',
+  );
+  $items['transact/default'] = array(
+    'title' => 'Log',
+    'description' => 'Full control over transaction creation',
+    //'page callback' => 'drupal_get_form',
+    //'access arguments' => array('transact'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/accounting/entity_controller'] = array(
     'title' => 'Entity controller',
@@ -129,10 +145,19 @@ function transaction_menu_title($transaction) {
   return t('Transaction certificate #@serial', array('@serial' => $transaction->serial));
 }
 
+function transaction_default_form($form, &$form_state) {
+  $form = transaction_form($form, $form_state);
+  $form['state']['#type'] = 'value';
+  $form['type']['#type'] = 'value';
+  $form['creator']['#type'] = 'value';
+  return $form;
+
+}
+
 /**
  * All transaction forms should use this function as a basis using hook_forms
  */
-function _transaction_form($form, &$form_state, $transaction) {
+function _transaction_form(&$form, &$form_state, $transaction) {
   $form['serial'] = array(
     '#type'=> 'hidden',
     '#value' => isset($transaction->serial) ? $transaction->serial : 0
@@ -156,12 +181,11 @@ function _transaction_form($form, &$form_state, $transaction) {
     '#weight' => 9,
   );
   $types = module_invoke_all('mcapi_info_types');
-  unset($types[array_search('unspecified', $types)]);
   $form['type'] = array(
     '#title' => t('Transaction type'),
     '#options' => drupal_map_assoc($types),
     '#type' => 'select',
-    '#default_value' => $transaction->type ? $transaction->type : 'auto',
+    '#default_value' => $transaction->type ? $transaction->type : 'default',
     '#element_validate' => array('mcapi_validate_ttype'),
     '#required' => TRUE,
     '#weight' => 15
@@ -206,7 +230,6 @@ function _transaction_form($form, &$form_state, $transaction) {
   $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_form_submit');
   $form_state['redirect'] = 'user';
-  return $form;
 }
 
 /*

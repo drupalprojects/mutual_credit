@@ -69,7 +69,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'menu_link' =>array(
       '#title' => t('Menu link location'),
-      '#description' => t('Choose the menu, or menu item-type.') .' '. t("For more info, see 'type' info at !link", array('!link' => l('drupal.org', 'http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
+      '#description' => t('Choose the menu, or menu item-type.') .' '. t('Some choices may not produce a menu item') .' '.
+        t("For more info, see 'type' info at !link", array('!link' => l('drupal.org', 'http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
       '#type' => 'select',
       '#default_value' => isset($mcapi_form['architecture']['menu_link']) ? $mcapi_form['architecture']['menu_link'] : 'MENU_CALLBACK',
       '#options' => $menus+ array(

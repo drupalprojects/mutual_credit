@@ -96,8 +96,10 @@ function transaction_form($form, &$form_state) {
   //the incoming transaction is either from $form_state, or from the build arguments or an empty object
   $transaction = isset($form_state['values']) ? (object)$form_state['values'] : (
     empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? new_transaction() : $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]);
-  return _transaction_form($form, $form_state, $transaction);
+  _transaction_form($form, $form_state, $transaction);
+  return $form;
 }
+
 
 /*
  * ctools plugin callback for editing a currency, determined by the ctools export_plugin
