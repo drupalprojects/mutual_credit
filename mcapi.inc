@@ -180,10 +180,9 @@ function _transaction_form(&$form, &$form_state, $transaction) {
     '#autocomplete_path' => 'user/autocomplete',
     '#weight' => 9,
   );
-  $types = module_invoke_all('mcapi_info_types');
   $form['type'] = array(
     '#title' => t('Transaction type'),
-    '#options' => drupal_map_assoc($types),
+    '#options' => drupal_map_assoc(module_invoke_all('mcapi_info_types')),
     '#type' => 'select',
     '#default_value' => $transaction->type ? $transaction->type : 'default',
     '#element_validate' => array('mcapi_validate_ttype'),
@@ -209,18 +208,8 @@ function _transaction_form(&$form, &$form_state, $transaction) {
     '#weight' => 20,
   );
 
-  //TODO
-  //I'm just fed up of multistep forms
-  //the following doesn't retrieve default values out of form_state when we come back from step 2
-  try {
-    field_attach_form('transaction', $transaction, $form, $form_state);
-  }
-  catch (Exception $e) {
-    drupal_set_message(t('Cannot build transaction form:').' '. $e->getMessage(), 'error');
-    return array();
-  }
-  $lang = current(element_children($form['worth'])); //assumes only one language
-  unset($form['worth'][$lang]['add_more']);
+  field_attach_form('transaction', $transaction, $form, $form_state);
+  unset($form['worth'][LANGUAGE_NONE]['add_more']);
 
   $form['buttons']['submit'] = array(
     '#type' => 'submit',

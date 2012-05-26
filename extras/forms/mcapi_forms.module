@@ -95,6 +95,9 @@ function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id)
        empty($titles['title']) ? $titles['sure_title'] :$titles['title']
     );
   }
+  if (!empty($form_state['storage']) && $form_state['step'] == 1) {
+    $form_state['values'] = $form_state['storage'];
+  }
 
   _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
 }

@@ -441,7 +441,7 @@ function transaction_insert_new($transaction, $really) {
  * array transactions_load($xids = array(), array('serial' => array(AB123, AB124), $clearcache);
  * try transactions_insert(&$transactions)
  * try transactions_undo($transaction)
- * try transaction_state($serials, $newstate);
+ * try transactions_state($serials, $newstate);
  * array transaction_totals($uid, $currcode, $options)
  * //undocumented
  * transaction_load($serial)

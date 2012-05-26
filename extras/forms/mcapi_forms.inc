@@ -13,7 +13,7 @@ define('MCAPIFORM_BUILD_INFO_ARG', 1);
 function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   $args = &$form_state['build_info']['args'];
   $mcapi_form = $args[MCAPIFORM_BUILD_INFO_ARG];
-  $transaction = isset($form_state['values']) ? (object)$form_state['values'] : (
+  $transaction = isset($form_state['storage']) ? (object)$form_state['storage'] : (
     $args[TRANSACTION_BUILD_INFO_ARG] ? $args[TRANSACTION_BUILD_INFO_ARG] :
     new_transaction_presets($mcapi_form->data)
   );
@@ -239,11 +239,13 @@ function mcapi_forms_validate($form, &$form_state) {
   if (isset($form_state['values']['back']) && $form_state['values']['op'] == $form_state['values']['back']) {
     $form_state['rebuild'] = TRUE;
     $form_state['step']--;
+    $form_state['values'] = $form_state['storage'];
+    unset($form_state['transactions']);
   }
   //if step 2 template is available add a step and rebuild the form
   elseif (strlen($form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]->data['experience']['sure_title'])) {
     if (!form_get_errors() && $form['#step'] == 1) {
-      $form_state['storage'] += $form_state['values'];
+      $form_state['storage'] = $form_state['values'] + $form_state['storage'];
       $form_state['rebuild'] = TRUE;
       $form_state['step']++;
     }
