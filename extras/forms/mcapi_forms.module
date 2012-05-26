@@ -12,7 +12,6 @@ function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
   $mcapi_forms = mcapi_forms_load(NULL, TRUE);
-  $path_transact = _is_using_path_transact($mcapi_forms);
   //one menu callback for each form.
   foreach($mcapi_forms as $form) {
     if (!empty($form->disabled)) continue;
@@ -34,6 +33,14 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
+  //make one of these the default tab on transact
+  foreach ($items as $key => $item) {
+    if (empty($item['title'])) $items[$key]['title'] = 'rebuild your form!!';
+    if ($item['type'] == MENU_LOCAL_TASK && substr($key, 0 , 9) == 'transact/') {
+      $items[$key]['type'] = MENU_DEFAULT_LOCAL_TASK;
+      break;
+    }
+  }
   return $items;
 }
 
@@ -42,7 +49,9 @@ function mcapi_forms_menu() {
  * alters the menu item provided by ctools so it can be used for context
  */
 function mcapi_forms_menu_alter(&$items) {
-  $path_transact = _is_using_path_transact($mcapi_forms);
+  foreach (mcapi_forms_load(NULL, TRUE) as $form) {
+    if (substr($form->data['architecture']['path'], 0 , 9) == 'transact/') unset($items['transact/admin']);
+  }
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/forms/list/%';
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
@@ -52,9 +61,7 @@ function mcapi_forms_menu_alter(&$items) {
 //helps decide how to format menu tabs
 function _is_using_path_transact($mcapi_forms) {
   foreach ($mcapi_forms as $form) {
-    if (substr($form->data['architecture'])) {
-
-    }
+    if (substr($form->data['architecture']['path'], 0 , 9) == 'transact/')  return TRUE;
   }
 }
 

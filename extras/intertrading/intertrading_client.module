@@ -622,14 +622,10 @@ function intertrading_client2_receive() {
   if ($error = intertrading_validate_transaction_post($post)) {
     intertrading_respond($error[0], $error[1]);
   }
-  //build up the transaction form submission and validate it.
-  //if it wasn't for the description field, we wouldn't have to go through all this form mimicing.
-  //but could just make a transaction entity and handle it directly
-  $form_state['build_info']['args'] = array();
   $local_trader_mail = $post['dest_url'] == $post['payer_url'] ? $post['payer'] : $post['payee'];
   if ($local_trader = user_load_by_mail($local_trader_mail)) {
     $outgoing = $post['dest_url'] == $post['payee_url'];
-    $form_state['values'] = array(
+    $transaction = array(
       'creator' => variable_get('intertrading_uid'),
       'state' => TRANSACTION_STATE_FINISHED,
       'payer' => $outgoing ? variable_get('intertrading_uid', 0) : $local_trader->uid,
@@ -645,7 +641,7 @@ function intertrading_client2_receive() {
       ),
     );
     if($description_field = variable_get('intertrading_description_field', '')) {
-      $values[$description_field] = array(
+      $transaction[$description_field] = array(
         LANGUAGE_NONE => array(
           0 => array(
             'value' => urldecode($post['description'])
@@ -658,22 +654,22 @@ function intertrading_client2_receive() {
     intertrading_respond(28, array('@client' => INTERTRADING_REF_URL, '@mail' => $local_trader_mail));
   }
   try {
-    $transaction = (object)$form_state['values'];
-    $form = drupal_retrieve_form('transaction_form', $form_state);
-    entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-    transaction_insert_new($transaction, $really);
+    transaction_insert_new((object)$transaction, TRUE);
   }
   catch (Exception $e) {
     $message = $e->getMessage();
-    if(strpos($message, '>')) {
-      list($excess, $limit) = explode('>', $message);
-      $code = $data['incoming'] ? 21 : 23;
-      $args = array('@quantity' => $excess);
-    }
-    elseif(strpos($message, '<')) {
-      list($excess, $limit) = explode('<', $message);
-      $code = $data['incoming'] ? 22 : 24;
-      $args = array('@quantity' => $excess);
+    if ($d = $e->getPrevious()) {
+      $errors = unserialize($d->getMessage());//see limits exception handling
+      foreach ($errors as &$error) {
+        $ticks_user = user_load_by_name($error['@name']);
+        intertrading_convert_from_ticks($error['@excess'], $ticks_user);
+        intertrading_convert_from_ticks($error['@projected'], $ticks_user);
+        isset($error['@min']) ?
+          intertrading_convert_from_ticks($error['@min'], $ticks_user) :
+          intertrading_convert_from_ticks($error['@max'], $ticks_user);
+      }
+      //convert the values FROM minutes to the src systems currency
+      intertrading_respond(24, array('@message' =>  serialize($errors)));
     }
     else {
       $code = 25;
@@ -691,8 +687,6 @@ function intertrading_client2_receive() {
   if ($errors = form_get_errors()) {
     intertrading_respond(25, array('@message' => implode('; ', $errors)));
   }
-
-  transaction_all_submit($form, $form_state);
   intertrading_respond('OK');
 }
 

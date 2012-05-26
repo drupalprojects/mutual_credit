@@ -143,7 +143,7 @@ function intertrading_error() {
 }
 
 
-function intertrading_error_codes($code, $args = array()) {debug($args);
+function intertrading_error_codes($code, $args = array()) {
   //$code 'OK' should never be passed to this function
   switch ($code) {
     //transaction

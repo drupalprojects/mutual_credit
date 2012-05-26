@@ -16,7 +16,7 @@
  * $recorded        // date formatted using drupal's 'medium' date format
  * $payer           // name linked to payer profile
  * $payee           // name linked to payee profile
- * $worth          // an comma separated list of formatted transaction values (in different currencies)
+ * $worth          // a comma separated list of formatted transaction values (in different currencies)
  *
  * need to do some more work on the icon size
  * for now, you might want to include your own large-size graphic instead
@@ -54,14 +54,13 @@ else {
     t('!payer <strong>paid</strong> !payee', $replacements) :
     t('!payer <strong>will pay</strong> !payee', $replacements);
   $sum = t('the sum of !worth', array('!worth' => '<div style="font-size:250%;">'. $worth .'</div>'));
-  unset($additional['worth']);
   ?>
 
   <div class="exchange">
     <p><?php print $date; ?>
      <br /><br /><?php print $movement; ?>
      <br /><br /><?php print $sum; ?> </p>
-     <br /><br /><?php print implode($additional); ?></p>
+     <br /><br /><?php print render($additional); ?></p>
   </div>
   <?php
     if ($children) { ?>

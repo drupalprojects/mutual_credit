@@ -54,12 +54,6 @@ function mcapi_auto_action_info() {
       'label' => t('Charge the payee'),
       'configurable' => TRUE,
       'triggers' => array('any'),
-    ),
-    'mcapi_transaction_notify_action' => array(
-      'type' => 'transaction',
-      'label' => t('Notify transactee'),
-      'configurable' => TRUE,
-      'triggers' => array('any'),
     )
   );
   if (module_exists('mcapi_pending')) {//this could be moved
@@ -157,9 +151,6 @@ function transaction_auto_save($transactions) {
 function mcapi_auto_trigger_info() {
   return array(
     'mcapi' => array(
-      'transactions_alter' => array(
-        'label' => t('Modify before saving, and add any child transactions'),
-      ),
       'entity_insert' => array(
         'label' => t('A transaction has been created'),
       ),
@@ -168,7 +159,7 @@ function mcapi_auto_trigger_info() {
 }
 
 /*
- * The following 3 hook implementations are triggers which when fired, check for actions and then do them.
+ * The following hook implementations are triggers which when fired, check for actions and then do them.
  */
 function mcapi_auto_transactions_alter(&$transactions) {
   $original = &$transactions[0];
@@ -180,12 +171,6 @@ function mcapi_auto_transactions_alter(&$transactions) {
     }
   }
   return $transactions;
-}
-function mcapi_auto_entity_insert($transaction, $type) {
-  if ($type != 'transaction' || $transaction->type == 'auto') return;
-  foreach (trigger_get_assigned_actions('entity_insert') as $aid => $info) {
-    actions_do($aid, $transaction, $info);
-  }
 }
 /*
  * implements hook_form_trigger_assign_form_alter
@@ -213,31 +198,5 @@ function mcapi_auto_get_quant($formula, $base_quant) {
 
 
 
-/*
- * settings form callback for action mcapi_transaction_notify_action
- */
-function mcapi_transaction_notify_action_form($context) {
-  $form['recipient'] = array(
-    '#title' => t('Recipient'),
-    '#type' => 'textfield',
-    '#default_value' => empty($context['recipient']) ? '' : $context['recipient'],
-    '#element_validate' => array('mcapi_validate_usernames'),
-    '#autocomplete_path' => 'user/autocomplete',
-    '#required' => TRUE
-  );
-  $form['email_template'] = array(
-    '#title' => t('Mail template'),
-    '#description' => implode(' ', array(
-      t('Edit the e-mail to members who wish to be notified when this form completes.'),
-      t("'user' is the recipient of the mail."),
-      t('Available variables are: ') . implode(', ', matslats_list_tokens('site', 'user', 'transaction'))
-    )),
-    '#type' => 'textarea',
-    '#default_value' => empty($context['email_template']) ? '' : $context['email_template'],
-    '#required' => TRUE,
-    '#weight' => 1
-  );
-  return $form;
-}
 
 //Need a block to bring forced transactions to attention of permitted user

@@ -8,6 +8,7 @@ include ('mcapi_forms.inc');
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   $mcapi_form = &$form_state['item']->data;
+  if (empty($mcapi_form['experience']['sure_format']))debug($mcapi_form, "use this to update the 'experience section, below");
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
   $roles = user_roles(TRUE);

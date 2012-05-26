@@ -58,6 +58,7 @@ function mcapi_limits_transactions_validate(array $transactions) {
         $balance = transaction_totals($uid, $currcode)->balance;
         $projected = $balance + array_sum($diffs);
         $limits = limits_get($currcode, $uid);
+        watchdog('mcapi_debug', '@a', array('@a' => "balance: $balance, currcode: $currcode, 'uid: $uid"));
         if (!empty($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max'] && $projected > $balance) {
           $errors[$uid] = array(
             '@name' => user_load($uid)->name,
@@ -82,12 +83,15 @@ function mcapi_limits_transactions_validate(array $transactions) {
   //the only way I can think of to pass both messages and codes back is to nest exceptions
   try {if (count($errors)) throw new Exception(serialize($errors));}
   catch (exception $e) {
-    $messages = mcapi_limits_exception_parse(unserialize($e->getMessage()));
-    throw new Exception(implode('<br />', $messages), 0, $e);
+    $message = mcapi_limits_exception_parse(unserialize($e->getMessage()));
+    throw new Exception($message, 0, $e);
   }
 }
-
+/*
+ * utility parse the error messages which hitherto, were coded.
+ */
 function mcapi_limits_exception_parse($errors) {
+  $messages = array();
   foreach ($errors as $key => $error) {
     //parse balance limits error
     if (isset($error['@max'])) {

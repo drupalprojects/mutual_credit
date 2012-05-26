@@ -316,15 +316,9 @@ function mcapi_theme_fields() {
         'quantity' => 0
       )
     ),
-    'worth_field_multiple' => array(
-      'render element' => 'items'
-    ),
     'worth_widget' => array(
       'render element' => 'element'
-    ),
-    'worth_widget_multiple' => array(
-      'render element' => 'element'
-    ),
+    )
   );
 }
 /*
@@ -346,7 +340,7 @@ function mcapi_preprocess_worth_widget(&$variables) {
  * 'quantity'
  * 'currcode'
  */
-function theme_worth_field(&$variables) {
+function theme_worth_field(&$variables) {debug($variables);
   $currency = currency_load($variables['currcode']);
   list($replacements['@integer'], $replacements['@subdivision'], $replacements['@minus']) = currency_explode($variables['quantity']);
   if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
@@ -355,26 +349,8 @@ function theme_worth_field(&$variables) {
   if ($replacements['@integer'] >  999) {//put in the thousands separator
     $replacements['@integer'] = number_format($replacements['@integer']);
   }
-  return strtr($currency->display['format'], $replacements);
-}
-/*
- * default implementation of theme hook 'worth_field_multiple'
- * this should probably be removed in favour of the usual multiple field wrapper
- */
-function theme_worth_field_multiple($variables) {
-  $items = &$variables['items'];
-  $output = array();
-  foreach (element_children($items) as $name) {
-    $output[] = theme('worth_field', $items[$name]);
-  }
-  return implode('<br />', $output);
-}
-
-function theme_worth_widget_multiple($variables) {
-  foreach (element_children($variables['element']) as $key) {
-    $children[] = drupal_render($variables['element']);
-  }
-  return implode('<br />', $children);
+  //add the extra space to save writing a multiple rendering function
+  return strtr($currency->display['format'], $replacements) .' ';
 }
 
 /*

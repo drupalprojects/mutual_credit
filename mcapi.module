@@ -322,9 +322,8 @@ function currency_label($currency) {
 }
 
 /**
- * menu callback
- * build a render array any number of transactions
- * compatible with $entity_info['view callback'] from entity module
+ * menu callback (also declared as $entity_info['view callback'])
+ * build a render array for any number of transactions
  * first arg can be one or an array
  */
 function transaction_view($transactions, $view_mode = 'certificate') {
@@ -334,18 +333,9 @@ function transaction_view($transactions, $view_mode = 'certificate') {
   if ($view_mode == 'sentence') {
     drupal_add_css('.transaction-sentence div{display:inline;}', array('type' => 'inline'));
   }
-  entity_prepare_view('transaction', $transactions);
   //structure the transactions using serial numbers, assuming the first is always the main one
   $clusters = array();
   foreach($transactions as $transaction) {
-    //render the fieldAPI fields.
-    $transaction->additional = field_attach_view('transaction', $transaction, $view_mode);
-    //$transactions must be keyed by xid if there is more than one
-    //in preview mode this may not be the case
-    //anyway it seems to work without
-    if (!empty($transaction->xid)) {
-      field_attach_prepare_view('transaction', array($transaction->xid => $transaction), $view_mode);
-    }
     if (empty($clusters[$transaction->serial])) {
       $clusters[$transaction->serial] = $transaction;
     }
@@ -373,13 +363,31 @@ function template_preprocess_transaction(&$variables) {
   $variables['state'] = $transaction->state;
   $variables['recorded'] = format_date($transaction->created, 'medium');
   $variables['type'] = $transaction->type;
+
+
+  //$transactions must be keyed by xid if there is more than one
+  //in preview mode this may not be the case
+  //anyway it seems to work without
+  if (!empty($transaction->xid)) {
+    $transactions = array($transaction->xid => &$transaction);
+    field_attach_prepare_view('transaction', $transactions, $variables['view_mode']);
+    //entity_prepare_view('transaction', $transactions);
+  }
+  else {
+    //I don't know
+  }
+  //this returns a render array
+  $variables['additional'] = field_attach_view('transaction', $transaction, $variables['view_mode']);
+  //this populates top level of variables with the render array
+  field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
+  //move worth field to the top of $variables where we would expect to find it
+  $variables['worth'] = drupal_render($variables['additional']['worth']);
+  unset($variables['additional']['worth']);
+
   //choose the transaction theme template based on the first currency of the transaction
   $flows = current($transaction->worth);
   $variables['theme_hook_suggestion'] = 'transaction__' . $flows[0]['currcode'];
-  foreach (element_children($transaction->additional) as $fieldname) {
-    $variables[$fieldname] = drupal_render($transaction->additional[$fieldname]);
-    $variables['additional'][$fieldname] = $variables[$fieldname];//this is used for default theme implementation
-  }
+
   $variables['children'] = array();
   if (!isset($transaction->children)) return;
   foreach ($transaction->children as $child) {
@@ -658,4 +666,127 @@ function mcapi_format_usernames($accounts) {
     $names[] = format_username($account);
   }
   return implode(' & ' ,$names);
+}
+
+
+/*
+ * ====================================================
+ * Implements hook_action_info
+ * provides some simple actions, without conditions
+ */
+function mcapi_action_info() {
+  module_load_include('inc', 'mcapi');
+  return array(
+    'mcapi_transaction_notify_action' => array(
+      'type' => 'transaction',
+      'label' => t('Notify transactees'),
+      'description' => t('Compose one mail which will be sent to users involved in the transaction who did not start the transaction'),
+      'configurable' => TRUE,
+      'triggers' => array('entity_insert'),
+    )
+  );
+}
+/*
+ * implements hook_trigger_info
+ */
+function mcapi_trigger_info() {
+  return array(
+    'mcapi' => array(
+      'entity_insert' => array(
+        'label' => t('A transaction has been created'),
+      ),
+    ),
+  );
+}
+
+
+/*
+ * settings form callback for action mcapi_transaction_notify_action
+ */
+function mcapi_transaction_notify_action_form($context) {
+  $def_bod = t("[user:name],
+
+A transaction for [transaction:worth] has been saved with [transaction:partner]
+
+More details can be found at
+[transaction:uri]
+
+To change your notification settings, visit your profile at
+[user:edit-url]
+
+The team at [site:name]");
+
+  $form['mail'] = array(
+    '#title' => t('Mail subject'),
+    '#description' => t('Available variables are: ') . implode(', ', matslats_list_tokens('site', 'user', 'transaction')),
+    'subject' => array(
+      '#title' => t('Subject'),
+      '#type' => 'textfield',
+      '#default_value' => empty($context['subject']) ? t('Exchange saved with [transaction:partner]') : $context['subject'],
+      '#required' => TRUE,
+    ),
+    'body' => array(
+      '#title' => t('Mail template'),
+      '#type' => 'textarea',
+      '#default_value' => empty($context['body']) ? $def_bod : $context['body'],
+      '#required' => TRUE,
+      '#weight' => 1
+    )
+  );
+  $form['cc'] = array(
+    '#title' => t('cc:'),
+    '#description' => t('Send an extra copy'),
+    '#type' => 'textfield',
+    '#default_value' => empty($context['cc']) ? '' : $context['cc'],
+    '#weight' => 2
+  );
+  return $form;
+}
+function mcapi_transaction_notify_action_submit($form, $form_state) {
+  return $form_state['values'];
+}
+/*
+ * implements hook_entity_insert
+ * in service of trigger module
+ */
+function mcapi_entity_insert($transaction, $type) {
+  if ($type != 'transaction' || $transaction->type == 'auto') return;
+  foreach (trigger_get_assigned_actions('entity_insert') as $aid => $info) {
+    actions_do($aid, $transaction, $info);
+  }
+}
+/*
+ * action callback
+ * mail the transaction participants, and cc
+ */
+function mcapi_transaction_notify_action($transaction, $params) {
+  $params['transaction'] = $transaction;
+  if ($GLOBALS['user']->uid != $transaction->payer) {
+    $params['user'] = user_load($transaction->payer);
+    drupal_mail('mcapi', 'transaction_notify_action', $params['user']->mail, user_preferred_language($params['user']), $params);
+  }
+  if ($GLOBALS['user']->uid != $transaction->payee) {
+    $params['user'] = user_load($transaction->payee);
+    drupal_mail('mcapi', 'transaction_notify_action', $params['user']->mail, user_preferred_language($params['user']), $params);
+  }
+  $cc = user_load_by_mail($params['cc']);
+  if ($cc->uid && $GLOBALS['user']->uid != $cc->uid) {
+    $params['user'] = &$cc;
+    drupal_mail('mcapi', 'transaction_notify_action', $settings['cc'], user_preferred_language($params['user']), $params);
+  }
+
+}
+
+/*
+ * ================================================================
+ * implements hook_mail
+ */
+function mcapi_mail($key, &$message, $params) {
+  if ($key == 'transaction_notify_action') {
+    // We do not sanitize the token replacement, since the output of this
+    // replacement is intended for an e-mail message, not a web browser.
+    $options = array('language' => $message['language'], 'sanitize' => FALSE);
+    $message['subject'] =  token_replace($params['subject'], $params, $options);
+    $message['body'][] =  token_replace($params['body'], $params, $options);
+  }
 }

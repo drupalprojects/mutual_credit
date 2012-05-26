@@ -30,17 +30,12 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $account = user_load($transaction->payee);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
-      case 'partner':
-        $uid = $data['user']->uid == $transaction->payee ? $transaction->payer :$transaction->payee;
-        $account = user_load($uid);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
-        break;
       case 'creator':
         $account = user_load($transaction->creator);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'summary':
-        $replacements[$original] = theme('transaction', array('transaction' => $transaction, 'view_mode' => 'summary'));
+        $replacements[$original] = theme('transaction', array('transaction' => $transaction, 'view_mode' => 'sentence'));
         break;
       case 'uri':
         $replacements[$original] = url("transaction/$transaction->xid", $url_options);
@@ -50,7 +45,8 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'worth':
         //there may be different incoming formats depending on whether we are rending a form or an entity
-        $replacements[$original] = theme('worth_field_multiple', array('items' => $transaction->worth['und']));
+        $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $transaction->worth['und'], 'sentence');
+        $replacements[$original] = drupal_render($element);
         break;
       default: //hopefully a field API field
         //we don't want all the gumph around it, so just render the children
@@ -79,10 +75,6 @@ function mcapi_token_info() {
     'payee' => array(
       'name' => t('Payee name'),
       'description' => t("The user whose account is debited"),
-    ),
-    'partner' => array(
-      'name' => t('Other user'),
-      'description' => t("The user who isn't referred to here."),
     ),
     'summary' => array(
       'name' => t('Summary'),

@@ -272,7 +272,7 @@ function currencies_load_all() {
 function default_cur() {
   $currency = ctools_export_crud_load('mcapi_currencies', 'def_drup')->data;
   $currency->human_name = '';
-  $currency->display['format'] = '@minus@integer @division';
+  $currency->display['format'] = '@minus@integer @subdivision';
   return $currency;
 }
 
