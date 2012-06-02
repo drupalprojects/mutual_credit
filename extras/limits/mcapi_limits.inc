@@ -224,12 +224,17 @@ function show_balance_limits($uid, $currcode) {
   );
 }
 function show_trading_limits($uid, $currcode) {
-  extract(transaction_totals($uid, $currcode));
-  extract(limits_get_adjusted($currcode, $uid, $balance));
-  return array(
+  $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);
+  if(empty($limits)) return;
+  $render_array = array(
     '#theme' => 'trading_limits',
-    '#currency' => currency_load($currcode),
-    '#spend_limit' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $spend_limit)),
-    '#earn_limit' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $earn_limit)),
+    '#currency' => currency_load($currcode)
   );
+  if (isset($limits['spend_limit'])) {
+    $render_array['#spend_limit'] = theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['spend_limit']));
+  }
+  if (isset($limits['earn_limit'])) {
+    $render_array['#earn_limit'] = theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['earn_limit']));
+  }
+  return $render_array;
 }

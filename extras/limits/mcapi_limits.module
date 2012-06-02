@@ -25,14 +25,15 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
     }
     if ($limits['min']) $adjusted['spend_limit'] = $balance - $limits['min'];
     if ($limits['max']) $adjusted['earn_limit'] = $limits['max'] - $balance;
+    return $adjusted;
   }
-  return $adjusted;
 }
-
-
 
 /*
  * implements mcapi hook_transactions_validate
+ * takes the transactions and checks the projected balances against the balance limtits for each account,
+ *
+ * as if each transaction was 'counted' i.e having a state  > 0
  * I didn't want to output only readable messages by this module,
  * but throw data and messages to be handled later
  * Because i don't know how to pass args into an exception,
@@ -42,46 +43,50 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
  * i.e. "$difference>$limit" for transactions that would exceed the max
  * i.e. "$difference>$limit" for transactions that would exceed the min
  */
-function mcapi_limits_transactions_validate(array $transactions) {
-  static $accounts_diff = array();
+function mcapi_limits_accounting_validate(array $transactions) {
   $errors = array();
   foreach ($transactions as $transaction) {
-    //calculate the potential balances after all transactions have gone through
-    foreach ($transaction->worth[LANGUAGE_NONE] as $delta => $flow) {
-      $currcode = &$flow['currcode'];
-      $accounts_diff[$transaction->payee][$currcode][] = $flow['quantity'];
-      $accounts_diff[$transaction->payer][$currcode][] = -$flow['quantity'];
+    if (empty($transaction->serial)) {
+      $transaction->state = 1;//because we want to check what the balances would be IF the transaction was completed.
     }
-    //then compare the resulting balances for each user with their limits
-    foreach ($accounts_diff as $uid => $percurrency) {
-      foreach ($percurrency as $currcode => $diffs) {
-        $balance = transaction_totals($uid, $currcode)->balance;
-        $projected = $balance + array_sum($diffs);
-        $limits = limits_get($currcode, $uid);
-        watchdog('mcapi_debug', '@a', array('@a' => "balance: $balance, currcode: $currcode, 'uid: $uid"));
-        if (!empty($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max'] && $projected > $balance) {
-          $errors[$uid] = array(
-            '@name' => user_load($uid)->name,
-            '@projected' => $projected,
-            '@excess' => $projected - $limits['max'],
-            '@max' => $limits['max'],
-            '@currcode' => $currcode
-          );
-        }
-        elseif (!empty($limits['min']) && is_numeric($limits['min']) && $projected < $limits['min'] && $projected < $balance) {
-          $errors[$uid] = array(
-            '@name' => user_load($uid)->name,
-            '@projected' => $projected,
-            '@excess' => $limits['min'] - $projected,
-            '@min' => $limits['min'],
-            '@currcode' => $currcode
-          );
-        }
-      }
+    else {
+      $existing[] = $transaction->serial;//we discount this transaction when calculating the current balance.
     }
   }
-  //the only way I can think of to pass both messages and codes back is to nest exceptions
-  try {if (count($errors)) throw new Exception(serialize($errors));}
+  //compare the resulting balances for each user with their limits
+  foreach (_transactions_diff($transactions) as $uid => $percurrency) {
+    foreach ($percurrency as $currcode => $diffs) {
+      $conditions = array(
+        array('serial', array_filter(array_unique($existing)), '<>'),
+        array('state', 0, '>')
+      );
+      $balance = transaction_totals($uid, $currcode, $conditions)->balance;
+      $projected = $balance + array_sum($diffs);
+      $limits = limits_get($currcode, $uid);
+      if (!empty($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max'] && $projected > $balance) {
+        $errors[$uid][$currcode] = array(
+          '@name' => user_load($uid)->name,
+          '@projected' => $projected,
+          '@max' => $limits['max'],
+          '@excess' => $projected - $limits['max'],
+        );
+      }
+      elseif (!empty($limits['min']) && is_numeric($limits['min']) && $projected < $limits['min'] && $projected < $balance) {
+        $errors[$uid][$currcode] = array(
+          '@name' => user_load($uid)->name,
+          '@projected' => $projected,
+          '@min' => $limits['min'],
+          '@excess' => $limits['min'] - $projected,
+        );
+      }
+      debug('projected for '. user_load($uid)->name .": $currcode $projected");
+    }
+  }
+  //the only way I can think of to pass both messages and codes back,
+  //short of defining my own exception is to nest exceptions
+  try {
+    if (count($errors)) throw new Exception(serialize($errors));
+  }
   catch (exception $e) {
     $message = mcapi_limits_exception_parse(unserialize($e->getMessage()));
     throw new Exception($message, 0, $e);
@@ -92,25 +97,27 @@ function mcapi_limits_transactions_validate(array $transactions) {
  */
 function mcapi_limits_exception_parse($errors) {
   $messages = array();
-  foreach ($errors as $key => $error) {
-    //parse balance limits error
-    if (isset($error['@max'])) {
-      $messages[] = t('Transaction would take @name !quant above the maximum balance of !max',
-        array(
-          '@name' => $error['@name'],
-          '!quant' => theme('worth_field', array('quantity' => $error['@excess'], 'currcode' => $error['@currcode'])),
-          '!max' => theme('worth_field', array('quantity' => $error['@max'], 'currcode' => $error['@currcode']))
-        )
-      );
-    }
-    if (isset($error['@min'])) {
-      $messages[] = t('Transaction would take @name !quant below the minimum balance of !min',
-        array(
-          '@name' => $error['@name'],
-          '!quant' => theme('worth_field', array('quantity' => $error['@excess'], 'currcode' => $error['@currcode'])),
-          '!min' => theme('worth_field', array('quantity' => $error['@min'], 'currcode' => $error['@currcode'])),
-        )
-      );
+  foreach ($errors as $uid => $percurrency) {
+    foreach ($percurrency as $currcode => $info) {
+      //parse balance limits error
+      if (isset($info['@max'])) {
+        $messages[] = t('Transaction would take @name !quant above the maximum balance of !max',
+          array(
+            '@name' => $info['@name'],
+            '!quant' => theme('worth_field', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
+            '!max' => theme('worth_field', array('quantity' => $info['@max'], 'currcode' => $currcode))
+          )
+        );
+      }
+      if (isset($info['@min'])) {
+        $messages[] = t('Transaction would take @name !quant below the minimum balance of !min',
+          array(
+            '@name' => $info['@name'],
+            '!quant' => theme('worth_field', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
+            '!min' => theme('worth_field', array('quantity' => $info['@min'], 'currcode' => $currcode)),
+          )
+        );
+      }
     }
   }
   return implode('; ', $messages);
@@ -283,18 +290,17 @@ function mcapi_limits_block_view($delta) {
   $settings = mcapi_limits_block_settings('block_'.$delta);
   $src_uid = $settings['source'] ? user_uid_optional_to_arg(arg(1)) : $GLOBALS['user']->uid;
   $currcodes = empty($settings['currcodes']) ? array_keys(currencies_load()) : $settings['currcodes'];
-  $output = array();
   foreach($currcodes as $currcode) {
     if (!currency_access('user_aggregated_view', $currcode)) continue;
     require_once('mcapi_limits.inc');
     $function = 'show_'. $delta;
-    $output[] = $function($src_uid, $currcode);
+    $render_array[] = $function($src_uid, $currcode);
   }
-  if (empty($output)) return;
-  $account = user_load($src_uid);
+  $render_array = array_filter($render_array);
+  if (empty($render_array)) return;
   return array(
-    'subject' => t("@user's limits", array('@user' => strip_tags(format_username($account)))),
-    'content' => $output
+    'subject' => t("@user's limits", array('@user' => strip_tags(format_username(user_load($src_uid))))),
+    'content' => $render_array
   );
 }
 
