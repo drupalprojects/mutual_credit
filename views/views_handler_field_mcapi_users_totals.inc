@@ -9,6 +9,8 @@
  */
 class views_handler_field_mcapi_users_totals extends views_handler_field {
 
+  var $fetched;
+
   function query() {
     $this->ensure_my_table();
   }
@@ -40,11 +42,14 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   }
 
   function render($values) {
+
     $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);
     $key = $this->options['total'];
-    $elements = array('#theme' => 'worth_field_multiple');
     foreach ($currcodes as $currcode) {
-      $quant = transaction_totals($values->uid, $currcode)->$key;
+      if (empty($this->fetched[$uid][$currcode])) {
+        $this->fetched[$uid][$currcode] = transaction_totals($values->uid, $currcode);
+      }
+      $quant = $this->fetched[$uid][$currcode]->$key;
       if ($key == 'count') {
         $elements[$currcode] = array('#type' => 'markup', '#markup' => $quant);
       }

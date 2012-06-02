@@ -1,79 +1,74 @@
 <?php
 /**
  * @file
- * Contains the basic 'node' field handler.
+ * Contains the basic 'transaction' field handler.
  */
 
 /**
- * Field handler to provide simple renderer that allows linking to a node.
+ * Field handler to provide simple renderer that allows linking to a transaction.
  * Definition terms:
- * - link_to_node default: Should this field have the checkbox "link to node" enabled by default.
+ * - link_to_transaction default: Should this field have the checkbox "link to transaction" enabled by default.
  *
  * @ingroup views_field_handlers
  */
-class views_handler_field_node extends views_handler_field {
+class views_handler_field_transaction extends views_handler_field {
 
   function init(&$view, &$options) {
     parent::init($view, $options);
-    // Don't add the additional fields to groupby
-    if (!empty($this->options['link_to_node'])) {
-      $this->additional_fields['nid'] = array('table' => 'node', 'field' => 'nid');
-      if (module_exists('translation')) {
-        $this->additional_fields['language'] = array('table' => 'node', 'field' => 'language');
-      }
-    }
+    //$this->additional_fields['serial'] = array('table' => 'mcapi_transactions', 'field' => 'serial');
   }
 
   function option_definition() {
     $options = parent::option_definition();
-    $options['link_to_node'] = array('default' => isset($this->definition['link_to_node default']) ? $this->definition['link_to_node default'] : FALSE);
+    if ($this->real_field == 'serial') {
+      $options['link_to_transaction'] = array('default' => isset($this->definition['link_to_transaction default']) ? $this->definition['link_to_transaction default'] : FALSE);
+    }
+    else {
+      $options['link_title'] = array('default' => $this->real_field);
+    }
     return $options;
   }
 
   /**
-   * Provide link to node option
+   * Provide link to transaction option
    */
   function options_form(&$form, &$form_state) {
-    $form['link_to_node'] = array(
-      '#title' => t('Link this field to the original piece of content'),
-      '#description' => t("Enable to override this field's links."),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['link_to_node']),
-    );
-
+    if ($this->real_field == 'serial') {
+      $form['link_to_transaction'] = array(
+        '#title' => t('Link this field to the transaction'),
+        '#type' => 'checkbox',
+        '#default_value' => !empty($this->options['link_to_transaction']),
+      );
+    }
+    else {
+      $form['link_title'] = array(
+        '#type' => 'textfield',
+        '#title' => t("Text to show for link"),
+        '#default_value' => $this->options['link_title'],
+      );
+    }
     parent::options_form($form, $form_state);
   }
-
-  /**
-   * Render whatever the data is as a link to the node.
-   *
-   * Data should be made XSS safe prior to calling this function.
-   */
-  function render_link($data, $values) {
-    if (!empty($this->options['link_to_node']) && !empty($this->additional_fields['nid'])) {
-      if ($data !== NULL && $data !== '') {
-        $this->options['alter']['make_link'] = TRUE;
-        $this->options['alter']['path'] = "node/" . $this->get_value($values, 'nid');
-        if (isset($this->aliases['language'])) {
-          $languages = language_list();
-          $language = $this->get_value($values, 'language');
-          if (isset($languages[$language])) {
-            $this->options['alter']['language'] = $languages[$language];
-          }
-          else {
-            unset($this->options['alter']['language']);
-          }
-        }
-      }
-      else {
-        $this->options['alter']['make_link'] = FALSE;
-      }
-    }
-    return $data;
+  function query() {
+    $this->ensure_my_table();
+    $this->add_additional_fields(array('serial'));
   }
 
   function render($values) {
-    $value = $this->get_value($values);
-    return $this->render_link($this->sanitize_value($value), $values);
+    $serial = $values->{$this->aliases['serial']};
+    $transaction = transaction_load($serial);
+    $op = $this->real_field == 'serial' ? 'view' : $this->real_field;
+    $access_callback = 'transaction_'.$op.'_access';
+    if ($access_callback($transaction)) {
+      return array('#theme' => 'link',
+        '#text' => $this->real_field == 'serial' ? $serial : $this->options['link_title'],
+        '#path' => 'transaction/'.$serial.'/'.$op,
+        '#options' => array(
+          'attributes' =>array(),
+          'html' => TRUE
+        )
+      );
+    }
   }
+
 }

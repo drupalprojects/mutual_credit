@@ -20,21 +20,11 @@ function mcapi_views_data() {
     ),
     'entity type' => 1,//so the entity module can expose this table
   );
-  $data['mcapi_transactions']['xid'] = array(
-    'title' => t('Transaction ID'), // The item it appears as on the UI,
-    'field' => array(
-      'help' => t('The Unique database key of the transaction'),
-      'handler' => 'views_handler_field',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
   $data['mcapi_transactions']['serial'] = array(
     'title' => t('Unique serial number'), // The item it appears as on the UI,
     'field' => array(
       'help' => t('The serial number of the transaction and dependents'),
-      'handler' => 'views_handler_field',
+      'handler' => 'views_handler_field_transaction',
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -131,11 +121,18 @@ function mcapi_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
-  $data['mcapi_transactions']['links'] = array(
-    'title' => t('Transaction links'),
-    'help' => t("View and undo links"),
+  $data['mcapi_transactions']['view'] = array(
+    'title' => t('View'),
+    'help' => t("Link to transaction"),
     'field' => array(
-      'handler' => 'views_handler_field_transaction_link',
+      'handler' => 'views_handler_field_transaction',
+    )
+  );
+  $data['mcapi_transactions']['undo'] = array(
+    'title' => t('Undo'),
+    'help' => t("Link to undo transaction"),
+    'field' => array(
+      'handler' => 'views_handler_field_transaction',
     )
   );
   return $data;
