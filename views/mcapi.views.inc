@@ -21,7 +21,7 @@ function mcapi_views_data() {
     'entity type' => 1,//so the entity module can expose this table
   );
   $data['mcapi_transactions']['serial'] = array(
-    'title' => t('Unique serial number'), // The item it appears as on the UI,
+    'title' => t('Serial number'), // The item it appears as on the UI,
     'field' => array(
       'help' => t('The serial number of the transaction and dependents'),
       'handler' => 'views_handler_field_transaction',

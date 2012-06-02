@@ -56,7 +56,7 @@ function ___mcapi_index_views_get_schema() {
     'description' => 'enables views to slice and dice the transactions',
     'fields' => array(
       'serial' => array(
-        'description' => 'the unique serial number',
+        'description' => 'serial number',
         'type' => 'varchar',
         'size' => '16',
         'not null' => TRUE,

@@ -112,7 +112,7 @@ function mcapi_schema() {
         'not null' => TRUE,
       ),
       'serial' => array(
-        'description' => 'unique transaction serial number (integer)',
+        'description' => 'serial number (integer)',
         'type' => 'int',
         'size' => 'normal',
         'not null' => FALSE,

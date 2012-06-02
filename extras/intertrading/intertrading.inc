@@ -39,7 +39,6 @@ function intertrading_json_request($url, $params) {
   //http status codes failure
   else {
     intertrading_error($result);
-    debug($result);
     //this doesn't catch "php_network_getaddresses: getaddrinfo failed: Name or service not known" with code 0
     $return->args = array('@client' => $url, '@status' => $result->code);
     if (isset($result->error)) {
@@ -138,8 +137,8 @@ function intertrading_error() {
   foreach ($args as $arg) {
     $strings[] = print_r($arg, 1);
   }
-  //watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
-  file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
+  watchdog('intertrading error', '!message', array('!message' => '<pre>'.implode('<br />', $strings).'</pre>'), WATCHDOG_DEBUG);
+  //file_put_contents('intertrading.msg', implode("\n", $strings)."\n\n", FILE_APPEND);
 }
 
 

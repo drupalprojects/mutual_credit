@@ -79,7 +79,6 @@ function mcapi_limits_accounting_validate(array $transactions) {
           '@excess' => $limits['min'] - $projected,
         );
       }
-      debug('projected for '. user_load($uid)->name .": $currcode $projected");
     }
   }
   //the only way I can think of to pass both messages and codes back,

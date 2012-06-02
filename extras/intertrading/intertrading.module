@@ -11,7 +11,7 @@ define('INTERTRADING_REF_URL',
 /*
  * implements hook_menu
  */
-function intertrading_client_menu() {
+function intertrading_menu() {
   $items['statement'] = array(
     'title' => 'Trading network',
     'description' => 'Display statistics about this exchange in the Community Forge network',
@@ -67,8 +67,9 @@ function intertrading_client_menu() {
     );
   }
   $items['intertrade'] = array(
-    'page callback' => 'intertrading_client2_receive',
+    'page callback' => 'intertrading_passive',
     'access callback' => 'intertrading_check_key',
+    'type' => MENU_CALLBACK,
   );
   $items['admin/accounting/intertrade'] = array(
     'title' => 'Trading network',
@@ -85,7 +86,7 @@ function intertrading_client_menu() {
 /*
  * implements hook_permission
  */
-function intertrading_client_permission() {
+function intertrading_permission() {
   return array(
     'access statement' => array(
       'title' => t('access statement'),
@@ -102,7 +103,7 @@ function intertrading_client_permission() {
  * implements hook_forms
  * $args[0] => $transaction
  */
-function intertrading_client_forms($form_id, $args) {
+function intertrading_forms($form_id, $args) {
   $forms['remote_incoming_form'] = array(
     'callback' => 'transaction_form',
     'callback arguments' => $args
@@ -117,7 +118,7 @@ function intertrading_client_forms($form_id, $args) {
 /*
  * access callback for menu items
  */
-function intertrading_check_key() {
+function intertrading_check_key() {           return true;
   $post = intertrading_get_post();
   if (empty($post) || substr($_GET['q'], 0, 10) != 'intertrade' || $GLOBALS['user']->uid) {
     return FALSE;
@@ -232,8 +233,14 @@ function intertrading_validate_ticks(&$element, $form_state) {
   }
 }
 
-function intertrading_client_uninstall() {
+function intertrading_uninstall() {
   variable_del('intertrading_server');
+  variable_del('intertrading_uid');
+  variable_del('intertrading_currcode');
+  variable_del('ticks');
+  variable_del('description_field');
+  variable_del('site_latitude');
+  variable_del('site_longitude');
 }
 
 /*
@@ -241,7 +248,7 @@ function intertrading_client_uninstall() {
  * injects the lat lon variables into the site_information form
  * no validation
  */
-function intertrading_client_form_system_site_information_settings_alter(&$form) {
+function intertrading_form_system_site_information_settings_alter(&$form) {
   $form['coordinates'] = array(
     '#title' => t('Geolocation'),
     '#description' => t('To determine your coordinates, please visit !link', array('!link' => l('http://www.whatsmygps.com/', 'http://www.whatsmygps.com/'))),
@@ -267,7 +274,7 @@ function intertrading_client_form_system_site_information_settings_alter(&$form)
 /*
  * implements hook_theme
  */
-function intertrading_client_theme() {
+function intertrading_theme() {
   return array (
     'statement' => array(
       'arguments' =>array(
@@ -430,7 +437,7 @@ function intertrading_validate_coords(&$element, &$form_state) {
 /*
  * implements mcapi hook_info_types
  */
-function intertrading_client_mcapi_info_types() {
+function intertrading_mcapi_info_types() {
   return array('remote receipt', 'remote payment');
 }
 /*
@@ -463,7 +470,7 @@ function intertrading_json_client_request($path, $data = array()) {
  * form function for menu callback
  * provide a basic form for intertrading
  */
-function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_state, $form_id) {
+function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $form_id) {
   //page title is blank coz its too much along with the tabs
   drupal_set_title('');
   $form['#incoming'] = $form_id == 'remote_incoming_form';
@@ -477,7 +484,7 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
         if (isset($form_state['server_params']['earn_limit'])) {
           if ($form_state['server_params']['earn_limit'] < 0) {
             form_set_error('', t('No receipts are possible at this time'));
-            $form['#disabled'] = 1;
+            $form['#disabled'] = TRUE;
           }
           else {
             $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['earn_limit'];
@@ -492,7 +499,7 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
         if (isset($form_state['server_params']['spend_limit'])) {
           if ($form_state['server_params']['spend_limit'] < 0) {
             form_set_error('', t('No payments are possible at this time'));
-            $form['#disabled'] = 1;
+            $form['#disabled'] = TRUE;
           }
           else {
             $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['spend_limit'];
@@ -505,33 +512,32 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
       }
     }
     else {
+      //request failed
       drupal_set_message($result->message, 'error');
+      $form['#disabled'] = TRUE;
     }
   }
-  if (isset($form_state['server_params'])) {
-    $sites = array('' => t('Please choose...')) + $form_state['server_params']['sites'];
-  }
-  else {
-    $sites = array();
-    $form['#disabled'] = TRUE;
-  }
+
 
   //just ensure that the delta value is 0 (it might not be if there are multiple currencies)
   $form['worth'][LANGUAGE_NONE][0] = array_shift($form['worth'][LANGUAGE_NONE]);
 
-  //for now we'll hide the state
+  //tweak the default form; hide the state and set the transaction type
   $form['state']['#access'] = FALSE;
   $form['type']['#value'] = $form['#incoming'] ? 'remote receipt' : 'remote payment';
   $form['type']['#type'] = 'hidden';
 
-  unset($sites[INTERTRADING_REF_URL]);
+  $sites =
+
   $form['dest_url'] = array(
     '#title' => t('Remote exchange'),
     '#description' => l(t('Not listed?'), 'intertrading/help'),
     '#type' => 'select',
-    '#options' => $sites,
+    '#options' => array('' => t('Please choose...')) + $form_state['server_params']['sites'],
     '#weight' => -10,
   );
+  unset($form['dest_url']['#options'][INTERTRADING_REF_URL]);
+  
   $form['dest_user'] = array(
     '#title' => $form['#incoming'] ? t('Remote payer email address') : t('Remote payee email address'),
     '#type' => 'textfield',
@@ -563,8 +569,8 @@ function intertrading_client_form_remote_incoming_form_alter(&$form, &$form_stat
  * form function for menu callback
  * provide a basic form for intertrading
  */
-function intertrading_client_form_remote_outgoing_form_alter(&$form, &$form_state, $form_id) {
-  return intertrading_client_form_remote_incoming_form_alter($form, $form_state, $form_id);
+function intertrading_form_remote_outgoing_form_alter(&$form, &$form_state, $form_id) {
+  return intertrading_form_remote_incoming_form_alter($form, $form_state, $form_id);
 }
 
 
@@ -617,7 +623,7 @@ function intertrading_transaction_form_submit($form, $form_state) {
  * converts, validates and saves the transaction.
  * returns usual json object format, with OK or an error code
  */
-function intertrading_client2_receive() {
+function intertrading_passive() {
   $post = intertrading_get_post();
   if ($error = intertrading_validate_transaction_post($post)) {
     intertrading_respond($error[0], $error[1]);
@@ -690,17 +696,11 @@ function intertrading_client2_receive() {
   intertrading_respond('OK');
 }
 
-function intertrading_client_cron(){
-  //resetting the key through a handshake called by cron doesn't seem to work
-  //the server doesn't update the key
-  //intertrading_handshake();
-}
-
 /*
  * Implements variable module's hook_variable_info
  * only block settings really
  */
-function intertrading_client_variable_info() {
+function intertrading_variable_info() {
   $vars['intertrading_server'] = array(
     'type' => 'string',
     'title' => t('Intertrading server url'),
@@ -741,7 +741,7 @@ function intertrading_client_variable_info() {
 /*
  * implements hook_help
  */
-function intertrading_client_help($path, $args) {
+function intertrading_help($path, $args) {
   if ($path == 'admin/accounting/intertrade') {
     $result = intertrading_json_client_request('intertrading/help/json');
     if ($result->code != 'OK') {
@@ -793,9 +793,9 @@ function report_intertrading_history() {
   ->fetchCol();
   
   if (count($serials)) {
-    $transactions = transactions_load(array(), array('serial', $serials));
+    transactions_state($serials, TRANSACTION_STATE_FINISHED);
+    $transactions = transactions_load(array(), array('serial' => $serials));
     foreach ($transactions as $transaction) {
-      transactions_state($transaction->serial, TRANSACTION_STATE_FINISHED);
 
       $outgoing = FALSE;
       if ($transaction->payee_uid == $intertrading_uid) $outgoing = TRUE;
@@ -835,10 +835,10 @@ function transaction_quant($transaction, $currcode = NULL) {
  * implements hook_form_FORM_ID_alter
  * prevent
  */
-function intertrading_client_form_transaction_form_alter(&$form, &$form_state, $form_id) {
+function intertrading_form_transaction_form_alter(&$form, &$form_state, $form_id) {
   if (empty($form_state['build_info']['args'][0])) return;
   //prevent all editing of transactions with the intertrading account
-  if (in_array($form_state['build_info']['args'][0]->type, intertrading_client_mcapi_info_types())) {
+  if (in_array($form_state['build_info']['args'][0]->type, intertrading_mcapi_info_types())) {
     drupal_set_message(t('Transactions with the intertrading account cannot be modified'), 'warning');
     $form['#printed'] = TRUE;
   }

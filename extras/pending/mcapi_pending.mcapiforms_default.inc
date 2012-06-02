@@ -17,7 +17,7 @@ function mcapi_pending_mcapiforms_default() {
     'architecture' => array(
       'path' => 'transaction/%transaction/sign',
       'access' => 'mcapi_access_check_roles:2',
-      'menu_link' => 'devel',
+      'menu_link' => MENU_LOCAL_ACTION,
       'use_block' => 0,
     ),
     'submission' => array(
@@ -27,7 +27,7 @@ function mcapi_pending_mcapiforms_default() {
     'experience' => array(
       'title' => '',
       'template' => '',
-      'sure_title' => t('Sign this transaction'),
+      'sure_title' => t('Sign transaction'),
       'sure_format' => 'certificate',
     ),
     'buttons' => array(

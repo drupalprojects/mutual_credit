@@ -57,10 +57,11 @@ else {
   ?>
 
   <div class="exchange">
-    <p><?php print $date; ?>
-     <br /><br /><?php print $movement; ?>
-     <br /><br /><?php print $sum; ?> </p>
-     <br /><br /><?php print render($additional); ?></p>
+<?php print render($pending_signatures); ?>
+    <p><?php print $date; ?><br /><br />
+    <?php print $movement; ?><br /><br />
+    <?php print $sum; ?></p>
+    <?php print render($additional); ?>
   </div>
   <?php
     if ($children) { ?>
@@ -70,3 +71,4 @@ else {
     </div>
     <?php }
   } ?>
+
