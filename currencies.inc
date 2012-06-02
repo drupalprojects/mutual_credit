@@ -252,15 +252,11 @@ function currencies_load_all() {
     $currency->display['divisions_allowed'] = $divisions;
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     foreach (mcapi_get_states() as $constant => $state_info) {
-      foreach ($currency->transaction_access[$constant] as $callback) {
-        if (!in_array($callback, $functions)) {
-          unset($currency->transaction_access[$constant]);
-          drupal_set_message(t('invalid access callback for currency @currname state @state. Using default setting.',
-            array('@curname' => $currency->human_name, '@state' => $state_info['name'])
-          ));
-        }
-      }
       if (!isset($currency->transaction_access[$constant])) {
+        unset($currency->transaction_access[$constant]);
+        drupal_set_message(t('invalid access callback for currency @currname state @state.',
+          array('@currname' => $currency->human_name, '@state' => $state_info['name'])
+        ));
         $currency->transaction_access[$constant] = drupal_map_assoc($state_info['default_access_callbacks']);
       }
     }

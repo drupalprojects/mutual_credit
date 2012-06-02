@@ -16,6 +16,14 @@ function mcapi_forms_menu() {
   foreach($mcapi_forms as $form) {
     if (!empty($form->disabled)) continue;
     $settings = &$form->data;
+    //TODO Remove this after upgrade
+    if (empty($settings['experience'])) {
+      drupal_set_message('UPGRADE NOTICE: You must resave this accounting form: '. l($settings['info']['name'], 'admin/accounting/forms/list/'.$settings['info']['name'].'/edit'));
+      $settings['experience'] = array(
+        'title' => $settings['step-1']['title'],
+        'sure_title' => $settings['step-2']['title']
+      );
+    }
     $menu_link = &$settings['architecture']['menu_link'];
     $items[$settings['architecture']['path']] = array(
       'title' => empty($settings['experience']['title']) ? $settings['experience']['sure_title'] : $settings['experience']['title'],
@@ -33,13 +41,21 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
+
+  $default_tabs_supplied = 0;
   //make one of these the default tab on transact
   foreach ($items as $key => $item) {
-    if (empty($item['title'])) $items[$key]['title'] = 'rebuild your form!!';
-    if ($item['type'] == MENU_LOCAL_TASK && substr($key, 0 , 9) == 'transact/') {
-      $items[$key]['type'] = MENU_DEFAULT_LOCAL_TASK;
-      break;
+    if (substr($key, 0 , 9) == 'transact/') {
+      $default_tab_needed = TRUE;
+      if ($item['type'] == MENU_DEFAULT_LOCAL_TASK) {
+        $items[$key]['weight'] = -1;
+        $default_tabs_supplied++;
+      }
     }
+  }
+  if (isset($default_tab_needed)) {
+    if (empty($default_tabs_supplied)) drupal_set_message(t("There is no default tab under path 'transact/'"));
+    elseif ($default_tabs_supplied > 1) drupal_set_message(t("There is more than one default tab under path 'transact/'"));
   }
   return $items;
 }
@@ -50,19 +66,21 @@ function mcapi_forms_menu() {
  */
 function mcapi_forms_menu_alter(&$items) {
   foreach (mcapi_forms_load(NULL, TRUE) as $form) {
-    if (substr($form->data['architecture']['path'], 0 , 9) == 'transact/') unset($items['transact/admin']);
+    //remove the default tab under 'transact/'
+    if (substr($form->data['architecture']['path'], 0 , 9) == 'transact/') {
+      unset($items['transact/default']);
+      //replace the 'transact' item form with whichever of the forms has default tab
+      if ($form->data['architecture']['menu_link'] == MENU_DEFAULT_LOCAL_TASK) {
+        $items['transact'] = $items[$form->data['architecture']['path']];
+        $items['transact']['type'] = MENU_NORMAL_ITEM;
+      }
+    }
+    break;
   }
+  $items['admin/accounting/forms']['weight'] = -1;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/forms/list/%';
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
-  unset($items['admin/accounting/display']);
-  unset($items['admin/accounting/display/default']);
-}
-//helps decide how to format menu tabs
-function _is_using_path_transact($mcapi_forms) {
-  foreach ($mcapi_forms as $form) {
-    if (substr($form->data['architecture']['path'], 0 , 9) == 'transact/')  return TRUE;
-  }
 }
 
 /**
@@ -142,11 +160,14 @@ function mcapi_forms_block_view($delta) {
 
 /*
  * Implements hook_mcapi_info_types
+ *
  */
 function mcapi_forms_mcapi_info_types() {
   $mcapi_forms = mcapi_forms_load();
   foreach($mcapi_forms as $mcapi_form) {
-    $types[] = $mcapi_form->name;
+    if ($mcapi_form->data['experience']['title']) {
+      $types[] = $mcapi_form->name;
+    }
   }
   return $types;
 }
@@ -289,3 +310,4 @@ function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   //ditto
   unset($form['instance']['description']);
 }
+

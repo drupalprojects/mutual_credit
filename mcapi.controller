@@ -51,7 +51,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         unset($entity->data);
       }
     }
-
     if (!empty($queried_entities)) {
       $this->attachLoad($queried_entities);
       $entities += $queried_entities;
@@ -109,8 +108,8 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     }
     if (!$really) {
       foreach ($ts as $db_transaction) $db_transaction->rollback();
-      foreach ($transactions as $id => $transaction) {
-        $transactions[$id]->xid = $transaction->temp;
+      foreach ($transactions as $transaction) {
+        $transaction->xid = $transaction->temp;
       }
     }
     db_set_active();
@@ -121,11 +120,8 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * $purge is an undocumented feature, for development only, which forces mode MCPI_CURRENCY_UNDO_DELETE
    */
   public function undo($transactions, $mode = NULL) {
-    if ($mode === NULL) {
-      //take the safest as the default
-      $mode = variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE);
-    }
-    switch($mode) {
+    //it's possible to override the systemwide delete settings by passing in a constant
+    switch($mode === NULL ? variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) : $mode) {
       case MCPI_CURRENCY_UNDO_DELETE: //actually delete
         foreach ($transactions as $transaction) {
           $xids[] = $transaction->xid;
@@ -136,17 +132,22 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $this->state($transactions, TRANSACTION_STATE_ERASED);
         break;
       case MCPI_CURRENCY_UNDO_REVERSE:
+        //transactions which are 'undone' with this method have to be marked so they cannot be undone again
         foreach($transactions as $transaction) {
+          $changetype[] = $transaction->serial;
           $reversed = clone $transaction;
           $reversed->payer = $transaction->payee;
           $reversed->payee = $transaction->payer;
+          $reversed->type = 'undo';
+          $reversed->data['original'] = $transaction->serial;
           $reversed->xid = NULL;
           $reverseds[] = $reversed;
         }
+        db_update('mcapi_transactions')->fields(array('type' => 'undone'))->condition('serial', $changetype)->execute();
         transactions_insert($reverseds, TRUE);
         break;
     }
-    return $transaction;
+    variable_del('change_undo_mode');
   }
   /*
    * change the state of a transaction and its dependents
@@ -163,25 +164,13 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * get some stats by adding up the transactions for a given user
    * this is currently used for the limits module and for the views handler per-row
    * caching running balances is dangerous because they would all need recalculating any time a transaction changed state
-   * $options can be array(
-   *   states => array(TRANSACTION_STATE_FINISHED)
-   *   before_xid => 0
-   *   after_xid => 0
-   *   before_time => 0
-   *   after_time => 0
    */
-  public function sums($uid, $currcode, $options = array()) {
-    $options += array(
-      'states' => array(TRANSACTION_STATE_FINISHED),
-      'before_xid' => NULL,
-      'after_xid' => 0,
-      'before_time' => NULL,
-      'after_time' => 0
-    );
+  public function sums($uid, $currcode, $conditions) {
     //this COALESCE is only tested for mysql.
-    //when we joing the tables like this, half of all values will be NULL, and NULL values do not add
+    //when we join the tables like this, half of all values will be NULL, and NULL values do not add
     //so these NULL values need to be selected as 0 before adding
     //there may well be a more elegant way
+
     $query = "SELECT
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)), 0) as gross_in,
       COALESCE(SUM(COALESCE(w1.worth_quantity, 0)), 0) as gross_out,
@@ -190,22 +179,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       FROM {mcapi_transactions} t
       LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
       LEFT JOIN {field_data_worth} w2 ON t.xid = w2.entity_id AND w2.worth_currcode = '$currcode' AND t.payee = $uid
-      WHERE (t.payer = $uid OR t.payee = $uid)
-        AND t.state in (:states)
-        AND t.created > :after_time
-        AND t.xid > :after_xid";
-    if ($options['before_xid'] > 0) {
-      $query .= " AND t.xid <= ".$options['before_xid'];
+      WHERE t.payer = $uid OR t.payee = $uid";
+    if ($result = db_query($query . mcapi_parse_conditions($conditions))->fetchAssoc()) {
+      return $result;
     }
-    if ($options['before_time'] > 0) {
-      $query .= " AND t.created <= ".$options['before_time'];
-    }
-    $replacements = array(
-      ':states' => implode(',', $options['states']),
-      ':after_xid' => $options['after_xid'],
-      ':after_time' => $options['after_time']
-    );
-    return db_query($query, $replacements)->fetchAssoc();
+    return array('gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'count' => 0);
   }
 
   /*
@@ -259,12 +237,35 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
 function mcapi_form_mcapi_controller_options_form_alter(&$form) {
   $form['mcapi_controller_delete_mode'] = array(
     '#title' => t('Undo mode'),
+    '#description' => t('Cannot be changed after a transaction has been undone'),
     '#type' => 'radios',
     '#options' => array(
       MCPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
       MCPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
       MCPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
+    ),
     '#default_value' => variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE),
-    )
+    '#disabled' => !variable_get('change_undo_mode', FALSE)
   );
+}
+
+function mcapi_parse_conditions($conditions) {
+  if (empty($conditions)) return '';
+  $where = array();
+  foreach ($conditions as $condition) {
+    if (is_array($condition)) {
+      $condition[] = '=';
+      list($field, $value, $operator) = $condition;
+      if (empty($operator)) $operator = ' = ';
+      if (is_array($value)) {
+        $value = '('.implode(', ', $value) .')';
+        $operator = ' IN ';
+      }
+      $where[] = " ( t.$field $operator $value ) ";
+    }
+    else {//the condition is already provided as a string
+      $where[] = " $condition ";
+    }
+  }
+  return ' AND '. implode(' AND ', $where);
 }

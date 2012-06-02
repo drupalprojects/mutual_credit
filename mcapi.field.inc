@@ -110,6 +110,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
   elseif (isset($item['currcode'])) {//cardinality is 1 and the currency is already set
     $element['#restrict_currcodes'] =  array($item['currcode']);
   }
+  $element['#config_mode'] = FALSE;
   worth_element_build($element, $default_vals);
   $element['#element_validate'] = array('worth_widget_validate');
   $element['#process'] = array('mcapi_field_widget_process');
@@ -119,7 +120,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
 
 /*
  * form process callback
- * just processes one 'worth' at a time
+ * just processes one 'worth' $item at a time
  * creates each of the element children, currcode, integer, division
  * N.B there are 3 form elements but the widget returns 2 values currcode and quantity (float)
  * this is run during the ajax rebuild, whereas hook_field_widget_form isn't
@@ -146,7 +147,6 @@ function mcapi_field_widget_process($element, &$form_state, $form) {
   foreach (element_children($element) as $child) {
     $element[$child]['#theme_wrappers'] = array();
   }
-
   //set the weight in case this is a multiple currency form
   return $element;
 }
@@ -175,6 +175,11 @@ function worth_element_build(&$element, $default_vals) {
     ),
   );
   $currcode = isset($element['currcode']['#value']) ? $element['currcode']['#value'] : $element['currcode']['#default_value'];
+
+  if($element['#config_mode'] == TRUE && $element['currcode']['#type'] == 'select') {
+    $element['currcode']['#options'] = array('' =>'Any') + $element['currcode']['#options'];
+    unset($element['currcode']['#ajax']);
+  }
   if (empty($currcode)) return;
   $currency = currency_load($currcode);
 
@@ -340,7 +345,7 @@ function mcapi_preprocess_worth_widget(&$variables) {
  * 'quantity'
  * 'currcode'
  */
-function theme_worth_field(&$variables) {debug($variables);
+function theme_worth_field(&$variables) {
   $currency = currency_load($variables['currcode']);
   list($replacements['@integer'], $replacements['@subdivision'], $replacements['@minus']) = currency_explode($variables['quantity']);
   if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {

@@ -80,6 +80,10 @@ function drush_mcapi_purge() {
   //how to do "are you sure?" messages in drush
   $transactions = transactions_load(NULL, array('state' => TRANSACTION_STATE_ERASED));
   entity_get_controller('transaction')->undo($transactions, MCPI_CURRENCY_UNDO_DELETE);
+  foreach ($transactions as $transaction) {
+    field_attach_delete('transaction', $transaction);
+    module_invoke_all('entity_delete', $transaction, 'transaction');
+  }
   $count = count($transactions);
   drush_print("completely removed $count transactions");
   if ($xid = db_query("SELECT xid FROM {mcapi_transactions}")->fetchfield()) return;
@@ -88,6 +92,7 @@ function drush_mcapi_purge() {
   db_query("TRUNCATE TABLE {field_data_worth}");
   db_query("TRUNCATE TABLE {field_revision_worth}");
   db_query("TRUNCATE TABLE {mcapi_transactions}");
+  variable_set('change_undo_mode', TRUE);
   drush_print('reset auto-increment-transaction ID on transaction & worth tables. This could cause problems with other fieldAPI fields');
 }
 

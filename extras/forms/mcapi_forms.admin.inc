@@ -8,7 +8,6 @@ include ('mcapi_forms.inc');
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   $mcapi_form = &$form_state['item']->data;
-  if (empty($mcapi_form['experience']['sure_format']))debug($mcapi_form, "use this to update the 'experience section, below");
   //prepare variables for building the form
   $permissions = module_invoke_all('permission');
   $roles = user_roles(TRUE);
@@ -44,14 +43,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
   $form['xfid'] = array(
     '#type' => 'hidden',
     '#value' => isset($form_state['item']->xfid) ? $form_state['item']->xfid : ''
-  );
-  $form['help'] = array(
-    '#title' => t('Help'),
-    '#description' => t('A quick description of the form, for the administrator'),
-    '#type' => 'textfield',
-    '#default_value' => isset($mcapi_form['help']) ? $mcapi_form['help'] : '',
-    '#maxlength' => 255,
-    '#weight' => 3
   );
   $form['architecture'] = array(
     '#title' => t('Architecture'),
@@ -206,6 +197,10 @@ function _edit_mcapi_form(&$form, &$form_state) {
   if ($field['cardinality'] > 1) {
     $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
   }
+  else {
+    //this allows the field remain unset
+    $form['worth']['preset'][LANGUAGE_NONE][0]['#config_mode'] = TRUE;
+  }
   //mcapi_unset_recursive($form['worth']['preset']['und'], '#required');
 
   $form['submission'] = array(
@@ -214,14 +209,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => empty($mcapi_form),
-    'state' => array(
-      '#title' => t('Save to state'),
-      '#description' => t('Transaction will be submitted in this state'),
-      '#type' => 'select',
-      '#options' => array('' => t('Unchanged')) + mcapi_get_states('#options'),
-      '#default_value' => empty($mcapi_form['submission']['state']) ? TRANSACTION_STATE_FINISHED : $mcapi_form['submission']['state'],
-      '#weight' => 3,
-    ),
     'button' => array(
       '#title' => t('Save button'),
       '#description' => t("The text to appear on the 'save' button, or the absolute url of an image"),
@@ -247,6 +234,19 @@ function _edit_mcapi_form(&$form, &$form_state) {
   foreach ($entity['view modes'] as $name => $mode) {
     $view_modes[$name] = $mode['label'];
   }
+
+      //TODO Remove this after upgrade
+    if (empty($mcapi_form['experience'])) {
+      drupal_set_message('SAVE THIS PAGE!!');
+      $mcapi_form['experience'] = array(
+        'title' => $mcapi_form['step-1']['title'],
+        'sure_title' => $mcapi_form['step-1']['title'],
+        'template' => $mcapi_form['step-1']['template'],
+        'sure_format' => 'certificate'
+      );
+    }
+
+
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
@@ -316,7 +316,7 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
       }
     }
   }
-  else { //for transaction entity main fields like payer, state etc
+  else { //for transaction entity main fields like payer etc
     $element['#description'] = t("This field is required");
     $element['preset']['#default_value'] = $preset;
   }

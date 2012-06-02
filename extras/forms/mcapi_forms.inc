@@ -42,12 +42,12 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   if ($form['#step'] == 1) {
     $form['#template'] = $mcapi_form->data['experience']['template'];
     $form['creator']['#type'] = 'hidden';
+    $form['state']['#type'] = 'hidden';
+    $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
     $form['type']['#type'] = 'hidden';
     $form['type']['#value'] = $mcapi_form->name;
 
-    $form['state']['#value'] = strlen($mcapi_form->data['submission']['state']) ? $mcapi_form->data['submission']['state'] : $transaction->state;
-    $form['state']['#type'] = 'hidden';
-    //participants
+     //participants
     if ($mcapi_form->data['perspective'] == 3) {
       foreach (array('payer', 'payee') as $participant) {
         $form[$participant]['#type'] = strtok($mcapi_form->data[$participant]['args'], ':');
@@ -102,7 +102,11 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       }
       $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
     }
-
+    //if the cardinality is 1 and a default language is given, then confine the widget to that one language
+    if (count(element_children($form['worth'][LANGUAGE_NONE])) == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {
+      $form['worth'][LANGUAGE_NONE][0]['#restrict_currcodes'][] = $transaction->worth[LANGUAGE_NONE][0]['currcode'];
+    }
+    
     //specially for the worth field: remove any $items which are not in the default $transaction object
     //see mcapi_form_validate_worth_preset() for more
     foreach (element_children($form['worth']['und']) as $delta) {

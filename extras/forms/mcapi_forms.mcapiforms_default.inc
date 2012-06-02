@@ -24,7 +24,6 @@ function mcapiform_default_1stparty() {
       'name' => '1stparty',
     ),
     'perspective' => '1',
-    'help' => 'Enter your trading partner and direction of the payment',
     'architecture' => array(
       'path' => 'transact/1stparty',
       'access' => 'user_access:transact',
@@ -54,7 +53,6 @@ function mcapiform_default_1stparty() {
       ),
     ),
     'submission' => array(
-      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),
@@ -84,15 +82,11 @@ function mcapiform_default_3rdparty() {
       'name' => '3rdparty',
     ),
     'perspective' => '3',
-    'help' => 'Enter the transaction for any two members',
     'architecture' => array(
       'path' => 'transact/3rdparty',
       'access' => 'user_access:manage all transactions',
       'menu_link' => MENU_LOCAL_TASK,
       'use_block' => 1,
-    ),
-    'mcapi_form_fields' => array(
-      'mcapi_form_fields__active_tab' => 'edit-worth',
     ),
     'payer' => array(
       'preset' => '',
@@ -115,7 +109,6 @@ function mcapiform_default_3rdparty() {
       ),
     ),
     'submission' => array(
-      'state' => TRANSACTION_STATE_FINISHED,
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
     ),

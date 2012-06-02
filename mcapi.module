@@ -35,7 +35,7 @@ define('MCPI_CURRENCY_UNDO_REVERSE', 2);
  *     hook_transaction_validate
  *     EntityController->insert($transactions, TRUE)
  *     field_attach_insert('transaction', $transaction);
- *     //run hook_entity_insert
+ *   hook_transactions_inserted
  * end form submission
  *
  */
@@ -127,13 +127,15 @@ function mcapi_hook_info() {
   return array(
     //declare new transaction controllers
     'transaction_controller' => array(),
-    //so any module can add validation to the transaction object
-    'transactions_validate' => array(),
+    //check the transactions and the system integrity after the transactions would go through
+    'accounting_validate' => array(),
+    //respond to the insertion of a transaction cluster
+    'transactions_insert' => array(),
     //callbacks for determining access to the currency and aggregated stats
     'currency_access_callbacks' => array(),
     //declare permissions for transaction access control, per currency per operation
     'transaction_access_callbacks' => array(),
-    //change of transaction state - takes transaction
+    //change of transaction state - takes serials
     'transactions_state' => array(),
     //declare transaction states
     'mcapi_info_states' => array(),
@@ -142,7 +144,7 @@ function mcapi_hook_info() {
     //declare permissions to go into the community accounting section of the drupal permissions page
     'mcapi_info_drupal_permissions' => array(),
   );
-  //also note there is hook_transactions_alter before insertion
+  //also note there is hook_transactions_alter to build up a transaction cluster
 }
 
 /**
@@ -183,7 +185,12 @@ function mcapi_mcapi_info_states() {
  * implements mcapi hook_info_types
  */
 function mcapi_mcapi_info_types() {
-  return array('default');
+  $types = array('default', 'child');
+  if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE) {
+    $types[]= 'undo';
+    $types[]= 'undone';
+  }
+  return $types;
 }
 
 function mcapi_get_states($return_mode = 'full') {
@@ -277,6 +284,7 @@ function transaction_view_access($transaction) {
 
 function transaction_undo_access($transaction) {
   module_load_include('inc', 'mcapi');
+  if ($transaction->type == 'undone') return FALSE;
   foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
     if (!currency_access('undo', $item['currcode'])) return FALSE;
   }
@@ -335,7 +343,7 @@ function transaction_view($transactions, $view_mode = 'certificate') {
   }
   //structure the transactions using serial numbers, assuming the first is always the main one
   $clusters = array();
-  foreach($transactions as $transaction) {
+  foreach ($transactions as $transaction) {
     if (empty($clusters[$transaction->serial])) {
       $clusters[$transaction->serial] = $transaction;
     }
@@ -366,20 +374,17 @@ function template_preprocess_transaction(&$variables) {
 
 
   //$transactions must be keyed by xid if there is more than one
-  //in preview mode this may not be the case
-  //anyway it seems to work without
-  if (!empty($transaction->xid)) {
-    $transactions = array($transaction->xid => &$transaction);
-    field_attach_prepare_view('transaction', $transactions, $variables['view_mode']);
-    //entity_prepare_view('transaction', $transactions);
-  }
-  else {
-    //I don't know
-  }
+  //because the entity key is used to read fieldAPI data
+  //in preview mode the xid hasn't been determined
+  $transactions = array($transaction->xid => &$transaction);
+  field_attach_prepare_view('transaction', $transactions, $variables['view_mode']);
+  //entity_prepare_view('transaction', $transactions);
+
   //this returns a render array
   $variables['additional'] = field_attach_view('transaction', $transaction, $variables['view_mode']);
   //this populates top level of variables with the render array
   field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
+
   //move worth field to the top of $variables where we would expect to find it
   $variables['worth'] = drupal_render($variables['additional']['worth']);
   unset($variables['additional']['worth']);
@@ -391,7 +396,7 @@ function template_preprocess_transaction(&$variables) {
   $variables['children'] = array();
   if (!isset($transaction->children)) return;
   foreach ($transaction->children as $child) {
-    $variables['children'] = transaction_view($child, 'sentence');
+    $variables['children'][] = transaction_view($child, 'sentence');
   }
 }
 
@@ -407,7 +412,8 @@ function matslats_list_tokens($type1, $type2 = NULL) {
 }
 
 
-  //this runs every time a 'new_transaction()' is created
+//this runs every time a 'new_transaction()' is created.
+//just helps to make sure the less visible fields have reasonable defaults
 function new_transaction() {
   return (object) array(
     'xid' => 0,
@@ -418,28 +424,11 @@ function new_transaction() {
     'state' => TRANSACTION_STATE_UNSAVED,
     'type' => NULL,
     'extra' => array(),
-    //'worth' => array('und'=> array(0 => array('currcode' => 'def_drup', 'quantity' => 0)))
   );
 }
 
 /*
- * wrapper around transactions_insert
- * take a transaction and derive any children
- * return the transaction, with ->children
- * boolean $really means whether this is a test insert or not.
- */
-function transaction_insert_new($transaction, $really) {
-  $transactions = array($transaction);
-  //this is where the transaction is likely to acquire children, 
-  //and serial numbers set by contrib modules
-  drupal_alter('transactions', $transactions);
-
-  transactions_insert($transactions, $really);
-  return $transactions;
-}
-
-/*
- * INTERNAL API FOR MODULE DEVELOPERS
+ * Community Accounting API FOR MODULE DEVELOPERS
  *
  * These need to be better unified as regards exception handling
  * but I don't have much experience on that
@@ -457,6 +446,10 @@ function transaction_insert_new($transaction, $really) {
  *
  */
 
+/*
+ * Entity load callback
+ * Community Accounting API function
+ */
 function transactions_load($xids = array(), $conditions = array(), $reset = FALSE) {
   $transactions = entity_load('transaction', $xids, $conditions, $reset);
   module_invoke_all('entity_load', $transactions, 'transaction');
@@ -465,22 +458,27 @@ function transactions_load($xids = array(), $conditions = array(), $reset = FALS
 
 
 /*
- * internal API function
+ * Community Accounting API function
+ * N.B. Contrib modules would normally call wrapper function transaction_insert_new()
+ * which fires the hook_transactions inserted
+ * $transactions is a flat array
  */
-function transactions_insert(array $transactions, $really = FALSE) {
+function transactions_insert(array &$transactions, $really = FALSE) {
   //put all the transactions side by side ready for the entity controller to validate and insert
-  module_invoke_all('transactions_validate', $transactions);
+  module_invoke_all('accounting_validate', $transactions);
   entity_get_controller('transaction')->insert($transactions, $really);
   //we don't insert the fields if we are not $really saving
   if ($really) {
     foreach ($transactions as $transaction) {
       field_attach_insert('transaction', $transaction);
-      module_invoke_all('entity_insert', $transaction, 'transaction');
     }
   }
 }
 
-function transactions_undo(array $transactions, $force = FALSE) {
+/*
+ * Community Accounting API function
+ */
+function transactions_undo(array $transactions) {
   entity_get_controller('transaction')->undo($transactions);
   //depends on the undo mode
   if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_DELETE) {
@@ -490,26 +488,39 @@ function transactions_undo(array $transactions, $force = FALSE) {
     }
   }
 }
-//resave the transaction, but only change the state - this is not considered an update
-function transactions_state(array $serials, $new_state, $really = FALSE) {
-  $transactions = transactions_load(NULL, array('serial' => $serials));
-  module_invoke_all('transactions_validate', $transactions);
-  if (!$really) return;
-  entity_get_controller('transaction')->state($serials, $new_state, $really);
-  module_invoke_all('transactions_state', $transactions);
+/*
+ * Community Accounting API function
+ * re the transaction, but only change the state
+ * should be called within try-catch
+ * N.B. Validation should happen OUTSIDE of this function
+ */
+function transactions_state(array $serials, $new_state) {
+  entity_get_controller('transaction')->state($serials, $new_state);
+  module_invoke_all('transactions_state', $serials, $new_state);
 }
-//returns an object with properties
-//->balance
-//->gross_in
-//->gross_out
-//->count
-function transaction_totals($uid, $currcode = NULL, $options = array()) {
+
+/*
+ * Community Accounting API function
+ * Retrieves transaction summary data for a user in a given currency
+ * This data can also be obtained through various views fields, especially in the mcapi_index_views module
+ * $conditions are same as in drupal database api, each an array like ($fieldname, $value, $operator),
+ * where the fieldname is from mcapi_transactions table and the operator is optional.
+ * If there are no conditions passed then only transactions in a positive state are counted.
+ * N.B for a replacement entity controller, these would need translating.
+ * 
+ * Returns an array with the following keys
+ * - balance
+ * - gross_in
+ * - gross_out
+ * - count
+ */
+function transaction_totals($uid, $currcode = NULL, $conditions = array()) {
   if (!$currcode) $currcode = key(currencies_load());
-  $options += array(
-    'states' => array(TRANSACTION_STATE_FINISHED),
-  );
+  if (empty($conditions)) {
+    $conditions = array(array('state', 0, '>'));
+  }
   //convert it to an object for cleaner syntax in php5
-  $totals = (object)entity_get_controller('transaction')->sums($uid, $currcode, $options);
+  $totals = (object)entity_get_controller('transaction')->sums($uid, $currcode, $conditions);
   //just out of interest (needed for intertrading) we'll store the smallest balances
   if (module_exists('intertrading_client') && $currcode == variable_get('intertrading_currcode', '')){
     save_smallest($totals->balance, $uid);
@@ -519,9 +530,14 @@ function transaction_totals($uid, $currcode = NULL, $options = array()) {
 
 /*
  * API wrapper functions
+ * These wrappers are mostly concerned with managing transactions as clusters sharing the same serial number
+ * The transaction engine is oblivious to this aspect of the Drupal architecture.
+ * Module developers should use these functions wherever possible.
+ * Writers of alternative transaction engines should probably ignore them.
  */
 
-/**
+/*
+ * wrapper around Community Accounting API function transactions_load
  * load a cluster of transactions sharing a serial number
  * this is used to as a menu loader, so can't be in an inc file
  */
@@ -541,10 +557,49 @@ function transaction_load($serial) {
   return $serials[$serial];
 }
 
+/*
+ * wrapper around Community Accounting API function transactions_insert
+ * take a transaction and derive any children
+ * return the transaction, with ->children
+ * boolean $really means whether this is a test insert or not.
+ */
+function transaction_insert_new($transaction, $really) {
+  $transactions = array($transaction);
+  //this is where the transaction is likely to acquire children,
+  //and serial numbers set by contrib modules
+  drupal_alter('transactions', $transactions);
+
+  transactions_insert($transactions, $really);
+  if ($really) {
+    module_invoke_all('transactions_inserted', $transactions);
+  }
+  return $transactions;
+}
+/*
+ * undocumented Community Accounting API function - for development only!
+ */
 function transactions_delete($transactions) {
   transactions_undo($transactions, MCPI_CURRENCY_UNDO_DELETE);
 }
 
+/*
+ * Calculate the balance changes that this transaction proposes
+ * by convention, if the transaction state < 0 it is NOT COUNTED
+ */
+function _transactions_diff($transactions) {
+  $diff = array();
+  foreach ($transactions as $transaction) {
+    if ($transaction->state <= 0)
+    foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
+      $quant = $transaction->state <= 0 ? 0 : $flow['quantity'];
+      //we can't prepare the array in advance with zeros so += and -= throws notices
+      //instead we just build up an array and add them up when we need them
+      $diff[$transaction->payer][$flow['currcode']][] = $quant;
+      $diff[$transaction->payee][$flow['currcode']][] = $quant;
+    }
+  }
+  return $diff;
+}
 
 //deficit is an array keyed by by uid, ordered asc
 function save_smallest($balance, $uid) {
@@ -677,116 +732,83 @@ function mcapi_format_usernames($accounts) {
 function mcapi_action_info() {
   module_load_include('inc', 'mcapi');
   return array(
-    'mcapi_transaction_notify_action' => array(
-      'type' => 'transaction',
-      'label' => t('Notify transactees'),
-      'description' => t('Compose one mail which will be sent to users involved in the transaction who did not start the transaction'),
+    'mcapi_charge_action' => array(
+      'type' => 'transactions',
+      'label' => t('Charge one of the participants'),
       'configurable' => TRUE,
-      'triggers' => array('entity_insert'),
+      'triggers' => array('transactions_alter'),
+    ),
+    'mcapi_transaction_mail_action' => array(
+      'type' => 'transactions',
+      'label' => t('Notify transactees'),
+      'description' => t('Compose one mail which will be sent to the participants in the transaction'),
+      'configurable' => TRUE,
+      'triggers' => array('transactions_inserted'),
     )
   );
 }
+
 /*
  * implements hook_trigger_info
  */
 function mcapi_trigger_info() {
   return array(
+    //all mcapi hooks take variable $transactions.
     'mcapi' => array(
-      'entity_insert' => array(
-        'label' => t('A transaction has been created'),
+      'transactions_alter' => array(
+        'label' => t('Modify a cluster of transactions (with the same serial number) before saving'),
       ),
-    ),
-  );
-}
-
-
-/*
- * settings form callback for action mcapi_transaction_notify_action
- */
-function mcapi_transaction_notify_action_form($context) {
-  $def_bod = t("[user:name],
-
-A transaction for [transaction:worth] has been saved with [transaction:partner]
-
-More details can be found at
-[transaction:uri]
-
-To change your notification settings, visit your profile at
-[user:edit-url]
-
-The team at [site:name]");
-
-  $form['mail'] = array(
-    '#title' => t('Mail subject'),
-    '#description' => t('Available variables are: ') . implode(', ', matslats_list_tokens('site', 'user', 'transaction')),
-    'subject' => array(
-      '#title' => t('Subject'),
-      '#type' => 'textfield',
-      '#default_value' => empty($context['subject']) ? t('Exchange saved with [transaction:partner]') : $context['subject'],
-      '#required' => TRUE,
-    ),
-    'body' => array(
-      '#title' => t('Mail template'),
-      '#type' => 'textarea',
-      '#default_value' => empty($context['body']) ? $def_bod : $context['body'],
-      '#required' => TRUE,
-      '#weight' => 1
+      'transactions_inserted' => array(
+        'label' => t('A cluster of transactions have been inserted'),
+      )
     )
   );
-  $form['cc'] = array(
-    '#title' => t('cc:'),
-    '#description' => t('Send an extra copy'),
-    '#type' => 'textfield',
-    '#default_value' => empty($context['cc']) ? '' : $context['cc'],
-    '#weight' => 2
-  );
-  return $form;
 }
-function mcapi_transaction_notify_action_submit($form, $form_state) {
-  return $form_state['values'];
+
+/*
+ * implements hook_form_trigger_assign_form_alter
+ * adds a helpful comment to the transactions trigger
+ */
+function mcapi_form_trigger_assign_form_alter(&$form, $form_state) {
+  $clarification = t('Actions which create new transactions will not fire the trigger recursively');
+  $form['transactions_alter']['#description'] = $clarification;
 }
 /*
- * implements hook_entity_insert
+ * implements hook_transactions_inserted (trigger)
  * in service of trigger module
  */
-function mcapi_entity_insert($transaction, $type) {
-  if ($type != 'transaction' || $transaction->type == 'auto') return;
-  foreach (trigger_get_assigned_actions('entity_insert') as $aid => $info) {
-    actions_do($aid, $transaction, $info);
+function mcapi_transactions_inserted($transactions) {
+  if (module_exists('trigger')) {
+    foreach (trigger_get_assigned_actions('transactions_inserted') as $aid => $info) {
+      reset($transactions);
+      actions_do($aid, $transactions, $info);
+    }
   }
-}
-/*
- * action callback
- * mail the transaction participants, and cc
- */
-function mcapi_transaction_notify_action($transaction, $params) {
-  $params['transaction'] = $transaction;
-  if ($GLOBALS['user']->uid != $transaction->payer) {
-    $params['user'] = user_load($transaction->payer);
-    drupal_mail('mcapi', 'transaction_notify_action', $params['user']->mail, user_preferred_language($params['user']), $params);
-  }
-  if ($GLOBALS['user']->uid != $transaction->payee) {
-    $params['user'] = user_load($transaction->payee);
-    drupal_mail('mcapi', 'transaction_notify_action', $params['user']->mail, user_preferred_language($params['user']), $params);
-  }
-  $cc = user_load_by_mail($params['cc']);
-  if ($cc->uid && $GLOBALS['user']->uid != $cc->uid) {
-    $params['user'] = &$cc;
-    drupal_mail('mcapi', 'transaction_notify_action', $settings['cc'], user_preferred_language($params['user']), $params);
-  }
-
 }
 
 /*
- * ================================================================
- * implements hook_mail
+ * implements hook_transactions_alter (trigger)
+ * sends the first transaction to the action callbacks where it can be changed.
+ * Action callbacks may return a new transaction to be added to the $transactions
  */
-function mcapi_mail($key, &$message, $params) {
-  if ($key == 'transaction_notify_action') {
-    // We do not sanitize the token replacement, since the output of this
-    // replacement is intended for an e-mail message, not a web browser.
-    $options = array('language' => $message['language'], 'sanitize' => FALSE);
-    $message['subject'] =  token_replace($params['subject'], $params, $options);
-    $message['body'][] =  token_replace($params['body'], $params, $options);
+function mcapi_transactions_alter(&$transactions) {
+  if (module_exists('trigger')) {
+    foreach (trigger_get_assigned_actions('transactions_alter') as $aid => $info) {
+      reset($transactions);
+      //each action should return a transaction object
+      $result = actions_do($aid, $transactions, $info);
+      if (!empty($result[$aid])) {
+        $transactions[] = $result[$aid];
+      }
+    }
+  }
+}
+
+
+
+//this should really be in core...
+function _mcapi_validate_mail_element($element, $form_state) {
+  if (!valid_email_address($element['#value'])) {
+    form_error($element, t('That e-mail address is not valid.'));
   }
 }

@@ -6,6 +6,7 @@
  * Install, update and uninstall functions for the transactions module.
  */
 
+
 /**
  * Implements hook_install().
  */
@@ -32,6 +33,18 @@ function mcapi_install() {
       $data_col = serialize($data);
       db_update('field_config')->fields(array('data' => $data_col))->condition('field_name', 'body')->execute();
     }
+  }
+  //this variable is deleted when the first transaction is erased
+  variable_set('change_undo_mode', TRUE);
+
+  //create a new user if only user 1 exists.
+  if (db_query("SELECT count(uid) FROM {users}")->fetchField() < 2) {
+    user_save(NULL, array(
+      'name' => 'demo',
+      'mail' => 'demo@'.$_SERVER['SERVER_NAME'],
+      'pass' => 'demo'
+    ));
+    drupal_set_message("A new user was created for trading. name: demo, pass: demo");
   }
 }
 

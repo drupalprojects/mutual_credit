@@ -78,7 +78,7 @@ function mcapi_menu_inc() {
   );
   $items['admin/accounting/entity_controller'] = array(
     'title' => 'Entity controller',
-    'description' => "Choose which lump of code reads and writes your transaction data.",
+    'description' => "Choose and configure how and where your transaction data is stored",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_controller_options_form'),
     'access arguments' => array('manage all transactions'),
@@ -350,16 +350,9 @@ function mcapi_validate_title(&$element, $form_state) {
  * as a form element validation callback, this is assumed to happen BEFORE transactions_validate is called
  */
 function mcapi_validate_state(&$element, &$form_state) {
-  $val = &$element['$value'];
-  if ($val == TRANSACTION_STATE_UNSAVED) return;
-  if (empty($val) && empty($form_state['values']['serial'])) {
-    form_set_value($element, TRANSACTION_STATE_UNSAVED, $form_state);
-  }
-  else{
-    $states = mcapi_get_states();
-    if (!isset($states[$val])) {
-      form_error($element, t('Invalid transaction state: @value.', array('@value' => $val)));
-    }
+  $states = mcapi_get_states();
+  if (!isset($states[$element['#value']])) {
+    form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['$value'])));
   }
 }
 
@@ -372,27 +365,10 @@ function mcapi_validate_ttype(&$element, $form_state) {
   form_error($element, t('Invalid transaction type.'));
 }
 
-/*
- * if there are children in the transations, bring the children up to the top,
- * ensure they have the same serial number as the parent
- * so all can be processed in parallel
- */
-function transactions_flatten($transactions) {
-  foreach ($transactions as $transaction) {
-    if (empty($transaction->children)) continue;
-    foreach ($transaction->children as $child) {
-      //$child->serial = $transaction->serial;
-      $transactions[] = $child;
-    }
-    unset($transaction->children);
-  }
-}
 
 /*
  * access callbacks declared in hook_transaction_access and hook_currency_access
- */
-
-/*
+ *
  * general purpose callbacks require no arguments
  */
 function mcapi_access_anyone() {
@@ -448,7 +424,6 @@ function currency_picker_element(array $currcodes, $default = NULL, $multiple = 
     '#options' =>  _currency_picker_element_options($currcodes),
     '#default_value' => $default,
     '#multiple' => $multiple,
-    '#required' => TRUE,
   );
 }
 //build a key value array of currency codes and currency names
@@ -460,4 +435,187 @@ function _currency_picker_element_options(array $currcodes) {
     $options[$currcode] = $currencies[$currcode]->human_name;
   }
   return $options;
+}
+
+
+/*
+ * action callback
+ * mail the transaction participants, and cc
+ */
+function mcapi_transaction_mail_action($transactions, $params) {
+  $params['transactions'] = $transactions;
+  $transaction = current($transactions);
+  _mcapi_transaction_mail_action(array($transaction->payer, $transaction->payee), $params);
+}
+
+function _mcapi_transaction_mail_action($uids, $params) {
+  foreach ($uids as $uid) {
+    if ($GLOBALS['user']->uid != $uid) {
+      $params['user'] = user_load($uid);
+      drupal_mail('mcapi', 'transaction_mail_action', $params['user']->mail, user_preferred_language($params['user']), $params);
+    }
+  }
+  //this is done separately because we start not with a uid but with a mail which may or not belong to an account
+  if ($params['cc']) {
+    global $language;
+    $account = user_load_by_mail($params['cc']);
+    $language = $account->uid > 0 ? user_preferred_language($params['user']) : $language;
+    drupal_mail('mcapi', 'transaction_mail_action', $params['cc'], user_preferred_language($params['user']), $params);
+  }
+}
+
+/*
+ * settings form callback for action mcapi_transaction_mail_action
+ */
+function mcapi_transaction_mail_action_form($context) {
+  if (empty($context['body'])) $context['body'] = "[user:name],\n\n".
+    t('A transaction for [transaction:worth] has been saved')."\n\n".
+    t('More details can be found at:') ."\n[transaction:uri]\n\n".
+    t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
+    t('The team at [site:name]');
+  return _mcapi_mail_template_fields($context);
+}
+
+function _mcapi_mail_template_fields($context) {
+  return array(
+    'mail' => array(
+      '#title' => t('Mail template'),
+      '#description' => t('Available variables are: ') . implode(', ', matslats_list_tokens('site', 'user', 'transaction', 'transactions')),
+      '#type' => 'fieldset',
+      'subject' => array(
+        '#title' => t('Subject'),
+        '#type' => 'textfield',
+        '#default_value' => empty($context['subject']) ? t('Exchange saved with [transaction:partner]') : $context['subject'],
+        '#required' => TRUE,
+      ),
+      'body' => array(
+        '#title' => t('Body'),
+        '#type' => 'textarea',
+        '#default_value' => empty($context['body']) ? $def_bod : $context['body'],
+        '#required' => TRUE,
+        '#weight' => 1
+      ),
+      'cc' => array(
+        '#title' => t('Carbon copy'),
+        '#description' => t('Send an extra copy'),
+        '#type' => 'textfield',
+        '#default_value' => empty($context['cc']) ? '' : $context['cc'],
+        '#element_validate' => array('_mcapi_validate_mail'),
+        '#weight' => 2
+      )
+    )
+  );
+}
+
+function mcapi_transaction_mail_action_submit($form, $form_state) {
+  return $form_state['values'];
+}
+
+/*
+ * implements hook_mail
+ */
+function mcapi_mail($key, &$message, $params) {
+  if ($key == 'transaction_mail_action') {
+    // We do not sanitize the token replacement, since the output of this
+    // replacement is intended for an e-mail message, not a web browser.
+    $options = array('language' => $message['language'], 'sanitize' => FALSE);
+    $message['subject'] =  token_replace($params['subject'], $params, $options);
+    $message['body'][] =  token_replace($params['body'], $params, $options);
+  }
+}
+
+/*
+ * action callback for hook_transactions_alter
+ * Alters the original transaction and/or returns a child
+ */
+function mcapi_charge_action($transactions, $settings) {
+  $transaction = current($transactions);
+  $currcode = isset($settings['currcode']) ? $settings['currcode'] : 'def_drup';
+  $child = new_transaction();
+  $child->type = 'child';
+  $child->serial = $transaction->serial;//note how this is inherited
+  $child->payer = $transaction->{$settings['source']};
+  $child->payee = $settings['recipient'];
+  $child->state = $transaction->state;
+  $quant = _mcapi_calc($settings['rate'], $transaction->worth[LANGUAGE_NONE][0]['quantity']);
+  $child->worth[LANGUAGE_NONE][0] = array(
+    'quantity' => mcapi_round($quant, $currcode, $settings['round'] == 'up'),
+    'currcode' => $currcode
+  );
+  return $child;
+}
+
+/*
+ * Settings form callback for mcapi_pay_someone_action
+ * odd that form_state isn't passed
+ * this means we can't do form_load_include
+ * $context = array(
+ *  [actions_label] => Record transaction
+ *  [actions_type] => transaction
+ * )
+ */
+function mcapi_charge_action_form($context) {
+  $form['#description'] = t('Assumes the first currency in the transaction');
+  $def_currcode = isset($context['currcode']) ? $context['currcode'] : 'def_drup';
+  $form['currcode'] = currency_picker_element(array_keys(currencies_load()), $def_currcode, FALSE);
+  $form['source'] = array(
+    '#title' => t('Source'),
+    '#type' => 'radios',
+    '#options' => array('payer' => t('Payer'), 'payee' => t('Payee')),
+    '#default_value' => isset($context['source']) ? $context['source'] : 'payer',
+  );
+  $form['recipient'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Account number to be credited'),
+    '#description' => t('A username, email, or user ID'),
+    '#default_value' => isset($context['recipient']) ? $context['recipient'] : 1,
+    '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
+    '#autocomplete_path' => 'user/autocomplete',
+    '#weight' => 1,
+  );
+  $form['rate'] = array(
+    '#title' => t('Rate or amount'),
+    '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity'),
+    '#type' => 'textfield',
+    '#default_value' => isset($context['rate']) ? $context['rate'] : 1,
+    '#element_validate' => array('mcapi_validate_charge_rate'),
+    '#weight' => 2,
+  );
+  $form['round'] = array(
+    '#title' => t('Calculation method'),
+    '#type' => 'radios',
+    '#options' => array('up' => t('Up'), 'down' => t('Down')),
+    '#default_value' => isset($context['round']) ? $context['round'] : 'down',
+    '#weight' => 3,
+  );
+  return $form;
+}
+function mcapi_charge_action_submit($form, $form_state) {
+  return $form_state['values'];
+}
+
+/*
+ * element validate callback in mcapi_charge_action)form
+ */
+function mcapi_validate_charge_rate(&$element, &$form_state) {
+  $quant = _mcapi_calc($element['#value'], 1);
+  if (!is_numeric($quant)) {
+    form_error($element, t('Does not return a number for transaction quantity 1: @notnum', array('@notnum' => $quant)));
+  }
+}
+/*
+ * calculate a transaction quantity based on a provided formala and input quantity
+ * $formula can be
+ * number => returns the number as a quantity, regardless of $base_quant
+ * percentage of the $base_quant
+ * formula using [q] for base_quant
+ */
+
+function _mcapi_calc($formula, $base_quant) {
+  if (is_numeric($formula)) return $formula;
+  $proportion = str_replace('%', '', $formula);
+  if (is_numeric($proportion)) {
+    return $base_quant * $proportion/100;
+  }
+  return eval('echo '.str_replace('[q]', $base_quant, $formula).';');
 }
