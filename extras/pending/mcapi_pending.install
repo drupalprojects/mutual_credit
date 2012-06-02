@@ -6,9 +6,42 @@ function mcapi_pending_install() {
   drupal_set_message(t('Pending state is now available. Adjust any non-default transaction forms to save into the pending state: !link',
     array('!link' => l('admin/accounting/forms', 'admin/accounting/forms'))
   ));
+  save_default_pending_action('mcapi_add_signatories_action', 'transactions_inserted');
+  save_default_pending_action('mcapi_signatories_mail_action', 'transactions_inserted');
+  drupal_set_message(t('Actions and triggers have been configured for transaction signing.'));
+}
+
+
+function save_default_pending_action($callback, $trigger) {
+  static $weight = 1;
+  $actions = mcapi_pending_action_info();
+  $form_callback = $callback.'_form';
+  $form = $form_callback();
+  //special exception for mail_all_signatories_action
+  if (isset($form['mail'])) $form = $form['mail'];
+  //this is tricky but we're getting the default values out of the action form
+  foreach (element_children($form) as $fieldname) {
+    $params[$fieldname] = $form[$fieldname]['#default_value'];
+  }
+  $aid = actions_save($callback, 'transaction', $params, $actions[$callback]['label']);
+  // Borrowed from trigger_assign_form_submit
+  db_insert('trigger_assignments')->fields(
+    array(
+      'hook' => $trigger,
+      'aid' => $aid,
+      'weight' => $weight++,
+    )
+  )->execute();
 }
 
 function mcapi_pending_uninstall() {
+  module_load_include('module', 'mcapi_pending');
+  $actions = array_keys(mcapi_pending_action_info());
+  $aids = db_select('actions', 'a')->fields('a', array('aid'))->condition('callback', $actions)->execute()->fetchCol();
+  foreach ($aids as $aid) {
+    actions_delete($aid);
+  }
+
   if (module_exists('views')) {
     $view = views_get_view('signatures');
     if($view) {

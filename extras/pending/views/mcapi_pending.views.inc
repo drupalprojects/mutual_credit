@@ -58,10 +58,17 @@ function mcapi_pending_views_data() {
     )
   );
   $data['mcapi_signatures']['sign'] = array(
-    'title' => t('Sign here link'),
+    'title' => t('Sign'),
     'field' => array(
-      'help' => t('Link for current user to sign, or blank'),
-      'handler' => 'views_handler_field_mcapi_sign',
+      'help' => t('Link for current user to sign, if permitted'),
+      'handler' => 'views_handler_field_transaction',
+    )
+  );
+  $data['mcapi_signatures']['signoff'] = array(
+    'title' => t('Sign off'),
+    'field' => array(
+      'help' => t('Link for current user to sign on behalf of everyone, if permitted'),
+      'handler' => 'views_handler_field_transaction',
     )
   );
 

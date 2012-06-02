@@ -1,6 +1,6 @@
 ; $Id:
 name = Pending transactions
-description = Declares a new transaction state, 'pending', and defines forms for signing those transactions.
+description = Use actions and triggers to require signatures before transactions move into pending state
 package = Community Accounting
 core = 7.x
 
@@ -9,7 +9,7 @@ files[] = mcapi_pending.install
 files[] = mcapi_pending.mcapiforms_default.inc
 files[] = mcapi_pending.views_default.inc
 files[] = mcapi_pending.views.inc
-files[] = views_handler_field_mcapi_sign.inc
-;files[] = views_handler_filter_mcapi_signed.inc
+files[] = views/views_handler_field_mcapi_sign.inc
 
 dependencies[] = mcapi
+dependencies[] = trigger

@@ -14,7 +14,6 @@ function mcapi_pending_mcapiforms_default() {
       'name' => 'add_my_signature',
     ),
     'perspective' => '3',
-    'help' => 'to sign a pending transaction',
     'architecture' => array(
       'path' => 'transaction/%transaction/sign',
       'access' => 'mcapi_access_check_roles:2',
@@ -22,35 +21,20 @@ function mcapi_pending_mcapiforms_default() {
       'use_block' => 0,
     ),
     'submission' => array(
-      'state' => TRANSACTION_STATE_FINISHED,
-      'button' => 'Yes',
+      'button' => t('Yes'),
       'redirect' => 'transaction/%transaction',
     ),
     'experience' => array(
       'title' => '',
       'template' => '',
-      'sure_title' => 'Sign this transaction',
+      'sure_title' => t('Sign this transaction'),
       'sure_format' => 'certificate',
     ),
     'buttons' => array(
-      'submit' => 'Save',
-      'delete' => 'Delete',
+      'submit' => t('Save'),
+      'delete' => t('Delete'),
     )
   );
   $mcapiforms[$mcapiform->name] = $mcapiform;
   return $mcapiforms;
-}
-
-
-/*
- * Implements hook_default_mcapiforms_alter
- * changes all other default mcapi_forms to output as pending instead
- */
-function mcapi_pending_mcapiforms_default_alter(&$mcapiforms) {
-  foreach ($mcapiforms as $name => $mcapiform) {
-    if ($name == 'add_my_signature') continue;
-    if ($mcapiform->data['submission']['state'] == TRANSACTION_STATE_FINISHED) {
-      $mcapiform->data['submission']['state'] = TRANSACTION_STATE_PENDING;
-    }
-  }
 }
