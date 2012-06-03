@@ -145,34 +145,43 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['state']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['state']['hide_empty'] = 0;
   $handler->display->display_options['fields']['state']['empty_zero'] = 0;
-  /* Field: Transaction: Transaction links */
-  $handler->display->display_options['fields']['links']['id'] = 'links';
-  $handler->display->display_options['fields']['links']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['links']['field'] = 'links';
-  $handler->display->display_options['fields']['links']['label'] = '';
-  $handler->display->display_options['fields']['links']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['links']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['links']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['links']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['links']['hide_alter_empty'] = 1;
   /* Field: Transaction: Type */
   $handler->display->display_options['fields']['type']['id'] = 'type';
   $handler->display->display_options['fields']['type']['table'] = 'mcapi_transactions';
   $handler->display->display_options['fields']['type']['field'] = 'type';
-  $handler->display->display_options['fields']['type']['alter']['alter_text'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['make_link'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['absolute'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['external'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['nl2br'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['word_boundary'] = 1;
-  $handler->display->display_options['fields']['type']['alter']['ellipsis'] = 1;
-  $handler->display->display_options['fields']['type']['alter']['strip_tags'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['trim'] = 0;
-  $handler->display->display_options['fields']['type']['alter']['html'] = 0;
   $handler->display->display_options['fields']['type']['element_label_colon'] = 0;
   $handler->display->display_options['fields']['type']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['type']['hide_empty'] = 0;
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
+  /* Field: Transaction: Undo */
+  $handler->display->display_options['fields']['undo']['id'] = 'undo';
+  $handler->display->display_options['fields']['undo']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['undo']['field'] = 'undo';
+  $handler->display->display_options['fields']['undo']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['undo']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['undo']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['undo']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['undo']['hide_alter_empty'] = 1;
+  /* Field: Transaction: View */
+  $handler->display->display_options['fields']['view']['id'] = 'view';
+  $handler->display->display_options['fields']['view']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['view']['field'] = 'view';
+  $handler->display->display_options['fields']['view']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['view']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['view']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['view']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['view']['hide_alter_empty'] = 1;
+  if (module_exists('mcapi_pending')) {
+    /* Field: Transaction: Sign off */
+    $handler->display->display_options['fields']['signoff']['id'] = 'signoff';
+    $handler->display->display_options['fields']['signoff']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['fields']['signoff']['field'] = 'signoff';
+    $handler->display->display_options['fields']['signoff']['element_label_colon'] = 1;
+    $handler->display->display_options['fields']['signoff']['element_default_classes'] = 1;
+    $handler->display->display_options['fields']['signoff']['hide_empty'] = 0;
+    $handler->display->display_options['fields']['signoff']['empty_zero'] = 0;
+    $handler->display->display_options['fields']['signoff']['hide_alter_empty'] = 1;
+  }
   /* Sort criterion: Transaction: created */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'mcapi_transactions';

@@ -79,7 +79,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     foreach ($transactions as $transaction) {
       $transaction->temp = isset($transaction->xid) ? $transaction->xid : 0;
       $transaction->creator = $GLOBALS['user']->uid;
-      $transaction->created = REQUEST_TIME;
+      if (empty($transaction->created)) $transaction->created = REQUEST_TIME;
       //do the best we can in case a serial number isn't yet provided
       if (empty($transaction->serial)) {
         $transaction->serial = $serial;

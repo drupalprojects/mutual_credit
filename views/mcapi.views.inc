@@ -121,6 +121,7 @@ function mcapi_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
+
   $data['mcapi_transactions']['view'] = array(
     'title' => t('View'),
     'help' => t("Link to transaction"),

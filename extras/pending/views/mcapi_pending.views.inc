@@ -57,20 +57,31 @@ function mcapi_pending_views_data() {
       'handler' => 'views_handler_filter_boolean_operator',
     )
   );
-  $data['mcapi_signatures']['sign'] = array(
+  return $data;
+}
+
+
+function mcapi_pending_views_data_alter(&$data) {
+  // For other base tables, explain how we join
+  $data['mcapi_transactions']['table']['join']['mcapi_signatures'] = array(
+    'left_table' => 'mcapi_signatures',
+    'left_field' => 'serial',
+    'field' => 'serial',
+  );
+  $data['mcapi_transactions']['sign'] = array(
     'title' => t('Sign'),
     'field' => array(
-      'help' => t('Link for current user to sign, if permitted'),
+      'help' => t('Sign, if permitted'),
       'handler' => 'views_handler_field_transaction',
+      'link_title' => t('Sign')
     )
   );
-  $data['mcapi_signatures']['signoff'] = array(
+  $data['mcapi_transactions']['signoff'] = array(
     'title' => t('Sign off'),
     'field' => array(
-      'help' => t('Link for current user to sign on behalf of everyone, if permitted'),
+      'help' => t('Sign on behalf of everyone, if permitted'),
       'handler' => 'views_handler_field_transaction',
+      'link_title' => t('Sign off')
     )
   );
-
-  return $data;
 }
