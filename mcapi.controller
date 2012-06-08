@@ -69,7 +69,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * any transactions without a serial number will be assumed to be part of a new cluster
    * and saved with the SAME serial number
    */
-  public function insert(&$transactions, $really = FALSE) {
+  public function insert(array &$transactions, $really = FALSE) {
     //we need to ensure the schema is cached before calling mcapi_write_record
     //Otherwise it may try to retrieve the schema from the wrong database
     drupal_get_schema('mcapi_transactions');
@@ -119,19 +119,15 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * there is no error checking on this.
    * $purge is an undocumented feature, for development only, which forces mode MCPI_CURRENCY_UNDO_DELETE
    */
-  public function undo($transactions, $mode = NULL) {
+  public function undo(array $serials) {
+    variable_del('change_undo_mode');
     //it's possible to override the systemwide delete settings by passing in a constant
-    switch($mode === NULL ? variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) : $mode) {
+    switch(variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE)) {
       case MCPI_CURRENCY_UNDO_DELETE: //actually delete
-        foreach ($transactions as $transaction) {
-          $xids[] = $transaction->xid;
-        }
-        $query = db_delete("mcapi_transactions")->condition('xid', $xids)->execute();
-        break;
-      case MCPI_CURRENCY_UNDO_ERASE: //mark deleted
-        $this->state($transactions, TRANSACTION_STATE_ERASED);
-        break;
+        db_delete("mcapi_transactions")->condition('serial', $serials)->execute();
+        return;
       case MCPI_CURRENCY_UNDO_REVERSE:
+        $transactions = $this->load(NULL, array('serial' => $serials));
         //transactions which are 'undone' with this method have to be marked so they cannot be undone again
         foreach($transactions as $transaction) {
           $changetype[] = $transaction->serial;
@@ -143,11 +139,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
           $reversed->xid = NULL;
           $reverseds[] = $reversed;
         }
-        db_update('mcapi_transactions')->fields(array('type' => 'undone'))->condition('serial', $changetype)->execute();
         transactions_insert($reverseds, TRUE);
-        break;
+        //continue
+      case MCPI_CURRENCY_UNDO_ERASE: //mark deleted
+        $this->state($serials, TRANSACTION_STATE_UNDONE);
     }
-    variable_del('change_undo_mode');
   }
   /*
    * change the state of a transaction and its dependents

@@ -165,6 +165,9 @@ function mcapi_sign($serials, $uids) {
         ));
       }
       module_invoke_all('transaction_sign', $transaction, $uid);
+      if (module_exists('rules')) {
+        rules_invoke_event('transaction_sign', array($transaction));
+      }
     }
     if ($transaction->state == TRANSACTION_STATE_PENDING) {
       drupal_set_message(t("@num signatures remaining on transaction #@serial", 
@@ -531,7 +534,7 @@ function mcapi_pending_process_transaction(&$variables) {
     $status = 'signed';
     if ($pending) {
       if ($uid == $GLOBALS['user']->uid && transaction_sign_access($transaction)) {
-        $status = url('transaction/'.$transaction->serial.'/sign');
+        $status = 'transaction/'.$transaction->serial.'/sign';
       }
       else {
         $status = 'pending';

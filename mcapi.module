@@ -43,32 +43,27 @@ define('MCPI_CURRENCY_UNDO_REVERSE', 2);
 //states are mutually exclusive
 //the convention is that states > 0 are counted
 define('TRANSACTION_STATE_FINISHED', 1);
-define('TRANSACTION_STATE_ERASED', 0);
-define('TRANSACTION_STATE_UNSAVED', NULL); //before the transaction ever reaches the db
+//There's a convention that says transactions are 'counted' towards the balance when their state is > 0
+//when the delete mode is to write another transaction reversing the first, 
+//we don't actually want to discount the deleted transaction
+//so its state constant will be > 0
+//depending on the delete mode, erased transactions may or may not be counted
+define('TRANSACTION_STATE_UNDONE', variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE ? 2 : 0);
+
+//the transaction form expects args in $form_state[build_info]
+//This constant and another in the forms module ensures the argument position is not determined by chance
 define('TRANSACTION_BUILD_INFO_ARG', 0);
 
 
 /**
  * implements hook_help()
+ * provides on-page advice
  */
 function mcapi_help($section, $arg) {
   switch ($section) {
-    case 'admin/help#transaction':
-      return t('Defines a contentType called transactions, manages them and does the accounting.');
     case 'admin/accounting':
-      return '<p>'. t("This module, its development and implementations at !cforge,", array('!cforge' => l('Community Forge', 'http://communityforge.net')))  .' '.
-        t("have been the full time commitment of one person since Spring 2008, and a second person since spring 2009.") . ' '.
-        t("The results of this work are offered freely to all.") .'</p><p>'.
-        t("We give all possible resources to this work, and live by reciprocal gifting as much as possible.") .' '.
-        t("We look forward to the day when support is robust enough to pay staff and provide a reliable nonprofit public service.") .' '.
-        t("Please consider supporting this work by:") . ' '.
-        theme('item_list', array('items' => array(
-          t("sending some scarce hard currency to the developer"),
-          t("allying with us to build a global complementary currency ecosystem"),
-          t("offering board and lodging for a month or two")
-        )));
-    case 'admin/accounting/record':
-      return t('This is a base form provided for administration purposes only. For end-users, there are forms provided by other modules');
+      return '<p>'. t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence on abusive global financial capital. Despite its huge utility and value to local communities, the development of this software over four years has been supported only by informal donations, in money and in kind.");
+
   }
 }
 
@@ -80,16 +75,6 @@ function mcapi_menu() {
   return mcapi_menu_inc();
 }
 
-/*
- * implements hook_forms
- */
-function mcapi_forms($form_id, $args) {
-  $forms['transaction_admin_form'] = array(
-    'callback' => 'transaction_form',
-    'callback arguments' => $args
-  );
-  return $forms;
-}
 
 function transaction_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
@@ -131,6 +116,8 @@ function mcapi_hook_info() {
     'accounting_validate' => array(),
     //respond to the insertion of a transaction cluster
     'transactions_insert' => array(),
+    //respond to the removal, or undoing of a transaction
+    'transactions_undone' => array(),
     //callbacks for determining access to the currency and aggregated stats
     'currency_access_callbacks' => array(),
     //declare permissions for transaction access control, per currency per operation
@@ -173,7 +160,7 @@ function mcapi_mcapi_info_states() {
       'description' => t('the last state of the workflow'),
       'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
-    TRANSACTION_STATE_ERASED => array(
+    TRANSACTION_STATE_UNDONE => array(
       'name' => t('Undone'),
       'description' => t('marked deleted, but the transaction record remains'),
       'default_access_callbacks' => array()
@@ -192,24 +179,31 @@ function mcapi_mcapi_info_types() {
   }
   return $types;
 }
-
-function mcapi_get_states($return_mode = 'full') {
+/*
+ * utility
+ * gather up all the transaction states from the hooks and present them in a given format
+ * #options is suitable for choosing in a form element
+ * #description is suitable for a chunk of description text explaining what the states mean
+ * #full is the full array returned from the callback, keyed by constant value
+ */
+function mcapi_get_states($return_mode = '#options') {
   $states = array();
   foreach(module_implements('mcapi_info_states') as $module) {
     $function = $module . '_mcapi_info_states';
     $states += $function('states');
   }
-  if ($return_mode == '#options') {//suitable for a dropdown
-    foreach ($states as $key => $state) {
-      $options[$key] = $state['name'];
-    }
-    return $options;
-  }
+  if ($return_mode == '#full') return $states;
   elseif ($return_mode == '#description') {
     foreach ($states as $key => $state) {
       $desc[] = $state['name'] .' - '. $state['description'] .'.';
     }
     return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
+  }
+  else {//suitable for a dropdown
+    foreach ($states as $key => $state) {
+      $options[$key] = $state['name'];
+    }
+    return $options;
   }
   return $states;
 }
@@ -421,7 +415,7 @@ function new_transaction() {
     'payee' => NULL,
     'creator' => $GLOBALS['user']->uid,
     'created' => REQUEST_TIME,
-    'state' => TRANSACTION_STATE_UNSAVED,
+    'state' => TRANSACTION_STATE_FINISHED,
     'type' => NULL,
     'extra' => array(),
   );
@@ -451,7 +445,9 @@ function new_transaction() {
  * Community Accounting API function
  */
 function transactions_load($xids = array(), $conditions = array(), $reset = FALSE) {
-  $transactions = entity_load('transaction', $xids, $conditions, $reset);
+
+  $transactions = entity_get_controller('transaction')->load($xids, $conditions, $reset);
+  //$transactions = entity_load('transaction', $xids, $conditions, $reset);
   module_invoke_all('entity_load', $transactions, 'transaction');
   return $transactions;
 }
@@ -478,14 +474,18 @@ function transactions_insert(array &$transactions, $really = FALSE) {
 /*
  * Community Accounting API function
  */
-function transactions_undo(array $transactions) {
-  entity_get_controller('transaction')->undo($transactions);
+function transactions_undo(array $serials) {
+  entity_get_controller('transaction')->undo($serials);
   //depends on the undo mode
   if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_DELETE) {
-    foreach ($transactions as $transaction) {
+    foreach (transactions_load(NULL, array('serial' => $serials)) as $transaction) {
       field_attach_delete('transaction', $transaction);
       module_invoke_all('entity_delete', $transaction, 'transaction');
     }
+  }
+  module_invoke_all('transactions_undone', $serials);
+  if (module_exists('rules')) {
+    rules_invoke_event('transactions_undone', array($serials));
   }
 }
 /*
@@ -495,8 +495,12 @@ function transactions_undo(array $transactions) {
  * N.B. Validation should happen OUTSIDE of this function
  */
 function transactions_state(array $serials, $new_state) {
+  $old_state = transaction_load(current($serials))->state;
   entity_get_controller('transaction')->state($serials, $new_state);
-  module_invoke_all('transactions_state', $serials, $new_state);
+  module_invoke_all('transactions_state', $serials, $old_state, $new_state);
+  if (module_exists('rules')) {
+    rules_invoke_event('transactions_state', array($serials), $old_state, $new_state);
+  }
 }
 
 /*
@@ -572,14 +576,18 @@ function transaction_insert_new($transaction, $really) {
   transactions_insert($transactions, $really);
   if ($really) {
     module_invoke_all('transactions_inserted', $transactions);
+    if (module_exists('rules')) {
+      rules_invoke_event('transactions_inserted', array($transactions));
+    }
   }
   return $transactions;
 }
 /*
  * undocumented Community Accounting API function - for development only!
  */
-function transactions_delete($transactions) {
-  transactions_undo($transactions, MCPI_CURRENCY_UNDO_DELETE);
+function transactions_delete($serials) {
+  debug('Using undocumented API call to delete transactions');
+  transactions_undo($serials, MCPI_CURRENCY_UNDO_DELETE);
 }
 
 /*
@@ -732,7 +740,7 @@ function mcapi_format_usernames($accounts) {
 function mcapi_action_info() {
   module_load_include('inc', 'mcapi');
   return array(
-    'mcapi_charge_action' => array(
+    'mcapi_supplementary_transaction_action' => array(
       'type' => 'transactions',
       'label' => t('Charge one of the participants'),
       'configurable' => TRUE,
@@ -756,10 +764,16 @@ function mcapi_trigger_info() {
     //all mcapi hooks take variable $transactions.
     'mcapi' => array(
       'transactions_alter' => array(
-        'label' => t('Modify a cluster of transactions (with the same serial number) before saving'),
+        'label' => t('Modify a transaction cluster before saving'),
       ),
       'transactions_inserted' => array(
-        'label' => t('A cluster of transactions have been inserted'),
+        'label' => t('A transaction cluster was inserted'),
+      ),
+      'transactions_undone' => array(
+        'label' => t('A transaction cluster was undone'),
+      ),
+      'transaction_state' => array(
+        'label' => t('A transaction cluster changed state'),
       )
     )
   );
@@ -795,12 +809,16 @@ function mcapi_transactions_alter(&$transactions) {
   if (module_exists('trigger')) {
     foreach (trigger_get_assigned_actions('transactions_alter') as $aid => $info) {
       reset($transactions);
-      //each action should return a transaction object
+      //each action might return a transaction object
       $result = actions_do($aid, $transactions, $info);
       if (!empty($result[$aid])) {
         $transactions[] = $result[$aid];
       }
     }
+  }
+
+  if (module_exists('rules')) {
+    rules_invoke_event('transactions_alter', array($transactions));
   }
 }
 
@@ -811,4 +829,9 @@ function _mcapi_validate_mail_element($element, $form_state) {
   if (!valid_email_address($element['#value'])) {
     form_error($element, t('That e-mail address is not valid.'));
   }
+}
+
+function currency_get_users($currcode) {
+  debug(currency_load($currcode));
+  return db_query("select uid from users")->getCol();
 }

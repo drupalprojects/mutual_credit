@@ -20,7 +20,7 @@ $plugin = array(
     // Description of the top level menu, which is usually needed for
     // menu items in an administration list. Will be translated
     // by the menu system.
-    'menu description' => 'Administer transaction forms',
+    'menu description' => 'Gives you fine-grained control of the all important transaction form. Control the wording, the layout, the presets, the access and other aspects of the drupal architecture.',
   ),
 
   // These are required to provide proper strings for referring to the

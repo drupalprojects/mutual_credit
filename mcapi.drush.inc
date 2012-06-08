@@ -18,7 +18,7 @@ function mcapi_drush_help($section) {
     case 'mcapi:mcapi-wipeslate':
       return dt('Undo all transactions according to the currency settings');
     case 'drush:mcapi-purge':
-      return dt('Completely remove all references to transactions in state TRANSACTION_STATE_ERASED');
+      return dt('Completely remove all references to transactions in state TRANSACTION_STATE_UNDONE');
     case 'drush:mcapi-nodedel':
       return dt('remove the exchange nodes following the d6 upgrade');
   }
@@ -48,12 +48,14 @@ function mcapi_drush_command() {
       'purge' => 'Completely remove'
     ),
   );
-  $items['mcapi-purge'] = array(
-    'callback' => 'drush_mcapi_purge',
-    'description' => dt('Completely remove all references to transactions and attached fields in state TRANSACTION_STATE_ERASED'),
-    'drupal dependencies' => array('mcapi'),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
-  );
+  if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) != MCPI_CURRENCY_UNDO_REVERSE) {
+    $items['mcapi-purge'] = array(
+      'callback' => 'drush_mcapi_purge',
+      'description' => dt('Completely remove all references to transactions and attached fields in state TRANSACTION_STATE_UNDONE'),
+      'drupal dependencies' => array('mcapi'),
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+    );
+  }
   $items['mcapi-nodedel'] = array(
     'callback' => 'drush_mcapi_delnodes',
     'description' => dt('remove the exchange nodes following the d6 upgrade'),
@@ -67,7 +69,7 @@ function mcapi_drush_command() {
 function drush_mcapi_wipeslate() {
   //how to do "are you sure?" messages in drush!
   $serials = db_query("SELECT serial FROM {mcapi_transactions}")->fetchCol();
-  entity_get_controller('transaction')->state($serials, TRANSACTION_STATE_ERASED);
+  entity_get_controller('transaction')->state($serials, 0);
   $count = count($serials);
   drush_print("undone $count transactions");
   if (drush_get_option('purge')) {
@@ -75,36 +77,31 @@ function drush_mcapi_wipeslate() {
   }
 }
 
-
+//delete records of erased transactions (doesn't work in purge mode)
 function drush_mcapi_purge() {
-  //how to do "are you sure?" messages in drush
-  $transactions = transactions_load(NULL, array('state' => TRANSACTION_STATE_ERASED));
-  entity_get_controller('transaction')->undo($transactions, MCPI_CURRENCY_UNDO_DELETE);
-  foreach ($transactions as $transaction) {
-    field_attach_delete('transaction', $transaction);
-    module_invoke_all('entity_delete', $transaction, 'transaction');
+  if (variable_get('mcapi_controller', 'mcapi') != 'mcapi') {
+    drush_print('Purging only supported with default transaction engine.');
+    return;
   }
-  $count = count($transactions);
-  drush_print("completely removed $count transactions");
-  if ($xid = db_query("SELECT xid FROM {mcapi_transactions}")->fetchfield()) return;
+  //how to do "are you sure?" messages in drush?
+  //can't purge deleted transactions if delete is in reverse mode
+  //selective purge of transactions in erased state (NOT reversed state!)
+  $serials = db_query("SELECT DISTINCT serial FROM {mcapi_transactions} WHERE state = 0")->fetchCol();
+  //this is the undocumented hard-delete function for the transactions table itself
+  db_delete('mcapi_transactions')->condition('serial', $serials)->execute();
+  $remaining = db_query("SELECT count(xid) FROM {mcapi_transactions}")->fetchfield();
+  drush_print(dt("@purged transactions purged. @remaining transactions remaining", array(
+    '@purged' => count($serials), 
+    '@remaining' => $remaining)
+  ));
+  if ($remaining) return;
   
   //$fields = field_info_instance('transaction', 'field_worth', 'transaction');
   db_query("TRUNCATE TABLE {field_data_worth}");
   db_query("TRUNCATE TABLE {field_revision_worth}");
   db_query("TRUNCATE TABLE {mcapi_transactions}");
   variable_set('change_undo_mode', TRUE);
-  drush_print('reset auto-increment-transaction ID on transaction & worth tables. This could cause problems with other fieldAPI fields');
-}
-
-//based on node_delete_multiple
-function transaction_delete_multiple($serials) {
-  if (empty ($serials)) return;
-  $transactions = transactions_load(array(), array('serial' => $serials));
-  foreach ($transactions as $transaction) {
-    module_invoke_all('entity_delete', $transaction, 'transaction');
-    field_attach_delete('transaction', $transaction);
-  }
-  db_delete('mcapi_transactions')->condition('serial', $serials)->execute();
+  drush_print('reset auto-increment-transaction ID on transaction table. This could cause problems with other fieldAPI fields');
 }
 
 function drush_mcapi_delnodes() {

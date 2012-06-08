@@ -46,20 +46,11 @@ function mcapi_entity_info_inc() {
 function mcapi_menu_inc() {
   $items['admin/accounting'] = array(
     'title' => 'Accounting',
-    'description' => 'Member to member transactions',
+    'description' => "Manage all aspects of your community's money system",
     'page callback' => 'mcapi_accounting',
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.inc',
     'weight' => 2
-  );
-  $items['admin/accounting/transact'] = array(
-    'title' => 'Record transaction (full)',
-    'description' => 'Log a transaction in the database',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('transaction_admin_form'),
-    'access arguments' => array('manage all transactions'),
-    'menu name' => 'navigation',
-    'file' => 'mcapi.inc',
   );
   $items['transact'] = array(
     'title' => 'Record transaction',
@@ -78,7 +69,7 @@ function mcapi_menu_inc() {
   );
   $items['admin/accounting/entity_controller'] = array(
     'title' => 'Entity controller',
-    'description' => "Choose and configure how and where your transaction data is stored",
+    'description' => "This package comes with it's own entity controller, which reads and writes to the database using an internal API. It is possible to write different entity controllers to work with different accouting systems. The provided entity controller is semi-financialised. It is very different from the drupal default, designed for content management, but it does only single entry accounting with no database-level error checking built in.",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_controller_options_form'),
     'access arguments' => array('manage all transactions'),
@@ -158,10 +149,13 @@ function transaction_default_form($form, &$form_state) {
  * All transaction forms should use this function as a basis using hook_forms
  */
 function _transaction_form(&$form, &$form_state, $transaction) {
+  /*
+   * no need for this, because there's no editing of transactions once they are saved
   $form['serial'] = array(
     '#type'=> 'hidden',
     '#value' => isset($transaction->serial) ? $transaction->serial : 0
   );
+   */
   $form['payer'] = array(
     '#type' => 'textfield',
     '#title' => t('Account number to be debited'),
@@ -214,6 +208,8 @@ function _transaction_form(&$form, &$form_state, $transaction) {
   $form['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Record'),
+    //this prevents double click, but doesn't prevent going back and resubmitting the form
+    '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();")
   );
   $form['buttons']['#weight'] = 25;
   $form['#validate'] = array('transaction_form_validate');
@@ -228,7 +224,6 @@ function _transaction_form(&$form, &$form_state, $transaction) {
  *
  */
 function transaction_form_validate($form, &$form_state) {
-  form_state_values_clean($form_state);
   $transaction = (object)$form_state['values'];
   //populate the core transaction values from $form_state
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
@@ -250,6 +245,13 @@ function transaction_form_validate($form, &$form_state) {
  * this is what actually saves the data
  */
 function transaction_form_submit($form, &$form_state) {
+  if (isset($form_state['submitted_mcapi'])) {
+    form_set_error('This form had already been submitted.');
+    return;
+  }
+  else {
+    $form_state['submitted_mcapi'] = TRUE;
+  }
   form_state_values_clean($form_state);
   $transaction = (object)$form_state['values'];
   //build the transaction object from the $form_state[values]
@@ -331,8 +333,7 @@ function mcapi_transaction_undo_confirm_form($form, $form_state, $transaction){
  * Submit handler for deleting a transaction
  */
 function mcapi_transaction_undo_confirm_form_submit($form, $form_state) {
-  $transactions = array(transaction_load($form_state['values']['serial']));
-  transactions_undo($transactions);
+  transactions_undo(array($form_state['values']['serial']));
   //this could be done better with 'destination' in the url
   drupal_goto('user');
 }
@@ -350,7 +351,7 @@ function mcapi_validate_title(&$element, $form_state) {
  * as a form element validation callback, this is assumed to happen BEFORE transactions_validate is called
  */
 function mcapi_validate_state(&$element, &$form_state) {
-  $states = mcapi_get_states();
+  $states = mcapi_get_states('#full');
   if (!isset($states[$element['#value']])) {
     form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['$value'])));
   }
@@ -528,7 +529,7 @@ function mcapi_mail($key, &$message, $params) {
  * action callback for hook_transactions_alter
  * Alters the original transaction and/or returns a child
  */
-function mcapi_charge_action($transactions, $settings) {
+function mcapi_supplementary_transaction_action($transactions, $settings) {
   $transaction = current($transactions);
   $currcode = isset($settings['currcode']) ? $settings['currcode'] : 'def_drup';
   $child = new_transaction();
@@ -554,7 +555,7 @@ function mcapi_charge_action($transactions, $settings) {
  *  [actions_type] => transaction
  * )
  */
-function mcapi_charge_action_form($context) {
+function mcapi_supplementary_transaction_action_form($context) {
   $form['#description'] = t('Assumes the first currency in the transaction');
   $def_currcode = isset($context['currcode']) ? $context['currcode'] : 'def_drup';
   $form['currcode'] = currency_picker_element(array_keys(currencies_load()), $def_currcode, FALSE);
@@ -590,12 +591,12 @@ function mcapi_charge_action_form($context) {
   );
   return $form;
 }
-function mcapi_charge_action_submit($form, $form_state) {
+function mcapi_supplementary_transaction_action_submit($form, $form_state) {
   return $form_state['values'];
 }
 
 /*
- * element validate callback in mcapi_charge_action)form
+ * element validate callback in mcapi_supplementary_transaction_action)form
  */
 function mcapi_validate_charge_rate(&$element, &$form_state) {
   $quant = _mcapi_calc($element['#value'], 1);

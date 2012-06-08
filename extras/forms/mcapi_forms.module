@@ -153,7 +153,7 @@ function mcapi_forms_block_view($delta) {
   //it's generally a bad idea to show the form in block on its own page
   if (current_path() == $mcapi_form->data['architecture']['path']) return;
   return array(//if these seem inverted its because drupal_get_form loads the inc file
-    'subject' => mcapi_form_get_title($mcapi_form),
+    'subject' => $mcapi_form->data['experience']['title'],
     'content' => drupal_get_form('mcapi_forms_form', new_transaction(), $mcapi_form),
   );
 }

@@ -1,9 +1,0 @@
-; $Id: mc_sms.info,v 1.1.2.1 2010/12/06 13:19:46 hutch Exp $
-name = Rules for Community Accounting
-description = Rules, mass transactions, and automated transaction creation
-package = Community Accounting
-core = "7.x"
-dependencies[] = mcapi
-
-files[] = mcapi_rules.eval.inc
-files[] = mcapi_rules.rules.inc

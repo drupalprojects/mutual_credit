@@ -61,7 +61,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       //I-thou exchanges
       //this section cannot be used to edit existing transactions
       $form['secondperson'] = array(
-        '#default_value' => $transaction->secondperson
+        '#default_value' => $GLOBALS['user']->uid == $transaction->payer ? $transaction->payee : $transaction->payer
       ) + $form['payee'];
       $form['secondperson']['#type'] = strtok($mcapi_form->data['secondperson']['args'], ':');
       $form['secondperson']['#args'] = array(strtok(':'));
@@ -75,7 +75,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
           'outgoing' => $mcapi_form->data['direction']['outgoing']
         ),
         //if we are loading the page from blank, or rebuilding the form, we set the default values here,
-        '#default_value' => $transaction->direction,
+        '#default_value' =>  $GLOBALS['user']->uid == $transaction->payee ? 'incoming' : 'outgoing',
         '#required' => TRUE
       );
       //if we are loading the page from blank, or rebuilding the form, we set the default values here

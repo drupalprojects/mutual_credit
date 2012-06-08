@@ -39,7 +39,7 @@ if ($view_mode == 'sentence') {
     case TRANSACTION_STATE_FINISHED:
       print t("On @recorded, !payer gave !payee !worth", $replacements);
       break;
-    case TRANSACTION_STATE_ERASED:
+    case TRANSACTION_STATE_UNDONE:
       print t("On @recorded, !payer did not give !payee !worth. (DELETED)'", $replacements);
       break;
     case TRANSACTION_STATE_PENDING:
