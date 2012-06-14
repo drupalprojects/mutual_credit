@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 
 function mcapi_entity_property_info() {
@@ -13,9 +13,9 @@ function mcapi_entity_property_info() {
     'schema field' => 'serial',
     'getter callback' => 'entity_property_verbatim_get',//this is added by default if not put here
   );
-  $properties['type'] = array(
+  $properties['transaction_type'] = array(
     'label' => t("Transaction type"),
-    'type' => 'token',
+    'type' => 'list<text>',
     'options list' => 'mcapi_get_types',
     'required' => TRUE,
     'schema field' => 'type',
@@ -24,6 +24,7 @@ function mcapi_entity_property_info() {
   $properties['payer'] = array(
     'label' => t("Payer"),
     'description' => t("The user ID of the payer"),
+    'type' => 'user',
     'schema field' => 'payer',
     'required' => TRUE,
     'getter callback' => 'entity_property_verbatim_get',
@@ -31,21 +32,25 @@ function mcapi_entity_property_info() {
   $properties['payee'] = array(
     'label' => t("Payer"),
     'description' => t("The user ID of the payer"),
+    'type' => 'user',
     'schema field' => 'payee',
     'required' => TRUE,
     'getter callback' => 'entity_property_verbatim_get',
   );
   $properties['created'] = array(
     'label' => t("Unixtime of transaction creation"),
+    'type' => 'integer',
     'schema field' => 'created',
     'getter callback' => 'entity_property_verbatim_get',
   );
   $properties['creator'] = array(
     'label' => t("User who created the transaction"),
+    'type' => 'user',
     'schema field' => 'creator',
   );
   $properties['state'] = array(
     'label' => t("State"),
+    'type' => 'integer',
     'description' => t("Workflow state. Greater than zero means it is counted."),
     'schema field' => 'state',
     'getter callback' => 'entity_property_verbatim_get',
@@ -53,6 +58,10 @@ function mcapi_entity_property_info() {
   return $info;
 }
 
+
+function mcapi_entity_property_info_alter(&$items) {
+  //debug($items);
+}
 
 
 /*

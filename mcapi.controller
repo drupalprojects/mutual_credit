@@ -137,6 +137,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
           $reversed->type = 'undo';
           $reversed->data['original'] = $transaction->serial;
           $reversed->xid = NULL;
+          $reversed->state = TRANSACTION_STATE_UNDONE;
           $reverseds[] = $reversed;
         }
         transactions_insert($reverseds, TRUE);

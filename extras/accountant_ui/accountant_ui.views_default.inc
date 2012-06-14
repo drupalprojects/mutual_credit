@@ -272,7 +272,7 @@ function mcapi_views_default_views() {
   $handler->display->display_options['path'] = 'admin/accounting/transactions';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'Manage transactions';
-  $handler->display->display_options['menu']['description'] = 'Filter through all the transactions on the system';
+  $handler->display->display_options['menu']['description'] = "This is the default accountant's interface. It is simply a transaction view with all the filters exposed. More accountants tools are needed, depending on how the system is to be used.";
   $handler->display->display_options['menu']['weight'] = '0';
   $handler->display->display_options['menu']['name'] = 'management';
 

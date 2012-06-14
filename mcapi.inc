@@ -12,9 +12,11 @@ function mcapi_entity_info_inc() {
     'uri callback' => 'transaction_uri', //what is this for???
     'label callback' => 'transaction_label',
     'access callback' => 'transaction_access',
+    'module' => 'mcapi',
     'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'xid',
+      'name' => 'serial',//name is required by entity API module
     ),
     'bundles' => array(
       'transaction' => array(
@@ -38,6 +40,12 @@ function mcapi_entity_info_inc() {
         'label' => t('Sentence'),
         'custom settings' => FALSE,
       ),
+    ),
+    //entity API properties
+    'creation callback' => 'new_transaction',
+    'save callback' => 'transaction_insert_new',
+    'export' => array(
+      'default hook' => 'blah'
     )
   );
   return $entities;
@@ -271,15 +279,16 @@ function transaction_form_submit($form, &$form_state) {
 
 
 /*
- * implements hook_transactions_validate
+ * implements hook_accounting_validate
  * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
  */
-function mcapi_transactions_validate($transactions){
+function mcapi_accounting_validate($transactions){
+  $errors = array();
   foreach ($transactions as $transaction) {
     //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
     if ($transaction->payer > 0) {
       if ($transaction->payer == $transaction->payee) {
-        throw new Exception(t('A transaction must involve two different users'));
+        $errors[] =t('A transaction must involve two different users');
       }
     }
     //a transaction can only be finished if all these fields are filled in.
@@ -287,10 +296,23 @@ function mcapi_transactions_validate($transactions){
       $required = array('payer', 'payee',  'type');
       foreach ($required as $fieldname) {
         if (!$transaction->$fieldname) {
-          throw new Exception(t("@fieldname required for completed transaction", array('@fieldname' => $fieldname)));
+          $errors[] = t("@fieldname required for completed transaction", array('@fieldname' => $fieldname));
         }
       }
     }
+    //check that each user has permission to use each currency
+    foreach ($transaction->worth[LANGUAGE_NONE] as $key => $flow) {
+      $currency = currency_load($flow['currcode']);
+      $access_callback = $currency->currency_access['membership'];
+      foreach (array('payer', 'payee') as $uid) {
+        if ($access_callback(user_load($transaction->$uid)) == FALSE) {
+          $errors[] = t('User @name cannot use @currency', array('@name' => user_load($transaction->$uid)->name, '@currency' => $currency->human_name));
+        }
+      }
+    }
+  }
+  if ($errors) {
+    throw new Exception(implode("<br />", $errors));
   }
 }
 
@@ -372,30 +394,31 @@ function mcapi_validate_ttype(&$element, $form_state) {
  *
  * general purpose callbacks require no arguments
  */
-function mcapi_access_anyone() {
+function transaction_access_anyone($transaction, $account = NULL) {
   return TRUE;
 }
-function mcapi_access_authenticated() {
-  return $GLOBALS['user']->uid;
+function transaction_access_authenticated($transaction, $account = NULL) {
+  if (!$account) $account = $GLOBALS['user'];
+  return $account->uid;
 }
-function mcapi_access_accountant() {
-  return user_access('manage all transactions');
+function transaction_access_accountant($transaction, $account = NULL) {
+  return user_access('manage all transactions', $account);
 }
 /*
  * transaction_access callbacks
  */
-function mcapi_xacc_participants($transaction) {
+function transaction_xacc_participants($transaction) {
   return in_array($GLOBALS['user']->uid, array($transaction->payer, $transaction->payee));
 }
 
 /*
  * currency access callback
  */
-function user_access_transact() {
-  return user_access('transact', $GLOBALS['user']);
+function currency_access_transact($account = NULL) {
+  return user_access('transact', $account);
 }
-function user_access_manage_all_transactions() {
-  return user_access('manage all transactions', $GLOBALS['user']);
+function currency_access_manage_all_transactions($account) {
+  return user_access('manage all transactions', $account);
 }
 
 /*
@@ -532,18 +555,23 @@ function mcapi_mail($key, &$message, $params) {
 function mcapi_supplementary_transaction_action($transactions, $settings) {
   $transaction = current($transactions);
   $currcode = isset($settings['currcode']) ? $settings['currcode'] : 'def_drup';
-  $child = new_transaction();
-  $child->type = 'child';
-  $child->serial = $transaction->serial;//note how this is inherited
-  $child->payer = $transaction->{$settings['source']};
-  $child->payee = $settings['recipient'];
-  $child->state = $transaction->state;
   $quant = _mcapi_calc($settings['rate'], $transaction->worth[LANGUAGE_NONE][0]['quantity']);
-  $child->worth[LANGUAGE_NONE][0] = array(
-    'quantity' => mcapi_round($quant, $currcode, $settings['round'] == 'up'),
-    'currcode' => $currcode
+  $child = array(
+    'type' => 'child',
+    'serial' => $transaction->serial,//note how this is inherited
+    'payer' => $transaction->{$settings['source']},
+    'payee' => $settings['recipient'],
+    'state' => $transaction->state,
+    'worth' => array(
+      LANGUAGE_NONE => array(
+        0 => array(
+          'quantity' => mcapi_round($quant, $currcode, $settings['round'] == 'up'),
+          'currcode' => $currcode
+        )
+      )
+    )
   );
-  return $child;
+  return new_transaction($child);
 }
 
 /*

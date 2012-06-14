@@ -7,7 +7,7 @@ require('intertrading.inc');
 
 define('INTERTRADING_API_VERSION', 1.0);
 define('INTERTRADING_REF_URL',
-  str_replace('www.', '', @$_SERVER['SERVER_NAME']). str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']) .'/?q=');
+  str_replace('www.', '', @$_SERVER['HTTP_HOST']). str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']) .'/?q=');
 /*
  * implements hook_menu
  */
@@ -73,7 +73,7 @@ function intertrading_menu() {
   );
   $items['admin/accounting/intertrade'] = array(
     'title' => 'Trading network',
-    'description' => 'Settings for your trading network',
+    'description' => "Credit clearing systems are by nature closed systems. But it is possible to make meta credit-clearing systems, composed of local systems, each trusting the the credit of the others. This is called 'intertrading', It widens the scope of your market, and it brings with it a new level of governance and accountability. ",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('intertrading_settings'),
     'access arguments' => array('manage all transactions'),

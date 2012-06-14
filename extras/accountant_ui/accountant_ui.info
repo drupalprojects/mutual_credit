@@ -1,0 +1,7 @@
+; $Id: mc_sms.info,v 1.1.2.1 2010/12/06 13:19:46 hutch Exp $
+name = Interface for accountants
+description = Navigate transactions and create new ones
+package = Community Accounting
+core = "7.x"
+dependencies[] = mcapi
+

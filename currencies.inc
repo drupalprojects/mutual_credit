@@ -96,27 +96,25 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     ),
     '#weight' => -1
   );
-
   static $i = 0;
   static $j = 0;
-    $form['transaction_access'] = array(
-      '#title' => t('Transaction access'),
-      '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
-      '#type' => 'fieldset',
-      '#group' => 'additional_settings',
+  $form['transaction_access'] = array(
+    '#title' => t('Transaction access'),
+    '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
+    '#type' => 'fieldset',
+    '#group' => 'additional_settings',
+  );
+  foreach (mcapi_get_states('#full') as $constant => $state) {
+    $states = isset($currency->view) ? $currency->view : array();
+    $form['transaction_access'][$constant] = array(
+      '#title' => $state['name'],
+      '#description' => $state['description'],
+      '#type' => 'checkboxes',
+      '#options' => module_invoke_all('transaction_access_callbacks'),
+      '#default_value' => isset($currency->transaction_access[$constant]) ? $currency->transaction_access[$constant] : array(),
+      '#weight' => $j++,
     );
-    foreach (mcapi_get_states() as $constant => $state) {
-      $states = isset($currency->view) ? $currency->view : array();
-      $form['transaction_access'][$constant] = array(
-        '#title' => $state['name'],
-        '#description' => $state['description'],
-        '#type' => 'checkboxes',
-        '#options' => module_invoke_all('transaction_access_callbacks'),
-        '#default_value' => $currency->transaction_access[$constant],
-        '#weight' => $j++,
-      );
-    }
-
+  }
   $form['zero'] = array(
     '#title' => t('Allow zero value transactions'),
     '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
@@ -202,18 +200,6 @@ function mcapi_validate_currcode(&$element, $form_state) {
  */
 function currency_edit_access($currency) {
   return user_access('configure all currencies') || $currency->uid == $GLOBALS['user']->uid;
-}
-/*
- * Implements hook_mcapi_access
- * List callbacks which can be used to determine whether a user can use a currency
- * These callbacks, at the moment take no arguments, and check access for the current user
- */
-function mcapi_currency_access_callbacks() {
-  return array(
-    'mcapi_access_anyone' => t('Anyone, including anonymous users'),
-    'user_access_transact' => t("According to permission '@perm'", array('@perm' => t('transact'))),
-    'user_access_manage_all_transactions' => t("According to permission '@perm'", array('@perm' => t('Manage all transactions')))
-  );
 }
 
 /*

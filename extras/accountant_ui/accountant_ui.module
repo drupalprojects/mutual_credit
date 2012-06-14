@@ -1,0 +1,125 @@
+<?php
+
+/*
+ * implements hook_menu
+ */
+function accountant_ui_menu() {
+
+  $items['admin/accounting/masspay'] = array(
+    'title' => 'Mass payments',
+    'description' => t('One off payments from between one account and many accounts'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('many2one'),
+    'access arguments' => array('manage all transactions'),
+    'file' => 'accountant_ui.inc',
+  );
+  $items['admin/accounting/masspay/many2one'] = array(
+    'title' => 'Many to one',
+    'page callback' => 'drupal_get_form',
+    //'page arguments' => array('many2one'),
+    //'access arguments' => array('manage all transactions'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 1,
+  );
+  $items['admin/accounting/masspay/one2many'] = array(
+    'title' => 'One to many',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('one2many'),
+    'access arguments' => array('manage all transactions'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'accountant_ui.inc',
+    'weight' => 2,
+  );
+  $items['admin/accounting/masspay/one2few'] = array(
+    'title' => 'One to few',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('one2few'),
+    'access arguments' => array('manage all transactions'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'accountant_ui.inc',
+    'weight' => 3,
+  );
+  $items['admin/accounting/masspay/few2one'] = array(
+    'title' => 'Few to one',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('few2one'),
+    'access arguments' => array('manage all transactions'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'accountant_ui.inc',
+    'weight' => 4,
+  );
+  $items['admin/accounting/transact'] = array(
+    'title' => 'Record transaction (full)',
+    'description' => "This form allows for one-off transaction creation, with all the values exposed. For accountant's use only! N.B It is reccommended to install the submit_once module, for all transaction forms",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('transaction_admin_form'),
+    'access arguments' => array('manage all transactions'),
+    'menu name' => 'navigation',
+    'file' => 'mcapi.inc',
+    'file path' => drupal_get_path('module', 'mcapi')
+  );
+  return $items;
+}
+
+/*
+ * implements hook_trading_groups
+ * these callbacks take the user_chooser element, and the $form_State as their arguments
+ */
+function accountant_ui_user_chooser_preselect() {
+  $callbacks = array(
+    'accounting_list_all_users' => t('All active users with permission to @perm', array('@perm' => t('transact'))),
+  );
+  if (count(currencies_load()) > 1) {
+    //if worth field cardinality > 1 this will assume the first currency
+    $callbacks['accounting_list_currency'] = t('All users of the given currency');
+  }
+  return $callbacks;
+}
+
+/*
+ * implements hook_forms
+ */
+function accountant_ui_forms($form_id, $args) {
+  return array(
+    'many2one' => array(
+      'callback' => 'mcapi_mass_pay',
+      'callback arguments' => array('many2one')
+    ),
+    'one2many' => array(
+      'callback' => 'mcapi_mass_pay',
+      'callback arguments' => array('one2many')
+    ),
+    'few2one' => array(
+      'callback' => 'mcapi_mass_pay',
+      'callback arguments' => array('few2one')
+    ),
+    'one2few' => array(
+      'callback' => 'mcapi_mass_pay',
+      'callback arguments' => array('one2few')
+    ),
+    //this is the only way to user the raw accounting form, defined in mcapi.inc
+    'transaction_admin_form' => array (
+      'callback' => 'transaction_form',
+      'callback arguments' => $args
+    ),
+  );
+}
+
+
+/*
+ * Implements views hook_views_api
+ */
+function accountant_ui_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'accountant_ui') . '/views',
+  );
+}
+
+
+/*
+ * implements mcapi hook_info_types
+ */
+function accountant_ui_mcapi_info_types() {
+  return array('mass');
+}

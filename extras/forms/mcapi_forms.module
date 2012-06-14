@@ -32,7 +32,7 @@ function mcapi_forms_menu() {
         'mcapi_forms_form',
         //in case the form needs to load a transaction, extract it from the path
         array_search('%transaction', explode('/', $settings['architecture']['path'])),//may return NULL
-        $form//we put the whole form in the menu item because ctools performance is very poor
+        $form//we put the whole settings array in the menu item because ctools performance is very poor
       ),
       'access callback' => strtok($settings['architecture']['access'], ':'),
       'access arguments' => array(strtok(':')),

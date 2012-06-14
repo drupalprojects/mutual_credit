@@ -17,28 +17,36 @@ function intertrading_json_request($url, $params) {
     )
   );
   $return = new stdClass;
-  if (!empty($result->data) &&  $data = json_decode($result->data, TRUE)) {
-    array_walk_recursive($data, 'urldecode_m');
-    $return->code = array_shift($data);
-    $return->args = $data;
-    if ($result->code == 200) {//valid intertrading result
-      //now handle intertrading errors
-      if ($return->code == 'OK') {
-        
+  if (!empty($result->data)) {
+    if ($data = drupal_json_decode($result->data)) {
+      array_walk_recursive($data, 'urldecode_m');
+      $return->code = array_shift($data);
+      $return->args = $data;
+      if ($result->code == 200) {//valid intertrading result
+        //now handle intertrading errors
+        if ($return->code == 'OK') {
+          return $return;
+        }
+        else {
+          $return->message = html_entity_decode(intertrading_error_codes($return->code, $return->args));
+          watchdog('intertrading', 'Site @site returned error @message', array('@site' => $url,  '@message' => $return->message), WATCHDOG_NOTICE);
+        }
       }
-      else {
-        $return->message = html_entity_decode(intertrading_error_codes($return->code, $return->args));
-        watchdog('intertrading', 'Site @site returned error @message', array('@site' => $url,  '@message' => $return->message), WATCHDOG_NOTICE);
+      else {//this could mean a 500 error or something
+        watchdog('intertrading', 'Unexpected result from @url: @result', array('@url' => $url, '@result' => print_r($result, 1)), WATCHDOG_NOTICE);
+        $return->message = t('Server reports: '). html_entity_decode($result->data);
+        $return->code = 27;
       }
     }
-    else {//this could mean a 500 error or something
-      watchdog('intertrading', 'Unexpected result from @url: @result', array('@url' => $url, '@result' => print_r($result, 1)), WATCHDOG_NOTICE);
-      $return->message = t('Server reports: '). html_entity_decode($result->data);
+    else {
+      intertrading_error('retrieved data not in json format:'.json_last_error(), $url, $result->data, 'decoded:', drupal_json_decode($result->data));
+      $return->message = 'retrieved data not in json format';
+      $return->code = 27;
     }
   }
   //http status codes failure
   else {
-    intertrading_error($result);
+    intertrading_error('no data retrieved', $url, $result);
     //this doesn't catch "php_network_getaddresses: getaddrinfo failed: Name or service not known" with code 0
     $return->args = array('@client' => $url, '@status' => $result->code);
     if (isset($result->error)) {
@@ -162,12 +170,10 @@ function intertrading_error_codes($code, $args = array()) {
     case 18: return t("Not enough data to authenticate");
     //failure of remote client
     case 20: return t("Failed to connect with @server; returned: @message", $args);
-    case 21: return t("Transaction would exceed remote client's max intertrading limits by @quantity", $args);
-    case 22: return t("Transaction would exceed remote client's min intertrading limits by @quantity, $args");
-    case 23: return t("Transaction would exceed remote client's min account limits by @quantity, $args");
-    case 24: return t("Transaction would exceed remote client's max account limits by @quantity", $args);
+    case 22: return t("Transaction would exceed remote client's intertrading limits by @quantity, $args");
+    case 24: return t("Transaction would exceed remote client's account limits by @quantity", $args);
     case 25: return t("Misc validation error on remote client: @message", $args);
-    case 26: return t("server not found: @server", $args);
+    case 26: return t("client not found: @server", $args);
     case 27: return t("Failed to connect: @params", array('@params' => '<pre>'.print_r($args, 1).'</pre>'));
     case 28: return t("Unknown mail on @client: @mail", $args);
     default: return t('Unknown error code @code: @args', array('@code' => $code, '@args' => print_r($args, 1)));

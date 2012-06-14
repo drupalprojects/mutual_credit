@@ -48,7 +48,12 @@ define('TRANSACTION_STATE_FINISHED', 1);
 //we don't actually want to discount the deleted transaction
 //so its state constant will be > 0
 //depending on the delete mode, erased transactions may or may not be counted
-define('TRANSACTION_STATE_UNDONE', variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE ? 2 : 0);
+if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE) {
+  define('TRANSACTION_STATE_UNDONE', 2);
+}
+else {
+  define('TRANSACTION_STATE_UNDONE', 0);
+}
 
 //the transaction form expects args in $form_state[build_info]
 //This constant and another in the forms module ensures the argument position is not determined by chance
@@ -253,10 +258,23 @@ function mcapi_mcapi_info_drupal_permissions() {
  */
 function mcapi_transaction_access_callbacks() {
   return array(
-    'mcapi_xacc_participants' => t('the participants in the transaction'),
-    'mcapi_access_authenticated' => t('Authenticated users'),
-    'mcapi_access_accountant' => t("Accountants"),
-    'mcapi_access_anyone' => t('General public')
+    'transaction_xacc_participants' => t('the participants in the transaction'),
+    'transaction_access_authenticated' => t('Authenticated users'),
+    'transaction_access_accountant' => t("Accountants"),
+    'transaction_access_anyone' => t('Anyone, including anonymous users')
+  );
+}
+
+/*
+ * Implements hook_mcapi_access
+ * List callbacks which can be used to determine whether a user can use a currency
+ * Each callback takes optional $account argument
+ */
+function mcapi_currency_access_callbacks() {
+  return array(
+    'mcapi_access_anyone' => t('Anyone, including anonymous users'),
+    'currency_access_transact' => t("According to permission '@perm'", array('@perm' => t('transact'))),
+    'currency_access_manage_all_transactions' => t("According to permission '@perm'", array('@perm' => t('Manage all transactions')))
   );
 }
 
@@ -408,17 +426,27 @@ function matslats_list_tokens($type1, $type2 = NULL) {
 
 //this runs every time a 'new_transaction()' is created.
 //just helps to make sure the less visible fields have reasonable defaults
-function new_transaction() {
-  return (object) array(
-    'xid' => 0,
+function new_transaction($values = array()) {
+  $transaction = $values + array(
+    'xid' => NULL,
+    'serial' => NULL,
     'payer' => NULL,
     'payee' => NULL,
+    'worth' => array(
+      LANGUAGE_NONE =>array(
+        0 => array(
+          'currcode' => 'def_drup',
+          'quantity' => 0
+        )
+      )
+    ),
     'creator' => $GLOBALS['user']->uid,
     'created' => REQUEST_TIME,
     'state' => TRANSACTION_STATE_FINISHED,
-    'type' => NULL,
+    'type' => 'default',
     'extra' => array(),
   );
+  return (object)$transaction;
 }
 
 /*
@@ -459,7 +487,7 @@ function transactions_load($xids = array(), $conditions = array(), $reset = FALS
  * which fires the hook_transactions inserted
  * $transactions is a flat array
  */
-function transactions_insert(array &$transactions, $really = FALSE) {
+function transactions_insert(array &$transactions, $really = TRUE) {
   //put all the transactions side by side ready for the entity controller to validate and insert
   module_invoke_all('accounting_validate', $transactions);
   entity_get_controller('transaction')->insert($transactions, $really);
@@ -566,8 +594,10 @@ function transaction_load($serial) {
  * take a transaction and derive any children
  * return the transaction, with ->children
  * boolean $really means whether this is a test insert or not.
+ * $really defaults to TRUE top be compatible with the Entity API 'save callback'
+ * this should also be called within try - catch
  */
-function transaction_insert_new($transaction, $really) {
+function transaction_insert_new($transaction, $really = TRUE) {
   $transactions = array($transaction);
   //this is where the transaction is likely to acquire children,
   //and serial numbers set by contrib modules

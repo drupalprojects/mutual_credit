@@ -136,17 +136,18 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     else {//landing directly on step 2
       $form['#preview'] = transaction_view(array($transaction->xid => $transaction), 'certificate');
     }
-    //save button
-    if (strpos($mcapi_form->data['submission']['button'], '/')) {
-      $form['buttons']['submit']['#type'] = 'image_button';
-      $form['buttons']['submit']['#src'] = $mcapi_form->data['submission']['button'];
-    }
-    else {
-      $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
-    }
     //the transaction properties were validated in step 1
     //bypass the default transaction validate function, transaction_form_validate which rebuilds the transaction entity from form_state['values]
     $form['#validate'] = array();
+  }
+  
+  //save button
+  if (strpos($mcapi_form->data['submission']['button'], '/')) {
+    $form['buttons']['submit']['#type'] = 'image_button';
+    $form['buttons']['submit']['#src'] = $mcapi_form->data['submission']['button'];
+  }
+  else {
+    $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
 
   //this may help with the validation and submission
