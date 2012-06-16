@@ -149,7 +149,7 @@ function mcapi_form_currency(&$node) {
   $form['visual']['symbol'] = array(
     '#type' => 'textfield',
     '#title' => t('Notation'),
-    '#default_value' => $node->symbol,
+    '#default_value' => $node->symbol ? $node->symbol : '@minus@icon@integer:@subdivision',
     '#description' => t('Write an expression to control the display of the currency using the following tokens:') .' @icon, @quant, @subdivision ' .
        t('For example to display -$45:23 AUS, enter @minus@icon@integer:@subdivision AUS'),
     '#required' => TRUE,
@@ -162,15 +162,6 @@ function mcapi_form_currency(&$node) {
     '#description' => t("Suggested size: 12px, preferably with a transparent background."),
     '#element_validate' => array('mc_validate_icon_upload'),
     '#size' => 25,//the default, 60, ruins the 2 col theming
-  );
-  $form['visual']['color'] = array(
-    '#type' => 'textfield',
-    '#title' => t('A hex colour value'),
-    '#default_value' => $node->data['color'] ? $node->data['color'] : '000000',
-    '#description' => t('6 hex digits'),
-    '#maxlength' => 6,
-    '#size' => 6,
-    '#field_prefix' => '#'
   );
 
   $form['sub_divisions'] = array(
@@ -190,18 +181,10 @@ function mcapi_form_currency(&$node) {
     '#title' => t('Fractions visible in form'),
     '#description' => '<p>'. t("Only applies when 'database storage' is set to 'fractions'.") .' '.
       t('Leave blank to use hundredths. To use a dropdown, such as for quarters of an hour, write a "hundredths value| visible text" on each line. E.g. ') .'</p>' .
-      '<pre>0| exactly<br />50| half an hour',
+      "<pre>0|00\n25|15 mins\n50|30 mins\n75|45 mins",
     '#default_value' => $node->data['divisions'],
     '#element_validate' => array('mc_validate_currency_divisions'),
     '#rows' => 4,
-  );
-  $form['value'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Comparative value'),
-    '#default_value' => $node->value,
-    '#size' => 4,
-    '#maxlength' => 6,
-    '#description' => t("The value of the currency in relation to other currencies in the same trading network (not yet operational)")
   );
   $form['zero'] = array(
     '#type' => 'checkbox',
@@ -217,15 +200,14 @@ function theme_currency_node_form($form) {
   $output .= "\n<div style = \"width:49%;float:left;\">";
   $output .= drupal_render($form['title']);
   $output .= drupal_render($form['body']);
-  $output .= drupal_render($form['value']);
   $output .= drupal_render($form['range']);
   if ($form['subtype_bitmask']) {// this saves overriding the whole theme in the 1stparty form
     $output .= drupal_render($form['subtype_bitmask']);
   }
+  $output .= drupal_render($form['zero']);
   $output .='</div><div style = "width:49%; float:right;">';
   $output .= drupal_render($form['visual']);
   $output .= drupal_render($form['sub_divisions']);
-  $output .= drupal_render($form['zero']);
   $output .= "</div>";
   $buttons = drupal_render($form['buttons']);
   // Everything else gets rendered here, and is displayed before the admin form
@@ -292,10 +274,9 @@ function mc_preprocess_exchange($node) {
 //this could almost have been done with a view, but as this is the API module, we're saving a dependency
 function currency_list() {
   $currencies = currencies_load();
-  $headers = array(t('Symbol'), t('Name'), '-99 '. t('Format'), t('usage'));
+  $headers = array(t('Name'), '-99 '. t('Format'), t('usage'));
   $output = '';
   foreach ($currencies as $currency) {
-    $row['icon'] = theme('image', $currency->icon);
     $row['name'] = l($currency->title, 'node/'.$currency->nid);
     $row['format'] = theme('money', -99, $currency->nid);
     $row['usage'] = db_result(db_query("SELECT count(nid) FROM {mc_exchanges} WHERE cid = %d", array(':cid' => $currency->nid)));
@@ -504,7 +485,9 @@ function mcapi_notify($op, $exchange) {
     }
     //because this node might not be properly loaded.
     //We can't reload node at this stage because this mail operation is already called from a nodeapi 'insert/update'
-    $exchange->taxonomy = taxonomy_node_get_terms($exchange);
+    if (module_exists('taxonomy')) {
+      $exchange->taxonomy = taxonomy_node_get_terms($exchange);
+    }
     $message = drupal_mail(
       'mcapimail',
       $op,
@@ -639,7 +622,6 @@ function get_trader_uids() {
 }
 
 function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
-  global $user;
   //although mcapi.module allows it, this version of the API will not allow zero value exchanges
   $currency = $node->cid ? node_load($node->cid) : array_pop(currencies_load());
   if (exchange_validate_zero($quantity, $currency)) {
@@ -659,22 +641,16 @@ function build_exchange_node($payer_uid, $payee_uid, $quantity, $options) {
     'title' => t('no description given'),  //shouldn't really be omitted
     'state' => EXCHANGE_STATE_FINISHED, //shouldn't really be omitted
     'exchange_type' => 'api unspecified', //shouldn't really be omitted
-    'uid' => $user->uid,
-    'name' => $user->name,
+    'uid' => $GLOBALS['user']->uid,
+    'name' => $GLOBALS['user']->name,
     'created' => time(),
     'data' => array(),
     'status' => FALSE,
+    'promote' => FALSE,
    //essential node property
     'type' => 'exchange',
   );
   $node = (object)$node;
   mcapi_validate($node);
   return $node;
-}
-
-//returns true if the quant is zero and the currency doesn't permit zeros
-function exchange_validate_zero($quant, $currency) {
-  if ($quant == 0 && !$currency->data['zero']) {
-    return TRUE;
-  }
 }

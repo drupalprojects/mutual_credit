@@ -4,7 +4,7 @@
 if (!$node->sub) $division = t('integer');
 elseif (!isset($node->data['divisions']) || !count($node->data['divisions'])) $division = t('centiles');
 else {
-   $vals = $node->data['divisions'];
+   $vals = $node->divisions;
    $divisions = array();
    foreach ($vals as $val) {
      $divisions[] = trim(strrchr($val, '|'));

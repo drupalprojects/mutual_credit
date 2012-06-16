@@ -87,24 +87,28 @@ function mcapi_enable() {
       'uid' => 1,
       'min' => -100,
       'max' => 100,
-      'sub' => 1,
+      'sub' => 0,
       'icon' => $module_path .'/theme/cc.png',
-      'symbol' => '@minus@icon@integer @subdivision',
+      'symbol' => '@minus@icon@integer',
       'data' => array(
         'color' => '00ff00',
         'subtype_bitmask' => 3,
-        'divisions' => "0|00\n25|15 mins\n50|30 mins\n75|45 mins"
+        'divisions' => ''
       )
     );
     node_save($currency);
-    drupal_write_record('mc_currencies', $currency);
-
+    //seems that node save works differently in different installation contexts
+    if(!db_result(db_query('SELECT nid from {mc_currencies}'))) {
+      drupal_set_message('saving currency');
+      drupal_write_record('mc_currencies', $currency);
+    }
 
     drupal_set_message(t('Your defult currency is @name. !edit', array(
       '@name' => $currency->title,
       '!edit' => l(t('edit'), 'node/'.$currency->nid.'/edit')
     )));
   }
+  //upgrade from version 1
   if (db_result(db_query("SELECT nid from {node} where type = 'transaction'"))) {
     drupal_install_modules(array('mc_signatures'));
     mc_upgrade($currency->nid);
@@ -277,12 +281,6 @@ function mcapi_schema() {
         'description' => t("Units and values after the decimal point"),
         'type' => 'int',
         'size' => 'tiny',
-        'default' => 0,
-      ),
-      'value' => array(
-        'description' => t("the nominal value of this currency expressed as an objective value (0 means not interchanagable)"),
-        'type' => 'int',
-        'size' => 'normal',
         'default' => 0,
       ),
     )
@@ -521,4 +519,10 @@ function mcapi_update_6006() {
   module_load_include('inc', 'mcapi');
   mc_balances_refresh();
   return array();
+}
+
+function mcapi_update_6007() {
+  $ret = array();
+  db_drop_field($ret, 'mc_currencies', 'value');
+  return $ret;
 }

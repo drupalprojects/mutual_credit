@@ -1,0 +1,5 @@
+; $Id:
+name = Intertrading client
+description = Exchange with other mutual credit systems using a ClearingCentral 2 server
+package = Community Accounting
+core = "6.x"

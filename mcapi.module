@@ -633,7 +633,7 @@ function mc_validate_quantity(&$element, &$form_state) {
     $division = ($value - intval($value))*100;
     if ($division) {
       if ($currency->sub) {
-        if ($division && isset($currency->divisions) && !isset($currency->divisions[$division])) {echo 1;
+        if ($division && !empty($currency->divisions) && !isset($currency->divisions[$division])) {
           form_error($element, t("Invalid fraction for '@fieldname'", array('@fieldname' => $element['#title'])));
         }
       }
@@ -644,6 +644,12 @@ function mc_validate_quantity(&$element, &$form_state) {
   }
 }
 
+//returns true if the quant is zero and the currency doesn't permit zeros
+function exchange_validate_zero($quant, $currency) {
+  if ($quant == 0 && !$currency->data['zero']) {
+    return TRUE;
+  }
+}
 
 function mc_validate_icon_upload(&$element, &$form_state) {
   $validators = array(
