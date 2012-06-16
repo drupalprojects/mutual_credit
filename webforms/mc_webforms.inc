@@ -50,6 +50,8 @@ function mc_3rdparty_form_validate($form, &$form_state) {
     //send the pseudo-node off for validation by the mcapi
     mcapi_validate((object)$form_state['values'], $form);
   }
+  //this is the best place to include the delete button handler
+  module_load_include('pages.inc', 'node');
 }
 
 //submission handler to control the form rebuilding and value storage
@@ -390,23 +392,6 @@ function theme_mc_trader_stripped($element) {
   if (!isset($elements['#printed'])) {
     return theme($element['#element_type'] . '_stripped', $element);
   }
-}
-function theme_mc_quantity($element) {
-  $currname = isset($element['#single_currency_name']) ? $element['#single_currency_name'] : '';
-  $naked = '<div class="container-inline">'. $element['#children'] . $currname .'</div>';
-  //assumes the children have been themed with theme_form_item().
-  //Under no circumstances to we want to view the labels for the child fields
-  foreach (element_children($element) as $child) {
-    $classes[] = '#'. $element[$child]['#id'] .'-wrapper label';
-  }
-  $css = "<style>".implode(',', $classes)."{display:none;}</style>\n";
-  //it's not supposed to be this way, but overrides of this theme wouldn't work, looks to me like drupal render is badly thought out
-  //so this theme function checks a variable from mc_webforms. the alternative is to override this in mc_webforms with phptemplate_mc_quality
-
-  if (variable_get('mc_webform_special_theme', TRUE)) {
-    return $css.$naked;
-  }
-  else return theme('form_element', $element, $css.$naked);
 }
 
 //apply the 'special' theme functions and templates to any form (this is a form #after_build function)

@@ -489,3 +489,25 @@ function mc_webforms_exchange_type_info() {
     )
   );
 }
+
+/*
+ * default theme implementation of mc_quantity
+ * its in this file so that the intertrading_client doesn't have to include an extra file when it borrows this widget
+ */
+function theme_mc_quantity($element) {
+  $currname = isset($element['#single_currency_name']) ? $element['#single_currency_name'] : '';
+  $naked = '<div class="container-inline">'. $element['#children'] . $currname .'</div>';
+  //assumes the children have been themed with theme_form_item().
+  //Under no circumstances to we want to view the labels for the child fields
+  foreach (element_children($element) as $child) {
+    $classes[] = '#'. $element[$child]['#id'] .'-wrapper label';
+  }
+  $css = "<style>".implode(',', $classes)."{display:none;}</style>\n";
+  //it's not supposed to be this way, but overrides of this theme wouldn't work, looks to me like drupal render is badly thought out
+  //so this theme function checks a variable from mc_webforms. the alternative is to override this in mc_webforms with phptemplate_mc_quality
+
+  if (variable_get('mc_webform_special_theme', TRUE)) {
+    return $css.$naked;
+  }
+  else return theme('form_element', $element, $css.$naked);
+}
