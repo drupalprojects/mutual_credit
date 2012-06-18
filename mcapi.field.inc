@@ -17,8 +17,8 @@ function mcapi_field_info() {
       'default_widget' => 'worth_widget',
       'default_formatter' => 'worth_widget',
       'translatable' => FALSE,
-      //following properties are for the entity API module
-      'property_type' => 'worth',//don't know what this refers to
+      //following properties are for the entity API module. see mcapi.info.inc
+      'property_type' => 'worth',
       'property_callbacks' => array('entity_metadata_field_worth_property_callback'),
     )
   );
@@ -182,7 +182,7 @@ function worth_element_build(&$element, $default_vals) {
   }
   if (empty($currcode)) return;
   $currency = currency_load($currcode);
-
+ 
     //Only show the divisions element if we know the currency and it has divisions. We are already showing integers
   if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_FIELD) {
     $element['division_quant'] =  array(
@@ -348,8 +348,12 @@ function mcapi_preprocess_worth_widget(&$variables) {
 function theme_worth_field(&$variables) {
   $currency = currency_load($variables['currcode']);
   list($replacements['@integer'], $replacements['@subdivision'], $replacements['@minus']) = currency_explode($variables['quantity']);
-  if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
-    $replacements['@subdivision'] = $currency->display['divisions_allowed'][intval($replacements['@subdivision'])];
+  switch($currency->display['divisions']) {
+    case CURRENCY_DIVISION_MODE_CUSTOM :
+      $replacements['@subdivision'] = $currency->display['divisions_allowed'][intval($replacements['@subdivision'])];
+    case CURRENCY_DIVISION_MODE_CENTS_FIELD:
+    case CURRENCY_DIVISION_MODE_CENTS_INLINE:
+      $replacements['@subdivision'] = str_pad($replacements['@subdivision'], 2, STR_PAD_LEFT);
   }
   if ($replacements['@integer'] >  999) {//put in the thousands separator
     $replacements['@integer'] = number_format($replacements['@integer']);
@@ -364,26 +368,24 @@ function theme_worth_field(&$variables) {
  */
 function theme_worth_widget($variables) {
   $element = &$variables['element'];
-  //output starts with the currency field, whether hidden or showing
-  $curr_chooser = drupal_render($element['currcode']);
-  if ($element['currcode']['#type'] == 'hidden') {
-    //if the currcode is set then render according to the currency format, with no currcode chooser
-    $format = currency_load($element['currcode']['#value'])->display['format'];
+  $ignore_format = $element['currcode']['#type'] == 'hidden' ||
+    currency_load($element['currcode']['#value'])->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_INLINE;
+  if ($ignore_format) {
+    $element['#description'] = t("Use up to two decimal places, with a point '.' if necessary");
+    $element['#children'] = drupal_render($element['main_quant']);
   }
   else {
-    //not knowing the currency, we don't know what divisions fields to show,
-    //so just show the main quant field
-    //the ajax will rebuild when the currency is chosen
-    $format = '@integer';
+    //output starts with the currency field, whether hidden or showing
+    $element['#children'] = strtr(
+      currency_load($element['currcode']['#value'])->display['format'],
+      array(
+        '@minus' => '',//no negative valuesin a form widget
+        '@integer' => drupal_render($element['main_quant']),
+        '@subdivision' => !empty($element['division_quant']) ? drupal_render($element['division_quant']) : '',
+      )
+    );
   }
-  $html = $curr_chooser.= strtr($format,
-    array(
-      '@minus' => '',//no negative valuesin a form widget
-      '@integer' => drupal_render($element['main_quant']),
-      '@subdivision' => !empty($element['division_quant']) ? drupal_render($element['division_quant']) : '',
-    )
-  );
-  return $html;
+  return drupal_render($element['currcode']) . theme_form_element(array('element' => $element));
 }
 
 function clear_def_cur() {
@@ -396,10 +398,11 @@ function clear_def_cur() {
  * remove the default 'worth' setting from the field settings form
  */
 function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
+  $currencies = &drupal_static('currencies');
   if ($form['#instance']['field_name'] != 'worth') return;
 
   //change the cardinality field because there is only one worth value possible per currency
-  $currcount = count(currencies_load());
+  $currcount = count($currencies_load);
   if ($currcount == 1) {
     $form['field']['cardinality'] = array(
       '#type' => 'hidden',
@@ -501,4 +504,54 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
     case CURRENCY_DIVISION_MODE_NONE:
       return $quant;
   }
+}
+
+/*
+ * utility function
+ * settings to calculate a worth value, based on another value in the same currency
+ * Always include using:
+ * form_load_include($form_state, 'field.inc', 'mcapi');
+ */
+function _add_rate_fields(&$form, $weight) {
+    $form['rate'] = array(
+    '#title' => t('Rate or amount'),
+    '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity'),
+    '#type' => 'textfield',
+    '#default_value' => isset($context['rate']) ? $context['rate'] : 1,
+    '#element_validate' => array('mcapi_validate_charge_rate'),
+    '#weight' => $weight,
+  );
+  $form['round'] = array(
+    '#title' => t('Calculation method'),
+    '#type' => 'radios',
+    '#options' => array('up' => t('Up'), 'down' => t('Down')),
+    '#default_value' => isset($context['round']) ? $context['round'] : 'down',
+    '#weight' => $weight + 1,
+  );
+}
+
+/*
+ * element validate callback in mcapi_supplementary_transaction_action)form
+ */
+function mcapi_validate_charge_rate(&$element, &$form_state) {
+  $quant = _mcapi_calc($element['#value'], 1);
+  if (!is_numeric($quant)) {
+    form_error($element, t('Does not return a number for transaction quantity 1: @notnum', array('@notnum' => $quant)));
+  }
+}
+/*
+ * calculate a transaction quantity based on a provided formala and input quantity
+ * $formula can be
+ * number => returns the number as a quantity, regardless of $base_quant
+ * percentage of the $base_quant
+ * formula using [q] for base_quant
+ */
+
+function _mcapi_calc($formula, $base_quant) {
+  if (is_numeric($formula)) return $formula;
+  $proportion = str_replace('%', '', $formula);
+  if (is_numeric($proportion)) {
+    return $base_quant * $proportion/100;
+  }
+  return eval('echo '.str_replace('[q]', $base_quant, $formula).';');
 }

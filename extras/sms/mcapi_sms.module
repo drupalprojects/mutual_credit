@@ -53,7 +53,8 @@ function mcapi_sms_mcapi_info_types() {
 
 function mcapi_sms_settings(){
   $tokens = array('%user', '%amount', '%description (optional)');
-  if (count(currencies_load()) > 1) {
+  $currencies = &drupal_static('currencies');
+  if (count($currencies) > 1) {
     $tokens[] = '%currency';
   }
   $form['requests'] = array(
@@ -183,6 +184,7 @@ function mcapi_sms_parse($number, $message) {
 
 //values is an array keyed by the tokens
 function mcapi_sms_expressions($number, $values, $direction) {
+  $currencies = &drupal_static('currencies');
   $sender = sms_user_get_uid($number)
     or sms_send($number, t('Your number is not registered at @sitename', array('@sitename' => variable_get('site_name', ''))));
   $other = _sms_validate_trader($values['%user'], $number)
@@ -207,7 +209,7 @@ function mcapi_sms_expressions($number, $values, $direction) {
   $transaction = new_transaction();
   $transaction->payer = $payer;
   $transaction->payee = $payee;
-  $transaction->worth['und'][0]['currcode'] = isset($values['%currency']) ? $values['%currency'] : key(currencies_load());
+  $transaction->worth['und'][0]['currcode'] = isset($values['%currency']) ? $values['%currency'] : key($currencies);
   $transaction->worth['und'][0]['quantity'] = $values['%amount'];
   $transaction->state = variable_get('mcapi_sms_pending', 0) ? TRANSACTION_STATE_PENDING : TRANSACTION_STATE_FINISHED;
   $transaction->type = $type;

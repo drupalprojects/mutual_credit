@@ -1,9 +1,8 @@
 <?php
 // $Id:
 
-
-
-function mcapi_views_default_views() {
+function accountant_ui_views_default_views() {
+  $currencies = &drupal_static('currencies');
   $view = new view;
   $view->name = 'transactions_all';
   $view->description = 'For admin or accountant to manage transactions';
@@ -254,7 +253,7 @@ function mcapi_views_default_views() {
   $handler->display->display_options['filters']['worth_quantity']['expose']['identifier'] = 'worth_quantity';
   $handler->display->display_options['filters']['worth_quantity']['expose']['multiple'] = FALSE;
 
-  if (count(currencies_load()) > 1) {
+  if (count($currencies) > 1) {
     /* Filter criterion: Transaction: Value (worth:currcode) */
     $handler->display->display_options['filters']['worth_currcode']['id'] = 'worth_currcode';
     $handler->display->display_options['filters']['worth_currcode']['table'] = 'field_data_worth';

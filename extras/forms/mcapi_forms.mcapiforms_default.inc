@@ -15,6 +15,7 @@ function mcapi_forms_mcapiforms_default() {
 }
 
 function mcapiform_default_1stparty() {
+  $currencies = &drupal_static('currencies');
   $mcapiform = new stdClass;
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
   $mcapiform->api_version = 3;
@@ -44,7 +45,7 @@ function mcapiform_default_1stparty() {
       'preset' => array(
         'und' => array(
           0 => array(
-            'currcode' => current(currencies_load())->info['currcode'],
+            'currcode' => key($currencies),
             'quantity' => '1',
           ),
         ),
@@ -73,6 +74,7 @@ function mcapiform_default_1stparty() {
 }
 
 function mcapiform_default_3rdparty() {
+  $currencies = &drupal_static('currencies');
   $mcapiform = new stdClass;
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
   $mcapiform->api_version = 3;
@@ -102,7 +104,7 @@ function mcapiform_default_3rdparty() {
       'preset' => array(
         'und' => array(
           0 => array(
-            'currcode' => current(currencies_load())->info['currcode'],
+            'currcode' => key($currencies),
             'quantity' => '0',
           ),
         ),

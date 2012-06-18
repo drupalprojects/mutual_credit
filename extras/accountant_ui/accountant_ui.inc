@@ -88,7 +88,6 @@ function mcapi_mass_pay_validate($form, &$form_state) {
   if (!isset($form_state['confirmed'])) {
     $form_state['values']['type'] = 'mass';
     $form_state['values']['creator'] = $GLOBALS['user']->uid;
-    debug($form_state['values']);
     $transactions = mcapi_mass_pay_insert($form_state['values'], FALSE);
     if (!form_get_errors()) {
       $form_state['rebuild'] = TRUE;

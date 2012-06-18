@@ -165,7 +165,8 @@ function intertrading_settings() {
     '#required' => TRUE
   );
 
-  $form['intertrading_currcode'] =  currency_picker_element(array_keys(currencies_load()), variable_get('intertrading_currcode', 0));
+  $currencies = &drupal_static('currencies');
+  $form['intertrading_currcode'] =  currency_picker_element(array_keys($currencies), variable_get('intertrading_currcode', 0));
 
   $form['intertrading_ticks'] = array(
     '#title' => 'Ticks',//this is a reference to the forex base comparision unit
@@ -382,9 +383,10 @@ function statement() {
 
 //this could be made prettier
 function theme_statement($variables) {
+  $currencies = &drupal_static('currencies');
   $data = &$variables['data'];
   unset($data['api'], $data['divisions'], $data['mail'], $data['name'], $data['logo'], $data['first_trade']);
-  $currcode = variable_get('intertrading_currcode', key(currencies_load()));
+  $currcode = variable_get('intertrading_currcode', key($currencies));
 
   $rows = array();
   $rows['currency_name'] = array(

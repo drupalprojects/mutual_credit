@@ -69,7 +69,8 @@ function accountant_ui_user_chooser_preselect() {
   $callbacks = array(
     'accounting_list_all_users' => t('All active users with permission to @perm', array('@perm' => t('transact'))),
   );
-  if (count(currencies_load()) > 1) {
+  $currencies = &drupal_static('currencies');
+  if (count($currencies) > 1) {
     //if worth field cardinality > 1 this will assume the first currency
     $callbacks['accounting_list_currency'] = t('All users of the given currency');
   }
@@ -105,17 +106,15 @@ function accountant_ui_forms($form_id, $args) {
   );
 }
 
-
 /*
  * Implements views hook_views_api
  */
 function accountant_ui_views_api() {
   return array(
     'api' => 3,
-    'path' => drupal_get_path('module', 'accountant_ui') . '/views',
+    'path' => drupal_get_path('module', 'accountant_ui'),
   );
 }
-
 
 /*
  * implements mcapi hook_info_types

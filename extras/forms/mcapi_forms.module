@@ -16,14 +16,6 @@ function mcapi_forms_menu() {
   foreach($mcapi_forms as $form) {
     if (!empty($form->disabled)) continue;
     $settings = &$form->data;
-    //TODO Remove this after upgrade
-    if (empty($settings['experience'])) {
-      drupal_set_message('UPGRADE NOTICE: You must resave this accounting form: '. l($settings['info']['name'], 'admin/accounting/forms/list/'.$settings['info']['name'].'/edit'));
-      $settings['experience'] = array(
-        'title' => $settings['step-1']['title'],
-        'sure_title' => $settings['step-2']['title']
-      );
-    }
     $menu_link = &$settings['architecture']['menu_link'];
     $items[$settings['architecture']['path']] = array(
       'title' => empty($settings['experience']['title']) ? $settings['experience']['sure_title'] : $settings['experience']['title'],

@@ -16,15 +16,17 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   }
 
   function option_definition() {
+    $currencies = &drupal_static('currencies');
     $options = parent::option_definition();
-    $options['currcode'] = array('default' => key(currencies_load()));
+    $options['currcode'] = array('default' => key($currencies));
     $options['total'] = array('default' => 'balance');
     return $options;
   }
 
   function options_form(&$form, &$form_state) {
+    $currencies = &drupal_static('currencies');
     module_load_include('inc', 'mcapi');
-    $form['currcode'] = currency_picker_element(array_keys(currencies_load()), $this->options['currcode']);
+    $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode']);
     
     $form['total'] = array(
       '#title' => t('Aggregate'),

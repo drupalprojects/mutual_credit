@@ -145,7 +145,6 @@ function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_
         '#title' => t('Method'),
         '#description' => t('How will the limits be determined?'),
         '#type' => 'select',
-        //TODO this needs its own hook!
         '#options' => module_invoke_all('limits_info'),
         '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'no_limits',
         '#weight' => -1,
@@ -282,24 +281,24 @@ function mcapi_limits_block_info() {
   return $blocks;
 }
 
-/*
+/*$currencies
  * Implements views hook_block_view
  */
 function mcapi_limits_block_view($delta) {
   module_load_include('inc', 'mcapi');
-  $settings = mcapi_limits_block_settings('block_'.$delta);
-  $src_uid = $settings['source'] ? user_uid_optional_to_arg(arg(1)) : $GLOBALS['user']->uid;
-  $currcodes = empty($settings['currcodes']) ? array_keys(currencies_load()) : $settings['currcodes'];
-  foreach($currcodes as $currcode) {
+  $settings = _mcapi_block_settings($delta);
+  if (empty($settings)) return;
+  foreach($settings['currcodes'] as $currcode) {
     if (!currency_access('user_aggregated_view', $currcode)) continue;
     require_once('mcapi_limits.inc');
     $function = 'show_'. $delta;
-    $render_array[] = $function($src_uid, $currcode);
+    $render_array[] = $function($settings['account']->uid, $currcode);
   }
   $render_array = array_filter($render_array);
   if (empty($render_array)) return;
+  $is_me = $settings['account']->uid == $GLOBALS['user']->uid;
   return array(
-    'subject' => t("@user's limits", array('@user' => strip_tags(format_username(user_load($src_uid))))),
+    'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
     'content' => $render_array
   );
 }
@@ -309,35 +308,15 @@ function mcapi_limits_block_view($delta) {
  * Implements views hook_block_configure
  */
 function mcapi_limits_block_configure($delta) {
-  module_load_include('inc', 'mcapi');
-  $settings = mcapi_limits_block_settings('block_'.$delta);
-  $form['currcodes'] = currency_picker_element(array_keys(currencies_load()), $settings['currcodes'], TRUE);
-  $form['source'] = array(
-    '#title' => t('Show as part of profile'),
-    '#description' => t('If unchecked, shows for logged in user'),
-    '#type' => 'checkbox',
-    '#default_value' => $settings['source']
-  );
-  return $form;
+  return mcapi_block_configure($delta);
 }
 
 /*
  * Implements views hook_block_save
  */
 function mcapi_limits_block_save($delta, $values) {
-  variable_set(
-    'block_'. $delta,
-    array(
-      'currcodes' => $values['currcodes'],
-      'source' => $values['source']
-    )
-  );
+  mcapi_block_save($delta, $values);
 }
-function mcapi_limits_block_settings($delta) {
-  $settings = variable_get($delta, array());
-  return $settings ? $settings : array('currcodes' => array_keys(currencies_load()), 'source' => 0);
-}
-
 
 /*
  * Implements variable module's hook_variable_info

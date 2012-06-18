@@ -1,6 +1,9 @@
 <?php
 
-
+/*
+ * implements entity hook_entity_property_info
+ * required field makes it appear in the rules new entity config form
+ */
 function mcapi_entity_property_info() {
   $info = array();
   // Add meta-data about the basic node properties.
@@ -17,7 +20,6 @@ function mcapi_entity_property_info() {
     'label' => t("Transaction type"),
     'type' => 'list<text>',
     'options list' => 'mcapi_get_types',
-    'required' => TRUE,
     'schema field' => 'type',
     'getter callback' => 'entity_property_verbatim_get',
   );
@@ -27,15 +29,15 @@ function mcapi_entity_property_info() {
     'type' => 'user',
     'schema field' => 'payer',
     'required' => TRUE,
-    'getter callback' => 'entity_property_verbatim_get',
+    'getter callback' => 'entity_property_verbatim_get',//might want to convert to username
   );
   $properties['payee'] = array(
-    'label' => t("Payer"),
-    'description' => t("The user ID of the payer"),
+    'label' => t("Payee"),
+    'description' => t("The user ID of the payee"),
     'type' => 'user',
     'schema field' => 'payee',
     'required' => TRUE,
-    'getter callback' => 'entity_property_verbatim_get',
+    'getter callback' => 'entity_property_verbatim_get',//might want to convert to username
   );
   $properties['created'] = array(
     'label' => t("Unixtime of transaction creation"),
@@ -47,11 +49,12 @@ function mcapi_entity_property_info() {
     'label' => t("User who created the transaction"),
     'type' => 'user',
     'schema field' => 'creator',
+    'getter callback' => 'entity_property_verbatim_get',//might want to convert to username
   );
   $properties['state'] = array(
     'label' => t("State"),
     'type' => 'integer',
-    'description' => t("Workflow state. Greater than zero means it is counted."),
+    'description' => t("Workflow state. By convention, greater than zero means it is counted."),
     'schema field' => 'state',
     'getter callback' => 'entity_property_verbatim_get',
   );
@@ -59,14 +62,6 @@ function mcapi_entity_property_info() {
 }
 
 
-function mcapi_entity_property_info_alter(&$items) {
-  //debug($items);
-}
-
-
-/*
- * INTEGRATION WITH ENTITY MODULE
- */
 //this is a property callback in mcapi_field_info
 function entity_metadata_field_worth_property_callback(&$info, $entity_type, $field, $instance, $field_type) {
   $property = &$info[$entity_type]['bundles'][$instance['bundle']]['properties'][$field['field_name']];
@@ -103,7 +98,10 @@ function mcapi_options_list($field) {
   debug($field);
 }
 
-
+/*
+ * implements hook_entity_views_field_handlers_alter
+ * not sure its needed actually
+ */
 function mcapi_entity_views_field_handlers_alter(&$field_handlers) {
   //this views handler isn't written yet coz I haven't worked out how the entity module integrates with views
   $field_handlers['worth'] = 'entity_views_handler_field_mcapi_worth';

@@ -122,14 +122,6 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#default_value' => $currency->zero,
     '#weight' => 15,
   );
-  $form['buttons'] = array(
-    '#weight' => 20,
-    'submit' => array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-      '#weight' => 20
-    )
-  );
   $form['uid'] = array(
     '#type' => 'textfield',
     '#title' => t('Declared by'),
@@ -202,48 +194,33 @@ function currency_edit_access($currency) {
   return user_access('configure all currencies') || $currency->uid == $GLOBALS['user']->uid;
 }
 
-/*
-//this function is no longer called. and doesn't make much sense anyway
-function transaction_validate_currency_access($form, $form_state) {
-  $transaction = (object)$form_state['values'];
-  $currency = currency_load($transaction->currcode);
-  $participants = array('payer', 'payer');
-  foreach ($participants as $participant) {
-    if (!currency_access('membership', $currency)) {
-      form_set_error($participant, t("!name is not permitted to use @currency", array(
-        '!name' => format_username(user_load($transaction->$participant)),
-        '@currency' => $currency->human_name
-      )));
-    }
-  }
-}
-*/
-
 function currencies_load_all() {
   ctools_include('export');
   $functions = array_keys(module_invoke_all('transaction_access_callbacks'));
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
-  foreach($all as $currcode => $currency_ctools_obj) {
-    if (!empty($currency_ctools_obj->disabled)) continue;
-    $currency = $currency_ctools_obj->data;
+  foreach($all as $currcode => $currency) {
+    if (!empty($currency->disabled)) continue;
+    $data = &$currency->data;
     //convert the divisions_allowed into an array
     $divisions = array();
-    if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
-      foreach(explode("\n", $currency->display['divisions_setting']) as $line) {
+    if ($data->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
+      foreach(explode("\n", $data->display['divisions_setting']) as $line) {
         list($cent, $display) = explode('|', $line);
         $divisions[$cent] = $display;
       }
     }
-    $currency->display['divisions_allowed'] = $divisions;
+    $data->display['divisions_allowed'] = $divisions;
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     foreach (mcapi_get_states('#full') as $constant => $state_info) {
-      if (!isset($currency->transaction_access[$constant])) {
-        unset($currency->transaction_access[$constant]);
-        drupal_set_message(t('invalid access callback for currency @currname state @state.',
-          array('@currname' => $currency->human_name, '@state' => $state_info['name'])
+      if (!isset($data->transaction_access[$constant])) {
+        drupal_set_message(t('Invalid access callback for currency @currname, state @state: !edit_link',array(
+          '@currname' => $data->human_name,
+          '@state' => $state_info['name'],
+          '!edit_link' => l(t('edit'), 'admin/accounting/currencies/list/'.$currcode.'/edit')
+          )
         ));
-        $currency->transaction_access[$constant] = drupal_map_assoc($state_info['default_access_callbacks']);
+        $data->transaction_access[$constant] = drupal_map_assoc($state_info['default_access_callbacks']);
       }
     }
     $currencies[$currcode] = $currency;
@@ -271,13 +248,9 @@ function mcapi_currency_form_validate(){
  * declared in plugins/export/mcapi_ui
  * set the $form_state['item'] for ctools to save
  */
-function mcapi_currency_form_submit($form, $form_state) {
+function mcapi_currency_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
-  //I would have thought this database key would have been provided automacically
-  //since the field was created automatically
-  if (empty($form_state['item']->currcode)) {
-    $form_state['item']->currcode = $form_state['values']['info']['currcode'];
-  }
+  //things got a little out of kilter here - this shouldn't be necessary
   $form_state['item']->data = (object)$form_state['values'];
   register_shutdown_function('currencies_load_refresh');
 }

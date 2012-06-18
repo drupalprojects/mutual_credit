@@ -123,9 +123,9 @@ function mcapi_hook_info() {
     'transactions_insert' => array(),
     //respond to the removal, or undoing of a transaction
     'transactions_undone' => array(),
-    //callbacks for determining access to the currency and aggregated stats
+    //callbacks for determining access to the currency and aggregated stats. See mcapi_currency_access_callbacks
     'currency_access_callbacks' => array(),
-    //declare permissions for transaction access control, per currency per operation
+    //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
     'transaction_access_callbacks' => array(),
     //change of transaction state - takes serials
     'transactions_state' => array(),
@@ -179,8 +179,8 @@ function mcapi_mcapi_info_states() {
 function mcapi_mcapi_info_types() {
   $types = array('default', 'child');
   if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE) {
-    $types[]= 'undo';
-    $types[]= 'undone';
+    $types[] = 'undo';
+    $types[] = 'undone';
   }
   return $types;
 }
@@ -251,14 +251,12 @@ function mcapi_mcapi_info_drupal_permissions() {
  * each callback refers to 2 functions - itself and CALLBACK_views
  * Declare the access callbacks for (transactions in) currencies
  * each callback takes the following args
- * $transaction
- * $account
+ * $transaction, $account
  * Multiple callbacks can be selected and access will be granted if any returns TRUE
- * TODO Update these callbacks in transaction_access_views_alter
  */
 function mcapi_transaction_access_callbacks() {
   return array(
-    'transaction_xacc_participants' => t('the participants in the transaction'),
+    'transaction_access_participants' => t('the participants in the transaction'),
     'transaction_access_authenticated' => t('Authenticated users'),
     'transaction_access_accountant' => t("Accountants"),
     'transaction_access_anyone' => t('Anyone, including anonymous users')
@@ -315,11 +313,92 @@ function mcapi_theme($existing, $type, $theme, $path) {
         'transaction' => NULL,
         'view_mode' => 'certificate',
       )
+    ),
+    'transaction_totals' => array(
+      'variables' => array(
+        'totals' => array()
+      )
     )
-  ) + mcapi_theme_fields();
+  ) + mcapi_theme_fields();//theming for field API in mcapi.field.inc
   return $items;
 }
 
+/*
+ * implements hook_block_info
+ */
+function mcapi_block_info() {
+  $blocks['balances'] = array(
+    'info' => 'MC '. t("Balances"),
+    'region' => 'left',
+  );
+  return $blocks;
+}
+/*
+ * implements hook_block_view
+ */
+function mcapi_block_view($delta) {
+  module_load_include('inc', 'mcapi');
+  $settings = _mcapi_block_settings($delta);
+  if (empty($settings)) return;
+  $render_array = array('#theme' => 'transaction_totals');
+  foreach ($settings['currcodes'] as $currcode) {
+    $render_array['#totals'][$currcode] = transaction_totals($settings['account']->uid, $currcode);
+  }
+  if (empty($render_array['#totals'])) return;
+  $is_me = $settings['account']->uid == $GLOBALS['user']->uid;
+  return array(
+    'subject' => $is_me ? t('My account') : t("@user's account", array('@user' => strip_tags(format_username($settings['account'])))),
+    'content' => $render_array
+  );
+}
+
+/*
+ * implements hook_block_configure
+ */
+function mcapi_block_configure($delta) {
+  $currencies = &drupal_static('currencies');
+  module_load_include('inc', 'mcapi');
+  $settings = _mcapi_block_settings($delta);
+  $form['currcodes'] = currency_picker_element(array_keys($currencies), $settings['currcodes'], TRUE);
+  $form['user_source'] = array(
+    '#title' => t('User'),
+    '#type' => 'radios',
+    '#options' => array(
+      0 => t('Show as part of profile being viewed'),
+      1 => t('Show for logged in user')
+    ),
+    '#default_value' => $settings['user_source']
+  );
+  return $form;
+}
+
+/*
+ * implements hook_block_save
+ */
+function mcapi_block_save($delta, $values) {
+  variable_set('block_'. $delta,
+    array(
+      'currcodes' => $values['currcodes'],
+      'user_source' => $values['user_source']
+    )
+  );
+}
+
+/*
+ * default implementation of theme callback
+ */
+function theme_transaction_totals(&$variables) {
+  foreach ($variables['totals'] as $currcode => $totals) {
+    $balance = theme('worth_field', array('currcode' => $currcode, 'quantity' => $totals->balance));
+    $income = theme('worth_field', array('currcode' => $currcode, 'quantity' => $totals->gross_in));
+    $output = '<div class="balance">'. $balance ."</div>";
+    $output .= '<div class="gross-in">'.t('Income: @quant', array('@quant' => $income)) ."</div>";
+    $output .= '<div class="count">'.t('Transactions: @count', array('@count' => $totals->count)) ."</div>";
+    $outputs[] = "<div class = \"transaction-totals $currcode\">$output</div>";
+  }
+  drupal_add_css(".transaction-totals .balance{font-size:2em;}", array('type' => 'inline'));
+  return implode("<br />", $outputs);
+}
 
 /**
  * Implements hook_entity_info()
@@ -547,7 +626,10 @@ function transactions_state(array $serials, $new_state) {
  * - count
  */
 function transaction_totals($uid, $currcode = NULL, $conditions = array()) {
-  if (!$currcode) $currcode = key(currencies_load());
+  if (!$currcode) {
+    $currencies = &drupal_static('currencies');
+    $currcode = key($currencies);
+  }
   if (empty($conditions)) {
     $conditions = array(array('state', 0, '>'));
   }
@@ -616,7 +698,7 @@ function transaction_insert_new($transaction, $really = TRUE) {
  * undocumented Community Accounting API function - for development only!
  */
 function transactions_delete($serials) {
-  debug('Using undocumented API call to delete transactions');
+  drupal_set_message('Using undocumented API call to delete transactions');
   transactions_undo($serials, MCPI_CURRENCY_UNDO_DELETE);
 }
 
@@ -670,11 +752,18 @@ function mcapi_validate_usernames(&$element, &$form_state) {
   }
 }
 /*
+ * implements hook_init
+ * make the drupal_static variable 'currencies' available
+ */
+function mcapi_init() {
+  currencies_load();
+}
+/*
  * return one currency object
  */
 function currency_load($currcode) {
   $currencies = &drupal_static('currencies');
-  if (empty($currencies))currencies_load();
+  if (empty($currencies))currencies_load();//filters
   if (isset($currencies[$currcode])) {
     return $currencies[$currcode];
   }
@@ -683,26 +772,31 @@ function currency_load($currcode) {
 }
 /*
  * Load all the currencies from cache filter
- * then optionally return them filtered for which ones an account can use.
+ * then optionally return them filtered for which ones an account has membership i.e. can use
+ * wish I understood ctools better. not sure I need to cache here
  */
 function currencies_load($account = NULL, $refresh = FALSE) {
   $currencies = &drupal_static('currencies');
-  if ($refresh) unset($currencies);
+  if ($refresh) $currencies = array();
+  $filtered = array();
   if (empty($currencies)) {//first time this page request.
     if (!$refresh && $cache = cache_get('currencies')) {
       $currencies = $cache->data;
     }
     else {
       module_load_include('inc', 'mcapi', 'currencies');
-      $currencies = currencies_load_all();
+      foreach (currencies_load_all() as $currcode => $currency) {
+        $currencies[$currcode] = $currency->data;
+      }
       cache_set('currencies', $currencies);
     }
   }
-  if (empty($account)) return $currencies;
+  if (!$account) return;//having set the $currencies static
+
   module_load_include('inc', 'mcapi');
-  $filtered = array();
   foreach ($currencies as $currcode => $currency) {
     if (currency_access('membership', $currcode, $account)) {
+      //we're actually stripping the ctools metadata wrapper of the currency away here for convenience everywhere else
       $filtered[$currcode] = $currency;
     }
   }
@@ -859,9 +953,4 @@ function _mcapi_validate_mail_element($element, $form_state) {
   if (!valid_email_address($element['#value'])) {
     form_error($element, t('That e-mail address is not valid.'));
   }
-}
-
-function currency_get_users($currcode) {
-  debug(currency_load($currcode));
-  return db_query("select uid from users")->getCol();
 }

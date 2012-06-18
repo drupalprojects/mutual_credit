@@ -611,3 +611,9 @@ function template_preprocess_pending_signatures(&$variables) {
     '#rows' => $rows
   );
 }
+
+function mcapi_pending_mcapicurrencies_default_alter(&$currencies) {
+  foreach ($currencies as $name => $currency) {
+    $currencies[$name]->data->transaction_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(array('transaction_access_accountant', 'transaction_access_participants'));
+  }
+}

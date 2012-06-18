@@ -2,15 +2,16 @@
 //Id;
 
 function mcapi_index_views_views_default_views() {
+  $multicurrencies = &drupal_static('currencies') > 1;
   $viewnames = array('user_transactions_summary', 'statement', 'user_rankings', 'balance_history', 'profit_loss');//missing 'user_transactions_index', 
   foreach ($viewnames as $viewname) {
     $function  = 'mcapi_getview_'.$viewname;
-    $views[$viewname] = $function();
+    $views[$viewname] = $function($multicurrencies);
   }
   return $views;
 }
 
-function mcapi_getview_user_transactions_summary() {
+function mcapi_getview_user_transactions_summary($multicurrencies) {
   $view = new view;
   $view->name = 'user_transactions_summaries';
   $view->description = 'per currency transaction summary for individual users';
@@ -32,7 +33,7 @@ function mcapi_getview_user_transactions_summary() {
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['style_plugin'] = 'default';
   $handler->display->display_options['row_plugin'] = 'fields';
-  if (count(currencies_load()) > 1) {
+  if ($multicurrencies) {
     /* Field: Transaction index: Currency */
     $handler->display->display_options['fields']['currcode']['id'] = 'currcode';
     $handler->display->display_options['fields']['currcode']['table'] = 'mcapi_index';
@@ -128,7 +129,7 @@ function mcapi_getview_user_transactions_summary() {
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
-  $translatables['profit_loss_summary'] = array(
+  $translatables['user_transactions_summaries'] = array(
     t('Master'),
     t('more'),
     t('Apply'),
@@ -150,7 +151,7 @@ function mcapi_getview_user_transactions_summary() {
   return $view;
 }
 
-function mcapi_getview_statement() {
+function mcapi_getview_statement($multicurrencies) {
   $view = new view;
   $view->name = 'statement';
   $view->description = 'shows trades of one user, with otheruser field and running balance. (not working because of apparent views error)';
@@ -235,7 +236,7 @@ function mcapi_getview_statement() {
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid1']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid1']['not'] = 0;
-  if (count(currencies_load()) > 1) {
+  if ($multicurrencies) {
     /* Filter criterion: Transaction index: Currency */
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
@@ -279,7 +280,7 @@ function mcapi_getview_statement() {
   return $view;
 }
 
-function mcapi_getview_user_rankings() {
+function mcapi_getview_user_rankings($multicurrencies) {
   $view = new view;
   $view->name = 'user_rankings';
   $view->description = 'If you have multiple currencies, be sure to change the argument. Also you can add \'between\' dates';
@@ -344,21 +345,21 @@ function mcapi_getview_user_rankings() {
   $handler->display->display_options['fields']['expenditure']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['expenditure']['hide_empty'] = 0;
   $handler->display->display_options['fields']['expenditure']['empty_zero'] = 0;
-  if (count(currencies_load()) > 1) {
+  if ($multicurrencies > 1) {
     /* Contextual filter: Transaction index: Currency */
     $handler->display->display_options['arguments']['currcode']['id'] = 'currcode';
     $handler->display->display_options['arguments']['currcode']['table'] = 'mcapi_index';
     $handler->display->display_options['arguments']['currcode']['field'] = 'currcode';
     $handler->display->display_options['arguments']['currcode']['default_action'] = 'default';
     $handler->display->display_options['arguments']['currcode']['default_argument_type'] = 'php';
-    $handler->display->display_options['arguments']['currcode']['default_argument_options']['code'] = 'return array_shift(array_keys(currencies_load()));';
+    $handler->display->display_options['arguments']['currcode']['default_argument_options']['code'] = '$currencies = &drupal_static("currencies");return array_shift(array_keys($currencies));';
     $handler->display->display_options['arguments']['currcode']['default_argument_skip_url'] = 0;
     $handler->display->display_options['arguments']['currcode']['summary']['number_of_records'] = '0';
     $handler->display->display_options['arguments']['currcode']['summary']['format'] = 'default_summary';
     $handler->display->display_options['arguments']['currcode']['summary_options']['items_per_page'] = '25';
   }
   /* Display: Promiscuity */
-  $handler = $view->new_display('block', 'Promiscuity', 'block_1');
+  $handler = $view->new_display('block', 'Promiscuity', 'block_promiscuity');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'Promiscuity';
   $handler->display->display_options['defaults']['fields'] = FALSE;
@@ -399,7 +400,7 @@ function mcapi_getview_user_rankings() {
   $handler->display->display_options['sorts']['uid']['order'] = 'DESC';
 
   /* Display: Volume */
-  $handler = $view->new_display('block', 'Volume', 'block_2');
+  $handler = $view->new_display('block', 'Volume', 'block_volumes');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'Volume';
   $handler->display->display_options['defaults']['fields'] = FALSE;
@@ -436,7 +437,7 @@ function mcapi_getview_user_rankings() {
   $handler->display->display_options['sorts']['volume']['order'] = 'DESC';
 
   /* Display: Trades */
-  $handler = $view->new_display('block', 'Trades', 'block_3');
+  $handler = $view->new_display('block', 'Trades', 'block_trades');
   $handler->display->display_options['display_description'] = 'Number of trades';
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: User: Name */
@@ -476,7 +477,7 @@ function mcapi_getview_user_rankings() {
   $handler->display->display_options['sorts']['name']['order'] = 'DESC';
 
   /* Display: Incomes */
-  $handler = $view->new_display('block', 'Incomes', 'block_4');
+  $handler = $view->new_display('block', 'Incomes', 'block_incomes');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'Incomes';
   $handler->display->display_options['defaults']['fields'] = FALSE;
@@ -512,7 +513,7 @@ function mcapi_getview_user_rankings() {
   $handler->display->display_options['sorts']['income']['order'] = 'DESC';
 
   /* Display: Expenditure */
-  $handler = $view->new_display('block', 'Expenditure', 'block_5');
+  $handler = $view->new_display('block', 'Expenditure', 'block_expenditures');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'expenditures';
   $handler->display->display_options['defaults']['sorts'] = FALSE;
@@ -550,7 +551,7 @@ function mcapi_getview_user_rankings() {
   return $view;
 }
 
-function mcapi_getview_balance_history() {
+function mcapi_getview_balance_history($multicurrencies) {
   $view = new view;
   $view->name = 'running_balance';
   $view->description = t('Unixtimes and running balances');
@@ -615,22 +616,22 @@ function mcapi_getview_balance_history() {
   $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid']['not'] = 0;
-  if (count(currencies_load()) > 1) {
+  if ($multicurrencies) {
     /* Contextual filter: Transaction index: Currency */
     $handler->display->display_options['arguments']['currcode']['id'] = 'currcode';
     $handler->display->display_options['arguments']['currcode']['table'] = 'mcapi_index';
     $handler->display->display_options['arguments']['currcode']['field'] = 'currcode';
     $handler->display->display_options['arguments']['currcode']['default_action'] = 'default';
     $handler->display->display_options['arguments']['currcode']['default_argument_type'] = 'php';
-    $handler->display->display_options['arguments']['currcode']['default_argument_options']['code'] = 'return array_shift(array_keys(currencies_load()));';
+    $handler->display->display_options['arguments']['currcode']['default_argument_options']['code'] = '$currencies = &drupal_static("currencies");return array_shift(array_keys($currencies));';
     $handler->display->display_options['arguments']['currcode']['default_argument_skip_url'] = 0;
     $handler->display->display_options['arguments']['currcode']['summary']['number_of_records'] = '0';
     $handler->display->display_options['arguments']['currcode']['summary']['format'] = 'default_summary';
     $handler->display->display_options['arguments']['currcode']['summary_options']['items_per_page'] = '25';
   }
   /* Display: Block */
-  $handler = $view->new_display('block', 'Block', 'block');
-  $handler->display->display_options['block_description'] = 'Running balance';
+  $handler = $view->new_display('block', 'Running balance', 'block_running_balance');
+  $handler->display->display_options['block_description'] = 'balance after each transaction';
   $translatables['balance_history'] = array(
     t('Master'),
     t('Balance history'),
@@ -647,13 +648,13 @@ function mcapi_getview_balance_history() {
     t('Balance'),
     t('Created'),
     t('All'),
-    t('Block'),
+    t('Running balance'),
   );
   return $view;
 }
 
 
-function mcapi_getview_user_transactions_index() {
+function mcapi_getview_user_transactions_index($multicurrencies) {
   $view = new view;
   $view->name = 'user_transactions_index';
   $view->description = 'statement of one user, with otheruser field and running balance (reads transaction index table)';
@@ -724,7 +725,7 @@ function mcapi_getview_user_transactions_index() {
   $handler->display->display_options['arguments']['uid1']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   /* Filter criterion: Transaction index: Currency */
-  if (count(currencies_load()) > 1) {
+  if ($multicurrencies) {
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
     $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
@@ -764,7 +765,7 @@ function mcapi_getview_user_transactions_index() {
 
 }
 
-function mcapi_getview_profit_loss() {
+function mcapi_getview_profit_loss($multicurrencies) {
   $view = new view;
   $view->name = 'profit_loss';
   $view->description = 'income and expenditure in separate tables';
@@ -881,7 +882,7 @@ function mcapi_getview_profit_loss() {
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid1']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid1']['not'] = 0;
-  if (module_exists('mcapi_currencies')) {
+  if ($multicurrencies) {
     /* Filter criterion: Transaction index: Currency */
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';

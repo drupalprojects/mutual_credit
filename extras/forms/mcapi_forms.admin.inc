@@ -40,10 +40,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['perspective']['#description'] = 'Technical limitations prohibit this being flipped more than once. Reload the whole page to change it back';
   }
 
-  $form['xfid'] = array(
-    '#type' => 'hidden',
-    '#value' => isset($form_state['item']->xfid) ? $form_state['item']->xfid : ''
-  );
   $form['architecture'] = array(
     '#title' => t('Architecture'),
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
@@ -235,18 +231,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $view_modes[$name] = $mode['label'];
   }
 
-      //TODO Remove this after upgrade
-    if (empty($mcapi_form['experience'])) {
-      drupal_set_message('SAVE THIS PAGE!!');
-      $mcapi_form['experience'] = array(
-        'title' => $mcapi_form['step-1']['title'],
-        'sure_title' => $mcapi_form['step-1']['title'],
-        'template' => $mcapi_form['step-1']['template'],
-        'sure_format' => 'certificate'
-      );
-    }
-
-
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
@@ -366,7 +350,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
     $form_state['item'] = ctools_export_crud_new('mcapi_forms');
   }
   $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
-  unset($form_state['values']['name'], $form_state['values']['xfid']);
+  unset($form_state['values']['name']);
 
   $form_state['item']->data = $form_state['values'];
   $mcapiform = &$form_state['item']->data;

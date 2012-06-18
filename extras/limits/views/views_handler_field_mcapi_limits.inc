@@ -3,22 +3,16 @@
 
 class views_handler_field_mcapi_limits extends views_handler_field {
 
-
-  function construct() {
-    parent::construct();
-    //$this->additional_fields['uid'] = 'uid';
-  }
-
-
   function option_definition() {
+    $currencies = &drupal_static('currencies');
     $options = parent::option_definition();
-    $options['currcode'] = array('default' => key(currencies_load()));
+    $options['currcode'] = array('default' => key($currencies));
     return $options;
   }
 
   function options_form(&$form, &$form_state) {
-    module_load_include('inc', 'mcapi');
-    $form['currcode'] = currency_picker_element(array_keys(currencies_load()), $this->options['currcode']);
+    $currencies = &drupal_static('currencies');
+    $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode']);
     parent::options_form($form, $form_state);
   }
 

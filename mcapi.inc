@@ -140,6 +140,23 @@ function mcapi_accounting() {
   return system_admin_menu_block_page();
 }
 
+/*
+ * helper to get block settings and load whichever user we like
+ * may return nothing if no user is determined
+ */
+function _mcapi_block_settings($delta) {
+  $currencies = &drupal_static('currencies');
+  $settings = variable_get('block_'. $delta, array('currcodes' => array_keys($currencies), 'user_source' => 0));
+  if (empty($settings['user_source'])) {
+    if (arg(0) == 'user') $settings['account'] = user_uid_optional_load();
+    else return;
+  }
+  else {
+    $settings['account'] = $GLOBALS['user'];
+  }
+  return $settings;
+}
+
 function transaction_menu_title($transaction) {
   return t('Transaction certificate #@serial', array('@serial' => $transaction->serial));
 }
@@ -157,13 +174,6 @@ function transaction_default_form($form, &$form_state) {
  * All transaction forms should use this function as a basis using hook_forms
  */
 function _transaction_form(&$form, &$form_state, $transaction) {
-  /*
-   * no need for this, because there's no editing of transactions once they are saved
-  $form['serial'] = array(
-    '#type'=> 'hidden',
-    '#value' => isset($transaction->serial) ? $transaction->serial : 0
-  );
-   */
   $form['payer'] = array(
     '#type' => 'textfield',
     '#title' => t('Account number to be debited'),
@@ -390,9 +400,7 @@ function mcapi_validate_ttype(&$element, $form_state) {
 
 
 /*
- * access callbacks declared in hook_transaction_access and hook_currency_access
- *
- * general purpose callbacks require no arguments
+ * transaction_access callbacks
  */
 function transaction_access_anyone($transaction, $account = NULL) {
   return TRUE;
@@ -404,10 +412,7 @@ function transaction_access_authenticated($transaction, $account = NULL) {
 function transaction_access_accountant($transaction, $account = NULL) {
   return user_access('manage all transactions', $account);
 }
-/*
- * transaction_access callbacks
- */
-function transaction_xacc_participants($transaction) {
+function transaction_access_participants($transaction) {
   return in_array($GLOBALS['user']->uid, array($transaction->payer, $transaction->payee));
 }
 
@@ -454,7 +459,7 @@ function currency_picker_element(array $currcodes, $default = NULL, $multiple = 
 //$currencies is an array of the form returned by currencies_load
 //if $currencies is empty, it will assume you mean all currencies
 function _currency_picker_element_options(array $currcodes) {
-  $currencies = &currencies_load();
+  $currencies = &drupal_static('currencies');
   foreach ($currcodes as $currcode) {
     $options[$currcode] = $currencies[$currcode]->human_name;
   }
@@ -586,7 +591,8 @@ function mcapi_supplementary_transaction_action($transactions, $settings) {
 function mcapi_supplementary_transaction_action_form($context) {
   $form['#description'] = t('Assumes the first currency in the transaction');
   $def_currcode = isset($context['currcode']) ? $context['currcode'] : 'def_drup';
-  $form['currcode'] = currency_picker_element(array_keys(currencies_load()), $def_currcode, FALSE);
+  $currencies = &drupal_static('currencies');
+  $form['currcode'] = currency_picker_element(array_keys($currencies), $def_currcode, FALSE);
   $form['source'] = array(
     '#title' => t('Source'),
     '#type' => 'radios',
@@ -602,49 +608,10 @@ function mcapi_supplementary_transaction_action_form($context) {
     '#autocomplete_path' => 'user/autocomplete',
     '#weight' => 1,
   );
-  $form['rate'] = array(
-    '#title' => t('Rate or amount'),
-    '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity'),
-    '#type' => 'textfield',
-    '#default_value' => isset($context['rate']) ? $context['rate'] : 1,
-    '#element_validate' => array('mcapi_validate_charge_rate'),
-    '#weight' => 2,
-  );
-  $form['round'] = array(
-    '#title' => t('Calculation method'),
-    '#type' => 'radios',
-    '#options' => array('up' => t('Up'), 'down' => t('Down')),
-    '#default_value' => isset($context['round']) ? $context['round'] : 'down',
-    '#weight' => 3,
-  );
+  form_load_include($form_state, 'field.inc', 'mcapi');
+  _add_rate_fields($form, 3);
   return $form;
 }
 function mcapi_supplementary_transaction_action_submit($form, $form_state) {
   return $form_state['values'];
-}
-
-/*
- * element validate callback in mcapi_supplementary_transaction_action)form
- */
-function mcapi_validate_charge_rate(&$element, &$form_state) {
-  $quant = _mcapi_calc($element['#value'], 1);
-  if (!is_numeric($quant)) {
-    form_error($element, t('Does not return a number for transaction quantity 1: @notnum', array('@notnum' => $quant)));
-  }
-}
-/*
- * calculate a transaction quantity based on a provided formala and input quantity
- * $formula can be
- * number => returns the number as a quantity, regardless of $base_quant
- * percentage of the $base_quant
- * formula using [q] for base_quant
- */
-
-function _mcapi_calc($formula, $base_quant) {
-  if (is_numeric($formula)) return $formula;
-  $proportion = str_replace('%', '', $formula);
-  if (is_numeric($proportion)) {
-    return $base_quant * $proportion/100;
-  }
-  return eval('echo '.str_replace('[q]', $base_quant, $formula).';');
 }

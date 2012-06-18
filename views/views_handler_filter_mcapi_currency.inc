@@ -8,14 +8,16 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
   //this is waiting for a suitable hook function so that modules can declare their own exchange types.
   function get_value_options() {
     module_load_include('inc', 'mcapi');
-    $this->value_options = _currency_picker_element_options(array_keys(currencies_load()));
+    $currencies = &drupal_static('currencies');
+    $this->value_options = _currency_picker_element_options(array_keys($currencies));
   }
 
   function value_form(&$form, &$form_state) {
-    $currcodes = array_keys(currencies_load());
-    if (count($currcodes) > 1) {
+    $currencies = &drupal_static('currencies');
+    if (count($currencies) > 1) {
       module_load_include('inc', 'mcapi');
-      $form['value'] = currency_picker_element($currcodes, $this->value, TRUE);
+      $form['value'] = currency_picker_element(array_keys($currencies), $this->value, TRUE);
+//      print_r($form['value']);
       if (!empty($this->options['exposed'])) {
         $identifier = $this->options['expose']['identifier'];
         if (!empty($form_state['exposed']) && !isset($form_state['input'][$identifier])) {
@@ -28,11 +30,11 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
             $any_label = check_plain($any_label);
           }
           $form['value']['#options'] = array('All' => $any_label) + $form['value']['#options'];
+          $form['value']['#description'] = t("Don't expose the currcode filter if you only have one currency");
         }
       }
       return $form;
     }
-    drupal_set_message("Don't expose the currcode filter if you only have one currency", 'warning');
   }
 
   function expose_options() {

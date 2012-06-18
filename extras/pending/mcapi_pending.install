@@ -2,36 +2,9 @@
 //Id;
 
 function mcapi_pending_install() {
-  //todo: go through each of the currencies and make sure they have a pending permissions value
-  drupal_set_message(t('Pending state is now available. Adjust any non-default transaction forms to save into the pending state: !link',
-    array('!link' => l('admin/accounting/forms', 'admin/accounting/forms'))
-  ));
-  save_default_pending_action('mcapi_add_signatories_action', 'transactions_inserted');
-  save_default_pending_action('mcapi_signatories_mail_action', 'transactions_inserted');
-  drupal_set_message(t('Actions and triggers have been configured for transaction signing.'));
-}
+  //there's no easy way to iterate through the ctools currency definitions, update them and save them
+  _pending_setup_actions();
 
-
-function save_default_pending_action($callback, $trigger) {
-  static $weight = 1;
-  $actions = mcapi_pending_action_info();
-  $form_callback = $callback.'_form';
-  $form = $form_callback();
-  //special exception for mail_all_signatories_action
-  if (isset($form['mail'])) $form = $form['mail'];
-  //this is tricky but we're getting the default values out of the action form
-  foreach (element_children($form) as $fieldname) {
-    $params[$fieldname] = $form[$fieldname]['#default_value'];
-  }
-  $aid = actions_save($callback, 'transaction', $params, $actions[$callback]['label']);
-  // Borrowed from trigger_assign_form_submit
-  db_insert('trigger_assignments')->fields(
-    array(
-      'hook' => $trigger,
-      'aid' => $aid,
-      'weight' => $weight++,
-    )
-  )->execute();
 }
 
 function mcapi_pending_uninstall() {
@@ -80,17 +53,46 @@ function mcapi_pending_schema() {
   return $schema;
 }
 
-function mcapi_pending_update_7001() {
-  $spec = array(
-    'description' => t('the transaction to which this entry is attached'),
-    'type' => 'varchar',
-    'length' => 16,
-    'not null' => FALSE,
-  );
-  db_add_field('mcapi_signatures', 'serial', $spec);
-  db_query("UPDATE {mcapi_signatures} SET serial = xid");
-  db_drop_field('mcapi_signatures', 'xid');
-  db_drop_primary_key('mcapi_signatures');
-  db_add_unique_key('mcapi_transactions', 'serial number', array('serial', 'uid'));
-  //we don't need to update the serial numbers from the xids because they are the same at this point
+function _pending_setup_actions() {
+  save_default_pending_action('mcapi_add_signatories_action', 'transactions_inserted');
+  save_default_pending_action('mcapi_signatories_mail_action', 'transactions_inserted');
+  drupal_set_message(st('Actions and triggers have been configured for transaction signing.'));
+}
+
+function save_default_pending_action($callback, $trigger) {
+  static $weight = 1;
+  $actions = mcapi_pending_action_info();
+  module_load_include('module', 'mcapi_pending');
+  $form_callback = $callback.'_form';
+  $form = $form_callback();
+  //special exception for mail_all_signatories_action
+  if (isset($form['mail'])) $form = $form['mail'];
+  //this is tricky but we're getting the default values out of the action form
+  foreach (element_children($form) as $fieldname) {
+    $params[$fieldname] = $form[$fieldname]['#default_value'];
+  }
+  if (variable_get('mc_signatures_notification_subject', '')) {
+    $params['subject'] = variable_get('mc_signatures_notification_subject', '');
+    $params['body'] = variable_get('mc_signatures_notification_body', '');
+  }
+  include_once('includes/actions.inc');
+  $aid = actions_save($callback, 'transaction', $params, $actions[$callback]['label']);
+  // Borrowed from trigger_assign_form_submit
+  db_insert('trigger_assignments')->fields(
+    array(
+      'hook' => $trigger,
+      'aid' => $aid,
+      'weight' => $weight++,
+    )
+  )->execute();
+}
+
+/*
+ * implements hook_update_n
+ * this module does not update itself, because the name changed since version 6
+ * instead the update is done in mcapi.install
+ *
+ */
+function ___mcapi_pending_update_7001() {
+
 }

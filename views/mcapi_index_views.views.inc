@@ -12,7 +12,7 @@ function mcapi_index_views_views_data() {
     'field' => 'serial',
     'title' => t('Transaction totals'),
     'help' => t('Transaction totals'),
-    'access query tag' => 'transaction_access_views',
+    'access query tag' => 'transaction_access_views_index',
     'defaults' => array('diff')
   );
 
@@ -214,4 +214,21 @@ function mcapi_index_views_views_plugins() {
       ),
     )
   );
+}
+
+
+/*
+ * implements hook_query_TAG_alter
+ * The transaction_index table doesn't care about states,
+ * but we do have to add an access check concerning aggregated data for each currency
+ */
+function mcapi_query_transaction_access_views_index_alter(QueryAlterableInterface $query) {
+  $or_currcodes = db_or();//where currcode = A OR currcode = B
+  foreach (drupal_static('currencies') as $currcode => $currency) {
+    if ($currency->access['user_aggregated_view']) {
+      $or_currcodes->condition('currcode', $currcode);
+    }
+  }
+  //to see this working, show the sql query on admin/structure/views/settings/basic
+  $query->condition($or_currcodes);
 }

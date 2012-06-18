@@ -7,13 +7,6 @@ function mcapi_forms_schema() {
   $schema['mcapi_forms'] = array(
     'description' => 'Ctools table for mcapi forms',
     'fields' => array(
-      'xfid' => array(
-        'type'        => 'serial',
-        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
-        'unsigned'    => TRUE,
-        'not null'    => TRUE,
-        'no export'   => TRUE,
-      ),
       'name' => array(
         'description' => 'The unique, machine readable name of the form.',
         'type'        => 'varchar',
@@ -21,11 +14,11 @@ function mcapi_forms_schema() {
         'not null'    => TRUE,
       ),
       'status' => array(
-       'description' => 'Form is enabled.',
-       'type'        => 'int',
-       'length'      => 2,
-       'not null'    => TRUE,
-       'default'     => 1
+        'description' => 'Form is enabled.',
+        'type'        => 'int',
+        'length'      => 2,
+        'not null'    => TRUE,
+        'default'     => 1
       ),
       'data' => array(
         'type' => 'blob',
@@ -34,13 +27,13 @@ function mcapi_forms_schema() {
         'serialized default' => 'a:0:{}',
       ),
     ),
-    'primary key' => array('xfid'),
+    'primary key' => array('name'),
     'unique keys' => array(
       'name' => array('name'),
     ),
     'export' => array(
       'key' => 'name',
-      'primary key' => 'xfid',
+      'primary key' => 'name',
       'identifier' => 'mcapiform',
       'api' => array(
         'owner' => 'mcapiforms',
@@ -61,6 +54,7 @@ function mcapi_forms_submit_once() {
   variable_set('submit_once_forms', implode("\n", array_unique($forms)));
 }
 
-function mcapi_forms_update_7000() {
+function mcapi_forms_update_7001() {
   db_drop_field('mcapi_forms', 'path');
+  db_drop_field('mcapi_forms', 'xfid');
 }

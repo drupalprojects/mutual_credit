@@ -98,30 +98,6 @@ function mcapi_views_data() {
       'handler' => 'views_handler_argument_mcapi_dates_various',
     )
   );
-  $data['mcapi_transactions']['modifer'] = array(
-    'title' => t('Modifier'),
-    'help' => t('The user who last touched the transaction.'),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'users',
-      'label' => t('Modifier'),
-    ),
-  );
-  $data['mcapi_transactions']['modified'] = array(
-    'title' => t('Corrected'),
-    'help' => t("the second the transaction was corrected"),
-    'field' => array(
-      'handler' => 'views_handler_field_time_interval',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort_date',
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_date',
-    ),
-  );
-
   $data['mcapi_transactions']['view'] = array(
     'title' => t('View'),
     'help' => t("Link to transaction"),
@@ -189,64 +165,35 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
 }
 
 
-
-
-//must return a condition objectmcapi_transactions.state
-function mcapi_xacc_unrestricted_views($state){
+function transaction_access_participants_views($state) {
   $condition = db_and();
-  return $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition('mcapi_transactions.state', $state);
+  $subcondition = db_or();
+  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
+  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
+  $condition->condition($subcondition);
+  return $condition;
 }
-//must return a condition objectmcapi_transactions.state
-function mcapi_xacc_creator_views($state){
-  $condition = db_and();
-  return $condition->condition('mcapi_transactions.creator', $GLOBALS['user']->uid);
-}
+
 //returns conditions that $state = state && the current user ID  > 0
-function mcapi_xacc_authenticated_views($state){
+function transaction_access_authenticated_views($state){
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(0, $GLOBALS['user']->uid, '<>');
-  return $condition;
-}
-//returns a condition that the current user ID  > 0
-function mcapi_xacc_none_views($state){
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(0, 1);//which is to say, FALSE
-  return $condition;
-}
-function mcapi_xacc_participants_admin_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $subcondition = db_or();
-  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
-  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
-  $subcondition->condition(1, user_access('administer all transactions'));
-  $condition->condition($subcondition);
-  return $condition;
-}
-function mcapi_xacc_admin_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(1, user_access('administer all transactions'));
-  return $condition;
-}
-function mcapi_xacc_participants_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $subcondition = db_or();
-  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
-  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
-  $condition->condition($subcondition);
+  $condition->condition(0, $GLOBALS['user']->uid, '<>'); //user is logged in
   return $condition;
 }
 
-//this isn't working without the $currency, which the others do not need
-function mcapi_xacc_currency_views($state) {
+function transaction_access_accountant_views($state) {
   $condition = db_and();
-  return $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition(1, user_access('administer all transactions')); //user is accountant
+  return $condition;
 }
-
+function transaction_access_anyone_views($state) {
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  return $condition;
+}
 
 /*
  * implements hook_query_TAG_alter
@@ -254,36 +201,17 @@ function mcapi_xacc_currency_views($state) {
  * this modifies the query only to show the transactions visible to the user.
  * this is pretty elaborate, but the access control has to be done in the query or views pager won't know how many results there were
  */
-function __mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$query) {
+function mcapi_query_transaction_access_views_alter(QueryAlterableInterface $query) {
   $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
   //what currencies can the current user see?
-  $currencies = currencies_load();
-  //WHERE (
-  //  (
-  //    tw.field_worth_currcode = 1
-  //  ) AND (//$currcode_and_states
-  //    (
-  //      (
-  //        mcapi_transactions.state = 0
-  //      ) AND (// $state_and_callback
-  //        callback
-  //      )
-  //    ) OR (//$state_or_state
-  //      (
-  //        mcapi_transactions.state = 1
-  //      ) AND (// $state_and_callback
-  //        callback
-  //      )
-  //   )
-  // ) OR ( //$or_currcodes
-  //  currcode = 2 ...
-  $or_currcodes = db_or();
-  foreach ($currencies as $currency) {
-    $currcode_and_states = db_and();
-    $currcode_and_states->condition('tw.worth_currcode', $currency->currcode);
-    $state_or_state = db_or();
+  $currencies = currencies_load($GLOBALS['user']);
+  $or_currcodes = db_or();//where currcode = A OR currcode = B
+  foreach ($currencies as $currcode => $currency) {
+    $currcode_and_states = db_and(); //where (currcode = A AND (STATES) )
+    $currcode_and_states->condition('tw.worth_currcode', $currcode);
+    $state_or_state = db_or();//where state = A OR B
     foreach ($currency->transaction_access as $state => $callbacks) {
-      foreach ($callbacks as $callback) {
+      foreach (array_filter($callbacks) as $callback) {
         $callback .= '_views';
         $state_and_callback = $callback($state);
         $state_or_state->condition($state_and_callback);
@@ -292,5 +220,6 @@ function __mcapi_query_transaction_access_views_alter(QueryAlterableInterface &$
     $currcode_and_states->condition($state_or_state);
     $or_currcodes->condition($currcode_and_states);
   }
+  //to see this working, show the sql query on admin/structure/views/settings/basic
   $query->condition($or_currcodes);
 }

@@ -103,8 +103,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
     }
     //if the cardinality is 1 and a default language is given, then confine the widget to that one language
-    if (count(element_children($form['worth'][LANGUAGE_NONE])) == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {
-      $form['worth'][LANGUAGE_NONE][0]['#restrict_currcodes'][] = $transaction->worth[LANGUAGE_NONE][0]['currcode'];
+    if (count(element_children($form['worth'][LANGUAGE_NONE])) == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {debug(1);
+      $form['worth'][LANGUAGE_NONE][0]['#restrict_currcodes'] = array($transaction->worth[LANGUAGE_NONE][0]['currcode'])Zzzz;
     }
     
     //specially for the worth field: remove any $items which are not in the default $transaction object
