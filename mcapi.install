@@ -230,7 +230,7 @@ function mcapi_check_fields() {
   $fields = _update_7000_field_read_fields(array('module' => 'mcapi'), 'field_name');
   field_associate_fields('mcapi');//sets field_config definition to active
   
-  if (!$fields('worth')) {
+  if (empty($fields['worth'])) {
     $field = array(
       'field_name' => 'worth',
       'type' => 'worth_field',
