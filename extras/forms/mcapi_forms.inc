@@ -103,8 +103,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
     }
     //if the cardinality is 1 and a default language is given, then confine the widget to that one language
-    if (count(element_children($form['worth'][LANGUAGE_NONE])) == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {debug(1);
-      $form['worth'][LANGUAGE_NONE][0]['#restrict_currcodes'] = array($transaction->worth[LANGUAGE_NONE][0]['currcode'])Zzzz;
+    if (count(element_children($form['worth'][LANGUAGE_NONE])) == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {
+      $form['worth'][LANGUAGE_NONE][0]['#restrict_currcodes'] = array($transaction->worth[LANGUAGE_NONE][0]['currcode']);
     }
     
     //specially for the worth field: remove any $items which are not in the default $transaction object
@@ -127,18 +127,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
         '#type' => 'submit',
         '#value' => t('Back'),
       );
-
       array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
-      if (isset($form_state['storage'])) {//that is, if step 2 was preceded by step 1
-      //  $form_state['values'] = $form_state['storage'];
-      }
     }
     else {//landing directly on step 2
       $form['#preview'] = transaction_view(array($transaction->xid => $transaction), 'certificate');
     }
     //the transaction properties were validated in step 1
-    //bypass the default transaction validate function, transaction_form_validate which rebuilds the transaction entity from form_state['values]
-    $form['#validate'] = array();
+    //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]
+    unset($form['#validate'][array_search('transaction_form_validate', $form['#validate'])]);
   }
   
   //save button

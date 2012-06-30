@@ -202,6 +202,26 @@ function mcapi_schema() {
       'bulk export' => TRUE,
     )
   );
+  $schema['mcapi_submitted'] = array(
+    'description' => 'submitted form_build_ids, cleared periodically',
+    'fields' => array(
+      'form_build_id' => array(
+        'description' => 'the unique form build ID',
+        'type' => 'varchar',
+        'length' => '49',
+        'not null' => TRUE,
+      ),
+      'time' => array(
+        'description' => "Unixtime that the form was submitted",
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      )
+    ),
+    'unique keys' => array(
+      'name' => array('form_build_id')
+    )
+  );
   return $schema;
 }
 
@@ -635,7 +655,7 @@ function mcapi_update_7002() {
  * implements hook_update_n
  * adds the serial field to the transaction table
  */
-function mcapi_update_7008() {
+function _mcapi_update_7008() {
   $tables = mcapi_schema();
   $xid_spec = $tables['mcapi_transactions']['fields']['xid'];
   $xid_spec['description'] = 'auto increment database key';
@@ -652,4 +672,9 @@ function mcapi_update_7008() {
   //turn this into a blob
   db_change_field('mcapi_currencies', 'data', 'data', $tables['mcapi_currencies']['fields']['data']);
   cache_clear_all('currencies', 'cache');
+}
+
+function mcapi_update_7009() {
+  $tables = mcapi_schema();
+  db_create_table('mcapi_submitted', $tables['mcapi_submitted']);
 }

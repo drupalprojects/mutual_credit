@@ -123,6 +123,8 @@ function mcapi_hook_info() {
     'transactions_insert' => array(),
     //respond to the removal, or undoing of a transaction
     'transactions_undone' => array(),
+    //preparing a transaction for rendering
+    'transactions_view' => array(),
     //callbacks for determining access to the currency and aggregated stats. See mcapi_currency_access_callbacks
     'currency_access_callbacks' => array(),
     //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
@@ -161,7 +163,7 @@ function mcapi_transaction_controller(){}
 function mcapi_mcapi_info_states() {
   return array(
     TRANSACTION_STATE_FINISHED => array(
-      'name' => t('Finished'),
+      'name' => t('Cleared'),
       'description' => t('the last state of the workflow'),
       'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
@@ -407,17 +409,19 @@ function mcapi_entity_info(){
   module_load_include('inc', 'mcapi');
   return mcapi_entity_info_inc();
 }
-//I don't believe this callback, part of the entity definition, has any purpose
+/*
+ * transaction entity definition 'uri callback'
+ */
 function transaction_uri($transaction) {
   return array(
     'path' => 'transaction/' . $transaction->serial,
   );
 }
+/*
+ * transaction entity definition 'label callback'
+ */
 function transaction_label($transaction){
   return t('Transaction #@serial', array('@serial' => $transaction->serial));
-}
-function currency_label($currency) {
-  return $currency->human_name;
 }
 
 /**
@@ -449,6 +453,8 @@ function transaction_view($transactions, $view_mode = 'certificate') {
       '#view_mode' => $view_mode,
     );
   }
+  $type = 'transaction';
+  drupal_alter(array('transaction_view', 'entity_view'), $renderable, $type);
   return $renderable;
 }
 

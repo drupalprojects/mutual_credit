@@ -56,7 +56,8 @@ function mcapi_tokens_transaction($tokens, $transaction, $options) {
         break;
       default: //hopefully a field API field
         //we don't want all the gumph around it, so just render the children
-        $replacements[$original] = drupal_render_children(field_view_field('transaction', $transaction, $name, 'default'));
+        $render_transaction = field_view_field('transaction', $transaction, $name, 'default');
+        $replacements[$original] = drupal_render_children($render_transaction);
         break;
     }
   }

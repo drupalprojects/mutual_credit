@@ -29,7 +29,7 @@ function mcapi_entity_info_inc() {
         )
       ),
     ),
-    'load hook' => 'mcapi_xaction_load',//this avoids conflict with commerce module
+    'load hook' => 'mcapi_xaction_load',//this isn't used but must avoid conflict with commerce module
     'view callback' => 'transaction_view', //used by entity module
     'view modes' => array(
       'certificate' => array(
@@ -257,19 +257,26 @@ function transaction_form_validate($form, &$form_state) {
   }
 }
 
+
 /*
  * form submit callback from the base transaction form, hence used by all forms
  * hence must be in .module file
  * this is what actually saves the data
  */
 function transaction_form_submit($form, &$form_state) {
-  if (isset($form_state['submitted_mcapi'])) {
-    form_set_error('This form had already been submitted.');
+  $form_build_id = $form_state['values']['form_build_id'];
+  //check the form hasn't been submitted already
+  $submitted = db_query('SELECT count(form_build_id) FROM {mcapi_submitted} where form_build_id = :id', array(':id' => $form_build_id))
+  ->fetchField();
+  if ($submitted) {
+    drupal_set_message(t('Transaction was already submitted'), 'error');
     return;
   }
-  else {
-    $form_state['submitted_mcapi'] = TRUE;
-  }
+  //check that the form hasn't been submitted already
+  db_query('INSERT INTO {mcapi_submitted} (form_build_id, time) VALUES (:form_build_id, :time)',
+    array(':form_build_id' => $form_build_id, ':time' => REQUEST_TIME)
+  );
+  
   form_state_values_clean($form_state);
   $transaction = (object)$form_state['values'];
   //build the transaction object from the $form_state[values]
