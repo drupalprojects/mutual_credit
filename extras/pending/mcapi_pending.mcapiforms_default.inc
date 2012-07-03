@@ -1,5 +1,7 @@
 <?php
 
+currencies_load();
+
 /*
  * Implements ctools hook default_mcapiforms
  */

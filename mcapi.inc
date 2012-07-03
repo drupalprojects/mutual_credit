@@ -219,7 +219,6 @@ function _transaction_form(&$form, &$form_state, $transaction) {
     '#required' => TRUE,
     '#weight' => 20,
   );
-
   field_attach_form('transaction', $transaction, $form, $form_state);
   unset($form['worth'][LANGUAGE_NONE]['add_more']);
 
@@ -451,7 +450,7 @@ function currency_picker_element(array $currcodes, $default = NULL, $multiple = 
   if (count($currcodes) < 2) {
     return array(
       '#type' => 'hidden',
-      '#value' => current($currcodes)
+      '#default_value' => current($currcodes)
     );
   }
   return array(
@@ -536,7 +535,7 @@ function _mcapi_mail_template_fields($context) {
         '#description' => t('Send an extra copy'),
         '#type' => 'textfield',
         '#default_value' => empty($context['cc']) ? '' : $context['cc'],
-        '#element_validate' => array('_mcapi_validate_mail'),
+        '#element_validate' => array('_mcapi_validate_mail_element'),
         '#weight' => 2
       )
     )

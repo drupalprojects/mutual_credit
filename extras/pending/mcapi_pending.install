@@ -35,7 +35,6 @@ function mcapi_pending_schema() {
         'description' => t('the transaction to which this entry is attached'),
         'type' => 'varchar',
         'length' => 16,
-        'not null' => FALSE,
       ),
       'uid' => array(
         'description' => t('the uid of the signatory'),
@@ -93,6 +92,8 @@ function save_default_pending_action($callback, $trigger) {
  * instead the update is done in mcapi.install
  *
  */
-function ___mcapi_pending_update_7001() {
-
+function mcapi_pending_update_7001() {
+  $schema = mcapi_pending_schema();
+  $newfield = $schema['mcapi_signatures']['fields']['serial'];
+  db_change_field('mcapi_signatures', 'xid', 'serial', $newfield);
 }

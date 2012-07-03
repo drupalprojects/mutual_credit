@@ -68,7 +68,6 @@ function mcapi_help($section, $arg) {
   switch ($section) {
     case 'admin/accounting':
       return '<p>'. t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence on abusive global financial capital. Despite its huge utility and value to local communities, the development of this software over four years has been supported only by informal donations, in money and in kind.");
-
   }
 }
 

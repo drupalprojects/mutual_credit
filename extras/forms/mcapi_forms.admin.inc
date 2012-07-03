@@ -179,7 +179,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#default_value' => isset($mcapi_form['direction']['widget']) ? $mcapi_form['direction']['widget'] : 'radios',
     );
     $form['direction']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
-
   }
   //these are the field api fields which may have been added to the transaction entity
   $additional_fields = field_info_instances('transaction', 'transaction');
@@ -194,10 +193,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
   }
   else {
-    //this allows the field remain unset
     $form['worth']['preset'][LANGUAGE_NONE][0]['#config_mode'] = TRUE;
   }
-  //mcapi_unset_recursive($form['worth']['preset']['und'], '#required');
 
   $form['submission'] = array(
     '#title' => t('Form submission'),

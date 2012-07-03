@@ -12,8 +12,7 @@ define ('TRANSACTION_STATE_PENDING', -1);
  * Signatures happen via menu callbacks
  * Its possible both to sign a transaction 'off' thus 'finishing' it
  * Also to sign all a user's transactions.
- * Note that the mcapi_forms module can not deal with signatures of non-transactors, nor can the mail processor, but this module can
- */
+  */
 function mcapi_pending_menu() {
   //this item makes it possible to sign on someone elses behalf, if the link is provided.
   //That's not in the scope of this module

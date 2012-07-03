@@ -39,7 +39,7 @@ function mcapi_index_views_views_query_alter($view, &$query) {
     $query->add_field('mcapi_index', 'currcode', 'currcode');
   }
 }
-
+//views access control callback
 function views_plugin_access_user_arg_check() {
   return $GLOBALS['user']->uid == arg(1) || user_access('manage all transactions');
 }

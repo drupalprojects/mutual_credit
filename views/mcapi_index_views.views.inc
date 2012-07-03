@@ -223,9 +223,10 @@ function mcapi_index_views_views_plugins() {
  * but we do have to add an access check concerning aggregated data for each currency
  */
 function mcapi_query_transaction_access_views_index_alter(QueryAlterableInterface $query) {
+  $currencies = &drupal_static('currencies');
   $or_currcodes = db_or();//where currcode = A OR currcode = B
-  foreach (drupal_static('currencies') as $currcode => $currency) {
-    if ($currency->access['user_aggregated_view']) {
+  foreach ($currencies as $currcode => $currency) {
+    if ($currency->currency_access['user_aggregated_view']) {
       $or_currcodes->condition('currcode', $currcode);
     }
   }

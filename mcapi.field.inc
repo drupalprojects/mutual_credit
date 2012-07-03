@@ -144,6 +144,7 @@ function mcapi_field_widget_process($element, &$form_state, $form) {
     }
   }
   worth_element_build($element, $default_vals);
+
   foreach (element_children($element) as $child) {
     $element[$child]['#theme_wrappers'] = array();
   }
@@ -159,6 +160,8 @@ function mcapi_field_widget_process($element, &$form_state, $form) {
  */
 function worth_element_build(&$element, $default_vals) {
   static $cardinality;//because this function usually runs twice per form
+  $currencies = &drupal_static('currencies');
+
   if (empty($cardinality)) {
     $field = field_info_field('worth');
     $cardinality = $field['cardinality'];
@@ -166,22 +169,23 @@ function worth_element_build(&$element, $default_vals) {
   $currcodes = isset($element['#restrict_currcodes']) ? 
     $element['#restrict_currcodes'] :
     array_keys(currencies_load($GLOBALS['user']));
-
-  //call the standard currency choosing widget
-  $element['currcode'] = currency_picker_element($currcodes, @$default_vals['currcode']) + array(
-    '#ajax' => array(//seems like the ajax is necessary on the rebuilt form, even if the field is hidden
-      'callback' => 'mcapi_ajax_worth',
-      'wrapper' => 'worth-add-more-wrapper'
-    ),
-  );
-  $currcode = isset($element['currcode']['#value']) ? $element['currcode']['#value'] : $element['currcode']['#default_value'];
-
-  if($element['#config_mode'] == TRUE && $element['currcode']['#type'] == 'select') {
+  
+  if($element['#config_mode'] == TRUE && count($currencies) > 1) {
+    $element['currcode'] = currency_picker_element(array_keys($currencies), @$default_vals['currcode']);
     $element['currcode']['#options'] = array('' =>'Any') + $element['currcode']['#options'];
-    unset($element['currcode']['#ajax']);
+    return;
   }
-  if (empty($currcode)) return;
-  $currency = currency_load($currcode);
+  else {
+    //call the standard currency choosing widget
+    $element['currcode'] = currency_picker_element($currcodes, @$default_vals['currcode']) + array(
+      '#ajax' => array(//seems like the ajax is necessary on the rebuilt form, even if the field is hidden
+        'callback' => 'mcapi_ajax_worth',
+        'wrapper' => 'worth-add-more-wrapper'
+      ),
+    );
+  }
+  if (empty($element['currcode']['#default_value'])) return;
+  $currency = currency_load($element['currcode']['#default_value']);
  
     //Only show the divisions element if we know the currency and it has divisions. We are already showing integers
   if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_FIELD) {
@@ -224,7 +228,7 @@ function worth_element_build(&$element, $default_vals) {
  */
 function worth_widget_validate(&$element, &$form_state, $form) {
   if ($form['#form_id'] == 'field_ui_field_edit_form') return;
-  $value['currcode'] = &$element['currcode']['#value'];
+  $value['currcode'] = &$element['currcode']['#default_value'];
   $value['quantity']  = &$element['main_quant']['#value'];
   if (!empty($element['division_quant']['#value'])) {
     //combine integer and division to get quantity
@@ -260,7 +264,7 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
     if (!isset($permitted_currencies[$item['currcode']])) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
         'error' => 'mcapi_invalid_currency',//this is not working as intended
-        'message' => t('This currency does not exist, or you do not have permission to use it'),
+        'message' => t('This currency does not exist, or you do not have permission to use it: @currcode', array('@currcode' => $item['currcode'])),
       );
     }
     $currency = currency_load($item['currcode']);
@@ -368,8 +372,9 @@ function theme_worth_field(&$variables) {
  */
 function theme_worth_widget($variables) {
   $element = &$variables['element'];
-  $ignore_format = $element['currcode']['#type'] == 'hidden' ||
-    currency_load($element['currcode']['#value'])->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_INLINE;
+  $ignore_format = $element['currcode']['#type'] == 'select' ||
+    currency_load($element['currcode']['#default_value'])->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_INLINE;
+
   if ($ignore_format) {
     $element['#description'] = t("Use up to two decimal places, with a point '.' if necessary");
     $element['#children'] = drupal_render($element['main_quant']);
@@ -377,7 +382,7 @@ function theme_worth_widget($variables) {
   else {
     //output starts with the currency field, whether hidden or showing
     $element['#children'] = strtr(
-      currency_load($element['currcode']['#value'])->display['format'],
+      currency_load($element['currcode']['#default_value'])->display['format'],
       array(
         '@minus' => '',//no negative valuesin a form widget
         '@integer' => drupal_render($element['main_quant']),

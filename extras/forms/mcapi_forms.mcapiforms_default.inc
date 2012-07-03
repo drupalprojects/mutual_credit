@@ -1,4 +1,5 @@
 <?php
+currencies_load();
 
 /*
  * Implements ctools hook mcapi_default_forms
