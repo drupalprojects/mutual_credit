@@ -364,7 +364,7 @@ function mcapi_field_schema($field) {
  * implements hook_update_n
  * updates are triggered here for all the modules in the package, because most of them have changed names
  */
-function mcapi_update_7000() {
+function mcapi_update_7001() {
   module_enable(array('devel', 'admin_menu', 'views', 'views_ui'));
   module_enable(array('mcapi_limits', 'text', 'accounting_ui', 'mcapi_index_views', 'mcapi_forms'));
 
@@ -439,7 +439,7 @@ function mcapi_update_7000() {
  * implements hook_update_n
  * copy the currency definitions into the new variable, or the new table
  */
-function mcapi_update_7001() {
+function mcapi_update_7002() {
   require_once('mcapi.mcapicurrencies_default.inc');
   require_once('currencies.inc');
   //make the tables declared in this module
@@ -620,7 +620,7 @@ function _mcapi_update_pending(&$states) {
  * implements hook_update_n
  * attempts to make blocks equivalent between d6 and d7
  */
-function mcapi_update_7002() {
+function mcapi_update_7003() {
   //forms module
   db_query("UPDATE {block} SET pages = REPLACE('exchange', 'transaction', pages)");
   db_query("UPDATE {block} SET module = 'mcapi_forms' WHERE module = 'mcapi_webforms'");
@@ -635,15 +635,16 @@ function mcapi_update_7002() {
   db_query("UPDATE {block} SET module = 'views', delta = 'user_rankings-block_expenditures' WHERE delta = 'user_rankings-block_5'");
 
   //other blocks from the mc_display module
+  //we seem to have a delta 'balances' already for the mc_display module
   db_query("UPDATE {block} SET module = 'mcapi', delta = 'balances' WHERE delta = 'mc_balances'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_running_balance' WHERE delta = 'mc_balance_history'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_summ_per_curr' WHERE delta = 'balance_ometer'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_run_bal' WHERE delta = 'mc_balance_history'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_sum' WHERE delta = 'balance_ometer'");
   db_query("UPDATE {block} SET module = 'views', delta = 'transactions-who_paid_whom' WHERE delta = 'mc_exchanges_all-block_1'");//who gave to whom?
   db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-my_pending' WHERE delta = 'mc_exchanges_pending-block_1'");//I must sign
   db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-user_pending' WHERE delta = 'mc_exchanges_pending-block_2'");//user must sign
-  db_query("UPDATE {block} SET module = 'mcapi_limits', WHERE delta = 'balance_limits'");
+  db_query("UPDATE {block} SET module = 'mcapi_limits' WHERE delta = 'balance_limits'");
 
-  db_delete('blocks')->condition('delta', array(
+  db_delete('block')->condition('delta', array(
     'mc_exchanges_all-block_2',//description field is no longer part of this module
     'mc_exchanges_pending-block_3',//statement is no longer available in a block
     'mc_statement' //statement is no longer available in a block

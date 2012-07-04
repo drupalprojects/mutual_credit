@@ -467,7 +467,8 @@ function template_preprocess_transaction(&$variables) {
   $variables['state'] = $transaction->state;
   $variables['recorded'] = format_date($transaction->created, 'medium');
   $variables['type'] = $transaction->type;
-
+  $variables['classes_array'] = array('transaction', 'transaction-'.$variables['view_mode'], $transaction->type);
+  if (!$variables['xid']) $variables['classes_array'][] = 'preview';
 
   //$transactions must be keyed by xid if there is more than one
   //because the entity key is used to read fieldAPI data
@@ -955,7 +956,7 @@ function mcapi_transactions_alter(&$transactions) {
 
 //this should really be in core...
 function _mcapi_validate_mail_element($element, $form_state) {
-  if (!valid_email_address($element['#value'])) {
+  if ($element['#value'] && !valid_email_address($element['#value'])) {
     form_error($element, t('That e-mail address is not valid.'));
   }
 }

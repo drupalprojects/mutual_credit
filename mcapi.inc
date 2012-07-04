@@ -99,10 +99,14 @@ function mcapi_menu_inc() {
     // The page callback also invokes drupal_set_title() in case
     // the menu router's title is overridden by a menu link.
     'page callback' => 'transaction_view',
-    'page arguments' => array(1),
+    'page arguments' => array(1, 'certificate'),
     'access callback' => 'transaction_view_access',
     'access arguments' => array(1),
     'file' => 'mcapi.inc',
+  );
+  $items['transaction/%transaction/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['transaction/%transaction/undo'] = array(
     'title' => 'Undo transaction',

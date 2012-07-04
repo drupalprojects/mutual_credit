@@ -6,6 +6,7 @@ configure = admin/accounting
 core = 7.x
 
 dependencies[] = ctools
+dependencies[] = field
 
 files[] = mcapi.inc
 files[] = mcapi.install
