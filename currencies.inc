@@ -148,7 +148,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
     form_error($element, t("Currency format must contain token '@integer'"));
   }
   //we also need to check that the format field contains the divisions token
-  if (!empty($form_state['values']['divisions_allowed']) && !strpos($element['#value'], '@subdivision')) {
+  if ($form_state['values']['display']['divisions'] != CURRENCY_DIVISION_MODE_NONE && !strpos($element['#value'], '@subdivision')) {
     form_error($element, t("Currency format must contain token '@subdivision'"));
   }
 }

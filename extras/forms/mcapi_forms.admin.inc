@@ -211,20 +211,24 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'redirect' => array(
       '#title' => t('Destination'),
-      '#description' => implode('<br />', array(
-        t("Use token '%transaction' to refer to the transaction ID, and %user for the current user ID"),
-        t("E.g. the transaction's own page is 'transaction/%transaction'."),
-      )),
+      '#description' => t('Goes to the new transaction certificate by default'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['submission']['redirect']) ? $mcapi_form['submission']['redirect'] : '',
       '#element_validate' => array('mcapi_path_validate'),
-      '#required' => TRUE,
+      '#weight' => 1,
+    ),
+    'feedback' => array(
+      '#title' => t('Message'),
+      '#description' => t('Contents of the message box'),
+      '#type' => 'textfield',
+      '#default_value' => isset($mcapi_form['submission']['feedback']) ? $mcapi_form['submission']['feedback'] : '',
       '#weight' => 1,
     ),
     '#weight' => 20,
   );
   $entity = entity_get_info('transaction');
   foreach ($entity['view modes'] as $name => $mode) {
+    if ($name == 'token') continue;//TODO support the token module for transaction previews
     $view_modes[$name] = $mode['label'];
   }
 
@@ -238,7 +242,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#description' => t('For use in block title and menu links.') .' '. t('Plain text'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['experience']['title']) ? $mcapi_form['experience']['title'] : '',
-      '#required' => TRUE
     ),
     'template' => array(
       '#title' => t('Main form'),
@@ -250,21 +253,18 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#type' => 'textarea',
       '#rows' => 6,
       '#default_value' => isset($mcapi_form['experience']['template']) ? $mcapi_form['experience']['template'] : '',
-      '#required' => TRUE
     ),
     'sure_title' => array(
       '#title' => t('Confirmation page title'),
       '#description' => t('Plain text'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['experience']['sure_title']) ? $mcapi_form['experience']['sure_title'] : '',
-      '#required' => TRUE
     ),
     'sure_format' => array(
       '#title' => t('Confirmation preview mode'),
       '#type' => 'radios',
       '#options' => $view_modes,
       '#default_value' => isset($mcapi_form['experience']['sure_format']) ? $mcapi_form['experience']['sure_format'] : 'certificate',
-      '#required' => TRUE
     )
   );
 }

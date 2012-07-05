@@ -92,10 +92,11 @@ function mcapi_menu_inc() {
     'type' => MENU_CALLBACK,
     'file' => 'currencies.inc'
   );
+  
   $items['transaction/%transaction'] = array(
+    'title' => 'Transaction certificate',
     'title callback' => 'transaction_menu_title',
     'title arguments' => array(1),
-    'title' => 'Transaction certificate',
     // The page callback also invokes drupal_set_title() in case
     // the menu router's title is overridden by a menu link.
     'page callback' => 'transaction_view',
@@ -103,6 +104,7 @@ function mcapi_menu_inc() {
     'access callback' => 'transaction_view_access',
     'access arguments' => array(1),
     'file' => 'mcapi.inc',
+    'type' => MENU_CALLBACK,
   );
   $items['transaction/%transaction/view'] = array(
     'title' => 'View',
@@ -161,7 +163,7 @@ function _mcapi_block_settings($delta) {
   return $settings;
 }
 
-function transaction_menu_title($transaction) {
+function transaction_menu_title($transaction = NULL) {
   return t('Transaction certificate #@serial', array('@serial' => $transaction->serial));
 }
 
@@ -408,7 +410,6 @@ function mcapi_validate_ttype(&$element, $form_state) {
   form_error($element, t('Invalid transaction type.'));
 }
 
-
 /*
  * transaction_access callbacks
  */
@@ -506,7 +507,7 @@ function _mcapi_transaction_mail_action($uids, $params) {
 /*
  * settings form callback for action mcapi_transaction_mail_action
  */
-function mcapi_transaction_mail_action_form($context) {
+function mcapi_transaction_mail_action_form($context = array()) {
   if (empty($context['body'])) $context['body'] = "[user:name],\n\n".
     t('A transaction for [transaction:worth] has been saved')."\n\n".
     t('More details can be found at:') ."\n[transaction:uri]\n\n".

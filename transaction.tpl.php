@@ -32,38 +32,22 @@ $replacements = array(
   '!payee' => $payee,
   '!worth' => $worth,
 );
-
-if ($view_mode == 'sentence') {
-  ?><div class = "transaction-sentence"><?php
-  switch ($transaction->state) {
-    case TRANSACTION_STATE_FINISHED:
-      print t("On @recorded, !payer gave !payee !worth", $replacements);
-      break;
-    case TRANSACTION_STATE_UNDONE:
-      print t("On @recorded, !payer did not give !payee !worth. (DELETED)'", $replacements);
-      break;
-    case TRANSACTION_STATE_PENDING:
-      print t("!payer should give !payee !worth", $replacements);
-      break;
+?>
+<div class = "<?php print $classes; ?>">
+  <?php if ($view_mode == 'sentence') {
+    print t("On @recorded, !payer gave !payee !worth", $replacements);
   }
-  ?></div><?php
-}
 else {
+  print render($pending_signatures); //floating the right, by default
   $date = t('On @date', array('@date' => $recorded));
-  $movement = $state == TRANSACTION_STATE_FINISHED ?
-    t('!payer <strong>paid</strong> !payee', $replacements) :
-    t('!payer <strong>will pay</strong> !payee', $replacements);
+  $movement = t('!payer <strong>paid</strong> !payee', $replacements);
   $sum = t('the sum of !worth', array('!worth' => '<div style="font-size:250%;">'. $worth .'</div>'));
   ?>
-
-  <div class="exchange">
-<?php print render($pending_signatures); ?>
     <p><?php print $date; ?><br /><br />
     <?php print $movement; ?><br /><br />
     <?php print $sum; ?></p>
-    <?php print render($additional); ?>
-  </div>
-  <?php
+    <?php print render($additional);
+    
     if ($children) { ?>
     <div id="dependent-transactions" style ="border:medium solid grey; text-align:center;">
       <h3><?php print t('Dependent transactions'); ?></h3>
@@ -72,3 +56,4 @@ else {
     <?php }
   } ?>
 
+</div><!-- end transaction-->

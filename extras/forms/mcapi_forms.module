@@ -73,6 +73,7 @@ function mcapi_forms_menu_alter(&$items) {
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/forms/list/%';
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
+  unset($items['admin/accounting/display']);
 }
 
 /**

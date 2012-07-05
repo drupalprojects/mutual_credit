@@ -53,6 +53,7 @@ function mcapi_pending_schema() {
 }
 
 function _pending_setup_actions() {
+  module_load_include('module', 'mcapi_pending');
   save_default_pending_action('mcapi_add_signatories_action', 'transactions_inserted');
   save_default_pending_action('mcapi_signatories_mail_action', 'transactions_inserted');
   drupal_set_message(st('Actions and triggers have been configured for transaction signing.'));
@@ -61,7 +62,6 @@ function _pending_setup_actions() {
 function save_default_pending_action($callback, $trigger) {
   static $weight = 1;
   $actions = mcapi_pending_action_info();
-  module_load_include('module', 'mcapi_pending');
   $form_callback = $callback.'_form';
   $form = $form_callback();
   //special exception for mail_all_signatories_action
@@ -70,9 +70,11 @@ function save_default_pending_action($callback, $trigger) {
   foreach (element_children($form) as $fieldname) {
     $params[$fieldname] = $form[$fieldname]['#default_value'];
   }
-  if (variable_get('mc_signatures_notification_subject', '')) {
+  if ($callback == 'mcapi_signatories_mail_action' && variable_get('mc_signatures_notification_subject', '')) {
     $params['subject'] = variable_get('mc_signatures_notification_subject', '');
     $params['body'] = variable_get('mc_signatures_notification_body', '');
+    variable_del('mc_signatures_notification_subject');
+    variable_del('mc_signatures_notification_body');
   }
   include_once('includes/actions.inc');
   $aid = actions_save($callback, 'transaction', $params, $actions[$callback]['label']);
@@ -92,8 +94,14 @@ function save_default_pending_action($callback, $trigger) {
  * instead the update is done in mcapi.install
  *
  */
+function mcapi_pending_update_7000() {
+  db_rename_table('mc_unsigned', 'mcapi_signatures');
+  $tables = mcapi_pending_schema();
+  db_change_field('mcapi_signatures', 'nid', 'xid', $tables['mcapi_signatures']['fields']['serial']);
+  db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
+}
+
 function mcapi_pending_update_7001() {
   $schema = mcapi_pending_schema();
-  $newfield = $schema['mcapi_signatures']['fields']['serial'];
-  db_change_field('mcapi_signatures', 'xid', 'serial', $newfield);
+  db_change_field('mcapi_signatures', 'xid', 'serial', $schema['mcapi_signatures']['fields']['serial']);
 }

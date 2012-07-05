@@ -82,6 +82,7 @@ function mcapi_menu() {
 
 function transaction_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
+  $form['#action'] = url('transaction/last');
   //the incoming transaction is either from $form_state, or from the build arguments or an empty object
   $transaction = isset($form_state['values']) ? (object)$form_state['values'] : (
     empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? new_transaction() : $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]);
@@ -281,7 +282,7 @@ function mcapi_currency_access_callbacks() {
  * special access function for transactions - NOT hook implementation
  * Grant view access to a transaction based on its state and the specified callback for that currency
  */
-function transaction_view_access($transaction) {
+function transaction_view_access($transaction = NULL) {
   module_load_include('inc', 'mcapi');
   foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
     $callbacks = array_filter(currency_load($flow['currcode'])->transaction_access[$transaction->state]);
@@ -468,7 +469,7 @@ function template_preprocess_transaction(&$variables) {
   $variables['recorded'] = format_date($transaction->created, 'medium');
   $variables['type'] = $transaction->type;
   $variables['classes_array'] = array('transaction', 'transaction-'.$variables['view_mode'], $transaction->type);
-  if (!$variables['xid']) $variables['classes_array'][] = 'preview';
+  if (empty($variables['xid'])) $variables['classes_array'][] = 'preview';
 
   //$transactions must be keyed by xid if there is more than one
   //because the entity key is used to read fieldAPI data
@@ -512,6 +513,7 @@ function matslats_list_tokens($type1, $type2 = NULL) {
 //this runs every time a 'new_transaction()' is created.
 //just helps to make sure the less visible fields have reasonable defaults
 function new_transaction($values = array()) {
+  $currencies = &drupal_static('currencies');
   $transaction = $values + array(
     'xid' => NULL,
     'serial' => NULL,
@@ -520,7 +522,7 @@ function new_transaction($values = array()) {
     'worth' => array(
       LANGUAGE_NONE =>array(
         0 => array(
-          'currcode' => 'def_drup',
+          'currcode' => key($currencies),
           'quantity' => 0
         )
       )
@@ -656,6 +658,7 @@ function transaction_totals($uid, $currcode = NULL, $conditions = array()) {
  * Writers of alternative transaction engines should probably ignore them.
  */
 
+
 /*
  * wrapper around Community Accounting API function transactions_load
  * load a cluster of transactions sharing a serial number
@@ -663,6 +666,14 @@ function transaction_totals($uid, $currcode = NULL, $conditions = array()) {
  */
 function transaction_load($serial) {
   static $serials = array();
+  //if no serial specified replace with the last transaction that this user created.
+  if ($serial == 0) {
+    static $last;
+    if (!$last) {
+      $last = end(transactions_load(array(), array('creator' => $GLOBALS['user']->uid)))->serial;
+    }
+    $serial = $last;
+  }
   //the menu system alone may call this function several times in one page request
   if (empty($serials[$serial])) {
     //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
@@ -707,6 +718,7 @@ function transactions_delete($serials) {
   drupal_set_message('Using undocumented API call to delete transactions');
   transactions_undo($serials, MCPI_CURRENCY_UNDO_DELETE);
 }
+
 
 /*
  * Calculate the balance changes that this transaction proposes
@@ -960,3 +972,4 @@ function _mcapi_validate_mail_element($element, $form_state) {
     form_error($element, t('That e-mail address is not valid.'));
   }
 }
+

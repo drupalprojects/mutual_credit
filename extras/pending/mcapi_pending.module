@@ -506,12 +506,12 @@ function mcapi_signatories_mail_action($transactions, $context) {
 }
 
 function mcapi_signatories_mail_action_form($context = array()) {
+  module_load_include('inc', 'mcapi');
   if (empty($context['body'])) $context['body'] = "[user:name],\n\n".
     t('A transaction for [transaction:worth] has been saved')."\n\n".
     t('More details can be found at:') ."\n[transaction:uri]\n\n".
     t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
     t('The team at [site:name]');
-  module_load_include('inc', 'mcapi');
   $form = _mcapi_mail_template_fields($context);
   $form['send_to_all'] = array(
     '#title' => t('Send to all'),
@@ -520,6 +520,10 @@ function mcapi_signatories_mail_action_form($context = array()) {
     '#default_value' => isset($context['send_to_all']) ? $context['send_to_all'] : 0,
   );
   return $form;
+}
+
+function mcapi_signatories_mail_action_submit($form, $form_state) {
+  return $form_state['values'];
 }
 
 /*

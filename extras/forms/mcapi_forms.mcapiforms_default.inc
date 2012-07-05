@@ -57,6 +57,7 @@ function mcapiform_default_1stparty() {
     'submission' => array(
       'button' => 'Submit',
       'redirect' => 'transaction/%transaction',
+      'feedback' => ''
     ),
     'experience' => array(
       'title' => 'Make a payment',

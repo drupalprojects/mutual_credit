@@ -67,17 +67,20 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       $form['secondperson']['#args'] = array(strtok(':'));
       $form['secondperson']['#me'] = FALSE;
       $form['secondperson']['#required'] = TRUE;
-
       $form['direction'] = array(
         '#type' => $mcapi_form->data['direction']['widget'] ? $mcapi_form->data['direction']['widget'] : 'select',
         '#options' => array(
+          '' => t('Please choose...'),
           'incoming' => $mcapi_form->data['direction']['incoming'],
           'outgoing' => $mcapi_form->data['direction']['outgoing']
         ),
         //if we are loading the page from blank, or rebuilding the form, we set the default values here,
-        '#default_value' =>  $GLOBALS['user']->uid == $transaction->payee ? 'incoming' : 'outgoing',
+        '#default_value' =>  $mcapi_form->data['direction']['preset'],
         '#required' => TRUE
       );
+      if (empty($form['direction']['#default_value'])) {
+        $form['direction']['#default_value'] = $GLOBALS['user']->uid == $transaction->payee ? 'incoming' : 'outgoing';
+      }
       //if we are loading the page from blank, or rebuilding the form, we set the default values here
       //however if we are editing an existing transaction,
       //we have to show the transaction owner and derive the direction and partner from the payer and payee
@@ -136,7 +139,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]
     unset($form['#validate'][array_search('transaction_form_validate', $form['#validate'])]);
   }
-  
+  //if this is the last step then change the #action
+  //this is rather than using redirect which prevents the messagebox
+  if ($form['#step'] == 1 || $mcapi_form->data['experience']['sure_title']) {
+    $form['#action'] = url($_GET['q']);
+  }
+  elseif ($mcapi_form->data['submission']['redirect']) {
+    $form['#action'] = $mcapi_form->data['submission']['redirect'];
+  }
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
     $form['buttons']['submit']['#type'] = 'image_button';
@@ -194,7 +204,7 @@ function theme_mcapi_form($variables) {
   //render the visible stuff first
   if ($form['#step'] == 1) {
     mcapi_unset_recursive($form, '#theme_wrappers');
-    return  token_replace(
+    return token_replace(
       $form['#template'],
       $form,
       array('sanitize' => FALSE)
@@ -270,12 +280,11 @@ function mcapi_forms_form_postsubmit($form, &$form_state) {
   $serial = isset($form_state['values']['serial']) ?
     $form_state['values']['serial'] :
     $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]->serial;
-  $form_state['redirect'] = str_replace(
-    array('%transaction', '%user'),
-    array($serial, $GLOBALS['user']->uid),
-    $form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]->data['submission']['redirect']
-  );
-
+  $feedback = &$form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]->data['submission']['feedback'];
+  if ($feedback) {
+    //this could be more sophisticated by using tokens and transaction_load_last()
+    drupal_set_message($feedback);
+  }
 }
 
 /*

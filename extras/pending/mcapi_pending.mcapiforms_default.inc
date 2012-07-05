@@ -24,7 +24,8 @@ function mcapi_pending_mcapiforms_default() {
     ),
     'submission' => array(
       'button' => t('Yes'),
-      'redirect' => 'transaction/%transaction',
+      'redirect' => '',
+      'feedback' => t('You have signed the transaction')
     ),
     'experience' => array(
       'title' => '',

@@ -226,7 +226,7 @@ function mcapi_schema() {
 }
 
 function mcapi_check_fields() {
-  module_load_install('field');
+  field_info_cache_clear();
   $fields = _update_7000_field_read_fields(array('module' => 'mcapi'), 'field_name');
   field_associate_fields('mcapi');//sets field_config definition to active
   
@@ -360,6 +360,76 @@ function mcapi_field_schema($field) {
   }
 }
 
+
+/*
+ * implements hook_update_n
+ * copy the currency definitions into the new variable, or the new table
+ */
+function mcapi_update_7000() {drush_print('mcapi_update_7000');
+  require_once('mcapi.mcapicurrencies_default.inc');
+  require_once('currencies.inc');
+  //make the tables declared in this module
+  $tables = mcapi_schema();\
+  db_create_table('mcapi_currencies', $tables['mcapi_transactions']);
+  //this was part of mcapi in d6
+  if (db_query("SELECT TRUE FROM {system} WHERE name = 'mc_signatures'")->fetchfield()) {
+    db_delete('system')->condition('name', 'mcapi_pending')->execute();
+    db_update('system')->fields(array('name' => 'mcapi_pending'))->condition('name', 'mc_signatures')->execute();
+  }
+
+  //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
+  $old_currencies = db_query("SELECT * FROM {mc_currencies} c LEFT JOIN {node} n ON c.nid = n.nid ORDER BY c.nid")->fetchAllAssoc('nid');
+  $currency = current(mcapi_mcapicurrencies_default())->data;
+  foreach ($old_currencies as $nid => $old_currency) {drush_print("updating currency $nid");
+    foreach (unserialize($old_currency->data) as $key => $val) {
+      $old_currency->$key = $val;
+    }
+    //get the default currency for this module, and populate with the old default currency
+    //the first currency is called def_drup
+    $currcode = @$default ? strtolower(str_replace(' ', '_', substr($old_currency->title, 0, 8))) : 'def_drup';
+    $currcodes[$nid] = $currcode;//use this later
+    $default = TRUE;
+    $currency->info['currcode'] = $currcode;
+    $currency->human_name = $old_currency->title;
+    $currency->uid = $old_currency->uid;
+    $currency->display = array(
+      'format' => str_replace(array('[', ']', '@icon'), array('@', '', ''), $old_currency->symbol),
+      'divisions' => $old_currency->divisions ? CURRENCY_DIVISION_MODE_CUSTOM : $old_currency->sub,
+      'divisions_setting' => trim($old_currency->divisions)
+    );
+    //there are 3 possible modes for old limits callbacks - none, user or global
+    //we're going to assume for upgrading, that user limits was enabled, since there's no way of knowing
+    $currency->limits_callback = 'limits_personal';
+    $currency->limits_personal['min'] = $old_currency->min;
+    $currency->limits_personal['max'] = $old_currency->max;
+    //update the users' balance limits
+    $uids = db_select('users', 'u')->fields('u', array('uid'))->execute()->fetchCol();
+    $accounts = user_load_multiple($uids);
+    foreach ($accounts as $account) {
+      if (isset($account->mc_limits[$old_currency->nid])) {
+        $edit['limits_personal'][$currcode] = $account->mc_limits[$old_currency->nid];
+        user_save($account, $edit);
+      }
+    }
+    $row = array(
+      'currcode' => $currcode,
+      'data' => $currency
+    );
+    drupal_print($row);
+    drupal_write_record('mcapi_currencies', $row);
+  }
+  //update the field definitions
+  db_query("DELETE FROM {field_config_instance} WHERE entity_type = 'node' AND bundle = 'currency'");
+  foreach (db_query("SELECT field_name FROM {field_config}")->fetchCol() as $fieldname) {
+    db_query("DELETE FROM {field_data_$fieldname} WHERE entity_type = 'node' AND bundle = 'currency'");
+    db_query("DELETE FROM {field_revision_$fieldname} WHERE entity_type = 'node' AND bundle = 'currency'");
+  }
+
+  db_drop_table('mc_currencies');
+  db_drop_table('mc_cache');
+  drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($old_currencies))));
+}
+
 /*
  * implements hook_update_n
  * updates are triggered here for all the modules in the package, because most of them have changed names
@@ -371,7 +441,6 @@ function mcapi_update_7001() {
   _mcapi_module_weights();
   registry_rebuild();
   variable_set('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_ERASE);
-  
   mcapi_check_fields();
   //add the description field, which was intrinsic in v2
   field_create_field(array(
@@ -431,83 +500,6 @@ function mcapi_update_7001() {
     )
   );
   field_create_instance($instance);
-  //cleanup
-  variable_del('mc_tabs_css');
-}
-
-/*
- * implements hook_update_n
- * copy the currency definitions into the new variable, or the new table
- */
-function mcapi_update_7002() {
-  require_once('mcapi.mcapicurrencies_default.inc');
-  require_once('currencies.inc');
-  //make the tables declared in this module
-  foreach (mcapi_schema() as $name => $table) {
-    db_create_table($name, $table);
-  }
-  //this was part of mcapi in d6
-  if (module_exists('mc_signatures')) {
-    db_delete('system')->condition('name', 'mcapi_pending')->execute();
-    db_update('system')->fields('name', 'mcapi_pending')->condition('name', 'mc_signatures')->execute();
-  }
-
-  //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
-  $old_currencies = db_query("SELECT * FROM {mc_currencies} c LEFT JOIN {node} n ON c.nid = n.nid ORDER BY c.nid")->fetchAllAssoc('nid');
-
-  $currency = current(mcapi_mcapicurrencies_default())->data;
-  foreach ($old_currencies as $nid => $old_currency) {
-    foreach (unserialize($old_currency->data) as $key => $val) {
-      $old_currency->$key = $val;
-    }
-    //get the default currency for this module, and populate with the old default currency
-    //the first currency is called def_drup
-    $currcode = @$default ? strtolower(str_replace(' ', '_', substr($old_currency->title, 0, 8))) : 'def_drup';
-    $currcodes[$nid] = $currcode;//use this later
-    $default = TRUE;
-    $currency->info['currcode'] = $currcode;
-    $currency->human_name = $old_currency->title;
-    $currency->uid = $old_currency->uid;
-    $currency->display = array(
-      'format' => str_replace(array('[', ']', '@icon'), array('@', '', ''), $old_currency->symbol),
-      'divisions' => $old_currency->divisions ? CURRENCY_DIVISION_MODE_CUSTOM : $old_currency->sub,
-      'divisions_setting' => trim($old_currency->divisions)
-    );
-    //there are 3 possible modes for old limits callbacks - none, user or global
-    //we're going to assume for upgrading, that user limits was enabled, since there's no way of knowing
-    $currency->limits_callback = 'limits_personal';
-    $currency->limits_personal['min'] = $old_currency->min;
-    $currency->limits_personal['max'] = $old_currency->max;
-    //update the users' balance limits
-    $uids = db_select('users', 'u')->fields('u', array('uid'))->execute()->fetchCol();
-    $accounts = user_load_multiple($uids);
-    foreach ($accounts as $account) {
-      if (isset($account->mc_limits[$old_currency->nid])) {
-        $edit['limits_personal'][$currcode] = $account->mc_limits[$old_currency->nid];
-        user_save($account, $edit);
-      }
-    }
-    $row = array(
-      'currcode' => $currcode,
-      'data' => $currency
-    );
-    drupal_write_record('mcapi_currencies', $row);
-  }
-  //update the field definitions
-  db_query("DELETE FROM {field_config_instance} WHERE entity_type = 'node' AND bundle = 'currency'");
-  foreach (db_query("SELECT field_name FROM {field_config}")->fetchCol() as $fieldname) {
-    db_query("DELETE FROM {field_data_$fieldname} WHERE entity_type = 'node' AND bundle = 'currency'");
-    db_query("DELETE FROM {field_revision_$fieldname} WHERE entity_type = 'node' AND bundle = 'currency'");
-  }
-
-  db_drop_table('mc_currencies');
-  db_drop_table('mc_cache');
-  drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($old_currencies))));
-  currencies_load_refresh();
-
-  //now migrate the transactions...
-  module_load_include('module', 'mcapi');//for the transaction_state definitions
-  module_load_install('field_sql_storage');//for the field saving function
 
   //sort out the field definitions
   db_query("UPDATE {field_config_instance} SET entity_type = 'transaction', bundle = 'transaction' WHERE entity_type = 'node' AND bundle = 'exchange' ");
@@ -516,7 +508,19 @@ function mcapi_update_7002() {
     db_query("UPDATE {field_data_$fieldname} SET entity_type = 'transaction', bundle = 'transaction' WHERE entity_type = 'node' AND bundle = 'exchange'");
     db_query("UPDATE {field_revision_$fieldname} SET entity_type = 'transaction', bundle = 'transaction' WHERE entity_type = 'node' AND bundle = 'exchange'");
   }
+  //cleanup
+  variable_del('mc_tabs_css');
+}
 
+
+function mcapi_update_7002() {
+  //now migrate the transactions...
+  module_load_include('module', 'mcapi');//for the transaction_state definitions
+  module_load_install('field_sql_storage');//for the field saving function
+
+
+  $tables = mcapi_schema();
+  db_create_table('mcapi_transactions', $tables['mcapi_transactions']);
   $states = array(
     -1 => MCPI_CURRENCY_UNDO_ERASE, //TRANSACTION_STATE_UNDONE,
     0 => TRANSACTION_STATE_FINISHED,
@@ -609,10 +613,10 @@ function _mcapi_update_pending(&$states) {
 
   variable_del('mc_signatures_sure');
   variable_del('mc_subtypes');
-  variable_del('mc_signatures_notification_subject');
-  variable_del('mc_signatures_notification_body');
   variable_del('mc_signatures_signoff_subject');
   variable_del('mc_signatures_signoff_body');
+  variable_del('mc_notification_update_body');
+  variable_del('mc_notification_update_subject');
 }
 
 
@@ -649,14 +653,13 @@ function mcapi_update_7003() {
     'mc_exchanges_pending-block_3',//statement is no longer available in a block
     'mc_statement' //statement is no longer available in a block
   ))->execute();
-
 }
 
 /*
  * implements hook_update_n
  * adds the serial field to the transaction table
  */
-function _mcapi_update_7008() {
+function mcapi_update_7004() {
   $tables = mcapi_schema();
   $xid_spec = $tables['mcapi_transactions']['fields']['xid'];
   $xid_spec['description'] = 'auto increment database key';
@@ -674,6 +677,37 @@ function _mcapi_update_7008() {
   db_change_field('mcapi_currencies', 'data', 'data', $tables['mcapi_currencies']['fields']['data']);
   cache_clear_all('currencies', 'cache');
 }
+
+function mcapi_update_7005() {
+  $callback = 'mcapi_transaction_mail_action';
+  $trigger = 'transactions_inserted';
+  $actions = mcapi_action_info();
+  $form_callback = $callback.'_form';
+  $form = $form_callback();
+  //special exception for mail_all_signatories_action
+  if (isset($form['mail'])) $form = $form['mail'];
+  //this is tricky but we're getting the default values out of the action form
+  foreach (element_children($form) as $fieldname) {
+    $params[$fieldname] = $form[$fieldname]['#default_value'];
+  }
+  if ($callback == 'mcapi_signatories_mail_action' && variable_get('mc_signatures_notification_subject', '')) {
+    $params['subject'] = variable_get('mc_notification_subject', '');
+    $params['body'] = variable_get('mc_notification_body', '');
+    variable_del('mc_notification_subject');
+    variable_del('mc_notification_body');
+  }
+  include_once('includes/actions.inc');
+  $aid = actions_save($callback, 'transaction', $params, $actions[$callback]['label']);
+  // Borrowed from trigger_assign_form_submit
+  db_insert('trigger_assignments')->fields(
+    array(
+      'hook' => $trigger,
+      'aid' => $aid,
+      'weight' => 0,
+    )
+  )->execute();
+}
+
 
 function mcapi_update_7009() {
   $tables = mcapi_schema();
