@@ -114,6 +114,23 @@ function mcapi_limits_exception_parse($errors) {
   return implode('; ', $messages);
 }
 
+
+/*
+ * implement hook_token_info_alter
+ */
+function mcapi_signatures_token_info_alter(&$data) {
+  $data['tokens']['transaction'] += array(
+    'payer_diff' => array(
+      'name' => t("Difference to payer"),
+      'description' => t("Total change to payers balance")
+    ),
+    'payee_diff' => array(
+      'name' => t("Difference to payee"),
+      'description' => t("Total change to payees balance"),
+    )
+  );
+}
+
 /*
  * implements hook_form_ctools_export_ui_edit_item_form_alter
  * Add the limits section to the currency form

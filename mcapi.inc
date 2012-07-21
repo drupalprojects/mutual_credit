@@ -540,7 +540,7 @@ function _mcapi_mail_template_fields($context = array()) {
   return array(
     'mail' => array(
       '#title' => t('Mail template'),
-      '#description' => t('Available variables are:') .' '. implode(', ', matslats_list_tokens('site', 'user', 'transaction', 'transactions')),
+      '#description' => t('Available variables are:') .' '. implode(', ', matslats_list_tokens('site', 'user', 'transaction')),
       '#type' => 'fieldset',
       'subject' => array(
         '#title' => t('Subject'),

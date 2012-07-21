@@ -169,7 +169,7 @@ function mcapi_signatures_config($form, $form_state) {
     '#title' => t('Signature notification'),
     '#description' => implode(' ', array(
       t('Compose the email sent to users when a signature is required of them.'),
-      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens('transaction'))
+      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens('transaction', 'user', 'site'))
     )),
     '#type' => 'fieldset',
     'subject' => array(
@@ -677,7 +677,7 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
  */
 function mcapi_signatures_transaction_view_alter($renderable, $type) {
   foreach ($renderable as $array) {
-    if ($array['#transaction']->state == TRANSACTION_STATE_PENDING && $array['#view_mode'] == 'certificate') {
+    if ($array['#view_mode'] == 'certificate' && $array['#transaction']->state == TRANSACTION_STATE_PENDING) {
       $imagefile = url(drupal_get_path('module', 'mcapi_signatures') . '/pending.png');
       $declaration = "background-image:url(\"$imagefile\"); background-repeat: no-repeat;";
       drupal_add_css('.transaction.pending{'.$declaration.'}', array('type' => 'inline'));

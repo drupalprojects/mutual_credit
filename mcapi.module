@@ -428,7 +428,7 @@ function transaction_label($transaction){
  * build a render array for any number of transactions
  * first arg can be one or an array
  */
-function transaction_view($transactions, $view_mode = 'certificate') {
+function transaction_view($transactions, $view_mode = 'certificate', $token_string = '') {
   if (!is_array($transactions)) {
     $transactions = array($transactions->xid => $transactions);
   }
@@ -446,11 +446,19 @@ function transaction_view($transactions, $view_mode = 'certificate') {
     }
   }
   foreach ($clusters as $cluster) {
-    $renderable[] = array(
-      '#theme' => 'transaction',
-      '#transaction' => $cluster,
-      '#view_mode' => $view_mode,
-    );
+    if ($view_mode == 'token') {
+      $params = array('transaction' => $cluster, 'user' => $GLOBALS['user']);
+      $renderable[$cluster->serial] = array(
+        '#markup' =>token_replace($token_string, $params)
+      );
+    }
+    else {
+      $renderable[$cluster->serial] = array(
+        '#theme' => 'transaction',
+        '#transaction' => $cluster,
+      );
+    }
+    $renderable[$cluster->serial]['#view_mode'] = $view_mode;
   }
   $type = 'transaction';
   drupal_alter(array('transaction_view', 'entity_view'), $renderable, $type);

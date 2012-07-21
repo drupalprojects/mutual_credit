@@ -4,12 +4,8 @@
  * implements hook_tokens
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  if ($type == 'transaction') {
-    return mcapi_tokens_transaction($tokens, $data[$type], $options);
-  }
-}
-
-function mcapi_tokens_transaction($tokens, $transaction, $options) {
+  if ($type != 'transaction') return;
+  $transaction = &$data['transaction'];
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
   $language_code = NULL;
@@ -53,13 +49,16 @@ function mcapi_tokens_transaction($tokens, $transaction, $options) {
       case 'payer_diff':
       case 'payee_diff':
         $worth = array();
-        $diff = _transactions_diff($transactions);
+        $diff = _transactions_diff(array($transaction));
         $uid = $name == 'payer_diff' ? $transaction->payer : $transaction->payer;
         foreach ($diff[$uid] as $currcode => $quantities) {
           $worth[] = array('currcode' => $currcode, 'quantity' => array_sum($quantities));
         }
         $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $worth, 'sentence');
         $replacements[$original] = drupal_render($element);
+      case 'url':
+        //the token module handles this, but it mustn't be treated as 'default', below
+        break;
       default: //hopefully a field API field
         //we don't want all the gumph around it, so just render the children
         $render_transaction = field_view_field('transaction', $transaction, $name, 'default');
@@ -99,14 +98,6 @@ function mcapi_token_info() {
     'creator' => array(
       'name' => t('Creator'),
       'description' => t("The user who first recorded the transaction"),
-    ),
-    'payer_diff' => array(
-      'name' => t("Difference to payer"),
-      'description' => t("Total change to payers balance")
-    ),
-    'payee_diff' => array(
-      'name' => t("Difference to payee"),
-      'description' => t("Total change to payees balance"),
     )
   );
 
