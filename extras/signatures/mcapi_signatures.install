@@ -1,20 +1,31 @@
 <?php
 //Id;
 
-function mcapi_pending_install() {
+function mcapi_signatures_install() {
   //there's no easy way to iterate through the ctools currency definitions, update them and save them
   _pending_setup_actions();
-
+  //left overs from renamed mcapi_pending
+  db_delete('actions')->condition('callback', 'mcapi_add_signatories_action')->execute();
+  
+  $mcapi_signed_off_notify_template = array(
+    'subject' =>  st('Transaction signed off'),
+    'body' => st('The following transaction has been signed off: @token', array('@token' => '[transaction:uri]'))
+  );
+  variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
+  $mcapi_sign_notify_template = array(
+    'subject' =>  st('Your signature is required'),
+    'body' => st('Your signature is required on @token', array('@token' => '[transaction:uri]'))
+  );
+  variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
 }
 
-function mcapi_pending_uninstall() {
+function mcapi_signatures_uninstall() {
   module_load_include('module', 'mcapi_pending');
   $actions = array_keys(mcapi_pending_action_info());
   $aids = db_select('actions', 'a')->fields('a', array('aid'))->condition('callback', $actions)->execute()->fetchCol();
   foreach ($aids as $aid) {
     actions_delete($aid);
   }
-
   if (module_exists('views')) {
     $view = views_get_view('signatures');
     if($view) {
@@ -22,12 +33,11 @@ function mcapi_pending_uninstall() {
     }
   }
 }
-
 /**
  * Implementation of hook_schema)().
  * creates a table for storing signatures needed on pending transactions
  */
-function mcapi_pending_schema() {
+function mcapi_signatures_schema() {
   $schema['mcapi_signatures'] = array(
     'description' => 'signatories needed on pending transactions',
     'fields' => array(
@@ -94,14 +104,9 @@ function save_default_pending_action($callback, $trigger) {
  * instead the update is done in mcapi.install
  *
  */
-function mcapi_pending_update_7000() {
+function mcapi_signatures_update_7000() {
   db_rename_table('mc_unsigned', 'mcapi_signatures');
-  $tables = mcapi_pending_schema();
+  $tables = mcapi_signatures_schema();
   db_change_field('mcapi_signatures', 'nid', 'xid', $tables['mcapi_signatures']['fields']['serial']);
   db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
-}
-
-function mcapi_pending_update_7001() {
-  $schema = mcapi_pending_schema();
-  db_change_field('mcapi_signatures', 'xid', 'serial', $schema['mcapi_signatures']['fields']['serial']);
 }

@@ -56,7 +56,7 @@ function mcapiform_default_1stparty() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/%transaction',
+      'redirect' => '',
       'feedback' => ''
     ),
     'experience' => array(
@@ -114,7 +114,7 @@ function mcapiform_default_3rdparty() {
     ),
     'submission' => array(
       'button' => 'Submit',
-      'redirect' => 'transaction/%transaction',
+      'redirect' => '',
     ),
     'experience' => array(
       'title' => 'Record a transaction',

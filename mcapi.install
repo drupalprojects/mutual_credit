@@ -267,7 +267,7 @@ function _mcapi_module_weights() {
   $weights = array(
     -1 => array('mcapi'),//before ctools
     1 => array('mcapi_forms', 'mcapi_limits', 'intertrading'),
-    2 => array('mcapi_pending', 'mcapi_sms'),
+    2 => array('mcapi_signatures', 'mcapi_sms'),
     3 => array('mcapi_index_views', 'mcapi_sms')
   );
   foreach ($weights as $weight => $modules) {
@@ -373,8 +373,8 @@ function mcapi_update_7000() {drush_print('mcapi_update_7000');
   db_create_table('mcapi_currencies', $tables['mcapi_transactions']);
   //this was part of mcapi in d6
   if (db_query("SELECT TRUE FROM {system} WHERE name = 'mc_signatures'")->fetchfield()) {
-    db_delete('system')->condition('name', 'mcapi_pending')->execute();
-    db_update('system')->fields(array('name' => 'mcapi_pending'))->condition('name', 'mc_signatures')->execute();
+    db_delete('system')->condition('name', 'mcapi_signatures')->execute();
+    db_update('system')->fields(array('name' => 'mcapi_signatures'))->condition('name', 'mc_signatures')->execute();
   }
 
   //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
@@ -583,7 +583,7 @@ function mcapi_update_7002() {
     if ($transaction->state == TRANSACTION_STATE_PENDING) $pending = TRUE;
   }
   if (empty($pending)) {
-    module_disable(array('mcapi_pending'));
+    module_disable(array('mcapi_signatures'));
   }
 
   db_drop_table('mc_exchanges');
@@ -605,7 +605,7 @@ function mcapi_user_presave(&$edit, $account, $category) {
 function _mcapi_update_pending(&$states) {
   $version  = db_query("SELECT schema_version FROM {system} WHERE name = 'mc_signatures'")->fetchField();
   if ($version < 1) return;
-  module_enable(array('mcapi_pending'));
+  module_enable(array('mcapi_signatures'));
   db_query('INSERT into {mcapi_signatures} SELECT nid as serial, uid, 1 as pending FROM {mc_unsigned}');
   $states[1] = TRANSACTION_STATE_PENDING;
 

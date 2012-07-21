@@ -125,10 +125,9 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     switch(variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE)) {
       case MCPI_CURRENCY_UNDO_DELETE: //actually delete
         db_delete("mcapi_transactions")->condition('serial', $serials)->execute();
-        return;
+        break;
       case MCPI_CURRENCY_UNDO_REVERSE:
         $transactions = $this->load(NULL, array('serial' => $serials));
-        //transactions which are 'undone' with this method have to be marked so they cannot be undone again
         foreach($transactions as $transaction) {
           $changetype[] = $transaction->serial;
           $reversed = clone $transaction;
@@ -143,8 +142,9 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         transactions_insert($reverseds, TRUE);
         //continue
       case MCPI_CURRENCY_UNDO_ERASE: //mark deleted
-        $this->state($serials, TRANSACTION_STATE_UNDONE);
+        //the state change should have already happened in the wrapper function
     }
+    transactions_state($serials, TRANSACTION_STATE_UNDONE);
   }
   /*
    * change the state of a transaction and its dependents
@@ -155,6 +155,8 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       ->fields(array('state' => $new_state))
       ->condition('serial', $serials)
       ->execute();
+
+    $this->resetCache();
   }
 
   /*
@@ -172,11 +174,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)), 0) as gross_in,
       COALESCE(SUM(COALESCE(w1.worth_quantity, 0)), 0) as gross_out,
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0)), 0) as balance,
-      COUNT(t.xid) as count
+      COUNT(w1.worth_quantity) as count
       FROM {mcapi_transactions} t
       LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
       LEFT JOIN {field_data_worth} w2 ON t.xid = w2.entity_id AND w2.worth_currcode = '$currcode' AND t.payee = $uid
-      WHERE t.payer = $uid OR t.payee = $uid";
+      WHERE (t.payer = $uid OR t.payee = $uid)";
     if ($result = db_query($query . mcapi_parse_conditions($conditions))->fetchAssoc()) {
       return $result;
     }

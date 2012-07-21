@@ -153,8 +153,10 @@ function mcapi_accounting() {
 function _mcapi_block_settings($delta) {
   $currencies = &drupal_static('currencies');
   $settings = variable_get('block_'. $delta, array('currcodes' => array_keys($currencies), 'user_source' => 0));
-  if (empty($settings['user_source'])) {
-    if (arg(0) == 'user') $settings['account'] = user_uid_optional_load();
+  if ($settings['user_source'] == 0) {
+    if (arg(0) == 'user') {
+      $settings['account'] = user_uid_optional_load(arg(1));
+    }
     else return;
   }
   else {
@@ -237,7 +239,6 @@ function _transaction_form(&$form, &$form_state, $transaction) {
   $form['buttons']['#weight'] = 25;
   $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_form_submit');
-  $form_state['redirect'] = 'user';
 }
 
 /*
@@ -253,9 +254,8 @@ function transaction_form_validate($form, &$form_state) {
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   try{
-    $transactions = transaction_insert_new($transaction, FALSE);
     //keep a copy of the built transaction, and its dependencies for validation elsewhere
-    $form_state['transactions'] = $transactions;
+    $form_state['transactions'] = transaction_insert_new($transaction, FALSE);
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
@@ -281,7 +281,6 @@ function transaction_form_submit($form, &$form_state) {
   db_query('INSERT INTO {mcapi_submitted} (form_build_id, time) VALUES (:form_build_id, :time)',
     array(':form_build_id' => $form_build_id, ':time' => REQUEST_TIME)
   );
-  
   form_state_values_clean($form_state);
   $transaction = (object)$form_state['values'];
   //build the transaction object from the $form_state[values]
@@ -291,10 +290,6 @@ function transaction_form_submit($form, &$form_state) {
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
-  }
-
-  if (!isset($form_state['redirect'])) {
-    $form_state['redirect'] = 'transaction/'.$transaction->serial;
   }
   $form_state['values']['serial'] = $transaction->serial;
 }
@@ -405,9 +400,12 @@ function mcapi_validate_state(&$element, &$form_state) {
  * Validate callback for transaction form 'type' element
  */
 function mcapi_validate_ttype(&$element, $form_state) {
-  // _element_validate() checks select widgets in the same way
-  if (in_array( $element['#value'], module_invoke_all('mcapi_info_types'))) return;
-  form_error($element, t('Invalid transaction type.'));
+  $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
+  foreach ($values as $value) {
+    if (!in_array($value, module_invoke_all('mcapi_info_types'))) {
+      form_error($element, t('Invalid transaction type: @value', array('@value' => $value)));
+    }
+  }
 }
 
 /*
@@ -451,7 +449,6 @@ function currency_access($op, $currcode, $account = NULL) {
  * if $picker_options is NULL it returns a hidden field
  */
 function currency_picker_element(array $currcodes, $default = NULL, $multiple = FALSE) {
-  if (empty($currcodes)) drupal_set_message(print_r(debug_backtrace(), 1), 'error');
   if (count($currcodes) < 2) {
     return array(
       '#type' => 'hidden',
@@ -485,6 +482,7 @@ function _currency_picker_element_options(array $currcodes) {
 function mcapi_transaction_mail_action($transactions, $params) {
   $params['transactions'] = $transactions;
   $transaction = current($transactions);
+  if ($transaction->state != TRANSACTION_STATE_FINISHED) return;
   _mcapi_transaction_mail_action(array($transaction->payer, $transaction->payee), $params);
 }
 
@@ -508,36 +506,58 @@ function _mcapi_transaction_mail_action($uids, $params) {
  * settings form callback for action mcapi_transaction_mail_action
  */
 function mcapi_transaction_mail_action_form($context = array()) {
-  if (empty($context['body'])) $context['body'] = "[user:name],\n\n".
-    t('A transaction for [transaction:worth] has been saved')."\n\n".
-    t('More details can be found at:') ."\n[transaction:uri]\n\n".
-    t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
-    t('The team at [site:name]');
-  return _mcapi_mail_template_fields($context);
+  if (empty($context['body'])) {
+    $context['body'] = "[user:name],\n\n".
+      t('A transaction for [transaction:worth] has been finalised')."\n\n".
+      t('More details can be found at:') ."\n[transaction:uri]\n\n".
+      t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
+      t('The team at [site:name]');
+  }
+  if (empty($context['subject'])) {
+    $context['subject'] = t('Transaction saved with [transaction:partner]');
+  }
+  $form = _mcapi_mail_template_fields($context);
+  $form['transaction_types'] = _transaction_type_selector(@$context['transaction_types'], TRUE);
+  $form['description'] = t('Only send for these transaction types.');
+  unset($form['transaction_types']['#options']['auto']);
+  return $form;
 }
 
-function _mcapi_mail_template_fields($context) {
+function _transaction_type_selector($default = array(), $multiple = TRUE) {
+  $types = drupal_map_assoc(mcapi_get_types());
+  return array(
+    '#title' => $multiple ? t('Transaction types') : t('Transaction type'),
+    '#type' => 'select',
+    '#multiple' => $multiple,
+    '#options' => $types,
+    '#default_value' => $default,
+    '#required' => TRUE,
+    '#element_validate' => array('mcapi_validate_ttype')
+  );
+}
+
+function _mcapi_mail_template_fields($context = array()) {
   return array(
     'mail' => array(
       '#title' => t('Mail template'),
-      '#description' => t('Available variables are: ') . implode(', ', matslats_list_tokens('site', 'user', 'transaction', 'transactions')),
+      '#description' => t('Available variables are:') .' '. implode(', ', matslats_list_tokens('site', 'user', 'transaction', 'transactions')),
       '#type' => 'fieldset',
       'subject' => array(
         '#title' => t('Subject'),
         '#type' => 'textfield',
-        '#default_value' => empty($context['subject']) ? t('Exchange saved with [transaction:partner]') : $context['subject'],
+        '#default_value' => empty($context['subject']) ? '' : $context['subject'],
         '#required' => TRUE,
       ),
       'body' => array(
         '#title' => t('Body'),
         '#type' => 'textarea',
-        '#default_value' => empty($context['body']) ? $def_bod : $context['body'],
+        '#default_value' => empty($context['body']) ? '' : $context['body'],
         '#required' => TRUE,
         '#weight' => 1
       ),
       'cc' => array(
         '#title' => t('Carbon copy'),
-        '#description' => t('Send an extra copy'),
+        '#description' => t('Send an extra copy to this address'),
         '#type' => 'textfield',
         '#default_value' => empty($context['cc']) ? '' : $context['cc'],
         '#element_validate' => array('_mcapi_validate_mail_element'),

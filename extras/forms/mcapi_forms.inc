@@ -39,14 +39,16 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   $form['#step'] = $form_state['step'];
   $form['#theme'] = 'mcapi_form';
 
+  //this might not be the way to build a 2 step form.
+  //All the validation callbacks need to check the step because all the important fields are in step one only.
   if ($form['#step'] == 1) {
     $form['#template'] = $mcapi_form->data['experience']['template'];
     $form['creator']['#type'] = 'hidden';
     $form['state']['#type'] = 'hidden';
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
-    $form['type']['#type'] = 'hidden';
+    $form['type']['#type'] = 'value';
     $form['type']['#value'] = $mcapi_form->name;
-
+    
      //participants
     if ($mcapi_form->data['perspective'] == 3) {
       foreach (array('payer', 'payee') as $participant) {
@@ -133,19 +135,12 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
     }
     else {//landing directly on step 2
-      $form['#preview'] = transaction_view(array($transaction->xid => $transaction), 'certificate');
+      $form['#preview'] = transaction_view(array($transaction->xid => $transaction), $mcapi_form->data['experience']['sure_format']);
     }
+
     //the transaction properties were validated in step 1
     //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]
-    unset($form['#validate'][array_search('transaction_form_validate', $form['#validate'])]);
-  }
-  //if this is the last step then change the #action
-  //this is rather than using redirect which prevents the messagebox
-  if ($form['#step'] == 1 || $mcapi_form->data['experience']['sure_title']) {
-    $form['#action'] = url($_GET['q']);
-  }
-  elseif ($mcapi_form->data['submission']['redirect']) {
-    $form['#action'] = $mcapi_form->data['submission']['redirect'];
+    unset($form['#validate']);
   }
   //save button
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
@@ -155,12 +150,11 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   else {
     $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
+  array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
 
   //this may help with the validation and submission
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
-
   $form['#validate'][] = 'mcapi_forms_validate';
-  array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
 }
 
 
@@ -272,19 +266,21 @@ function mcapi_forms_validate($form, &$form_state) {
 function mcapi_forms_form_presubmit($form, &$form_state) {
   $form_state['values'] = $form_state['storage'];
 }
+
 /*
  * Last submit callback for default transaction form
  * this has to be after the transaction id is created and before the end of form processing
  */
 function mcapi_forms_form_postsubmit($form, &$form_state) {
-  $serial = isset($form_state['values']['serial']) ?
-    $form_state['values']['serial'] :
-    $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]->serial;
-  $feedback = &$form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]->data['submission']['feedback'];
-  if ($feedback) {
+  $submission = &$form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]->data['submission'];
+  if ($submission['feedback']) {
     //this could be more sophisticated by using tokens and transaction_load_last()
-    drupal_set_message($feedback);
+    drupal_set_message($submission['feedback']);
   }
+  if (empty($submission['redirect'])) {
+    $submission['redirect'] = 'transaction/' . $form_state['values']['serial'];
+  }
+  drupal_goto($submission['redirect']);
 }
 
 /*

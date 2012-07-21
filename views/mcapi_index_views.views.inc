@@ -39,7 +39,7 @@ function mcapi_index_views_views_data() {
 
   $data['mcapi_index']['uid1'] = array(
     'title' => t('1st user'), // The item it appears as on the UI,
-    'help' => t('The the transactor, whose perspective we are looking from'),
+    'help' => t('The transactor, whose perspective we are looking from'),
     'field' => array(
       'handler' => 'views_handler_field',
     ),
@@ -183,15 +183,15 @@ function mcapi_index_views_views_data() {
  * anything (field) that is joined to mcapi_transactions should be joined to mcapi_index also
  * except worth field, which is copied in the table already
  */
-function mcapi_index_views_views_data_alter(&$data) {
-  foreach ($data as $handler => $info) {
-    //ignore the fields we konw about, this is just intended for fields added via field API
-    if (in_array($handler, array('field_data_worth', 'mcapi_signatures'))) continue;
+function mcapi_index_views_views_data_alter(&$tables) {
+  foreach ($tables as $table => $info) {
+    //ignore the fields we know about, this is just intended for fields added via field API
+    if (in_array($table, array('field_data_worth', 'mcapi_signatures'))) continue;
     if (isset($info['table']['join']['mcapi_transactions'])) {
-      $data[$handler]['table']['join']['mcapi_index'] = $info['table']['join']['mcapi_transactions'];
+      $tables[$table]['table']['join']['mcapi_index'] = $info['table']['join']['mcapi_transactions'];
       $fieldname = $info['entity_id']['field']['moved to'][1];
       if (is_array($info[$fieldname]['field']['entity_tables'])) {
-        $data[$handler][$fieldname]['field']['entity_tables']['mcapi_index'] = 'transaction';
+        $tables[$table][$fieldname]['field']['entity_tables']['mcapi_index'] = 'transaction';
       }
     }
   }

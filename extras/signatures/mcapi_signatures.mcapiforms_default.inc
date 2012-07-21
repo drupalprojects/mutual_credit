@@ -31,7 +31,7 @@ function mcapi_pending_mcapiforms_default() {
       'title' => '',
       'template' => '',
       'sure_title' => t('Sign transaction'),
-      'sure_format' => 'certificate',
+      'sure_format' => 'sentence',
     ),
     'buttons' => array(
       'submit' => t('Save'),

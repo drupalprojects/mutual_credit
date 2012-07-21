@@ -2,6 +2,7 @@
 // $Id:
 
 function accountant_ui_views_default_views() {
+  currencies_load(); //because this seems to run before mcapi_init()
   $currencies = &drupal_static('currencies');
   $view = new view;
   $view->name = 'transactions_all';

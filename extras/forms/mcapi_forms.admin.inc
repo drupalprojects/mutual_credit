@@ -195,43 +195,12 @@ function _edit_mcapi_form(&$form, &$form_state) {
   else {
     $form['worth']['preset'][LANGUAGE_NONE][0]['#config_mode'] = TRUE;
   }
-
-  $form['submission'] = array(
-    '#title' => t('Form submission'),
-    '#description' => t("Settings for @field", array('@field' => t('Submit'))),
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => empty($mcapi_form),
-    'button' => array(
-      '#title' => t('Save button'),
-      '#description' => t("The text to appear on the 'save' button, or the absolute url of an image"),
-      '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['submission']['button']) ? $mcapi_form['submission']['button'] : t('Submit'),
-      '#required' => TRUE,
-    ),
-    'redirect' => array(
-      '#title' => t('Destination'),
-      '#description' => t('Goes to the new transaction certificate by default'),
-      '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['submission']['redirect']) ? $mcapi_form['submission']['redirect'] : '',
-      '#element_validate' => array('mcapi_path_validate'),
-      '#weight' => 1,
-    ),
-    'feedback' => array(
-      '#title' => t('Message'),
-      '#description' => t('Contents of the message box'),
-      '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['submission']['feedback']) ? $mcapi_form['submission']['feedback'] : '',
-      '#weight' => 1,
-    ),
-    '#weight' => 20,
-  );
+  //we need to know the view modes of the transaction entity, to choose for the preview page
   $entity = entity_get_info('transaction');
   foreach ($entity['view modes'] as $name => $mode) {
     if ($name == 'token') continue;//TODO support the token module for transaction previews
     $view_modes[$name] = $mode['label'];
   }
-
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
@@ -266,6 +235,37 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#options' => $view_modes,
       '#default_value' => isset($mcapi_form['experience']['sure_format']) ? $mcapi_form['experience']['sure_format'] : 'certificate',
     )
+  );
+
+  $form['submission'] = array(
+    '#title' => t('Form submission'),
+    '#description' => t("Settings for @field", array('@field' => t('Submit'))),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => empty($mcapi_form),
+    'button' => array(
+      '#title' => t('Save button'),
+      '#description' => t("The text to appear on the 'save' button, or the absolute url of an image"),
+      '#type' => 'textfield',
+      '#default_value' => isset($mcapi_form['submission']['button']) ? $mcapi_form['submission']['button'] : t('Submit'),
+      '#required' => TRUE,
+    ),
+    'redirect' => array(
+      '#title' => t('Destination'),
+      '#description' => t('Goes to the new transaction certificate by default'),
+      '#type' => 'textfield',
+      '#default_value' => isset($mcapi_form['submission']['redirect']) ? $mcapi_form['submission']['redirect'] : '',
+      '#element_validate' => array('mcapi_path_validate'),
+      '#weight' => 1,
+    ),
+    'feedback' => array(
+      '#title' => t('Message'),
+      '#description' => t('Contents of the message box'),
+      '#type' => 'textfield',
+      '#default_value' => isset($mcapi_form['submission']['feedback']) ? $mcapi_form['submission']['feedback'] : '',
+      '#weight' => 1,
+    ),
+    '#weight' => 20,
   );
 }
 
@@ -313,10 +313,10 @@ function mcapi_forms_ajax_settings($form, &$form_state) {
  * form validation callback for edit_mcapi_form
  */
 function mcapi_forms_template_validate($form, &$form_state) {
+  register_shutdown_function('menu_rebuild');
   $values = &$form_state['values'];
-  //filter the templates and check that each one with a body has a title
-  
-  //check that direction widget is visible if its 1st person and direction is not preset
+  if (empty($values['experience']['template'])) return;
+  //check that the critical transaction fields are either present in the template OR preset
   $required_fields = array('worth');
   $required_fields += $values['perspective'] == 1 ? array('secondperson', 'direction') : array('payer', 'payee');
   foreach ($required_fields as $fieldname) {
@@ -326,7 +326,6 @@ function mcapi_forms_template_validate($form, &$form_state) {
       ));
     }
   }
-  register_shutdown_function('menu_rebuild');
 }
 
 function mcapi_forms_exists($machine_name, $element, &$form_state) {

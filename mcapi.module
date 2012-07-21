@@ -48,12 +48,7 @@ define('TRANSACTION_STATE_FINISHED', 1);
 //we don't actually want to discount the deleted transaction
 //so its state constant will be > 0
 //depending on the delete mode, erased transactions may or may not be counted
-if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE) {
-  define('TRANSACTION_STATE_UNDONE', 2);
-}
-else {
-  define('TRANSACTION_STATE_UNDONE', 0);
-}
+define('TRANSACTION_STATE_UNDONE', variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE ? 2: 0);
 
 //the transaction form expects args in $form_state[build_info]
 //This constant and another in the forms module ensures the argument position is not determined by chance
@@ -82,7 +77,6 @@ function mcapi_menu() {
 
 function transaction_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
-  $form['#action'] = url('transaction/last');
   //the incoming transaction is either from $form_state, or from the build arguments or an empty object
   $transaction = isset($form_state['values']) ? (object)$form_state['values'] : (
     empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? new_transaction() : $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]);
@@ -186,6 +180,7 @@ function mcapi_mcapi_info_types() {
   }
   return $types;
 }
+
 /*
  * utility
  * gather up all the transaction states from the hooks and present them in a given format
@@ -343,6 +338,10 @@ function mcapi_block_view($delta) {
   $settings = _mcapi_block_settings($delta);
   if (empty($settings)) return;
   $render_array = array('#theme' => 'transaction_totals');
+  if (empty($settings['currcodes'])) {
+    $settings['currcodes'] = array_keys(currencies_load($settings['account']));
+  }
+  
   foreach ($settings['currcodes'] as $currcode) {
     $render_array['#totals'][$currcode] = transaction_totals($settings['account']->uid, $currcode);
   }
@@ -369,7 +368,7 @@ function mcapi_block_configure($delta) {
       0 => t('Show as part of profile being viewed'),
       1 => t('Show for logged in user')
     ),
-    '#default_value' => $settings['user_source']
+    '#default_value' => intval($settings['user_source'])
   );
   return $form;
 }
@@ -394,7 +393,7 @@ function theme_transaction_totals(&$variables) {
     $balance = theme('worth_field', array('currcode' => $currcode, 'quantity' => $totals->balance));
     $income = theme('worth_field', array('currcode' => $currcode, 'quantity' => $totals->gross_in));
     $output = '<div class="balance">'. $balance ."</div>";
-    $output .= '<div class="gross-in">'.t('Income: @quant', array('@quant' => $income)) ."</div>";
+    $output .= '<div class="gross-in">'.t('Income: !quant', array('!quant' => $income)) ."</div>";
     $output .= '<div class="count">'.t('Transactions: @count', array('@count' => $totals->count)) ."</div>";
     $outputs[] = "<div class = \"transaction-totals $currcode\">$output</div>";
   }
@@ -468,8 +467,9 @@ function template_preprocess_transaction(&$variables) {
   $variables['state'] = $transaction->state;
   $variables['recorded'] = format_date($transaction->created, 'medium');
   $variables['type'] = $transaction->type;
-  $variables['classes_array'] = array('transaction', 'transaction-'.$variables['view_mode'], $transaction->type);
-  if (empty($variables['xid'])) $variables['classes_array'][] = 'preview';
+  $states = mcapi_get_states();
+  $variables['classes_array'] = array('transaction', $variables['view_mode'], $transaction->type, strtolower($states[TRANSACTION_STATE_PENDING]));
+  if (empty($transaction->xid)) $variables['classes_array'][] = 'preview';
 
   //$transactions must be keyed by xid if there is more than one
   //because the entity key is used to read fieldAPI data
@@ -514,6 +514,7 @@ function matslats_list_tokens($type1, $type2 = NULL) {
 //just helps to make sure the less visible fields have reasonable defaults
 function new_transaction($values = array()) {
   $currencies = &drupal_static('currencies');
+  //we do not set a default state because the state must be set using transaction_state
   $transaction = $values + array(
     'xid' => NULL,
     'serial' => NULL,
@@ -529,9 +530,9 @@ function new_transaction($values = array()) {
     ),
     'creator' => $GLOBALS['user']->uid,
     'created' => REQUEST_TIME,
-    'state' => TRANSACTION_STATE_FINISHED,
     'type' => 'default',
     'extra' => array(),
+    'state' => NULL
   );
   return (object)$transaction;
 }
@@ -560,7 +561,6 @@ function new_transaction($values = array()) {
  * Community Accounting API function
  */
 function transactions_load($xids = array(), $conditions = array(), $reset = FALSE) {
-
   $transactions = entity_get_controller('transaction')->load($xids, $conditions, $reset);
   //$transactions = entity_load('transaction', $xids, $conditions, $reset);
   module_invoke_all('entity_load', $transactions, 'transaction');
@@ -573,6 +573,7 @@ function transactions_load($xids = array(), $conditions = array(), $reset = FALS
  * N.B. Contrib modules would normally call wrapper function transaction_insert_new()
  * which fires the hook_transactions inserted
  * $transactions is a flat array
+ * All $transactions will be given the same serial numbers
  */
 function transactions_insert(array &$transactions, $really = TRUE) {
   //put all the transactions side by side ready for the entity controller to validate and insert
@@ -583,21 +584,28 @@ function transactions_insert(array &$transactions, $really = TRUE) {
     foreach ($transactions as $transaction) {
       field_attach_insert('transaction', $transaction);
     }
+    //all the transactions have the same serial, and the same state, so we just use the last one from the foreach
+    //tell the system that the new transaction is going from NULL to whatever the form specified
+    transactions_state(array($transaction->serial), $transaction->state);
   }
 }
 
 /*
  * Community Accounting API function
+ * Undo according to the appropriate delete mode.
  */
 function transactions_undo(array $serials) {
-  entity_get_controller('transaction')->undo($serials);
-  //depends on the undo mode
-  if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_DELETE) {
-    foreach (transactions_load(NULL, array('serial' => $serials)) as $transaction) {
+  $deletemode = variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE);
+  if ($deletemode == MCPI_CURRENCY_UNDO_DELETE) {
+    foreach ($serials as $serial) {
+      $transaction = transaction_load($serial);
+      //depending on the undo mode, we might want to do the whole entity_delete thing.
       field_attach_delete('transaction', $transaction);
       module_invoke_all('entity_delete', $transaction, 'transaction');
     }
   }
+  entity_get_controller('transaction')->undo($serials);
+
   module_invoke_all('transactions_undone', $serials);
   if (module_exists('rules')) {
     rules_invoke_event('transactions_undone', array($serials));
@@ -605,16 +613,21 @@ function transactions_undo(array $serials) {
 }
 /*
  * Community Accounting API function
- * re the transaction, but only change the state
+ * change or set the state of a transaction, and pull triggers
  * should be called within try-catch
  * N.B. Validation should happen OUTSIDE of this function
+ * This API function unfortunately doesn't act on a transaction object, but merely affects the database.
  */
 function transactions_state(array $serials, $new_state) {
-  $old_state = transaction_load(current($serials))->state;
+  foreach ($serials as $serial) {
+    //we can't assume all of these are in the same state, so they might be following different workflow paths, so we have to deal with them individually
+    $old_clusters[$serial] = transaction_load($serial);
+  }
   entity_get_controller('transaction')->state($serials, $new_state);
-  module_invoke_all('transactions_state', $serials, $old_state, $new_state);
+  //for the following hooks, we send the old transactions in full, and the new state
+  module_invoke_all('transactions_state', $old_clusters, $new_state);
   if (module_exists('rules')) {
-    rules_invoke_event('transactions_state', array($serials), $old_state, $new_state);
+    rules_invoke_event('transactions_state', $old_clusters, $new_state);
   }
 }
 
@@ -678,7 +691,7 @@ function transaction_load($serial) {
   if (empty($serials[$serial])) {
     //if this isn't done globally, entity_crud_get_info in the contributed 'entity' module, tries to load the controller without loading the file
     $transactions = transactions_load(array(), array('serial' => $serial));
-    if (empty($transactions))throw new Exception(t('There is no transaction @serial', array('@serial' => $serial)));
+    if (empty($transactions))throw new Exception(t('Unable to load transaction @serial', array('@serial' => $serial)));
     //take the first one off and make the rest its children, preserving their keys
     $transactions = array_reverse($transactions, TRUE);
     $transaction = array_pop($transactions);
@@ -717,26 +730,6 @@ function transaction_insert_new($transaction, $really = TRUE) {
 function transactions_delete($serials) {
   drupal_set_message('Using undocumented API call to delete transactions');
   transactions_undo($serials, MCPI_CURRENCY_UNDO_DELETE);
-}
-
-
-/*
- * Calculate the balance changes that this transaction proposes
- * by convention, if the transaction state < 0 it is NOT COUNTED
- */
-function _transactions_diff($transactions) {
-  $diff = array();
-  foreach ($transactions as $transaction) {
-    if ($transaction->state <= 0)
-    foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
-      $quant = $transaction->state <= 0 ? 0 : $flow['quantity'];
-      //we can't prepare the array in advance with zeros so += and -= throws notices
-      //instead we just build up an array and add them up when we need them
-      $diff[$transaction->payer][$flow['currcode']][] = $quant;
-      $diff[$transaction->payee][$flow['currcode']][] = $quant;
-    }
-  }
-  return $diff;
 }
 
 //deficit is an array keyed by by uid, ordered asc
@@ -891,9 +884,9 @@ function mcapi_action_info() {
     'mcapi_transaction_mail_action' => array(
       'type' => 'transactions',
       'label' => t('Notify transactees'),
-      'description' => t('Compose one mail which will be sent to the participants in the transaction'),
+      'description' => t('Mail sent to the participants when the transaction completes'),
       'configurable' => TRUE,
-      'triggers' => array('transactions_inserted'),
+      'triggers' => array('transactions_state'),
     )
   );
 }

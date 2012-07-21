@@ -91,25 +91,18 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
     '#maxlength' => 6,
     '#weight' => 1
   );
-  if($field['cardinality'] > 1) {//if there are many currency fields, the default for each is fixed here
+  //if there are many currency flows allowed per transaction, we provide a widget for each, preset (#restricted) to one currency
+  if($field['cardinality'] > 1) {
     $currcodes = array_keys(currencies_load($GLOBALS['user']));
     $currcode = $currcodes[$delta];
-    //if the worth field was preset - new_transaction() doesn't preset this field
-    if (empty($form_state['values']) && isset($item)) {
-      //so we only show the currencies listed as items
-      //that means we might want to skip this widget form if its not one of the preset items
-      if ($item['currcode'] == $currcode) {
-        $element['#restrict_currcodes'] = array($currcode);
-      }
-      else return;
-    }
-    else {//no presets, so make each $item into a field for each currency
-      $element['#restrict_currcodes'] = array($currcode);
-    }
+    //that means we might want to skip this widget form if its not one of the preset items
+    $element['#restrict_currcodes'] = array($currcode);
   }
+  //if only one flow is allowed, and it has been preset
   elseif (isset($item['currcode'])) {//cardinality is 1 and the currency is already set
     $element['#restrict_currcodes'] =  array($item['currcode']);
   }
+  //elseif there is only one currency the widget will work out what to do later
   $element['#config_mode'] = FALSE;
   worth_element_build($element, $default_vals);
   $element['#element_validate'] = array('worth_widget_validate');
@@ -247,7 +240,8 @@ function worth_widget_validate(&$element, &$form_state, $form) {
  */
 function mcapi_field_is_empty($item) {
   if (isset($item['quantity'])) return empty($item['quantity']);
-  return empty($item['main_quant']) && empty($item['division_quant']);
+  $div = isset($item['division_quant']) ? intval($item['division_quant']) : 0;
+  return empty($item['main_quant']) && empty($div);
 }
 
 /*
@@ -407,7 +401,7 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   if ($form['#instance']['field_name'] != 'worth') return;
 
   //change the cardinality field because there is only one worth value possible per currency
-  $currcount = count($currencies_load);
+  $currcount = count($currencies);
   if ($currcount == 1) {
     $form['field']['cardinality'] = array(
       '#type' => 'hidden',

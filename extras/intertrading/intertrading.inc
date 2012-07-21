@@ -170,7 +170,7 @@ function intertrading_error_codes($code, $args = array()) {
     case 18: return t("Not enough data to authenticate");
     //failure of remote client
     case 20: return t("Failed to connect with @server; returned: @message", $args);
-    case 22: return t("Transaction would exceed remote client's intertrading limits by @quantity, $args");
+    case 22: return t("Transaction would exceed remote client's intertrading limits by @quantity", $args);
     case 24: return t("Transaction would exceed remote client's account limits by @quantity", $args);
     case 25: return t("Misc validation error on remote client: @message", $args);
     case 26: return t("client not found: @server", $args);

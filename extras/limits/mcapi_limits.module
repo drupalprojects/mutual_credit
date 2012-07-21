@@ -31,9 +31,12 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
 
 /*
  * implements mcapi hook_transactions_validate
- * takes the transactions and checks the projected balances against the balance limtits for each account,
+ * runs only on transaction insertion
+ * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
+ * against the balance limits for each affected account,
+ * NB. the accounting_validate hook is only run when a transaction cluster is inserted:
+ * This hook does no checking when transactions are undone nor when they change state.
  *
- * as if each transaction was 'counted' i.e having a state  > 0
  * I didn't want to output only readable messages by this module,
  * but throw data and messages to be handled later
  * Because i don't know how to pass args into an exception,
@@ -45,22 +48,11 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
  */
 function mcapi_limits_accounting_validate(array $transactions) {
   $errors = array();
-  foreach ($transactions as $transaction) {
-    if (empty($transaction->serial)) {
-      $transaction->state = 1;//because we want to check what the balances would be IF the transaction was completed.
-    }
-    else {
-      $existing[] = $transaction->serial;//we discount this transaction when calculating the current balance.
-    }
-  }
+  //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each user with their limits
   foreach (_transactions_diff($transactions) as $uid => $percurrency) {
     foreach ($percurrency as $currcode => $diffs) {
-      $conditions = array(
-        array('serial', array_filter(array_unique($existing)), '<>'),
-        array('state', 0, '>')
-      );
-      $balance = transaction_totals($uid, $currcode, $conditions)->balance;
+      $balance = transaction_totals($uid, $currcode)->balance;
       $projected = $balance + array_sum($diffs);
       $limits = limits_get($currcode, $uid);
       if (!empty($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max'] && $projected > $balance) {
@@ -333,4 +325,23 @@ function mcapi_limits_variable_info() {
     );
   }
   return $vars;
+}
+
+
+/*
+ * Calculate the balance changes that this transaction proposes
+ * by convention, if the transaction state < 0 it is NOT COUNTED
+ */
+function _transactions_diff($transactions) {
+  $diff = array();
+  foreach ($transactions as $transaction) {
+    foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
+      $quant = $transaction->state <= 0 ? 0 : $flow['quantity'];
+      //we can't prepare the array in advance with zeros so += and -= throws notices
+      //instead we just build up an array and add them up when we need them
+      $diff[$transaction->payer][$flow['currcode']][] = $quant;
+      $diff[$transaction->payee][$flow['currcode']][] = $quant;
+    }
+  }
+  return $diff;
 }

@@ -35,7 +35,12 @@ $replacements = array(
 ?>
 <div class = "<?php print $classes; ?>">
   <?php if ($view_mode == 'sentence') {
-    print t("On @recorded, !payer gave !payee !worth", $replacements);
+    if ($state == TRANSACTION_STATE_PENDING) {
+      print t("On @recorded, !payer will give !payee !worth", $replacements);
+    }
+    else {
+      print t("On @recorded, !payer gave !payee !worth", $replacements);
+    }
   }
 else {
   print render($pending_signatures); //floating the right, by default
@@ -57,3 +62,4 @@ else {
   } ?>
 
 </div><!-- end transaction-->
+

@@ -96,6 +96,31 @@ function mcapi_forms_forms($form_id, $args) {
   
 }
 
+
+/*
+ * implements hook_form_FORMID_alter
+ * Alter the mcapi form editing form
+ */
+function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+  if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
+  $form['#validate'][] = 'mcapi_forms_template_validate';
+  $form_state['redirect'] = 'admin/accounting/forms';
+
+  $form['advice'] = array(
+    '#type' => 'markup',
+    '#markup' => t('Test your form before enabling for users!'),
+    '#weight' => 25
+  );
+  $form['buttons']['#prefix'] = '<div>';
+  $form['buttons']['#suffix'] = '</div>';
+}
+
+
+/*
+ * implements hook_form_FORMID_alter
+ * The building of the transaction form is done in the alter phase of building the basic form.
+ * This means that any alter hooks for the basic form are also run.
+ */
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
   $mcapiform = &$form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG];
@@ -116,7 +141,6 @@ function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id)
   if (!empty($form_state['storage']) && $form_state['step'] == 1) {
     $form_state['values'] = $form_state['storage'];
   }
-
   _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
 }
 
@@ -194,27 +218,12 @@ function mcapi_forms_theme($existing, $type, $theme, $path) {
  */
 function mcapi_edit_mcapi_form(&$form, &$form_state) {
   cache_clear_all('mcapi_forms', 'cache');
-  //this big form builder function is kept in admin.inc
   form_load_include($form_state, 'admin.inc', 'mcapi_forms');
   form_load_include($form_state, 'inc', 'mcapi');//contains the validation functions for the default form elements
   $form_state['build_info']['files']['menu'] = drupal_get_path('module', 'mcapi_forms') .'/mcapi_forms.admin.inc';
   $form_state['build_info']['files']['ctools'] = drupal_get_path('module', 'ctools') .'/includes/export.inc';
   $form['#tree'] = TRUE;
-  $form['advice'] = array(
-    '#type' => 'markup',
-    '#markup' => t('Test your form before enabling for users!'),
-    '#weight' => 25
-  );
   return _edit_mcapi_form($form, $form_state);
-}
-
-/*
- * implements hook_form_FORMID_alter
- */
-function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
-  if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
-  $form['#validate'][] = 'mcapi_forms_template_validate';
-  $form_state['redirect'] = 'admin/accounting/forms';
 }
 
 /*
