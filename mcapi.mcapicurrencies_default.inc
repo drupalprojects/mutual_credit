@@ -24,10 +24,10 @@ function mcapi_mcapicurrencies_default() {
     'uid' => 1,
     'zero' => 0,
     'currency_access' => array(
-      'membership' => 'currency_access_transact',
-      'user_aggregated_view' => 'currency_access_transact',
-      'currency_aggregated_view' => 'mcapi_access_anyone',
-      'undo' => 'currency_access_manage_all_transactions',
+      'membership' => 'user_segments_transact',
+      'user_aggregated_view' => 'user_segments_transact',
+      'currency_aggregated_view' => 'user_segments_all',
+      'undo' => 'user_segments_manage_all_transactions',
     ),
     'transaction_access' => array(
       TRANSACTION_STATE_FINISHED => array(

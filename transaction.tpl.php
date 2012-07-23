@@ -17,6 +17,7 @@
  * $payer           // name linked to payer profile
  * $payee           // name linked to payee profile
  * $worth          // a comma separated list of formatted transaction values (in different currencies)
+ * $children        //an array of other transactions with the same serial number
  *
  * need to do some more work on the icon size
  * for now, you might want to include your own large-size graphic instead
@@ -26,15 +27,28 @@
  * This template doesn't use normal template syntax because it's based on a sentence structure and needs to retain a coherent translatable string
  * It is rather complex because of the need for translation
  */
-$replacements = array(
-  '@recorded' => $recorded,
-  '!payer' => $payer,
-  '!payee' => $payee,
-  '!worth' => $worth,
-);
+if ($view_mode != 'sentences') {
+  $replacements = array(
+    '@recorded' => $recorded,
+    '!payer' => $payer,
+    '!payee' => $payee,
+    '!worth' => $worth,
+  );
+}
 ?>
-<div class = "<?php print $classes; ?>">
-  <?php if ($view_mode == 'sentence') {
+<div class = "<?php print $classes; ?>"><?php
+  if ($view_mode == 'certificate') {
+    print render($pending_signatures); //floating the right, by default
+    $date = t('On @date', array('@date' => $recorded));
+    $movement = t('!payer <strong>paid</strong> !payee', $replacements);
+    $sum = t('the sum of !worth', array('!worth' => '<div style="font-size:250%;">'. $worth .'</div>'));
+    ?>
+    <p><?php print $date; ?><br /><br />
+    <?php print $movement; ?><br /><br />
+    <?php print $sum; ?></p>
+    <?php print render($additional);
+  }
+  elseif ($view_mode == 'sentence') {
     if ($state == TRANSACTION_STATE_PENDING) {
       print t("On @recorded, !payer will give !payee !worth", $replacements);
     }
@@ -42,24 +56,12 @@ $replacements = array(
       print t("On @recorded, !payer gave !payee !worth", $replacements);
     }
   }
-else {
-  print render($pending_signatures); //floating the right, by default
-  $date = t('On @date', array('@date' => $recorded));
-  $movement = t('!payer <strong>paid</strong> !payee', $replacements);
-  $sum = t('the sum of !worth', array('!worth' => '<div style="font-size:250%;">'. $worth .'</div>'));
-  ?>
-    <p><?php print $date; ?><br /><br />
-    <?php print $movement; ?><br /><br />
-    <?php print $sum; ?></p>
-    <?php print render($additional);
-    
-    if ($children) { ?>
-    <div id="dependent-transactions" style ="border:medium solid grey; text-align:center;">
-      <h3><?php print t('Dependent transactions'); ?></h3>
-      <?php print render ($children); ?>
-    </div>
-    <?php }
-  } ?>
+  if ($children) { // all the remaining transactions are already rendered as sentences ?>
+  <div id="dependent-transactions" style ="border:medium solid grey; text-align:center;">
+    <h3><?php print t('Dependent transactions'); ?></h3>
+    <?php print render ($children); ?>
+  </div>
+  <?php } ?>
 
 </div><!-- end transaction-->
 

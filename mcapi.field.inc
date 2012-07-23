@@ -221,7 +221,7 @@ function worth_element_build(&$element, $default_vals) {
  */
 function worth_widget_validate(&$element, &$form_state, $form) {
   if ($form['#form_id'] == 'field_ui_field_edit_form') return;
-  $value['currcode'] = &$element['currcode']['#default_value'];
+  $value['currcode'] = &$element['currcode']['#value'];
   $value['quantity']  = &$element['main_quant']['#value'];
   if (!empty($element['division_quant']['#value'])) {
     //combine integer and division to get quantity

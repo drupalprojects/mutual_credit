@@ -369,7 +369,7 @@ function mcapi_update_7000() {drush_print('mcapi_update_7000');
   require_once('mcapi.mcapicurrencies_default.inc');
   require_once('currencies.inc');
   //make the tables declared in this module
-  $tables = mcapi_schema();\
+  $tables = mcapi_schema();
   db_create_table('mcapi_currencies', $tables['mcapi_transactions']);
   //this was part of mcapi in d6
   if (db_query("SELECT TRUE FROM {system} WHERE name = 'mc_signatures'")->fetchfield()) {
@@ -680,7 +680,6 @@ function mcapi_update_7004() {
 
 function mcapi_update_7005() {
   $callback = 'mcapi_transaction_mail_action';
-  $trigger = 'transactions_inserted';
   $actions = mcapi_action_info();
   $form_callback = $callback.'_form';
   $form = $form_callback();
@@ -701,7 +700,7 @@ function mcapi_update_7005() {
   // Borrowed from trigger_assign_form_submit
   db_insert('trigger_assignments')->fields(
     array(
-      'hook' => $trigger,
+      'hook' => 'transactions_state',
       'aid' => $aid,
       'weight' => 0,
     )

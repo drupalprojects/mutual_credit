@@ -37,7 +37,11 @@ function mcapi_entity_info_inc() {
         'custom settings' => FALSE,
       ),
       'sentence' => array(
-        'label' => t('Sentence'),
+        'label' => t('Main transaction as a sentence'),
+        'custom settings' => FALSE,
+      ),
+      'sentences' => array(
+        'label' => t('One sentence per transaction'),
         'custom settings' => FALSE,
       ),
     ),
@@ -322,7 +326,7 @@ function mcapi_accounting_validate($transactions){
       $currency = currency_load($flow['currcode']);
       $access_callback = $currency->currency_access['membership'];
       foreach (array('payer', 'payee') as $uid) {
-        if ($access_callback(user_load($transaction->$uid)) == FALSE) {
+        if ($access_callback($transaction->$uid) == FALSE) {
           $errors[] = t('User @name cannot use @currency', array('@name' => user_load($transaction->$uid)->name, '@currency' => $currency->human_name));
         }
       }
@@ -426,21 +430,51 @@ function transaction_access_participants($transaction) {
 }
 
 /*
- * currency access callback
+ * currency access callbacks
+ * determine a segment of users
+ * each of these returns TRUE or FALSE if passed a User ID
+ * or a list of User IDs if passed nothing
  */
-function currency_access_transact($account = NULL) {
-  return user_access('transact', $account);
+function user_segments_transact($uid = 0) {
+  if ($uid && $account = user_load($uid)) {
+    return user_access('transact', $account);
+  }
+  return _matslats_role_get_users('transact', $uid);
 }
-function currency_access_manage_all_transactions($account) {
-  return user_access('manage all transactions', $account);
+function user_segments_manage_all_transactions($uid = 0) {
+  if ($uid && $account = user_load($uid)) {
+    return user_access('manage all transactions', $account);
+  }
+  return _matslats_role_get_users('manage all transactions');
+}
+function user_segments_all($uid = 0) {
+  $query = db_select('users')->condition('status', 1);
+  if ($uid) $query->condition('uid', $uid);
+  $uids = $query->execute()->fetchcol();
+  if ($uid) return in_array($uid, $uids);
+  return $uids;
+}
+//utility function for the above
+function _matslats_role_get_users($permission) {
+  $rids = user_roles(TRUE, $permission);
+  if (empty($rids)) return array(1);
+  $query = db_select('users_roles', 'ur');
+  $query->join('users', 'u', 'u.uid = ur.uid');
+  return $query->fields('ur', array('uid'))
+    ->condition('ur.rid', array_keys($rids))
+    ->condition('u.status', TRUE)
+    ->execute()
+    ->fetchCol();
 }
 
 /*
  * access control wrapper for currency
+ * if $account is specified, returns TRUE or FALSE
+ * otherwise returns a list of users
  */
-function currency_access($op, $currcode, $account = NULL) {
+function currency_access($op, $currcode, $uid = 0) {
   $function = currency_load($currcode)->currency_access[$op];
-  return $function($account);
+  return $function($uid);
 }
 
 /*
@@ -479,11 +513,11 @@ function _currency_picker_element_options(array $currcodes) {
  * action callback
  * mail the transaction participants, and cc
  */
-function mcapi_transaction_mail_action($transactions, $params) {
-  $params['transactions'] = $transactions;
-  $transaction = current($transactions);
-  if ($transaction->state != TRANSACTION_STATE_FINISHED) return;
-  _mcapi_transaction_mail_action(array($transaction->payer, $transaction->payee), $params);
+function mcapi_transaction_mail_action($old_cluster, $params, $new_state) {
+  if ($new_state != TRANSACTION_STATE_FINISHED) return;
+  $uids = array($old_cluster->payer,$old_cluster->payee);
+  $params['transaction'] = $old_cluster;
+  _mcapi_transaction_mail_action($uids, $params);
 }
 
 function _mcapi_transaction_mail_action($uids, $params) {
@@ -514,21 +548,21 @@ function mcapi_transaction_mail_action_form($context = array()) {
       t('The team at [site:name]');
   }
   if (empty($context['subject'])) {
-    $context['subject'] = t('Transaction saved with [transaction:partner]');
+    $context['subject'] = t('Transaction saved by [transaction:creator]');
   }
   $form = _mcapi_mail_template_fields($context);
-  $form['transaction_types'] = _transaction_type_selector(@$context['transaction_types'], TRUE);
-  $form['description'] = t('Only send for these transaction types.');
-  unset($form['transaction_types']['#options']['auto']);
+  $def_types = isset($context['transaction_types']) ? $context['transaction_types'] : array();
+  $form['transaction_types'] = _transaction_type_selector($def_types, TRUE);
+  $form['transaction_types']['#description'] = t('Only send for these transaction types.');
+  unset($form['transaction_types']['#options']['auto'], $form['transaction_types']['#options']['undo']);
   return $form;
 }
 
-function _transaction_type_selector($default = array(), $multiple = TRUE) {
+function _transaction_type_selector($default, $multiple = TRUE) {
   $types = drupal_map_assoc(mcapi_get_types());
   return array(
     '#title' => $multiple ? t('Transaction types') : t('Transaction type'),
-    '#type' => 'select',
-    '#multiple' => $multiple,
+    '#type' => $multiple ? 'checkboxes' : 'select',
     '#options' => $types,
     '#default_value' => $default,
     '#required' => TRUE,

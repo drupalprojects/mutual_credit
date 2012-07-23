@@ -65,13 +65,6 @@ function mcapi_rules_event_info() {//debug('mcapi_rules_event_info');
         'cluster' => $cluster
       ),
     ),
-    'transactions_inserted' => array(
-      'label' => t('A transaction cluster was inserted'),
-      'group' => t('Community accounting'),
-      'variables' => array(
-        'cluster' => $cluster
-      ),
-    ),
     'transactions_undone' => array(
       'label' => t('A transaction cluster was undone'),
       'group' => t('Community accounting'),

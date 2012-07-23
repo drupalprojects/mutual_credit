@@ -122,3 +122,15 @@ function accountant_ui_views_api() {
 function accountant_ui_mcapi_info_types() {
   return array('mass');
 }
+
+
+/*
+ * trading_groups callback declared in hook_user_chooser_preselect
+ * return all the users with permission to trade
+ * needs no arguments
+ */
+function accounting_list_currency($element, $form_state) {
+  $currency = currency_load($form_state['values']['worth'][LANGUAGE_NONE][0]['currcode']);
+  $callback = $currency->currency_access['membership'];
+  return $callback();
+}

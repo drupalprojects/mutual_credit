@@ -13,6 +13,7 @@ files[] = mcapi.install
 files[] = mcapi.controller
 files[] = mcapi.field.inc
 files[] = mcapi.tokens.inc
+files[] = currencies.inc
 
 ;ctools implementation for currencies
 files[] = mcapi.mcapicurrencies_default.inc

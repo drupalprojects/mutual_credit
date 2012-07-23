@@ -29,51 +29,40 @@ uid_login - for LETS groups who commonly use their User ID
 autocategorise - a way of bringing consistency to items provided by many users in a closed vocabulary
 offers_wants - a simple-to-setup directory of categorised offers (and wants)
 
-Visit admin/accounting/currency
-There is one currency in the system until the 'currency constellation' module is installed.
-Edit its properties carefully.
+Visit admin/accounting/currencies
+Each currency has its own config, theming and users
 The accounting is all done to 2 decimal places, so any fractions of a unit are counted in hundredths.
 Rather than writing hundreds on the transaction form, it can be configured to accept just certain fractions, like quarters (of an hour)
 Note how the default settings are the strictest accounting standards possible, with no editing and no deleting of transactions
-When editing the accounting standards, the access operations (edit, delete) appear as extra tabs. Careful the AJAX is a bit flakey on that form.
 
 Visit admin/accounting/transaction/fields
-If you want to add a description, or a date, or an image to your transaction contenttype, enable the appropriate modules and add and configure those fields here.
+Notice that transaction entity is fieldable. Fields added in this way will automatically be available to the form template and in views
+Its possible to add a description, or a date, or an image or categories to your transaction object
+Ensure the modules which declare those fields are installed and add and configure those fields here.
+Note the 'cardinality' field in the field_worth settings. This allows you to have more than one currency per transaction.
 
 Visit admin/accounting/forms
 Design the forms for users to create and edit transactions
-N.B It is possible to create invalid transaction forms, and I advise editing an existing one before creating a new one.
+Like views, they can be exported and bundled in code with a distribution.
+N.B I advise editing an existing one before creating a new one since it is possible to create invalid transaction forms.
 Create menu links to the forms and/or wrap them in blocks.
 Note that some modules alter existing forms or create new ones.
-Like views, you can create new ones from scratch or modify or clone the ones provided. They can be exported and bundled in code with a distribution.
-The form essentially moves transactions between states, offering an opportunity to show or edit the values.
-However if is not a serious workflow system.
-Each field will do its own validation, then there is form-level validation.
-If there is a confirmation page, it will take the whole page, even if the original form was in a block.
-You can tell the form which page to redirect to.
-It should be possible to create forms in a few minutes for specific purposes
-Would appreciate some feedback on the whole form creation process.
+It should be possible to create forms in a few minutes for specific purposes.
 
-Visit admin/accounting/record
+Visit admin/accounting/transact
 This is the troubleshooting transaction create/edit form, intended for administrative use only, it allows all fields to be edited.
 
 Visit admin/accounting/transactions
-Super views exposed filterama offers basic but thorough transaction management.
-Notice that views queries to this table respect the currency 'view' permission settings
+Using lots of views exposed filters allopws basic but thorough transaction management.
+Notice that views queries even to this table respect the currency access control settings - this table could be exposed to users.
 
 Visit admin/people/permissions
-Note that these are general permissions, but there is a whole internal permission system in the currency definitions
-
-Visit admin/accounting/transaction/edit/fields
-Notice that transaction entity is fieldable. Fields added in this way will automatically be available to the form template and in views
-You can add fields (including taxonomy) to transactions: admin/accounting/transaction/edit/fields
+Note that these are general permissions, but there is a whole per-currency permission system
 
 Limits
 Most projects require that accounts have 'overdraft' limits and, in mutual credit, positive balance limits.
 There is a module for that.
 Edit the currency and choose how you want the limits to be determined.
-Discretionary limits will create an extra section on the user account edit form, inheriting defaults from the currency.
-
 
 Views
 The extra views module creates a transaction index table which is good for producing transaction summaries.
@@ -86,14 +75,14 @@ This module does not provide special access control for transactions to be aggre
 The previous version of the module contained a cache table containing balances and suchlike, but here it is all dynamic,
 or at least drupal/views caching needs to be used, especially on large systems
 
+Actions framework
+Two actions are provided by the core module,
+- to send an email when a transaction enters 'completed' state
+- to supplement a transaction cluster with another transaction - useful for taxation.
 
-Further set up
-
-Email notifications
-The mail notification module adds a tab to the mcapi_forms which allows composition of the email template for each form used.
-It also adds a notification option for each party in the form.
-Users themselves on their user profiles decide when to be notified.
-Do test this, espcially when used in conjunction with the pending module
+Pending transactions
+Causes transactions to be saved in a pending state, listing signatories.
+Configure which transactions to effect, what signatures are needed, and notification on admin/accounting/signatures
 
 Now you can start assembling the pieces according to the needs of your site.
 The first level of architecture is in menus, blocks, views, mcapi_forms
@@ -110,18 +99,39 @@ At time of writing, Feb 2012, Entity module looks like it is the way forward. Ho
 
 Intended for webshops and skilled Drupal developers
 
-1. Triggering payments.
-2. Master/Slave transaction storage
-3. internal API
-4. Exporting currencies and mcapi_forms
-5. i18n
-6. theming
+
+1. Internal API
+2. Master/Slave transaction storage & entity controller
+3. Triggering payments.
+
+1. Internal API
+
+Standard transaction operations are conducted through an API provided in mcapi.module
+This API is for communicating with the swoppable entity controller.
+All transaction state changes, including creation must be done with a call to transactions_state()
+The transaction_totals() function is mostly duplicated by the mcapi_index_views module
+Careful there are three undo modes.
+There are a couple of wrapper functions round the API supporting transaction clusters
+A cluster is when many transactions share a serial number, say if, they are spawned from it.
+The module assumes the first transaction in a cluster is the main one, say for display purposes.
+
+2. Master/Slave transaction storage & entity controller
+
+Drupal allows several database connections to be defined in settings.php.
+On admin/accounting/entity_controller you can choose which database connections the default transaction controller will write to
+And which one connection it will read from.
+Alternatively another entity controller can be written. Although the API isn't fully documented.
+
+3. Triggering Payments
+
+The mcapi module provides an action which adds a transaction to the cluster.
+however it's not very configurable - the rules framework is more appropriate for this; encouragement is needed
 
 
 ***********************
 ** ON THE WISH LIST **
 ***********************
-SMS
+SMS - waiting for the sms_framework module
 Voice activated transactions
 iphone app
 Google charts

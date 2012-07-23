@@ -343,7 +343,7 @@ function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
  * changes the status in the transaction form according to the settings for the transaction_type
  */
 function mcapi_signatures_form_transaction_form_alter(&$form, $form_state) {
-  if ($form['#step'] > 1) return;
+  if (isset($form['#step']) && $form['#step'] > 1) return;//this only applies to the forms module
   $type = isset($form['type']['#value']) ? $form['type']['#value'] : $form['type']['#default_value'];//yuk
   if (in_array($type, _get_signable_transaction_types())) {
     $config = variable_get('mcapi_signatures_'.$type, array());
@@ -525,9 +525,6 @@ function mcapi_signatures_trigger_info() {
       'transaction_sign' => array(
         'label' => t('A signature is added to a transaction'),
       ),
-      'transaction_signed_off' => array(
-        'label' => t('A transaction moves from pending to completed states'),
-      )
     )
   );
 }
@@ -680,14 +677,14 @@ function mcapi_signatures_transaction_view_alter($renderable, $type) {
     if ($array['#view_mode'] == 'certificate' && $array['#transaction']->state == TRANSACTION_STATE_PENDING) {
       $imagefile = url(drupal_get_path('module', 'mcapi_signatures') . '/pending.png');
       $declaration = "background-image:url(\"$imagefile\"); background-repeat: no-repeat;";
-      drupal_add_css('.transaction.pending{'.$declaration.'}', array('type' => 'inline'));
+      drupal_add_css('.transaction.state--1{'.$declaration.'}', array('type' => 'inline'));
       return;
     }
   }
 }
 
 function _get_signable_transaction_types() {
-  $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt'));
+  $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));
   sort($types);
   return $types;
 }

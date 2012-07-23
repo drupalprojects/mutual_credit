@@ -64,8 +64,8 @@ function mcapi_signatures_schema() {
 
 function _pending_setup_actions() {
   module_load_include('module', 'mcapi_pending');
-  save_default_pending_action('mcapi_add_signatories_action', 'transactions_inserted');
-  save_default_pending_action('mcapi_signatories_mail_action', 'transactions_inserted');
+  save_default_pending_action('mcapi_add_signatories_action', 'transactions_state');
+  save_default_pending_action('mcapi_signatories_mail_action', 'transactions_state');
   drupal_set_message(st('Actions and triggers have been configured for transaction signing.'));
 }
 

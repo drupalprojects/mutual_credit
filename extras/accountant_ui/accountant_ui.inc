@@ -7,7 +7,6 @@
 function mcapi_mass_pay($form, &$form_state, $vector) {
   form_load_include($form_state, 'inc', 'accountant_ui');
   $form = array();
-
   if (empty($form_state['confirmed'])) {
     list($payer, $payee) = explode('2', $vector);
 
@@ -67,7 +66,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     );
   }
   else {
-    $form['preview'] = transaction_view($form_state['confirmed'], 'sentence');
+    $form['preview'] = transaction_view($form_state['confirmed'], 'sentences');
   }
 
   $form['buttons']['submit'] = array(
@@ -77,7 +76,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();")
   );
   $form['buttons']['#weight'] = 25;
-
   return $form;
 }
 /*
@@ -86,8 +84,9 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
  */
 function mcapi_mass_pay_validate($form, &$form_state) {
   if (!isset($form_state['confirmed'])) {
-    $form_state['values']['type'] = 'mass';
     $form_state['values']['creator'] = $GLOBALS['user']->uid;
+    $form_state['values']['type'] = 'mass';
+    $form_state['values']['state'] = TRANSACTION_STATE_FINISHED;
     $transactions = mcapi_mass_pay_insert($form_state['values'], FALSE);
     if (!form_get_errors()) {
       $form_state['rebuild'] = TRUE;
@@ -148,16 +147,4 @@ function accounting_list_all_users($element, $form_state) {
     $query->condition('ur.rid', array_keys($roles));
   }
   return $query->execute()->fetchCol();
-}
-
-/*
- * trading_groups callback declared in hook_user_chooser_preselect
- * return all the users with permission to trade
- * needs no arguments
- */
-function accounting_list_currency($element, $form_state) {
-  $currcode = $form_state['values']['worth'][LANGUAGE_NONE][0]['currcode'];
-  //this is really horrible because we have to iterate through all the users to see which can use this currency
-  //NOT SCALABLE
-  
 }

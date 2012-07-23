@@ -35,7 +35,7 @@ define('MCPI_CURRENCY_UNDO_REVERSE', 2);
  *     hook_transaction_validate
  *     EntityController->insert($transactions, TRUE)
  *     field_attach_insert('transaction', $transaction);
- *   hook_transactions_inserted
+ *       hook_transactions_state
  * end form submission
  *
  */
@@ -119,8 +119,8 @@ function mcapi_hook_info() {
     'transactions_undone' => array(),
     //preparing a transaction for rendering
     'transactions_view' => array(),
-    //callbacks for determining access to the currency and aggregated stats. See mcapi_currency_access_callbacks
-    'currency_access_callbacks' => array(),
+    //callbacks for determining users whoaccess to the currency and aggregated stats. See mcapi_user_segments
+    'user_segments' => array(),
     //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
     'transaction_access_callbacks' => array(),
     //change of transaction state - takes serials
@@ -261,15 +261,14 @@ function mcapi_transaction_access_callbacks() {
 }
 
 /*
- * Implements hook_mcapi_access
- * List callbacks which can be used to determine whether a user can use a currency
- * Each callback takes optional $account argument
+ * Implements hook_mcapi_user_segments
+ * Callbacks which return a list of users
  */
-function mcapi_currency_access_callbacks() {
+function mcapi_user_segments() {
   return array(
-    'mcapi_access_anyone' => t('Anyone, including anonymous users'),
-    'currency_access_transact' => t("According to permission '@perm'", array('@perm' => t('transact'))),
-    'currency_access_manage_all_transactions' => t("According to permission '@perm'", array('@perm' => t('Manage all transactions')))
+    'user_segments_all' => t('Anyone, including anonymous users'),
+    'user_segments_transact' => t("According to permission '@perm'", array('@perm' => t('transact'))),
+    'user_segments_manage_all_transactions' => t("According to permission '@perm'", array('@perm' => t('Manage all transactions')))
   );
 }
 
@@ -434,11 +433,12 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
   }
   if ($view_mode == 'sentence') {
     drupal_add_css('.transaction-sentence div{display:inline;}', array('type' => 'inline'));
+    drupal_add_css('div.field-name-worth, div.field-name-worth div{display:inline;}', array('type' => 'inline'));
   }
   //structure the transactions using serial numbers, assuming the first is always the main one
   $clusters = array();
   foreach ($transactions as $transaction) {
-    if (empty($clusters[$transaction->serial])) {
+    if (empty($clusters[$transaction->serial]) && $view_mode != 'sentences') {
       $clusters[$transaction->serial] = $transaction;
     }
     else {
@@ -448,17 +448,18 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
   foreach ($clusters as $cluster) {
     if ($view_mode == 'token') {
       $params = array('transaction' => $cluster, 'user' => $GLOBALS['user']);
-      $renderable[$cluster->serial] = array(
-        '#markup' =>token_replace($token_string, $params)
+      $renderable[] = array(
+        '#markup' =>token_replace($token_string, $params),
+        '#view_mode' => $view_mode
       );
     }
     else {
-      $renderable[$cluster->serial] = array(
+      $renderable[] = array(
         '#theme' => 'transaction',
         '#transaction' => $cluster,
+        '#view_mode' => $view_mode
       );
     }
-    $renderable[$cluster->serial]['#view_mode'] = $view_mode;
   }
   $type = 'transaction';
   drupal_alter(array('transaction_view', 'entity_view'), $renderable, $type);
@@ -470,35 +471,37 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
  */
 function template_preprocess_transaction(&$variables) {
   $transaction = &$variables['transaction'];
-  $variables['payer'] = format_username(user_load($transaction->payer));
-  $variables['payee'] = format_username(user_load($transaction->payee));
-  $variables['state'] = $transaction->state;
-  $variables['recorded'] = format_date($transaction->created, 'medium');
-  $variables['type'] = $transaction->type;
-  $states = mcapi_get_states();
-  $variables['classes_array'] = array('transaction', $variables['view_mode'], $transaction->type, strtolower($states[TRANSACTION_STATE_PENDING]));
-  if (empty($transaction->xid)) $variables['classes_array'][] = 'preview';
+  if ($variables['view_mode'] != 'sentences') {
+    $variables['payer'] = format_username(user_load($transaction->payer));
+    $variables['payee'] = format_username(user_load($transaction->payee));
+    $variables['state'] = $transaction->state;
+    $variables['recorded'] = format_date($transaction->created, 'medium');
+    $variables['type'] = $transaction->type;
 
-  //$transactions must be keyed by xid if there is more than one
-  //because the entity key is used to read fieldAPI data
-  //in preview mode the xid hasn't been determined
-  $transactions = array($transaction->xid => &$transaction);
-  field_attach_prepare_view('transaction', $transactions, $variables['view_mode']);
-  //entity_prepare_view('transaction', $transactions);
+    $states = mcapi_get_states();
 
-  //this returns a render array
-  $variables['additional'] = field_attach_view('transaction', $transaction, $variables['view_mode']);
-  //this populates top level of variables with the render array
-  field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
+    $variables['classes_array'] = array('transaction', $variables['view_mode'], $transaction->type, 'state-'.$transaction->state);
+    if (empty($transaction->xid)) $variables['classes_array'][] = 'preview';
 
-  //move worth field to the top of $variables where we would expect to find it
-  $variables['worth'] = drupal_render($variables['additional']['worth']);
-  unset($variables['additional']['worth']);
+    //$transactions must be keyed by xid if there is more than one
+    //because the entity key is used to read fieldAPI data
+    //in preview mode the xid hasn't been determined
+    $transactions = array($transaction->xid => &$transaction);
+    field_attach_prepare_view('transaction', $transactions, $variables['view_mode']);
+    //entity_prepare_view('transaction', $transactions);
 
-  //choose the transaction theme template based on the first currency of the transaction
-  $flows = current($transaction->worth);
-  $variables['theme_hook_suggestion'] = 'transaction__' . $flows[0]['currcode'];
+    //this returns a render array
+    $variables['additional'] = field_attach_view('transaction', $transaction, $variables['view_mode']);
+    //this populates top level of variables with the render array
+    field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
+    //move worth field to the top of $variables where we would expect to find it
+    $variables['worth'] = drupal_render($variables['additional']['worth']);
+    unset($variables['additional']['worth']);
 
+    //choose the transaction theme template based on the first currency of the transaction
+    $flows = current($transaction->worth);
+    $variables['theme_hook_suggestion'] = 'transaction__' . $flows[0]['currcode'];
+  }
   $variables['children'] = array();
   if (!isset($transaction->children)) return;
   foreach ($transaction->children as $child) {
@@ -634,9 +637,6 @@ function transactions_state(array $serials, $new_state) {
   entity_get_controller('transaction')->state($serials, $new_state);
   //for the following hooks, we send the old transactions in full, and the new state
   module_invoke_all('transactions_state', $old_clusters, $new_state);
-  if (module_exists('rules')) {
-    rules_invoke_event('transactions_state', $old_clusters, $new_state);
-  }
 }
 
 /*
@@ -724,12 +724,6 @@ function transaction_insert_new($transaction, $really = TRUE) {
   drupal_alter('transactions', $transactions);
 
   transactions_insert($transactions, $really);
-  if ($really) {
-    module_invoke_all('transactions_inserted', $transactions);
-    if (module_exists('rules')) {
-      rules_invoke_event('transactions_inserted', array($transactions));
-    }
-  }
   return $transactions;
 }
 /*
@@ -814,7 +808,7 @@ function currencies_load($account = NULL, $refresh = FALSE) {
 
   module_load_include('inc', 'mcapi');
   foreach ($currencies as $currcode => $currency) {
-    if (currency_access('membership', $currcode, $account)) {
+    if (currency_access('membership', $currcode, $account->uid)) {
       //we're actually stripping the ctools metadata wrapper of the currency away here for convenience everywhere else
       $filtered[$currcode] = $currency;
     }
@@ -891,7 +885,7 @@ function mcapi_action_info() {
     ),
     'mcapi_transaction_mail_action' => array(
       'type' => 'transactions',
-      'label' => t('Notify transactees'),
+      'label' => t('Completed transaction notification'),
       'description' => t('Mail sent to the participants when the transaction completes'),
       'configurable' => TRUE,
       'triggers' => array('transactions_state'),
@@ -909,14 +903,11 @@ function mcapi_trigger_info() {
       'transactions_alter' => array(
         'label' => t('Modify a transaction cluster before saving'),
       ),
-      'transactions_inserted' => array(
-        'label' => t('A transaction cluster was inserted'),
-      ),
       'transactions_undone' => array(
         'label' => t('A transaction cluster was undone'),
       ),
-      'transaction_state' => array(
-        'label' => t('A transaction cluster changed state'),
+      'transactions_state' => array(
+        'label' => t('A transaction cluster was inserted or changed state'),
       )
     )
   );
@@ -929,18 +920,6 @@ function mcapi_trigger_info() {
 function mcapi_form_trigger_assign_form_alter(&$form, $form_state) {
   $clarification = t('Actions which create new transactions will not fire the trigger recursively');
   $form['transactions_alter']['#description'] = $clarification;
-}
-/*
- * implements hook_transactions_inserted (trigger)
- * in service of trigger module
- */
-function mcapi_transactions_inserted($transactions) {
-  if (module_exists('trigger')) {
-    foreach (trigger_get_assigned_actions('transactions_inserted') as $aid => $info) {
-      reset($transactions);
-      actions_do($aid, $transactions, $info);
-    }
-  }
 }
 
 /*
@@ -959,12 +938,23 @@ function mcapi_transactions_alter(&$transactions) {
       }
     }
   }
-
   if (module_exists('rules')) {
     rules_invoke_event('transactions_alter', array($transactions));
   }
 }
-
+function mcapi_transactions_state($old_clusters, $new_state) {
+  if (module_exists('trigger')) {
+    foreach (trigger_get_assigned_actions('transactions_state') as $aid => $info) {
+      foreach ($old_clusters as $cluster) {
+        actions_do($aid, $cluster, $info, $new_state);
+      }
+    }
+  }
+  if (module_exists('rules')) {
+    //shouldn't this fire autromatically?
+    rules_invoke_event('transactions_state', $old_clusters, $new_state);
+  }
+}
 
 
 //this should really be in core...

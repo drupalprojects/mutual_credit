@@ -57,17 +57,17 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
-  $currency_access_callbacks = module_invoke_all('currency_access_callbacks');
+  $user_segments = module_invoke_all('user_segments');
   $form['currency_access'] = array(
     '#title' => 'Currency access',
-    '#description' => t('Check fewer boxes for efficiency'),
+    '#description' => t('Module developers: use @hook to add more options', array('@hook' => 'hook_user_segments')),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
     'membership' => array(
       '#title' => t('Use currency'),
       '#description' => t('Determine which users are permitted to use this currency'),
       '#type' => 'radios',
-      '#options' => $currency_access_callbacks,
+      '#options' => $user_segments,
       '#default_value' => $currency->currency_access['membership'],
       '#weight' => 1,
     '#prefix' => '<style>.form-type-checkboxes .form-type-checkbox{margin:0;} .form-type-checkbox input{margin:0; padding:0}</style>',
@@ -76,21 +76,21 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
       '#title' => t('View aggregated user transaction data'),
       '#description' => t('Such as balance, gross income, number of transactions'),
       '#type' => 'radios',
-      '#options' => $currency_access_callbacks,
+      '#options' => $user_segments,
       '#default_value' => $currency->currency_access['user_aggregated_view'],
       '#weight' => 2,
     ),
     'currency_aggregated_view' => array(
       '#title' => t('View aggregated system data'),
       '#type' => 'radios',
-      '#options' => $currency_access_callbacks,
+      '#options' => $user_segments,
       '#default_value' => $currency->currency_access['currency_aggregated_view'],
       '#weight' => 3,
     ),
     'undo' => array(
       '#title' => t('Undo any transaction in this currency'),
       '#type' => 'radios',
-      '#options' => $currency_access_callbacks,
+      '#options' => $user_segments,
       '#default_value' => $currency->currency_access['undo'],
       '#weight' => 3,
     ),
