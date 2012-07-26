@@ -226,6 +226,7 @@ function mcapi_schema() {
 }
 
 function mcapi_check_fields() {
+  //on the upgrade to d7 the field hasn't been registered yet
   field_info_cache_clear();
   $fields = _update_7000_field_read_fields(array('module' => 'mcapi'), 'field_name');
   field_associate_fields('mcapi');//sets field_config definition to active
@@ -275,61 +276,6 @@ function _mcapi_module_weights() {
   }
 }
 
-/*
- *
- */
-function mcapi_controller_options_form($form_state) {
-  cache_clear_all('*', 'cache');
-  $controllers = module_implements('transaction_controller');
-  $form['mcapi_controller'] = array(
-    '#title' => 'Entity controller module',
-    '#description' => t('Choose which module, with a .controller file, to use.'),
-    '#type' => 'radios',
-    '#options' => drupal_map_assoc($controllers),
-    '#default_value' => variable_get('mcapi_controller', 'mcapi'),
-    '#ajax' => array(
-      'callback' => 'mcapi_controller_options_form_ajax',
-      'wrapper' => 'mcapi-controller-options-form',
-    ),
-  );
-
-  global $databases;
-  if (count($databases) > 1) {
-    foreach($databases as $key => $data) {
-      $options[$key] = $key;
-    }
-    $form['master_slave'] = array(
-      '#title' => t('Databases'),
-      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
-        t('Write accounting information to more than one database, and read from one database, making a sort of master/slave arrangement.') .' '.
-        t("Don't forget each database connection itself can have master/slave arrangement, but we are concerned only with accounting here.") .' '.
-        t("the database should be appropriate for the controller."),
-      '#type' => 'fieldset',
-      '#attributes' => array('id' => 'master-slave'),
-    );
-    $form['master_slave']['mcapi_db_write'] = array(
-      '#title' => t('Write accounting information to'),
-      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
-        t('Use with caution as fields added to transactions and currencies will still be saved locally') .' '.
-        t("the database should be appropriate for the controller."),
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => variable_get('mcapi_db_write', array('default' => 'default')),
-      '#ajax' => array(
-        'callback' => 'mcapi_controller_options_form_ajax',
-        'wrapper' => 'master-slave',
-      ),
-    );
-    $form['master_slave']['mcapi_db_read'] = array(
-      '#title' => t('Read accounting information from'),
-      '#type' => 'select',
-      '#options' =>  $options,
-      '#default_value' => variable_get('mcapi_db_read', 'default'),
-      '#weight' => 1,
-    );
-  }
-  return system_settings_form($form);
-}
 function mcapi_controller_options_form_ajax($form, $form_state) {
   $form['master_slave']['mcapi_db_read']['#options'] = array_filter($form_state['values']['mcapi_db_write']);
   return $form;
@@ -365,7 +311,7 @@ function mcapi_field_schema($field) {
  * implements hook_update_n
  * copy the currency definitions into the new variable, or the new table
  */
-function mcapi_update_7000() {drush_print('mcapi_update_7000');
+function mcapi_update_7000() {
   require_once('mcapi.mcapicurrencies_default.inc');
   require_once('currencies.inc');
   //make the tables declared in this module
@@ -380,7 +326,7 @@ function mcapi_update_7000() {drush_print('mcapi_update_7000');
   //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
   $old_currencies = db_query("SELECT * FROM {mc_currencies} c LEFT JOIN {node} n ON c.nid = n.nid ORDER BY c.nid")->fetchAllAssoc('nid');
   $currency = current(mcapi_mcapicurrencies_default())->data;
-  foreach ($old_currencies as $nid => $old_currency) {drush_print("updating currency $nid");
+  foreach ($old_currencies as $nid => $old_currency) {
     foreach (unserialize($old_currency->data) as $key => $val) {
       $old_currency->$key = $val;
     }
@@ -415,7 +361,6 @@ function mcapi_update_7000() {drush_print('mcapi_update_7000');
       'currcode' => $currcode,
       'data' => $currency
     );
-    drupal_print($row);
     drupal_write_record('mcapi_currencies', $row);
   }
   //update the field definitions
@@ -428,6 +373,9 @@ function mcapi_update_7000() {drush_print('mcapi_update_7000');
   db_drop_table('mc_currencies');
   db_drop_table('mc_cache');
   drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($old_currencies))));
+  //prepare for mcapi_update_7001
+  module_load_include('field.inc', 'mcapi');
+  registry_rebuild();
 }
 
 /*
@@ -439,9 +387,13 @@ function mcapi_update_7001() {
   module_enable(array('mcapi_limits', 'text', 'accounting_ui', 'mcapi_index_views', 'mcapi_forms'));
 
   _mcapi_module_weights();
-  registry_rebuild();
   variable_set('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_ERASE);
-  mcapi_check_fields();
+  if (module_exists('mcapi')) {
+    //because it's reccommended to disable modules when upgrading the whole site
+    drupal_set_message('mcapi is installed, so adding new worth_field');
+    mcapi_check_fields();
+    //otherwise this will be run when the module is enabled.
+  }
   //add the description field, which was intrinsic in v2
   field_create_field(array(
     'entity_types' => array(
@@ -522,7 +474,7 @@ function mcapi_update_7002() {
   $tables = mcapi_schema();
   db_create_table('mcapi_transactions', $tables['mcapi_transactions']);
   $states = array(
-    -1 => MCPI_CURRENCY_UNDO_ERASE, //TRANSACTION_STATE_UNDONE,
+    -1 => MCPI_CURRENCY_UNDO_ERASE,
     0 => TRANSACTION_STATE_FINISHED,
   );
   //if any transaction is in pending mode then enable the pending module
@@ -607,7 +559,7 @@ function _mcapi_update_pending(&$states) {
   if ($version < 1) return;
   module_enable(array('mcapi_signatures'));
   db_query('INSERT into {mcapi_signatures} SELECT nid as serial, uid, 1 as pending FROM {mc_unsigned}');
-  $states[1] = TRANSACTION_STATE_PENDING;
+  $states[TRANSACTION_STATE_PENDING] = TRANSACTION_STATE_PENDING;
 
   db_drop_table('mc_unsigned');
 
@@ -711,4 +663,15 @@ function mcapi_update_7005() {
 function mcapi_update_7009() {
   $tables = mcapi_schema();
   db_create_table('mcapi_submitted', $tables['mcapi_submitted']);
+}
+
+function mcapi_update_7010() {
+  if (module_exists('mcapi_pending')) {
+    db_query("DELETE FROM {system} WHERE name = 'mcapi_signatures'");
+    db_query("UPDATE {system} set name = 'mcapi_signatures' WHERE name = 'mcapi_pending'");
+    drupal_set_message("Best delete the mcapi_pending module, which has been replaced by mcapi_signatures");
+  }
+  else {
+    db_query("DELETE FROM {system} WHERE name = 'mcapi_pending'");
+  }
 }

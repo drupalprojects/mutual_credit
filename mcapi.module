@@ -41,14 +41,17 @@ define('MCPI_CURRENCY_UNDO_REVERSE', 2);
  */
 
 //states are mutually exclusive
-//the convention is that states > 0 are counted
+//the convention is that states > 0 are counted (but sometimes you might want to count pending (-1) as well)
 define('TRANSACTION_STATE_FINISHED', 1);
 //There's a convention that says transactions are 'counted' towards the balance when their state is > 0
 //when the delete mode is to write another transaction reversing the first, 
 //we don't actually want to discount the deleted transaction
 //so its state constant will be > 0
 //depending on the delete mode, erased transactions may or may not be counted
-define('TRANSACTION_STATE_UNDONE', variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE ? 2: 0);
+define('TRANSACTION_STATE_ERASED', 0);
+//A reveresed transaction cluster contains at least one pair of mirrored transactions.
+//Reversed transactions are counted and visible
+define('TRANSACTION_STATE_REVERSED', 2);
 
 //the transaction form expects args in $form_state[build_info]
 //This constant and another in the forms module ensures the argument position is not determined by chance
@@ -63,6 +66,9 @@ function mcapi_help($section, $arg) {
   switch ($section) {
     case 'admin/accounting':
       return '<p>'. t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence on abusive global financial capital. Despite its huge utility and value to local communities, the development of this software over four years has been supported only by informal donations, in money and in kind.");
+    case 'admin/accounting/fields':
+      module_load_include('inc', 'mcapi');
+      return drupal_render(drupal_get_form('mcapi_description_field'));
   }
 }
 
@@ -137,7 +143,8 @@ function mcapi_hook_info() {
 
 /**
  * implements hook_permission
- * This hook can supply permissions that the module defines,
+ * This hook can supply permissions that the module defines.
+ * doing it with another hook allows us to collect all the mutual credit permissions in one section of the permissions page
  */
 function mcapi_permission() {
   return module_invoke_all('mcapi_info_drupal_permissions');
@@ -161,9 +168,9 @@ function mcapi_mcapi_info_states() {
       'description' => t('the last state of the workflow'),
       'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
-    TRANSACTION_STATE_UNDONE => array(
-      'name' => t('Undone'),
-      'description' => t('marked deleted, but the transaction record remains'),
+    TRANSACTION_STATE_ERASED => array(
+      'name' => t('Erased'),
+      'description' => t("marked deleted - not to be confused with 'reversal' transactions"),
       'default_access_callbacks' => array()
     )
   );
@@ -175,8 +182,7 @@ function mcapi_mcapi_info_states() {
 function mcapi_mcapi_info_types() {
   $types = array('default', 'child');
   if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE) {
-    $types[] = 'undo';
-    $types[] = 'undone';
+    $types[] = 'reversal';
   }
   return $types;
 }
@@ -509,18 +515,6 @@ function template_preprocess_transaction(&$variables) {
   }
 }
 
-// how else to get a list of tokens for including on form field descriptions?
-function matslats_list_tokens($type1, $type2 = NULL) {
-  $info = token_info();
-  foreach(func_get_args() as $type) {
-    foreach($info['tokens'][$type] as $tok => $data) {
-      $tokens[] = "[$type:$tok]";
-    }
-  }
-  return $tokens;
-}
-
-
 //this runs every time a 'new_transaction()' is created.
 //just helps to make sure the less visible fields have reasonable defaults
 function new_transaction($values = array()) {
@@ -607,15 +601,25 @@ function transactions_insert(array &$transactions, $really = TRUE) {
  */
 function transactions_undo(array $serials) {
   $deletemode = variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE);
-  if ($deletemode == MCPI_CURRENCY_UNDO_DELETE) {
-    foreach ($serials as $serial) {
-      $transaction = transaction_load($serial);
-      //depending on the undo mode, we might want to do the whole entity_delete thing.
-      field_attach_delete('transaction', $transaction);
-      module_invoke_all('entity_delete', $transaction, 'transaction');
+  if ($deletemode == MCPI_CURRENCY_UNDO_ERASE) {
+    transactions_state($serials, TRANSACTION_STATE_ERASED);
+  }
+  else {
+    if ($deletemode == MCPI_CURRENCY_UNDO_DELETE) {
+      foreach ($serials as $serial) {
+        $transaction = transaction_load($serial);
+        //depending on the undo mode, we might want to do the whole entity_delete thing.
+        field_attach_delete('transaction', $transaction);
+        module_invoke_all('entity_delete', $transaction, 'transaction');
+      }
+      entity_get_controller('transaction')->undo($serials, TRUE);
+      //no state change here
+    }
+    elseif ($deletemode == MCPI_CURRENCY_UNDO_REVERSE) {
+      entity_get_controller('transaction')->undo($serials);
+      transactions_state($serials, TRANSACTION_STATE_REVERSED);
     }
   }
-  entity_get_controller('transaction')->undo($serials);
 
   module_invoke_all('transactions_undone', $serials);
   if (module_exists('rules')) {

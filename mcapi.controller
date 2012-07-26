@@ -119,33 +119,36 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * there is no error checking on this.
    * $purge is an undocumented feature, for development only, which forces mode MCPI_CURRENCY_UNDO_DELETE
    */
-  public function undo(array $serials) {
+  public function undo(array $serials, $hard = FALSE) {
     variable_del('change_undo_mode');
-    //it's possible to override the systemwide delete settings by passing in a constant
-    switch(variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE)) {
-      case MCPI_CURRENCY_UNDO_DELETE: //actually delete
-        db_delete("mcapi_transactions")->condition('serial', $serials)->execute();
-        break;
-      case MCPI_CURRENCY_UNDO_REVERSE:
-        $transactions = $this->load(NULL, array('serial' => $serials));
-        foreach($transactions as $transaction) {
-          $changetype[] = $transaction->serial;
-          $reversed = clone $transaction;
-          $reversed->payer = $transaction->payee;
-          $reversed->payee = $transaction->payer;
-          $reversed->type = 'undo';
-          $reversed->data['original'] = $transaction->serial;
-          $reversed->xid = NULL;
-          $reversed->state = TRANSACTION_STATE_UNDONE;
-          $reverseds[] = $reversed;
-        }
-        transactions_insert($reverseds, TRUE);
-        //continue
-      case MCPI_CURRENCY_UNDO_ERASE: //mark deleted
-        //the state change should have already happened in the wrapper function
+    if ($hard) {
+      db_delete("mcapi_transactions")->condition('serial', $serials)->execute();
     }
-    transactions_state($serials, TRANSACTION_STATE_UNDONE);
+    else {
+      $transactions = $this->load(NULL, array('serial' => $serials));
+      foreach($transactions as $transaction) {
+        $reversed = clone $transaction;
+        $reversed->serial = $transaction->serial;
+        $reversed->xid = NULL;
+        $reversed->payer = $transaction->payee;
+        $reversed->payee = $transaction->payer;
+        $reversed->type = 'reversal';
+        $reversed->data['original'] = $transaction->serial;
+        if ($field = variable_get('transaction_description_field', '')) {
+          $entity = entity_get_info('transaction');
+          $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => $entity['label callback']($transaction)));
+        }
+        $reverseds[] = $reversed;
+      }
+      try{
+        transactions_insert($reverseds, TRUE);
+      }
+      catch (Exception $e){
+        drupal_set_message(t('Failed to reverse transaction: @message', array('@message' => $e->getMessage())));
+      }
+    }
   }
+  
   /*
    * change the state of a transaction and its dependents
    * This does not count as updating it, which is subject to different permissions
@@ -223,29 +226,6 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
   public function next_serial($transaction) {
     return db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
   }
-
-  public function delete() {
-    
-  }
-}
-
-/*
- * implements hook_FORM_mcapi_controller_options_form
- * sets a drupal variable mcapi_controller_delete_mode
- */
-function mcapi_form_mcapi_controller_options_form_alter(&$form) {
-  $form['mcapi_controller_delete_mode'] = array(
-    '#title' => t('Undo mode'),
-    '#description' => t('Cannot be changed after a transaction has been undone'),
-    '#type' => 'radios',
-    '#options' => array(
-      MCPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
-      MCPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
-      MCPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
-    ),
-    '#default_value' => variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE),
-    '#disabled' => !variable_get('change_undo_mode', FALSE)
-  );
 }
 
 function mcapi_parse_conditions($conditions) {

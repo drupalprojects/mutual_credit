@@ -2,6 +2,7 @@
 name = Transaction signing
 description = Use actions and triggers to require signatures before transactions move into pending state
 package = Community Accounting
+configure = admin/accounting/signatures
 core = 7.x
 
 files[] = mcapi_signatures.module

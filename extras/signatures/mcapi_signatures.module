@@ -169,19 +169,19 @@ function mcapi_signatures_config($form, $form_state) {
     '#title' => t('Signature notification'),
     '#description' => implode(' ', array(
       t('Compose the email sent to users when a signature is required of them.'),
-      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens('transaction', 'user', 'site'))
+      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens(array('transaction', 'user', 'site')))
     )),
     '#type' => 'fieldset',
     'subject' => array(
       '#title' => t('Subject'),
       '#type' => 'textfield',
-      '#default_value' => $mail_def['subject'],
+      '#default_value' => isset($mail_def['subject']) ? $mail_def['subject'] : t('Your signature required'),
       '#required' => TRUE,
     ),
     'body' => array(
       '#title' => t('Body'),
       '#type' => 'textarea',
-      '#default_value' => $mail_def['body'],
+      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:uri]',
       '#required' => TRUE,
       '#weight' => 1
     ),
@@ -192,19 +192,19 @@ function mcapi_signatures_config($form, $form_state) {
     '#title' => t('Completed notification'),
     '#description' => implode(' ', array(
       t('Compose the email sent to all signatories when a pending transaction completes.'),
-      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens('transaction'))
+      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens(array('transaction')))
     )),
     '#type' => 'fieldset',
     'subject' => array(
       '#title' => t('Subject'),
       '#type' => 'textfield',
-      '#default_value' => $mail_def['subject'],
+      '#default_value' => isset($mail_def['subject']) ? $mail_def['subject'] : t('Transaction signed off'),
       '#required' => TRUE,
     ),
     'body' => array(
       '#title' => t('Body'),
       '#type' => 'textarea',
-      '#default_value' => $mail_def['body'],
+      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:uri]',
       '#required' => TRUE,
       '#weight' => 1
     ),
@@ -221,7 +221,7 @@ function mcapi_signatures_config($form, $form_state) {
  * )
  * Every value should be 1 when the transaction is created
  */
-function mcapi_signatures_save($transaction) {
+function mcapi_signatures_save($transaction) {ddebug_backtrace();
   $old_state = $transaction->state;
   //need to check property 'pending_signatures' because it may not have been declared
   if (!empty($transaction->pending_signatures)) {

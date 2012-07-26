@@ -356,7 +356,7 @@ function _transactions_diff($transactions) {
       $quant = $transaction->state < -1 ? 0 : $flow['quantity'];//i is signature module is enabled, pending transactions count here
       //we can't prepare the array in advance with zeros so += and -= throws notices
       //instead we just build up an array and add them up when we need them
-      $diff[$transaction->payer][$flow['currcode']][] = $quant;
+      $diff[$transaction->payer][$flow['currcode']][] = -$quant;
       $diff[$transaction->payee][$flow['currcode']][] = $quant;
     }
   }

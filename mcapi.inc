@@ -56,6 +56,13 @@ function mcapi_entity_info_inc() {
 }
 
 function mcapi_menu_inc() {
+  //take this opportunity of an occaisional hook to check that the description field is set
+  if (!variable_get('transaction_description_field', '')) {
+    if (count(_mcapi_get_text_instances())) {
+      drupal_set_message(t('As the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
+    }
+  }
+
   $items['admin/accounting'] = array(
     'title' => 'Accounting',
     'description' => "Manage all aspects of your community's money system",
@@ -75,17 +82,16 @@ function mcapi_menu_inc() {
   $items['transact/default'] = array(
     'title' => 'Log',
     'description' => 'Full control over transaction creation',
-    //'page callback' => 'drupal_get_form',
-    //'access arguments' => array('transact'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/accounting/entity_controller'] = array(
-    'title' => 'Entity controller',
+    'title' => 'Misc settings',
     'description' => "This package comes with it's own entity controller, which reads and writes to the database using an internal API. It is possible to write different entity controllers to work with different accouting systems. The provided entity controller is semi-financialised. It is very different from the drupal default, designed for content management, but it does only single entry accounting with no database-level error checking built in.",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_controller_options_form'),
     'access arguments' => array('manage all transactions'),
-    'file' => 'mcapi.install',
+    'file' => 'mcapi.inc',
+    'weight' => 10
   );
   $items['admin/accounting/currencies/%currency/edit'] = array(
     'title' => 'Modify currency',
@@ -115,13 +121,13 @@ function mcapi_menu_inc() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['transaction/%transaction/undo'] = array(
-    'title' => 'Undo transaction',
+    'title' => 'Undo',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_transaction_undo_confirm_form', 1),
     'access callback' => 'transaction_undo_access',
     'access arguments' => array(1),
     'weight' => 1,
-    'type' => MENU_CALLBACK,
+    'type' => MENU_LOCAL_ACTION,
     'file' => 'mcapi.inc',
   );
   return $items;
@@ -300,6 +306,76 @@ function transaction_form_submit($form, &$form_state) {
 
 
 /*
+ *
+ */
+function mcapi_controller_options_form($form_state) {
+  cache_clear_all('*', 'cache');
+  $controllers = module_implements('transaction_controller');
+  $form['mcapi_controller'] = array(
+    '#title' => 'Entity controller module',
+    '#description' => t('Choose which module, with a .controller file, to use.'),
+    '#type' => 'radios',
+    '#options' => drupal_map_assoc($controllers),
+    '#default_value' => variable_get('mcapi_controller', 'mcapi'),
+    '#ajax' => array(
+      'callback' => 'mcapi_controller_options_form_ajax',
+      'wrapper' => 'mcapi-controller-options-form',
+    ),
+  );
+
+  global $databases;
+  if (count($databases) > 1) {
+    foreach($databases as $key => $data) {
+      $options[$key] = $key;
+    }
+    $form['master_slave'] = array(
+      '#title' => t('Databases'),
+      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
+        t('Write accounting information to more than one database, and read from one database, making a sort of master/slave arrangement.') .' '.
+        t("Don't forget each database connection itself can have master/slave arrangement, but we are concerned only with accounting here.") .' '.
+        t("the database should be appropriate for the controller."),
+      '#type' => 'fieldset',
+      '#attributes' => array('id' => 'master-slave'),
+    );
+    $form['master_slave']['mcapi_db_write'] = array(
+      '#title' => t('Write accounting information to'),
+      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
+        t('Use with caution as fields added to transactions and currencies will still be saved locally') .' '.
+        t("the database should be appropriate for the controller."),
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => variable_get('mcapi_db_write', array('default' => 'default')),
+      '#ajax' => array(
+        'callback' => 'mcapi_controller_options_form_ajax',
+        'wrapper' => 'master-slave',
+      ),
+    );
+    $form['master_slave']['mcapi_db_read'] = array(
+      '#title' => t('Read accounting information from'),
+      '#type' => 'select',
+      '#options' =>  $options,
+      '#default_value' => variable_get('mcapi_db_read', 'default'),
+      '#weight' => 1,
+    );
+  }
+  $form['mcapi_controller_delete_mode'] = array(
+    '#title' => t('Undo mode'),
+    '#description' => t('What should happen when a user or admin deletes a transaction.?') .' '.
+      t("Some system operations may 'scratch' transactions") .' '.
+      t('Cannot be changed after a transaction has been undone'),
+    '#type' => 'radios',
+    '#options' => array(
+      MCPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
+      MCPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
+      MCPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
+    ),
+    '#default_value' => variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE),
+    '#disabled' => !variable_get('change_undo_mode', FALSE)
+  );
+  return system_settings_form($form);
+}
+
+/*
  * implements hook_accounting_validate
  * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
  */
@@ -448,7 +524,7 @@ function user_segments_manage_all_transactions($uid = 0) {
   return _matslats_role_get_users('manage all transactions');
 }
 function user_segments_all($uid = 0) {
-  $query = db_select('users')->condition('status', 1);
+  $query = db_select('users', 'u')->fields('u', array('uid'))->condition('status', 1);
   if ($uid) $query->condition('uid', $uid);
   $uids = $query->execute()->fetchcol();
   if ($uid) return in_array($uid, $uids);
@@ -521,6 +597,8 @@ function mcapi_transaction_mail_action($old_cluster, $params, $new_state) {
 }
 
 function _mcapi_transaction_mail_action($uids, $params) {
+  //check the filter-by-transaction type
+  if (empty ($params['transaction_types'][$params['transaction']->type])) return;
   foreach ($uids as $uid) {
     if ($GLOBALS['user']->uid != $uid) {
       $params['user'] = user_load($uid);
@@ -552,40 +630,43 @@ function mcapi_transaction_mail_action_form($context = array()) {
   }
   $form = _mcapi_mail_template_fields($context);
   $def_types = isset($context['transaction_types']) ? $context['transaction_types'] : array();
-  $form['transaction_types'] = _transaction_type_selector($def_types, TRUE);
+  $form['transaction_types'] = _transaction_type_selector($def_types, TRUE, array('mass', 'child'));
   $form['transaction_types']['#description'] = t('Only send for these transaction types.');
   unset($form['transaction_types']['#options']['auto'], $form['transaction_types']['#options']['undo']);
   return $form;
 }
 
-function _transaction_type_selector($default, $multiple = TRUE) {
-  $types = drupal_map_assoc(mcapi_get_types());
+function _transaction_type_selector($default, $multiple = TRUE, $exclude = array()) {
+  $types = array_diff(mcapi_get_types(), $exclude);
   return array(
     '#title' => $multiple ? t('Transaction types') : t('Transaction type'),
     '#type' => $multiple ? 'checkboxes' : 'select',
-    '#options' => $types,
+    '#options' => drupal_map_assoc($types),
     '#default_value' => $default,
     '#required' => TRUE,
     '#element_validate' => array('mcapi_validate_ttype')
   );
 }
 
-function _mcapi_mail_template_fields($context = array()) {
+function _mcapi_mail_template_fields($defaults = array(), $tokens = array()) {
+  $tokens_list = count($tokens) ?
+    t('Available variables are: @variables', array('@variables' => implode(', ', matslats_list_tokens($tokens)))) :
+    t('The same email will be sent in all cases.');
   return array(
     'mail' => array(
       '#title' => t('Mail template'),
-      '#description' => t('Available variables are:') .' '. implode(', ', matslats_list_tokens('site', 'user', 'transaction')),
+      '#description' => $tokens_list,
       '#type' => 'fieldset',
       'subject' => array(
         '#title' => t('Subject'),
         '#type' => 'textfield',
-        '#default_value' => empty($context['subject']) ? '' : $context['subject'],
+        '#default_value' => empty($defaults['subject']) ? '' : $defaults['subject'],
         '#required' => TRUE,
       ),
       'body' => array(
         '#title' => t('Body'),
         '#type' => 'textarea',
-        '#default_value' => empty($context['body']) ? '' : $context['body'],
+        '#default_value' => empty($defaults['body']) ? '' : $defaults['body'],
         '#required' => TRUE,
         '#weight' => 1
       ),
@@ -593,12 +674,24 @@ function _mcapi_mail_template_fields($context = array()) {
         '#title' => t('Carbon copy'),
         '#description' => t('Send an extra copy to this address'),
         '#type' => 'textfield',
-        '#default_value' => empty($context['cc']) ? '' : $context['cc'],
+        '#default_value' => empty($defaults['cc']) ? '' : $defaults['cc'],
         '#element_validate' => array('_mcapi_validate_mail_element'),
         '#weight' => 2
       )
     )
   );
+}
+
+
+// how else to get a list of tokens for including on form field descriptions?
+function matslats_list_tokens($types) {
+  $info = token_info();
+  foreach($types as $type) {
+    foreach($info['tokens'][$type] as $tok => $data) {
+      $tokens[] = "[$type:$tok]";
+    }
+  }
+  return $tokens;
 }
 
 function mcapi_transaction_mail_action_submit($form, $form_state) {
@@ -679,4 +772,26 @@ function mcapi_supplementary_transaction_action_form($context) {
 }
 function mcapi_supplementary_transaction_action_submit($form, $form_state) {
   return $form_state['values'];
+}
+
+function mcapi_description_field($form, $form_state) {
+//  form_load_include($form_state, 'inc', 'mcapi');
+  $options = array('' => 'none');
+  $options += _mcapi_get_text_instances();
+  $form['transaction_description_field'] = array(
+    '#type' => 'select',
+    '#title' => 'Description field',
+    '#description' => t("Which of the text fields below is used for the transaction description?."),
+    '#options' => $options,
+    '#default_value' => variable_get('transaction_description_field', ''),
+  );
+  return system_settings_form($form);
+}
+function _mcapi_get_text_instances() {
+  foreach(field_info_fields() as $field) {
+    if ($field['module'] == 'text' && isset($field['bundles']['transaction'])) {
+      $options[$field['field_name']] = $field['field_name'];
+    }
+  }
+  return $options;
 }

@@ -33,7 +33,7 @@ function mcapi_mcapicurrencies_default() {
       TRANSACTION_STATE_FINISHED => array(
         'mcapi_access_authenticated' => 'transaction_access_authenticated',
       ),
-      TRANSACTION_STATE_UNDONE => array(),
+      TRANSACTION_STATE_ERASED => array(),
     )
   );
 

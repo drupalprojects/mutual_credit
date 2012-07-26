@@ -1,5 +1,5 @@
 ; $Id:
-name = Mutual Credit Accounting
+name = Community Accounting API
 description = Defines transaction entity with a swoppable controller, a default currency, 'worth' field, and the forms, views theme callbacks for basic manipulation
 package = Community Accounting
 configure = admin/accounting
@@ -24,17 +24,17 @@ files[] = plugins/export_ui/mcapi_ui.class.php
 files[] = views/mcapi.views.inc
 files[] = views/mcapi.views_default.inc
 files[] = views/views_handler_argument_mcapi_dates_various.inc
-files[] = views/views_handler_field_transaction.inc
 files[] = views/views_handler_field_mcapi_state.inc
-;files[] = views/views_handler_field_transaction_link.inc
 files[] = views/views_handler_field_mcapi_users_totals.inc
-files[] = views/views_handler_filter_mcapi_types.inc
-files[] = views/views_handler_filter_mcapi_states.inc
+files[] = views/views_handler_field_transaction.inc
 files[] = views/views_handler_filter_mcapi_currency.inc
+files[] = views/views_handler_filter_mcapi_states.inc
+files[] = views/views_handler_filter_mcapi_types.inc
 files[] = views/views_plugin_row_transaction.inc
 
 ;rules integration
 files[] = mcapi.rules.inc
 files[] = extras/mcapi.eval.inc
+
 ;entity integration
 files[] = mcapi.info.inc

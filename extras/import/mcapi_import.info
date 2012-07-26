@@ -1,0 +1,8 @@
+; $Id:
+name = Import transactions
+description = Paste a csv to import transactions. Assumes one currency.
+package = Community Accounting
+core = 7.x
+configure = admin/accounting/import
+
+dependencies[] = mcapi

@@ -12,6 +12,7 @@ function accountant_ui_menu() {
     'page arguments' => array('many2one'),
     'access arguments' => array('manage all transactions'),
     'file' => 'accountant_ui.inc',
+    'weight' => -1
   );
   $items['admin/accounting/masspay/many2one'] = array(
     'title' => 'Many to one',

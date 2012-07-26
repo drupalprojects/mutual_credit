@@ -181,24 +181,25 @@ function intertrading_settings() {
     '#weight' => 2
   );
 
+  //this widget and variable is also used in intertrading.module
   $fields = array();
   foreach(field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
     if ($fieldname == 'worth') continue; //this field is reserved!
     $fields[$fieldname] = $instance['label'];
   }
   if (count($fields)) {
-    $form['intertrading_description_field'] = array(
+    $form['transaction_description_field'] = array(
       '#title' => 'Description field',
       '#description' => t("Which field API field on the transaction entity should be used for 'description'"),
       '#type' => 'select',
       '#options' => $fields,
-      '#default_value' => variable_get('intertrading_description_field', ''),
+      '#default_value' => variable_get('transaction_description_field', ''),
       '#weight' => 5
     );
   }
   else {
     drupal_set_message(t('Intertrading works better when the transaction entity has a description field'), 'warning', FALSE);
-    $form['intertrading_description_field'] = array(
+    $form['transaction_description_field'] = array(
       '#type' => 'hidden',
       '#default_value' => ''
     );
@@ -589,7 +590,7 @@ function intertrading_transaction_form_validate($form, $form_state) {
   }
   if (count(form_get_errors())) return;
   
-  $desc_field = variable_get('intertrading_description_field', '');
+  $desc_field = variable_get('transaction_description_field', '');
   $data = array(
     'payer' => $form['#incoming'] ? $values['dest_user'] : user_load($values['payer'])->mail,
     'payer_url' => $form['#incoming'] ? $values['dest_url'] : INTERTRADING_REF_URL,
@@ -648,7 +649,7 @@ function intertrading_passive() {
         )
       ),
     );
-    if($description_field = variable_get('intertrading_description_field', '')) {
+    if($description_field = variable_get('transaction_description_field', '')) {
       $transaction[$description_field] = array(
         LANGUAGE_NONE => array(
           0 => array(
@@ -731,7 +732,7 @@ function intertrading_variable_info() {
     'description' => t('Enter the account number'),
     'required' => TRUE,
   );
-  $vars['intertrading_description_field'] = array(
+  $vars['transaction_description_field'] = array(
     'type' => 'string',
     'title' => t('Description field'),
     'default' => '',
@@ -812,7 +813,7 @@ function report_intertrading_history() {
         'quantity' => transaction_quant($transaction, $intertrading_currcode), //denominated in src units
         'date' => $transaction->created, //unixtime
       );
-      if ($desc = variable_get('intertrading_description_field', '')) {
+      if ($desc = variable_get('transaction_description_field', '')) {
         $field = field_view_field('transaction', $transaction, $desc);
       }
       //rendering the children removes the the title field and stuff

@@ -200,6 +200,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   foreach ($entity['view modes'] as $name => $mode) {
     $view_modes[$name] = $mode['label'];
   }
+  module_load_include('inc', 'mcapi'); //for the matslats_list_tokens function
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
@@ -216,7 +217,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Main form'),
       '#description' => implode("\n<br /> ", array(
         t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
-        t('Allowed tokens are:') .implode(', ', matslats_list_tokens('mcapiform'))
+        t('Allowed tokens are:') .implode(', ', matslats_list_tokens(array('mcapiform')))
       )),
       '#type' => 'textarea',
       '#rows' => 6,
@@ -239,7 +240,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'sure_template' => array(
       '#title' => t('Template for tokenised confirmation page'),
-      '#description' => t('Allowed tokens are:') .implode(', ', matslats_list_tokens('transaction', 'user', 'site')),
+      '#description' => t('Allowed tokens are:') .implode(', ', matslats_list_tokens(array('transaction', 'user', 'site'))),
       '#type' => 'textarea',
       '#rows' => 4,
       '#default_value' => @$mcapi_form['experience']['sure_template'],
