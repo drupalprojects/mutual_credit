@@ -70,7 +70,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
       '#options' => $user_segments,
       '#default_value' => $currency->currency_access['membership'],
       '#weight' => 1,
-    '#prefix' => '<style>.form-type-checkboxes .form-type-checkbox{margin:0;} .form-type-checkbox input{margin:0; padding:0}</style>',
+      '#prefix' => '<style>.form-type-checkboxes .form-type-checkbox{margin:0;} .form-type-checkbox input{margin:0; padding:0}</style>',
     ),
     'user_aggregated_view' => array(
       '#title' => t('View aggregated user transaction data'),
@@ -92,7 +92,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
       '#type' => 'radios',
       '#options' => $user_segments,
       '#default_value' => $currency->currency_access['undo'],
-      '#weight' => 3,
+      '#weight' => 4,
     ),
     '#weight' => -1
   );

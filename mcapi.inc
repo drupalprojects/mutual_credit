@@ -163,7 +163,7 @@ function mcapi_accounting() {
 function _mcapi_block_settings($delta) {
   $currencies = &drupal_static('currencies');
   $settings = variable_get('block_'. $delta, array('currcodes' => array_keys($currencies), 'user_source' => 0));
-  if ($settings['user_source'] == 0) {
+  if (@$settings['user_source'] == 0) {
     if (arg(0) == 'user') {
       $settings['account'] = user_uid_optional_load(arg(1));
     }
@@ -504,6 +504,13 @@ function transaction_access_accountant($transaction, $account = NULL) {
 function transaction_access_participants($transaction) {
   return in_array($GLOBALS['user']->uid, array($transaction->payer, $transaction->payee));
 }
+function transaction_access_payee($transaction) {
+  return $GLOBALS['user']->uid == $transaction->payee;
+}
+function transaction_access_payer($transaction) {
+  return $GLOBALS['user']->uid == $transaction->payer;
+}
+
 
 /*
  * currency access callbacks

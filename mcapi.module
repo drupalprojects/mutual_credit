@@ -259,10 +259,12 @@ function mcapi_mcapi_info_drupal_permissions() {
  */
 function mcapi_transaction_access_callbacks() {
   return array(
-    'transaction_access_participants' => t('the participants in the transaction'),
+    'transaction_access_participants' => t('Either participant in the transaction'),
     'transaction_access_authenticated' => t('Authenticated users'),
     'transaction_access_accountant' => t("Accountants"),
-    'transaction_access_anyone' => t('Anyone, including anonymous users')
+    'transaction_access_anyone' => t('Anyone, including anonymous users'),
+    'transaction_access_payee' => t('The payee in the transaction'),
+    'transaction_access_payer' => t('The payer in the transaction'),
   );
 }
 
@@ -296,7 +298,7 @@ function transaction_view_access($transaction = NULL) {
 
 function transaction_undo_access($transaction) {
   module_load_include('inc', 'mcapi');
-  if ($transaction->type == 'undone') return FALSE;
+  if ($transaction->state == TRANSACTION_STATE_ERASED) return FALSE;
   foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
     if (!currency_access('undo', $item['currcode'])) return FALSE;
   }

@@ -95,18 +95,6 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['fields']['sign_1']['empty_zero'] = 0;
   $handler->display->display_options['fields']['sign_1']['hide_alter_empty'] = 0;
   $handler->display->display_options['fields']['sign_1']['link_title'] = 'Sign';
-  /* Contextual filter: Signatures: Signatory */
-  $handler->display->display_options['arguments']['uid']['id'] = 'uid';
-  $handler->display->display_options['arguments']['uid']['table'] = 'mcapi_signatures';
-  $handler->display->display_options['arguments']['uid']['field'] = 'uid';
-  $handler->display->display_options['arguments']['uid']['default_action'] = 'default';
-  $handler->display->display_options['arguments']['uid']['default_argument_type'] = 'current_user';
-  $handler->display->display_options['arguments']['uid']['default_argument_skip_url'] = 0;
-  $handler->display->display_options['arguments']['uid']['summary']['number_of_records'] = '0';
-  $handler->display->display_options['arguments']['uid']['summary']['format'] = 'default_summary';
-  $handler->display->display_options['arguments']['uid']['summary_options']['items_per_page'] = '25';
-  $handler->display->display_options['arguments']['uid']['break_phrase'] = 0;
-  $handler->display->display_options['arguments']['uid']['not'] = 0;
   /* Filter criterion: Signatures: Is pending */
   $handler->display->display_options['filters']['pending']['id'] = 'pending';
   $handler->display->display_options['filters']['pending']['table'] = 'mcapi_signatures';

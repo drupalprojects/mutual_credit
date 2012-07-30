@@ -162,8 +162,8 @@ function mcapi_import_generate_transactions($rows) {
     $transaction->payer = trim($row['payer']);
     $transaction->payee = trim($row['payee']);
     $transaction->worth[LANGUAGE_NONE][0]['quantity'] = trim($row['quantity']);
-    if (isset($row['unixtime'])) {
-      $transaction->created = !is_numeric($row['created']) ? trim($row['created']) : strtotime($row['created']);
+    if (isset($row['created'])) {
+      $transaction->created = is_numeric($row['created']) ? trim($row['created']) : strtotime($row['created']);
     }
     if ($desc = variable_get('transaction_description_field', '')) {
       $transaction->{$desc}[LANGUAGE_NONE][0]['value'] = trim($row[$desc]);

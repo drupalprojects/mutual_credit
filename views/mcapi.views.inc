@@ -194,6 +194,18 @@ function transaction_access_anyone_views($state) {
   $condition->condition('mcapi_transactions.state', $state);
   return $condition;
 }
+function transaction_access_payee_views($state) {
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
+  return $condition;
+}
+function transaction_access_payer_views($state) {
+  $condition = db_and();
+  $condition->condition('mcapi_transactions.state', $state);
+  $condition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
+  return $condition;
+}
 
 /*
  * implements hook_query_TAG_alter
@@ -203,6 +215,7 @@ function transaction_access_anyone_views($state) {
  */
 function mcapi_query_transaction_access_views_alter(QueryAlterableInterface $query) {
   $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
+  $states = array_keys(mcapi_get_states());
   //what currencies can the current user see?
   $currencies = currencies_load($GLOBALS['user']);
   $or_currcodes = db_or();//where currcode = A OR currcode = B
@@ -210,8 +223,9 @@ function mcapi_query_transaction_access_views_alter(QueryAlterableInterface $que
     $currcode_and_states = db_and(); //where (currcode = A AND (STATES) )
     $currcode_and_states->condition('tw.worth_currcode', $currcode);
     $state_or_state = db_or();//where state = A OR B
-    foreach ($currency->transaction_access as $state => $callbacks) {
-      foreach (array_filter($callbacks) as $callback) {
+    foreach ($states as $state) {
+      $callbacks = array_filter($currency->transaction_access[$state]);
+      foreach ($callbacks as $callback) {
         $callback .= '_views';
         $state_and_callback = $callback($state);
         $state_or_state->condition($state_and_callback);

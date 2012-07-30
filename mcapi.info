@@ -4,6 +4,7 @@ description = Defines transaction entity with a swoppable controller, a default 
 package = Community Accounting
 configure = admin/accounting
 core = 7.x
+php = 5.3
 
 dependencies[] = ctools
 dependencies[] = field

@@ -3,7 +3,7 @@
 /*
  * Implements views hook_views_data
  */
-function mcapi_pending_views_data() {
+function mcapi_signatures_views_data() {
 
   $data['mcapi_signatures']['table']['group']  = t('Signatures');
   $data['mcapi_signatures']['table']['base'] = array(
@@ -34,7 +34,7 @@ function mcapi_pending_views_data() {
     )
   );
   $data['mcapi_signatures']['uid'] = array(
-    'title' => t('Signatory'),
+    'title' => t('Current signatory'),
     'filter' => array(
       'help' => t('Show only transactions on which the current user is a signatory'),
       'handler' => 'views_handler_filter_user_current'
@@ -57,11 +57,18 @@ function mcapi_pending_views_data() {
       'handler' => 'views_handler_filter_boolean_operator',
     )
   );
+  $data['mcapi_signatures']['sign'] = array(
+    'title' => t('Sign here'),
+    'field' => array(
+      'help' => t('Link to sign the transactions'),
+      'handler' => 'views_handler_field_mcapi_sign'
+    )
+  );
   return $data;
 }
 
 
-function mcapi_pending_views_data_alter(&$data) {
+function mcapi_signatures_views_data_alter(&$data) {
   // For other base tables, explain how we join
   $data['mcapi_transactions']['table']['join']['mcapi_signatures'] = array(
     'left_table' => 'mcapi_signatures',

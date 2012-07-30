@@ -154,7 +154,6 @@ function mcapi_limits_equation_parse($string, $values) {
     $pattern,
     $values
   );
-  if ($GLOBALS['user']->uid == 1)debug($values, $formula);
   return eval($formula);
 }
 
