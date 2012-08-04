@@ -10,7 +10,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
   list($payer, $payee) = explode('2', $vector);
   if (empty($form_state['confirmed'])) {
     $one = array(
-      '#title' => t('Account number to be credited'),
       '#type' => 'textfield',
       '#description' => t('A username, email, or user ID'),
       '#default_value' => '',
@@ -19,7 +18,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#weight' => 9,
     );
     $few = array(
-      '#title' => t('Payees'),
       '#description' => t('A group of users'),
       '#type' => 'user_chooser_permissions',
       '#args' => array('transact'),
@@ -27,9 +25,8 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#multiple' => TRUE,
     );
     $many = array(
-      '#title' => t('Payees'),
       '#type' => 'user_chooser_preselect',
-      '#options' => module_invoke_all('trading_groups'),
+      '#options' => module_invoke_all('user_chooser_preselect'),
       '#me' => FALSE,
     );
 
@@ -61,10 +58,10 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       'subject' => variable_get('mcapi_accounting_masspay_subject', ''),
       'body' => variable_get('mcapi_accounting_masspay_body', ''),
     );
-    $form += _mcapi_mail_template_fields($defaults);
+    $form += _mcapi_mail_template_fields($defaults, NULL, FALSE);
     $form['mail']['#weight'] = 21;
     $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
-  unset($form['mail']['cc']);
+    unset($form['mail']['cc']);
   }
   else {
     $form['preview'] = transaction_view($form_state['confirmed'], 'sentences');
@@ -91,6 +88,7 @@ function mcapi_mass_pay_validate($form, &$form_state) {
     $form_state['values']['creator'] = $GLOBALS['user']->uid;
     $form_state['values']['type'] = 'mass';
     $form_state['values']['state'] = TRANSACTION_STATE_FINISHED;
+    if (form_get_errors()) return;
     $transactions = mcapi_mass_pay_insert($form_state['values'], FALSE);
     if (!form_get_errors()) {
       $form_state['rebuild'] = TRUE;
@@ -100,28 +98,37 @@ function mcapi_mass_pay_validate($form, &$form_state) {
     }
   }
 }
-
+/*
+ * form submit callback
+ */
 function mcapi_mass_pay_submit($form, &$form_state) {
-  $transactions = mcapi_mass_pay_insert($form_state['storage'], TRUE);
-  if ($form_state['storage']['subject'] && $form_state['storage']['body']) {
-    global $language;
-    $params['bcc'] = db_select('users', 'u')
+  $values = $form_state['storage'];
+  $transactions = mcapi_mass_pay_insert($values, TRUE);
+  if ($values['subject'] && $values['body']) {
+    $bcc = db_select('users', 'u')
       ->fields('u', array('mail'))
-      ->condition('uid', isset($form_state['values']['payers']) ? $form_state['values']['payers'] : $form_state['values']['payees'])
+      ->condition('uid', isset($values['payers']) ? $values['payers'] : $values['payees'])
       ->execute()
       ->fetchCol();
-    drupal_mail('accountant_ui', 'mass', variable_get('site_mail', ''), $language, $params);
+    if (count($bcc)) {
+      $values['bcc'] = implode(", ", $bcc);
+    }
+    global $language;
+    drupal_mail('accountant_ui', 'mass', variable_get('site_mail', ''), $language, $values);
   }
   //store the mail so we can bring it up as a default next time
-  variable_set('mcapi_accounting_masspay_subject', $form_state['storage']['subject']);
-  variable_set('mcapi_accounting_masspay_body', $form_state['storage']['body']);
+  variable_set('mcapi_accounting_masspay_subject', $values['subject']);
+  variable_set('mcapi_accounting_masspay_body',$values['body']);
   $form_state['redirect'] = 'admin/accounting';
 }
 
+/*
+ * implements hook_mail
+ */
 function accountant_ui_mail($key, &$message, $params) {
   $message['headers']['Bcc'] = $params['bcc'];
-  $message['subject'] = $form_state['storage']['subject'];
-  $message['body'] = $form_state['storage']['body'];
+  $message['subject'] = $params['subject'];
+  $message['body'][] = $params['body'];
 }
 
 function mcapi_mass_pay_insert($values, $really) {
@@ -138,7 +145,7 @@ function mcapi_mass_pay_insert($values, $really) {
   }
   $messages = array();
   try {transactions_insert($transactions, $really);}
-  catch (Exception $e) {form_set_error('', implode('<br />', $e->getMessage()));}
+  catch (Exception $e) {form_set_error('', $e->getMessage());}
   return $transactions;
 }
 

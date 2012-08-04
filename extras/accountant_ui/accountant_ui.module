@@ -63,7 +63,7 @@ function accountant_ui_menu() {
 }
 
 /*
- * implements hook_trading_groups
+ * implements hook_user_chooser_preselect
  * these callbacks take the user_chooser element, and the $form_State as their arguments
  */
 function accountant_ui_user_chooser_preselect() {

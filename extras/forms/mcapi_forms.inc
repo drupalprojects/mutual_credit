@@ -87,6 +87,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       //however if we are editing an existing transaction,
       //we have to show the transaction owner and derive the direction and partner from the payer and payee
       if (!empty($transaction->xid)) {
+        debug('editing transaction');//actually I'm not sure if this is ever needed since we removed transaction editing/
         if ($transaction->creator == $transaction->payer) {
           $form['secondperson']['#default_value'] = $transaction->payee;
           $form['direction']['#default_value'] = 'outgoing';
@@ -94,6 +95,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
         else{
           $form['secondperson']['#default_value'] = $transaction->payer;
           $form['direction']['#default_value'] = 'incoming';
+        }
+      }
+      else {
+        if ($mcapi_form->data['direction']['preset']) {
+          $form['direction']['#default_value'] = $mcapi_form->data['direction']['preset'];
+        }
+        if ($mcapi_form->data['secondperson']['preset']) {
+          $form['secondperson']['#default_value'] = $mcapi_form->data['secondperson']['preset'];
         }
       }
       unset($form['payer'], $form['payee']);
@@ -193,11 +202,13 @@ function mcapi_recursive_default_value($value) {
  */
 function theme_mcapi_form($variables) {
   $form = &$variables['form'];
-
   $buttons = drupal_render($form['buttons']);
   //render the visible stuff first
   if ($form['#step'] == 1) {
-    mcapi_unset_recursive($form, '#theme_wrappers');
+    foreach (array('payer', 'payee', 'secondperson', 'direction', 'worth') as $fieldname) {
+      if (!isset($form[$fieldname])) continue;
+      mcapi_unset_recursive($form[$fieldname], '#theme_wrappers');
+    }
     return token_replace(
       $form['#template'],
       $form,

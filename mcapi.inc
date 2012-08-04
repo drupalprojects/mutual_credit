@@ -84,11 +84,11 @@ function mcapi_menu_inc() {
     'description' => 'Full control over transaction creation',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/accounting/entity_controller'] = array(
+  $items['admin/accounting/misc'] = array(
     'title' => 'Misc settings',
     'description' => "This package comes with it's own entity controller, which reads and writes to the database using an internal API. It is possible to write different entity controllers to work with different accouting systems. The provided entity controller is semi-financialised. It is very different from the drupal default, designed for content management, but it does only single entry accounting with no database-level error checking built in.",
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_controller_options_form'),
+    'page arguments' => array('mcapi_misc_options_form'),
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.inc',
     'weight' => 10
@@ -263,6 +263,7 @@ function transaction_form_validate($form, &$form_state) {
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
+  if (form_get_errors()) return;
   try{
     //keep a copy of the built transaction, and its dependencies for validation elsewhere
     $form_state['transactions'] = transaction_insert_new($transaction, FALSE);
@@ -308,7 +309,7 @@ function transaction_form_submit($form, &$form_state) {
 /*
  *
  */
-function mcapi_controller_options_form($form_state) {
+function mcapi_misc_options_form($form_state) {
   cache_clear_all('*', 'cache');
   $controllers = module_implements('transaction_controller');
   $form['mcapi_controller'] = array(
@@ -415,9 +416,11 @@ function mcapi_accounting_validate($transactions){
 
 /*
  * validate callback for transaction form participants - accepts uid only
+ * the $element value may be a string, depending on the widget used
+ * in which case the form_state value will have been changed by mcapi_validate_usernames()
  */
 function mcapi_validate_transactor(&$element, $form_state) {
-  $uid = &$element['#value'];
+  $uid = &$form_state['values'][$element['#name']];
   if (is_null($uid)) return;
   $account = user_load($uid);
   if (empty($account->uid)) {
@@ -655,7 +658,7 @@ function _transaction_type_selector($default, $multiple = TRUE, $exclude = array
   );
 }
 
-function _mcapi_mail_template_fields($defaults = array(), $tokens = array()) {
+function _mcapi_mail_template_fields($defaults = array(), $tokens = array(), $required = TRUE) {
   $tokens_list = count($tokens) ?
     t('Available variables are: @variables', array('@variables' => implode(', ', matslats_list_tokens($tokens)))) :
     t('The same email will be sent in all cases.');
@@ -668,13 +671,13 @@ function _mcapi_mail_template_fields($defaults = array(), $tokens = array()) {
         '#title' => t('Subject'),
         '#type' => 'textfield',
         '#default_value' => empty($defaults['subject']) ? '' : $defaults['subject'],
-        '#required' => TRUE,
+        '#required' => $required,
       ),
       'body' => array(
         '#title' => t('Body'),
         '#type' => 'textarea',
         '#default_value' => empty($defaults['body']) ? '' : $defaults['body'],
-        '#required' => TRUE,
+        '#required' => $required,
         '#weight' => 1
       ),
       'cc' => array(

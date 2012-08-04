@@ -231,7 +231,7 @@ function mcapi_signatures_config($form, $form_state) {
  * )
  * Every value should be 1 when the transaction is created
  */
-function mcapi_signatures_save($transaction) {ddebug_backtrace();
+function mcapi_signatures_save($transaction) {
   $old_state = $transaction->state;
   //need to check property 'pending_signatures' because it may not have been declared
   if (!empty($transaction->pending_signatures)) {
@@ -339,7 +339,8 @@ function transaction_cancel_pending_access($transaction) {
   module_load_include('inc', 'mcapi');
   currencies_load();//menu access functions run before hook_init - see mcapi_init
   $currencies = &drupal_static('currencies');
-  $callbacks = $currencies[$transaction->worth[LANGUAGE_NONE][0]['currcode']]->transaction_access['cancel_pending'];
+  $callbacks = &$currencies[$transaction->worth[LANGUAGE_NONE][0]['currcode']]->transaction_access['cancel_pending'];
+  if (empty($callbacks)) return FALSE;
   foreach (array_filter($callbacks) as $callback) {
     if ($callback($transaction)) return TRUE;
   }

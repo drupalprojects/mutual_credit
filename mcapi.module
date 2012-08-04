@@ -757,19 +757,27 @@ function save_smallest($balance, $uid) {
 function mcapi_validate_usernames(&$element, &$form_state) {
   $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
   if (!array_filter($values)) return;
+  $validated = array();
   foreach ($values as $value) {
-    if (!is_numeric($value)) {
-      $uid = user_load_by_name($value)->uid;
-      if ($uid) {
-        $element['#value'] = $uid;
-        form_set_value($element, $uid, $form_state);
-      }
-      else {
-        form_error($element, t('The username %name does not exist.', array('%name' => $value)));
-      }
+    if (is_numeric($value)) {
+      $account = user_load($value);
+    }
+    else {
+      $account = user_load_by_name($value);
+    }
+    if (is_object($account)) {
+      $validated[] = $account->uid;
+    }
+    else {
+      form_error($element, t('The user %string does not exist.', array('%string' => $value)));
     }
   }
+  if (form_get_errors()) return;
+  $result = is_array($element['#value']) ? $validated : $validated[0];
+  form_set_value($element, $result, $form_state);
 }
+
+
 /*
  * implements hook_init
  * make the drupal_static variable 'currencies' available

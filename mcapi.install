@@ -666,6 +666,8 @@ function mcapi_update_7009() {
 }
 
 function mcapi_update_7010() {
+  //in case the following doesn't work properly
+  db_query("update {system} SET weight = 2 where name = 'mcapi_signatures'");
   if (module_exists('mcapi_pending')) {
     db_query("DELETE FROM {system} WHERE name = 'mcapi_signatures'");
     db_query("UPDATE {system} set name = 'mcapi_signatures' WHERE name = 'mcapi_pending'");

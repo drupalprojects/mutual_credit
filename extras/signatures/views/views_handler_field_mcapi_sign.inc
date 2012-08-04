@@ -33,7 +33,7 @@ class views_handler_field_mcapi_sign extends views_handler_field {
     if (transaction_sign_access($transaction)) {
       return l($this->options['text'], 'transaction/'. $serial . '/sign');
     }
-    elseif (mcapi_pending_signoff_access($transaction)) {
+    elseif (transaction_signoff_access($transaction)) {
       return l(t('Sign off'), 'transaction/'. $serial . '/signoff');
     }
   }
