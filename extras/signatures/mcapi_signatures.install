@@ -71,7 +71,7 @@ function _pending_setup_actions() {
 
 function save_default_pending_action($callback, $trigger) {
   static $weight = 1;
-  $actions = mcapi_pending_action_info();
+  $actions = mcapi_signatures_action_info();
   $form_callback = $callback.'_form';
   $form = $form_callback();
   //special exception for mail_all_signatories_action

@@ -103,12 +103,19 @@ function mcapi_views_default_views() {
   $handler->display->display_options['filters']['type']['id'] = 'type';
   $handler->display->display_options['filters']['type']['table'] = 'mcapi_transactions';
   $handler->display->display_options['filters']['type']['field'] = 'type';
+  $handler->display->display_options['filters']['type']['operator'] = 'not in';
   $handler->display->display_options['filters']['type']['value'] = array(
-    'default' => 'default',
-    '1stparty' => '1stparty',
-    '3rdparty' => '3rdparty',
+    'child' => 'child',
+    'mass' => 'mass',
   );
-  $handler->display->display_options['filters']['type']['reduce_duplicates'] = 0;
+  $handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
+  $handler->display->display_options['filters']['type']['expose']['label'] = 'Type';
+  $handler->display->display_options['filters']['type']['expose']['use_operator'] = FALSE;
+  $handler->display->display_options['filters']['type']['expose']['operator'] = 'type_op';
+  $handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
+  $handler->display->display_options['filters']['type']['expose']['required'] = FALSE;
+  $handler->display->display_options['filters']['type']['expose']['remember'] = FALSE;
+  $handler->display->display_options['filters']['type']['expose']['multiple'] = FALSE;
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Transactions', 'transactions');

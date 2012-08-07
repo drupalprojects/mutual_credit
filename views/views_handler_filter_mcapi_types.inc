@@ -3,9 +3,10 @@
 /**
  * Filter handler for exchange types
  */
-class views_handler_filter_mcapi_types extends views_handler_filter_many_to_one {
+class views_handler_filter_mcapi_types extends views_handler_filter_in_operator {
 
   function get_value_options() {
-    $this->value_options = mcapi_get_types();
+    $this->value_options = drupal_map_assoc(mcapi_get_types());
+    return $this->value_options;
   }
 }

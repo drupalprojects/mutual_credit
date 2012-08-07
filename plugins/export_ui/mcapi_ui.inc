@@ -14,7 +14,7 @@ $plugin = array(
   'menu' => array(
     'menu prefix' => 'admin/accounting',
     'menu item' => 'currencies',
-    'menu title' => 'Currencies configuration',
+    'menu title' => 'Currencies',
     'menu description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.',
   ),
 

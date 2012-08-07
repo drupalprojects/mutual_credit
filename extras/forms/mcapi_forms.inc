@@ -135,7 +135,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     }
     //put the back button only for last step if there are values from step 1
     if (!empty($form_state['values'])) {//coming from step 1
-      $form['#preview'] = transaction_view($form_state['transactions'], $mcapi_form->data['experience']['sure_format'], $mcapi_form->data['experience']['sure_template']);
+      $form['#preview'] = transaction_view($form_state['transactions'], $mcapi_form->data['experience']['sure_format'], @$mcapi_form->data['experience']['sure_template']);
       mcapi_hide_tabs();
       $form['buttons']['back'] = array(
         '#type' => 'submit',
@@ -250,7 +250,7 @@ function mcapi_forms_validate($form, &$form_state) {
     return;
   }
 
-  $form_state['rebuild'] = 0;
+  $form_state['rebuild'] = FALSE;
   //go back if that button was pressed
   if (isset($form_state['values']['back']) && $form_state['values']['op'] == $form_state['values']['back']) {
     $form_state['rebuild'] = TRUE;

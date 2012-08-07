@@ -85,7 +85,7 @@ class mcapi_ui extends ctools_export_ui {
     }
 
     $header[] = array('data' => t('Transactions'), 'class' => array('ctools-export-ui-storage'));
-    $header[] = array('data' => t('Example'), 'class' => array('ctools-export-ui-name'));
+    $header[] = array('data' => t('Display format'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
 

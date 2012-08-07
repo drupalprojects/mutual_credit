@@ -154,7 +154,7 @@ function mcapi_forms_block_info() {
   foreach ($mcapi_forms as $mcapi_form) {
     if ($mcapi_form->data['architecture']['use_block'] && empty($mcapi_form->disabled)) {
       $blocks[$mcapi_form->name] = array(
-        'info' => $mcapi_form->name,
+        'info' => t('Transaction form:') . ' ' .$mcapi_form->name,
         'cache' => DRUPAL_CACHE_PER_USER
       );
     }

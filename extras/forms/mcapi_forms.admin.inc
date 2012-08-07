@@ -86,6 +86,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#type' => 'checkbox',
       '#default_value' => isset($mcapi_form['architecture']['use_block']) ? $mcapi_form['architecture']['use_block'] : '',
       '#element_validate' => array(),
+      '#weight' => 4
     )
   );
 

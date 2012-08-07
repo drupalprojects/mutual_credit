@@ -80,7 +80,7 @@
  * Server Response: returns list of exchanges and spending/earning limits
  *
  * Try transaction
- * Client Request: sends transaction params
+ * Client Request: transaction params
  * Server Response: returns OK or error code
  *
  * Relay transaction
@@ -203,6 +203,7 @@ array(
   'src_url' => STRING, //'servername.com',
   'quantity' => FLOAT, //denominated in src units
   'description' => TEXT, //255
+  'really' => boolean //whether or not to write
 );
 //going towards the server, the 2 authentication fields should be added
 //on the second leg, towards the 2nd client, that client's key is needed for authentication
