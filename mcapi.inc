@@ -9,7 +9,7 @@ function mcapi_entity_info_inc() {
     'label' => t('Transaction'),
     'controller class' => variable_get('mcapi_controller', 'mcapi') .'_EntityController',
     'base table' => 'mcapi_transactions',
-    'uri callback' => 'transaction_uri', //what is this for???
+    'uri callback' => 'transaction_uri',
     'label callback' => 'transaction_label',
     'access callback' => 'transaction_access',
     'module' => 'mcapi',
@@ -52,6 +52,21 @@ function mcapi_entity_info_inc() {
       'default hook' => 'blah'
     )
   );
+
+  // Search integration is provided by node.module, so search-related
+  // view modes for nodes are defined here and not in search.module.
+  if (module_exists('search')) {
+    $entities['transaction']['view modes'] += array(
+      'search_index' => array(
+        'label' => t('Search index'),
+        'custom settings' => FALSE,
+      ),
+      'search_result' => array(
+        'label' => t('Search result'),
+        'custom settings' => FALSE,
+      ),
+    );
+  }
   return $entities;
 }
 
@@ -59,7 +74,7 @@ function mcapi_menu_inc() {
   //take this opportunity of an occaisional hook to check that the description field is set
   if (!variable_get('transaction_description_field', '')) {
     if (count(_mcapi_get_text_instances())) {
-      drupal_set_message(t('As the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
+      drupal_set_message(t('Is the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
     }
   }
 
@@ -798,6 +813,7 @@ function mcapi_description_field($form, $form_state) {
   return system_settings_form($form);
 }
 function _mcapi_get_text_instances() {
+  $options = array();
   foreach(field_info_fields() as $field) {
     if ($field['module'] == 'text' && isset($field['bundles']['transaction'])) {
       $options[$field['field_name']] = $field['field_name'];

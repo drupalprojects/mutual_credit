@@ -49,7 +49,7 @@ define('TRANSACTION_STATE_FINISHED', 1);
 //so its state constant will be > 0
 //depending on the delete mode, erased transactions may or may not be counted
 define('TRANSACTION_STATE_ERASED', 0);
-//A reveresed transaction cluster contains at least one pair of mirrored transactions.
+//A reversed transaction cluster contains at least one pair of mirrored transactions.
 //Reversed transactions are counted and visible
 define('TRANSACTION_STATE_REVERSED', 2);
 
@@ -68,8 +68,7 @@ function mcapi_help($section, $arg) {
       return '<p>'. t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence on abusive global financial capital. Despite its huge utility and value to local communities, the development of this software over four years has been supported only by informal donations, in money and in kind.");
     case 'admin/accounting/fields':
       module_load_include('inc', 'mcapi');
-      return drupal_render(drupal_get_form('mcapi_description_field'));
-  }
+      return drupal_render(drupal_get_form('mcapi_description_field'));  }
 }
 
 /**
@@ -171,6 +170,11 @@ function mcapi_mcapi_info_states() {
     TRANSACTION_STATE_ERASED => array(
       'name' => t('Erased'),
       'description' => t("marked deleted - not to be confused with 'reversal' transactions"),
+      'default_access_callbacks' => array()
+    ),
+    TRANSACTION_STATE_REVERSED => array(
+      'name' => t('Reversed'),
+      'description' => t("cancelled by another reversed transaction in the same cluster"),
       'default_access_callbacks' => array()
     )
   );
@@ -327,6 +331,128 @@ function mcapi_theme($existing, $type, $theme, $path) {
   return $items;
 }
 
+/**
+ * Implements hook_search_info().
+ */
+function mcapi_search_info() {
+  if (!variable_get('transaction_description_field', '')) return;
+  return array(
+    'title' => 'Transactions',
+    'path' => 'transaction',
+  );
+}
+
+/**
+ * Implements hook_search_access().
+ * the reality is more complex since the transactions are visible according to currency settings
+ */
+function mcapi_search_access() {
+  if (!variable_get('transaction_description_field', '')) return;
+  return user_access('transact');
+}
+
+/**
+ * Implements hook_search_reset().
+ */
+function mcapi_search_reset() {
+  if (!variable_get('transaction_description_field', '')) return;
+  db_update('search_dataset')
+    ->fields(array('reindex' => REQUEST_TIME))
+    ->condition('type', 'transaction')
+    ->execute();
+}
+
+/**
+ * Implements hook_search_status().
+ * based on node_search_status()
+ */
+function mcapi_search_status() {
+  if (!variable_get('transaction_description_field', '')) return;
+  return array(
+    'remaining' => db_query("SELECT COUNT(*) FROM {mcapi_transactions} x LEFT JOIN {search_dataset} d ON d.type = 'transaction' AND d.sid = x.xid WHERE d.sid IS NULL OR d.reindex <> 0")->fetchField(),
+    'total' => db_query('SELECT COUNT(*) FROM {mcapi_transactions}')->fetchField()
+  );
+}
+
+/**
+ * Implements hook_search_execute().
+ * based on node_search_execute()
+ */
+function mcapi_search_execute($keys = NULL, $conditions = NULL) {
+  if (!variable_get('transaction_description_field', '')) return array();
+  // Build matching conditions
+  $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
+  $query->join('mcapi_transactions', 'x', 'x.serial = i.sid');
+  $query
+    ->addTag('transaction_access')
+    ->searchExpression($keys, 'mcapi');
+
+  // Only continue if the first pass query matches.
+  if (!$query->executeFirstPass()) {
+    return array();
+  }
+
+  // Load results.
+  $find = $query
+    ->limit(10)
+    ->execute();
+  $results = array();
+  foreach ($find as $item) {
+    // Render the node.
+    $transaction = transaction_load($item->sid);//sid is actually the serial number
+    if (!transaction_view_access($transaction)) continue;
+
+    $uri = entity_uri('transaction', $transaction);
+    $results[$item->sid] = array(
+      'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
+      'title' => transaction_label($transaction),
+      'transaction' => $transaction,
+    );
+  }
+  krsort($results);
+  return $results;
+}
+
+
+/**
+ * Implements hook_update_index().
+ */
+function mcapi_update_index() {
+  if (!variable_get('transaction_description_field', '')) return;
+  module_load_include('inc', 'mcapi');
+  $xs = db_query("SELECT x.serial, x.xid
+    FROM {mcapi_transactions} x
+    LEFT JOIN {search_dataset} d ON d.type = 'transaction' AND d.sid = x.serial
+    WHERE d.sid IS NULL OR d.reindex <> 0")->fetchAll();
+  foreach($xs as $trans) {
+    //is this achievable using GROUP BY?
+    $xids[$trans->serial][] = $trans->xid;
+  }
+  foreach ($xids as $serial => $xids) {
+    $text = array();
+    foreach(_mcapi_get_text_instances() as $fieldname) {
+      $info = field_info_field($fieldname);
+      $table = 'field_data_'.$fieldname;
+      $column = $fieldname.'_value';
+      $text[] = db_query("SELECT $column FROM {$table} WHERE entity_id IN (".implode(',', $xids).") AND entity_type = 'transaction'")->fetchField();
+    }
+    search_index($serial, 'mcapi', implode(' ', $text));
+  }
+  // Save the changed time of the most recent indexed transaction, for the search results half-life calculation.
+  // actually not doing this coz only updating new transactions since last cron.
+  //variable_set('mcapi_cron_last', transaction_load($serial)->created);
+}
+
+/**
+ * Implements hook_field_display_ENTITY_TYPE_alter().
+ */
+function mcapi_field_display_transaction_alter(&$display, $context) {
+  // Hide field labels in search index.
+  if ($context['view_mode'] == 'search_index') {
+    $display['label'] = 'hidden';
+  }
+}
+
 /*
  * implements hook_block_info
  */
@@ -439,7 +565,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
   if (!is_array($transactions)) {
     $transactions = array($transactions->xid => $transactions);
   }
-  if ($view_mode == 'sentence') {
+  if ($view_mode == 'sentence' || $view_mode == 'search_result' ) {
     drupal_add_css('.transaction-sentence div{display:inline;}', array('type' => 'inline'));
     drupal_add_css('div.field-name-worth, div.field-name-worth div{display:inline;}', array('type' => 'inline'));
   }

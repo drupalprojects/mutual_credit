@@ -72,6 +72,9 @@ function drush_mcapi_wipeslate() {
   entity_get_controller('transaction')->state($serials, 0);
   $count = count($serials);
   drush_print("undone $count transactions");
+  if (module_exists('mcapi_signatures')) {
+    db_query("TRUNCATE table {mcapi_signatures}");
+  }
   if (drush_get_option('purge')) {
     drush_mcapi_purge();
   }
