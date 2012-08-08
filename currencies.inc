@@ -196,6 +196,7 @@ function currency_edit_access($currency) {
 
 function currencies_load_all() {
   ctools_include('export');
+  $currencies = array();
   $functions = array_keys(module_invoke_all('transaction_access_callbacks'));
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park

@@ -128,7 +128,7 @@ function mcapi_signatures_mcapi_info_states() {
     TRANSACTION_STATE_PENDING => array(
       'name' => t("Pending"),
       'description' => t("awaiting signatures before becoming 'finished'."),
-      'default_access_callbacks' => array('mcapi_xacc_participants')
+      'default_access_callbacks' => array('transaction_access_participants')
     )
   );
 }
@@ -150,8 +150,8 @@ function mcapi_signatures_config($form, $form_state) {
       '#collapsed' => TRUE,
       '#id' => $type,
       'participants' => array(
-        '#title' => t('Participants'),
-        '#description' => t("Both participants, logged in user signs automatically"),
+        '#title' => t('Both participants must sign'),
+        '#description' => t("Logged in user signs automatically"),
         '#type' => 'checkbox',
         '#default_value' => isset($settings['participants']) ? $settings['participants'] : TRUE
       ),
@@ -165,7 +165,7 @@ function mcapi_signatures_config($form, $form_state) {
         '#me' =>TRUE
       ),
       'complete' => array(
-        '#title' => t('Notify'),
+        '#title' => t('Send notification'),
         '#description' => t("Use the email template on this page to notify all signatories"),
         '#type' => 'checkbox',
         '#default_value' => isset($settings['complete']) ? $settings['complete'] : FALSE,
@@ -418,7 +418,7 @@ function mcapi_signatures_form_ctools_export_ui_edit_item_form_alter(&$form, &$f
       '#title' => t('Cancel pending transactions'),
       '#type' => 'checkboxes',
       '#options' => $form['transaction_access'][1]['#options'],
-      '#default_value' => @$currency->transaction_access['cancel_pending'],
+      '#default_value' => isset($currency->transaction_access['cancel_pending']) ? $currency->transaction_access['cancel_pending'] : array(),
       '#weight' => 5,
     );
   }

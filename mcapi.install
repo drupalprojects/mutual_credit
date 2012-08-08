@@ -316,12 +316,7 @@ function mcapi_update_7000() {
   require_once('currencies.inc');
   //make the tables declared in this module
   $tables = mcapi_schema();
-  db_create_table('mcapi_currencies', $tables['mcapi_transactions']);
-  //this was part of mcapi in d6
-  if (db_query("SELECT TRUE FROM {system} WHERE name = 'mc_signatures'")->fetchfield()) {
-    db_delete('system')->condition('name', 'mcapi_signatures')->execute();
-    db_update('system')->fields(array('name' => 'mcapi_signatures'))->condition('name', 'mc_signatures')->execute();
-  }
+  db_create_table('mcapi_currencies', $tables['mcapi_currencies']);
 
   //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
   $old_currencies = db_query("SELECT * FROM {mc_currencies} c LEFT JOIN {node} n ON c.nid = n.nid ORDER BY c.nid")->fetchAllAssoc('nid');
@@ -372,6 +367,9 @@ function mcapi_update_7000() {
 
   db_drop_table('mc_currencies');
   db_drop_table('mc_cache');
+  variable_set('transaction_description_field', 'transaction_description');
+  field_delete_instance(field_info_instance('transaction', 'body', 'transaction'));
+
   drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($old_currencies))));
   //prepare for mcapi_update_7001
   module_load_include('field.inc', 'mcapi');
@@ -477,7 +475,6 @@ function mcapi_update_7002() {
     -1 => MCPI_CURRENCY_UNDO_ERASE,
     0 => TRANSACTION_STATE_FINISHED,
   );
-  //if any transaction is in pending mode then enable the pending module
   _mcapi_update_pending($states);
 
   $currs = db_query("SELECT nid, title FROM {node} where type = 'currency' ORDER BY nid ASC")->fetchAllKeyed();
@@ -556,19 +553,38 @@ function mcapi_user_presave(&$edit, $account, $category) {
 
 function _mcapi_update_pending(&$states) {
   $version  = db_query("SELECT schema_version FROM {system} WHERE name = 'mc_signatures'")->fetchField();
-  if ($version < 1) return;
+  if ($version < 1) return;//the module was never installed
+  //replace the old module with the new, so as to retain the version number
+  if (db_query("SELECT TRUE FROM {system} WHERE name = 'mc_signatures'")->fetchfield()) {
+    db_delete('system')->condition('name', 'mcapi_signatures')->execute();
+    db_update('system')->fields(array('name' => 'mcapi_signatures'))->condition('name', 'mc_signatures')->execute();
+  }
+
   module_enable(array('mcapi_signatures'));
   db_query('INSERT into {mcapi_signatures} SELECT nid as serial, uid, 1 as pending FROM {mc_unsigned}');
   $states[TRANSACTION_STATE_PENDING] = TRANSACTION_STATE_PENDING;
 
-  db_drop_table('mc_unsigned');
+  $d6tokens = array('!username', '!site', '!uri', '!date', '!login_url', '!creator', '!exchange_uri', '!summary');
+  $d7tokens = array('[transaction:creator]', '[site:name]', '[transaction:uri]', '[transaction:created]', '[site:login-url]', '[transaction:creator]', '[transaction:uri]', '[transaction:summary]');
+  variable_set('mcapi_sign_notify_template', array(
+    'subject' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_notification_subject')),
+    'body' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_notification_body')),
+  ));
+  variable_set('mcapi_signed_off_notify_template', array(
+    'subject' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_signoff_subject')),
+    'body' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_signoff_body')),
+  ));
+
 
   variable_del('mc_signatures_sure');
   variable_del('mc_subtypes');
   variable_del('mc_signatures_signoff_subject');
   variable_del('mc_signatures_signoff_body');
+  variable_del('mc_signatures_notification_subject');
+  variable_del('mc_signatures_notification_body');
   variable_del('mc_notification_update_body');
   variable_del('mc_notification_update_subject');
+  db_drop_table('mc_unsigned');
 }
 
 
@@ -592,6 +608,8 @@ function mcapi_update_7003() {
 
   //other blocks from the mc_display module
   //we seem to have a delta 'balances' already for the mc_display module
+  db_query("DELETE FROM {block} WHERE module = 'mcapi' AND 'delta' = 'balances' AND theme = 'garland'");
+  //so without the line above, this one gives an error
   db_query("UPDATE {block} SET module = 'mcapi', delta = 'balances' WHERE delta = 'mc_balances'");
   db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_run_bal' WHERE delta = 'mc_balance_history'");
   db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_sum' WHERE delta = 'balance_ometer'");
