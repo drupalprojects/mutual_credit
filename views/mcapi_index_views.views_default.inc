@@ -172,7 +172,8 @@ function mcapi_getview_statement($multicurrencies) {
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
-  $handler->display->display_options['pager']['type'] = 'full';
+  $handler->display->display_options['pager']['type'] = module_exists('date_views') ? 'date_views_pager' : 'none';
+
   $handler->display->display_options['pager']['options']['items_per_page'] = '25';
   $handler->display->display_options['style_plugin'] = 'table';
   /* Relationship: Transaction index: 2nd user */
@@ -248,6 +249,18 @@ function mcapi_getview_statement($multicurrencies) {
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid1']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid1']['not'] = 0;
+  /* Contextual filter: Transaction index: Created moment */
+  if (module_exists('date_views')) {
+    $handler->display->display_options['arguments']['created']['id'] = 'created';
+    $handler->display->display_options['arguments']['created']['table'] = 'mcapi_index';
+    $handler->display->display_options['arguments']['created']['field'] = 'created';
+    $handler->display->display_options['arguments']['created']['default_action'] = 'default';
+    $handler->display->display_options['arguments']['created']['default_argument_type'] = 'date';
+    $handler->display->display_options['arguments']['created']['default_argument_skip_url'] = 0;
+    $handler->display->display_options['arguments']['created']['summary']['number_of_records'] = '0';
+    $handler->display->display_options['arguments']['created']['summary']['format'] = 'default_summary';
+    $handler->display->display_options['arguments']['created']['summary_options']['items_per_page'] = '25';
+  }
   if ($multicurrencies) {
     /* Filter criterion: Transaction index: Currency */
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
@@ -264,7 +277,7 @@ function mcapi_getview_statement($multicurrencies) {
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['path'] = 'user/%/statement';
   $handler->display->display_options['menu']['type'] = 'tab';
-  $handler->display->display_options['menu']['title'] = 'Trades';
+  $handler->display->display_options['menu']['title'] = 'Statement';
   $handler->display->display_options['menu']['weight'] = '0';
   $translatables['statement'] = array(
     t('Master'),
@@ -288,6 +301,7 @@ function mcapi_getview_statement($multicurrencies) {
     t('All'),
     t('Currency'),
     t('Page'),
+    t('Statement'),
   );
   return $view;
 }
@@ -794,7 +808,7 @@ function mcapi_getview_profit_loss($multicurrencies) {
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
-  $handler->display->display_options['pager']['type'] = 'some';
+  $handler->display->display_options['pager']['type'] = module_exists('date_views') ? 'date_views_pager' : 'none';
   $handler->display->display_options['pager']['options']['items_per_page'] = '10';
   $handler->display->display_options['style_plugin'] = 'table';
   $handler->display->display_options['style_options']['columns'] = array(
@@ -920,7 +934,7 @@ function mcapi_getview_profit_loss($multicurrencies) {
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['defaults']['header'] = FALSE;
   $handler->display->display_options['title'] = 'Income';
-  $handler->display->display_options['path'] = 'user/%/profit_loss';
+  $handler->display->display_options['path'] = 'user/%user/profit_loss';
   $handler->display->display_options['menu']['type'] = 'tab';
   $handler->display->display_options['menu']['title'] = 'Transactions';
   $handler->display->display_options['menu']['description'] = 'Income, Expenditure';

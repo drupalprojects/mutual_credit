@@ -37,6 +37,7 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['serial']['id'] = 'serial';
   $handler->display->display_options['fields']['serial']['table'] = 'mcapi_transactions';
   $handler->display->display_options['fields']['serial']['field'] = 'serial';
+  $handler->display->display_options['fields']['serial']['exclude'] = TRUE;
   /* Field: User: Name */
   $handler->display->display_options['fields']['name']['id'] = 'name';
   $handler->display->display_options['fields']['name']['table'] = 'users';

@@ -215,12 +215,12 @@ function currencies_load_all() {
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     foreach (mcapi_get_states('#full') as $constant => $state_info) {
       if (!isset($data->transaction_access[$constant])) {
-        drupal_set_message(t('Invalid access callback for currency @currname, state @state: !edit_link',array(
+        drupal_set_message(t('Resave currency @currname, paying attention to transaction access for state @state: !edit_link',array(
           '@currname' => $data->human_name,
           '@state' => $state_info['name'],
           '!edit_link' => l(t('edit'), 'admin/accounting/currencies/list/'.$currcode.'/edit')
           )
-        ));
+        ), 'warning');
         $data->transaction_access[$constant] = drupal_map_assoc($state_info['default_access_callbacks']);
       }
     }

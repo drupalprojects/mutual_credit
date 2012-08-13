@@ -494,13 +494,18 @@ function mcapi_update_7002() {
     LEFT JOIN {node} n on n.nid = x.nid
     LEFT JOIN {node_revision} v on n.vid = v.vid"
   )->fetchAllAssoc('nid');
-  $serial = 0;
+  $serial = 1;
 
+  mcapi_init();//ensure the currencies are loaded up
+  $currencies = &drupal_static('currencies');
+  $currcodes = array_keys($currencies);
+  debug('check that the field_data_worth table has a value for currcode', $old->cid);
+  debug('transaction conversion may need to be done in batches');
   foreach ($transactions as $xid => $old) {
     //bypasses the transaction controller
     $transaction = array(
       'xid' => $xid,
-      'serial' => $serial++,
+      'serial' => $serial,
       'payer' => $old->payer_uid,
       'payee' => $old->payee_uid,
       'state' => $states[$old->state],
@@ -514,7 +519,7 @@ function mcapi_update_7002() {
       LANGUAGE_NONE => array(
         0 => array(
           'quantity' => $old->quantity,
-          'currcode' => $currcodes[$old->cid]
+          'currcode' => $currcodes[$old->cid] ? $currcodes[$old->cid] : 'def_drup'
         )
       )
     );
@@ -530,6 +535,7 @@ function mcapi_update_7002() {
     //tidy up
     node_delete($xid);
     if ($transaction->state == TRANSACTION_STATE_PENDING) $pending = TRUE;
+    $serial++;
   }
   if (empty($pending)) {
     module_disable(array('mcapi_signatures'));
@@ -552,16 +558,21 @@ function mcapi_user_presave(&$edit, $account, $category) {
 }
 
 function _mcapi_update_pending(&$states) {
-  $version  = db_query("SELECT schema_version FROM {system} WHERE name = 'mc_signatures'")->fetchField();
-  if ($version < 1) return;//the module was never installed
-  //replace the old module with the new, so as to retain the version number
-  if (db_query("SELECT TRUE FROM {system} WHERE name = 'mc_signatures'")->fetchfield()) {
-    db_delete('system')->condition('name', 'mcapi_signatures')->execute();
-    db_update('system')->fields(array('name' => 'mcapi_signatures'))->condition('name', 'mc_signatures')->execute();
-  }
+  //replace the old module with the new, so as to retain the version number, and keeping it installed
+  db_delete('system')->condition('name', 'mcapi_signatures')->execute();
+  db_update('system')->fields(array('name' => 'mcapi_signatures'))->condition('name', 'mc_signatures')->execute();
 
-  module_enable(array('mcapi_signatures'));
-  db_query('INSERT into {mcapi_signatures} SELECT nid as serial, uid, 1 as pending FROM {mc_unsigned}');
+  //rename and update the table
+  if(db_query("SHOW TABLES LIKE 'mc_unsigned'")->fetchfield()) {//this prevents an error if we try to do it twice or if the module isn't installed
+    db_rename_table('mc_unsigned', 'mcapi_signatures');
+    module_load_install('mcapi_signatures');
+    $tables = mcapi_signatures_schema();
+    db_change_field('mcapi_signatures', 'nid', 'xid', $tables['mcapi_signatures']['fields']['serial']);
+    db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
+  }
+  //having made the structural changes,
+  if (db_query("SELECT schema_version FROM {system} WHERE name = 'mc_signatures'")->fetchField()) return;//the module was never installed
+
   $states[TRANSACTION_STATE_PENDING] = TRANSACTION_STATE_PENDING;
 
   $d6tokens = array('!username', '!site', '!uri', '!date', '!login_url', '!creator', '!exchange_uri', '!summary');
@@ -575,6 +586,20 @@ function _mcapi_update_pending(&$states) {
     'body' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_signoff_body')),
   ));
 
+  //add some permissions for pending transactions on each currency.
+  foreach (db_query("SELECT currcode, data FROM {mcapi_currencies}")->fetchAll() as $row) {
+    $currcode = $row->currcode;
+    $data = unserialize($row->data);
+    $data->transaction_access[TRANSACTION_STATE_PENDING] = array(
+      'transaction_access_participants' => 'transaction_access_participants',
+      'transaction_access_accountant' => 'transaction_access_accountant'
+    );
+    db_query("UPDATE {mcapi_currencies} SET data = :data WHERE currcode = :currcode", array(
+      ':data' => serialize($data),
+      ':currcode' => $currcode
+    ));
+  }
+
 
   variable_del('mc_signatures_sure');
   variable_del('mc_subtypes');
@@ -584,7 +609,6 @@ function _mcapi_update_pending(&$states) {
   variable_del('mc_signatures_notification_body');
   variable_del('mc_notification_update_body');
   variable_del('mc_notification_update_subject');
-  db_drop_table('mc_unsigned');
 }
 
 
@@ -593,8 +617,7 @@ function _mcapi_update_pending(&$states) {
  * attempts to make blocks equivalent between d6 and d7
  */
 function mcapi_update_7003() {
-  //forms module
-  db_query("UPDATE {block} SET pages = REPLACE('exchange', 'transaction', pages)");
+  db_query("UPDATE {block} SET pages = REPLACE(pages, 'exchange', 'transaction')");
   db_query("UPDATE {block} SET module = 'mcapi_forms' WHERE module = 'mcapi_webforms'");
   //work with the default webforms
   db_query("UPDATE {block} SET delta = '3rdparty' WHERE delta = 'mc_webform_3rdparty_form'");
@@ -610,13 +633,13 @@ function mcapi_update_7003() {
   //we seem to have a delta 'balances' already for the mc_display module
   db_query("DELETE FROM {block} WHERE module = 'mcapi' AND 'delta' = 'balances' AND theme = 'garland'");
   //so without the line above, this one gives an error
-  db_query("UPDATE {block} SET module = 'mcapi', delta = 'balances' WHERE delta = 'mc_balances'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_run_bal' WHERE delta = 'mc_balance_history'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_sum' WHERE delta = 'balance_ometer'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'transactions-who_paid_whom' WHERE delta = 'mc_exchanges_all-block_1'");//who gave to whom?
-  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-my_pending' WHERE delta = 'mc_exchanges_pending-block_1'");//I must sign
-  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-user_pending' WHERE delta = 'mc_exchanges_pending-block_2'");//user must sign
-  db_query("UPDATE {block} SET module = 'mcapi_limits' WHERE delta = 'balance_limits'");
+  db_query("UPDATE {block} SET module = 'mcapi', delta = 'balances' WHERE delta = 'mc_balances' AND theme = 'sky_seldulac'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_run_bal' WHERE delta = 'mc_balance_history' AND theme = 'sky_seldulac'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_sum' WHERE delta = 'balance_ometer' AND theme = 'sky_seldulac'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'transactions-who_paid_whom' WHERE delta = 'mc_exchanges_all-block_1' AND theme = 'sky_seldulac'");//who gave to whom?
+  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-my_pending' WHERE delta = 'mc_exchanges_pending-block_1' AND theme = 'sky_seldulac'");//I must sign
+  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-user_pending' WHERE delta = 'mc_exchanges_pending-block_2' AND theme = 'sky_seldulac'");//user must sign
+  db_query("UPDATE {block} SET module = 'mcapi_limits' WHERE delta = 'balance_limits' AND theme = 'sky_seldulac'");
 
   db_delete('block')->condition('delta', array(
     'mc_exchanges_all-block_2',//description field is no longer part of this module
@@ -627,25 +650,24 @@ function mcapi_update_7003() {
 
 /*
  * implements hook_update_n
- * adds the serial field to the transaction table
+ * updates the permissions from D6
+ *     'exchange',
+    'view all exchanges',
+    'edit own finished exchanges',
+    'edit all exchanges',
+    'configure currencies',
+    'declare currency'
  */
 function mcapi_update_7004() {
-  $tables = mcapi_schema();
-  $xid_spec = $tables['mcapi_transactions']['fields']['xid'];
-  $xid_spec['description'] = 'auto increment database key';
-  db_change_field('mcapi_transactions', 'xid', 'xid', $xid_spec);
-  $spec = array(
-    'description' => 'unique transaction serial number',
-    'type' => 'varchar',
-    'length' => '16',
-    'not null' => FALSE,
+  $map = array(
+    'exchange' => 'transact',
+    'edit all exchanges' => 'manage all exchanges',
+    'configure currencies' => 'configure all currencies',
   );
-  db_add_unique_key('mcapi_transactions', 'serial number', array('serial'));
-  db_drop_field('mcapi_transactions', 'modifier');
-  db_drop_field('mcapi_transactions', 'modified');
-  //turn this into a blob
-  db_change_field('mcapi_currencies', 'data', 'data', $tables['mcapi_currencies']['fields']['data']);
-  cache_clear_all('currencies', 'cache');
+  foreach ($map as $from => $to) {
+    db_query("UPDATE {role_permission} SET permission = :to WHERE permission = :from", array(':from' => $from, ':to' => $to));
+  }
+  db_query("DELETE FROM {role_permission} WHERE permission IN ('view all exchanges', 'edit own finished exchanges', 'view all balances')");
 }
 
 function mcapi_update_7005() {

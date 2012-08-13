@@ -44,12 +44,12 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   }
 
   function render($values) {
-
+    $uid = &$values->uid;
     $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);
     $key = $this->options['total'];
     foreach ($currcodes as $currcode) {
       if (empty($this->fetched[$uid][$currcode])) {
-        $this->fetched[$uid][$currcode] = transaction_totals($values->uid, $currcode);
+        $this->fetched[$uid][$currcode] = transaction_totals($uid, $currcode);
       }
       $quant = $this->fetched[$uid][$currcode]->$key;
       if ($key == 'count') {

@@ -28,7 +28,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   //I think ctools is supposed to be handling this
   $form['info']['name']['#type'] = 'machine_name';
   $form['info']['name']['#machine_name']['exists'] = 'mcapi_forms_exists';
-
+  $form['info']['name']['#maxlength'] = 32;
   $perspectives = array(
     3 => t('3rd Party'),
     1 => t('1st Party')
@@ -45,7 +45,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => empty($mcapi_form),
+    '#collapsed' => !empty($mcapi_form),
     '#weight' => 3,
     'path' => array(
       '#title' => t('Path'),
@@ -357,6 +357,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   if (empty($form_state['item'])) {
     $form_state['item'] = ctools_export_crud_new('mcapi_forms');
   }
+  
   $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
   unset($form_state['values']['name']);
 

@@ -49,11 +49,11 @@ if ($view_mode != 'sentences') {
     <?php print render($additional);
   }
   elseif ($view_mode == 'sentence') {
-    if ($state == TRANSACTION_STATE_PENDING) {
-      print t("On @recorded, !payer will give !payee !worth", $replacements);
-    }
-    else {
+    if ($state > 0) {//transaction states > 0 are 'counted'
       print t("On @recorded, !payer gave !payee !worth", $replacements);
+    }
+    else {//this is most likely a 'pending' transaction which is state -1
+      print t("On @recorded, !payer will give !payee !worth", $replacements);
     }
   }
   if ($children) { // all the remaining transactions are already rendered as sentences ?>

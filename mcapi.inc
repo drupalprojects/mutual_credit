@@ -573,7 +573,7 @@ function _matslats_role_get_users($permission) {
  * if $account is specified, returns TRUE or FALSE
  * otherwise returns a list of users
  */
-function currency_access($op, $currcode, $uid = 0) {
+function currency_access($op, $currcode, $uid) {
   $function = currency_load($currcode)->currency_access[$op];
   return $function($uid);
 }

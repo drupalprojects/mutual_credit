@@ -308,7 +308,7 @@ function transaction_undo_access($transaction) {
   module_load_include('inc', 'mcapi');
   if ($transaction->state == TRANSACTION_STATE_ERASED) return FALSE;
   foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    if (!currency_access('undo', $item['currcode'])) return FALSE;
+    if (!currency_access('undo', $item['currcode'], $GLOBALS['user']->uid)) return FALSE;
   }
   return TRUE;
 }
@@ -478,7 +478,6 @@ function mcapi_block_view($delta) {
   if (empty($settings['currcodes'])) {
     $settings['currcodes'] = array_keys(currencies_load($settings['account']));
   }
-  
   foreach ($settings['currcodes'] as $currcode) {
     $render_array['#totals'][$currcode] = transaction_totals($settings['account']->uid, $currcode);
   }
@@ -516,7 +515,7 @@ function mcapi_block_configure($delta) {
 function mcapi_block_save($delta, $values) {
   variable_set('block_'. $delta,
     array(
-      'currcodes' => $values['currcodes'],
+      'currcodes' => (array)$values['currcodes'],
       'user_source' => $values['user_source']
     )
   );
@@ -1456,9 +1455,11 @@ function theme_worth_field(&$variables) {
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :
       $replacements['@subdivision'] = $currency->display['divisions_allowed'][intval($replacements['@subdivision'])];
+      break;
     case CURRENCY_DIVISION_MODE_CENTS_FIELD:
     case CURRENCY_DIVISION_MODE_CENTS_INLINE:
       $replacements['@subdivision'] = str_pad($replacements['@subdivision'], 2, STR_PAD_LEFT);
+      break;
   }
   if ($replacements['@integer'] >  999) {//put in the thousands separator
     $replacements['@integer'] = number_format($replacements['@integer']);

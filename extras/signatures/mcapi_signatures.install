@@ -2,11 +2,6 @@
 //Id;
 
 function mcapi_signatures_install() {
-  //there's no easy way to iterate through the ctools currency definitions, update them and save them
-  _pending_setup_actions();
-  //left overs from renamed mcapi_pending
-  db_delete('actions')->condition('callback', 'mcapi_add_signatories_action')->execute();
-  
   $mcapi_signed_off_notify_template = array(
     'subject' =>  st('Transaction signed off'),
     'body' => st('The following transaction has been signed off: @token', array('@token' => '[transaction:uri]'))
@@ -18,6 +13,11 @@ function mcapi_signatures_install() {
   );
   variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
 }
+
+  if(db_query("show tables like 'mc_unsigned'")->fetchfield()) {
+    db_rename_table('mc_unsigned', 'mcapi_signatures');
+  }
+
 
 function mcapi_signatures_uninstall() {
   module_load_include('module', 'mcapi_pending');
@@ -60,53 +60,4 @@ function mcapi_signatures_schema() {
     'primary key' => array('serial', 'uid')
   );
   return $schema;
-}
-
-function _pending_setup_actions() {
-  module_load_include('module', 'mcapi_pending');
-  save_default_pending_action('mcapi_add_signatories_action', 'transactions_state');
-  save_default_pending_action('mcapi_signatories_mail_action', 'transactions_state');
-  drupal_set_message(st('Actions and triggers have been configured for transaction signing.'));
-}
-
-function save_default_pending_action($callback, $trigger) {
-  static $weight = 1;
-  $actions = mcapi_signatures_action_info();
-  $form_callback = $callback.'_form';
-  $form = $form_callback();
-  //special exception for mail_all_signatories_action
-  if (isset($form['mail'])) $form = $form['mail'];
-  //this is tricky but we're getting the default values out of the action form
-  foreach (element_children($form) as $fieldname) {
-    $params[$fieldname] = $form[$fieldname]['#default_value'];
-  }
-  if ($callback == 'mcapi_signatories_mail_action' && variable_get('mc_signatures_notification_subject', '')) {
-    $params['subject'] = variable_get('mc_signatures_notification_subject', '');
-    $params['body'] = variable_get('mc_signatures_notification_body', '');
-    variable_del('mc_signatures_notification_subject');
-    variable_del('mc_signatures_notification_body');
-  }
-  include_once('includes/actions.inc');
-  $aid = actions_save($callback, 'transaction', $params, $actions[$callback]['label']);
-  // Borrowed from trigger_assign_form_submit
-  db_insert('trigger_assignments')->fields(
-    array(
-      'hook' => $trigger,
-      'aid' => $aid,
-      'weight' => $weight++,
-    )
-  )->execute();
-}
-
-/*
- * implements hook_update_n
- * this module does not update itself, because the name changed since version 6
- * instead the update is done in mcapi.install
- *
- */
-function mcapi_signatures_update_7000() {
-  db_rename_table('mc_unsigned', 'mcapi_signatures');
-  $tables = mcapi_signatures_schema();
-  db_change_field('mcapi_signatures', 'nid', 'xid', $tables['mcapi_signatures']['fields']['serial']);
-  db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
 }
