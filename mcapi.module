@@ -339,7 +339,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
  * Implements hook_search_info().
  */
 function mcapi_search_info() {
-  if (!variable_get('transaction_description_field', '')) return;
+  if (!variable_get('transaction_description_field', '')) return array();
   return array(
     'title' => 'Transactions',
     'path' => 'transaction',
@@ -474,18 +474,16 @@ function mcapi_block_view($delta) {
   module_load_include('inc', 'mcapi');
   $settings = _mcapi_block_settings($delta);
   if (empty($settings)) return;
-  $render_array = array('#theme' => 'transaction_totals');
+  
+  if (empty($render_array['#totals'])) return;
   if (empty($settings['currcodes'])) {
     $settings['currcodes'] = array_keys(currencies_load($settings['account']));
   }
-  foreach ($settings['currcodes'] as $currcode) {
-    $render_array['#totals'][$currcode] = transaction_totals($settings['account']->uid, $currcode);
-  }
-  if (empty($render_array['#totals'])) return;
-  $is_me = $settings['account']->uid == $GLOBALS['user']->uid;
   return array(
-    'subject' => $is_me ? t('My account') : t("@user's account", array('@user' => strip_tags(format_username($settings['account'])))),
-    'content' => $render_array
+    'subject' => $settings['account']->uid == $GLOBALS['user']->uid ?
+      t('My account') :
+      t("@user's account", array('@user' => strip_tags(format_username($settings['account'])))),
+    'content' => mcapi_show_balances($settings['account']->uid, $settings['currcodes'])
   );
 }
 
@@ -917,14 +915,15 @@ function mcapi_init() {
 /*
  * return one currency object
  */
-function currency_load($currcode) {
+function currency_load($currcode = NULL) {if (is_array($currcode))ddebug_backtrace();
   $currencies = &drupal_static('currencies');
   if (empty($currencies))currencies_load();//filters
-  if (isset($currencies[$currcode])) {
+  if ($currcode && isset($currencies[$currcode])) {
+    watchdog('mcapi', 'Nonexistent currency @currcode requested from list: @list',
+      array('@currcode' => $currcode, '@list' => print_r($currencies, 1)));
     return $currencies[$currcode];
   }
-  watchdog('mcapi', 'Nonexistent currency @currcode requested from list: @list',
-    array('@currcode' => $currcode, '@list' => print_r($currencies, 1)));
+  else return current($currencies);
 }
 /*
  * Load all the currencies from cache filter
@@ -1591,6 +1590,14 @@ function entity_metadata_field_property_get_mcapi_quantity($data, $options, $nam
 }
 function entity_metadata_field_worth_get($entity, $options, $name, $type, $info) {
   return $entity->worth[LANGUAGE_NONE];
+}
+
+function mcapi_show_balances($uid, $currcodes) {
+  $render_array = array('#theme' => 'transaction_totals');
+  foreach ($currcodes as $currcode) {
+    $render_array['#totals'][$currcode] = transaction_totals($uid, $currcode);
+  }
+  return $render_array;
 }
 
 function mcapi_round($quant, $currcode, $up = FALSE) {
