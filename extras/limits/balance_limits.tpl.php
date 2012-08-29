@@ -9,7 +9,7 @@
 
 print t('Balance:') .' '. $balance; ?>
 <br />
-<?php if ($min) print t('Min:') . ' '. $min; ?>
+<?php if ($min) print t('Min:') . ' '. theme('worth_field', array('currcode' => $currcode, 'quantity' => $min));; ?>
 <br />
-<?php if ($max) print t('Max:') . ' '. $max; ?>
+<?php if ($max) print t('Max:') . ' '. theme('worth_field', array('currcode' => $currcode, 'quantity' => $max));; ?>
 <br />

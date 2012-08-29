@@ -362,3 +362,41 @@ function _transactions_diff($transactions) {
   }
   return $diff;
 }
+
+/*
+ * callback to return themed balance limits
+ */
+function show_balance_limits($uid, $currcodes) {
+  foreach ($currcodes as $currcode) {
+    $limits = limits_get($currcode, $uid);
+    //this chart makes no sense if there isn't a max (or min) limit
+    if (empty($limits['max']) && empty($limits['min'])) {
+      return array();
+    }
+    $renderable[$currcode] = array(
+      '#theme' => 'balance_limits',
+      '#currency' => currency_load($currcode),
+      '#min' => $limits['min'],
+      '#max' => $limits['max'],
+      '#balance' => transaction_totals($uid, $currcode)->balance
+    );
+  }
+  return $renderable;
+}
+function show_trading_limits($uid, $currcodes) {
+  foreach ($currcodes as $currcode) {
+    $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);
+    if(empty($limits)) continue;
+    $render_array[$currcode] = array(
+      '#theme' => 'trading_limits',
+      '#currency' => currency_load($currcode)
+    );
+    if (isset($limits['spend_limit'])) {
+      $render_array[$currcode]['#spend_limit'] = $limits['spend_limit'];
+    }
+    if (isset($limits['earn_limit'])) {
+      $render_array[$currcode]['#earn_limit'] = $limits['earn_limit'];
+    }
+  }
+  return $render_array;
+}

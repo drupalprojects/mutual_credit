@@ -204,37 +204,3 @@ function mcapi_limits_validate_max(&$element, $form_state) {
     form_error($element, t('Maximum balance must be larger than 0'));
   }
 }
-
-
-/*
- * callback to return themed balance limits
- */
-function show_balance_limits($uid, $currcode) {
-  $limits = limits_get($currcode, $uid);
-  //this chart makes no sense if there isn't a max (or min) limit
-  if (empty($limits['max']) && empty($limits['min'])) {
-    return array();
-  }
-  return array(
-    '#theme' => 'balance_limits',
-    '#currency' => currency_load($currcode),
-    '#min' => $limits['min'],
-    '#max' => $limits['max'],
-    '#balance' => transaction_totals($uid, $currcode)->balance
-  );
-}
-function show_trading_limits($uid, $currcode) {
-  $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);
-  if(empty($limits)) return;
-  $render_array = array(
-    '#theme' => 'trading_limits',
-    '#currency' => currency_load($currcode)
-  );
-  if (isset($limits['spend_limit'])) {
-    $render_array['#spend_limit'] = $limits['spend_limit'];
-  }
-  if (isset($limits['earn_limit'])) {
-    $render_array['#earn_limit'] = $limits['earn_limit'];
-  }
-  return $render_array;
-}

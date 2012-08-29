@@ -17,6 +17,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $args[TRANSACTION_BUILD_INFO_ARG] ? $args[TRANSACTION_BUILD_INFO_ARG] :
     new_transaction_presets($mcapi_form->data)
   );
+  //change the format of the worth field
+  $transaction->worth[LANGUAGE_NONE][0] = currency_explode($transaction->worth[LANGUAGE_NONE][0], TRUE);
   //determine what step this is
   //Because some forms may even bypass step one, and start with the confirmation step
   if (empty($form_state['step'])) {

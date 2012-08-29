@@ -69,7 +69,7 @@ class views_handler_filter_mcapi_states extends views_handler_filter_in_operator
     // human-readable label based on the current value.  The value_options
     // array is keyed with either 0 or 1, so if the current value is not
     // empty, use the label for 1, and if it's empty, use the label for 0.
-    return $this->value_options[!empty($this->value)];
+    return $this->value_options[$this->value];
   }
 
   function expose_options() {

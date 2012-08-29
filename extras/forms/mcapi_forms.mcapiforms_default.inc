@@ -47,7 +47,9 @@ function mcapiform_default_1stparty() {
         'und' => array(
           0 => array(
             'currcode' => key($currencies),
-            'quantity' => '1',
+            'quantity' => '0',
+            'main_quant' => '0',
+            'division' => '0'
           ),
         ),
         'disable' => 0,
@@ -108,6 +110,8 @@ function mcapiform_default_3rdparty() {
           0 => array(
             'currcode' => key($currencies),
             'quantity' => '0',
+            'main_quant' => '0',
+            'division' => '0'
           ),
         ),
       ),

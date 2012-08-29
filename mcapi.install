@@ -600,7 +600,6 @@ function _mcapi_update_pending(&$states) {
     ));
   }
 
-
   variable_del('mc_signatures_sure');
   variable_del('mc_subtypes');
   variable_del('mc_signatures_signoff_subject');
