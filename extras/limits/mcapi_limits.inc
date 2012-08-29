@@ -218,9 +218,9 @@ function show_balance_limits($uid, $currcode) {
   return array(
     '#theme' => 'balance_limits',
     '#currency' => currency_load($currcode),
-    '#min' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['min'])),
-    '#max' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['max'])),
-    '#balance' => theme('worth_field', array('currcode' => $currcode, 'quantity' => transaction_totals($uid, $currcode)->balance))
+    '#min' => $limits['min'],
+    '#max' => $limits['max'],
+    '#balance' => transaction_totals($uid, $currcode)->balance
   );
 }
 function show_trading_limits($uid, $currcode) {
@@ -231,10 +231,10 @@ function show_trading_limits($uid, $currcode) {
     '#currency' => currency_load($currcode)
   );
   if (isset($limits['spend_limit'])) {
-    $render_array['#spend_limit'] = theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['spend_limit']));
+    $render_array['#spend_limit'] = $limits['spend_limit'];
   }
   if (isset($limits['earn_limit'])) {
-    $render_array['#earn_limit'] = theme('worth_field', array('currcode' => $currcode, 'quantity' => $limits['earn_limit']));
+    $render_array['#earn_limit'] = $limits['earn_limit'];
   }
   return $render_array;
 }
