@@ -148,15 +148,12 @@ function mcapi_index_views_views_data() {
     'filter' => array(
       'handler' => 'views_handler_filter_date',
     ),
-  );
-  if (module_exists('date_views')) {
-    $data['mcapi_index']['created']['argument'] = array(
-      'help' => t('Filter by month'),
+    'argument' => array(
       'handler' => 'views_handler_argument_mcapi_date',
-      'fieldname' => 'created'//for some reason this wasn't showing in $view->real_field
-    );
-  }
-
+      'help' => t('Limit the date range'),
+      'fieldname' => 'created'
+    ),
+  );
   $data['mcapi_index']['currcode'] = array(
     'title' => t('Currency'),
     'help' => t("The currency ID"),

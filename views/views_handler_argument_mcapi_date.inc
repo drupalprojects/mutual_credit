@@ -12,6 +12,7 @@ class views_handler_argument_mcapi_date extends views_handler_argument_date {
     parent::construct();
     $this->format = 'F Y';
     $this->arg_format = 'Ym';
+    //seems strange that this handler doesn't know the name of the field it is on, has to be defined in hook_views_data
     $field = $this->real_field ? $this->real_field : $this->definition['fieldname'];
     $this->formula = views_date_sql_format($this->arg_format, "***table***.$field");
   }
@@ -35,6 +36,29 @@ class views_handler_argument_mcapi_date extends views_handler_argument_date {
     if (!$raw && $this->options['default_argument_type'] == 'date') {
       return date($this->arg_format, REQUEST_TIME);
     }
+  }
+
+  function option_definition() {
+    $options = parent::option_definition();
+    $options['operator'] = array('default' => 0);
+    return $options;
+  }
+
+
+  function options_form(&$form, &$form_state) {
+    parent::options_form($form, $form_state);
+
+    // allow + for or, , for and
+    $form['operator'] = array(
+      '#type' => 'radios',
+      '#title' => t('Relative to date'),
+      '#default_value' => $this->options['operator'],
+      '#options' => array(
+        '<' => t('Before'),
+        '=' => t('Exactly on'),
+        '>' => t('After')
+      ),
+    );
   }
 
   /**
@@ -64,4 +88,17 @@ class views_handler_argument_mcapi_date extends views_handler_argument_date {
     parent::default_argument_form($form, $form_state);
     $form['default_argument_type']['#options'] += array('date' => t('Current date'));
   }
+
+  function query($group_by = FALSE) {
+    $this->ensure_my_table();
+    // Now that our table is secure, get our formula.
+    $placeholder = $this->placeholder();
+    $formula = $this->get_formula() . $this->options['operator'] . $placeholder;
+    $placeholders = array(
+      $placeholder => $this->argument,
+    );
+    $this->query->add_where(0, $formula, $placeholders, 'formula');
+  }
+
+
 }

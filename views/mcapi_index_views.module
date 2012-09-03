@@ -57,8 +57,11 @@ function mcapi_index_views_theme() {
 }
 
 
-function show_balance_history($uid, $currcodes, $since = NULL) {
+function show_balance_history($uid, $currcodes = array(), $since = NULL) {
   db_query("SET @csum := 0");
+  if (empty($currcodes)) {
+    $currcodes = array_keys(currencies_load(user_load($uid)));
+  }
   foreach ($currcodes as $currcode) {
     $histories[$currcode] = db_query("SELECT created, (@csum := @csum + diff) as balance
       FROM {mcapi_index}

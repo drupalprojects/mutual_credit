@@ -1,12 +1,12 @@
 <?php
 
-function mcapi_pending_views_default_views() {
+function mcapi_signatures_views_default_views() {
   $view = new view;
-  $view->name = 'pending_transactions';
+  $view->name = 'signature_blocks';
   $view->description = 'pending transactions for which the given user is a signatory';
   $view->tag = 'default';
   $view->base_table = 'mcapi_transactions';
-  $view->human_name = 'Pending transactions';
+  $view->human_name = 'Signatures waiting';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -175,7 +175,7 @@ function mcapi_pending_views_default_views() {
   $handler->display->display_options['filters']['uid']['field'] = 'uid';
   $handler->display->display_options['filters']['uid']['value'] = '1';
   $translatables['pending_transactions'] = array(
-    t('Pending transactions'),
+    t('Signatures waiting'),
     t('Transaction #[serial]'),
     t('transaction/[serial]'),
     t('Sign'),
@@ -192,7 +192,7 @@ function mcapi_pending_views_default_views() {
   $views[$view->name] = $view;
 
   $view = new view;
-  $view->name = 'pending_transactions';
+  $view->name = 'signatures';
   $view->description = 'pending transactions for which the given user is a signatory';
   $view->tag = 'default';
   $view->base_table = 'mcapi_transactions';

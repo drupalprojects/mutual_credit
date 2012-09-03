@@ -567,7 +567,7 @@ function _mcapi_update_pending(&$states) {
     db_rename_table('mc_unsigned', 'mcapi_signatures');
     module_load_install('mcapi_signatures');
     $tables = mcapi_signatures_schema();
-    db_change_field('mcapi_signatures', 'nid', 'xid', $tables['mcapi_signatures']['fields']['serial']);
+    db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
     db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
   }
   //having made the structural changes,
@@ -620,6 +620,7 @@ function mcapi_update_7003() {
   db_query("UPDATE {block} SET module = 'mcapi_forms' WHERE module = 'mcapi_webforms'");
   //work with the default webforms
   db_query("UPDATE {block} SET delta = '3rdparty' WHERE delta = 'mc_webform_3rdparty_form'");
+  db_query("UPDATE {block} SET delta = '1stparty' WHERE delta = 'start_exchange'");
 
   //blocks from the mc_display view, user_rankings
   db_query("UPDATE {block} SET module = 'views', delta = 'user_rankings-block_promiscuity' WHERE delta = 'user_rankings-block_1'");
@@ -632,13 +633,16 @@ function mcapi_update_7003() {
   //we seem to have a delta 'balances' already for the mc_display module
   db_query("DELETE FROM {block} WHERE module = 'mcapi' AND 'delta' = 'balances' AND theme = 'garland'");
   //so without the line above, this one gives an error
-  db_query("UPDATE {block} SET module = 'mcapi', delta = 'balances' WHERE delta = 'mc_balances' AND theme = 'sky_seldulac'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_run_bal' WHERE delta = 'mc_balance_history' AND theme = 'sky_seldulac'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_sum' WHERE delta = 'balance_ometer' AND theme = 'sky_seldulac'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'transactions-who_paid_whom' WHERE delta = 'mc_exchanges_all-block_1' AND theme = 'sky_seldulac'");//who gave to whom?
-  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-my_pending' WHERE delta = 'mc_exchanges_pending-block_1' AND theme = 'sky_seldulac'");//I must sign
-  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-user_pending' WHERE delta = 'mc_exchanges_pending-block_2' AND theme = 'sky_seldulac'");//user must sign
-  db_query("UPDATE {block} SET module = 'mcapi_limits' WHERE delta = 'balance_limits' AND theme = 'sky_seldulac'");
+  db_query("UPDATE {block} SET module = 'mcapi', delta = 'balances' WHERE delta = 'mc_balances'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_run_bal' WHERE delta = 'mc_balance_history'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_sum' WHERE delta = 'balance_ometer'");
+  db_query("UPDATE {block} SET module = 'views', delta = 'transactions-who_paid_whom' WHERE delta = 'mc_exchanges_all-block_1'");//who gave to whom?
+  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-my_pending' WHERE delta = 'mc_exchanges_pending-block_1'");//I must sign
+  db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-user_pending' WHERE delta = 'mc_exchanges_pending-block_2'");//user must sign
+  db_query("UPDATE {block} SET module = 'mcapi_limits' WHERE delta = 'balance_limits'");
+
+  db_query("UPDATE {block} SET module = 'webforms' WHERE module LIKE '%c_webform%'");
+
 
   db_delete('block')->condition('delta', array(
     'mc_exchanges_all-block_2',//description field is no longer part of this module

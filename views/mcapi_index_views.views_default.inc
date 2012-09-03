@@ -5,7 +5,7 @@ function mcapi_index_views_views_default_views() {
   currencies_load(); //because this seems to run before mcapi_init()
   $currencies = &drupal_static('currencies');
   $multicurrencies = count($currencies) > 1;
-  $viewnames = array('user_transactions_summary', 'statement', 'user_rankings', 'balance_history', 'profit_loss');//missing 'user_transactions_index', 
+  $viewnames = array('user_transactions_summary', 'statement', 'user_rankings', 'balance_history', 'profit_loss', 'system_stats');//missing 'user_transactions_index',
   foreach ($viewnames as $viewname) {
     $function  = 'mcapi_getview_'.$viewname;
     $views[$viewname] = $function($multicurrencies);
@@ -969,5 +969,175 @@ function mcapi_getview_profit_loss($multicurrencies) {
     t('Created'),
   );
 
+  return $view;
+}
+
+
+function mcapi_getview_system_stats($multicurrencies) {
+  $view = new view;
+  $view->name = 'system_stats';
+  $view->description = '';
+  $view->tag = 'default';
+  $view->base_table = 'mcapi_index';
+  $view->human_name = 'system stats';
+  $view->core = 7;
+  $view->api_version = '3.0';
+  $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+
+  /* Display: Master */
+  $handler = $view->new_display('default', 'Master', 'default');
+  $handler->display->display_options['title'] = 'Trading summary';
+  $handler->display->display_options['use_more_text'] = 'plus';
+  $handler->display->display_options['group_by'] = TRUE;
+  $handler->display->display_options['access']['type'] = 'none';
+  $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['query']['type'] = 'views_query';
+  $handler->display->display_options['query']['options']['query_comment'] = FALSE;
+  $handler->display->display_options['exposed_form']['type'] = 'basic';
+  $handler->display->display_options['exposed_form']['options']['reset_button_label'] = 'Remise à zéro';
+  $handler->display->display_options['exposed_form']['options']['exposed_sorts_label'] = 'Trier par';
+  $handler->display->display_options['pager']['type'] = 'some';
+  $handler->display->display_options['pager']['options']['items_per_page'] = '1';
+  $handler->display->display_options['style_plugin'] = 'default';
+  $handler->display->display_options['row_plugin'] = 'fields';
+  /* Champ: COUNT(Transaction index : Transaction ID) */
+  $handler->display->display_options['fields']['xid']['id'] = 'xid';
+  $handler->display->display_options['fields']['xid']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['xid']['field'] = 'xid';
+  $handler->display->display_options['fields']['xid']['group_type'] = 'count';
+  $handler->display->display_options['fields']['xid']['label'] = 'Trades';
+  $handler->display->display_options['fields']['xid']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['xid']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['xid']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['xid']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['xid']['hide_alter_empty'] = 1;
+  $handler->display->display_options['fields']['xid']['format_plural'] = 0;
+  /* Champ: COUNT(DISTINCT Transaction index : 2nd user) */
+  $handler->display->display_options['fields']['uid2']['id'] = 'uid2';
+  $handler->display->display_options['fields']['uid2']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['uid2']['field'] = 'uid2';
+  $handler->display->display_options['fields']['uid2']['group_type'] = 'count_distinct';
+  $handler->display->display_options['fields']['uid2']['label'] = 'Active traders';
+  $handler->display->display_options['fields']['uid2']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['uid2']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['uid2']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['uid2']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['uid2']['hide_alter_empty'] = 1;
+  /* Champ: SUM(Transaction index : Volume) */
+  $handler->display->display_options['fields']['volume']['id'] = 'volume';
+  $handler->display->display_options['fields']['volume']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['volume']['field'] = 'volume';
+  $handler->display->display_options['fields']['volume']['group_type'] = 'sum';
+  $handler->display->display_options['fields']['volume']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['volume']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['volume']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['volume']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['volume']['hide_alter_empty'] = 1;
+  if ($multicurrencies) {
+    /* Filter criterion: Transaction index: Currency */
+    $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
+    $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['value'] = array(
+      'def_drup' => 'def_drup',
+    );
+    $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
+    $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
+    $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
+    $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
+    $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
+    $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
+  }
+  /* Filtre contextuel: Transaction index : Created moment */
+  $handler->display->display_options['arguments']['created']['id'] = 'created';
+  $handler->display->display_options['arguments']['created']['table'] = 'mcapi_index';
+  $handler->display->display_options['arguments']['created']['field'] = 'created';
+  $handler->display->display_options['arguments']['created']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['created']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['created']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['created']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['created']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['created']['operator'] = '>';
+
+  /* Display: Block */
+  $handler = $view->new_display('block', 'System trading stats', 'block');
+
+  /* Display: Bloc */
+  $handler = $view->new_display('block', 'User trading stats', 'block_1');
+  $handler->display->display_options['title'] = 'User\'s trading summary';
+  $handler->display->display_options['defaults']['relationships'] = FALSE;
+  /* Relation: Transaction index : 1st user */
+  $handler->display->display_options['relationships']['uid1']['id'] = 'uid1';
+  $handler->display->display_options['relationships']['uid1']['table'] = 'mcapi_index';
+  $handler->display->display_options['relationships']['uid1']['field'] = 'uid1';
+  $handler->display->display_options['relationships']['uid1']['required'] = 0;
+  $handler->display->display_options['defaults']['fields'] = FALSE;
+  /* Champ: COUNT(Transaction index : Transaction ID) */
+  $handler->display->display_options['fields']['xid']['id'] = 'xid';
+  $handler->display->display_options['fields']['xid']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['xid']['field'] = 'xid';
+  $handler->display->display_options['fields']['xid']['group_type'] = 'count';
+  $handler->display->display_options['fields']['xid']['label'] = 'Trades';
+  $handler->display->display_options['fields']['xid']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['xid']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['xid']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['xid']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['xid']['hide_alter_empty'] = 1;
+  $handler->display->display_options['fields']['xid']['format_plural'] = 0;
+  /* Champ: COUNT(DISTINCT Transaction index : 2nd user) */
+  $handler->display->display_options['fields']['uid2']['id'] = 'uid2';
+  $handler->display->display_options['fields']['uid2']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['uid2']['field'] = 'uid2';
+  $handler->display->display_options['fields']['uid2']['group_type'] = 'count_distinct';
+  $handler->display->display_options['fields']['uid2']['label'] = 'Promiscuity';
+  $handler->display->display_options['fields']['uid2']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['uid2']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['uid2']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['uid2']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['uid2']['hide_alter_empty'] = 1;
+  $handler->display->display_options['fields']['uid2']['format_plural'] = 0;
+  /* Champ: SUM(Transaction index : Volume) */
+  $handler->display->display_options['fields']['volume']['id'] = 'volume';
+  $handler->display->display_options['fields']['volume']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['volume']['field'] = 'volume';
+  $handler->display->display_options['fields']['volume']['group_type'] = 'sum';
+  $handler->display->display_options['fields']['volume']['element_label_colon'] = 1;
+  $handler->display->display_options['fields']['volume']['element_default_classes'] = 1;
+  $handler->display->display_options['fields']['volume']['hide_empty'] = 0;
+  $handler->display->display_options['fields']['volume']['empty_zero'] = 0;
+  $handler->display->display_options['fields']['volume']['hide_alter_empty'] = 1;
+  $handler->display->display_options['defaults']['arguments'] = FALSE;
+  /* Filtre contextuel: Transaction index : 1st user */
+  $handler->display->display_options['arguments']['uid1']['id'] = 'uid1';
+  $handler->display->display_options['arguments']['uid1']['table'] = 'mcapi_index';
+  $handler->display->display_options['arguments']['uid1']['field'] = 'uid1';
+  $handler->display->display_options['arguments']['uid1']['title_enable'] = 1;
+  $handler->display->display_options['arguments']['uid1']['title'] = '%1 summary';
+  $handler->display->display_options['arguments']['uid1']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['uid1']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['uid1']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['uid1']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['uid1']['break_phrase'] = 0;
+  $handler->display->display_options['arguments']['uid1']['not'] = 0;
+  /* Filtre contextuel: Transaction index : Created moment */
+  $handler->display->display_options['arguments']['created']['id'] = 'created';
+  $handler->display->display_options['arguments']['created']['table'] = 'mcapi_index';
+  $handler->display->display_options['arguments']['created']['field'] = 'created';
+  $handler->display->display_options['arguments']['created']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['created']['default_argument_skip_url'] = 0;
+  $handler->display->display_options['arguments']['created']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['created']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['created']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['created']['operator'] = '>';
+  $translatables['system_stats'] = array(
+    t('User\'s trading summary'),
+    t('plus'),
+    t('Trades'),
+    t('Active traders'),
+    t('Volume'),
+    t('Promiscuity'),
+    t('%1 summary'),
+  );
   return $view;
 }
