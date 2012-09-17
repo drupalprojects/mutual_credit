@@ -259,7 +259,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
     'balance_limits' => array(
       'template' => 'balance_limits',
       'variables' => array(
-        'currency' => '',
+        'currcode' => '',
         'min' => 0,
         'balance' => 0,
         'max' => 0
@@ -268,7 +268,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
     'trading_limits' => array(
       'template' => 'trading_limits',
       'variables' => array(
-        'currency' => '',
+        'currcode' => '',
         'earn_limit' => 0,
         'spend_limit' => 0
       )
@@ -375,7 +375,7 @@ function show_balance_limits($uid, $currcodes) {
     }
     $renderable[$currcode] = array(
       '#theme' => 'balance_limits',
-      '#currency' => currency_load($currcode),
+      '#currcode' => $currcode,
       '#min' => $limits['min'],
       '#max' => $limits['max'],
       '#balance' => transaction_totals($uid, $currcode)->balance
@@ -389,7 +389,7 @@ function show_trading_limits($uid, $currcodes) {
     if(empty($limits)) continue;
     $render_array[$currcode] = array(
       '#theme' => 'trading_limits',
-      '#currency' => currency_load($currcode)
+      '#currcode' => $currcode
     );
     if (isset($limits['spend_limit'])) {
       $render_array[$currcode]['#spend_limit'] = $limits['spend_limit'];

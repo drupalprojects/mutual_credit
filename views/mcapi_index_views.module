@@ -59,19 +59,27 @@ function mcapi_index_views_theme() {
 
 function show_balance_history($uid, $currcodes = array(), $since = NULL) {
   db_query("SET @csum := 0");
+  $account = user_load($uid);
   if (empty($currcodes)) {
-    $currcodes = array_keys(currencies_load(user_load($uid)));
+    $currcodes = array_keys(currencies_load($account));
   }
   foreach ($currcodes as $currcode) {
-    $histories[$currcode] = db_query("SELECT created, (@csum := @csum + diff) as balance
+    //make a starting point, before the first transaction
+    //zero means the moment the account was created
+    $histories[$currcode] = array(0 => 0) +
+    db_query("SELECT created - :born, (@csum := @csum + diff) as balance
       FROM {mcapi_index}
       WHERE currcode = :currcode AND uid1 = $uid
       ORDER BY created",
-      array(':currcode' => $currcode)
+      array(':currcode' => $currcode, ':born' => $account->created)
     )->fetchAllKeyed(0);
-    //now we need to curtail the history
+    
+    //make an end point now with the balance the same as the last point
+    $histories[$currcode][REQUEST_TIME - $account->created] = end($histories[$currcode]);
+    //now we need to curtail the history using $since
     //couldn't be bothered now
   }
+
   return array(
     '#theme' => 'balance_history',
     '#account' => user_load($uid),

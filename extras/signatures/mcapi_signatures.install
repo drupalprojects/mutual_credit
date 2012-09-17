@@ -12,12 +12,15 @@ function mcapi_signatures_install() {
     'body' => st('Your signature is required on @token', array('@token' => '[transaction:uri]'))
   );
   variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
-}
-
-  if(db_query("show tables like 'mc_unsigned'")->fetchfield()) {
-    db_rename_table('mc_unsigned', 'mcapi_signatures');
+  //signatures
+  foreach (array_keys(mcapi_get_types()) as $type) {
+    variable_set('mcapi_signatures_'.$type, array (
+      'participants' => 1,
+      'countersignatories' => array (),
+      'complete' => 0,
+    ));
   }
-
+}
 
 function mcapi_signatures_uninstall() {
   module_load_include('module', 'mcapi_pending');
@@ -31,6 +34,10 @@ function mcapi_signatures_uninstall() {
     if($view) {
       views_delete_view($view);
     }
+  }
+  //signatures
+  foreach (array_keys(mcapi_get_types()) as $type) {
+    variable_del('mcapi_signatures_'.$type);
   }
 }
 /**

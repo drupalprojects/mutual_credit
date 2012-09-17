@@ -743,7 +743,7 @@ function mcapi_signatures_transaction_view_alter($renderable, $type) {
   foreach ($renderable as $array) {
     if ($array['#view_mode'] == 'certificate' && $array['#transaction']->state == TRANSACTION_STATE_PENDING) {
       $imagefile = url(drupal_get_path('module', 'mcapi_signatures') . '/pending.png');
-      $declaration = "background-image:url(\"$imagefile\"); background-repeat: no-repeat;";
+      $declaration = "background-image:url(\"$imagefile\"); background-repeat: no-repeat; height:163px;";
       drupal_add_css('.transaction.state--1{'.$declaration.'}', array('type' => 'inline'));
       return;
     }

@@ -19,9 +19,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $access_options[t('Permissions')]['user_access:'.$perm] = strip_tags($info['title']);
     $user_chooser_options[t('Permissions')]['user_chooser_permissions:'.$perm] = strip_tags($info['title']);
   }
-  $menus = module_exists('menu') ? 
-    db_select('menu_custom', 'm')->fields('m', array('menu_name', 'title'))->execute()->fetchAllKeyed() :
-    drupal_map_assoc(array('navigation', 'user-menu', 'main-menu', 'management'));
 
   $form['#prefix'] = '<div id = "form-wrapper">';
   $form['#suffix'] = '</div>';
@@ -61,7 +58,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         t("For more info, see 'type' info at !link", array('!link' => l('drupal.org', 'http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
       '#type' => 'select',
       '#default_value' => isset($mcapi_form['architecture']['menu_link']) ? $mcapi_form['architecture']['menu_link'] : 'MENU_CALLBACK',
-      '#options' => $menus+ array(
+      '#options' => drupal_map_assoc(array_keys(menu_get_menus())) + array(
         MENU_CALLBACK => t('No menu item'),
         MENU_LOCAL_TASK => 'MENU_LOCAL_TASK',
         MENU_DEFAULT_LOCAL_TASK => 'MENU_DEFAULT_LOCAL_TASK',
@@ -351,7 +348,6 @@ function mcapi_forms_exists($machine_name, $element, &$form_state) {
  * the $form_state[item] is the object to be saved, derived from $form_state[values]
  */
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
-
   form_state_values_clean($form_state);
   //we need to start with an existing ctools object which contains essential default properties
   if (empty($form_state['item'])) {

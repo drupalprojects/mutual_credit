@@ -71,10 +71,11 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       $form['secondperson']['#args'] = array(strtok(':'));
       $form['secondperson']['#me'] = FALSE;
       $form['secondperson']['#required'] = TRUE;
+      $type = $mcapi_form->data['direction']['widget'] ? $mcapi_form->data['direction']['widget'] : 'select';
+      $options = $type == 'select' ? array(t('Please choose...')) : array();
       $form['direction'] = array(
-        '#type' => $mcapi_form->data['direction']['widget'] ? $mcapi_form->data['direction']['widget'] : 'select',
-        '#options' => array(
-          '' => t('Please choose...'),
+        '#type' => $type,
+        '#options' => $options + array(
           'incoming' => $mcapi_form->data['direction']['incoming'],
           'outgoing' => $mcapi_form->data['direction']['outgoing']
         ),
@@ -86,26 +87,11 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
         $form['direction']['#default_value'] = $GLOBALS['user']->uid == $transaction->payee ? 'incoming' : 'outgoing';
       }
       //if we are loading the page from blank, or rebuilding the form, we set the default values here
-      //however if we are editing an existing transaction,
-      //we have to show the transaction owner and derive the direction and partner from the payer and payee
-      if (!empty($transaction->xid)) {
-        debug('editing transaction');//actually I'm not sure if this is ever needed since we removed transaction editing/
-        if ($transaction->creator == $transaction->payer) {
-          $form['secondperson']['#default_value'] = $transaction->payee;
-          $form['direction']['#default_value'] = 'outgoing';
-        }
-        else{
-          $form['secondperson']['#default_value'] = $transaction->payer;
-          $form['direction']['#default_value'] = 'incoming';
-        }
+      if ($mcapi_form->data['direction']['preset']) {
+        $form['direction']['#default_value'] = $mcapi_form->data['direction']['preset'];
       }
-      else {
-        if ($mcapi_form->data['direction']['preset']) {
-          $form['direction']['#default_value'] = $mcapi_form->data['direction']['preset'];
-        }
-        if ($mcapi_form->data['secondperson']['preset']) {
-          $form['secondperson']['#default_value'] = $mcapi_form->data['secondperson']['preset'];
-        }
+      if ($mcapi_form->data['secondperson']['preset']) {
+        $form['secondperson']['#default_value'] = $mcapi_form->data['secondperson']['preset'];
       }
       unset($form['payer'], $form['payee']);
       //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
@@ -113,11 +99,13 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     }
     //we now modify the transaction form fields according to the form settings for each field
     foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
+      $default = array();
       if (isset($transaction->$fieldname)) {
         $default = mcapi_recursive_default_value($transaction->$fieldname);
       }
       $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
     }
+
     //if the cardinality is 1 and a default language is given, then confine the widget to that one language
     if (count(element_children($form['worth'][LANGUAGE_NONE])) == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {
       $form['worth'][LANGUAGE_NONE][0]['#restrict_currcodes'] = array($transaction->worth[LANGUAGE_NONE][0]['currcode']);
@@ -132,14 +120,14 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   elseif ($form['#step'] == 2) {
     drupal_set_title($mcapi_form->data['experience']['sure_title']);
     foreach(element_children($form) as $fieldname) {
-      if (in_array($fieldname, array('buttons', 'form_id', 'form_build_id', 'form_token'))) continue;
+      if (in_array($fieldname, array('actions', 'form_id', 'form_build_id', 'form_token'))) continue;
       unset($form[$fieldname]);
     }
     //put the back button only for last step if there are values from step 1
     if (!empty($form_state['values'])) {//coming from step 1
       $form['#preview'] = transaction_view($form_state['transactions'], $mcapi_form->data['experience']['sure_format'], @$mcapi_form->data['experience']['sure_template']);
       mcapi_hide_tabs();
-      $form['buttons']['back'] = array(
+      $form['actions']['back'] = array(
         '#type' => 'submit',
         '#value' => t('Back'),
       );
@@ -154,12 +142,13 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     unset($form['#validate']);
   }
   //save button
+  $form['actions']['#type'] = 'actions';
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
-    $form['buttons']['submit']['#type'] = 'image_button';
-    $form['buttons']['submit']['#src'] = $mcapi_form->data['submission']['button'];
+    $form['actions']['submit']['#type'] = 'image_button';
+    $form['actions']['submit']['#src'] = $mcapi_form->data['submission']['button'];
   }
   else {
-    $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
+    $form['actions']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
 
@@ -204,11 +193,10 @@ function mcapi_recursive_default_value($value) {
  */
 function theme_mcapi_form($variables) {
   $form = &$variables['form'];
-  $buttons = drupal_render($form['buttons']);
+  $buttons = drupal_render($form['actions']);
   //render the visible stuff first
   if ($form['#step'] == 1) {
-    foreach (array('payer', 'payee', 'secondperson', 'direction', 'worth') as $fieldname) {
-      if (!isset($form[$fieldname])) continue;
+    foreach (element_children($form) as $fieldname) {
       mcapi_unset_recursive($form[$fieldname], '#theme_wrappers');
     }
     return token_replace(
@@ -216,7 +204,6 @@ function theme_mcapi_form($variables) {
       $form,
       array('sanitize' => FALSE)
     ) . $buttons;
-
   }
   elseif ($form['#step'] == 2) {
     $preview = drupal_render($form['#preview']);

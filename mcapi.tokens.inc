@@ -104,7 +104,7 @@ function mcapi_token_info() {
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
     $transaction_tokens[$fieldname] = array(
       'name' => $field['label'],
-      'description' => $field['description']
+      'description' => isset($field['description']) ? $field['description'] : ''
     );
   }
 

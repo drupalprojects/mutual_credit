@@ -28,7 +28,7 @@ function mcapi_forms_menu() {
       ),
       'access callback' => strtok($settings['architecture']['access'], ':'),
       'access arguments' => array(strtok(':')),
-      'menu name' => is_numeric($menu_link) ? 'navigation' :$menu_link,
+      'menu_name' => is_numeric($menu_link) ? 'navigation' :$menu_link,
       'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
       'file' => 'mcapi_forms.inc',
     );
@@ -170,6 +170,7 @@ function mcapi_forms_block_view($delta) {
   $mcapi_form = mcapi_forms_load($delta);
   //it's generally a bad idea to show the form in block on its own page
   if (current_path() == $mcapi_form->data['architecture']['path']) return;
+  if (!user_access('transact')) return;
   return array(//if these seem inverted its because drupal_get_form loads the inc file
     'subject' => $mcapi_form->data['experience']['title'],
     'content' => drupal_get_form('mcapi_forms_form', new_transaction(), $mcapi_form),

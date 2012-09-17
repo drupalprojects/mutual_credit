@@ -80,6 +80,12 @@ function mcapi_help($section, $arg) {
  */
 function mcapi_menu() {
   module_load_include('inc', 'mcapi');
+  //take this opportunity of an occaisional hook to check that the description field is set
+  if (!variable_get('transaction_description_field', '')) {
+    if (count(_mcapi_get_text_instances())) {
+      drupal_set_message(t('Is the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
+    }
+  }
   return mcapi_menu_inc();
 }
 
@@ -463,7 +469,6 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
 function mcapi_block_info() {
   $blocks['balances'] = array(
     'info' => 'MC '. t("Balances"),
-    'region' => 'left',
   );
   return $blocks;
 }

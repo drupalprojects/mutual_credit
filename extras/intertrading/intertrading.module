@@ -251,7 +251,7 @@ function intertrading_uninstall() {
 function intertrading_form_system_site_information_settings_alter(&$form) {
   $form['coordinates'] = array(
     '#title' => t('Geolocation'),
-    '#description' => t('To determine your coordinates, please visit !link', array('!link' => l('http://www.whatsmygps.com/', 'http://www.whatsmygps.com/'))),
+    '#description' => t('The intertrading server would like to know where you are.') .' '. t('To determine your coordinates, please visit !link', array('!link' => l('http://www.whatsmygps.com/', 'http://www.whatsmygps.com/'))),
     '#type' => 'fieldset',
     'site_latitude' => array(
       '#type' => 'textfield',

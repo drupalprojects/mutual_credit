@@ -1058,6 +1058,12 @@ function mcapi_getview_system_stats($multicurrencies) {
   $handler->display->display_options['arguments']['created']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['created']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['created']['operator'] = '>';
+  /* Filter criterion: Transaction index: Value */
+  $handler->display->display_options['filters']['diff']['id'] = 'diff';
+  $handler->display->display_options['filters']['diff']['table'] = 'mcapi_index';
+  $handler->display->display_options['filters']['diff']['field'] = 'diff';
+  $handler->display->display_options['filters']['diff']['operator'] = '>';
+  $handler->display->display_options['filters']['diff']['value']['value'] = '0';
 
   /* Display: Block */
   $handler = $view->new_display('block', 'System trading stats', 'block');
@@ -1130,6 +1136,9 @@ function mcapi_getview_system_stats($multicurrencies) {
   $handler->display->display_options['arguments']['created']['summary']['format'] = 'default_summary';
   $handler->display->display_options['arguments']['created']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['created']['operator'] = '>';
+  
+  $handler->display->display_options['defaults']['filter_groups'] = FALSE;
+  $handler->display->display_options['defaults']['filters'] = FALSE;
   $translatables['system_stats'] = array(
     t('User\'s trading summary'),
     t('plus'),

@@ -3,6 +3,7 @@ name = Limit balances
 description = Min and max balance limits per user and per currency
 package = Community Accounting
 core = 7.x
+php 5.3
 
 dependencies[] = mcapi
 

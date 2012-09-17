@@ -71,13 +71,6 @@ function mcapi_entity_info_inc() {
 }
 
 function mcapi_menu_inc() {
-  //take this opportunity of an occaisional hook to check that the description field is set
-  if (!variable_get('transaction_description_field', '')) {
-    if (count(_mcapi_get_text_instances())) {
-      drupal_set_message(t('Is the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
-    }
-  }
-
   $items['admin/accounting'] = array(
     'title' => 'Accounting',
     'description' => "Manage all aspects of your community's money system",
@@ -255,7 +248,7 @@ function _transaction_form(&$form, &$form_state, $transaction) {
   field_attach_form('transaction', $transaction, $form, $form_state);
   unset($form['worth'][LANGUAGE_NONE]['add_more']);
 
-  $form['buttons']['submit'] = array(
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Record'),
     //this prevents double click, but doesn't prevent going back and resubmitting the form
@@ -814,9 +807,11 @@ function mcapi_description_field($form, $form_state) {
 }
 function _mcapi_get_text_instances() {
   $options = array();
-  foreach(field_info_fields() as $field) {
-    if ($field['module'] == 'text' && isset($field['bundles']['transaction'])) {
-      $options[$field['field_name']] = $field['field_name'];
+  if (substr($_SERVER['SCRIPT_NAME'], -9) == 'index.php') {//coz field_info_fields isn't available during update.php
+    foreach(field_info_fields() as $field) {
+      if ($field['module'] == 'text' && isset($field['bundles']['transaction'])) {
+        $options[$field['field_name']] = $field['field_name'];
+      }
     }
   }
   return $options;
