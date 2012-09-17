@@ -196,9 +196,9 @@ function _edit_mcapi_form(&$form, &$form_state) {
   //we need to know the view modes of the transaction entity, to choose for the preview page
   $entity = entity_get_info('transaction');
   foreach ($entity['view modes'] as $name => $mode) {
+    if (in_array($name, array('search_index', 'search_result')))continue;
     $view_modes[$name] = $mode['label'];
   }
-  module_load_include('inc', 'mcapi'); //for the matslats_list_tokens function
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
@@ -213,39 +213,41 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'template' => array(
       '#title' => t('Main form'),
-      '#description' => implode("\n<br /> ", array(
-        t('Write HTML here to layout the form, using the fieldnames in square brackets above as tokens.'),
-        t('Allowed tokens are:') .implode(', ', matslats_list_tokens(array('mcapiform')))
-      )),
+      '#description' => t('Write HTML here to layout the form, using the tokens below'),
       '#type' => 'textarea',
       '#rows' => 6,
       '#default_value' => isset($mcapi_form['experience']['template']) ? $mcapi_form['experience']['template'] : '',
       '#weight' => 2,
+    ),
+    'token_tree' => array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('mcapiform'),
+      '#global_types' => FALSE,
+      '#weight' => 3,
     ),
     'sure_title' => array(
       '#title' => t('Confirmation page title'),
       '#description' => t('Plain text'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['experience']['sure_title']) ? $mcapi_form['experience']['sure_title'] : '',
-      '#weight' => 3,
+      '#weight' => 4,
     ),
     'sure_format' => array(
       '#title' => t('Confirmation preview mode'),
       '#type' => 'radios',
       '#options' => $view_modes,
       '#default_value' => isset($mcapi_form['experience']['sure_format']) ? $mcapi_form['experience']['sure_format'] : 'certificate',
-      '#weight' => 4,
+      '#weight' => 5,
     ),
     'sure_template' => array(
-      '#title' => t('Template for tokenised confirmation page'),
-      '#description' => t('Allowed tokens are:') .implode(', ', matslats_list_tokens(array('transaction', 'user', 'site'))),
+      '#title' => '('. t('Confirmation page') .')',
+      '#description' => t('If using tokens mode, write HTML here to layout the confirmation, using the tokens above.'),
       '#type' => 'textarea',
       '#rows' => 4,
       '#default_value' => @$mcapi_form['experience']['sure_template'],
-      '#weight' => 5,
-    )
+      '#weight' => 6,
+    ),
   );
-
   $form['submission'] = array(
     '#title' => t('Form submission'),
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),

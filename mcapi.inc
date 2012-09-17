@@ -667,9 +667,6 @@ function _transaction_type_selector($default, $multiple = TRUE, $exclude = array
 }
 
 function _mcapi_mail_template_fields($defaults = array(), $tokens = array(), $required = TRUE) {
-  $tokens_list = count($tokens) ?
-    t('Available variables are: @variables', array('@variables' => implode(', ', matslats_list_tokens($tokens)))) :
-    t('The same email will be sent in all cases.');
   return array(
     'mail' => array(
       '#title' => t('Mail template'),
@@ -695,21 +692,14 @@ function _mcapi_mail_template_fields($defaults = array(), $tokens = array(), $re
         '#default_value' => empty($defaults['cc']) ? '' : $defaults['cc'],
         '#element_validate' => array('_mcapi_validate_mail_element'),
         '#weight' => 2
+      ),
+      'token_tree' => array(
+        '#theme' => 'token_tree',
+        '#token_types' => $tokens,//array('user'),
+        '#global_types' => FALSE,
       )
     )
   );
-}
-
-
-// how else to get a list of tokens for including on form field descriptions?
-function matslats_list_tokens($types) {
-  $info = token_info();
-  foreach($types as $type) {
-    foreach($info['tokens'][$type] as $tok => $data) {
-      $tokens[] = "[$type:$tok]";
-    }
-  }
-  return $tokens;
 }
 
 function mcapi_transaction_mail_action_submit($form, $form_state) {

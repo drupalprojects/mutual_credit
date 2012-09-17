@@ -174,12 +174,18 @@ function mcapi_signatures_config($form, $form_state) {
       '#weight' => $w++
     );
   }
+  $form['token_tree'] = array(
+    '#theme' => 'token_tree',
+    '#token_types' => array('transaction', 'user', 'site'),
+    '#global_types' => FALSE,
+    '#weight' => $w++
+  );
   $mail_def = variable_get('mcapi_sign_notify_template', array());
   $form['mcapi_sign_notify_template'] = array(
     '#title' => t('Signature notification'),
     '#description' => implode(' ', array(
-      t('Compose the email sent to users when a signature is required of them.'),
-      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens(array('transaction', 'user', 'site')))
+      t('Compose the email notifying signatories that a transaction needs their attention'),
+      t('Use the tokens provided')
     )),
     '#type' => 'fieldset',
     'subject' => array(
@@ -202,7 +208,7 @@ function mcapi_signatures_config($form, $form_state) {
     '#title' => t('Completed notification'),
     '#description' => implode(' ', array(
       t('Compose the email sent to all signatories when a pending transaction completes.'),
-      t('Use the following tokens:') .' '. implode(', ', matslats_list_tokens(array('transaction', 'site', 'user')))
+      t('Use the tokens provided')
     )),
     '#type' => 'fieldset',
     'subject' => array(
