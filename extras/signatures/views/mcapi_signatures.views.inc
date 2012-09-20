@@ -55,8 +55,13 @@ function mcapi_signatures_views_data() {
     'filter' => array(
       'help' => t('The signature is still pending'),
       'handler' => 'views_handler_filter_boolean_operator',
+    ),
+    'sort' => array(
+      'help' => t('The signature is still pending'),
+      'handler' => 'views_handler_filter_sort',
     )
   );
+  //virtual field
   $data['mcapi_signatures']['sign'] = array(
     'title' => t('Sign here'),
     'field' => array(

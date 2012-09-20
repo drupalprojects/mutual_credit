@@ -670,7 +670,7 @@ function _mcapi_mail_template_fields($defaults = array(), $tokens = array(), $re
   return array(
     'mail' => array(
       '#title' => t('Mail template'),
-      '#description' => $tokens_list,
+      '#description' => $tokens,
       '#type' => 'fieldset',
       'subject' => array(
         '#title' => t('Subject'),

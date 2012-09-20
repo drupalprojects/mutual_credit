@@ -68,18 +68,17 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['fields']['sign']['hide_empty'] = 0;
   $handler->display->display_options['fields']['sign']['empty_zero'] = 0;
   $handler->display->display_options['fields']['sign']['hide_alter_empty'] = 1;
-  /* Critère de filtrage: Transaction : State */
-  $handler->display->display_options['filters']['state']['id'] = 'state';
-  $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['filters']['state']['field'] = 'state';
-  $handler->display->display_options['filters']['state']['value'] = array(
-    -1 => -1,
-  );
-  /* Critère de filtrage: Signatures : Current signatory */
+  /* Filter criterion: Signatures: Current signatory */
   $handler->display->display_options['filters']['uid']['id'] = 'uid';
   $handler->display->display_options['filters']['uid']['table'] = 'mcapi_signatures';
   $handler->display->display_options['filters']['uid']['field'] = 'uid';
   $handler->display->display_options['filters']['uid']['value'] = '1';
+  /* Filter criterion: Signatures: Is pending */
+  $handler->display->display_options['filters']['pending']['id'] = 'pending';
+  $handler->display->display_options['filters']['pending']['table'] = 'mcapi_signatures';
+  $handler->display->display_options['filters']['pending']['field'] = 'pending';
+  $handler->display->display_options['filters']['pending']['value'] = '1';
+  $handler->display->display_options['block_description'] = 'My pending transactions';
 
   /* Display: my_signature_needed */
   $handler = $view->new_display('block', 'my_signature_needed', 'block');

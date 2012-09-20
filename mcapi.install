@@ -385,8 +385,7 @@ function mcapi_update_7001() {
     $currency->limits['limits_callback'] = 'limits_personal';
     $currency->limits['limits_personal']['min'] = $old_currency->min;
     $currency->limits['limits_personal']['max'] = $old_currency->max;
-    module_load('mcapi_signatures');//makes available the constant TRANSACTION_STATE_PENDING
-    $currency->transaction_access[TRANSACTION_STATE_PENDING] = array(
+    $currency->transaction_access[-1] = array( //-1 defined as TRANSACTION_STATE_PENDING
       'transaction_access_participants' => 'transaction_access_participants',
       'transaction_access_accountant' => 'transaction_access_accountant'
     );
@@ -424,6 +423,30 @@ function mcapi_update_7001() {
  * create the new 'worth' field and attach it to the transaction entity
  */
 function mcapi_update_7002() {
+  create_transaction_description_field();
+  variable_set('transaction_description_field', $fieldname);
+  //field_delete_instance(field_info_instance('transaction', 'body', 'transaction'));
+  
+  //we also need to update any taxonomy terms
+  foreach (db_query("SELECT field_name FROM {field_config} WHERE field_name != 'taxonomyextra'")->fetchCol() as $fieldname) {
+    db_query("UPDATE {field_data_$fieldname} SET entity_type = 'transaction', bundle = 'transaction' WHERE entity_type = 'node' AND bundle = 'exchange'");
+    db_query("UPDATE {field_revision_$fieldname} SET entity_type = 'transaction', bundle = 'transaction' WHERE entity_type = 'node' AND bundle = 'exchange'");
+  }
+
+  //update the field definitions
+  db_query("DELETE FROM {field_config_instance} WHERE entity_type = 'node' AND bundle = 'currency'");
+
+  //sort out the field definitions
+  db_query("UPDATE {field_config_instance}
+    SET entity_type = 'transaction', bundle = 'transaction'
+    WHERE entity_type = 'node' AND bundle = 'exchange'"
+  );
+  //cleanup
+  variable_del('mc_tabs_css');
+}
+//this can be called separately by config modules in ther hook_install
+function create_transaction_description_field() {
+  module_load_install('field');
   variable_set('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_ERASE);
   mcapi_check_fields();
   $fieldname = 'transaction_description';
@@ -464,7 +487,9 @@ function mcapi_update_7002() {
       ),
     ),
   );
-  _update_7000_field_create_field($field);
+  if (_update_7000_field_read_fields(array('field_name' => $fieldname))) {
+    _update_7000_field_create_field($field);
+  }
   $instance = array(
     'field_name' => $fieldname,
     'label' => t('Description'),
@@ -488,27 +513,9 @@ function mcapi_update_7002() {
       )
     )
   );
-  _update_7000_field_create_instance($field, $instance);
-
-  variable_set('transaction_description_field', $fieldname);
-  //field_delete_instance(field_info_instance('transaction', 'body', 'transaction'));
-  
-  //we also need to update any taxonomy terms
-  foreach (db_query("SELECT field_name FROM {field_config} WHERE field_name != 'taxonomyextra'")->fetchCol() as $fieldname) {
-    db_query("UPDATE {field_data_$fieldname} SET entity_type = 'transaction', bundle = 'transaction' WHERE entity_type = 'node' AND bundle = 'exchange'");
-    db_query("UPDATE {field_revision_$fieldname} SET entity_type = 'transaction', bundle = 'transaction' WHERE entity_type = 'node' AND bundle = 'exchange'");
+  if (!field_info_instance('transaction', 'field_description', 'transaction')) {
+    _update_7000_field_create_instance($field, $instance);
   }
-
-  //update the field definitions
-  db_query("DELETE FROM {field_config_instance} WHERE entity_type = 'node' AND bundle = 'currency'");
-
-  //sort out the field definitions
-  db_query("UPDATE {field_config_instance}
-    SET entity_type = 'transaction', bundle = 'transaction'
-    WHERE entity_type = 'node' AND bundle = 'exchange'"
-  );
-  //cleanup
-  variable_del('mc_tabs_css');
 }
 
 /**
@@ -535,58 +542,59 @@ function mcapi_update_7003() {
     'manytoone' => 'one2many',
     'alltoone' => 'one2many',
   );
+  if (!db_query("SELECT xid FROM {mcapi_transactions}")->fetchfield()) {
+    //convert each old transaction into a transaction object
+    $transactions = db_query("SELECT * FROM {mc_exchanges} x
+      RIGHT JOIN {node} n on n.nid = x.nid
+      LEFT JOIN {node_revision} v on n.vid = v.vid
+      WHERE x.state > -1
+      ORDER BY n.created"
+    )->fetchAllAssoc('nid');
+    $serial = 1;
 
-  //convert each old transaction into a transaction object
-  $transactions = db_query("SELECT * FROM {mc_exchanges} x
-    RIGHT JOIN {node} n on n.nid = x.nid
-    LEFT JOIN {node_revision} v on n.vid = v.vid
-    WHERE x.state > -1
-    ORDER BY n.created"
-  )->fetchAllAssoc('nid');
-  $serial = 1;
-
-  mcapi_init();//ensure the currencies are loaded up
-  $currencies = &drupal_static('currencies');
-  $currcodes = array_keys($currencies);
-  debug('check that the field_data_worth table has a value for currcode', $old->cid);
-  debug('transaction conversion may need to be done in batches');
-  foreach ($transactions as $xid => $old) {
-    //bypasses the transaction controller
-    $transaction = array(
-      'xid' => $xid,
-      'serial' => $serial,
-      'payer' => $old->payer_uid,
-      'payee' => $old->payee_uid,
-      'state' => $states[$old->state],
-      'created' => $old->created,
-      'creator' => $old->uid,
-      'type' => isset($types[$old->exchange_type]) ? $types[$old->exchange_type] : '3rdparty',
-      'data' => array(),
-    );
-    drupal_write_record('mcapi_transactions', $transaction);
-    $worth_field = array(
-      LANGUAGE_NONE => array(
-        0 => array(
-          'quantity' => $old->quantity,
-          'currcode' => $currcodes[$old->cid] ? $currcodes[$old->cid] : 'def_drup'
+    mcapi_init();//ensure the currencies are loaded up
+    $currencies = &drupal_static('currencies');
+    $currcodes = array_keys($currencies);
+    drupal_set_message('check that the field_data_worth table has a value for currcode', $old->cid);
+    drupal_set_message('transaction conversion may need to be done in batches');
+    foreach ($transactions as $xid => $old) {
+      //bypasses the transaction controller
+      $transaction = array(
+        'xid' => $xid,
+        'serial' => $serial,
+        'payer' => $old->payer_uid,
+        'payee' => $old->payee_uid,
+        'state' => $states[$old->state],
+        'created' => $old->created,
+        'creator' => $old->uid,
+        'type' => isset($types[$old->exchange_type]) ? $types[$old->exchange_type] : '3rdparty',
+        'data' => array(),
+      );
+      drupal_write_record('mcapi_transactions', $transaction);
+      $worth_field = array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'quantity' => $old->quantity,
+            'currcode' => $currcodes[$old->cid] ? $currcodes[$old->cid] : 'def_drup'
+          )
         )
-      )
-    );
-    _update_7000_field_sql_storage_write('transaction', 'transaction', $xid, $xid, 'worth', $worth_field);
-    $description_field = array(
-      LANGUAGE_NONE => array(
-        0 => array(
-          'value' => $old->title
+      );
+      _update_7000_field_sql_storage_write('transaction', 'transaction', $xid, $xid, 'worth', $worth_field);
+      $description_field = array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'value' => $old->title
+          )
         )
-      )
-    );
+      );
 
-    if ($description_field_name = variable_get('transaction_description_field', '')) {
-      _update_7000_field_sql_storage_write('transaction', 'transaction', $xid, $xid, $description_field_name, $description_field);
+      if ($description_field_name = variable_get('transaction_description_field', '')) {
+        _update_7000_field_sql_storage_write('transaction', 'transaction', $xid, $xid, $description_field_name, $description_field);
+      }
+      //tidy up
+      if ($transaction->state == TRANSACTION_STATE_PENDING) $pending = TRUE;
+      $serial++;
     }
-    //tidy up
-    if ($transaction->state == TRANSACTION_STATE_PENDING) $pending = TRUE;
-    $serial++;
   }
   if (empty($pending)) {
     module_disable(array('mcapi_signatures'));
@@ -712,7 +720,9 @@ function mcapi_update_7006() {
   if (isset($form['mail'])) $form = $form['mail'];
   //this is tricky but we're getting the default values out of the action form
   foreach (element_children($form) as $fieldname) {
-    $params[$fieldname] = $form[$fieldname]['#default_value'];
+    if (isset($form[$fieldname]['#default_value'])) {
+      $params[$fieldname] = $form[$fieldname]['#default_value'];
+    }
   }
   if (variable_get('mc_notification_subject', '')) {
     $params['subject'] = variable_get('mc_notification_subject', '');
