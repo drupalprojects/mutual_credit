@@ -376,8 +376,8 @@ function show_balance_limits($uid, $currcodes) {
     $renderable[$currcode] = array(
       '#theme' => 'balance_limits',
       '#currcode' => $currcode,
-      '#min' => $limits['min'],
-      '#max' => $limits['max'],
+      '#min' => @$limits['min'],
+      '#max' => @$limits['max'],
       '#balance' => transaction_totals($uid, $currcode)->balance
     );
   }

@@ -223,9 +223,9 @@ function mcapi_schema() {
 
 function mcapi_check_fields() {
   field_associate_fields('mcapi');//sets field_config definition to active
-  $fields = _update_7000_field_read_fields(array('module' => 'mcapi'), 'field_name');
+  $field = current(_update_7000_field_read_fields(array('module' => 'mcapi'), 'field_name'));
   
-  if (empty($fields['worth'])) {
+  if (empty($field)) {
     $field = array(
       'field_name' => 'worth',
       'type' => 'worth_field',
@@ -235,7 +235,7 @@ function mcapi_check_fields() {
     _update_7000_field_create_field($field);
   }
   // Create the instance if needed.
-  if (!field_read_instance('transaction', $field['field_name'], 'transaction', array('include_inactive' => TRUE))) {
+  if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
     $instance = array(
       'field_name' => $field['field_name'],
       'description' => t('The value of the exchange'),
@@ -424,7 +424,6 @@ function mcapi_update_7001() {
  */
 function mcapi_update_7002() {
   create_transaction_description_field();
-  variable_set('transaction_description_field', $fieldname);
   //field_delete_instance(field_info_instance('transaction', 'body', 'transaction'));
   
   //we also need to update any taxonomy terms
@@ -451,71 +450,73 @@ function create_transaction_description_field() {
   mcapi_check_fields();
   $fieldname = 'transaction_description';
   //add the description field, which was intrinsic in v2
-  $field = array(
-    'entity_types' => array(
-      'transaction',
-    ),
-    'settings' => array(
-      'max_length' => 255
-    ),
-    'field_name' => $fieldname,
-    'type' => 'text',
-    'module' => 'text',
-    'active' => '1',
-    'locked' => '0',
-    'cardinality' => '1',
-    'columns' => array(
-      'value' => array(
-        'type' => 'text',
-        'size' => 'big',
-        'not null' => FALSE,
-      ),
-      'summary' => array(
-        'type' => 'text',
-        'size' => 'big',
-        'not null' => FALSE,
-      ),
-      'format' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => FALSE,
-      ),
-    ),
-    'bundles' => array(
-      'transaction' => array(
+  $field = current(_update_7000_field_read_fields(array('field_name' => $fieldname)));
+  if (!$field) {
+    $field = array(
+      'entity_types' => array(
         'transaction',
       ),
-    ),
-  );
-  if (_update_7000_field_read_fields(array('field_name' => $fieldname))) {
+      'settings' => array(
+        'max_length' => 255
+      ),
+      'field_name' => $fieldname,
+      'type' => 'text',
+      'module' => 'text',
+      'active' => '1',
+      'locked' => '0',
+      'cardinality' => '1',
+      'columns' => array(
+        'value' => array(
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ),
+        'summary' => array(
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ),
+        'format' => array(
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ),
+      ),
+      'bundles' => array(
+        'transaction' => array(
+          'transaction',
+        ),
+      ),
+    );
     _update_7000_field_create_field($field);
   }
-  $instance = array(
-    'field_name' => $fieldname,
-    'label' => t('Description'),
-    'description' => '',
-    'entity_type' => 'transaction',
-    'bundle' => 'transaction',
-    'settings' => array(),
-    'required' => TRUE,
-    'display' => array(
-      'default' => array(
-        'label' => 'hidden',
-        'type' => 'text_default',
-        'weight' => 0,
+  if (!field_info_instance('transaction', $fieldname, 'transaction')) {
+    $instance = array(
+      'field_name' => $fieldname,
+      'label' => t('Description'),
+      'description' => '',
+      'entity_type' => 'transaction',
+      'bundle' => 'transaction',
+      'settings' => array(),
+      'required' => TRUE,
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'text_default',
+          'weight' => 0,
+        ),
       ),
-    ),
-    'widget' => array(
-      'weight' => '3',
-      'type' => 'text_textfield',
-      'settings' => array(
-        'rows' => '1'
+      'widget' => array(
+        'weight' => '3',
+        'type' => 'text_textfield',
+        'settings' => array(
+          'rows' => '1'
+        )
       )
-    )
-  );
-  if (!field_info_instance('transaction', 'field_description', 'transaction')) {
+    );
     _update_7000_field_create_instance($field, $instance);
   }
+  variable_set('transaction_description_field', $fieldname);
 }
 
 /**
@@ -758,6 +759,8 @@ function mcapi_update_7009() {
   else {
     db_query("DELETE FROM {system} WHERE name = 'mcapi_pending'");
   }
+  db_query("DELETE FROM {field_config_instance} WHERE bundle IN ('comment_node_currency', 'comment_node_exchange')");
+
   module_enable(array('mcapi_index_views'), TRUE);
   $nids = db_query("SELECT nid FROM {node} where type = 'exchange'")->fetchCol();
   node_delete_multiple($nids);

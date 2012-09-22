@@ -34,8 +34,8 @@ files[] = views/views_handler_filter_mcapi_types.inc
 files[] = views/views_plugin_row_transaction.inc
 
 ;rules integration
-files[] = mcapi.rules.inc
-files[] = extras/mcapi.eval.inc
+;files[] = mcapi.rules.inc
+;files[] = extras/mcapi.eval.inc
 
 ;entity integration
 files[] = mcapi.info.inc
