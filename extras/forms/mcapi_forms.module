@@ -77,13 +77,6 @@ function mcapi_forms_menu_alter(&$items) {
   unset($items['admin/accounting/display/default']);
 }
 
-/**
- * Implements hook_admin_paths().
- */
-function mcapi_forms_admin_paths() {
-  return array('transaction/*/formedit' => TRUE);
-}
-
 /*
  * implements hook_forms
  * $args is an mcapi_form and an optional transaction
@@ -136,7 +129,9 @@ function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id)
   $titles = &$mcapiform->data['experience'];
   if ($parts == $map) {
     drupal_set_title(
-       empty($titles['title']) ? $titles['sure_title'] :$titles['title']
+      empty($titles['title']) ?
+        mcapi_locale($titles['sure_title'], 'sure_title') :
+        mcapi_locale($titles['title'], 'title')
     );
   }
   if (!empty($form_state['storage']) && $form_state['step'] == 1) {

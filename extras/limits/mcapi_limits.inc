@@ -184,6 +184,9 @@ function min_max_fields($defaults) {
 }
 
 function mcapi_validate_optional_num(&$element, $form_state) {
+  if ($element['#value'] == '-') {//this is the default field value, meaning minus zero
+    form_set_value($element, 0, $form_state);
+  }
   if (strlen($element['#value']) && !is_numeric($element['#value'])) {
     form_error($element, t('Limits must be numeric: @value', array('@value' => $element['#value'])));
   }

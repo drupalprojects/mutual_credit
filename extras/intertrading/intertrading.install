@@ -1,10 +1,21 @@
 <?php
 
 function intertrading_install() {
-  
+  variable_set('intertrading_currcode', currency_load()->info['currcode']);
 }
 
 function intertrading_enable() {
   user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array('access statement'));
+
   drupal_set_message(t("Anonymous users have been granted permission to see the stats. However this is not required to be part of the intertrading network"), 'warning');
+}
+
+function intertrading_uninstall() {
+  variable_del('intertrading_server');
+  variable_del('intertrading_uid');
+  variable_del('intertrading_currcode');
+  variable_del('ticks');
+  variable_del('description_field');
+  variable_del('site_latitude');
+  variable_del('site_longitude');
 }

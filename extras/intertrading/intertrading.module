@@ -19,9 +19,10 @@ function intertrading_menu() {
     'weight' => 1
   );
 
-  if ($currcode = variable_get('intertrading_currcode', NULL)) {
+  if ($currcode = variable_get('intertrading_currcode') && variable_get('intertrading_uid')) {
+    mcapi_init();//
     $transaction =  new_transaction();
-    //this attempt to preset has little errect if the field cardinality > 0
+    //this attempt to preset has little effect if the field cardinality > 0
     $transaction->worth[LANGUAGE_NONE][0] = array(
       'currcode' => variable_get('intertrading_currcode', NULL),
       'quantity' => 0
@@ -231,16 +232,6 @@ function intertrading_validate_ticks(&$element, $form_state) {
   if (!is_numeric($element['#value'])) {
     form_error($element, t('Ticks must be numeric'));
   }
-}
-
-function intertrading_uninstall() {
-  variable_del('intertrading_server');
-  variable_del('intertrading_uid');
-  variable_del('intertrading_currcode');
-  variable_del('ticks');
-  variable_del('description_field');
-  variable_del('site_latitude');
-  variable_del('site_longitude');
 }
 
 /*
@@ -564,7 +555,7 @@ function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $for
     drupal_set_title(t('Are you sure?'));
     //clear the transaction fields because the value is in form_state['storage
     foreach(element_children($form) as $fieldname) {
-      if (in_array($fieldname, array('buttons', 'form_id', 'form_build_id', 'form_token'))) continue;
+      if (in_array($fieldname, array('actions', 'form_id', 'form_build_id', 'form_token'))) continue;
       unset($form[$fieldname]);
     }
 

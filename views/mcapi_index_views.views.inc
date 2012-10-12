@@ -185,6 +185,7 @@ function mcapi_index_views_views_data() {
  * except worth field, which is copied in the table already
  */
 function mcapi_index_views_views_data_alter(&$tables) {
+
   foreach ($tables as $table => $info) {
     //ignore the fields we know about, this is just intended for fields added via field API
     if (in_array($table, array('field_data_worth', 'mcapi_signatures'))) continue;
@@ -196,6 +197,28 @@ function mcapi_index_views_views_data_alter(&$tables) {
       }
     }
   }
+  //tell the date_views module about this table
+  $tables['mcapi_index']['date_argument'] = array(
+    'group' => t('Date'),
+    'title' => t('Date (!base_table)', array('!base_table' => 'mcapi_index')),
+    'help' => t('Filter any Views !base_table date field by a date argument, using any common ISO date/period format (i.e. YYYY, YYYY-MM, YYYY-MM-DD, YYYY-W99, YYYY-MM-DD--P3M, P90D, etc). ', array('!base_table' => 'mcapi_index')),
+    'argument' => array(
+      'handler' => 'date_views_argument_handler',
+      'empty field name' => t('Undated'),
+      'is date' => TRUE,
+    ),
+  );
+  // The flexible date filter.
+  $tables['mcapi_index']['date_filter'] = array(
+    'group' => t('Date'),
+    'title' => t('Date (!base_table)', array('!base_table' => 'mcapi_index')),
+    'help' => t('Filter any Views !base_table date field.', array('!base_table' => 'mcapi_index')),
+    'filter' => array(
+      'handler' => 'date_views_filter_handler',
+      'empty field name' => t('Undated'),
+      'is date' => TRUE,
+    ),
+  );
 }
 
 

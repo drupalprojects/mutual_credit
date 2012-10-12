@@ -223,7 +223,8 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     return $query->execute()->fetchAll();
   }
 
-  public function next_serial($transaction) {
+  //this function is not 100% robust against creating simultaneous transactions
+  public function next_serial() {
     return db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
   }
 }

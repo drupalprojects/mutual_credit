@@ -248,13 +248,13 @@ function _transaction_form(&$form, &$form_state, $transaction) {
   field_attach_form('transaction', $transaction, $form, $form_state);
   unset($form['worth'][LANGUAGE_NONE]['add_more']);
 
-  $form['actions']['submit'] = array(
+  $form['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Record'),
     //this prevents double click, but doesn't prevent going back and resubmitting the form
     '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();")
   );
-  $form['buttons']['#weight'] = 25;
+  $form['actions']['#weight'] = 25;
   $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_form_submit');
 }
@@ -263,7 +263,6 @@ function _transaction_form(&$form, &$form_state, $transaction) {
  * standard form-level validation callback for ALL transaction forms
  * fields have already been validated individually
  * By this time each of the form values should be well enough validated not to fail on writing to db
- *
  */
 function transaction_form_validate($form, &$form_state) {
   $transaction = (object)$form_state['values'];
@@ -797,7 +796,7 @@ function mcapi_description_field($form, $form_state) {
 }
 function _mcapi_get_text_instances() {
   $options = array();
-  if (substr($_SERVER['SCRIPT_NAME'], -9) == 'index.php') {//coz field_info_fields isn't available during update.php
+  if (substr($_SERVER['SCRIPT_NAME'], -9) == 'index.php' && module_exists('field')) {//coz field_info_fields isn't available during update.php
     foreach(field_info_fields() as $field) {
       if ($field['module'] == 'text' && isset($field['bundles']['transaction'])) {
         $options[$field['field_name']] = $field['field_name'];

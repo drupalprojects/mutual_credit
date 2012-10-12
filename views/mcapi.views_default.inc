@@ -14,7 +14,7 @@ function mcapi_views_default_views() {
 
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
-  $handler->display->display_options['title'] = 'transactions';
+  $handler->display->display_options['title'] = t('Transactions');
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
@@ -165,27 +165,205 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['name_1']['format_username'] = 1;
 
   $views[$view->name] = $view;
+
+  if (module_exists('date_views')) {
+    $view = new view();
+    $view->name = 'income_expenditure';
+    $view->description = 'two displays showing a users transactions in each direction, by period';
+    $view->tag = 'mcapi';
+    $view->base_table = 'mcapi_transactions';
+    $view->human_name = 'Income & Expenditure';
+    $view->core = 7;
+    $view->api_version = '3.0';
+    $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+
+    /* Display: Master */
+    $handler = $view->new_display('default', 'Master', 'default');
+    $handler->display->display_options['use_more_always'] = FALSE;
+    $handler->display->display_options['access']['type'] = 'none';
+    $handler->display->display_options['cache']['type'] = 'none';
+    $handler->display->display_options['query']['type'] = 'views_query';
+    $handler->display->display_options['exposed_form']['type'] = 'basic';
+    $handler->display->display_options['pager']['type'] = 'date_views_pager';
+    $handler->display->display_options['pager']['options']['pager_position'] = 'both';
+    $handler->display->display_options['style_plugin'] = 'table';
+    /* No results behavior: Global: Text area */
+    $handler->display->display_options['empty']['area']['id'] = 'area';
+    $handler->display->display_options['empty']['area']['table'] = 'views';
+    $handler->display->display_options['empty']['area']['field'] = 'area';
+    $handler->display->display_options['empty']['area']['label'] = 'empty text';
+    $handler->display->display_options['empty']['area']['empty'] = TRUE;
+    $handler->display->display_options['empty']['area']['content'] = 'No transactions';
+    $handler->display->display_options['empty']['area']['format'] = 'editor_filtered_html';
+    /* Relationship: Transaction: Payee */
+    $handler->display->display_options['relationships']['payee']['id'] = 'payee';
+    $handler->display->display_options['relationships']['payee']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['relationships']['payee']['field'] = 'payee';
+    $handler->display->display_options['relationships']['payee']['required'] = TRUE;
+    /* Relationship: Transaction: Payer */
+    $handler->display->display_options['relationships']['payer']['id'] = 'payer';
+    $handler->display->display_options['relationships']['payer']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['relationships']['payer']['field'] = 'payer';
+    $handler->display->display_options['relationships']['payer']['required'] = TRUE;
+    /* Field: Transaction: Serial number */
+    $handler->display->display_options['fields']['serial']['id'] = 'serial';
+    $handler->display->display_options['fields']['serial']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['fields']['serial']['field'] = 'serial';
+    /* Sort criterion: Transaction: created */
+    $handler->display->display_options['sorts']['created']['id'] = 'created';
+    $handler->display->display_options['sorts']['created']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['sorts']['created']['field'] = 'created';
+
+    /* Display: Income */
+    $handler = $view->new_display('page', 'Income', 'page');
+    $handler->display->display_options['defaults']['title'] = FALSE;
+    $handler->display->display_options['title'] = '<h4>Income</h4>';
+    $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+    $handler->display->display_options['defaults']['fields'] = FALSE;
+    /* Field: Transaction: Serial number */
+    $handler->display->display_options['fields']['serial']['id'] = 'serial';
+    $handler->display->display_options['fields']['serial']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['fields']['serial']['field'] = 'serial';
+    $handler->display->display_options['fields']['serial']['link_to_transaction'] = 0;
+    /* Field: Transaction: created */
+    $handler->display->display_options['fields']['created']['id'] = 'created';
+    $handler->display->display_options['fields']['created']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['fields']['created']['field'] = 'created';
+    $handler->display->display_options['fields']['created']['label'] = '';
+    $handler->display->display_options['fields']['created']['element_label_colon'] = FALSE;
+    $handler->display->display_options['fields']['created']['date_format'] = 'short';
+    /* Field: User: Name */
+    $handler->display->display_options['fields']['name']['id'] = 'name';
+    $handler->display->display_options['fields']['name']['table'] = 'users';
+    $handler->display->display_options['fields']['name']['field'] = 'name';
+    $handler->display->display_options['fields']['name']['relationship'] = 'payer';
+    /* Field: Transaction: Worth */
+    $handler->display->display_options['fields']['worth']['id'] = 'worth';
+    $handler->display->display_options['fields']['worth']['table'] = 'field_data_worth';
+    $handler->display->display_options['fields']['worth']['field'] = 'worth';
+    $handler->display->display_options['fields']['worth']['label'] = 'Value';
+    $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
+    $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
+    /* Field: Transaction: Description */
+    $handler->display->display_options['fields']['transaction_description']['id'] = 'transaction_description';
+    $handler->display->display_options['fields']['transaction_description']['table'] = 'field_data_transaction_description';
+    $handler->display->display_options['fields']['transaction_description']['field'] = 'transaction_description';
+    $handler->display->display_options['defaults']['arguments'] = FALSE;
+    /* Contextual filter: Transaction: Payee */
+    $handler->display->display_options['arguments']['payee']['id'] = 'payee';
+    $handler->display->display_options['arguments']['payee']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['arguments']['payee']['field'] = 'payee';
+    $handler->display->display_options['arguments']['payee']['default_action'] = 'default';
+    $handler->display->display_options['arguments']['payee']['default_argument_type'] = 'user';
+    $handler->display->display_options['arguments']['payee']['default_argument_options']['user'] = FALSE;
+    $handler->display->display_options['arguments']['payee']['summary']['number_of_records'] = '0';
+    $handler->display->display_options['arguments']['payee']['summary']['format'] = 'default_summary';
+    $handler->display->display_options['arguments']['payee']['summary_options']['items_per_page'] = '25';
+    /* Contextual filter: Date: Date (mcapi_transactions) */
+    $handler->display->display_options['arguments']['date_argument']['id'] = 'date_argument';
+    $handler->display->display_options['arguments']['date_argument']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['arguments']['date_argument']['field'] = 'date_argument';
+    $handler->display->display_options['arguments']['date_argument']['default_action'] = 'default';
+    $handler->display->display_options['arguments']['date_argument']['year_range'] = '-10:+0';
+    $handler->display->display_options['arguments']['date_argument']['granularity'] = 'year';
+    $handler->display->display_options['arguments']['date_argument']['use_fromto'] = 'no';
+    $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
+      'mcapi_transactions.created' => 'mcapi_transactions.created',
+    );
+    $handler->display->display_options['path'] = 'user/%/income_expenditure';
+    $handler->display->display_options['menu']['type'] = 'tab';
+    $handler->display->display_options['menu']['title'] = 'Trade';
+    $handler->display->display_options['menu']['description'] = 'This year\'s transactions';
+    $handler->display->display_options['menu']['weight'] = '0';
+    $handler->display->display_options['menu']['context'] = 0;
+
+    /* Display: Expenditure */
+    $handler = $view->new_display('attachment', 'Expenditure', 'attachment_1');
+    $handler->display->display_options['defaults']['title'] = FALSE;
+    $handler->display->display_options['title'] = '<h4>Expenditure</h4>';
+    $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+    $handler->display->display_options['pager']['type'] = 'none';
+    $handler->display->display_options['pager']['options']['offset'] = '0';
+    $handler->display->display_options['defaults']['fields'] = FALSE;
+    /* Field: Transaction: Serial number */
+    $handler->display->display_options['fields']['serial']['id'] = 'serial';
+    $handler->display->display_options['fields']['serial']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['fields']['serial']['field'] = 'serial';
+    /* Field: Transaction: created */
+    $handler->display->display_options['fields']['created']['id'] = 'created';
+    $handler->display->display_options['fields']['created']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['fields']['created']['field'] = 'created';
+    $handler->display->display_options['fields']['created']['label'] = '';
+    $handler->display->display_options['fields']['created']['element_label_colon'] = FALSE;
+    $handler->display->display_options['fields']['created']['date_format'] = 'short';
+    /* Field: User: Name */
+    $handler->display->display_options['fields']['name']['id'] = 'name';
+    $handler->display->display_options['fields']['name']['table'] = 'users';
+    $handler->display->display_options['fields']['name']['field'] = 'name';
+    $handler->display->display_options['fields']['name']['relationship'] = 'payee';
+    /* Field: Transaction: Worth */
+    $handler->display->display_options['fields']['worth']['id'] = 'worth';
+    $handler->display->display_options['fields']['worth']['table'] = 'field_data_worth';
+    $handler->display->display_options['fields']['worth']['field'] = 'worth';
+    $handler->display->display_options['fields']['worth']['label'] = 'Value';
+    $handler->display->display_options['fields']['worth']['alter']['alter_text'] = TRUE;
+    $handler->display->display_options['fields']['worth']['alter']['text'] = '-[worth]';
+    $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
+    $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
+    /* Field: Transaction: Description */
+    $handler->display->display_options['fields']['transaction_description']['id'] = 'transaction_description';
+    $handler->display->display_options['fields']['transaction_description']['table'] = 'field_data_transaction_description';
+    $handler->display->display_options['fields']['transaction_description']['field'] = 'transaction_description';
+    $handler->display->display_options['defaults']['arguments'] = FALSE;
+    /* Contextual filter: Transaction: Payer */
+    $handler->display->display_options['arguments']['payer']['id'] = 'payer';
+    $handler->display->display_options['arguments']['payer']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['arguments']['payer']['field'] = 'payer';
+    $handler->display->display_options['arguments']['payer']['default_action'] = 'default';
+    $handler->display->display_options['arguments']['payer']['default_argument_type'] = 'user';
+    $handler->display->display_options['arguments']['payer']['default_argument_options']['user'] = FALSE;
+    $handler->display->display_options['arguments']['payer']['summary']['number_of_records'] = '0';
+    $handler->display->display_options['arguments']['payer']['summary']['format'] = 'default_summary';
+    $handler->display->display_options['arguments']['payer']['summary_options']['items_per_page'] = '25';
+    /* Contextual filter: Date: Date (mcapi_transactions) */
+    $handler->display->display_options['arguments']['date_argument']['id'] = 'date_argument';
+    $handler->display->display_options['arguments']['date_argument']['table'] = 'mcapi_transactions';
+    $handler->display->display_options['arguments']['date_argument']['field'] = 'date_argument';
+    $handler->display->display_options['arguments']['date_argument']['default_action'] = 'default';
+    $handler->display->display_options['arguments']['date_argument']['year_range'] = '-10:+0';
+    $handler->display->display_options['arguments']['date_argument']['granularity'] = 'year';
+    $handler->display->display_options['arguments']['date_argument']['use_fromto'] = 'no';
+    $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
+      'mcapi_transactions.created' => 'mcapi_transactions.created',
+    );
+    $handler->display->display_options['displays'] = array(
+      'page' => 'page',
+      'default' => 0,
+    );
+    $views[$view->name] = $view;
+  }
+  else {
+    if ($GLOBALS['user']->uid == 1) drupal_set_message('Install date_views module for more default views.', 'warning');
+  }
   return $views;
 }
 
 $translatables['transactions'] = array(
-  t('Master'),
-  t('transactions'),
   t('more'),
-  t('Apply'),
-  t('Reset'),
-  t('Sort by'),
-  t('Asc'),
-  t('Desc'),
-  t('Items per page'),
-  t('- All -'),
-  t('Offset'),
   t('Payee'),
   t('Payer'),
   t('Serial number'),
   t('Name'),
   t('Worth'),
-  t('Transactions'),
+  t('Value'),
   t('Who paid whom'),
   t('[name] paid [name_1]'),
+  t('Income & Expenditure'),
+  t('Transactions'),
+  t('No transactions'),
+  t('Trade'),
+  t('This year\'s transactions'),
+  t('Transactions'),
+  t('Transactions'),
+  ''
 );

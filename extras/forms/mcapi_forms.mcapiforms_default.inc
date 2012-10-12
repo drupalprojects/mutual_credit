@@ -62,17 +62,13 @@ function mcapiform_default_1stparty() {
       'feedback' => ''
     ),
     'experience' => array(
-      'title' => 'Make a payment',
-      'template' => 'Partner: [mcapiform:secondperson]<br />
-    Direction: [mcapiform:direction]<br />
-    Amount: [mcapiform:worth]<br />',
-      'sure_title' => 'Are you sure?',
-      'sure_format' => 'certificate',
-    ),
-    'buttons' => array(
-      'submit' => 'Save',
-      'delete' => 'Revert',
-    ),
+      'title' => t('Make a payment'),
+      'template' => t('Partner: [mcapiform:secondperson]<br />
+Direction: [mcapiform:direction]<br />
+Amount: [mcapiform:worth]<br />'),
+      'sure_title' => t('Are you sure?'),
+      'sure_format' => t('certificate'),
+    )
   );
   return $mcapiform;
 }
@@ -119,18 +115,15 @@ function mcapiform_default_3rdparty() {
     'submission' => array(
       'button' => 'Submit',
       'redirect' => '',
+      'feedback' => ''
     ),
     'experience' => array(
-      'title' => 'Record a transaction',
-      'template' => 'Payer: [mcapiform:payer]<br />
+      'title' => t('Record a transaction'),
+      'template' => t('Payer: [mcapiform:payer]<br />
 Payee: [mcapiform:payee]<br />
-Amount: [mcapiform:worth]<br />',
-      'sure_title' => 'Are you sure?',
-      'sure_format' => 'certificate',
-    ),
-    'buttons' => array(
-      'submit' => 'Save',
-      'delete' => 'Revert',
+Amount: [mcapiform:worth]<br />'),
+      'sure_title' => t('Are you sure?'),
+      'sure_format' => t('certificate'),
     ),
   );
   return $mcapiform;

@@ -33,6 +33,13 @@ function mcapi_views_data() {
   $data['mcapi_transactions']['payer'] = array(
     'title' => t('Payer'),
     'help' => t('The user who gave currency in the transaction.'),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+      'click sortable' => TRUE,
+    ),
+    'field' => array(
+      'handler' => 'views_handler_field',
+    ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'users',
@@ -42,6 +49,13 @@ function mcapi_views_data() {
   $data['mcapi_transactions']['payee'] = array(
     'title' => t('Payee'),
     'help' => t('The user who gave currency in the transaction.'),
+    'argument' => array(
+      'handler' => 'views_handler_argument_numeric',
+      'click sortable' => TRUE,
+    ),
+    'field' => array(
+      'handler' => 'views_handler_field',
+    ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'users',

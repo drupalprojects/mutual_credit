@@ -36,6 +36,7 @@ function mcapi_signatures_uninstall() {
     }
   }
   //signatures
+  //TODO implement hook_variable
   foreach (array_keys(mcapi_get_types()) as $type) {
     variable_del('mcapi_signatures_'.$type);
   }

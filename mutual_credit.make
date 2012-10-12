@@ -2,7 +2,7 @@
 core = 7.x
 api = 2
 
-projects[user_chooser][version] = "1.0-beta2"
-projects[token][version] = "1.3"
+projects[user_chooser][version] = "1.0-beta3"
+projects[token][version] = "1.4"
 projects[ctools][version] = "1.2"
 projects[views][version] = "3.5"

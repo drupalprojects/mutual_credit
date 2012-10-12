@@ -193,12 +193,14 @@ function _edit_mcapi_form(&$form, &$form_state) {
   else {
     $form['worth']['preset'][LANGUAGE_NONE][0]['#config_mode'] = TRUE;
   }
+
   //we need to know the view modes of the transaction entity, to choose for the preview page
   $entity = entity_get_info('transaction');
   foreach ($entity['view modes'] as $name => $mode) {
     if (in_array($name, array('search_index', 'search_result')))continue;
     $view_modes[$name] = $mode['label'];
   }
+
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),

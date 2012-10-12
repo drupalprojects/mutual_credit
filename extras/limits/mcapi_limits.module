@@ -16,6 +16,12 @@ function limits_get($currcode, $uid){
       '@callback' => $currency->limits['limits_callback']
     )));
   }
+  else {
+    return array(
+      'max' => '',
+      'min' => ''
+    );
+  }
 }
 function limits_get_adjusted($currcode, $uid, $balance = NULL) {
   $adjusted = array();
@@ -214,6 +220,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
   if (isset($form['limits_personal'])) {
     $form['limits_personal'] += array(
       '#title' => t('Personal balance limits, set manually'),
+      '#description' => t('These override any limits defined in the currency.'),
       '#type' => 'fieldset',
       '#weight' => 2
     );
