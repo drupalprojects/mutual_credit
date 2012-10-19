@@ -185,7 +185,7 @@ function mcapi_views_default_views() {
     $handler->display->display_options['query']['type'] = 'views_query';
     $handler->display->display_options['exposed_form']['type'] = 'basic';
     $handler->display->display_options['pager']['type'] = 'date_views_pager';
-    $handler->display->display_options['pager']['options']['pager_position'] = 'both';
+    $handler->display->display_options['pager']['options']['pager_position'] = 'bottom';
     $handler->display->display_options['style_plugin'] = 'table';
     /* No results behavior: Global: Text area */
     $handler->display->display_options['empty']['area']['id'] = 'area';
@@ -216,10 +216,16 @@ function mcapi_views_default_views() {
 
     /* Display: Income */
     $handler = $view->new_display('page', 'Income', 'page');
-    $handler->display->display_options['defaults']['title'] = FALSE;
-    $handler->display->display_options['title'] = '<h4>Income</h4>';
-    $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
     $handler->display->display_options['defaults']['fields'] = FALSE;
+    $handler->display->display_options['defaults']['header'] = FALSE;
+    /* Header: Global: Text area */
+    $handler->display->display_options['header']['area']['id'] = 'area';
+    $handler->display->display_options['header']['area']['table'] = 'views';
+    $handler->display->display_options['header']['area']['field'] = 'area';
+    $handler->display->display_options['header']['area']['empty'] = TRUE;
+    $handler->display->display_options['header']['area']['content'] = '<h4>'.t('Income').'</h4>';
+    $handler->display->display_options['header']['area']['format'] = 'editor_filtered_html';
+
     /* Field: Transaction: Serial number */
     $handler->display->display_options['fields']['serial']['id'] = 'serial';
     $handler->display->display_options['fields']['serial']['table'] = 'mcapi_transactions';
@@ -265,7 +271,7 @@ function mcapi_views_default_views() {
     $handler->display->display_options['arguments']['date_argument']['field'] = 'date_argument';
     $handler->display->display_options['arguments']['date_argument']['default_action'] = 'default';
     $handler->display->display_options['arguments']['date_argument']['year_range'] = '-10:+0';
-    $handler->display->display_options['arguments']['date_argument']['granularity'] = 'year';
+    $handler->display->display_options['arguments']['date_argument']['granularity'] = 'month';
     $handler->display->display_options['arguments']['date_argument']['use_fromto'] = 'no';
     $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
       'mcapi_transactions.created' => 'mcapi_transactions.created',
@@ -277,11 +283,17 @@ function mcapi_views_default_views() {
     $handler->display->display_options['menu']['weight'] = '0';
     $handler->display->display_options['menu']['context'] = 0;
 
+
     /* Display: Expenditure */
     $handler = $view->new_display('attachment', 'Expenditure', 'attachment_1');
-    $handler->display->display_options['defaults']['title'] = FALSE;
-    $handler->display->display_options['title'] = '<h4>Expenditure</h4>';
-    $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+    $handler->display->display_options['defaults']['header'] = FALSE;
+    /* Header: Global: Text area */
+    $handler->display->display_options['header']['area']['id'] = 'area';
+    $handler->display->display_options['header']['area']['table'] = 'views';
+    $handler->display->display_options['header']['area']['field'] = 'area';
+    $handler->display->display_options['header']['area']['empty'] = TRUE;
+    $handler->display->display_options['header']['area']['content'] = '<h4>'.t('Expenditure').'</h4>';
+    $handler->display->display_options['header']['area']['format'] = 'editor_filtered_html';
     $handler->display->display_options['pager']['type'] = 'none';
     $handler->display->display_options['pager']['options']['offset'] = '0';
     $handler->display->display_options['defaults']['fields'] = FALSE;
@@ -340,6 +352,7 @@ function mcapi_views_default_views() {
       'page' => 'page',
       'default' => 0,
     );
+    $handler->display->display_options['attachment_position'] = 'after';
     $views[$view->name] = $view;
   }
   else {

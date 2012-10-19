@@ -1675,3 +1675,12 @@ function _mcapi_calc($formula, $base_quant) {
   }
   return eval('echo '.str_replace('[q]', $base_quant, $formula).';');
 }
+/*
+ * implements hook_uid_renum from uid_login module
+ */
+function mcapi_uid_renum($old, $new) {
+  drupal_set_message("mcapi_uid_renum($old, $new)");
+  foreach(array('payer', 'payee') as $participant) {
+    db_update('mcapi_transactions')->fields(array($participant => $new))->condition($participant, $old)->execute();
+  }
+}

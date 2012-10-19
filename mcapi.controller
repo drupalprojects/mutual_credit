@@ -117,7 +117,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
 
   /*
    * there is no error checking on this.
-   * $purge is an undocumented feature, for development only, which forces mode MCPI_CURRENCY_UNDO_DELETE
+   * note that field_attach_delete must be called separately
    */
   public function undo(array $serials, $hard = FALSE) {
     variable_del('change_undo_mode');

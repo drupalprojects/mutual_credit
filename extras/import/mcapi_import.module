@@ -3,24 +3,23 @@
 define('CENTRAL_ACCOUNT_UID', 1);
 
 function mcapi_import_help($path) {
+  $help = array();
   switch ($path) {
     case 'admin/help#mcapi_import':
-      return t('Prepare a csv file and create transactions') .
-      t('Assumes user 1 is the balancing account.') .
-      t("The 'migrate' module was considered too difficult for the anticipated users of this module");
+      $help[] = t('Prepare a csv file and create transactions');
+      $help[] = t('Assumes user 1 is the balancing account.');
+      $help[] = t("The 'migrate' module is too complex for this, so this bespoke solution is provided.");
+      break;
     case 'admin/accounting/import/transactions' :
-      return implode(' ', array(
-        t('Import a whole transaction history after all users are imported.'),
-        t("Assumes there is only one currency in the system." ),
-        
-      ));
+      $help[] = t('Import a whole transaction history after all users are imported.');
+      $help[] = t("Assumes there is only one currency in the system." );
+      break;
     case 'admin/accounting/import/balances':
-      return implode(' ', array(
-        t("This page allows you to import users' balances and gross incomes for users already on the system."),
-        t("Be aware that the trigger 'transactions_state' will be fired for each user."),
-        t("To import users, see the !import_user module.")
-      ));
+      $help[] = t("This page allows you to import users' balances and gross incomes for users already on the system.");
+      $help[] = t("Be aware that the trigger 'transactions_state' will be fired for each user.");
+      $help[] = t("To import users, see the !import_user module.");
   }
+  return implode(' ', $help);
 }
 
 /**
@@ -76,16 +75,6 @@ function import_settings_form($form, $form_state) {
     $fields[$fieldname] = $instance['label'];
   }
   return system_settings_form($form);
-}
-
-function mcapi_import_ready() {
-  if (($type = variable_get('mcapi_import_type', 0)) && ($code = variable_get('mcapi_import_currcode', 0))) {
-    return t('Currency code: !code', array('!code' => '<strong>'.$code.'</strong>')) .'<br />'.
-      t('Transaction type: !type', array('!type' => '<strong>'.$type.'</strong>')) .'<br />'.
-      t('Description field: !field', array('!field' => '<strong>'.variable_get('transaction_description_field', '').'</strong>')) ;
-  }
-  drupal_set_message('Settings are required before import is allowed');
-  drupal_goto('admin/accounting/import');
 }
 
 /*
@@ -157,6 +146,7 @@ function mcapi_import_generate_transactions($rows) {
     'state' => TRANSACTION_STATE_FINISHED,
     'worth' => array(LANGUAGE_NONE => array(0 => array('currcode' => variable_get('mcapi_import_currcode', ''))))
   ));
+  $desc = variable_get('transaction_description_field', '');
   foreach ($rows as $row) {
     $transaction = clone($template);
     $transaction->payer = trim($row['payer']);
@@ -165,7 +155,7 @@ function mcapi_import_generate_transactions($rows) {
     if (isset($row['created'])) {
       $transaction->created = is_numeric($row['created']) ? trim($row['created']) : strtotime($row['created']);
     }
-    if ($desc = variable_get('transaction_description_field', '')) {
+    if ($desc && isset($row[$desc])) {
       $transaction->{$desc}[LANGUAGE_NONE][0]['value'] = trim($row[$desc]);
     }
     $transactions[] = $transaction;
@@ -245,10 +235,12 @@ function mcapi_import_balances_member($uid, $balance, $gross_income = NULL) {
       $out->{$desc_field}[$language->language][0]['value'] = t("Gross expenditure");
     }
     $in->worth[LANGUAGE_NONE][0]['quantity'] = $gross_expenditure;
+    $in->worth[LANGUAGE_NONE][0]['currcode'] = 'def_drup';
     $in->payer = CENTRAL_ACCOUNT_UID;
     $in->payee = $uid;
     $transactions[] = $in;
     $out->worth[LANGUAGE_NONE][0]['quantity'] = $gross_income;
+    $out->worth[LANGUAGE_NONE][0]['currcode'] = 'def_drup';
     $out->payer = $uid;
     $out->payee = CENTRAL_ACCOUNT_UID;
     $transactions[] = $out;
@@ -324,36 +316,36 @@ function csv2array($input, $delimiter = ",", $enclosure = '"', $escape = "\\") {
   return($fields);
 }
 
-/*
- * USER_IMPORT hooks
- * implements user_import hook_user_import_data
- */
-function mcapi_import_user_import_form_field_match() {
-  drupal_set_message('User import for Community Accounting not yet tested');
-  $options = array();
-  $options['mutual_credit']['cleared_balance'] = t('Balance');
-  $options['mutual_credit']['gross_income'] = t('Gross Income');
-  return $options;
+
+function mcapi_import_ready() {
+  if (($type = variable_get('mcapi_import_type', 0)) && ($code = variable_get('mcapi_import_currcode', 0))) {
+    return t('Currency code: !code', array('!code' => '<strong>'.$code.'</strong>')) .'<br />'.
+      t('Transaction type: !type', array('!type' => '<strong>'.$type.'</strong>')) .'<br />'.
+      t('Description field: !field', array('!field' => '<strong>'.variable_get('transaction_description_field', '').'</strong>')) ;
+  }
+  drupal_set_message('Settings are required before import is allowed');
+  drupal_goto('admin/accounting/import');
 }
 
-/*
- * implements user_import hook_user_import_data
+/**
+ * Implementation of hook_uif_help().
  */
-function mcapi_import_user_import_data($settings, $update_setting, $column_settings, $type, $field_id, $data, $column_id) {
-  drupal_set_message('User import for Community Accounting not yet tested');
-  $field_match = $type .'-'. $field_id;
-  foreach ($settings['field_match'] as $key => $val) {
-    if ($val['field_match'] == $field_match) {
-      return $data[$key];
-    }
+function mcapi_import_uif_help() {
+  $items = array(
+    'balance' => 'balance ' .t('The starting balance of the imported user'),
+    'gross_income' => 'gross_income ' . t('The total income ever of this user.')
+  );
+  return '<p>' . t('Importing balance (and gross income) per user is incompatible with importing the transaction history.') . '</p>'
+  . theme('item_list', array('items' => $items));
+}
+
+/**
+ * implements uif hook_post_create
+ * Give users an initial balance, paid from the central account
+ */
+function mcapi_import_uif_post_create($account, $user_data, $form_state) {
+  if (isset($user_data['balance'])) {
+    mcapi_import_balances_member($account->uid, $user_data['balance'], @$user_data['gross_income']);
   }
 }
-/*
- * implements user_import hook_user_import_after_save
- */
-function mcapi_import_user_import_after_save($settings, $account, $password, $fields, $updated, $update_setting_per_module) {
-  drupal_set_message('User import for Community Accounting not yet tested');
-  if ($fields['mutual_credit']['cleared_balance'][0]) {
-    mcapi_import_balances_member($account->uid, $fields['mutual_credit']['cleared_balance'][0], $fields['mutual_credit']['gross_income'][0]);
-  }
-}
+
