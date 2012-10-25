@@ -44,8 +44,9 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   }
 
   function render($values) {
+    $currencies = &drupal_static('currencies');
     $uid = &$values->uid;
-    $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);
+    $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array_keys($currencies);
     $key = $this->options['total'];
     foreach ($currcodes as $currcode) {
       if (empty($this->fetched[$uid][$currcode])) {
