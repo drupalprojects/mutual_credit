@@ -326,7 +326,6 @@ function mcapi_forms_ajax_settings($form, &$form_state) {
  * form validation callback for edit_mcapi_form
  */
 function mcapi_forms_template_validate($form, &$form_state) {
-  register_shutdown_function('menu_rebuild');
   $values = &$form_state['values'];
   if (empty($values['experience']['template'])) return;
   //check that the critical transaction fields are either present in the template OR preset
@@ -357,7 +356,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   if (empty($form_state['item'])) {
     $form_state['item'] = ctools_export_crud_new('mcapi_forms');
   }
-  
+
   $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
   unset($form_state['values']['name']);
 
