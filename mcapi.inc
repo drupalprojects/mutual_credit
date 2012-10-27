@@ -110,7 +110,7 @@ function mcapi_menu_inc() {
     'type' => MENU_CALLBACK,
     'file' => 'currencies.inc'
   );
-  
+
   $items['transaction/%transaction'] = array(
     'title' => 'Transaction certificate',
     'title callback' => 'transaction_menu_title',
@@ -510,9 +510,6 @@ function transaction_access_authenticated($transaction, $account = NULL) {
 }
 function transaction_access_accountant($transaction, $account = NULL) {
   return user_access('manage all transactions', $account);
-}
-function transaction_access_participants($transaction) {
-  return in_array($GLOBALS['user']->uid, array($transaction->payer, $transaction->payee));
 }
 function transaction_access_payee($transaction) {
   return $GLOBALS['user']->uid == $transaction->payee;

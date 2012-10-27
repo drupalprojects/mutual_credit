@@ -128,7 +128,7 @@ function mcapi_signatures_mcapi_info_states() {
     TRANSACTION_STATE_PENDING => array(
       'name' => t("Pending"),
       'description' => t("awaiting signatures before becoming 'finished'."),
-      'default_access_callbacks' => array('transaction_access_participants')
+      'default_access_callbacks' => array('transaction_access_payer', 'transaction_access_payee')
     )
   );
 }
@@ -284,7 +284,7 @@ function mcapi_sign($serials, $uids) {
       }
     }
     if ($transaction->state == TRANSACTION_STATE_PENDING) {
-      drupal_set_message(t("@num signatures remaining on transaction #@serial", 
+      drupal_set_message(t("@num signatures remaining on transaction #@serial",
         array('@num' => count(array_filter($transaction->pending_signatures)), '@serial' => $serial)
       ));
     }
@@ -311,7 +311,7 @@ function mcapi_get_signatories($serial = NULL, $uid = NULL) {
   else {
     $result = $query->fields('s', array('serial'))->condition('pending', 1)->condition('uid', $uid)->execute()->fetchCol();
   }
- 
+
   return $result;
 }
 
@@ -738,7 +738,9 @@ function template_preprocess_pending_signatures(&$variables) {
 
 function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
   foreach ($currencies as $name => $currency) {
-    $currencies[$name]->data->transaction_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(array('transaction_access_accountant', 'transaction_access_participants'));
+    $currencies[$name]->data->transaction_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
+      array('transaction_access_accountant', 'transaction_access_payer', 'transaction_access_payee')
+    );
   }
 }
 /*

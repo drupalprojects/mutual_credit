@@ -48,7 +48,7 @@ define ('CURRENCY_DIVISION_MODE_CUSTOM', 3);
 //the convention is that states > 0 are counted (but sometimes you might want to count pending (-1) as well)
 define('TRANSACTION_STATE_FINISHED', 1);
 //There's a convention that says transactions are 'counted' towards the balance when their state is > 0
-//when the delete mode is to write another transaction reversing the first, 
+//when the delete mode is to write another transaction reversing the first,
 //we don't actually want to discount the deleted transaction
 //so its state constant will be > 0
 //depending on the delete mode, erased transactions may or may not be counted
@@ -106,7 +106,7 @@ function transaction_form($form, &$form_state) {
  */
 function mcapi_currency_form(&$form, &$form_state){
   form_load_include($form_state, 'inc', 'mcapi', 'currencies');
-  $currency = isset($form_state['values']) ? (object)$form_state['values'] : 
+  $currency = isset($form_state['values']) ? (object)$form_state['values'] :
     ($form_state['item']->data ? $form_state['item']->data : default_cur());
   //copy some settings from the default currency
   if (isset($currency->human_name)) {
@@ -273,7 +273,6 @@ function mcapi_mcapi_info_drupal_permissions() {
  */
 function mcapi_transaction_access_callbacks() {
   return array(
-    'transaction_access_participants' => t('Either participant in the transaction'),
     'transaction_access_authenticated' => t('Authenticated users'),
     'transaction_access_accountant' => t("Accountants"),
     'transaction_access_anyone' => t('Anyone, including anonymous users'),
@@ -479,7 +478,7 @@ function mcapi_block_view($delta) {
   module_load_include('inc', 'mcapi');
   $settings = _mcapi_block_settings($delta);
   if (empty($settings)) return;
-  
+
   if (empty($render_array['#totals'])) return;
   if (empty($settings['currcodes'])) {
     $settings['currcodes'] = array_keys(currencies_load($settings['account']));
@@ -785,7 +784,7 @@ function transactions_state(array $serials, $new_state) {
  * where the fieldname is from mcapi_transactions table and the operator is optional.
  * If there are no conditions passed then only transactions in a positive state are counted.
  * N.B for a replacement entity controller, these would need translating.
- * 
+ *
  * Returns an array with the following keys
  * - balance
  * - gross_in
@@ -925,11 +924,12 @@ function currency_load($currcode = NULL) {if (is_array($currcode))ddebug_backtra
   $currencies = &drupal_static('currencies');
   if (empty($currencies))currencies_load();//filters
   if ($currcode && isset($currencies[$currcode])) {
-    watchdog('mcapi', 'Nonexistent currency @currcode requested from list: @list',
-      array('@currcode' => $currcode, '@list' => print_r($currencies, 1)));
     return $currencies[$currcode];
   }
-  else return current($currencies);
+  watchdog('mcapi', 'Nonexistent currency @currcode requested from list: @list',
+    array('@currcode' => $currcode, '@list' => print_r($currencies, 1))
+  );
+  return current($currencies);
 }
 /*
  * Load all the currencies from cache filter
@@ -1477,7 +1477,7 @@ function theme_worth_field(&$variables) {
  * Default implementation of theme 'worth_widget'
  * Render all currency widgets
  */
-function theme_worth_widget($variables) {
+function theme_worth_widget($variables) {debug('hi');
   $element = &$variables['element'];
   $ignore_format = $element['currcode']['#type'] == 'select' ||
     currency_load($element['currcode']['#default_value'])->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_INLINE;
@@ -1679,7 +1679,6 @@ function _mcapi_calc($formula, $base_quant) {
  * implements hook_uid_renum from uid_login module
  */
 function mcapi_uid_renum($old, $new) {
-  drupal_set_message("mcapi_uid_renum($old, $new)");
   foreach(array('payer', 'payee') as $participant) {
     db_update('mcapi_transactions')->fields(array($participant => $new))->condition($participant, $old)->execute();
   }

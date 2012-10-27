@@ -186,17 +186,6 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payer']['#description'] = $description;
 }
 
-
-function transaction_access_participants_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $subcondition = db_or();
-  $subcondition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
-  $subcondition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
-  $condition->condition($subcondition);
-  return $condition;
-}
-
 //returns conditions that $state = state && the current user ID  > 0
 function transaction_access_authenticated_views($state){
   $condition = db_and();

@@ -60,7 +60,6 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
   $user_segments = module_invoke_all('user_segments');
   $form['currency_access'] = array(
     '#title' => 'Currency access',
-    '#description' => t('Module developers: use @hook to add more options', array('@hook' => 'hook_user_segments')),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
     'membership' => array(
@@ -96,6 +95,10 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     ),
     '#weight' => -1
   );
+  if ($GLOBALS['user']->uid == 1) {
+    $form['currency_access']['#description'] = t('Module developers: use @hook to add more options', array('@hook' => 'hook_user_segments'));
+  }
+
   static $i = 0;
   static $j = 0;
   $form['transaction_access'] = array(
@@ -242,7 +245,7 @@ function default_cur() {
  * set the $form_state['item'] for ctools to save
  */
 function mcapi_currency_form_validate(){
-  
+
 }
 /*
  * Submit callback for mcapi_currency_form
