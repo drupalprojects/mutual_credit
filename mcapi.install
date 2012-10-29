@@ -239,7 +239,7 @@ function mcapi_check_fields() {
   if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
     $instance = array(
       'field_name' => $field['field_name'],
-      'description' => t('The value of the exchange'),
+      'description' => t("Use up to two decimal places, with a point '.' if necessary"),
       'label' => t('Worth'),
       'entity_type' => 'transaction',
       'bundle' => 'transaction',
@@ -256,7 +256,8 @@ function mcapi_check_fields() {
       'widget' => array(
         'type' => 'worth_widget',
         'module' => 'mcapi',
-        'settings' => array()
+        'settings' => array(),
+        'weight' => 3
       ),
     );
     _update_7000_field_create_instance($field, $instance);

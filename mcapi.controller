@@ -62,12 +62,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
     }
     return $entities;
   }
-  
+
 
   /*
-   * put an array of transactions in the database
-   * any transactions without a serial number will be assumed to be part of a new cluster
-   * and saved with the SAME serial number
+   * put an cluster of transactions in the database
+   * all will be given the SAME serial number, which is what makes them a cluster
    */
   public function insert(array &$transactions, $really = FALSE) {
     //we need to ensure the schema is cached before calling mcapi_write_record
@@ -80,10 +79,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       $transaction->temp = isset($transaction->xid) ? $transaction->xid : 0;
       $transaction->creator = $GLOBALS['user']->uid;
       if (empty($transaction->created)) $transaction->created = REQUEST_TIME;
-      //do the best we can in case a serial number isn't yet provided
-      if (empty($transaction->serial)) {
-        $transaction->serial = $serial;
-      }
+      $transaction->serial = $serial;
       $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
     }
     //remember transaction might be written to more than one db
@@ -148,7 +144,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       }
     }
   }
-  
+
   /*
    * change the state of a transaction and its dependents
    * This does not count as updating it, which is subject to different permissions

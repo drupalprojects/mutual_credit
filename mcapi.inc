@@ -247,7 +247,7 @@ function _transaction_form(&$form, &$form_state, $transaction) {
   );
   field_attach_form('transaction', $transaction, $form, $form_state);
   unset($form['worth'][LANGUAGE_NONE]['add_more']);
-
+  $form['worth'][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
   $form['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Record'),
@@ -721,65 +721,154 @@ function mcapi_mail($key, &$message, $params) {
  */
 function mcapi_supplementary_transaction_action($transactions, $settings) {
   $transaction = current($transactions);
-  $currcode = isset($settings['currcode']) ? $settings['currcode'] : 'def_drup';
-  $quant = _mcapi_calc($settings['rate'], $transaction->worth[LANGUAGE_NONE][0]['quantity']);
   $child = array(
     'type' => 'child',
-    'serial' => $transaction->serial,//note how this is inherited
-    'payer' => $transaction->{$settings['source']},
-    'payee' => $settings['recipient'],
-    'state' => $transaction->state,
-    'worth' => array(
-      LANGUAGE_NONE => array(
-        0 => array(
-          'quantity' => mcapi_round($quant, $currcode, $settings['round'] == 'up'),
-          'currcode' => $currcode
-        )
-      )
-    )
+    'state' => $transaction->state
   );
-  return new_transaction($child);
+  switch ($settings['mapping']) {
+    case 'payerpays':
+      $child['payee'] = $settings['otheruser'];
+      $child['payer'] = $transaction->payer;
+      break;
+    case 'payeepays':
+      $child['payee'] = $settings['otheruser'];
+      $child['payer'] = $transaction->payee;
+      break;
+    case 'payspayer':
+      $child['payee'] = $transaction->payer;
+      $child['payer'] = $settings['otheruser'];
+      break;
+    case 'payspayee':
+      $child['payee'] = $transaction->payee;
+      $child['payer'] = $settings['otheruser'];
+      break;
+  }
+  foreach ($settings['worth'][LANGUAGE_NONE] as $delta => $item) {
+    //if this currency was in the prime transaction, pass it to the calculator
+    $quant = _mcapi_calc($item['quantity'], @$transaction->worth[LANGUAGE_NONE][$delta]);
+    if ($quant) {
+      //if a quant was returned (and there really should be, from at least one currency), add it to the child
+      $child['worth'][LANGUAGE_NONE][$delta] = array(
+        'quantity' => mcapi_round($quant, $item['currcode'], $settings['worth']['round'] == 'up'),
+        'currcode' => $item['currcode']
+      );
+    }
+  }
+  if (isset($child['worth'])) return new_transaction($child);
+  return drupal_set_message(t('Badly configured action failed to create dependent transaction'), 'error');
 }
 
 /*
  * Settings form callback for mcapi_pay_someone_action
  * odd that form_state isn't passed
  * this means we can't do form_load_include
- * $context = array(
- *  [actions_label] => Record transaction
- *  [actions_type] => transaction
- * )
  */
 function mcapi_supplementary_transaction_action_form($context) {
-  $form['#description'] = t('Assumes the first currency in the transaction');
-  $def_currcode = isset($context['currcode']) ? $context['currcode'] : 'def_drup';
-  $currencies = &drupal_static('currencies');
-  $form['currcode'] = currency_picker_element(array_keys($currencies), $def_currcode, FALSE);
-  $form['source'] = array(
-    '#title' => t('Source'),
+  $form['mapping'] = array(
+    '#title' => t('Mapping'),
     '#type' => 'radios',
-    '#options' => array('payer' => t('Payer'), 'payee' => t('Payee')),
-    '#default_value' => isset($context['source']) ? $context['source'] : 'payer',
+    '#options' => array(
+      'payerpays' => t('Payer pays other'),
+      'payeepays' => t('Payee pays other'),
+      'payspayer' => t('Other pays payer'),
+      'payspayee' => t('Other pays payee'),
+    ),
+    '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
   );
-  $form['recipient'] = array(
+  $form['otheruser'] = array(
     '#type' => 'textfield',
-    '#title' => t('Account number to be credited'),
+    '#title' => t('Other account'),
     '#description' => t('A username, email, or user ID'),
-    '#default_value' => isset($context['recipient']) ? $context['recipient'] : 1,
+    '#default_value' => isset($context['otheruser']) ? $context['otheruser'] : 1,
     '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
     '#autocomplete_path' => 'user/autocomplete',
     '#weight' => 1,
   );
-  form_load_include($form_state, 'field.inc', 'mcapi');
-  _add_rate_fields($form, 3);
+  mcapi_configure_worth_field($form, $context['worth'], TRUE);
   return $form;
 }
+//this is needed by the actions framework
 function mcapi_supplementary_transaction_action_submit($form, $form_state) {
   return $form_state['values'];
 }
 
+/*
+ * function to generate a fieldset for configuring the worth of an autotransaction
+ * $form : passed as a reference and nothing is returned
+ * $saved : the #tree of default values
+ * $dependent : whether or not the auto transaction will depend on on the values from another transaction
+ * $fieldset_name : depending on how the settings are saved, this may need to be a unique variable name
+ */
+function mcapi_configure_worth_field(&$form, $saved, $dependent = FALSE, $fieldset_name = 'worth') {
+  $form['#parents'] = array();
+  $worth_field = field_info_field('worth');
+  $currencies = &drupal_static('currencies');
+  $form_state = array();
+  $instance = field_read_instance('transaction', 'worth', 'transaction');
+  $instance['widget']['weight'] = 3; //this compensates for an error in installation - can be deleted later
+  $fieldset = field_default_form('transaction', new_transaction(), $worth_field, $instance, LANGUAGE_NONE, $saved[LANGUAGE_NONE], $form, $form_state);
+  $fieldset[$fieldset_name]['#type'] = 'fieldset';
+  $fieldset[$fieldset_name]['#tree'] = TRUE;
+  $fieldset[$fieldset_name]['#title'] = t('Worth');
+  if ($worth_field['cardinality'] == 1) {
+    $desc = &$fieldset[$fieldset_name]['#description'];
+  }
+  else {
+    $desc = &$fieldset[$fieldset_name][LANGUAGE_NONE]['#description'];
+  }
+  if ($dependent) {
+    $desc = t('Enter a number, a percentage, or a formula using [q] for the transaction quantity');
+  }
+  $fieldset[$fieldset_name]['#config_mode'] = TRUE;
+
+  //increase the size of the field
+  foreach (element_children($fieldset['worth'][LANGUAGE_NONE]) as $delta) {
+    $fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#size'] = 10;
+    $fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#maxlength'] = 10;
+    if ($dependent) {
+      $fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_field');
+    }
+    unset($fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['currcode']['#ajax']);
+  }
+
+  $fieldset[$fieldset_name]['round'] = array(
+    '#title' => t('Rounding'),
+    '#type' => 'radios',
+    '#options' => array('up' => t('Up'), 'down' => t('Down')),
+    '#default_value' => isset($saved['round']) ? $saved['round'] : 'down',
+  );
+
+  $form = array_merge($form, $fieldset);
+}
+/*
+ * element validate callback
+ * ensures that the formula for calculating a quantity works
+ */
+function validate_mcapi_configure_worth_field($element, $form_state) {
+  if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
+    form_error($element, t('Invalid formula'));
+  }
+}
+
+/*
+ * calculate a transaction quantity based on a provided formala and input quantity
+ * $formula can be
+ * number => returns the number as a quantity, regardless of $base_quant
+ * percentage of the $base_quant
+ * formula using [q] for base_quant
+ */
+function _mcapi_calc($formula, $base_quant) {
+  if (is_numeric($formula)) return $formula;
+  $proportion = str_replace('%', '', $formula);
+  if (is_numeric($proportion)) {
+    return $base_quant * $proportion/100;
+  }
+  return eval('return '.str_replace('[q]', $base_quant, $formula).';');
+}
+//TODO
+//Parse error: syntax error, unexpected '/' in /var/www/drupal7/sites/all/modules/matslats/mutual_credit/mcapi.inc(853) : eval()'d code on line 1
+
 function mcapi_description_field($form, $form_state) {
-//  form_load_include($form_state, 'inc', 'mcapi');
   $options = array('' => 'none');
   $options += _mcapi_get_text_instances();
   $form['transaction_description_field'] = array(
@@ -801,4 +890,22 @@ function _mcapi_get_text_instances() {
     }
   }
   return $options;
+}
+
+/**
+ * implementation of mcapi theme hook
+ * Returns HTML for a worth field.
+ */
+function theme_field_multiple_worthed_form($variables) {
+  $element = $variables['element'];
+
+  $items = array();
+  foreach (element_children($element) as $key) {
+    $items[] = drupal_render($element[$key]);
+  }
+
+  $output = implode("\n", $items);
+  $output .= $element['#description'] ? '<div class="description">' . $element['#description'] . '</div>' : '';
+
+  return $output;
 }
