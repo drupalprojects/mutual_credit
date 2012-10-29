@@ -49,7 +49,7 @@ class mcapi_forms_ui extends ctools_export_ui {
 
     //first col, name
     $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
-    
+
     //second col, path
     $path = $item->data['architecture']['path'];
     if (!strpos($path, '%') && empty($item->disabled)) {
@@ -57,8 +57,8 @@ class mcapi_forms_ui extends ctools_export_ui {
     }
     $this->rows[$name]['data'][] = array('data' => $path);
     //third col, storage
-    $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage')); 
-    
+    $this->rows[$name]['data'][] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage'));
+
     // Reorder the operations so that enable is the default action for a templatic views
     if (!empty($operations['enable'])) {
       $operations = array('enable' => $operations['enable']) + $operations;
@@ -83,6 +83,9 @@ class mcapi_forms_ui extends ctools_export_ui {
    * table, override this method to set up the table header.
    */
   function list_table_header() {
+    //this is critical but I can't work out where it is supposed to go
+    //after editing the form, it always returns to this page.
+    menu_rebuild();debug('Menu rebuilt');
     $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-name'));
     //$header[] = array('data' => t('Help'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Path'), 'class' => array('ctools-export-ui-name'));

@@ -102,7 +102,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
   );
 
   //load the transaction form so we can use all the fields here to set the defaults
-  $transaction_fields = transaction_form($form, $form_state);
+  $array = array();
+  $transaction_fields = transaction_form($array, $array);
 
   //this section of the form allows the admin to handle the individual fields of the transaction form.
   //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
@@ -142,6 +143,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#options' => $user_chooser_options,
       '#default_value' => isset($mcapi_form['secondperson']['args']) ? $mcapi_form['secondperson']['args'] : 'mcapi_access_check_roles:2'
     );
+
     $form['direction'] = array(
       '#type' => 'radios',
       '#options' => array(
@@ -215,7 +217,9 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'template' => array(
       '#title' => t('Main form'),
-      '#description' => t('Write HTML here to layout the form, using the tokens below'),
+      '#description' => implode('<br />', array(
+          t('Write HTML here to layout the form, using the tokens below.')
+        )),
       '#type' => 'textarea',
       '#rows' => 6,
       '#default_value' => isset($mcapi_form['experience']['template']) ? $mcapi_form['experience']['template'] : '',
@@ -285,6 +289,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
 
 function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   static $w;
+  $can_strip = TRUE;
   mcapi_unset_recursive($default_field, '#element_validate');
   $element = array(
     '#title' => "[mcapiform:$key]",
@@ -293,14 +298,14 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
     '#weight' => $w++,
     'preset' => array(
       '#title' => t('Hard set value'),
-      '#description' => t('overrides incoming values'),
     ) + $default_field,
   );
   //set the defaults from the saved object
   $preset = &$mcapi_form_fields[$key]['preset'];
   $lang = current(element_children($default_field)); //assumes value is in one language only
   if (is_array($preset) && isset($default_field[$lang][0]['#columns'])) {//for formAPI fields
-    $element['#description'] = l(t("Edit instance settings."), 'admin/accounting/fields/'.$default_field[$lang][0]['#field_name']);
+    $element['#description'] = l(t("Edit field cardinality."), 'admin/accounting/fields/'.$default_field[$lang][0]['#field_name']);
+    $element['#description'] .= '<br />'. t('Preset to zero to include widget on the form, or leave blank to exclude.');
     unset($default_field[$lang]['add_more']);
     foreach (element_children($default_field[$lang]) as $delta) {
       foreach (element_children($default_field[$lang][$delta]) as $subfieldname) {
@@ -310,17 +315,33 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
       }
     }
   }
-  else { //for transaction entity main fields like payer etc
+  //fields without a $delta cannot be stripped by the theming
+  elseif(is_array($preset) && isset($default_field[$lang]['#columns'])) {
+    $can_strip = FALSE;
+  }
+  else {
+    ////the main transaction fields are required and cannot be set
     $element['#description'] = t("This field is required");
     $element['preset']['#default_value'] = $preset;
+    $can_strip = !in_array($element['preset']['#type'], array('radios', 'checkbox', 'checkboxes'));
   }
+  if (!$can_strip) $default_val = 0;
+  else $default_val = isset($mcapi_form_fields[$key]['strip']) ? $mcapi_form_fields[$key]['strip'] : 1;
+
+  $element['strip'] = array(
+    '#title' => t('Strip theme container'),
+    '#description' => t("Disable the outer container, so it doesn't render the field #title and #description but gives you fuller control in the template below."),
+    '#type' => 'checkbox',
+    '#default_value' => $default_val,
+    '#disabled' => !$can_strip,
+    '#weight' => 10
+  );
   return $element;
 }
 
 function mcapi_forms_ajax_settings($form, &$form_state) {
   return $form;
 }
-
 
 /*
  * form validation callback for edit_mcapi_form
@@ -387,15 +408,11 @@ function mcapi_edit_mcapi_form_submit($form, &$form_state) {}
  * before saving it as a preset
  */
 function mcapi_form_validate_worth_preset(&$element, &$form_state) {
-  //if any of the currencies has been preset with a value, remove the empty ones
+  //if any of the currencies has been preset with a value, including 0 remove the empty ones
   $items = &$form_state['values']['worth']['preset']['und'];
-  $allempty = TRUE;
-  foreach ($items as $item) {
-    if (!mcapi_field_is_empty($item)) $allempty = FALSE;
-  }
-  if ($allempty) return;
-  //delete the empty items
   foreach ($items as $delta => $item) {
-    if (mcapi_field_is_empty($item)) unset($items[$delta]);
+    if ($item['main_quant'] == '' && empty($item['division_quant'])) {
+      unset($items[$delta]);
+    }
   }
 }

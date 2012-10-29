@@ -65,7 +65,7 @@ function mcapiform_default_1stparty() {
       'title' => t('Make a payment'),
       'template' => t('Partner: [mcapiform:secondperson]<br />
 Direction: [mcapiform:direction]<br />
-Amount: [mcapiform:worth]<br />'),
+[mcapiform:worth]<br />'),
       'sure_title' => t('Are you sure?'),
       'sure_format' => t('certificate'),
     )
@@ -121,7 +121,7 @@ function mcapiform_default_3rdparty() {
       'title' => t('Record a transaction'),
       'template' => t('Payer: [mcapiform:payer]<br />
 Payee: [mcapiform:payee]<br />
-Amount: [mcapiform:worth]<br />'),
+[mcapiform:worth]<br />'),
       'sure_title' => t('Are you sure?'),
       'sure_format' => t('certificate'),
     ),

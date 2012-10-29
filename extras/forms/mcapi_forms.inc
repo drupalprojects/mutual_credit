@@ -18,7 +18,9 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     new_transaction_presets($mcapi_form->data)
   );
   //change the format of the worth field
-  $transaction->worth[LANGUAGE_NONE][0] = currency_explode($transaction->worth[LANGUAGE_NONE][0], TRUE);
+  foreach ($transaction->worth[LANGUAGE_NONE] as $delta => $item) {
+    $transaction->worth[LANGUAGE_NONE][$delta] = currency_explode($transaction->worth[LANGUAGE_NONE][$delta], TRUE);
+  }
   //determine what step this is
   //Because some forms may even bypass step one, and start with the confirmation step
   if (empty($form_state['step'])) {
@@ -40,7 +42,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
   //we need to store the step value in $form so that the theme system knows what to do
   $form['#step'] = $form_state['step'];
   $form['#theme'] = 'mcapi_form';
-
   //this might not be the way to build a 2 step form.
   //All the validation callbacks need to check the step because all the important fields are in step one only.
   if ($form['#step'] == 1) {
@@ -50,7 +51,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
     $form['type']['#type'] = 'value';
     $form['type']['#value'] = $mcapi_form->name;
-    
+
      //participants
     if ($mcapi_form->data['perspective'] == 3) {
       foreach (array('payer', 'payee') as $participant) {
@@ -106,21 +107,24 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
       $form[$fieldname] = array_replace_recursive($form[$fieldname], $default);
     }
     //if the cardinality is 1 and a default language is given, then confine the widget to that one language
-    if (count(element_children($form['worth'][LANGUAGE_NONE])) == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {
+    if ($form['worth'][LANGUAGE_NONE]['#cardinality'] == 1 && $transaction->worth[LANGUAGE_NONE][0]['currcode'] ) {
       $form['worth'][LANGUAGE_NONE][0]['#restrict_currcodes'] = array($transaction->worth[LANGUAGE_NONE][0]['currcode']);
     }
     //specially for the worth field: remove any $items which are not in the default $transaction object
+    //and change any zero values to empty strings in the main_quant
     //see mcapi_form_validate_worth_preset() for more
     foreach (element_children($form['worth']['und']) as $delta) {
-      if (empty($transaction->worth['und'][$delta])) {
+      if (isset($transaction->worth['und'][$delta])) {
+        if ($transaction->worth['und'][$delta]['main_quant'] == 0) {
+          $form['worth']['und'][$delta]['main_quant']['#default_value'] = '';
+        }
+      }
+      else {
+        //this currency wasn't included on this form
         unset($form['worth']['und'][$delta]);
       }
     }
     //this helps to keep the transaction flowing so that layout can be controlled by the template
-    drupal_add_css(
-      'div#edit-worth, div#worth-add-more-wrapper, div#worth-add-more-wrapper .form-item{display:inline;}',
-      array('type' => 'inline')
-    );
   }
   elseif ($form['#step'] == 2) {
     drupal_set_title(mcapi_locale($mcapi_form->data['experience']['sure_title'], 'sure_title'));
@@ -131,7 +135,7 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //put the back button only for last step if there are values from step 1
     if (!empty($form_state['values'])) {//coming from step 1
       $form['#preview'] = transaction_view(
-        $form_state['transactions'], 
+        $form_state['transactions'],
         mcapi_locale($mcapi_form->data['experience']['sure_format'], 'sure_format'),
         mcapi_locale(@$mcapi_form->data['experience']['sure_template'], 'sure_template')
       );
@@ -150,6 +154,12 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]
     unset($form['#validate']);
   }
+
+  foreach (element_children($form) as $fieldname) {
+    if (isset($mcapi_form->data[$fieldname]['strip'])) {
+      $form[$fieldname]['#strip'] = $mcapi_form->data[$fieldname]['strip'];
+    }
+  }
   //save button
   $form['buttons']['#type'] = 'actions';
   if (strpos($mcapi_form->data['submission']['button'], '/')) {
@@ -160,16 +170,21 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     $form['buttons']['submit']['#value'] = $mcapi_form->data['submission']['button'];
   }
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
+  $form['#validate'][] = 'mcapi_forms_validate';
 
   //this may help with the validation and submission
-  $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
-  $form['#validate'][] = 'mcapi_forms_validate';
+  //however it doesn't work because we need to rebuild the menu after editing the form
+  //contextual links send the user back to this page,
+  //but we are doing the rebuild as the form editing form returns to the admin/accounting/forms page
+  //see list_table_header() in mcapi_forms_ui.class.php
+//  $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
 }
 
 
 function new_transaction_presets($mcapi_formdata) {
   $transaction = new_transaction();
-  //this transaction is used to store defaults for the form building, so it has pseudo properties which aren't saved
+  //this transaction is used to store defaults for the form building,
+  //so it may have pseudo-properties secondperson and direction
   $fieldnames = $mcapi_formdata['perspective'] == 1 ? array('secondperson', 'direction') : array('payer', 'payee');
   $fieldnames = array_merge($fieldnames, array_keys(field_info_instances('transaction', 'transaction')));
   foreach($fieldnames as $fieldname) {
@@ -205,12 +220,19 @@ function theme_mcapi_form($variables) {
   $buttons = drupal_render($form['buttons']);
   //render the visible stuff first
   if ($form['#step'] == 1) {
-    //this takes away the guff, so what has replaced the tokens is naked form elements
-    mcapi_unset_recursive($form['worth'], '#title');
-    mcapi_unset_recursive($form['worth'], '#description');
+    if ($form['worth'][LANGUAGE_NONE]['#cardinality'] == 1) {
+      //this takes away the guff, so what has replaced the tokens is naked form elements
+      unset($form['worth'][LANGUAGE_NONE][0]['#title']);
+      unset($form['worth'][LANGUAGE_NONE][0]['#description']);
+    }
+    else {
+      $form['worth'][LANGUAGE_NONE]['#title'] = '';
+      $form['worth'][LANGUAGE_NONE]['#description'] = '';
+    }
     foreach (element_children($form) as $fieldname) {
-      if ($fieldname == 'worth') continue;
-      mcapi_unset_recursive($form[$fieldname], '#theme_wrappers');
+      if (!empty($form[$fieldname]['#strip'])) {
+        mcapi_unset_recursive($form[$fieldname], '#theme_wrappers');
+      }
     }
     return token_replace(
       $form['#template'],

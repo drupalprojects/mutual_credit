@@ -24,7 +24,8 @@ function mcapi_forms_menu() {
         'mcapi_forms_form',
         //in case the form needs to load a transaction, extract it from the path
         array_search('%transaction', explode('/', $settings['architecture']['path'])),//may return NULL
-        $form//we put the whole settings array in the menu item because ctools performance is very poor
+        //we put the whole settings array in the menu item rather than call on heavy ctools
+        $form
       ),
       'access callback' => strtok($settings['architecture']['access'], ':'),
       'access arguments' => array(strtok(':')),
@@ -87,7 +88,7 @@ function mcapi_forms_forms($form_id, $args) {
     'callback arguments' => $args
   );
   return $forms;
-  
+
 }
 
 
@@ -277,7 +278,7 @@ function mcapi_access_check_roles($rid) {
 function mcapi_forms_form_system_theme_settings_alter(&$form, $form_state) {
   $form['tab_element'] = array(
     '#title' => t('Css menu tab identifier'),
-    '#description' => t("The second stage of the the transaction form works best when the menu tabs are hidden.") .' '. 
+    '#description' => t("The second stage of the the transaction form works best when the menu tabs are hidden.") .' '.
       t("Write the css identifier for the div on this page containing the menu items which 'List', 'Update' & 'Settings'.") .' '.
       t("Don't forget the leading . or #"),
     '#type' => 'textfield',
