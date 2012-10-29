@@ -169,7 +169,7 @@ function mcapi_forms_block_view($delta) {
   if (!user_access('transact')) return;
   return array(//if these seem inverted its because drupal_get_form loads the inc file
     'subject' => $mcapi_form->data['experience']['title'],
-    'content' => drupal_get_form('mcapi_forms_form', new_transaction(), $mcapi_form),
+    'content' => drupal_get_form('mcapi_forms_form', NULL, $mcapi_form),
   );
 }
 

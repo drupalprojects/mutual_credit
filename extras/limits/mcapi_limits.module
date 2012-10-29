@@ -303,19 +303,16 @@ function mcapi_limits_block_info() {
 function mcapi_limits_block_view($delta) {
   module_load_include('inc', 'mcapi');
   $settings = _mcapi_block_settings($delta);
-  if (empty($settings)) return;
-  foreach($settings['currcodes'] as $currcode) {
-    if (!currency_access('user_aggregated_view', $currcode)) continue;
-    require_once('mcapi_limits.inc');
-    $function = 'show_'. $delta;
-    $render_array[] = $function($settings['account']->uid, $currcode);
-  }
-  $render_array = array_filter($render_array);
-  if (empty($render_array)) return;
-  $is_me = $settings['account']->uid == $GLOBALS['user']->uid;
+  $account = &$settings['account'];
+  $currcodes = empty($settings['currcodes']) ? array_keys(currencies_load($account)) : $settings['currcodes'];
+  if (empty($currcodes)) return;
+  require_once('mcapi_limits.inc');
+  $function = 'show_'. $delta;
+  $render_array = $function($account->uid, $currcodes);
+  $is_me = $account->uid == $GLOBALS['user']->uid;
   return array(
-    'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
-    'content' => $render_array
+    'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($account)))),
+    'content' => array_filter($render_array)
   );
 }
 
@@ -374,12 +371,12 @@ function _transactions_diff($transactions) {
  * callback to return themed balance limits
  */
 function show_balance_limits($uid, $currcodes) {
+  $renderable = array();
   foreach ($currcodes as $currcode) {
+    if (!currency_access('user_aggregated_view', $currcode, $uid)) continue;
     $limits = limits_get($currcode, $uid);
     //this chart makes no sense if there isn't a max (or min) limit
-    if (empty($limits['max']) && empty($limits['min'])) {
-      return array();
-    }
+    if (empty($limits['max']) && empty($limits['min'])) continue;
     $renderable[$currcode] = array(
       '#theme' => 'balance_limits',
       '#currcode' => $currcode,
@@ -391,7 +388,9 @@ function show_balance_limits($uid, $currcodes) {
   return $renderable;
 }
 function show_trading_limits($uid, $currcodes) {
+  $renderable = array();
   foreach ($currcodes as $currcode) {
+    if (!currency_access('user_aggregated_view', $currcode, $uid)) continue;
     $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);
     if(empty($limits)) continue;
     $render_array[$currcode] = array(

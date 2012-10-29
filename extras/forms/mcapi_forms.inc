@@ -64,9 +64,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     }
     else {
       //I-thou exchanges
-      //this section cannot be used to edit existing transactions
       $form['secondperson'] = array(
-        '#default_value' => $GLOBALS['user']->uid == $transaction->payer ? $transaction->payee : $transaction->payer
+        '#default_value' => empty($transaction->secondperson) ? '' : $transaction->secondperson
       ) + $form['payee'];
       $form['secondperson']['#type'] = strtok($mcapi_form->data['secondperson']['args'], ':');
       $form['secondperson']['#args'] = array(strtok(':'));
@@ -180,12 +179,21 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
 //  $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($mcapi_form->name));
 }
 
-
+//create a transaction with all the defaults from the mcapi_form
+//this is not a real transaction, but just used to store the defaults
+//So it has fields either payer and payee OR direction and secondperson
+//plus the fieldAPI fields
 function new_transaction_presets($mcapi_formdata) {
-  $transaction = new_transaction();
+  $fieldnames = array();
+  $transaction = entity_metadata_create_transaction();
   //this transaction is used to store defaults for the form building,
   //so it may have pseudo-properties secondperson and direction
-  $fieldnames = $mcapi_formdata['perspective'] == 1 ? array('secondperson', 'direction') : array('payer', 'payee');
+  if ($mcapi_formdata['perspective'] == 1) {
+    unset($transaction->payer, $transaction->payee);
+    $fieldnames[] = 'direction';
+    $fieldnames[] = 'secondperson';
+  }
+  //hmmm the transaction type is not covered here - its assumed to derive from the formname
   $fieldnames = array_merge($fieldnames, array_keys(field_info_instances('transaction', 'transaction')));
   foreach($fieldnames as $fieldname) {
     if (isset($mcapi_formdata[$fieldname]['preset'])) {

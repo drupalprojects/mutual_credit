@@ -135,7 +135,7 @@ function mcapi_mass_pay_insert($values, $really) {
   $payers = (array)$values['payers'];
   $payees = (array)$values['payees'];
   unset($values['payers'], $values['payees']);
-  $template = new_transaction($values);
+  $template = entity_metadata_create_transaction($values);
   foreach ($payers as $payer) {
     foreach ($payees as $payee) {
       $template->payer = $payer;
@@ -161,7 +161,7 @@ function accounting_list_all_users($element, $form_state) {
     ->condition('status', TRUE);
   if (empty($roles[DRUPAL_AUTHENTICATED_RID])) {
     $query->join('users_roles', 'ur', 'ur.uid = u.uid');
-    //if we chain this it breaks with: Call to a member function condition() on a non-object 
+    //if we chain this it breaks with: Call to a member function condition() on a non-object
     $query->condition('ur.rid', array_keys($roles));
   }
   return $query->execute()->fetchCol();

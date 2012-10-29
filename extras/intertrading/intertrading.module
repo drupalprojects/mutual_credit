@@ -21,7 +21,7 @@ function intertrading_menu() {
 
   if ($currcode = variable_get('intertrading_currcode') && variable_get('intertrading_uid')) {
     mcapi_init();//
-    $transaction =  new_transaction();
+    $transaction =  entity_metadata_create_transaction();
     //this attempt to preset has little effect if the field cardinality > 0
     $transaction->worth[LANGUAGE_NONE][0] = array(
       'currcode' => variable_get('intertrading_currcode', NULL),
@@ -561,7 +561,7 @@ function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $for
 
     $form['preview'] = array(
       '#type' => 'markup',
-      '#markup' => drupal_render(transaction_view(new_transaction($form_state['storage'])), 'sentence')
+      '#markup' => drupal_render(transaction_view(entity_metadata_create_transaction($form_state['storage'])), 'sentence')
     );
     $form['buttons']['submit']['#value'] = t('Confirm');
   }
@@ -612,7 +612,7 @@ function intertrading_transaction_form_submit($form, &$form_state) {
   $values = &$form_state['storage'];
   $result = intertrading_send_transaction($values, $form['#incoming'], TRUE);
   if ($result->code == 'OK') {//this should always be the case
-    $transaction = new_transaction($values);
+    $transaction = entity_metadata_create_transaction($values);
     transaction_insert_new($transaction, TRUE);
     drupal_set_message('Transaction saved with remote site.');
   }
@@ -684,7 +684,7 @@ function intertrading_passive() {
   else {
     intertrading_respond(28, array('@client' => INTERTRADING_REF_URL, '@mail' => $local_trader_mail));
   }
-  
+
   try {
     $transactions = transaction_insert_new((object)$transaction, $post['really']);
     intertrading_respond('OK');
@@ -770,7 +770,7 @@ function intertrading_help($path, $args) {
       '1' => t('Account active')
     );
     $help = $args['@message'] . '<hr />';
-    $help .= '<p>'.t('@name account status is: @status', 
+    $help .= '<p>'.t('@name account status is: @status',
       array('@name' => $result->args['@name'], '@status' => $statuses[$args['@status']]));
     //following applies only if the account has been created already
     if ($args['@status'] != -1) {
@@ -805,7 +805,7 @@ function report_intertrading_history() {
     WHERE (payer = :payer OR payee = :payee) AND state > 0 AND w.worth_currcode = :currcode",
       array(':payer' => $intertrading_uid, ':payee' => $intertrading_uid, ':currcode' => $intertrading_currcode))
   ->fetchCol();
-  
+
   if (count($serials)) {
     transactions_state($serials, TRANSACTION_STATE_FINISHED);
     $transactions = transactions_load(array(), array('serial' => $serials));

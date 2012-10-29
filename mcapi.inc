@@ -46,7 +46,7 @@ function mcapi_entity_info_inc() {
       ),
     ),
     //entity API properties
-    'creation callback' => 'new_transaction',
+    'creation callback' => 'entity_metadata_create_transaction',
     'save callback' => 'transaction_insert_new',
     'export' => array(
       'default hook' => 'blah'
@@ -171,6 +171,7 @@ function mcapi_accounting() {
 function _mcapi_block_settings($delta) {
   $currencies = &drupal_static('currencies');
   $settings = variable_get('block_'. $delta, array('currcodes' => array_keys($currencies), 'user_source' => 0));
+
   if (@$settings['user_source'] == 0) {
     if (arg(0) == 'user') {
       $settings['account'] = user_uid_optional_load(arg(1));
@@ -186,7 +187,10 @@ function _mcapi_block_settings($delta) {
 function transaction_menu_title($transaction = NULL) {
   return t('Transaction certificate #@serial', array('@serial' => $transaction->serial));
 }
-
+/*
+ * menu callback
+ * build the most basic possible transaction form
+ */
 function transaction_default_form($form, &$form_state) {
   $form = transaction_form($form, $form_state);
   $form['state']['#type'] = 'value';
@@ -247,7 +251,9 @@ function _transaction_form(&$form, &$form_state, $transaction) {
   );
   field_attach_form('transaction', $transaction, $form, $form_state);
   unset($form['worth'][LANGUAGE_NONE]['add_more']);
+  //there doesn't seem to be anywhere else to do this. We can only alter individual items, not the whole field
   $form['worth'][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
+
   $form['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Record'),
@@ -754,7 +760,7 @@ function mcapi_supplementary_transaction_action($transactions, $settings) {
       );
     }
   }
-  if (isset($child['worth'])) return new_transaction($child);
+  if (isset($child['worth'])) return entity_metadata_create_transaction($child);
   return drupal_set_message(t('Badly configured action failed to create dependent transaction'), 'error');
 }
 
@@ -806,39 +812,42 @@ function mcapi_configure_worth_field(&$form, $saved, $dependent = FALSE, $fields
   $form_state = array();
   $instance = field_read_instance('transaction', 'worth', 'transaction');
   $instance['widget']['weight'] = 3; //this compensates for an error in installation - can be deleted later
-  $fieldset = field_default_form('transaction', new_transaction(), $worth_field, $instance, LANGUAGE_NONE, $saved[LANGUAGE_NONE], $form, $form_state);
-  $fieldset[$fieldset_name]['#type'] = 'fieldset';
-  $fieldset[$fieldset_name]['#tree'] = TRUE;
-  $fieldset[$fieldset_name]['#title'] = t('Worth');
-  if ($worth_field['cardinality'] == 1) {
-    $desc = &$fieldset[$fieldset_name]['#description'];
-  }
-  else {
-    $desc = &$fieldset[$fieldset_name][LANGUAGE_NONE]['#description'];
-  }
+  $fieldset = field_default_form('transaction', entity_metadata_create_transaction(), $worth_field, $instance, LANGUAGE_NONE, @$saved[LANGUAGE_NONE], $form, $form_state);
+
+  $form[$fieldset_name] = $fieldset['worth'];
+  $form[$fieldset_name][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
+  $form[$fieldset_name]['#type'] = 'fieldset';
+  $form[$fieldset_name]['#tree'] = TRUE;
+  $form[$fieldset_name]['#title'] = t('Worth');
+  $form[$fieldset_name]['#config_mode'] = TRUE;
+
   if ($dependent) {
+    if ($worth_field['cardinality'] == 1) {
+      $desc = &$form[$fieldset_name]['#description'];
+    }
+    else {
+      $desc = &$form[$fieldset_name][LANGUAGE_NONE]['#description'];
+    }
     $desc = t('Enter a number, a percentage, or a formula using [q] for the transaction quantity');
   }
-  $fieldset[$fieldset_name]['#config_mode'] = TRUE;
 
   //increase the size of the field
   foreach (element_children($fieldset['worth'][LANGUAGE_NONE]) as $delta) {
-    $fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#size'] = 10;
-    $fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#maxlength'] = 10;
+    $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#size'] = 10;
+    $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#maxlength'] = 10;
     if ($dependent) {
-      $fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_field');
+      $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_field');
     }
-    unset($fieldset[$fieldset_name][LANGUAGE_NONE][$delta]['currcode']['#ajax']);
+    unset($form[$fieldset_name][LANGUAGE_NONE][$delta]['currcode']['#ajax']);
   }
-
-  $fieldset[$fieldset_name]['round'] = array(
-    '#title' => t('Rounding'),
-    '#type' => 'radios',
-    '#options' => array('up' => t('Up'), 'down' => t('Down')),
-    '#default_value' => isset($saved['round']) ? $saved['round'] : 'down',
-  );
-
-  $form = array_merge($form, $fieldset);
+  if ($dependent) {
+    $form[$fieldset_name]['round'] = array(
+      '#title' => t('Rounding'),
+      '#type' => 'radios',
+      '#options' => array('up' => t('Up'), 'down' => t('Down')),
+      '#default_value' => isset($saved['round']) ? $saved['round'] : 'down',
+    );
+  }
 }
 /*
  * element validate callback
