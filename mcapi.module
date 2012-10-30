@@ -316,7 +316,7 @@ function entity_metadata_create_transaction($values = array()) {
     if (isset($values[$desc_fieldname])) $desc = &$values[$desc_fieldname];
     elseif (isset($values['description'])) $desc = &$values['description'];
     if (isset($desc)) {
-      $transaction->{$desc}['und'][0]['value'] = $desc;
+      $transaction->{$desc_fieldname}['und'][0]['value'] = $desc;
     }
   }
   return $transaction;
@@ -1407,7 +1407,7 @@ function worth_widget_validate(&$element, &$form_state, $form) {
  * $item can contain either the raw field data i.e. integer and division or $quantity
  */
 function mcapi_field_is_empty($item) {
-  if (isset($item['quantity'])) return empty($item['quantity']);
+  if (isset($item['quantity'])) return in_array($item['quantity'], array('0', '0.00', 0, ''));
   $div = isset($item['division_quant']) ? intval($item['division_quant']) : 0;
   return empty($item['main_quant']) && empty($div);
 }

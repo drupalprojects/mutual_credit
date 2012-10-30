@@ -176,7 +176,7 @@ function _mcapi_block_settings($delta) {
     if (arg(0) == 'user') {
       $settings['account'] = user_uid_optional_load(arg(1));
     }
-    else return;
+    else return array();
   }
   else {
     $settings['account'] = $GLOBALS['user'];

@@ -303,6 +303,7 @@ function mcapi_limits_block_info() {
 function mcapi_limits_block_view($delta) {
   module_load_include('inc', 'mcapi');
   $settings = _mcapi_block_settings($delta);
+  if (empty($settings['account'])) return;
   $account = &$settings['account'];
   $currcodes = empty($settings['currcodes']) ? array_keys(currencies_load($account)) : $settings['currcodes'];
   if (empty($currcodes)) return;

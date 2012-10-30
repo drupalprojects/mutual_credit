@@ -78,6 +78,7 @@ function drush_mcapi_wipeslate() {
   if (drush_get_option('purge')) {
     drush_mcapi_purge();
   }
+  db_truncate('cache_field')->execute();
 }
 
 //delete records of erased transactions (doesn't work in purge mode)
@@ -94,16 +95,17 @@ function drush_mcapi_purge() {
   db_delete('mcapi_transactions')->condition('serial', $serials)->execute();
   $remaining = db_query("SELECT count(xid) FROM {mcapi_transactions}")->fetchfield();
   drush_print(dt("@purged transactions purged. @remaining transactions remaining", array(
-    '@purged' => count($serials), 
+    '@purged' => count($serials),
     '@remaining' => $remaining)
   ));
   variable_del('change_undo_mode');
   if ($remaining) return;
-  
+
+  db_truncate('cache_field')->execute();
+  db_truncate('field_data_worth')->execute();
+  db_truncate('field_revision_worth')->execute();
+  db_truncate('mcapi_transactions')->execute();
   //$fields = field_info_instance('transaction', 'field_worth', 'transaction');
-  db_query("TRUNCATE TABLE {field_data_worth}");
-  db_query("TRUNCATE TABLE {field_revision_worth}");
-  db_query("TRUNCATE TABLE {mcapi_transactions}");
   variable_set('change_undo_mode', TRUE);
   drush_print('reset auto-increment-transaction ID on transaction table. This could cause problems with other fieldAPI fields');
 }
