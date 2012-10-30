@@ -823,4 +823,5 @@ function mcapi_update_7010() {
       ->condition('currcode', $currcode)
       ->execute();
   }
+  cache_clear_all('currencies', 'cache');
 }

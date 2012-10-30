@@ -106,14 +106,14 @@ function mcapi_index_views_views_data() {
     )
   );
   $data['mcapi_index']['diff'] = array(
-    'title' => t('Value'), // The item it appears as on the UI,
+    'title' => t('Change in balance'), // The item it appears as on the UI,
     'help' => t("Change in the users balance"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
       'click sortable' => TRUE,
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_numeric'
+      'handler' => 'views_handler_filter_mcapi_index_diff'
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -138,13 +138,6 @@ function mcapi_index_views_views_data() {
     'help' => t("Indexed running balance after each transaction. (1 database query per row)"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_balance',
-    ),
-  );
-  $data['mcapi_index']['direction'] = array(
-    'title' => t('Direction'), // The item it appears as on the UI,
-    'help' => t("Whether the transaction is incoming or outgoing relative to the 1st user"),
-    'filter' => array(
-      'handler' => 'views_handler_filter_mcapi_index_direction',
     ),
   );
   $data['mcapi_index']['created'] = array(

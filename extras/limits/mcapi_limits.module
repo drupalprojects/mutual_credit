@@ -372,6 +372,7 @@ function _transactions_diff($transactions) {
  * callback to return themed balance limits
  */
 function show_balance_limits($uid, $currcodes) {
+  module_load_include('inc', 'mcapi');
   $renderable = array();
   foreach ($currcodes as $currcode) {
     if (!currency_access('user_aggregated_view', $currcode, $uid)) continue;
@@ -389,6 +390,7 @@ function show_balance_limits($uid, $currcodes) {
   return $renderable;
 }
 function show_trading_limits($uid, $currcodes) {
+  module_load_include('inc', 'mcapi');
   $renderable = array();
   foreach ($currcodes as $currcode) {
     if (!currency_access('user_aggregated_view', $currcode, $uid)) continue;
