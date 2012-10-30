@@ -18,8 +18,8 @@ function mcapi_index_views_views_data() {
 
   $data['mcapi_index']['xid'] = array(
     'title' => t('Transaction ID'), // The item it appears as on the UI,
+    'help' => t('The Unique database key of the transaction'),
     'field' => array(
-      'help' => t('The Unique database key of the transaction'),
       'handler' => 'views_handler_field',
     ),
     'sort' => array(
@@ -43,6 +43,9 @@ function mcapi_index_views_views_data() {
     'field' => array(
       'handler' => 'views_handler_field',
     ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric'
+    ),
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
       'click sortable' => TRUE,
@@ -60,6 +63,7 @@ function mcapi_index_views_views_data() {
     'field' => array(
       'handler' => 'views_handler_field',
     ),
+    //can't 'think of a use case for a filter here
     'argument' => array(
       'handler' => 'views_handler_argument_numeric',
       'click sortable' => TRUE,
@@ -136,8 +140,16 @@ function mcapi_index_views_views_data() {
       'handler' => 'views_handler_field_mcapi_index_balance',
     ),
   );
+  $data['mcapi_index']['direction'] = array(
+    'title' => t('Direction'), // The item it appears as on the UI,
+    'help' => t("Whether the transaction is incoming or outgoing relative to the 1st user"),
+    'filter' => array(
+      'handler' => 'views_handler_filter_mcapi_index_direction',
+    ),
+  );
   $data['mcapi_index']['created'] = array(
     'title' => t('Created moment'),
+    'help' => t('The moment the transaction was registered'),
     'field' => array(
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
@@ -154,21 +166,33 @@ function mcapi_index_views_views_data() {
       'fieldname' => 'created'
     ),
   );
-  $data['mcapi_index']['currcode'] = array(
-    'title' => t('Currency'),
-    'help' => t("The currency ID"),
+
+  $data['mcapi_index']['view'] = array(
+    'title' => t('View'),
+    'help' => t("Link to transaction"),
     'field' => array(
-      //this needs a custom handler
-      'handler' => 'views_handler_field_mcapi_index_currcode',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-       'handler' => 'views_handler_filter_mcapi_currency'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument',
-    ),
+      'handler' => 'views_handler_field_transaction',
+    )
   );
+  currencies_load();//because mcapi_init hasn't run yet
+  $currencies = &drupal_static('currencies');
+  if (count($currencies) > 1) {
+    $data['mcapi_index']['currcode'] = array(
+      'title' => t('Currency'),
+      'help' => t("The currency ID"),
+      'field' => array(
+        //this needs a custom handler
+        'handler' => 'views_handler_field_mcapi_index_currcode',
+        'click sortable' => TRUE,
+      ),
+      'filter' => array(
+         'handler' => 'views_handler_filter_mcapi_currency'
+      ),
+      'argument' => array(
+        'handler' => 'views_handler_argument',
+      ),
+    );
+  }
   $data['mcapi_index']['links'] = array(
     'title' => t('Transaction links'),
     'help' => t("View and undo links"),

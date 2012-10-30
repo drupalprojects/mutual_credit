@@ -20,7 +20,7 @@ function accountant_ui_views_default_views() {
   $handler->display->display_options['access']['type'] = 'perm';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
-  $handler->display->display_options['query']['options']['query_comment'] = FALSE;
+  $handler->display->display_options['query']['options']['distinct'] = TRUE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'full';
   $handler->display->display_options['pager']['options']['items_per_page'] = '50';
@@ -137,6 +137,18 @@ function accountant_ui_views_default_views() {
   $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
   $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
   $handler->display->display_options['fields']['worth']['field_api_classes'] = 0;
+  if ($fieldname = variable_get('transaction_description_field')) {
+    /* Field: Transaction: Description */
+    $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
+    $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
+    $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;
+    $handler->display->display_options['fields'][$fieldname]['label'] = 'Description';
+    $handler->display->display_options['fields'][$fieldname]['alter']['make_link'] = TRUE;
+    $handler->display->display_options['fields'][$fieldname]['alter']['path'] = 'transaction/[serial]';
+    $handler->display->display_options['fields'][$fieldname]['element_label_colon'] = FALSE;
+    $handler->display->display_options['fields'][$fieldname]['type'] = 'text_plain';
+  }
+
   /* Field: Transaction: State */
   $handler->display->display_options['fields']['state']['id'] = 'state';
   $handler->display->display_options['fields']['state']['table'] = 'mcapi_transactions';
@@ -265,6 +277,22 @@ function accountant_ui_views_default_views() {
     $handler->display->display_options['filters']['worth_currcode']['expose']['operator'] = 'worth_currcode_op';
     $handler->display->display_options['filters']['worth_currcode']['expose']['identifier'] = 'worth_currcode';
     $handler->display->display_options['filters']['worth_currcode']['expose']['reduce'] = 0;
+
+    $worth_field = field_info_field('worth');
+    if ($worth_field['cardinality'] == 1) {
+      /* Filter criterion: Transaction: Worth (worth:currcode) */
+      $handler->display->display_options['filters']['worth_currcode']['id'] = 'worth_currcode';
+      $handler->display->display_options['filters']['worth_currcode']['table'] = 'field_data_worth';
+      $handler->display->display_options['filters']['worth_currcode']['field'] = 'worth_currcode';
+      $handler->display->display_options['filters']['worth_currcode']['exposed'] = TRUE;
+      $handler->display->display_options['filters']['worth_currcode']['expose']['operator_id'] = '=';
+      $handler->display->display_options['filters']['worth_currcode']['expose']['label'] = 'Currency';
+      $handler->display->display_options['filters']['worth_currcode']['expose']['operator'] = 'worth_currcode_op';
+      $handler->display->display_options['filters']['worth_currcode']['expose']['identifier'] = 'worth_currcode';
+      $handler->display->display_options['filters']['worth_currcode']['expose']['remember'] = TRUE;
+      $handler->display->display_options['filters']['worth_currcode']['expose']['multiple'] = TRUE;
+      $handler->display->display_options['filters']['worth_currcode']['expose']['remember_roles'] = array(2 => 2);
+    }
   }
 
   /* Display: Page */
@@ -272,33 +300,17 @@ function accountant_ui_views_default_views() {
   $handler->display->display_options['path'] = 'admin/accounting/transactions';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'Manage transactions';
-  $handler->display->display_options['menu']['description'] = "This is the default accountant's interface. It is simply a transaction view with all the filters exposed. More accountants tools are needed, depending on how the system is to be used.";
-  $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['menu']['description'] = "A transaction view with all the filters exposed.";
+  $handler->display->display_options['menu']['weight'] = '10';
   $handler->display->display_options['menu']['name'] = 'management';
 
   $translatables['transactions_all'] = array(
-    t('Master'),
-    t('Transaction management'),
-    t('more'),
-    t('Apply'),
-    t('Reset'),
-    t('Sort by'),
-    t('Asc'),
-    t('Desc'),
-    t('Items per page'),
-    t('- All -'),
-    t('Offset'),
-    t('All transactions can be seen from here. Use the filters to list what you need.'),
+    t('A transaction view with all the filters exposed.'),
     t('Payee'),
     t('Payer'),
-    t('Name'),
-    t('Value'),
     t('State'),
-    t('Link'),
-    t('view'),
     t('Type'),
     t('Quantity'),
-    t('Page'),
   );
 
   $views[$view->name] = $view;

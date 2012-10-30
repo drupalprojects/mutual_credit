@@ -8,7 +8,7 @@
  * @ingroup views_field_handlers
  */
 class views_handler_field_mcapi_index_balance extends views_handler_field {
-  
+
   var $uid;
 
   function construct() {
@@ -28,8 +28,11 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
       if (is_numeric($arg)) {
         $this->uid = $this->view->args[$arg];
       }
+      elseif (isset($this->view->filter['uid1'])) {
+        $this->uid = $this->view->filter['uid1']->value['value'];
+      }
       else {
-        drupal_set_message("Running balance requires contextual filter 'Transaction index: 1st user'", 'error', FALSE);
+        drupal_set_message("Running balance requires filter or contextual filter 'Transaction index: 1st user'", 'error', FALSE);
         return 'error';
       }
     }

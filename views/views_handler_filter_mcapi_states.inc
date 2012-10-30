@@ -2,11 +2,9 @@
 /**
  * Simple filter to handle matching of boolean values.
  *
- * This handler checks to see if a string field is empty (equal to '') or not.
- * It is otherwise identical to the parent operator.
+ * This handler filters by the transaction state.
+ * See mcapi_get_states() and the mcapi hook that declares states
  *
- * Definition items:
- * - label: (REQUIRED) The label for the checkbox.
  */
 class views_handler_filter_mcapi_states extends views_handler_filter_in_operator {
 

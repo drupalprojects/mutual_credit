@@ -13,6 +13,6 @@ files[] = mcapi_index_views.views_default.inc
 files[] = views_handler_field_mcapi_index_balance.inc
 files[] = views_handler_field_mcapi_index_currcode.inc
 files[] = views_handler_field_mcapi_index_quantity.inc
-files[] = views_handler_filter_mcapi_users_balance.inc
+files[] = views_handler_filter_mcapi_index_direction.inc
 files[] = views_handler_sort_mcapi_users_balance.inc
 files[] = views_plugin_access_user_arg1.inc
