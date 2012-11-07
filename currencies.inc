@@ -1,7 +1,6 @@
 <?php
 
 function _mcapi_currency_form(&$form, &$form_state, $currency){
-  //in case this is an ajax reload, set the currency object, used for defaults, with the form_state
   $form['#tree'] = TRUE;
   $form['info']['currcode']['#maxlength'] = 8;
   $form['human_name'] = array(
@@ -140,10 +139,6 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
   }
 }
 
-
-function currency_form_ajax(&$form, &$form_state) {
-  return $form;
-}
 
 function mcapi_currency_validate_format(&$element, $form_state) {
   if (!strpos($element['#value'], '@integer')) {

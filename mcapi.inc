@@ -186,16 +186,16 @@ function _transaction_form(&$form, &$form_state, $transaction) {
     '#title' => t('Account to be debited'),
     '#type' => 'user_chooser_permissions',
     '#args' => array('transact'),
-    '#default_value' => $transaction->payer,
     '#allow_me' => TRUE,
+    '#default_value' => $transaction->payer,
     '#weight' => 6,
   );
   $form['payee'] = array(
     '#title' => t('Account to be credited'),
     '#type' => 'user_chooser_permissions',
     '#args' => array('transact'),
-    '#default_value' => $transaction->payee,
     '#allow_me' => TRUE,
+    '#default_value' => $transaction->payee,
     '#weight' => 9,
   );
   $form['type'] = array(
@@ -790,41 +790,33 @@ function mcapi_configure_worth_field(&$form, $saved, $primary_transaction = TRUE
   $instance = field_read_instance('transaction', 'worth', 'transaction');
   $instance['widget']['weight'] = 3; //this compensates for an error in installation - can be deleted later
   $def = entity_metadata_create_transaction();
-  $fieldset = field_default_form('transaction', $def, $worth_field, $instance, LANGUAGE_NONE, $saved ? $saved[LANGUAGE_NONE]: $def->worth[LANGUAGE_NONE], $form, $form_state);
+  $items = empty($saved['worth'][LANGUAGE_NONE]) ? $def->worth[LANGUAGE_NONE] : $saved['worth'][LANGUAGE_NONE];
+  $form[$fieldset_name] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Worth'),
+    '#tree' => TRUE
+   ) + field_default_form('transaction', $def, $worth_field, $instance, LANGUAGE_NONE, $items, $form, $form_state);
+  //horrible but hook_element_info for the worth field will sort it all
+  $form[$fieldset_name]['worth'][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
 
-  $form[$fieldset_name] = $fieldset['worth'];
-  debug($form[$fieldset_name]);
-  $form[$fieldset_name][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
-  if ($primary_transaction) {
-    $form[$fieldset_name]['#type'] = 'fieldset';
-  }
-  $form[$fieldset_name]['#tree'] = TRUE;
-  $form[$fieldset_name]['#title'] = t('Worth');
-  $form[$fieldset_name]['#config_mode'] = TRUE;
-  $form[$fieldset_name]['#proxyname'] = $fieldset_name;
+//  $form[$fieldset_name]['worth']['#title'] = t('Worth');
+  $form[$fieldset_name]['worth']['#config_mode'] = TRUE;
+  $form[$fieldset_name]['worth']['#proxyname'] = $fieldset_name;//used in the temp validation function
   //setting the #required of the worth field to TRUE has no effect
   //because its not an element declared in element_info.
   //the field was created for fieldAPI, so lacks some features out of that context.
   //so there's a temp validation function for this.
-  $form[$fieldset_name]['#element_validate'] = array('temp_element_validate_empty_worth');
+  $form[$fieldset_name]['worth']['#element_validate'] = array('temp_element_validate_empty_worth');
 
-
-  if ($worth_field['cardinality'] == 1) {
-    $desc = &$form[$fieldset_name]['#description'];
-  }
-  else {
-    $desc = &$form[$fieldset_name][LANGUAGE_NONE]['#description'];
-  }
-  $desc = $primary_transaction ? t('What is the fixed value of this transaction') : t('The value of the transction may depend on the value of the main transaction.'). ' '.t('Enter a number, a percentage, or a formula using [q] for the transaction quantity');
+  $form[$fieldset_name]['#description'] = $primary_transaction ? t('What is the fixed value of this transaction?') : t('The value of the transction may depend on the value of the main transaction.'). ' '.t('Enter a number, a percentage, or a formula using [q] for the transaction quantity');
 
   //increase the size of the field
-  foreach (element_children($fieldset['worth'][LANGUAGE_NONE]) as $delta) {
-    $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#size'] = 10;
-    $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#maxlength'] = 10;
+  foreach (element_children($form[$fieldset_name]['worth'][LANGUAGE_NONE]) as $delta) {
+    $form[$fieldset_name]['worth'][LANGUAGE_NONE][$delta]['main_quant']['#size'] = 10;
+    $form[$fieldset_name]['worth'][LANGUAGE_NONE][$delta]['main_quant']['#maxlength'] = 10;
     if (!$primary_transaction) {
-      $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_field');
+      $form[$fieldset_name]['worth'][LANGUAGE_NONE][$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_field');
     }
-    unset($form[$fieldset_name][LANGUAGE_NONE][$delta]['currcode']['#ajax']);
   }
   if (!$primary_transaction) {
     $form[$fieldset_name]['round'] = array(
@@ -847,7 +839,7 @@ function validate_mcapi_configure_worth_field(&$element, $form_state) {
 }
 //temp function to check for empty worth field when its not used in field_api
 function temp_element_validate_empty_worth($element, $form_state) {
-  foreach($form_state['values'][$element['#proxyname']][LANGUAGE_NONE] as $item) {
+  foreach($form_state['values'][$element['#proxyname']]['worth'][LANGUAGE_NONE] as $item) {
     if (!mcapi_field_is_empty($item)) return;
   }
   form_error($element, t('A value is required'));

@@ -291,11 +291,7 @@ function mcapi_forms_validate_secondperson($form, &$form_state) {
  * handles the steps
  */
 function mcapi_forms_validate($form, &$form_state) {
-  //don't validate if it's ajax
-  if (current_path() == 'system/ajax') {
-    return;
-  }
-  elseif (!empty($form_state['clicked_button']['#submit']) && in_array('mcapi_transaction_undo_confirm_form', $form_state['clicked_button']['#submit'])) {
+  if (!empty($form_state['clicked_button']['#submit']) && in_array('mcapi_transaction_undo_confirm_form', $form_state['clicked_button']['#submit'])) {
     return;
   }
 
