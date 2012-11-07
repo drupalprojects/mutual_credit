@@ -1,11 +1,12 @@
 <?php
 function mcapi_index_views_install() {
-  db_query("CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS 
+  db_query("CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS
       SELECT
           t.xid,
           t.serial,
           t.payer AS uid1,
           t.payee AS uid2,
+          t.type,
           0 AS income,
           w.worth_quantity AS expenditure,
           - w.worth_quantity AS diff,
@@ -21,6 +22,7 @@ function mcapi_index_views_install() {
           t.serial,
           t.payee AS uid1,
           t.payer AS uid2,
+          t.type,
           w.worth_quantity AS income,
           0 AS expenditure,
           w.worth_quantity AS diff,
@@ -133,10 +135,12 @@ function ___mcapi_index_views_get_schema() {
   );
   return $schema;
 }
-
-function mcapi_index_views_update_7001() {
+/**
+ * update function to rebuild the mysql index view
+ */
+function mcapi_index_views_update_7002() {
   db_query("DROP TABLE IF EXISTS {mcapi_index}");
   DRUPAL_SET_MESSAGE('Check all views involving the transaction->state filter','warning');
-  db_query("DROP VIEW {mcapi_index}");
+  db_query("DROP VIEW IF EXISTS {mcapi_index}");
   mcapi_index_views_install();
 }

@@ -33,15 +33,11 @@ function mcapi_entity_info_inc() {
     'view callback' => 'transaction_view', //used by entity module
     'view modes' => array(
       'certificate' => array(
-        'label' => t('Certificate'),
-        'custom settings' => FALSE,
-      ),
-      'sentence' => array(
-        'label' => t('Main transaction as a sentence'),
+        'label' => t("An HTML laid out view of the transaction cluster"),
         'custom settings' => FALSE,
       ),
       'sentences' => array(
-        'label' => t('One sentence per transaction'),
+        'label' => t("A one-per-line description of the transaction cluster"),
         'custom settings' => FALSE,
       ),
     ),
@@ -164,25 +160,6 @@ function mcapi_accounting() {
   return system_admin_menu_block_page();
 }
 
-/*
- * helper to get block settings and load whichever user we like
- * may return nothing if no user is determined
- */
-function _mcapi_block_settings($delta) {
-  $currencies = &drupal_static('currencies');
-  $settings = variable_get('block_'. $delta, array('currcodes' => array_keys($currencies), 'user_source' => 0));
-
-  if (@$settings['user_source'] == 0) {
-    if (arg(0) == 'user') {
-      $settings['account'] = user_uid_optional_load(arg(1));
-    }
-    else return array();
-  }
-  else {
-    $settings['account'] = $GLOBALS['user'];
-  }
-  return $settings;
-}
 
 function transaction_menu_title($transaction = NULL) {
   return t('Transaction certificate #@serial', array('@serial' => $transaction->serial));
@@ -204,22 +181,21 @@ function transaction_default_form($form, &$form_state) {
  * All transaction forms should use this function as a basis using hook_forms
  */
 function _transaction_form(&$form, &$form_state, $transaction) {
+  //the default payer and payee widgets will autocomplete any user on the system, and permissions will be checked later
   $form['payer'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Account number to be debited'),
-    '#description' => t('A username, email, or user ID'),
+    '#title' => t('Account to be debited'),
+    '#type' => 'user_chooser_permissions',
+    '#args' => array('transact'),
     '#default_value' => $transaction->payer,
-    '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
-    '#autocomplete_path' => 'user/autocomplete',
+    '#allow_me' => TRUE,
     '#weight' => 6,
   );
   $form['payee'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Account number to be credited'),
-    '#description' => t('A username, email, or user ID'),
+    '#title' => t('Account to be credited'),
+    '#type' => 'user_chooser_permissions',
+    '#args' => array('transact'),
     '#default_value' => $transaction->payee,
-    '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
-    '#autocomplete_path' => 'user/autocomplete',
+    '#allow_me' => TRUE,
     '#weight' => 9,
   );
   $form['type'] = array(
@@ -241,17 +217,18 @@ function _transaction_form(&$form, &$form_state, $transaction) {
     '#weight' => 18
   );
   $form['creator'] = array(
-    '#type' => 'textfield',
     '#title' => t('Recorded by'),
-    '#autocomplete_path' => 'user/autocomplete',
     '#default_value' => empty($form_state['values']['creator']) ? user_load($transaction->creator)->name : user_load($form_state['values']['creator'])->name,
-    '#element_validate' => array('mcapi_validate_usernames'),
+    '#type' => 'user_chooser_permissions',
+    '#args' => array('transact'),
+    '#allow_me' => TRUE,
     '#required' => TRUE,
     '#weight' => 20,
   );
   field_attach_form('transaction', $transaction, $form, $form_state);
   unset($form['worth'][LANGUAGE_NONE]['add_more']);
-  //there doesn't seem to be anywhere else to do this. We can only alter individual items, not the whole field
+  //there doesn't seem to be anywhere else to do this.
+  //We can only alter theming of individual items, not the whole multiple value field
   $form['worth'][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
 
   $form['buttons']['submit'] = array(
@@ -260,6 +237,9 @@ function _transaction_form(&$form, &$form_state, $transaction) {
     //this prevents double click, but doesn't prevent going back and resubmitting the form
     '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();")
   );
+  //this determines whether the function calls transaction_insert_new(), which includes drupal_alter
+  // or transactions_insert() which writes the cluster
+  $form['#skip_alter'] = FALSE;
   $form['actions']['#weight'] = 25;
   $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_form_submit');
@@ -278,8 +258,14 @@ function transaction_form_validate($form, &$form_state) {
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   if (form_get_errors()) return;
   try{
-    //keep a copy of the built transaction, and its dependencies for validation elsewhere
-    $form_state['transactions'] = transaction_insert_new($transaction, FALSE);
+    if ($form['#skip_alter']) {
+      $transactions = array($transaction);
+      $form_state['transactions'] = transactions_insert($transactions, FALSE);
+    }
+    else {
+      //keep a copy of the built transaction, and its dependencies for validation elsewhere
+      $form_state['transactions'] = transaction_insert_new($transaction, FALSE);
+    }
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
@@ -288,8 +274,7 @@ function transaction_form_validate($form, &$form_state) {
 
 
 /*
- * form submit callback from the base transaction form, hence used by all forms
- * hence must be in .module file
+ * form submit callback from the base transaction form, hence USED BY ALL forms
  * this is what actually saves the data
  */
 function transaction_form_submit($form, &$form_state) {
@@ -310,7 +295,13 @@ function transaction_form_submit($form, &$form_state) {
   //build the transaction object from the $form_state[values]
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
   try{
-    $transactions = transaction_insert_new($transaction, TRUE);
+    if ($form['#skip_alter']) {
+      $transactions = array($transaction);
+      transactions_insert($transactions, TRUE);
+    }
+    else {
+      transaction_insert_new($transaction, TRUE);
+    }
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
@@ -393,13 +384,18 @@ function mcapi_misc_options_form($form_state) {
  * implements hook_accounting_validate
  * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
  */
-function mcapi_accounting_validate($transactions){
+function mcapi_accounting_validate(&$transactions){
   $errors = array();
-  foreach ($transactions as $transaction) {
+  foreach ($transactions as $key => $transaction) {
     //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
     if ($transaction->payer > 0) {
       if ($transaction->payer == $transaction->payee) {
-        $errors[] =t('A transaction must involve two different users');
+        if ($key == 0) {
+          $errors[] = t('A transaction must involve two different users');
+        }
+        else {
+          unset($transactions[$key]);
+        }
       }
     }
     //a transaction can only be finished if all these fields are filled in.
@@ -411,36 +407,9 @@ function mcapi_accounting_validate($transactions){
         }
       }
     }
-    //check that each user has permission to use each currency
-    foreach ($transaction->worth[LANGUAGE_NONE] as $key => $flow) {
-      $currency = currency_load($flow['currcode']);
-      $access_callback = $currency->currency_access['membership'];
-      foreach (array('payer', 'payee') as $uid) {
-        if ($access_callback($transaction->$uid) == FALSE) {
-          $errors[] = t('User @name cannot use @currency', array('@name' => user_load($transaction->$uid)->name, '@currency' => $currency->human_name));
-        }
-      }
-    }
   }
   if ($errors) {
     throw new Exception(implode("<br />", $errors));
-  }
-}
-
-/*
- * validate callback for transaction form participants - accepts uid only
- * the $element value may be a string, depending on the widget used
- * in which case the form_state value will have been changed by mcapi_validate_usernames()
- */
-function mcapi_validate_transactor(&$element, $form_state) {
-  $uid = &$form_state['values'][$element['#name']];
-  if (is_null($uid)) return;
-  $account = user_load($uid);
-  if (empty($account->uid)) {
-    form_error($element, t('User ID does not exist: @user', array('@user' => $uid)));
-  }
-  elseif(!user_access('transact', $account)) {
-    form_error($element, t("User ID is not permitted to 'transact': @user", array('@user' => format_username($account))));
   }
 }
 
@@ -625,30 +594,21 @@ function _mcapi_transaction_mail_action($uids, $params) {
       drupal_mail('mcapi', 'transaction_mail_action', $params['user']->mail, user_preferred_language($params['user']), $params);
     }
   }
-  //this is done separately because we start not with a uid but with a mail which may or not belong to an account
-  if ($params['cc']) {
-    global $language;
-    $account = user_load_by_mail($params['cc']);
-    $language = $account->uid > 0 ? user_preferred_language($params['user']) : $language;
-    drupal_mail('mcapi', 'transaction_mail_action', $params['cc'], user_preferred_language($params['user']), $params);
-  }
 }
 
 /*
  * settings form callback for action mcapi_transaction_mail_action
  */
 function mcapi_transaction_mail_action_form($context = array()) {
-  if (empty($context['body'])) {
-    $context['body'] = "[user:name],\n\n".
+  $context += array(//set the defaults
+    'subject' => t('Transaction saved by [transaction:creator]'),
+    'body' => "[user:name],\n\n".
       t('A transaction for [transaction:worth] has been finalised')."\n\n".
       t('More details can be found at:') ."\n[transaction:uri]\n\n".
       t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
-      t('The team at [site:name]');
-  }
-  if (empty($context['subject'])) {
-    $context['subject'] = t('Transaction saved by [transaction:creator]');
-  }
-  $form = _mcapi_mail_template_fields($context);
+      t('The team at [site:name]')
+  );
+  $form['mail'] = mcapi_mail_config_fieldset($context, array('transactions', 'user'), TRUE, 5);
   $def_types = isset($context['transaction_types']) ? $context['transaction_types'] : array();
   $form['transaction_types'] = _transaction_type_selector($def_types, TRUE, array('mass', 'child'));
   $form['transaction_types']['#description'] = t('Only send for these transaction types.');
@@ -668,40 +628,57 @@ function _transaction_type_selector($default, $multiple = TRUE, $exclude = array
   );
 }
 
-function _mcapi_mail_template_fields($defaults = array(), $tokens = array(), $required = TRUE) {
-  return array(
-    'mail' => array(
-      '#title' => t('Mail template'),
-      '#description' => $tokens,
-      '#type' => 'fieldset',
-      'subject' => array(
-        '#title' => t('Subject'),
-        '#type' => 'textfield',
-        '#default_value' => empty($defaults['subject']) ? '' : $defaults['subject'],
-        '#required' => $required,
-      ),
-      'body' => array(
-        '#title' => t('Body'),
-        '#type' => 'textarea',
-        '#default_value' => empty($defaults['body']) ? '' : $defaults['body'],
-        '#required' => $required,
-        '#weight' => 1
-      ),
-      'cc' => array(
-        '#title' => t('Carbon copy'),
-        '#description' => t('Send an extra copy to this address'),
-        '#type' => 'textfield',
-        '#default_value' => empty($defaults['cc']) ? '' : $defaults['cc'],
-        '#element_validate' => array('_mcapi_validate_mail_element'),
-        '#weight' => 2
-      ),
-      'token_tree' => array(
-        '#theme' => 'token_tree',
-        '#token_types' => $tokens,//array('user'),
-        '#global_types' => FALSE,
-      )
+/*
+ * retrieve a form fieldset which allows a mail to be configured.
+ * $key is either a variable name prefix or an array containing the defaults subject and body and optionallly cc
+ *
+ */
+function mcapi_mail_config_fieldset($key, $tokens = array('transactions'), $required = TRUE, $weight = 0) {
+  if (is_array($key)) {
+    extract($key);
+    $key = '';
+  }
+  else{
+    $key .= '_';
+    $subject = variable_get($key . 'subject');
+    $body = variable_get($key . 'body');
+    $cc = variable_get($key . 'cc', NULL);
+  }
+  $fieldset =  array(
+    '#title' => t('Mail template'),
+    '#type' => 'fieldset',
+    '#weight' => $weight,
+    $key.'subject' => array(
+      '#title' => t('Subject'),
+      '#type' => 'textfield',
+      '#default_value' => $subject,
+      '#required' => $required,
+    ),
+    $key.'body' => array(
+      '#title' => t('Body'),
+      '#type' => 'textarea',
+      '#default_value' => $body,
+      '#required' => $required,
+      '#weight' => 2
+    ),
+    'token_tree' => array(
+      '#theme' => 'token_tree',
+      '#token_types' => $tokens,//array('user'),
+      '#global_types' => FALSE,
+      '#weight' => 3
     )
   );
+  if (isset($cc)) {
+    $fieldset[$key.'cc'] = array(
+      '#title' => t('Carbon copy'),
+      '#description' => t('Send an extra copy to this address'),
+      '#type' => 'textfield',
+      '#default_value' => $cc,
+      '#element_validate' => array('_mcapi_validate_mail_element'),
+      '#weight' => 1
+    );
+  }
+  return $fieldset;
 }
 
 function mcapi_transaction_mail_action_submit($form, $form_state) {
@@ -751,7 +728,7 @@ function mcapi_supplementary_transaction_action($transactions, $settings) {
   }
   foreach ($settings['worth'][LANGUAGE_NONE] as $delta => $item) {
     //if this currency was in the prime transaction, pass it to the calculator
-    $quant = _mcapi_calc($item['quantity'], @$transaction->worth[LANGUAGE_NONE][$delta]);
+    $quant = _mcapi_calc($item['quantity'], @$transaction->worth[LANGUAGE_NONE][$delta]['quantity']);
     if ($quant) {
       //if a quant was returned (and there really should be, from at least one currency), add it to the child
       $child['worth'][LANGUAGE_NONE][$delta] = array(
@@ -782,15 +759,15 @@ function mcapi_supplementary_transaction_action_form($context) {
     '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
   );
   $form['otheruser'] = array(
-    '#type' => 'textfield',
+
     '#title' => t('Other account'),
-    '#description' => t('A username, email, or user ID'),
+    '#type' => 'user_chooser_permissions',
+    '#args' => array('transact'),
+    '#allow_me' => TRUE,
     '#default_value' => isset($context['otheruser']) ? $context['otheruser'] : 1,
-    '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
-    '#autocomplete_path' => 'user/autocomplete',
     '#weight' => 1,
   );
-  mcapi_configure_worth_field($form, $context['worth'], TRUE);
+  mcapi_configure_worth_field($form, $context['worth'], FALSE);
   return $form;
 }
 //this is needed by the actions framework
@@ -805,42 +782,51 @@ function mcapi_supplementary_transaction_action_submit($form, $form_state) {
  * $dependent : whether or not the auto transaction will depend on on the values from another transaction
  * $fieldset_name : depending on how the settings are saved, this may need to be a unique variable name
  */
-function mcapi_configure_worth_field(&$form, $saved, $dependent = FALSE, $fieldset_name = 'worth') {
+function mcapi_configure_worth_field(&$form, $saved, $primary_transaction = TRUE, $fieldset_name = 'worth') {
   $form['#parents'] = array();
   $worth_field = field_info_field('worth');
   $currencies = &drupal_static('currencies');
   $form_state = array();
   $instance = field_read_instance('transaction', 'worth', 'transaction');
   $instance['widget']['weight'] = 3; //this compensates for an error in installation - can be deleted later
-  $fieldset = field_default_form('transaction', entity_metadata_create_transaction(), $worth_field, $instance, LANGUAGE_NONE, @$saved[LANGUAGE_NONE], $form, $form_state);
+  $def = entity_metadata_create_transaction();
+  $fieldset = field_default_form('transaction', $def, $worth_field, $instance, LANGUAGE_NONE, $saved ? $saved[LANGUAGE_NONE]: $def->worth[LANGUAGE_NONE], $form, $form_state);
 
   $form[$fieldset_name] = $fieldset['worth'];
+  debug($form[$fieldset_name]);
   $form[$fieldset_name][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
-  $form[$fieldset_name]['#type'] = 'fieldset';
+  if ($primary_transaction) {
+    $form[$fieldset_name]['#type'] = 'fieldset';
+  }
   $form[$fieldset_name]['#tree'] = TRUE;
   $form[$fieldset_name]['#title'] = t('Worth');
   $form[$fieldset_name]['#config_mode'] = TRUE;
+  $form[$fieldset_name]['#proxyname'] = $fieldset_name;
+  //setting the #required of the worth field to TRUE has no effect
+  //because its not an element declared in element_info.
+  //the field was created for fieldAPI, so lacks some features out of that context.
+  //so there's a temp validation function for this.
+  $form[$fieldset_name]['#element_validate'] = array('temp_element_validate_empty_worth');
 
-  if ($dependent) {
-    if ($worth_field['cardinality'] == 1) {
-      $desc = &$form[$fieldset_name]['#description'];
-    }
-    else {
-      $desc = &$form[$fieldset_name][LANGUAGE_NONE]['#description'];
-    }
-    $desc = t('Enter a number, a percentage, or a formula using [q] for the transaction quantity');
+
+  if ($worth_field['cardinality'] == 1) {
+    $desc = &$form[$fieldset_name]['#description'];
   }
+  else {
+    $desc = &$form[$fieldset_name][LANGUAGE_NONE]['#description'];
+  }
+  $desc = $primary_transaction ? t('What is the fixed value of this transaction') : t('The value of the transction may depend on the value of the main transaction.'). ' '.t('Enter a number, a percentage, or a formula using [q] for the transaction quantity');
 
   //increase the size of the field
   foreach (element_children($fieldset['worth'][LANGUAGE_NONE]) as $delta) {
     $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#size'] = 10;
     $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#maxlength'] = 10;
-    if ($dependent) {
+    if (!$primary_transaction) {
       $form[$fieldset_name][LANGUAGE_NONE][$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_field');
     }
     unset($form[$fieldset_name][LANGUAGE_NONE][$delta]['currcode']['#ajax']);
   }
-  if ($dependent) {
+  if (!$primary_transaction) {
     $form[$fieldset_name]['round'] = array(
       '#title' => t('Rounding'),
       '#type' => 'radios',
@@ -853,10 +839,18 @@ function mcapi_configure_worth_field(&$form, $saved, $dependent = FALSE, $fields
  * element validate callback
  * ensures that the formula for calculating a quantity works
  */
-function validate_mcapi_configure_worth_field($element, $form_state) {
+function validate_mcapi_configure_worth_field(&$element, $form_state) {
+  if (empty($element['#value'])) return;
   if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
     form_error($element, t('Invalid formula'));
   }
+}
+//temp function to check for empty worth field when its not used in field_api
+function temp_element_validate_empty_worth($element, $form_state) {
+  foreach($form_state['values'][$element['#proxyname']][LANGUAGE_NONE] as $item) {
+    if (!mcapi_field_is_empty($item)) return;
+  }
+  form_error($element, t('A value is required'));
 }
 
 /*
@@ -869,13 +863,59 @@ function validate_mcapi_configure_worth_field($element, $form_state) {
 function _mcapi_calc($formula, $base_quant) {
   if (is_numeric($formula)) return $formula;
   $proportion = str_replace('%', '', $formula);
+  if (empty($base_quant)) $base_quant = 0;
   if (is_numeric($proportion)) {
     return $base_quant * $proportion/100;
   }
-  return eval('return '.str_replace('[q]', $base_quant, $formula).';');
+  //$formula = str_replace('/', '//', $formula);
+  $equation = str_replace('[q]', $base_quant, $formula) .';';
+  $val = eval('return '. $equation);
+  if (is_numeric($val)) return $val;
+  drupal_set_message(t('Problem with calculation for dependent transaction: '.$val));
 }
 //TODO
 //Parse error: syntax error, unexpected '/' in /var/www/drupal7/sites/all/modules/matslats/mutual_credit/mcapi.inc(853) : eval()'d code on line 1
+
+
+/*
+ * helper to get block settings and load whichever user we like
+ * may return nothing if no user is determined
+ */
+function _mcapi_block_settings($delta) {
+  $currencies = &drupal_static('currencies');
+  $settings = variable_get('block_'. $delta, array('currcodes' => array_keys($currencies), 'user_source' => 0));
+
+  if (@$settings['user_source'] == 0) {
+    if (arg(0) == 'user') {
+      $settings['account'] = user_uid_optional_load(arg(1));
+    }
+    else return array();
+  }
+  else {
+    $settings['account'] = $GLOBALS['user'];
+  }
+  return $settings;
+}
+
+
+/*
+ * Calculate the balance changes that this transaction proposes
+ * by convention, if the transaction state < 0 it is NOT COUNTED
+ * this is only used in tokens, so far, and in mcapi_limits module
+ */
+function _transactions_diff($transactions) {
+  $diff = array();
+  foreach ($transactions as $transaction) {
+    foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
+      $quant = $transaction->state < -1 ? 0 : $flow['quantity'];//i is signature module is enabled, pending transactions count here
+      //we can't prepare the array in advance with zeros so += and -= throws notices
+      //instead we just build up an array and add them up when we need them
+      $diff[$transaction->payer][$flow['currcode']][] = -$quant;
+      $diff[$transaction->payee][$flow['currcode']][] = $quant;
+    }
+  }
+  return $diff;
+}
 
 function mcapi_description_field($form, $form_state) {
   $options = array('' => 'none');
@@ -905,16 +945,18 @@ function _mcapi_get_text_instances() {
  * implementation of mcapi theme hook
  * Returns HTML for a worth field.
  */
-function theme_field_multiple_worthed_form($variables) {
+function theme_field_multiple_worth_form($variables) {
   $element = $variables['element'];
-
   $items = array();
   foreach (element_children($element) as $key) {
     $items[] = drupal_render($element[$key]);
   }
+  //debug($items);
 
   $output = implode("\n", $items);
-  $output .= $element['#description'] ? '<div class="description">' . $element['#description'] . '</div>' : '';
+  if (!empty($element['#description'])) {
+    //$output.= '<div class="description">' . $element['#description'] . '</div>';
+  }
 
   return $output;
 }

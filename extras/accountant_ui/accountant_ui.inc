@@ -6,28 +6,28 @@
  */
 function mcapi_mass_pay($form, &$form_state, $vector) {
   form_load_include($form_state, 'inc', 'accountant_ui');
+  form_load_include($form_state, 'inc', 'mcapi');
   $form = array();
   list($payer, $payee) = explode('2', $vector);
   if (empty($form_state['confirmed'])) {
     $one = array(
-      '#type' => 'textfield',
       '#description' => t('A username, email, or user ID'),
-      '#default_value' => '',
-      '#element_validate' => array('mcapi_validate_usernames', 'mcapi_validate_transactor'),
-      '#autocomplete_path' => 'user/autocomplete',
+      '#type' => 'user_chooser_permissions',
+      '#args' => array('transact'),
+      '#allow_me' => TRUE,
       '#weight' => 9,
     );
     $few = array(
       '#description' => t('A group of users'),
       '#type' => 'user_chooser_permissions',
       '#args' => array('transact'),
-      '#me' => FALSE,
+      '#allow_me' => FALSE,
       '#multiple' => TRUE,
     );
     $many = array(
       '#type' => 'user_chooser_preselect',
       '#options' => module_invoke_all('user_chooser_preselect'),
-      '#me' => FALSE,
+      '#allow_me' => FALSE,
     );
 
     if ($payer == 'one') {
@@ -50,23 +50,20 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
         '#weight' => 2
       )+ $$payer;
     }
-    field_attach_form('transaction', NULL, $form, $form_state);
+    field_attach_form('transaction', entity_metadata_create_transaction(), $form, $form_state);
+    $form['worth'][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
     unset($form['worth'][LANGUAGE_NONE]['add_more']);
 
     module_load_include('inc', 'mcapi');
-    $defaults = array(
-      'subject' => variable_get('mcapi_accounting_masspay_subject', ''),
-      'body' => variable_get('mcapi_accounting_masspay_body', ''),
-    );
-    $form += _mcapi_mail_template_fields($defaults, NULL, FALSE);
-    $form['mail']['#weight'] = 21;
+    $form['mail'] = mcapi_mail_config_fieldset('mcapi_accounting_masspay', array('transactions'), FALSE, 21);
     $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
     unset($form['mail']['cc']);
+    $form['mail']['#description'] = t('Some tokens may not apply.');
   }
   else {
     $form['preview'] = transaction_view($form_state['confirmed'], 'sentences');
   }
-
+  $form['#skip_alter'] = TRUE;
   $form['buttons'] = array(
     '#weight' => 20,
     'submit' => array(
@@ -88,47 +85,48 @@ function mcapi_mass_pay_validate($form, &$form_state) {
     $form_state['values']['creator'] = $GLOBALS['user']->uid;
     $form_state['values']['type'] = 'mass';
     $form_state['values']['state'] = TRANSACTION_STATE_FINISHED;
-    if (form_get_errors()) return;
     $transactions = mcapi_mass_pay_insert($form_state['values'], FALSE);
-    if (!form_get_errors()) {
-      $form_state['rebuild'] = TRUE;
-      drupal_set_title(t('Are you sure?'));
-      $form_state['storage'] = $form_state['values'];
-      $form_state['confirmed'] = $transactions;
-    }
+    if (form_get_errors()) return;
+    $form_state['rebuild'] = TRUE;
+    drupal_set_title(t('Are you sure?'));
+    $form_state['storage'] = $form_state['values'];
+    $form_state['confirmed'] = $transactions;//for displaying at the top of the confirmation page
   }
 }
 /*
  * form submit callback
  */
 function mcapi_mass_pay_submit($form, &$form_state) {
-  $values = $form_state['storage'];
-  $transactions = mcapi_mass_pay_insert($values, TRUE);
-  if ($values['subject'] && $values['body']) {
-    $bcc = db_select('users', 'u')
-      ->fields('u', array('mail'))
-      ->condition('uid', isset($values['payers']) ? $values['payers'] : $values['payees'])
-      ->execute()
-      ->fetchCol();
-    if (count($bcc)) {
-      $values['bcc'] = implode(", ", $bcc);
-    }
+  $params['subject'] = $form_state['storage']['subject'];
+  $params['body'] = $form_state['storage']['body'];
+  unset($form_state['storage']['subject'], $form_state['storage']['body']);
+  $form_state['values'] = $form_state['storage'];
+  form_state_values_clean($form_state);
+  $values = &$form_state['values'];
+  $serial = mcapi_mass_pay_insert($values, TRUE);
+  //now start preparing the mail
+  if ($params['subject'] && $params['body']) {
+    $mailto = count($values['payees']) > 1 ? 'payee' : 'payer';
     global $language;
-    drupal_mail('accountant_ui', 'mass', variable_get('site_mail', ''), $language, $values);
+    foreach (transactions_load(NULL, array('serial' => $serial)) as $transaction) {
+      $params['transactions'][$serial] = $transaction;
+      $account = user_load($transaction->$mailto);
+      drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);
+    }
   }
   //store the mail so we can bring it up as a default next time
-  variable_set('mcapi_accounting_masspay_subject', $values['subject']);
-  variable_set('mcapi_accounting_masspay_body',$values['body']);
-  $form_state['redirect'] = 'admin/accounting';
+  variable_set('mcapi_accounting_masspay_subject', $params['subject']);
+  variable_set('mcapi_accounting_masspay_body', $params['body']);
+  $form_state['redirect'] = 'transaction/'.$serial;
 }
 
 /*
  * implements hook_mail
  */
 function accountant_ui_mail($key, &$message, $params) {
-  $message['headers']['Bcc'] = $params['bcc'];
-  $message['subject'] = $params['subject'];
-  $message['body'][] = $params['body'];
+  $options = array('language' => $message['language'], 'sanitize' => FALSE);
+  $message['subject'] = token_replace($params['subject'], $params, $options);
+  $message['body'][] = token_replace($params['body'], $params, $options);
 }
 
 function mcapi_mass_pay_insert($values, $really) {
@@ -143,10 +141,15 @@ function mcapi_mass_pay_insert($values, $really) {
       $transactions[] = clone $template;
     }
   }
-  $messages = array();
-  try {transactions_insert($transactions, $really);}
-  catch (Exception $e) {form_set_error('', $e->getMessage());}
-  return $transactions;
+  try {
+    $serial = transactions_insert($transactions, $really);
+  }
+  catch (Exception $e) {
+    form_set_error('', $e->getMessage());
+  }
+  if ($really) return $serial;
+  else return $transactions;
+
 }
 
 /*

@@ -40,7 +40,6 @@ function mcapi_mcapicurrencies_default() {
   if (module_exists('mcapi_signatures')) {
     $currency->data->transaction_access[TRANSACTION_STATE_PENDING] = array();
   }
-
   $currencies[DEFAULT_CURRENCY_NAME] = $currency;
   return $currencies;
 }

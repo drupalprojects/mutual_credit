@@ -10,7 +10,7 @@
  * see template_preprocess_transaction() for details
  *
  * $transaction     //entity object
- * $view_mode       // either 'sentence' or 'certificate'
+ * $view_mode       // either 'sentences' or 'certificate'
  * $type            //
  * $state           // 1 = pending, 0 = completed, -1 = erased
  * $recorded        // date formatted using drupal's 'medium' date format
@@ -27,14 +27,12 @@
  * This template doesn't use normal template syntax because it's based on a sentence structure and needs to retain a coherent translatable string
  * It is rather complex because of the need for translation
  */
-if ($view_mode != 'sentences') {
-  $replacements = array(
-    '@recorded' => $recorded,
-    '!payer' => $payer,
-    '!payee' => $payee,
-    '!worth' => $worth,
-  );
-}
+$replacements = array(
+  '@recorded' => $recorded,
+  '!payer' => $payer,
+  '!payee' => $payee,
+  '!worth' => $worth,
+);
 ?>
 <div class = "<?php print $classes; ?>"><?php
   if ($view_mode == 'certificate') {
@@ -48,7 +46,7 @@ if ($view_mode != 'sentences') {
     <?php print $sum; ?></p>
     <?php print render($additional);
   }
-  elseif ($view_mode == 'sentence') {
+  elseif ($view_mode == 'sentences') {
     if ($state > 0) {//transaction states > 0 are 'counted'
       print t("On @recorded, !payer gave !payee !worth", $replacements);
     }

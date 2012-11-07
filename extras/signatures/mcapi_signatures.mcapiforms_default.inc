@@ -6,7 +6,6 @@ currencies_load();
  * Implements ctools hook default_mcapiforms
  */
 function mcapi_pending_mcapiforms_default() {
-
   $mcapiform = new stdClass;
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
   $mcapiform->api_version = 3;

@@ -90,11 +90,10 @@ define('TRANSACTION_BUILD_INFO_ARG', 0);
  */
 function transactions_load($xids = array(), $conditions = array(), $reset = FALSE) {
   $transactions = entity_get_controller('transaction')->load($xids, $conditions, $reset);
-  //$transactions = entity_load('transaction', $xids, $conditions, $reset);
   module_invoke_all('entity_load', $transactions, 'transaction');
+
   return $transactions;
 }
-
 
 /*
  * Community Accounting API function
@@ -102,20 +101,26 @@ function transactions_load($xids = array(), $conditions = array(), $reset = FALS
  * which fires the hook_transactions inserted
  * $transactions is a flat array
  * All $transactions will be given the same serial numbers
+ * return the serial number if $really is TRUE
  */
 function transactions_insert(array &$transactions, $really = TRUE) {
   //put all the transactions side by side ready for the entity controller to validate and insert
-  module_invoke_all('accounting_validate', $transactions);
-  entity_get_controller('transaction')->insert($transactions, $really);
-  //we don't insert the fields if we are not $really saving
-  if ($really) {
+  //instead of module_invoke_all, this allows us to pass by reference
+  foreach (module_implements('accounting_validate') as $module) {
+    $function = $module . '_accounting_validate';
+    $function($transactions);
+  }
+  $serial = entity_get_controller('transaction')->insert($transactions, $really);
+  if ($serial) {//this is only if the transaction was actually inserted
     foreach ($transactions as $transaction) {
       field_attach_insert('transaction', $transaction);
     }
     //all the transactions have the same serial, and the same state, so we just use the last one from the foreach
     //tell the system that the new transaction is going from NULL to whatever the form specified
     transactions_state(array($transaction->serial), $transaction->state);
+    return $serial;
   }
+  else return $transactions;
 }
 
 /*
@@ -193,7 +198,7 @@ function transaction_totals($uid, $currcode = NULL, $conditions = array()) {
   $totals = (object)entity_get_controller('transaction')->sums($uid, $currcode, $conditions);
   //just out of interest (needed for intertrading) we'll store the smallest balances
   if (module_exists('intertrading_client') && $currcode == variable_get('intertrading_currcode', '')){
-    save_smallest($totals->balance, $uid);
+    _save_smallest($totals->balance, $uid);
   }
   return $totals;
 }
@@ -253,8 +258,7 @@ function transaction_insert_new($transaction, $really = TRUE) {
   //and serial numbers set by contrib modules
   drupal_alter('transactions', $transactions);
 
-  transactions_insert($transactions, $really);
-  return $transactions;
+  return transactions_insert($transactions, $really);
 }
 /*
  * undocumented Community Accounting API function - for development only!
@@ -283,8 +287,8 @@ function transactions_delete($serials) {
  *   'quantity' (AND currcode) numeric value (AND currency identifier)
  *   'description' OR $description_field_name string describing purpose of transaction
  */
-function entity_metadata_create_transaction($values = array()) {
-  $currencies = &drupal_static('currencies');
+function entity_metadata_create_transaction($values = array(), $for_me = FALSE) {
+
   $defaults = array(
     'payer' => 0,
     'payee' => 0,
@@ -297,6 +301,9 @@ function entity_metadata_create_transaction($values = array()) {
   foreach ($defaults as $key => $val) {
     $transaction->$key = isset($values[$key]) ? $values[$key] : $val;
   }
+
+  if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
+  else $currencies = drupal_static('currencies');
   //this callback doesn't normally deal with fieldAPI fields, but worth is special and description is special
   if (isset($values['worth'])) {
     $transaction->worth = $values['worth'];
@@ -306,17 +313,24 @@ function entity_metadata_create_transaction($values = array()) {
     $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
   }
   else {
-    $transaction->worth[LANGUAGE_NONE][0] = array(
-      'quantity' => 0,
-      'currcode' => key($currencies)
-    );
+    $currcodes = array_keys($currencies);
+    foreach ($currcodes as $currcode) {
+      $transaction->worth[LANGUAGE_NONE][] = array(
+        'quantity' => 0,
+        'currcode' => $currcode
+      );
+    }
   }
   //allow the description to come in with various names
   if ($desc_fieldname = variable_get('transaction_description_field')) {
-    if (isset($values[$desc_fieldname])) $desc = &$values[$desc_fieldname];
-    elseif (isset($values['description'])) $desc = &$values['description'];
+    if (isset($values[$desc_fieldname])) {
+      $desc = &$values[$desc_fieldname];
+    }
+    elseif (isset($values['description'])) {
+      $desc = array(LANGUAGE_NONE => array(0 => array('value' => $values['description'])));
+    }
     if (isset($desc)) {
-      $transaction->{$desc_fieldname}['und'][0]['value'] = $desc;
+      $transaction->{$desc_fieldname} = $desc;
     }
   }
   return $transaction;
@@ -833,6 +847,15 @@ function mcapi_user_segments() {
     'user_segments_manage_all_transactions' => t("According to permission '@perm'", array('@perm' => t('Manage all transactions')))
   );
 }
+/*
+ * implements hook_mail_alter
+ * add the cc
+ */
+function mcapi_mail_alter(&$message) {
+  if (isset($message['params']['cc'])) {
+    $message['headers']['Cc'] = $message['params']['cc'];
+  }
+}
 
 /**
  * special access function for transactions - NOT hook implementation
@@ -840,8 +863,8 @@ function mcapi_user_segments() {
  */
 function transaction_view_access(stdClass $transaction) {
   module_load_include('inc', 'mcapi');
-  foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
-    $callbacks = array_filter(currency_load($flow['currcode'])->transaction_access[$transaction->state]);
+  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
+    $callbacks = array_filter(currency_load($item['currcode'])->transaction_access[$transaction->state]);
     //see hook_transaction_access_callbacks for a list of these functions
     foreach ($callbacks as $function) {
       if ($function($transaction)) return TRUE;
@@ -913,14 +936,15 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
   if (!is_array($transactions)) {
     $transactions = array($transactions->xid => $transactions);
   }
-  if ($view_mode == 'sentence' || $view_mode == 'search_result' ) {
-    drupal_add_css('.transaction-sentence div{display:inline;}', array('type' => 'inline'));
+  if ($view_mode == 'sentences' || $view_mode == 'search_result' ) {
+    drupal_add_css('.transaction-sentences div{display:inline;}', array('type' => 'inline'));
     drupal_add_css('div.field-name-worth, div.field-name-worth div{display:inline;}', array('type' => 'inline'));
   }
   //structure the transactions using serial numbers, assuming the first is always the main one
   $clusters = array();
   foreach ($transactions as $transaction) {
-    if (empty($clusters[$transaction->serial]) && $view_mode != 'sentences') {
+    //the first one is at the top level, the rest are its ->children
+    if (empty($clusters[$transaction->serial])) {
       $clusters[$transaction->serial] = $transaction;
     }
     else {
@@ -951,44 +975,41 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
 /*
  * theme implementation of template_preprocess_HOOK
  * make the transaction variables into something which can be nicely themed
+ * $variables['transaction'] may have ->children from transaction_view
  */
 function template_preprocess_transaction(&$variables) {
   $transaction = &$variables['transaction'];
-  if ($variables['view_mode'] != 'sentences') {
-    $variables['payer'] = format_username(user_load($transaction->payer));
-    $variables['payee'] = format_username(user_load($transaction->payee));
-    $variables['state'] = $transaction->state;
-    $variables['recorded'] = format_date($transaction->created, 'medium');
-    $variables['type'] = $transaction->type;
+  $variables['payer'] = format_username(user_load($transaction->payer));
+  $variables['payee'] = format_username(user_load($transaction->payee));
+  $variables['state'] = $transaction->state;
+  $variables['recorded'] = format_date($transaction->created, 'medium');
+  $variables['type'] = $transaction->type;
 
-    $states = mcapi_get_states();
+  $variables['classes_array'] = array('transaction', $variables['view_mode'], $transaction->type, 'state-'.$transaction->state);
+  if (empty($transaction->xid)) $variables['classes_array'][] = 'preview';
 
-    $variables['classes_array'] = array('transaction', $variables['view_mode'], $transaction->type, 'state-'.$transaction->state);
-    if (empty($transaction->xid)) $variables['classes_array'][] = 'preview';
+  //$transactions must be keyed by xid if there is more than one
+  //because the entity key is used to read fieldAPI data
+  //in preview mode the xid hasn't been determined
+  $transactions = array($transaction->xid => &$transaction);
+  field_attach_prepare_view('transaction', $transactions, $variables['view_mode']);
+  //entity_prepare_view('transaction', $transactions);
+  //this returns a render array
+  $variables['additional'] = field_attach_view('transaction', $transaction, $variables['view_mode']);
+  //this populates top level of variables with the render array
+  field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
+  //move worth field to the top of $variables where we would expect to find it
+  $variables['worth'] = drupal_render($variables['additional']['worth']);
+  unset($variables['additional']['worth']);
 
-    //$transactions must be keyed by xid if there is more than one
-    //because the entity key is used to read fieldAPI data
-    //in preview mode the xid hasn't been determined
-    $transactions = array($transaction->xid => &$transaction);
-    field_attach_prepare_view('transaction', $transactions, $variables['view_mode']);
-    //entity_prepare_view('transaction', $transactions);
+  //choose the transaction theme template based on the first currency of the transaction
+  $flows = current($transaction->worth);
+  $variables['theme_hook_suggestion'] = 'transaction__' . $flows[0]['currcode'];
 
-    //this returns a render array
-    $variables['additional'] = field_attach_view('transaction', $transaction, $variables['view_mode']);
-    //this populates top level of variables with the render array
-    field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
-    //move worth field to the top of $variables where we would expect to find it
-    $variables['worth'] = drupal_render($variables['additional']['worth']);
-    unset($variables['additional']['worth']);
-
-    //choose the transaction theme template based on the first currency of the transaction
-    $flows = current($transaction->worth);
-    $variables['theme_hook_suggestion'] = 'transaction__' . $flows[0]['currcode'];
-  }
   $variables['children'] = array();
   if (!isset($transaction->children)) return;
   foreach ($transaction->children as $child) {
-    $variables['children'][] = transaction_view($child, 'sentence');
+    $variables['children'][] = transaction_view($child, 'sentences');
   }
 }
 
@@ -1224,11 +1245,10 @@ function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $l
         $item['quantity'].= '.'. $item['division_quant'];
       }
     }
-    $element[$delta] = array(
-      '#theme' => 'worth_field',
-      '#currcode' => $item['currcode'],
-      '#quantity' => $item['quantity'],
-    );
+    $element[$delta] = array('#markup' => theme('worth_field', array(
+      'currcode' => $item['currcode'],
+      'quantity' => $item['quantity'],
+    )));
   }
   return $element;
 }
@@ -1236,168 +1256,105 @@ function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $l
 /*
  * implements hook_field_widget_form
  * this is called once for each delta value
- * If a default currcode is given, then it preformats the field
- * Otherwise it generates a currcode select list, with ajax
+ * it should always know what currency to show, and nicely format the field
+ * unless there are multiple currencies and single cardinality
  */
 function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-  //unset($element['#description']);
-  drupal_add_css('#worth-add-more-wrapper label{display:none}',
+  $currencies = &drupal_static('currencies');
+  $field = field_info_field('worth');
+  $cardinality = $field['cardinality'];
+  drupal_add_css(
+    '#worth-add-more-wrapper div.form-item {display:inline}',
     array('type' => 'inline')
   );
-
   $element['#delta'] = $delta;
   $item = &$items[$delta];
-  list($default_vals['main_quant'], $default_vals['division_quant']) = currency_explode($item['quantity']);
+  //try to get the default values, main_quant, div_quant and currcode
+  list($item['main_quant'], $item['division_quant']) = currency_explode($item['quantity']);
+  //if there are many currency flows allowed per transaction, each widget is already preset to one currency
+  if($field['cardinality'] > 1) {
+    $element['#restrict_currcodes'] =  array($item['currcode']);
+  }
+  else {
+    //show one widget with maybe several currency options
+    //only currencies the user is supposed to be able to see
+    $element['#restrict_currcodes'] =  array_keys(currencies_load($GLOBALS['user']));
+  }
+
+  //now start constructing the subfields for the widget
+  //the currcode
+  $element['currcode'] = currency_picker_element(array_keys($currencies), $item['currcode']);
+  //the main quantity
   $element['main_quant'] = array(
     '#title' => t('Units'), //this is only ever seen on the error message anyway
     '#type' => 'textfield',
-    '#default_value' => $default_vals['main_quant'],
+    '#default_value' => $item['main_quant'],
     '#size' => 4,
     '#maxlength' => 6,
     '#weight' => 1
   );
-  //if there are many currency flows allowed per transaction, we provide a widget for each, preset (#restricted) to one currency
-  if($field['cardinality'] > 1) {
-    $currcodes = array_keys(currencies_load($GLOBALS['user']));
-    $currcode = $currcodes[$delta];
-    //that means we might want to skip this widget form if its not one of the preset items
-    $element['#restrict_currcodes'] = array($currcode);
-  }
-  //if only one flow is allowed, and it has been preset
-  elseif (isset($item['currcode'])) {//cardinality is 1 and the currency is already set
-    $element['#restrict_currcodes'] =  array($item['currcode']);
-  }
-  //elseif there is only one currency the widget will work out what to do later
-  $element['#config_mode'] = FALSE;
-  worth_element_build($element, $default_vals);
-  if ($element['currcode']['#default_value']) {
-    $currency = currency_load($element['currcode']['#default_value']);
-    //If the display format requires we can re-join the main part and the division if they belong in one widget
-    if (in_array($currency->display['divisions'], array(CURRENCY_DIVISION_MODE_CENTS_INLINE, CURRENCY_DIVISION_MODE_CENTS_FIELD))) {
-      $element['main_quant']['#element_validate'] = array('element_validate_number'); //will do for now
-    }
-    else {
-      $element['main_quant']['#element_validate'] = array('element_validate_integer_worth');
-    }
-  }
-  $element['#element_validate'] = array('worth_widget_validate');
-  $element['#process'] = array('mcapi_field_widget_process');
-  $element['#theme'] = 'worth_widget';
-  return $element;
-}
-
-
-/*
- * form process callback
- * just processes one 'worth' $item at a time
- * creates each of the element children, currcode, integer, division
- * N.B there are 3 form elements but the widget returns 2 values currcode and quantity (float)
- * this is run during the ajax rebuild, whereas hook_field_widget_form isn't
- * so this is the stage that formats the divisions sub-widget according to currcode, which may have changed since the form was first built
- * tricky bit is setting the field[#default_value]s which are sometimes raw field data and sometimes from the db, sometimes passed in
- */
-function mcapi_field_widget_process($element, &$form_state, $form) {
-  //determine the values for each of the three subfields, main_quant, division_quant, currcode
-  //these are handled in order of priority as the default values could come from different sources
-  //deal with any submitted values from ajax, or the back button
-  if (isset($form_state['values']['worth'][LANGUAGE_NONE][$element['#delta']])) {
-    $value = $form_state['values']['worth'][LANGUAGE_NONE][$element['#delta']];
-    $element['#restrict_currcodes'] = array($value['currcode']);
-    list($default_vals['main_quant'], $default_vals['division_quant']) = currency_explode($value['quantity']);
-    //coz its ajax, we rebuild most of the element
-  }
-  else {
-    foreach (element_children($element) as $fieldname) {
-      $default_vals[$fieldname] = @$element[$fieldname]['#default_value'];
-    }
-  }
-  worth_element_build($element, $default_vals);
-
-  foreach (element_children($element) as $child) {
-    $element[$child]['#theme_wrappers'] = array();
-  }
-  //set the weight in case this is a multiple currency form
-  return $element;
-}
-/*
- * because the structure of the widget itself depends on the currcode,
- * and the currcode is sometimes supplied by ajax,
- * and ajax doesn't rebuild the whole form, but only reprocesses it
- * And because sometimes we need the filled form including defaults before processing --when?
- * this function usually runs twice! Called from both the form build function and the process function
- */
-function worth_element_build(&$element, $default_vals) {
-  static $cardinality;//because this function usually runs twice per form
-  $currencies = &drupal_static('currencies');
-
-  if (empty($cardinality)) {
-    $field = field_info_field('worth');
-    $cardinality = $field['cardinality'];
-  }
-  $currcodes = isset($element['#restrict_currcodes']) ?
-    $element['#restrict_currcodes'] :
-    array_keys(currencies_load($GLOBALS['user']));
-
-  if($element['#config_mode'] == TRUE && count($currencies) > 1) {
-    $element['currcode'] = currency_picker_element(array_keys($currencies), @$default_vals['currcode']);
+  //and that's enough if we don't know what currency to render
+  if(@$element['#config_mode']) {
     $element['currcode']['#options'] = array('' =>'Any') + $element['currcode']['#options'];
     return;
   }
-  else {
-    //call the standard currency choosing widget
-    $element['currcode'] = currency_picker_element($currcodes, @$default_vals['currcode']) + array(
-      '#ajax' => array(//seems like the ajax is necessary on the rebuilt form, even if the field is hidden
-        'callback' => 'mcapi_ajax_worth',
-        'wrapper' => 'worth-add-more-wrapper'
-      ),
-    );
-  }
-  if (empty($element['currcode']['#default_value'])) return;
-  $currency = currency_load($element['currcode']['#default_value']);
+  if (count($element['#restrict_currcodes']) > 1) return $element;
+  //this means we are rendering one $item and we know what currency it is
+  //should certainly be a default currcode by now
+  $element['#currency'] = $currencies[$element['currcode']['#default_value']];
 
     //Only show the divisions element if we know the currency and it has divisions. We are already showing integers
-  if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_FIELD) {
+  if ($element['#currency']->display['divisions'] == CURRENCY_DIVISION_MODE_CENTS_FIELD) {
     $element['division_quant'] =  array(
-      '#title' => t('Cents'),
+      '#title' => t('Cents'),//the title is only needed for error messages
       '#type' => 'textfield',
       '#size' => 2,
       '#maxlength' => 2,
-      '#field_prefix' => '.',
-      '#default_value' => @$default_vals['division_quant'],
+      '#default_value' => @$item['division_quant'],
       '#element_validate' => array('element_validate_integer_worth'),
       '#weight' => 2
     );
   }
-  elseif ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM){
+  elseif ($element['#currency']->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM){
     $element['division_quant'] = array(
-      '#title' => t('Fraction'),
-      '#options' => $currency->display['divisions_allowed'], //which MUST be an array because of _currency_divisions_array
+      '#title' => t('Fraction'),//the title is only needed for error messages
+      '#options' => $element['#currency']->display['divisions_allowed'], //which MUST be an array because of _currency_divisions_array
       '#type' => 'select',
-      '#field_prefix' => ':',
       '#default_value' => @$default_vals['division_quant'],
       '#element_validate' => array('element_validate_integer_worth'),
       '#weight' => 2
     );
   }
+
+  //If the display format requires we can re-join the main part and the division if they belong in one widget
+  if (in_array($element['#currency']->display['divisions'], array(CURRENCY_DIVISION_MODE_CENTS_INLINE, CURRENCY_DIVISION_MODE_CENTS_FIELD))) {
+    $element['main_quant']['#element_validate'] = array('element_validate_number'); //will do for now
+  }
+  else {
+    $element['main_quant']['#element_validate'] = array('element_validate_integer_worth');
+  }
+
+  $element['#element_validate'] = array('worth_widget_validate');
+  $element['#theme'] = 'worth_widget';
+  debug($element['#theme']);
+  return $element;
 }
 
 /*
  * element validation callback
  * convert the split form field quantity into one number for easier processing and storage
  * this is then used in the $items for the official widget validation mcapi_field_validate
- * $element[#value] should already be set
  */
 function worth_widget_validate(&$element, &$form_state, $form) {
   if ($form['#form_id'] == 'field_ui_field_edit_form') return;
   $value['currcode'] = &$element['currcode']['#value'];
   $value['quantity']  = &$element['main_quant']['#value'];
+  //combine integer and division to get quantity
   if (!empty($element['division_quant']['#value'])) {
-    //combine integer and division to get quantity
     $value['quantity'] += $element['division_quant']['#value']/100;
   }
   $element['#value'] = $value;
-  //this affects form_state only, which later is used to set $element['#value
-
+  //this affects $form_state, which is used to set $element['#value
   form_set_value($element, $value, $form_state);
 }
 
@@ -1410,6 +1367,26 @@ function mcapi_field_is_empty($item) {
   if (isset($item['quantity'])) return in_array($item['quantity'], array('0', '0.00', 0, ''));
   $div = isset($item['division_quant']) ? intval($item['division_quant']) : 0;
   return empty($item['main_quant']) && empty($div);
+}
+/*
+ * implements hook_field_load
+ * removes empty worth values from the loaded transaction
+ */
+function mcapi_field_load($entity_type, $entities, $field, $instances, $langcode, &$worths, $age) {
+  foreach ($worths as $xid => $items) {
+    _transaction_empty_remove($items);
+    $worths[$xid] = $items;
+  }
+}
+/*
+ * implements hook_field_insert
+ * removes empty worth values from the transaction being inserted
+ */
+function mcapi_field_insert($entity_type, $entity, $field, $instance, $langcode, &$worths) {
+  foreach ($worths as $xid => $items) {
+    _transaction_empty_remove($items);
+    $worths[$xid] = $items;
+  }
 }
 
 /*
@@ -1441,9 +1418,9 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
         );
       }
     }
-    if ($item['quantity'] <= 0 && empty($currency->zero)) {
+    if ($item['quantity'] <= 0 && empty($currency->zero) && $field['cardinality'] == 1) {
       $errors[$field['field_name']][$langcode][$delta][] = array(
-        'error' => 'mcapi_invalid_zero',//this is not working as intended
+        'error' => 'mcapi_invalid_zero',
         'message' =>  t('Zero value transactions not allowed in @currency', array('@currency' => $currency->human_name))
       );
     }
@@ -1454,6 +1431,27 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
       $errors[$field['field_name']][$langcode][$delta][] = array(
         'error' => 'mcapi_over_max',//this is not working as intended
         'message' =>  t('The maximum value is !value', array('!value' => theme('worth_field', $item['quantity'])))
+      );
+    }
+    //check that each user has permission to use each currency
+    foreach (array('payer', 'payee') as $uid) {
+      if ($currency->currency_access['membership']($entity->$uid)) continue;
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'mcapi_currency_access_membership',
+        'message' => t('User @name cannot use @currency', array('@name' => user_load($transaction->$uid)->name, '@currency' => $currency->human_name))
+      );
+    }
+
+
+  }
+  //check that at least one of the $items has a value
+  $deltas = array_keys($items);
+  _transaction_empty_remove($items);
+  if (empty($items)) {
+    foreach ($deltas as $delta) {
+      $errors[$field['field_name']][$langcode][$delta][] = array(
+        'error' => 'mcapi_empty_worth',
+        'message' =>  t('No value has been specified')
       );
     }
   }
@@ -1490,8 +1488,8 @@ function mcapi_theme_fields() {
     'worth_widget' => array(
       'render element' => 'element'
     ),
+    ////replacement for 'field_multiple_value_form'
     'field_multiple_worth_form' => array(
-      //replacement for 'field_multiple_value_form'
       'render element' => 'element',
       'file' => 'mcapi.inc'
     )
@@ -1528,9 +1526,8 @@ function theme_worth_field(&$variables) {
       $replacements['@subdivision'] = str_pad($replacements['@subdivision'], 2, STR_PAD_LEFT);
       break;
   }
-  if ($replacements['@integer'] >  999) {//put in the thousands separator
-    $replacements['@integer'] = number_format($replacements['@integer']);
-  }
+  //I don't know how to account for different languages in number format
+  $replacements['@integer'] = number_format(floatval($replacements['@integer']));
   //add the extra space to save writing a multiple rendering function
   return strtr($currency->display['format'], $replacements) .' ';
 }
@@ -1541,28 +1538,26 @@ function theme_worth_field(&$variables) {
  */
 function theme_worth_widget($variables) {
   $element = &$variables['element'];
-  $currency = currency_load($element['currcode']['#default_value']);
-  if ($element['currcode']['#type'] == 'select') {
-    $element['#children'] = drupal_render($element['main_quant']);
-  }
-  else {
-    //output starts with the currency field, whether hidden or showing
-    $element['#children'] = strtr(
-      $currency->display['format'],
-      array(
-        '@minus' => '',//no negative valuesin a form widget
-        '@integer' => drupal_render($element['main_quant']),
-        '@subdivision' => !empty($element['division_quant']) ? drupal_render($element['division_quant']) : '',
-      )
+  unset($element['currcode']['#title'], $element['main_quant']['#title'], $element['division_quant']['#title']);
+  $element['#children'] = drupal_render($element['currcode']);
+  if ($element['#currency']) {
+    $format = &$element['#currency']->display['format'];
+    $vars = array(
+      '@minus' => '',//no negative valuesin a form widget
+      '@integer' => drupal_render($element['main_quant']),
+      '@subdivision' => !empty($element['division_quant']) ? drupal_render($element['division_quant']) : '',
     );
+    //output starts with the currency field, whether hidden or showing
+    $element['#children'] .= strtr($format, $vars);
   }
-  return drupal_render($element['currcode']) . theme_form_element(array('element' => $element));
+  else {//this will be a select widget and a textfield
+    $element['#children'] .= drupal_render($element['main_quant']);
+  }
+  return $element['#children'];
+  //this returns the wholly rendered element
+  return theme_form_element(array('element' => $element));
 }
 
-function clear_def_cur() {
-  cache_clear_all('currencies', 'cache');
-  variable_del('currencies_default');
-}
 
 /*
  * implements hook_form_field_ui_field_edit_form_alter
@@ -1571,7 +1566,7 @@ function clear_def_cur() {
 function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   $currencies = &drupal_static('currencies');
   if ($form['#instance']['field_name'] != 'worth') return;
-  $form['instance']['#access'] = FALSE;
+  $form['instance']['#access'] = FALSE;//this is the required checkbox
   //change the cardinality field because there is only one worth value possible per currency
   $currcount = count($currencies);
   if ($currcount == 1) {
@@ -1582,12 +1577,12 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   }
   else {
     $form['field']['cardinality'] = array(
-      '#title' => t('Payments per transaction'),
+      '#title' => t('Currencies per transaction'),
       '#description' => t('Maximum one per currency'),
-      '#type' => 'radios',
+      '#type' => 'checkbox',
       '#options' => array(
         1 => t('Choose one currency'),
-        $currcount => t('One field per currency')
+        $currcount => t('All currencies')
       ),
       '#default_value' => $form['field']['cardinality']['#default_value']
     );
@@ -1642,7 +1637,9 @@ function entity_metadata_field_worth_get($entity, $options, $name, $type, $info)
 
 
 //deficit is an array keyed by by uid, ordered asc
-function save_smallest($balance, $uid) {
+//this is awkward, but the variable is needed for the intertrading module to assess participation credentials
+//and there's no easy way to get the lowest balances on this system
+function _save_smallest($balance, $uid) {
   $deficits = variable_get('mcapi_deficit', array());
   $deficits[$uid] = $balance;
   sort($deficits);
@@ -1650,43 +1647,6 @@ function save_smallest($balance, $uid) {
   variable_set('mcapi_deficit', array_slice($deficits, 0, 3));
 }
 
-/*
- * Bit of a one off, this one
- */
-function mcapi_format_usernames($accounts) {
-  foreach($accounts as $account) {
-    $names[] = format_username($account);
-  }
-  return implode(' & ' ,$names);
-}
-
-/*
- * validate callback for user id fields
- * borrowed from node_validate, where it really should have been a reusable function like this.
- * this is in the main module file where it can be found by both currency form and transaction form.
- */
-function mcapi_validate_usernames(&$element, &$form_state) {
-  $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
-  if (!array_filter($values)) return;
-  $validated = array();
-  foreach ($values as $value) {
-    if (is_numeric($value)) {
-      $account = user_load($value);
-    }
-    else {
-      $account = user_load_by_name($value);
-    }
-    if (is_object($account)) {
-      $validated[] = $account->uid;
-    }
-    else {
-      form_error($element, t('The user %string does not exist.', array('%string' => $value)));
-    }
-  }
-  if (form_get_errors()) return;
-  $result = is_array($element['#value']) ? $validated : $validated[0];
-  form_set_value($element, $result, $form_state);
-}
 
 //ajax callback for form widget
 //returns widget formatted according to selected currency
@@ -1704,7 +1664,17 @@ function currency_explode($number) {
   if (is_numeric($number)) {
     return array_merge(explode('.', number_format(abs($number), 2, '.', '')), array($number < 0 ? '-' : ''));
   }
-  return array($number, 0);
+  return array($number, 0, '');
+}
+
+
+//just used in loading and inserting transactions
+function _transaction_empty_remove(&$items) {
+  foreach ($items as $delta => $item) {
+    if (mcapi_field_is_empty($item)) {
+      unset($items[$delta]);
+    }
+  }
 }
 
 function mcapi_round($quant, $currcode, $up = FALSE) {

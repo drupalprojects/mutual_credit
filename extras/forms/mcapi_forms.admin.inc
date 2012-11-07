@@ -101,7 +101,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
   );
 
-  //load the transaction form so we can use all the fields here to set the defaults
+  //load the transaction form so we can re-use the form field declarations
   $array = array();
   $transaction_fields = transaction_form($array, $array);
 
@@ -126,7 +126,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
         )),
         '#type' => 'select',
         '#options' => $user_chooser_options,
-        '#default_value' => isset($mcapi_form[$key]['args']) ? $mcapi_form[$key]['args'] : 'mcapi_access_check_roles:2'
+        '#default_value' => isset($mcapi_form[$key]['args']) ? $mcapi_form[$key]['args'] : 'mcapi_access_check_roles:2',
+        '#required' => FALSE
       );
       $form[$key]['preset']['#description'] = t('Use [self] to preset with the logged in user');
     }
@@ -141,6 +142,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       )),
       '#type' => 'select',
       '#options' => $user_chooser_options,
+      '#required' => FALSE,
       '#default_value' => isset($mcapi_form['secondperson']['args']) ? $mcapi_form['secondperson']['args'] : 'mcapi_access_check_roles:2'
     );
 
@@ -180,6 +182,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     );
     $form['direction']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
   }
+
   //these are the field api fields which may have been added to the transaction entity
   $additional_fields = field_info_instances('transaction', 'transaction');
   foreach ($additional_fields as $fieldname => $field) {
@@ -286,7 +289,12 @@ function _edit_mcapi_form(&$form, &$form_state) {
   );
 }
 
-
+/*
+ * build the section of the form for configuring one transaction field
+ * $mcapi_form_fields - the saved mcapiform, containing default values
+ * $default_field - the field from the empty transaction form
+ * $key - the fieldname
+ */
 function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   static $w;
   $can_strip = TRUE;
@@ -302,29 +310,48 @@ function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
   );
   //set the defaults from the saved object
   $preset = &$mcapi_form_fields[$key]['preset'];
-  $lang = current(element_children($default_field)); //assumes value is in one language only
-  if (is_array($preset) && isset($default_field[$lang][0]['#columns'])) {//for formAPI fields
+  $lang = current(element_children($default_field)); //assumes value is in one language only!!!
+  if (isset($default_field[$lang][0]['#columns'])) {
+    //this controls some formAPI fields only - the ones that can be stripped, in fact
     $element['#description'] = l(t("Edit field cardinality."), 'admin/accounting/fields/'.$default_field[$lang][0]['#field_name']);
-    $element['#description'] .= '<br />'. t('Preset to zero to include widget on the form, or leave blank to exclude.');
-    unset($default_field[$lang]['add_more']);
-    foreach (element_children($default_field[$lang]) as $delta) {
-      foreach (element_children($default_field[$lang][$delta]) as $subfieldname) {
-        if (!empty($preset[$lang][$delta][$subfieldname])) {
-          $element['preset'][$lang][$delta][$subfieldname]['#default_value'] = $preset[$lang][$delta][$subfieldname];
+
+    //we have a special case for worth field,
+    //because we don't know that the $delta of the form element and the delata of the $default correspond
+    //and so we have to use the nested currcode instead
+    if ($key == 'worth') {
+      $element['#description'] .= '<br />'. t('Preset to zero to include widget on the form, or leave blank to exclude.');
+      //we know this field is in LANGUAGE_NONE
+      foreach (element_children($default_field[LANGUAGE_NONE]) as $delta) {
+        $currcode = $default_field[LANGUAGE_NONE][$delta]['currcode']['#default_value'];
+        if (@$preset[LANGUAGE_NONE][$delta]['currcode'] == $currcode) {
+          foreach ($preset[LANGUAGE_NONE][$delta] as $column => $col_val) {
+            $element['preset'][LANGUAGE_NONE][$delta][$column]['#default_value'] = $col_val;
+          }
         }
       }
     }
+    else {//this will typically be used by the description field
+      foreach (element_children($default_field[$lang]) as $delta) {
+        foreach (element_children($default_field[$lang][$delta]) as $subfieldname) {
+          if (!empty($preset[$lang][$delta][$subfieldname])) {
+            $element['preset'][$lang][$delta][$subfieldname]['#default_value'] = $preset[$lang][$delta][$subfieldname];
+          }
+        }
+      }
+    }
+    $can_strip = TRUE;
   }
   //fields without a $delta cannot be stripped by the theming
-  elseif(is_array($preset) && isset($default_field[$lang]['#columns'])) {
+  elseif(isset($default_field[$lang]['#columns'])) {
     $can_strip = FALSE;
   }
   else {
+    $can_strip = TRUE;
     ////the main transaction fields are required and cannot be set
     $element['#description'] = t("This field is required");
     $element['preset']['#default_value'] = $preset;
-    $can_strip = !in_array($element['preset']['#type'], array('radios', 'checkbox', 'checkboxes'));
   }
+
   if (!$can_strip) $default_val = 0;
   else $default_val = isset($mcapi_form_fields[$key]['strip']) ? $mcapi_form_fields[$key]['strip'] : 1;
 
@@ -368,7 +395,8 @@ function mcapi_forms_exists($machine_name, $element, &$form_state) {
 
 
 /*
- * validate callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
+ * validate callback for edit form,
+ * declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
  * the $form_state[item] is the object to be saved, derived from $form_state[values]
  */
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
@@ -395,12 +423,6 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   }
   cache_clear_all('mcapi_forms', 'cache');
 }
-
-/*
- * submit callback for edit form, declared in the ctools plugin $this->plugin['form']['submit'] in mcapi_forms_ui.inc
- * NOT NEEDED
-function mcapi_edit_mcapi_form_submit($form, &$form_state) {}
- */
 
 /*
  * element validate callback for worth field with multiple cardinality

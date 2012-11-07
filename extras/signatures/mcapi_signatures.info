@@ -1,6 +1,6 @@
 ; $Id:
 name = Transaction signing
-description = Use actions and triggers to require signatures before transactions move into pending state
+description = Use actions and triggers to require signatures before transactions move into pending state. Default assumes all active members will expire at the end of the year
 package = Community Accounting
 configure = admin/accounting/signatures
 core = 7.x

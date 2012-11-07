@@ -1,5 +1,6 @@
 <?php // ;id:
 
+define('MCAPIFORM_BUILD_INFO_ARG', 1);
 /*
  * Permitted users can design their own transaction forms, hopefully all valid!
  */
@@ -11,9 +12,9 @@ function mcapi_forms_menu() {
   module_load_include('inc', 'mcapi_forms');
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
-  $mcapi_forms = mcapi_forms_load(NULL, TRUE);
+  $mcapi_forms = mcapi_forms_load();
   //one menu callback for each form.
-  foreach($mcapi_forms as $form) {
+  foreach($mcapi_forms as $ctools_id => $form) {
     if (!empty($form->disabled)) continue;
     $settings = &$form->data;
     $menu_link = &$settings['architecture']['menu_link'];
@@ -24,8 +25,7 @@ function mcapi_forms_menu() {
         'mcapi_forms_form',
         //in case the form needs to load a transaction, extract it from the path
         array_search('%transaction', explode('/', $settings['architecture']['path'])),//may return NULL
-        //we put the whole settings array in the menu item rather than call on heavy ctools
-        $form
+        $ctools_id
       ),
       'access callback' => strtok($settings['architecture']['access'], ':'),
       'access arguments' => array(strtok(':')),
@@ -34,7 +34,6 @@ function mcapi_forms_menu() {
       'file' => 'mcapi_forms.inc',
     );
   }
-
   $default_tabs_supplied = 0;
   //make one of these the default tab on transact
   foreach ($items as $key => $item) {
@@ -113,12 +112,12 @@ function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_s
 
 /*
  * implements hook_form_FORMID_alter
- * The building of the transaction form is done in the alter phase of building the basic form.
+ * This module does all its work in the alter phase which allows the base form, 'transaction_form' to be usable
  * This means that any alter hooks for the basic form are also run.
  */
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-  $mcapiform = &$form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG];
+  $mcapiform =  mcapi_forms_load($form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]);
   //set the page title if this form is not being displayed in a block
   //ascertains whether the active path corresponds to this mcapi_form
   $parts = explode('/', current_path());
@@ -169,7 +168,7 @@ function mcapi_forms_block_view($delta) {
   if (!user_access('transact')) return;
   return array(//if these seem inverted its because drupal_get_form loads the inc file
     'subject' => $mcapi_form->data['experience']['title'],
-    'content' => drupal_get_form('mcapi_forms_form', NULL, $mcapi_form),
+    'content' => drupal_get_form('mcapi_forms_form', NULL, $delta),
   );
 }
 
@@ -178,10 +177,13 @@ function mcapi_forms_block_view($delta) {
  *
  */
 function mcapi_forms_mcapi_info_types() {
-  $mcapi_forms = mcapi_forms_load();
-  foreach($mcapi_forms as $mcapi_form) {
-    if ($mcapi_form->data['experience']['title']) {
-      $types[] = $mcapi_form->name;
+  static $types;
+  if (!isset($types)) {
+    $mcapi_forms = mcapi_forms_load();
+    foreach($mcapi_forms as $mcapi_form) {
+      if ($mcapi_form->data['experience']['title']) {
+        $types[] = $mcapi_form->name;
+      }
     }
   }
   return $types;
@@ -228,16 +230,19 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
  * load an mcapi_form by name, using ctools
  * it seems that ctools isn't doing any caching
  */
-function mcapi_forms_load($name = NULL) {
-  //$items = cache_get('mcapi_forms');
+function mcapi_forms_load($name = NULL) {if (is_object($name))ddebug_backtrace();
   static $items;
   if (empty($items)) {
-    ctools_include('export');
-    $items = ctools_export_crud_load_all('mcapi_forms');
-    drupal_alter('mcapi_forms', $items);
-    //cache_set('mcapi_forms', $items);
+    $cache = cache_get('mcapi_forms');
+    if (empty($cache->data)) {
+      ctools_include('export');
+      $items = ctools_export_crud_load_all('mcapi_forms');
+      drupal_alter('mcapi_forms', $items);
+      cache_set('mcapi_forms', $items);
+    }
+    else $items = &$cache->data;
   }
-  if ($name && isset($items[$name])) {
+  if (isset($name) && isset($items[$name])) {
     return $items[$name];
   }
   return $items;
@@ -310,4 +315,3 @@ function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   //ditto
   unset($form['instance']['description']);
 }
-

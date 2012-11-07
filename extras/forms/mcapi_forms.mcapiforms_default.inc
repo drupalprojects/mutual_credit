@@ -35,12 +35,14 @@ function mcapiform_default_1stparty() {
     'secondperson' => array(
       'preset' => '',
       'args' => 'user_chooser_permissions:transact',
+      'strip' => 1,
     ),
     'direction' => array(
       'preset' => 'outgoing',
       'incoming' => 'Request',
       'outgoing' => 'Payment',
       'widget' => 'select',
+      'strip' => 0,
     ),
     'worth' => array(
       'preset' => array(
@@ -48,16 +50,15 @@ function mcapiform_default_1stparty() {
           0 => array(
             'currcode' => key($currencies),
             'quantity' => '0',
-            'main_quant' => '0',
-            'division' => '0'
           ),
         ),
         'disable' => 0,
         'required' => 1,
       ),
+      'strip' => 1,
     ),
     'submission' => array(
-      'button' => 'Submit',
+      'button' => t('Submit'),
       'redirect' => '',
       'feedback' => ''
     ),

@@ -162,7 +162,7 @@ function mcapi_signatures_config($form, $form_state) {
         '#args' => array(DRUPAL_AUTHENTICATED_RID),
         '#default_value' => isset($settings['countersignatories']) ? $settings['countersignatories'] : array(),
         '#multiple' => TRUE,
-        '#me' =>TRUE
+        '#allow_me' =>TRUE
       ),
       'complete' => array(
         '#title' => t('Send notification'),
@@ -359,7 +359,7 @@ function transaction_cancel_pending_access($transaction) {
  */
 function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
 
-  if ($form_state['build_info']['args'][1]->name != 'add_my_signature') return;
+  if ($form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG] != 'add_my_signature') return;
   unset($form['experience']['title'], $form['experience']['template']);
   //replace the transaction_form_submit callback because we only want to change the state, not save the 'values and everything
   $key = array_search('transaction_form_submit', $form['#submit']);
@@ -454,7 +454,7 @@ function mcapi_signoff_confirm_form($form, $form_state, $transaction) {
   $signatories = array_filter(mcapi_get_signatories($transaction->serial));
   $users = user_load_multiple(array_keys($signatories));
   $form['#prefix'] = t('Are you sure you want to sign this transaction on behalf of @users?',
-    array('@users' => mcapi_format_usernames($users))
+    array('@users' => _mcapi_sig_format_usernames($users))
   );
   return confirm_form(
     $form,
@@ -494,7 +494,7 @@ function mcapi_cancel_confirm_form($form, $form_state, $transaction) {
   $signatories = array_filter(mcapi_get_signatories($transaction->serial));
   $users = user_load_multiple(array_keys($signatories));
   $form['#prefix'] = t('Are you sure you want to cancel this pending transaction',
-    array('@users' => mcapi_format_usernames($users))
+    array('@users' => _mcapi_sig_format_usernames($users))
   );
   return confirm_form(
     $form,
@@ -762,4 +762,15 @@ function _get_signable_transaction_types() {
   $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));
   sort($types);
   return $types;
+}
+
+
+/*
+ * Bit of a one off, this one
+ */
+function _mcapi_sig_format_usernames($accounts) {
+  foreach($accounts as $account) {
+    $names[] = format_username($account);
+  }
+  return implode(' & ' ,$names);
 }

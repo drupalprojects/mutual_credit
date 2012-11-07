@@ -61,7 +61,7 @@ function mcapi_forms_token_info() {
       'description' => t("The user who first recorded the transaction"),
     ),
     'modified' => array(
-      'name' => t('Created'),
+      'name' => t('Modified'),
       'description' => t("When the transaction was last modified"),
     ),
   );

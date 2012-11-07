@@ -1,12 +1,10 @@
-; $Id: 
+; $Id:
 name = Forms and form builder UI
 description = Exportable transaction form builder
 package = Community Accounting
 core = 7.x
 configure = admin/accounting/forms
 
-files[] = mcapi_forms.install
-files[] = mcapi_forms.module
 files[] = mcapi_forms.admin.inc
 files[] = mcapi_forms.inc
 files[] = mcapi_forms.mcapiforms_default.inc
@@ -14,5 +12,3 @@ files[] = plugins/export_ui/mcapi_forms_ui.inc
 files[] = plugins/export_ui/mcapi_forms_ui.class.php
 
 dependencies[] = mcapi
-dependencies[] = ctools
-dependencies[] = user_chooser

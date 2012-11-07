@@ -60,6 +60,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
         $this->cacheSet($queried_entities);
       }
     }
+    
     return $entities;
   }
 
@@ -67,6 +68,7 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
   /*
    * put an cluster of transactions in the database
    * all will be given the SAME serial number, which is what makes them a cluster
+   * returns the serial number if $really is TRUE
    */
   public function insert(array &$transactions, $really = FALSE) {
     //we need to ensure the schema is cached before calling mcapi_write_record
@@ -103,12 +105,15 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       }
     }
     if (!$really) {
-      foreach ($ts as $db_transaction) $db_transaction->rollback();
+      foreach ($ts as $db_transaction) {
+        $db_transaction->rollback();
+      }
       foreach ($transactions as $transaction) {
         $transaction->xid = $transaction->temp;
       }
     }
     db_set_active();
+    if ($really) return $serial;
   }
 
   /*

@@ -8,6 +8,7 @@ core = 7.x
 dependencies[] = ctools
 dependencies[] = field
 dependencies[] = token
+dependencies[] = user_chooser
 
 files[] = mcapi.inc
 files[] = mcapi.install
@@ -23,7 +24,6 @@ files[] = plugins/export_ui/mcapi_ui.class.php
 ;views integration
 files[] = views/mcapi.views.inc
 files[] = views/mcapi.views_default.inc
-files[] = views/views_handler_argument_mcapi_date.inc
 files[] = views/views_handler_field_mcapi_state.inc
 files[] = views/views_handler_field_mcapi_users_totals.inc
 files[] = views/views_handler_field_transaction.inc

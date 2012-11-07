@@ -120,23 +120,6 @@ function mcapi_limits_exception_parse($errors) {
   return implode('; ', $messages);
 }
 
-
-/*
- * implement hook_token_info_alter
- */
-function mcapi_signatures_token_info_alter(&$data) {
-  $data['tokens']['transaction'] += array(
-    'payer_diff' => array(
-      'name' => t("Difference to payer"),
-      'description' => t("Total change to payers balance")
-    ),
-    'payee_diff' => array(
-      'name' => t("Difference to payee"),
-      'description' => t("Total change to payees balance"),
-    )
-  );
-}
-
 /*
  * implements hook_form_ctools_export_ui_edit_item_form_alter
  * Add the limits section to the currency form
@@ -347,25 +330,6 @@ function mcapi_limits_variable_info() {
     );
   }
   return $vars;
-}
-
-
-/*
- * Calculate the balance changes that this transaction proposes
- * by convention, if the transaction state < 0 it is NOT COUNTED
- */
-function _transactions_diff($transactions) {
-  $diff = array();
-  foreach ($transactions as $transaction) {
-    foreach ($transaction->worth[LANGUAGE_NONE] as $flow) {
-      $quant = $transaction->state < -1 ? 0 : $flow['quantity'];//i is signature module is enabled, pending transactions count here
-      //we can't prepare the array in advance with zeros so += and -= throws notices
-      //instead we just build up an array and add them up when we need them
-      $diff[$transaction->payer][$flow['currcode']][] = -$quant;
-      $diff[$transaction->payee][$flow['currcode']][] = $quant;
-    }
-  }
-  return $diff;
 }
 
 /*

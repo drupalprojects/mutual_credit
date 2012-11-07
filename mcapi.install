@@ -808,6 +808,7 @@ function mcapi_update_7009() {
  * Convert a transaction access callback which was superfluous
  */
 function mcapi_update_7010() {
+  mcapi_init();
   $currencies = &drupal_static('currencies');
   foreach ($currencies as $currcode => $currency) {
     foreach ($currency->transaction_access as $state => $callbacks) {
@@ -824,4 +825,5 @@ function mcapi_update_7010() {
       ->execute();
   }
   cache_clear_all('currencies', 'cache');
+  drupal_set_message('check for whitescreen error and if so, clear caches and run mcapi_update_7010() via devel/php');
 }

@@ -7,25 +7,8 @@
  *
  *
  */
-class views_handler_filter_mcapi_index_direction extends views_handler_filter_numeric {
+class views_handler_filter_mcapi_index_diff extends views_handler_filter_numeric {
 
-/*
-  function get_value_options() {
-    $this->value_options = array('incoming' => t('Incoming'), 'outgoing' => t('Outgoing'));
-  }
-
-  function option_definition() {
-    $options = parent::option_definition();
-    $options['value']['default'] = 'outgoing';
-    return $options;
-  }
-
-  function expose_options() {
-    parent::expose_options();
-    $this->options['expose']['operator_id'] = '';
-    $this->options['expose']['label'] = t('Direction');
-  }
-*/
   function operators() {
     $operators = array(
       '=' => array(
@@ -54,33 +37,13 @@ class views_handler_filter_mcapi_index_direction extends views_handler_filter_nu
   function query() {
     if ($this->operator == '=') return;
     $this->ensure_my_table();
-    $this->query->add_where($this->options['group'], "$this->table_alias.$this->real_field", 0, $this->operator);
+    $this->query->add_where($this->options['group'], "$this->table_alias.diff", 0, $this->operator);
   }
 
   function exposed_form(&$form, &$form_state) {
     parent::exposed_form($form, $form_state);
-    $form[$this->real_field.'_op']['#type'] = 'radios';
-    unset($form[$this->real_field]);
+    $form['diff_op']['#type'] = 'radios';
+    unset($form['diff']);
   }
-  function _options_form(&$form, &$form_state) {
-    //$this->show_expose_button($form, $form_state);
-
-    $form['clear_markup_start'] = array(
-      '#markup' => '<div class="clearfix">',
-    );
-
-    // Add the subform from operator_form().
-    $this->show_operator_form($form, $form_state);
-
-    // Add the subform from value_form().
-    $this->show_value_form($form, $form_state);
-
-    $form['clear_markup_end'] = array(
-      '#markup' => '</div>',
-    );
-    // Add the subform from expose_form().
-    $this->show_expose_form($form, $form_state);
-  }
-
 
 }

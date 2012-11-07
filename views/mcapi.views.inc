@@ -95,8 +95,8 @@ function mcapi_views_data() {
     ),
   );
   $data['mcapi_transactions']['created'] = array(
-    'title' => t('created'),
-    'help' => t("the second the transaction was created"),
+    'title' => t('Created'),
+    'help' => t("The second the transaction was created."),
     'field' => array(
       'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
@@ -108,18 +108,11 @@ function mcapi_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
     'argument' => array(
+      'help' => t('Better to use the handler from date_views module'),
+      'handler' => 'views_handler_argument_date',
       'field' => 'created',
-      'handler' => 'views_handler_argument_mcapi_date',
     )
   );
-  if (module_exists('date_views')) {
-    $data['mcapi_transactions']['created']['argument'] = array(
-      'help' => t('Filter by month'),
-      'handler' => 'views_handler_argument_mcapi_date',
-      'fieldname' => 'created'//for some reason this wasn't showing in $view->real_field
-    );
-  }
-
   $data['mcapi_transactions']['view'] = array(
     'title' => t('View'),
     'help' => t("Link to transaction"),

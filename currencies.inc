@@ -125,15 +125,14 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
     '#default_value' => $currency->zero,
     '#weight' => 15,
   );
-  $form['uid'] = array(
-    '#type' => 'textfield',
+    $form['uid'] = array(
     '#title' => t('Declared by'),
-    '#maxlength' => 60,
-    '#autocomplete_path' => 'user/autocomplete',
+    '#type' => 'user_chooser_permissions',
+    '#args' => array('transact'),
     '#default_value' => $currency->uid ? user_load($currency->uid)->name : $GLOBALS['user']->name,
-    '#element_validate' => array('mcapi_validate_usernames'),
+    '#allow_me' => TRUE,
     '#required' => TRUE,
-    '#weight' => 4
+    '#weight' => 4,
   );
 
   if (isset($currency->currcode)) {

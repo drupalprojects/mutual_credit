@@ -75,6 +75,17 @@ function mcapi_index_views_views_data() {
       'label' => t('2nd user'),
     ),
   );
+  $data['mcapi_index']['type'] = array(
+    'title' => t('Type'),
+    'help' => t('Which form or module which created the transaction'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+      'click sortable' => TRUE
+    ),
+    'filter' => array(
+      'handler' => 'views_handler_filter_mcapi_types',
+    ),
+  );
   $data['mcapi_index']['income'] = array(
     'title' => t('Income'), // The item it appears as on the UI,
     'help' => t('Number of units of currency incoming'),
@@ -154,8 +165,8 @@ function mcapi_index_views_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
     'argument' => array(
-      'handler' => 'views_handler_argument_mcapi_date',
-      'help' => t('Limit the date range'),
+      'help' => t('Better to use the handler from date_views module'),
+      'handler' => 'views_handler_argument_date',
       'fieldname' => 'created'
     ),
   );
@@ -249,7 +260,7 @@ function mcapi_index_views_views_plugins() {
     'access' => array(
       'arg1user' => array(
         'title' => t('Arg 1 user'),
-        'help' => t('Access will be granted to only if the user is in arg 1'),
+        'help' => t('Access will be granted only to users is on their own profile pages - user/%'),
         'handler' => 'views_plugin_access_user_arg1',
         'uses options' => FALSE,
       ),
