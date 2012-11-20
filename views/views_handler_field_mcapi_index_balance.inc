@@ -48,7 +48,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
       )
     )->fetchField();
     return array(
-      '#theme' => 'worth_field',
+      '#theme' => 'worth_item',
       '#currcode' => $values->currcode,
       '#quantity' => $quantity
     );

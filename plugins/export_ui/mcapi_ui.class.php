@@ -55,7 +55,7 @@ class mcapi_ui extends ctools_export_ui {
     //second col, usage
     $this->rows[$currcode]['data'][2] = array('data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField());
     //third col, format
-    $this->rows[$currcode]['data'][3] = array('data' => theme('worth_field', array(
+    $this->rows[$currcode]['data'][3] = array('data' => theme('worth_item', array(
       'currcode' => $currcode,
       'quantity' => -99.00
     )));
@@ -96,6 +96,16 @@ class mcapi_ui extends ctools_export_ui {
   function edit_form(&$form, &$form_state) {
     ctools_include('export');
     parent::edit_form($form, $form_state);
+  }
+
+  function __list_page($js, $input) {
+    if ($GLOBALS['user']->uid == 1) {return debug('need to rebuild this page with currency weights');};
+
+    $this->items = ctools_export_crud_load_all($this->plugin['schema'], $js);
+
+    $output = $this->list_header($form_state) . $this->list_render($form_state) . $this->list_footer($form_state);
+
+
   }
 
 }

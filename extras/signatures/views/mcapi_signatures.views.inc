@@ -25,7 +25,8 @@ function mcapi_signatures_views_data() {
   );
 
   $data['mcapi_signatures']['serial'] = array(
-    'title' => t('Signatures'),
+    'title' => t('Transactions with signatures'),
+    'help' => t('The serial number of the transaction'),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
       'base' => 'mcapi_transactions',
@@ -33,21 +34,29 @@ function mcapi_signatures_views_data() {
       'label' => t('Transaction'),
     )
   );
+  //some of these are a bit confused - need more time!
   $data['mcapi_signatures']['uid'] = array(
-    'title' => t('Current signatory'),
+    'title' => t('Signatory'),
+    'field' => array(
+      'help' => t('Signatory to a transaction'),
+      'handler' => 'views_handler_field_user'
+    ),
     'filter' => array(
+      'title' => t('...is a signatory'),
       'help' => t('Show only transactions on which the current user is a signatory'),
       'handler' => 'views_handler_filter_user_current'
     ),
     'argument' => array(
-      'help' => t('Show only transactions on which the passed user is a signatory'),
+      'title' => t('...is a signatory'),
+      'help' => t('Show only transactions on which the current user is a signatory'),
       'handler' => 'views_handler_argument_user_uid',
     ),
+    //for some reason this isn't showing a widget so that fields can connect to it
     'relationship' => array(
+      'label' => t('Signatory user'),
       'handler' => 'views_handler_relationship',
       'base' => 'users',
       'field' => 'uid',
-      'label' => t('Signatory'),
     ),
   );
   $data['mcapi_signatures']['pending'] = array(

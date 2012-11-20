@@ -4,7 +4,7 @@
  * Access plugin that provides permission-based access control.
  */
 class views_plugin_access_user_arg1 extends views_plugin_access {
-  
+
   function access($account) {
     return views_plugin_access_user_arg_check($account);
   }
@@ -16,5 +16,4 @@ class views_plugin_access_user_arg1 extends views_plugin_access {
   function summary_title() {
     return t('Arg 1 user');
   }
-
 }

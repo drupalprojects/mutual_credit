@@ -10,6 +10,9 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
   $form = array();
   list($payer, $payee) = explode('2', $vector);
   if (empty($form_state['confirmed'])) {
+
+    field_attach_form('transaction', entity_metadata_create_transaction(), $form, $form_state);
+
     $one = array(
       '#description' => t('A username, email, or user ID'),
       '#type' => 'user_chooser_permissions',
@@ -50,11 +53,8 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
         '#weight' => 2
       )+ $$payer;
     }
-    field_attach_form('transaction', entity_metadata_create_transaction(), $form, $form_state);
-    $form['worth'][LANGUAGE_NONE]['#theme'] = 'field_multiple_worth_form';
-    unset($form['worth'][LANGUAGE_NONE]['add_more']);
 
-    module_load_include('inc', 'mcapi');
+
     $form['mail'] = mcapi_mail_config_fieldset('mcapi_accounting_masspay', array('transactions'), FALSE, 21);
     $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
     unset($form['mail']['cc']);
@@ -97,15 +97,19 @@ function mcapi_mass_pay_validate($form, &$form_state) {
  * form submit callback
  */
 function mcapi_mass_pay_submit($form, &$form_state) {
-  $params['subject'] = $form_state['storage']['subject'];
-  $params['body'] = $form_state['storage']['body'];
-  unset($form_state['storage']['subject'], $form_state['storage']['body']);
+    //store the mail so we can bring it up as a default next time
+  variable_set('mcapi_accounting_masspay_mail', array(
+    'subject' => $$form_state['storage']['mcapi_accounting_masspay_subject'],
+    'body' => $form_state['storage']['mcapi_accounting_masspay_body'],
+  ));
+  $params = variable_get('mcapi_accounting_masspay_mail');
   $form_state['values'] = $form_state['storage'];
+  unset($form_state['values']['subject'], $form_state['values']['body']);
   form_state_values_clean($form_state);
-  $values = &$form_state['values'];
-  $serial = mcapi_mass_pay_insert($values, TRUE);
+  //the transactions are actually saved here
+  $serial = mcapi_mass_pay_insert($form_state['values'], TRUE);
   //now start preparing the mail
-  if ($params['subject'] && $params['body']) {
+  if (strlen($params['subject']) && strlen($params['body'])) {
     $mailto = count($values['payees']) > 1 ? 'payee' : 'payer';
     global $language;
     foreach (transactions_load(NULL, array('serial' => $serial)) as $transaction) {
@@ -114,9 +118,6 @@ function mcapi_mass_pay_submit($form, &$form_state) {
       drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);
     }
   }
-  //store the mail so we can bring it up as a default next time
-  variable_set('mcapi_accounting_masspay_subject', $params['subject']);
-  variable_set('mcapi_accounting_masspay_body', $params['body']);
   $form_state['redirect'] = 'transaction/'.$serial;
 }
 

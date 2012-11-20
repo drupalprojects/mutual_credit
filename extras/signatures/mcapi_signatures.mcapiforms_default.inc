@@ -5,7 +5,7 @@ currencies_load();
 /*
  * Implements ctools hook default_mcapiforms
  */
-function mcapi_pending_mcapiforms_default() {
+function mcapi_signatures_mcapiforms_default() {
   $mcapiform = new stdClass;
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
   $mcapiform->api_version = 3;
@@ -17,7 +17,7 @@ function mcapi_pending_mcapiforms_default() {
     'perspective' => '3',
     'architecture' => array(
       'path' => 'transaction/%transaction/sign',
-      'access' => 'mcapi_access_check_roles:2',
+      'access' => 'transaction_sign_access:2',
       'menu_link' => MENU_LOCAL_ACTION,
       'use_block' => 0,
     ),
@@ -30,7 +30,7 @@ function mcapi_pending_mcapiforms_default() {
       'title' => '',
       'template' => '',
       'sure_title' => t('Sign transaction'),
-      'sure_format' => 'sentence',
+      'sure_format' => 'sentences',
     ),
     'buttons' => array(
       'submit' => t('Save'),

@@ -29,8 +29,8 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
     if ($balance === NULL) {
       $balance = transaction_totals($uid, $currcode)->balance;
     }
-    if ($limits['min']) $adjusted['spend_limit'] = $balance - $limits['min'];
-    if ($limits['max']) $adjusted['earn_limit'] = $limits['max'] - $balance;
+    if (isset($limits['min'])) $adjusted['spend_limit'] = $balance - $limits['min'];
+    if (isset($limits['max'])) $adjusted['earn_limit'] = $limits['max'] - $balance;
     return $adjusted;
   }
 }
@@ -101,8 +101,8 @@ function mcapi_limits_exception_parse($errors) {
         $messages[] = t('Transaction would take @name !quant above the maximum balance of !max',
           array(
             '@name' => $info['@name'],
-            '!quant' => theme('worth_field', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
-            '!max' => theme('worth_field', array('quantity' => $info['@max'], 'currcode' => $currcode))
+            '!quant' => theme('worth_item', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
+            '!max' => theme('worth_item', array('quantity' => $info['@max'], 'currcode' => $currcode))
           )
         );
       }
@@ -110,8 +110,8 @@ function mcapi_limits_exception_parse($errors) {
         $messages[] = t('Transaction would take @name !quant below the minimum balance of !min',
           array(
             '@name' => $info['@name'],
-            '!quant' => theme('worth_field', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
-            '!min' => theme('worth_field', array('quantity' => $info['@min'], 'currcode' => $currcode)),
+            '!quant' => theme('worth_item', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
+            '!min' => theme('worth_item', array('quantity' => $info['@min'], 'currcode' => $currcode)),
           )
         );
       }
@@ -286,16 +286,14 @@ function mcapi_limits_block_info() {
 function mcapi_limits_block_view($delta) {
   module_load_include('inc', 'mcapi');
   $settings = _mcapi_block_settings($delta);
-  if (empty($settings['account'])) return;
-  $account = &$settings['account'];
-  $currcodes = empty($settings['currcodes']) ? array_keys(currencies_load($account)) : $settings['currcodes'];
-  if (empty($currcodes)) return;
+  $uid = $settings['account']->uid;
+  if (empty($uid)) return;
   require_once('mcapi_limits.inc');
   $function = 'show_'. $delta;
-  $render_array = $function($account->uid, $currcodes);
-  $is_me = $account->uid == $GLOBALS['user']->uid;
+  $render_array = $function($uid, $settings['currcodes']);
+  $is_me = $uid == $GLOBALS['user']->uid;
   return array(
-    'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($account)))),
+    'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
     'content' => array_filter($render_array)
   );
 }

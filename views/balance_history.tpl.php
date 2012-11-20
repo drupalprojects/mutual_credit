@@ -5,7 +5,7 @@
 define ('MAX_CHART_POINTS', 140);
 
  /*
-  * Balance History Google Chart 
+  * Balance History Google Chart
   * Takes data in the format below and outputs an <img> tag for a google chart.
   * Feel free to tweak the initial variables
   * //TODO This could be cached.
@@ -67,7 +67,7 @@ foreach ($histories as $currcode => $history){
       $times[] = floor(($sample_time-$first_time)/10000);
       $values[] = $history_values[$sample_position];
     }
-  } 
+  }
   else { //using given data
     //draws straight diagonal lines between the points
     foreach ($history as $time => $value) {
@@ -83,6 +83,9 @@ foreach ($histories as $currcode => $history){
   $mins[] = min($values);
   $chcos[] = next($colors);
   $chdls[] = $currency->human_name;
+  $min_label = theme('worth_item', array('quantity' => $min, 'currcode' => $currcode));
+  $mid_label = theme('worth_item', array('quantity' => ($min + $max)/2, 'currcode' => $currcode));
+  $max_label = theme('worth_item', array('quantity' => $max, 'currcode' => $currcode));
 }
 //$lines['zero'] = $account->created .','.REQUEST_TIME .'|0,0';
 //$line_styles['zero'] = 3;
@@ -110,7 +113,7 @@ if ($min != 0) { //0.5 means half way up, 0.6 must be larger than 0.5, thickness
   $params['chm'] = implode(',', array('r','dddddd',0,$zeropoint, $zeropoint+0.001));
 }
 $params['chds'] = implode(',',array(-1, array_pop($times) +1, $min, $max));
-$params['chxl'] = '0:|' . date('M y', $account->created) . '|' . t('Now') . '|1:|' . implode('|', array($min, ($min + $max)/2, $max));
+$params['chxl'] = '0:|' . date('M y', $account->created) . '|' . t('Now') . '|1:|' . implode('|', array($min_label, $mid_label, $max_label));
 
 //cleaner than http_build_query
 foreach ($params as $key=>$val) {

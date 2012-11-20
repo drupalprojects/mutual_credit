@@ -61,6 +61,7 @@ function mcapi_uninstall() {
   variable_del('mcapi_db_read');
   variable_del('mcapi_db_write');
   variable_del('currency_default');
+  variable_del('mcapi_mixed_transactions');
   cache_clear_all('currencies', 'cache');
 }
 
@@ -257,8 +258,12 @@ function mcapi_check_fields() {
         'type' => 'worth_widget',
         'module' => 'mcapi',
         'settings' => array(),
-        'weight' => 3
+        'weight' => 5,
       ),
+      'default value' => array(
+        'currcode' => 'def_drup',
+        'quantity' => 0
+      )
     );
     _update_7000_field_create_instance($field, $instance);
   }
@@ -356,14 +361,18 @@ function mcapi_update_dependencies() {
 function mcapi_update_7000() {
   _mcapi_module_weights();
   $tables = mcapi_schema();
-  db_create_table('mcapi_currencies', $tables['mcapi_currencies']);
-  db_create_table('mcapi_transactions', $tables['mcapi_transactions']);
+  if(!db_query("SHOW TABLES LIKE 'mcapi_currencies'")->fetchfield()) {
+    db_create_table('mcapi_currencies', $tables['mcapi_currencies']);
+  }
+  if(!db_query("SHOW TABLES LIKE 'mcapi_transactions'")->fetchfield()) {
+    db_create_table('mcapi_transactions', $tables['mcapi_transactions']);
+  }
   module_enable(array('token', 'mcapi_limits', 'accountant_ui', 'mcapi_forms'), TRUE);
 
   //replace the old module with the new, so as to retain the version number, and keeping it installed
   db_delete('system')->condition('name', 'mcapi_signatures')->execute();
   db_update('system')->fields(array('name' => 'mcapi_signatures'))->condition('name', 'mc_signatures')->execute();  //rename and update the table
-  if(db_query("SHOW TABLES LIKE 'mc_unsigned'")->fetchfield()) {//this prevents an error if we try to do it twice or if the module isn't installed
+  if(!db_query("SHOW TABLES LIKE 'mcapi_signatures'")->fetchfield()) {//this prevents an error if we try to do it twice or if the module isn't installed
     db_rename_table('mc_unsigned', 'mcapi_signatures');
     module_load_install('mcapi_signatures');
     $tables = mcapi_signatures_schema();
@@ -707,7 +716,9 @@ function mcapi_update_7005() {
     'configure currencies' => 'configure all currencies',
   );
   foreach ($map as $from => $to) {
-    db_query("UPDATE {role_permission} SET permission = :to WHERE permission = :from", array(':from' => $from, ':to' => $to));
+    if (!db_query("SELECT TRUE FROM {role_permission} WHERE permission = :to", array(':to' => $to))) {
+      db_query("UPDATE {role_permission} SET permission = :to WHERE permission = :from", array(':from' => $from, ':to' => $to));
+    }
   }
   db_query("DELETE FROM {role_permission} WHERE permission IN ('view all exchanges', 'edit own finished exchanges', 'view all balances')");
 }
@@ -791,16 +802,18 @@ function mcapi_update_7009() {
   variable_del('mc_signatures_notification_body');
   variable_del('mc_notification_update_body');
   variable_del('mc_notification_update_subject');
-
-  db_query("DELETE FROM {variable} WHERE name LIKE '%exchange'");
-  db_query("DELETE FROM {block_role} WHERE module LIKE ('mc_%')");
-  db_query("DELETE FROM {block_role} WHERE delta LIKE ('cc_%')");
-  db_query("DELETE FROM {block_role} WHERE delta LIKE ('pending_exchanges%')");
-  db_query("DELETE FROM {block_role} WHERE module = 'transactions'");
-
+  if (module_exists('block')) {
+    db_query("DELETE FROM {variable} WHERE name LIKE '%exchange'");
+    db_query("DELETE FROM {block_role} WHERE module LIKE ('mc_%')");
+    db_query("DELETE FROM {block_role} WHERE delta LIKE ('cc_%')");
+    db_query("DELETE FROM {block_role} WHERE delta LIKE ('pending_exchanges%')");
+    db_query("DELETE FROM {block_role} WHERE module = 'transactions'");
+  }
   module_enable(array('mcapi_index_views'), TRUE);
   $tables = drupal_get_schema();
-  db_create_table('mcapi_submitted', $tables['mcapi_submitted']);
+  if (!db_query("SHOW TABLES LIKE 'mcapi_submitted'")->fetchField()) {
+    db_create_table('mcapi_submitted', $tables['mcapi_submitted']);
+  }
 }
 
 
@@ -826,4 +839,19 @@ function mcapi_update_7010() {
   }
   cache_clear_all('currencies', 'cache');
   drupal_set_message('check for whitescreen error and if so, clear caches and run mcapi_update_7010() via devel/php');
+}
+/**
+ * update the default value on the worth widget
+ */
+function mcapi_update_7011() {
+  $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
+  $instance['default_value'] = array(
+    0 => array(
+      'currcode' => 'def_drup',
+      'quantity' => 0
+    )
+  );
+  field_update_instance($instance);
+  drupal_set_message('Resave all your transaction forms, paying attention to default transaction field values: '.l('admin/accounting/forms', 'admin/accounting/forms'));
+  menu_rebuild();
 }

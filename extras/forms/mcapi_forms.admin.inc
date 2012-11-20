@@ -1,6 +1,24 @@
 <?php
 include ('mcapi_forms.inc');
 
+/**
+ * implements hook_help
+ */
+function mcapi_forms_help($path, $args) {
+  if (substr($path, 0, 22) == 'admin/accounting/forms') {
+    if (strlen($path) > 22) {
+      $help[] = t('Edit transaction form.');
+      if (module_exists('locale')) {
+        $help[] = t('To work in many languages this form should be exported to a custom module, then not overwritten, and the strings wrapped in t().');
+      }
+      return implode(' ', $help);
+    }
+    else {
+      return t('Create transaction forms for specific use-cases. Use with caution as not all permutations are meaningful.');
+    }
+  }
+}
+
 /*
  * This is the form-builder form
  * For every field in the transaction form, this form allows it to be configured.
@@ -8,18 +26,6 @@ include ('mcapi_forms.inc');
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   $mcapi_form = &$form_state['item']->data;
-  //prepare variables for building the form
-  $permissions = module_invoke_all('permission');
-  $roles = user_roles(TRUE);
-  foreach ($roles as $rid => $name){
-    $access_options[t('Roles')]['mcapi_access_check_roles:'.$rid] = $name;
-    $user_chooser_options[t('Roles')]['user_chooser_roles:'.$rid] = $name;
-  }
-  foreach ($permissions as $perm => $info){
-    $access_options[t('Permissions')]['user_access:'.$perm] = strip_tags($info['title']);
-    $user_chooser_options[t('Permissions')]['user_chooser_permissions:'.$perm] = strip_tags($info['title']);
-  }
-
   $form['#prefix'] = '<div id = "form-wrapper">';
   $form['#suffix'] = '</div>';
   //I think ctools is supposed to be handling this
@@ -46,7 +52,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#weight' => 3,
     'path' => array(
       '#title' => t('Path'),
-      '#description' => t("unique path of this form. (without leading slash)"),
+      '#description' => t("Unique path to this form. Don't forget you can use a path alias over this"),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['architecture']['path']) ? $mcapi_form['architecture']['path'] : '',
       '#required' => TRUE,
@@ -72,7 +78,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
       '#type' => 'select',
       '#default_value' => isset($mcapi_form['architecture']['access']) ? $mcapi_form['architecture']['access'] : 'currency',
-      '#options' => $access_options,
+      '#options' => _mcapi_user_chooser_access_options(),
       '#element_validate' => array(),
       '#weight' => 3
     ),
@@ -101,103 +107,66 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
   );
 
-  //load the transaction form so we can re-use the form field declarations
-  $array = array();
-  $transaction_fields = transaction_form($array, $array);
-
-  //this section of the form allows the admin to handle the individual fields of the transaction form.
+  //following section of the form allows the admin to handle the individual fields of the transaction form.
   //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
   $form['mcapi_form_fields'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 6,
-    '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}</style>',
+    '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}.vertical-tabs .form-type-textfield input{width:inherit;}</style>',
   );
   //the participants of the transaction are either payer/payee or 1stperson/secondperson. This is called the 'perspective' of the form.
   $perspective = isset($form_state['values']['perspective']) ? $form_state['values']['perspective'] : $form['perspective']['#default_value'] ;
-  if ($perspective == 3) {
-    //special settings for payer and payee
-    foreach (array('payer' => t('Payer ID'), 'payee' => t('Payee ID')) as $key => $name) {
-      $form[$key] = _mcapi_form_shared($mcapi_form, $transaction_fields[$key], $key);
-      $form[$key]['#widget'] = 'user_chooser';//this is the only option that will work right now
-      $form[$key]['args'] = array(
-        '#title' => t('Users to choose from'),
-        '#description' => t('Configure this widget more at !link',
-           array('!link' => l('admin/config/people/user_chooser', 'admin/config/people/user_chooser', array('attributes'=>array('target'=> '_blank')))
-        )),
-        '#type' => 'select',
-        '#options' => $user_chooser_options,
-        '#default_value' => isset($mcapi_form[$key]['args']) ? $mcapi_form[$key]['args'] : 'mcapi_access_check_roles:2',
-        '#required' => FALSE
-      );
-      $form[$key]['preset']['#description'] = t('Use [self] to preset with the logged in user');
+
+  //load the transaction form so we can re-use the form field declarations
+  $array = array();
+  $transaction_fields = transaction_form($array, $array);
+  foreach (element_children($transaction_fields) as $fieldname) {
+    $form[$fieldname] = (array)@$form[$fieldname];//this is good for new forms with values
+    $mcapi_form[$fieldname] = (array)@$mcapi_form[$fieldname];//in case the form elements are controlled elsewhere and not preset here
+    switch ($fieldname) {
+      case 'type':
+      case 'state':
+      case 'creator':
+      case 'buttons':
+        break;
+      case 'payer':
+        if ($perspective == 1) {
+          $transaction_fields[$fieldname]['#title'] = t('Other user');
+          //convert the payer field to a seconderson field
+          $form['secondperson'] = _mcapi_form_config_fieldset($mcapi_form['secondperson'], $transaction_fields['payer'], 'secondperson');
+          $form['secondperson']['user_chooser_config'] = _mcapi_user_chooser_config_field($mcapi_form['secondperson']);
+          $preset = array(
+            '#title' => t('Direction'),
+            '#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
+            '#type' => $mcapi_form['direction']['widget'],
+            '#options' => array(
+                '' => t('Neither'),
+                'incoming' => $mcapi_form['direction']['incoming'],
+                'outgoing' => $mcapi_form['direction']['outgoing'],
+            )
+          );
+          $form['direction'] = _mcapi_form_config_fieldset($mcapi_form['direction'], $preset, 'direction')
+            +_mcapi_direction_config_fields($mcapi_form['direction']);
+          break;
+        }
+        //then run on
+      case 'payee':
+        if ($perspective == 3) {
+          $form[$fieldname] = _mcapi_form_config_fieldset($mcapi_form[$fieldname], $transaction_fields[$fieldname], $fieldname);
+          $form[$fieldname]['user_chooser_config'] = _mcapi_user_chooser_config_field(@$mcapi_form[$fieldname]);
+        }
+        break;
+
+      default: //this covers all fieldAPI fields
+        $instance = field_read_instance('transaction', $fieldname, 'transaction');
+        $default_items = &$mcapi_form[$fieldname];
+        $empty_field = $transaction_fields[$fieldname][LANGUAGE_NONE];
+        $form[$fieldname] = _mcapi_form_config_fieldset($default_items, $empty_field, $fieldname);
     }
   }
-  else {//1st person form shows one field only, presuming the current user initiates the transaction
-    $form['secondperson'] = _mcapi_form_shared($mcapi_form, $transaction_fields['payer'], 'secondperson');
-    $form['secondperson']['#widget'] = 'user_chooser';//this is the only option that will work right now
-    $form['secondperson']['args'] = array(
-      '#title' => t('Users to choose from'),
-      '#description' => t('Configure this widget more at !link',
-         array('!link' => l('admin/config/people/user_chooser', 'admin/config/people/user_chooser', array('attributes'=>array('target'=> '_blank')))
-      )),
-      '#type' => 'select',
-      '#options' => $user_chooser_options,
-      '#required' => FALSE,
-      '#default_value' => isset($mcapi_form['secondperson']['args']) ? $mcapi_form['secondperson']['args'] : 'mcapi_access_check_roles:2'
-    );
-
-    $form['direction'] = array(
-      '#type' => 'radios',
-      '#options' => array(
-        'incoming' => t('Incoming'),
-        'outgoing' => t('Outgoing'),
-      ),
-    );
-    $options = array(
-      '' => t('--No preset--'),
-      'incoming' => isset($mcapi_form['direction']['incoming']) ? $mcapi_form['direction']['incoming'] : t('Request'),
-      'outgoing' => isset($mcapi_form['direction']['outgoing']) ? $mcapi_form['direction']['outgoing'] : t('Payment')
-    );
-    $form['direction'] = _mcapi_form_shared($mcapi_form, $form['direction'], 'direction');
-    $form['direction']['preset']['#options'] = $options;
-    //not sure these are ever used...
-    $form['direction']['incoming'] = array(
-      '#title' => t('Name of incoming transaction'),
-      '#type' => 'textfield',
-      '#default_value' => $options['incoming'],
-    );
-    $form['direction']['outgoing'] = array(
-      '#title' => t('Name of outgoing transaction'),
-      '#type' => 'textfield',
-      '#default_value' => $options['outgoing'],
-    );
-    $form['direction']['widget'] = array(
-      '#title' => t('Widget'),
-      '#type' => 'radios',
-      '#options' => array(
-        'select' => t('Dropdown select box'),
-        'radios' => t('Radio buttons')
-      ),
-      '#default_value' => isset($mcapi_form['direction']['widget']) ? $mcapi_form['direction']['widget'] : 'radios',
-    );
-    $form['direction']['preset']['#description'] = t("Either 'incoming' or 'outgoing' relative to the logged in user");
-  }
-
-  //these are the field api fields which may have been added to the transaction entity
-  $additional_fields = field_info_instances('transaction', 'transaction');
-  foreach ($additional_fields as $fieldname => $field) {
-    mcapi_unset_recursive($transaction_fields[$fieldname], '#required');
-    mcapi_unset_recursive($transaction_fields[$fieldname], '#element_validate');
-    $form[$fieldname] = _mcapi_form_shared($mcapi_form, $transaction_fields[$fieldname], $fieldname);
-  }
-  //special settings for worth field
-  $field = field_info_field('worth');
-  if ($field['cardinality'] > 1) {
-    $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
-  }
-  else {
-    $form['worth']['preset'][LANGUAGE_NONE][0]['#config_mode'] = TRUE;
-  }
+  $form['worth']['preset']['#required'] = FALSE;
+  $form['worth']['#description'] = '<br />'. t('Leave blank to exclude the currency from the form. Otherwise preset to zero or some other value');
+  $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
 
   //we need to know the view modes of the transaction entity, to choose for the preview page
   $entity = entity_get_info('transaction');
@@ -209,11 +178,13 @@ function _edit_mcapi_form(&$form, &$form_state) {
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
     '#type' => 'fieldset',
     '#weight' => 15,
     'title' => array(
       '#title' => t('Title'),
-      '#description' => t('For use in block title and menu links.') .' '. t('Plain text'),
+      '#description' => t('For use in block title and menu links.') .' '. t('Plain text') . t('Leave blank to jump to the confirmation stage.'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['experience']['title']) ? $mcapi_form['experience']['title'] : '',
       '#weight' => 1,
@@ -290,77 +261,57 @@ function _edit_mcapi_form(&$form, &$form_state) {
 }
 
 /*
- * build the section of the form for configuring one transaction field
- * $mcapi_form_fields - the saved mcapiform, containing default values
- * $default_field - the field from the empty transaction form
+ * make a fieldset for each of the fields on the transaction form
+ * Each fieldset will include a field to set a default value
+ * $mcapi_form_field - the saved section of the mcapi form
+ * $empty_element - an empty widget to put the #default_value in
  * $key - the fieldname
  */
-function _mcapi_form_shared($mcapi_form_fields, array $default_field, $key) {
+function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fieldname) {
   static $w;
-  $can_strip = TRUE;
-  mcapi_unset_recursive($default_field, '#element_validate');
+  $preset = &$field_defaults['preset'];
+  mcapi_unset_recursive($empty_element, '#required');
+  mcapi_unset_recursive($empty_element, '#element_validate');
   $element = array(
-    '#title' => "[mcapiform:$key]",
+    '#title' => $empty_element['#title'],
     '#type' => 'fieldset',
     '#group' => 'mcapi_form_fields',
     '#weight' => $w++,
     'preset' => array(
-      '#title' => t('Hard set value'),
-    ) + $default_field,
+      '#title' => t('Default value'),
+    ) + $empty_element,
   );
-  //set the defaults from the saved object
-  $preset = &$mcapi_form_fields[$key]['preset'];
-  $lang = current(element_children($default_field)); //assumes value is in one language only!!!
-  if (isset($default_field[$lang][0]['#columns'])) {
-    //this controls some formAPI fields only - the ones that can be stripped, in fact
-    $element['#description'] = l(t("Edit field cardinality."), 'admin/accounting/fields/'.$default_field[$lang][0]['#field_name']);
-
-    //we have a special case for worth field,
-    //because we don't know that the $delta of the form element and the delata of the $default correspond
-    //and so we have to use the nested currcode instead
-    if ($key == 'worth') {
-      $element['#description'] .= '<br />'. t('Preset to zero to include widget on the form, or leave blank to exclude.');
-      //we know this field is in LANGUAGE_NONE
-      foreach (element_children($default_field[LANGUAGE_NONE]) as $delta) {
-        $currcode = $default_field[LANGUAGE_NONE][$delta]['currcode']['#default_value'];
-        if (@$preset[LANGUAGE_NONE][$delta]['currcode'] == $currcode) {
-          foreach ($preset[LANGUAGE_NONE][$delta] as $column => $col_val) {
-            $element['preset'][LANGUAGE_NONE][$delta][$column]['#default_value'] = $col_val;
-          }
+  //set the defaults from the saved object.
+  //Need to do it differently according to whether this is a fieldAPI field or one of the basic transaction properties
+  if (isset($empty_element['#entity'])) {//this is for fieldAPI checkboxes and radio buttons
+    if (isset($preset)) {
+      if ($fieldname == 'worth') {
+        foreach ($preset as $delta => $item) {
+          $element['preset'][$delta]['#default_value'] = $item;
+        }
+      }
+      else $element['preset']['#default_value'] = $preset;
+    }
+  }
+  elseif (element_children($empty_element)) {//this is a normal fieldAPI field - not checkboxes or radios
+    foreach (element_children($empty_element) as $delta) {
+      foreach (element_children($empty_element[$delta]) as $col) {
+        if (strlen($preset[$delta][$col])) {
+          $element['preset'][$delta][$col]['#default_value'] = $preset[$delta][$col];
         }
       }
     }
-    else {//this will typically be used by the description field
-      foreach (element_children($default_field[$lang]) as $delta) {
-        foreach (element_children($default_field[$lang][$delta]) as $subfieldname) {
-          if (!empty($preset[$lang][$delta][$subfieldname])) {
-            $element['preset'][$lang][$delta][$subfieldname]['#default_value'] = $preset[$lang][$delta][$subfieldname];
-          }
-        }
-      }
-    }
-    $can_strip = TRUE;
   }
-  //fields without a $delta cannot be stripped by the theming
-  elseif(isset($default_field[$lang]['#columns'])) {
-    $can_strip = FALSE;
-  }
-  else {
-    $can_strip = TRUE;
-    ////the main transaction fields are required and cannot be set
+  else {//this is a normal field
+    //the payer, payee, secondperson, direction, fields are required and cannot be set
     $element['#description'] = t("This field is required");
     $element['preset']['#default_value'] = $preset;
   }
-
-  if (!$can_strip) $default_val = 0;
-  else $default_val = isset($mcapi_form_fields[$key]['strip']) ? $mcapi_form_fields[$key]['strip'] : 1;
-
   $element['strip'] = array(
     '#title' => t('Strip theme container'),
     '#description' => t("Disable the outer container, so it doesn't render the field #title and #description but gives you fuller control in the template below."),
     '#type' => 'checkbox',
-    '#default_value' => $default_val,
-    '#disabled' => !$can_strip,
+    '#default_value' => @$field_defaults['strip'],
     '#weight' => 10
   );
   return $element;
@@ -406,8 +357,13 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
     $form_state['item'] = ctools_export_crud_new('mcapi_forms');
   }
 
-  $form_state['item']->name = $form_state['values']['info']['name'];//this isn't editable at the moment
+  $form_state['item']->name = $form_state['values']['info']['name'];//because this isn't editable at the moment
   unset($form_state['values']['name']);
+  unset($form_state['values']['mcapi_form_fields']);
+  //strip the leading slash just to be sure
+  if (substr($form_state['values']['architecture']['path'], 0, 1) == '/') {
+    $form_state['values']['architecture']['path'] = substr($form_state['values']['architecture']['path'], 1);
+  }
 
   $form_state['item']->data = $form_state['values'];
   $mcapiform = &$form_state['item']->data;
@@ -426,15 +382,89 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
 
 /*
  * element validate callback for worth field with multiple cardinality
- * if a default value is provided for any currency(s), then remove all other empty values
- * before saving it as a preset
+ * Ensure that null values are saved as NULL and not zero
  */
 function mcapi_form_validate_worth_preset(&$element, &$form_state) {
-  //if any of the currencies has been preset with a value, including 0 remove the empty ones
-  $items = &$form_state['values']['worth']['preset']['und'];
+  //if any of the currencies has been preset with a value, including 0 remove the empty ones before saving
+  $items = &$form_state['values']['worth']['preset'];
   foreach ($items as $delta => $item) {
-    if ($item['main_quant'] == '' && empty($item['division_quant'])) {
+    if ($item['main_quant'] == '' && empty($item['div_quant'])) {
+      //that means it won't be saved and will come in as blank next time
       unset($items[$delta]);
     }
   }
+  form_set_value($element, $items, $form_state);
+}
+
+function _mcapi_user_chooser_config_field($default = array('user_chooser_config' => 'mcapi_access_check_permissions:transact')) {
+  return array(
+    '#title' => t('Users to choose from'),
+    '#description' => t('Configure this widget more at !link',
+       array('!link' => l('admin/config/people/user_chooser', 'admin/config/people/user_chooser', array('attributes'=>array('target'=> '_blank')))
+       )),
+    '#type' => 'select',
+    '#options' => _mcapi_user_chooser_access_options(),
+    '#default_value' => $default,
+    '#required' => FALSE
+  );
+}
+
+/*
+ * this function provides options to configure the user_chooser widget for any one role or permission.
+ * Other groups could be provided
+ * This functionality is also implies that that there will be access callbacks to take these parameters.
+ * But that will have to wait for another time and a more powerful utility module.
+ * In the mean time, the access callbacks are in user_chooser
+ */
+function _mcapi_user_chooser_access_options() {
+  static $user_chooser_options;
+  if (!isset($user_chooser_options)) {
+    $roles = user_roles(TRUE);
+    foreach ($roles as $rid => $name) {
+      $user_chooser_options[t('Roles')]['user_chooser_roles:'.$rid] = $name;
+    }
+    $permissions = module_invoke_all('permission');
+    foreach ($permissions as $perm => $info) {
+      $user_chooser_options[t('Permissions')]['user_chooser_permissions:'.$perm] = strip_tags($info['title']);
+    }
+  }
+  return $user_chooser_options;
+}
+
+
+
+
+
+function _mcapi_direction_config_fields($defaults) {
+  $defaults += array(
+    'incoming' => t('Request'),
+    'outgoing' => t('Payment'),
+    'widget' => 'radios'
+  );
+
+  return array(
+    'widget' => array(
+      '#title' => t('Widget'),
+      '#type' => 'radios',
+      '#options' => array(
+        'select' => t('Dropdown select box'),
+        'radios' => t('Radio buttons')
+      ),
+      '#default_value' => $defaults['widget'],
+      '#weight' => 1
+    ),
+    'incoming' => array(
+      '#title' => t("'incoming' option label"),
+      '#type' => 'textfield',
+      '#default_value' => $defaults['incoming'],
+      '#weight' => 2
+    ),
+    'outgoing' => array(
+      '#title' => t("'outgoing' option label"),
+      '#type' => 'textfield',
+      '#default_value' => $defaults['outgoing'],
+      '#weight' => 3
+    )
+  );
+  return $element;
 }

@@ -12,5 +12,5 @@ files[] = views/mcapi_signatures.views_default.inc
 files[] = views/mcapi_signatures.views.inc
 files[] = views/views_handler_field_mcapi_sign.inc
 
-dependencies[] = mcapi
+dependencies[] = mcapi_forms
 dependencies[] = user_chooser

@@ -395,15 +395,15 @@ function theme_statement($variables) {
   $rows['transactions']['title'] = t('Last 30 days transactions');
   $rows['volume'] = array(
     'title' => t('Last 365 days volume'),
-    'value' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $data['volume'])),
+    'value' => theme('worth_item', array('currcode' => $currcode, 'quantity' => $data['volume'])),
   );
   $rows['deficit'] = array(
     'title' => t('Largest negative balance'),
-    'value' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $data['deficit']))
+    'value' => theme('worth_item', array('currcode' => $currcode, 'quantity' => $data['deficit']))
   );
   $rows['balance'] = array(
     'title' => t('Balance of Trade'),
-    'value' => theme('worth_field', array('currcode' => $currcode, 'quantity' => $data['balance']))
+    'value' => theme('worth_item', array('currcode' => $currcode, 'quantity' => $data['balance']))
   );
   $rows['visibility'] = array(
     'title' => t('Visibility'),
@@ -484,7 +484,7 @@ function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $for
               $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['earn_limit'];
               drupal_set_message(t('The most @name can receive is !amount', array(
                 '@name' => variable_get('site_name', NULL),
-                '!amount' => theme('worth_field', array('quantity' => $form_state['server_params']['earn_limit'], 'currcode' => $currcode))
+                '!amount' => theme('worth_item', array('quantity' => $form_state['server_params']['earn_limit'], 'currcode' => $currcode))
               )));
             }
           }
@@ -499,7 +499,7 @@ function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $for
               $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['spend_limit'];
               drupal_set_message(t('The most @name can pay is !amount', array(
                 '@name' => variable_get('site_name', NULL),
-                '!amount' => theme('worth_field', array('quantity' => $form_state['server_params']['spend_limit'], 'currcode' => $currcode))
+                '!amount' => theme('worth_item', array('quantity' => $form_state['server_params']['spend_limit'], 'currcode' => $currcode))
               )));
             }
           }
@@ -773,7 +773,7 @@ function intertrading_help($path, $args) {
       array('@name' => $result->args['@name'], '@status' => $statuses[$args['@status']]));
     //following applies only if the account has been created already
     if ($args['@status'] != -1) {
-      $args['!balance'] = theme('worth_field', array('quantity' => $args['@balance'], 'currcode' => variable_get('intertrading_currcode')));
+      $args['!balance'] = theme('worth_item', array('quantity' => $args['@balance'], 'currcode' => variable_get('intertrading_currcode')));
 
       $help .= '<br />'.t('@name account balance is !balance', $result->args);
       if (isset($result->args['@min']) && isset($result->args['@max'])) {

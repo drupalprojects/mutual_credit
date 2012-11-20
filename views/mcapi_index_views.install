@@ -1,5 +1,7 @@
 <?php
-function mcapi_index_views_install() {
+
+function mcapi_index_views_enable() {
+  db_query("DROP VIEW IF EXISTS {mcapi_index}");
   db_query("CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS
       SELECT
           t.xid,
@@ -43,6 +45,8 @@ function mcapi_index_views_uninstall() {
     views_delete_view($view);
   }
 }
+
+
 /*
  * implements hook_schema
  * not needed since we are using a mysql view instead
@@ -139,8 +143,6 @@ function ___mcapi_index_views_get_schema() {
  * update function to rebuild the mysql index view
  */
 function mcapi_index_views_update_7002() {
-  db_query("DROP TABLE IF EXISTS {mcapi_index}");
-  DRUPAL_SET_MESSAGE('Check all views involving the transaction->state filter','warning');
-  db_query("DROP VIEW IF EXISTS {mcapi_index}");
-  mcapi_index_views_install();
+  //DRUPAL_SET_MESSAGE('Check all views involving the transaction->state filter','warning');
+  mcapi_index_views_enable();
 }

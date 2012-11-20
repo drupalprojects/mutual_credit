@@ -1,5 +1,6 @@
 <?php
 // $Id:
+//much of this module could be hived off into an inc file
 
 define ('TRANSACTION_STATE_PENDING', -1);
 
@@ -58,6 +59,16 @@ function mcapi_signatures_menu() {
   return $items;
 }
 
+function mcapi_signatures_menu_alter(&$items) {
+  //this menu item is generated from the ctools transaction form in mcapi_signatures_mcapiforms_default()
+  //it can ONLY be seen by signatories
+  $items['transaction/%transaction/sign']['access callback'] = 'transaction_sign_access';
+  $items['transaction/%transaction/sign']['access arguments'] = array(1);
+  $items['transaction/%transaction/sign']['type'] = MENU_LOCAL_ACTION;
+  $items['transaction/%transaction/sign']['page arguments'][] = 1;
+  $items['admin/structure/trigger/mcapi']['weight'] = 1;
+}
+
 function mcapi_signatures_hook_info() {
   return array(
     //a signature is added to a transaction
@@ -65,15 +76,6 @@ function mcapi_signatures_hook_info() {
     'transaction_sign' => array(),
     'transaction_signed_off' => array(),
   );
-}
-
-function mcapi_signatures_menu_alter(&$items) {
-  //this menu item is generated from the transaction form-in-code
-  //it can ONLY be seen by signatories
-  $items['transaction/%transaction/sign']['access callback'] = 'transaction_sign_access';
-  $items['transaction/%transaction/sign']['access arguments'] = array(1);
-  $items['transaction/%transaction/sign']['type'] = MENU_LOCAL_ACTION;
-  $items['admin/structure/trigger/mcapi']['weight'] = 1;
 }
 
 /*
@@ -355,11 +357,10 @@ function transaction_cancel_pending_access($transaction) {
 
 /*
  * implements hook_form_FORMID_alter
- * bumps the signature form up to stage 2, where the fields are rendered as text
+ * makes some adjustments to this modules mcapi_form, which starts on step 2
  */
 function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
-
-  if ($form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG] != 'add_my_signature') return;
+  if ($form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]['info']['name'] != 'add_my_signature') return;
   unset($form['experience']['title'], $form['experience']['template']);
   //replace the transaction_form_submit callback because we only want to change the state, not save the 'values and everything
   $key = array_search('transaction_form_submit', $form['#submit']);
@@ -370,8 +371,12 @@ function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
  * implements hook_form_FORM_ID_alter
  * changes the status in the transaction form according to the settings for the transaction_type
  */
-function mcapi_signatures_form_transaction_form_alter(&$form, $form_state) {
-  if (isset($form['#step']) && $form['#step'] > 1) return;//this only applies to the forms module
+function mcapi_signatures_form_transaction_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'mcapi_forms_form' && $form['#step'] > 1) {
+    //we don't change anything after step one of mcapi_forms_form
+    return;
+  }
+  //read the settings and set the $form['state'] hidden widget
   $type = isset($form['type']['#value']) ? $form['type']['#value'] : $form['type']['#default_value'];//yuk
   if (in_array($type, _get_signable_transaction_types())) {
     $config = variable_get('mcapi_signatures_'.$type, array());
@@ -384,12 +389,11 @@ function mcapi_signatures_form_transaction_form_alter(&$form, $form_state) {
   }
 }
 
-
 /*
  * Integration with mcapi_forms module
  *
  * Implements hook_form_FORM_ID_alter
- * modifies the saved form 'add_my_signature' to hide exceptional fields
+ * modifies the saved form 'add_my_signature' to hide fields controlled by this module
  */
 function mcapi_signatures_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   //check that this is actually a transaction form
@@ -409,10 +413,11 @@ function mcapi_signatures_form_ctools_export_ui_edit_item_form_alter(&$form, &$f
     $form['experience']['title']['#type'] = 'hidden';
     $form['experience']['template']['#type'] = 'hidden';
     $instances = field_info_instances('transaction', 'transaction');
-      mcapi_disable_recursive($form['payer']);
-      mcapi_disable_recursive($form['payee']);
-    foreach ($instances as $instance) {
-      mcapi_disable_recursive($form[$instance['field_name']]);
+
+    foreach (element_children($form) as $key) {
+      if (isset($form[$key]['#group']) && $form[$key]['#group'] == 'mcapi_form_fields') {
+        unset($form[$key]);
+      }
     }
     unset($form['step-1']);
   }
@@ -432,11 +437,12 @@ function mcapi_signatures_form_ctools_export_ui_edit_item_form_alter(&$form, &$f
 
 
 /*
- * form submit callback
+ * transaction form submit callback
  */
 function add_my_signature_submit($form, &$form_state) {
   $serial = $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]->serial;
   mcapi_sign(array($serial), array($GLOBALS['user']->uid));
+  $form_state['values']['serial'] = $serial; //this is needed for the redirect in mcapi_forms_form_postsubmit
 }
 
 
@@ -603,9 +609,7 @@ function mcapi_signatures_trigger_info() {
 
 /*
  * implements mcapi hook_transactions_state
- * gets the config for the transaction according to type.
- * For new transactions, defines the signatories.
- * Then sends mail as needed
+ * saves the signatures and sends any notifications needed
  */
 function mcapi_signatures_transactions_state($old_clusters, $new_state) {
   //check the module settings for the transaction type
@@ -722,10 +726,12 @@ function template_preprocess_pending_signatures(&$variables) {
       $title = $status == 'pending' ? t('Awaiting signature') : t('Signed');
     }
     $rows[$uid] = array(
-      $username, array(
+      $username,
+      array(//these are the attributes
         'class' => $status,
         'data' => $link,
-        'title' => $title
+        'title' => $title,
+        'width' => array(20)
       )
     );
   }

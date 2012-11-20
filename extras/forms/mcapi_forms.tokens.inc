@@ -54,22 +54,18 @@ function mcapi_forms_token_info() {
     ),
     'created' => array(
       'name' => t('Created'),
-      'description' => t("When the transaction was created"),
+      'description' => t('Stage 2 only: '). ' '. t("When the transaction was created")
     ),
     'creator' => array(
       'name' => t('Creator'),
-      'description' => t("The user who first recorded the transaction"),
-    ),
-    'modified' => array(
-      'name' => t('Modified'),
-      'description' => t("When the transaction was last modified"),
-    ),
+      'description' => ('Stage 2 only: '). ' '. t("The user who first recorded the transaction"),
+    )
   );
 
-  foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
+  foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
     $mcapiform[$fieldname] = array(
-      'name' => $field['label'],
-      'description' => isset($field['description']) ? $field['description'] : ''
+      'name' => $instance['label'],
+      'description' => isset($instance['description']) ? $instance['description'] : ''
     );
   }
   return array(

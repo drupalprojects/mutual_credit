@@ -10,7 +10,8 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
   function get_value_options() {
     module_load_include('inc', 'mcapi');
     $currencies = &drupal_static('currencies');
-    $this->value_options = _currency_picker_element_options(array_keys($currencies));
+    $field = currency_picker_element(array_keys($currencies));
+    $this->value_options = $field['#options'];
   }
 
   function value_form(&$form, &$form_state) {

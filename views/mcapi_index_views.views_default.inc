@@ -32,8 +32,8 @@ function mcapi_getview_user_transactions_summary($multicurrencies) {
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['group_by'] = TRUE;
-  $handler->display->display_options['access']['type'] = 'none';
-  $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['access']['perm'] = 'transact';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
@@ -171,8 +171,8 @@ function mcapi_getview_statement($multicurrencies) {
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'User transactions';
   $handler->display->display_options['use_more_always'] = FALSE;
-  $handler->display->display_options['access']['type'] = 'none';
-  $handler->display->display_options['cache']['type'] = 'none';
+  $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['access']['perm'] = 'transact';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
@@ -196,6 +196,7 @@ function mcapi_getview_statement($multicurrencies) {
   $handler->display->display_options['fields']['created']['id'] = 'created';
   $handler->display->display_options['fields']['created']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['created']['field'] = 'created';
+  $handler->display->display_options['fields']['created']['label'] = 'Created';
   $handler->display->display_options['fields']['created']['hide_alter_empty'] = FALSE;
   $handler->display->display_options['fields']['created']['date_format'] = 'short';
   /* Field: User: Name */
@@ -276,6 +277,7 @@ function mcapi_getview_statement($multicurrencies) {
     t('Currency'),
     t('Page'),
     t('Statement'),
+    t('Created'),
   );
   return $view;
 }
@@ -554,7 +556,7 @@ function mcapi_getview_user_rankings($multicurrencies) {
 function mcapi_getview_balance_history($multicurrencies) {
   $view = new view;
   $view->name = 'running_balance';
-  $view->description = t('Unixtimes and running balances');
+  $view->description = t('Running balances per user');
   $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = t('Running balance');
@@ -565,7 +567,8 @@ function mcapi_getview_balance_history($multicurrencies) {
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'Running balance';
-  $handler->display->display_options['access']['type'] = 'none';
+  $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['access']['perm'] = 'transact';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
@@ -666,7 +669,8 @@ function mcapi_getview_user_transactions_index($multicurrencies) {
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'User transactions';
-  $handler->display->display_options['access']['type'] = 'none';
+  $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['access']['perm'] = 'transact';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;

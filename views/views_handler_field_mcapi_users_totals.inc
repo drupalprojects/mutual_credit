@@ -27,7 +27,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
     $currencies = &drupal_static('currencies');
     module_load_include('inc', 'mcapi');
     $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode']);
-    
+
     $form['total'] = array(
       '#title' => t('Aggregate'),
       '#description' => t('How do you want to summarise the the transaction totals?'),
@@ -58,7 +58,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
       }
       else {
         $elements[$currcode] = array(
-          '#theme' => 'worth_field',
+          '#theme' => 'worth_item',
           '#quantity' => $quant,
           '#currcode' => $currcode
         );

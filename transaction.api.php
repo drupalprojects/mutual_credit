@@ -1,8 +1,149 @@
 <?php
 /**
  * @file
+ * Formal description of transaction handling function and Entity controller functions
+ *
+ * N.B. transaction' can have 3 different meanings
+ *  a database transaction (not relevant to this document)
+ *  Fieldable entity with one or more '$items' each a in different currency
+ *  A cluster of those entities sharing the same serial number. The first is the volitional transaction and the rest are dependents
+ *
+ *
+ * Typical procedure for form processing might be
+ * form validation
+ *   //create the transaction object and save the extranneous fields
+ *   //use drupal_alter to add any dependent transactions
+ *   $transactions = array($transaction);
+ *   drupal_alter('transactions', $transactions);
+ *   transactions_insert($transactions, FALSE)
+ *     hook_transaction_validate
+ *     EntityController->insert($transactions, FALSE)
+ * end form validation
+ * form submission
+ *   //use drupal_alter to add any dependent transactions
+ *   $transactions = array($transaction);
+ *   drupal_alter('transactions', $transactions);
+ *   transactions_insert($transactions, TRUE);
+ *     hook_transaction_validate
+ *     EntityController->insert($transactions, TRUE)
+ *     field_attach_insert('transaction', $transaction);
+ *       hook_transactions_state
+ * end form submission
+ *
+ */
+
+/*
+ * Community Accounting API FOR MODULE DEVELOPERS
+ * WRAPPER FUNCTIONS
+ * These 3 wrapper functions around the following transaction controller API
+ * are mostly concerned with managing transactions as clusters sharing the same serial number
+ * Module developers should use these functions wherever possible.
+ */
+
+
+/*
+ * wrapper around Community Accounting API function transactions_load
+ * load a cluster of transactions sharing a serial number
+ * The first transaction will be the 'volitional' transaction and the rest are loaded into
+ * $transaction->children where the theme layer expects to find them
+ *
+ */
+transaction_load($serial);
+
+
+/*
+ * Entity API callback and wrapper around Community Accounting API function transactions_insert
+ * take one volitional transaction and processes it for rules, actions etc
+ * attempts to write them all
+ * returns them as an array
+ */
+try {
+  transaction_insert_new($transaction, $really = TRUE);
+}
+catch(exception $e){}
+
+ /*
+  * the following can be used for development
+  */
+transactions_delete($serials);
+
+
+
+/*
+ * TRANSACTION ENTITY CONTROLLER INTERFACE
+ * This is the actual api for transaction entity controllers
+ * Currently the module supports only one entity controller per drupal instance
+ * But it would be really powerful to support one entity controller  per currency
+ */
+
+/*
+ * Insert a cluster of validated transactions, which will receive the same serial number
+ * N.B. Contrib modules would normally call wrapper function transaction_insert_new()
+ * which fires the hook_transactions inserted
+ * $transactions is a flat array
+ * All $transactions will be given the same serial numbers
+ */
+try {
+  transactions_insert(&$transactions);
+}
+catch(exception $e){}
+
+/*
+ * The default entity controller supports 3 ways to undo
+ * Utter delete
+ * Change state to erased
+ * Create counter-transaction and set state of both to TRANSACTION_STATE_REVERSED
+ */
+try {
+  transactions_undo($transaction);
+}
+catch(exception $e){}
+
+
+/*
+ * very important to use this one for any state change,
+ * note that there is a hook that goes with it,
+ * hook_transaction_state($clusters, $new_state)
+ */
+try {
+  transactions_state($serials, $newstate);
+}
+catch(exception $e){}
+
+
+//retrieve an arbitrary transaction
+//actually default entity controller only does integer serial numbers
+$conditions = array('serial' => array('AB123', 'AB124'));
+//or
+$xids = array(234, 567);
+$transactions = transactions_load($xids, $conditions, $clearcache);
+
+
+/*
+ *
+ * Retrieves transaction summary data for a user in a given currency
+ *
+ * This data can also be obtained through various views fields, especially in the mcapi_index_views module
+ * $conditions are same as in drupal database api, each an array like ($fieldname, $value, $operator),
+ * where the fieldname is from mcapi_transactions table and the operator is optional.
+ * If there are no conditions passed then only transactions in a positive STATE are counted.
+ *
+ * Returns an array with the following keys
+ * - balance
+ * - gross_in
+ * - gross_out
+ * - count
+ */
+transaction_totals($uid, $currcode, $options);
+
+
+
+
+
+ /*
  * Hooks provided by entity API module for this the transaction entity.
- * This file is a placeholder, since the transaction entity does things quite differently to what the entity API module expects
+ * THESE ARE PLACEHOLDERS, since the transaction entity does things quite differently
+ * to what the entity API module expects and it hasn't been coded yet
  * constructed from template http://drupal.org/node/999936
  */
 

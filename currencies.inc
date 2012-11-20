@@ -117,14 +117,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
       '#weight' => $j++,
     );
   }
-  $form['zero'] = array(
-    '#title' => t('Allow zero value transactions'),
-    '#description' => t('Some projects may want to record an acknowledgement without recording a transfer of value. Also if a transaction has multiple currencies, some of them may be zero for some transactions.'),
-    '#type' => 'checkbox',
-    '#default_value' => $currency->zero,
-    '#weight' => 15,
-  );
-    $form['uid'] = array(
+  $form['uid'] = array(
     '#title' => t('Declared by'),
     '#type' => 'user_chooser_permissions',
     '#args' => array('transact'),

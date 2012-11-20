@@ -31,35 +31,36 @@ $replacements = array(
   '@recorded' => $recorded,
   '!payer' => $payer,
   '!payee' => $payee,
-  '!worth' => $worth,
+  '!worth' => '<span class = "quantity">'. $worth .'</span>',
 );
+if ($view_mode == 'certificate') {
+  print render($pending_signatures); //floating the right, by default
+  $certificate_string = t(
+    'On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth',
+    $replacements
+  );
+  $certificate_string = str_replace('<br/>', '<br /><br />', $certificate_string);
+}
 ?>
-<div class = "<?php print $classes; ?>"><?php
-  if ($view_mode == 'certificate') {
-    print render($pending_signatures); //floating the right, by default
-    $date = t('On @date', array('@date' => $recorded));
-    $movement = t('!payer <strong>paid</strong> !payee', $replacements);
-    $sum = t('the sum of !worth', array('!worth' => '<div style="font-size:250%;">'. $worth .'</div>'));
-    ?>
-    <p><?php print $date; ?><br /><br />
-    <?php print $movement; ?><br /><br />
-    <?php print $sum; ?></p>
-    <?php print render($additional);
-  }
-  elseif ($view_mode == 'sentences') {
+<div class = "<?php print $classes; ?>">
+  <?php if ($view_mode == 'certificate') : ?>
+    <?php print $certificate_string; ?>
+    <?php print render($additional); ?>
+  <?php elseif ($view_mode == 'sentences') :
     if ($state > 0) {//transaction states > 0 are 'counted'
       print t("On @recorded, !payer gave !payee !worth", $replacements);
     }
     else {//this is most likely a 'pending' transaction which is state -1
       print t("On @recorded, !payer will give !payee !worth", $replacements);
     }
-  }
-  if ($children) { // all the remaining transactions are already rendered as sentences ?>
-  <div id="dependent-transactions" style ="border:medium solid grey; text-align:center;">
+  endif; ?>
+
+  <?php if (isset($dependents)) : // all the remaining transactions are already rendered as sentences ?>
+  <div id="dependent-transactions">
     <h3><?php print t('Dependent transactions'); ?></h3>
-    <?php print render ($children); ?>
+    <?php print render ($dependents); ?>
   </div>
-  <?php } ?>
+  <?php endif; ?>
 
 </div><!-- end transaction-->
 

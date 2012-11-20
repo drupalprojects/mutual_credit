@@ -35,14 +35,14 @@ The accounting is all done to 2 decimal places, so any fractions of a unit are c
 Rather than writing hundreds on the transaction form, it can be configured to accept just certain fractions, like quarters (of an hour)
 Note how the default settings are the strictest accounting standards possible, with no editing and no deleting of transactions
 
-Visit admin/accounting/transaction/fields
+Visit admin/accounting/fields
 Notice that transaction entity is fieldable. Fields added in this way will automatically be available to the form template and in views
 Its possible to add a description, or a date, or an image or categories to your transaction object
 Ensure the modules which declare those fields are installed and add and configure those fields here.
-Note the 'cardinality' field in the field_worth settings. This allows you to have more than one currency per transaction.
+Note the 'cardinality' field in the field_worth settings. This allows you to have one or more currencies per transaction.
 
 Visit admin/accounting/forms
-Design the forms for users to create and edit transactions
+Design the forms for users to create transactions
 Like views, they can be exported and bundled in code with a distribution.
 N.B I advise editing an existing one before creating a new one since it is possible to create invalid transaction forms.
 Create menu links to the forms and/or wrap them in blocks.
@@ -50,7 +50,7 @@ Note that some modules alter existing forms or create new ones.
 It should be possible to create forms in a few minutes for specific purposes.
 
 Visit admin/accounting/transact
-This is the troubleshooting transaction create/edit form, intended for administrative use only, it allows all fields to be edited.
+This is the troubleshooting transaction creation form, intended for administrative use only, it allows filtering on all transaction fields.
 
 Visit admin/accounting/transactions
 Using lots of views exposed filters allopws basic but thorough transaction management.
@@ -61,8 +61,7 @@ Note that these are general permissions, but there is a whole per-currency permi
 
 Limits
 Most projects require that accounts have 'overdraft' limits and, in mutual credit, positive balance limits.
-There is a module for that.
-Edit the currency and choose how you want the limits to be determined.
+Enable the limits module and edit the currency and choose how you want the limits to be determined.
 
 Views
 The extra views module creates a transaction index table which is good for producing transaction summaries.
@@ -106,11 +105,14 @@ Intended for webshops and skilled Drupal developers
 
 1. Internal API
 
-Standard transaction operations are conducted through an API provided in mcapi.module
+Standard transaction operations are conducted through an API provided at the top of mcapi.module
 This API is for communicating with the swoppable entity controller.
 All transaction state changes, including creation must be done with a call to transactions_state()
-The transaction_totals() function is mostly duplicated by the mcapi_index_views module
-Careful there are three undo modes.
+The transaction_totals() function is mostly duplicated by the mcapi_index_views module, but external entity controllers will have difficulty integrating with views I should think.
+The provided transaction entity controller has THREE undo modes:
+- change state to erased
+- remove transaction completely
+- write a counter-transaction and set both to state 'undone'
 There are a couple of wrapper functions round the API supporting transaction clusters
 A cluster is when many transactions share a serial number, say if, they are spawned from it.
 The module assumes the first transaction in a cluster is the main one, say for display purposes.

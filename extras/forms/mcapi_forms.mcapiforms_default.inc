@@ -28,13 +28,13 @@ function mcapiform_default_1stparty() {
     'perspective' => '1',
     'architecture' => array(
       'path' => 'transact/1stparty',
-      'access' => 'user_access:transact',
+      'access' => 'user_chooser_permissions:transact',
       'menu_link' => MENU_DEFAULT_LOCAL_TASK,
       'use_block' => 1,
     ),
     'secondperson' => array(
       'preset' => '',
-      'args' => 'user_chooser_permissions:transact',
+      'user_chooser_config' => 'user_chooser_permissions:transact',
       'strip' => 1,
     ),
     'direction' => array(
@@ -42,18 +42,14 @@ function mcapiform_default_1stparty() {
       'incoming' => 'Request',
       'outgoing' => 'Payment',
       'widget' => 'select',
-      'strip' => 0,
+      'strip' => 1,
     ),
     'worth' => array(
       'preset' => array(
-        'und' => array(
-          0 => array(
-            'currcode' => key($currencies),
-            'quantity' => '0',
-          ),
-        ),
-        'disable' => 0,
-        'required' => 1,
+        0 => array(
+          'currcode' => key($currencies),
+          'quantity' => '0',
+        )
       ),
       'strip' => 1,
     ),
@@ -87,31 +83,28 @@ function mcapiform_default_3rdparty() {
     'perspective' => '3',
     'architecture' => array(
       'path' => 'transact/3rdparty',
-      'access' => 'user_access:manage all transactions',
+      'access' => 'user_chooser_permissions:transact',
       'menu_link' => MENU_LOCAL_TASK,
       'use_block' => 1,
     ),
     'payer' => array(
       'preset' => '',
-      'args' => 'user_chooser_permissions:transact',
-      'multiple' => 0,
+      'user_chooser_config' => 'user_chooser_permissions:transact',
+      'strip' => 1,
     ),
     'payee' => array(
       'preset' => '',
-      'args' => 'user_chooser_permissions:transact',
-      'multiple' => 0,
+      'user_chooser_config' => 'user_chooser_permissions:transact',
+      'strip' => 1,
     ),
     'worth' => array(
       'preset' => array(
-        'und' => array(
-          0 => array(
-            'currcode' => key($currencies),
-            'quantity' => '0',
-            'main_quant' => '0',
-            'division' => '0'
-          ),
+        0 => array(
+          'currcode' => key($currencies),
+          'quantity' => '0',
         ),
       ),
+      'strip' => 1,
     ),
     'submission' => array(
       'button' => 'Submit',
