@@ -83,16 +83,16 @@ foreach ($histories as $currcode => $history){
   $mins[] = min($values);
   $chcos[] = next($colors);
   $chdls[] = $currency->human_name;
-  $min_label = theme('worth_item', array('quantity' => $min, 'currcode' => $currcode));
-  $mid_label = theme('worth_item', array('quantity' => ($min + $max)/2, 'currcode' => $currcode));
-  $max_label = theme('worth_item', array('quantity' => $max, 'currcode' => $currcode));
 }
 //$lines['zero'] = $account->created .','.REQUEST_TIME .'|0,0';
 //$line_styles['zero'] = 3;
 //  $curr_names[] = '';
 
-$max = max($maxes);
-$min = min($mins);
+  $max = max($maxes);
+  $min = min($mins);
+  $min_label = strip_tags(theme('worth_item', array('quantity' => $min, 'currcode' => $currcode)));
+  $mid_label = strip_tags(theme('worth_item', array('quantity' => ($min + $max)/2, 'currcode' => $currcode)));
+  $max_label = strip_tags(theme('worth_item', array('quantity' => $max, 'currcode' => $currcode)));
 
 //now put the line into the google charts api format
 $params = array(

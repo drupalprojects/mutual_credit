@@ -1250,10 +1250,6 @@ msgstr ""
 msgid "For use in block title and menu links."
 msgstr ""
 
-#: extras/forms/mcapi_forms.admin.inc:187;210
-msgid "Plain text"
-msgstr ""
-
 #: extras/forms/mcapi_forms.admin.inc:193
 msgid "Main form"
 msgstr ""
@@ -1298,8 +1294,7 @@ msgid "Save button"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:239
-msgid ""
-"The text to appear on the 'save' button, or the absolute url of an image"
+msgid "The text to appear on the 'save' button, or the absolute url of an image."
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:245
@@ -1307,7 +1302,7 @@ msgid "Destination"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:246
-msgid "Goes to the new transaction certificate by default"
+msgid "Goes to the new transaction certificate by default."
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:253
@@ -1315,7 +1310,7 @@ msgid "Message"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:254
-msgid "Contents of the message box"
+msgid "Contents of the message box."
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:281

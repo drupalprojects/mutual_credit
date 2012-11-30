@@ -52,8 +52,8 @@ function accountant_ui_menu() {
     'weight' => 4,
   );
   $items['admin/accounting/transact'] = array(
-    'title' => 'Record transaction (full)',
-    'description' => "This form allows for one-off transaction creation, with all the values exposed. For accountant's use only! N.B It is reccommended to install the submit_once module, for all transaction forms",
+    'title' => 'Log transaction',
+    'description' => "One-off transaction creation, with all the values exposed.",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_admin_form'),
     'access arguments' => array('manage all transactions'),

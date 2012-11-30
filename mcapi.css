@@ -1,0 +1,29 @@
+#mcapi-forms-form.step-1 div.form-type-checkboxes .form-type-checkbox label,
+#mcapi-forms-form.step-1 .form-type-radios .form-type-radio label,
+#edit-secondperson .vertical-tabs-panes div.form-type-radio,
+#mcapi-forms-form.step-1 div.form-type-checkbox,
+#mcapi-forms-form.step-1 div.form-type-radio,
+#mcapi-forms-form.step-1 div.form-radios,
+#mcapi-forms-form.step-1 div.form-checkboxes,
+#mcapi-forms-form.step-1 div.worths-widget,
+div.worth-widget div.form-item {
+  display:inline
+}
+#mcapi-forms-form.step-1 .form-type-checkboxes label,
+#mcapi-forms-form.step-1 .form-type-radios label{
+  display:none;
+}
+#dependent-transactions{
+  border:medium solid grey; 
+  text-align:center;
+}
+div.certificate span.quantity{
+  font-size:250%; 
+  line-height:1.1em;
+}
+.vertical-tabs .form-type-textfield input{
+  width:inherit;
+}
+div.worth-widget{
+  margin-bottom:5px;
+}

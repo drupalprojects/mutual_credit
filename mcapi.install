@@ -855,3 +855,18 @@ function mcapi_update_7011() {
   drupal_set_message('Resave all your transaction forms, paying attention to default transaction field values: '.l('admin/accounting/forms', 'admin/accounting/forms'));
   menu_rebuild();
 }
+/**
+ * reset weights
+ * delete variables from version 1
+ */
+function mcapi_update_7012() {
+  //looks like this might not have been set earlier on some cases
+  _mcapi_module_weights();
+  cache_clear_all(NULL, 'cache_bootstrap');
+
+  db_query("DELETE FROM {variable} WHERE name LIKE '%c_signatures_signoff%'");
+  db_delete('variable')->condition('name', array(
+  'cc_balancing_account_num', 'cc_default_currency', 'cc_description_min_words',
+  'cc_pending_notification_template', 'cc_select_user_orderby', 	'cc_select_user_show',
+	'cc_stats_periods', 'cc_trader_autocomplete', 'cc_trader_selector', 'cc_transaction_qualities'))->execute();
+}

@@ -141,15 +141,7 @@ function mcapi_menu_inc() {
  * (this file is included in mcapi_menu)
  */
 function mcapi_menu_alter(&$items) {
-  foreach (array_keys($items) as $key) {
-    //we don't need to see the page for arranging the bundle fields,
-    if (substr($key, 0, 41) == 'admin/accounting/edit/display') {
-      unset($items[$key]);
-    }
-  }
-  unset($items['admin/accounting/fields/worth/delete']);
-  //but we do want to manage the fields for two entity types on one page.
-  $items['admin/accounting/edit/fields']['title'] = 'Transaction fields';
+  $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
 }
 
 /*
@@ -174,7 +166,6 @@ function transaction_default_form($form, &$form_state) {
   $form['type']['#type'] = 'value';
   $form['creator']['#type'] = 'value';
   return $form;
-
 }
 
 /**
@@ -508,14 +499,14 @@ function transaction_access_payer($transaction) {
  * or a list of User IDs if passed nothing
  */
 function user_segments_transact($uid = 0) {
-  if ($uid && $account = user_load($uid)) {
-    return user_access('transact', $account);
+  if ($uid) {
+    return user_access('transact', user_load($uid));
   }
   return _matslats_role_get_users('transact', $uid);
 }
 function user_segments_manage_all_transactions($uid = 0) {
-  if ($uid && $account = user_load($uid)) {
-    return user_access('manage all transactions', $account);
+  if ($uid) {
+    return user_access('manage all transactions', user_load($uid));
   }
   return _matslats_role_get_users('manage all transactions');
 }
@@ -527,6 +518,7 @@ function user_segments_all($uid = 0) {
   return $uids;
 }
 //utility function for the above
+//if the user doesn't have permission
 function _matslats_role_get_users($permission) {
   $rids = user_roles(TRUE, $permission);
   if (empty($rids)) return array(1);
@@ -541,10 +533,11 @@ function _matslats_role_get_users($permission) {
 
 /*
  * access control wrapper for currency
- * if $account is specified, returns TRUE or FALSE
+ * if uid is specified, returns TRUE or FALSE
  * otherwise returns a list of users
  */
-function currency_access($op, $currcode, $uid) {
+function currency_access($op, $currcode, $uid = NULL) {
+  if (is_null($uid))$uid = $GLOBALS['user']->uid;
   $function = currency_load($currcode)->currency_access[$op];
   return $function($uid);
 }
@@ -893,16 +886,21 @@ function _mcapi_block_settings($delta) {
  * Calculate the balance changes that this transaction proposes
  * by convention, if the transaction state < 0 it is NOT COUNTED
  * this is only used in tokens, so far, and in mcapi_limits module
+ * incoming transaction can be a transaction object with children or an array
  */
-function _transactions_diff($transactions) {
+function _transactions_diff($transaction) {
   $diff = array();
-  foreach ($transactions as $transaction) {
-    foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-      $quant = $transaction->state < -1 ? 0 : $item['quantity'];//i is signature module is enabled, pending transactions count here
+  //because this can be called before or after the transaction,
+  //it might come in as a cluster, or as an object with dependents
+  //we need a cluster so we can iterate though
+  $cluster = is_array($transaction) ? $transaction :  array_merge(array($transaction) + (array)$transaction->dependents);
+  foreach ($cluster as $transfer) {
+    foreach ($transfer->worth[LANGUAGE_NONE] as $item) {
+      $quant = $transfer->state < -1 ? 0 : $item['quantity'];//i is signature module is enabled, pending transactions count here
       //we can't prepare the array in advance with zeros so += and -= throws notices
       //instead we just build up an array and add them up when we need them
-      $diff[$transaction->payer][$item['currcode']][] = -$quant;
-      $diff[$transaction->payee][$item['currcode']][] = $quant;
+      $diff[$transfer->payer][$item['currcode']][] = -$quant;
+      $diff[$transfer->payee][$item['currcode']][] = $quant;
     }
   }
   return $diff;

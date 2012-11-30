@@ -52,11 +52,11 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
  * i.e. "$difference>$limit" for transactions that would exceed the max
  * i.e. "$difference>$limit" for transactions that would exceed the min
  */
-function mcapi_limits_accounting_validate(array $transactions) {
+function mcapi_limits_accounting_validate(array $cluster) {
   $errors = array();
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each user with their limits
-  foreach (_transactions_diff($transactions) as $uid => $percurrency) {
+  foreach (_transactions_diff($cluster) as $uid => $percurrency) {
     foreach ($percurrency as $currcode => $diffs) {
       $balance = transaction_totals($uid, $currcode)->balance;
       $projected = $balance + array_sum($diffs);
@@ -286,8 +286,8 @@ function mcapi_limits_block_info() {
 function mcapi_limits_block_view($delta) {
   module_load_include('inc', 'mcapi');
   $settings = _mcapi_block_settings($delta);
+  if (empty($settings['account'])) return;
   $uid = $settings['account']->uid;
-  if (empty($uid)) return;
   require_once('mcapi_limits.inc');
   $function = 'show_'. $delta;
   $render_array = $function($uid, $settings['currcodes']);

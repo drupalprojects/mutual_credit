@@ -263,10 +263,6 @@ msgstr "Haut"
 msgid "Volume"
 msgstr "Volume"
 
-#: extras/forms/mcapi_forms.admin.inc:211,232
-msgid "Plain text"
-msgstr "Texte brut"
-
 #: extras/forms/mcapi_forms.admin.inc:171
 msgid "Widget"
 msgstr "Widget"
@@ -649,7 +645,7 @@ msgstr "mcapi"
 
 #: extras/forms/mcapi_forms.admin.inc:245
 msgid "Confirmation page"
-msgstr "Page de confirmation"
+msgstr "Page de confirmation."
 
 #: extras/accountant_ui/accountant_ui.views_default.inc:286; views/mcapi_index_views.views_default.inc:145,535,643,753
 msgid "Asc"
@@ -723,7 +719,7 @@ msgstr "Sortant"
 
 #: extras/forms/mcapi_forms.admin.inc:31
 msgid "1st Party"
-msgstr "Saisir un échange"
+msgstr ""
 
 #: currencies.inc:67
 msgid "Use currency"
@@ -1040,9 +1036,7 @@ msgid "Settings for @field"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:261
-msgid ""
-"The text to appear on the 'save' button, or the absolute url of an "
-"image"
+msgid "The text to appear on the 'save' button, or the absolute url of an image."
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:211
@@ -2262,7 +2256,7 @@ msgid "Deteriming how the form and the confirmation work for the user"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:231
-msgid "Confirmation page title"
+msgid "Confirmation page title."
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:238
@@ -2651,11 +2645,11 @@ msgid "Navigate transactions and create new ones"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:268
-msgid "Goes to the new transaction certificate by default"
+msgid "Goes to the new transaction certificate by default."
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:276
-msgid "Contents of the message box"
+msgid "Contents of the message box."
 msgstr ""
 
 #: extras/intertrading/intertrading.inc:173
@@ -3055,7 +3049,7 @@ msgid "The value of the exchange"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:218
-msgid "Write HTML here to layout the form, using the tokens below"
+msgid "Write HTML here to layout the form, using the tokens below."
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:246

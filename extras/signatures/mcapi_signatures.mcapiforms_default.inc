@@ -31,6 +31,7 @@ function mcapi_signatures_mcapiforms_default() {
       'template' => '',
       'sure_title' => t('Sign transaction'),
       'sure_format' => 'sentences',
+      'sure_template' => '',
     ),
     'buttons' => array(
       'submit' => t('Save'),

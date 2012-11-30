@@ -178,7 +178,7 @@ function mcapi_signatures_config($form, $form_state) {
   }
   $form['token_tree'] = array(
     '#theme' => 'token_tree',
-    '#token_types' => array('transaction', 'user', 'site'),
+    '#token_types' => array('transactions', 'user', 'site'),
     '#global_types' => FALSE,
     '#weight' => $w++
   );
@@ -357,9 +357,15 @@ function transaction_cancel_pending_access($transaction) {
 
 /*
  * implements hook_form_FORMID_alter
- * makes some adjustments to this modules mcapi_form, which starts on step 2
+ * this has to run AFTER the mcapi_forms implementation
  */
 function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
+  //changing state of all ONLY transaction forms made with mcapi_forms module
+  if (isset($form['#step']) && $form['#step'] == 1) {
+    _set_form_state_to_pending($form, $form_state);
+  }
+
+  //makes some adjustments to this modules mcapi_form, which starts on step 2
   if ($form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG]['info']['name'] != 'add_my_signature') return;
   unset($form['experience']['title'], $form['experience']['template']);
   //replace the transaction_form_submit callback because we only want to change the state, not save the 'values and everything
@@ -367,16 +373,21 @@ function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
   $form['#submit'][$key] = 'add_my_signature_submit';
   unset($form['buttons']['delete']);
 }
+
 /*
  * implements hook_form_FORM_ID_alter
- * changes the status in the transaction form according to the settings for the transaction_type
+ * changing state of all transaction forms EXCEPT those made with mcapi_forms module
  */
 function mcapi_signatures_form_transaction_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'mcapi_forms_form' && $form['#step'] > 1) {
-    //we don't change anything after step one of mcapi_forms_form
-    return;
-  }
-  //read the settings and set the $form['state'] hidden widget
+  if ($form_id == 'mcapi_forms_form') return;
+  _set_form_state_to_pending($form, $form_state);
+}
+
+
+//check whether this transaction type needs signatures and change the state accordingly
+//changes the status in the transaction form according to the settings for the transaction_type
+function _set_form_state_to_pending(&$form, $form_state) {
+    //read the settings and set the $form['state'] hidden widget
   $type = isset($form['type']['#value']) ? $form['type']['#value'] : $form['type']['#default_value'];//yuk
   if (in_array($type, _get_signable_transaction_types())) {
     $config = variable_get('mcapi_signatures_'.$type, array());
@@ -412,6 +423,7 @@ function mcapi_signatures_form_ctools_export_ui_edit_item_form_alter(&$form, &$f
     $form['perspective']['#value'] = 3;
     $form['experience']['title']['#type'] = 'hidden';
     $form['experience']['template']['#type'] = 'hidden';
+    $form['experience']['title']['#required'] = FALSE;
     $instances = field_info_instances('transaction', 'transaction');
 
     foreach (element_children($form) as $key) {
@@ -577,6 +589,15 @@ function mcapi_signatures_block_info_alter(&$blocks) {
   }
 }
 
+function mcapi_signatures_block_view_alter(&$data, $block) {
+  if ($block->delta == 'balances' && $block->module = 'mcapi' && isset($data['#settings']['account'])) {
+    $data['content']= array(
+      $data['content'],
+      array('#markup' => views_embed_view('signature_blocks', $display_id = 'block', $data['#settings']['account']->uid))
+    );
+  }
+}
+
 function mcapi_signatures_cron() {
   //call me paranoid, but I'd like to just check data integrity
   $serials = db_query("SELECT t.serial FROM {mcapi_transactions} t LEFT JOIN {mcapi_signatures} s ON t.serial = s.serial WHERE s.pending = 1 AND t.state = :state", array(':state' => TRANSACTION_STATE_FINISHED))->fetchCol();
@@ -610,10 +631,13 @@ function mcapi_signatures_trigger_info() {
 /*
  * implements mcapi hook_transactions_state
  * saves the signatures and sends any notifications needed
+ * The incoming $transaction clusters have already been saved and reloade,
+ * all have the same state and serial number
+ * so we process one a time children which aren't needed here
  */
-function mcapi_signatures_transactions_state($old_clusters, $new_state) {
+function mcapi_signatures_transactions_state($transactions, $new_state) {
   //check the module settings for the transaction type
-  foreach ($old_clusters as $transaction) {
+  foreach ($transactions as $transaction) {
     $config = variable_get('mcapi_signatures_'.$transaction->type, array());
     $params = array('transaction' => $transaction);
     $uid = &$GLOBALS['user']->uid;
@@ -630,8 +654,7 @@ function mcapi_signatures_transactions_state($old_clusters, $new_state) {
       $params['conf'] = variable_get('mcapi_sign_notify_template', array());
     }
     //moving from pending to finished
-    elseif($new_state == TRANSACTION_STATE_FINISHED && current($old_clusters)->state == TRANSACTION_STATE_PENDING) {
-      $config = variable_get('mcapi_signatures_'.$transaction->type, array());
+    elseif($new_state == TRANSACTION_STATE_FINISHED && $transaction->state == TRANSACTION_STATE_PENDING) {
       $key = 'complete';
       $params['conf'] = variable_get('mcapi_signed_off_notify_template', array());
     }

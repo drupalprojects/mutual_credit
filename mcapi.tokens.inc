@@ -2,10 +2,11 @@
 
 /*
  * implements hook_tokens for a transaction cluster
+ * process one transaction at a time, containing dependents
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  if ($type != 'transactions') return;
-  $transactions = &$data['transactions'];
+  if ($type != 'transaction') return;
+  $transaction = &$data['transaction'];
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
   $language_code = NULL;
@@ -14,23 +15,22 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
     $url_options['language'] = $options['language'];
     $language_code = $options['language']->language;
   }
-  $primary_transaction = reset($transactions);
   foreach ($tokens as $name => $original) {
     switch ($name) {
       // Simple key values on the node.
       case 'serial':
-        $replacements[$original] = $primary_transaction->serial;
+        $replacements[$original] = $transaction->serial;
         break;
       case 'payer':
-        $account = user_load($primary_transaction->payer);
+        $account = user_load($transaction->payer);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'payee':
-        $account = user_load($primary_transaction->payee);
+        $account = user_load($transaction->payee);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'creator':
-        $account = user_load($primary_transaction->creator);
+        $account = user_load($transaction->creator);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'summary':
@@ -40,21 +40,21 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = drupal_render(transaction_view($transactions, 'certificate'));
         break;
       case 'uri':
-        $replacements[$original] = url("transaction/$primary_transaction->serial", $url_options);
+        $replacements[$original] = url("transaction/$transaction->serial", $url_options);
         break;
       case 'created':
-        $replacements[$original] = format_date($primary_transaction->created, 'medium', '', NULL, $language_code);
+        $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
         break;
       case 'worth':
         //there may be different incoming formats depending on whether we are rending a form or an entity
-        $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $primary_transaction->worth['und'], 'sentences');
+        $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $transaction->worth['und'], 'sentences');
         $replacements[$original] = drupal_render($element);
         break;
       case 'payer_diff':
       case 'payee_diff':
         $worth = $items = array();
-        $diff = _transactions_diff($transactions);
-        $uid = $name == 'payer_diff' ? $primary_transaction->payer : $primary_transaction->payer;
+        $diff = _transactions_diff($transaction);
+        $uid = $name == 'payer_diff' ? $transaction->payer : $transaction->payer;
         foreach ($diff[$uid] as $currcode => $quantities) {
           $items[] = array('currcode' => $currcode, 'quantity' => array_sum($quantities));
         }
@@ -63,7 +63,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       default: //hopefully a field API field
         //we don't want all the gumph around it, so just render the children
-        $render_transaction = field_view_field('transaction', $primary_transaction, $name, 'default');
+        $render_transaction = field_view_field('transaction', $transaction, $name, 'default');
         $replacements[$original] = drupal_render_children($render_transaction);
         break;
     }
@@ -120,14 +120,14 @@ function mcapi_token_info() {
 
   return array(
     'types' => array(
-      'transactions' => array(
+      'transaction' => array(
         'name' => t('Transaction'),
         'description' => t('Tokens related to a transaction cluster.'),
-        'needs-data' => 'transactions',
+        'needs-data' => 'transaction',
       ),
     ),
     'tokens' => array(
-      'transactions' => $transaction_tokens,
+      'transaction' => $transaction_tokens,
     ),
   );
 }
