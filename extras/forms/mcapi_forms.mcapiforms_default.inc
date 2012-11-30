@@ -11,6 +11,10 @@ function mcapi_forms_mcapiforms_default() {
   foreach ($forms as $form_id) {
     $function = 'mcapiform_default_'.$form_id;
     $mcapiforms[$form_id] = $function();
+    if (function_exists('i18n_string_object_update')) {
+      $strings = array('name' => $form_id) + $mcapiforms[$form_id]->data['experience'];
+      //i18n_string_object_update('payform_experience', $strings);
+    }
   }
   return $mcapiforms;
 }
@@ -54,17 +58,18 @@ function mcapiform_default_1stparty() {
       'strip' => 1,
     ),
     'submission' => array(
-      'button' => t('Submit'),
+      'button' => 'Submit',
       'redirect' => '',
       'feedback' => ''
     ),
     'experience' => array(
-      'title' => t('Make a payment'),
-      'template' => t('Partner: [mcapiform:secondperson]<br />
-Direction: [mcapiform:direction]<br />
-[mcapiform:worth]<br />'),
-      'sure_title' => t('Are you sure?'),
-      'sure_format' => t('certificate'),
+      'title' => 'Make a payment',
+      'template' => 'Partner: [mcapiform:secondperson]
+Direction: [mcapiform:direction]
+[mcapiform:worth]',
+      'sure_title' => 'Are you sure?',
+      'sure_format' => 'certificate',
+      'sure_template' => '',
     )
   );
   return $mcapiform;
@@ -112,12 +117,13 @@ function mcapiform_default_3rdparty() {
       'feedback' => ''
     ),
     'experience' => array(
-      'title' => t('Record a transaction'),
-      'template' => t('Payer: [mcapiform:payer]<br />
-Payee: [mcapiform:payee]<br />
-[mcapiform:worth]<br />'),
-      'sure_title' => t('Are you sure?'),
-      'sure_format' => t('certificate'),
+      'title' => 'Record a transaction',
+      'template' => 'Payer: [mcapiform:payer]
+Payee: [mcapiform:payee]
+[mcapiform:worth]',
+      'sure_title' => 'Are you sure?',
+      'sure_format' => 'certificate',
+      'sure_template' => '',
     ),
   );
   return $mcapiform;

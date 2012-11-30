@@ -26,6 +26,7 @@ function mcapi_forms_help($path, $args) {
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   $mcapi_form = &$form_state['item']->data;
+
   $form['#prefix'] = '<div id = "form-wrapper">';
   $form['#suffix'] = '</div>';
   //I think ctools is supposed to be handling this
@@ -112,7 +113,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
   $form['mcapi_form_fields'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 6,
-    '#prefix' => '<style>.vertical-tabs-panes div.form-type-radio{display:inline;}.vertical-tabs .form-type-textfield input{width:inherit;}</style>',
   );
   //the participants of the transaction are either payer/payee or 1stperson/secondperson. This is called the 'perspective' of the form.
   $perspective = isset($form_state['values']['perspective']) ? $form_state['values']['perspective'] : $form['perspective']['#default_value'] ;
@@ -174,7 +174,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     if (in_array($name, array('search_index', 'search_result')))continue;
     $view_modes[$name] = $mode['label'];
   }
-
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
@@ -184,20 +183,22 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#weight' => 15,
     'title' => array(
       '#title' => t('Title'),
-      '#description' => t('For use in block title and menu links.') .' '. t('Plain text') . t('Leave blank to jump to the confirmation stage.'),
+      '#description' => t('For use in block title and menu links.') .' '. t('Leave blank to jump to the confirmation stage.'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['experience']['title']) ? $mcapi_form['experience']['title'] : '',
+      '#default_value' => @$mcapi_form['experience']['title'],
       '#weight' => 1,
+      '#required' => TRUE
     ),
     'template' => array(
       '#title' => t('Main form'),
       '#description' => implode('<br />', array(
-          t('Write HTML here to layout the form, using the tokens below.')
+          t('Use the tokens below with HTML & css to design your payment form. Linebreaks will be replaced automatically.')
         )),
       '#type' => 'textarea',
       '#rows' => 6,
-      '#default_value' => isset($mcapi_form['experience']['template']) ? $mcapi_form['experience']['template'] : '',
+      '#default_value' => @$mcapi_form['experience']['template'],
       '#weight' => 2,
+      '#required' => TRUE
     ),
     'token_tree' => array(
       '#theme' => 'token_tree',
@@ -207,9 +208,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'sure_title' => array(
       '#title' => t('Confirmation page title'),
-      '#description' => t('Plain text'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['experience']['sure_title']) ? $mcapi_form['experience']['sure_title'] : '',
+      '#default_value' => @$mcapi_form['experience']['sure_title'],
       '#weight' => 4,
     ),
     'sure_format' => array(
@@ -235,29 +235,41 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => empty($mcapi_form),
     'button' => array(
-      '#title' => t('Save button'),
-      '#description' => t("The text to appear on the 'save' button, or the absolute url of an image"),
+      '#title' => t('Save button label'),
+      '#description' => t("The text to appear on the 'save' button, or the absolute url of an image."),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['submission']['button']) ? $mcapi_form['submission']['button'] : t('Submit'),
+      '#default_value' => isset($mcapi_form['submission']['button']) ? $mcapi_form['submission']['button'] : 'Submit',
       '#required' => TRUE,
     ),
     'redirect' => array(
       '#title' => t('Destination'),
-      '#description' => t('Goes to the new transaction certificate by default'),
+      '#description' => t('Goes to the new transaction certificate by default.'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['submission']['redirect']) ? $mcapi_form['submission']['redirect'] : '',
       '#element_validate' => array('mcapi_path_validate'),
       '#weight' => 1,
     ),
     'feedback' => array(
-      '#title' => t('Message'),
-      '#description' => t('Contents of the message box'),
+      '#title' => t('Confirmation message'),
+      '#description' => t('Contents of the message box.'),
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['submission']['feedback']) ? $mcapi_form['submission']['feedback'] : '',
       '#weight' => 1,
     ),
     '#weight' => 20,
   );
+  if (module_exists('i18n_string')) {//put some helpful links in
+    $path = 'admin/accounting/forms/list/'. $mcapi_form['info']['name'] .'/translate/';
+    $note = t('Put the default language here, then !link.',
+      array('!link' => l(t('translate'), $path))
+    ) .' ';
+    $form['experience']['title']['#description'] = $note . $form['experience']['title']['#description'];
+    $form['experience']['template']['#description'] = $note . $form['experience']['template']['#description'];
+    $form['experience']['sure_title']['#description'] = $note . @$form['experience']['sure_title']['#description'];
+    $form['experience']['sure_template']['#description'] = $note . $form['experience']['sure_template']['#description'];
+    $form['submission']['button']['#description'] = $note . $form['submission']['button']['#description'];
+    $form['submission']['feedback']['#description'] = $note . $form['submission']['feedback']['#description'];
+  }
 }
 
 /*
@@ -283,7 +295,7 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   );
   //set the defaults from the saved object.
   //Need to do it differently according to whether this is a fieldAPI field or one of the basic transaction properties
-  if (isset($empty_element['#entity'])) {//this is for fieldAPI checkboxes and radio buttons
+  if (isset($empty_element['#entity'])) {//this is for fieldAPI worth checkboxes and radio buttons
     if (isset($preset)) {
       if ($fieldname == 'worth') {
         foreach ($preset as $delta => $item) {
@@ -326,7 +338,6 @@ function mcapi_forms_ajax_settings($form, &$form_state) {
  */
 function mcapi_forms_template_validate($form, &$form_state) {
   $values = &$form_state['values'];
-  if (empty($values['experience']['template'])) return;
   //check that the critical transaction fields are either present in the template OR preset
   $required_fields = array('worth');
   $required_fields += $values['perspective'] == 1 ? array('secondperson', 'direction') : array('payer', 'payee');
@@ -351,33 +362,48 @@ function mcapi_forms_exists($machine_name, $element, &$form_state) {
  * the $form_state[item] is the object to be saved, derived from $form_state[values]
  */
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
-  form_state_values_clean($form_state);
-  //we need to start with an existing ctools object which contains essential default properties
-  if (empty($form_state['item'])) {
-    $form_state['item'] = ctools_export_crud_new('mcapi_forms');
-  }
-
-  $form_state['item']->name = $form_state['values']['info']['name'];//because this isn't editable at the moment
-  unset($form_state['values']['name']);
-  unset($form_state['values']['mcapi_form_fields']);
+  $values = &$form_state['values'];
   //strip the leading slash just to be sure
-  if (substr($form_state['values']['architecture']['path'], 0, 1) == '/') {
-    $form_state['values']['architecture']['path'] = substr($form_state['values']['architecture']['path'], 1);
+  if (substr($values['architecture']['path'], 0, 1) == '/') {
+    $values['architecture']['path'] = substr($form_state['values']['architecture']['path'], 1);
   }
 
-  $form_state['item']->data = $form_state['values'];
-  $mcapiform = &$form_state['item']->data;
   //need to check that all required fields exist in the form.
-  if (!empty($mcapiform['experience']['template'])) {
-    foreach ($mcapiform as $name => $prop) {
+  if (!empty($values['experience']['template'])) {
+    foreach ($values as $name => $prop) {
       if (!empty($prop['required']) && empty($prop['preset'])) {
-        if (strpos($mcapiform['experience']['template'], $name) == FALSE) {
-          form_error($form['experience']['template'], t("Required field '@name' must be used in the form template", array('@name' => $name)));
+        if (strpos($values['experience']['template'], $name) == FALSE) {
+          form_error(
+            $form['experience']['template'],
+            t("Required field '@name' must be used in the form template", array('@name' => $name))
+          );
         }
       }
     }
   }
-  cache_clear_all('mcapi_forms', 'cache');
+  //could check all the other fields too, but thi sis a protected area and we'd be here till xmas
+  //this is only here because the i18n_string module nees translatable fields to have a format
+  $values['experience']['template'] = check_markup($values['experience']['template'], MCAPIFORM_STRING_FORMAT);
+  $values['experience']['sure_template'] = check_markup($values['experience']['sure_template'], MCAPIFORM_STRING_FORMAT);
+}
+
+/*
+ * ctools export_ui plugin callback:
+ * The submit handler is only responsible for moving data from
+ * $form_state['values'] to $form_state['item'].
+ */
+function mcapi_edit_mcapi_form_submit($form, &$form_state) {
+  form_state_values_clean($form_state);
+  unset($form_state['values']['mcapi_form_fields']);
+
+  //save the strings for the i18n
+  if (function_exists('i18n_string_object_update')) {
+    //we don't need to pass the whole object because it isn't saved
+    //mcapi_forms_i18n_object_info is set to expect this
+    $strings = _mcapi_i18n_object($form_state['values']);
+    i18n_string_object_update('payform_experience', $strings);
+  }
+  $form_state['item']->data = $form_state['values'];
 }
 
 /*
@@ -430,9 +456,6 @@ function _mcapi_user_chooser_access_options() {
   }
   return $user_chooser_options;
 }
-
-
-
 
 
 function _mcapi_direction_config_fields($defaults) {

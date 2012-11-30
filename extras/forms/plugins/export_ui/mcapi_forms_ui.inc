@@ -16,7 +16,7 @@ $plugin = array(
     'menu item' => 'forms',
     // Title of the top level menu. Note this should not be translated,
     // as the menu system will translate it.
-    'menu title' => 'Transaction form builder',
+    'menu title' => 'Form designer',
     // Description of the top level menu, which is usually needed for
     // menu items in an administration list. Will be translated
     // by the menu system.
@@ -43,7 +43,7 @@ $plugin = array(
   'form' => array(
     'settings' => 'mcapi_edit_mcapi_form',
     'validate' => 'mcapi_edit_mcapi_form_validate',
-    //'submit'   => 'mcapi_edit_mcapi_form_submit',
+    'submit'   => 'mcapi_edit_mcapi_form_submit',
   ),
   'strings' => array(
     'confirmation' => array(

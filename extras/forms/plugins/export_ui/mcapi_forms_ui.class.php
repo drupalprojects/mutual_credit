@@ -67,6 +67,13 @@ class mcapi_forms_ui extends ctools_export_ui {
     if ($name == 'add_my_signature') {
       unset($operations['disable']);
     }
+
+    if (module_exists('i18n_string')) {
+      $operations['translate'] = array(
+        'title' => t('Translate'),
+        'href' => "admin/accounting/forms/list/$name/translate"
+      );
+    }
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
     $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
 

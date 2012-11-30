@@ -1,6 +1,7 @@
 <?php // ;id:
 
 define('MCAPIFORM_BUILD_INFO_ARG', 1);
+define('MCAPIFORM_STRING_FORMAT', 'mcapiform_string_format');
 /*
  * Permitted users can design their own transaction forms, hopefully all valid!
  */
@@ -11,22 +12,20 @@ define('MCAPIFORM_BUILD_INFO_ARG', 1);
 function mcapi_forms_menu() {
   //all the admin menu items are generated via the ctools export-ui plugin
   $items = array();
+  cache_clear_all('mcapi_forms', 'cache');
   $mcapi_forms = mcapi_forms_load();
   //one menu callback for each form.
   foreach($mcapi_forms as $ctools_id => $form) {
     if (!empty($form->disabled)) continue;
     $settings = &$form->data;
     $menu_link = &$settings['architecture']['menu_link'];
-
     list($access_callback, $access_arg1) = explode(':', $settings['architecture']['access']);
     $items[$settings['architecture']['path']] = array(
-      'title' => 'Transaction form',
+      'title' => 'Design form',
       'title callback' => 'mcapi_form_title',
-      'title arguments' => array($settings['experience']['sure_title']),
+      'title arguments' => array($settings['experience']['title']),
       'page callback' => 'mcapi_get_form',
-      'page arguments' => array(
-        $ctools_id
-      ),
+      'page arguments' => array($ctools_id),
       'access callback' => $access_callback,
       'access arguments' => array($access_arg1),
       'menu_name' => is_numeric($menu_link) ? 'navigation' :$menu_link,
@@ -72,7 +71,7 @@ function mcapi_forms_menu_alter(&$items) {
   $items['admin/accounting/forms']['weight'] = -1;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/forms/list/%';
-  $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_INLINE;
+  $items['admin/accounting/forms/list/%ctools_export_ui/edit']['context'] = MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE;
   unset($items['admin/accounting/display']);
   unset($items['admin/accounting/display/default']);
 }
@@ -97,6 +96,11 @@ function mcapi_forms_forms($form_id, $args) {
  */
 function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   if ($form_state['plugin']['schema'] != 'mcapi_forms') return;
+
+  if (!filter_access(filter_format_load(MCAPIFORM_STRING_FORMAT))) {
+    drupal_set_message(t('You may need permission to use the text format to edit this form'), 'warning');
+  }
+
   $form['#validate'][] = 'mcapi_forms_template_validate';
   $form_state['redirect'] = 'admin/accounting/forms';//this is when the menu_rebuild happens
 
@@ -118,39 +122,8 @@ function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_s
  */
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-  $form['#settings'] =  $form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG];
-  $settings = &$form['#settings'];
-  //set the page title if this form is not being displayed in a block
-  //ascertains whether the active path corresponds to this mcapi_form
-  $parts = explode('/', current_path());
-  //reverse calculate the path
-  $map = explode('/', $settings['architecture']['path']);
-  foreach($map as $key => $part) {
-    if (strpos($part, '%') === 0) $parts[$key] = $part;
-  }
-  $titles = &$settings['experience'];
-  if ($parts == $map) {
-    drupal_set_title(
-      empty($titles['title']) ?
-        mcapi_locale($titles['sure_title'], 'sure_title') :
-        mcapi_locale($titles['title'], 'title')
-    );
-  }
-  if (!empty($form_state['storage']) && $form_state['step'] == 1) {
-    $form_state['values'] = $form_state['storage'];
-  }
 
-  if (empty($form_state['step'])) {
-    if ($settings['experience']['title']) {
-      $form_state['storage'] = array();
-      $form_state['step'] = 1;
-    }
-    else {//jump to step 2 if there's no title for step 1
-      $form_state['step'] = 2;
-    }
-  }
-
-  _mcapi_forms_form_mcapi_forms_form_alter($form, $form_state, $form_id);
+  mcapi_form_build($form, $form_state, $form_id);
 }
 
 /*
@@ -175,15 +148,19 @@ function mcapi_forms_block_info() {
  */
 function mcapi_forms_block_view($delta) {
   //load the form and check access first
-  $mcapi_form = mcapi_forms_load($delta)->data;
-  $access_callback = strtok($mcapi_form['architecture']['access'], ':');
+  $settings = mcapi_forms_load($delta)->data['architecture'];
+  $access_callback = strtok($settings['access'], ':');
   if (!$access_callback(strtok(':'))) return;
   //it's generally a bad idea to show the form in block on its own page
-  if (current_path() == $mcapi_form['architecture']['path']) return;
-  return array(//if these seem inverted its because drupal_get_form loads the inc file
-    'subject' => $mcapi_form['experience']['title'],
+  if (current_path() == $settings['path']) return;
+  $title = drupal_get_title();
+  //because loading up the form sets the page title
+  $block = array(//if these seem inverted its because drupal_get_form loads the inc file
+    'subject' => drupal_get_title(),
     'content' => mcapi_get_form($delta),
   );
+  drupal_set_title($title);
+  return $block;
 }
 
 /*
@@ -212,12 +189,6 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
   return drupal_get_form('mcapi_forms_form', $transaction, $settings);
 }
 
-
-
-function _new_pseudo_transaction($settings) {
-
-  return $transaction;
-}
 
 /*
  * Implements hook_mcapi_info_types
@@ -352,8 +323,11 @@ function mcapi_path_validate(&$element, &$form_state) {}
 
 function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   //because default values are best set in the forms
-  $form['instance']['default_value_widget']['#access'] = FALSE;
-  //because this module removes the #theme_wrapper from form elements, so the title is invisible anyway
-  //$form['instance']['label']['#type'] = 'hidden';
-  //$form['instance']['description']['#type'] = 'hidden';
+//  $form['instance']['default_value_widget']['#disabled'] = TRUE;
+  $form['instance']['default_value_widget'] = array(
+    '#markup' => '<strong>'. t(
+      'The default values are set in the form designer: !link',
+      array('!link' => l('admin/accounting/forms', 'admin/accounting/forms'))
+    ).'</strong>'
+  );
 }

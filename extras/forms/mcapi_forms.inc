@@ -12,16 +12,54 @@ module_load_include('inc', 'mcapi');
  * would have been nice to be able to build the transaction from the settings and pass it to transaction_form
  * then not worry about setting defaults here, which is really about shaping the form.
  */
-function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
+function mcapi_form_build(&$form, &$form_state, $form_id) {
+  $form['#settings'] =  $form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG];
   $settings = &$form['#settings'];
   $transaction = $form['#transaction'];
+
+  //change the 5 translatable strings
+  if (module_exists('i18n_string')) {
+    //prepare the i18n pseudo_object, because i18n expects a flat object and the mcapi_form just isn't, sorry
+    $object = _mcapi_i18n_object($settings);
+    //translate the object
+    $translations = i18n_string_object_translate('payform_experience', $object);
+    //and copy the strings back into the settings
+    $settings['experience']['title'] = $translations['title'];
+    $settings['experience']['template'] = $translations['template'];
+    $settings['experience']['sure_title'] = $translations['sure_title'];
+    $settings['experience']['sure_template'] = $translations['sure_template'];
+    $settings['submission']['button'] = $translations['button'];
+    $settings['submission']['feedback'] = $translations['feedback'];
+  }
+
+  if (!empty($form_state['storage']) && $form_state['step'] == 1) {
+    $form_state['values'] = $form_state['storage'];
+  }
+  if (empty($form_state['step'])) {
+    if ($settings['experience']['title']) {
+      $form_state['storage'] = array();
+      $form_state['step'] = 1;
+    }
+    else {//jump to step 2 if there's no title for step 1
+      $form_state['step'] = 2;
+    }
+  }
+  //set the page title
+  if ($form_state['step'] == 1) {
+    drupal_set_title(check_plain($settings['experience']['title']));
+  }
+  else {
+    drupal_set_title(check_plain($settings['experience']['sure_title']));
+  }
+
+
   //we need to store the step value in $form so that the theme system knows what to do
   $form['#step'] = $form_state['step'];
   $form['#theme'] = 'mcapi_form';
   //this might not be the way to build a 2 step form.
   //All the validation callbacks need to check the step because all the important fields are in step one only.
   if ($form['#step'] == 1) {
-    $form['#template'] = mcapi_locale($settings['experience']['template'], 'template');
+    $form['#template'] = check_markup($settings['experience']['template']);
     $form['creator']['#type'] = 'hidden';
     $form['state']['#type'] = 'hidden';
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
@@ -74,7 +112,6 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     }
   }
   elseif ($form['#step'] == 2) {
-    drupal_set_title(mcapi_locale($settings['experience']['sure_title'], 'sure_title'));
     //we unset most of the fields so they don't display or change from what's in storage
     foreach(element_children($form) as $fieldname) {
       if (in_array($fieldname, array('buttons', 'form_id', 'form_build_id', 'form_token'))) continue;
@@ -84,8 +121,8 @@ function _mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id
     if (!empty($form_state['values'])) {//coming from step 1
       $form['#preview'] = transaction_view(
         $form_state['transactions'],
-        mcapi_locale($settings['experience']['sure_format'], 'sure_format'),
-        mcapi_locale(@$settings['experience']['sure_template'], 'sure_template')
+        $settings['experience']['sure_format'],
+        check_markup($settings['experience']['sure_template'], MCAPIFORM_STRING_FORMAT)
       );
       mcapi_hide_tabs();
       $form['buttons']['back'] = array(
@@ -175,7 +212,7 @@ function theme_mcapi_form($variables) {
       }
     }
     return token_replace(
-      $form['#template'],
+      check_markup($form['#template'], MCAPIFORM_STRING_FORMAT),
       $form,
       array('sanitize' => FALSE)
     ) . '<br />'.$buttons;
@@ -230,10 +267,7 @@ function mcapi_forms_validate($form, &$form_state) {
       $form_state['step']++;
     }
   }
-
 }
-
-
 
 /*
  * First submit callback for default transaction form
@@ -275,6 +309,19 @@ function mcapi_unset_recursive(array &$array, $prop) {
 }
 
 
+function _mcapi_i18n_object($settings) {
+  return array(
+    'name' => $settings['info']['name'],
+    'templates_format' => MCAPIFORM_STRING_FORMAT,
+    'title' => @$settings['experience']['title'],
+    'template' => $settings['experience']['template'],
+    'sure_title' => @$settings['experience']['sure_title'],
+    'sure_template' => @$settings['experience']['sure_template'],
+    'button' => @$settings['submission']['button'],
+    'feedback' => @$settings['submission']['feedback']
+  );
+}
+
 /*
  * pre php5.3
  */
@@ -309,8 +356,3 @@ if (!function_exists('array_replace_recursive')) {
   }
 }
 
-function mcapi_locale(&$string, $key) {
-  global $language;
-  if ($language->language == 'en' || !function_exists('locale')) return $string;
-  return locale($string, '', $language->language);
-}
