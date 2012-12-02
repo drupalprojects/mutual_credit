@@ -800,8 +800,18 @@ function mcapi_update_7009() {
   variable_del('mc_signatures_signoff_body');
   variable_del('mc_signatures_notification_subject');
   variable_del('mc_signatures_notification_body');
+  variable_del('mc_trader_autocomplete');
+	variable_del('mc_trader_selector');
+	variable_del('mc_webform_destination');
+	variable_del('mc_webform_special_theme');
+	variable_del('mc_webform_sure');
   variable_del('mc_notification_update_body');
   variable_del('mc_notification_update_subject');
+  variable_del('mc_notification_footer');
+	variable_del('mc_notification_option');
+	variable_del('mc_notification_throttle_default');
+	variable_del('mc_stats_exclude');
+
   if (module_exists('block')) {
     db_query("DELETE FROM {variable} WHERE name LIKE '%exchange'");
     db_query("DELETE FROM {block_role} WHERE module LIKE ('mc_%')");
@@ -869,4 +879,21 @@ function mcapi_update_7012() {
   'cc_balancing_account_num', 'cc_default_currency', 'cc_description_min_words',
   'cc_pending_notification_template', 'cc_select_user_orderby', 	'cc_select_user_show',
 	'cc_stats_periods', 'cc_trader_autocomplete', 'cc_trader_selector', 'cc_transaction_qualities'))->execute();
+}
+/**
+ * clear up a relic which was putting the 'Transactions fieldAPI' link at the top of the management menu
+ * + other variables from v2s
+ */
+function ____mcapi_update_7013() {
+  variable_del('mc_trader_autocomplete');
+	variable_del('mc_trader_selector');
+	variable_del('mc_webform_destination');
+	variable_del('mc_webform_special_theme');
+	variable_del('mc_webform_sure');
+  variable_del('mc_notification_footer');
+	variable_del('mc_notification_option');
+	variable_del('mc_notification_throttle_default');
+	variable_del('mc_stats_exclude');
+  db_delete("menu_links")->condition('plid', 0)->condition('link_path', 'admin/accounting/fields')->execute();
+  menu_rebuild();
 }

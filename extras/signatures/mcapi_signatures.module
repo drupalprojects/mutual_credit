@@ -141,7 +141,6 @@ function mcapi_signatures_config($form, $form_state) {
   $types = _get_signable_transaction_types();
   $w = 0;
   $form = array('#tree' => TRUE);
-  //I don't like storing these as separate variables. however it seems to be good practice elsewhere in Drupal
   foreach ($types as $type) {
     $var_name = 'mcapi_signatures_'.$type;
     $settings = @$form_state['values'][$var_name] ? $form_state['values'][$var_name] : variable_get($var_name, array());
@@ -176,12 +175,6 @@ function mcapi_signatures_config($form, $form_state) {
       '#weight' => $w++
     );
   }
-  $form['token_tree'] = array(
-    '#theme' => 'token_tree',
-    '#token_types' => array('transactions', 'user', 'site'),
-    '#global_types' => FALSE,
-    '#weight' => $w++
-  );
   $mail_def = variable_get('mcapi_sign_notify_template', array());
   $form['mcapi_sign_notify_template'] = array(
     '#title' => t('Signature notification'),
@@ -226,6 +219,12 @@ function mcapi_signatures_config($form, $form_state) {
       '#required' => TRUE,
       '#weight' => 1
     ),
+    '#weight' => $w++
+  );
+  $form['token_tree'] = array(
+    '#theme' => 'token_tree',
+    '#token_types' => array('transaction', 'user', 'site'),
+    '#global_types' => FALSE,
     '#weight' => $w++
   );
   return system_settings_form($form);

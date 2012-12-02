@@ -866,7 +866,7 @@ function intertrading_form_transaction_form_alter(&$form, &$form_state, $form_id
  */
 function intertrading_occlude_account(&$form, &$form_state) {
   foreach (array('payer', 'payee') as $participant) {
-    if (isset($form_state['values'][$participant]) && $form_state['values'][$participant] == variable_get('intertrading_uid', 0)) {
+    if (isset($form_state['values'][$participant]) && $form_state['values'][$participant] && $form_state['values'][$participant] == variable_get('intertrading_uid', 0)) {
       form_set_error($participant, t('Intertrading is not possible with this form.'));
     }
   }

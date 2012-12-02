@@ -95,7 +95,7 @@ function entity_property_field_item_worth_info() {
 
 //I think this is an entity module hook
 function mcapi_options_list($field) {
-  debug($field);
+  //debug($field);
 }
 
 /*

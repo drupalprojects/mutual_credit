@@ -2,6 +2,11 @@
 
 class views_handler_field_mcapi_sign extends views_handler_field {
 
+  function construct() {
+    parent::construct();
+    $this->additional_fields['serial'] = 'serial';
+  }
+
   function option_definition() {
     $options = parent::option_definition();
     $options['text'] = array('default' => t('Sign'), 'translatable' => TRUE);
@@ -28,7 +33,8 @@ class views_handler_field_mcapi_sign extends views_handler_field {
   }
 
   function render($values) {
-    $serial = $values->{$this->aliases['serial']};
+    $serial = &$values->{$this->aliases['serial']};
+    if (empty($serial)) {debug('no serial number for xid '.$values->xid);return;}
     $transaction = transaction_load($serial);
     if (transaction_sign_access($transaction)) {
       return l($this->options['text'], 'transaction/'. $serial . '/sign');
@@ -37,5 +43,5 @@ class views_handler_field_mcapi_sign extends views_handler_field {
       return l(t('Sign off'), 'transaction/'. $serial . '/signoff');
     }
   }
-  
+
 }

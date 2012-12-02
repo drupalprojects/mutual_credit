@@ -39,9 +39,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
       case 'certificate':
         $replacements[$original] = drupal_render(transaction_view($transactions, 'certificate'));
         break;
-      case 'uri':
-        $replacements[$original] = url("transaction/$transaction->serial", $url_options);
-        break;
       case 'created':
         $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
         break;
@@ -130,4 +127,12 @@ function mcapi_token_info() {
       'transaction' => $transaction_tokens,
     ),
   );
+}
+/*
+ * implements hook_token_info_alter
+ * remove the 'original' set of tokens, which is added to all entities,
+ * but is not necessary, because transactions are not edited
+ */
+function mcapi_token_info_alter(&$items) {
+  unset($items['tokens']['transaction']['original']);
 }

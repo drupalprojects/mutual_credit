@@ -75,6 +75,10 @@ function mcapi_menu_inc() {
     'file' => 'mcapi.inc',
     'weight' => 2
   );
+  $items['admin/accounting/config'] = array(
+    'title' => 'Configuration',
+    'type' => MENU_DEFAULT_LOCAL_TASK
+  );
   $items['transact'] = array(
     'title' => 'Record transaction',
     'description' => 'Log a transaction in the database',
@@ -548,15 +552,14 @@ function currency_access($op, $currcode, $uid = NULL) {
  * mail the transaction participants, and cc
  */
 function mcapi_transaction_mail_action($old_cluster, $params, $new_state) {
+  //pending transaction notifications are handled by the signatures module
   if ($new_state != TRANSACTION_STATE_FINISHED) return;
-  $uids = array($old_cluster->payer,$old_cluster->payee);
-  $params['transaction'] = $old_cluster;
-  _mcapi_transaction_mail_action($uids, $params);
-}
-
-function _mcapi_transaction_mail_action($uids, $params) {
-  //check the filter-by-transaction type
+  //the actions settings define which transaction types this will work for
   if (empty ($params['transaction_types'][$params['transaction']->type])) return;
+  $uids = array($old_cluster->payer,$old_cluster->payee);
+
+  $params['transaction'] = $old_cluster;//isn't this the case anyway?
+
   foreach ($uids as $uid) {
     if ($GLOBALS['user']->uid != $uid) {
       $params['user'] = user_load($uid);
@@ -577,7 +580,7 @@ function mcapi_transaction_mail_action_form($context = array()) {
       t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
       t('The team at [site:name]')
   );
-  $form['mail'] = mcapi_mail_config_fieldset($context, array('transactions', 'user'), TRUE, 5);
+  $form['mail'] = mcapi_mail_config_fieldset($context, array('transaction', 'user'), TRUE, 5);
   $def_types = isset($context['transaction_types']) ? $context['transaction_types'] : array();
   $form['transaction_types'] = _transaction_type_selector($def_types, TRUE, array('mass', 'child'));
   $form['transaction_types']['#description'] = t('Only send for these transaction types.');
@@ -605,7 +608,7 @@ function _transaction_type_selector($default, $multiple = TRUE, $exclude = NULL)
  * $key is either a variable name prefix or an array containing the defaults subject and body and optionallly cc
  *
  */
-function mcapi_mail_config_fieldset($key, $tokens = array('transactions'), $required = TRUE, $weight = 0) {
+function mcapi_mail_config_fieldset($key, $tokens = array('transaction'), $required = TRUE, $weight = 0) {
   if (is_array($key)) {
     extract($key);
     $key = '';
@@ -679,7 +682,7 @@ function mcapi_mail($key, &$message, $params) {
 }
 
 /*
- * action callback for hook_transactions_alter
+ * action callback for hook_transaction_cluster_alter
  * Alters the original transaction and/or returns a child
  */
 function mcapi_supplementary_transaction_action($transactions, $settings) {
@@ -978,8 +981,7 @@ function worth_element_validate(&$element, &$form_state, $form) {
   $quant = $element['#value']['quantity'];
 
   if (!is_numeric($quant)) {
-    if ($element['#title'])form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
-    else debug($element, 'no #title in element');
+    form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
   }
   if ($quant < 0) {
     form_error($element, t('Negative values not allowed'));

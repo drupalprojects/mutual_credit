@@ -5,9 +5,13 @@
  *
  * N.B. transaction' can have 3 different meanings
  *  a database transaction (not relevant to this document)
- *  Fieldable entity with one or more '$items' each a in different currency
- *  A cluster of those entities sharing the same serial number. The first is the volitional transaction and the rest are dependents
- *
+ *  Fieldable entity with one or more '$items' each a in different currency. This is what views works with
+ *  A transaction cluster is an array of the previous 'transactions',
+ *  usually before they are written to the db, where they will have the same serial number and state
+ *    The first transaction in a cluster 'volitional' and the rest, 'dependent',
+ *   which means they were created automatically, from the volitional
+ *   the dependent transactions share a serial number and state, but probably have a different 'type'
+ *  When a transaction is loaded from the db, the dependents are put into (array)$transaction->dependents.
  *
  * Typical procedure for form processing might be
  * form validation
