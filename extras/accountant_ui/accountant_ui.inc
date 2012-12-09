@@ -99,7 +99,7 @@ function mcapi_mass_pay_validate($form, &$form_state) {
 function mcapi_mass_pay_submit($form, &$form_state) {
     //store the mail so we can bring it up as a default next time
   variable_set('mcapi_accounting_masspay_mail', array(
-    'subject' => $$form_state['storage']['mcapi_accounting_masspay_subject'],
+    'subject' => $form_state['storage']['mcapi_accounting_masspay_subject'],
     'body' => $form_state['storage']['mcapi_accounting_masspay_body'],
   ));
   $params = variable_get('mcapi_accounting_masspay_mail');
