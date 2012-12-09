@@ -58,8 +58,8 @@ function mcapi_forms_menu_alter(&$items) {
   foreach (mcapi_forms_load(NULL, TRUE) as $form) {
     //remove the default tab under 'transact/'
     if (substr($form->data['architecture']['path'], 0 , 9) == 'transact/') {
+      //replace the default tab at 'transact/default' item form with whichever of the forms has default tab
       unset($items['transact/default']);
-      //replace the 'transact' item form with whichever of the forms has default tab
       if ($form->data['architecture']['menu_link'] == MENU_DEFAULT_LOCAL_TASK) {
         $items['transact'] = $items[$form->data['architecture']['path']];
         $items['transact']['type'] = MENU_NORMAL_ITEM;

@@ -44,6 +44,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['perspective']['#description'] = 'Technical limitations prohibit this being flipped more than once. Reload the whole page to change it back';
   }
 
+  $menus = module_exists('menu') ? menu_get_menus() : menu_list_system_menus();
   $form['architecture'] = array(
     '#title' => t('Architecture'),
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
@@ -57,7 +58,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#type' => 'textfield',
       '#default_value' => isset($mcapi_form['architecture']['path']) ? $mcapi_form['architecture']['path'] : '',
       '#required' => TRUE,
-      '#weight' => 1
+      '#weight' => 1,
+      '#element_validate' => array('mcapi_element_validate_path_duplicate')
     ),
     'menu_link' =>array(
       '#title' => t('Menu link location'),
@@ -65,7 +67,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         t("For more info, see 'type' info at !link", array('!link' => l('drupal.org', 'http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
       '#type' => 'select',
       '#default_value' => isset($mcapi_form['architecture']['menu_link']) ? $mcapi_form['architecture']['menu_link'] : 'MENU_CALLBACK',
-      '#options' => drupal_map_assoc(array_keys(menu_get_menus())) + array(
+      '#options' => drupal_map_assoc(array_keys($menus)) + array(
         MENU_CALLBACK => t('No menu item'),
         MENU_LOCAL_TASK => 'MENU_LOCAL_TASK',
         MENU_DEFAULT_LOCAL_TASK => 'MENU_DEFAULT_LOCAL_TASK',
@@ -154,6 +156,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         if ($perspective == 3) {
           $form[$fieldname] = _mcapi_form_config_fieldset($mcapi_form[$fieldname], $transaction_fields[$fieldname], $fieldname);
           $form[$fieldname]['user_chooser_config'] = _mcapi_user_chooser_config_field(@$mcapi_form[$fieldname]);
+          $form[$fieldname]['preset']['#description'] = t('This field does not respond to changes in the above field.');
         }
         break;
 
@@ -307,6 +310,8 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   }
   elseif (element_children($empty_element)) {//this is a normal fieldAPI field - not checkboxes or radios
     foreach (element_children($empty_element) as $delta) {
+      debug(element_children($empty_element[$delta]), $delta);
+      debug($preset, 'preset[$delta][$col] is not always valid');
       foreach (element_children($empty_element[$delta]) as $col) {
         if (strlen($preset[$delta][$col])) {
           $element['preset'][$delta][$col]['#default_value'] = $preset[$delta][$col];
@@ -363,10 +368,6 @@ function mcapi_forms_exists($machine_name, $element, &$form_state) {
  */
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   $values = &$form_state['values'];
-  //strip the leading slash just to be sure
-  if (substr($values['architecture']['path'], 0, 1) == '/') {
-    $values['architecture']['path'] = substr($form_state['values']['architecture']['path'], 1);
-  }
 
   //need to check that all required fields exist in the form.
   if (!empty($values['experience']['template'])) {
@@ -490,4 +491,19 @@ function _mcapi_direction_config_fields($defaults) {
     )
   );
   return $element;
+}
+
+function mcapi_element_validate_path_duplicate(&$element, &$form_state) {
+  //strip the leading slash just to be sure
+  if (substr($form_state['values']['architecture']['path'], 0, 1) == '/') {
+    $element['#value'] = substr($form_state['values']['architecture']['path'], 1);
+    form_set_value($element, $element['#value'], $form_state);
+  }
+  if ($element['#value'] != $element['#default_value']) {debug('checking new path');
+    if (db_query("SELECT TRUE FROM {menu_router} WHERE path = :path", array(':path' => $element['#value']))->fetchField()) {
+      form_error($element, t('Path is already in use'));
+    }
+  }
+
+
 }

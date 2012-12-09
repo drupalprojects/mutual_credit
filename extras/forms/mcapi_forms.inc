@@ -59,7 +59,8 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   //this might not be the way to build a 2 step form.
   //All the validation callbacks need to check the step because all the important fields are in step one only.
   if ($form['#step'] == 1) {
-    $form['#template'] = check_markup($settings['experience']['template']);
+    $form['#template'] = $settings['experience']['template'];
+
     $form['creator']['#type'] = 'hidden';
     $form['state']['#type'] = 'hidden';
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
@@ -167,13 +168,17 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
   $form['#validate'][] = 'mcapi_forms_validate';
   $form['#attributes']['class'][] = 'step-'.$form['#step'];
-
-  //this may help with the validation and submission
-  //however it doesn't work because we need to rebuild the menu after editing the form
-  //contextual links send the user back to this page,
-  //but we are doing the rebuild as the form editing form returns to the admin/accounting/forms page
-  //see list_table_header() in mcapi_forms_ui.class.php
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($settings['info']['name']));
+}
+/*
+ * implements hook_contextual_links_view_alter
+ * prevents the edit form form returning directly the context
+ * because it has to rebuild the menu first on admin/accounting/forms
+ */
+function mcapi_forms_contextual_links_view_alter(&$element, $items) {
+  if (!empty($element['#links']['mcapi-forms-edit']['query']['destination'])) {
+    unset($element['#links']['mcapi-forms-edit']['query']['destination']);
+  }
 }
 
 /*
