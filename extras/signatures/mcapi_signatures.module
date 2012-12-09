@@ -785,7 +785,7 @@ function mcapi_signatures_transaction_view_alter($renderable, $type) {
     }
   }
 }
-//untility function
+//utility function
 //gets all the transaction types and excludes a few that we know aren't suitable for configuring
 function _get_signable_transaction_types() {
   $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));

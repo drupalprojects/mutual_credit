@@ -34,19 +34,22 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'summary':
-        $replacements[$original] = drupal_render(transaction_view($transactions, 'sentences'));
+        $replacements[$original] = drupal_render(transaction_view($transaction, 'sentences'));
         break;
       case 'certificate':
-        $replacements[$original] = drupal_render(transaction_view($transactions, 'certificate'));
+        $replacements[$original] = drupal_render(transaction_view(array($transaction), 'certificate'));
         break;
       case 'created':
         $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
         break;
+      /*
       case 'worth':
         //there may be different incoming formats depending on whether we are rending a form or an entity
         $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $transaction->worth['und'], 'sentences');
         $replacements[$original] = drupal_render($element);
         break;
+       * 
+       */
       case 'payer_diff':
       case 'payee_diff':
         $worth = $items = array();
@@ -59,6 +62,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = drupal_render($element);
         break;
       default: //hopefully a field API field
+        break;
         //we don't want all the gumph around it, so just render the children
         $render_transaction = field_view_field('transaction', $transaction, $name, 'default');
         $replacements[$original] = drupal_render_children($render_transaction);
@@ -107,14 +111,14 @@ function mcapi_token_info() {
       'description' => t("The user who first recorded the transaction"),
     )
   );
-
+/*
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
     $transaction_tokens[$fieldname] = array(
       'name' => $field['label'],
       'description' => isset($field['description']) ? $field['description'] : ''
     );
   }
-
+*/
   return array(
     'types' => array(
       'transaction' => array(
@@ -135,4 +139,5 @@ function mcapi_token_info() {
  */
 function mcapi_token_info_alter(&$items) {
   unset($items['tokens']['transaction']['original']);
+
 }

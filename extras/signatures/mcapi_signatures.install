@@ -79,3 +79,12 @@ function mcapi_signatures_update_7001() {
   db_query("UPDATE {block} SET delta = 'sig_blocks-anybodys_sig_needed' WHERE delta = 'signature_blocks-block_2'");
   views_flush_caches();
 }
+
+/**
+ * update email tokens from transaction:uri to transaction:uri
+ */
+function mcapi_signatures_update_7002() {
+  foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
+    variable_set($var, str_replace('transaction:uri', 'transaction:url', variable_get($var)));
+  }
+}
