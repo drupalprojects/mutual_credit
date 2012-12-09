@@ -44,46 +44,38 @@ function views_plugin_access_user_arg_check() {
   return $GLOBALS['user']->uid == arg(1) || user_access('manage all transactions');
 }
 
-function mcapi_index_views_theme() {
-  return array(
-    'balance_history' => array(
-      'template' => 'balance_history',
-      'variables' => array(
-        'account' => NULL,
-        'histories' => array(),
-      )
-    )
-  );
-}
-
-
-function show_balance_history($uid, $currcodes = array(), $since = NULL) {
+/*
+ * callback to give times and balances
+ * $mode can be either
+ *   diagonal, square, or the number of points required after sampling
+ */
+function get_balance_history($account, $currcodes = array(), $mode = 'diagonal', $since = NULL) {
   db_query("SET @csum := 0");
-  $account = user_load($uid);
   if (empty($currcodes)) {
     $currcodes = array_keys(currencies_load($account));
   }
   foreach ($currcodes as $currcode) {
     //make a starting point, before the first transaction
-    //zero means the moment the account was created
+    //then retrive up the WHOLE transaction history
+    //the first entry is zero meaning the account created time, zero meaning starting balance
     $histories[$currcode] = array(0 => 0) +
     db_query("SELECT created - :born, (@csum := @csum + diff) as balance
       FROM {mcapi_index}
-      WHERE currcode = :currcode AND uid1 = $uid
+      WHERE currcode = :currcode AND uid1 = :uid
       ORDER BY created",
-      array(':currcode' => $currcode, ':born' => $account->created)
+      array(
+        ':currcode' => $currcode,
+        ':born' => $account->created,
+        ':uid' => $account->uid
+      )
     )->fetchAllKeyed(0);
-    
     //make an end point now with the balance the same as the last point
     $histories[$currcode][REQUEST_TIME - $account->created] = end($histories[$currcode]);
     //now we need to curtail the history using $since
-    //couldn't be bothered now
+    //that means removing every value in the array whose key is less than $since
+    //how to do that without iterating through what might be a large array?
   }
-
-  return array(
-    '#theme' => 'balance_history',
-    '#account' => user_load($uid),
-    '#histories' => $histories
-  );
-
+  return $histories;
 }
+
+
