@@ -1,4 +1,4 @@
-<?php
+d<?php
 include ('mcapi_forms.inc');
 
 /**
@@ -310,8 +310,8 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   }
   elseif (element_children($empty_element)) {//this is a normal fieldAPI field - not checkboxes or radios
     foreach (element_children($empty_element) as $delta) {
-      debug(element_children($empty_element[$delta]), $delta);
-      debug($preset, 'preset[$delta][$col] is not always valid');
+//      debug(element_children($empty_element[$delta]), $delta);
+//      debug($preset, 'preset[$delta][$col] is not always valid');
       foreach (element_children($empty_element[$delta]) as $col) {
         if (strlen($preset[$delta][$col])) {
           $element['preset'][$delta][$col]['#default_value'] = $preset[$delta][$col];
@@ -499,7 +499,7 @@ function mcapi_element_validate_path_duplicate(&$element, &$form_state) {
     $element['#value'] = substr($form_state['values']['architecture']['path'], 1);
     form_set_value($element, $element['#value'], $form_state);
   }
-  if ($element['#value'] != $element['#default_value']) {debug('checking new path');
+  if ($element['#value'] != $element['#default_value']) {
     if (db_query("SELECT TRUE FROM {menu_router} WHERE path = :path", array(':path' => $element['#value']))->fetchField()) {
       form_error($element, t('Path is already in use'));
     }

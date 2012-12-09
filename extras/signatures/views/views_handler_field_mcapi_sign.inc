@@ -34,7 +34,7 @@ class views_handler_field_mcapi_sign extends views_handler_field {
 
   function render($values) {
     $serial = &$values->{$this->aliases['serial']};
-    if (empty($serial)) {debug('no serial number for xid '.$values->xid);return;}
+//    if (empty($serial)) {debug('no serial number for xid '.$values->xid);return;}
     $transaction = transaction_load($serial);
     if (transaction_sign_access($transaction)) {
       return l($this->options['text'], 'transaction/'. $serial . '/sign');

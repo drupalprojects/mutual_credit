@@ -137,7 +137,6 @@ function intertrading_report_fields() {
 
 function intertrading_error() {
   $args = func_get_args();
-  //$call = debug_backtrace();
   //$call = array_shift($call);
 //file_put_contents('intertrading_test.msg', implode("\n", $call)."\n\n", FILE_APPEND);
   //$loc = "Called from function <b>".$call['function']."</b> on line <b>". $call['line'] ."</b> in file <b>".$call['file'].'</b>';
