@@ -185,7 +185,6 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
       $transaction->direction = $settings['direction']['preset'];
     }
   }
-
   return drupal_get_form('mcapi_forms_form', $transaction, $settings);
 }
 

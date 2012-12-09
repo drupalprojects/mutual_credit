@@ -28,7 +28,7 @@ function mcapi_signatures_menu() {
     'description' => 'Require signatures before transactions enter pending state',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_signatures_config'),
-    'access arguments' => array('configure all transactions'),
+    'access arguments' => array('design transaction forms'),
   );
   $items['transaction/%transaction/signoff'] = array(
     'title' => 'Sign off',
@@ -645,7 +645,7 @@ function mcapi_signatures_transactions_state($transactions, $new_state) {
         $transaction->pending_signatures[$transaction->payer] = $uid == $transaction->payer ? 0 : 1;
         $transaction->pending_signatures[$transaction->payee] = $uid == $transaction->payee ? 0 : 1;
       }
-      foreach($config['countersignatories'] as $counter_uid) {
+      foreach((array)$config['countersignatories'] as $counter_uid) {
         $transaction->pending_signatures[$counter_uid] = $uid == $counter_uid ? 0 : 1;
       }
       mcapi_signatures_save($transaction);

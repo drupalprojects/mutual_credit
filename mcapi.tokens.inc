@@ -3,6 +3,7 @@
 /*
  * implements hook_tokens for a transaction cluster
  * process one transaction at a time, containing dependents
+ * field API fields are handled elsewhere
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'transaction') return;
@@ -42,14 +43,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
       case 'created':
         $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
         break;
-      /*
-      case 'worth':
-        //there may be different incoming formats depending on whether we are rending a form or an entity
-        $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $transaction->worth['und'], 'sentences');
-        $replacements[$original] = drupal_render($element);
-        break;
-       * 
-       */
       case 'payer_diff':
       case 'payee_diff':
         $worth = $items = array();
@@ -111,14 +104,6 @@ function mcapi_token_info() {
       'description' => t("The user who first recorded the transaction"),
     )
   );
-/*
-  foreach (field_info_instances('transaction', 'transaction') as $fieldname => $field) {
-    $transaction_tokens[$fieldname] = array(
-      'name' => $field['label'],
-      'description' => isset($field['description']) ? $field['description'] : ''
-    );
-  }
-*/
   return array(
     'types' => array(
       'transaction' => array(

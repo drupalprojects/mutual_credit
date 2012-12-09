@@ -46,12 +46,11 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   }
   //set the page title
   if ($form_state['step'] == 1) {
-    drupal_set_title(check_plain($settings['experience']['title']));
+    drupal_set_title(filter_xss($settings['experience']['title']), PASS_THROUGH);
   }
   else {
-    drupal_set_title(check_plain($settings['experience']['sure_title']));
+    drupal_set_title(filter_xss($settings['experience']['sure_title']), PASS_THROUGH);
   }
-
 
   //we need to store the step value in $form so that the theme system knows what to do
   $form['#step'] = $form_state['step'];
@@ -60,7 +59,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   //All the validation callbacks need to check the step because all the important fields are in step one only.
   if ($form['#step'] == 1) {
     $form['#template'] = $settings['experience']['template'];
-
     $form['creator']['#type'] = 'hidden';
     $form['state']['#type'] = 'hidden';
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;

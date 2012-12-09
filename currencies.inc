@@ -1,6 +1,6 @@
 <?php
 
-function _mcapi_currency_form(&$form, &$form_state, $currency){
+function _mcapi_currency_form(&$form, &$form_state, $currency) {
   $form['#tree'] = TRUE;
   $form['info']['currcode']['#maxlength'] = 8;
   $form['human_name'] = array(
@@ -119,9 +119,10 @@ function _mcapi_currency_form(&$form, &$form_state, $currency){
   }
   $form['uid'] = array(
     '#title' => t('Declared by'),
+    '#description' => t("Users with permission to 'transact'"),
     '#type' => 'user_chooser_permissions',
     '#args' => array('transact'),
-    '#default_value' => $currency->uid ? user_load($currency->uid)->name : $GLOBALS['user']->name,
+    '#default_value' => $currency->uid ? $currency->uid : $GLOBALS['user']->name,
     '#allow_me' => TRUE,
     '#required' => TRUE,
     '#weight' => 4,

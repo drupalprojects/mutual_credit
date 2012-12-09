@@ -31,10 +31,11 @@ $replacements = array(
   '@recorded' => $recorded,
   '!payer' => $payer,
   '!payee' => $payee,
-  '!worth' => '<span class = "quantity">'. $worth .'</span>',
+  '!worth' => $worth,
 );
 if ($view_mode == 'certificate') {
   print render($pending_signatures); //floating the right, by default
+  $replacements['!worth'] = '<span class = "quantity">'. $replacements['!worth'] .'</div>';
   $certificate_string = t(
     'On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth',
     $replacements

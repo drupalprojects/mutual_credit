@@ -176,7 +176,7 @@ function transaction_insert_new($transaction, $really = TRUE) {
   $transactions = array($transaction);
   //this is where the transaction is likely to acquire dependents,
   //and serial numbers set by contrib modules
-  drupal_alter('transactions', $transactions);
+  drupal_alter('transaction_cluster', $transactions);
   return transactions_insert($transactions, $really);
 }
 /*
@@ -615,7 +615,7 @@ function transaction_form($form, &$form_state) {
 //  debug($form_state['build_info']['args']);
   $form['#transaction'] = isset($form_state['values']) ? (object)$form_state['values'] : (
     empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? entity_metadata_create_transaction() : $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]);
-
+  debug($form['#transaction']);
   _transaction_form($form, $form_state);
 
   field_attach_form('transaction', $form['#transaction'], $form, $form_state);

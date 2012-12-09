@@ -81,7 +81,7 @@ function mcapi_signatures_update_7001() {
 }
 
 /**
- * update email tokens from transaction:uri to transaction:uri
+ * update email tokens from transaction:uri to transaction:url
  */
 function mcapi_signatures_update_7002() {
   foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {

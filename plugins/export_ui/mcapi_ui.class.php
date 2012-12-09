@@ -93,19 +93,27 @@ class mcapi_ui extends ctools_export_ui {
     return $header;
   }
 
-  function edit_form(&$form, &$form_state) {
-    ctools_include('export');
-    parent::edit_form($form, $form_state);
-  }
-
-  function __list_page($js, $input) {
-    if ($GLOBALS['user']->uid == 1) {return debug('need to rebuild this page with currency weights');};
-
+  function list_page($js, $input) {
     $this->items = ctools_export_crud_load_all($this->plugin['schema'], $js);
+        // This is where the form will put the output.
+    $this->rows = array();
+    $this->sorts = array();
 
-    $output = $this->list_header($form_state) . $this->list_render($form_state) . $this->list_footer($form_state);
+    $form_state = array(
+      'plugin' => $this->plugin,
+      'input' => $input,
+      'rerender' => TRUE,
+      'no_redirect' => TRUE,
+      'object' => &$this,
+    );
 
+    if (!isset($form_state['input']['form_id'])) {
+      $form_state['input']['form_id'] = 'ctools_export_ui_list_form';
+    }
+    //this populates $this->rows
+    $form = drupal_build_form('ctools_export_ui_list_form', $form_state);
 
+    return $this->list_render($form_state);
   }
 
 }

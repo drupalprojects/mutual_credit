@@ -997,12 +997,11 @@ function worth_element_validate(&$element, &$form_state, $form) {
   if (!isset($currencies[$element['#value']['currcode']])) {
     form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
   }
-  if (!is_int($quant)) {
+  if ($division = $quant - intval($quant)) {
     $currency = currency_load($element['#value']['currcode']);
-    $division = $quant - intval($quant);
     //check that divisions match allowed values for the currency
-    if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division])) {
-      form_error($element, t('Only certain centiles are permitted for @name', array('@name' => $currency->human_name)));
+    if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
+      form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));
     }
   }
 }

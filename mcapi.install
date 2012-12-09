@@ -866,25 +866,21 @@ function mcapi_update_7011() {
   menu_rebuild();
 }
 /**
- * reset weights
- * delete variables from version 1
- */
-function mcapi_update_7012() {
-  //looks like this might not have been set earlier on some cases
-  _mcapi_module_weights();
-  cache_clear_all(NULL, 'cache_bootstrap');
-
-  db_query("DELETE FROM {variable} WHERE name LIKE '%c_signatures_signoff%'");
-  db_delete('variable')->condition('name', array(
-  'cc_balancing_account_num', 'cc_default_currency', 'cc_description_min_words',
-  'cc_pending_notification_template', 'cc_select_user_orderby', 	'cc_select_user_show',
-	'cc_stats_periods', 'cc_trader_autocomplete', 'cc_trader_selector', 'cc_transaction_qualities'))->execute();
-}
-/**
  * clear up a relic which was putting the 'Transactions fieldAPI' link at the top of the management menu
- * + other variables from v2s
+ * + other variables from v2s and v1
  */
 function mcapi_update_7013() {
+  db_query("DELETE FROM {variable} WHERE name LIKE '%c_signatures_signoff%'");
+  variable_del('cc_balancing_account_num');
+  variable_del('cc_default_currency');
+  variable_del('cc_description_min_words');
+  variable_del('cc_pending_notification_template');
+  variable_del('cc_select_user_orderby');
+  variable_del('cc_select_user_show');
+  variable_del('cc_stats_periods');
+  variable_del('cc_trader_autocomplete');
+  variable_del('cc_trader_selector');
+  variable_del('cc_transaction_qualities');
   variable_del('mc_trader_autocomplete');
 	variable_del('mc_trader_selector');
 	variable_del('mc_webform_destination');
@@ -895,5 +891,21 @@ function mcapi_update_7013() {
 	variable_del('mc_notification_throttle_default');
 	variable_del('mc_stats_exclude');
   db_delete("menu_links")->condition('plid', 0)->condition('link_path', 'admin/accounting/fields')->execute();
+  //looks like this might not have been set earlier on some cases
+  _mcapi_module_weights();
+  cache_clear_all(NULL, 'cache_bootstrap');
   menu_rebuild();
+}
+/*
+ * update email tokens from transaction:uri to transaction:uri
+ * some variables but also some action settings
+ */
+function mcapi_update_1014() {
+  $actions = db_query("SELECT aid, parameters FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchAllKeyed();
+  foreach ($actions as $aid => $params) {
+    $params = unserialize($params);
+    $params = str_replace('transaction:uri', 'transaction:url', $params);
+    $params = serialize($params);
+    db_update('actions')->fields(array('parameters' => $params))->condition('aid', $aid)->execute();
+  }
 }
