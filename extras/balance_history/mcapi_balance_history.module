@@ -1,0 +1,98 @@
+<?php
+
+/*
+ * implements hook_block_info
+ */
+function mcapi_index_views_block_info() {
+  return array(
+    'balance_history' => array(
+      'info' => t('Balance over time')
+    )
+  );
+}
+
+/*
+ * implements hook_block_view
+ */
+function mcapi_index_views_block_view($delta) {
+  module_load_include('inc', 'mcapi');
+  if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
+    return array(
+      'subject' => t('Balance over time'),
+      'content' => array(
+        '#theme' => 'balance_history',
+        '#account' => $settings['account'],
+        '#histories' => get_balance_history($settings['account'], $settings['currcodes']),
+      )
+    );
+  }
+}
+
+/*
+ * implements hook_theme
+ */
+function mcapi_index_views_theme() {
+  return array(
+    'balance_history_gchart' => array(
+      'template' => 'balance_history',
+      'variables' => array(
+        'account' => NULL,
+        'histories' => array(),
+      )
+    )
+  );
+}
+
+
+//for google charts, which is the default implementation, we need to limit the number of points
+function template_preprocess_balance_history_gchart(&$vars) {
+  //this is calcluated as 2048 max chars in a google charts url
+  //- 250 characters for all the other data divided by 13 characters per chart-point
+  $max_points = 140;
+  $points = 0;
+  foreach ($vars['histories'] as $history) {
+    $points += count($history);
+  }
+  if ($points < $max_points /2 ) $vars['mode'] = 'square';
+  elseif($points > $max_points)$vars['mode'] = $max_points;
+  else $vars['mode'] = 'diagonal';
+}
+
+function template_process_balance_history_gchart(&$vars) {
+  foreach ($vars['histories'] as $currcode => $history) {
+    //draws straight diagonal lines between the points
+    $times = array_keys($history);
+    $values = array_values($history);
+
+    if($vars['mode'] == 'square') {//adds intermediate points to produce perpendicular lines
+      //make two points for each point, then slip the x against the y to make the step effect
+      $times = sort(array_merge($times , $times));
+      foreach ($values as $val) {
+        $values[] = $val;
+        $values[] = $val;
+      }
+      $values = $values;
+      unset($values2);
+      //remove the first time and the last value to make the stepped effect!
+      array_shift($times);
+      array_pop($values);
+    }
+    elseif(is_numeric($vars['mode'])) {//sampling using $mode as the number of points required
+      $last_time = end($times );
+      $values[] = end($values);//repeat the last time because it has to have the same number of elements as the temp array, with the sample moment added
+
+      $sampling_interval = ceil(($last_time) / $vars['mode']);
+      for ($i = 0; $i <= $vars['mode']; $i++) {
+        $sample_time = $i * $sampling_interval;
+        $new_times[] = $sample_time;
+        $temp = $times + array($sample_time);
+        sort($temp);
+        $sample_position = array_search($sample_time, $temp);
+        $new_values[] = $values[$sample_position];
+      }
+      $times = $new_times;
+      $values = $new_values;
+    }
+    $vars['histories'][$currcode] = array_combine($times, $values);
+  }
+}

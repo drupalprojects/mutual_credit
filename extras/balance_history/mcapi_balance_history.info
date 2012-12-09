@@ -1,0 +1,7 @@
+; $Id:
+name = Balance History
+description = A google charts implementation showing the account balance over time
+package = Community Accounting
+core = 7.x
+
+dependencies[] = mcapi_index_views
