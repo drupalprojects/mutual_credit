@@ -126,6 +126,7 @@ function limits_equations_form($currency, array $defaults) {
       '#type' => 'textfield',
       '#default_value' => isset($defaults['min']) ? $defaults['min'] : '-',
       '#element_validate' => array('mcapi_limits_equation_validate'),
+      '#required' => TRUE,
     ),
     'max' => array(
       '#title' => t('Formula to calculate maximum limit'),
@@ -133,6 +134,7 @@ function limits_equations_form($currency, array $defaults) {
       '#type' => 'textfield',
       '#default_value' => isset($defaults['max']) ? $defaults['max'] : '-',
       '#element_validate' => array('mcapi_limits_equation_validate'),
+      '#required' => TRUE,
     ),
   );
 }

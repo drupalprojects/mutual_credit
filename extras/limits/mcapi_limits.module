@@ -285,17 +285,16 @@ function mcapi_limits_block_info() {
  */
 function mcapi_limits_block_view($delta) {
   module_load_include('inc', 'mcapi');
-  $settings = _mcapi_block_settings($delta);
-  if (empty($settings['account'])) return;
-  $uid = $settings['account']->uid;
-  require_once('mcapi_limits.inc');
-  $function = 'show_'. $delta;
-  $render_array = $function($uid, $settings['currcodes']);
-  $is_me = $uid == $GLOBALS['user']->uid;
-  return array(
-    'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
-    'content' => array_filter($render_array)
-  );
+  if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
+    require_once('mcapi_limits.inc');
+    $uid = $settings['account']->uid;
+    $function = 'show_'. $delta;
+    $is_me = $uid == $GLOBALS['user']->uid;
+    return array(
+      'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
+      'content' => array_filter($function($uid, $settings['currcodes']))
+    );
+  }
 }
 
 
