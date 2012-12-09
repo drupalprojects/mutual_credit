@@ -427,7 +427,7 @@ function mcapi_transaction_undo_confirm_form($form, $form_state, $transaction){
   $question = t('Are you sure you want to undo transaction #@serial?', array('@serial' => $transaction->serial));
   $path = 'transaction/'.$transaction->serial;
   $description = '';
-  if (isset($transaction->dependents) && count($transaction->children)) {
+  if (isset($transaction->dependents) && count($transaction->dependents)) {
     $description = t('This includes dependent transactions');
   }
   $yes = t('Delete');
@@ -867,13 +867,13 @@ function _mcapi_calc($formula, $base_quant) {
  * helper to get block settings and load whichever user we like
  * may return nothing if no user is determined
  */
-function _mcapi_block_settings($delta) {
+function _mcapi_block_settings($delta, $currency_access_mode) {
   $settings = variable_get('block_'. $delta, array('currcodes' => array(), 'user_source' => 1));
   if (@$settings['user_source'] == 0) {//Show as part of profile being viewed
     if (arg(0) == 'user') {//and we are viewing a profile...
       $settings['account'] = user_uid_optional_load(arg(1));
     }
-    else return array();
+    else return;
   }
   else {
     $settings['account'] = $GLOBALS['user'];
@@ -881,6 +881,12 @@ function _mcapi_block_settings($delta) {
   if (empty($settings['currcodes'])) {
     $settings['currcodes'] = array_keys(currencies_load($settings['account']));
   }
+  //check that the current user can see the aggregated trading data in this currency
+  foreach($settings['currcodes'] as $key => $currcode) {
+    if (!currency_access($currency_access_mode, $currcode)) unset($settings['currcodes'][$key]);
+  }
+  if (empty($settings['currcodes']))return;
+
   return $settings;
 }
 
@@ -1173,8 +1179,8 @@ function theme_transaction_totals(&$variables) {
     $output = '<div class="balance">'. $balance ."</div>";
     $output .= '<div class="gross-in">'.t('Income: !quant', array('!quant' => $income)) ."</div>";
     $output .= '<div class="count">'.t('Transactions: @count', array('@count' => $totals->count)) ."</div>";
+    $output .= '<div class="volume">'.t('Volume: @count', array('@count' => $totals->volume)) ."</div>";
     $outputs[] = "<div class = \"transaction-totals $currcode\">$output</div>";
   }
-  drupal_add_css(".transaction-totals .balance{font-size:2em;}", array('type' => 'inline'));
   return implode("<br />", $outputs);
 }

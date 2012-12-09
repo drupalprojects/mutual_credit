@@ -884,7 +884,7 @@ function mcapi_update_7012() {
  * clear up a relic which was putting the 'Transactions fieldAPI' link at the top of the management menu
  * + other variables from v2s
  */
-function ____mcapi_update_7013() {
+function mcapi_update_7013() {
   variable_del('mc_trader_autocomplete');
 	variable_del('mc_trader_selector');
 	variable_del('mc_webform_destination');

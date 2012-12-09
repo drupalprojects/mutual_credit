@@ -14,12 +14,17 @@ div.worth-widget div.form-item {
   display:none;
 }
 #dependent-transactions{
-  border:medium solid grey; 
+  border:medium solid grey;
   text-align:center;
 }
 div.certificate span.quantity{
-  font-size:250%; 
+  font-size:250%;
   line-height:1.1em;
+}
+div.certificate .sentences div{/* TODO review this */
+  display: inline;
+  font-size: inherit;
+  line-height: inherit;
 }
 .vertical-tabs .form-type-textfield input{
   width:inherit;
@@ -27,3 +32,21 @@ div.certificate span.quantity{
 div.worth-widget{
   margin-bottom:5px;
 }
+
+.transaction-totals .balance{
+  font-size:2em;
+}
+
+#pending-signatures .signed{
+  /* this won't work if your site isn't at the web root */
+  background-image: url('/misc/message-24-ok.png');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+#pending-signatures .pending{
+  /* this won't work if your site isn't at the web root */
+  background-image: url('/misc/message-24-warning.png');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+#pending-signatures .sign-link{}

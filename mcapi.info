@@ -37,4 +37,4 @@ files[] = views/views_plugin_row_transaction.inc
 ;files[] = extras/mcapi.eval.inc
 
 ;entity integration
-files[] = mcapi.info.inc
+;files[] = mcapi.info.inc
