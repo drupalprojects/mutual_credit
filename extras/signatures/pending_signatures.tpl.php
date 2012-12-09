@@ -15,8 +15,5 @@ $title = $finished ? t('Signed by') : t('Awaiting Signatures');
 <div style ="float:right" id ="pending-signatures">
   <h2><?php print $title; ?></h2>
   <?php if ($signoff_link) print '('.render($signoff_link) .')'; ?>
-  <style>#pending-signatures .signed{background-image: url('/misc/message-24-ok.png');background-repeat: no-repeat;background-position: center;}
-  #pending-signatures .pending{background-image: url('/misc/message-24-warning.png');background-repeat: no-repeat;background-position: center;}
-  #pending-signatures .sign-link{}</style>
   <?php print render($table); ?>
 </div>

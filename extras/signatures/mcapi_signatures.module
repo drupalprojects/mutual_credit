@@ -637,15 +637,15 @@ function mcapi_signatures_trigger_info() {
 function mcapi_signatures_transactions_state($transactions, $new_state) {
   //check the module settings for the transaction type
   foreach ($transactions as $transaction) {
-    $config = variable_get('mcapi_signatures_'.$transaction->type, array());
+    $config = variable_get('mcapi_signatures_'.$transaction->type, array('participants' => TRUE, 'countersignatories' => array()));
     $params = array('transaction' => $transaction);
     $uid = &$GLOBALS['user']->uid;
     if ($new_state == TRANSACTION_STATE_PENDING) {
-      if (@$config['participants']) {
+      if ($config['participants']) {
         $transaction->pending_signatures[$transaction->payer] = $uid == $transaction->payer ? 0 : 1;
         $transaction->pending_signatures[$transaction->payee] = $uid == $transaction->payee ? 0 : 1;
       }
-      foreach(@$config['countersignatories'] as $counter_uid) {
+      foreach($config['countersignatories'] as $counter_uid) {
         $transaction->pending_signatures[$counter_uid] = $uid == $counter_uid ? 0 : 1;
       }
       mcapi_signatures_save($transaction);
@@ -658,7 +658,7 @@ function mcapi_signatures_transactions_state($transactions, $new_state) {
       $params['conf'] = variable_get('mcapi_signed_off_notify_template', array());
     }
     //send the mail, using the module settings for this transaction
-    if (isset($params['conf']) && $config[$key]) {
+    if (!empty($params['conf']) && $config[$key]) {
       foreach(user_load_multiple(array_keys(array_filter($transaction->pending_signatures))) as $account) {
         $params['user'] = $account;
         drupal_mail('mcapi_signatures', $key, $account->mail, user_preferred_language($account), $params);
@@ -785,7 +785,8 @@ function mcapi_signatures_transaction_view_alter($renderable, $type) {
     }
   }
 }
-
+//untility function
+//gets all the transaction types and excludes a few that we know aren't suitable for configuring
 function _get_signable_transaction_types() {
   $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));
   sort($types);
@@ -801,4 +802,33 @@ function _mcapi_sig_format_usernames($accounts) {
     $names[] = format_username($account);
   }
   return implode(' & ' ,$names);
+}
+
+
+/*
+ * implements hook_variable
+ */
+function mcapi_signatures_variable() {
+  $variables = array(
+    'mcapi_sign_notify_template' => array(
+      'title' => t('Transaction signature notification template'),
+      'description' => t('A mail template (subject, body) for alerting users their signature is needed.'),
+      'type' => 'array',
+    ),
+    'mcapi_signed_off_notify_template' => array(
+      'title' => t('Transaction sign off notification template'),
+      'description' => t('A mail template (subject, body) for alerting users a transaction has been signed off.'),
+      'type' => 'array',
+    )
+  );
+  $types = _get_signable_transaction_types();
+  foreach ($types as $type) {
+    $var_name = 'mcapi_signatures_'.$type;
+    $variables[$var_name] = array(
+      'title' => t('Signature settings for transaction type: @type', array('@type' => $var_name)),
+      'description' => t('Specifies who should sign and who should be notified for transactions of this type'),
+      'type' => 'array',
+    );
+  }
+
 }

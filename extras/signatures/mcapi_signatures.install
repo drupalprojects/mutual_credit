@@ -21,7 +21,9 @@ function mcapi_signatures_install() {
     ));
   }
 }
-
+/*
+ * implements hook_uninstall
+ */
 function mcapi_signatures_uninstall() {
   module_load_include('module', 'mcapi_pending');
   $actions = array_keys(mcapi_pending_action_info());
