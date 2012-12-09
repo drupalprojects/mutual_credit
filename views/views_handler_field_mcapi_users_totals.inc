@@ -33,10 +33,11 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
       '#description' => t('How do you want to summarise the the transaction totals?'),
       '#type' => 'radios',
       '#options' => array(
-        'balance' => t('Balance'),
+        'count' => t('Number of transactions'),
         'gross_in' => t('Gross income'),
         'gross_out' => t('Gross expenditure'),
-        'count' => t('Number of transactions'),
+        'balance' => t('Balance'),
+        'participation' => t('Participation')
       ),
       '#default_value' => $this->options['total']
     );
