@@ -14,7 +14,7 @@ function mcapi_index_views_block_info() {
 /*
  * implements hook_block_view
  */
-function mcapi_index_views_block_view($delta) {
+function mcapi_balance_history_block_view($delta) {
   module_load_include('inc', 'mcapi');
   if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
     return array(
@@ -31,10 +31,10 @@ function mcapi_index_views_block_view($delta) {
 /*
  * implements hook_theme
  */
-function mcapi_index_views_theme() {
+function mcapi_balance_history_theme() {
   return array(
-    'balance_history_gchart' => array(
-      'template' => 'balance_history',
+    'balance_history' => array(
+      'template' => 'balance_history_gchart',
       'variables' => array(
         'account' => NULL,
         'histories' => array(),

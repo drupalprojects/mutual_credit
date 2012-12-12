@@ -288,7 +288,7 @@ function mcapi_limits_block_view($delta) {
   if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
     require_once('mcapi_limits.inc');
     $uid = $settings['account']->uid;
-    $function = 'show_'. $delta;
+    $function = $delta .'view';
     $is_me = $uid == $GLOBALS['user']->uid;
     return array(
       'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
@@ -332,7 +332,7 @@ function mcapi_limits_variable_info() {
 /*
  * callback to return themed balance limits
  */
-function show_balance_limits($uid, $currcodes) {
+function balance_limits_view($uid, $currcodes) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
   foreach ($currcodes as $currcode) {
@@ -350,7 +350,7 @@ function show_balance_limits($uid, $currcodes) {
   }
   return $renderable;
 }
-function show_trading_limits($uid, $currcodes) {
+function trading_limits_view($uid, $currcodes) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
   foreach ($currcodes as $currcode) {

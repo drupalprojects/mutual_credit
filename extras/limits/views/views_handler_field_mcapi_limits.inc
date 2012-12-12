@@ -27,6 +27,6 @@ class views_handler_field_mcapi_limits extends views_handler_field {
   function render($values) {
     module_load_include('inc', 'mcapi_limits');
     $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);
-    return show_balance_limits($values->uid, $currcodes);
+    return balance_limits_view($values->uid, $currcodes);
   }
 }

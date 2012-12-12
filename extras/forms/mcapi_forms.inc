@@ -58,6 +58,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   //this might not be the way to build a 2 step form.
   //All the validation callbacks need to check the step because all the important fields are in step one only.
   if ($form['#step'] == 1) {
+    $form['#action'] = url($settings['architecture']['path']);
     $form['#template'] = $settings['experience']['template'];
     $form['creator']['#type'] = 'hidden';
     $form['state']['#type'] = 'hidden';

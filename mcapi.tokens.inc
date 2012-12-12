@@ -16,6 +16,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
     $url_options['language'] = $options['language'];
     $language_code = $options['language']->language;
   }
+  $replacements = array();
   foreach ($tokens as $name => $original) {
     switch ($name) {
       // Simple key values on the node.

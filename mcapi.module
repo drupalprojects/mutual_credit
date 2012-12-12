@@ -478,7 +478,7 @@ function mcapi_block_view($delta) {
       'subject' => $settings['account']->uid == $GLOBALS['user']->uid ?
         t('Trading status') :
         t("@user's account", array('@user' => strip_tags(format_username($settings['account'])))),
-      'content' => mcapi_show_balances($settings['account']->uid, $settings['currcodes']),
+      'content' => mcapi_balances_view($settings['account']->uid, $settings['currcodes']),
       '#settings' => $settings,//this is read by mcapi_signatures_block_view_alter
     );
   }
@@ -822,7 +822,7 @@ function transaction_label($transaction){
 /*
  * block function a nice display of user balances in a currency
  */
-function mcapi_show_balances($uid, $currcodes) {
+function mcapi_balances_view($uid, $currcodes) {
   $render_array = array('#theme' => 'transaction_totals');
   foreach ($currcodes as $currcode) {
     $render_array['#totals'][$currcode] = transaction_totals($uid, $currcode);

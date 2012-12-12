@@ -33,10 +33,10 @@ function mcapi_dependent_transaction_rules_action($worth, $payer, $payee, $setti
 
 /*
  * action callback
- * save a new transaction 
+ * save a new transaction
  */
 function mcapi_new_transaction_rules_action($worth, $payer, $payee, $settings, $alter_cluster, $settings, RulesState $state, RulesPlugin $element) {
-  $transaction = new_transaction();
+  $transaction = entity_metadata_create_transaction();
   $transaction->worth[LANGUAGE_NONE] = $worth;
   $transaction->payer = $payer;
   $transaction->payee = $payee;
