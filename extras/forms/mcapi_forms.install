@@ -78,7 +78,7 @@ function mcapiforms_setup_filter() {
     'format' => MCAPIFORM_STRING_FORMAT,
     'name' => t('Payment form'),
     'weight' => 20,
-    'status' => TRUE,
+    'status' => 1,
     'filters' => array(//use only core filters
       'filter_autop' => array()
     )

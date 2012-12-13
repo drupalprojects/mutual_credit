@@ -142,10 +142,11 @@ function _edit_mcapi_form(&$form, &$form_state) {
             '#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
             '#type' => $mcapi_form['direction']['widget'],
             '#options' => array(
-                '' => t('Neither'),
-                'incoming' => $mcapi_form['direction']['incoming'],
-                'outgoing' => $mcapi_form['direction']['outgoing'],
-            )
+              '' => t('Neither'),
+              'incoming' => $mcapi_form['direction']['incoming'],
+              'outgoing' => $mcapi_form['direction']['outgoing'],
+            ),
+            '#required' => FALSE
           );
           $form['direction'] = _mcapi_form_config_fieldset($mcapi_form['direction'], $preset, 'direction')
             +_mcapi_direction_config_fields($mcapi_form['direction']);

@@ -4,12 +4,12 @@
 function mcapi_signatures_install() {
   $mcapi_signed_off_notify_template = array(
     'subject' =>  st('Transaction signed off'),
-    'body' => st('The following transaction has been signed off: @token', array('@token' => '[transaction:uri]'))
+    'body' => st('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
   );
   variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
   $mcapi_sign_notify_template = array(
     'subject' =>  st('Your signature is required'),
-    'body' => st('Your signature is required on @token', array('@token' => '[transaction:uri]'))
+    'body' => st('Your signature is required on @token', array('@token' => '[transaction:url]'))
   );
   variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
   //signatures
@@ -84,8 +84,26 @@ function mcapi_signatures_update_7001() {
 /**
  * update email tokens from transaction:uri to transaction:url
  */
-function mcapi_signatures_update_7002() {
+function mcapi_signatures_update_7003() {
   foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
     variable_set($var, str_replace('transaction:uri', 'transaction:url', variable_get($var)));
   }
+}
+
+/*
+ * oops there was a bug which left transactions pending but without signatures
+ * cleanest fix is to create signed signatures in the mcapi_signatures table
+ */
+function mcapi_signatures_7004() {
+  $transactions = transactions_load(NULL, array('state' => -1));
+  foreach (transactions_load(NULL, array('state' => -1)) as $transaction) {
+    foreach (array('payer', 'payee') as $participant) {
+      $pending = $transaction->creator != $transaction->$participant;
+      db_query(
+        "INSERT IGNORE INTO {mcapi_signatures} (serial, uid, pending) VALUES (:serial, :uid, :pending) ON DUPLICATE KEY DO NOTHING",
+        array(':serial' => $transaction->serial, ':uid' => $transaction->$participant, ':pending' => $pending)
+      );
+    }
+  }
+  db_query("DELETE FROM {mcapi_signatures} WHERE uid = 0");
 }

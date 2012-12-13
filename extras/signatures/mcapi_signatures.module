@@ -192,7 +192,7 @@ function mcapi_signatures_config($form, $form_state) {
     'body' => array(
       '#title' => t('Body'),
       '#type' => 'textarea',
-      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:uri]',
+      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url]',
       '#required' => TRUE,
       '#weight' => 1
     ),
@@ -215,7 +215,7 @@ function mcapi_signatures_config($form, $form_state) {
     'body' => array(
       '#title' => t('Body'),
       '#type' => 'textarea',
-      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:uri]',
+      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url]',
       '#required' => TRUE,
       '#weight' => 1
     ),
@@ -645,7 +645,8 @@ function mcapi_signatures_transactions_state($transactions, $new_state) {
         $transaction->pending_signatures[$transaction->payer] = $uid == $transaction->payer ? 0 : 1;
         $transaction->pending_signatures[$transaction->payee] = $uid == $transaction->payee ? 0 : 1;
       }
-      foreach((array)$config['countersignatories'] as $counter_uid) {
+      $config['countersignatories']= array_filter((array)$config['countersignatories']);
+      foreach($config['countersignatories'] as $counter_uid) {
         $transaction->pending_signatures[$counter_uid] = $uid == $counter_uid ? 0 : 1;
       }
       mcapi_signatures_save($transaction);
@@ -832,3 +833,5 @@ function mcapi_signatures_variable() {
   }
 
 }
+
+

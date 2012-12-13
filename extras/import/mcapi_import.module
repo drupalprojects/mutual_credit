@@ -155,18 +155,6 @@ function mcapi_import_generate_transactions($rows) {
       $props['created'] = is_numeric($row['created']) ? trim($row['created']) : strtotime($row['created']);
     }
 
-    //TEMP
-    drupal_set_message('using temporary code', 'warning', FALSE);
-    $transaction = (object)$props;
-    $transaction->worth = array('und' => array(0 => array('currcode' => $transaction->currcode, 'quantity' => $transaction->quantity)));
-    unset($transaction->worth);
-    if ($fieldname = variable_get('transaction_description_field')) {
-      $transaction->$fieldname = array('und' => array(0 => array('value' => $transaction->description)));
-      unset($transaction->description);
-    }
-    $transactions[] = $transaction; continue;
-    //END TEMP
-
     $transactions[] = entity_metadata_create_transaction($props);
   }
   return $transactions;
