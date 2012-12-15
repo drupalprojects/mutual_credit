@@ -9,7 +9,7 @@ function mcapi_signatures_install() {
   variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
   $mcapi_sign_notify_template = array(
     'subject' =>  st('Your signature is required'),
-    'body' => st('Your signature is required on @token', array('@token' => '[transaction:url]'))
+    'body' => st('Your signature is required on @token', array('@token' => '[transaction:url:absolute]'))
   );
   variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
   //signatures
@@ -81,15 +81,6 @@ function mcapi_signatures_update_7001() {
   views_flush_caches();
 }
 
-/**
- * update email tokens from transaction:uri to transaction:url
- */
-function mcapi_signatures_update_7003() {
-  foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
-    variable_set($var, str_replace('transaction:uri', 'transaction:url', variable_get($var)));
-  }
-}
-
 /*
  * oops there was a bug which left transactions pending but without signatures
  * cleanest fix is to create signed signatures in the mcapi_signatures table
@@ -106,4 +97,29 @@ function mcapi_signatures_7004() {
     }
   }
   db_query("DELETE FROM {mcapi_signatures} WHERE uid = 0");
+}
+
+
+/**
+ * update email tokens from transaction:uri to transaction:url:absolute
+ */
+function mcapi_signatures_update_7005() {
+  foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
+    $string = variable_get($var);
+    $string = str_replace('transaction:uri]', 'transaction:url:absolute]', $string);
+    $string = str_replace('transaction:url]', 'transaction:url:absolute]', $string);
+    variable_set($var, $string);
+  }
+}
+/*
+ * check that signatures are congruent with transaction states
+ */
+function mcapi_signatures_update_7006() {
+  //sell all pending transactions to completed, then reset them to pending if they have signatures
+  db_update('mcapi_transactions')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();
+  $pending_serials = db_select('mcapi_signatures', 's')->fields('s', array('serial'))->condition('pending', 1)->execute()->fetchCol();
+  db_update('mcapi_transactions')
+    ->fields(array('state' => TRANSACTION_STATE_PENDING))
+    ->condition('serial', $pending_serials)
+    ->execute();
 }

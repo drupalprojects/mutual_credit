@@ -192,7 +192,7 @@ function mcapi_signatures_config($form, $form_state) {
     'body' => array(
       '#title' => t('Body'),
       '#type' => 'textarea',
-      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url]',
+      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url:absolute]',
       '#required' => TRUE,
       '#weight' => 1
     ),
@@ -215,7 +215,7 @@ function mcapi_signatures_config($form, $form_state) {
     'body' => array(
       '#title' => t('Body'),
       '#type' => 'textarea',
-      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url]',
+      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url:absolute]',
       '#required' => TRUE,
       '#weight' => 1
     ),
@@ -588,11 +588,16 @@ function mcapi_signatures_block_info_alter(&$blocks) {
   }
 }
 
+/*
+ * implements hook_block_view_alter
+ * appends the 'signatures needed' view to the mcapi-balance block
+ */
 function mcapi_signatures_block_view_alter(&$data, $block) {
   if ($block->delta == 'balances' && $block->module = 'mcapi' && isset($data['#settings']['account'])) {
     $data['content']= array(
       $data['content'],
-      array('#markup' => views_embed_view('signature_blocks', $display_id = 'block', $data['#settings']['account']->uid))
+      array('#markup' => '<h5>'.t('Awaiting my signature...').'</h5>'),
+      array('#markup' => views_embed_view('sig_blocks', 'my_sig_needed', $data['#settings']['account']->uid))
     );
   }
 }
@@ -718,6 +723,15 @@ function mcapi_signatures_process_transaction(&$variables) {
  * implements hook_theme
  */
 function mcapi_signatures_theme() {
+  $imagepath = url('misc');
+  $module_path = url(drupal_get_path('module', 'mcapi_signatures'));
+  $css = ".state--1{background-image:url(\"$module_path/pending.png\");background-repeat: no-repeat; background-position: center;}";
+
+  $declaration = "background-image:url(\"$imagepath/message-24-ok.png\"); background-repeat: no-repeat; background-position: center;";
+  $css .= '#pending-signatures .signed{'.$declaration.'}';
+  $declaration = "background-image:url(\"$imagepath/message-24-warning.png\"); background-repeat: no-repeat; background-position: center;";
+  $css .= '#pending-signatures .pending{'.$declaration.'}';
+  variable_set('signature-css', $css);
   $items = array(
     'pending_signatures' => array(
       'template' => 'pending_signatures',
@@ -778,11 +792,11 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
  */
 function mcapi_signatures_transaction_view_alter($renderable, $type) {
   foreach ($renderable as $array) {
-    if ($array['#view_mode'] == 'certificate' && $array['#transaction']->state == TRANSACTION_STATE_PENDING) {
-      $imagefile = url(drupal_get_path('module', 'mcapi_signatures') . '/pending.png');
-      $declaration = "background-image:url(\"$imagefile\"); background-repeat: no-repeat; height:163px;";
-      drupal_add_css('.certificate.transaction.state--1{'.$declaration.'}', array('type' => 'inline'));
-      return;
+    if ($array['#view_mode'] == 'certificate' && !empty($array['#transaction']->pending_signatures)) {
+      if ($css = variable_get('signature-css', '') ) {
+        drupal_add_css($css, array('type' => 'inline'));
+        return;
+      }
     }
   }
 }
@@ -794,7 +808,6 @@ function _get_signable_transaction_types() {
   return $types;
 }
 
-
 /*
  * Bit of a one off, this one
  */
@@ -804,7 +817,6 @@ function _mcapi_sig_format_usernames($accounts) {
   }
   return implode(' & ' ,$names);
 }
-
 
 /*
  * implements hook_variable

@@ -84,11 +84,32 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
   $handler->display->display_options['block_description'] = 'Awaiting my signature...';
 
+  /* No results behavior: Global: Text area */
+  $handler->display->display_options['defaults']['empty'] = FALSE;
+  $handler->display->display_options['empty']['area']['id'] = 'area';
+  $handler->display->display_options['empty']['area']['table'] = 'views';
+  $handler->display->display_options['empty']['area']['field'] = 'area';
+  $handler->display->display_options['empty']['area']['label'] = 'no results';
+  $handler->display->display_options['empty']['area']['empty'] = TRUE;
+  $handler->display->display_options['empty']['area']['content'] = t('Up to date');
+  $handler->display->display_options['empty']['area']['format'] = 'editor_filtered_html';
+
   /* Display: anybody_signatures_needed */
   $handler = $view->new_display('block', "Anybody's signature needed", 'anybodys_sig_needed');
   $handler->display->display_options['display_description'] = 'signatures waiting for given user, or all signatures if no uid passed';
   $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
   $handler->display->display_options['defaults']['arguments'] = FALSE;
+
+  /* No results behavior: Global: Text area */
+  $handler->display->display_options['defaults']['empty'] = FALSE;
+  $handler->display->display_options['empty']['area']['id'] = 'area';
+  $handler->display->display_options['empty']['area']['table'] = 'views';
+  $handler->display->display_options['empty']['area']['field'] = 'area';
+  $handler->display->display_options['empty']['area']['label'] = 'no results';
+  $handler->display->display_options['empty']['area']['empty'] = TRUE;
+  $handler->display->display_options['empty']['area']['content'] = t('None');
+  $handler->display->display_options['empty']['area']['format'] = 'editor_filtered_html';
+
   /* Contextual filter: Signatures: ...is a signatory */
   $handler->display->display_options['arguments']['uid']['id'] = 'uid';
   $handler->display->display_options['arguments']['uid']['table'] = 'mcapi_signatures';
