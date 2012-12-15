@@ -24,13 +24,14 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#description' => t('A group of users'),
       '#type' => 'user_chooser_permissions',
       '#args' => array('transact'),
-      '#allow_me' => FALSE,
+      '#allow_me' => TRUE,
       '#multiple' => TRUE,
+      '#multiple_fail_quietly' => TRUE
     );
     $many = array(
       '#type' => 'user_chooser_preselect',
       '#options' => module_invoke_all('user_chooser_preselect'),
-      '#allow_me' => FALSE,
+      '#allow_me' => TRUE,
     );
 
     if ($payer == 'one') {
@@ -53,7 +54,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
         '#weight' => 2
       )+ $$payer;
     }
-
 
     $form['mail'] = mcapi_mail_config_fieldset('mcapi_accounting_masspay', array('transactions'), FALSE, 21);
     $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
@@ -137,6 +137,10 @@ function mcapi_mass_pay_insert($values, $really) {
   $template = entity_metadata_create_transaction($values);
   foreach ($payers as $payer) {
     foreach ($payees as $payee) {
+      if ($payer == $payee) {
+        drupal_set_message(t("Skipped transaction in which account '@account' pays itself", array('@account' => format_username(user_load($payee)))));
+        continue;
+      }
       $template->payer = $payer;
       $template->payee = $payee;
       $transactions[] = clone $template;
@@ -150,7 +154,6 @@ function mcapi_mass_pay_insert($values, $really) {
   }
   if ($really) return $serial;
   else return $transactions;
-
 }
 
 /*
