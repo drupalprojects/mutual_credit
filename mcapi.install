@@ -904,8 +904,10 @@ function mcapi_update_1014() {
   $actions = db_query("SELECT aid, parameters FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchAllKeyed();
   foreach ($actions as $aid => $params) {
     $params = unserialize($params);
-    $params = str_replace('transaction:uri', 'transaction:url', $params);
-    $params = serialize($params);
-    db_update('actions')->fields(array('parameters' => $params))->condition('aid', $aid)->execute();
+    $params['body'] = str_replace('transaction:uri', 'transaction:url', $params['body']);
+    db_update('actions')
+      ->fields(array('parameters' => serialize($params)))
+      ->condition('aid', $aid)
+      ->execute();
   }
 }

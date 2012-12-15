@@ -278,9 +278,10 @@ function mcapi_help($section, $arg) {
       return drupal_render(drupal_get_form('mcapi_description_field'));
     case 'admin/accounting/currencies':
       $currencies = &drupal_static('currencies');
-      if (count($currencies) > 1);
-      module_load_include('inc', 'mcapi');
-      return drupal_render(drupal_get_form('mcapi_mixed_transactions'));
+      if (count($currencies) > 1) {
+        module_load_include('inc', 'mcapi');
+        return drupal_render(drupal_get_form('mcapi_mixed_transactions'));
+      }
   }
 }
 
@@ -474,6 +475,7 @@ function mcapi_block_info() {
 function mcapi_block_view($delta) {
   module_load_include('inc', 'mcapi');
   if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
+    if (empty($settings['account']) || empty($settings['account']->uid)) return;
     return array(
       'subject' => $settings['account']->uid == $GLOBALS['user']->uid ?
         t('Trading status') :

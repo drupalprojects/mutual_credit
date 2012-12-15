@@ -501,6 +501,7 @@ function transaction_access_payer($transaction) {
  * determine a segment of users
  * each of these returns TRUE or FALSE if passed a User ID
  * or a list of User IDs if passed nothing
+ * This is likely to be moved towards user_chooser
  */
 function user_segments_transact($uid = 0) {
   if ($uid) {
@@ -550,17 +551,16 @@ function currency_access($op, $currcode, $uid = NULL) {
 /*
  * action callback
  * mail the transaction participants, and cc
+ * $transaction may have dependents
  */
-function mcapi_transaction_mail_action($old_cluster, $params, $new_state) {
+function mcapi_transaction_mail_action($transaction, $settings, $new_state) {
   //pending transaction notifications are handled by the signatures module
   if ($new_state != TRANSACTION_STATE_FINISHED) return;
-  //the actions settings define which transaction types this will work for
-  if (empty ($params['transaction_types'][$params['transaction']->type])) return;
-  $uids = array($old_cluster->payer,$old_cluster->payee);
+  //the actions settings allow to filter by transaction type
+  if (empty($settings['transaction_types'][$transaction->type])) return;
 
-  $params['transaction'] = $old_cluster;//isn't this the case anyway?
-
-  foreach ($uids as $uid) {
+  $params = $settings + array('transaction' => $transaction);
+  foreach (array($transaction->payer, $transaction->payee) as $uid) {
     if ($GLOBALS['user']->uid != $uid) {
       $params['user'] = user_load($uid);
       drupal_mail('mcapi', 'transaction_mail_action', $params['user']->mail, user_preferred_language($params['user']), $params);
@@ -576,7 +576,7 @@ function mcapi_transaction_mail_action_form($context = array()) {
     'subject' => t('Transaction saved by [transaction:creator]'),
     'body' => "[user:name],\n\n".
       t('A transaction for [transaction:worth] has been finalised')."\n\n".
-      t('More details can be found at:') ."\n[transaction:uri]\n\n".
+      t('More details can be found at:') ."\n[transaction:url:absolute]\n\n".
       t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
       t('The team at [site:name]')
   );
@@ -657,6 +657,7 @@ function mcapi_mail_config_fieldset($key, $tokens = array('transaction'), $requi
 }
 
 function mcapi_transaction_mail_action_submit($form, $form_state) {
+  form_state_values_clean($form_state);
   return $form_state['values'];
 }
 
@@ -866,6 +867,9 @@ function _mcapi_calc($formula, $base_quant) {
 /*
  * helper to get block settings and load whichever user we like
  * may return nothing if no user is determined
+ * the possible values of user_source should be made into php constants
+ * 0 //the user argument comes from the current path
+ * 1 //the user argument is the current user
  */
 function _mcapi_block_settings($delta, $currency_access_mode) {
   $settings = variable_get('block_'. $delta, array('currcodes' => array(), 'user_source' => 1));
