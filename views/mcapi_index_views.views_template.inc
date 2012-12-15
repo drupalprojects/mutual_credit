@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 
 /*
@@ -8,7 +8,7 @@ function mcapi_index_views_views_templates() {
   currencies_load(); //because this seems to run before mcapi_init()
   $currencies = &drupal_static('currencies');
   $multicurrencies = count($currencies) > 1;
-  
+
   if (module_exists('date_views')) {
     $view = new view();
     $view->name = 'income_expenditure';
@@ -210,7 +210,7 @@ function mcapi_index_views_views_templates() {
     if ($GLOBALS['user']->uid == 1) drupal_set_message('Install date_views module for better paging', 'warning');
   }
 
-  
+
   $view = new view;
   $view->name = 'user_transactions_summaries';
   $view->description = 'per currency transaction summary for individual users';
@@ -332,7 +332,7 @@ function mcapi_index_views_views_templates() {
   $view->description = 'If you have multiple currencies, be sure to change the argument. Also you can add \'between\' dates';
   $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
-  $view->human_name = 'user_ranking';
+  $view->human_name = 'User rankings';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -571,12 +571,12 @@ function mcapi_index_views_views_templates() {
   $handler->display->display_options['sorts']['expenditure']['order'] = 'DESC';
   $translatables['user_rankings'] = array(
     t('Most trades'),
+    t('User rankings'),
     t('Promiscuity'),
     t('Volume'),
     t('Trades'),
     t('Number of trades'),
     t('Incomes'),
-    t('incomes'),
     t('Income'),
     t('Expenditure'),
     t('expenditures'),

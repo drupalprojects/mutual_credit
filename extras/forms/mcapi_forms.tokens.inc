@@ -4,9 +4,10 @@
  * implements hook_tokens
  * $options is ver important because it tells us whether to render the form field or a text version of the value in it
  */
-function mcapi_forms_tokens($type, $tokens, array $form, array $options = array()) {
+function mcapi_forms_tokens($type, $tokens, array $objects, array $options = array()) {
   $replacements = array();
-  if ($type != 'mcapiform') return $replacements;
+  if ($type != 'mcapiform' || !isset($objects[$type])) return $replacements;
+  $mcapiform = $objects[$type];
 
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
@@ -17,7 +18,7 @@ function mcapi_forms_tokens($type, $tokens, array $form, array $options = array(
     $language_code = $options['language']->language;
   }
   foreach ($tokens as $name => $original) {
-    $replacements[$original] = drupal_render($form[$name]);
+    $replacements[$original] = drupal_render($mcapiform[$name]);
   }
   //now, since we couldn't pass the form by reference,
   //we need to render the rest of the form elements
@@ -25,8 +26,8 @@ function mcapi_forms_tokens($type, $tokens, array $form, array $options = array(
   //before that we need to hide all the unused form elements
 
   mcapi_element_children_value($form, '#theme', 'hidden');
-  foreach (element_children($form) as $name) {
-    $item = drupal_render($form[$name]);
+  foreach (element_children($mcapiform) as $name) {
+    $item = drupal_render($mcapiform[$name]);
     $replacements[$original] .= $item;
   }
   return $replacements;

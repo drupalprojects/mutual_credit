@@ -238,7 +238,7 @@ function _transaction_form(&$form, &$form_state) {
  * By this time each of the form values should be well enough validated not to fail on writing to db
  */
 function transaction_form_validate($form, &$form_state) {
-  $transaction = (object)$form_state['values'];
+  $transaction = entity_metadata_create_transaction($form_state['values']);
   //populate the core transaction values from $form_state
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
   //validate the Field API fields

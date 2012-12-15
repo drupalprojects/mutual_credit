@@ -119,11 +119,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     }
     //put the back button only for last step if there are values from step 1
     if (!empty($form_state['values'])) {//coming from step 1
-      $form['#preview'] = transaction_view(
-        $form_state['transactions'],
-        $settings['experience']['sure_format'],
-        check_markup($settings['experience']['sure_template'], MCAPIFORM_STRING_FORMAT)
-      );
+      $transactions = &$form_state['transactions'];
       mcapi_hide_tabs();
       $form['buttons']['back'] = array(
         '#type' => 'submit',
@@ -134,8 +130,14 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     }
     else {//landing directly on step 2
       $transaction = &$form_state['build_info']['args'][0];
-      $form['#preview'] = transaction_view(array($transaction->xid => $transaction), $settings['experience']['sure_format']);
+      $transactions[$transaction->xid] = $transaction;
     }
+
+    $form['#preview'] = transaction_view(
+      $transactions,
+      $settings['experience']['sure_format'],
+      $settings['experience']['sure_template']
+    );
     //the transaction properties were validated in step 1
     //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]
     unset($form['#validate']);
@@ -217,13 +219,13 @@ function theme_mcapi_form($variables) {
     }
     return token_replace(
       check_markup($form['#template'], MCAPIFORM_STRING_FORMAT),
-      $form,
+      array('mcapiform' => $form),
       array('sanitize' => FALSE)
     ) . '<br />'.$buttons;
   }
   elseif ($form['#step'] == 2) {
     $preview = drupal_render($form['#preview']);
-    return drupal_render_children($form) . $buttons . $preview;
+    return drupal_render_children($form) . $preview . $buttons;
   }
 }
 
@@ -289,7 +291,7 @@ function mcapi_forms_form_presubmit($form, &$form_state) {
  */
 function mcapi_forms_form_postsubmit($form, &$form_state) {
   $submission = &$form['#settings']['submission'];
-  if ($submission['feedback']) {
+  if (isset($submission['feedback']) && $submission['feedback']) {
     //this could be more sophisticated by using tokens and transaction_load_last()
     drupal_set_message($submission['feedback']);
   }

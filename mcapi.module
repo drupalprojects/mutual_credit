@@ -255,6 +255,7 @@ function entity_metadata_create_transaction($values = array(), $for_me = FALSE) 
       );
     }
   }
+  $transaction->dependents = array();
   return $transaction;
 }
 
@@ -862,7 +863,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
   }
   foreach ($transactions as $transaction) {
     if ($view_mode == 'token') {
-      $params = array('transaction' => $transaction, 'user' => $GLOBALS['user']);
+      $params = array('transaction' => $transaction);
       $renderable[] = array(
         '#markup' => token_replace($token_string, $params),
         '#view_mode' => $view_mode

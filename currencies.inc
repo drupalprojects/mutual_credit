@@ -245,10 +245,11 @@ function mcapi_currency_form_submit($form, &$form_state) {
   //things got a little out of kilter here - this shouldn't be necessary
   $form_state['item']->currcode = $form_state['values']['info']['currcode'];
   $form_state['item']->data = (object)$form_state['values'];
-  register_shutdown_function('currencies_load_refresh');
+  //register_shutdown_function('currencies_load_refresh');
+  cache_clear_all('currencies', 'cache');
 }
 
 //utility callback (takes no args)
 function currencies_load_refresh() {
-  currencies_load(NULL, TRUE);
+  //currencies_load(NULL, TRUE);
 }

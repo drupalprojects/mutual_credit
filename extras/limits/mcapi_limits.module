@@ -280,7 +280,7 @@ function mcapi_limits_block_info() {
   return $blocks;
 }
 
-/*$currencies
+/*
  * Implements views hook_block_view
  */
 function mcapi_limits_block_view($delta) {
@@ -288,7 +288,7 @@ function mcapi_limits_block_view($delta) {
   if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
     require_once('mcapi_limits.inc');
     $uid = $settings['account']->uid;
-    $function = $delta .'view';
+    $function = $delta .'_view';
     $is_me = $uid == $GLOBALS['user']->uid;
     return array(
       'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
@@ -330,7 +330,7 @@ function mcapi_limits_variable_info() {
 }
 
 /*
- * callback to return themed balance limits
+ * callback to return render array for a balance limits view
  */
 function balance_limits_view($uid, $currcodes) {
   module_load_include('inc', 'mcapi');

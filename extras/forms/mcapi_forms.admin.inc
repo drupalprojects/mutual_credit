@@ -1,4 +1,4 @@
-d<?php
+<?php
 include ('mcapi_forms.inc');
 
 /**
@@ -204,7 +204,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#weight' => 2,
       '#required' => TRUE
     ),
-    'token_tree' => array(
+    'token_tree1' => array(
       '#theme' => 'token_tree',
       '#token_types' => array('mcapiform'),
       '#global_types' => FALSE,
@@ -223,15 +223,23 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#default_value' => isset($mcapi_form['experience']['sure_format']) ? $mcapi_form['experience']['sure_format'] : 'certificate',
       '#weight' => 5,
     ),
-    'sure_template' => array(
-      '#title' => '('. t('Confirmation page') .')',
-      '#description' => t('If using tokens mode, write HTML here to layout the confirmation, using the tokens above.'),
+    'token_tree2' => array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('transaction'),
+      '#global_types' => FALSE,
+      '#weight' => 6,
+    ),
+  );
+  if (module_exists('token')) {
+    $form['experience']['sure_template'] = array(
+      '#title' => '('. t('Confirmation page (Token mode only)') .')',
+      '#description' => t('Design your confirmation page using HTML and the tokens below.'),
       '#type' => 'textarea',
       '#rows' => 4,
       '#default_value' => @$mcapi_form['experience']['sure_template'],
       '#weight' => 6,
-    ),
-  );
+    );
+  }
   $form['submission'] = array(
     '#title' => t('Form submission'),
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
