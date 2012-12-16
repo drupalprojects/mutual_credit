@@ -10,7 +10,6 @@
  * see template_preprocess_transaction() for details
  *
  * $transaction     //entity object
- * $view_mode       // either 'sentences' or 'certificate'
  * $type            //
  * $state           // 1 = pending, 0 = completed, -1 = erased
  * $recorded        // date formatted using drupal's 'medium' date format
@@ -24,8 +23,7 @@
  * using $transaction->quantity
  * tip: $currency = currency_load($transaction->currcode);
  *
- * This template doesn't use normal template syntax because it's based on a sentence structure and needs to retain a coherent translatable string
- * It is rather complex because of the need for translation
+ * If anyone can think of a more elegant way to make this translatable...
  */
 $replacements = array(
   '@recorded' => $recorded,
@@ -33,36 +31,27 @@ $replacements = array(
   '!payee' => $payee,
   '!worth' => $worth,
 );
-if ($view_mode == 'certificate') {
-  print render($pending_signatures); //floating the right, by default
   $replacements['!worth'] = '<span class = "quantity">'. $replacements['!worth'] .'</span>';
   $certificate_string = t(
     'On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth',
     $replacements
   );
-  $certificate_string = str_replace('<br/>', '<br /><br />', $certificate_string);
-}
+  $certificate_string = str_replace('<br />', '<br /><br />', $certificate_string);
+
 ?>
 <!--transaction.tpl.php-->
 <div class = "<?php print $classes; ?>">
-  <?php if ($view_mode == 'certificate') : ?>
-    <?php print $certificate_string; ?>
-    <?php print render($additional); ?>
-  <?php elseif ($view_mode == 'sentences') :
-    if ($state > 0) {//transaction states > 0 are 'counted'
-      print t("On @recorded, !payer gave !payee !worth", $replacements);
-    }
-    else {//this is most likely a 'pending' transaction which is state -1
-      print t("On @recorded, !payer will give !payee !worth", $replacements);
-    }
-  endif; ?>
+  <?php print render($pending); //floating on the right, by default ?>
+  <?php print $certificate_string; ?>
 
-  <?php if (isset($dependents)) : // all the remaining transactions are already rendered as sentences ?>
+  <?php if (isset($dependents)) : // all the remaining transactions are already rendered as tokenised strings ?>
   <div id="dependent-transactions">
     <h3><?php print t('Dependent transactions'); ?></h3>
     <?php print render ($dependents); ?>
   </div>
   <?php endif; ?>
+
+  <?php print render($additional); //any fields we don't know about'?>
 
 </div><!-- end transaction-->
 

@@ -575,6 +575,31 @@ function mcapi_signall_confirm_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'user';
 }
 
+function mcapi_signatures_block_info() {
+  //this is very hard to do in views
+  return array(
+    'user_pending' => array(
+      'info' => t('All pending transactions (per user)')
+    )
+  );
+}
+
+function mcapi_signatures_block_view($delta) {
+  module_load_include('inc', 'mcapi');
+  if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
+    return array(
+      'subject' => t('Pending transactions'),
+      'content' => list_pending($settings['account']->uid, $settings['currcodes'])
+    );
+  }
+}
+
+function mcapi_signatures_block_configure($delta) {
+  return mcapi_block_configure($delta);
+}
+function mcapi_signatures_block_save($delta) {
+  return mcapi_block_save($delta, $values);
+}
 
 /*
  * implements hook_block_info_alter
@@ -679,105 +704,28 @@ function mcapi_signatures_mail($key, &$message, $params) {
   $message['body'][] = token_replace($params['conf']['body'], $params, $options);
 }
 
-/*
- * implements theming hook_process_transaction
- */
-function mcapi_signatures_process_transaction(&$variables) {
-  $transaction = &$variables['transaction'];
-  if (!isset($transaction->pending_signatures) || empty($transaction->pending_signatures)) return;
-  $table = array();
-  foreach ($transaction->pending_signatures as $uid => $pending) {
-    $status = 'signed';
-    if ($pending) {
-      if ($uid == $GLOBALS['user']->uid && transaction_sign_access($transaction)) {
-        $status = 'transaction/'.$transaction->serial.'/sign';
-      }
-      else {
-        $status = 'pending';
-      }
-    }
-    $signatories[$uid] = $status;
-  }
-  $signoff = array();
-  if (transaction_signoff_access($transaction)) {
-    $signoff = array(
-      '#theme' => 'link',
-      '#text' => t('Sign off'),
-      '#path' => 'transaction/'.$transaction->serial.'/signoff',
-      '#options' => array(
-        'attributes' => array('title' => t('Sign the transaction on behalf of everyone')),
-        'html' => TRUE,//required
-       ),
-    );
-  }
-  $variables['pending_signatures'] = array(
-    '#theme' => 'pending_signatures',
-    '#pending_signatures' => $transaction->pending_signatures,
-    '#signatories' => $signatories,
-    '#signoff_link' => $signoff,
-    '#finished' => $transaction->state == TRANSACTION_STATE_FINISHED ? TRUE : FALSE
-  );
-}
 
 /*
  * implements hook_theme
  */
 function mcapi_signatures_theme() {
-  $imagepath = url('misc');
-  $module_path = url(drupal_get_path('module', 'mcapi_signatures'));
-  $css = ".state--1{background-image:url(\"$module_path/pending.png\");background-repeat: no-repeat; background-position: center;}";
-
-  $declaration = "background-image:url(\"$imagepath/message-24-ok.png\"); background-repeat: no-repeat; background-position: center;";
-  $css .= '#pending-signatures .signed{'.$declaration.'}';
-  $declaration = "background-image:url(\"$imagepath/message-24-warning.png\"); background-repeat: no-repeat; background-position: center;";
-  $css .= '#pending-signatures .pending{'.$declaration.'}';
-  variable_set('signature-css', $css);
-  $items = array(
-    'pending_signatures' => array(
-      'template' => 'pending_signatures',
-      'variables' => array(
-        'pending_signatures' => array(),//raw data pulled from the transaction
-        'signatories' => array(),
-        'signoff_link' => array(),
-        'finished' => FALSE
-      )
+  $items['pending_signatures_box'] = array(
+    'template' => 'pending_signatures_box',
+    'variables' => array(
+      'transaction' => NULL,//raw data pulled from the transaction
     )
   );
   return $items;
 }
 
 /*
- * default preprocessor for theme callback 'pending_signatures'
+ * implements hook_theme_registry_alter
+ * adds the pending section to the transaction certificate
  */
-function template_preprocess_pending_signatures(&$variables) {
-  $signatories = &$variables['signatories'];
-  foreach ($signatories as $uid => $status) {
-    $link = '';
-    $username  = format_username(user_load($uid));
-    if (strlen($status) > 7 ) {//then its a url
-      $link = l( t('Sign transaction'), $status);
-      $status = 'sign-link';
-      $title = '';
-    }
-    else {
-      $title = $status == 'pending' ? t('Awaiting signature') : t('Signed');
-    }
-    $rows[$uid] = array(
-      $username,
-      array(//these are the attributes
-        'class' => $status,
-        'data' => $link,
-        'title' => $title,
-        'width' => array(20)
-      )
-    );
-  }
-  $variables['table'] = array(
-    '#theme' => 'table',
-    '#attributes' => array('style' => 'width:15em'),
-    '#rows' => $rows
-  );
+function mcapi_signatures_theme_registry_alter(&$items) {
+  $items['certificate']['variables']['pending'] = array();
 }
+
 
 function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
   foreach ($currencies as $name => $currency) {
@@ -786,28 +734,6 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
     );
   }
 }
-/*
- * implements hook_transaction_view_alter
- * inserts the css for the pending graphic
- */
-function mcapi_signatures_transaction_view_alter($renderable, $type) {
-  foreach ($renderable as $array) {
-    if ($array['#view_mode'] == 'certificate' && !empty($array['#transaction']->pending_signatures)) {
-      if ($css = variable_get('signature-css', '') ) {
-        drupal_add_css($css, array('type' => 'inline'));
-        return;
-      }
-    }
-  }
-}
-//utility function
-//gets all the transaction types and excludes a few that we know aren't suitable for configuring
-function _get_signable_transaction_types() {
-  $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));
-  sort($types);
-  return $types;
-}
-
 /*
  * Bit of a one off, this one
  */
@@ -818,32 +744,74 @@ function _mcapi_sig_format_usernames($accounts) {
   return implode(' & ' ,$names);
 }
 
-/*
- * implements hook_variable
- */
-function mcapi_signatures_variable() {
-  $variables = array(
-    'mcapi_sign_notify_template' => array(
-      'title' => t('Transaction signature notification template'),
-      'description' => t('A mail template (subject, body) for alerting users their signature is needed.'),
-      'type' => 'array',
-    ),
-    'mcapi_signed_off_notify_template' => array(
-      'title' => t('Transaction sign off notification template'),
-      'description' => t('A mail template (subject, body) for alerting users a transaction has been signed off.'),
-      'type' => 'array',
-    )
-  );
-  $types = _get_signable_transaction_types();
-  foreach ($types as $type) {
-    $var_name = 'mcapi_signatures_'.$type;
-    $variables[$var_name] = array(
-      'title' => t('Signature settings for transaction type: @type', array('@type' => $var_name)),
-      'description' => t('Specifies who should sign and who should be notified for transactions of this type'),
-      'type' => 'array',
-    );
-  }
+function list_pending($uid, $currcodes = array()) {
 
+  $serials = db_query(
+    "SELECT serial FROM {mcapi_transactions} WHERE state = :pending AND (payer = $uid OR payee = $uid)",
+    array(':pending' => TRANSACTION_STATE_PENDING)
+  )->fetchCol();
+  if ($serials) {
+    return transaction_view(transactions_load(array(), array('serial' => $serials)), 'token');
+  }
+  else return array('#markup' => t('No transactions'));
 }
 
 
+/*
+ * implements theming hook_process_transaction
+ * adds the sign_link to the transaction certificate, in accordance with mcapi_signatures_theme_registry_alter
+ */
+function mcapi_signatures_preprocess_certificate(&$variables) {
+  $transaction = &$variables['transaction'];
+  if ($transaction->state == TRANSACTION_STATE_PENDING) {
+    $variables['pending'] = array(
+      '#theme' => 'pending_signatures_box',
+      '#transaction' => $transaction
+    );
+  }
+}
+
+
+function _get_signoff_link($transaction) {
+  if (transaction_signoff_access($transaction)) {
+    $build['sign'] = array(
+      '#theme' => 'link',
+      '#text' => t('Sign off'),
+      '#path' => 'transaction/'.$transaction->serial.'/signoff',
+      '#options' => array(
+        'attributes' => array(
+          'title' => t('Sign the transaction on behalf of everyone'),
+          'class' => 'link'
+         ),
+        'html' => TRUE,//required
+       ),
+    );
+    return $build;
+  }
+}
+function _get_sign_link($transaction) {
+  if (transaction_sign_access($transaction)) {
+    $build['sign'] = array(
+      '#theme' => 'link',
+      '#text' => t('Sign'),
+      '#path' => 'transaction/'.$transaction->serial.'/sign',
+      '#options' => array(
+        'attributes' => array(
+          'title' => t('Sign the transaction'),
+          'class' => 'link'
+         ),
+        'html' => TRUE,//required
+       ),
+    );
+    return $build;
+  }
+}
+
+
+//utility function
+//gets all the transaction types and excludes a few that we know aren't suitable for configuring
+function _get_signable_transaction_types() {
+  $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));
+  sort($types);
+  return $types;
+}

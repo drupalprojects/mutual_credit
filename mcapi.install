@@ -33,6 +33,7 @@ function mcapi_install() {
     ));
     drupal_set_message("A new user, !name was created for trading. name: demo, pass", array('!name' => format_username($account)));
   }
+  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:sign_link]');
 }
 
 /**
@@ -899,8 +900,9 @@ function mcapi_update_7013() {
 /*
  * update email tokens from transaction:uri to transaction:uri
  * some variables but also some action settings
+ * create mcapi_sentence variable
  */
-function mcapi_update_1014() {
+function mcapi_update_7014() {
   $actions = db_query("SELECT aid, parameters FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchAllKeyed();
   foreach ($actions as $aid => $params) {
     $params = unserialize($params);
@@ -910,4 +912,5 @@ function mcapi_update_1014() {
       ->condition('aid', $aid)
       ->execute();
   }
+  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth]');
 }

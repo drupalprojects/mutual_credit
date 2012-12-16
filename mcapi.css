@@ -1,7 +1,10 @@
 
 div.worth-widget div.form-item,
-div.transaction.sentences div {
+div.sentence {
   display:inline
+}
+div.sentence .link{
+  padding: 0 0 0 1em;
 }
 #mcapi-forms-form.step-1 .form-type-checkboxes label,
 #mcapi-forms-form.step-1 .form-type-radios label{
@@ -10,6 +13,9 @@ div.transaction.sentences div {
 #dependent-transactions{
   border:medium solid grey;
   text-align:center;
+}
+div.certificate{
+  padding:3em;
 }
 div.certificate span.quantity{
   font-size:250%;

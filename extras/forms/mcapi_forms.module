@@ -23,7 +23,7 @@ function mcapi_forms_menu() {
     $items[$settings['architecture']['path']] = array(
       'title' => 'Design form',
       'title callback' => 'mcapi_form_title',
-      'title arguments' => array($settings['experience']['title']),
+      'title arguments' => array($ctools_id),
       'page callback' => 'mcapi_get_form',
       'page arguments' => array($ctools_id),
       'access callback' => $access_callback,
@@ -311,8 +311,19 @@ function mcapi_hide_tabs() {
  * menu title callback
  * the menu system can't cope with an empty title
  */
-function mcapi_form_title($title = '') {
-  return $title;
+function mcapi_form_title($form_name) {
+  $object = _mcapi_i18n_object($form_name);
+  //change the 5 translatable strings
+  if (module_exists('i18n_string')) {
+    $translations = i18n_string_object_translate('payform_experience', $object);
+    //this needs to be internationalized
+    if (strlen($translations['title'])) return $translations['title'];
+    else return $translations['sure_title'];
+  }
+  else {
+    if (strlen($object['title'])) return $object['title'];
+    else return $object['sure_title'];
+  }
 }
 
 /*
@@ -328,5 +339,28 @@ function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
       'The default values are set in the form designer: !link',
       array('!link' => l('admin/accounting/forms', 'admin/accounting/forms'))
     ).'</strong>'
+  );
+}
+
+
+/*
+ * the i18n objects are supposed to be simple one dimensional things,
+ * but the mcapi_form settings are more nested.
+ * So this function does a conversion
+ * puts all of the translatable parts of mcapiform into one flat i18n array
+ */
+function _mcapi_i18n_object($settings) {
+  if (is_string($settings)) {
+    $settings = mcapi_forms_load($settings)->data;
+  }
+  return array(
+    'name' => $settings['info']['name'],
+    'templates_format' => MCAPIFORM_STRING_FORMAT,
+    'title' => @$settings['experience']['title'],
+    'template' => $settings['experience']['template'],
+    'sure_title' => @$settings['experience']['sure_title'],
+    'sure_template' => @$settings['experience']['sure_template'],
+    'button' => @$settings['submission']['button'],
+    'feedback' => @$settings['submission']['feedback']
   );
 }

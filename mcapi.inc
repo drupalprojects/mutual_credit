@@ -36,10 +36,6 @@ function mcapi_entity_info_inc() {
         'label' => t("An HTML laid out view of the transaction cluster"),
         'custom settings' => FALSE,
       ),
-      'sentences' => array(
-        'label' => t("A one-per-line description of the transaction cluster"),
-        'custom settings' => FALSE,
-      ),
     ),
     //entity API properties
     'creation callback' => 'entity_metadata_create_transaction',
@@ -364,6 +360,20 @@ function mcapi_misc_options_form($form_state) {
     ),
     '#default_value' => variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE),
     '#disabled' => !variable_get('change_undo_mode', FALSE)
+  );
+
+  $form['mcapi_sentence'] = array(
+    '#title' => t('Transaction sentence template'),
+    '#description' => t('Use the tokens to define how the transaction will read when displayed in sentence mode'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('mcapi_sentence'),
+    '#weight' => 5
+  );
+  $form['token_tree'] = array(
+    '#theme' => 'token_tree',
+    '#token_types' => array('transaction'),
+    '#global_types' => FALSE,
+    '#weight' => 6
   );
 
   return system_settings_form($form);

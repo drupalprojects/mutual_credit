@@ -316,12 +316,11 @@ function mcapi_permission() {
  */
 function mcapi_theme($existing, $type, $theme, $path) {
   $items = array(
-    'transaction' => array(
-      'template' => 'transaction',
-      'pattern' => 'transaction__',
+    'certificate' => array(
+      'template' => 'certificate',
+      'pattern' => 'certificate__',
       'variables' => array(
         'transaction' => NULL,
-        'view_mode' => 'certificate',
       )
     ),
     'worth_element'=> array(
@@ -863,17 +862,24 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
   }
   foreach ($transactions as $transaction) {
     if ($view_mode == 'token') {
-      $params = array('transaction' => $transaction);
-      $renderable[] = array(
-        '#markup' => token_replace($token_string, $params),
-        '#view_mode' => $view_mode
-      );
+      global $language;
+      $options = array('language' => $language, 'sanitize' => FALSE);
+      foreach ($transactions as $transaction) {
+        $params = array('transaction' => $transaction);
+        $sentence = token_replace(variable_get('mcapi_sentence'), $params, $options);
+        $renderable[] = array(
+          '#view_mode' => 'token',
+          '#prefix' => '<div class = "sentence">',
+          '#markup' => $sentence,
+          '#suffix' => '</div>',
+        );
+      }
     }
     else {
       $renderable[] = array(
-        '#theme' => 'transaction',
+        '#view_mode' => 'certificate',
+        '#theme' => 'certificate',
         '#transaction' => $transaction,
-        '#view_mode' => $view_mode
       );
     }
   }
@@ -889,27 +895,26 @@ function transaction_view($transactions, $view_mode = 'certificate', $token_stri
  * $variables['transaction'] may have ->dependents from transaction_load
  * or it may be a simulated transaction with no xid and serial or dependents
  */
-function template_preprocess_transaction(&$variables) {
+function template_preprocess_certificate(&$variables) {
   $cluster = &$variables['transaction'];
   $variables['payer'] = format_username(user_load($cluster->payer));
   $variables['payee'] = format_username(user_load($cluster->payee));
   $variables['state'] = $cluster->state;
   $variables['recorded'] = format_date($cluster->created, 'medium');
   $variables['type'] = $cluster->type;
-  $date_format = $variables['view_mode'] == 'certificate' ? 'long' : 'short';
-  $variables['date'] = format_date($cluster->created, $date_format);
+  $variables['date'] = format_date($cluster->created, 'long');
 
-  $variables['classes_array'] = array('transaction', $variables['view_mode'], $cluster->type, 'state-'.$cluster->state);
+  $variables['classes_array'] = array('transaction', 'certificate', $cluster->type, 'state-'.$cluster->state);
   if (empty($cluster->xid)) $variables['classes_array'][] = 'preview';
 
   //fieldAPI expects several at a time, keyed by entity key
   //NB in preview mode the xid hasn't been determined but it doesn't seem to matter
   $clusters = array($cluster->xid => $cluster);
   //note that the $cluster is changed by reference
-  field_attach_prepare_view('transaction', $clusters, $variables['view_mode']);
+  field_attach_prepare_view('transaction', $clusters, 'certificate');
   entity_prepare_view('transaction', $clusters);
   //this returns a render array
-  $variables['additional'] = field_attach_view('transaction', $cluster, $variables['view_mode']);
+  $variables['additional'] = field_attach_view('transaction', $cluster, 'certificate');
   //this populates top level of variables with the render array
   field_attach_preprocess('transaction', $cluster, $variables['additional'], $variables);
 
@@ -1120,7 +1125,7 @@ function mcapi_field_formatter_info() {
  * implements hook_field_formatter_view
  * prepare a render array containing all (worth) $items
  */
-function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items) {
   $element = array();
   foreach($items as $delta => $item) {
     //if (empty($item['currcode'])) continue;

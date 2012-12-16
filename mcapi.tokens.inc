@@ -36,7 +36,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
       case 'summary':
-        $replacements[$original] = drupal_render(transaction_view($transaction, 'sentences'));
+        $replacements[$original] = drupal_render(transaction_view($transaction, 'token'));
         break;
       case 'certificate':
         $replacements[$original] = drupal_render(transaction_view(array($transaction), 'certificate'));
@@ -52,7 +52,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         foreach ($diff[$uid] as $currcode => $quantities) {
           $items[] = array('currcode' => $currcode, 'quantity' => array_sum($quantities));
         }
-        $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $items, 'sentences');
+        $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $items);
         $replacements[$original] = drupal_render($element);
         break;
       default: //hopefully a field API field

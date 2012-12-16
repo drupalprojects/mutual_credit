@@ -314,20 +314,6 @@ function mcapi_unset_recursive(array &$array, $prop) {
   }
 }
 
-
-function _mcapi_i18n_object($settings) {
-  return array(
-    'name' => $settings['info']['name'],
-    'templates_format' => MCAPIFORM_STRING_FORMAT,
-    'title' => @$settings['experience']['title'],
-    'template' => $settings['experience']['template'],
-    'sure_title' => @$settings['experience']['sure_title'],
-    'sure_template' => @$settings['experience']['sure_template'],
-    'button' => @$settings['submission']['button'],
-    'feedback' => @$settings['submission']['feedback']
-  );
-}
-
 /*
  * pre php5.3
  */

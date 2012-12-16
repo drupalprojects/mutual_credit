@@ -3,13 +3,13 @@
 
 function mcapi_signatures_install() {
   $mcapi_signed_off_notify_template = array(
-    'subject' =>  st('Transaction signed off'),
-    'body' => st('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
+    'subject' =>  t('Transaction signed off'),
+    'body' => t('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
   );
   variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
   $mcapi_sign_notify_template = array(
-    'subject' =>  st('Your signature is required'),
-    'body' => st('Your signature is required on @token', array('@token' => '[transaction:url:absolute]'))
+    'subject' =>  t('Your signature is required'),
+    'body' => t('Your signature is required on @token', array('@token' => '[transaction:url:absolute]'))
   );
   variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
   //signatures
@@ -20,6 +20,9 @@ function mcapi_signatures_install() {
       'complete' => 0,
     ));
   }
+  $sentence = variable_get('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth]');
+  $sentence .= ' [transaction:sign_link]';
+  variable_set('mcapi_sentence', $sentence);
 }
 /*
  * implements hook_uninstall
@@ -122,4 +125,9 @@ function mcapi_signatures_update_7006() {
     ->fields(array('state' => TRANSACTION_STATE_PENDING))
     ->condition('serial', $pending_serials)
     ->execute();
+}
+
+
+function mcapi_signatures_update_7007() {
+  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:sign_link]');
 }
