@@ -222,24 +222,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#options' => $view_modes,
       '#default_value' => isset($mcapi_form['experience']['sure_format']) ? $mcapi_form['experience']['sure_format'] : 'certificate',
       '#weight' => 5,
-    ),
-    'token_tree2' => array(
-      '#theme' => 'token_tree',
-      '#token_types' => array('transaction'),
-      '#global_types' => FALSE,
-      '#weight' => 6,
-    ),
+    )
   );
-  if (module_exists('token')) {
-    $form['experience']['sure_template'] = array(
-      '#title' => '('. t('Confirmation page (Token mode only)') .')',
-      '#description' => t('Design your confirmation page using HTML and the tokens below.'),
-      '#type' => 'textarea',
-      '#rows' => 4,
-      '#default_value' => @$mcapi_form['experience']['sure_template'],
-      '#weight' => 6,
-    );
-  }
   $form['submission'] = array(
     '#title' => t('Form submission'),
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
@@ -278,7 +262,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['experience']['title']['#description'] = $note . $form['experience']['title']['#description'];
     $form['experience']['template']['#description'] = $note . $form['experience']['template']['#description'];
     $form['experience']['sure_title']['#description'] = $note . @$form['experience']['sure_title']['#description'];
-    $form['experience']['sure_template']['#description'] = $note . $form['experience']['sure_template']['#description'];
     $form['submission']['button']['#description'] = $note . $form['submission']['button']['#description'];
     $form['submission']['feedback']['#description'] = $note . $form['submission']['feedback']['#description'];
   }
@@ -394,7 +377,6 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   //could check all the other fields too, but thi sis a protected area and we'd be here till xmas
   //this is only here because the i18n_string module nees translatable fields to have a format
   $values['experience']['template'] = check_markup($values['experience']['template'], MCAPIFORM_STRING_FORMAT);
-  $values['experience']['sure_template'] = check_markup($values['experience']['sure_template'], MCAPIFORM_STRING_FORMAT);
 }
 
 /*

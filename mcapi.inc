@@ -109,7 +109,7 @@ function mcapi_menu_inc() {
 
   $items['transaction/%transaction'] = array(
     'title' => 'Transaction certificate',
-    'title callback' => 'transaction_menu_title',
+    'title callback' => 'transaction_label',
     'title arguments' => array(1),
     // The page callback also invokes drupal_set_title() in case
     // the menu router's title is overridden by a menu link.
@@ -152,10 +152,6 @@ function mcapi_accounting() {
   return system_admin_menu_block_page();
 }
 
-
-function transaction_menu_title($transaction = NULL) {
-  return t('Transaction certificate #@serial', array('@serial' => $transaction->serial));
-}
 /*
  * menu callback
  * build the most basic possible transaction form
@@ -210,7 +206,7 @@ function _transaction_form(&$form, &$form_state) {
   $form['creator'] = array(
     '#title' => t('Recorded by'),
     '#type' => 'user_chooser_permissions',
-    '#default_value' => user_load($form['#transaction']->creator)->name,
+    '#default_value' => $form['#transaction']->creator,
     '#args' => array('transact'),
     '#allow_me' => TRUE,
     '#required' => TRUE,

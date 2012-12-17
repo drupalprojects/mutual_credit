@@ -90,7 +90,6 @@ function mcapiforms_setup_filter() {
   foreach ($mcapiforms as $name => $settings) {
     $settings = unserialize($settings);
     $settings['experience']['template'] = str_replace('<br />', '', $settings['experience']['template']);
-    $settings['experience']['sure_template'] = str_replace('<br />', '', $settings['experience']['sure_template']);
     db_query("UPDATE {mcapi_forms} SET data = :data where name = :name",
       array(':data' => serialize($settings), ':name' => $name)
     );

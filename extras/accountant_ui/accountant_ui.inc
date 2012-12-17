@@ -21,7 +21,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#weight' => 9,
     );
     $few = array(
-      '#description' => t('A group of users'),
       '#type' => 'user_chooser_permissions',
       '#args' => array('transact'),
       '#allow_me' => TRUE,

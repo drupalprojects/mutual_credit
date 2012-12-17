@@ -30,8 +30,7 @@ function mcapi_signatures_mcapiforms_default() {
       'title' => '',
       'template' => '',
       'sure_title' => t('Sign transaction'),
-      'sure_format' => 'sentences',
-      'sure_template' => '',
+      'sure_format' => 'token'
     ),
     'buttons' => array(
       'submit' => t('Save'),

@@ -230,8 +230,8 @@ function entity_metadata_create_transaction($values = array(), $for_me = FALSE) 
     $transaction->worth = array(LANGUAGE_NONE => $values['worth']);
   }
   elseif(isset($values['quantity'])) {
-    $transaction->worth[LANGUAGE_NONE][$values['currcode']]['quantity'] = $values['quantity'];
-    $transaction->worth[LANGUAGE_NONE][$values['currcode']]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
+    $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
+    $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
   }
   else {
     $currcodes = array_keys($currencies);
@@ -283,6 +283,10 @@ function mcapi_help($section, $arg) {
         module_load_include('inc', 'mcapi');
         return drupal_render(drupal_get_form('mcapi_mixed_transactions'));
       }
+    case 'admin/accounting/misc':
+      return implode(' ', array(
+        t("Send mail notifications for completed transactions using the action/trigger system: !link", array('!link' => l('admin/config/system/actions', 'admin/config/system/actions')))
+      ));
   }
 }
 
@@ -856,7 +860,7 @@ function mcapi_currency_form(&$form, &$form_state){
  * build a render array for any number of transactions
  * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in transaction_load
  */
-function transaction_view($transactions, $view_mode = 'certificate', $token_string = '') {
+function transaction_view($transactions, $view_mode = 'certificate') {
   if (!is_array($transactions)) {//we have been passed a single transaction
     $transactions = array($transactions->xid => $transactions);
   }

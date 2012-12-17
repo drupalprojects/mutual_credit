@@ -129,10 +129,15 @@ function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_
     form_load_include($form_state, 'inc', 'mcapi_limits');
     $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
     //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
+    $warning[] = t("With great power comes great responsibility!");
+    $warning[] = t("The first rule of accounting is: no account should issue more credit than it can redeem.");
+    $warning[] = t("Even fiat currencies can be run sustainably if they are used to pay tax.");
+    $warning[] = t("Trust in the system can be increased by limiting the right to issue credit to trusted, known, productive actors in the economy, which may or not include the goverment!");
+    $warning[] = t("Transactions will be rejected which take accounts beyond these limits.");
+    $warning[] = t("Choose which method to use, and configure it.");
     $form['limits'] = array(
       '#title' => t('Balance limits'),
-      '#description' => t("With great power comes great responsibility! The first rule of accounting is: no account should issue more credit than it can redeem. Even fiat currencies can be run sustainably if they are used to pay tax. Trust in the system can be increased by limiting the right to issue credit to trusted, known, productive actors in the economy, which may or not include the goverment!") .' '.
-        t('Transactions will be rejected which take accounts beyond these limits.') .' '. t('Choose which method to use, and configure it.'),
+      '#description' => implode(' ', $warning),
       '#type' => 'fieldset',
       '#weight' => 20,
       '#group' => 'additional_settings',

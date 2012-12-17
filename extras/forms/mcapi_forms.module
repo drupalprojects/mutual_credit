@@ -122,7 +122,6 @@ function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_s
  */
 function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id) {
   form_load_include($form_state, 'inc', 'mcapi_forms');
-
   mcapi_form_build($form, $form_state, $form_id);
 }
 
@@ -359,7 +358,6 @@ function _mcapi_i18n_object($settings) {
     'title' => @$settings['experience']['title'],
     'template' => $settings['experience']['template'],
     'sure_title' => @$settings['experience']['sure_title'],
-    'sure_template' => @$settings['experience']['sure_template'],
     'button' => @$settings['submission']['button'],
     'feedback' => @$settings['submission']['feedback']
   );

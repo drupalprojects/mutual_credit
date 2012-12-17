@@ -27,7 +27,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     $settings['experience']['title'] = $translations['title'];
     $settings['experience']['template'] = $translations['template'];
     $settings['experience']['sure_title'] = $translations['sure_title'];
-    $settings['experience']['sure_template'] = $translations['sure_template'];
     $settings['submission']['button'] = $translations['button'];
     $settings['submission']['feedback'] = $translations['feedback'];
   }
@@ -135,8 +134,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
 
     $form['#preview'] = transaction_view(
       $transactions,
-      $settings['experience']['sure_format'],
-      $settings['experience']['sure_template']
+      $settings['experience']['sure_format']
     );
     //the transaction properties were validated in step 1
     //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]

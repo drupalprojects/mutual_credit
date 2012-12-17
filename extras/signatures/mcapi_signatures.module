@@ -422,8 +422,10 @@ function mcapi_signatures_form_ctools_export_ui_edit_item_form_alter(&$form, &$f
     $form['perspective']['#value'] = 3;
     $form['experience']['title']['#type'] = 'hidden';
     $form['experience']['template']['#type'] = 'hidden';
+    $form['experience']['template']['#requried'] = FALSE;
     $form['experience']['title']['#required'] = FALSE;
     $instances = field_info_instances('transaction', 'transaction');
+    unset($form['#validate'][array_search('mcapi_forms_template_validate', $form['#validate'])]);
 
     foreach (element_children($form) as $key) {
       if (isset($form[$key]['#group']) && $form[$key]['#group'] == 'mcapi_form_fields') {
@@ -763,7 +765,7 @@ function list_pending($uid, $currcodes = array()) {
  */
 function mcapi_signatures_preprocess_certificate(&$variables) {
   $transaction = &$variables['transaction'];
-  if ($transaction->state == TRANSACTION_STATE_PENDING) {
+  if ($transaction->state == TRANSACTION_STATE_PENDING && isset($transaction->pending_signatures)) {
     $variables['pending'] = array(
       '#theme' => 'pending_signatures_box',
       '#transaction' => $transaction

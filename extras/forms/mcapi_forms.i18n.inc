@@ -48,10 +48,6 @@ function mcapi_forms_i18n_object_info() {
           'format' => 'templates_format',
         ),
         'sure_title' => t('Sure title'),
-        'sure_template' => array(
-          'title' => t('Sure template'),
-          'format' => 'templates_format',
-        ),
         'button' => t('Save button label'),
         'feedback' => t('Confirmation message')
       ),

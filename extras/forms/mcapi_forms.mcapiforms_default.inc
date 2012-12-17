@@ -69,7 +69,6 @@ Direction: [mcapiform:direction]
 [mcapiform:worth]',
       'sure_title' => 'Are you sure?',
       'sure_format' => 'certificate',
-      'sure_template' => '',
     )
   );
   return $mcapiform;
@@ -123,7 +122,6 @@ Payee: [mcapiform:payee]
 [mcapiform:worth]',
       'sure_title' => 'Are you sure?',
       'sure_format' => 'certificate',
-      'sure_template' => '',
     ),
   );
   return $mcapiform;

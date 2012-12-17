@@ -19,7 +19,6 @@ function mcapi_signatures_tokens($type, $tokens, array $data = array(), array $o
   $transaction = &$data['transaction'];
   if (isset($tokens['sign_link'])) {
     $links = array_filter(array(_get_sign_link($transaction), _get_signoff_link($transaction)));
-    $replacements[$tokens['sign_link']] = render($links);
+    return array($tokens['sign_link'] => render($links));
   }
-  return $replacements;
 }
