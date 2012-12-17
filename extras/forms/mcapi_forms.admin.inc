@@ -26,7 +26,6 @@ function mcapi_forms_help($path, $args) {
  */
 function _edit_mcapi_form(&$form, &$form_state) {
   $mcapi_form = &$form_state['item']->data;
-
   $form['#prefix'] = '<div id = "form-wrapper">';
   $form['#suffix'] = '</div>';
   //I think ctools is supposed to be handling this
@@ -178,6 +177,10 @@ function _edit_mcapi_form(&$form, &$form_state) {
     if (in_array($name, array('search_index', 'search_result')))continue;
     $view_modes[$name] = $mode['label'];
   }
+  $view_modes['token'] = t(
+    'Tokenised sentence; configure at !link', 
+    array('!link' => l('admin/accounting/misc', 'admin/accounting/misc'))
+  );
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),

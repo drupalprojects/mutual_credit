@@ -33,7 +33,7 @@ function mcapi_entity_info_inc() {
     'view callback' => 'transaction_view', //used by entity module
     'view modes' => array(
       'certificate' => array(
-        'label' => t("An HTML laid out view of the transaction cluster"),
+        'label' => t("A transaction certificate"),
         'custom settings' => FALSE,
       ),
     ),
@@ -587,6 +587,7 @@ function mcapi_transaction_mail_action_form($context = array()) {
       t('The team at [site:name]')
   );
   $form['mail'] = mcapi_mail_config_fieldset($context, array('transaction', 'user'), TRUE, 5);
+  $form['mail']['#description'] = t('Mail will be sent to the payer and payee, except for the logged in user.');
   $def_types = isset($context['transaction_types']) ? $context['transaction_types'] : array();
   $form['transaction_types'] = _transaction_type_selector($def_types, TRUE, array('mass', 'child'));
   $form['transaction_types']['#description'] = t('Only send for these transaction types.');

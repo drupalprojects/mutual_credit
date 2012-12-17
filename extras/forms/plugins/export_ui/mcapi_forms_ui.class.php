@@ -92,6 +92,7 @@ class mcapi_forms_ui extends ctools_export_ui {
   function list_table_header() {
     //this is critical but I can't work out where it is supposed to go
     //after editing the form, it always returns to this page.
+    cache_clear_all();
     menu_rebuild();
     $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-name'));
     //$header[] = array('data' => t('Help'), 'class' => array('ctools-export-ui-name'));

@@ -81,8 +81,11 @@ function import_settings_form($form, $form_state) {
  * form called by menu
  */
 function import_transactions_form($form, $form_state) {
-  $columns = array('payer', 'payee', 'quantity', 'created', 'description');
-  if ($desc = variable_get('transaction_description_field', ''))$columns[] = $desc;
+  $columns = array('payer', 'payee', 'quantity', 'created');
+  if ($desc = variable_get('transaction_description_field', '')) {
+    //we don't actually use the name of the field here
+    $columns[] = 'description';
+  }
   $form['#prefix'] = implode(' ', array(
     t('Prepare a csv file, without quotes'),
     t("'created' is optional, but should be convertable to unixtime using strtotime"),
@@ -96,6 +99,12 @@ function import_transactions_form($form, $form_state) {
     '#default_value' => isset($form_state['values']['data']) ? $form_state['values']['data'] : implode(', ', $columns),
     '#required' => TRUE
   );
+  $form['set_created'] = array (
+    '#type' => 'checkbox',
+    '#title' => 'Adjust user created date',
+    '#description' => 'Set $account->created to one day before the first transaction',
+    '#default_value' => TRUE,
+  );
   $form['import_transactions'] = array (
     '#type' => 'submit',
     '#value' => 'import',
@@ -105,6 +114,7 @@ function import_transactions_form($form, $form_state) {
 }
 
 function import_transactions_form_validate(&$form, &$form_state) {
+  module_load_include('inc', 'mcapi');
   $rows = parse_getcsv($form_state['values']['data']);
   foreach ($rows as $row) {
     $uids[] = $row['payer'];
@@ -117,7 +127,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
   foreach (mcapi_import_generate_transactions($rows) as $transaction) {
     try{
       $transactions = array($transaction);
-      //each will have its own serial number, but without triggering the mail
+      //each will have its own serial number
       transactions_insert($transactions, FALSE);
     }
     catch (Exception $e){
@@ -134,9 +144,11 @@ function import_transactions_form_submit($form, &$form_state) {
     $earliest[$transaction->payer][] = $transaction->created;
     $earliest[$transaction->payee][] = $transaction->created;
   }
-  $createdtimes = db_query("SELECT uid, created FROM {users}")->fetchAllKeyed();
-  foreach($earliest as $uid => $times) {
-    db_query("UPDATE {users} SET created = :created WHERE uid = $uid", array(':created' => min(min($times), $createdtimes[$uid])));
+  if ($form_state['values']['set_created']) {
+    //set the user created to 1 day before the transaction
+    foreach($earliest as $uid => $times) {
+      db_query("UPDATE {users} SET created = :created WHERE uid = $uid", array(':created' => min($times)));
+    }
   }
 }
 
@@ -263,7 +275,7 @@ function mcapi_import_balances_member($uid, $balance, $gross_income = NULL) {
 
 //check that the user ids or names actually correspond to a user on the system
 //coming from the csv all keys and values will be strings, surrounded by quotes
-function check_users($uids, $allow1) {
+function check_users($uids, $allow1 = FALSE) {
 
   $errors = array();
   $uids = array_unique($uids);

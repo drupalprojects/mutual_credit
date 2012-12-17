@@ -131,7 +131,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $transaction = &$form_state['build_info']['args'][0];
       $transactions[$transaction->xid] = $transaction;
     }
-
     $form['#preview'] = transaction_view(
       $transactions,
       $settings['experience']['sure_format']
