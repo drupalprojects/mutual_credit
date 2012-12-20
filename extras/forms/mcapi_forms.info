@@ -8,6 +8,7 @@ configure = admin/accounting/forms
 files[] = mcapi_forms.inc
 files[] = mcapi_forms.admin.inc
 files[] = mcapi_forms.i18n.inc
+files[] = mcapi_forms.tokens.inc
 files[] = mcapi_forms.mcapiforms_default.inc
 files[] = plugins/export_ui/mcapi_forms_ui.inc
 files[] = plugins/export_ui/mcapi_forms_ui.class.php

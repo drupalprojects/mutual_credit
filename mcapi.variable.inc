@@ -67,5 +67,5 @@ function mcapi_variable_info() {
 }
 
 function mcapi_variable_options_callback() {
-  debug('is this worth implementing?');
+  drupal_set_message('is this worth implementing?');
 }

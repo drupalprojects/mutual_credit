@@ -64,13 +64,6 @@ function mcapi_forms_update_7001() {
   db_drop_field('mcapi_forms', 'path');
   db_drop_field('mcapi_forms', 'xfid');
 }
-/**
- * introduce drupal filters to the designed payment forms
- */
-function mcapi_forms_update_7002() {
-  mcapiforms_setup_filter();
-}
-
 
 function mcapiforms_setup_filter() {
   //make our own filter format and ensure it is localizable
@@ -84,6 +77,22 @@ function mcapiforms_setup_filter() {
     )
   );
   filter_format_save((object)$format);
+  //and set the permissions for using this filter to authenticated user
+
+
+  $formats = variable_get('i18n_string_allowed_formats', array(filter_fallback_format()));
+  $formats[] = MCAPIFORM_STRING_FORMAT;
+  variable_set('i18n_string_allowed_formats', array_unique($formats));
+
+
+  db_query(
+    "UPDATE {filter} SET status = 1 WHERE format = :format AND name = 'filter_autop'",
+    array(':format' => MCAPIFORM_STRING_FORMAT)
+  );
+
+  global $language;
+  cache_clear_all("filter_formats:{$language->language}", 'cache');
+  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('use text format '.MCAPIFORM_STRING_FORMAT));
 
   //and clear the br tags from the existing saved forms
   $mcapiforms = db_select('mcapi_forms', 'f')->fields('f', array('name', 'data'))->execute()->fetchAllKeyed(0);
@@ -95,12 +104,11 @@ function mcapiforms_setup_filter() {
     );
   }
   cache_clear_all('mcapi_forms', 'cache');
-
-  $formats = variable_get('i18n_string_allowed_formats', array(filter_fallback_format()));
-  $formats[] = MCAPIFORM_STRING_FORMAT;
-  variable_set('i18n_string_allowed_formats', $formats);
 }
 
-function mcapiforms_update_7003() {
-  db_query("UPDATE {filter} SET status = 1 WHERE format = :format AND name = 'filter_autop'", array(':format' => MCAPIFORM_STRING_FORMAT));
+/**
+ * introduce or reset drupal filters to the designed payment forms
+ */
+function mcapi_forms_update_7003() {
+  mcapiforms_setup_filter();
 }

@@ -1346,7 +1346,7 @@ function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
       $value['quantity'] += $div/100;
     }
   }
-  //might save some memory and declutter debugging
+  //decluttering
   unset($element['currcode'], $element['main_quant'], $element['div_quant']);
   //we have to set the form_state[values] here because they have probably already been set by the parent element
   //they are only set automatically if they haven't been set at all

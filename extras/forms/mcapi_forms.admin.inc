@@ -25,7 +25,7 @@ function mcapi_forms_help($path, $args) {
  * Its not geometrically perfect, but covers a lot of use cases without getting too complicated
  */
 function _edit_mcapi_form(&$form, &$form_state) {
-  $mcapi_form = &$form_state['item']->data;
+  $settings = &$form_state['item']->data;
   $form['#prefix'] = '<div id = "form-wrapper">';
   $form['#suffix'] = '</div>';
   //I think ctools is supposed to be handling this
@@ -49,13 +49,13 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => !empty($mcapi_form),
+    '#collapsed' => !empty($settings),
     '#weight' => 3,
     'path' => array(
       '#title' => t('Path'),
       '#description' => t("Unique path to this form. Don't forget you can use a path alias over this"),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['architecture']['path']) ? $mcapi_form['architecture']['path'] : '',
+      '#default_value' => isset($settings['architecture']['path']) ? $settings['architecture']['path'] : '',
       '#required' => TRUE,
       '#weight' => 1,
       '#element_validate' => array('mcapi_element_validate_path_duplicate')
@@ -65,7 +65,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#description' => t('Choose the menu, or menu item-type.') .' '. t('Some choices may not produce a menu item') .' '.
         t("For more info, see 'type' info at !link", array('!link' => l('drupal.org', 'http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_menu/7'))),
       '#type' => 'select',
-      '#default_value' => isset($mcapi_form['architecture']['menu_link']) ? $mcapi_form['architecture']['menu_link'] : 'MENU_CALLBACK',
+      '#default_value' => isset($settings['architecture']['menu_link']) ? $settings['architecture']['menu_link'] : 'MENU_CALLBACK',
       '#options' => drupal_map_assoc(array_keys($menus)) + array(
         MENU_CALLBACK => t('No menu item'),
         MENU_LOCAL_TASK => 'MENU_LOCAL_TASK',
@@ -79,7 +79,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Access control'),
       '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
       '#type' => 'select',
-      '#default_value' => isset($mcapi_form['architecture']['access']) ? $mcapi_form['architecture']['access'] : 'currency',
+      '#default_value' => isset($settings['architecture']['access']) ? $settings['architecture']['access'] : 'user_chooser_roles:'.DRUPAL_AUTHENTICATED_RID,
       '#options' => _mcapi_user_chooser_access_options(),
       '#element_validate' => array(),
       '#weight' => 3
@@ -89,7 +89,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#description' => t('The block is named according the path.') .' '.
         t('Remember that blocks have their own caching and access control.'),
       '#type' => 'checkbox',
-      '#default_value' => isset($mcapi_form['architecture']['use_block']) ? $mcapi_form['architecture']['use_block'] : '',
+      '#default_value' => isset($settings['architecture']['use_block']) ? $settings['architecture']['use_block'] : '',
       '#element_validate' => array(),
       '#weight' => 4
     )
@@ -100,7 +100,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#description' => t('Whether this is completed by a 3rd party or a participant.'),
     '#type' => 'radios',
     '#options' => $perspectives,
-    '#default_value' => isset($mcapi_form['perspective']) ? $mcapi_form['perspective'] : 3,
+    '#default_value' => isset($settings['perspective']) ? $settings['perspective'] : 3,
     '#weight' => 5,
     //this ajax only works once then the form #id increments to ctools-export-ui-edit-item-form--2
     '#ajax' => array(
@@ -123,7 +123,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
   $transaction_fields = transaction_form($array, $array);
   foreach (element_children($transaction_fields) as $fieldname) {
     $form[$fieldname] = (array)@$form[$fieldname];//this is good for new forms with values
-    $mcapi_form[$fieldname] = (array)@$mcapi_form[$fieldname];//in case the form elements are controlled elsewhere and not preset here
+    $settings[$fieldname] = (array)@$settings[$fieldname];//in case the form elements are controlled elsewhere and not preset here
     switch ($fieldname) {
       case 'type':
       case 'state':
@@ -134,41 +134,45 @@ function _edit_mcapi_form(&$form, &$form_state) {
         if ($perspective == 1) {
           $transaction_fields[$fieldname]['#title'] = t('Other user');
           //convert the payer field to a seconderson field
-          $form['secondperson'] = _mcapi_form_config_fieldset($mcapi_form['secondperson'], $transaction_fields['payer'], 'secondperson');
-          $form['secondperson']['user_chooser_config'] = _mcapi_user_chooser_config_field($mcapi_form['secondperson']);
+          $form['secondperson'] = _mcapi_form_config_fieldset($settings['secondperson'], $transaction_fields['payer'], 'secondperson');
+          $form['secondperson']['user_chooser_config'] = _mcapi_user_chooser_config_field($settings['secondperson']);
           $preset = array(
             '#title' => t('Direction'),
             '#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
-            '#type' => $mcapi_form['direction']['widget'],
+            '#type' => $settings['direction']['widget'],
             '#options' => array(
               '' => t('Neither'),
-              'incoming' => $mcapi_form['direction']['incoming'],
-              'outgoing' => $mcapi_form['direction']['outgoing'],
+              'incoming' => $settings['direction']['incoming'],
+              'outgoing' => $settings['direction']['outgoing'],
             ),
+            '#default_value' => '',
             '#required' => FALSE
           );
-          $form['direction'] = _mcapi_form_config_fieldset($mcapi_form['direction'], $preset, 'direction')
-            +_mcapi_direction_config_fields($mcapi_form['direction']);
+          $form['direction'] = _mcapi_form_config_fieldset($settings['direction'], $preset, 'direction')
+            +_mcapi_direction_config_fields((array)$settings['direction']);
           break;
         }
         //then run on
       case 'payee':
         if ($perspective == 3) {
-          $form[$fieldname] = _mcapi_form_config_fieldset($mcapi_form[$fieldname], $transaction_fields[$fieldname], $fieldname);
-          $form[$fieldname]['user_chooser_config'] = _mcapi_user_chooser_config_field(@$mcapi_form[$fieldname]);
+          $form[$fieldname] = _mcapi_form_config_fieldset($settings[$fieldname], $transaction_fields[$fieldname], $fieldname);
+          $form[$fieldname]['user_chooser_config'] = _mcapi_user_chooser_config_field($settings[$fieldname]);
           $form[$fieldname]['preset']['#description'] = t('This field does not respond to changes in the above field.');
         }
         break;
 
-      default: //this covers all fieldAPI fields
+      default: //this covers all fieldAPI fields, including 'worth'
         $instance = field_read_instance('transaction', $fieldname, 'transaction');
-        $default_items = &$mcapi_form[$fieldname];
+        $default_items = &$settings[$fieldname];
         $empty_field = $transaction_fields[$fieldname][LANGUAGE_NONE];
         $form[$fieldname] = _mcapi_form_config_fieldset($default_items, $empty_field, $fieldname);
     }
   }
   $form['worth']['preset']['#required'] = FALSE;
-  $form['worth']['#description'] = '<br />'. t('Leave blank to exclude the currency from the form. Otherwise preset to zero or some other value');
+  $currencies = &drupal_static('currencies');
+  if (count($currencies) >1) {
+    $form['worth']['#description'] = '<br />'. t('Leave blank to exclude the currency widget from the form. Otherwise preset to zero or some other value');
+  }
   $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
 
   //we need to know the view modes of the transaction entity, to choose for the preview page
@@ -178,7 +182,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $view_modes[$name] = $mode['label'];
   }
   $view_modes['token'] = t(
-    'Tokenised sentence; configure at !link', 
+    'Tokenised sentence; configure at !link',
     array('!link' => l('admin/accounting/misc', 'admin/accounting/misc'))
   );
   $form['experience'] = array(
@@ -192,7 +196,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Title'),
       '#description' => t('For use in block title and menu links.') .' '. t('Leave blank to jump to the confirmation stage.'),
       '#type' => 'textfield',
-      '#default_value' => @$mcapi_form['experience']['title'],
+      '#default_value' => $settings['experience']['title'],
       '#weight' => 1,
       '#required' => TRUE
     ),
@@ -203,7 +207,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         )),
       '#type' => 'textarea',
       '#rows' => 6,
-      '#default_value' => @$mcapi_form['experience']['template'],
+      '#default_value' => @$settings['experience']['template'],
       '#weight' => 2,
       '#required' => TRUE
     ),
@@ -216,14 +220,14 @@ function _edit_mcapi_form(&$form, &$form_state) {
     'sure_title' => array(
       '#title' => t('Confirmation page title'),
       '#type' => 'textfield',
-      '#default_value' => @$mcapi_form['experience']['sure_title'],
+      '#default_value' => @$settings['experience']['sure_title'],
       '#weight' => 4,
     ),
     'sure_format' => array(
       '#title' => t('Confirmation preview mode'),
       '#type' => 'radios',
       '#options' => $view_modes,
-      '#default_value' => isset($mcapi_form['experience']['sure_format']) ? $mcapi_form['experience']['sure_format'] : 'certificate',
+      '#default_value' => isset($settings['experience']['sure_format']) ? $settings['experience']['sure_format'] : 'certificate',
       '#weight' => 5,
     )
   );
@@ -232,19 +236,19 @@ function _edit_mcapi_form(&$form, &$form_state) {
     '#description' => t("Settings for @field", array('@field' => t('Submit'))),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => empty($mcapi_form),
+    '#collapsed' => empty($settings),
     'button' => array(
       '#title' => t('Save button label'),
       '#description' => t("The text to appear on the 'save' button, or the absolute url of an image."),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['submission']['button']) ? $mcapi_form['submission']['button'] : 'Submit',
+      '#default_value' => isset($settings['submission']['button']) ? $settings['submission']['button'] : 'Submit',
       '#required' => TRUE,
     ),
     'redirect' => array(
       '#title' => t('Destination'),
       '#description' => t('Goes to the new transaction certificate by default.'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['submission']['redirect']) ? $mcapi_form['submission']['redirect'] : '',
+      '#default_value' => isset($settings['submission']['redirect']) ? $settings['submission']['redirect'] : '',
       '#element_validate' => array('mcapi_path_validate'),
       '#weight' => 1,
     ),
@@ -252,13 +256,13 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Confirmation message'),
       '#description' => t('Contents of the message box.'),
       '#type' => 'textfield',
-      '#default_value' => isset($mcapi_form['submission']['feedback']) ? $mcapi_form['submission']['feedback'] : '',
+      '#default_value' => isset($settings['submission']['feedback']) ? $settings['submission']['feedback'] : '',
       '#weight' => 1,
     ),
     '#weight' => 20,
   );
   if (module_exists('i18n_string')) {//put some helpful links in
-    $path = 'admin/accounting/forms/list/'. $mcapi_form['info']['name'] .'/translate/';
+    $path = 'admin/accounting/forms/list/'. $settings['info']['name'] .'/translate/';
     $note = t('Put the default language here, then !link.',
       array('!link' => l(t('translate'), $path))
     ) .' ';
@@ -279,7 +283,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
  */
 function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fieldname) {
   static $w;
-  $preset = &$field_defaults['preset'];
+  $preset = @$field_defaults['preset'];
   mcapi_unset_recursive($empty_element, '#required');
   mcapi_unset_recursive($empty_element, '#element_validate');
   $element = array(
@@ -296,8 +300,14 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   if (isset($empty_element['#entity'])) {//this is for fieldAPI worth checkboxes and radio buttons
     if (isset($preset)) {
       if ($fieldname == 'worth') {
-        foreach ($preset as $delta => $item) {
-          $element['preset'][$delta]['#default_value'] = $item;
+        foreach (element_children($element['preset']) as $delta) {
+          if (empty($preset[$delta])) {
+            //$element['preset'][$delta]['#default_value']['quantity'] = 0;
+          }
+          else {
+            //hoping the $delta order is consistent considering the currencies don't have weights
+            $element['preset'][$delta]['#default_value'] = $preset[$delta];
+          }
         }
       }
       else $element['preset']['#default_value'] = $preset;
@@ -305,8 +315,6 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   }
   elseif (element_children($empty_element)) {//this is a normal fieldAPI field - not checkboxes or radios
     foreach (element_children($empty_element) as $delta) {
-//      debug(element_children($empty_element[$delta]), $delta);
-//      debug($preset, 'preset[$delta][$col] is not always valid');
       foreach (element_children($empty_element[$delta]) as $col) {
         if (strlen($preset[$delta][$col])) {
           $element['preset'][$delta][$col]['#default_value'] = $preset[$delta][$col];
@@ -377,7 +385,11 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
       }
     }
   }
-  //could check all the other fields too, but thi sis a protected area and we'd be here till xmas
+  if (empty($values['worth']['preset'])) {
+    form_error($form['worth']['preset'], t("Use zero in the worth field"));
+  }
+
+  //could sanitise all the other fields too, but this is a protected area and we'd be here till xmas
   //this is only here because the i18n_string module nees translatable fields to have a format
   $values['experience']['template'] = check_markup($values['experience']['template'], MCAPIFORM_STRING_FORMAT);
 }
@@ -390,6 +402,9 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
 function mcapi_edit_mcapi_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   unset($form_state['values']['mcapi_form_fields']);
+  //awkward, but on the one hand ctools assumes the 'name' is a top level element
+  // and elsewhere it is expected to be in 'info'
+  $form_state['values']['name'] = $form_state['values']['info']['name'];
 
   //save the strings for the i18n
   if (function_exists('i18n_string_object_update')) {
@@ -417,7 +432,8 @@ function mcapi_form_validate_worth_preset(&$element, &$form_state) {
   form_set_value($element, $items, $form_state);
 }
 
-function _mcapi_user_chooser_config_field($default = array('user_chooser_config' => 'mcapi_access_check_permissions:transact')) {
+function _mcapi_user_chooser_config_field($default = NULL) {
+  if (!$default) $default = array('user_chooser_config' => 'user_chooser_roles:'.DRUPAL_AUTHENTICATED_RID);
   return array(
     '#title' => t('Users to choose from'),
     '#description' => t('Configure this widget more at !link',

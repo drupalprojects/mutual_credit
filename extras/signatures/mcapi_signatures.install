@@ -1,5 +1,6 @@
 <?php
 //Id;
+module_load_include('module', 'mcapi_signatures');
 
 function mcapi_signatures_install() {
   $mcapi_signed_off_notify_template = array(
@@ -29,11 +30,6 @@ function mcapi_signatures_install() {
  */
 function mcapi_signatures_uninstall() {
   module_load_include('module', 'mcapi_pending');
-  $actions = array_keys(mcapi_pending_action_info());
-  $aids = db_select('actions', 'a')->fields('a', array('aid'))->condition('callback', $actions)->execute()->fetchCol();
-  foreach ($aids as $aid) {
-    actions_delete($aid);
-  }
   if (module_exists('views')) {
     $view = views_get_view('signatures');
     if($view) {
@@ -114,20 +110,27 @@ function mcapi_signatures_update_7005() {
     variable_set($var, $string);
   }
 }
-/*
+/**
+ * reset the default transaction sentence to include signature links
+ */
+function mcapi_signatures_update_7007() {
+  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:sign_link]');
+}
+
+/**
  * check that signatures are congruent with transaction states
  */
-function mcapi_signatures_update_7006() {
+function mcapi_signatures_update_7008() {
   //sell all pending transactions to completed, then reset them to pending if they have signatures
   db_update('mcapi_transactions')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();
-  $pending_serials = db_select('mcapi_signatures', 's')->fields('s', array('serial'))->condition('pending', 1)->execute()->fetchCol();
+  $pending_serials = db_select('mcapi_signatures', 's')
+    ->fields('s', array('serial'))
+    ->condition('pending', 1)
+    ->execute()->fetchCol();
+  if (empty($pending_serials)) return;
   db_update('mcapi_transactions')
     ->fields(array('state' => TRANSACTION_STATE_PENDING))
     ->condition('serial', $pending_serials)
     ->execute();
 }
 
-
-function mcapi_signatures_update_7007() {
-  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:sign_link]');
-}

@@ -7,7 +7,7 @@
 function mcapi_forms_tokens($type, $tokens, array $objects, array $options = array()) {
   $replacements = array();
   if ($type != 'mcapiform' || !isset($objects[$type])) return $replacements;
-  $mcapiform = $objects[$type];
+  $form = $objects[$type];
 
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
@@ -18,16 +18,16 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
     $language_code = $options['language']->language;
   }
   foreach ($tokens as $name => $original) {
-    $replacements[$original] = drupal_render($mcapiform[$name]);
+    $replacements[$original] = drupal_render($form[$name]);
   }
   //now, since we couldn't pass the form by reference,
-  //we need to render the rest of the form elements
+  //we need to render the rest of the form elements, which not being in the template, are 'hidden'
   //and tack them onto one of the tokens.
   //before that we need to hide all the unused form elements
 
   mcapi_element_children_value($form, '#theme', 'hidden');
-  foreach (element_children($mcapiform) as $name) {
-    $item = drupal_render($mcapiform[$name]);
+  foreach (element_children($form) as $name) {
+    $item = drupal_render($form[$name]);
     $replacements[$original] .= $item;
   }
   return $replacements;
@@ -36,31 +36,27 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
 function mcapi_forms_token_info() {
   $types['mcapiform'] = array(
     'name' => t('Mcapi forms'),
-    'description' => t('Tokens to put in stage 1 or stage 2 of the transaction forms'),
+    'description' => t('Tokens to put in stage 1 of the transaction forms'),
     'needs-data' => 'mcapiform',
   );
 
   $mcapiform = array(
     'payer' => array(
-      'name' => t('Payer name'),
-      'description' => t("The user whose account is credit"),
+      'name' => t('3rd party: Payer name'),
+      'description' => t("User whose account is credited"),
     ),
     'payee' => array(
-      'name' => t('Payee name'),
-      'description' => t("The user whose account is debited"),
+      'name' => t('3rd party: Payee name'),
+      'description' => t("User whose account is debited"),
+    ),
+    'direction' => array(
+      'name' => t('1st party: Direction of transaction'),
+      'description' => t("Relative to the logged in user"),
     ),
     'secondperson' => array(
-      'name' => t('Second person'),
-      'description' => t("The user who isn't referred to here."),
+      'name' => t('1st party: Second person'),
+      'description' => t("The 'other' user in the transaction, not the logged in user"),
     ),
-    'created' => array(
-      'name' => t('Created'),
-      'description' => t('Stage 2 only: '). ' '. t("When the transaction was created")
-    ),
-    'creator' => array(
-      'name' => t('Creator'),
-      'description' => ('Stage 2 only: '). ' '. t("The user who first recorded the transaction"),
-    )
   );
 
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
