@@ -599,7 +599,7 @@ function mcapi_signatures_block_view($delta) {
 function mcapi_signatures_block_configure($delta) {
   return mcapi_block_configure($delta);
 }
-function mcapi_signatures_block_save($delta) {
+function mcapi_signatures_block_save($delta, $values) {
   return mcapi_block_save($delta, $values);
 }
 

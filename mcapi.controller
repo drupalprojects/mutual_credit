@@ -155,11 +155,11 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
    * This does not count as updating it, which is subject to different permissions
    */
   public function state(array $serials, $new_state) {
+    if (empty($serials)) return;
     db_update('mcapi_transactions')
       ->fields(array('state' => $new_state))
       ->condition('serial', $serials)
       ->execute();
-
     $this->resetCache();
   }
 

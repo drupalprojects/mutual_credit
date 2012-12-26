@@ -1,6 +1,5 @@
 <?php
-// $Id: variable.drush.inc,v 1.19 2010/03/25 02:48:17 weitzman Exp $
-
+// $Id:
 /**
  * Implementation of hook_drush_help().
  *
@@ -39,6 +38,7 @@ function mcapi_drush_help($section) {
  *   An associative array describing your command(s).
  */
 function mcapi_drush_command() {
+  module_load_include('module', 'mcapi');
   $items['mcapi-wipeslate'] = array(
     'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Undo all transactions according to the currency settings'),

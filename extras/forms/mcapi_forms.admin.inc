@@ -168,7 +168,9 @@ function _edit_mcapi_form(&$form, &$form_state) {
         $form[$fieldname] = _mcapi_form_config_fieldset($default_items, $empty_field, $fieldname);
     }
   }
-  $form['worth']['preset']['#required'] = FALSE;
+  $form['worth']['preset']['#all'] = TRUE;
+  $form['worth']['preset']['#allow_zero'] = TRUE;
+
   $currencies = &drupal_static('currencies');
   if (count($currencies) >1) {
     $form['worth']['#description'] = '<br />'. t('Leave blank to exclude the currency widget from the form. Otherwise preset to zero or some other value');
@@ -300,14 +302,8 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   if (isset($empty_element['#entity'])) {//this is for fieldAPI worth checkboxes and radio buttons
     if (isset($preset)) {
       if ($fieldname == 'worth') {
-        foreach (element_children($element['preset']) as $delta) {
-          if (empty($preset[$delta])) {
-            //$element['preset'][$delta]['#default_value']['quantity'] = 0;
-          }
-          else {
-            //hoping the $delta order is consistent considering the currencies don't have weights
-            $element['preset'][$delta]['#default_value'] = $preset[$delta];
-          }
+        foreach ($preset as $item) {
+          $element['preset']['#default_value'][$item['currcode']] = $item['quantity'];
         }
       }
       else $element['preset']['#default_value'] = $preset;

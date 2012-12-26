@@ -225,9 +225,10 @@ function entity_metadata_create_transaction($values = array(), $for_me = FALSE) 
   if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
   else $currencies = drupal_static('currencies');
   //this callback doesn't normally deal with fieldAPI fields, but worth is special and description is special
-  if (isset($values['worth'])) {//
-    if (isset($values['worth'][LANGUAGE_NONE])) $values['worth'] = $values['worth'][LANGUAGE_NONE];
-    $transaction->worth = array(LANGUAGE_NONE => $values['worth']);
+  if (isset($values['worth'])) {
+    foreach ($values['worth'] as $currcode => $quantity) {
+      $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $currcode, 'quantity' => $quantity);
+    }
   }
   elseif(isset($values['quantity'])) {
     $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
@@ -331,10 +332,13 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'render element' => 'element',
       'file' => 'mcapi.inc'
     ),
+      /*
     'worths_element'=> array(
       'render element' => 'element',
       'file' => 'mcapi.inc'
     ),
+       * 
+       */
     'worth_item'=> array(
       'variables' => array(
         'currcode' => NULL,
@@ -993,7 +997,7 @@ function mcapi_action_info() {
   return array(
     'mcapi_supplementary_transaction_action' => array(
       'type' => 'transactions',
-      'label' => t('Charge one of the participants'),
+      'label' => t('Make a dependent payment'),
       'configurable' => TRUE,
       'triggers' => array('transaction_cluster_alter'),
     ),
@@ -1003,6 +1007,17 @@ function mcapi_action_info() {
       'description' => t('Mail sent to the participants when the transaction completes'),
       'configurable' => TRUE,
       'triggers' => array('transactions_state'),
+    ),
+    'mcapi_transaction_entity_uid' => array(
+      'type' => 'transactions',
+      'label' => t('Create transaction with entity owner'),
+      'description' => t('Mail sent to the participants when the transaction completes'),
+      'configurable' => TRUE,
+      'triggers' => array(//all the core triggers, except taxonomy
+        'node_presave', 'node_insert', 'node_update', 'node_delete', 'node_view',
+        'comment_presave', 'comment_insert', 'comment_update', 'comment_delete', 'comment_view',
+        'user_insert', 'user_update', 'user_delete', 'user_login', 'user_logout',  'user_view',
+      ),
     )
   );
 }
@@ -1161,7 +1176,16 @@ function mcapi_field_widget_info() {
  */
 function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   module_load_include('inc', 'mcapi');
-  $element += get_worths_element($items);
+  $element['#type'] = 'worths';
+  $defaults = count($items) ? $items : (array)$instance['default_value'];
+  //set the instance defaults exactly as saved in mcapi_form_field_ui_field_edit_form_alter
+  //these are used when the element is processed
+  foreach ($defaults as $item) {
+    $element['#default_value'][$item['currcode']] = $item['quantity'];
+  }
+  if (!isset($element['#default_value'])) {
+    $element['#default_value'] = array();
+  }
   return $element;
 }
 
@@ -1190,7 +1214,8 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
   //checks that at least one of the $items is populated
   if (!empty($entity) & $instance['required']) {
     foreach ($items as $item) {
-      if (!mcapi_field_is_empty($item, $field)) return;
+      //we don't use mcapi_field_is_empty here because we want 0 to return FALSE
+      if (!empty($item['quantity'])) return;
     }
     $errors[$field['field_name']][$langcode][$delta][] = array(
       'error' => 'mcapi_empty_worth',
@@ -1213,15 +1238,19 @@ function mcapi_field_widget_error(&$element, $error, $form, &$form_state) {
       return form_error($element, $error['message']);
   }
 }
-
+/*
+ * implements field hook_field_is_empty
+ * allows zero values to be saved, but not NULL
+ */
 function mcapi_field_is_empty($item) {
-  return empty($item['quantity']);
+  return !strlen($item['quantity']);
 }
 
 
 /*
  * implements hook_form_field_ui_field_edit_form_alter
- * remove the default 'worth' setting from the field settings form
+ * remove the default 'worth' setting from the field settings form i.e. cardinality
+ * tell the widget that it is in config mode
  */
 function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   if ($form['#field']['type'] == 'worth_field') {
@@ -1231,6 +1260,7 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
       '#value' => 1
    );
   }
+  $form['instance']['default_value_widget']['worth'][LANGUAGE_NONE]['#all'] = TRUE;
 }
 
 /*
@@ -1301,26 +1331,33 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
  */
 function mcapi_element_info() {
   return array(
+    //this is used by the field API for mixed transaction forms
+    'worths' => array(
+      '#title' => t('Worth'),
+      '#input' => TRUE,
+      '#title_display' => 'before',
+      '#element_validate' => array('worths_element_validate'),
+     // '#theme' => 'worths_element',
+      '#theme_wrappers' => array('form_element'),
+      '#process' => array('worths_element_process'),
+      //defaults
+      '#required' => TRUE,
+      //custom properties, used for configuration
+      '#all' => FALSE,//shows all currencies
+      '#allow_zero' => FALSE,//affects the #required value
+    ),
+    //this one is used internally only,
+    //although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
     'worth' => array(
       '#input' => TRUE,
       '#title_display' => 'attribute',
       '#process' => array('worth_element_process'),
       '#element_validate' => array('worth_element_validate'),
       '#theme' => 'worth_element',
-      '#config' => FALSE, //bypasses value processing
       //defaults
       '#required' => TRUE,
-    ),
-    //this is only used by the field API for mixed transaction forms
-    'worths' => array(
-      '#title' => t('Worth'),
-      '#input' => TRUE,
-      '#title_display' => 'before',
-      '#element_validate' => array('worths_element_validate'),
-      '#theme' => 'worths_element',
-      '#theme_wrappers' => array('form_element'),
-      //defaults
-      '#required' => TRUE,
+      //custom properties, used for configuration
+      '#allow_zero' => FALSE,//affects the #required value, inherited from above
     )
   );
 }
@@ -1338,14 +1375,13 @@ function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
     'currcode' => $edit['currcode'],
     'quantity' => $edit['main_quant']
   );
-
-  if (empty($element['#config'])) {
-    $value['quantity'] += 0; //ensure its a number
-    //combine integer and division to get quantity
-    if ($div = @$edit['div_quant'] + 0) {
-      $value['quantity'] += $div/100;
-    }
+  //incorporate the fractions from the division field
+  $value['quantity'] += 0; //ensure its a number
+  //combine integer and division to get quantity
+  if ($div = @$edit['div_quant'] + 0) {
+    $value['quantity'] += $div/100;
   }
+
   //decluttering
   unset($element['currcode'], $element['main_quant'], $element['div_quant']);
   //we have to set the form_state[values] here because they have probably already been set by the parent element

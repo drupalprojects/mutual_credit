@@ -153,13 +153,13 @@ function mcapi_forms_block_view($delta) {
   //it's generally a bad idea to show the form in block on its own page
   if (current_path() == $settings['path']) return;
   $title = drupal_get_title();
-  //because loading up the form sets the page title
-  $block = array(//if these seem inverted its because drupal_get_form loads the inc file
-    'subject' => drupal_get_title(),
-    'content' => mcapi_get_form($delta),
-  );
+  $form = mcapi_get_form($delta);//this sets the page title
+  $block_title = drupal_get_title();
   drupal_set_title($title);
-  return $block;
+  return array(//if these seem inverted its because drupal_get_form loads the inc file
+    'subject' => $block_title,
+    'content' => $form,
+  );
 }
 
 /*
@@ -175,7 +175,14 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
     $fieldnames = array_merge(array('payer', 'payee'), array_keys(field_info_instances('transaction', 'transaction')));
     foreach($fieldnames as $fieldname) {
       if (isset($settings[$fieldname]['preset'])) {
-        $defaults[$fieldname] = $settings[$fieldname]['preset'];
+        if ($fieldname == 'worth') {
+          foreach ($settings[$fieldname]['preset'] as $item) {
+            $defaults[$fieldname][$item['currcode']] = $item['quantity'];
+          }
+        }
+        else {
+          $defaults[$fieldname] = $settings[$fieldname]['preset'];
+        }
       }
     }
     $transaction = entity_metadata_create_transaction($defaults);
@@ -342,14 +349,13 @@ function mcapi_form_title($form_name) {
 function mcapi_path_validate(&$element, &$form_state) {}
 
 function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
-  //because default values are best set in the forms
-//  $form['instance']['default_value_widget']['#disabled'] = TRUE;
-  $form['instance']['default_value_widget'] = array(
-    '#markup' => '<strong>'. t(
+  if ($form['#instance']['entity_type'] == 'transaction') {
+    $form['instance']['default_value_widget']['#disabled'] = TRUE;
+    $form['instance']['default_value_widget']['#description'] = '<strong>'.t(
       'The default values are set in the form designer: !link',
       array('!link' => l('admin/accounting/forms', 'admin/accounting/forms'))
-    ).'</strong>'
-  );
+    ).'</strong>';
+  }
 }
 
 

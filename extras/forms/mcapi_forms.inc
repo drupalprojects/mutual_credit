@@ -103,24 +103,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
       array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
     }
-    //reindex the settings by currcode
-    foreach ($settings['worth']['preset'] as $item)$worths[$item['currcode']] = $item['quantity'];
-
-    //hide the unused currencies and convert the zeros from the settings to empty strings in the actual form
-    foreach (element_children($form['worth'][LANGUAGE_NONE]) as $delta) {
-      $currcode = $form['worth'][LANGUAGE_NONE][$delta]['#default_value']['currcode'];
-      debug($form['worth'][LANGUAGE_NONE][$delta]['#default_value'], $currcode);
-      if(!is_numeric($worths[$currcode])) {
-        unset($form['worth'][LANGUAGE_NONE][$delta]);
-      }
-      elseif($worths[$currcode] == 0) {
-        $form['worth'][LANGUAGE_NONE][$delta]['#default_value']['quantity'] = '';
-      }
-      else{
-        $form['worth'][LANGUAGE_NONE][$delta]['#default_value']['quantity'] = $worths[$currcode];
-      }
-      debug($form['worth'][LANGUAGE_NONE][$delta]);
-    }
   }
   elseif ($form['#step'] == 2) {
     //we unset most of the fields so they don't display or change from what's in storage

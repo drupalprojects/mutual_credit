@@ -77,6 +77,9 @@ class mcapi_ui extends ctools_export_ui {
    * table, override this method to set up the table header.
    */
   function list_table_header() {
+    //yuk, I don't know how views clears the cache, but this is as a good a place to do it as any.
+    cache_clear_all('currencies', 'cache');
+
     $header = array();
     if (!empty($this->plugin['export']['admin_title'])) {
       $header[] = array('data' => t('Title'), 'class' => array('ctools-export-ui-title'));
