@@ -16,7 +16,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   $form['#settings'] =  $form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG];
   $settings = &$form['#settings'];
   $transaction = $form['#transaction'];
-
   //change the 5 translatable strings
   if (module_exists('i18n_string')) {
     //prepare the i18n pseudo_object, because i18n expects a flat object and the mcapi_form just isn't, sorry
@@ -71,7 +70,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
         //specifies which user_chooser widget
         $form[$participant]['#type'] = strtok($settings[$participant]['user_chooser_config'], ':');
         $form[$participant]['#args'] = array(strtok(':'));
-        //$form[$participant]['#default_value'] = $settings[$participant]['preset'];
         $form[$participant]['#allow_me'] = TRUE;//this could be put in the config
       }
     }
@@ -171,12 +169,12 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
  */
 function theme_mcapi_form($variables) {
   $form = &$variables['form'];
-  $buttons = drupal_render($form['buttons']);
+  $form['buttons']['#strip'] = TRUE;
   //render the visible stuff first
   if ($form['#step'] == 1) {
     foreach (element_children($form) as $fieldname) {
-      if (in_array($fieldname, array('payer', 'payee', 'secondperson', 'direction'))) {
-        if (isset($form[$fieldname]['#strip']) && $form[$fieldname]['#strip']) {
+      if (in_array($fieldname, array('payer', 'payee', 'secondperson', 'direction', 'actions'))) {
+        if (isset($form[$fieldname]['#strip']) && $form[$fieldname]['#strip'] || $fieldname == 'actions') {
           unset($form[$fieldname]['#theme_wrappers']);
           unset($form[$fieldname]['#title']);
           unset($form[$fieldname]['#description']);
@@ -205,7 +203,7 @@ function theme_mcapi_form($variables) {
       check_markup($form['#template'], MCAPIFORM_STRING_FORMAT),
       array('mcapiform' => $form),
       array('sanitize' => FALSE)
-    ) . '<br />'.$buttons;
+    );
   }
   elseif ($form['#step'] == 2) {
     $preview = drupal_render($form['#preview']);

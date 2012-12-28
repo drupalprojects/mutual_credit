@@ -341,7 +341,7 @@ function balance_limits_view($uid, $currcodes) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
   foreach ($currcodes as $currcode) {
-    if (!currency_access('user_aggregated_view', $currcode, $uid)) continue;
+    if (!currency_access('user_aggregated_view', $currcode)) continue;
     $limits = limits_get($currcode, $uid);
     //this chart makes no sense if there isn't a max (or min) limit
     if (empty($limits['max']) && empty($limits['min'])) continue;
@@ -359,7 +359,7 @@ function trading_limits_view($uid, $currcodes) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
   foreach ($currcodes as $currcode) {
-    if (!currency_access('user_aggregated_view', $currcode, $uid)) continue;
+    if (!currency_access('user_aggregated_view', $currcode)) continue;
     $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);
     if(empty($limits)) continue;
     $render_array[$currcode] = array(

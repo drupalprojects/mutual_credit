@@ -80,6 +80,8 @@ function mcapi_menu_inc() {
     'description' => 'Log a transaction in the database',#co
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_default_form'),
+    //we use this permission but it's possible to create a paradox since each currency has its own permission
+    //if we knew what currency we would use callback 'transaction_operation_access' and args 'membership' and a dummy transaction
     'access arguments' => array('transact'),
     'file' => 'mcapi.inc',
   );
@@ -128,8 +130,8 @@ function mcapi_menu_inc() {
     'title' => 'Undo',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_transaction_undo_confirm_form', 1),
-    'access callback' => 'transaction_undo_access',
-    'access arguments' => array(1),
+    'access callback' => 'transaction_operation_access',
+    'access arguments' => array('undo', 1),
     'weight' => 1,
     'type' => MENU_LOCAL_ACTION,
     'file' => 'mcapi.inc',
@@ -484,73 +486,20 @@ function mcapi_validate_ttype(&$element, $form_state) {
 /*
  * transaction_access callbacks
  */
-function transaction_access_anyone($transaction, $account = NULL) {
+function transaction_access_callback_anyone($transaction, $account) {
   return TRUE;
 }
-function transaction_access_authenticated($transaction, $account = NULL) {
-  if (!$account) $account = $GLOBALS['user'];
-  return $account->uid;
+function transaction_access_callback_perm_transact($transaction, $account) {
+  return user_access('transact',$account);
 }
-function transaction_access_accountant($transaction, $account = NULL) {
+function transaction_access_callback_perm_manage_all($transaction, $account) {
   return user_access('manage all transactions', $account);
 }
-function transaction_access_payee($transaction) {
-  return $GLOBALS['user']->uid == $transaction->payee;
+function transaction_access_callback_payee($transaction, $account) {
+  return $account->uid == $transaction->payee;
 }
-function transaction_access_payer($transaction) {
-  return $GLOBALS['user']->uid == $transaction->payer;
-}
-
-
-/*
- * currency access callbacks
- * determine a segment of users
- * each of these returns TRUE or FALSE if passed a User ID
- * or a list of User IDs if passed nothing
- * This is likely to be moved towards user_chooser
- */
-function user_segments_transact($uid = 0) {
-  if ($uid) {
-    return user_access('transact', user_load($uid));
-  }
-  return _matslats_role_get_users('transact', $uid);
-}
-function user_segments_manage_all_transactions($uid = 0) {
-  if ($uid) {
-    return user_access('manage all transactions', user_load($uid));
-  }
-  return _matslats_role_get_users('manage all transactions');
-}
-function user_segments_all($uid = 0) {
-  $query = db_select('users', 'u')->fields('u', array('uid'))->condition('status', 1);
-  if ($uid) $query->condition('uid', $uid);
-  $uids = $query->execute()->fetchcol();
-  if ($uid) return in_array($uid, $uids);
-  return $uids;
-}
-//utility function for the above
-//if the user doesn't have permission
-function _matslats_role_get_users($permission) {
-  $rids = user_roles(TRUE, $permission);
-  if (empty($rids)) return array(1);
-  $query = db_select('users_roles', 'ur');
-  $query->join('users', 'u', 'u.uid = ur.uid');
-  return $query->fields('ur', array('uid'))
-    ->condition('ur.rid', array_keys($rids))
-    ->condition('u.status', TRUE)
-    ->execute()
-    ->fetchCol();
-}
-
-/*
- * access control wrapper for currency
- * if uid is specified, returns TRUE or FALSE
- * otherwise returns a list of users
- */
-function currency_access($op, $currcode, $uid = NULL) {
-  if (is_null($uid))$uid = $GLOBALS['user']->uid;
-  $function = currency_load($currcode)->currency_access[$op];
-  return $function($uid);
+function transaction_access_callback_payer($transaction, $account) {
+  return $account->uid == $transaction->payer;
 }
 
 
@@ -1031,61 +980,13 @@ function _mcapi_get_text_instances() {
   return $options;
 }
 
-/*
- * element_info process callback
- * break up the worths values into individual fields
- * either one widget with a currency chooser
- * or many widgets with fixed currencies
- * $element['default_value'] is an array of all the currencies to be rendered as keys against quantitites
- */
-function worths_element_process($element, $form_state) {
-  if ($element['#all']) {
-    //ensure every currency is represented
-    $currencies = &drupal_static('currencies');
-    foreach (array_keys($currencies) as $currcode) {
-      if (!isset($element['#default_value'][$currcode]))$element['#default_value'][$currcode] = 0;
-    }
-  }
-  $currencies = &drupal_static('currencies');
-  $element['#type'] = 'worths';
-
-  //define the sub-element for each currency
-  //if mixed transaction flag is off, then we don't increment the delta
-  //and instead just add to the #currcodes
-  $delta = 0;
-
-  foreach($element['#default_value'] as $currcode => $quant) {
-    if (empty($currencies[$currcode])) {
-      //this should only happen when a currency has been deleted and some config still expects
-      drupal_set_message(t("Cannot put unknown currency in form: @name", array('@name' => $currcode)));
-      continue;
-    }
-    $element[$delta]['#title'] = $currencies[$currcode]->human_name;
-    $element[$delta]['#title_display'] = 'attribute';
-    $element[$delta]['#type'] = 'worth';
-    $element[$delta]['#required'] = FALSE;//not sure about this
-    $element[$delta]['#currcodes'][] = $currcode;
-    $element[$delta]['#allow_zero'] = $element['#allow_zero'];
-    $element[$delta]['#default_value'] = array(
-      'currcode' => $currcode,
-      'quantity' => $quant
-    );
-    if(variable_get('mcapi_mixed_transactions', TRUE)) {
-      $element[$delta]['#title'] = $currencies[$currcode]->human_name;
-      $delta++;
-    }
-  }
-
-  return $element;
-}
-
 
 /*
  * default worths element validator
  * and check required
  * clear the $items which are empty
  */
-function worths_element_validate(&$element, &$form_state) {
+function worths_element_validate(&$element, &$form_state) {debug($form_state['values']);
   //we need to drop the empty values to prevent them being written to the database
   //this element contains the worth_element $items, but did not inherit its value from them
   //because, as container, it processes before them. Shame
@@ -1122,7 +1023,8 @@ function worths_element_validate(&$element, &$form_state) {
  * element process callback
  * is called once for each $item
  */
-function worth_element_process($element) {
+function worth_element_process($element, &$form_state) {
+  form_load_include($form_state, 'inc', 'mcapi');
   $currencies = &drupal_static('currencies');
   $main_quant = '';
   $quantity = $element['#default_value']['quantity'];
@@ -1201,7 +1103,7 @@ function worth_element_process($element) {
 function worth_element_validate(&$element, &$form_state, $form) {
   $quant = $element['#value']['quantity'];
 
-  if (!is_numeric($quant)) {
+  if (!is_numeric($quant) && !$element['#allow_zero']) {
     form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
   }
   if ($quant < 0) {

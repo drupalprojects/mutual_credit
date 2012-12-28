@@ -25,6 +25,13 @@ function mcapi_signatures_install() {
   $sentence .= ' [transaction:sign_link]';
   variable_set('mcapi_sentence', $sentence);
 }
+
+function mcapi_signatures_enable() {
+  drupal_set_message(t(
+    "Currencies should be reviewed to take account of transaction signing. !link",
+    array('!link' => l('admin/accounting/currencies', 'admin/accounting/currencies'))
+  ));
+}
 /*
  * implements hook_uninstall
  */

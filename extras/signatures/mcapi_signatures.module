@@ -39,15 +39,6 @@ function mcapi_signatures_menu() {
     'access arguments' => array(1),
     'type' => MENU_LOCAL_ACTION,
   );
-  $items['transaction/%transaction/cancel_pending'] = array(
-    'title' => 'Cancel',
-    'description' => 'Cancel the transaction',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_cancel_confirm_form', 1),
-    'access callback' => 'transaction_cancel_pending_access',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_ACTION,
-  );
   $items['transactions/signall/%user'] = array(
     'title' => 'Sign all my transactions',
     'page callback' => 'drupal_get_form',
@@ -340,18 +331,6 @@ function transaction_signoff_access($transaction) {
     if (user_access('manage all transactions')) return TRUE;
   }
 }
-//menu access callback
-function transaction_cancel_pending_access($transaction) {
-  if ($transaction->state != TRANSACTION_STATE_PENDING) return;
-  module_load_include('inc', 'mcapi');
-  currencies_load();//menu access functions run before hook_init - see mcapi_init
-  $currencies = &drupal_static('currencies');
-  $callbacks = &$currencies[$transaction->worth[LANGUAGE_NONE][0]['currcode']]->transaction_access['cancel_pending'];
-  if (empty($callbacks)) return FALSE;
-  foreach (array_filter($callbacks) as $callback) {
-    if ($callback($transaction)) return TRUE;
-  }
-}
 
 
 /*
@@ -434,19 +413,8 @@ function mcapi_signatures_form_ctools_export_ui_edit_item_form_alter(&$form, &$f
     }
     unset($form['step-1']);
   }
-  //for the currencies form,
-  //Add the a new operation to the currency access
-  elseif ($form_state['plugin']['schema'] == 'mcapi_currencies') {
-    $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
-    $form['transaction_access']['cancel_pending'] = array(
-      '#title' => t('Cancel pending transactions'),
-      '#type' => 'checkboxes',
-      '#options' => $form['transaction_access'][1]['#options'],
-      '#default_value' => isset($currency->transaction_access['cancel_pending']) ? $currency->transaction_access['cancel_pending'] : array(),
-      '#weight' => 5,
-    );
-  }
 }
+
 
 
 /*
@@ -816,4 +784,35 @@ function _get_signable_transaction_types() {
   $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));
   sort($types);
   return $types;
+}
+
+/*
+ * implements mcapi hook ransaction_operations
+ * each callback refers to 2 functions - itself and CALLBACK_views
+ */
+function mcapi_signatures_transaction_operations() {
+  return array(
+    'undo_pending' => array(
+      'title' => t('Undo pending transactions'),
+      //'description' => t('Determine which users are permitted to use this currency')
+    ),
+  );
+}
+
+/*
+ * implements mcapi hook transaction_access_callbacks
+ * each callback refers to 2 functions - itself and CALLBACK_views
+ */
+function mcapi_signatures_transaction_access_callbacks() {
+  return array(
+    'transaction_access_callback_signatory' => t('Signatories to the transaction'),
+  );
+}
+function transaction_access_callback_signatory($transaction) {
+  if (!isset($transaction->pending_signatures)) return FALSE;
+  return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
+}
+function transaction_access_callback_signatory_views() {
+  //this could be horrible...
+  return TRUE;
 }

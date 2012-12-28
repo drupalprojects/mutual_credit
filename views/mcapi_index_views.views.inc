@@ -278,7 +278,7 @@ function mcapi_query_transaction_access_views_index_alter(QueryAlterableInterfac
   $currencies = &drupal_static('currencies');
   $or_currcodes = db_or();//where currcode = A OR currcode = B
   foreach ($currencies as $currcode => $currency) {
-    if ($currency->currency_access['user_aggregated_view']) {
+    if (currency_access('user_aggregated_view', $currcode)) {
       $or_currcodes->condition('currcode', $currcode);
     }
   }

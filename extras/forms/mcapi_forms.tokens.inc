@@ -8,7 +8,6 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
   $replacements = array();
   if ($type != 'mcapiform' || !isset($objects[$type])) return $replacements;
   $form = $objects[$type];
-
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
   $language_code = NULL;
@@ -20,15 +19,21 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
   foreach ($tokens as $name => $original) {
     $replacements[$original] = drupal_render($form[$name]);
   }
+  //stick the button on the end if it hasn't already been rendered as a token
+  unset($form['buttons']['#theme_wrappers']);
+  $replacements[$original] .= drupal_render($form['buttons']);
+
   //now, since we couldn't pass the form by reference,
   //we need to render the rest of the form elements, which not being in the template, are 'hidden'
-  //and tack them onto one of the tokens.
-  //before that we need to hide all the unused form elements
-
-  mcapi_element_children_value($form, '#theme', 'hidden');
+  //and tack them onto the end of the last token - after the buttons
   foreach (element_children($form) as $name) {
-    $item = drupal_render($form[$name]);
-    $replacements[$original] .= $item;
+    $element = &$form[$name];
+    if (isset($element['#children']) && strlen($element['#children'])) continue;//have already been rendered (and replaced, above)
+    //hide all the unused form elements
+    mcapi_element_children_value($element, '#theme', 'hidden');
+    mcapi_unset_recursive($element, '#type');
+    mcapi_unset_recursive($element, '#theme_wrappers');
+    $replacements[$original] .= drupal_render($element);
   }
   return $replacements;
 }
@@ -57,6 +62,9 @@ function mcapi_forms_token_info() {
       'name' => t('1st party: Second person'),
       'description' => t("The 'other' user in the transaction, not the logged in user"),
     ),
+    'button' => array(
+      'name' => t('Submit button')
+    ),
   );
 
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
@@ -73,15 +81,15 @@ function mcapi_forms_token_info() {
 
 
 /*
- * nesting function to set values wherever in the element
+ * nesting function to set values at the deepest level in the element
  */
 function mcapi_element_children_value(&$element, $name, $value) {
   if (is_array($element)) {
-    $element[$name] = $value;
     if ($fieldnames = element_children($element)) {
       foreach($fieldnames as $fieldname) {
         mcapi_element_children_value($element[$fieldname], $name, $value);
       }
     }
+    else $element[$name] = $value;
   }
 }

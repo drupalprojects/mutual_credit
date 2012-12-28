@@ -139,11 +139,11 @@ function _edit_mcapi_form(&$form, &$form_state) {
           $preset = array(
             '#title' => t('Direction'),
             '#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
-            '#type' => $settings['direction']['widget'],
+            '#type' => $settings['direction']['widget'] ? $settings['direction']['widget'] : 'radios',
             '#options' => array(
               '' => t('Neither'),
-              'incoming' => $settings['direction']['incoming'],
-              'outgoing' => $settings['direction']['outgoing'],
+              'incoming' => $settings['direction']['incoming'] ? $settings['direction']['incoming'] : t('Incoming'),
+              'outgoing' => $settings['direction']['outgoing'] ? $settings['direction']['outgoing'] : t('Outgoing'),
             ),
             '#default_value' => '',
             '#required' => FALSE
@@ -198,7 +198,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Title'),
       '#description' => t('For use in block title and menu links.') .' '. t('Leave blank to jump to the confirmation stage.'),
       '#type' => 'textfield',
-      '#default_value' => $settings['experience']['title'],
+      '#default_value' => @$settings['experience']['title'],
       '#weight' => 1,
       '#required' => TRUE
     ),
@@ -367,7 +367,6 @@ function mcapi_forms_exists($machine_name, $element, &$form_state) {
  */
 function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   $values = &$form_state['values'];
-
   //need to check that all required fields exist in the form.
   if (!empty($values['experience']['template'])) {
     foreach ($values as $name => $prop) {
@@ -384,10 +383,6 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
   if (empty($values['worth']['preset'])) {
     form_error($form['worth']['preset'], t("Use zero in the worth field"));
   }
-
-  //could sanitise all the other fields too, but this is a protected area and we'd be here till xmas
-  //this is only here because the i18n_string module nees translatable fields to have a format
-  $values['experience']['template'] = check_markup($values['experience']['template'], MCAPIFORM_STRING_FORMAT);
 }
 
 /*

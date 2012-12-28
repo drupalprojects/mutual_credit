@@ -64,21 +64,6 @@ function accountant_ui_menu() {
   return $items;
 }
 
-/*
- * implements hook_user_chooser_preselect
- * these callbacks take the user_chooser element, and the $form_State as their arguments
- */
-function accountant_ui_user_chooser_preselect() {
-  $callbacks = array(
-    'accounting_list_all_users' => t('All active users with permission to @perm', array('@perm' => t('transact'))),
-  );
-  $currencies = &drupal_static('currencies');
-  if (count($currencies) > 1) {
-    //if worth field cardinality > 1 this will assume the first currency
-    $callbacks['accounting_list_currency'] = t('All users of the given currency');
-  }
-  return $callbacks;
-}
 
 /*
  * implements hook_forms
@@ -124,16 +109,4 @@ function accountant_ui_views_api() {
  */
 function accountant_ui_mcapi_info_types() {
   return array('mass');
-}
-
-
-/*
- * trading_groups callback declared in hook_user_chooser_preselect
- * return all the users with permission to trade
- * needs no arguments
- */
-function accounting_list_currency($element, $form_state) {
-  $currency = currency_load($form_state['values']['worth'][LANGUAGE_NONE][0]['currcode']);
-  $callback = $currency->currency_access['membership'];
-  return $callback();
 }

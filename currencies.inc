@@ -56,67 +56,76 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
-  $user_segments = module_invoke_all('user_segments');
   $form['currency_access'] = array(
     '#title' => 'Currency access',
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
-    'membership' => array(
-      '#title' => t('Use currency'),
-      '#description' => t('Determine which users are permitted to use this currency'),
-      '#type' => 'radios',
-      '#options' => $user_segments,
-      '#default_value' => $currency->currency_access['membership'],
-      '#weight' => 1,
-      '#prefix' => '<style>.form-type-checkboxes .form-type-checkbox{margin:0;} .form-type-checkbox input{margin:0; padding:0}</style>',
-    ),
-    'user_aggregated_view' => array(
-      '#title' => t('View aggregated user transaction data'),
-      '#description' => t('Such as balance, gross income, number of transactions'),
-      '#type' => 'radios',
-      '#options' => $user_segments,
-      '#default_value' => $currency->currency_access['user_aggregated_view'],
-      '#weight' => 2,
-    ),
-    'currency_aggregated_view' => array(
-      '#title' => t('View aggregated system data'),
-      '#type' => 'radios',
-      '#options' => $user_segments,
-      '#default_value' => $currency->currency_access['currency_aggregated_view'],
-      '#weight' => 3,
-    ),
-    'undo' => array(
-      '#title' => t('Undo any transaction in this currency'),
-      '#type' => 'radios',
-      '#options' => $user_segments,
-      '#default_value' => $currency->currency_access['undo'],
-      '#weight' => 4,
-    ),
     '#weight' => -1
   );
-  if ($GLOBALS['user']->uid == 1) {
-    $form['currency_access']['#description'] = t('Module developers: use @hook to add more options', array('@hook' => 'hook_user_segments'));
+  $weight = 0;
+
+
+  foreach (module_implements('permission') as $module) {
+    $function = $module .'_permission';
+    foreach ($function() as $perm => $info) {
+      $options[$module][$perm] = strip_tags($info['title']);
+    }
   }
+  $form['currency_access']['user_aggregated_view'] = array(
+    '#title' => t('View aggregated user transaction data'),
+    '#description' => t("Such as users' balances, gross income, number of transactions"),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => @$currency->currency_access[$callback] ? $currency->currency_access[$callback] : 'transact',
+    '#weight' => $weight++,
+  );
+  $form['currency_access']['currency_aggregated_view'] = array(
+    '#title' => t('View aggregated system data'),
+    '#description' => t('Look at currency usage stats stripped of personal information'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => @$currency->currency_access[$callback] ? $currency->currency_access[$callback] : 'transact',
+    '#weight' => $weight++,
+  );
 
   static $i = 0;
   static $j = 0;
   $form['transaction_access'] = array(
-    '#title' => t('Transaction access'),
+    '#title' => t('Privacy'),
     '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
   );
+  $access_callbacks = module_invoke_all('transaction_access_callbacks');
   foreach (mcapi_get_states('#full') as $constant => $state) {
     $states = isset($currency->view) ? $currency->view : array();
     $form['transaction_access'][$constant] = array(
       '#title' => $state['name'],
       '#description' => $state['description'],
       '#type' => 'checkboxes',
-      '#options' => module_invoke_all('transaction_access_callbacks'),
+      '#options' => $access_callbacks,
       '#default_value' => isset($currency->transaction_access[$constant]) ? $currency->transaction_access[$constant] : array(),
       '#weight' => $j++,
     );
   }
+  $form['transaction_operations'] = array(
+    '#title' => t('Transaction operations'),
+    '#description' => t('Determine who can do what to transactions') .' '. t('Any of the checked conditions must return TRUE'),
+    '#type' => 'fieldset',
+    '#group' => 'additional_settings',
+  );
+
+  foreach (module_invoke_all('transaction_operations') as $callback => $info) {
+    $form['transaction_operations'][$callback] = array(
+      '#title' => $info['title'],
+      '#description' => @$info['description'],
+      '#type' => 'checkboxes',
+      '#options' => $access_callbacks,
+      '#default_value' => isset($currency->transaction_operations[$constant]) ? $currency->transaction_operations[$constant] : array(),
+      '#weight' => $j++,
+    );
+  }
+
   $form['uid'] = array(
     '#title' => t('Declared by'),
     '#description' => t("Users with permission to 'transact'"),
