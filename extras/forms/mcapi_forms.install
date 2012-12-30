@@ -93,7 +93,7 @@ function mcapiforms_setup_filter() {
   global $language;
   cache_clear_all("filter_formats:{$language->language}", 'cache');
   foreach (user_roles(TRUE, 'design transaction forms') as $rid => $rolename) {
-    user_role_grant_permissions($rid, array("use text format $rolename"));
+    user_role_grant_permissions($rid, array("use text format ".MCAPIFORM_STRING_FORMAT));
   }
   //and clear the br tags from the existing saved forms
   $mcapiforms = db_select('mcapi_forms', 'f')->fields('f', array('name', 'data'))->execute()->fetchAllKeyed(0);

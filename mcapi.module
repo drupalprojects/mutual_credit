@@ -4,9 +4,9 @@
 $controller_mod = variable_get('mcapi_controller', 'mcapi');
 include(drupal_get_path('module', $controller_mod) .'/'. $controller_mod.'.controller');
 //delete modes
-define('MCPI_CURRENCY_UNDO_DELETE', 0);
-define('MCPI_CURRENCY_UNDO_ERASE', 1);
-define('MCPI_CURRENCY_UNDO_REVERSE', 2);
+define('MCAPI_CURRENCY_UNDO_DELETE', 0);
+define('MCAPI_CURRENCY_UNDO_ERASE', 1);
+define('MCAPI_CURRENCY_UNDO_REVERSE', 2);
 
 define ('CURRENCY_DIVISION_MODE_NONE', 0);
 define ('CURRENCY_DIVISION_MODE_CENTS_INLINE', 1);
@@ -72,12 +72,12 @@ function transactions_insert(array &$cluster, $really = TRUE) {
  * Undo according to the appropriate delete mode.
  */
 function transactions_undo(array $serials) {
-  $deletemode = variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE);
-  if ($deletemode == MCPI_CURRENCY_UNDO_ERASE) {
+  $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
+  if ($deletemode == MCAPI_CURRENCY_UNDO_ERASE) {
     transactions_state($serials, TRANSACTION_STATE_ERASED);
   }
   else {
-    if ($deletemode == MCPI_CURRENCY_UNDO_DELETE) {
+    if ($deletemode == MCAPI_CURRENCY_UNDO_DELETE) {
       foreach ($serials as $serial) {
         $transaction = transaction_load($serial);
         //depending on the undo mode, we might want to do the whole entity_delete thing.
@@ -87,7 +87,7 @@ function transactions_undo(array $serials) {
       entity_get_controller('transaction')->undo($serials, TRUE);
       //no state change here
     }
-    elseif ($deletemode == MCPI_CURRENCY_UNDO_REVERSE) {
+    elseif ($deletemode == MCAPI_CURRENCY_UNDO_REVERSE) {
       entity_get_controller('transaction')->undo($serials);
       transactions_state($serials, TRANSACTION_STATE_REVERSED);
     }
@@ -186,7 +186,7 @@ function transaction_insert_new($transaction, $really = TRUE) {
  */
 function transactions_delete($serials) {
   drupal_set_message('Using undocumented API call to delete transactions');
-  transactions_undo($serials, MCPI_CURRENCY_UNDO_DELETE);
+  transactions_undo($serials, MCAPI_CURRENCY_UNDO_DELETE);
 }
 
 
@@ -211,7 +211,7 @@ function transactions_delete($serials) {
  * it just passes on the values it is passed
  */
 function entity_metadata_create_transaction($values = array(), $for_me = FALSE) {
-  $defaults = array(
+  $properties = array(
     'payer' => 0,
     'payee' => 0,
     'creator' => $GLOBALS['user']->uid,
@@ -220,21 +220,27 @@ function entity_metadata_create_transaction($values = array(), $for_me = FALSE) 
     'extra' => array(),
     'state' => TRANSACTION_STATE_FINISHED
   );
-  foreach ($defaults as $key => $val) {
+  foreach ($properties as $key => $val) {
     $transaction->$key = isset($values[$key]) ? $values[$key] : $val;
   }
-
   if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
   else $currencies = drupal_static('currencies');
   //this callback doesn't normally deal with fieldAPI fields, but worth is special and description is special
   if (isset($values['worth'])) {
-    foreach ($values['worth'] as $currcode => $quantity) {
+    $items = isset($values['worth'][LANGUAGE_NONE]) ? $values['worth'][LANGUAGE_NONE] : $values['worth'];
+    foreach ($items as $delta => $item) {
+      $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $item['currcode'], 'quantity' => $item['quantity']);
+    }
+  }
+  //another format which might be used
+  elseif(isset($values['worths'])) {
+    foreach ($values['worths'] as $currcode => $quantity) {
       $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $currcode, 'quantity' => $quantity);
     }
   }
   elseif(isset($values['quantity'])) {
     $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
-    $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
+    $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : 'def_drup';
   }
   else {
     $currcodes = array_keys($currencies);
@@ -421,7 +427,7 @@ function mcapi_search_execute($keys = NULL, $conditions = NULL) {
   foreach ($find as $item) {
     // Render the node.
     $transaction = transaction_load($item->sid);//sid is actually the serial number
-    if (!transaction_view_access($transaction)) continue;
+    if (!transaction_view_access($transaction, $GLOBALS['user'])) continue;
     $uri = entity_uri('transaction', $transaction);
     $results[$item->sid] = array(
       'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
@@ -614,10 +620,6 @@ function mcapi_hook_info() {
  */
 function mcapi_transaction_operations() {
   return array(
-    'membership' => array(
-      'title' => t('Participate in transactions'),
-      'description' => t('Determine which users are permitted to use this currency')
-    ),
     'undo' => array(
       'title' => t('Undo any transactions'),
     )
@@ -649,6 +651,7 @@ function transaction_form($form, &$form_state) {
  */
 function mcapi_transaction_controller(){}
 
+
 /*
  * implements mcapi hook_info_states
  * DON"T call this hook directly as the keys will be lost. use mcapi_get_states()
@@ -661,18 +664,23 @@ function mcapi_mcapi_info_states() {
       'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
   );
-  $deletemode = variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE);
-  if ($deletemode == MCPI_CURRENCY_UNDO_ERASE) {
+  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
+  $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
+  $description = t(
+    //dont' link the link coz this function can run while bootstrapping and that means trouble
+    "See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc')
+  );
+  if ($deletemode == MCAPI_CURRENCY_UNDO_ERASE) {
     $states[TRANSACTION_STATE_ERASED] = array(
       'name' => t('Erased'),
-      'description' => t("See 'delete mode' settings for more info, !link", array('!link' => l('admin/accounting/misc', 'admin/accounting/misc'))),
+      'description' => $description,
       'default_access_callbacks' => array()
     );
   }
-  elseif($deletemode == MCPI_CURRENCY_UNDO_REVERSE) {
+  elseif($deletemode == MCAPI_CURRENCY_UNDO_REVERSE) {
     $states[TRANSACTION_STATE_REVERSED] = array(
       'name' => t('Reversed'),
-      'description' => t("See 'delete mode' settings for more info, !link", array('!link' => l('admin/accounting/misc', 'admin/accounting/misc'))),
+      'description' => $description,
       'default_access_callbacks' => array()
     );
   }
@@ -695,7 +703,7 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
  */
 function mcapi_mcapi_info_types() {
   $types = array('default', 'child');
-  if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) == MCPI_CURRENCY_UNDO_REVERSE) {
+  if (variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_REVERSE) {
     $types[] = 'reversal';
   }
   return $types;
@@ -801,7 +809,7 @@ function transaction_view_access(stdClass $transaction) {
     if (isset($currency->transaction_access[$transaction->state])) {
     //see hook_transaction_access_callbacks for a list of these functions
       foreach (array_filter($currency->transaction_access[$transaction->state]) as $function) {
-        if ($function($transaction)) return TRUE;
+        if ($function($transaction, $GLOBALS['user'])) return TRUE;
       }
     }
   }
@@ -821,8 +829,8 @@ function transaction_operation_access($op, $transaction, $account = NULL) {
   module_load_include('inc', 'mcapi');
   if (!$account) $account = $GLOBALS['user'];
   foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    $currency = currency_load($item['currcode']);
-    foreach (currency_load($currcode)->transaction_operations[$op] as $callback) {
+    $callbacks = currency_load($item['currcode'])->transaction_operations[$op];
+    foreach (array_filter($callbacks) as $callback) {
     //see hook_transaction_operations for a list of these functions
       if ($callback($transaction, $account)) return TRUE;
     }
@@ -887,16 +895,14 @@ function transaction_view($transactions, $view_mode = 'certificate') {
     if ($view_mode == 'token') {
       global $language;
       $options = array('language' => $language, 'sanitize' => FALSE);
-      foreach ($transactions as $transaction) {
-        $params = array('transaction' => $transaction);
-        $sentence = token_replace(variable_get('mcapi_sentence'), $params, $options);
-        $renderable[] = array(
-          '#view_mode' => 'token',
-          '#prefix' => '<div class = "sentence">',
-          '#markup' => $sentence,
-          '#suffix' => '</div>',
-        );
-      }
+      $params = array('transaction' => $transaction);
+      $sentence = token_replace(variable_get('mcapi_sentence'), $params, $options);
+      $renderable[] = array(
+        '#view_mode' => 'token',
+        '#prefix' => '<div class = "sentence">',
+        '#markup' => $sentence,
+        '#suffix' => '</div>',
+      );
     }
     else {
       $renderable[] = array(
@@ -993,7 +999,7 @@ function currencies_load($account = NULL, $refresh = FALSE) {
 
   module_load_include('inc', 'mcapi');
   foreach ($currencies as $currcode => $currency) {
-    if (transaction_operation_access('membership', $currcode, $account)) {
+    if (currency_access('membership', $currcode, $account)) {
       //we're actually stripping the ctools metadata wrapper of the currency away here for convenience everywhere else
       $filtered[$currcode] = $currency;
     }
@@ -1216,9 +1222,9 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
       $currency = $currencies[$item['currcode']];
       //check that each user has permission to use the currency in each item
       foreach (array('payer', 'payee') as $uid) {
-        if ($currency->transaction_operation_access['membership']($entity->$uid)) continue;
+        if (currency_access('membership', $item['currcode'])) continue;
         $errors[$field['field_name']][$langcode][$delta][] = array(
-          'error' => 'mcapi_transaction_operation_access_membership',
+          'error' => 'currency_access_membership',
           'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->$uid)->name, '@currency' => $currency->human_name))
         );
       }

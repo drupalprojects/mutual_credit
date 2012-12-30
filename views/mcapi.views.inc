@@ -183,20 +183,19 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payer']['#description'] = $description;
 }
 
-//returns conditions that $state = state && the current user ID  > 0
-function transaction_access_authenticated_views($state){
+function transaction_access_callback_perm_transact_views($state) {
   $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(0, $GLOBALS['user']->uid, '<>'); //user is logged in
+  $operator = user_access('transact') ? '= ': '<>';
+  $condition->condition('mcapi_transactions.state', $state, $operator);
+  return $condition;
+}
+function transaction_access_callback_perm_manage_all_views($state) {
+  $condition = db_and();
+  $operator = user_access('manage all transactions') ? '= ': '<>';
+  $condition->condition('mcapi_transactions.state', $state, $operator);
   return $condition;
 }
 
-function transaction_access_accountant_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition(1, user_access('administer all transactions')); //user is accountant
-  return $condition;
-}
 function transaction_access_anyone_views($state) {
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);

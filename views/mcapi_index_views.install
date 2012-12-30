@@ -1,5 +1,22 @@
 <?php
 
+
+/*
+ * implements hook_requirements
+ * tests that the transaction controller is default. i.e. using drupal
+ */
+function mcapi_index_views_requirements() {
+  $controller = variable_get('mcapi_controller', 'mcapi');
+  $requirements['transaction_controller'] = array(
+    'title' => 'Transaction controller',
+    'value' => 'mcapi_index_views module only works with controller: '.$controller,
+    'severity' => $controller == 'mcapi' ? REQUIREMENT_INFO : REQUIREMENT_ERROR,
+  );
+  return $requirements;
+}
+/*
+ * implements hook_enable
+ */
 function mcapi_index_views_enable() {
   db_query("DROP VIEW IF EXISTS {mcapi_index}");
   db_query("CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS
@@ -38,107 +55,15 @@ function mcapi_index_views_enable() {
 }
 
 function mcapi_index_views_uninstall() {
-  db_query("DROP VIEW IF EXISTS {mcapi_index}");
   $views = db_query("SELECT name from {views_view} WHERE base_table = 'mcapi_index'")->fetchCol();
   foreach ($views as $viewname) {
     $view = views_get_view($viewname);
     views_delete_view($view);
   }
+  db_query("DROP VIEW IF EXISTS {mcapi_index}");
 }
 
 
-/*
- * implements hook_schema
- * not needed since we are using a mysql view instead
- */
-function ___mcapi_index_views_get_schema() {
-  $numeric = array(
-    'type' => 'numeric',
-    'size' => 'normal',
-    'precision' => 8,
-    'scale' => 2
-  );
-  $schema['mcapi_index'] = array(
-    'description' => 'enables views to slice and dice the transactions',
-    'fields' => array(
-      'serial' => array(
-        'description' => 'serial number',
-        'type' => 'varchar',
-        'size' => '16',
-        'not null' => TRUE,
-      ),
-      'uid1' => array(
-        'description' => 'the user to which this entry is attached',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'uid2' => array(
-        'description' => 'the user to which this entry is attached',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'currcode' => array(
-        'description' => 'the currency id, where there is more than one currency',
-        'type' => 'varchar',
-        'length' => '8',
-        'not null' => TRUE,
-      ),
-      'income' => array(
-        'description' => 'the number of units incoming',
-        'type' => 'numeric',
-        'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
-        'default' => 0,
-      ),
-      'expenditure' => array(
-        'description' => 'the number of units incoming',
-        'type' => 'numeric',
-        'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
-        'default' => 0,
-      ),
-      'diff' => array(
-        'description' => 'the change in balance',
-        'type' => 'numeric',
-        'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
-        'default' => 0,
-      ),
-      'volume' => array(
-        'description' => 'the volume of the transaction',
-        'type' => 'numeric',
-        'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
-        'default' => 0,
-      ),
-      'created' => array(
-        'description' => "Unixtime that the transaction was recorded",
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'balance' => array(
-        'description' => 'balance excluding pending transactions',
-        'type' => 'numeric',
-        'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
-      ),
-    ),
-    'unique keys' => array(
-      'serial_uid1' => array('serial', 'uid1')
-    )
-  );
-  return $schema;
-}
 /**
  * update function to rebuild the mysql index view
  */

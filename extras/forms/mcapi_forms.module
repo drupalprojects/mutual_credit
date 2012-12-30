@@ -177,7 +177,7 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
       if (isset($settings[$fieldname]['preset'])) {
         if ($fieldname == 'worth') {
           foreach ($settings[$fieldname]['preset'] as $item) {
-            $defaults[$fieldname][$item['currcode']] = $item['quantity'];
+            $defaults['worths'][$item['currcode']] = $item['quantity'];
           }
         }
         else {

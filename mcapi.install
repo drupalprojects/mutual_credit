@@ -478,7 +478,7 @@ function mcapi_update_7002() {
 //this can be called separately by config modules in ther hook_install
 function create_transaction_description_field() {
   module_load_install('field');
-  variable_set('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_ERASE);
+  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
   mcapi_check_fields();
   $fieldname = 'transaction_description';
   //add the description field, which was intrinsic in v2
@@ -588,7 +588,7 @@ function mcapi_upgrade_transactions($nids) {
   $controller = entity_get_controller('transaction');
   $currcodes = variable_get('mcapi_currcode_update', array());
   $states = array(
-    -1 => MCPI_CURRENCY_UNDO_ERASE,
+    -1 => MCAPI_CURRENCY_UNDO_ERASE,
     0 => TRANSACTION_STATE_FINISHED,
     1 => 0 //use the integar value in case signatures module is not present
   );

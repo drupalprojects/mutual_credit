@@ -174,7 +174,7 @@ function theme_mcapi_form($variables) {
   if ($form['#step'] == 1) {
     foreach (element_children($form) as $fieldname) {
       if (in_array($fieldname, array('payer', 'payee', 'secondperson', 'direction', 'actions'))) {
-        if (isset($form[$fieldname]['#strip']) && $form[$fieldname]['#strip'] || $fieldname == 'actions') {
+        if (isset($form[$fieldname]['#strip']) && $form[$fieldname]['#strip'] || $fieldname == 'buttons') {
           unset($form[$fieldname]['#theme_wrappers']);
           unset($form[$fieldname]['#title']);
           unset($form[$fieldname]['#description']);
@@ -207,7 +207,7 @@ function theme_mcapi_form($variables) {
   }
   elseif ($form['#step'] == 2) {
     $preview = drupal_render($form['#preview']);
-    return drupal_render_children($form) . $preview . $buttons;
+    return $preview . drupal_render_children($form) . drupal_render($form['buttons']);
   }
 }
 

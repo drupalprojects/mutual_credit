@@ -23,22 +23,20 @@ function mcapi_mcapicurrencies_default() {
     ),
     'uid' => 1,
     'currency_access' => array(
-      'membership' => 'user_segments_transact',
-      'user_aggregated_view' => 'user_segments_transact',
-      'currency_aggregated_view' => 'user_segments_all',
-      'undo' => 'user_segments_manage_all_transactions',
+      'membership' => 'transact',
+      'user_aggregated_view' => 'transact',
+      'currency_aggregated_view' => 'transact',
     ),
     'transaction_access' => array(
       TRANSACTION_STATE_FINISHED => array(
-        'mcapi_access_authenticated' => 'transaction_access_authenticated',
+        'transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact',
+        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
-      TRANSACTION_STATE_ERASED => array(),
       TRANSACTION_STATE_REVERSED => array(),
     )
   );
-  if (module_exists('mcapi_signatures')) {
-    $currency->data->transaction_access[TRANSACTION_STATE_PENDING] = array();
-  }
   $currencies[DEFAULT_CURRENCY_NAME] = $currency;
   return $currencies;
 }
+
+

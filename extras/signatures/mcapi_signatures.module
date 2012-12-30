@@ -696,14 +696,6 @@ function mcapi_signatures_theme_registry_alter(&$items) {
   $items['certificate']['variables']['pending'] = array();
 }
 
-
-function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
-  foreach ($currencies as $name => $currency) {
-    $currencies[$name]->data->transaction_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
-      array('transaction_access_accountant', 'transaction_access_payer', 'transaction_access_payee')
-    );
-  }
-}
 /*
  * Bit of a one off, this one
  */
@@ -721,7 +713,8 @@ function list_pending($uid, $currcodes = array()) {
     array(':pending' => TRANSACTION_STATE_PENDING)
   )->fetchCol();
   if ($serials) {
-    return transaction_view(transactions_load(array(), array('serial' => $serials)), 'token');
+    $transactions = transactions_load(array(), array('serial' => $serials));
+    return transaction_view($transactions, 'token');
   }
   else return array('#markup' => t('No transactions'));
 }

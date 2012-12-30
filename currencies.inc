@@ -71,12 +71,20 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
       $options[$module][$perm] = strip_tags($info['title']);
     }
   }
+  $form['currency_access']['membership'] = array(
+    '#title' => t('Use the currency'),
+    '#description' => t('Determine which users are permitted to use this currency'),
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => @$currency->currency_access['membership'] ? $currency->currency_access['membership'] : 'transact',
+    '#weight' => $weight++,
+  );
   $form['currency_access']['user_aggregated_view'] = array(
     '#title' => t('View aggregated user transaction data'),
     '#description' => t("Such as users' balances, gross income, number of transactions"),
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => @$currency->currency_access[$callback] ? $currency->currency_access[$callback] : 'transact',
+    '#default_value' => @$currency->currency_access['user_aggregated_view'] ? $currency->currency_access['user_aggregated_view'] : 'transact',
     '#weight' => $weight++,
   );
   $form['currency_access']['currency_aggregated_view'] = array(
@@ -84,7 +92,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#description' => t('Look at currency usage stats stripped of personal information'),
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => @$currency->currency_access[$callback] ? $currency->currency_access[$callback] : 'transact',
+    '#default_value' => @$currency->currency_access['currency_aggregated_view'] ? $currency->currency_access['currency_aggregated_view'] : 'transact',
     '#weight' => $weight++,
   );
 
@@ -100,7 +108,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
   foreach (mcapi_get_states('#full') as $constant => $state) {
     $states = isset($currency->view) ? $currency->view : array();
     $form['transaction_access'][$constant] = array(
-      '#title' => $state['name'],
+      '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
       '#description' => $state['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,
@@ -121,7 +129,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
       '#description' => @$info['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,
-      '#default_value' => isset($currency->transaction_operations[$constant]) ? $currency->transaction_operations[$constant] : array(),
+      '#default_value' => isset($currency->transaction_operations[$callback]) ? $currency->transaction_operations[$callback] : array(),
       '#weight' => $j++,
     );
   }

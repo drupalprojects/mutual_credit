@@ -81,7 +81,7 @@ function mcapi_menu_inc() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_default_form'),
     //we use this permission but it's possible to create a paradox since each currency has its own permission
-    //if we knew what currency we would use callback 'transaction_operation_access' and args 'membership' and a dummy transaction
+    //if we knew what currency we would use callback 'currency_access' and arg 'membership'
     'access arguments' => array('transact'),
     'file' => 'mcapi.inc',
   );
@@ -272,10 +272,10 @@ function transaction_form_submit($form, &$form_state) {
     array(':form_build_id' => $form_build_id, ':time' => REQUEST_TIME)
   );
   form_state_values_clean($form_state);
-  $transaction = (object)$form_state['values'];
-
+  $transaction = entity_metadata_create_transaction($form_state['values']);
   //build the transaction object from the $form_state[values]
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+
   try{
     if ($form['#skip_alter']) {
       $transactions = array($transaction);
@@ -352,11 +352,11 @@ function mcapi_misc_options_form($form_state) {
       t('Cannot be changed after a transaction has been undone'),
     '#type' => 'radios',
     '#options' => array(
-      MCPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
-      MCPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
-      MCPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
+      MCAPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
+      MCAPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
+      MCAPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
     ),
-    '#default_value' => variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE),
+    '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE),
     '#disabled' => !variable_get('change_undo_mode', FALSE)
   );
 
@@ -986,7 +986,7 @@ function _mcapi_get_text_instances() {
  * and check required
  * clear the $items which are empty
  */
-function worths_element_validate(&$element, &$form_state) {debug($form_state['values']);
+function worths_element_validate(&$element, &$form_state) {
   //we need to drop the empty values to prevent them being written to the database
   //this element contains the worth_element $items, but did not inherit its value from them
   //because, as container, it processes before them. Shame

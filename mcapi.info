@@ -16,6 +16,7 @@ files[] = mcapi.controller
 files[] = mcapi.tokens.inc
 files[] = mcapi.variable.inc
 files[] = mcapi.drush.inc
+files[] = mcapi.info.inc
 files[] = currencies.inc
 
 ;ctools implementation for currencies
