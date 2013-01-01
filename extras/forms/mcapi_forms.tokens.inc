@@ -63,7 +63,8 @@ function mcapi_forms_token_info() {
       'description' => t("The 'other' user in the transaction, not the logged in user"),
     ),
     'button' => array(
-      'name' => t('Submit button')
+      'name' => t('Submit button'),
+      'description' => '',//this key expected
     ),
   );
 

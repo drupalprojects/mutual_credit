@@ -415,8 +415,8 @@ function mcapi_update_7001() {
     $currency->limits['limits_callback'] = 'limits_personal';
     $currency->limits['limits_personal']['min'] = $old_currency->min;
     $currency->limits['limits_personal']['max'] = $old_currency->max;
-    $currency->transaction_access[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
-      'transaction_access_payer', 'transaction_access_payee', 'transaction_access_accountant'
+    $currency->transaction_view_access[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
+      'transaction_view_access_payer', 'transaction_view_access_payee', 'transaction_view_access_accountant'
     ));
     //update the users' balance limits
     $uids = db_select('users', 'u')->fields('u', array('uid'))->execute()->fetchCol();
@@ -836,12 +836,12 @@ function mcapi_update_7010() {
   $currencies = &drupal_static('currencies');
   foreach ($currencies as $currcode => $currency) {
     foreach ($currency->transaction_access as $state => $callbacks) {
-      if (@$callbacks['transaction_access_participants']) {
-        $callbacks['transaction_access_payer'] = 'transaction_access_payer';
-        $callbacks['transaction_access_payee'] = 'transaction_access_payee';
+      if (@$callbacks['transaction_view_access_participants']) {
+        $callbacks['transaction_view_access_payer'] = 'transaction_view_access_payer';
+        $callbacks['transaction_view_access_payee'] = 'transaction_view_access_payee';
       }
-      unset ($callbacks['transaction_access_participants']);
-      $currency->transaction_access[$state] = array_filter($callbacks);
+      unset ($callbacks['transaction_view_access_participants']);
+      $currency->transaction_view_access[$state] = array_filter($callbacks);
     }
     db_update('mcapi_currencies')
       ->fields(array('data' => serialize($currency)))

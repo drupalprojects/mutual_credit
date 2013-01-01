@@ -12,7 +12,7 @@ function mcapi_index_views_views_data() {
     'field' => 'serial',
     'title' => t('Transaction totals'),
     'help' => t('Transaction totals'),
-    'access query tag' => 'transaction_access_views_index',
+    'access query tag' => 'transaction_view_access_views_index',
     'defaults' => array('diff')
   );
 
@@ -274,7 +274,7 @@ function mcapi_index_views_views_plugins() {
  * The transaction_index table doesn't care about states,
  * but we do have to add an access check concerning aggregated data for each currency
  */
-function mcapi_query_transaction_access_views_index_alter(QueryAlterableInterface $query) {
+function mcapi_query_transaction_view_access_views_index_alter(QueryAlterableInterface $query) {
   $currencies = &drupal_static('currencies');
   $or_currcodes = db_or();//where currcode = A OR currcode = B
   foreach ($currencies as $currcode => $currency) {

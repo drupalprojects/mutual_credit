@@ -98,38 +98,38 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
 
   static $i = 0;
   static $j = 0;
-  $form['transaction_access'] = array(
+  $form['transaction_view_access'] = array(
     '#title' => t('Privacy'),
     '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
   );
-  $access_callbacks = module_invoke_all('transaction_access_callbacks');
+  $access_callbacks = module_invoke_all('transaction_view_access_callbacks');
   foreach (mcapi_get_states('#full') as $constant => $state) {
     $states = isset($currency->view) ? $currency->view : array();
-    $form['transaction_access'][$constant] = array(
+    $form['transaction_view_access'][$constant] = array(
       '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
       '#description' => $state['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,
-      '#default_value' => isset($currency->transaction_access[$constant]) ? $currency->transaction_access[$constant] : array(),
+      '#default_value' => isset($currency->transaction_view_access[$constant]) ? $currency->transaction_view_access[$constant] : array(),
       '#weight' => $j++,
     );
   }
-  $form['transaction_operations'] = array(
+  $form['transaction_operation_access'] = array(
     '#title' => t('Transaction operations'),
     '#description' => t('Determine who can do what to transactions') .' '. t('Any of the checked conditions must return TRUE'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
   );
 
-  foreach (module_invoke_all('transaction_operations') as $callback => $info) {
-    $form['transaction_operations'][$callback] = array(
+  foreach (module_invoke_all('transaction_operation_access') as $callback => $info) {
+    $form['transaction_operation_access'][$callback] = array(
       '#title' => $info['title'],
       '#description' => @$info['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,
-      '#default_value' => isset($currency->transaction_operations[$callback]) ? $currency->transaction_operations[$callback] : array(),
+      '#default_value' => isset($currency->transaction_operation_access[$callback]) ? $currency->transaction_operation_access[$callback] : array(),
       '#weight' => $j++,
     );
   }
@@ -205,7 +205,7 @@ function currency_edit_access($currency) {
 function currencies_load_all() {
   ctools_include('export');
   $currencies = array();
-  $functions = array_keys(module_invoke_all('transaction_access_callbacks'));
+  $functions = array_keys(module_invoke_all('transaction_view_access_callbacks'));
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
   foreach($all as $currcode => $currency) {
@@ -221,16 +221,13 @@ function currencies_load_all() {
     }
     $data->display['divisions_allowed'] = $divisions;
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
-    foreach (mcapi_get_states('#full') as $constant => $state_info) {
-      if (!isset($data->transaction_access[$constant])) {
-        drupal_set_message(t('Resave currency @currname, paying attention to transaction access for state @state: !edit_link',array(
-          '@currname' => $data->human_name,
-          '@state' => $state_info['name'],
-          '!edit_link' => l(t('edit'), 'admin/accounting/currencies/list/'.$currcode.'/edit')
-          )
-        ), 'warning');
-        $data->transaction_access[$constant] = drupal_map_assoc($state_info['default_access_callbacks']);
-      }
+    $accesses = array('transaction_view_access' => 'Privacy', 'transaction_operation_access' => 'Transaction operations', 'currency_access' => 'Currency Access');
+    foreach ($accesses as $op => $name) {
+      if (isset($data->$prop)) continue;
+      drupal_set_message(
+        "Resave currency $data->human_name, paying attention to $name : ". l(t('edit'), 'admin/accounting/currencies/list/'.$currcode.'/edit'),
+        'warning'
+      );
     }
     $currencies[$currcode] = $currency;
   }

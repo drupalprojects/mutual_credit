@@ -11,7 +11,7 @@ function mcapi_entity_info_inc() {
     'base table' => 'mcapi_transactions',
     'uri callback' => 'transaction_uri',
     'label callback' => 'transaction_label',
-    'access callback' => 'transaction_access',
+    'access callback' => 'transaction_view_access',
     'module' => 'mcapi',
     'fieldable' => TRUE,
     'entity keys' => array(
@@ -484,21 +484,21 @@ function mcapi_validate_ttype(&$element, $form_state) {
 }
 
 /*
- * transaction_access callbacks
+ * transaction_view_access callbacks
  */
-function transaction_access_callback_anyone($transaction, $account) {
+function transaction_view_access_callback_anyone($transaction, $account) {
   return TRUE;
 }
-function transaction_access_callback_perm_transact($transaction, $account) {
+function transaction_view_access_callback_perm_transact($transaction, $account) {
   return user_access('transact',$account);
 }
-function transaction_access_callback_perm_manage_all($transaction, $account) {
+function transaction_view_access_callback_perm_manage_all($transaction, $account) {
   return user_access('manage all transactions', $account);
 }
-function transaction_access_callback_payee($transaction, $account) {
+function transaction_view_access_callback_payee($transaction, $account) {
   return $account->uid == $transaction->payee;
 }
-function transaction_access_callback_payer($transaction, $account) {
+function transaction_view_access_callback_payer($transaction, $account) {
   return $account->uid == $transaction->payer;
 }
 
@@ -1034,18 +1034,17 @@ function worth_element_process($element, &$form_state) {
     $element['#currcodes'] = array_keys($currencies);
   }
   $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
-  $currency = currency_load($element['currcode']['#value']);
+  $currency = currency_load($element['currcode']['#value'] ? $element['currcode']['#value'] : $element['currcode']['#default_value']);
   $element['#title'] = $currency->human_name;
   $element['#title_display'] = 'attribute';
 
-  if ($element['currcode']['#type'] == 'hidden') {
-    $div_mode = $currency->display['divisions'];
-    $use_div_subelement = in_array($div_mode, array(CURRENCY_DIVISION_MODE_CUSTOM, CURRENCY_DIVISION_MODE_CENTS_FIELD));
+  if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
+    $use_div_subelement = in_array($currency->display['divisions'], array(CURRENCY_DIVISION_MODE_CUSTOM, CURRENCY_DIVISION_MODE_CENTS_FIELD));
   }
 
   //work out the defaults for each subfield
   //null is not presumed to be zero, and is preserved
-  if ($use_div_subelement) {
+  if (!empty($use_div_subelement)) {
     list($main_quant, $div_quant) = currency_explode($quantity);
   }
   else {
@@ -1068,7 +1067,7 @@ function worth_element_process($element, &$form_state) {
   );
 
   //we only show the division field if the currency requires it
-  if ($use_div_subelement) {//that means $currency is also set
+  if (isset($div_quant)) {//that means $currency is also set
 
     if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
       $element['div_quant'] = array(

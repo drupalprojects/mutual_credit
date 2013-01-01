@@ -11,7 +11,7 @@ function mcapi_signatures_views_data() {
     'field' => 'serial',
     'title' => t('Signatures'),
     'help' => t('Signatures needed on pending transactions'),
-    'access query tag' => 'transaction_access_views',
+    'access query tag' => 'transaction_view_access_views',
     'defaults' => array(
       'field' => 'serial',
     ),

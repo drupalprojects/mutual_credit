@@ -29,8 +29,8 @@ function mcapi_mcapicurrencies_default() {
     ),
     'transaction_access' => array(
       TRANSACTION_STATE_FINISHED => array(
-        'transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact',
-        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
+        'transaction_view_access_callback_perm_transact' => 'transaction_view_access_callback_perm_transact',
+        'transaction_view_access_callback_perm_manage_all' => 'transaction_view_access_callback_perm_manage_all'
       ),
       TRANSACTION_STATE_REVERSED => array(),
     )

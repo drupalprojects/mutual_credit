@@ -173,6 +173,7 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
   //plus the fieldAPI fields
   if (empty($transaction)) {//only under exceptional cases might an existing transaction be passed
     $fieldnames = array_merge(array('payer', 'payee'), array_keys(field_info_instances('transaction', 'transaction')));
+    $defaults = array();
     foreach($fieldnames as $fieldname) {
       if (isset($settings[$fieldname]['preset'])) {
         if ($fieldname == 'worth') {

@@ -13,7 +13,7 @@ function mcapi_views_data() {
       'field' => 'xid',
       'title' => t('Transactions'),
       'help' => t('Records of transactions between users'),
-      'access query tag' => 'transaction_access_views',
+      'access query tag' => 'transaction_view_access_views',
       'defaults' => array(
         'field' => 'serial',
       ),
@@ -183,31 +183,31 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payer']['#description'] = $description;
 }
 
-function transaction_access_callback_perm_transact_views($state) {
+function transaction_view_access_callback_perm_transact_views($state) {
   $condition = db_and();
   $operator = user_access('transact') ? '= ': '<>';
   $condition->condition('mcapi_transactions.state', $state, $operator);
   return $condition;
 }
-function transaction_access_callback_perm_manage_all_views($state) {
+function transaction_view_access_callback_perm_manage_all_views($state) {
   $condition = db_and();
   $operator = user_access('manage all transactions') ? '= ': '<>';
   $condition->condition('mcapi_transactions.state', $state, $operator);
   return $condition;
 }
 
-function transaction_access_anyone_views($state) {
+function transaction_view_access_anyone_views($state) {
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   return $condition;
 }
-function transaction_access_payee_views($state) {
+function transaction_view_access_payee_views($state) {
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   $condition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
   return $condition;
 }
-function transaction_access_payer_views($state) {
+function transaction_view_access_payer_views($state) {
   $condition = db_and();
   $condition->condition('mcapi_transactions.state', $state);
   $condition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
@@ -216,11 +216,11 @@ function transaction_access_payer_views($state) {
 
 /*
  * implements hook_query_TAG_alter
- * the saved view adds the tag 'transaction_access'
+ * the saved view adds the tag 'transaction_view_access'
  * this modifies the query only to show the transactions visible to the user.
  * this is pretty elaborate, but the access control has to be done in the query or views pager won't know how many results there were
  */
-function mcapi_query_transaction_access_views_alter(QueryAlterableInterface $query) {
+function mcapi_query_transaction_view_access_views_alter(QueryAlterableInterface $query) {
   $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
   $states = array_keys(mcapi_get_states());
   //what currencies can the current user see?
@@ -231,7 +231,7 @@ function mcapi_query_transaction_access_views_alter(QueryAlterableInterface $que
     $currcode_and_states->condition('tw.worth_currcode', $currcode);
     $state_or_state = db_or();//where state = A OR B
     foreach ($states as $state) {
-      $callbacks = array_filter($currency->transaction_access[$state]);
+      $callbacks = array_filter($currency->transaction_view_access[$state]);
       foreach ($callbacks as $callback) {
         $callback .= '_views';
         $state_and_callback = $callback($state);

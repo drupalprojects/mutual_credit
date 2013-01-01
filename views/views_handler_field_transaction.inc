@@ -50,7 +50,7 @@ class views_handler_field_transaction extends views_handler_field {
     }
     parent::options_form($form, $form_state);
   }
-  
+
   function query() {
     $this->ensure_my_table();
     $this->add_additional_fields();
@@ -59,17 +59,15 @@ class views_handler_field_transaction extends views_handler_field {
   function render($values) {
     $serial = $values->{$this->aliases['serial']};
     $op = $this->real_field == 'serial' ? 'view' : $this->real_field;
-    $access_callback = 'transaction_'.$op.'_access';
-    if ($access_callback(transaction_load($serial))) {
-      return array('#theme' => 'link',
-        '#text' => $this->real_field == 'serial' ? $serial : $this->options['link_title'],
-        '#path' => 'transaction/'.$serial.'/'.$op,
-        '#options' => array(
-          'attributes' =>array(),
-          'html' => TRUE
-        )
-      );
-    }
+    if ($op == 'view' && !transaction_view_access($op, transaction_load($serial))) return;
+    if ($op == 'undo' && !transaction_operation_access($op, transaction_load($serial))) return;
+    return array('#theme' => 'link',
+      '#text' => $this->real_field == 'serial' ? $serial : $this->options['link_title'],
+      '#path' => 'transaction/'.$serial.'/'.$op,
+      '#options' => array(
+        'attributes' =>array(),
+        'html' => TRUE
+      )
+    );
   }
-
 }

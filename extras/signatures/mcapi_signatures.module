@@ -121,7 +121,7 @@ function mcapi_signatures_mcapi_info_states() {
     TRANSACTION_STATE_PENDING => array(
       'name' => t("Pending"),
       'description' => t("awaiting signatures before becoming 'finished'."),
-      'default_access_callbacks' => array('transaction_access_payer', 'transaction_access_payee')
+      'default_access_callbacks' => array('transaction_view_access_payer', 'transaction_view_access_payee')
     )
   );
 }
@@ -783,7 +783,7 @@ function _get_signable_transaction_types() {
  * implements mcapi hook ransaction_operations
  * each callback refers to 2 functions - itself and CALLBACK_views
  */
-function mcapi_signatures_transaction_operations() {
+function mcapi_signatures_transaction_operation_access() {
   return array(
     'undo_pending' => array(
       'title' => t('Undo pending transactions'),
@@ -796,16 +796,16 @@ function mcapi_signatures_transaction_operations() {
  * implements mcapi hook transaction_access_callbacks
  * each callback refers to 2 functions - itself and CALLBACK_views
  */
-function mcapi_signatures_transaction_access_callbacks() {
+function mcapi_signatures_transaction_view_access_callbacks() {
   return array(
-    'transaction_access_callback_signatory' => t('Signatories to the transaction'),
+    'transaction_view_access_callback_signatory' => t('Signatories to the transaction'),
   );
 }
-function transaction_access_callback_signatory($transaction) {
+function transaction_view_access_callback_signatory($transaction) {
   if (!isset($transaction->pending_signatures)) return FALSE;
   return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
 }
-function transaction_access_callback_signatory_views() {
+function transaction_view_access_callback_signatory_views() {
   //this could be horrible...
   return TRUE;
 }
