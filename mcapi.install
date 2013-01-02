@@ -416,7 +416,7 @@ function mcapi_update_7001() {
     $currency->limits['limits_personal']['min'] = $old_currency->min;
     $currency->limits['limits_personal']['max'] = $old_currency->max;
     $currency->transaction_view_access[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
-      'transaction_view_access_payer', 'transaction_view_access_payee', 'transaction_view_access_accountant'
+      'transaction_access_payer', 'transaction_access_payee', 'transaction_access_accountant'
     ));
     //update the users' balance limits
     $uids = db_select('users', 'u')->fields('u', array('uid'))->execute()->fetchCol();

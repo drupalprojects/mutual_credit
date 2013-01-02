@@ -498,7 +498,7 @@ function mcapi_block_view($delta) {
 /*
  * implements hook_block_configure
  */
-function mcapi_block_configure($delta) {
+function mcapi_block_configure($delta) {debug($delta);
   $currencies = &drupal_static('currencies');
   module_load_include('inc', 'mcapi');
   $settings = variable_get('block_'. $delta, array('currcodes' => array(), 'user_source' => 0));
@@ -600,10 +600,10 @@ function mcapi_hook_info() {
     'transactions_undone' => array(),
     //preparing a transaction for rendering
     'transactions_view' => array(),
-    //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_view_access_callbacks
-    'transaction_view_access_callbacks' => array(),
+    //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
+    'transaction_access_callbacks' => array(),
     //things that can be done to transactions
-    'transaction_operation_access' => array(),
+    'transaction_operations' => array(),
     //change of transaction state - takes serials
     'transactions_state' => array(),
     //declare transaction states
@@ -618,7 +618,7 @@ function mcapi_hook_info() {
 /*
  * implements hook_transaction_operation_access
  */
-function mcapi_transaction_operation_access() {
+function mcapi_transaction_operations() {
   return array(
     'undo' => array(
       'title' => t('Undo any transactions'),
@@ -778,13 +778,13 @@ function mcapi_mcapi_info_drupal_permissions() {
  * $transaction, $account
  * Multiple callbacks can be selected and access will be granted if any returns TRUE
  */
-function mcapi_transaction_view_access_callbacks() {
+function mcapi_transaction_access_callbacks() {
   return array(
-    'transaction_view_access_callback_perm_transact' => t("Users with permission to '@perm'", array('@perm' => t('Transact'))),
-    'transaction_view_access_callback_perm_manage_all' => t("Users with permission to '@perm'", array('@perm' => t('Manage all transactions'))),
-    'transaction_view_access_callback_anyone' => t('Anyone, including anonymous users'),
-    'transaction_view_access_callback_payee' => t('The payee in the transaction'),
-    'transaction_view_access_callback_payer' => t('The payer in the transaction'),
+    'transaction_access_callback_perm_transact' => t("Users with permission to '@perm'", array('@perm' => t('Transact'))),
+    'transaction_access_callback_perm_manage_all' => t("Users with permission to '@perm'", array('@perm' => t('Manage all transactions'))),
+    'transaction_access_callback_anyone' => t('Anyone, including anonymous users'),
+    'transaction_access_callback_payee' => t('The payee in the transaction'),
+    'transaction_access_callback_payer' => t('The payer in the transaction'),
   );
 }
 
@@ -807,7 +807,7 @@ function transaction_view_access(stdClass $transaction) {
   foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
     $currency = currency_load($item['currcode']);
     if (isset($currency->transaction_view_access[$transaction->state])) {
-    //see hook_transaction_view_access_callbacks for a list of these functions
+    //see hook_transaction_access_callbacks for a list of these functions
       foreach (array_filter($currency->transaction_view_access[$transaction->state]) as $function) {
         if ($function($transaction, $GLOBALS['user'])) return TRUE;
       }
@@ -828,11 +828,10 @@ function currency_access($op, $currcode, $account = NULL) {
 function transaction_operation_access($op, $transaction, $account = NULL) {
   module_load_include('inc', 'mcapi');
   if (!$account) $account = $GLOBALS['user'];
-  debug($transation);
-  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {debug($item);
+  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
     $callbacks = currency_load($item['currcode'])->transaction_operation_access[$op];
     foreach (array_filter($callbacks) as $callback) {
-    //see hook_transaction_operations for a list of these functions
+      //see hook_transaction_operations for a list of these functions
       if ($callback($transaction, $account)) return TRUE;
     }
   }

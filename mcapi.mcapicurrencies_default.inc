@@ -27,16 +27,19 @@ function mcapi_mcapicurrencies_default() {
       'user_aggregated_view' => 'transact',
       'currency_aggregated_view' => 'transact',
     ),
-    'transaction_access' => array(
+    'transaction_view_access' => array(
       TRANSACTION_STATE_FINISHED => array(
-        'transaction_view_access_callback_perm_transact' => 'transaction_view_access_callback_perm_transact',
-        'transaction_view_access_callback_perm_manage_all' => 'transaction_view_access_callback_perm_manage_all'
+        'transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact',
+        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
       TRANSACTION_STATE_REVERSED => array(),
+    ),
+    'transaction_operation_access' => array(
+      'undo' => array(
+        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
+      )
     )
   );
   $currencies[DEFAULT_CURRENCY_NAME] = $currency;
   return $currencies;
 }
-
-

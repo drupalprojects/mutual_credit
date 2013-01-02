@@ -104,7 +104,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
   );
-  $access_callbacks = module_invoke_all('transaction_view_access_callbacks');
+  $access_callbacks = module_invoke_all('transaction_access_callbacks');
   foreach (mcapi_get_states('#full') as $constant => $state) {
     $states = isset($currency->view) ? $currency->view : array();
     $form['transaction_view_access'][$constant] = array(
@@ -118,12 +118,12 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
   }
   $form['transaction_operation_access'] = array(
     '#title' => t('Transaction operations'),
-    '#description' => t('Determine who can do what to transactions') .' '. t('Any of the checked conditions must return TRUE'),
+    '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
   );
 
-  foreach (module_invoke_all('transaction_operation_access') as $callback => $info) {
+  foreach (module_invoke_all('transaction_operations') as $callback => $info) {
     $form['transaction_operation_access'][$callback] = array(
       '#title' => $info['title'],
       '#description' => @$info['description'],
@@ -201,11 +201,13 @@ function mcapi_validate_currcode(&$element, $form_state) {
 function currency_edit_access($currency) {
   return user_access('configure all currencies') || $currency->uid == $GLOBALS['user']->uid;
 }
-
+/*
+ * load the currencies from ctools and alter them before they get used
+ */
 function currencies_load_all() {
   ctools_include('export');
   $currencies = array();
-  $functions = array_keys(module_invoke_all('transaction_view_access_callbacks'));
+  $functions = array_keys(module_invoke_all('transaction_access_callbacks'));
   $all = ctools_export_crud_load_all('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
   foreach($all as $currcode => $currency) {
@@ -222,8 +224,8 @@ function currencies_load_all() {
     $data->display['divisions_allowed'] = $divisions;
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     $accesses = array('transaction_view_access' => 'Privacy', 'transaction_operation_access' => 'Transaction operations', 'currency_access' => 'Currency Access');
-    foreach ($accesses as $op => $name) {
-      if (isset($data->$prop)) continue;
+    foreach ($accesses as $prop => $name) {
+      if (property_exists($data, $prop)) continue;
       drupal_set_message(
         "Resave currency $data->human_name, paying attention to $name : ". l(t('edit'), 'admin/accounting/currencies/list/'.$currcode.'/edit'),
         'warning'

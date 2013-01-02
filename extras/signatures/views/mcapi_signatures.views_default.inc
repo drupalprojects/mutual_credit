@@ -4,7 +4,7 @@ function mcapi_signatures_views_default_views() {
   $view = new view();
   $view->name = 'sig_blocks';
   $view->description = 'pending transactions for which the given user is a signatory';
-  $view->tag = 'default';
+  $view->tag = 'mcapi';
   $view->base_table = 'mcapi_transactions';
   $view->human_name = 'Signatures waiting';
   $view->core = 7;
@@ -91,7 +91,7 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['empty']['area']['table'] = 'views';
   $handler->display->display_options['empty']['area']['field'] = 'area';
   $handler->display->display_options['empty']['area']['label'] = 'no results';
-  $handler->display->display_options['empty']['area']['empty'] = TRUE;
+  $handler->display->display_options['empty']['area']['empty'] = FALSE;
   $handler->display->display_options['empty']['area']['content'] = t('Up to date');
   $handler->display->display_options['empty']['area']['format'] = 'editor_filtered_html';
 
@@ -154,7 +154,7 @@ function mcapi_signatures_views_default_views() {
   $view = new view;
   $view->name = 'signatures';
   $view->description = 'pending transactions for which the given user is a signatory';
-  $view->tag = 'default';
+  $view->tag = 'mcapi';
   $view->base_table = 'mcapi_transactions';
   $view->human_name = 'Pending transactions';
   $view->core = 7;

@@ -39,13 +39,13 @@ function mcapi_signatures_menu() {
     'access arguments' => array(1),
     'type' => MENU_LOCAL_ACTION,
   );
-  $items['transactions/signall/%user'] = array(
+  $items['user/%/signall'] = array(
     'title' => 'Sign all my transactions',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_signall_confirm_form', 2),
-    'access callback' => 'user_has_pending',
-    'access arguments' => array(2),
-    'type' => MENU_CALLBACK,
+    'page arguments' => array('mcapi_signall_confirm_form', 1),
+    'access callback' => 'signatures_can_signall_for',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_ACTION,
   );
   return $items;
 }
@@ -121,7 +121,7 @@ function mcapi_signatures_mcapi_info_states() {
     TRANSACTION_STATE_PENDING => array(
       'name' => t("Pending"),
       'description' => t("awaiting signatures before becoming 'finished'."),
-      'default_access_callbacks' => array('transaction_view_access_payer', 'transaction_view_access_payee')
+      'default_access_callbacks' => array('transaction_access_payer', 'transaction_access_payee')
     )
   );
 }
@@ -307,13 +307,6 @@ function mcapi_get_signatories($serial = NULL, $uid = NULL) {
   return $result;
 }
 
-function user_has_pending($account) {
-  $whether = db_query("SELECT count(serial) FROM {mcapi_signatures} where uid = :uid AND pending = 1", array(':uid' => $account->uid))
-    ->fetchfield();
-  if (!$whether) return;
-  return $account->uid == $GLOBALS['user']->uid || user_access('manage all transactions');
-
-}
 //menu access callback
 //returns true if the user is a listed signatory and hasn't signed
 //this function name is constructed - do not change!
@@ -515,11 +508,11 @@ function pending_not_signable($serial) {
   }
 }
 
-function mcapi_signall_confirm_form($form, $form_state, $account) {
+function mcapi_signall_confirm_form($form, $form_state, $uid) {
   $form = array();
   $form['uid'] = array(
     '#type' => 'hidden',
-    '#value' => $account->uid
+    '#value' => $uid
   );
   $form['#prefix'] = t('Are you sure you want to sign all your transactions?');
   return confirm_form(
@@ -533,15 +526,7 @@ function mcapi_signall_confirm_form($form, $form_state, $account) {
 }
 
 function mcapi_signall_confirm_form_submit($form, &$form_state) {
-  $uid = &$form_state['values']['uid'];
-  //get all the transactions
-  $serials = array_keys(mcapi_get_signatories(NULL, $uid));
-  $transactions = transactions_load(array(), array('serial' => $serials));
-  //sign them one by one
-  foreach ($transactions as $transaction) {
-    $serials[] = $transaction->serial;
-  }
-  mcapi_sign($serials, array($uid));
+  mcapi_sign(transactions_needing_sig_of_user($form_state['values']['uid']), array($form_state['values']['uid']));
   $form_state['redirect'] = 'user';
 }
 
@@ -550,16 +535,26 @@ function mcapi_signatures_block_info() {
   return array(
     'user_pending' => array(
       'info' => t('All pending transactions (per user)')
+    ),
+    'waiting_on_uid' => array(
+      'info' => t('Signatures for user to sign')
     )
   );
 }
 
 function mcapi_signatures_block_view($delta) {
   module_load_include('inc', 'mcapi');
-  if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
+  $settings = _mcapi_block_settings($delta, 'user_aggregated_view');
+  if ($delta == 'user_pending') {
     return array(
       'subject' => t('Pending transactions'),
-      'content' => list_pending($settings['account']->uid, $settings['currcodes'])
+      'content' => list_pending_for_uid($settings['account']->uid, $settings['currcodes'])
+    );
+  }
+  elseif($delta == 'waiting_on_uid') {
+    return array(
+      'subject' => t('Awaiting my signature'),
+      'content' => list_waiting_on_uid($settings['account']->uid, $settings['currcodes'])
     );
   }
 }
@@ -588,11 +583,13 @@ function mcapi_signatures_block_info_alter(&$blocks) {
  * appends the 'signatures needed' view to the mcapi-balance block
  */
 function mcapi_signatures_block_view_alter(&$data, $block) {
-  if ($block->delta == 'balances' && $block->module = 'mcapi' && isset($data['#settings']['account'])) {
+  if ($block->delta == 'balances' && $block->module == 'mcapi' && isset($data['#settings']['account'])) {
+    $render = list_waiting_on_uid($data['#settings']['account']->uid);
+    if (empty($render)) return;
     $data['content']= array(
       $data['content'],
       array('#markup' => '<h5>'.t('Awaiting my signature...').'</h5>'),
-      array('#markup' => views_embed_view('sig_blocks', 'my_sig_needed', $data['#settings']['account']->uid))
+      $render
     );
   }
 }
@@ -706,17 +703,56 @@ function _mcapi_sig_format_usernames($accounts) {
   return implode(' & ' ,$names);
 }
 
-function list_pending($uid, $currcodes = array()) {
+function list_pending_for_uid($uid, $currcodes = array()) {
+  return list_waiting_on_uid($uid, $currcodes) + list_waiting_not_on_uid($uid, $currcodes);
+}
 
+function list_waiting_on_uid($uid, $currcodes = array()) {
+  $output = array();
+  $serials = transactions_needing_sig_of_user($uid);
+  if ($serials) {
+    $transactions = transactions_load(array(), array('serial' => $serials));
+    if (count($transactions) > 1) {
+      $output[] = array(
+        '#theme' => 'link',
+        '#text' => t('Sign all'),
+        '#path' => "user/$uid/signall",
+        '#options' => array(
+          'attributes' => array(),
+          'html' => FALSE
+        )
+      );
+    }
+    $output[] = transaction_view($transactions, 'token');
+  }
+  return $output;
+}
+function list_waiting_not_on_uid($uid, $currcodes = array()) {
+  $output = array();
   $serials = db_query(
-    "SELECT serial FROM {mcapi_transactions} WHERE state = :pending AND (payer = $uid OR payee = $uid)",
+    "SELECT t.serial FROM {mcapi_transactions} t
+     RIGHT JOIN {mcapi_signatures} s ON t.serial = s.serial
+     WHERE t.state = :pending
+       AND (t.payer = $uid OR t.payee = $uid)
+       AND (s.uid = $uid AND s.pending = 0)",
     array(':pending' => TRANSACTION_STATE_PENDING)
   )->fetchCol();
   if ($serials) {
     $transactions = transactions_load(array(), array('serial' => $serials));
-    return transaction_view($transactions, 'token');
+    $output[] = transaction_view($transactions, 'token');
   }
-  else return array('#markup' => t('No transactions'));
+  return $output;
+}
+
+function signatures_can_signall_for($uid) {
+  $needed = transactions_needing_sig_of_user($uid);
+  if (count($needed)) {
+    if ($uid == $GLOBALS['user']->uid || user_access('manage all transactions')) return TRUE;
+  }
+  return FALSE;
+}
+function transactions_needing_sig_of_user($uid) {
+  return db_query("SELECT serial FROM {mcapi_signatures} where uid = $uid AND pending = 1")->fetchCol();
 }
 
 
@@ -783,12 +819,12 @@ function _get_signable_transaction_types() {
  * implements mcapi hook ransaction_operations
  * each callback refers to 2 functions - itself and CALLBACK_views
  */
-function mcapi_signatures_transaction_operation_access() {
+function mcapi_signatures_transaction_operations() {
   return array(
     'undo_pending' => array(
       'title' => t('Undo pending transactions'),
       //'description' => t('Determine which users are permitted to use this currency')
-    ),
+    )
   );
 }
 
@@ -796,16 +832,22 @@ function mcapi_signatures_transaction_operation_access() {
  * implements mcapi hook transaction_access_callbacks
  * each callback refers to 2 functions - itself and CALLBACK_views
  */
-function mcapi_signatures_transaction_view_access_callbacks() {
+function mcapi_signatures_transaction_access_callbacks() {
   return array(
-    'transaction_view_access_callback_signatory' => t('Signatories to the transaction'),
+    'transaction_access_callback_signatory' => t('Signatories to the transaction'),
   );
 }
-function transaction_view_access_callback_signatory($transaction) {
+/*
+ * callback for transaction_access
+ */
+function transaction_access_callback_signatory($transaction) {
   if (!isset($transaction->pending_signatures)) return FALSE;
   return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
 }
-function transaction_view_access_callback_signatory_views() {
+/*
+ * callback for transaction view access for views
+ */
+function transaction_access_callback_signatory_views() {
   //this could be horrible...
   return TRUE;
 }
