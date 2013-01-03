@@ -141,6 +141,37 @@ $transactions = transactions_load($xids, $conditions, $clearcache);
 transaction_totals($uid, $currcode, $options);
 
 
+/*
+ * list of hooks called in this module
+ * no need to put hook_info coz that's just for lazy loading
+ */
+//declare new transaction controllers
+function hook_transaction_controller(){}
+//check the transactions and the system integrity after the transactions would go through
+function hook_accounting_validate(){}
+//respond to the insertion of a transaction cluster
+function hook_transactions_insert(){}
+//respond to the removal, or undoing of a transaction
+function hook_transactions_undone(){}
+//preparing a transaction for rendering
+function hook_transactions_view(){}
+//declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
+function hook_transaction_access_callbacks(){}
+//things that can be done to transactions
+function hook_transaction_operations(){}
+//change of transaction state - takes serials
+function hook_transactions_state(){}
+//declare transaction states
+function hook_mcapi_info_states(){}
+//declare transaction types
+function hook_mcapi_info_types(){}
+//declare permissions to go into the community accounting section of the drupal permissions page
+function hook_mcapi_info_drupal_permissions(){}
+
+
+//alter hooks, more could be added, if necessary!
+function hook_transaction_cluster_alter(){}
+function hook_transaction_operations_alter(){}
 
 
 

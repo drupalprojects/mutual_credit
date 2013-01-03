@@ -13,7 +13,7 @@ function mcapi_views_data() {
       'field' => 'xid',
       'title' => t('Transactions'),
       'help' => t('Records of transactions between users'),
-      'access query tag' => 'transaction_access_views',
+      'access query tag' => 'transaction_view_access',
       'defaults' => array(
         'field' => 'serial',
       ),
@@ -113,20 +113,18 @@ function mcapi_views_data() {
       'field' => 'created',
     )
   );
-  $data['mcapi_transactions']['view'] = array(
-    'title' => t('View'),
-    'help' => t("Link to transaction"),
-    'field' => array(
-      'handler' => 'views_handler_field_transaction',
-    )
-  );
-  $data['mcapi_transactions']['undo'] = array(
-    'title' => t('Undo'),
-    'help' => t("Link to undo transaction"),
-    'field' => array(
-      'handler' => 'views_handler_field_transaction',
-    )
-  );
+  $operations = transaction_operations();
+  //treat view like an operation
+  $operations['view'] = array('imperative' => 'View', 'description' => 'View transaction');
+  foreach ($operations as $key => $info) {
+    $data['mcapi_transactions'][$key] = array(
+      'title' => $info['imperative'],
+      'help' => t('Link: @description', array('@description' => $info['description'])),
+      'field' => array(
+        'handler' => 'views_handler_field_transaction',
+      )
+    );
+  }
   return $data;
 }
 
@@ -173,74 +171,62 @@ function mcapi_views_plugins() {
 }
 
 
+function transaction_access_callback_perm_transact_views($query, $condition, $state) {
+  $condition->condition(1, user_access('transact'));
+}
+function transaction_access_callback_perm_manage_all_views($query, $condition, $state) {
+  $condition->condition(1, user_access('manage all transactions'));
+}
+
+function transaction_access_callback_anyone_views($query, $condition, $state) {
+
+}
+function transaction_access_callback_payee_views($query, $condition, $state) {
+  $condition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
+}
+function transaction_access_callback_payer_views($query, $condition, $state) {
+  $condition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
+}
+
 /*
- * implements hook_form_alter
+ * implements hook_query_TAG_alter for views on the mcapi_transactions table
+ * this modifies the query only to show the transactions visible to the user
+ * according to currency view access settings per transaction state
+ * this is pretty elaborate, but the access control has to be done in the query
+ * or views pager won't know how many results there were
+ */
+function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $query) {
+  $query->addJoin('LEFT', 'field_data_worth', 'w', 'w.entity_id = mcapi_transactions.xid');
+  $states = array_keys(mcapi_get_states());
+  //what currencies can the current user see?
+  $currencies = currencies_load($GLOBALS['user']);
+  $or_currcodes = db_or();//where ((currcode = A and (blah)) OR ((currcode = B and (blah))
+  foreach ($currencies as $currcode => $currency) {
+    //where (currcode = A and (state = x) OR (state = Y) )
+    $state_or_state = db_or();//where state = A OR B
+    foreach ($states as $state) {
+      $callbacks = array_filter($currency->transaction_view_access[$state]);
+      foreach ($callbacks as $callback) {
+        $callback .= '_views';
+        $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);
+        $callback($query, $state_and_callback, $state);
+        $state_or_state->condition($state_and_callback);
+      }
+    }
+    $currcode_and_states = db_and()->condition('w.worth_currcode', $currcode)->condition($state_or_state);
+    $or_currcodes->condition($currcode_and_states);
+  }
+  //to see this working, show the sql query on admin/structure/views/settings/basic
+  $query->condition($or_currcodes);
+}
+
+
+/*
+ * implements hook_form_FORM_ID_alter
  * renames the exposed filters on views forms
  */
 function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $description = t('Comma separated usernames');
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
-}
-
-function transaction_access_callback_perm_transact_views($state) {
-  $condition = db_and();
-  $operator = user_access('transact') ? '= ': '<>';
-  $condition->condition('mcapi_transactions.state', $state, $operator);
-  return $condition;
-}
-function transaction_access_callback_perm_manage_all_views($state) {
-  $condition = db_and();
-  $operator = user_access('manage all transactions') ? '= ': '<>';
-  $condition->condition('mcapi_transactions.state', $state, $operator);
-  return $condition;
-}
-
-function transaction_access_callback_anyone_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  return $condition;
-}
-function transaction_access_callback_payee_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
-  return $condition;
-}
-function transaction_access_callback_payer_views($state) {
-  $condition = db_and();
-  $condition->condition('mcapi_transactions.state', $state);
-  $condition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
-  return $condition;
-}
-
-/*
- * implements hook_query_TAG_alter
- * the saved view adds the tag 'transaction_view_access'
- * this modifies the query only to show the transactions visible to the user.
- * this is pretty elaborate, but the access control has to be done in the query or views pager won't know how many results there were
- */
-function mcapi_query_transaction_access_views_alter(QueryAlterableInterface $query) {
-  $query->addJoin('LEFT', 'field_data_worth', 'tw', 'tw.entity_id = xid');
-  $states = array_keys(mcapi_get_states());
-  //what currencies can the current user see?
-  $currencies = currencies_load($GLOBALS['user']);
-  $or_currcodes = db_or();//where currcode = A OR currcode = B
-  foreach ($currencies as $currcode => $currency) {
-    $currcode_and_states = db_and(); //where (currcode = A AND (STATES) )
-    $currcode_and_states->condition('tw.worth_currcode', $currcode);
-    $state_or_state = db_or();//where state = A OR B
-    foreach ($states as $state) {
-      $callbacks = array_filter($currency->transaction_view_access[$state]);
-      foreach ($callbacks as $callback) {
-        $callback .= '_views';
-        $state_and_callback = $callback($state);
-        $state_or_state->condition($state_and_callback);
-      }
-    }
-    $currcode_and_states->condition($state_or_state);
-    $or_currcodes->condition($currcode_and_states);
-  }
-  //to see this working, show the sql query on admin/structure/views/settings/basic
-  $query->condition($or_currcodes);
 }

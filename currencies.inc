@@ -125,7 +125,7 @@ function _mcapi_currency_form(&$form, &$form_state, $currency) {
 
   foreach (module_invoke_all('transaction_operations') as $callback => $info) {
     $form['transaction_operation_access'][$callback] = array(
-      '#title' => $info['title'],
+      '#title' => $info['description'],
       '#description' => @$info['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,

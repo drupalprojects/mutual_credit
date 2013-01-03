@@ -16,5 +16,6 @@ The module declares a new state, TRAANSACTION_STATE_PENDING which doesn't count 
 It fires a trigger whenever the transaction is signed
 And another trigger when the transaction moves from pending to finished states.
 
-Views integration is provided so the sign links and pending state are understood by views.
-Views provides a block showing a user's pending transactions.
+Views integrationi used to be provided, but has probably been removed.
+Its very tricky working with the linked signatures table to provide all the likely permutations.
+Instead callbacks have been provided which show the sentence, or 'tokens' display mode.

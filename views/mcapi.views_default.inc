@@ -5,7 +5,7 @@ function mcapi_views_default_views() {
   $view = new view;
   $view->name = 'transactions';
   $view->description = '';
-  $view->tag = 'default';
+  $view->tag = 'mcapi';
   $view->base_table = 'mcapi_transactions';
   $view->human_name = 'transactions';
   $view->core = 7;
@@ -99,12 +99,11 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['view']['empty_zero'] = 0;
   $handler->display->display_options['fields']['view']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['view']['link_title'] = t('View');
-  /* Sort criterion: Transaction: created */
+  /* Sort criterion: Transaction: Created */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'mcapi_transactions';
   $handler->display->display_options['sorts']['created']['field'] = 'created';
   $handler->display->display_options['sorts']['created']['order'] = 'DESC';
-  $handler->display->display_options['sorts']['created']['granularity'] = 'hour';
   /* Filter criterion: Transaction: State */
   $handler->display->display_options['filters']['state']['id'] = 'state';
   $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';

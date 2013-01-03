@@ -59,7 +59,6 @@ class views_handler_field_transaction extends views_handler_field {
   function render($values) {
     $serial = $values->{$this->aliases['serial']};
     $op = $this->real_field == 'serial' ? 'view' : $this->real_field;
-    if ($op == 'view' && !transaction_view_access(transaction_load($serial))) return;
     if ($op == 'undo' && !transaction_operation_access($op, transaction_load($serial))) return;
     return array('#theme' => 'link',
       '#text' => $this->real_field == 'serial' ? $serial : $this->options['link_title'],

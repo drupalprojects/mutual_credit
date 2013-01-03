@@ -4,16 +4,45 @@
  * show the $transaction->pending signatures, signed and unsigned, with links
  *
  * variables are
- * $pending signatures - original data pulled from transaction object
- * $signatories - intermediate data saying how to theme it, with links and access control done
- * $signoff_link - is a link as a render array, checked for access control
- * $rows produced by template_preprocess_pending_signatures, with themed cells and links as render arrays
- * $finished = boolean whether or not the transaction->state is TRANSACTION_STATE_FINISHED
+ * $transaction - original data pulled from transaction object
+ *
+ * css is calculated in hook_theme and included with
+ *
  */
-$title = $finished ? t('Signed by') : t('Awaiting Signatures');
+//inject a bit of css to change the background picture of the transaction certificate
+$background =  "background-repeat: no-repeat; background-position: center;";
+
+foreach ($transaction->pending_signatures as $uid => $status) {
+  if ($status == 1)  {
+    $row = array(
+      'title' => t('Awaiting signature'),
+      'class' => 'pending',
+      'style' => "background-image:url(\"".url('misc')."/message-24-warning.png\"); width:20px; $background"
+    );
+  }
+  else {
+    $row = array(
+      'title' => t('Signed'),
+      'class' => 'signed',
+      'style' => "background-image:url(\"".url('misc')."/message-24-ok.png\"); width:20px; $background"
+    );
+  }
+
+  $rows[$uid] = array(
+    format_username(user_load($uid)),
+    $row
+  );
+}
+$sign_link = _get_signoff_link($transaction);
+if (!$sign_link) $sign_link = _get_sign_link($transaction);
+$table = array(
+  '#theme' => 'table',
+  '#attributes' => array('style' => "width:15em;"),
+  '#rows' => $rows
+);
 ?>
 <div style ="float:right" id ="pending-signatures">
-  <h2><?php print $title; ?></h2>
-  <?php if ($signoff_link) print '('.render($signoff_link) .')'; ?>
+  <h2><?php print $transaction->state == TRANSACTION_STATE_FINISHED ? t('Signed by') : t('Awaiting Signatures'); ?></h2>
+  <?php if ($sign_link) print render($sign_link); ?>
   <?php print render($table); ?>
 </div>

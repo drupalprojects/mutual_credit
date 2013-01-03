@@ -427,7 +427,7 @@ function mcapi_search_execute($keys = NULL, $conditions = NULL) {
   foreach ($find as $item) {
     // Render the node.
     $transaction = transaction_load($item->sid);//sid is actually the serial number
-    if (!transaction_view_access($transaction, $GLOBALS['user'])) continue;
+    if (!transaction_operation_access('view', $transaction, $GLOBALS['user'])) continue;
     $uri = entity_uri('transaction', $transaction);
     $results[$item->sid] = array(
       'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
@@ -585,46 +585,41 @@ function mcapi_views_api() {
 }
 
 /*
- * implements hook_hook_info
- * Mcapi hook implementations follow
- */
-function mcapi_hook_info() {
-  return array(
-    //declare new transaction controllers
-    'transaction_controller' => array(),
-    //check the transactions and the system integrity after the transactions would go through
-    'accounting_validate' => array(),
-    //respond to the insertion of a transaction cluster
-    'transactions_insert' => array(),
-    //respond to the removal, or undoing of a transaction
-    'transactions_undone' => array(),
-    //preparing a transaction for rendering
-    'transactions_view' => array(),
-    //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
-    'transaction_access_callbacks' => array(),
-    //things that can be done to transactions
-    'transaction_operations' => array(),
-    //change of transaction state - takes serials
-    'transactions_state' => array(),
-    //declare transaction states
-    'mcapi_info_states' => array(),
-    //declare transaction types
-    'mcapi_info_types' => array(),
-    //declare permissions to go into the community accounting section of the drupal permissions page
-    'mcapi_info_drupal_permissions' => array(),
-  );
-  //also note there is hook_transaction_cluster_alter to build up a transaction cluster
-}
-/*
- * implements hook_transaction_operation_access
+ * implements hook_transaction_operations
+ * returns an array of operation infos keyed by the operation key
+ * imperative //this is the button text - DO NOT WRAP IN t() as the menu system will do it
+ * description //for the menu local action and currency permission settings - DO NOT WRAP IN t() as the menu system will do it
+ * sure_message //for the 'are you sure form'
+ * redirect //for the 'are you sure' form, defaults to the transaction/%serial
+ * weight for the menu item, defaults to 0//
+ * file_extension //to be used as the first parameter in file_load_include e.g. 'inc'
+ *
+ * Each op will have a menu callback at transaction/%serial/$op
+ * And there must be a function named transaction_operation_do_OPKEY
+ * And there must be a function named transaction_operation_access_OPKEY
+ * A trigger will be created for each op, hook_transaction_operation_OPKEY
+ *
  */
 function mcapi_transaction_operations() {
+  $message = t('Are you sure you want to delete?') .' ';
+  if (variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE) {
+    $message = t('This transaction will disappear without a trace (apart from site backups)');
+  }
+  else {
+    $message = t('Only the site administrator will be able to restore this transaction.');
+  }
   return array(
     'undo' => array(
-      'title' => t('Undo any transactions'),
+      'imperative' => 'Undo',
+      'description' => 'Undo a transaction, and its dependents',
+      'sure_message' => $message,
+      'redirect' => 'user',
+      'weight' => 3,
+      'file_extension' => 'inc'
     )
   );
 }
+
 
 /*
  * entity callback for editing transaction entity
@@ -770,6 +765,34 @@ function mcapi_mcapi_info_drupal_permissions() {
   );
 }
 
+
+
+/**
+ * special access function for transactions - NOT hook implementation
+ */
+/*
+ * menu_access callback (needs to be in .module)
+ * Grant access to a transaction for an operation based
+ * this is slightly crude, since the callbacks can't know know what to do with all possible operations
+ */
+function transaction_operation_access($op, $transaction, $account = NULL) {
+  module_load_include('inc', 'mcapi');
+  if (!$account) $account = $GLOBALS['user'];
+  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
+    $currency = currency_load($item['currcode']);
+    if ($op == 'view') {
+      $callbacks = array_filter($currency->transaction_view_access[$transaction->state]);
+      return _transaction_check_access_callbacks($callbacks, $transaction);
+    }
+    else {
+      $callbacks = array_filter($currency->transaction_operation_access[$op]);
+      $op_access_callback = 'transaction_operation_access_'.$op;
+      if (!$op_access_callback($callbacks, $transaction)) return FALSE;
+    }
+  }
+  return TRUE;
+}
+
 /*
  * implements hook mcapi_permissions
  * each callback refers to 2 functions - itself and CALLBACK_views
@@ -798,24 +821,6 @@ function mcapi_mail_alter(&$message) {
   }
 }
 
-/**
- * special access function for transactions - NOT hook implementation
- * Grant view access to a transaction based on its state and the specified callback for that currency
- */
-function transaction_view_access(stdClass $transaction) {
-  module_load_include('inc', 'mcapi');
-  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    $currency = currency_load($item['currcode']);
-    if (isset($currency->transaction_view_access[$transaction->state])) {
-    //see hook_transaction_access_callbacks for a list of these functions
-      foreach (array_filter($currency->transaction_view_access[$transaction->state]) as $function) {
-        if ($function($transaction, $GLOBALS['user'])) return TRUE;
-      }
-    }
-  }
-  return FALSE;
-}
-
 /*
  * access control wrapper for currency
  * if uid is specified, returns TRUE or FALSE
@@ -824,17 +829,6 @@ function transaction_view_access(stdClass $transaction) {
 function currency_access($op, $currcode, $account = NULL) {
   if (!$account) $account = $GLOBALS['user'];
   return user_access(currency_load($currcode)->currency_access[$op], $account);
-}
-function transaction_operation_access($op, $transaction, $account = NULL) {
-  module_load_include('inc', 'mcapi');
-  if (!$account) $account = $GLOBALS['user'];
-  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    $callbacks = currency_load($item['currcode'])->transaction_operation_access[$op];
-    foreach (array_filter($callbacks) as $callback) {
-      //see hook_transaction_operations for a list of these functions
-      if ($callback($transaction, $account)) return TRUE;
-    }
-  }
 }
 
 /*
@@ -1007,6 +1001,41 @@ function currencies_load($account = NULL, $refresh = FALSE) {
   return $filtered;
 }
 
+//returns operations with untranslated 'imperative' and 'description'
+function transaction_operations($localize = TRUE) {
+  if ($cached = cache_get('transaction_operations')) {
+    //$operations = $cached->data;
+  }
+  if (empty($operations)) {
+    $operations = array();
+    foreach (module_implements('transaction_operations') as $module) {
+      $ops = array();
+      $function = $module .'_transaction_operations';
+      $ops = $function();
+      foreach ($ops as $op => $info) {
+        $ops[$op]['module'] = $module;
+        if($info['file_extension']) module_load_include($info['file_extension'], $module);
+        //for developers, lets just check...
+        foreach (array('transaction_operation_do_'.$op, 'transaction_operation_access_'.$op) as $func) {
+          if (!function_exists($func)) debug('Expected function missing: '.$func);
+        }
+      }
+      $operations += $ops;
+    }
+    drupal_alter('transaction_operations', $operations);
+    cache_set('transaction_operations', $operations, 'cache', CACHE_TEMPORARY);
+  }
+  //I don't know how this will work regarding picking up strings for po files
+  //but we need to pass untranslated strings to the menu somehow
+  if ($localize) {
+    $callback = 't';//this is how to avoid errors during the string extraction when the string is a variable
+    foreach($operations as $key => $info) {
+      $operations[$key]['imperative'] = $callback($info['imperative']);
+      $operations[$key]['description'] = $callback($info['description']);
+    }
+  }
+  return $operations;
+}
 
 /*
  * ====================================================
@@ -1043,24 +1072,18 @@ function mcapi_action_info() {
   );
 }
 
+
 /*
  * implements hook_trigger_info
  */
 function mcapi_trigger_info() {
-  return array(
-    //all mcapi hooks take variable $transactions.
-    'mcapi' => array(
-      'transaction_cluster_alter' => array(
-        'label' => t('Modify a transaction cluster before saving'),
-      ),
-      'transactions_undone' => array(
-        'label' => t('A transaction cluster was undone'),
-      ),
-      'transactions_state' => array(
-        'label' => t('A transaction cluster was inserted or changed state'),
-      )
-    )
-  );
+  //all mcapi hooks take variable $transactions.
+  $triggers['transaction_cluster_alter']['label'] = t('Modify a transaction cluster before saving');
+  $triggers['transactions_state']['label'] = t('A transaction cluster was inserted or changed state');
+  foreach (transaction_operations() as $op => $info) {
+    $triggers['transaction_operation_'.$op]['label'] = $info['description'] .' NOT TESTED';
+  }
+  return array('mcapi' => $triggers);
 }
 
 /*

@@ -37,6 +37,15 @@ function mcapi_mcapicurrencies_default() {
     'transaction_operation_access' => array(
       'undo' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
+      ),
+      'sign' => array(
+        'transaction_access_callback_signatory' => 'transaction_access_callback_signatory'
+      ),
+      'undo_pending' => array(
+        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
+      ),
+      'signoff' => array(
+        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       )
     )
   );

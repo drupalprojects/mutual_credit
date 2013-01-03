@@ -416,7 +416,7 @@ function mcapi_update_7001() {
     $currency->limits['limits_personal']['min'] = $old_currency->min;
     $currency->limits['limits_personal']['max'] = $old_currency->max;
     $currency->transaction_view_access[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
-      'transaction_access_payer', 'transaction_access_payee', 'transaction_access_accountant'
+      'transaction_access_callback_payer', 'transaction_access_callback_payee', 'transaction_access_callback_perm_manage_all'
     ));
     //update the users' balance limits
     $uids = db_select('users', 'u')->fields('u', array('uid'))->execute()->fetchCol();
@@ -837,8 +837,8 @@ function mcapi_update_7010() {
   foreach ($currencies as $currcode => $currency) {
     foreach ($currency->transaction_access as $state => $callbacks) {
       if (@$callbacks['transaction_view_access_participants']) {
-        $callbacks['transaction_view_access_payer'] = 'transaction_view_access_payer';
-        $callbacks['transaction_view_access_payee'] = 'transaction_view_access_payee';
+        $callbacks['transaction_access_callback_payer'] = 'transaction_access_callback_payer';
+        $callbacks['transaction_access_callback_payee'] = 'transaction_access_callback_payee';
       }
       unset ($callbacks['transaction_view_access_participants']);
       $currency->transaction_view_access[$state] = array_filter($callbacks);
@@ -913,4 +913,27 @@ function mcapi_update_7014() {
       ->execute();
   }
   variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth]');
+}
+/**
+ * refresh currencies whose internal format has changed - again
+ */
+function mcapi_update_7015() {
+  module_load_include('mcapicurrencies_default.inc', 'mcapi');
+  $default_currencies = mcapi_mcapicurrencies_default();
+  $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
+  foreach ($datas as $currcode => $data) {
+    $currency = unserialize($data);
+    if (property_exists($currency, transaction_access)) {
+      foreach ((array)$currency->transaction_access as $state => $callbacks) {
+        if (!is_numeric($state)) continue;
+        $currency->transaction_view_access[$state] = array_filter($currency->transaction_access[$state]);
+      }
+    }
+    if (!property_exists($currency, transaction_operation_access)) {
+      $currency->transaction_operation_access = $default_currencies[DEFAULT_CURRENCY_NAME]->transaction_operation_access;
+    }
+    unset($currency->transaction_access);
+    db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
+  }
+  drupal_set_message("Check your currencies' access callbacks");
 }
