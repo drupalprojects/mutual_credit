@@ -177,10 +177,6 @@ function transaction_access_callback_perm_transact_views($query, $condition, $st
 function transaction_access_callback_perm_manage_all_views($query, $condition, $state) {
   $condition->condition(1, user_access('manage all transactions'));
 }
-
-function transaction_access_callback_anyone_views($query, $condition, $state) {
-
-}
 function transaction_access_callback_payee_views($query, $condition, $state) {
   $condition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
 }

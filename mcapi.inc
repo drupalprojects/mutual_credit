@@ -125,7 +125,7 @@ function mcapi_menu_inc() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
 
-  foreach (transaction_operations(FALSE) as $op => $info) {
+  foreach (transaction_operations(NULL, FALSE, FALSE) as $op => $info) {
     $items["transaction/%transaction/$op"] = array(
       'title' => $info['imperative'],
       'description' => $info['description'],
@@ -138,17 +138,14 @@ function mcapi_menu_inc() {
     );
     if (isset($info['file_extension'])) {
       $items["transaction/%transaction/$op"]['file'] = $info['module'] .'.'. $info['file_extension'];
+      $items["transaction/%transaction/$op"]['file path'] = drupal_get_path('module', $info['module']);
     }
   }
   return $items;
 }
 
 function transaction_operation_form($form, &$form_state, $op, $transaction) {
-  $operations = transaction_operations();
-  $info = &$operations[$op];
-  if (isset($info['file_extension'])) {
-    form_load_include($form_state, $info['file_extension'], $info['module']);
-  }
+  $info = transaction_operations($op, FALSE, TRUE);
   mcapi_hide_tabs();
   $form['serial'] = array(
     '#type' => 'hidden',
@@ -531,9 +528,6 @@ function _transaction_check_access_callbacks($callbacks, $transaction) {
  * transaction_access callbacks
  * $ops are determined in hook_transation_operations
  */
-function transaction_access_callback_anyone($transaction) {
-  return TRUE;
-}
 function transaction_access_callback_perm_transact($transaction) {
   return user_access('transact');
 }
@@ -1241,4 +1235,44 @@ function theme_transaction_totals(&$variables) {
     $outputs[] = "<div class = \"transaction-totals $currcode\">$output</div>";
   }
   return implode("<br />", $outputs);
+}
+
+function transaction_get_links($transaction) {
+  $links = array();
+  foreach (transaction_operations(NULL, TRUE, TRUE) as $op => $info) {
+    if (!transaction_operation_access($op, $transaction)) continue;
+    $t = 't';
+    $links[] = array(
+      '#theme' => 'link',
+      '#path' => 'transaction/'.$transaction->serial.'/'.$op,
+      '#text' => $t($info['imperative']),//t function should only be used directly with literal strings
+      '#options' => array(
+        'attributes' => array(),
+        'html' => FALSE
+      )
+    );
+  }
+  return ($links);
+}
+
+
+/*
+ * entity module support
+ * these functions present the components of the worth field as an entity property
+ * they are called without the .info.inc file necessarily having being included
+ */
+function entity_metadata_field_property_get_mcapi_currcode($data, $options, $name, $type, $info) {
+  foreach ($data[LANGUAGE_NONE] as $delta => $data) {
+    $values[$delta] = $data['currcode'];
+  }
+  return $values;
+}
+function entity_metadata_field_property_get_mcapi_quantity($data, $options, $name, $type, $info) {
+  foreach ($data[LANGUAGE_NONE] as $delta => $data) {
+    $values[$delta] = $data['quantity'];
+  }
+  return $values;
+}
+function entity_metadata_field_worth_get($entity, $options, $name, $type, $info) {
+  return $entity->worth[LANGUAGE_NONE];
 }

@@ -28,6 +28,10 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
   //and tack them onto the end of the last token - after the buttons
   foreach (element_children($form) as $name) {
     $element = &$form[$name];
+    if (empty($element)) {//ideally this situation would be caught earlier.
+      drupal_set_message(t("nonexistent field '@fieldname' in transaction form", array('@fieldname' => $name)));
+      continue;
+    }
     if (isset($element['#children']) && strlen($element['#children'])) continue;//have already been rendered (and replaced, above)
     //hide all the unused form elements
     mcapi_element_children_value($element, '#theme', 'hidden');

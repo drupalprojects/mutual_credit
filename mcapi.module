@@ -498,7 +498,7 @@ function mcapi_block_view($delta) {
 /*
  * implements hook_block_configure
  */
-function mcapi_block_configure($delta) {debug($delta);
+function mcapi_block_configure($delta) {
   $currencies = &drupal_static('currencies');
   module_load_include('inc', 'mcapi');
   $settings = variable_get('block_'. $delta, array('currcodes' => array(), 'user_source' => 0));
@@ -785,6 +785,10 @@ function transaction_operation_access($op, $transaction, $account = NULL) {
       return _transaction_check_access_callbacks($callbacks, $transaction);
     }
     else {
+      $info = transaction_operations($op, TRUE, FALSE);//this loads the include file
+      //its possible, if a new module was installed and the currency not resaved, that that $op doesn't exist.
+      //TODO check the ops when the currencies are loaded so we can assume here and delete this line
+      if (!isset($currency->transaction_operation_access[$op])) return FALSE;
       $callbacks = array_filter($currency->transaction_operation_access[$op]);
       $op_access_callback = 'transaction_operation_access_'.$op;
       if (!$op_access_callback($callbacks, $transaction)) return FALSE;
@@ -805,7 +809,6 @@ function mcapi_transaction_access_callbacks() {
   return array(
     'transaction_access_callback_perm_transact' => t("Users with permission to '@perm'", array('@perm' => t('Transact'))),
     'transaction_access_callback_perm_manage_all' => t("Users with permission to '@perm'", array('@perm' => t('Manage all transactions'))),
-    'transaction_access_callback_anyone' => t('Anyone, including anonymous users'),
     'transaction_access_callback_payee' => t('The payee in the transaction'),
     'transaction_access_callback_payer' => t('The payer in the transaction'),
   );
@@ -955,7 +958,7 @@ function template_preprocess_certificate(&$variables) {
 }
 
 /*
- * return one currency object
+ * return one currency object, assuming the user has permission to use it
  */
 function currency_load($currcode = NULL) {
   $currencies = &drupal_static('currencies');
@@ -1002,7 +1005,7 @@ function currencies_load($account = NULL, $refresh = FALSE) {
 }
 
 //returns operations with untranslated 'imperative' and 'description'
-function transaction_operations($localize = TRUE) {
+function transaction_operations($op_name = NULL, $load = FALSE, $localize = TRUE) {
   if ($cached = cache_get('transaction_operations')) {
     //$operations = $cached->data;
   }
@@ -1025,6 +1028,10 @@ function transaction_operations($localize = TRUE) {
     drupal_alter('transaction_operations', $operations);
     cache_set('transaction_operations', $operations, 'cache', CACHE_TEMPORARY);
   }
+  //if a specific op is requested, then reduce the array to just that
+  if ($op_name) {
+    $operations = array($op_name => $operations[$op_name]);
+  }
   //I don't know how this will work regarding picking up strings for po files
   //but we need to pass untranslated strings to the menu somehow
   if ($localize) {
@@ -1034,7 +1041,14 @@ function transaction_operations($localize = TRUE) {
       $operations[$key]['description'] = $callback($info['description']);
     }
   }
-  return $operations;
+  if ($load) {
+    foreach ($operations as $key => $info) {
+      if (strlen($info['file_extension'])) {
+        module_load_include($info['file_extension'], $info['module']);
+      }
+    }
+  }
+  return $op_name ? $operations[$op_name] : $operations;
 }
 
 /*
@@ -1061,7 +1075,7 @@ function mcapi_action_info() {
     'mcapi_transaction_entity_uid' => array(
       'type' => 'transactions',
       'label' => t('Create transaction with entity owner'),
-      'description' => t('Mail sent to the participants when the transaction completes'),
+      'description' => t('Pay or charge the entity uid'),
       'configurable' => TRUE,
       'triggers' => array(//all the core triggers, except taxonomy
         'node_presave', 'node_insert', 'node_update', 'node_delete', 'node_view',

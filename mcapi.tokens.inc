@@ -7,6 +7,7 @@
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'transaction') return;
+  module_load_include('inc', 'mcapi');
   $transaction = &$data['transaction'];
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
@@ -55,12 +56,15 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $element = mcapi_field_formatter_view(NULL, NULL, NULL, NULL, NULL, $items);
         $replacements[$original] = drupal_render($element);
         break;
+      case 'links':
+        $links = transaction_get_links($transaction);
+        foreach (transaction_get_links($transaction) as $link) {
+          $ops[] = drupal_render($link);
+        }
+        $replacements[$original] = implode(' ', $ops);
+        break;
       default: //hopefully a field API field
-        break;
-        //we don't want all the gumph around it, so just render the children
-        $render_transaction = field_view_field('transaction', $transaction, $name, 'default');
-        $replacements[$original] = drupal_render_children($render_transaction);
-        break;
+       // drupal_set_message("Unknown token $name");
     }
   }
   return $replacements;
@@ -103,6 +107,10 @@ function mcapi_token_info() {
     'creator' => array(
       'name' => t('Creator'),
       'description' => t("The user who first recorded the transaction"),
+    ),
+    'links' => array(
+      'name' => t('Links'),
+      'description' => t("Links to transaction operations"),
     )
   );
   return array(

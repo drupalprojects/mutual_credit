@@ -65,4 +65,12 @@ function get_balance_history($account, $currcodes = array(), $mode = 'diagonal',
   return $histories;
 }
 
-
+/**
+ * Implementation of hook_backup_migrate_profiles_alter().
+ * backup migrate module breaks with the mysql view
+ */
+function mcapi_index_views_backup_migrate_profiles_alter(&$profiles) {
+  foreach ($profiles as $name => $profile) {
+    $profile->filters['destinations']['db']['exclude_tables']['mcapi_index'] = 'mcapi_index';
+  }
+}

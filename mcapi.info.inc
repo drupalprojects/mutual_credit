@@ -106,25 +106,3 @@ function mcapi_entity_views_field_handlers_alter(&$field_handlers) {
   //this views handler isn't written yet coz I haven't worked out how the entity module integrates with views
   $field_handlers['worth'] = 'entity_views_handler_field_mcapi_worth';
 }
-
-
-
-/*
- * integration with the entity module
- * these two functions present the components of the worth field as an entity property
- */
-function entity_metadata_field_property_get_mcapi_currcode($data, $options, $name, $type, $info) {
-  foreach ($data[LANGUAGE_NONE] as $delta => $data) {
-    $values[$delta] = $data['currcode'];
-  }
-  return $values;
-}
-function entity_metadata_field_property_get_mcapi_quantity($data, $options, $name, $type, $info) {
-  foreach ($data[LANGUAGE_NONE] as $delta => $data) {
-    $values[$delta] = $data['quantity'];
-  }
-  return $values;
-}
-function entity_metadata_field_worth_get($entity, $options, $name, $type, $info) {
-  return $entity->worth[LANGUAGE_NONE];
-}

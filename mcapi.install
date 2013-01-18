@@ -33,7 +33,7 @@ function mcapi_install() {
     ));
     drupal_set_message("A new user, !name was created for trading. name: demo, pass", array('!name' => format_username($account)));
   }
-  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:sign_link]');
+  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]');
 }
 
 /**
@@ -283,6 +283,7 @@ function _mcapi_module_weights() {
   foreach ($weights as $weight => $modules) {
     db_update('system')->fields(array('weight' => $weight))->condition('name', $modules)->execute();
   }
+  cache_clear_all('*', 'cache_bootstrap', TRUE);
 }
 
 function mcapi_controller_options_form_ajax($form, $form_state) {
@@ -541,6 +542,7 @@ function create_transaction_description_field() {
       'widget' => array(
         'weight' => '3',
         'type' => 'text_textfield',
+        'module' => 'text',
         'settings' => array(
           'rows' => '1'
         )
@@ -923,17 +925,26 @@ function mcapi_update_7015() {
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);
-    if (property_exists($currency, transaction_access)) {
+    if (!property_exists($currency, 'transaction_operation_access') || empty($currency->transaction_operation_access)) {
+      $currency->transaction_operation_access = $default_currencies[DEFAULT_CURRENCY_NAME]->data->transaction_operation_access;
+    }
+    if (property_exists($currency, 'transaction_access')) {
       foreach ((array)$currency->transaction_access as $state => $callbacks) {
         if (!is_numeric($state)) continue;
         $currency->transaction_view_access[$state] = array_filter($currency->transaction_access[$state]);
       }
     }
-    if (!property_exists($currency, transaction_operation_access)) {
-      $currency->transaction_operation_access = $default_currencies[DEFAULT_CURRENCY_NAME]->transaction_operation_access;
-    }
-    unset($currency->transaction_access);
+    debug($currency, 'transaction_view_access should be copied from transaction access; otherwise check your currency settings');
+    //unset($currency->transaction_access);
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
+  cache_clear_all('currencies', 'cache');
+
+  $sentence = variable_get('mcapi_sentence');
+  $sentence .= '[transaction:links]';
+  variable_set('mcapi_sentence', $sentence);
+  cache_clear_all('*', 'cache_token', TRUE);
+  _mcapi_module_weights();
+
   drupal_set_message("Check your currencies' access callbacks");
 }

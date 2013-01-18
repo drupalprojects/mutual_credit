@@ -98,14 +98,12 @@ function drush_mcapi_purge() {
     '@purged' => count($serials),
     '@remaining' => $remaining)
   ));
-  variable_del('change_undo_mode');
   if ($remaining) return;
 
   db_truncate('cache_field')->execute();
   db_truncate('field_data_worth')->execute();
   db_truncate('field_revision_worth')->execute();
   db_truncate('mcapi_transactions')->execute();
-  //$fields = field_info_instance('transaction', 'field_worth', 'transaction');
   variable_set('change_undo_mode', TRUE);
   drush_print('reset auto-increment-transaction ID on transaction table. This could cause problems with other fieldAPI fields');
 }

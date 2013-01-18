@@ -10,11 +10,14 @@ function mcapi_signatures_variable() {
       'description' => t('A mail template (subject, body) for alerting users their signature is needed.'),
       'type' => 'array',
     ),
+    /*
     'mcapi_signed_off_notify_template' => array(
       'title' => t('Transaction sign off notification template'),
       'description' => t('A mail template (subject, body) for alerting users a transaction has been signed off.'),
       'type' => 'array',
     ),
+     * 
+     */
   );
   $types = _get_signable_transaction_types();
   foreach ($types as $type) {

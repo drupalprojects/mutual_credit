@@ -277,12 +277,14 @@ function mcapi_forms_form_postsubmit($form, &$form_state) {
     //this could be more sophisticated by using tokens and transaction_load_last()
     drupal_set_message($submission['feedback']);
   }
-  //I'm finding $form_state['redirect'] doesn't work here
+  $serial = $form_state['values']['serial'];
+  //$form_state['redirect'] doesn't work here
   if (empty($submission['redirect'])) {
-    drupal_goto('transaction/' . $form_state['values']['serial']);
+    drupal_goto('transaction/' . $serial);
   }
   else {
-    drupal_goto(str_replace('%user', $GLOBALS['user']->uid, $submission['redirect']));
+    $replacements = array('%user' => $GLOBALS['user']->uid, '%transaction' => $serial);
+    drupal_goto(strtr($submission['redirect'], $replacements));
   }
 }
 

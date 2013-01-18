@@ -33,16 +33,13 @@ foreach ($transaction->pending_signatures as $uid => $status) {
     $row
   );
 }
-$sign_link = _get_signoff_link($transaction);
-if (!$sign_link) $sign_link = _get_sign_link($transaction);
 $table = array(
   '#theme' => 'table',
   '#attributes' => array('style' => "width:15em;"),
   '#rows' => $rows
 );
 ?>
-<div style ="float:right" id ="pending-signatures">
+<div id ="pending-signatures">
   <h2><?php print $transaction->state == TRANSACTION_STATE_FINISHED ? t('Signed by') : t('Awaiting Signatures'); ?></h2>
-  <?php if ($sign_link) print render($sign_link); ?>
   <?php print render($table); ?>
 </div>

@@ -18,12 +18,9 @@ function mcapi_signatures_install() {
     variable_set('mcapi_signatures_'.$type, array (
       'participants' => 1,
       'countersignatories' => array (),
-      'complete' => 0,
+      'notify' => 0,
     ));
   }
-  $sentence = variable_get('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth]');
-  $sentence .= ' [transaction:sign_link]';
-  variable_set('mcapi_sentence', $sentence);
 }
 
 function mcapi_signatures_enable() {
@@ -36,7 +33,7 @@ function mcapi_signatures_enable() {
  * implements hook_uninstall
  */
 function mcapi_signatures_uninstall() {
-  module_load_include('module', 'mcapi_pending');
+  drupal_load('mcapi_pending');
   if (module_exists('views')) {
     $view = views_get_view('signatures');
     if($view) {
@@ -117,12 +114,6 @@ function mcapi_signatures_update_7005() {
     variable_set($var, $string);
   }
 }
-/**
- * reset the default transaction sentence to include signature links
- */
-function mcapi_signatures_update_7007() {
-  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:sign_link]');
-}
 
 /**
  * check that signatures are congruent with transaction states
@@ -140,4 +131,21 @@ function mcapi_signatures_update_7008() {
     ->condition('serial', $pending_serials)
     ->execute();
 }
+/**
+ * update an array key in the signature settings
+ */
+function mcapi_signatures_update_7009() {
+  module_load_include('inc', 'mcapi_signatures');
+  foreach (_get_signable_transaction_types() as $type) {
+    $varname = 'mcapi_signatures_'.$type;
+    $var = variable_get('mcapi_signatures_'.$type, array());
+    if (empty($var)) continue;
+    $var['notify'] = $var['complete'];
+    unset($var['complete']);
+    variable_set($varname, $var);
+  }
+}
 
+//later when surer, do this
+//variable_del('mcapi_signed_off_notify_template');
+//and remove from hook_variable

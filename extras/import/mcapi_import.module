@@ -137,14 +137,19 @@ function import_transactions_form_validate(&$form, &$form_state) {
 }
 
 function import_transactions_form_submit($form, &$form_state) {
-  $transactions = mcapi_import_generate_transactions(parse_getcsv($form_state['values']['data']));
-  foreach ($transactions as $transaction) {
+  $csv = parse_getcsv($form_state['values']['data']);
+  //store the earliest values
+  foreach ($csv as $row) {
+    if (empty($row['created'])) continue;
+    $earliest[$row['payer']][] = $transaction['created'];
+    $earliest[$row['payee']][] = $transaction['created'];
+  }
+  //create the transactions
+  foreach(mcapi_import_generate_transactions($csv) as $transaction) {
     $cluster = array($transaction);
     transactions_insert($cluster, TRUE);
-    $earliest[$transaction->payer][] = $transaction->created;
-    $earliest[$transaction->payee][] = $transaction->created;
   }
-  if ($form_state['values']['set_created']) {
+  if ($form_state['values']['set_created'] && !empty($earliest)) {
     //set the user created to 1 day before the transaction
     foreach($earliest as $uid => $times) {
       db_query("UPDATE {users} SET created = :created WHERE uid = $uid", array(':created' => min($times)));

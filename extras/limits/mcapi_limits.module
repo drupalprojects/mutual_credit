@@ -295,9 +295,11 @@ function mcapi_limits_block_view($delta) {
     $uid = $settings['account']->uid;
     $function = $delta .'_view';
     $is_me = $uid == $GLOBALS['user']->uid;
+    $content = array_filter($function($uid, $settings['currcodes']));
+    if (empty($content)) return;
     return array(
       'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
-      'content' => array_filter($function($uid, $settings['currcodes']))
+      'content' => $content
     );
   }
 }
