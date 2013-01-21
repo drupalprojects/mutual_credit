@@ -34,6 +34,7 @@ function mcapi_install() {
     drupal_set_message("A new user, !name was created for trading. name: demo, pass", array('!name' => format_username($account)));
   }
   variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]');
+  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
 }
 
 /**
@@ -262,7 +263,7 @@ function mcapi_check_fields() {
         'weight' => 5,
       ),
       'default value' => array(
-        'currcode' => 'def_drup',
+        'currcode' => DEFAULT_CURRENCY,
         'quantity' => 0
       )
     );
@@ -400,8 +401,7 @@ function mcapi_update_7001() {
       $old_currency->$key = $val;
     }
     //get the default currency for this module, and populate with the old default currency
-    //the first currency is called def_drup
-    $currcode = $first_cur ? 'def_drup' : strtolower(str_replace(' ', '_', substr($old_currency->title, 0, 8)));
+    $currcode = $first_cur ? DEFAULT_CURRENCY : strtolower(str_replace(' ', '_', substr($old_currency->title, 0, 8)));
     $currcodes[$nid] = $currcode;//use this later
     $currency->info['currcode'] = $currcode;
     $currency->human_name = $old_currency->title;
@@ -479,7 +479,6 @@ function mcapi_update_7002() {
 //this can be called separately by config modules in ther hook_install
 function create_transaction_description_field() {
   module_load_install('field');
-  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
   mcapi_check_fields();
   $fieldname = 'transaction_description';
   //add the description field, which was intrinsic in v2
@@ -626,7 +625,7 @@ function mcapi_upgrade_transactions($nids) {
         LANGUAGE_NONE => array(
           0 => array(
             'quantity' => $old->quantity,
-            'currcode' => $currcodes[$old->cid] ? $currcodes[$old->cid] : 'def_drup'
+            'currcode' => $currcodes[$old->cid] ? $currcodes[$old->cid] : DEFAULT_CURRENCY
           )
         )
       ),
@@ -860,7 +859,7 @@ function mcapi_update_7011() {
   $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
   $instance['default_value'] = array(
     0 => array(
-      'currcode' => 'def_drup',
+      'currcode' => DEFAULT_CURRENCY,
       'quantity' => 0
     )
   );
@@ -926,7 +925,7 @@ function mcapi_update_7015() {
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);
     if (!property_exists($currency, 'transaction_operation_access') || empty($currency->transaction_operation_access)) {
-      $currency->transaction_operation_access = $default_currencies[DEFAULT_CURRENCY_NAME]->data->transaction_operation_access;
+      $currency->transaction_operation_access = $default_currencies[DEFAULT_CURRENCY]->data->transaction_operation_access;
     }
     if (property_exists($currency, 'transaction_access')) {
       foreach ((array)$currency->transaction_access as $state => $callbacks) {

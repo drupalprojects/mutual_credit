@@ -48,10 +48,26 @@ function transaction_operation_access_undo_pending($callbacks, $transaction) {
 }
 
 
+function mcapi_signall($form, $form_state, $account) {
+  $serials = transactions_needing_sig_of_user($account->uid);
+  $transactions = transactions_load(array(), array('serial' => $serials));
+  $form['preview'] = transaction_view($transactions, 'token');
+  $form['uid'] = array(
+    '#type' => 'hidden',
+    '#value' => $account->uid
+  );
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Sign all')
+  );
+  return $form;
+}
 
-
-function mcapi_signall_confirm_form_submit($form, &$form_state) {
-  mcapi_sign(transactions_needing_sig_of_user($form_state['values']['uid']), array($form_state['values']['uid']));
+function mcapi_signall_submit($form, &$form_state) {
+  $uid = &$form_state['values']['uid'];
+  foreach (transactions_needing_sig_of_user($uid) as $serial) {
+    transaction_sign($serial, $uid);
+  }
   $form_state['redirect'] = 'user';
 }
 
@@ -120,7 +136,12 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
 
 
 function transactions_needing_sig_of_user($uid) {
-  return db_query("SELECT serial FROM {mcapi_signatures} where uid = $uid AND pending = 1")->fetchCol();
+  return db_select("mcapi_signatures", 's')
+    ->fields('s', array('serial'))
+    ->condition('uid', $uid)
+    ->condition('pending', TRUE)
+    ->execute()
+    ->fetchCol();
 }
 /*
  * transaction operation submit callback

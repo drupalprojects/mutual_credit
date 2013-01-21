@@ -38,7 +38,6 @@ function mcapi_drush_help($section) {
  *   An associative array describing your command(s).
  */
 function mcapi_drush_command() {
-  module_load_include('module', 'mcapi');
   $items['mcapi-wipeslate'] = array(
     'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Undo all transactions according to the currency settings'),
@@ -48,6 +47,7 @@ function mcapi_drush_command() {
       'purge' => 'Completely remove'
     ),
   );
+  drupal_load('module', 'mcapi'); //loads the constants
   if (variable_get('mcapi_controller_delete_mode', MCPI_CURRENCY_UNDO_REVERSE) != MCPI_CURRENCY_UNDO_REVERSE) {
     $items['mcapi-purge'] = array(
       'callback' => 'drush_mcapi_purge',

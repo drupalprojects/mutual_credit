@@ -17,7 +17,7 @@ function mcapi_variable_info() {
   $vars['mcapi_deficit'] = array(
     'type' => 'array',
     'title' => t('Largest negative balances'),
-    'default' => array('def_drup' => 0),
+    'default' => array(DEFAULT_CURRENCY => 0),
     'description' => t('Inelegant way of storing the lowest balances, to help the intertrading module survey the system health'),
     'required' => FALSE,
     'group' => 'mcapi',

@@ -30,7 +30,7 @@ class mcapi_ui extends ctools_export_ui {
     // Set up sorting
     $currcode = $item->{$this->plugin['export']['key']};
     unset($operations['disable']);
-    if ($currcode == 'def_drup') {
+    if ($currcode == DEFAULT_CURRENCY) {
       unset($operations['delete']);
     }
 

@@ -34,6 +34,14 @@ function mcapi_signatures_menu() {
     'access arguments' => array('design transaction forms'),
     'file' => 'mcapi_signatures.inc'
   );
+  $items['user/%user/signall'] = array(
+    'title' => 'Sign all your transactions?',
+    'description' => 'Put your signature on all transactions which require it',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mcapi_signall', 1),
+    'access arguments' => array('transact'),
+    'file' => 'mcapi_signatures.inc'
+  );
   return $items;
 }
 
@@ -185,7 +193,7 @@ function mcapi_signatures_block_view_alter(&$data, $block) {
     if (empty($render)) return;
     $data['content']= array(
       $data['content'],
-      array('#markup' => '<h5>'.t('Awaiting my signature...').'</h5>'),
+      array('#markup' => '<strong>'.t('Awaiting my signature...').'</strong>'),
       $render
     );
   }
@@ -303,6 +311,7 @@ function transaction_access_callback_signatory_views($query, $condition, $state)
   //Don't use a static to join ONLY once because the query builder runs more than once for some reason.
   //However there's no harm in joining the same table more than once
   $query->addJoin('LEFT', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+  $query->distinct();
   $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);
 }
 /*
@@ -319,12 +328,14 @@ function transaction_access_callback_pending_signatory_views($query, $condition,
 
 /*
  * implements hook_mcapicurrencies_default_alter
+ * allows signatories and accountants to view pending transactions on the default currency
  * its here coz its small and tidier than creating a mcapicurrencies_default.inc file
  */
 function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
-  foreach ($currencies as $name => $currency) {
-    $currencies[$name]->data->transaction_view_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
-      array('transaction_access_callback_pending_signatory', 'transaction_access_callback_pending_perm_manage_all')
-    );
-  }
+  $currencies[DEFAULT_CURRENCY]->data->transaction_view_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
+    array(
+      'transaction_access_callback_signatory',
+      'transaction_access_callback_perm_manage_all'
+    )
+  );
 }

@@ -248,12 +248,12 @@ function mcapi_import_balances_member($uid, $balance, $gross_income = NULL) {
       $out->{$desc_field}[$language->language][0]['value'] = t("Gross expenditure");
     }
     $in->worth[LANGUAGE_NONE][0]['quantity'] = $gross_expenditure;
-    $in->worth[LANGUAGE_NONE][0]['currcode'] = 'def_drup';
+    $in->worth[LANGUAGE_NONE][0]['currcode'] = DEFAULT_CURRENCY;
     $in->payer = CENTRAL_ACCOUNT_UID;
     $in->payee = $uid;
     $transactions[] = $in;
     $out->worth[LANGUAGE_NONE][0]['quantity'] = $gross_income;
-    $out->worth[LANGUAGE_NONE][0]['currcode'] = 'def_drup';
+    $out->worth[LANGUAGE_NONE][0]['currcode'] = DEFAULT_CURRENCY;
     $out->payer = $uid;
     $out->payee = CENTRAL_ACCOUNT_UID;
     $transactions[] = $out;

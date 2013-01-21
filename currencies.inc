@@ -218,7 +218,7 @@ function currencies_load_all() {
     if ($data->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
       foreach(explode("\n", $data->display['divisions_setting']) as $line) {
         list($cent, $display) = explode('|', $line);
-        $divisions[$cent] = $display;
+        $divisions[$cent] = trim($display);
       }
     }
     $data->display['divisions_allowed'] = $divisions;
@@ -237,7 +237,7 @@ function currencies_load_all() {
 }
 //load the default currency and clear some fields, so it can populate the edit form with some discrete defaults
 function default_cur() {
-  $currency = ctools_export_crud_load('mcapi_currencies', 'def_drup')->data;
+  $currency = ctools_export_crud_load('mcapi_currencies', DEFAULT_CURRENCY)->data;
   $currency->human_name = '';
   $currency->display['format'] = '@minus@integer @subdivision';
   return $currency;

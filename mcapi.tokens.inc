@@ -57,7 +57,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = drupal_render($element);
         break;
       case 'links':
-        $links = transaction_get_links($transaction);
+        $ops = array();
         foreach (transaction_get_links($transaction) as $link) {
           $ops[] = drupal_render($link);
         }

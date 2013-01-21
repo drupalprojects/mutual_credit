@@ -30,6 +30,7 @@ define('TRANSACTION_STATE_REVERSED', 2);
 //This constant and another in the forms module ensures the argument position is not determined by chance
 define('TRANSACTION_BUILD_INFO_ARG', 0);
 
+define('DEFAULT_CURRENCY', 'def_drup');
 
 /*
  * Entity load callback
@@ -240,7 +241,7 @@ function entity_metadata_create_transaction($values = array(), $for_me = FALSE) 
   }
   elseif(isset($values['quantity'])) {
     $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
-    $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : 'def_drup';
+    $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : DEFAULT_CURRENCY;
   }
   else {
     $currcodes = array_keys($currencies);
@@ -602,7 +603,7 @@ function mcapi_views_api() {
  */
 function mcapi_transaction_operations() {
   $message = t('Are you sure you want to delete?') .' ';
-  if (variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE) {
+  if (variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE) {
     $message = t('This transaction will disappear without a trace (apart from site backups)');
   }
   else {
@@ -611,7 +612,7 @@ function mcapi_transaction_operations() {
   return array(
     'undo' => array(
       'imperative' => 'Undo',
-      'description' => 'Undo a transaction, and its dependents',
+      'description' => "Undo a finished transaction, and its dependents",
       'sure_message' => $message,
       'redirect' => 'user',
       'weight' => 3,
@@ -659,7 +660,6 @@ function mcapi_mcapi_info_states() {
       'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
   );
-  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
   $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
   $description = t(
     //dont' link the link coz this function can run while bootstrapping and that means trouble

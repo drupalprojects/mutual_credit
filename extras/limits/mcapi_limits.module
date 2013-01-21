@@ -54,6 +54,7 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
  */
 function mcapi_limits_accounting_validate(array $cluster) {
   $errors = array();
+  module_load_include('inc', 'mcapi');
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each user with their limits
   foreach (_transactions_diff($cluster) as $uid => $percurrency) {

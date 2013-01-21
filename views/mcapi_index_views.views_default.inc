@@ -180,7 +180,7 @@ function mcapi_index_views_views_default_views() {
     $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
     $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['value'] = array(
-      'def_drup' => 'def_drup',
+      DEFAULT_CURRENCY => DEFAULT_CURRENCY,
     );
     $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
     $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
