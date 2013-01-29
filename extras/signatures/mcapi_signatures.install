@@ -81,27 +81,7 @@ function mcapi_signatures_update_7001() {
   db_delete('block')->condition('delta', array('sig_blocks-my_sig_needed', 'sig_blocks-anybodys_sig_needed'))->execute();
   db_query("UPDATE {block} SET delta = 'sig_blocks-my_sig_needed' WHERE delta = 'signature_blocks-block_1'");
   db_query("UPDATE {block} SET delta = 'sig_blocks-anybodys_sig_needed' WHERE delta = 'signature_blocks-block_2'");
-  views_flush_caches();
 }
-
-/*
- * oops there was a bug which left transactions pending but without signatures
- * cleanest fix is to create signed signatures in the mcapi_signatures table
- */
-function mcapi_signatures_7004() {
-  $transactions = transactions_load(NULL, array('state' => -1));
-  foreach (transactions_load(NULL, array('state' => -1)) as $transaction) {
-    foreach (array('payer', 'payee') as $participant) {
-      $pending = $transaction->creator != $transaction->$participant;
-      db_query(
-        "INSERT IGNORE INTO {mcapi_signatures} (serial, uid, pending) VALUES (:serial, :uid, :pending) ON DUPLICATE KEY DO NOTHING",
-        array(':serial' => $transaction->serial, ':uid' => $transaction->$participant, ':pending' => $pending)
-      );
-    }
-  }
-  db_query("DELETE FROM {mcapi_signatures} WHERE uid = 0");
-}
-
 
 /**
  * update email tokens from transaction:uri to transaction:url:absolute
@@ -109,10 +89,11 @@ function mcapi_signatures_7004() {
 function mcapi_signatures_update_7005() {
   foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
     $string = variable_get($var);
-    $string = str_replace('transaction:uri]', 'transaction:url:absolute]', $string);
+    $string = str_replace('transaction:uri]', 'transaction:url]', $string);
     $string = str_replace('transaction:url]', 'transaction:url:absolute]', $string);
     variable_set($var, $string);
   }
+  views_flush_caches();
 }
 
 /**
@@ -136,14 +117,10 @@ function mcapi_signatures_update_7009() {
   }
 }
 
-//later when surer, do this
-//variable_del('mcapi_signed_off_notify_template');
-//and remove from hook_variable
-
-
 function signature_integrity_check() {
-    //sell all pending transactions to completed, then reset them to pending if they have pending signatures
+  //set all pending transactions to completed
   db_update('mcapi_transactions')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();
+  //any transactions with pending signatures should be set back to pending state
   $pending_serials = db_select('mcapi_signatures', 's')
     ->fields('s', array('serial'))
     ->condition('pending', 1)

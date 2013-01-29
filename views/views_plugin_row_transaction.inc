@@ -53,7 +53,7 @@ class views_plugin_row_transaction extends views_plugin_row {
     foreach ($values as $row) {
       $serials[] = $row->{$this->field_alias};
     }
-    $this->transactions = transactions_load(array(), array('serial' => $serials));
+    $this->transactions = transaction_load_multiple(array(), array('serial' => $serials));
   }
 
   function render($row) {

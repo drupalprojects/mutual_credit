@@ -21,7 +21,7 @@ function intertrading_menu() {
 
   if ($currcode = variable_get('intertrading_currcode') && variable_get('intertrading_uid')) {
     mcapi_init();//
-    $transaction =  entity_metadata_create_transaction();
+    $transaction =  entity_create('transaction', array());
     //this attempt to preset has little effect if the field cardinality > 0
     $transaction->worth[LANGUAGE_NONE][0] = array(
       'currcode' => variable_get('intertrading_currcode', NULL),
@@ -558,10 +558,10 @@ function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $for
       if (in_array($fieldname, array('actions', 'form_id', 'form_build_id', 'form_token'))) continue;
       unset($form[$fieldname]);
     }
-
+    $transaction = entity_create('transaction', $form_state['storage']);
     $form['preview'] = array(
       '#type' => 'markup',
-      '#markup' => drupal_render(transaction_view(entity_metadata_create_transaction($form_state['storage'])), 'sentences')
+      '#markup' => drupal_render(transaction_view($transaction), 'token')
     );
     $form['buttons']['submit']['#value'] = t('Confirm');
   }
@@ -612,7 +612,7 @@ function intertrading_transaction_form_submit($form, &$form_state) {
   $values = &$form_state['storage'];
   $result = intertrading_send_transaction($values, $form['#incoming'], TRUE);
   if ($result->code == 'OK') {//this should always be the case
-    $transaction = entity_metadata_create_transaction($values);
+    $transaction = entity_create('transaction', $values);
     transaction_insert_new($transaction, TRUE);
     drupal_set_message('Transaction saved with remote site.');
   }
@@ -807,7 +807,7 @@ function report_intertrading_history() {
 
   if (count($serials)) {
     transactions_state($serials, TRANSACTION_STATE_FINISHED);
-    $transactions = transactions_load(array(), array('serial' => $serials));
+    $transactions = transaction_load_multiple(array(), array('serial' => $serials));
     foreach ($transactions as $transaction) {
 
       $outgoing = FALSE;

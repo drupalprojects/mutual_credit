@@ -31,7 +31,13 @@ function mcapi_mcapicurrencies_default() {
         'transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact',
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
-      TRANSACTION_STATE_REVERSED => array(),
+      //both deletemodes supported in this default currency
+      TRANSACTION_STATE_REVERSED => array(
+        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
+      ),
+      TRANSACTION_STATE_ERASED => array(
+        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
+      ),
     ),
     'transaction_operation_access' => array(
       'undo' => array(

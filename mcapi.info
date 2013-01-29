@@ -9,15 +9,16 @@ dependencies[] = ctools
 dependencies[] = field
 dependencies[] = token
 dependencies[] = user_chooser
+dependencies[] = entity
 
-files[] = mcapi.inc
 files[] = mcapi.install
+files[] = mcapi.inc
+files[] = mcapi.admin.inc
 files[] = mcapi.controller
 files[] = mcapi.tokens.inc
 files[] = mcapi.variable.inc
 files[] = mcapi.drush.inc
 files[] = mcapi.info.inc
-files[] = currencies.inc
 
 ;ctools implementation for currencies
 files[] = mcapi.mcapicurrencies_default.inc

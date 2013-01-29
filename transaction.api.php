@@ -46,7 +46,7 @@
 
 
 /*
- * wrapper around Community Accounting API function transactions_load
+ * wrapper around Community Accounting API function transaction_load_multiple
  * load a cluster of transactions sharing a serial number
  * The first transaction will be the 'volitional' transaction and the rest are loaded into
  * $transaction->children where the theme layer expects to find them
@@ -99,7 +99,7 @@ catch(exception $e){}
  * Create counter-transaction and set state of both to TRANSACTION_STATE_REVERSED
  */
 try {
-  transactions_undo($transaction);
+  transaction_undo($transaction);
 }
 catch(exception $e){}
 
@@ -120,7 +120,7 @@ catch(exception $e){}
 $conditions = array('serial' => array('AB123', 'AB124'));
 //or
 $xids = array(234, 567);
-$transactions = transactions_load($xids, $conditions, $clearcache);
+$transactions = transaction_load_multiple($xids, $conditions, $clearcache);
 
 
 /*

@@ -123,6 +123,10 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $transaction = &$form_state['build_info']['args'][0];
       $transactions[$transaction->xid] = $transaction;
     }
+    //for the preview, we need to put any dependent transactions inside the main one
+    while(count($transactions) > 1) {
+      $transactions[0]->dependents[] = array_pop($transactions);
+    }
     $form['#preview'] = transaction_view(
       $transactions,
       $settings['experience']['sure_format']

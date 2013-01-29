@@ -50,7 +50,7 @@ function transaction_operation_access_undo_pending($callbacks, $transaction) {
 
 function mcapi_signall($form, $form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
-  $transactions = transactions_load(array(), array('serial' => $serials));
+  $transactions = transaction_load_multiple(array(), array('serial' => $serials));
   $form['preview'] = transaction_view($transactions, 'token');
   $form['uid'] = array(
     '#type' => 'hidden',
@@ -101,7 +101,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
   $output = array();
   $serials = transactions_needing_sig_of_user($uid);
   if ($serials) {
-    $transactions = transactions_load(array(), array('serial' => $serials));
+    $transactions = transaction_load_multiple(array(), array('serial' => $serials));
     if (count($transactions) > 1) {
       $output[] = array(
         '#theme' => 'link',
@@ -128,7 +128,7 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
     array(':pending' => TRANSACTION_STATE_PENDING)
   )->fetchCol();
   if ($serials) {
-    $transactions = transactions_load(array(), array('serial' => $serials));
+    $transactions = transaction_load_multiple(array(), array('serial' => $serials));
     $output[] = transaction_view($transactions, 'token');
   }
   return $output;
@@ -293,6 +293,7 @@ function _mcapi_signatures_transactions_state($transactions, $new_state) {
         $transaction->pending_signatures[$counter_uid] = $uid == $counter_uid ? 0 : 1;
       }
       mcapi_signatures_save($transaction);
+      debug($transaction);
       $params['mail_template'] = variable_get('mcapi_sign_notify_template', array());
     }
     //send the mail, using the module settings for this transaction

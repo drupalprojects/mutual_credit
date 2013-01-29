@@ -1,15 +1,15 @@
 <?php
 // $Id:
+
 /*
  * This file is included using the function mcapi_controller();
  * Each function supports the choice of database connections.
  * the class should be named thus:
  * MODULENAME_EntityController
  */
-/*
- * The transaction entity has its own CRUD operations
- */
-class mcapi_EntityController extends DrupalDefaultEntityController {
+
+class mcapiEntityController extends EntityAPIController {
+
   /*
    * This controller test writes the transaction during validation
    * mostly copied from the node controller
@@ -66,14 +66,92 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
 
 
   /*
-   * put an cluster of transactions in the database
+   * creates a transaction-shaped object using the passed values
+   * the transaction would fail its own validation without being populated though
+   * PRIOR to writing in the database
+   * that means it does nothing with the xid and the serial number
+   *   'values' can contain any of
+   *   'payer' - user ID
+   *   'payee' - user ID
+   *   'creator' - User ID
+   *   'created' - unixtime
+   *   'type' - string defined in hook_mcapi_info_types
+   *   'extra' -
+   *   'state' - constant defined in hook_mcapi_info_states
+   *   'worth' - fieldAPI array begining with LANGUAGE_NONE
+   *     OR
+   *   'quantity' (AND currcode) numeric value (AND currency identifier)
+   *   'description' OR $description_field_name string describing purpose of transaction
+   *
+   */
+  public function create(array $values = array(), $for_me = FALSE) {
+    $properties = array(
+      'payer' => 0,
+      'payee' => 0,
+      'creator' => $GLOBALS['user']->uid,
+      'created' => REQUEST_TIME,
+      'type' => 'default',
+      'extra' => array(),
+      'state' => TRANSACTION_STATE_FINISHED
+    );
+    foreach ($properties as $key => $val) {
+      $transaction->$key = isset($values[$key]) ? $values[$key] : $val;
+    }
+
+    //this callback doesn't normally deal with fieldAPI fields, but worth is special and description is special
+    if (isset($values['worth'])) {
+      $items = isset($values['worth'][LANGUAGE_NONE]) ? $values['worth'][LANGUAGE_NONE] : $values['worth'];
+      foreach ($items as $delta => $item) {
+        $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $item['currcode'], 'quantity' => $item['quantity']);
+      }
+    }
+    //another format which might be used
+    elseif(isset($values['worths'])) {
+      foreach ($values['worths'] as $currcode => $quantity) {
+        $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $currcode, 'quantity' => $quantity);
+      }
+    }
+    elseif(isset($values['quantity'])) {
+      $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
+      $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : DEFAULT_CURRENCY;
+    }
+    else {//if worths is not indicated, create a value for each currency the user is permitted to use
+      //check that the creator is actually permitted to use this currency
+      if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
+      else $currencies = drupal_static('currencies');
+
+      foreach (array_keys($currencies) as $currcode) {
+        $transaction->worth[LANGUAGE_NONE][] = array(
+          'quantity' => '',//blank means this value has never been saved
+          'currcode' => $currcode
+        );
+      }
+    }
+    //allow the description to come in with various names
+    if ($desc_fieldname = variable_get('transaction_description_field')) {
+      //assumes that the description field is not called 'description'
+      if (isset($values['description'])) {
+        $transaction->{$desc_fieldname} = array(LANGUAGE_NONE => array(0 => array('value' => $values['description'])));
+      }
+      elseif (isset($values[$desc_fieldname])) {
+        if (isset($values[$desc_fieldname][LANGUAGE_NONE])) $values[$desc_fieldname] = $values[$desc_fieldname][LANGUAGE_NONE];
+        $transaction->{$desc_fieldname} = array(
+          LANGUAGE_NONE => $values[$desc_fieldname]
+        );
+      }
+    }
+    $transaction->dependents = array();
+
+    return $transaction;
+  }
+
+  public function save($transaction){} //we have no use for this
+  /*
+   * put a new cluster of transactions in the database
    * all will be given the SAME serial number, which is what makes them a cluster
    * returns the serial number if $really is TRUE
    */
   public function insert(array &$transactions, $really = FALSE) {
-    //we need to ensure the schema is cached before calling mcapi_write_record
-    //Otherwise it may try to retrieve the schema from the wrong database
-    drupal_get_schema('mcapi_transactions');
     //for now only the controller knows how to generate and serial numbers for its own
     //this subsystem system will need reworking if this module expands
     $serial = $this->next_serial(current($transactions));
@@ -110,45 +188,13 @@ class mcapi_EntityController extends DrupalDefaultEntityController {
       }
       foreach ($transactions as $transaction) {
         $transaction->xid = $transaction->temp;
+        unset($transaction->serial);
       }
     }
     db_set_active();
     if ($really) return $serial;
   }
 
-  /*
-   * there is no error checking on this.
-   * note that field_attach_delete must be called separately
-   */
-  public function undo(array $serials, $hard = FALSE) {
-    variable_del('change_undo_mode');
-    if ($hard) {
-      db_delete("mcapi_transactions")->condition('serial', $serials)->execute();
-    }
-    else {
-      $transactions = $this->load(NULL, array('serial' => $serials));
-      foreach($transactions as $transaction) {
-        $reversed = clone $transaction;
-        $reversed->serial = $transaction->serial;
-        $reversed->xid = NULL;
-        $reversed->payer = $transaction->payee;
-        $reversed->payee = $transaction->payer;
-        $reversed->type = 'reversal';
-        unset($reversed->created);
-        if ($field = variable_get('transaction_description_field', '')) {
-          $entity = entity_get_info('transaction');
-          $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => $entity['label callback']($transaction)));
-        }
-        $reverseds[] = $reversed;
-      }
-      try{
-        transactions_insert($reverseds, TRUE);
-      }
-      catch (Exception $e){
-        drupal_set_message(t('Failed to reverse transaction: @message', array('@message' => $e->getMessage())));
-      }
-    }
-  }
 
   /*
    * change the state of a transaction and its dependents

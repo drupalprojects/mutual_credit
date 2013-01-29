@@ -49,7 +49,7 @@ function mcapi_signatures_menu() {
  * Will implement hook_entity_load or some such
  */
 function mcapi_signatures_entity_load($entities, $type) {
-  if ($type != 'transaction')return;
+  if ($type != 'transaction') return;
   //as we put the signatures into the transaction objects, we check that each transaction is pending
   foreach ($entities as $key => $transaction) {
     $transaction->pending_signatures = mcapi_get_signatories($transaction->serial);
@@ -65,6 +65,10 @@ function mcapi_signatures_entity_delete($transaction, $type) {
     ->condition('serial', $transaction->serial)
     ->execute();
   }
+}
+
+function mcapi_signatures_entity_save() {
+
 }
 
 
@@ -252,7 +256,7 @@ function mcapi_signatures_transaction_view_alter(&$build) {
   foreach ($build as $render_array) {
     if ($render_array['#view_mode'] == 'certificate' && $render_array['#transaction']->state == TRANSACTION_STATE_PENDING) {
       $file = url(drupal_get_path('module', 'mcapi_signatures'))."/pending.png";
-      $css = ".state--1{background-image:url($file);background-repeat: no-repeat; background-position: center;}";
+      $css = ".state--1{background-image:url($file);background-repeat: no-repeat; background-position: top center;}";
       drupal_add_css($css, array('type' => 'inline'));
     }
   }
@@ -296,12 +300,16 @@ function mcapi_signatures_transaction_access_callbacks() {
  * callback for transaction_access
  */
 function transaction_access_callback_signatory($transaction) {
-  return in_array($GLOBALS['user']->uid, array_keys((array)$transaction->pending_signatures));
+  //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
+  if (!property_exists($transaction, 'pending_signatures')) return FALSE;
+  return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
 }
 /*
  * callback for transaction_access
  */
 function transaction_access_callback_pending_signatory($transaction) {
+  //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
+  if (!isset($transaction->pending_signatures)) return FALSE;
   return $transaction->pending_signatures[$GLOBALS['user']->uid];
 }
 /*

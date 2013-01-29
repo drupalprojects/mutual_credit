@@ -44,6 +44,11 @@ $replacements = array(
   <?php print render($pending); //floating on the right, by default ?>
   <?php print $certificate_string; ?>
 
+  <?php if ($desc_fieldname = variable_get('transaction_description_field')) : ?>
+    <strong><?php print t('For:');?></strong><br />
+    <?php print render($additional[$desc_fieldname]) ?><br />
+    <?php endif; ?>
+
   <?php if (isset($dependents)) : // all the remaining transactions are already rendered as tokenised strings ?>
   <div id="dependent-transactions">
     <h3><?php print t('Dependent transactions'); ?></h3>

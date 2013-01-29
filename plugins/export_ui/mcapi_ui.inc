@@ -51,3 +51,5 @@ $plugin = array(
   ),
   'handler' => 'mcapi_ui',
 );
+
+module_load_include('admin.inc', 'mcapi');

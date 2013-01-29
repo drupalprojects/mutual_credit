@@ -11,7 +11,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
   list($payer, $payee) = explode('2', $vector);
   if (empty($form_state['confirmed'])) {
 
-    field_attach_form('transaction', entity_metadata_create_transaction(), $form, $form_state);
+    field_attach_form('transaction', entity_create('transaction', array()), $form, $form_state);
 
     $one = array(
       '#description' => t('A username, email, or user ID'),
@@ -60,7 +60,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     $form['mail']['#description'] = t('Some tokens may not apply.');
   }
   else {
-    $form['preview'] = transaction_view($form_state['confirmed'], 'sentences');
+    $form['preview'] = transaction_view($form_state['confirmed'], 'token');
   }
   $form['#skip_alter'] = TRUE;
   $form['buttons'] = array(
@@ -111,7 +111,7 @@ function mcapi_mass_pay_submit($form, &$form_state) {
   if (strlen($params['subject']) && strlen($params['body'])) {
     $mailto = count($values['payees']) > 1 ? 'payee' : 'payer';
     global $language;
-    foreach (transactions_load(NULL, array('serial' => $serial)) as $transaction) {
+    foreach (transaction_load_multiple(NULL, array('serial' => $serial)) as $transaction) {
       $params['transactions'][$serial] = $transaction;
       $account = user_load($transaction->$mailto);
       drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);
@@ -133,7 +133,7 @@ function mcapi_mass_pay_insert($values, $really) {
   $payers = (array)$values['payers'];
   $payees = (array)$values['payees'];
   unset($values['payers'], $values['payees']);
-  $template = entity_metadata_create_transaction($values);
+  $template = entity_create('transaction', $values);
   foreach ($payers as $payer) {
     foreach ($payees as $payee) {
       if ($payer == $payee) {

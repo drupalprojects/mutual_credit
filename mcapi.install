@@ -23,7 +23,10 @@ function mcapi_install() {
   variable_set('change_undo_mode', TRUE);
 
   mcapi_check_fields();
-  return;
+
+  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]');
+  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
+
   //create a new user if only user 1 exists.
   if (db_query("SELECT count(uid) FROM {users}")->fetchField() < 2) {
     $account = user_save(NULL, array(
@@ -31,10 +34,11 @@ function mcapi_install() {
       'mail' => 'demo@'.$_SERVER['SERVER_NAME'],
       'pass' => 'demo'
     ));
-    drupal_set_message("A new user, !name was created for trading. name: demo, pass", array('!name' => format_username($account)));
+    drupal_set_message(t(
+      "A new user was created for trading. uid: :uid name: demo, pass: demo",
+      array(':uid' => $account->uid, ':delete' => l('Delete', 'user/'.$account->uid.'/delete'))
+    ));
   }
-  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]');
-  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
 }
 
 /**
@@ -374,7 +378,7 @@ function mcapi_update_7000() {
 
   //replace the old module with the new, so as to retain the version number, and keeping it installed
   db_delete('system')->condition('name', 'mcapi_signatures')->execute();
-  db_update('system')->fields(array('name' => 'mcapi_signatures'))->condition('name', 'mc_signatures')->execute();  //rename and update the table
+  db_update('system')->fields(array('name' => 'mcapi_signatures', 'schema_version' => 7007))->condition('name', 'mc_signatures')->execute();  //rename and update the table
   if(!db_query("SHOW TABLES LIKE 'mcapi_signatures'")->fetchfield()) {//this prevents an error if we try to do it twice or if the module isn't installed
     db_rename_table('mc_unsigned', 'mcapi_signatures');
     module_load_install('mcapi_signatures');
@@ -428,6 +432,7 @@ function mcapi_update_7001() {
         user_save($account, $edit);
       }
     }
+    drupal_set_message('Cleaned user profiles from old balance limits');
     $row = array(
       'currcode' => $currcode,
       'data' => $currency
@@ -659,7 +664,7 @@ function mcapi_upgrade_transactions_finished() {
 }
 /*
  * implements hook_user_presave
- * we can user this hook in the module upgrade because it's not used anywhere else in the module
+ * we can use this hook in the module upgrade because it's not used anywhere else in the module
  */
 function mcapi_user_presave(&$edit, $account, $category) {
   unset($edit['mc_limits'], $edit['mc_notification_throttle']);
@@ -731,6 +736,7 @@ function mcapi_update_7006() {
   if ($subject = variable_get('mc_notification_subject', '') && variable_get('mc_notification_body', '')) {
     include_once('includes/actions.inc');
     module_load_include('inc', 'mcapi');
+    module_load_include('admin.inc', 'mcapi');
     $form = mcapi_transaction_mail_action_form();
     //special exception for mail_all_signatories_action
     if (isset($form['mail'])) $form = $form['mail'];
@@ -742,7 +748,6 @@ function mcapi_update_7006() {
     }
     $params['subject'] = $subject;
     $params['body'] = $body;
-
     $aid = actions_save('mcapi_transaction_mail_action', 'transaction', $params, t('Notify transactees'));
     // Borrowed from trigger_assign_form_submit
     db_insert('trigger_assignments')->fields(
@@ -796,31 +801,24 @@ function mcapi_update_7009() {
       'body' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_signoff_body')),
     ));
   }
-  variable_del('mc_signatures_sure');
   variable_del('mc_subtypes');
-  variable_del('mc_signatures_signoff_subject');
-  variable_del('mc_signatures_signoff_body');
-  variable_del('mc_signatures_notification_subject');
-  variable_del('mc_signatures_notification_body');
-  variable_del('mc_trader_autocomplete');
-	variable_del('mc_trader_selector');
-	variable_del('mc_webform_destination');
-	variable_del('mc_webform_special_theme');
-	variable_del('mc_webform_sure');
-  variable_del('mc_notification_update_body');
-  variable_del('mc_notification_update_subject');
-  variable_del('mc_notification_footer');
-	variable_del('mc_notification_option');
-	variable_del('mc_notification_throttle_default');
-	variable_del('mc_stats_exclude');
+	variable_del('mc_live_stats');
+  db_query("DELETE FROM {variable} WHERE name LIKE '%exchange'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'mc_stats%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'mc_notif%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'mc_webform%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'mc_sig%'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'mc_trader%'");
 
   if (module_exists('block')) {
-    db_query("DELETE FROM {variable} WHERE name LIKE '%exchange'");
     db_query("DELETE FROM {block_role} WHERE module LIKE ('mc_%')");
     db_query("DELETE FROM {block_role} WHERE delta LIKE ('cc_%')");
     db_query("DELETE FROM {block_role} WHERE delta LIKE ('pending_exchanges%')");
     db_query("DELETE FROM {block_role} WHERE module = 'transactions'");
+
   }
+
+
   module_enable(array('mcapi_index_views'), TRUE);
   $tables = drupal_get_schema();
   if (!db_query("SHOW TABLES LIKE 'mcapi_submitted'")->fetchField()) {
@@ -836,6 +834,7 @@ function mcapi_update_7010() {
   mcapi_init();
   $currencies = &drupal_static('currencies');
   foreach ($currencies as $currcode => $currency) {
+    if (!isset($currency->transaction_access)) continue;
     foreach ($currency->transaction_access as $state => $callbacks) {
       if (@$callbacks['transaction_view_access_participants']) {
         $callbacks['transaction_access_callback_payer'] = 'transaction_access_callback_payer';
@@ -850,7 +849,6 @@ function mcapi_update_7010() {
       ->execute();
   }
   cache_clear_all('currencies', 'cache');
-  drupal_set_message('check for whitescreen error and if so, clear caches and run mcapi_update_7010() via devel/php');
 }
 /**
  * update the default value on the worth widget
@@ -864,8 +862,6 @@ function mcapi_update_7011() {
     )
   );
   field_update_instance($instance);
-  drupal_set_message('Resave all your transaction forms, paying attention to default transaction field values: '.l('admin/accounting/forms', 'admin/accounting/forms'));
-  menu_rebuild();
 }
 /**
  * clear up a relic which was putting the 'Transactions fieldAPI' link at the top of the management menu
@@ -896,7 +892,6 @@ function mcapi_update_7013() {
   //looks like this might not have been set earlier on some cases
   _mcapi_module_weights();
   cache_clear_all(NULL, 'cache_bootstrap');
-  menu_rebuild();
 }
 /*
  * update email tokens from transaction:uri to transaction:uri
@@ -919,6 +914,7 @@ function mcapi_update_7014() {
  * refresh currencies whose internal format has changed - again
  */
 function mcapi_update_7015() {
+  _mcapi_module_weights();
   module_load_include('mcapicurrencies_default.inc', 'mcapi');
   $default_currencies = mcapi_mcapicurrencies_default();
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
@@ -937,13 +933,13 @@ function mcapi_update_7015() {
     //unset($currency->transaction_access);
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
-  cache_clear_all('currencies', 'cache');
-
-  $sentence = variable_get('mcapi_sentence');
-  $sentence .= '[transaction:links]';
-  variable_set('mcapi_sentence', $sentence);
-  cache_clear_all('*', 'cache_token', TRUE);
-  _mcapi_module_weights();
 
   drupal_set_message("Check your currencies' access callbacks");
+  drupal_set_message('Resave all your transaction forms, paying attention to default transaction field values: '.l('admin/accounting/forms', 'admin/accounting/forms'));
+
+  $sentence = variable_get('mcapi_sentence');
+  variable_set('mcapi_sentence',  $sentence .= '[transaction:links]');
+  cache_clear_all('*', 'cache_token', TRUE);
+  cache_clear_all('currencies', 'cache');
+  menu_rebuild();
 }
