@@ -54,6 +54,30 @@ function mcapi_index_views_enable() {
   );
 }
 
+function mcapi_index_views_schema() {
+  return array(
+    'mcapi_greco_indices' => array(
+      'description' => 'history of system leverage',
+      'fields' => array(
+        'timestamp' => array(
+          'description' => "Unixtime that the transaction was recorded",
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'leverage' => array(
+          'description' => "Sum of all positive balances",
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+        )
+      )
+    )
+  );
+}
+/*
+ * implements hook_uninstall
+ */
 function mcapi_index_views_uninstall() {
   $views = db_query("SELECT name from {views_view} WHERE base_table = 'mcapi_index'")->fetchCol();
   foreach ($views as $viewname) {
@@ -67,7 +91,9 @@ function mcapi_index_views_uninstall() {
 /**
  * update function to rebuild the mysql index view
  */
-function mcapi_index_views_update_7002() {
-  //DRUPAL_SET_MESSAGE('Check all views involving the transaction->state filter','warning');
-  mcapi_index_views_enable();
+function mcapi_index_views_update_7003() {
+  foreach (mcapi_index_views_schema() as $tablename => $table) {
+    db_create_table($tablename, $table);
+  }
+  variable_set('mcapi_greco_period', 90);
 }

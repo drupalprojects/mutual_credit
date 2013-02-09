@@ -19,11 +19,9 @@ define('TRANSACTION_STATE_FINISHED', 1);
 //when the delete mode is to write another transaction reversing the first,
 //we don't actually want to discount the deleted transaction
 //so its state constant will be > 0
+//
 //depending on the delete mode, erased transactions may or may not be counted
-define('TRANSACTION_STATE_ERASED', 0);
-//A reversed transaction cluster contains at least one pair of mirrored transactions.
-//Reversed transactions are counted and visible
-define('TRANSACTION_STATE_REVERSED', 2);
+define('TRANSACTION_STATE_UNDONE', 0);
 
 //the transaction form expects args in $form_state[build_info]
 //This constant and another in the forms module ensures the argument position is not determined by chance
@@ -42,55 +40,67 @@ function transaction_load_multiple($xids = array(), $conditions = array(), $rese
 }
 
 /*
+ * entityAPI load callback - not used AFAIK
+ */
+function mcapi_xaction_load() {
+  debug(func_get_args());
+}
+
+/*
  * Community Accounting API function, see transaction.api.php
  * return the serial number if $really is TRUE
  */
-function transactions_insert(array &$cluster, $really = TRUE) {
+function transaction_cluster_write(array $cluster, $really = TRUE) {
   //put all the transactions side by side ready for the entity controller to validate and insert
-  //instead of module_invoke_all, this allows us to pass by reference
-  foreach (module_implements('accounting_validate') as $module) {
-    $function = $module . '_accounting_validate';
-    $function($cluster);
+  try{
+    module_invoke_all('accounting_validate', $cluster);
   }
-  $serial = entity_get_controller('transaction')->insert($cluster, $really);
-  if ($serial) {//this is only if the transaction was actually inserted
+  catch (Exception $e){
+    drupal_set_message($e->getMessage(), 'error');
+    return;
+  }
+
+  $serial = entity_get_controller('transaction')->insert_cluster($cluster, $really);
+  if ($serial) {
+    //the transaction was really inserted, so we'll write the fieldAPI fields now
     foreach ($cluster as $transaction) {
       field_attach_insert('transaction', $transaction);
     }
     //all the transactions have the same serial, and the same state,
     //so we just get the last serial num of the last transaction used
     //tell the system that the new transaction is going from NULL to whatever the form specified
-    transactions_state(array($transaction->serial), $transaction->state);
+    transaction_state($serial, $transaction->state);
     return $serial;
   }
-  else return $cluster;
 }
 
 /*
  * Community Accounting API function, see transaction.api.php
  * Undo according to the appropriate delete mode.
+ * NB No accounting checks take place before deletings.
  */
 function transaction_undo($serial) {
-  $cluster = transaction_load($serial);
-  variable_del('change_undo_mode');
-  $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
-  if ($deletemode == MCAPI_CURRENCY_UNDO_ERASE) {
-    transactions_state(array($serial), TRANSACTION_STATE_ERASED);
-  }
-  else {
-    $transactions = entity_load('transaction', array(), array('serial' => $serial));
-    if ($deletemode == MCAPI_CURRENCY_UNDO_DELETE) {
+
+  $transactions = entity_load('transaction', array(), array('serial' => $serial));
+  switch(variable_get('mcapi_controller_delete_mode')) {
+    case MCAPI_CURRENCY_UNDO_ERASE:
+      transaction_state($serial, TRANSACTION_STATE_UNDONE);
+      break;
+
+    case MCAPI_CURRENCY_UNDO_DELETE:
+      //the invocation has to run before because it may need to retrieve the transaction from the serial number
+      mcapi_invoke('transaction_deleted', $serial);
       foreach ($transactions as $transaction) {
         field_attach_delete('transaction', $transaction);
         module_invoke_all('entity_delete', $transaction, 'transaction');
         $xids[] = $transaction->xid;
       }
       entity_get_controller('transaction')->delete($xids);
-    }
-    elseif ($deletemode == MCAPI_CURRENCY_UNDO_REVERSE) {
+      break;
+
+    case MCAPI_CURRENCY_UNDO_REVERSE:
       foreach($transactions as $transaction) {
         $reversed = clone $transaction;
-        $reversed->serial = $transaction->serial;
         $reversed->xid = NULL;
         $reversed->payer = $transaction->payee;
         $reversed->payee = $transaction->payer;
@@ -103,38 +113,27 @@ function transaction_undo($serial) {
         $reverseds[] = $reversed;
       }
       try{
-        //this is basically the same as in transactions_insert, but without invoking accounting_validate
-        $serial = entity_get_controller('transaction')->save(array($reversed), TRUE);
+        //this is basically the same as in transaction_cluster_write, but without invoking accounting_validate
+        $serial = entity_get_controller('transaction')->insert(array($reversed), TRUE);
+        field_attach_insert('transaction', $reversed);
       }
       catch (Exception $e){
-          drupal_set_message(t('Failed to reverse transaction: @message', array('@message' => $e->getMessage())));
+        drupal_set_message(t('Failed to reverse transaction: @message', array('@message' => $e->getMessage())));
       }
-      field_attach_insert('transaction', $reversed);
-      transactions_state(array($serial), $reversed->state);
-    }
+      transaction_state($serial, $reversed->state);
+      break;
   }
-
-  module_invoke_all('transaction_undone', $cluster);
-  if (module_exists('rules')) {
-    rules_invoke_event('transaction_undone', $cluster);
-  }
+  variable_del('change_undo_mode');
 }
-
-
-
 
 /**
  * Community Accounting API function, see transaction.api.php
  * change or set the state of a transaction, and pull triggers
  */
-function transactions_state(array $serials, $new_state) {
-  foreach ($serials as $serial) {
-    //we can't assume all of these are in the same state, so they might be following different workflow paths, so we have to deal with them individually
-    $old_clusters[$serial] = transaction_load($serial);
-  }
-  entity_get_controller('transaction')->state($serials, $new_state);
+function transaction_state($serial, $new_state) {
+  entity_get_controller('transaction')->state(array($serial), $new_state);
   //for the following hooks, we send the old transactions in full, and the new state
-  module_invoke_all('transactions_state', $old_clusters, $new_state);
+  mcapi_invoke('transaction_state', $serial, $new_state);
 }
 
 /**
@@ -197,14 +196,14 @@ function transaction_load($serial) {
  * arguments:
  *   $transaction - an object, probably originally created by entity_metadata_create_transaction
  *   $really - Boolean whether to actually save this, or just test-write and revoke.
- *     Defaults to TRUE top be compatible with the Entity API 'save callback'
+ * Defaults to TRUE to be compatible with the Entity API 'save callback'
  */
-function transaction_insert_new($transaction, $really = TRUE) {
+function transaction_cluster_create($transaction, $really = TRUE) {
   $transactions = array($transaction);
-  //this is where the transaction is likely to acquire dependents,
-  //and serial numbers set by contrib modules
+  //this is where the transaction can acquire dependents,
   drupal_alter('transaction_cluster', $transactions);
-  return transactions_insert($transactions, $really);
+  transaction_cluster_write($transactions, $really);
+  return $transactions;
 }
 
 /*
@@ -272,7 +271,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'template' => 'certificate',
       'pattern' => 'certificate__',
       'variables' => array(
-        'transaction' => NULL,
+        'object' => NULL,
       ),
       'file' => 'mcapi.inc'
     ),
@@ -562,9 +561,7 @@ function transaction_form($form, &$form_state) {
     empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? entity_create('transaction', array()) : $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]);
   _transaction_form($form, $form_state);
   field_attach_form('transaction', $form['#transaction'], $form, $form_state);
-  //this determines whether the function calls transaction_insert_new(), which includes drupal_alter
-  // or transactions_insert() which writes the cluster
-  $form['#skip_alter'] = FALSE;
+  //this determines whether the function calls transaction_cluster_create() or transaction_cluster_write()
   $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_form_submit');
   return $form;
@@ -596,16 +593,9 @@ function mcapi_mcapi_info_states() {
     //dont' link the link coz this function can run while bootstrapping and that means trouble
     "See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc')
   );
-  if ($deletemode == MCAPI_CURRENCY_UNDO_ERASE) {
-    $states[TRANSACTION_STATE_ERASED] = array(
-      'name' => t('Erased'),
-      'description' => $description,
-      'default_access_callbacks' => array()
-    );
-  }
-  elseif($deletemode == MCAPI_CURRENCY_UNDO_REVERSE) {
-    $states[TRANSACTION_STATE_REVERSED] = array(
-      'name' => t('Reversed'),
+  if ($deletemode != MCAPI_CURRENCY_UNDO_DELETE) {
+    $states[TRANSACTION_STATE_UNDONE] = array(
+      'name' => t('Undone'),
       'description' => $description,
       'default_access_callbacks' => array()
     );
@@ -628,7 +618,7 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
  * implements mcapi hook_info_types
  */
 function mcapi_mcapi_info_types() {
-  $types = array('default', 'child');
+  $types = array('default', 'dependent');
   if (variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_REVERSE) {
     $types[] = 'reversal';
   }
@@ -744,14 +734,6 @@ function mcapi_transaction_access_callbacks() {
   );
 }
 
-/*
- * element process callback
- * is called once for each $item
- */
-function worth_element_process($element, &$form_state) {
-  form_load_include($form_state, 'inc', 'mcapi');
-  return _worth_element_process($element, $form_state);
-}
 
 /*
  * implements hook_mail
@@ -777,9 +759,12 @@ function mcapi_mail_alter(&$message) {
 }
 
 /*
- * access control wrapper for currency
- * if uid is specified, returns TRUE or FALSE
- * otherwise returns a list of users
+ * access control for currency
+ * there are three ops possible
+ * - membership
+ * - user_aggregated_view
+ * - currency_aggregated_view
+ * each containing a permission
  */
 function currency_access($op, $currcode, $account = NULL) {
   if (!$account) $account = $GLOBALS['user'];
@@ -787,46 +772,38 @@ function currency_access($op, $currcode, $account = NULL) {
 }
 
 
-/*
- * block function a nice display of user balances in a currency
- */
-function mcapi_balances_view($uid, $currcodes) {
-  $render_array = array('#theme' => 'transaction_totals');
-  foreach ($currcodes as $currcode) {
-    $render_array['#totals'][$currcode] = transaction_totals($uid, $currcode);
-  }
-  return $render_array;
-}
-
-
-
 /**
  * menu callback (also declared as $entity_info['view callback'])
  * build a render array for any number of transactions
  * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in transaction_load
  * not sure what the best file for this function is, not that it works in conjunction with the preprocess
+ * $transactions an array of transactions, each one having its dependents already set
+ * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
  */
-function transaction_view($transactions, $view_mode = 'certificate') {
+function transaction_view($transactions, $view_mode) {
   if (!is_array($transactions)) {//we have been passed a single transaction
     $transactions = array($transactions->xid => $transactions);
   }
+  global $language;
   foreach ($transactions as $transaction) {
-    if ($view_mode == 'token') {
-      global $language;
-      $options = array('language' => $language, 'sanitize' => FALSE);
-      $renderable[] = array(
-        '#view_mode' => 'token',
-        '#prefix' => '<div class = "sentence">',
-        '#markup' => token_replace(variable_get('mcapi_sentence'), array('transaction' => $transaction), $options),
-        '#suffix' => '</div>',
-      );
-    }
-    else {
-      $renderable[] = array(
-        '#view_mode' => 'certificate',
-        '#theme' => 'certificate',
-        '#transaction' => $transaction,
-      );
+    switch ($view_mode) {
+      case 'certificate':
+        $renderable['transaction'][] = array(
+          '#view_mode' => 'certificate',
+          '#theme' => 'certificate',
+          '#object' => $transaction,
+        );
+        break;
+        //continuing...
+      default: //an arbitrary token string
+        $options = array('language' => $language, 'sanitize' => FALSE);
+        $renderable['transaction'][] = array(
+          '#view_mode' => 'token',//the arbitrary template renders in all other respects as the saved sentence
+          '#prefix' => '<div class = "sentence">',
+          '#markup' => token_replace($view_mode, array('transaction' => $transaction), $options),
+          '#suffix' => '</div>',
+        );
+        break;//token mode only shows the first transaction in a cluster
     }
   }
   $type = 'transaction';
@@ -898,7 +875,7 @@ function transaction_operations($op_name = NULL, $load = FALSE, $localize = TRUE
         if($info['file_extension']) module_load_include($info['file_extension'], $module);
         //for developers, lets just check...
         foreach (array('transaction_operation_do_'.$op, 'transaction_operation_access_'.$op) as $func) {
-          if (!function_exists($func)) debug('Expected function missing: '.$func);
+          if (!function_exists($func)) drupal_set_message('Expected function missing: '.$func);
         }
       }
       $operations += $ops;
@@ -930,7 +907,66 @@ function transaction_operations($op_name = NULL, $load = FALSE, $localize = TRUE
 }
 
 /*
- * ====================================================
+ *
+ */
+function mcapi_invoke($hook, $serial, $arg1 = NULL) {
+  $transaction = transaction_load($serial);
+  foreach (module_implements($hook) as $module) {
+    $function = $module .'_'. $hook;
+    $function($transaction, $arg1);
+  }
+  //this is a bit of a shortcut past normal rules invocation - probably bad practice
+  if (module_exists('rules') && $event = rules_get_cache('event_' . $hook)) {
+    //because the rules integration only understands the type entity:transaction
+    $event->executeByArgs(array($transaction, $arg1));
+  }
+}
+
+/*
+ * implements hook_trigger_info
+ */
+function mcapi_trigger_info() {
+  if (variable_get('mcapi_controller_delete_mode') == MCAPI_CURRENCY_UNDO_DELETE) {
+    //other delete modes involve a change of state.
+    $triggers['transaction_undo']['label'] = t('A transaction was deleted');
+  }
+  $triggers['transaction_cluster_alter']['label'] = t('Check for dependent transactions before inserting');
+  $triggers['transaction_state']['label'] = t('A transaction was inserted or changed state');
+  foreach (transaction_operations() as $op => $info) {
+    $triggers['transaction_operation_'.$op]['label'] = $info['description'] .' NOT TESTED';
+  }
+  return array('mcapi' => $triggers);
+}
+
+/*
+ * implements trigger hook_transaction_cluster_alter
+ * will only fire if the trigger module is enabled
+ * sends the volitional transaction to the action callbacks where it can be changed.
+ * Action callbacks may return a new transaction to be added to the $transactions
+ */
+function trigger_transaction_cluster_alter(&$cluster) {
+  foreach (trigger_get_assigned_actions('transaction_cluster_alter') as $aid => $info) {
+    module_load_include('admin.inc', 'mcapi');
+    //each action might return ONE transaction object
+    $volitional_transaction = reset($cluster);
+    $result = actions_do($aid, $volitional_transaction, $info);
+    if (is_object($result[$aid])) {
+      $cluster[] = $result[$aid];
+    }
+  }
+}
+
+/*
+ * implement mcapi hook_transaction_state
+ * triggers actions whenever the state changes
+ */
+function trigger_transaction_state($transaction, $new_state) {
+  foreach (trigger_get_assigned_actions('transaction_state') as $aid => $info) {
+    actions_do($aid, $transaction, $info, $new_state);
+  }
+}
+
+/*
  * Implements hook_action_info
  * provides some simple actions, without conditions
  */
@@ -941,65 +977,37 @@ function mcapi_action_info() {
 
 
 /*
- * implements hook_trigger_info
+ * action callback
+ * mail the transaction participants, and cc
+ * $transaction may have dependents
  */
-function mcapi_trigger_info() {
-  //all mcapi hooks take variable $transactions.
-  $triggers['transaction_cluster_alter']['label'] = t('Modify a transaction cluster before saving');
-  $triggers['transactions_state']['label'] = t('A transaction cluster was inserted or changed state');
-  foreach (transaction_operations() as $op => $info) {
-    $triggers['transaction_operation_'.$op]['label'] = $info['description'] .' NOT TESTED';
-  }
-  return array('mcapi' => $triggers);
-}
+function mcapi_transaction_entity_uid($context) {
+  extract($context);//gives $group, $hook, $form_values, $user, actions_label, $direction, $worth_items
+  $entity = $$group;
+  $transaction = array(
+    //allow a price to be fixed on the entity using the worth field.
+    'worth' => isset($entity->worth) ? $entity->worth : $worth_items['worths'],
+    'type' => 'auto',
+    'state' => TRANSACTION_STATE_FINISHED
+  );
+  $transaction['description'] = $worth_items['description'];
 
-/*
- * implements hook_form_trigger_assign_form_alter
- * adds a helpful comment to the transactions trigger
- */
-function mcapi_form_trigger_assign_form_alter(&$form, $form_state) {
-  $clarification = t('Actions which create new transactions will not fire the trigger recursively');
-  $form['transaction_cluster_alter']['#description'] = $clarification;
-}
-
-/*
- * implements trigger hook_transaction_cluster_alter
- * sends the volitional transaction to the action callbacks where it can be changed.
- * Action callbacks may return a new transaction to be added to the $transactions
- */
-function mcapi_transaction_cluster_alter(&$cluster) {
-  if (module_exists('trigger')) {
-    foreach (trigger_get_assigned_actions('transaction_cluster_alter') as $aid => $info) {
-      module_load_include('admin.inc', 'mcapi');
-      //each action might return ONE transaction object
-      $result = actions_do($aid, reset($cluster), $info);
-      if (!empty($result[$aid])) {
-        $cluster[] = $result[$aid];
-      }
-    }
+  if ($direction == 'uidpays') {
+    $transaction['payee'] = 1;
+    $transaction['payer'] = $entity->uid;
   }
-  if (module_exists('rules')) {
-    rules_invoke_event('transaction_cluster_alter', array($cluster));
+  else {
+    $transaction['payee'] = $entity->uid;
+    $transaction['payer'] = 1;
+  }
+  $transactions = array(entity_create('transaction', $transaction));
+  try{
+    transaction_cluster_write($transactions, TRUE);
+  }
+  catch (Exception $e) {
+    drupal_set_message(t('Automated transaction failed: @message', array('@message' => $e->message)), 'error');
   }
 }
-/*
- * implement mcapi hook_transactions_state
- * triggers actions (and rules) whenever the state changes
- */
-function mcapi_transactions_state($old_clusters, $new_state) {
-  if (module_exists('trigger')) {
-    foreach (trigger_get_assigned_actions('transactions_state') as $aid => $info) {
-      foreach ($old_clusters as $cluster) {
-        actions_do($aid, $cluster, $info, $new_state);
-      }
-    }
-  }
-  if (module_exists('rules')) {
-    //shouldn't this fire autromatically?
-    rules_invoke_event('transactions_state', $old_clusters, $new_state);
-  }
-}
-
 
 /*
  * Everything below here concerns the 'worth' fieldAPI field and the 2 elements which it uses
@@ -1022,14 +1030,11 @@ function mcapi_element_info() {
       '#input' => TRUE,
       '#title_display' => 'before',
       '#element_validate' => array('worths_element_validate'),
-     // '#theme' => 'worths_element',
       '#theme_wrappers' => array('form_element'),
       '#process' => array('worths_element_process'),
-      //defaults
-      '#required' => TRUE,
       //custom properties, used for configuration
-      '#all' => FALSE,//shows all currencies
-      '#allow_zero' => FALSE,//affects the #required value
+      '#preset' => FALSE,//ensures all currencies are showing
+      '#calc' => FALSE,//allow a formula
     ),
     //this one is used internally only,
     //although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
@@ -1039,14 +1044,20 @@ function mcapi_element_info() {
       '#process' => array('worth_element_process'),
       '#element_validate' => array('worth_element_validate'),
       '#theme' => 'worth_element',
-      //defaults
-      '#required' => TRUE,
       //custom properties, used for configuration
-      '#allow_zero' => FALSE,//affects the #required value, inherited from above
+      '#calc' => FALSE,
     )
   );
 }
 
+/*
+ * element process callback
+ * is called once for each $item
+ */
+function worth_element_process($element, &$form_state) {
+  form_load_include($form_state, 'inc', 'mcapi');
+  return _worth_element_process($element, $form_state);
+}
 
 /*
  * element process callback
@@ -1055,91 +1066,65 @@ function mcapi_element_info() {
  * or many widgets with fixed currencies
  * $element['default_value'] is an array of all the currencies to be rendered as keys against quantitites
  */
-function worths_element_process($element, $form_state) {
-  if ($element['#all']) {
-    $zero = $element['#allow_zero'] ? '' : 0;
-    //ensure every currency is represented
-    $currencies = &drupal_static('currencies');
-    foreach (array_keys($currencies) as $currcode) {
-      if (!isset($element['#default_value'][$currcode]))$element['#default_value'][$currcode] = $zero;
-    }
-  }
-  $currencies = &drupal_static('currencies');
-  $element['#type'] = 'worths';
-
-  //define the sub-element for each currency
-  //if mixed transaction flag is off, then we don't increment the delta
-  //and instead just add to the #currcodes
-  $delta = 0;
-
-  foreach($element['#default_value'] as $currcode => $quant) {
-    if (empty($currencies[$currcode])) {
-      //this should only happen when a currency has been deleted and some config still expects
-      drupal_set_message(t("Cannot put unknown currency in form: @name", array('@name' => $currcode)));
-      continue;
-    }
-    $element[$delta]['#title'] = $currencies[$currcode]->human_name;
-    $element[$delta]['#title_display'] = 'attribute';
-    $element[$delta]['#type'] = 'worth';
-    $element[$delta]['#required'] = FALSE;//not sure about this
-    $element[$delta]['#currcodes'][] = $currcode;
-    $element[$delta]['#allow_zero'] = $element['#allow_zero'];
-    $element[$delta]['#default_value'] = array(
-      'currcode' => $currcode,
-      'quantity' => $quant
-    );
-    if(variable_get('mcapi_mixed_transactions', TRUE)) {
-      $element[$delta]['#title'] = $currencies[$currcode]->human_name;
-      $delta++;
-    }
-  }
-  return $element;
+function worths_element_process($element, &$form_state) {
+  form_load_include($form_state, 'inc', 'mcapi');
+  return _worths_element_process($element, $form_state);
 }
-
 
 /*
  * implements form_type_ELEMENT_NAME_value
- * return the two numeric fields in the element back as one float
- * Untidily, the main_quant and the div quant fields are also added to this element by the form builder
- * but they should be ignored.
  */
-function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
+function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
   if ($edit == FALSE) return;
-  $value = array(
-    'currcode' => $edit['currcode'],
-    'quantity' => $edit['main_quant']
-  );
-  if (strlen($value['quantity'])) {
+  foreach ($edit as $delta => $item) {
+    $value[$delta] = array(
+      'currcode' => $item['currcode'],
+      'quantity' => $item['main_quant']
+    );
+    if (empty($element['#calc'])) {
+      $value[$delta]['quantity'] += 0; //ensure its a number
+    }
     //incorporate the fractions from the division field
-    $value['quantity'] += 0; //ensure its a number
-    //combine integer and division to get quantity
-    if ($div = @$edit['div_quant'] + 0) {
-      $value['quantity'] += $div/100;
+    if (($div = @$item['div_quant'])) {
+      //combine integer and division to get quantity
+      if ($div) {
+        $value[$delta]['quantity'] += ($div+0)/100;
+      }
+    }
+    //set the value to zero if the field is empty and the currency allows it
+    if (empty($value[$delta]['quantity']) && currency_load($item['currcode'])->pay_zero) {
+      $value[$delta]['quantity'] = '0';
+    }
+    elseif(empty($value[$delta]['quantity'])) {
+      unset($value[$delta]);
     }
   }
 
-  //decluttering
-  unset($element['currcode'], $element['main_quant'], $element['div_quant']);
+  //renumber the items or field_API will break!
+  $value = array_values($value);
   //we have to set the form_state[values] here because they have probably already been set by the parent element
   //they are only set automatically if they haven't been set at all
-  drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], $value);
-  return $value;
+  //drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], @$value);
+  return @$value;
 }
 
 
 /*
- * Imlements entity module hook_field_info
+ * Imlements hook_field_info
  */
 function mcapi_field_info() {
   return array(
+    //oops the field type has the same name as the default_formatter
     'worth_field' => array(
       'label' => t('Worth'),
       'description' => t("One or more values, each denominated in a currency"),
+      'settings' => array(),
+      'instance_settings' => array(),
       'default_widget' => 'worths_widget',
       'default_formatter' => 'worth_field',
       'translatable' => FALSE,
       //following properties are for the entity API module.
-      'property_type' => 'worth',//this is probably out of date
+      'property_type' => 'field_item_worth',
       'property_callbacks' => array('entity_metadata_field_worth_property_callback'),
     )
   );
@@ -1267,11 +1252,10 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
     unset($form['field']['#type']);
     $form['field']['cardinality'] = array(
       '#type' => 'hidden',
-      '#value' => 1
+      '#value' => $form['#field']['cardinality'] //leave this value unchanged, it is manipulated elsewhere
    );
   }
-  $form['instance']['default_value_widget']['worth'][LANGUAGE_NONE]['#all'] = TRUE;
-  $form['instance']['default_value_widget']['worth'][LANGUAGE_NONE]['#allow_zero'] = TRUE;
+  $form['instance']['default_value_widget']['worth'][LANGUAGE_NONE]['#preset'] = TRUE;
 }
 
 /*
@@ -1288,3 +1272,50 @@ function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
   }
 }
 
+
+//this is a property callback for the worth field in mcapi_field_info
+function entity_metadata_field_worth_property_callback(&$info, $entity_type, $field, $instance, $field_type) {
+  $property = &$info[$entity_type]['bundles'][$instance['bundle']]['properties'][$field['field_name']];
+  //overwrite some defaults
+  $property['getter callback'] = 'worth_getter';
+  $property['setter callback'] = 'worth_setter';
+
+  $property['property info'] = entity_property_field_item_worth_info();
+
+}
+
+/*
+ * PROPERTY_TYPE is referenced in hook_field_info
+ */
+function entity_property_field_item_worth_info() {
+
+  return array();
+  //TODO The value below causes rules to work but also causes entity_token to return a value 'Property worth'
+
+  return array(
+    'currcode' => array(
+      'type' => 'text',
+      'label' => t('Currency code'),
+    ),
+    'quantity' => array(
+      'type' => 'decimal',
+      'label' => t('Quantity'),
+    ),
+  );
+}
+
+/*
+ * getter callback
+ * gets the worth field from the entity, FIRST ITEM ONLY
+ * not sure why the entity module can't do this - its just a standard field
+ */
+function worth_getter($entity, array $options, $property_name, $entity_type, $info) {
+  return $entity->{$property_name}[LANGUAGE_NONE][0];
+}
+
+function worth_setter(&$empty_entity, $fieldname, $passed_item, $lang, $entity_type, $field_info) {
+  $empty_entity->{$fieldname}[$lang][0] = array(
+    'currcode' => 'def_drup',
+    'quantity' => 99
+  );
+}

@@ -103,8 +103,7 @@ function drush_mcapi_purge() {
   $serials = db_select('mcapi_transactions', 't')
     ->fields('t', array('serial'))
     ->condition(db_or()
-      ->condition('state', TRANSACTION_STATE_ERASED)
-      ->condition('state', TRANSACTION_STATE_REVERSED)
+      ->condition('state', TRANSACTION_STATE_UNDONE)
     )
   ->execute()->fetchCol();
   hard_delete($serials);

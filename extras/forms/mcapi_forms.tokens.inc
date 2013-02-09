@@ -66,10 +66,6 @@ function mcapi_forms_token_info() {
       'name' => t('1st party: Second person'),
       'description' => t("The 'other' user in the transaction, not the logged in user"),
     ),
-    'button' => array(
-      'name' => t('Submit button'),
-      'description' => '',//this key expected
-    ),
   );
 
   foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {

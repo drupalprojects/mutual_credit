@@ -37,7 +37,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['empty']['area']['label'] = 'empty text';
     $handler->display->display_options['empty']['area']['empty'] = TRUE;
     $handler->display->display_options['empty']['area']['content'] = 'No transactions';
-    $handler->display->display_options['empty']['area']['format'] = 'editor_filtered_html';
+    $handler->display->display_options['empty']['area']['format'] = 'plain_text';
     /* Relationship: Transaction: Payee */
     $handler->display->display_options['relationships']['payee']['id'] = 'payee';
     $handler->display->display_options['relationships']['payee']['table'] = 'mcapi_transactions';
@@ -67,7 +67,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['header']['area']['field'] = 'area';
     $handler->display->display_options['header']['area']['empty'] = TRUE;
     $handler->display->display_options['header']['area']['content'] = '<h4>'.t('Income').'</h4>';
-    $handler->display->display_options['header']['area']['format'] = 'editor_filtered_html';
+    $handler->display->display_options['header']['area']['format'] = 'plain_text';
 
     /* Field: Transaction: Serial number */
     $handler->display->display_options['fields']['serial']['id'] = 'serial';
@@ -140,7 +140,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['header']['area']['field'] = 'area';
     $handler->display->display_options['header']['area']['empty'] = TRUE;
     $handler->display->display_options['header']['area']['content'] = '<h4>'.t('Expenditure').'</h4>';
-    $handler->display->display_options['header']['area']['format'] = 'editor_filtered_html';
+    $handler->display->display_options['header']['area']['format'] = 'plain_text';
     $handler->display->display_options['pager']['type'] = 'none';
     $handler->display->display_options['pager']['options']['offset'] = '0';
     $handler->display->display_options['defaults']['fields'] = FALSE;

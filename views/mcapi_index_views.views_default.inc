@@ -8,7 +8,7 @@ function mcapi_index_views_views_default_views() {
 
   $view = new view();
   $view->name = 'statement';
-  $view->description = 'shows trades of one user, with otheruser field and running balance. (not working because of apparent views error)';
+  $view->description = 'shows trades of one user, with otheruser field and running balance. does not show dependent transactions';
   $view->tag = 'mcapi (index)';
   $view->base_table = 'mcapi_index';
   $view->human_name = 'Statement';
@@ -36,8 +36,8 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['empty']['area']['field'] = 'area';
   $handler->display->display_options['empty']['area']['label'] = 'empty text';
   $handler->display->display_options['empty']['area']['empty'] = TRUE;
-  $handler->display->display_options['empty']['area']['content'] = 'No transactions';
-  $handler->display->display_options['empty']['area']['format'] = 'editor_filtered_html';
+  $handler->display->display_options['empty']['area']['content'] = t('No transactions');
+  $handler->display->display_options['empty']['area']['format'] = 'plain_text';
   /* Relationship: Transaction index: 2nd user */
   $handler->display->display_options['relationships']['uid2']['id'] = 'uid2';
   $handler->display->display_options['relationships']['uid2']['table'] = 'mcapi_index';
@@ -47,7 +47,7 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['created']['id'] = 'created';
   $handler->display->display_options['fields']['created']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['created']['field'] = 'created';
-  $handler->display->display_options['fields']['created']['label'] = 'Created';
+  $handler->display->display_options['fields']['created']['label'] = t('Created');
   $handler->display->display_options['fields']['created']['hide_alter_empty'] = FALSE;
   $handler->display->display_options['fields']['created']['date_format'] = 'short';
   /* Field: User: Name */
@@ -57,14 +57,20 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['name']['relationship'] = 'uid2';
   $handler->display->display_options['fields']['name']['label'] = 'With';
   $handler->display->display_options['fields']['name']['hide_alter_empty'] = FALSE;
+  /* Field: Transaction: Description */
+  $handler->display->display_options['fields']['transaction_description']['id'] = 'transaction_description';
+  $handler->display->display_options['fields']['transaction_description']['table'] = 'field_data_transaction_description';
+  $handler->display->display_options['fields']['transaction_description']['field'] = 'transaction_description';
   /* Field: Transaction index: Expenditure */
   $handler->display->display_options['fields']['expenditure']['id'] = 'expenditure';
   $handler->display->display_options['fields']['expenditure']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['expenditure']['field'] = 'expenditure';
+  $handler->display->display_options['fields']['expenditure']['hide_empty'] = TRUE;
   /* Field: Transaction index: Income */
   $handler->display->display_options['fields']['income']['id'] = 'income';
   $handler->display->display_options['fields']['income']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['income']['field'] = 'income';
+  $handler->display->display_options['fields']['income']['hide_empty'] = TRUE;
   /* Field: Transaction index: Balance */
   $handler->display->display_options['fields']['balance']['id'] = 'balance';
   $handler->display->display_options['fields']['balance']['table'] = 'mcapi_index';
@@ -105,7 +111,7 @@ function mcapi_index_views_views_default_views() {
     $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
     $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
-    $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
+    $handler->display->display_options['filters']['currcode']['expose']['label'] = t('Currency');
     $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
     $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
@@ -115,7 +121,7 @@ function mcapi_index_views_views_default_views() {
   $handler = $view->new_display('page', 'Statement', 'page');
   $handler->display->display_options['path'] = 'user/%/statement';
   $handler->display->display_options['menu']['type'] = 'tab';
-  $handler->display->display_options['menu']['title'] = 'Statement';
+  $handler->display->display_options['menu']['title'] = t('Statement');
   $handler->display->display_options['menu']['weight'] = '0';
 
   $views[$view->name] = $view;
@@ -141,8 +147,6 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['query']['options']['query_comment'] = FALSE;
   $handler->display->display_options['exposed_form']['type'] = 'basic';
-  $handler->display->display_options['exposed_form']['options']['reset_button_label'] = 'Remise à zéro';
-  $handler->display->display_options['exposed_form']['options']['exposed_sorts_label'] = 'Trier par';
   $handler->display->display_options['pager']['type'] = 'some';
   $handler->display->display_options['pager']['options']['items_per_page'] = '1';
   $handler->display->display_options['style_plugin'] = 'default';
@@ -158,7 +162,7 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['uid2']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['uid2']['field'] = 'uid2';
   $handler->display->display_options['fields']['uid2']['group_type'] = 'count_distinct';
-  $handler->display->display_options['fields']['uid2']['label'] = 'Active traders';
+  $handler->display->display_options['fields']['uid2']['label'] = t('Active traders');
   $handler->display->display_options['fields']['uid2']['element_label_colon'] = 1;
   $handler->display->display_options['fields']['uid2']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['uid2']['hide_empty'] = 0;
@@ -184,7 +188,7 @@ function mcapi_index_views_views_default_views() {
     );
     $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
     $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
-    $handler->display->display_options['filters']['currcode']['expose']['label'] = 'Currency';
+    $handler->display->display_options['filters']['currcode']['expose']['label'] = t('Currency');
     $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
     $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
     $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
@@ -265,10 +269,8 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['defaults']['filter_groups'] = FALSE;
   $handler->display->display_options['defaults']['filters'] = FALSE;
 
-
   $views[$view->name] = $view;
   return $views;
-
 }
 
 

@@ -4,6 +4,7 @@
  * Implements variable module's hook_variable_info
  */
 function mcapi_variable_info() {
+  /*
   $vars['mcapi_controller'] = array(
     'type' => 'select',
     'title' => t('Transaction entity controller'),
@@ -14,6 +15,23 @@ function mcapi_variable_info() {
     'type' => 'select',
     'options callback' => 'mcapi_variable_options_callback',
   );
+  $vars['mcapi_db_write'] = array(
+    'type' => 'select',
+    'title' => t('Transaction write Db'),
+    'description' => t('Database connections for writing transactions (Default controller only)'),
+    'required' => FALSE,
+    'group' => 'mcapi',
+    'type' => 'select',//this is multiple
+    'options callback' => 'mcapi_variable_options_callback',
+  );
+  $vars['mcapi_db_read'] = array(
+    'type' => 'select',
+    'title' => t('Transaction read Db'),
+    'description' => t('Database connection for reading transactions (Default controller only)'),
+    'required' => FALSE,
+    'group' => 'mcapi'
+  );
+  */
   $vars['mcapi_deficit'] = array(
     'type' => 'array',
     'title' => t('Largest negative balances'),
@@ -40,22 +58,6 @@ function mcapi_variable_info() {
     'group' => 'mcapi',
     'type' => 'select',
     'options callback' => 'mcapi_variable_options_callback',
-  );
-  $vars['mcapi_db_write'] = array(
-    'type' => 'select',
-    'title' => t('Transaction write Db'),
-    'description' => t('Database connections for writing transactions (Default controller only)'),
-    'required' => FALSE,
-    'group' => 'mcapi',
-    'type' => 'select',//this is multiple
-    'options callback' => 'mcapi_variable_options_callback',
-  );
-  $vars['mcapi_db_read'] = array(
-    'type' => 'select',
-    'title' => t('Transaction read Db'),
-    'description' => t('Database connection for reading transactions (Default controller only)'),
-    'required' => FALSE,
-    'group' => 'mcapi'
   );
   $vars['mcapi_sentence'] = array(
     'type' => 'string',

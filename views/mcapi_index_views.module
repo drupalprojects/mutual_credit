@@ -74,3 +74,42 @@ function mcapi_index_views_backup_migrate_profiles_alter(&$profiles) {
     $profile->filters['destinations']['db']['exclude_tables']['mcapi_index'] = 'mcapi_index';
   }
 }
+
+/*
+ * implements hook_cron
+ */
+function mcapi_index_views_cron() {
+  //save the average balances, with timestamp
+  //this enables us to get the last 90 day average
+  $leverage = 0;
+  $result = db_query("SELECT uid1, sum(income) as income, sum(expenditure) as outgoing FROM mcapi_index GROUP BY uid1");
+  foreach ($result as $row) {
+    if ($row->income > $row->outgoing) {
+      $leverage += $row->income - $row->outgoing;
+    }
+  }
+  db_insert('mcapi_greco_indices')->fields(array('timestamp' => REQUEST_TIME, 'leverage' => $leverage))->execute();
+
+  //now calculate the greco index for now this moment.
+  //get the average leverage over the period
+  $period = "-".variable_get('mcapi_greco_period', 90)." days";
+  $leverage = db_query(
+    "SELECT AVG(leverage) FROM mcapi_greco_indices where timestamp > :time",
+    array(':time' => strtotime($period))
+  )->fetchfield();
+  //get the transaction volume for the period.
+  $volume = db_query(
+    "SELECT SUM(income) FROM mcapi_index where created > :time",
+    array(':time' => strtotime($period))
+  )->fetchfield();
+
+  $indicator = $leverage == 0 ? 0 : round($volume / $leverage, 2);
+  variable_set('mcapi_greco_system_health', $indicator);
+}
+
+function mcapi_index_views_block_view_alter(&$data, $block) {
+  if ($block->delta == 'trade_analysis-system') {
+    //unnfortunately, views rendered it already
+    $data['content']['#markup'] .= t('Greco health index: @float', array('@float' => variable_get('mcapi_greco_system_health', 0)));
+  }
+}

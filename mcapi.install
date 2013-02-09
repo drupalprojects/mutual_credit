@@ -6,7 +6,6 @@
  * Install, update and uninstall functions for the transactions module.
  */
 
-
 /**
  * Implements hook_install().
  */
@@ -80,8 +79,8 @@ function mcapi_enable() {
   cache_clear_all("entity_info:".$language->language, 'cache');
   //this seems to have been omitted from core...
   currencies_load();
-  menu_rebuild();
 }
+
 function mcapi_disable() {
   cache_clear_all('currencies', 'cache');
 }
@@ -291,10 +290,13 @@ function _mcapi_module_weights() {
   cache_clear_all('*', 'cache_bootstrap', TRUE);
 }
 
+/* this feature has been commented out entirely for now
 function mcapi_controller_options_form_ajax($form, $form_state) {
   $form['master_slave']['mcapi_db_read']['#options'] = array_filter($form_state['values']['mcapi_db_write']);
   return $form;
 }
+ *
+ */
 
 function mcapi_modules_enabled($modules) {
   if (in_array('text', $modules)) {
@@ -322,13 +324,17 @@ function mcapi_field_schema($field) {
           'description' => 'The currency ID',
           'type' => 'varchar',
           'length' => '8',
+          'not null' => TRUE,
+          'default' => 'def_drup'
         ),
         'quantity' => array(
           'description' => 'Price',
           'type' => 'numeric',
           'size' => 'normal',
           'precision' => 8,
-          'scale' => 2
+          'scale' => 2,
+          'not null' => TRUE,
+          'default' => 0
         )
       )
     );
@@ -378,7 +384,10 @@ function mcapi_update_7000() {
 
   //replace the old module with the new, so as to retain the version number, and keeping it installed
   db_delete('system')->condition('name', 'mcapi_signatures')->execute();
-  db_update('system')->fields(array('name' => 'mcapi_signatures', 'schema_version' => 7007))->condition('name', 'mc_signatures')->execute();  //rename and update the table
+  db_update('system')
+    ->fields(array('name' => 'mcapi_signatures', 'schema_version' => 7007))
+    ->condition('name', 'mc_signatures')
+    ->execute();  //rename and update the table
   if(!db_query("SHOW TABLES LIKE 'mcapi_signatures'")->fetchfield()) {//this prevents an error if we try to do it twice or if the module isn't installed
     db_rename_table('mc_unsigned', 'mcapi_signatures');
     module_load_install('mcapi_signatures');
@@ -421,7 +430,8 @@ function mcapi_update_7001() {
     $currency->limits['limits_personal']['min'] = $old_currency->min;
     $currency->limits['limits_personal']['max'] = $old_currency->max;
     $currency->transaction_view_access[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
-      'transaction_access_callback_payer', 'transaction_access_callback_payee', 'transaction_access_callback_perm_manage_all'
+      'transaction_access_callback_signatory',
+      'transaction_access_callback_perm_manage_all'
     ));
     //update the users' balance limits
     $uids = db_select('users', 'u')->fields('u', array('uid'))->execute()->fetchCol();
@@ -562,7 +572,7 @@ function create_transaction_description_field() {
  */
 function mcapi_update_7003() {
   //now migrate the transactions...
-  module_load_include('module', 'mcapi');//for the transaction_state definitions
+  module_load_include('module', 'mcapi');//for the TRANSACTION_STATE_* definitions
   module_load_install('field_sql_storage');//for the field saving function
 
   if (!db_query("SELECT 1 FROM {mcapi_transactions}")->fetchfield()) {
@@ -752,7 +762,7 @@ function mcapi_update_7006() {
     // Borrowed from trigger_assign_form_submit
     db_insert('trigger_assignments')->fields(
       array(
-        'hook' => 'transactions_state',
+        'hook' => 'transaction_state',
         'aid' => $aid,
         'weight' => 0,
       )
@@ -782,7 +792,7 @@ function mcapi_update_7009() {
 
   //customised menu items need to be renamed
   db_query("UPDATE {menu_links} SET link_path = 'transactions' WHERE link_path = 'exchanges'");
-  db_query("UPDATE {menu_links} SET link_path = 'transact' WHERE link_path = 'exchange'");
+  db_query("DELETE FROM {menu_links} WHERE link_path LIKE 'exchange%'");
   db_delete('menu_links')->condition('link_path', array('statement', 'node/add/currency', 'exchange_stats'))->execute();
   db_query("DELETE FROM {menu_links} WHERE link_path LIKE 'admin/mc%'");
 
@@ -893,7 +903,7 @@ function mcapi_update_7013() {
   _mcapi_module_weights();
   cache_clear_all(NULL, 'cache_bootstrap');
 }
-/*
+/**
  * update email tokens from transaction:uri to transaction:uri
  * some variables but also some action settings
  * create mcapi_sentence variable
@@ -942,4 +952,34 @@ function mcapi_update_7015() {
   cache_clear_all('*', 'cache_token', TRUE);
   cache_clear_all('currencies', 'cache');
   menu_rebuild();
+}
+/**
+ * alter transaction state constant.
+ * Update the name of the saved action.
+ * Update the field cardinality, which went astray.
+ * Update the worth table to take zero values
+ */
+function mcapi_update_7016() {
+  db_query("UPDATE {mcapi_transactions} SET state = 0 WHERE state = 2");
+  if ($aid = db_select('actions', 'a')->fields('a', array('aid'))->condition('callback', 'mcapi_supplementary_transaction_action')->execute()->fetchfield()) {
+    db_update('actions')->fields(array('callback' => 'mcapi_dependent_transaction_action'))->condition('callback', 'mcapi_supplementary_transaction_action')->execute();
+    drupal_set_message('Check and resave this transaction action: !link', array('!link' => l('mcapi_supplementary_transaction_action', 'admin/config/system/actions/configure/'.$aid)));
+  }
+  variable_get('mcapi_mixed_transactions', 0);
+  $field = field_read_field('worth');
+  $currencies = &drupal_static('currencies');
+  $field['cardinality'] = variable_get('mcapi_mixed_transactions', 0) ? count($currencies) : 1;
+  field_update_field($field);
+
+  $worth_db_field = array(
+    'description' => 'Price',
+    'type' => 'numeric',
+    'size' => 'normal',
+    'precision' => 8,
+    'scale' => 2,
+    'not null' => TRUE,
+    'default' => 'def_drup'
+  );
+  db_change_field('field_data_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
+  db_change_field('field_revision_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
 }

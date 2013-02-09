@@ -69,30 +69,6 @@ function limits_global_form($currency, array $defaults) {
   return min_max_fields($defaults);
 }
 
-/*
- * PERSONAL LIMITS
- */
-function limits_personal($currency, $uid) {
-  $account = user_load($uid);
-  $currcode = $currency->info['currcode'];
-  $personal = array();
-  if (isset($account->data['limits_personal'][$currcode]) && is_array($account->data['limits_personal'][$currcode])) {
-    $personal = $account->data['limits_personal'][$currcode];
-  }
-  return $personal + $currency->limits['limits_personal'];
-}
-/*
- * the sub form for setting the default user limits on the currency form
- */
-function limits_personal_form($currency, array $defaults) {
-  $saved = empty($currency->limits['limits_personal']) ? array('min' => NULL, 'max' => NULL) : $currency->limits['limits_personal'];
-  $personal_form = min_max_fields($saved);
-  $personal_form['#description'] = t("Users with permission to manage all transactions can edit the users' personal limits.");
-  $personal_form['min']['#title'] = t('Default minimum balance.');
-  $personal_form['max']['#title'] = t('Default maximum balance.');
-  return $personal_form;
-}
-
 
 /*
  * Equation
@@ -165,7 +141,7 @@ function min_max_fields($defaults) {
       '#title' => t('Optional minimum balance'),
       '#description' => t('Must be less than or equal to zero'),
       '#type' => 'textfield',
-      '#default_value' => isset($defaults['min']) ? $defaults['min'] : '-',
+      '#default_value' => isset($defaults['min']) ? $defaults['min'] : '',
       '#element_validate' => array('mcapi_validate_optional_num', 'mcapi_limits_validate_min'),
       '#size' => 7,
       '#maxlength' => 7,

@@ -216,7 +216,7 @@ function mcapi_sms_expressions($number, $values, $direction) {
   $transaction->creator = $sender;
   $transactions = array($transaction);
   try {
-    transaction_insert_new($transaction, TRUE);
+    transaction_cluster_create($transaction, TRUE);
   }
   catch (Exception $e) {
     sms_user_send($account->uid, $e->message);

@@ -6,7 +6,7 @@
  */
 function mcapi_mass_pay($form, &$form_state, $vector) {
   form_load_include($form_state, 'inc', 'accountant_ui');
-  form_load_include($form_state, 'inc', 'mcapi');
+  form_load_include($form_state, 'admin.inc', 'mcapi');
   $form = array();
   list($payer, $payee) = explode('2', $vector);
   if (empty($form_state['confirmed'])) {
@@ -15,21 +15,25 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
 
     $one = array(
       '#description' => t('A username, email, or user ID'),
-      '#type' => 'user_chooser_permissions',
+      '#type' => 'user_chooser_few',
+      '#callback' => 'user_chooser_segment_permissions',
       '#args' => array('transact'),
       '#allow_me' => TRUE,
       '#weight' => 9,
+      '#multiple' => FALSE,
     );
     $few = array(
-      '#type' => 'user_chooser_permissions',
+      '#type' => 'user_chooser_few',
+      '#callback' => 'user_chooser_segment_permissions',
       '#args' => array('transact'),
       '#allow_me' => TRUE,
       '#multiple' => TRUE,
       '#multiple_fail_quietly' => TRUE
     );
     $many = array(
-      '#type' => 'user_chooser_preselect',
-      '#options' => module_invoke_all('user_chooser_preselect'),
+      '#type' => 'user_chooser_many',
+      '#callback' => 'user_chooser_segment_permissions',
+      '#args' => array('transact'),
       '#allow_me' => TRUE,
     );
 
@@ -60,9 +64,11 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     $form['mail']['#description'] = t('Some tokens may not apply.');
   }
   else {
-    $form['preview'] = transaction_view($form_state['confirmed'], 'token');
+    //we have to preview these separately to see them all
+    foreach ($form_state['confirmed'] as $transaction) {
+      $form['preview'][] = transaction_view(array($transaction), 'token');
+    }
   }
-  $form['#skip_alter'] = TRUE;
   $form['buttons'] = array(
     '#weight' => 20,
     'submit' => array(
@@ -102,11 +108,12 @@ function mcapi_mass_pay_submit($form, &$form_state) {
     'body' => $form_state['storage']['mcapi_accounting_masspay_body'],
   ));
   $params = variable_get('mcapi_accounting_masspay_mail');
-  $form_state['values'] = $form_state['storage'];
-  unset($form_state['values']['subject'], $form_state['values']['body']);
+  $form_state['values'] = &$form_state['storage'];
   form_state_values_clean($form_state);
+  $values = $form_state['values'];
+  unset($values['subject'], $values['body']);
   //the transactions are actually saved here
-  $serial = mcapi_mass_pay_insert($form_state['values'], TRUE);
+  $serial = mcapi_mass_pay_insert($values, TRUE);
   //now start preparing the mail
   if (strlen($params['subject']) && strlen($params['body'])) {
     $mailto = count($values['payees']) > 1 ? 'payee' : 'payer';
@@ -146,7 +153,7 @@ function mcapi_mass_pay_insert($values, $really) {
     }
   }
   try {
-    $serial = transactions_insert($transactions, $really);
+    $serial = transaction_cluster_write($transactions, $really);
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());

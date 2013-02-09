@@ -1,0 +1,6 @@
+.state--1{
+  background-image:url('pending.png');
+  background-repeat: no-repeat; 
+  background-position: top center;
+}
+#pending-signatures{float:right;}

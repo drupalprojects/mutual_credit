@@ -19,15 +19,14 @@ function mcapi_forms_menu() {
     if (!empty($form->disabled)) continue;
     $settings = &$form->data;
     $menu_link = &$settings['architecture']['menu_link'];
-    list($access_callback, $access_arg1) = explode(':', $settings['architecture']['access']);
     $items[$settings['architecture']['path']] = array(
       'title' => 'Design form',
       'title callback' => 'mcapi_form_title',
       'title arguments' => array($ctools_id),
       'page callback' => 'mcapi_get_form',
       'page arguments' => array($ctools_id),
-      'access callback' => $access_callback,
-      'access arguments' => array($access_arg1),
+      'access callback' => 'user_chooser_access',
+      'access arguments' => explode(':', $settings['architecture']['access']),
       'menu_name' => is_numeric($menu_link) ? 'navigation' :$menu_link,
       'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
     );
@@ -86,9 +85,7 @@ function mcapi_forms_forms($form_id, $args) {
     'callback arguments' => $args
   );
   return $forms;
-
 }
-
 
 /*
  * implements hook_form_FORMID_alter
@@ -112,7 +109,6 @@ function mcapi_forms_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_s
   $form['buttons']['#prefix'] = '<div>';
   $form['buttons']['#suffix'] = '</div>';
 }
-
 
 /*
  * implements hook_form_FORMID_alter
@@ -148,8 +144,9 @@ function mcapi_forms_block_info() {
 function mcapi_forms_block_view($delta) {
   //load the form and check access first
   $settings = mcapi_forms_load($delta)->data['architecture'];
-  $access_callback = strtok($settings['access'], ':');
-  if (!$access_callback(strtok(':'))) return;
+  $access_settings = explode(':', $settings['access']);
+  $access_callback = 'in_'. array_shift($access_settings);
+  if (!$access_callback($access_settings)) return;
   //it's generally a bad idea to show the form in block on its own page
   if (current_path() == $settings['path']) return;
   $title = drupal_get_title();
@@ -225,7 +222,7 @@ function mcapi_forms_mcapi_info_types() {
 }
 
 /*
- * Implements hook_mcapi_info_drupal_permissions
+ * Implements hook_mcapi_info_drupal_permissions().
  */
 function mcapi_forms_mcapi_info_drupal_permissions() {
   return array(
@@ -237,7 +234,7 @@ function mcapi_forms_mcapi_info_drupal_permissions() {
 }
 
 /*
- * Implements hook_theme
+ * Implements hook_theme().
  */
 function mcapi_forms_theme($existing, $type, $theme, $path) {
   return array(

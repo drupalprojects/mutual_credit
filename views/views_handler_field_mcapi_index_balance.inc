@@ -11,14 +11,8 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
 
   var $uid;
 
-  function construct() {
-    parent::construct();
-    $this->additional_fields['xid'] = 'xid';
-  }
-
   function query() {
     $this->ensure_my_table();
-    //adding the fields seems to require that $this->options['group_type'] be set
     $this->add_additional_fields();
   }
 
@@ -36,21 +30,20 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
         return 'error';
       }
     }
-    $quantity = db_query(
-      "SELECT SUM(diff) FROM {mcapi_index}
-        WHERE uid1 = :uid
-        AND xid <= :xid
-        AND currcode = :currcode",
-      array(
-        ':xid' => $values->{$this->aliases['xid']},
-        ':uid' => $this->uid,
-        ':currcode' => $values->currcode
-      )
-    )->fetchField();
     return array(
       '#theme' => 'worth_item',
       '#currcode' => $values->currcode,
-      '#quantity' => $quantity
+      '#quantity' => db_query(
+        "SELECT SUM(diff) FROM {mcapi_index}
+          WHERE uid1 = :uid
+          AND xid <= :xid
+          AND currcode = :currcode",
+        array(
+          ':xid' => $values->{$this->aliases['xid']},
+          ':uid' => $this->uid,
+          ':currcode' => $values->currcode
+        )
+      )->fetchField()
     );
   }
 }

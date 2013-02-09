@@ -90,15 +90,12 @@ function mcapi_views_default_views() {
     $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
     $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;
   }
-  /* Field: Transaction: View */
-  $handler->display->display_options['fields']['view']['id'] = 'view';
-  $handler->display->display_options['fields']['view']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['view']['field'] = 'view';
-  $handler->display->display_options['fields']['view']['label'] = '';
-  $handler->display->display_options['fields']['view']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['view']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['view']['hide_alter_empty'] = 1;
-  $handler->display->display_options['fields']['view']['link_title'] = t('View');
+  /* Field: Transaction: Operations */
+  $handler->display->display_options['fields']['operations']['id'] = 'operations';
+  $handler->display->display_options['fields']['operations']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['operations']['field'] = 'operations';
+  $handler->display->display_options['fields']['operations']['link_to_transaction'] = 0;
+
   /* Sort criterion: Transaction: Created */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'mcapi_transactions';
@@ -108,14 +105,14 @@ function mcapi_views_default_views() {
   $handler->display->display_options['filters']['state']['id'] = 'state';
   $handler->display->display_options['filters']['state']['table'] = 'mcapi_transactions';
   $handler->display->display_options['filters']['state']['field'] = 'state';
-  $handler->display->display_options['filters']['state']['value'] = array(1 => 1);
+  $handler->display->display_options['filters']['state']['value'] = array(1 => 1);//1 means finished transactions
   /* Filter criterion: Transaction: Type */
   $handler->display->display_options['filters']['type']['id'] = 'type';
   $handler->display->display_options['filters']['type']['table'] = 'mcapi_transactions';
   $handler->display->display_options['filters']['type']['field'] = 'type';
   $handler->display->display_options['filters']['type']['operator'] = 'not in';
   $handler->display->display_options['filters']['type']['value'] = array(
-    'child' => 'child',
+    'dependent' => 'dependent',
     'mass' => 'mass',
   );
   $handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';

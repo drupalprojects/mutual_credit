@@ -79,8 +79,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Access control'),
       '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
       '#type' => 'select',
-      '#default_value' => isset($settings['architecture']['access']) ? $settings['architecture']['access'] : 'user_chooser_roles:'.DRUPAL_AUTHENTICATED_RID,
-      '#options' => _mcapi_user_chooser_access_options(),
+      '#default_value' => isset($settings['architecture']['access']) ? $settings['architecture']['access'] : 'user_chooser_permissions:transact',
+      '#options' => module_invoke_all('uchoo_segments'),
       '#element_validate' => array(),
       '#weight' => 3
     ),
@@ -134,8 +134,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         if ($perspective == 1) {
           $transaction_fields[$fieldname]['#title'] = t('Other user');
           //convert the payer field to a seconderson field
-          $form['secondperson'] = _mcapi_form_config_fieldset($settings['secondperson'], $transaction_fields['payer'], 'secondperson');
-          $form['secondperson']['user_chooser_config'] = _mcapi_user_chooser_config_field($settings['secondperson']);
+          $form['secondperson'] = _mcapi_user_chooser_config_field($settings['secondperson']) + _mcapi_form_config_fieldset($settings['secondperson'], $transaction_fields['payer'], 'secondperson');
           $preset = array(
             '#title' => t('Direction'),
             '#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
@@ -155,8 +154,8 @@ function _edit_mcapi_form(&$form, &$form_state) {
         //then run on
       case 'payee':
         if ($perspective == 3) {
-          $form[$fieldname] = _mcapi_form_config_fieldset($settings[$fieldname], $transaction_fields[$fieldname], $fieldname);
-          $form[$fieldname]['user_chooser_config'] = _mcapi_user_chooser_config_field($settings[$fieldname]);
+          $form[$fieldname] = _mcapi_user_chooser_config_field($settings[$fieldname]) + _mcapi_form_config_fieldset($settings[$fieldname], $transaction_fields[$fieldname], $fieldname);
+          //$form[$fieldname] += ;
           $form[$fieldname]['preset']['#description'] = t('This field does not respond to changes in the above field.');
         }
         break;
@@ -168,8 +167,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         $form[$fieldname] = _mcapi_form_config_fieldset($default_items, $empty_field, $fieldname);
     }
   }
-  $form['worth']['preset']['#all'] = TRUE;
-  $form['worth']['preset']['#allow_zero'] = TRUE;
+  $form['worth']['preset']['#preset'] = TRUE;
 
   $currencies = &drupal_static('currencies');
   if (count($currencies) >1) {
@@ -180,13 +178,10 @@ function _edit_mcapi_form(&$form, &$form_state) {
   //we need to know the view modes of the transaction entity, to choose for the preview page
   $entity = entity_get_info('transaction');
   foreach ($entity['view modes'] as $name => $mode) {
-    if (in_array($name, array('search_index', 'search_result')))continue;
+    if (in_array($name, array('search_index', 'search_result', 'token'))) continue;
     $view_modes[$name] = $mode['label'];
   }
-  $view_modes['token'] = t(
-    'Tokenised sentence; configure at !link',
-    array('!link' => l('admin/accounting/misc', 'admin/accounting/misc'))
-  );
+
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Deteriming how the form and the confirmation work for the user'),
@@ -204,9 +199,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'template' => array(
       '#title' => t('Main form'),
-      '#description' => implode('<br />', array(
-          t('Use the tokens below with HTML & css to design your payment form. Linebreaks will be replaced automatically.')
-        )),
+      '#description' => t('Use the tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
       '#type' => 'textarea',
       '#rows' => 6,
       '#default_value' => @$settings['experience']['template'],
@@ -228,9 +221,27 @@ function _edit_mcapi_form(&$form, &$form_state) {
     'sure_format' => array(
       '#title' => t('Confirmation preview mode'),
       '#type' => 'radios',
-      '#options' => $view_modes,
+      '#options' =>  $view_modes + array(
+        'token' => t('Tokenised sentence'),
+      ),
       '#default_value' => isset($settings['experience']['sure_format']) ? $settings['experience']['sure_format'] : 'certificate',
       '#weight' => 5,
+    ),
+    'sure_template' => array(
+      '#title' => t('use tokens here'),
+      '#description' => t('Use the tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
+      '#type' => 'textarea',
+      '#rows' => 6,
+      '#default_value' => $settings['experience']['sure_template'] ? $settings['experience']['sure_template'] : variable_get('mcapi_sentence'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="experience[sure_format]"]' => array('value' => 'token'),
+        ),
+        'required' => array(
+          ':input[name="experience[sure_format]"]' => array('value' => 'token'),
+        ),
+      ),
+      '#weight' => 6,
     )
   );
   $form['submission'] = array(
@@ -424,39 +435,32 @@ function mcapi_form_validate_worth_preset(&$element, &$form_state) {
 }
 
 function _mcapi_user_chooser_config_field($default = NULL) {
-  if (!$default) $default = array('user_chooser_config' => 'user_chooser_roles:'.DRUPAL_AUTHENTICATED_RID);
-  return array(
+  $default += array(
+    'user_chooser_config' => 'user_chooser_segment_permissions:transact',
+    'preset' => ''
+  );
+  $fields['user_chooser_config'] = array(
     '#title' => t('Users to choose from'),
+    '#type' => 'select',
+    '#options' => module_invoke_all('uchoo_segments'),
+    '#default_value' => $default['user_chooser_config'],
+    '#required' => TRUE,
+  );
+  $params = explode(':', $default['user_chooser_config']);
+
+  $fields['preset'] = array(
+    '#title' => t('Preset field to'),
     '#description' => t('Configure this widget more at !link',
        array('!link' => l('admin/config/people/user_chooser', 'admin/config/people/user_chooser', array('attributes'=>array('target'=> '_blank')))
        )),
-    '#type' => 'select',
-    '#options' => _mcapi_user_chooser_access_options(),
-    '#default_value' => $default,
-    '#required' => FALSE
+    '#type' => 'user_chooser_few',
+    '#callback' => array_shift($params),
+    '#args' => $params,
+    '#default_value' => $default['preset'],
+    '#required' => FALSE,
+    '#multiple' => FALSE
   );
-}
-
-/*
- * this function provides options to configure the user_chooser widget for any one role or permission.
- * Other groups could be provided
- * This functionality is also implies that that there will be access callbacks to take these parameters.
- * But that will have to wait for another time and a more powerful utility module.
- * In the mean time, the access callbacks are in user_chooser
- */
-function _mcapi_user_chooser_access_options() {
-  static $user_chooser_options;
-  if (!isset($user_chooser_options)) {
-    $roles = user_roles(TRUE);
-    foreach ($roles as $rid => $name) {
-      $user_chooser_options[t('Roles')]['user_chooser_roles:'.$rid] = $name;
-    }
-    $permissions = module_invoke_all('permission');
-    foreach ($permissions as $perm => $info) {
-      $user_chooser_options[t('Permissions')]['user_chooser_permissions:'.$perm] = strip_tags($info['title']);
-    }
-  }
-  return $user_chooser_options;
+  return $fields;
 }
 
 

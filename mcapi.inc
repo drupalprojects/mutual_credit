@@ -22,6 +22,22 @@ class transaction extends Entity {
   }
 }
 
+
+/*
+ * transaction entity definition 'label callback'
+ */
+function transaction_label($transaction){
+  return t('Transaction #@serial', array('@serial' => $transaction->serial));
+}
+/*
+ * transaction entity definition 'uri callback'
+ */
+function transaction_uri($transaction) {
+  return array(
+    'path' => 'transaction/' . $transaction->serial,
+  );
+}
+
 /*
  * default form callback for all transaction operations
  */
@@ -41,7 +57,7 @@ function transaction_operation_form($form, &$form_state, $op, $transaction) {
   if (function_exists($form_callback)) {
     $form += $form_callback($transaction);
   }
-  $form['certificate'] = transaction_view(array($transaction));
+  $form['certificate'] = transaction_view($transaction, 'certificate');
   $form['certificate']['#weight'] = 1;
   $form = confirm_form(
     $form,
@@ -57,9 +73,12 @@ function transaction_operation_form($form, &$form_state, $op, $transaction) {
 
 function transaction_operation_form_submit($form, $form_state) {
   //I think the access has been checked already...
-  $real_submit = 'transaction_operation_do_'.$form_state['values']['operation'];
-  $real_submit($form_state['values']['serial'], $form_state['values']);
-  //pull the trigger
+  $values = &$form_state['values'];
+  //do the operation
+  $real_submit = 'transaction_operation_do_'.$values['operation'];
+  $real_submit($values['serial'], $form_state['values']);
+  //and invoke trigger and rules
+  mcapi_invoke($values['operation'], $values['serial']);
   drupal_goto($form['#redirect']);
 }
 
@@ -148,14 +167,8 @@ function transaction_form_validate($form, &$form_state) {
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   if (form_get_errors()) return;
   try{
-    if ($form['#skip_alter']) {
-      $transactions = array($transaction);
-      $form_state['transactions'] = transactions_insert($transactions, FALSE);
-    }
-    else {
-      //keep a copy of the built transaction, and its dependencies for validation elsewhere
-      $form_state['transactions'] = transaction_insert_new($transaction, FALSE);
-    }
+    //keep a copy of the built transaction, and its dependencies for validation elsewhere
+    $form_state['transactions'] = transaction_cluster_create($transaction, FALSE);
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
@@ -170,13 +183,14 @@ function transaction_form_validate($form, &$form_state) {
 function transaction_form_submit($form, &$form_state) {
   $form_build_id = $form_state['values']['form_build_id'];
   //check the form hasn't been submitted already
-  $submitted = db_query('SELECT count(form_build_id) FROM {mcapi_submitted} where form_build_id = :id', array(':id' => $form_build_id))
-  ->fetchField();
-  if ($submitted) {
+  if(db_query(
+    'SELECT count(form_build_id) FROM {mcapi_submitted} where form_build_id = :id',
+    array(':id' => $form_build_id)
+  )->fetchField() ) {
     drupal_set_message(t('Transaction was already submitted'), 'error');
     return;
   }
-  //check that the form hasn't been submitted already
+  //check that the form won't be submitted again
   db_query('INSERT INTO {mcapi_submitted} (form_build_id, time) VALUES (:form_build_id, :time)',
     array(':form_build_id' => $form_build_id, ':time' => REQUEST_TIME)
   );
@@ -184,15 +198,8 @@ function transaction_form_submit($form, &$form_state) {
   $transaction = entity_create('transaction', $form_state['values']);
   //build the transaction object from the $form_state[values]
   entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-
   try{
-    if ($form['#skip_alter']) {//for special cases, like mass transactions
-      $transactions = array($transaction);
-      transactions_insert($transactions, TRUE);
-    }
-    else {
-      transaction_insert_new($transaction, TRUE);
-    }
+    transaction_cluster_create($transaction, TRUE);
   }
   catch (Exception $e) {
     form_set_error('', $e->getMessage());
@@ -201,97 +208,12 @@ function transaction_form_submit($form, &$form_state) {
 }
 
 
-/*
- *
- */
-function mcapi_misc_options_form($form_state) {
-  cache_clear_all('*', 'cache');
-  $controllers = module_implements('transaction_controller');
-  $form['mcapi_controller'] = array(
-    '#title' => 'Entity controller module',
-    '#description' => t('Choose which module, with a .controller file, to use.'),
-    '#type' => 'radios',
-    '#options' => drupal_map_assoc($controllers),
-    '#default_value' => variable_get('mcapi_controller', 'mcapi'),
-    '#ajax' => array(
-      'callback' => 'mcapi_controller_options_form_ajax',
-      'wrapper' => 'mcapi-controller-options-form',
-    ),
-  );
-
-  global $databases;
-  if (count($databases) > 1) {
-    foreach($databases as $key => $data) {
-      $options[$key] = $key;
-    }
-    $form['master_slave'] = array(
-      '#title' => t('Databases'),
-      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
-        t('Write accounting information to more than one database, and read from one database, making a sort of master/slave arrangement.') .' '.
-        t("Don't forget each database connection itself can have master/slave arrangement, but we are concerned only with accounting here.") .' '.
-        t("the database should be appropriate for the controller."),
-      '#type' => 'fieldset',
-      '#attributes' => array('id' => 'master-slave'),
-    );
-    $form['master_slave']['mcapi_db_write'] = array(
-      '#title' => t('Write accounting information to'),
-      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
-        t('Use with caution as fields added to transactions and currencies will still be saved locally') .' '.
-        t("the database should be appropriate for the controller."),
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => variable_get('mcapi_db_write', array('default' => 'default')),
-      '#ajax' => array(
-        'callback' => 'mcapi_controller_options_form_ajax',
-        'wrapper' => 'master-slave',
-      ),
-    );
-    $form['master_slave']['mcapi_db_read'] = array(
-      '#title' => t('Read accounting information from'),
-      '#type' => 'select',
-      '#options' =>  $options,
-      '#default_value' => variable_get('mcapi_db_read', 'default'),
-      '#weight' => 1,
-    );
-  }
-  $form['mcapi_controller_delete_mode'] = array(
-    '#title' => t('Undo mode'),
-    '#description' => t('What should happen when a user or admin deletes a transaction.?') .' '.
-      t("Some system operations may 'scratch' transactions") .' '.
-      t('Cannot be changed after a transaction has been undone'),
-    '#type' => 'radios',
-    '#options' => array(
-      MCAPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
-      MCAPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
-      MCAPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
-    ),
-    '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE),
-    '#disabled' => !variable_get('change_undo_mode', FALSE)
-  );
-
-  $form['mcapi_sentence'] = array(
-    '#title' => t('Transaction sentence template'),
-    '#description' => t('Use the tokens to define how the transaction will read when displayed in sentence mode'),
-    '#type' => 'textfield',
-    '#default_value' => variable_get('mcapi_sentence'),
-    '#weight' => 5
-  );
-  $form['token_tree'] = array(
-    '#theme' => 'token_tree',
-    '#token_types' => array('transaction'),
-    '#global_types' => FALSE,
-    '#weight' => 6
-  );
-
-  return system_settings_form($form);
-}
-
 
 /*
  * implements hook_accounting_validate
  * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
  */
-function mcapi_accounting_validate(&$transactions){
+function mcapi_accounting_validate($transactions){
   $errors = array();
   foreach ($transactions as $key => $transaction) {
     //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
@@ -393,11 +315,11 @@ function transaction_access_callback_payer($transaction) {
   return $account->uid == $transaction->payer;
 }
 
-
 /*
  * action callback
  * mail the transaction participants, and cc
- * $transaction may have dependents
+ * NB Ignored here, but note that $transaction may have ->dependents property
+ * with other transactions and other payees / payers
  */
 function mcapi_transaction_mail_action($transaction, $settings, $new_state) {
   //pending transaction notifications are handled by the signatures module
@@ -414,7 +336,6 @@ function mcapi_transaction_mail_action($transaction, $settings, $new_state) {
   }
 }
 
-
 //this should really be in core...
 function _mcapi_validate_mail_element($element, $form_state) {
   if ($element['#value'] && !valid_email_address($element['#value'])) {
@@ -422,84 +343,53 @@ function _mcapi_validate_mail_element($element, $form_state) {
   }
 }
 
-
-/*
- * action callback
- * mail the transaction participants, and cc
- * $transaction may have dependents
- */
-function mcapi_transaction_entity_uid($dunno, $context) {
-  extract($context);
-  $entity = $$group;
-  $transaction = array(
-    //allow a price to be fixed on the entity using the worth field.
-    'worth' => isset($entity->worth) ? $entity->worth : $worth_items['worths'],
-    'type' => 'auto',
-    'state' => TRANSACTION_STATE_FINISHED
-  );
-  $transaction['description'] = $description;
-
-  if ($direction == 'uidpays') {
-    $transaction['payee'] = 1;
-    $transaction['payer'] = $entity->uid;
-  }
-  else {
-    $transaction['payee'] = $entity->uid;
-    $transaction['payer'] = 1;
-  }
-  $transactions = array(entity_create('transaction', $transaction));
-  try{
-    transactions_insert($transactions, TRUE);
-  }
-  catch (Exception $e) {
-    drupal_set_message(t('Automated transaction failed: @message', array('@message' => $e->message)), 'error');
-  }
-}
-
-
-
 /*
  * action callback for hook_transaction_cluster_alter
- * Alters the original transaction and/or returns a child
+ * Alters the original transaction and/or returns a dependent
  */
-function mcapi_supplementary_transaction_action($transaction, $settings) {
-  if (!in_array($transaction->type, $settings['transaction_types'])) return;
+function mcapi_dependent_transaction_action($transaction, $settings) {
+  if (!in_array($transaction->type, $settings['conditions']['transaction_types'])) return;
   $child = array(
-    'type' => 'child',
+    'type' => 'dependent',
     'state' => $transaction->state
   );
-  switch ($settings['mapping']) {
-    case 'payerpays':
-      $child['payee'] = $settings['otheruser'];
-      $child['payer'] = $transaction->payer;
-      break;
-    case 'payeepays':
-      $child['payee'] = $settings['otheruser'];
-      $child['payer'] = $transaction->payee;
-      break;
-    case 'payspayer':
-      $child['payee'] = $transaction->payer;
-      $child['payer'] = $settings['otheruser'];
-      break;
-    case 'payspayee':
-      $child['payee'] = $transaction->payee;
-      $child['payer'] = $settings['otheruser'];
-      break;
-  }
-  foreach ($settings['worth_items']['worths'] as $delta => $item) {
+
+  foreach ($settings['presets']['worth_items']['worths'] as $delta => $item) {
     //if this currency was in the prime transaction, pass it to the calculator
     $calculated = _mcapi_calc($item['quantity'], @$transaction->worth[LANGUAGE_NONE][$delta]['quantity']);
     if (!$calculated) continue;
-    $rounded = mcapi_round($calculated, $item['currcode'], $settings['worth_items']['round'] == 'up');
-    if (!$rounded) continue;
-    //if a quant was returned (and there really should be, from at least one currency), add it to the child
+    $rounded = mcapi_round($calculated, $item['currcode'], $settings['presets']['worth_items']['round'] == 'up');
+    //don't save zero value auto transactions, even if the currency settings permit
+    if ($rounded == 0) continue;
+    //if a quant was returned (and there really should be, from at least one currency), add it to the $dependent
     $child['worth'][$delta] = array(
       'quantity' => $rounded,
       'currcode' => $item['currcode']
     );
   }
-  if (isset($child['worth'])) return entity_create('transaction', $child);
-  return drupal_set_message(t('Badly configured action failed to create dependent transaction'), 'error');
+  if (!isset($child['worth'])) return;
+
+  $otheruser = &$settings['presets']['participants']['otheruser'];
+  switch ($settings['presets']['participants']['mapping']) {
+    case 'payerpays':
+      $child['payee'] = $otheruser;
+      $child['payer'] = $transaction->payer;
+      break;
+    case 'payeepays':
+      $child['payee'] = $otheruser;
+      $child['payer'] = $transaction->payee;
+      break;
+    case 'payspayer':
+      $child['payee'] = $transaction->payer;
+      $child['payer'] = $otheruser;
+      break;
+    case 'payspayee':
+      $child['payee'] = $transaction->payee;
+      $child['payer'] = $otheruser;
+      break;
+  }
+  $child['description'] = @$settings['presets']['description'];
+  return entity_create('transaction', $child);
 }
 
 
@@ -510,15 +400,15 @@ function mcapi_supplementary_transaction_action($transaction, $settings) {
  * percentage of the $base_quant
  * formula using [q] for base_quant
  */
-function _mcapi_calc($formula, $base_quant) {
+function _mcapi_calc($formula, $base_value) {
   if (is_numeric($formula)) return $formula;
   $proportion = str_replace('%', '', $formula);
-  if (empty($base_quant)) $base_quant = 0;
+  if (empty($base_value)) $base_quant = 0;
   if (is_numeric($proportion)) {
-    return $base_quant * $proportion/100;
+    return $base_value * $proportion/100;
   }
   //$formula = str_replace('/', '//', $formula);
-  $equation = str_replace('[q]', $base_quant, $formula) .';';
+  $equation = str_replace('[q]', $base_value, $formula) .';';
   $val = eval('return '. $equation);
   if (is_numeric($val)) return $val;
   drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
@@ -582,7 +472,77 @@ function _transactions_diff($transaction) {
   return $diff;
 }
 
+/*
+ * theme implementation of template_preprocess_HOOK
+ * make the transaction variables into something which can be nicely themed
+ * $variables['transaction'] may have ->dependents from transaction_load
+ * or it may be a simulated transaction with no xid and serial or dependents
+ */
+function template_preprocess_certificate(&$variables) {
+  $transaction = &$variables['object'];
+  $variables['payer'] = format_username(user_load($transaction->payer));
+  $variables['payee'] = format_username(user_load($transaction->payee));
+  $variables['state'] = $transaction->state;
+  $variables['recorded'] = format_date($transaction->created, 'medium');
+  $variables['type'] = $transaction->type;
+  $variables['date'] = format_date($transaction->created, 'long');
 
+  $variables['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
+  if (empty($transaction->xid)) $variables['classes_array'][] = 'preview';
+
+  //fieldAPI expects several at a time, keyed by entity key
+  //NB in preview mode the xid hasn't been determined but it doesn't seem to matter
+  $transactions = array($transaction->xid => $transaction);
+  //note that the $transaction is changed by reference
+  field_attach_prepare_view('transaction', $transactions, 'certificate');
+  entity_prepare_view('transaction', $transactions);
+
+  //this returns a render array
+  $variables['additional'] = field_attach_view('transaction', $transaction, 'certificate');
+  //this populates top level of variables with the render array
+  field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
+
+  //move worth field to the top of $variables where we would expect to find it
+  $variables['worth'] = drupal_render($variables['additional']['worth']);
+  unset($variables['additional']['worth']);
+  //choose the transaction theme template based on the first currency of the transaction
+  $first_item = reset($transaction->worth[LANGUAGE_NONE]);
+  $variables['theme_hook_suggestion'] = 'transaction__' . $first_item['currcode'];
+  if (isset($transaction->dependents)) {
+    $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'));
+    foreach ($transaction->dependents as $child) {
+      $variables['dependents'][] = transaction_view(array($child), $sentence, TRUE);
+    }
+  }
+}
+
+/**
+ * element validation callback
+ * check the centiles value is valid
+ * check that the $quantity is a number
+ */
+function worth_element_validate(&$element, &$form_state, $form) {
+  if (isset($element['#value']['quantity'])) {
+    if (strlen($quant) && !is_numeric($quant) && !$element['#calc']) {
+      form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
+    }
+    if ($quant < 0) {
+      form_error($element, t('Negative values not allowed'));
+    }
+
+    $currencies = &drupal_static('currencies');
+    if (!isset($currencies[$element['#value']['currcode']])) {
+      form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
+    }
+    if ($division = $quant - intval($quant)) {
+      $currency = currency_load($element['#value']['currcode']);
+      //check that divisions match allowed values for the currency
+      if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
+        form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));
+      }
+    }
+  }
+}
 
 /*
  * default worths element validator
@@ -591,49 +551,78 @@ function _transactions_diff($transaction) {
  */
 function worths_element_validate(&$element, &$form_state) {
   //we need to drop the empty values to prevent them being written to the database
-  //this element contains the worth_element $items, but did not inherit its value from them
-  //because, as container, it processes before them. Shame
-  //anyway we can retrieve the values, set in form_type_worth_value, from form_state
-  //then we filter them reindex the array and send them back to form_state
-  $items = drupal_array_get_nested_value($form_state['values'], $element['#array_parents']);
+  //unless the currency settings explicitly allow it.
+  //first of all set the form_State value, which could not be set from the form_type_worths_value
+  //because of the way it is populated from the container inwards
+  drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], $element['#value']);
 
-  if ($element['#allow_zero']) {
-    foreach ($items as $delta => $item) {
-      if (mcapi_field_is_empty($item)) {
-        unset($items[$delta]);
-      }
-    }
-  }
-  else {
-    foreach ($items as $delta => $item) {
-      if (empty($item['quantity'])) {
-        unset($items[$delta]);
-      }
-    }
-  }
-  //renumber the items or field_API will break!
-  $items = array_values($items);
   if ($element['#required']) {//note that this checks all the $items together
-    if (empty($items)) {
+    if (empty($element['#value'])) {
       form_error($element, t('!name field is required.', array('!name' => $element['#title'])));
     }
   }
   //very important for rendering that the $item keys are straight
-  form_set_value($element, $items, $form_state);
+  //form_set_value($element, $items, $form_state);
+}
+
+
+function _worths_element_process($element, &$form_state) {
+  $currencies = &drupal_static('currencies');
+  $field = field_info_field('worth');
+  $element['#type'] = 'worths';
+
+  //ensure all currencies are present if default_value is empty or if this is config mode
+  if (empty($element['#default_value']) || $element['#preset']) {
+    $element['#default_value'] = (array)$element['#default_value'];
+    foreach ($currencies as $currcode => $currency) {
+      $element['#default_value'] += array($currcode => 0);
+    }
+  }
+
+  //define the sub-element for each currency
+  //if mixed transaction flag is off, then we don't increment the delta
+  //and instead just add to the #currcodes
+  $delta = 0;
+  foreach($element['#default_value'] as $currcode => $quant) {
+    if (empty($currencies[$currcode])) {
+      //this should only happen when a currency has been deleted and some config still expects
+      drupal_set_message(t("Cannot put unknown currency in form: @name", array('@name' => $currcode)));
+      continue;
+    }
+    $element[$delta]['#currcodes'][] = $currcode;
+
+    if(!$delta || variable_get('mcapi_mixed_transactions', 0)) {
+      $element[$delta]['#title'] = $currencies[$currcode]->human_name;
+      $element[$delta]['#title_display'] = 'attribute';
+      $element[$delta]['#type'] = 'worth';
+      $element[$delta]['#calc'] = @$element['#calc'];
+    }
+    if (variable_get('mcapi_mixed_transactions', 0) == 1 || strlen($quant)) {
+      $element[$delta]['#default_value'] = array(
+        'currcode' => $currcode,
+        'quantity' => $quant
+      );
+    }
+    $delta += variable_get('mcapi_mixed_transactions', 0);
+  }
+
+
+  return $element;
 }
 
 
 function _worth_element_process($element, &$form_state) {
   $currencies = &drupal_static('currencies');
   $main_quant = '';
-  $quantity = $element['#default_value']['quantity'];
+  $quantity = @$element['#default_value']['quantity'];
   if (empty($element['#currcodes'])) {
     //best not rely on this, supply your own currencies that the user is permitted to use.
     //this defaults to all
     $element['#currcodes'] = array_keys($currencies);
   }
   $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
-  $currency = currency_load($element['currcode']['#value'] ? $element['currcode']['#value'] : $element['currcode']['#default_value']);
+  $currcode = isset($element['currcode']['#value']) ? $element['currcode']['#value'] : $element['currcode']['#default_value'];
+  $currency = currency_load($currcode);
   $element['#title'] = $currency->human_name;
   $element['#title_display'] = 'attribute';
 
@@ -650,9 +639,7 @@ function _worth_element_process($element, &$form_state) {
     $main_quant = $quantity;
   }
   //in normal mode, show a blank field where the default value is 0
-  if (empty($element['#allow_zero']) && $main_quant == '0') {
-    $main_quant = '';
-  }
+  if ($main_quant == '0') $main_quant = '';
   //while we return a float, the widget may want to show two fields.
   //in any case we show a main field, and an optional division field
   $element['main_quant'] = array(
@@ -691,78 +678,6 @@ function _worth_element_process($element, &$form_state) {
   }
 
   return $element;
-}
-
-/**
- * element validation callback
- * check the centiles value is valid
- * check that the $quantity is a number
- */
-function worth_element_validate(&$element, &$form_state, $form) {
-  $quant = $element['#value']['quantity'];
-
-  if (!is_numeric($quant) && !$element['#allow_zero']) {
-    form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
-  }
-  if ($quant < 0) {
-    form_error($element, t('Negative values not allowed'));
-  }
-
-  $currencies = &drupal_static('currencies');
-  if (!isset($currencies[$element['#value']['currcode']])) {
-    form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
-  }
-  if ($division = $quant - intval($quant)) {
-    $currency = currency_load($element['#value']['currcode']);
-    //check that divisions match allowed values for the currency
-    if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
-      form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));
-    }
-  }
-}
-
-
-
-/*
- * theme implementation of template_preprocess_HOOK
- * make the transaction variables into something which can be nicely themed
- * $variables['transaction'] may have ->dependents from transaction_load
- * or it may be a simulated transaction with no xid and serial or dependents
- */
-function template_preprocess_certificate(&$variables) {
-  $cluster = &$variables['transaction'];
-  $variables['payer'] = format_username(user_load($cluster->payer));
-  $variables['payee'] = format_username(user_load($cluster->payee));
-  $variables['state'] = $cluster->state;
-  $variables['recorded'] = format_date($cluster->created, 'medium');
-  $variables['type'] = $cluster->type;
-  $variables['date'] = format_date($cluster->created, 'long');
-
-  $variables['classes_array'] = array('transaction', 'certificate', $cluster->type, 'state-'.$cluster->state);
-  if (empty($cluster->xid)) $variables['classes_array'][] = 'preview';
-
-  //fieldAPI expects several at a time, keyed by entity key
-  //NB in preview mode the xid hasn't been determined but it doesn't seem to matter
-  $clusters = array($cluster->xid => $cluster);
-  //note that the $cluster is changed by reference
-  field_attach_prepare_view('transaction', $clusters, 'certificate');
-  entity_prepare_view('transaction', $clusters);
-  //this returns a render array
-  $variables['additional'] = field_attach_view('transaction', $cluster, 'certificate');
-  //this populates top level of variables with the render array
-  field_attach_preprocess('transaction', $cluster, $variables['additional'], $variables);
-
-  //move worth field to the top of $variables where we would expect to find it
-  $variables['worth'] = drupal_render($variables['additional']['worth']);
-  unset($variables['additional']['worth']);
-  //choose the transaction theme template based on the first currency of the transaction
-  $first_item = reset($cluster->worth[LANGUAGE_NONE]);
-  $variables['theme_hook_suggestion'] = 'transaction__' . $first_item['currcode'];
-  if (isset($cluster->dependents)) {
-    foreach ($cluster->dependents as $child) {
-      $variables['dependents'][] = transaction_view(array($child), 'token');
-    }
-  }
 }
 
 
@@ -822,10 +737,11 @@ function theme_transaction_totals(&$variables) {
   foreach ($variables['totals'] as $currcode => $totals) {
     $balance = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->balance));
     $income = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->gross_in));
+    $volume = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->volume));
     $output = '<div class="balance">'. $balance ."</div>";
     $output .= '<div class="gross-in">'.t('Income: !quant', array('!quant' => $income)) ."</div>";
+    $output .= '<div class="volume">'.t('Volume: !volume', array('!volume' => $volume)) ."</div>";
     $output .= '<div class="count">'.t('Transactions: @count', array('@count' => $totals->count)) ."</div>";
-    $output .= '<div class="volume">'.t('Volume: @count', array('@count' => $totals->volume)) ."</div>";
     $outputs[] = "<div class = \"transaction-totals $currcode\">$output</div>";
   }
   return implode("<br />", $outputs);
@@ -849,6 +765,17 @@ function transaction_get_links($transaction) {
   return ($links);
 }
 
+
+/*
+ * block function a nice display of user balances in a currency
+ */
+function mcapi_balances_view($uid, $currcodes) {
+  $render_array = array('#theme' => 'transaction_totals');
+  foreach ($currcodes as $currcode) {
+    $render_array['#totals'][$currcode] = transaction_totals($uid, $currcode);
+  }
+  return $render_array;
+}
 
 
 /*

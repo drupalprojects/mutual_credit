@@ -3,11 +3,10 @@
 /*
  * implements hook_tokens for a transaction cluster
  * process one transaction at a time, containing dependents
- * field API fields are handled elsewhere
+ * also see entity_tokens and field_tokens
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  if ($type != 'transaction') return;
-  module_load_include('inc', 'mcapi');
+  if ($type != 'transaction') return array();
   $transaction = &$data['transaction'];
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
@@ -20,7 +19,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
   $replacements = array();
   foreach ($tokens as $name => $original) {
     switch ($name) {
-      // Simple key values on the node.
       case 'serial':
         $replacements[$original] = $transaction->serial;
         break;
@@ -36,18 +34,16 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $account = user_load($transaction->creator);
         $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
         break;
-      case 'summary':
-        $replacements[$original] = drupal_render(transaction_view($transaction, 'token'));
+      case 'created':
+        $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
         break;
       case 'certificate':
         $replacements[$original] = drupal_render(transaction_view(array($transaction), 'certificate'));
         break;
-      case 'created':
-        $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
-        break;
       case 'payer_diff':
       case 'payee_diff':
         $worth = $items = array();
+        module_load_include('inc', 'mcapi');
         $diff = _transactions_diff($transaction);
         $uid = $name == 'payer_diff' ? $transaction->payer : $transaction->payer;
         foreach ($diff[$uid] as $currcode => $quantities) {
@@ -58,8 +54,10 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'links':
         $ops = array();
-        foreach (transaction_get_links($transaction) as $link) {
-          $ops[] = drupal_render($link);
+        if ($transaction->serial) {
+          foreach (transaction_get_links($transaction) as $link) {
+            $ops[] = drupal_render($link);
+          }
         }
         $replacements[$original] = implode(' ', $ops);
         break;
@@ -71,48 +69,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
 }
 
 function mcapi_token_info() {
-  $transaction_tokens = array(
-    'serial' => array(
-      'name' => t('Unique serial number'),
-      'description' => t("The unique serial number of the transaction cluster."),
-    ),
-    'payer' => array(
-      'name' => t('Payer name'),
-      'description' => t("The user whose account is credited"),
-    ),
-    'payee' => array(
-      'name' => t('Payee name'),
-      'description' => t("The user whose account is debited"),
-    ),
-    'payer_diff' => array(
-      'name' => t("Difference to payer in the main transaction"),
-      'description' => t("Total change to payers balance from transaction cluster")
-    ),
-    'payee_diff' => array(
-      'name' => t("Difference to payee in the main transaction"),
-      'description' => t("Total change to payees balance from transaction cluster"),
-    ),
-    'summary' => array(
-      'name' => t('Summary'),
-      'description' => t("A one-per-line description of the transaction cluster"),
-    ),
-    'certificate' => array(
-      'name' => t('Certificate'),
-      'description' => t("An HTML laid out view of the transaction cluster"),
-    ),
-    'created' => array(
-      'name' => t('Created'),
-      'description' => t("When the transaction was created"),
-    ),
-    'creator' => array(
-      'name' => t('Creator'),
-      'description' => t("The user who first recorded the transaction"),
-    ),
-    'links' => array(
-      'name' => t('Links'),
-      'description' => t("Links to transaction operations"),
-    )
-  );
   return array(
     'types' => array(
       'transaction' => array(
@@ -122,8 +78,45 @@ function mcapi_token_info() {
       ),
     ),
     'tokens' => array(
-      'transaction' => $transaction_tokens,
-    ),
+      'transaction' => array(
+        'serial' => array(
+          'name' => t('Unique serial number'),
+          'description' => t("The unique serial number of the transaction cluster."),
+        ),
+        'payer' => array(
+          'name' => t('Payer name'),
+          'description' => t("The user whose account is credited"),
+        ),
+        'payee' => array(
+          'name' => t('Payee name'),
+          'description' => t("The user whose account is debited"),
+        ),
+        'created' => array(
+          'name' => t('Created'),
+          'description' => t("When the transaction was created"),
+        ),
+        'creator' => array(
+          'name' => t('Creator'),
+          'description' => t("The user who first recorded the transaction"),
+        ),
+        'payer_diff' => array(
+          'name' => t("Difference to payer in the main transaction"),
+          'description' => t("Total change to payers balance from transaction cluster")
+        ),
+        'payee_diff' => array(
+          'name' => t("Difference to payee in the main transaction"),
+          'description' => t("Total change to payees balance from transaction cluster"),
+        ),
+        'certificate' => array(
+          'name' => t('Certificate'),
+          'description' => t("An HTML laid out view of the transaction cluster"),
+        ),
+        'links' => array(
+          'name' => t('Links'),
+          'description' => t("Links to transaction operations"),
+        )
+      )
+    )
   );
 }
 /*

@@ -2,130 +2,136 @@
 // $Id:
 
 /*
- * Implements views hook_views_data
+ * this is the entityAPI approach
+ * normally we would implement hook_views_data
  */
-function mcapi_views_data() {
-  $data = array();
-  $data['mcapi_transactions']['table'] = array(
-    'group'  => t('Transaction'),
-    'base' => array(
-      'database' => variable_get('mcapi_db_read', 'default'),
-      'field' => 'xid',
-      'title' => t('Transactions'),
-      'help' => t('Records of transactions between users'),
-      'access query tag' => 'transaction_view_access',
-      'defaults' => array(
-        'field' => 'serial',
-      ),
-    ),
-    'entity type' => 1,//so the entity module can expose this table
-  );
-  $data['mcapi_transactions']['serial'] = array(
-    'title' => t('Serial number'), // The item it appears as on the UI,
-    'field' => array(
-      'help' => t('The serial number of the transaction and dependents'),
-      'handler' => 'views_handler_field_transaction',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-  $data['mcapi_transactions']['payer'] = array(
-    'title' => t('Payer'),
-    'help' => t('The user who gave currency in the transaction.'),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-      'click sortable' => TRUE,
-    ),
-    'field' => array(
-      'handler' => 'views_handler_field',
-    ),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'users',
-      'label' => t('Payer'),
-    ),
-  );
-  $data['mcapi_transactions']['payee'] = array(
-    'title' => t('Payee'),
-    'help' => t('The user who gave currency in the transaction.'),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-      'click sortable' => TRUE,
-    ),
-    'field' => array(
-      'handler' => 'views_handler_field',
-    ),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'users',
-      'label' => t('Payee'),
-    ),
-  );
-  $data['mcapi_transactions']['state'] = array(
-    'title' => t('State'),
-    'help' => t("Transactions move between states, until they are 'finished'."),
-    'field' => array(
-      'handler' => 'views_handler_field_mcapi_state',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_mcapi_states',
-    ),
-  );
+class transactionDefaultViewsController extends EntityDefaultViewsController {
 
-  $data['mcapi_transactions']['type'] = array(
-    'title' => t('Type'),
-    'help' => t('Which form or module which created the transaction'),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_mcapi_types',
-    ),
-  );
-  $data['mcapi_transactions']['creator'] = array(
-    'title' => t('Creator'),
-    'help' => t('The user who first created the transaction.'),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'users',
-      'label' => t('Creator'),
-    ),
-  );
-  $data['mcapi_transactions']['created'] = array(
-    'title' => t('Created'),
-    'help' => t("The second the transaction was created."),
-    'field' => array(
-      'handler' => 'views_handler_field_date',
-      'click sortable' => TRUE,
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort_date',
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_date',
-    ),
-    'argument' => array(
-      'help' => t('Better to use the handler from date_views module'),
-      'handler' => 'views_handler_argument_date',
-      'field' => 'created',
-    )
-  );
-  $operations = transaction_operations();
-  //treat view like an operation
-  $operations['view'] = array('imperative' => 'View', 'description' => 'View transaction');
-  foreach ($operations as $key => $info) {
-    $data['mcapi_transactions'][$key] = array(
-      'title' => $info['imperative'],
-      'help' => t('Link: @description', array('@description' => $info['description'])),
+  /**
+   * Defines the result for hook_views_data().
+   */
+  public function views_data() {
+    $data = array();
+    $data['mcapi_transactions']['table'] = array(
+      'group'  => t('Transaction'),
+      'base' => array(
+//        'database' => variable_get('mcapi_db_read', 'default'),
+        'field' => 'xid',
+        'title' => t('Transactions'),
+        'help' => t('Records of transactions between users'),
+        'access query tag' => 'transaction_view_access',
+        'defaults' => array(
+          'field' => 'serial',
+        ),
+      ),
+      'entity type' => 'transaction',//so the entity module can expose this table
+    );
+
+    $data['mcapi_transactions']['serial'] = array(
+      'title' => t('Serial'), // The item it appears as on the UI,
       'field' => array(
+        'help' => t('The serial number of the transaction and dependents'),
         'handler' => 'views_handler_field_transaction',
+        'additional fields' => array('serial')
+      ),
+      'sort' => array(
+        'handler' => 'views_handler_sort',
+      ),
+    );
+    $data['mcapi_transactions']['payer'] = array(
+      'title' => t('Payer'),
+      'help' => t('The user who gave currency in the transaction.'),
+      'argument' => array(
+        'handler' => 'views_handler_argument_numeric',
+        'click sortable' => TRUE,
+      ),
+      'field' => array(
+        'handler' => 'views_handler_field',
+      ),
+      'relationship' => array(
+        'handler' => 'views_handler_relationship',
+        'base' => 'users',
+        'label' => t('Payer'),
+      ),
+    );
+    $data['mcapi_transactions']['payee'] = array(
+      'title' => t('Payee'),
+      'help' => t('The user who gave currency in the transaction.'),
+      'argument' => array(
+        'handler' => 'views_handler_argument_numeric',
+        'click sortable' => TRUE,
+      ),
+      'field' => array(
+        'handler' => 'views_handler_field',
+      ),
+      'relationship' => array(
+        'handler' => 'views_handler_relationship',
+        'base' => 'users',
+        'label' => t('Payee'),
+      ),
+    );
+    $data['mcapi_transactions']['state'] = array(
+      'title' => t('State'),
+      'help' => t("Transactions move between states, until they are 'finished'."),
+      'field' => array(
+        'handler' => 'views_handler_field_mcapi_state',
+        'click sortable' => TRUE,
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_mcapi_states',
+      ),
+    );
+
+    $data['mcapi_transactions']['type'] = array(
+      'title' => t('Type'),
+      'help' => t('Which form or module which created the transaction'),
+      'field' => array(
+        'handler' => 'views_handler_field',
+        'click sortable' => TRUE
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_mcapi_types',
+      ),
+    );
+    $data['mcapi_transactions']['creator'] = array(
+      'title' => t('Creator'),
+      'help' => t('The user who first created the transaction.'),
+      'relationship' => array(
+        'handler' => 'views_handler_relationship',
+        'base' => 'users',
+        'label' => t('Creator'),
+      ),
+    );
+    $data['mcapi_transactions']['created'] = array(
+      'title' => t('Created'),
+      'help' => t("The second the transaction was created."),
+      'field' => array(
+        'handler' => 'views_handler_field_date',
+        'click sortable' => TRUE,
+      ),
+      'sort' => array(
+        'handler' => 'views_handler_sort_date',
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_date',
+      ),
+      'argument' => array(
+        'help' => t('Better to use the handler from date_views module'),
+        'handler' => 'views_handler_argument_date',
+        'field' => 'created',
       )
     );
+
+    $data['mcapi_transactions']['operations'] = array(
+      'title' => t('Operations'),
+      'help' => t("What the user can do to the transaction"),
+      'field' => array(
+        'handler' => 'views_handler_field_transaction_operations',
+        'additional fields' => array('serial')
+      )
+    );
+    return $data;
   }
-  return $data;
 }
 
 /*
@@ -148,26 +154,6 @@ function mcapi_views_data_alter(&$data) {
     //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
     $data['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
   }
-}
-
-/**
- * Implements hook_views_plugins().
- * can't get this working
- */
-function mcapi_views_plugins() {
-  return array(
-    'module' => 'views', // This just tells our themes are elsewhere.
-    'row' => array(
-      'transaction' => array(
-        'title' => t('Transaction'),
-        'help' => t('The spacious, decorated, transaction certificate'),
-        'handler' => 'views_plugin_row_transaction',
-        'base' => array('mcapi_transactions'),//plugin will only be available when this is the base table
-        'uses options' => TRUE,
-        'type' => 'normal',
-      )
-    )
-  );
 }
 
 

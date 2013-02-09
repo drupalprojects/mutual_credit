@@ -1,8 +1,7 @@
 This document contains the following
 
 ** Basic setup **
-** Advanced setup **
-** Testing procedure **
+** Advanced usage **
 
 This document is a work in progress and may not be entirely up-to-date!
 For a high level account of the architecture and intention of this module,
@@ -74,11 +73,6 @@ This module does not provide special access control for transactions to be aggre
 The previous version of the module contained a cache table containing balances and suchlike, but here it is all dynamic,
 or at least drupal/views caching needs to be used, especially on large systems
 
-Actions framework
-Two actions are provided by the core module,
-- to send an email when a transaction enters 'completed' state
-- to supplement a transaction cluster with another transaction - useful for taxation.
-
 Pending transactions
 Causes transactions to be saved in a pending state, listing signatories.
 Configure which transactions to effect, what signatures are needed, and notification on admin/accounting/signatures
@@ -93,48 +87,81 @@ At time of writing, Feb 2012, Entity module looks like it is the way forward. Ho
 
 
 ***********************
-**  ADVANCED SETUP   **
+**  ADVANCED TIPS    **
 ***********************
-
 Intended for webshops and skilled Drupal developers
 
+1. Transaction Worflow
+2. Currency design
+3. Actions and RUles
+4. Internal API
+5. Limits system
+6. Views integration
 
-1. Internal API
-2. Master/Slave transaction storage & entity controller
-3. Triggering payments.
 
-1. Internal API
+1. Transaction workflow.
+There is a simple system for defining transaction states and defining the permission callbacks for the operations to move between states.
+By default, transactions are created in FINISHED state, and the UNDO operation is visible only to permitted users. Transactions should never be edited.
+The signatures module declares another state, 'pending', and 3 operations, 'sign', 'sign off' and 'delete pending', and provides lots more logic and displays and some configuration around that.
 
-Standard transaction operations are conducted through an API provided at the top of mcapi.module
-This API is for communicating with the swoppable entity controller.
+2. Currency Design
+The currencies are full (ctools) configuration objects and contain a lot of information about behaviour and access control.
+There are three kinds of access control,
+- currency_access, which determines who can trade with, and see aggregated data in that currency
+- transaction_view_access, which gives different visibility for each transaction state.
+- transaction_operations which allow users to move transactions between states.
+An extensible series of callbacks is provided to give fine-grained control. The signature module provides such callbacks, for example so that only a user who needs to sign a transaction can access the 'sign' operation.
+
+3. Forms
+Of course you can build your own forms using modules for creating transactions, but this powerful form builder is provided. Each form has its own address in the menu system, access control, and can be available as a block also.
+The administrator can design forms in HTML for different purposes and different places in the site.
+The HTML template contains tokens for each transaction property / field, or excluded elements are hidden.
+Properties and fields can be preset or otherwise configured also
+The form has an optional confirmation page, the format of which can also be determined.
+
+3. Actions and rules.
+Three actions are provided by the core module,
+- to send an email when a transaction enters 'completed' state
+- to supplement a transaction cluster with another transaction - useful for taxation.
+- to create a transaction based on the passed $entity->uid
+
+Plus there are triggers for all transaction workflow operations.
+Rules attempts to re-deply the them, but I got stuck describing the worth field to entity_token.
+So for now, rules integration only works for events and conditions not involving field 'worth', but not transaction actions.
+
+4. Internal API
+
+The transaction entity has 3 forms
+Simple entity object, usually called $transaction
+Cluster, which is an array of transactions being passed around before being written with the same serial number, always called $cluster
+Loaded entity, in which the dependent transactions (with the same serial number) are loaded into $entity->dependents, usually called $transaction
+Don't forget all the transactions on their way to the theme system, which might be called $build or $transaction
+
+Standard accounting database operations are conducted through an API described in transaction.api.php
+Entity module is used where I could make sesnse of it.
+The intention is that the entity controller can be swopped so that transactions can live in different formats in different databases.
+That concept has been proved, but more needs to be done to allow each currency to have its own transaction controller.
 All transaction state changes, including creation must be done with a call to transactions_state()
 The transaction_totals() function is mostly duplicated by the mcapi_index_views module, but external entity controllers will have difficulty integrating with views I should think.
-The provided transaction entity controller has THREE undo modes:
-- change state to erased
+The module supports THREE undo modes which need to move to the transaction entity controller where they will be selected per currency.
+- change 'state' to undone
 - remove transaction completely
 - write a counter-transaction and set both to state 'undone'
-There are a couple of wrapper functions round the API supporting transaction clusters
-A cluster is when many transactions share a serial number, say if, they are spawned from it.
-The module assumes the first transaction in a cluster is the main one, say for display purposes.
 
-2. Master/Slave transaction storage & entity controller
+5. Limits system
 
-Drupal allows several database connections to be defined in settings.php.
-On admin/accounting/entity_controller you can choose which database connections the default transaction controller will write to
-And which one connection it will read from.
-Alternatively another entity controller can be written. Although the API isn't fully documented.
+During the accounting_validate phase the limits module checks whether the transaction cluster would put any users over their limits.
+Limits are determined by callbacks, per currency, and are not saved in the database.
+Limts can optionally be overridden by user profile settings and custom modules can add more callbacks
+Under some circumstances limits could be exceeded, such as with automated transactions, or user 1 initiated transactions.
+In that case only transactions will be permitted which bring users towards zero.
+The limits module provides blocks to show 
+- the balance and the min/max limits
+- the amount which can be earned or spent before limits are hit.
 
-3. Triggering Payments
-
-The mcapi module provides an action which adds a transaction to the cluster.
-however it's not very configurable - the rules framework is more appropriate for this; encouragement is needed
-
-
-***********************
-** ON THE WISH LIST **
-***********************
-SMS - waiting for the sms_framework module
-Voice activated transactions
-iphone app
-Google charts
+6. Views integration
+Much work has been done on views to give the site builder maximum flexibility.
+First of all the transaction properties are exposed, and most of them as filters, arguments, sorts.
+All the transaction_view_access callbacks have versions for modifying transaction views.
+The mcapi_index_views module does what the transaction table cannot do, by installing a mysql VIEW and providing views integration with that. This allows a whole new perspective on the transactions, and allows new forms of statistics also.
 

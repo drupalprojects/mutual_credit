@@ -15,10 +15,9 @@ files[] = mcapi.install
 files[] = mcapi.inc
 files[] = mcapi.admin.inc
 files[] = mcapi.controller
-files[] = mcapi.tokens.inc
-files[] = mcapi.variable.inc
 files[] = mcapi.drush.inc
-files[] = mcapi.info.inc
+files[] = mcapi.variable.inc
+files[] = mcapi.rules.inc
 
 ;ctools implementation for currencies
 files[] = mcapi.mcapicurrencies_default.inc
@@ -31,14 +30,7 @@ files[] = views/mcapi.views_default.inc
 files[] = views/views_handler_field_mcapi_state.inc
 files[] = views/views_handler_field_mcapi_users_totals.inc
 files[] = views/views_handler_field_transaction.inc
+files[] = views/views_handler_field_transaction_operations.inc
 files[] = views/views_handler_filter_mcapi_currency.inc
 files[] = views/views_handler_filter_mcapi_states.inc
 files[] = views/views_handler_filter_mcapi_types.inc
-files[] = views/views_plugin_row_transaction.inc
-
-;rules integration
-;files[] = mcapi.rules.inc
-;files[] = extras/mcapi.eval.inc
-
-;entity integration
-;files[] = mcapi.info.inc

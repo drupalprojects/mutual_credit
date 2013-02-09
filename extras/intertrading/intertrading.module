@@ -613,7 +613,7 @@ function intertrading_transaction_form_submit($form, &$form_state) {
   $result = intertrading_send_transaction($values, $form['#incoming'], TRUE);
   if ($result->code == 'OK') {//this should always be the case
     $transaction = entity_create('transaction', $values);
-    transaction_insert_new($transaction, TRUE);
+    transaction_cluster_create($transaction, TRUE);
     drupal_set_message('Transaction saved with remote site.');
   }
   else {
@@ -685,7 +685,8 @@ function intertrading_passive() {
   }
 
   try {
-    $transactions = transaction_insert_new((object)$transaction, $post['really']);
+    //should be using entity_API_create to create the transaction here
+    transaction_cluster_create((object)$transaction, $post['really']);
     intertrading_respond('OK');
   }
   catch (Exception $e) {
@@ -806,7 +807,6 @@ function report_intertrading_history() {
   ->fetchCol();
 
   if (count($serials)) {
-    transactions_state($serials, TRANSACTION_STATE_FINISHED);
     $transactions = transaction_load_multiple(array(), array('serial' => $serials));
     foreach ($transactions as $transaction) {
 

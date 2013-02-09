@@ -16,7 +16,7 @@ function mcapi_import_help($path) {
       break;
     case 'admin/accounting/import/balances':
       $help[] = t("This page allows you to import users' balances and gross incomes for users already on the system.");
-      $help[] = t("Be aware that the trigger 'transactions_state' will be fired for each user.");
+      $help[] = t("Be aware that the trigger 'transaction_state' will be fired for each user.");
       $help[] = t("To import users, see the !import_user module.");
   }
   return implode(' ', $help);
@@ -128,7 +128,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
     try{
       $transactions = array($transaction);
       //each will have its own serial number
-      transactions_insert($transactions, FALSE);
+      transaction_cluster_write($transactions, FALSE);
     }
     catch (Exception $e){
       form_set_error('', $e->message());
@@ -147,7 +147,7 @@ function import_transactions_form_submit($form, &$form_state) {
   //create the transactions
   foreach(mcapi_import_generate_transactions($csv) as $transaction) {
     $cluster = array($transaction);
-    transactions_insert($cluster, TRUE);
+    transaction_cluster_write($cluster, TRUE);
   }
   if ($form_state['values']['set_created'] && !empty($earliest)) {
     //set the user created to 1 day before the transaction

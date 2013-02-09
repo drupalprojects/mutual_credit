@@ -67,11 +67,6 @@ function mcapi_signatures_entity_delete($transaction, $type) {
   }
 }
 
-function mcapi_signatures_entity_save() {
-
-}
-
-
 /*
  * Implements hook_mcapi_info_states
  */
@@ -217,15 +212,15 @@ function mcapi_signatures_cron() {
 
 
 /*
- * implements mcapi hook_transactions_state
+ * implements mcapi hook_transaction_state
  * saves the signatures and sends any notifications needed
  * The incoming $transaction clusters have already been saved and reloade,
  * all have the same state and serial number
  * so we process one a time children which aren't needed here
  */
-function mcapi_signatures_transactions_state($transactions, $new_state) {
+function mcapi_signatures_transaction_state($transaction, $new_state) {
   module_load_include('inc', 'mcapi_signatures');
-  _mcapi_signatures_transactions_state($transactions, $new_state);
+  _mcapi_signatures_transaction_state($transaction, $new_state);
 }
 
 /*
@@ -252,14 +247,8 @@ function mcapi_signatures_theme_registry_alter(&$items) {
 /*
  * implement hook_transaction_view_alter
  */
-function mcapi_signatures_transaction_view_alter(&$build) {
-  foreach ($build as $render_array) {
-    if ($render_array['#view_mode'] == 'certificate' && $render_array['#transaction']->state == TRANSACTION_STATE_PENDING) {
-      $file = url(drupal_get_path('module', 'mcapi_signatures'))."/pending.png";
-      $css = ".state--1{background-image:url($file);background-repeat: no-repeat; background-position: top center;}";
-      drupal_add_css($css, array('type' => 'inline'));
-    }
-  }
+function mcapi_signatures_init() {
+  drupal_add_css(drupal_get_path('module', 'mcapi_signatures').'/signatures.css');
 }
 
 /*
@@ -267,7 +256,7 @@ function mcapi_signatures_transaction_view_alter(&$build) {
  * adds the sign_link to the transaction certificate, in accordance with mcapi_signatures_theme_registry_alter
  */
 function mcapi_signatures_preprocess_certificate(&$variables) {
-  $transaction = &$variables['transaction'];
+  $transaction = &$variables['object'];
   if ($transaction->state == TRANSACTION_STATE_PENDING && isset($transaction->pending_signatures)) {
     $variables['pending'] = array(
       '#theme' => 'pending_signatures',
@@ -310,7 +299,7 @@ function transaction_access_callback_signatory($transaction) {
 function transaction_access_callback_pending_signatory($transaction) {
   //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
   if (!isset($transaction->pending_signatures)) return FALSE;
-  return $transaction->pending_signatures[$GLOBALS['user']->uid];
+  return @$transaction->pending_signatures[$GLOBALS['user']->uid];
 }
 /*
  * callback for transaction view access for views

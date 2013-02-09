@@ -63,13 +63,15 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
     $form['type']['#type'] = 'value';
     $form['type']['#value'] = $settings['info']['name'];
-
      //participants
     if ($settings['perspective'] == 3) {
       foreach (array('payer', 'payee') as $participant) {
         //specifies which user_chooser widget
-        $form[$participant]['#type'] = strtok($settings[$participant]['user_chooser_config'], ':');
-        $form[$participant]['#args'] = array(strtok(':'));
+        $uchoo_setup = explode(':', $settings[$participant]['user_chooser_config']);
+        $form[$participant]['#type'] = 'user_chooser_few';
+        $form[$participant]['#callback'] = array_shift($uchoo_setup);
+        $form[$participant]['#args'] = $uchoo_setup;
+        $form[$participant]['#multiple'] = FALSE;
         $form[$participant]['#allow_me'] = TRUE;//this could be put in the config
       }
     }
@@ -80,9 +82,12 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
         '#default_value' => $transaction->secondperson
       ) + $form['payee'];
       //specifies which user_chooser widget
-      $form['secondperson']['#type'] = strtok($settings['secondperson']['user_chooser_config'], ':');
-      $form['secondperson']['#args'] = array(strtok(':'));
+      $uchoo_setup = explode(':', $settings['secondperson']['user_chooser_config']);
+      $form['secondperson']['#type'] = 'user_chooser_few';
+      $form['secondperson']['#callback'] = array_shift($uchoo_setup);
+      $form['secondperson']['#args'] = $uchoo_setup;
       $form['secondperson']['#required'] = TRUE;
+      $form['secondperson']['#multiple'] = FALSE;
       $form['secondperson']['#allow_me'] = FALSE;//this could be put in the config
       $type = $settings['direction']['widget'] ? $settings['direction']['widget'] : 'select';
       $options = ($type == 'select' && empty($settings['direction']['preset'])) ? array(t('Please choose...')) : array();
@@ -127,10 +132,14 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     while(count($transactions) > 1) {
       $transactions[0]->dependents[] = array_pop($transactions);
     }
-    $form['#preview'] = transaction_view(
-      $transactions,
-      $settings['experience']['sure_format']
-    );
+    //the tokens page already has a token selector for the main form, based on mcapiform
+    //rather than make another token selector just for the rare use-case of using custom tokens,
+    //the sure_format is made with [mcapiform] tokentype and here replaced for [transaction]
+    $view_mode = $settings['experience']['sure_format'] == 'token' ?
+      str_replace('[mcapiform:', '[transaction:', $settings['experience']['sure_template']) :
+      $settings['experience']['sure_format'];
+    //then the view_mode, if unknown, is interpreted as a token
+    $form['#preview'] = transaction_view($transactions, $view_mode);
     //the transaction properties were validated in step 1
     //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]
     unset($form['#validate']);

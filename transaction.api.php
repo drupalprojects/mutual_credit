@@ -19,7 +19,7 @@
  *   //use drupal_alter to add any dependent transactions
  *   $transactions = array($transaction);
  *   drupal_alter('transactions', $transactions);
- *   transactions_insert($transactions, FALSE)
+ *   transaction_cluster_write($transactions, FALSE)
  *     hook_transaction_validate
  *     EntityController->insert($transactions, FALSE)
  * end form validation
@@ -27,11 +27,11 @@
  *   //use drupal_alter to add any dependent transactions
  *   $transactions = array($transaction);
  *   drupal_alter('transactions', $transactions);
- *   transactions_insert($transactions, TRUE);
+ *   transaction_cluster_write($transactions, TRUE);
  *     hook_transaction_validate
  *     EntityController->insert($transactions, TRUE)
  *     field_attach_insert('transaction', $transaction);
- *       hook_transactions_state
+ *       hook_transaction_state
  * end form submission
  *
  */
@@ -56,13 +56,12 @@ transaction_load($serial);
 
 
 /*
- * Entity API callback and wrapper around Community Accounting API function transactions_insert
- * take one volitional transaction and processes it for rules, actions etc
- * attempts to write them all
+ * Entity API callback and wrapper around Community Accounting API function transaction_cluster_write
+ * take one volitional transaction and allow the system to add dependents before sending the cluster to be written
  * returns them as an array
  */
 try {
-  transaction_insert_new($transaction, $really = TRUE);
+  transaction_cluster_create($transaction, $really = TRUE);
 }
 catch(exception $e){}
 
@@ -82,13 +81,20 @@ transactions_delete($serials);
 
 /*
  * Insert a cluster of validated transactions, which will receive the same serial number
- * N.B. Contrib modules would normally call wrapper function transaction_insert_new()
+ * N.B. Contrib modules would normally call wrapper function transaction_cluster_create()
  * which fires the hook_transactions inserted
  * $transactions is a flat array
  * All $transactions will be given the same serial numbers
  */
 try {
-  transactions_insert(&$transactions);
+  transaction_insert_cluster($transactions, $really);
+}
+catch(exception $e){}
+/*
+ * Insert a single transaction entity, with a serial number already determined.
+ */
+try {
+  transaction_insert_one($transaction, $really);
 }
 catch(exception $e){}
 
@@ -96,7 +102,7 @@ catch(exception $e){}
  * The default entity controller supports 3 ways to undo
  * Utter delete
  * Change state to erased
- * Create counter-transaction and set state of both to TRANSACTION_STATE_REVERSED
+ * Create counter-transaction and set state of both to TRANSACTION_STATE_UNDONE
  */
 try {
   transaction_undo($transaction);
@@ -110,7 +116,7 @@ catch(exception $e){}
  * hook_transaction_state($clusters, $new_state)
  */
 try {
-  transactions_state($serials, $newstate);
+  transaction_state($serial, $newstate);
 }
 catch(exception $e){}
 
@@ -150,7 +156,7 @@ function hook_transaction_controller(){}
 //check the transactions and the system integrity after the transactions would go through
 function hook_accounting_validate(){}
 //respond to the insertion of a transaction cluster
-function hook_transactions_insert(){}
+function hook_transaction_cluster_write(){}
 //respond to the removal, or undoing of a transaction
 function hook_transactions_undone(){}
 //preparing a transaction for rendering
@@ -160,17 +166,16 @@ function hook_transaction_access_callbacks(){}
 //things that can be done to transactions
 function hook_transaction_operations(){}
 //change of transaction state - takes serials
-function hook_transactions_state(){}
+function hook_transaction_state(){}
 //declare transaction states
 function hook_mcapi_info_states(){}
 //declare transaction types
 function hook_mcapi_info_types(){}
 //declare permissions to go into the community accounting section of the drupal permissions page
 function hook_mcapi_info_drupal_permissions(){}
-
-
-//alter hooks, more could be added, if necessary!
+//add transactions to a new cluster (this is not actually invoked with drupal_alter, but could be)
 function hook_transaction_cluster_alter(){}
+//alter hooks, more could be added, if necessary!
 function hook_transaction_operations_alter(){}
 
 

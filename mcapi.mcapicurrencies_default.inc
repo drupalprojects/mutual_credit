@@ -31,11 +31,7 @@ function mcapi_mcapicurrencies_default() {
         'transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact',
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
-      //both deletemodes supported in this default currency
-      TRANSACTION_STATE_REVERSED => array(
-        'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
-      ),
-      TRANSACTION_STATE_ERASED => array(
+      TRANSACTION_STATE_UNDONE => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
     ),
@@ -44,7 +40,7 @@ function mcapi_mcapicurrencies_default() {
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
       'sign' => array(
-        'transaction_access_callback_signatory' => 'transaction_access_callback_signatory'
+        'transaction_access_callback_pending_signatory' => 'transaction_access_callback_pending_signatory'
       ),
       'undo_pending' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
@@ -52,7 +48,8 @@ function mcapi_mcapicurrencies_default() {
       'signoff' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       )
-    )
+    ),
+    'pay_zero' => FALSE
   );
   $currencies[DEFAULT_CURRENCY] = $currency;
   return $currencies;

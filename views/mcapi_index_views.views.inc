@@ -8,7 +8,7 @@ function mcapi_index_views_views_data() {
   $data = array();
   $data['mcapi_index']['table']['group'] = t('Transaction index');
   $data['mcapi_index']['table']['base'] = array(
-    'database' => variable_get('mcapi_db_read', 'default'),
+//    'database' => variable_get('mcapi_db_read', 'default'),
     'field' => 'serial',
     'title' => t('Transaction totals'),
     'help' => t('Transaction totals'),
@@ -30,7 +30,7 @@ function mcapi_index_views_views_data() {
     'title' => t('Unique serial number'), // The item it appears as on the UI,
     'field' => array(
       'help' => t('The serial number of the transaction and dependents'),
-      'handler' => 'views_handler_field',
+      'handler' => 'views_handler_field_transaction',
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -149,6 +149,7 @@ function mcapi_index_views_views_data() {
     'help' => t("Indexed running balance after each transaction. (1 database query per row)"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_balance',
+      'additional fields' => array('xid')
     ),
   );
   $data['mcapi_index']['created'] = array(
@@ -169,14 +170,6 @@ function mcapi_index_views_views_data() {
       'handler' => 'views_handler_argument_date',
       'fieldname' => 'created'
     ),
-  );
-
-  $data['mcapi_index']['view'] = array(
-    'title' => t('View'),
-    'help' => t("Link to transaction"),
-    'field' => array(
-      'handler' => 'views_handler_field_transaction',
-    )
   );
   currencies_load();//because mcapi_init hasn't run yet
   $currencies = &drupal_static('currencies');
