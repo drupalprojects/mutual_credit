@@ -368,7 +368,6 @@ function mcapi_update_dependencies() {
 }
 
 /**
- * implements hook_update_n
  * create new tables and enable new modules
  */
 function mcapi_update_7000() {
@@ -466,7 +465,6 @@ function mcapi_update_7001() {
 }
 
 /**
- * implements hook_update_n
  * create the new 'worth' field and attach it to the transaction entity
  */
 function mcapi_update_7002() {
@@ -723,7 +721,6 @@ function mcapi_update_7004() {
 }
 
 /**
- * implements hook_update_n
  * updates the permissions from D6
  */
 function mcapi_update_7005() {
@@ -739,6 +736,7 @@ function mcapi_update_7005() {
   }
   db_query("DELETE FROM {role_permission} WHERE permission IN ('view all exchanges', 'edit own finished exchanges', 'view all balances')");
 }
+
 /**
  * update the transaction notification handling
  */
@@ -759,14 +757,17 @@ function mcapi_update_7006() {
     $params['subject'] = $subject;
     $params['body'] = $body;
     $aid = actions_save('mcapi_transaction_mail_action', 'transaction', $params, t('Notify transactees'));
-    // Borrowed from trigger_assign_form_submit
-    db_insert('trigger_assignments')->fields(
-      array(
-        'hook' => 'transaction_state',
-        'aid' => $aid,
-        'weight' => 0,
-      )
-    )->execute();
+    $tables = db_query("SHOW TABLES")->fetchCol();
+    if (in_array('system', $tables)) {
+      // Borrowed from trigger_assign_form_submit
+      db_insert('trigger_assignments')->fields(
+        array(
+          'hook' => 'transaction_state',
+          'aid' => $aid,
+          'weight' => 0,
+        )
+      )->execute();
+    }
   }
 
   variable_del('mc_notification_subject');
@@ -860,19 +861,7 @@ function mcapi_update_7010() {
   }
   cache_clear_all('currencies', 'cache');
 }
-/**
- * update the default value on the worth widget
- */
-function mcapi_update_7011() {
-  $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
-  $instance['default_value'] = array(
-    0 => array(
-      'currcode' => DEFAULT_CURRENCY,
-      'quantity' => 0
-    )
-  );
-  field_update_instance($instance);
-}
+
 /**
  * clear up a relic which was putting the 'Transactions fieldAPI' link at the top of the management menu
  * + other variables from v2s and v1
@@ -953,11 +942,13 @@ function mcapi_update_7015() {
   cache_clear_all('currencies', 'cache');
   menu_rebuild();
 }
+
 /**
  * alter transaction state constant.
  * Update the name of the saved action.
  * Update the field cardinality, which went astray.
- * Update the worth table to take zero values
+ * Update the worth table to take zero values.
+ * Ensure the transaction worth instance definition is correct.
  */
 function mcapi_update_7016() {
   db_query("UPDATE {mcapi_transactions} SET state = 0 WHERE state = 2");
@@ -978,8 +969,18 @@ function mcapi_update_7016() {
     'precision' => 8,
     'scale' => 2,
     'not null' => TRUE,
-    'default' => 'def_drup'
+    'default' => '0'
   );
   db_change_field('field_data_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
   db_change_field('field_revision_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
+
+  $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
+  $instance['widget']['module'] = 'mcapi';
+  $instance['default_value'] = array(
+    0 => array(
+      'currcode' => DEFAULT_CURRENCY,
+      'quantity' => 0
+    )
+  );
+  field_update_instance($instance);
 }

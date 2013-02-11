@@ -60,7 +60,7 @@ function mcapi_forms_menu_alter(&$items) {
       //replace the default tab at 'transact/default' item form with whichever of the forms has default tab
       unset($items['transact/default']);
       if ($form->data['architecture']['menu_link'] == MENU_DEFAULT_LOCAL_TASK) {
-        $items['transact'] = $items[$form->data['architecture']['path']];
+        $items['transact'] = $items[$form->data['architecture']['path']] + $items['transact'];
         $items['transact']['type'] = MENU_NORMAL_ITEM;
         $items['transact']['options']['alter'] = TRUE;//will run hook_translated_menu_link_alter
       }
@@ -142,13 +142,16 @@ function mcapi_forms_block_info() {
  * Implements hook_block_view
  */
 function mcapi_forms_block_view($delta) {
+  //don't display blocks on pages which are showing transaction forms already
+  $menu_item = menu_get_item();
+  if ($menu_item['page_callback'] == 'mcapi_get_form') return;
   //load the form and check access first
   $settings = mcapi_forms_load($delta)->data['architecture'];
+  //we know that the access is a user_chooser callback separated from a single arg by a colon
   $access_settings = explode(':', $settings['access']);
   $access_callback = 'in_'. array_shift($access_settings);
   if (!$access_callback($access_settings)) return;
   //it's generally a bad idea to show the form in block on its own page
-  if (current_path() == $settings['path']) return;
   $title = drupal_get_title();
   $form = mcapi_get_form($delta);//this sets the page title
   $block_title = drupal_get_title();
@@ -329,7 +332,7 @@ function mcapi_hide_tabs() {
 function mcapi_form_title($form_name) {
   $object = _mcapi_i18n_object($form_name);
   //change the 5 translatable strings
-  if (module_exists('i18n_string')) {
+  if (function_exists('i18n_string_object_translate')) {
     $translations = i18n_string_object_translate('payform_experience', $object);
     //this needs to be internationalized
     if (strlen($translations['title'])) return $translations['title'];

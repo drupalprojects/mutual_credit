@@ -72,7 +72,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
         $form[$participant]['#callback'] = array_shift($uchoo_setup);
         $form[$participant]['#args'] = $uchoo_setup;
         $form[$participant]['#multiple'] = FALSE;
-        $form[$participant]['#allow_me'] = TRUE;//this could be put in the config
       }
     }
     else {
@@ -88,7 +87,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $form['secondperson']['#args'] = $uchoo_setup;
       $form['secondperson']['#required'] = TRUE;
       $form['secondperson']['#multiple'] = FALSE;
-      $form['secondperson']['#allow_me'] = FALSE;//this could be put in the config
       $type = $settings['direction']['widget'] ? $settings['direction']['widget'] : 'select';
       $options = ($type == 'select' && empty($settings['direction']['preset'])) ? array(t('Please choose...')) : array();
       $form['direction'] = array(
@@ -208,7 +206,7 @@ function theme_mcapi_form($variables) {
           elseif(isset($form[$fieldname][LANGUAGE_NONE][0]['#entity'])) {
             mcapi_unset_recursive($form[$fieldname], '#theme_wrappers');
           }
-          else drupal_set_message('Cannot strip field:: '.$fieldname);
+          else drupal_set_message('Cannot strip field: '.$fieldname);
         }
       }
     }

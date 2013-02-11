@@ -18,7 +18,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#type' => 'user_chooser_few',
       '#callback' => 'user_chooser_segment_permissions',
       '#args' => array('transact'),
-      '#allow_me' => TRUE,
       '#weight' => 9,
       '#multiple' => FALSE,
     );
@@ -26,7 +25,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#type' => 'user_chooser_few',
       '#callback' => 'user_chooser_segment_permissions',
       '#args' => array('transact'),
-      '#allow_me' => TRUE,
       '#multiple' => TRUE,
       '#multiple_fail_quietly' => TRUE
     );
@@ -34,7 +32,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#type' => 'user_chooser_many',
       '#callback' => 'user_chooser_segment_permissions',
       '#args' => array('transact'),
-      '#allow_me' => TRUE,
     );
 
     if ($payer == 'one') {

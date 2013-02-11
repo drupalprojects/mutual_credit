@@ -1092,10 +1092,12 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
       }
     }
     //set the value to zero if the field is empty and the currency allows it
-    if (empty($value[$delta]['quantity']) && currency_load($item['currcode'])->pay_zero) {
+    $currency = currency_load($item['currcode']);
+    if (!property_exists($currency, 'pay_zero')) drupal_set_message('resave your currency!');
+    if (empty($value[$delta]['quantity']) && $currency->pay_zero) {
       $value[$delta]['quantity'] = '0';
     }
-    elseif(empty($value[$delta]['quantity'])) {
+    elseif(empty($value[$delta]['quantity']) && empty($element['#preset'])) {
       unset($value[$delta]);
     }
   }

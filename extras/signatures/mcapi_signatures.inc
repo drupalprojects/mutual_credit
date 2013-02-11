@@ -230,7 +230,6 @@ function mcapi_signatures_config($form, $form_state) {
         '#args' => array(DRUPAL_AUTHENTICATED_RID),
         '#default_value' => $settings['countersignatories'],
         '#multiple' => TRUE,
-        '#allow_me' =>TRUE
       ),
       'notify' => array(
         '#title' => t("Send 'pending' notification"),
@@ -246,10 +245,10 @@ function mcapi_signatures_config($form, $form_state) {
   $form['mcapi_sign_notify_template'] = array(
     '#title' => t('Signature notification'),
     '#description' => implode(' ', array(
-      t('Compose the email notifying signatories that a transaction needs their attention'),
-      t('Use the tokens provided').
-      t("To notify users when a transaction is completed, use the action and triggers."),
-      l('admin/config/system/actions', 'admin/config/system/actions')
+      t('Compose the email notifying signatories that a transaction needs their attention.'),
+      t('Use the tokens provided.'),
+      t("To notify users when a transaction is completed, use the action and triggers: !link",
+        array('admin/config/system/actions', 'admin/config/system/actions'))
     )),
     '#type' => 'fieldset',
     'subject' => array(

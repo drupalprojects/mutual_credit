@@ -103,7 +103,6 @@ function _transaction_form(&$form, &$form_state) {
     '#title' => t('Account to be debited'),
     '#type' => 'user_chooser_permissions',
     '#args' => array('transact'),
-    '#allow_me' => TRUE,
     '#default_value' => $form['#transaction']->payer,
     '#weight' => 6,
   );
@@ -111,7 +110,6 @@ function _transaction_form(&$form, &$form_state) {
     '#title' => t('Account to be credited'),
     '#type' => 'user_chooser_permissions',
     '#args' => array('transact'),
-    '#allow_me' => TRUE,
     '#default_value' => $form['#transaction']->payee,
     '#weight' => 9,
   );
@@ -138,7 +136,6 @@ function _transaction_form(&$form, &$form_state) {
     '#type' => 'user_chooser_permissions',
     '#default_value' => $form['#transaction']->creator,
     '#args' => array('transact'),
-    '#allow_me' => TRUE,
     '#required' => TRUE,
     '#weight' => 20,
   );
@@ -596,6 +593,7 @@ function _worths_element_process($element, &$form_state) {
       $element[$delta]['#title_display'] = 'attribute';
       $element[$delta]['#type'] = 'worth';
       $element[$delta]['#calc'] = @$element['#calc'];
+      $element[$delta]['#preset'] = @$element['#preset'];
     }
     if (variable_get('mcapi_mixed_transactions', 0) == 1 || strlen($quant)) {
       $element[$delta]['#default_value'] = array(
@@ -629,7 +627,6 @@ function _worth_element_process($element, &$form_state) {
   if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
     $use_div_subelement = in_array($currency->display['divisions'], array(CURRENCY_DIVISION_MODE_CUSTOM, CURRENCY_DIVISION_MODE_CENTS_FIELD));
   }
-
   //work out the defaults for each subfield
   //null is not presumed to be zero, and is preserved
   if (!empty($use_div_subelement)) {
@@ -639,7 +636,8 @@ function _worth_element_process($element, &$form_state) {
     $main_quant = $quantity;
   }
   //in normal mode, show a blank field where the default value is 0
-  if ($main_quant == '0') $main_quant = '';
+  if ($main_quant == '0' && empty($element['#preset'])) $main_quant = '';
+
   //while we return a float, the widget may want to show two fields.
   //in any case we show a main field, and an optional division field
   $element['main_quant'] = array(

@@ -91,6 +91,7 @@ function _mcapi_menu() {
     //if we knew what currency we would use callback 'currency_access' and arg 'membership'
     'access arguments' => array('transact'),
     'file' => 'mcapi.inc',
+    'file path' => drupal_get_path('module', 'mcapi')
   );
   $items['transact/default'] = array(
     'title' => 'Log',
@@ -289,10 +290,21 @@ function mcapi_currency_form(&$form, &$form_state){
     '#callback' => 'user_chooser_segment_permissions',
     '#args' => array('manage all transactions'),
     '#default_value' => property_exists($currency, 'uid') ? $currency->uid : $GLOBALS['user']->name,
-    '#allow_me' => TRUE,
+    '#multiple' => FALSE,
     '#required' => TRUE,
-    '#weight' => 4,
+    '#weight' => 3,
   );
+  $form['reservoir'] = array(
+    '#title' => t('Reservoir account'),
+    '#description' => t('Account used for issuing and taxing'),
+    '#type' => 'user_chooser_few',
+    '#callback' => 'user_chooser_segment_perms',
+    '#args' => array('transact'),
+    '#default_value' => property_exists($currency, 'reservoir') ? $currency->reservoir : 1,
+    '#multiple' => FALSE,
+    '#weight' => 4
+  );
+
   $form['display'] = array(
     '#title' => t('Appearance'),
     '#type' => 'fieldset',
@@ -719,17 +731,13 @@ function mcapi_transaction_entity_uid_form($context) {
       '#preset' => TRUE,//ensures that all currencies are rendered
     )
   );
-  if ($primary_transaction) {
-  }
-  else {
-    $form[$fieldset_name]['round'] = array(
-      '#title' => t('Rounding'),
-      '#type' => 'radios',
-      '#options' => array('up' => t('Up'), 'down' => t('Down')),
-      '#default_value' => isset($context['worth_items']['round']) ? $context['worth_items']['round'] : 'down',
-      '#weight' => 1
-    );
-  }
+  $form[$fieldset_name]['round'] = array(
+    '#title' => t('Rounding'),
+    '#type' => 'radios',
+    '#options' => array('up' => t('Up'), 'down' => t('Down')),
+    '#default_value' => isset($context['worth_items']['round']) ? $context['worth_items']['round'] : 'down',
+    '#weight' => 1
+  );
 
   if (variable_get('transaction_description_field')) {
     $form[$fieldset_name]['description'] = array(
@@ -738,11 +746,6 @@ function mcapi_transaction_entity_uid_form($context) {
       '#default_value' => @$context['worth_items']['description'],
     );
   }
-
-
-
-
-
   return $form;
 }
 /*
@@ -814,7 +817,6 @@ function mcapi_dependent_transaction_action_form($context) {
         '#title' => t('Other account'),
         '#type' => 'user_chooser_permissions',
         '#args' => array('transact'),
-        '#allow_me' => TRUE,
         '#default_value' => isset($context['presets']['participants']['otheruser']) ? $context['presets']['participants']['otheruser'] : 1,
         '#weight' => 1,
       )

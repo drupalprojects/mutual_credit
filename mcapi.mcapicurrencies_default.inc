@@ -21,6 +21,7 @@ function mcapi_mcapicurrencies_default() {
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
     ),
     'uid' => 1,
+    'reservoir' => 1,
     'currency_access' => array(
       'membership' => 'transact',
       'user_aggregated_view' => 'transact',

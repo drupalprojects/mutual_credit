@@ -156,9 +156,9 @@ function intertrading_settings() {
   $form['intertrading_uid'] = array(
     '#title' => t('Account for external transactions'),
     '#description' => t('WARNING. This cannot and should not be easily changed once your account on the intertrading server is created'),
-    '#type' => 'user_chooser_permissions',
+    '#type' => 'user_chooser_few',
+    '#callback' => 'user_chooser_segment_perms',
     '#args' => array('transact'),
-    '#allow_me' => TRUE,
     '#default_value' => variable_get('intertrading_uid', 0),
     '#disabled' => variable_get('intertrading_uid', 0),
     '#required' => TRUE

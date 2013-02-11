@@ -174,7 +174,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['worth']['#description'] = '<br />'. t('Leave blank to exclude the currency widget from the form. Otherwise preset to zero or some other value');
   }
   $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
-
   //we need to know the view modes of the transaction entity, to choose for the preview page
   $entity = entity_get_info('transaction');
   foreach ($entity['view modes'] as $name => $mode) {
@@ -316,6 +315,8 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
         foreach ($preset as $item) {
           $element['preset']['#default_value'][$item['currcode']] = $item['quantity'];
         }
+        //plus we need to show one for every currency (this helps with old versions, but should be managed by the worths process function)
+
       }
       else $element['preset']['#default_value'] = $preset;
     }

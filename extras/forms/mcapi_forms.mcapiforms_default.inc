@@ -32,7 +32,7 @@ function mcapiform_default_1stparty() {
     'perspective' => '1',
     'architecture' => array(
       'path' => 'transact/1stparty',
-      'access' => 'user_chooser_segment_permissions:manage all transactions',
+      'access' => 'user_chooser_segment_permissions:transact',
       'menu_link' => MENU_DEFAULT_LOCAL_TASK,
       'use_block' => 1,
     ),
