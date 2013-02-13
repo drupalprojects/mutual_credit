@@ -961,7 +961,7 @@ function mcapi_update_7016() {
   $currencies = &drupal_static('currencies');
   $field['cardinality'] = variable_get('mcapi_mixed_transactions', 0) ? count($currencies) : 1;
   field_update_field($field);
-
+/*
   $worth_db_field = array(
     'description' => 'Price',
     'type' => 'numeric',
@@ -973,7 +973,7 @@ function mcapi_update_7016() {
   );
   db_change_field('field_data_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
   db_change_field('field_revision_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
-
+*/
   $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
   $instance['widget']['module'] = 'mcapi';
   $instance['default_value'] = array(

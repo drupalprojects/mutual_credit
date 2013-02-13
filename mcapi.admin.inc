@@ -888,14 +888,6 @@ function validate_mcapi_configure_worth_formula(&$element, $form_state) {
   }
 }
 
-function _worthitems_to_worths(array $worthitems) {
-  $worths = array();
-  foreach ($worthitems as $worth_item) {
-    $worths[$worth_item['currcode']] = $worth_item['quantity'];
-  }
-  return $worths;
-}
-
 
 function mcapi_description_field($form, $form_state) {
   $options = array('' => 'none');

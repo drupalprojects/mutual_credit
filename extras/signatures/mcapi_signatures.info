@@ -8,9 +8,6 @@ core = 7.x
 files[] = mcapi_signatures.module
 files[] = mcapi_signatures.install
 files[] = mcapi_signatures.inc
-files[] = mcapi_signatures.mcapiforms_default.inc
-files[] = mcapi_signatures.tokens.inc
 files[] = mcapi_signatures.variable.inc
 
-dependencies[] = mcapi_forms
-dependencies[] = user_chooser
+dependencies[] = mcapi

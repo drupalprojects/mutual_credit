@@ -101,14 +101,16 @@ function _transaction_form(&$form, &$form_state) {
   //the default payer and payee widgets will autocomplete any user on the system, and permissions will be checked later
   $form['payer'] = array(
     '#title' => t('Account to be debited'),
-    '#type' => 'user_chooser_permissions',
+    '#type' => 'user_chooser_few',
+    '#callback' => 'user_chooser_segment_perms',
     '#args' => array('transact'),
     '#default_value' => $form['#transaction']->payer,
     '#weight' => 6,
   );
   $form['payee'] = array(
     '#title' => t('Account to be credited'),
-    '#type' => 'user_chooser_permissions',
+    '#type' => 'user_chooser_few',
+    '#callback' => 'user_chooser_segment_perms',
     '#args' => array('transact'),
     '#default_value' => $form['#transaction']->payee,
     '#weight' => 9,
@@ -158,13 +160,16 @@ function _transaction_form(&$form, &$form_state) {
  */
 function transaction_form_validate($form, &$form_state) {
   $transaction = entity_create('transaction', $form_state['values']);
-  //populate the core transaction values from $form_state
-  entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
+
+  //finish building the transaction entity from form_state and validate that
+  //Actually I don't believe this does anything we need
+  //entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+
   if (form_get_errors()) return;
   try{
-    //keep a copy of the built transaction, and its dependencies for validation elsewhere
+    //add the dependent transactions, validate, test write and put the checked cluster in form_state
     $form_state['transactions'] = transaction_cluster_create($transaction, FALSE);
   }
   catch (Exception $e) {
@@ -519,24 +524,24 @@ function template_preprocess_certificate(&$variables) {
  * check that the $quantity is a number
  */
 function worth_element_validate(&$element, &$form_state, $form) {
-  if (isset($element['#value']['quantity'])) {
-    if (strlen($quant) && !is_numeric($quant) && !$element['#calc']) {
-      form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
-    }
-    if ($quant < 0) {
-      form_error($element, t('Negative values not allowed'));
-    }
+  if (!isset($element['#value']['quantity'])) return;
+  $quant = &$element['#value']['quantity'];
+  if (strlen($quant) && !is_numeric($quant) && !$element['#calc']) {
+    form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
+  }
+  if ($quant < 0) {
+    form_error($element, t('Negative values not allowed'));
+  }
 
-    $currencies = &drupal_static('currencies');
-    if (!isset($currencies[$element['#value']['currcode']])) {
-      form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
-    }
-    if ($division = $quant - intval($quant)) {
-      $currency = currency_load($element['#value']['currcode']);
-      //check that divisions match allowed values for the currency
-      if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
-        form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));
-      }
+  $currencies = &drupal_static('currencies');
+  if (!isset($currencies[$element['#value']['currcode']])) {
+    form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
+  }
+  if ($division = $quant - intval($quant)) {
+    $currency = currency_load($element['#value']['currcode']);
+    //check that divisions match allowed values for the currency
+    if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
+      form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));
     }
   }
 }
@@ -575,7 +580,6 @@ function _worths_element_process($element, &$form_state) {
       $element['#default_value'] += array($currcode => 0);
     }
   }
-
   //define the sub-element for each currency
   //if mixed transaction flag is off, then we don't increment the delta
   //and instead just add to the #currcodes
@@ -603,7 +607,6 @@ function _worths_element_process($element, &$form_state) {
     }
     $delta += variable_get('mcapi_mixed_transactions', 0);
   }
-
 
   return $element;
 }

@@ -31,21 +31,7 @@ function mcapi_forms_menu() {
       'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
     );
   }
-  $default_tabs_supplied = 0;
-  //make one of these the default tab on transact
-  foreach ($items as $key => $item) {
-    if (substr($key, 0 , 9) == 'transact/') {
-      $default_tab_needed = TRUE;
-      if ($item['type'] == MENU_DEFAULT_LOCAL_TASK) {
-        $items[$key]['weight'] = -1;
-        $default_tabs_supplied++;
-      }
-    }
-  }
-  if (isset($default_tab_needed)) {
-    if (empty($default_tabs_supplied)) drupal_set_message(t("There is no default tab under path 'transact/'"));
-    elseif ($default_tabs_supplied > 1) drupal_set_message(t("There is more than one default tab under path 'transact/'"));
-  }
+
   return $items;
 }
 
@@ -54,11 +40,11 @@ function mcapi_forms_menu() {
  * alters the menu item provided by ctools so it can be used for context
  */
 function mcapi_forms_menu_alter(&$items) {
+  unset($items['transact/default']);
   foreach (mcapi_forms_load(NULL, TRUE) as $form) {
     //remove the default tab under 'transact/'
     if (substr($form->data['architecture']['path'], 0 , 9) == 'transact/') {
       //replace the default tab at 'transact/default' item form with whichever of the forms has default tab
-      unset($items['transact/default']);
       if ($form->data['architecture']['menu_link'] == MENU_DEFAULT_LOCAL_TASK) {
         $items['transact'] = $items[$form->data['architecture']['path']] + $items['transact'];
         $items['transact']['type'] = MENU_NORMAL_ITEM;
@@ -67,6 +53,32 @@ function mcapi_forms_menu_alter(&$items) {
     }
     break;
   }
+
+  //after all this messing, we should offer some feedback on how the default tabs are working out, under 'transact'
+  $default_tabs_supplied = array();
+  $default_tab_needed = FALSE;
+  //make one of these the default tab on transact
+  foreach ($items as $key => $item) {
+    if (substr($key, 0 , 9) == 'transact/') {
+      if (substr_count($key, '/') > 1)continue;
+      $default_tab_needed = TRUE;
+      if ($item['type'] == MENU_DEFAULT_LOCAL_TASK) {
+        $items[$key]['weight'] = -1;
+        $default_tabs_supplied[] = $key;
+      }
+    }
+  }
+
+  if ($default_tab_needed) {
+    switch (count($default_tabs_supplied)) {
+      case 0: drupal_set_message(t("There is no default tab under path 'transact/'")); break;
+      case 1: break;
+      default:
+        drupal_set_message(t("Cannot have more than one default tab, @paths", array('@paths' => implode('; ', $default_tabs_supplied))), 'warning');
+    }
+  }
+
+
   $items['admin/accounting/forms']['weight'] = -1;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['_tab'] = TRUE;
   $items['admin/accounting/forms/list/%ctools_export_ui/edit']['tab_parent'] = 'admin/accounting/forms/list/%';

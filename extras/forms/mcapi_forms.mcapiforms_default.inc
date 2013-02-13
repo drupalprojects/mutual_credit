@@ -32,13 +32,13 @@ function mcapiform_default_1stparty() {
     'perspective' => '1',
     'architecture' => array(
       'path' => 'transact/1stparty',
-      'access' => 'user_chooser_segment_permissions:transact',
+      'access' => 'user_chooser_segment_perms:transact',
       'menu_link' => MENU_DEFAULT_LOCAL_TASK,
       'use_block' => 1,
     ),
     'secondperson' => array(
       'preset' => '',
-      'user_chooser_config' => 'user_chooser_segment_permissions:transact',
+      'user_chooser_config' => 'user_chooser_segment_perms:transact',
       'strip' => 1,
     ),
     'direction' => array(
@@ -87,18 +87,18 @@ function mcapiform_default_3rdparty() {
     'perspective' => '3',
     'architecture' => array(
       'path' => 'transact/3rdparty',
-      'access' => 'user_chooser_segment_permissions:manage all transactions',
+      'access' => 'user_chooser_segment_perms:manage all transactions',
       'menu_link' => MENU_LOCAL_TASK,
       'use_block' => 1,
     ),
     'payer' => array(
       'preset' => '',
-      'user_chooser_config' => 'user_chooser_segment_permissions:transact',
+      'user_chooser_config' => 'user_chooser_segment_perms:transact',
       'strip' => 1,
     ),
     'payee' => array(
       'preset' => '',
-      'user_chooser_config' => 'user_chooser_segment_permissions:transact',
+      'user_chooser_config' => 'user_chooser_segment_perms:transact',
       'strip' => 1,
     ),
     'worth' => array(

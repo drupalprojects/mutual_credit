@@ -136,6 +136,7 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
 
 
 function transactions_needing_sig_of_user($uid) {
+  //assumes data integrity that all transactions referenced are in pending state
   return db_select("mcapi_signatures", 's')
     ->fields('s', array('serial'))
     ->condition('uid', $uid)
@@ -291,6 +292,9 @@ function _mcapi_signatures_transaction_state($transaction, $new_state) {
     }
     mcapi_signatures_save($transaction);
     $params['mail_template'] = variable_get('mcapi_sign_notify_template', array());
+  }
+  elseif ($new_state == TRANSACTION_STATE_UNDONE) {
+    db_delete('mcapi_signatures')->condition('serial', $transaction->serial)->execute();
   }
   //send the mail, using the module settings for this transaction
   if (!empty($params['mail_template']) && $config['notify']) {

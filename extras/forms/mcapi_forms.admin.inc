@@ -310,13 +310,11 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   //set the defaults from the saved object.
   //Need to do it differently according to whether this is a fieldAPI field or one of the basic transaction properties
   if (isset($empty_element['#entity'])) {//this is for fieldAPI worth checkboxes and radio buttons
-    if (isset($preset)) {
-      if ($fieldname == 'worth') {
+    if (isset($preset)) {debug($preset);
+      if ($fieldname == 'worth' && count($preset)) {
         foreach ($preset as $item) {
           $element['preset']['#default_value'][$item['currcode']] = $item['quantity'];
         }
-        //plus we need to show one for every currency (this helps with old versions, but should be managed by the worths process function)
-
       }
       else $element['preset']['#default_value'] = $preset;
     }

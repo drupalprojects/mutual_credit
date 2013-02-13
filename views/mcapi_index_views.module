@@ -109,7 +109,8 @@ function mcapi_index_views_cron() {
 
 function mcapi_index_views_block_view_alter(&$data, $block) {
   if ($block->delta == 'trade_analysis-system') {
-    //unnfortunately, views rendered it already
+    if (!isset($data['content'])) return;
+    //unfortunately, views rendered it already
     $data['content']['#markup'] .= t('Greco health index: @float', array('@float' => variable_get('mcapi_greco_system_health', 0)));
   }
 }
