@@ -5,6 +5,7 @@
  * this is the entityAPI approach
  * normally we would implement hook_views_data
  */
+if (module_exists('entity')) {
 class transactionDefaultViewsController extends EntityDefaultViewsController {
 
   /**
@@ -211,4 +212,5 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $description = t('Comma separated usernames');
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
+}
 }

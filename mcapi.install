@@ -591,7 +591,7 @@ function mcapi_update_7003() {
       'file' => drupal_get_path('module', 'mcapi').'/mcapi.install'
     ));
   }
-  db_query("DELETE FROM {menu_links} WHERE link_path = 'exchange/add'");
+  db_query("DELETE FROM {menu_links} WHERE link_path like 'exchange%'");
 }
 
 //batch callback
@@ -888,6 +888,7 @@ function mcapi_update_7013() {
 	variable_del('mc_notification_throttle_default');
 	variable_del('mc_stats_exclude');
   db_delete("menu_links")->condition('plid', 0)->condition('link_path', 'admin/accounting/fields')->execute();
+  db_delete('system')->condition('status', 0)->condition('name', 'cc_%', 'LIKE')->execute();
   //looks like this might not have been set earlier on some cases
   _mcapi_module_weights();
   cache_clear_all(NULL, 'cache_bootstrap');

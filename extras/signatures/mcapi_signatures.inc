@@ -227,7 +227,8 @@ function mcapi_signatures_config($form, $form_state) {
       'countersignatories' => array(
         '#title' => t('Counter-signers'),
         '#description' => t('Choose one or more users'),
-        '#type' => 'user_chooser_roles',
+        '#type' => 'user_chooser_few',
+        '#callback' => 'user_chooser_segment_roles',
         '#args' => array(DRUPAL_AUTHENTICATED_RID),
         '#default_value' => $settings['countersignatories'],
         '#multiple' => TRUE,

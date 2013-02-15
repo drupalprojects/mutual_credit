@@ -287,7 +287,7 @@ function mcapi_currency_form(&$form, &$form_state){
   $form['uid'] = array(
     '#title' => t('Declared by'),
     '#type' => 'user_chooser_few',
-    '#callback' => 'user_chooser_segment_permissions',
+    '#callback' => 'user_chooser_segment_perms',
     '#args' => array('manage all transactions'),
     '#default_value' => property_exists($currency, 'uid') ? $currency->uid : $GLOBALS['user']->name,
     '#multiple' => FALSE,

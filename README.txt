@@ -155,7 +155,7 @@ Limits are determined by callbacks, per currency, and are not saved in the datab
 Limts can optionally be overridden by user profile settings and custom modules can add more callbacks
 Under some circumstances limits could be exceeded, such as with automated transactions, or user 1 initiated transactions.
 In that case only transactions will be permitted which bring users towards zero.
-The limits module provides blocks to show 
+The limits module provides blocks to show
 - the balance and the min/max limits
 - the amount which can be earned or spent before limits are hit.
 
@@ -165,3 +165,24 @@ First of all the transaction properties are exposed, and most of them as filters
 All the transaction_view_access callbacks have versions for modifying transaction views.
 The mcapi_index_views module does what the transaction table cannot do, by installing a mysql VIEW and providing views integration with that. This allows a whole new perspective on the transactions, and allows new forms of statistics also.
 
+
+
+*************************
+** BUILDING A WORKFLOW **
+*************************
+
+The problem is that a transaction actually starts life as a product in the directory,with a description, vendor, and price.
+Gradually the buyer, is added, the price is agreed, the payment made, and the ratings added.
+The many possible variations on this process made it very hard for me to generalise
+
+However a basic, extensible transaction workflow is included, consisting of states and operations, declared in hooks
+At the moment a transaction once created, cannot be edited, but can only change state.
+SO you might want to build your workflow around a directory listing, which becomes a contract, which converts to a transaction towards the end.
+Transactions can be 'locked' in the final stages using the pending state or something like it.
+You need to show the users balance as 2 figures. X amount, of which Y is locked.
+Then you'll need to reconsider the transaction validation procedure where it checks if there is enough money in the account.
+You might want to write your own balance checking functions for that.
+When all required users have signed, the transaction moves from PENDING to the FINISHED state
+If you want traders to each rate the transaction, you could combine the rating with transaction signing.
+That means you ask each of them to rate, and that means implicitly that they have signed.
+This might cut a step out of the workflow.

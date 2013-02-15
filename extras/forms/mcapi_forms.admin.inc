@@ -79,7 +79,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#title' => t('Access control'),
       '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
       '#type' => 'select',
-      '#default_value' => isset($settings['architecture']['access']) ? $settings['architecture']['access'] : 'user_chooser_permissions:transact',
+      '#default_value' => isset($settings['architecture']['access']) ? $settings['architecture']['access'] : 'user_chooser_segment_perms:transact',
       '#options' => module_invoke_all('uchoo_segments'),
       '#element_validate' => array(),
       '#weight' => 3
@@ -310,7 +310,7 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   //set the defaults from the saved object.
   //Need to do it differently according to whether this is a fieldAPI field or one of the basic transaction properties
   if (isset($empty_element['#entity'])) {//this is for fieldAPI worth checkboxes and radio buttons
-    if (isset($preset)) {debug($preset);
+    if (isset($preset)) {
       if ($fieldname == 'worth' && count($preset)) {
         foreach ($preset as $item) {
           $element['preset']['#default_value'][$item['currcode']] = $item['quantity'];
@@ -435,7 +435,7 @@ function mcapi_form_validate_worth_preset(&$element, &$form_state) {
 
 function _mcapi_user_chooser_config_field($default = NULL) {
   $default += array(
-    'user_chooser_config' => 'user_chooser_segment_permissions:transact',
+    'user_chooser_config' => 'user_chooser_segment_perms:transact',
     'preset' => ''
   );
   $fields['user_chooser_config'] = array(

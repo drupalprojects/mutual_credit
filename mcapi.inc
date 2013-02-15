@@ -8,6 +8,7 @@ require_once(drupal_get_path('module', $controller_mod) .'/'. $controller_mod).'
  * I don't really know how to use this
  * copied from http://www.trellon.com/content/blog/creating-own-entities-entity-api
  */
+if (module_exists('entity')) {
 class transaction extends Entity {
   protected function defaultLabel() {
     return $this->title;
@@ -20,6 +21,7 @@ class transaction extends Entity {
   protected function defaultUri() {
     return array('path' => 'transaction/' . $this->serial);
   }
+}
 }
 
 

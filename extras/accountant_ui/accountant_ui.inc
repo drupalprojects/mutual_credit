@@ -16,21 +16,21 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     $one = array(
       '#description' => t('A username, email, or user ID'),
       '#type' => 'user_chooser_few',
-      '#callback' => 'user_chooser_segment_permissions',
+      '#callback' => 'user_chooser_segment_perms',
       '#args' => array('transact'),
       '#weight' => 9,
       '#multiple' => FALSE,
     );
     $few = array(
       '#type' => 'user_chooser_few',
-      '#callback' => 'user_chooser_segment_permissions',
+      '#callback' => 'user_chooser_segment_perms',
       '#args' => array('transact'),
       '#multiple' => TRUE,
       '#multiple_fail_quietly' => TRUE
     );
     $many = array(
       '#type' => 'user_chooser_many',
-      '#callback' => 'user_chooser_segment_permissions',
+      '#callback' => 'user_chooser_segment_perms',
       '#args' => array('transact'),
     );
 

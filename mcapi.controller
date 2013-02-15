@@ -7,7 +7,7 @@
  * the class should be named thus:
  * MODULENAME_EntityController
  */
-
+if (module_exists('entity')) {
 class mcapiEntityController extends EntityAPIController {
 
   /*
@@ -295,4 +295,5 @@ function mcapi_parse_conditions($conditions) {
     }
   }
   return ' AND '. implode(' AND ', $where);
+}
 }
