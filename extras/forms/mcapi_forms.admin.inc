@@ -231,7 +231,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
       '#description' => t('Use the tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
       '#type' => 'textarea',
       '#rows' => 6,
-      '#default_value' => $settings['experience']['sure_template'] ? $settings['experience']['sure_template'] : variable_get('mcapi_sentence'),
+      '#default_value' => @$settings['experience']['sure_template'] ? $settings['experience']['sure_template'] : variable_get('mcapi_sentence'),
       '#states' => array(
         'visible' => array(
           ':input[name="experience[sure_format]"]' => array('value' => 'token'),

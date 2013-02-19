@@ -14,3 +14,4 @@ files[] = plugins/export_ui/mcapi_forms_ui.inc
 files[] = plugins/export_ui/mcapi_forms_ui.class.php
 
 dependencies[] = mcapi
+dependencies[] = system (> 7.13)

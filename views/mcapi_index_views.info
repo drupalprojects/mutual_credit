@@ -14,6 +14,7 @@ files[] = mcapi_index_views.views_default.inc
 files[] = mcapi_index_views.views_template.inc
 files[] = views_handler_field_mcapi_index_balance.inc
 files[] = views_handler_field_mcapi_index_currcode.inc
+files[] = views_handler_field_mcapi_index_greco.inc
 files[] = views_handler_field_mcapi_index_quantity.inc
 files[] = views_handler_filter_mcapi_index_diff.inc
 files[] = views_handler_sort_mcapi_users_balance.inc

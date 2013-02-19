@@ -579,7 +579,7 @@ function _worths_element_process($element, &$form_state) {
   if (empty($element['#default_value']) || $element['#preset']) {
     $element['#default_value'] = (array)$element['#default_value'];
     foreach ($currencies as $currcode => $currency) {
-      $element['#default_value'] += array($currcode => 0);
+      $element['#default_value'] += array($currcode => '');
     }
   }
   //define the sub-element for each currency
@@ -601,15 +601,14 @@ function _worths_element_process($element, &$form_state) {
       $element[$delta]['#calc'] = @$element['#calc'];
       $element[$delta]['#preset'] = @$element['#preset'];
     }
-    if (variable_get('mcapi_mixed_transactions', 0) == 1 || strlen($quant)) {
+    if (variable_get('mcapi_mixed_transactions', 0) == 1 || strlen($quant) || count($element[$delta]['#currcodes']) == 1) {
       $element[$delta]['#default_value'] = array(
         'currcode' => $currcode,
-        'quantity' => $quant
+        'quantity' => $quant == '' ? 0 : $quant
       );
     }
     $delta += variable_get('mcapi_mixed_transactions', 0);
   }
-
   return $element;
 }
 
@@ -679,7 +678,6 @@ function _worth_element_process($element, &$form_state) {
       );
     }
   }
-
   return $element;
 }
 

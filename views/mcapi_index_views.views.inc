@@ -197,6 +197,13 @@ function mcapi_index_views_views_data() {
       'handler' => 'views_handler_field_transaction_link',
     )
   );
+  $data['mcapi_index']['greco'] = array(
+    'title' => t('Greco index'),
+    'help' => t("System health metric designed by Tom Greco"),
+    'field' => array(
+      'handler' => 'views_handler_field_mcapi_index_greco',
+    )
+  );
   return $data;
 }
 

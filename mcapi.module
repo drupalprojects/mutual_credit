@@ -148,12 +148,7 @@ function transaction_totals($uid, $currcode = NULL, $conditions = array()) {
     $conditions = array(array('state', 0, '>'));
   }
   //convert it to an object for cleaner syntax in php5
-  $totals = (object)entity_get_controller('transaction')->sums($uid, $currcode, $conditions);
-  //just out of interest (needed for intertrading) we'll store the smallest balances
-  if (module_exists('intertrading_client') && $currcode == variable_get('intertrading_currcode', '')){
-    _save_smallest($totals->balance, $uid);
-  }
-  return $totals;
+  return (object)entity_get_controller('transaction')->sums($uid, $currcode, $conditions);
 }
 
 /*

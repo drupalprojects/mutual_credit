@@ -290,6 +290,8 @@ function mcapi_signatures_transaction_access_callbacks() {
  */
 function transaction_access_callback_signatory($transaction) {
   //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
+  if (!isset($transaction->pending_signatures)) return FALSE;
+  //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
   if (!property_exists($transaction, 'pending_signatures')) return FALSE;
   return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
 }
@@ -297,9 +299,9 @@ function transaction_access_callback_signatory($transaction) {
  * callback for transaction_access
  */
 function transaction_access_callback_pending_signatory($transaction) {
-  //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
-  if (!isset($transaction->pending_signatures)) return FALSE;
-  return array_key_exists($GLOBALS['user']->uid, $transaction->pending_signatures);
+  if (transaction_access_callback_signatory($transaction)) {
+    return $transaction->pending_signatures[$GLOBALS['user']->uid];
+  }
 }
 /*
  * callback for transaction view access for views

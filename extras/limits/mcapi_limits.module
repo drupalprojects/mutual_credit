@@ -16,7 +16,7 @@ function limits_get($currcode, $uid){
     $account = user_load($uid);
     $limits = array_filter((array)@$account->data['limits_personal'][$currcode], 'is_numeric');
   }
-  if (count(array_filter($limits) == 2)) return $limits;
+  if (count(array_filter($limits)) == 2) return $limits;
 
   //now we fill the blanks with currency limits
   if (isset($currency->limits['limits_callback'])) {
@@ -66,7 +66,8 @@ function mcapi_limits_accounting_validate(array $cluster) {
     foreach ($percurrency as $currcode => $diffs) {
       //check to see if any of the skip settings apply.
       $currency = currency_load($currcode);
-      $skips = array_filter($currency->limits['skip']);
+      //upgraded sites need to check for the presence of the skip property
+      $skips = isset($currency->limits['skip']) ? array_filter($currency->limits['skip']) : array();
       if (isset($skips['user1']) && $GLOBALS['user']->uid == 1 ||
         isset($skips['owner']) && $GLOBALS['user']->uid == $currency->uid ||
         isset($skips['auto']) && current($cluster)->type == 'auto') {

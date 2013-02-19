@@ -24,7 +24,6 @@ function limits_settings_subform(&$form, $form_state, $currency) {
   }
   $form_callback = $limits_callback .'_form';
   if (!function_exists($form_callback)) {
-    drupal_set_message('Unknown limits settings callback: '.$form_callback);
     return array();
   }
   if (empty($form['limits'][$limits_callback])) {
@@ -37,7 +36,7 @@ function limits_settings_subform(&$form, $form_state, $currency) {
     '#prefix' => '<div id="limits-settings">',
     '#suffix' => '</div>',
   );
-  //we return the array for the ajax callback but the main form builder has been altered by reference
+  //we return the array for the sake of the ajax callback but also the main form builder has been altered by reference
   return $form['limits'][$limits_callback];
 }
 
@@ -49,10 +48,6 @@ function limits_settings_subform(&$form, $form_state, $currency) {
 function limits_none($currency, $uid) {
   return array();
 }
-function limits_none_form($currency, array $defaults) {
-  return array();
-}
-
 
 /*
  * GLOBAL LIMITS

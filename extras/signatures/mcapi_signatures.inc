@@ -238,7 +238,7 @@ function mcapi_signatures_config($form, $form_state) {
         '#description' => t("Use the email template on this page to notify all signatories"),
         '#type' => 'checkbox',
         '#default_value' => $settings['notify'],
-        '#weight' => 5
+        '#weight' => 5,
       ),
       '#weight' => $w++
     );

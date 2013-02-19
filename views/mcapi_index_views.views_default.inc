@@ -76,6 +76,7 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['balance']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['balance']['field'] = 'balance';
   $handler->display->display_options['fields']['balance']['hide_alter_empty'] = FALSE;
+
   /* Sort criterion: Transaction index: Created moment */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'mcapi_index';
@@ -178,6 +179,14 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['volume']['hide_empty'] = 0;
   $handler->display->display_options['fields']['volume']['empty_zero'] = 0;
   $handler->display->display_options['fields']['volume']['hide_alter_empty'] = 1;
+  /* Field: Transaction index: Greco index */
+  $handler->display->display_options['fields']['greco']['id'] = 'greco';
+  $handler->display->display_options['fields']['greco']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['greco']['field'] = 'greco';
+  $handler->display->display_options['fields']['greco']['label'] = '';
+  $handler->display->display_options['fields']['greco']['alter']['alter_text'] = TRUE;
+  $handler->display->display_options['fields']['greco']['alter']['text'] = 'Greco index [greco]';
+  $handler->display->display_options['fields']['greco']['element_label_colon'] = FALSE;
   if ($multicurrencies) {
     /* Filter criterion: Transaction index: Currency */
     $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
@@ -288,4 +297,5 @@ function mcapi_index_views_views_default_views() {
     t('Name'),
     t('Currency'),
     t('Statement'),
+    t('Greco index [greco]')
   );

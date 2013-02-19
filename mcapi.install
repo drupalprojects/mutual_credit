@@ -260,7 +260,7 @@ function mcapi_check_fields() {
         ),
       ),
       'widget' => array(
-        'type' => 'worth_widget',
+        'type' => 'worths_widget',
         'module' => 'mcapi',
         'settings' => array(),
         'weight' => 5,
@@ -958,11 +958,26 @@ function mcapi_update_7016() {
     drupal_set_message('Check and resave this transaction action: !link', array('!link' => l('mcapi_supplementary_transaction_action', 'admin/config/system/actions/configure/'.$aid)));
   }
   variable_get('mcapi_mixed_transactions', 0);
+  
   $field = field_read_field('worth');
   $currencies = &drupal_static('currencies');
   $field['cardinality'] = variable_get('mcapi_mixed_transactions', 0) ? count($currencies) : 1;
   field_update_field($field);
-/*
+
+  $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
+  $instance['widget']['type'] = 'worths_widget';
+  $instance['widget']['module'] = 'mcapi';
+  $instance['default_value'] = array(
+    0 => array(
+      'currcode' => DEFAULT_CURRENCY,
+      'quantity' => 0
+    )
+  );
+  field_update_instance($instance);
+}
+
+
+/* I think this turned out to be not necessary and also broke things
   $worth_db_field = array(
     'description' => 'Price',
     'type' => 'numeric',
@@ -975,13 +990,3 @@ function mcapi_update_7016() {
   db_change_field('field_data_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
   db_change_field('field_revision_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
 */
-  $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
-  $instance['widget']['module'] = 'mcapi';
-  $instance['default_value'] = array(
-    0 => array(
-      'currcode' => DEFAULT_CURRENCY,
-      'quantity' => 0
-    )
-  );
-  field_update_instance($instance);
-}

@@ -71,8 +71,8 @@ function _mcapi_entity_info() {
 
 function _mcapi_menu() {
   $items['admin/accounting'] = array(
-    'title' => 'Accounting',
-    'description' => "Manage all aspects of your community's money system",
+    'title' => t('Accounting'),
+    'description' => t("Manage all aspects of your community's money system"),
     'page callback' => 'mcapi_accounting',
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.admin.inc',
@@ -83,8 +83,8 @@ function _mcapi_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
   $items['transact'] = array(
-    'title' => 'Record transaction',
-    'description' => 'Log a transaction in the database',#co
+    'title' => t('Record transaction'),
+    'description' => t('Log a transaction in the database'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_default_form'),
     //we use this permission but it's possible to create a paradox since each currency has its own permission
@@ -94,13 +94,12 @@ function _mcapi_menu() {
     'file path' => drupal_get_path('module', 'mcapi')
   );
   $items['transact/default'] = array(
-    'title' => 'Log',
-    'description' => 'Full control over transaction creation',
+    'title' => t('Log'),
+    'description' => t('Basic transaction creation form'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/accounting/misc'] = array(
-    'title' => 'Misc settings',
-    'description' => "This package comes with it's own entity controller, which reads and writes to the database using an internal API. It is possible to write different entity controllers to work with different accouting systems. The provided entity controller is semi-financialised. It is very different from the drupal default, designed for content management, but it does only single entry accounting with no database-level error checking built in.",
+    'title' => t('Misc settings'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_misc_options_form'),
     'access arguments' => array('manage all transactions'),
@@ -108,7 +107,7 @@ function _mcapi_menu() {
     'weight' => 10
   );
   $items['admin/accounting/currencies/%currency/edit'] = array(
-    'title' => 'Modify currency',
+    'title' => t('Configure currency'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('currency_form', 3),
     'access callback' => 'currency_edit_access',
@@ -118,7 +117,7 @@ function _mcapi_menu() {
   );
   $transaction_argument_position = 1;
   $items['transaction/%transaction'] = array(
-    'title' => 'Transaction certificate',
+    'title' => t('Transaction certificate'),
     'title callback' => 'entity_label',
     'title arguments' => array('transaction', $transaction_argument_position),
     // The page callback also invokes drupal_set_title() in case
@@ -136,8 +135,6 @@ function _mcapi_menu() {
 
   foreach (transaction_operations(NULL, FALSE, FALSE) as $op => $info) {
     $items["transaction/%transaction/$op"] = array(
-      'title' => $info['imperative'],
-      'description' => $info['description'],
       'page callback' => 'drupal_get_form',
       'page arguments' => array('transaction_operation_form', $op, $transaction_argument_position),
       'access callback' => 'entity_access',
@@ -159,6 +156,14 @@ function _mcapi_menu() {
  */
 function mcapi_menu_alter(&$items) {
   $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
+
+  //this is an attempt to get around the locale requirements
+  //that menu item title and descriptions should be literal strings
+  //by using menu_alter instead of menu.
+  foreach (transaction_operations(NULL, FALSE, FALSE) as $op => $info) {
+    $items["transaction/%transaction/$op"]['title'] = $info['imperative'];
+    $items["transaction/%transaction/$op"]['description'] = $info['description'];
+  }
 }
 
 /*
@@ -173,7 +178,8 @@ function mcapi_accounting() {
  * drupal_get_form callback for menu item admin/accounting/misc
  */
 function mcapi_misc_options_form($form_state) {
-  cache_clear_all('*', 'cache');
+
+  /*
   $controllers = module_implements('transaction_controller');
   $form['mcapi_controller'] = array(
     '#title' => 'Entity controller module',
@@ -186,7 +192,6 @@ function mcapi_misc_options_form($form_state) {
       'wrapper' => 'mcapi-controller-options-form',
     ),
   );
-  /*
   global $databases;
   if (count($databases) > 1) {
     foreach($databases as $key => $data) {

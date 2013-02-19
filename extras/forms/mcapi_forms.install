@@ -114,7 +114,7 @@ function mcapi_forms_update_7003() {
   mcapiforms_setup_filter();
 }
 /**
- * reset the worth values in all of the forms.
+ * adjust the worth values in all of the forms so the new script can process it
  */
 function mcapi_forms_update_7004() {
   foreach (db_select('mcapi_forms', 'f')->fields('f', array('name', 'data'))->execute()->fetchAllKeyed(0) as $name => $data) {

@@ -106,11 +106,3 @@ function mcapi_index_views_cron() {
   $indicator = $leverage == 0 ? 0 : round($volume / $leverage, 2);
   variable_set('mcapi_greco_system_health', $indicator);
 }
-
-function mcapi_index_views_block_view_alter(&$data, $block) {
-  if ($block->delta == 'trade_analysis-system') {
-    if (!isset($data['content'])) return;
-    //unfortunately, views rendered it already
-    $data['content']['#markup'] .= t('Greco health index: @float', array('@float' => variable_get('mcapi_greco_system_health', 0)));
-  }
-}
