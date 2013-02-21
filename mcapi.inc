@@ -506,6 +506,9 @@ function template_preprocess_certificate(&$variables) {
   //this populates top level of variables with the render array
   field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
 
+  foreach (element_children($variables['additional']['worth']) as $delta) {
+    worth_item_zero_adjustment($variables['additional']['worth'][$delta]);
+  }
   //move worth field to the top of $variables where we would expect to find it
   $variables['worth'] = drupal_render($variables['additional']['worth']);
   unset($variables['additional']['worth']);
@@ -517,6 +520,15 @@ function template_preprocess_certificate(&$variables) {
     foreach ($transaction->dependents as $child) {
       $variables['dependents'][] = transaction_view(array($child), $sentence, TRUE);
     }
+  }
+}
+
+//this will adjust the rendering of zero worth in accordance with the currency display zero property
+//it is not used every time a 'worth' is rendered, but onlyl when transactions are displayed
+function worth_item_zero_adjustment(&$worth_render_array) {
+  $currencies = &drupal_static('currencies');
+  if ($worth_render_array['#quantity'] == 0) {
+    $worth_render_array = array('#markup' => $currencies[$worth_render_array['#currcode']]->display['zero']);
   }
 }
 
@@ -691,9 +703,6 @@ function _worth_element_process($element, &$form_state) {
  */
 function theme_worth_item(&$variables) {
   $currency = currency_load($variables['currcode']);
-  if ($variables['quantity'] == 0) {
-    return $currency->display['zero'];
-  }
   list($replacements['@integer'], $replacements['@subdivision'], $replacements['@minus']) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :

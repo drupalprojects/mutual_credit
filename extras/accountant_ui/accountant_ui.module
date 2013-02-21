@@ -69,29 +69,18 @@ function accountant_ui_menu() {
  * implements hook_forms
  */
 function accountant_ui_forms($form_id, $args) {
-  return array(
-    'many2one' => array(
+  foreach (array('many2one', 'one2many', 'few2one', 'one2few') as $key) {
+    $forms[$key] = array(
       'callback' => 'mcapi_mass_pay',
-      'callback arguments' => array('many2one')
-    ),
-    'one2many' => array(
-      'callback' => 'mcapi_mass_pay',
-      'callback arguments' => array('one2many')
-    ),
-    'few2one' => array(
-      'callback' => 'mcapi_mass_pay',
-      'callback arguments' => array('few2one')
-    ),
-    'one2few' => array(
-      'callback' => 'mcapi_mass_pay',
-      'callback arguments' => array('one2few')
-    ),
-    //this is the only way to user the raw accounting form, defined in mcapi.inc
-    'transaction_admin_form' => array (
-      'callback' => 'transaction_form',
-      'callback arguments' => $args
-    ),
+      'callback arguments' => array($key)
+    );
+  }
+  //this is the only way to use the raw accounting form, defined in mcapi.inc
+  $forms['transaction_admin_form'] = array (
+    'callback' => 'transaction_form',
+    'callback arguments' => $args
   );
+  return $forms;
 }
 
 /*

@@ -91,6 +91,7 @@ function mcapi_index_views_views_data() {
     'help' => t('Number of units of currency incoming'),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
+      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -106,6 +107,7 @@ function mcapi_index_views_views_data() {
     'help' => t('Number of units of currency outgoing'),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
+      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -121,6 +123,7 @@ function mcapi_index_views_views_data() {
     'help' => t("Change in the users balance"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
+      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -135,6 +138,7 @@ function mcapi_index_views_views_data() {
     'help' => t("Absolute value of the trade"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
+      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(

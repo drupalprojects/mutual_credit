@@ -30,8 +30,6 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     );
     $many = array(
       '#type' => 'user_chooser_many',
-      '#callback' => 'user_chooser_segment_perms',
-      '#args' => array('transact'),
     );
 
     if ($payer == 'one') {
@@ -54,16 +52,16 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
         '#weight' => 2
       )+ $$payer;
     }
-
     $form['mail'] = mcapi_mail_config_fieldset('mcapi_accounting_masspay', array('transactions'), FALSE, 21);
     $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
     unset($form['mail']['cc']);
     $form['mail']['#description'] = t('Some tokens may not apply.');
   }
   else {
+    $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'));
     //we have to preview these separately to see them all
     foreach ($form_state['confirmed'] as $transaction) {
-      $form['preview'][] = transaction_view(array($transaction), 'token');
+      $form['preview'][] = transaction_view(array($transaction), $sentence);
     }
   }
   $form['buttons'] = array(

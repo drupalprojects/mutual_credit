@@ -784,7 +784,6 @@ function transaction_view($transactions, $view_mode) {
     switch ($view_mode) {
       case 'certificate':
         $renderable['transaction'][] = array(
-          '#view_mode' => 'certificate',
           '#theme' => 'certificate',
           '#object' => $transaction,
         );
@@ -793,7 +792,6 @@ function transaction_view($transactions, $view_mode) {
       default: //an arbitrary token string
         $options = array('language' => $language, 'sanitize' => FALSE);
         $renderable['transaction'][] = array(
-          '#view_mode' => 'token',//the arbitrary template renders in all other respects as the saved sentence
           '#prefix' => '<div class = "sentence">',
           '#markup' => token_replace($view_mode, array('transaction' => $transaction), $options),
           '#suffix' => '</div>',

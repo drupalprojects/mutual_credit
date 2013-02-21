@@ -214,3 +214,18 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payer']['#description'] = $description;
 }
 }
+
+/*
+ * implements hook_views_pre_render
+ * converts zero values display in transaction views
+ */
+function mcapi_views_pre_render(&$view) {
+  if (in_array($view->base_table, array('mcapi_transactions', 'mcapi_index_views')))  {
+    foreach($view->result as $rowid => $row) {
+      if (!property_exists($row, 'field_worth')) return;
+      foreach ($row->field_worth as $delta => $item) {
+        worth_item_zero_adjustment($view->result[$rowid]->field_worth[$delta]['rendered']);
+      }
+    }
+  }
+}
