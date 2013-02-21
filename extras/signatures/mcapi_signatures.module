@@ -252,6 +252,16 @@ function mcapi_signatures_init() {
 }
 
 /*
+ * Implements views hook_views_api
+ */
+function mcapi_signatures_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi_signatures') . '/views',
+  );
+}
+
+/*
  * implements theming hook_process_transaction
  * adds the sign_link to the transaction certificate, in accordance with mcapi_signatures_theme_registry_alter
  */
@@ -295,6 +305,7 @@ function transaction_access_callback_signatory($transaction) {
   if (!property_exists($transaction, 'pending_signatures')) return FALSE;
   return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
 }
+
 /*
  * callback for transaction_access
  */
@@ -303,22 +314,28 @@ function transaction_access_callback_pending_signatory($transaction) {
     return $transaction->pending_signatures[$GLOBALS['user']->uid];
   }
 }
+
 /*
  * callback for transaction view access for views
  */
 function transaction_access_callback_signatory_views($query, $condition, $state) {
-  //Don't use a static to join ONLY once because the query builder runs more than once for some reason.
-  //However there's no harm in joining the same table more than once
-  $query->addJoin('LEFT', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+  //The join may have been created already by the views schema
+  if (!array_key_exists('mcapi_signatures', $query->gettables())) {
+    $query->addJoin('LEFT', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+  }
   $query->distinct();
   $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);
 }
+
 /*
  * callback for transaction view access for views
  * as above but for unsigned users only
  */
 function transaction_access_callback_pending_signatory_views($query, $condition, $state) {
-  $query->addJoin('INNER', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+  //The join may have been created already by the views schema
+  if (!array_key_exists('mcapi_signatures', $query->gettables())) {
+    $query->addJoin('INNER', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+  }
   $query->distinct();
   //note that this condition applies to the whole query, otherwise we'll get one result for each signature.
   $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);

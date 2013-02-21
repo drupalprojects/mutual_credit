@@ -32,11 +32,11 @@ function mcapi_variable_info() {
     'group' => 'mcapi'
   );
   */
-  $vars['mcapi_deficit'] = array(
-    'type' => 'array',
-    'title' => t('Largest negative balances'),
-    'default' => array(DEFAULT_CURRENCY => 0),
-    'description' => t('Inelegant way of storing the lowest balances, to help the intertrading module survey the system health'),
+  $vars['mcapi_mixed_transactions'] = array(
+    'type' => 'integer',
+    'title' => t('Mixed transactions'),
+    'default' => 0,
+    'description' => t('Whether to allow more than one transaction per currency'),
     'required' => FALSE,
     'group' => 'mcapi',
   );
@@ -68,6 +68,10 @@ function mcapi_variable_info() {
   return $vars;
 }
 
-function mcapi_variable_options_callback() {
+function __mcapi_variable_options_callback() {
   drupal_set_message('is this worth implementing?');
+}
+
+function __mcapi_variable_type_info() {
+  //might want to make something for worth or worths
 }

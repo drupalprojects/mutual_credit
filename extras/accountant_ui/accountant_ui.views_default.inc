@@ -165,24 +165,13 @@ function accountant_ui_views_default_views() {
   $handler->display->display_options['fields']['type']['element_default_classes'] = 1;
   $handler->display->display_options['fields']['type']['hide_empty'] = 0;
   $handler->display->display_options['fields']['type']['empty_zero'] = 0;
-  /* Field: Transaction: Undo */
-  $handler->display->display_options['fields']['undo']['id'] = 'undo';
-  $handler->display->display_options['fields']['undo']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['undo']['field'] = 'undo';
-  $handler->display->display_options['fields']['undo']['element_label_colon'] = 1;
-  $handler->display->display_options['fields']['undo']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['undo']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['undo']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['undo']['hide_alter_empty'] = 1;
-  /* Field: Transaction: View */
-  $handler->display->display_options['fields']['view']['id'] = 'view';
-  $handler->display->display_options['fields']['view']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['view']['field'] = 'view';
-  $handler->display->display_options['fields']['view']['element_label_colon'] = 1;
-  $handler->display->display_options['fields']['view']['element_default_classes'] = 1;
-  $handler->display->display_options['fields']['view']['hide_empty'] = 0;
-  $handler->display->display_options['fields']['view']['empty_zero'] = 0;
-  $handler->display->display_options['fields']['view']['hide_alter_empty'] = 1;
+  /* Champ: Echange : Actions */
+  $handler->display->display_options['fields']['operations']['id'] = 'operations';
+  $handler->display->display_options['fields']['operations']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['operations']['field'] = 'operations';
+  $handler->display->display_options['fields']['operations']['label'] = '';
+  $handler->display->display_options['fields']['operations']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['operations']['link_to_transaction'] = 0;
   if (module_exists('mcapi_pending')) {
     /* Field: Transaction: Sign off */
     $handler->display->display_options['fields']['signoff']['id'] = 'signoff';
@@ -279,16 +268,8 @@ function accountant_ui_views_default_views() {
     $handler->display->display_options['filters']['worth_currcode']['expose']['reduce'] = 0;
 
     $worth_field = field_info_field('worth');
+    //can't remember what this is about...
     if ($worth_field['cardinality'] == 1) {
-      /* Filter criterion: Transaction: Worth (worth:currcode) */
-      $handler->display->display_options['filters']['worth_currcode']['id'] = 'worth_currcode';
-      $handler->display->display_options['filters']['worth_currcode']['table'] = 'field_data_worth';
-      $handler->display->display_options['filters']['worth_currcode']['field'] = 'worth_currcode';
-      $handler->display->display_options['filters']['worth_currcode']['exposed'] = TRUE;
-      $handler->display->display_options['filters']['worth_currcode']['expose']['operator_id'] = '=';
-      $handler->display->display_options['filters']['worth_currcode']['expose']['label'] = 'Currency';
-      $handler->display->display_options['filters']['worth_currcode']['expose']['operator'] = 'worth_currcode_op';
-      $handler->display->display_options['filters']['worth_currcode']['expose']['identifier'] = 'worth_currcode';
       $handler->display->display_options['filters']['worth_currcode']['expose']['remember'] = TRUE;
       $handler->display->display_options['filters']['worth_currcode']['expose']['multiple'] = TRUE;
       $handler->display->display_options['filters']['worth_currcode']['expose']['remember_roles'] = array(2 => 2);

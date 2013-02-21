@@ -348,13 +348,28 @@ function mcapi_currency_form(&$form, &$form_state){
     '#element_validate' => array('mcapi_currency_validate_divisions'),
     '#weight' => 3
   );
+  $zeros = transaction_load_multiple(NULL, array('quantity' => 0, 'currcode' => $currency->info['currcode']));
+  $form['display']['zero'] = array(
+    '#title' => t('Zero value display'),
+    '#description' => t('Use html.') .' ',
+    '#type' => 'textfield',
+    '#default_value' => $currency->display['zero'],
+    '#required' => !empty($zeros),
+    '#weight' => 4
+  );
+  if ($zeros) {
+    $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");
+  }
+  else {
+    $form['display']['zero']['#description'] = t("Leave blank to disallow zero value transactions");
+  }
 
   $form['additional_settings'] = array(
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
   $form['currency_access'] = array(
-    '#title' => 'Currency access',
+    '#title' => t('Currency access'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
     '#weight' => -1
@@ -430,13 +445,6 @@ function mcapi_currency_form(&$form, &$form_state){
       '#weight' => $j++,
     );
   }
-  $form['pay_zero'] = array(
-    '#title' => t('Record zero payments'),
-    '#description' => t('Store payments of 0 or empty strings in the database'),
-    '#type' => 'checkbox',
-    '#default_value' => $currency->pay_zero,
-    '#weight' => 12
-  );
 
   if (isset($currency->currcode)) {
     $form['buttons']['submit']['#value'] = t('Update');
@@ -455,26 +463,31 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 }
 
 //currency form validate callback
-function mcapi_currency_validate_divisions(&$element, $form_state) {
+//deconstruct, validate, reconstruct and set_value
+//this sorts out any leading zeros on the centiles
+function mcapi_currency_validate_divisions(&$element, &$form_state) {
   if ($form_state['values']['display']['divisions'] != CURRENCY_DIVISION_MODE_CUSTOM) return;
-  $allowed = $element['#value'];
-  $lines = explode("\n", $allowed);
-  if (count($lines) < 2) {
-    form_error($element, t("There should be at least two lines in field '@fieldname'", array('@fieldname' => $element['#title'])));
-  }
-  foreach ($lines as $line) {
+  $validated = array();
+  foreach (explode("\n", $element['#value']) as $line) {
     if (strpos($line, '|') === FALSE) {
       form_error($element, t('line "@val" should contain a pipe character, |', array('@val' => $line)));
     }
-    $vals = explode('|', $line);
-    if (!is_numeric($vals[0]) || !strlen($lines[0]) || $vals[1] != check_plain($vals[1]) || !strlen($vals[1] || !is_integer($vals[1]))) {
+    list($cents, $display) = explode('|', $line);
+    if (!is_numeric($cents) || !strlen($display)) {
       form_error($element,
         t("'@val' should be an integer from  0 to 99, followed directly by a pipe, |, followed directly by a word or phrase with no unusual characters",
           array('@val' => $line)
         )
       );
     }
+    $validated[intval($cents)] = check_plain($display);
   }
+  if (count($validated) < 2) {
+    form_error($element, t("There should be at least two lines in field '@fieldname'", array('@fieldname' => $element['#title'])));
+  }
+  $element_value = '';
+  foreach($validated as $cents => $display) $element_value .= "$cents|$display\n";
+  form_set_value($element, trim($element_value), $form_state);
 }
 
 /*
@@ -516,11 +529,12 @@ function currencies_load_all() {
       }
     }
     $data->display['divisions_allowed'] = $divisions;
+    //TEMP
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     $accesses = array(
-      'transaction_view_access' => 'Privacy',
-      'transaction_operation_access' => 'Transaction operations',
-      'currency_access' => 'Currency Access'
+      'transaction_view_access' => t('Privacy'),
+      'transaction_operation_access' => t('Transaction operations'),
+      'currency_access' => t('Currency Access')
     );
     foreach ($accesses as $prop => $name) {
       if (property_exists($data, $prop)) continue;

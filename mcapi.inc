@@ -691,6 +691,9 @@ function _worth_element_process($element, &$form_state) {
  */
 function theme_worth_item(&$variables) {
   $currency = currency_load($variables['currcode']);
+  if ($variables['quantity'] == 0) {
+    return $currency->display['zero'];
+  }
   list($replacements['@integer'], $replacements['@subdivision'], $replacements['@minus']) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :

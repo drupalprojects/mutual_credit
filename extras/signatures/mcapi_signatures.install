@@ -1,6 +1,6 @@
 <?php
 //Id;
-module_load_include('module', 'mcapi_signatures');
+drupal_load('module', 'mcapi_signatures');
 
 function mcapi_signatures_install() {
   $mcapi_signed_off_notify_template = array(
@@ -68,6 +68,8 @@ function mcapi_signatures_schema() {
         'description' => t('whether it is awaiting a signature'),
         'type' => 'int',
         'size' => 'small',
+        'is_null' => FALSE,
+        'default' => 0
       )
     ),
     'primary key' => array('serial', 'uid')

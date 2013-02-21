@@ -19,6 +19,7 @@ function mcapi_mcapicurrencies_default() {
       'format' => '@minus<strong>CC</strong>@integer:@subdivision',
       'divisions' => CURRENCY_DIVISION_MODE_CUSTOM,
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
+      'zero' => '',
     ),
     'uid' => 1,
     'reservoir' => 1,
@@ -50,7 +51,6 @@ function mcapi_mcapicurrencies_default() {
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       )
     ),
-    'pay_zero' => FALSE
   );
   $currencies[DEFAULT_CURRENCY] = $currency;
   return $currencies;

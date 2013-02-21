@@ -1089,15 +1089,14 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
     }
     //set the value to zero if the field is empty and the currency allows it
     $currency = currency_load($item['currcode']);
-    if (!property_exists($currency, 'pay_zero')) drupal_set_message('resave your currency!');
-    if (empty($value[$delta]['quantity']) && $currency->pay_zero) {
+    //we can remove the @ when everybody has upgraded to RC6
+    if (empty($value[$delta]['quantity']) && @$currency->display['zero']) {
       $value[$delta]['quantity'] = '0';
     }
     elseif(empty($value[$delta]['quantity']) && empty($element['#preset'])) {
       unset($value[$delta]);
     }
   }
-
   //renumber the items or field_API will break!
   $value = array_values($value);
   //we have to set the form_state[values] here because they have probably already been set by the parent element
@@ -1211,12 +1210,9 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
   }
   //this must be the final check in this function
   //checks that at least one of the $items is populated
-  if (!empty($entity) & $instance['required']) {
-    foreach ($items as $item) {
-      //we don't use mcapi_field_is_empty here because we want 0 to return FALSE
-      if (!empty($item['quantity'])) return;
-    }
-    $errors[$field['field_name']][$langcode][$delta][] = array(
+  if (!empty($entity)) {
+    if (count($items)) return;
+    $errors[$field['field_name']][$langcode][] = array(
       'error' => 'mcapi_empty_worth',
       'message' =>  t('!name field is required.', array('!name' => $instance['label']))
     );

@@ -393,6 +393,7 @@ function mcapi_update_7000() {
     $tables = mcapi_signatures_schema();
     db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
     db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
+    db_query("UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL");
   }
 }
 
@@ -425,9 +426,11 @@ function mcapi_update_7001() {
     );
     //there are 3 possible modes for old limits callbacks - none, user or global
     //we're going to assume for upgrading, that user limits was enabled, since there's no way of knowing
-    $currency->limits['limits_callback'] = 'limits_personal';
-    $currency->limits['limits_personal']['min'] = $old_currency->min;
-    $currency->limits['limits_personal']['max'] = $old_currency->max;
+    $callback = 'limits_global';
+    $currency->limits['limits_callback'] = $callback;
+    $currency->limits[$callback]['min'] = $old_currency->min;
+    $currency->limits[$callback]['max'] = $old_currency->max;
+    $currency->limits['personal'] = TRUE;
     $currency->transaction_view_access[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
       'transaction_access_callback_signatory',
       'transaction_access_callback_perm_manage_all'
@@ -958,7 +961,7 @@ function mcapi_update_7016() {
     drupal_set_message('Check and resave this transaction action: !link', array('!link' => l('mcapi_supplementary_transaction_action', 'admin/config/system/actions/configure/'.$aid)));
   }
   variable_get('mcapi_mixed_transactions', 0);
-  
+
   $field = field_read_field('worth');
   $currencies = &drupal_static('currencies');
   $field['cardinality'] = variable_get('mcapi_mixed_transactions', 0) ? count($currencies) : 1;

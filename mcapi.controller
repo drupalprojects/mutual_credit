@@ -17,41 +17,54 @@ class mcapiEntityController extends EntityAPIController {
    * no support for revisions
    * returns an error if the transaction id is invalid
    */
-  public function load($ids = array(), $conditions = array()) {
+  public function load($xids = array(), $conditions = array()) {
     $entities = array();
-    $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
+    $passed_ids = !empty($xids) ? array_flip($xids) : FALSE;
 
     //get from cache where available
     if ($this->cache) {
-      $entities += $this->cacheGet($ids, $conditions);
+      $entities += $this->cacheGet($xids, $conditions);
       // If any entities were loaded, remove them from the ids still to load.
       if ($passed_ids) {
-        $ids = array_keys(array_diff_key($passed_ids, $entities));
+        $xids = array_keys(array_diff_key($passed_ids, $entities));
       }
     }
+    $queried_entities = array();
+    if (array_key_exists('quantity', $conditions) || array_key_exists('currcode', $conditions)) {
+      $query1 = db_select('field_data_worth', 'w')
+        ->fields('w', array('entity_id'))
+        ->condition('entity_type', 'transaction');
+      if (array_key_exists('quantity', $conditions)) {
+        $query1->condition('worth_quantity', $conditions['quantity']);
+      }
+      if (array_key_exists('currcode', $conditions)) {
+        $query1->condition('worth_currcode', $conditions['currcode']);
+      }
+      unset($conditions['quantity'], $conditions['currcode']);
+      $xids = $query1->execute()->fetchCol('entity_id');
+    }
 
-    if ($ids === FALSE || $ids || ($conditions && !$passed_ids)) {
+    if ($xids === FALSE || $xids || ($conditions && !$passed_ids)) {
       //db_set_active(variable_get('mcapi_db_read', 'default'));
-      $query = db_select('mcapi_transactions');
+      $query2 = db_select('mcapi_transactions');
       //db_set_active();
-      $query->fields('mcapi_transactions', $this->entityInfo['schema_fields_sql']['base table']);
+      $query2->fields('mcapi_transactions', $this->entityInfo['schema_fields_sql']['base table']);
       // Build the query.
-      if ($ids) {
-        $query->condition("mcapi_transactions.xid", $ids);
+      if ($xids) {
+        $query2->condition("mcapi_transactions.xid", $xids);
       }
       foreach ($conditions as $field => $value) {
-        $query->condition('mcapi_transactions.' . $field, $value);
+        $query2->condition('mcapi_transactions.' . $field, $value);
       }
-      $query->orderBy('xid', 'ASC'); //this ensures that the primary transaction in a cluster is first
-      $queried_entities = $query->execute()->fetchAllAssoc('xid');
+      $queried_entities += $query2->execute()->fetchAllAssoc('xid');
+    }
+    if (!empty($queried_entities)) {
       //extract the serialized data into 'extra' property
       //there isn't acutally a use for the extra property at the moment.
       foreach ($queried_entities as $entity) {
         $entity->extra = unserialize($entity->data);
         unset($entity->data);
       }
-    }
-    if (!empty($queried_entities)) {
       $this->attachLoad($queried_entities);
       $entities += $queried_entities;
     }
@@ -60,7 +73,7 @@ class mcapiEntityController extends EntityAPIController {
         $this->cacheSet($queried_entities);
       }
     }
-
+    ksort($entities);//this ensures that the primary transaction in a cluster is first
     return $entities;
   }
 

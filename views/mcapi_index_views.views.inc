@@ -252,7 +252,7 @@ function mcapi_index_views_views_data_alter(&$tables) {
 
 /**
  * Implements hook_views_plugins().
- * can't get this working
+ * I'm not sure this is useful at all any more, or whether it works
  */
 function mcapi_index_views_views_plugins() {
   return array(
