@@ -34,21 +34,21 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
 
     if ($payer == 'one') {
       $form['payers'] = array(
-        '#title' => 'Payer',
+        '#title' => t('Payer'),
         '#weight' => 1
       ) + $one;
       $form['payees'] = array(
-        '#title' => 'Payees',
+        '#title' => t('Payees'),
         '#weight' => 2
       )+ $$payee;
     }
     elseif ($payee == 'one') {
       $form['payees'] = array(
-        '#title' => 'Payee',
+        '#title' => t('Payee'),
         '#weight' => 1
       ) + $one;
       $form['payers'] = array(
-        '#title' => 'Payers',
+        '#title' => t('Payers'),
         '#weight' => 2
       )+ $$payer;
     }

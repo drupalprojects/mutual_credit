@@ -348,7 +348,8 @@ function transaction_access_callback_pending_signatory_views($query, $condition,
  * its here coz its small and tidier than creating a mcapicurrencies_default.inc file
  */
 function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
-  $currencies[DEFAULT_CURRENCY]->data->transaction_view_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
+  foreach ($currencies as $currcode => $currency)
+  $currencies[$currcode]->data->transaction_view_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
     array(
       'transaction_access_callback_signatory',
       'transaction_access_callback_perm_manage_all'

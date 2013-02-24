@@ -68,12 +68,15 @@ function mcapi_limits_accounting_validate(array $cluster) {
       $currency = currency_load($currcode);
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? array_filter($currency->limits['skip']) : array();
-      if (isset($skips['user1']) && $GLOBALS['user']->uid == 1 ||
-        isset($skips['owner']) && $GLOBALS['user']->uid == $currency->uid ||
-        isset($skips['auto']) && current($cluster)->type == 'auto') {
+      if (
+        isset($skips['user1']) && $GLOBALS['user']->uid == 1
+        || isset($skips['owner']) && $GLOBALS['user']->uid == $currency->uid
+        || isset($skips['auto']) && current($cluster)->type == 'auto'
+        || isset($skips['reservoir']) && $uid = $currency->reservoir )  {
+        //temporary message for testing
+        if ($GLOBALS['user']->uid == 1) drupal_set_message('Skipped balance limit check for account $uid and currency $currcode');
         continue;
       }
-
       $balance = transaction_totals($uid, $currcode)->balance;
       $projected = $balance + array_sum($diffs);
       $limits = limits_get($currcode, $uid);
@@ -196,7 +199,8 @@ function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_
         'auto' => t("for transactions of type 'auto'"),
         'mass' => t("for transactions of type 'mass'"),
         'user1' => t("for transactions created by user 1"),
-        'owner' => t("for transactions created by the currency owner")
+        'owner' => t("for transactions created by the currency owner"),
+        'reservoir' => t("for the reservoir account")
       ),
       '#weight' => 6,
     );
@@ -263,7 +267,7 @@ function mcapi_limits_user_presave(&$edit, $account, $category) {
   if ($category != 'account' || empty($account->uid)) return;
   $currencies = currencies_load($account);
   foreach($currencies as $currcode => $currency) {
-    if (isset($currency->limits['limits_callback']) && $currency->limits['limits_callback'] == 'limits_personal') {
+    if (isset($currency->limits['personal'])) {
       if (isset($edit['min-'.$currcode])) {
         $edit['data']['limits_personal'][$currcode]['min'] = $edit['min-'.$currcode];
       }

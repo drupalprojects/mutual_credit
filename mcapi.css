@@ -3,27 +3,32 @@
 div.worth-widget div.form-item {
   display:inline
 }
-div.sentence .link{
+div.sentence .link {
   padding: 0 0 0 1em;
 }
-#dependent-transactions{
+#dependent-transactions {
   border:medium solid grey;
   text-align:center;
 }
-div.certificate{
+div.certificate {
   padding:3em;
 }
-div.certificate span.quantity{
+div.certificate span.quantity {
   font-size:250%;
   line-height:1.1em;
 }
-.vertical-tabs .form-type-textfield input{
+.vertical-tabs .form-type-textfield input {
   width:inherit;
 }
-div.worth-widget{
+
+div.worth-widget {
   margin-bottom:5px;
 }
 
-.transaction-totals .balance{
+.transaction-totals .balance {
   font-size:2em;
+}
+
+tr.ctools-export-ui-disabled td {
+  color:#888;
 }

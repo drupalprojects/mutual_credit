@@ -28,11 +28,7 @@ class mcapi_ui extends ctools_export_ui {
    */
   function list_build_row($item, &$form_state, $operations) {
     // Set up sorting
-    $currcode = $item->{$this->plugin['export']['key']};
-    unset($operations['disable']);
-    if ($currcode == DEFAULT_CURRENCY) {
-      unset($operations['delete']);
-    }
+    $currcode = &$item->{$this->plugin['export']['key']};
 
     switch ($form_state['values']['order']) {
       case 'disabled':
@@ -51,19 +47,37 @@ class mcapi_ui extends ctools_export_ui {
     $this->rows[$currcode]['data'] = array();
     $this->rows[$currcode]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
     //first col, Name
-    $this->rows[$currcode]['data'][1] = array('data' => check_plain($item->data->human_name), 'class' => array('ctools-export-ui-title'));
+    $this->rows[$currcode]['data'][1] = array(
+      'data' => check_plain($item->data->human_name),
+      'class' => array('ctools-export-ui-title')
+    );
     //second col, usage
-    $this->rows[$currcode]['data'][2] = array('data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField());
+    $this->rows[$currcode]['data'][2] = array(
+      'data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField()
+    );
     //third col, format
-    $this->rows[$currcode]['data'][3] = array('data' => theme('worth_item', array(
-      'currcode' => $currcode,
-      'quantity' => -99.00
-    )));
+    $this->rows[$currcode]['data'][3] = array(
+      'data' => array(
+        '#theme' => 'worth_item',
+        '#currcode' => $currcode,
+        '#quantity' => -99.00
+      )
+    );
     //fourth col, storage
-    $this->rows[$currcode]['data'][4] = array('data' => check_plain($item->type), 'class' => array('ctools-export-ui-storage'));
+    $this->rows[$currcode]['data'][4] = array(
+      'data' => check_plain($item->type),
+      'class' => array('ctools-export-ui-storage')
+    );
     //final col, links
-    $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
-    $this->rows[$currcode]['data'][5] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
+    $ops = array(
+      '#theme' => 'links__ctools_dropbutton',
+      '#links' => $operations,
+      '#attributes' => array('class' => array('links', 'inline'))
+    );
+    $this->rows[$currcode]['data'][5] = array(
+      'data' => $ops,
+      'class' => array('ctools-export-ui-operations')
+    );
     // Add an automatic mouseover of the description if one exists.
     if (!empty($this->plugin['export']['admin_description'])) {
       $this->rows[$currcode]['title'] = $item->{$this->plugin['export']['admin_description']};
@@ -115,8 +129,94 @@ class mcapi_ui extends ctools_export_ui {
     }
     //this populates $this->rows
     $form = drupal_build_form('ctools_export_ui_list_form', $form_state);
-
     return $this->list_render($form_state);
   }
 
+
+  //replacing the ctools function because we need to ensure that the last enabled currency cannot be disabled
+  //so its all about the allowed operations and disabling the ajax
+  function list_form_submit(&$form, &$form_state) {
+    // Filter and re-sort the pages.
+    $plugin = $this->plugin;
+    $schema = ctools_export_get_schema($this->plugin['schema']);
+
+    $prefix = ctools_export_ui_plugin_base_path($plugin);
+
+    //matslats
+    foreach ($this->items as $name => $item) {
+      if (empty($item->disabled)) $enabled[] = $name;
+    }
+
+    foreach ($this->items as $name => $item) {
+      // Call through to the filter and see if we're going to render this
+      // row. If it returns TRUE, then this row is filtered out.
+      if ($this->list_filter($form_state, $item)) {
+        continue;
+      }
+      // Note: Creating this list seems a little clumsy, but can't think of
+      // better ways to do this.
+      $allowed_operations = drupal_map_assoc(array_keys($plugin['allowed operations']));
+      unset($allowed_operations['import']);
+      unset($allowed_operations['enable']);
+      $allowed_operations = array('enable' => 'enable') + $allowed_operations;
+
+
+      if ($item->{$schema['export']['export type string']} == t('Normal')) {
+        unset($allowed_operations['revert']);
+      }
+      elseif ($item->{$schema['export']['export type string']} == t('Overridden')) {
+        unset($allowed_operations['delete']);
+      }
+      else {
+        unset($allowed_operations['revert']);
+        unset($allowed_operations['delete']);
+      }
+      //matslats
+      if (count($enabled == 1) && $enabled[0] == $name) {
+        unset($allowed_operations['disable']);
+        unset($allowed_operations['delete']);
+      }
+      if(!in_array($name, $enabled)) {
+        unset($allowed_operations['disable']);
+      }
+      else {
+        unset($allowed_operations['enable']);
+      }
+
+      $operations = array();
+
+      foreach ($allowed_operations as $op) {
+        $operations[$op] = array(
+          'title' => $plugin['allowed operations'][$op]['title'],
+          'href' => ctools_export_ui_plugin_menu_path($plugin, $op, $name),
+        );
+        if (!empty($plugin['allowed operations'][$op]['ajax'])) {
+          //matslats
+          //here we have disabled the ajax, forcing the page to reload
+          //$operations[$op]['attributes'] = array('class' => array('use-ajax'));
+        }
+        if (!empty($plugin['allowed operations'][$op]['token'])) {
+          $operations[$op]['query'] = array('token' => drupal_get_token($op));
+        }
+      }
+
+      $this->list_build_row($item, $form_state, $operations);
+    }
+
+    // Now actually sort
+    if ($form_state['values']['sort'] == 'desc') {
+      arsort($this->sorts);
+    }
+    else {
+      asort($this->sorts);
+    }
+
+    // Nuke the original.
+    $rows = $this->rows;
+    $this->rows = array();
+    // And restore.
+    foreach ($this->sorts as $name => $title) {
+      $this->rows[$name] = $rows[$name];
+    }
+  }
 }

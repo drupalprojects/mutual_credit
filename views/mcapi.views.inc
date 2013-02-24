@@ -146,7 +146,6 @@ function mcapi_views_data_alter(&$data) {
     'field' => array(
       'help' => t("The balance, trading volume, or transaction count for each user"),
       'handler' => 'views_handler_field_mcapi_users_totals',
-      'click sortable' => TRUE
     )
   );
 

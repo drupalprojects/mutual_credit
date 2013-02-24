@@ -39,6 +39,7 @@ $table = array(
   '#rows' => $rows
 );
 ?>
+<div class ="pending-bgstamp"><?php print t('Pending'); ?></div>
 <div id ="pending-signatures">
   <h2><?php print $transaction->state == TRANSACTION_STATE_FINISHED ? t('Signed by') : t('Awaiting Signatures'); ?></h2>
   <?php print render($table); ?>

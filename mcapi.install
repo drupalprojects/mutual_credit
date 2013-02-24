@@ -184,9 +184,6 @@ function mcapi_schema() {
       ),
     ),
     'primary key' => array('currcode'),
-    'unique keys' => array(
-      'name' => array('currcode')
-    ),
     'export' => array(
       'key' => 'currcode',
       'key name' => t('Universal currency code (8 chars, immutable)'),
@@ -379,7 +376,7 @@ function mcapi_update_7000() {
   if(!db_query("SHOW TABLES LIKE 'mcapi_transactions'")->fetchfield()) {
     db_create_table('mcapi_transactions', $tables['mcapi_transactions']);
   }
-  module_enable(array('token', 'mcapi_limits', 'accountant_ui', 'mcapi_forms'), TRUE);
+  module_enable(array('mcapi_limits', 'accountant_ui', 'mcapi_forms', 'user_chooser'), TRUE);
 
   //replace the old module with the new, so as to retain the version number, and keeping it installed
   db_delete('system')->condition('name', 'mcapi_signatures')->execute();
@@ -403,6 +400,7 @@ function mcapi_update_7000() {
 function mcapi_update_7001() {
   module_load_include('mcapicurrencies_default.inc', 'mcapi');
   module_load_include('inc', 'mcapi', 'currencies');
+  drupal_load('module', 'mcapi');//for the constants
   //make the tables declared in this module
 
   //first of all we need to tweak the currency objects, which used to be nodes and now are ctools objects.
@@ -744,7 +742,7 @@ function mcapi_update_7005() {
  * update the transaction notification handling
  */
 function mcapi_update_7006() {
-  if ($subject = variable_get('mc_notification_subject', '') && variable_get('mc_notification_body', '')) {
+  if ($subject = variable_get('mc_notification_subject', '') && $body = variable_get('mc_notification_body', '')) {
     include_once('includes/actions.inc');
     module_load_include('inc', 'mcapi');
     module_load_include('admin.inc', 'mcapi');
@@ -928,11 +926,10 @@ function mcapi_update_7015() {
     }
     if (property_exists($currency, 'transaction_access')) {
       foreach ((array)$currency->transaction_access as $state => $callbacks) {
-        if (!is_numeric($state)) continue;
         $currency->transaction_view_access[$state] = array_filter($currency->transaction_access[$state]);
       }
+      drupal_set_message($currency, 'transaction_view_access should be copied from transaction access; otherwise check your currency settings');
     }
-    debug($currency, 'transaction_view_access should be copied from transaction access; otherwise check your currency settings');
     //unset($currency->transaction_access);
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
@@ -944,7 +941,6 @@ function mcapi_update_7015() {
   variable_set('mcapi_sentence',  $sentence .= '[transaction:links]');
   cache_clear_all('*', 'cache_token', TRUE);
   cache_clear_all('currencies', 'cache');
-  menu_rebuild();
 }
 
 /**
@@ -979,7 +975,10 @@ function mcapi_update_7016() {
   field_update_instance($instance);
 }
 
+function __mcapi_update_7017() {
 
+  mcapi_check_fields();
+}
 /* I think this turned out to be not necessary and also broke things
   $worth_db_field = array(
     'description' => 'Price',

@@ -232,6 +232,7 @@ function mcapi_signatures_config($form, $form_state) {
         '#args' => array(DRUPAL_AUTHENTICATED_RID),
         '#default_value' => $settings['countersignatories'],
         '#multiple' => TRUE,
+        '#required' => FALSE,
       ),
       'notify' => array(
         '#title' => t("Send 'pending' notification"),

@@ -20,7 +20,7 @@ function mcapi_forms_menu() {
     $settings = &$form->data;
     $menu_link = &$settings['architecture']['menu_link'];
     $items[$settings['architecture']['path']] = array(
-      'title' => 'Design form',
+      'title' => 'Designed form',
       'title callback' => 'mcapi_form_title',
       'title arguments' => array($ctools_id),
       'page callback' => 'mcapi_get_form',
