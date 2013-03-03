@@ -2,22 +2,31 @@
 
 define('CENTRAL_ACCOUNT_UID', 1);
 
+function mcapi_import_init() {
+  if(user_access('manage all currencies')) {
+    drupal_set_message('The Community Account import module is installed, and should be disabled and uninstalled when importing is complete.', 'warning');
+  }
+}
+
 function mcapi_import_help($path) {
   $help = array();
   switch ($path) {
     case 'admin/help#mcapi_import':
-      $help[] = t('Prepare a csv file and create transactions');
-      $help[] = t('Assumes user 1 is the balancing account.');
+      $help[] = t('Prepare a csv file and create transactions from the currency reservoir account');
       $help[] = t("The 'migrate' module is too complex for this, so this bespoke solution is provided.");
       break;
     case 'admin/accounting/import/transactions' :
-      $help[] = t('Import a whole transaction history after all users are imported.');
-      $help[] = t("Assumes there is only one currency in the system." );
+      $currencies = &drupal_static('currencies');
+      $currcode = variable_get('mcapi_import_currcode');
+      $help[] = t("Import a whole transaction history using the user 'uid' property.");
+      $help[] = t("All transactions will be in '@currency', according to the settings.", array('@currency' => $currencies[$currcode]->human_name));
+      if (module_exists('mcapi_limits')) {
+        $help[] = t("It is advised to disable the currency's balance limits before importing.");
+      }
       break;
     case 'admin/accounting/import/balances':
       $help[] = t("This page allows you to import users' balances and gross incomes for users already on the system.");
-      $help[] = t("Be aware that the trigger 'transaction_state' will be fired for each user.");
-      $help[] = t("To import users, see the !import_user module.");
+      $help[] = t("To import users, see the User Import Framework (UIF) module.");
   }
   return implode(' ', $help);
 }
@@ -88,10 +97,9 @@ function import_transactions_form($form, $form_state) {
   }
   $form['#prefix'] = implode(' ', array(
     t('Prepare a csv file, without quotes'),
-    t("'created' is optional, but should be convertable to unixtime using strtotime"),
+    t("'created' is optional, but will be converted to unixtime using php function !strtotime", array('@strtotime' => l('strtotime', 'http://php.net/strtotime'), array('absolute' => TRUE))),
     t('Use the following column headings, in any order: !columns', array('!columns' => '<blockquote>'.implode(', ', $columns).'</blockquote>'))
   ));
-  if (module_exists('mcapi_limits')) $form['#prefix'] .= ' '. t("It is advised to disable the currency's balance limits before importing.");
   $form['#prefix'] .= '<br />'. mcapi_import_ready();
   $form['data'] = array (
     '#type' => 'textarea',
@@ -225,19 +233,27 @@ function import_balances_form_validate($form, &$form_state) {
 
 function import_balances_form_submit($form, &$form_state) {
   $rows = parse_getcsv($form_state['values']['data']);
+    $currencies = &drupal_static('currencies');
+    $def_cur = key($currencies);
   foreach ($rows as $key=>$stats) {
-    mcapi_import_balances_member($stats['UserID'], $stats['Balance'], $stats['GrossIncome']);
+    mcapi_import_balances_member(
+      $stats['UserID'],
+      isset($stats['currcode']) ? $stats['currcode'] : $def_cur,
+      $stats['Balance'],
+      $stats['GrossIncome']
+    );
   }
 }
 
 
-function mcapi_import_balances_member($uid, $balance, $gross_income = NULL) {
+function mcapi_import_balances_member($uid, $currcode, $balance, $gross_income = NULL, $currcode) {
   global $language;
+  $currency = $currencies['currcode'];
   $transactions = array();
   $transaction = entity_create('transaction', array(
     'type' => variable_get('mcapi_import_type', current(mcapi_get_types())),
     'state' => TRANSACTION_STATE_FINISHED,
-    'worth' => array(LANGUAGE_NONE => array(0 => array('currcode' => variable_get('mcapi_import_currcode', ''))))
+    'worth' => array(LANGUAGE_NONE => array(0 => array('currcode' => $currcode)))
   ));
   if ($gross_income) {
     $gross_expenditure = $gross_income - $balance;
@@ -248,25 +264,25 @@ function mcapi_import_balances_member($uid, $balance, $gross_income = NULL) {
       $out->{$desc_field}[$language->language][0]['value'] = t("Gross expenditure");
     }
     $in->worth[LANGUAGE_NONE][0]['quantity'] = $gross_expenditure;
-    $in->worth[LANGUAGE_NONE][0]['currcode'] = DEFAULT_CURRENCY;
-    $in->payer = CENTRAL_ACCOUNT_UID;
+    $in->worth[LANGUAGE_NONE][0]['currcode'] = $currcode;
+    $in->payer = $currency->reservoir;
     $in->payee = $uid;
     $transactions[] = $in;
     $out->worth[LANGUAGE_NONE][0]['quantity'] = $gross_income;
-    $out->worth[LANGUAGE_NONE][0]['currcode'] = DEFAULT_CURRENCY;
+    $out->worth[LANGUAGE_NONE][0]['currcode'] = $currcode;
     $out->payer = $uid;
-    $out->payee = CENTRAL_ACCOUNT_UID;
+    $out->payee = $currency->reservoir;
     $transactions[] = $out;
   }
   elseif ($balance != 0) {//if there is only balance, we do one exchange, which is simply + balance
     $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $balance;
     if ($balance > 0) {
-      $transaction->payer = CENTRAL_ACCOUNT_UID;
+      $transaction->payer = $currency->reservoir;
       $transaction->payee = $uid;
     }
     else {
       $transaction->payer = $uid;
-      $transaction->payee = CENTRAL_ACCOUNT_UID;
+      $transaction->payee = $currency->reservoir;
     }
     if ($desc_field = variable_get('transaction_description_field', '')) {
       $transaction->{$desc_field}[$language->language][0]['value'] = t("Carried Forward");
@@ -344,9 +360,11 @@ function mcapi_import_ready() {
  * Implementation of hook_uif_help().
  */
 function mcapi_import_uif_help() {
+  $currencies = &drupal_static('currencies');
   $items = array(
-    'balance' => 'balance ' .t('The starting balance of the imported user'),
-    'gross_income' => 'gross_income ' . t('The total income ever of this user.')
+    'balance' => 'balance : ' .t('The starting balance of the imported user'),
+    'gross_income' => 'gross_income : ' . t('The total income ever of this user.'),
+    'currcode' => 'currcode : ' . t('The currency code (optional, default is @currcode)', array('@currcode' => key($currencies)))
   );
   return '<p>' . t('Importing balance (and gross income) per user is incompatible with importing the transaction history.') . '</p>'
   . theme('item_list', array('items' => $items));
@@ -358,7 +376,47 @@ function mcapi_import_uif_help() {
  */
 function mcapi_import_uif_post_create($account, $user_data, $form_state) {
   if (isset($user_data['balance'])) {
-    mcapi_import_balances_member($account->uid, $user_data['balance'], @$user_data['gross_income']);
+    if (!isset($user_data['currcode'])) {
+      $currencies = &drupal_static('currencies');
+      $user_data['currcode'] = key($currencies);
+    }
+    mcapi_import_balances_member($account->uid, $user_data['currcode'], $user_data['balance'], @$user_data['gross_income']);
   }
 }
 
+function mcapi_import_variable_info() {
+  return array(
+    'mcapi_import_type' => array(
+      'title' => t('Transaction type'),
+      'description' => t('Transaction type to be used for next import'),
+      'type' => 'select',
+      'options callback' => 'mcapi_get_types',
+      'default' => 'mass',
+      'required' => TRUE,
+      'group' => 'mcapi',
+    ),
+    'mcapi_import_currcode' => array(
+      'title' => t('Transaction Currency'),
+      'description' => t('Transaction currency to be used for next import'),
+      'type' => 'select',
+      //we have the currency_picker_element for this normally, but I don't think it will work.
+      'options callback' => 'mcapi_get_import_currencies',
+      'default' => 'mass',
+      'required' => TRUE,
+      'group' => 'mcapi'
+    ),
+  );
+}
+
+function mcapi_get_import_currencies() {
+  $currences = &drupal_static('currencies');
+  foreach (drupal_static('currencies') as $currcode => $currency) {
+    $options[$currcode] = $currency->human_name;
+  }
+  return $options;
+}
+
+function mcapi_import_uninstall() {
+  variable_del('mcapi_import_type');
+  variable_del('mcapi_import_currcode');
+}

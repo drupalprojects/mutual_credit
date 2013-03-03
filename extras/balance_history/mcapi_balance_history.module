@@ -16,7 +16,7 @@ function mcapi_index_views_block_info() {
  */
 function mcapi_balance_history_block_view($delta) {
   module_load_include('inc', 'mcapi');
-  if ($settings = _mcapi_block_settings($delta, 'user_aggregated_view')) {
+  if ($settings = _mcapiblock_settings($delta, 'trader_data')) {
     return array(
       'subject' => t('Balance over time'),
       'content' => array(

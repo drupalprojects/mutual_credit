@@ -1,8 +1,9 @@
 <?php
 //$Id
 
+define('GRECO_SAMPLE_PERIOD_DAYS', '90');
 /*
- * Module keeps a cache of transactions which is optimised for views to interrogate
+ * Having created a mysql view and exposed it to views, this .module file handles the greco index
  */
 
 
@@ -16,16 +17,6 @@ function mcapi_index_views_views_api() {
   );
 }
 
-/*
- * implements hook_views_query_alter
- * adds the currency code field to queries which is necessary for theming
- */
-function mcapi_index_views_views_query_alter($view, &$query) {
-  if (in_array('mcapi_index', array_keys($query->table_queue))) {
-    //this index table needs to have the currency code field put in automatically
-    $query->add_field('mcapi_index', 'currcode', 'currcode');
-  }
-}
 //views access control callback
 function views_plugin_access_user_arg_check() {
   return $GLOBALS['user']->uid == arg(1) || user_access('manage all transactions');
@@ -73,36 +64,47 @@ function mcapi_index_views_backup_migrate_profiles_alter(&$profiles) {
   foreach ($profiles as $name => $profile) {
     $profile->filters['destinations']['db']['exclude_tables']['mcapi_index'] = 'mcapi_index';
   }
+  drupal_set_message("Disable and re-enable the 'Views for transactions' module on the destination system to restore the 'mcapi_index_views' database view");
 }
 
 /*
  * implements hook_cron
+ * Greco says:
+ * Dividing the sum of all the debit balances by the average daily sales gives us the sales performance ratio for the system.
  */
 function mcapi_index_views_cron() {
-  //save the average balances, with timestamp
-  //this enables us to get the last 90 day average
-  $leverage = 0;
-  $result = db_query("SELECT uid1, sum(income) as income, sum(expenditure) as outgoing FROM mcapi_index GROUP BY uid1");
-  foreach ($result as $row) {
-    if ($row->income > $row->outgoing) {
-      $leverage += $row->income - $row->outgoing;
+  $currencies = currencies_load();
+  foreach ($currencies as $currency) {
+    $sum_of_all_debit_balances = 0;
+    //get the sum of all debit balances of all accounts in this currency
+    //get a list of all the users
+    $callback = strtok($currency->access['membership'], ':');
+    $args = array(strtok(':'));
+    $uids = user_chooser_retrieve_many($callback, $args, array('#allow_blocked' => TRUE));
+    foreach ($uids as $uid) {
+      $balance = transaction_totals($uid, $currcode)->balance;
+      if ($balance > 0) {
+        $sum_of_all_debit_balances += $balance;
+      }
     }
+    //now get the average daily sales
+    $since = strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days');
+    $total_daily_sales = db_query(
+      "SELECT SUM(income) FROM mcapi_index WHERE created > :time AND currcode = :currcode",
+      array(
+        ':time' => $since,
+        ':currcode' => $currcode
+      )
+    )->fetchfield();
+    $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
+
+    if ($average_daily_sales) {
+      $indicator = $sum_of_all_debit_balances / $average_daily_sales;
+    }
+    else {
+      $indicator = NULL;
+    }
+    $data[$currcode] = $indicator;
   }
-  db_insert('mcapi_greco_indices')->fields(array('timestamp' => REQUEST_TIME, 'leverage' => $leverage))->execute();
-
-  //now calculate the greco index for now this moment.
-  //get the average leverage over the period
-  $period = "-".variable_get('mcapi_greco_period', 90)." days";
-  $leverage = db_query(
-    "SELECT AVG(leverage) FROM mcapi_greco_indices where timestamp > :time",
-    array(':time' => strtotime($period))
-  )->fetchfield();
-  //get the transaction volume for the period.
-  $volume = db_query(
-    "SELECT SUM(income) FROM mcapi_index where created > :time",
-    array(':time' => strtotime($period))
-  )->fetchfield();
-
-  $indicator = $leverage == 0 ? 0 : round($volume / $leverage, 2);
-  variable_set('mcapi_greco_system_health', $indicator);
+  variable_set('mcapi_greco_system_health', $data);
 }

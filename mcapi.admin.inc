@@ -88,7 +88,7 @@ function _mcapi_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_default_form'),
     //we use this permission but it's possible to create a paradox since each currency has its own permission
-    //if we knew what currency we would use callback 'currency_access' and arg 'membership'
+    //if we knew what currency we would use callback 'access' and arg 'membership'
     'access arguments' => array('transact'),
     'file' => 'mcapi.inc',
     'file path' => drupal_get_path('module', 'mcapi')
@@ -268,9 +268,9 @@ function mcapi_misc_options_form($form_state) {
 function mcapi_currency_form(&$form, &$form_state){
   form_load_include($form_state, 'admin.inc', 'mcapi');
   $currency = isset($form_state['values']) ? (object)$form_state['values'] :
-    ($form_state['item']->data ? $form_state['item']->data : default_cur());
+    ($form_state['item']->data ? $form_state['item']->data : new stdClass);
   //copy some settings from the default currency
-  if (isset($currency->human_name)) {
+  if (property_exists($currency, 'human_name')) {
     drupal_set_title( !empty($currency->human_name) ? $title = t("Edit currency '@name'", array('@name' => $currency->human_name)) : t('Declare currency') );
   }
   if (isset($form_state['values']['uid'])) {
@@ -283,7 +283,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#title' => t('Name of currency'),
     '#description' => t('Use the plural'),
     '#type' => 'textfield',
-    '#default_value' => $currency->human_name,
+    '#default_value' => property_exists($currency, 'human_name') ? $currency->human_name : '',
     '#weight' => -1,
   );
   //nice to do a live machine name preview here, like views does, but I could work out how!
@@ -315,12 +315,19 @@ function mcapi_currency_form(&$form, &$form_state){
     '#type' => 'fieldset',
     '#weight' => 5
   );
+  $default_display = property_exists($currency, 'display') ? $currency->display :
+    array(
+      'format' => '',
+      'divisions' => CURRENCY_DIVISION_MODE_NONE,
+      'divisions_setting' => "0|/.\n25|1/4\n50|1/2\n75|3/4",
+      'zero' => ''
+    );
   $form['display']['format'] = array(
     '#title' => t('Display format'),
     '#description' => t('Write an expression to control the display of the currency using html, css and the following tokens:') .'@minus, @integer, @subdivision.' .' '.
        t('For example, !a shows as !b', array('!a' => '<em>@minus@integer:@subdivision AUS</em>', '!b' => '<em>-99:99 AUS</em>')),
     '#type' => 'textfield',
-    '#default_value' => $currency->display['format'],
+    '#default_value' => $default_display['format'],
     '#element_validate' => array('mcapi_currency_validate_format'),
     '#required' => TRUE,
     '#weight' => 1
@@ -334,7 +341,7 @@ function mcapi_currency_form(&$form, &$form_state){
       CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
       CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions, below')
     ),
-    '#default_value' => $currency->display['divisions'],
+    '#default_value' => $default_display['divisions'],
     '#weight' => 2
   );
   $form['display']['divisions_setting'] = array(
@@ -344,7 +351,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#cols' => 60,
     '#rows' => 4,
     '#resizable' => FALSE,
-    '#default_value' => isset($currency->display['divisions_setting']) ? $currency->display['divisions_setting'] : "0|/.\n25|1/4\n50|1/2\n75|3/4",
+    '#default_value' => $default_display['divisions_setting'],
     '#element_validate' => array('mcapi_currency_validate_divisions'),
     '#weight' => 3
   );
@@ -353,7 +360,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#title' => t('Zero value display'),
     '#description' => t('Use html.') .' ',
     '#type' => 'textfield',
-    '#default_value' => $currency->display['zero'],
+    '#default_value' => $default_display['zero'],
     '#required' => !empty($zeros),
     '#weight' => 4
   );
@@ -368,7 +375,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#type' => 'vertical_tabs',
     '#weight' => 10,
   );
-  $form['currency_access'] = array(
+  $form['access'] = array(
     '#title' => t('Currency access'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
@@ -383,34 +390,40 @@ function mcapi_currency_form(&$form, &$form_state){
       $options[$module][$perm] = strip_tags($info['title']);
     }
   }
-  $form['currency_access']['membership'] = array(
+  $default_access = property_exists($currency, 'access') ? $currency->access :
+    array(
+      'membership' => array(current($options)),
+      'trader_data' => array(current($options)),
+      'system_data' => array(current($options))
+    );
+  $form['access']['membership'] = array(
     '#title' => t('Use the currency'),
     '#description' => t('Determine which users are permitted to use this currency'),
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => @$currency->currency_access['membership'] ? $currency->currency_access['membership'] : 'transact',
+    '#type' => 'user_chooser_many',
+    '#config' => TRUE,
+    '#default_value' => property_exists($currency, 'access') ? $currency->access['membership'] : 'user_chooser_segment_perms:transact',
     '#weight' => $weight++,
   );
-  $form['currency_access']['user_aggregated_view'] = array(
+  $form['access']['trader_data'] = array(
     '#title' => t('View aggregated user transaction data'),
     '#description' => t("Such as users' balances, gross income, number of transactions"),
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => @$currency->currency_access['user_aggregated_view'] ? $currency->currency_access['user_aggregated_view'] : 'transact',
+    '#type' => 'user_chooser_many',
+    '#config' => TRUE,
+    '#default_value' => property_exists($currency, 'access') ? $currency->access['trader_data'] : 'user_chooser_segment_perms:transact',
     '#weight' => $weight++,
   );
-  $form['currency_access']['currency_aggregated_view'] = array(
+  $form['access']['system_data'] = array(
     '#title' => t('View aggregated system data'),
     '#description' => t('Look at currency usage stats stripped of personal information'),
-    '#type' => 'select',
-    '#options' => $options,
-    '#default_value' => @$currency->currency_access['currency_aggregated_view'] ? $currency->currency_access['currency_aggregated_view'] : 'transact',
+    '#type' => 'user_chooser_many',
+    '#config' => TRUE,
+    '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
     '#weight' => $weight++,
   );
 
   static $i = 0;
   static $j = 0;
-  $form['transaction_view_access'] = array(
+  $form['view_transaction_states'] = array(
     '#title' => t('Privacy'),
     '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
     '#type' => 'fieldset',
@@ -419,34 +432,35 @@ function mcapi_currency_form(&$form, &$form_state){
   $access_callbacks = module_invoke_all('transaction_access_callbacks');
   foreach (mcapi_get_states('#full') as $constant => $state) {
     $states = isset($currency->view) ? $currency->view : array();
-    $form['transaction_view_access'][$constant] = array(
+    $form['view_transaction_states'][$constant] = array(
       '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
       '#description' => $state['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,
-      '#default_value' => isset($currency->transaction_view_access[$constant]) ? $currency->transaction_view_access[$constant] : array(),
+      '#default_value' => property_exists($currency, 'view_transaction_states') && isset($currency->view_transaction_states[$constant]) ?
+         $currency->view_transaction_states[$constant] : array(current($access_callbacks)),
       '#weight' => $j++,
     );
   }
-  $form['transaction_operation_access'] = array(
+  $form['access_operations'] = array(
     '#title' => t('Transaction operations'),
     '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
   );
-
   foreach (module_invoke_all('transaction_operations') as $callback => $info) {
-    $form['transaction_operation_access'][$callback] = array(
+    $form['access_operations'][$callback] = array(
       '#title' => $info['description'],
       '#description' => @$info['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,
-      '#default_value' => isset($currency->transaction_operation_access[$callback]) ? $currency->transaction_operation_access[$callback] : array(),
+      '#default_value' => property_exists($currency, 'access_operations') && isset($currency->access_operations[$callback]) ?
+        $currency->access_operations[$callback] : array(current($access_callbacks)),
       '#weight' => $j++,
     );
   }
 
-  if (isset($currency->currcode)) {
+  if (property_exists($currency, 'currcode')) {
     $form['buttons']['submit']['#value'] = t('Update');
   }
 }
@@ -532,28 +546,18 @@ function currencies_load_all() {
     //TEMP
     //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
     $accesses = array(
-      'transaction_view_access' => t('Privacy'),
-      'transaction_operation_access' => t('Transaction operations'),
-      'currency_access' => t('Currency Access')
+      'view_transaction_states' => t('Privacy'),
+      'access_operations' => t('Transaction operations'),
+      'access' => t('Currency Access')
     );
     foreach ($accesses as $prop => $name) {
       if (property_exists($data, $prop)) continue;
-      drupal_set_message(
-        "Resave currency $data->human_name, paying attention to $name : ". l(t('edit'), 'admin/accounting/currencies/list/'.$currcode.'/edit'),
-        'warning'
-      );
+      $message = t( "Resave currency $data->human_name, paying attention to $name : ");
+      drupal_set_message($message, 'warning');
     }
     $currencies[$currcode] = $currency;
   }
   return $currencies;
-}
-
-//load the default currency and clear some fields, so it can populate the edit form with some discrete defaults
-function default_cur() {
-  $currency = ctools_export_crud_load('mcapi_currencies', DEFAULT_CURRENCY)->data;
-  $currency->human_name = '';
-  $currency->display['format'] = '@minus@integer @subdivision';
-  return $currency;
 }
 
 /*
@@ -562,8 +566,14 @@ function default_cur() {
  * set the $form_state['item'] for ctools to save
  */
 function mcapi_currency_form_validate($form, &$form_state){
-
+  //check that the reservoir account is allowed to use the currency
+  $callback = 'in_'. strtok($form_state['values']['access']['membership'], ':');
+  $arg = strtok(':');
+  if (!$callback(array($arg), $form_state['values']['reservoir'])) {
+    form_set_error(t('Reservoir account does not have access to the currency!'));
+  }
 }
+
 /*
  * Submit callback for mcapi_currency_form
  * declared in plugins/export/mcapi_ui
@@ -615,7 +625,8 @@ function mcapi_mixed_transactions($form) {
       0 => t('One currency per transaction'),
       1 => t('Many currencies per transaction')
     ),
-    '#default_value' => variable_get('mcapi_mixed_transactions', 0)
+    //something is setting this value to empty during upgrade I think
+    '#default_value' => intval(variable_get('mcapi_mixed_transactions', 0))
   );
   $form['submit'] = array(
     '#type' => 'submit',

@@ -54,27 +54,6 @@ function mcapi_index_views_enable() {
   );
 }
 
-function mcapi_index_views_schema() {
-  return array(
-    'mcapi_greco_indices' => array(
-      'description' => 'history of system leverage',
-      'fields' => array(
-        'timestamp' => array(
-          'description' => "Unixtime that the transaction was recorded",
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ),
-        'leverage' => array(
-          'description' => "Sum of all positive balances",
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-        )
-      )
-    )
-  );
-}
 /*
  * implements hook_uninstall
  */
@@ -96,4 +75,10 @@ function mcapi_index_views_update_7003() {
     db_create_table($tablename, $table);
   }
   variable_set('mcapi_greco_period', 90);
+}
+/**
+ * drop greco index table
+ */
+function mcapi_index_views_update_7004() {
+  db_query("DROP TABLE IF EXISTS {mcapi_greco_indices}");
 }

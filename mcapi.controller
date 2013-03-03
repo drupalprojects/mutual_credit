@@ -124,8 +124,9 @@ class mcapiEntityController extends EntityAPIController {
       }
     }
     elseif(isset($values['quantity'])) {
+      $currencies = &drupal_static('currencies');
       $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
-      $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : DEFAULT_CURRENCY;
+      $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
     }
     else {//if worths is not indicated, create a value for each currency the user is permitted to use
       //check that the creator is actually permitted to use this currency

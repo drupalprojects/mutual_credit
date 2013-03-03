@@ -3,6 +3,7 @@
 
 /*
  * Implements views hook_views_data
+ * adds the currency code field to queries which is necessary for theming
  */
 function mcapi_index_views_views_data() {
   $data = array();
@@ -21,6 +22,7 @@ function mcapi_index_views_views_data() {
     'help' => t('The Unique database key of the transaction'),
     'field' => array(
       'handler' => 'views_handler_field',
+      'additional fields' => array('currcode'),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -31,6 +33,7 @@ function mcapi_index_views_views_data() {
     'field' => array(
       'help' => t('The serial number of the transaction and dependents'),
       'handler' => 'views_handler_field_transaction',
+      'additional fields' => array('currcode'),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -42,6 +45,7 @@ function mcapi_index_views_views_data() {
     'help' => t('The transactor, whose perspective we are looking from'),
     'field' => array(
       'handler' => 'views_handler_field',
+      'additional fields' => array('currcode'),
     ),
     'filter' => array(
       'handler' => 'views_handler_filter_numeric'
@@ -62,6 +66,7 @@ function mcapi_index_views_views_data() {
     'help' => t("The transactee"),
     'field' => array(
       'handler' => 'views_handler_field',
+      'additional fields' => array('currcode'),
     ),
     //can't 'think of a use case for a filter here
     'argument' => array(
@@ -80,6 +85,7 @@ function mcapi_index_views_views_data() {
     'help' => t('Which form or module which created the transaction'),
     'field' => array(
       'handler' => 'views_handler_field',
+      'additional fields' => array('currcode'),
       'click sortable' => TRUE
     ),
     'filter' => array(
@@ -153,7 +159,7 @@ function mcapi_index_views_views_data() {
     'help' => t("Indexed running balance after each transaction. (1 database query per row)"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_balance',
-      'additional fields' => array('xid')
+      'additional fields' => array('xid', 'currcode')
     ),
   );
   $data['mcapi_index']['created'] = array(
@@ -161,6 +167,7 @@ function mcapi_index_views_views_data() {
     'help' => t('The moment the transaction was registered'),
     'field' => array(
       'handler' => 'views_handler_field_date',
+      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'sort' => array(
@@ -282,7 +289,7 @@ function mcapi_query_transaction_view_access_index_alter(QueryAlterableInterface
   $currencies = &drupal_static('currencies');
   $or_currcodes = db_or();//where currcode = A OR currcode = B
   foreach ($currencies as $currcode => $currency) {
-    if (currency_access('user_aggregated_view', $currcode)) {
+    if (currency_access('trader_data', $currcode)) {
       $or_currcodes->condition('currcode', $currcode);
     }
   }

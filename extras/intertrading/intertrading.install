@@ -1,7 +1,8 @@
 <?php
 
 function intertrading_install() {
-  variable_set('intertrading_currcode', currency_load(DEFAULT_CURRENCY)->info['currcode']);
+  $currencies = &drupal_static();
+  variable_set('intertrading_currcode', key($currencies));
 }
 
 function intertrading_enable() {

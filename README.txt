@@ -107,9 +107,9 @@ The signatures module declares another state, 'pending', and 3 operations, 'sign
 2. Currency Design
 The currencies are full (ctools) configuration objects and contain a lot of information about behaviour and access control.
 There are three kinds of access control,
-- currency_access, which determines who can trade with, and see aggregated data in that currency
-- transaction_view_access, which gives different visibility for each transaction state.
-- transaction_operations which allow users to move transactions between states.
+- access, which determines who can trade with, and see aggregated data in that currency
+- view_transaction_states, which gives different visibility for each transaction state.
+- access_operations which allow users to move transactions between states.
 An extensible series of callbacks is provided to give fine-grained control. The signature module provides such callbacks, for example so that only a user who needs to sign a transaction can access the 'sign' operation.
 
 3. Forms

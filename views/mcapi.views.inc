@@ -187,7 +187,7 @@ function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $quer
     //where (currcode = A and (state = x) OR (state = Y) )
     $state_or_state = db_or();//where state = A OR B
     foreach ($states as $state) {
-      $callbacks = array_filter($currency->transaction_view_access[$state]);
+      $callbacks = array_filter($currency->view_transaction_states[$state]);
       foreach ($callbacks as $callback) {
         $callback .= '_views';
         $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);

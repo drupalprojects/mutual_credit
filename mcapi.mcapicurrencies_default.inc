@@ -8,11 +8,10 @@ function mcapi_mcapicurrencies_default() {
   $currency = new stdClass;
   $currency->disabled = FALSE; /* Edit this to true to make a default currency disabled initially */
   $currency->api_version = 3;
-  $currency->currcode = DEFAULT_CURRENCY;
+  $currency->currcode = 'credunit';
   $currency->data = (object)array(
-    //default currency name is taken from the site_name at the moment it's first called
     'info' => array(//this wierd structure is for ctools benefit
-      'currcode' => DEFAULT_CURRENCY,
+      'currcode' => $currency->currcode,
     ),
     'human_name' =>  t('Community Coins'),
     'display' => array(
@@ -21,12 +20,12 @@ function mcapi_mcapicurrencies_default() {
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
       'zero' => '',
     ),
-    'currency_access' => array(
-      'membership' => 'transact',
-      'user_aggregated_view' => 'transact',
-      'currency_aggregated_view' => 'transact',
+    'access' => array(
+      'membership' => 'user_chooser_segment_perms:transact',
+      'trader_data' => 'user_chooser_segment_perms:transact',
+      'system_data' => 'user_chooser_segment_perms:transact',
     ),
-    'transaction_view_access' => array(
+    'view_transaction_states' => array(
       TRANSACTION_STATE_FINISHED => array(
         'transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact',
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
@@ -35,7 +34,7 @@ function mcapi_mcapicurrencies_default() {
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
     ),
-    'transaction_operation_access' => array(
+    'access_operations' => array(
       'undo' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
@@ -67,7 +66,7 @@ function mcapi_mcapicurrencies_default() {
       ),
     )
   );
-  $currencies[DEFAULT_CURRENCY] = $currency;
+  $currencies[$currency->currcode] = $currency;
 
 
 
@@ -77,7 +76,7 @@ function mcapi_mcapicurrencies_default() {
   $mcapicurrency->currcode = 'national';
   $mcapicurrency->data = (object) array(
     'info' => array(
-      'currcode' => 'national',
+      'currcode' => $mcapicurrency->currcode,
     ),
     'human_name' => t('Euros'),
     'display' => array(
@@ -85,12 +84,12 @@ function mcapi_mcapicurrencies_default() {
       'divisions' => CURRENCY_DIVISION_MODE_CENTS_INLINE,
       'divisions_setting' => '',
     ),
-    'currency_access' => array(
-      'membership' => 'transact',
-      'user_aggregated_view' => 'transact',
-      'currency_aggregated_view' => 'transact',
+    'access' => array(
+      'membership' => 'user_chooser_segment_perms:transact',
+      'trader_data' => 'user_chooser_segment_perms:transact',
+      'system_data' => 'user_chooser_segment_perms:transact',
     ),
-    'transaction_view_access' => array(
+    'view_transaction_states' => array(
       TRANSACTION_STATE_FINISHED => array(
         'transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact',
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
@@ -99,7 +98,7 @@ function mcapi_mcapicurrencies_default() {
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
     ),
-    'transaction_operation_access' => array(
+    'access_operations' => array(
       'undo' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),

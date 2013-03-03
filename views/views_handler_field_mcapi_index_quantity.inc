@@ -10,7 +10,7 @@
 class views_handler_field_mcapi_index_quantity extends views_handler_field {
 
   function query() {
-    $this->ensure_my_table();
+    //$this->ensure_my_table();
     $this->add_additional_fields();
     //increment the name of the alias in case this field is used more than once in the same display
     static $i;

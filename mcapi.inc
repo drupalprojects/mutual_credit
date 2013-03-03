@@ -428,8 +428,8 @@ function _mcapi_calc($formula, $base_value) {
  * 0 //the user argument comes from the current path
  * 1 //the user argument is the current user
  */
-function _mcapi_block_settings($delta, $currency_access_mode) {
-  $settings = variable_get('block_'. $delta, array('currcodes' => array(), 'user_source' => 1));
+function _mcapiblock_settings($delta, $currency_access_mode) {
+  $settings = variable_get('mcapiblock_'. $delta, array('currcodes' => array(), 'user_source' => 1));
   if (@$settings['user_source'] == 0) {//Show as part of profile being viewed
     if (arg(0) == 'user') {//and we are viewing a profile...
       $settings['account'] = user_uid_optional_load(arg(1));

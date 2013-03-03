@@ -49,12 +49,7 @@ function mcapiform_default_1stparty() {
       'strip' => 1,
     ),
     'worth' => array(
-      'preset' => array(
-        0 => array(
-          'currcode' => key($currencies),
-          'quantity' => '0',
-        )
-      ),
+      'preset' => array(),
       'strip' => 1,
     ),
     'submission' => array(
@@ -102,12 +97,7 @@ function mcapiform_default_3rdparty() {
       'strip' => 1,
     ),
     'worth' => array(
-      'preset' => array(
-        0 => array(
-          'currcode' => key($currencies),
-          'quantity' => '0',
-        ),
-      ),
+      'preset' => array(),
       'strip' => 1,
     ),
     'submission' => array(

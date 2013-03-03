@@ -140,7 +140,7 @@ function mcapi_signatures_block_info() {
  */
 function mcapi_signatures_block_view($delta) {
   module_load_include('inc', 'mcapi');
-  $settings = _mcapi_block_settings($delta, 'user_aggregated_view');
+  $settings = _mcapiblock_settings($delta, 'trader_data');
   if (empty($settings['account']) || empty($settings['account']->uid)) return;
   module_load_include('inc', 'mcapi_signatures');
   if ($delta == 'user_pending') {
@@ -349,7 +349,7 @@ function transaction_access_callback_pending_signatory_views($query, $condition,
  */
 function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
   foreach ($currencies as $currcode => $currency)
-  $currencies[$currcode]->data->transaction_view_access[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
+  $currencies[$currcode]->data->view_transaction_states[TRANSACTION_STATE_PENDING] = drupal_map_assoc(
     array(
       'transaction_access_callback_signatory',
       'transaction_access_callback_perm_manage_all'

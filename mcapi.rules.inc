@@ -89,7 +89,7 @@ class RulesDataUIWorth extends RulesDataUI implements RulesDataDirectInputFormIn
       $name => array(
         '#title' => t('Worth at least'),
         '#type' => 'worth',
-        '#default_value' => isset($settings[$name]) ? $settings[$name] : array('currcode' => DEFAULT_CURRENCY, 'quantity' => 0),
+        '#default_value' => isset($settings[$name]) ? $settings[$name] : array(),
         '#all' => TRUE,
          //this is not config mode because it's not 'presetting the form its actually setting a value
          //it affects what happens to the zero and null values

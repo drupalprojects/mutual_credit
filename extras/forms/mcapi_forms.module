@@ -1,4 +1,5 @@
-<?php // ;id:
+<?php
+// Id:
 
 define('MCAPIFORM_BUILD_INFO_ARG', 1);
 define('MCAPIFORM_STRING_FORMAT', 'mcapiform_string_format');

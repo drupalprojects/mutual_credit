@@ -78,7 +78,7 @@ function _set_form_state_to_pending(&$form, $form_state) {
    //read the settings and set the $form['state'] hidden widget
   $type = isset($form['type']['#value']) ? $form['type']['#value'] : $form['type']['#default_value'];//yuk
   if (in_array($type, _get_signable_transaction_types())) {
-    $config = variable_get('mcapi_signatures_'.$type, _signature_settings_default());
+    $config = _signature_settings_default($type);
     if (@$config['participants'] || count(@$config['countersignatories'])) {
       $form['state'] = array(
         '#type' => 'value',
@@ -90,10 +90,13 @@ function _set_form_state_to_pending(&$form, $form_state) {
 
 
 function list_pending_for_uid($uid, $currcodes = array()) {
-  //couldn't be bothered with a theme function
-  $output = list_waiting_on_uid($uid, $currcodes) + list_waiting_not_on_uid($uid, $currcodes);
-  $output['#prefix'] = '<div class = "user-pending">';
-  $output['#suffix'] = '</div>';
+  //couldn't be bothered with a theme callback for this
+  $output = array(
+    '#prefix' => '<div class = "user-pending">',
+    'waiting on' => list_waiting_on_uid($uid, $currcodes),
+    'waiting_not_on' => list_waiting_not_on_uid($uid, $currcodes),
+    '#suffix' => '</div>'
+  );
   return $output;
 }
 
@@ -211,7 +214,7 @@ function mcapi_signatures_config($form, $form_state) {
   $form = array('#tree' => TRUE);
   foreach (_get_signable_transaction_types() as $type) {
     $var_name = 'mcapi_signatures_'.$type;
-    $settings = @$form_state['values'][$var_name] ? $form_state['values'][$var_name] : variable_get($var_name, _signature_settings_default());
+    $settings = @$form_state['values'][$var_name] ? $form_state['values'][$var_name] : _signature_settings_default($type);
     $form[$var_name] = array(
       '#title' => $type,
       '#type' => 'fieldset',
@@ -280,7 +283,7 @@ function mcapi_signatures_config($form, $form_state) {
 
 
 function _mcapi_signatures_transaction_state($transaction, $new_state) {
-  $config = variable_get('mcapi_signatures_'.$transaction->type, _signature_settings_default());
+  $config = _signature_settings_default($transaction->type);
   $params = array('transaction' => $transaction);
   $uid = &$GLOBALS['user']->uid;
   if ($new_state == TRANSACTION_STATE_PENDING) {
@@ -316,11 +319,12 @@ function mcapi_signatures_mail($key, &$message, $params) {
   $message['body'][] = token_replace($params['mail_template']['body'], $params, $options);
 }
 
-function _signature_settings_default() {
+function _signature_settings_default($type) {
+  if ($setting = variable_get('mcapi_signatures_'.type, 0)) return $setting;
   return array(
-    'participants' => TRUE,
+    'participants' => $type == 'mass' ? FALSE : TRUE,
     'countersignatories' => array(),
-    'notify' => TRUE
+    'notify' => $type == 'mass' ? FALSE : TRUE
   );
 }
 
@@ -354,7 +358,7 @@ function _mcapi_signatures_transaction_operations() {
 //utility function
 //gets all the transaction types and excludes a few that we know aren't suitable for configuring
 function _get_signable_transaction_types() {
-  $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt', 'mass'));
+  $types = array_diff(mcapi_get_types(), array('child', 'undo', 'undone', 'remote payment', 'remote receipt'));
   sort($types);
   return $types;
 }

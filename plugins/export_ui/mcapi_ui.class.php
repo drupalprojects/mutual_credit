@@ -172,7 +172,7 @@ class mcapi_ui extends ctools_export_ui {
         unset($allowed_operations['delete']);
       }
       //matslats
-      if (count($enabled == 1) && $enabled[0] == $name) {
+      if (count($enabled) == 1 && $enabled[0] == $name) {
         unset($allowed_operations['disable']);
         unset($allowed_operations['delete']);
       }
@@ -182,7 +182,6 @@ class mcapi_ui extends ctools_export_ui {
       else {
         unset($allowed_operations['enable']);
       }
-
       $operations = array();
 
       foreach ($allowed_operations as $op) {

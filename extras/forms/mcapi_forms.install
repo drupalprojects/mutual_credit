@@ -1,5 +1,7 @@
 <?php
-
+/*
+ * implements hook_forms_enable
+ */
 function mcapi_forms_enable() {
   mcapiforms_setup_filter();
 }
@@ -49,11 +51,13 @@ function mcapi_forms_schema() {
   );
   return $schema;
 }
+
 function mcapi_forms_submit_once() {
   $forms =  explode("\n", variable_get('submit_once_forms', 'submit_once_settings'));
   $forms[] = 'mcapi_forms_form';
   variable_set('submit_once_forms', implode("\n", array_unique($forms)));
 }
+
 /**
  * adjustments to the table storing designed payment forms
  */

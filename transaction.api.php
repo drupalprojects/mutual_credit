@@ -134,7 +134,8 @@ $transactions = transaction_load_multiple($xids, $conditions, $clearcache);
  * Retrieves transaction summary data for a user in a given currency
  *
  * This data can also be obtained through various views fields, especially in the mcapi_index_views module
- * $conditions are same as in drupal database api, each an array like ($fieldname, $value, $operator),
+ * $filters are same as in drupal database api, each an array like ($fieldname, $value, $operator),
+ * applicable to the mcapi_transactions table (worth field is not supported)
  * where the fieldname is from mcapi_transactions table and the operator is optional.
  * If there are no conditions passed then only transactions in a positive STATE are counted.
  *
@@ -144,7 +145,7 @@ $transactions = transaction_load_multiple($xids, $conditions, $clearcache);
  * - gross_out
  * - count
  */
-transaction_totals($uid, $currcode, $options);
+transaction_totals($uid, $currcode, $filters);
 
 
 /*
