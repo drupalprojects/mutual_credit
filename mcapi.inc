@@ -621,7 +621,6 @@ function _worths_element_process($element, &$form_state) {
     $element[$delta]['#calc'] = @$element['#calc'];
     $element[$delta]['#preset'] = @$element['#preset'];
   }
-
   return $element;
 }
 
@@ -652,7 +651,6 @@ function _worth_element_process($element, &$form_state) {
   }
   //in normal mode, show a blank field where the default value is 0
   if ($main_quant == '0' && empty($element['#preset'])) $main_quant = '';
-
   //while we return a float, the widget may want to show two fields.
   //in any case we show a main field, and an optional division field
   $element['main_quant'] = array(
@@ -689,6 +687,7 @@ function _worth_element_process($element, &$form_state) {
       );
     }
   }
+  else $element['div_quant'] = array();
   return $element;
 }
 
@@ -728,22 +727,24 @@ function theme_worth_item(&$variables) {
  */
 function theme_worth_element($variables) {
   $element = &$variables['element'];
+  $element['#attributes']['class'][] = "worth-widget";
   $curr_select = drupal_render($element['currcode']);
   $quant_field = drupal_render($element['main_quant']);
-
-  if ($element['currcode']['#type'] == 'hidden') {//if the currency is preset, then we can use its display format
+  if ($element['currcode']['#type'] == 'hidden') {//if the currency is preset, then we can use its own display format
     $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
     $currency_display = currency_load($currcode)->display;
     if (!empty($element['div_quant'])) {
       $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
     }
-    $quantity = str_replace('[quantity]', $quant_field, $currency_display['format'], $vars);
+    $output = $curr_select . str_replace('[quantity]', $quant_field, $currency_display['format'], $vars);
   }
-  else {//this is always a textfield to write the value in
-    $quantity = drupal_render($element['main_quant']);
+  else {//if there is no known currcode, the
+    if (!empty($element['div_quant'])) {
+      $quant_field .= drupal_render($element['div_quant']);
+    }
+    $output .= $curr_select . $quant_field;
   }
-  $element['#attributes']['class'][] = "worth-widget";
-  return '<div ' . drupal_attributes($element['#attributes']) . '>'. $curr_select . $quantity .'</div>';
+  return '<div ' . drupal_attributes($element['#attributes']) . '>'. $output .'</div>';
 }
 
 

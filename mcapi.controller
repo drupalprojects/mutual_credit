@@ -131,19 +131,10 @@ class mcapiEntityController extends EntityAPIController {
       //check that the creator is actually permitted to use this currency
       if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
       else $currencies = drupal_static('currencies');
-
-      if (variable_get('mcapi_mixed_transactions', TRUE)) {
-        foreach (array_keys($currencies) as $currcode) {
-          $transaction->worth[LANGUAGE_NONE][] = array(
-            'quantity' => 0,
-            'currcode' => $currcode
-          );
-        }
-      }
-      else {
-        $transaction->worth[LANGUAGE_NONE][0] = array(
+      foreach (array_keys($currencies) as $currcode) {
+        $transaction->worth[LANGUAGE_NONE][] = array(
           'quantity' => 0,
-          'currcode' => key($currencies)
+          'currcode' => $currcode
         );
       }
     }
