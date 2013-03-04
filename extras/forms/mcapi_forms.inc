@@ -7,7 +7,7 @@ module_load_include('inc', 'mcapi');
 
 /*
  * main form builder, for this module, using the transaction_form as a base
- * build_info args are 0=> transaction, 1 => mcapi_form
+ * build_info args are 0 => transaction, 1 => mcapi_form
  * $form['#settings'] is already defined
  * would have been nice to be able to build the transaction from the settings and pass it to transaction_form
  * then not worry about setting defaults here, which is really about shaping the form.
@@ -15,7 +15,7 @@ module_load_include('inc', 'mcapi');
 function mcapi_form_build(&$form, &$form_state, $form_id) {
   $form['#settings'] =  $form_state['build_info']['args'][MCAPIFORM_BUILD_INFO_ARG];
   $settings = &$form['#settings'];
-  $transaction = $form['#transaction'];
+  $transaction = &$form['#transaction'];
   //change the 5 translatable strings
   if (module_exists('i18n_string')) {
     //prepare the i18n pseudo_object, because i18n expects a flat object and the mcapi_form just isn't, sorry

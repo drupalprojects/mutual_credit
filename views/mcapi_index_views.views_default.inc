@@ -187,19 +187,14 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['greco']['alter']['alter_text'] = TRUE;
   $handler->display->display_options['fields']['greco']['alter']['text'] = 'Greco index [greco]';
   $handler->display->display_options['fields']['greco']['element_label_colon'] = FALSE;
-  if ($multicurrencies) {
-    /* Filter criterion: Transaction index: Currency */
-    $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
-    $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
-    $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
-    $handler->display->display_options['filters']['currcode']['value'] = array();
-    $handler->display->display_options['filters']['currcode']['exposed'] = TRUE;
-    $handler->display->display_options['filters']['currcode']['expose']['operator_id'] = '';
-    $handler->display->display_options['filters']['currcode']['expose']['label'] = t('Currency');
-    $handler->display->display_options['filters']['currcode']['expose']['operator'] = 'currcode_op';
-    $handler->display->display_options['filters']['currcode']['expose']['identifier'] = 'currcode';
-    $handler->display->display_options['filters']['currcode']['expose']['reduce'] = 0;
-  }
+
+  /* Filter criterion: Transaction index: Currency */
+  //just do this for the default currency - as an exposed filter it doesn't seem to work
+  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
+  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
+  $handler->display->display_options['filters']['currcode']['value'] = array(key($currencies));
+
   /* Filtre contextuel: Transaction index : Created moment */
   $handler->display->display_options['arguments']['created']['id'] = 'created';
   $handler->display->display_options['arguments']['created']['table'] = 'mcapi_index';

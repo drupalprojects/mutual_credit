@@ -320,7 +320,7 @@ function mcapi_signatures_mail($key, &$message, $params) {
 }
 
 function _signature_settings_default($type) {
-  if ($setting = variable_get('mcapi_signatures_'.type, 0)) return $setting;
+  if ($setting = variable_get('mcapi_signatures_'.$type, 0)) return $setting;
   return array(
     'participants' => $type == 'mass' ? FALSE : TRUE,
     'countersignatories' => array(),

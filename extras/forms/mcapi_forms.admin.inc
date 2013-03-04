@@ -118,10 +118,14 @@ function _edit_mcapi_form(&$form, &$form_state) {
   //the participants of the transaction are either payer/payee or 1stperson/secondperson. This is called the 'perspective' of the form.
   $perspective = isset($form_state['values']['perspective']) ? $form_state['values']['perspective'] : $form['perspective']['#default_value'] ;
 
-  //load the transaction form so we can re-use the form field declarations
+  //load the transaction form so we can re-use the widgets
   $array = array();
-  $transaction_fields = transaction_form($array, $array);
-  foreach (element_children($transaction_fields) as $fieldname) {
+  $transaction_widgets = transaction_form($array, $array);
+  //adjust the empty worth transaction widget because in these forms empty is blank not zero
+  foreach ($transaction_widgets['worth'][LANGUAGE_NONE]['#default_value'] as $currcode => $quantity) {
+    $transaction_widgets['worth'][LANGUAGE_NONE]['#default_value'][$currcode] = $quantity == '0' ? '' : $quantity;
+  }
+  foreach (element_children($transaction_widgets) as $fieldname) {
     $form[$fieldname] = (array)@$form[$fieldname];//this is good for new forms with values
     $settings[$fieldname] = (array)@$settings[$fieldname];//in case the form elements are controlled elsewhere and not preset here
     switch ($fieldname) {
@@ -132,17 +136,19 @@ function _edit_mcapi_form(&$form, &$form_state) {
         break;
       case 'payer':
         if ($perspective == 1) {
-          $transaction_fields[$fieldname]['#title'] = t('Other user');
+          $transaction_widgets[$fieldname]['#title'] = t('Other user');
           //convert the payer field to a seconderson field
-          $form['secondperson'] = _mcapi_user_chooser_config_field($settings['secondperson']) + _mcapi_form_config_fieldset($settings['secondperson'], $transaction_fields['payer'], 'secondperson');
+          if (!isset($settings['secondperson'])) $settings['secondperson'] = array();
+          if (!isset($settings['direction'])) $settings['direction'] = array();
+          $form['secondperson'] = _mcapi_user_chooser_config_field($settings['secondperson']) + _mcapi_form_config_fieldset($settings['secondperson'], $transaction_widgets['payer'], 'secondperson');
           $preset = array(
             '#title' => t('Direction'),
             '#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
-            '#type' => $settings['direction']['widget'] ? $settings['direction']['widget'] : 'radios',
+            '#type' => isset($settings['direction']['widget']) ? $settings['direction']['widget'] : 'radios',
             '#options' => array(
               '' => t('Neither'),
-              'incoming' => $settings['direction']['incoming'] ? $settings['direction']['incoming'] : t('Incoming'),
-              'outgoing' => $settings['direction']['outgoing'] ? $settings['direction']['outgoing'] : t('Outgoing'),
+              'incoming' => isset($settings['direction']['incoming']) ? $settings['direction']['incoming'] : t('Incoming'),
+              'outgoing' => isset($settings['direction']['outgoing']) ? $settings['direction']['outgoing'] : t('Outgoing'),
             ),
             '#default_value' => '',
             '#required' => FALSE
@@ -154,7 +160,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
         //then run on
       case 'payee':
         if ($perspective == 3) {
-          $form[$fieldname] = _mcapi_user_chooser_config_field($settings[$fieldname]) + _mcapi_form_config_fieldset($settings[$fieldname], $transaction_fields[$fieldname], $fieldname);
+          $form[$fieldname] = _mcapi_user_chooser_config_field((array)$settings[$fieldname]) + _mcapi_form_config_fieldset($settings[$fieldname], $transaction_widgets[$fieldname], $fieldname);
           //$form[$fieldname] += ;
           $form[$fieldname]['preset']['#description'] = t('This field does not respond to changes in the above field.');
         }
@@ -163,15 +169,19 @@ function _edit_mcapi_form(&$form, &$form_state) {
       default: //this covers all fieldAPI fields, including 'worth'
         $instance = field_read_instance('transaction', $fieldname, 'transaction');
         $default_items = &$settings[$fieldname];
-        $empty_field = $transaction_fields[$fieldname][LANGUAGE_NONE];
+        $empty_field = $transaction_widgets[$fieldname][LANGUAGE_NONE];
         $form[$fieldname] = _mcapi_form_config_fieldset($default_items, $empty_field, $fieldname);
     }
   }
   $form['worth']['preset']['#preset'] = TRUE;
-
   $currencies = &drupal_static('currencies');
-  if (count($currencies) >1) {
-    $form['worth']['#description'] = '<br />'. t('Leave blank to exclude the currency widget from the form. Otherwise preset to zero or some other value');
+  if (count($currencies) > 1) {
+    $help = array(
+      t('Use zero to include a currency as an option on the form.'),
+      t('Leave blank to exclude the currency.'),
+      t('Numeric values are also valid')
+    );
+    $form['worth']['#description'] = implode(' ', $help);
   }
   $form['worth']['preset']['#element_validate'] = array('mcapi_form_validate_worth_preset');
   //we need to know the view modes of the transaction entity, to choose for the preview page
@@ -316,7 +326,9 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
           $element['preset']['#default_value'][$item['currcode']] = $item['quantity'];
         }
       }
-      else $element['preset']['#default_value'] = $preset;
+      else {
+        $element['preset']['#default_value'] = $preset;
+      }
     }
   }
   elseif (element_children($empty_element)) {//this is a normal fieldAPI field - not checkboxes or radios
@@ -390,7 +402,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
       }
     }
   }
-  if (empty($values['worth']['preset'])) {
+  if (variable_get('mcapi_mixed_transactions', TRUE) && empty($values['worth']['preset'])) {
     form_error($form['worth']['preset'], t("Use zero in the worth field"));
   }
 }
@@ -430,10 +442,13 @@ function mcapi_form_validate_worth_preset(&$element, &$form_state) {
       unset($items[$delta]);
     }
   }
+  //validate that not more than one currency is preset above zero
+  // && variable_get('mcapi_mixed_transactions', TRUE)
+
   form_set_value($element, $items, $form_state);
 }
 
-function _mcapi_user_chooser_config_field($default = NULL) {
+function _mcapi_user_chooser_config_field(array $default) {
   $default += array(
     'user_chooser_config' => 'user_chooser_segment_perms:transact',
     'preset' => ''

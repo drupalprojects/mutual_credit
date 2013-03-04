@@ -6,6 +6,7 @@ core = "7.x"
 
 dependencies[] = mcapi
 dependencies[] = views
+dependencies[] = date
 dependencies[] = date_views
 
 files[] = mcapi_index_views.install

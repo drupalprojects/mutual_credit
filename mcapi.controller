@@ -110,7 +110,6 @@ class mcapiEntityController extends EntityAPIController {
     foreach ($properties as $key => $val) {
       $transaction->$key = isset($values[$key]) ? $values[$key] : $val;
     }
-    //this callback doesn't normally deal with fieldAPI fields, but worth is special and description is special
     if (isset($values['worth'])) {
       $items = isset($values['worth'][LANGUAGE_NONE]) ? $values['worth'][LANGUAGE_NONE] : $values['worth'];
       foreach ($items as $delta => $item) {
@@ -132,10 +131,19 @@ class mcapiEntityController extends EntityAPIController {
       //check that the creator is actually permitted to use this currency
       if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
       else $currencies = drupal_static('currencies');
-      foreach (array_keys($currencies) as $currcode) {
-        $transaction->worth[LANGUAGE_NONE][] = array(
+
+      if (variable_get('mcapi_mixed_transactions', TRUE)) {
+        foreach (array_keys($currencies) as $currcode) {
+          $transaction->worth[LANGUAGE_NONE][] = array(
+            'quantity' => 0,
+            'currcode' => $currcode
+          );
+        }
+      }
+      else {
+        $transaction->worth[LANGUAGE_NONE][0] = array(
           'quantity' => 0,
-          'currcode' => $currcode
+          'currcode' => key($currencies)
         );
       }
     }

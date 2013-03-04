@@ -1006,9 +1006,10 @@ function mcapi_update_7017() {
   }
 }
 /**
- * Change the structure of the currency definition
+ * Update the structure of the currency definition
+ * Use more token like syntax for the display
  */
-function mcapi_update_7018() {
+function mcapi_update_7019() {
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);
@@ -1017,11 +1018,18 @@ function mcapi_update_7018() {
     $currency->access['system_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['currency_aggregated_view'];
     $currency->view_transaction_states = $currency->transaction_view_access;
     $currency->access_operations = $currency->transaction_operation_access;
+    if (strpos($currency->display['format'], '.')) $currency->display['delimiter'] = '.';
+    else $currency->display['delimiter'] = '.';
+    str_replace($currency->display['delimiter'], '', $currency->display['format']);
+    $replacements = array('@integer' => '[quantity]', '@subdivision' => '', '@minus' => '');
+    $currency->display['format'] = strtr($currency->display['format'], $replacements);
     //save with all the old values intact!
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
   cache_clear_all('currencies', 'cache');
 }
+
+
 /* I think this turned out to be not necessary and also broke things
   $worth_db_field = array(
     'description' => 'Price',

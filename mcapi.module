@@ -236,7 +236,7 @@ function mcapi_help($section, $arg) {
  */
 function mcapi_menu() {
   module_load_include('admin.inc', 'mcapi');
-  //take this opportunity of an occaisional hook to check that the description field is set
+  //take this opportunity of an occasional hook to check that the description field is set
   if (!variable_get('transaction_description_field', '')) {
     if (count(_mcapi_get_text_instances())) {
       drupal_set_message(t('Is the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
@@ -544,14 +544,17 @@ function mcapi_transaction_operations() {
   );
 }
 
-
 /*
  * menu callback for adding transaction entity
  */
 function transaction_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
-  $form['#transaction'] = isset($form_state['values']) ? entity_create('transaction', array()) : (
-    empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? entity_create('transaction', array()) : $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]);
+
+  //populate the form's #transaction either with submitted values, or with the build argument, or with an empty transaction
+  $form['#transaction'] = isset($form_state['values']) ? entity_create('transaction', $form_state['values']) : (
+    !empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG] :
+      entity_create('transaction', array()));
+
   _transaction_form($form, $form_state);
   field_attach_form('transaction', $form['#transaction'], $form, $form_state);
   //this determines whether the function calls transaction_cluster_create() or transaction_cluster_write()
@@ -560,14 +563,12 @@ function transaction_form($form, &$form_state) {
   return $form;
 }
 
-
 /*
  * implements mcapi hook_info_controller
  * the presence of this hook indicates there is a .controller file
  * with the name MODULE.controller
  */
 function mcapi_transaction_controller(){}
-
 
 /*
  * implements mcapi hook_info_states
@@ -815,8 +816,8 @@ function currency_load($currcode = NULL) {
   watchdog('mcapi', "Nonexistent currency '@currcode' requested from: @list",
     array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1))
   );
-  echo "update problems with currency id";
-  ddebug_backtrace();
+  debug("update problems with currency id: $currcode isn't available");
+  if (module_exists('devel')) ddebug_backtrace();//temp!
   return current($currencies);
 }
 /*
@@ -1055,6 +1056,7 @@ function worth_element_process($element, &$form_state) {
 /*
  * element process callback
  * break up the worths values into individual fields
+ * According to the mixed currency mode,
  * either one widget with a currency chooser
  * or many widgets with fixed currencies
  * $element['default_value'] is an array of all the currencies to be rendered as keys against quantitites
@@ -1066,25 +1068,29 @@ function worths_element_process($element, &$form_state) {
 
 /*
  * implements form_type_ELEMENT_NAME_value
+ * default value_callback for worths
  */
 function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
   if ($edit == FALSE) return;
   $value = array();
+
+
   foreach ($edit as $delta => $item) {
-    $value[$delta] = array(
-      'currcode' => $item['currcode'],
-      'quantity' => $item['main_quant']
-    );
-    if (empty($element['#calc'])) {
-      $value[$delta]['quantity'] += 0; //ensure its a number
+    $value[$delta]['currcode'] = $item['currcode'];
+
+    if (!strlen($item['main_quant']) && empty($item['div_quant'])) {
+      $value[$delta]['quantity'] = '';
     }
-    //incorporate the fractions from the division field
-    if (($div = @$item['div_quant'])) {
-      //combine integer and division to get quantity
-      if ($div) {
-        $value[$delta]['quantity'] += ($div+0)/100;
+    elseif (is_numeric($item['main_quant'])) {
+      $value[$delta]['quantity'] = floatval($item['main_quant']);
+      if (is_integer($value[$delta]['quantity']) && !empty($item['div_quant'])) {
+        $value[$delta]['quantity'] += ($item['div_quant'] + 0) / 100;
       }
     }
+    elseif ($element['#calc']) {
+      $value[$delta]['quantity'] = $item['main_quant'];
+    }
+
     //set the value to zero if the field is empty and the currency allows it
     $currency = currency_load($item['currcode']);
     //we can remove the @ when everybody has upgraded to RC6

@@ -152,7 +152,6 @@ function _mcapi_menu() {
 
 /*
  * implements hook_menu_alter
- * (this file is included in mcapi_menu)
  */
 function mcapi_menu_alter(&$items) {
   $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
@@ -313,47 +312,72 @@ function mcapi_currency_form(&$form, &$form_state){
   $form['display'] = array(
     '#title' => t('Appearance'),
     '#type' => 'fieldset',
+    '#collapsible' => TRUE,
     '#weight' => 5
   );
   $default_display = property_exists($currency, 'display') ? $currency->display :
     array(
       'format' => '',
       'divisions' => CURRENCY_DIVISION_MODE_NONE,
+      'delimiter' => ':',
       'divisions_setting' => "0|/.\n25|1/4\n50|1/2\n75|3/4",
       'zero' => ''
     );
-  $form['display']['format'] = array(
-    '#title' => t('Display format'),
-    '#description' => t('Write an expression to control the display of the currency using html, css and the following tokens:') .'@minus, @integer, @subdivision.' .' '.
-       t('For example, !a shows as !b', array('!a' => '<em>@minus@integer:@subdivision AUS</em>', '!b' => '<em>-99:99 AUS</em>')),
-    '#type' => 'textfield',
-    '#default_value' => $default_display['format'],
-    '#element_validate' => array('mcapi_currency_validate_format'),
-    '#required' => TRUE,
-    '#weight' => 1
-  );
+
   $form['display']['divisions'] = array(
     '#title' => t('Subdivisions'),
     '#type' => 'select',
     '#options' => array(
       CURRENCY_DIVISION_MODE_NONE => t('Integer values only'),
-      CURRENCY_DIVISION_MODE_CENTS_INLINE => t("Cents in same field, delimited by '.'"),
+      CURRENCY_DIVISION_MODE_CENTS_INLINE => t("Cents in same field"),
       CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
-      CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions, below')
+      CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions')
     ),
     '#default_value' => $default_display['divisions'],
-    '#weight' => 2
+    '#weight' => 1
   );
   $form['display']['divisions_setting'] = array(
     '#title' => t('Allowed subdivisions'),
-    '#description' => t('On each line put "hundredths| visible text". The visible text replaces the @subdivision in the display format, above.'),
+    '#description' => t('On each line put "hundredths| visible text". The visible text will be displayed after the delimiter.'),
     '#type' => 'textarea',
     '#cols' => 60,
     '#rows' => 4,
     '#resizable' => FALSE,
     '#default_value' => $default_display['divisions_setting'],
     '#element_validate' => array('mcapi_currency_validate_divisions'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_CUSTOM),
+      ),
+      'required' => array(
+        ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_CUSTOM),
+      ),
+    ),
+    '#weight' => 2
+  );
+  $form['display']['delimiter'] = array(
+    '#title' => t('Delimiter'),
+    '#description' => t('A character to go in between your integer and cents or other formatted subdivisions'),
+    '#type' => 'textfield',
+    '#max_length' => 3,
+    '#size' => 1,
+    '#default_value' => $default_display['delimiter'],
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="display[divisions]"]' => array('value' => array(CURRENCY_DIVISION_MODE_NONE)),
+      ),
+    ),
     '#weight' => 3
+  );
+  $form['display']['format'] = array(
+    '#title' => t('Display format'),
+    '#description' => t('Write an expression to control the display of the currency using html, css and [quantity].') .'<br />'.
+       t('For example, !a shows as !b', array('!a' => '<strong>BHrs[quantity]</strong>', '!b' => '<strong>BHrs99:99</strong>')),
+    '#type' => 'textfield',
+    '#default_value' => $default_display['format'],
+    '#element_validate' => array('mcapi_currency_validate_format'),
+    '#required' => TRUE,
+    '#weight' => 4
   );
   $zeros = transaction_load_multiple(NULL, array('quantity' => 0, 'currcode' => $currency->info['currcode']));
   $form['display']['zero'] = array(
@@ -362,7 +386,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#type' => 'textfield',
     '#default_value' => $default_display['zero'],
     '#required' => !empty($zeros),
-    '#weight' => 4
+    '#weight' => 5
   );
   if ($zeros) {
     $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");
@@ -467,12 +491,8 @@ function mcapi_currency_form(&$form, &$form_state){
 
 //currency form validate callback
 function mcapi_currency_validate_format(&$element, $form_state) {
-  if (!strpos($element['#value'], '@integer')) {
-    form_error($element, t("Currency format must contain token '@integer'"));
-  }
-  //we also need to check that the format field contains the divisions token
-  if ($form_state['values']['display']['divisions'] != CURRENCY_DIVISION_MODE_NONE && !strpos($element['#value'], '@subdivision')) {
-    form_error($element, t("Currency format must contain token '@subdivision'"));
+  if (!strpos($element['#value'], '[quantity]')) {
+    form_error($element, t("Currency format must contain token '[quantity]'"));
   }
 }
 

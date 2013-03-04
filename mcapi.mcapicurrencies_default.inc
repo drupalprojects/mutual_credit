@@ -15,9 +15,10 @@ function mcapi_mcapicurrencies_default() {
     ),
     'human_name' =>  t('Community Coins'),
     'display' => array(
-      'format' => '@minus<strong>CC</strong>@integer:@subdivision',
       'divisions' => CURRENCY_DIVISION_MODE_CUSTOM,
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
+      'delimiter' => ':',
+      'format' => '<strong>CC</strong>[quantity]',
       'zero' => '',
     ),
     'access' => array(
@@ -80,9 +81,10 @@ function mcapi_mcapicurrencies_default() {
     ),
     'human_name' => t('Euros'),
     'display' => array(
-      'format' => '@minus€@integer:@subdivision',
       'divisions' => CURRENCY_DIVISION_MODE_CENTS_INLINE,
       'divisions_setting' => '',
+      'delimiter' => ':',
+      'format' => '€[quantity]',
     ),
     'access' => array(
       'membership' => 'user_chooser_segment_perms:transact',

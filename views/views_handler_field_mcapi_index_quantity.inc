@@ -22,7 +22,8 @@ class views_handler_field_mcapi_index_quantity extends views_handler_field {
 
   function render($values) {
     if ($this->options['hide_empty'] && $values->{$this->field_alias} == 0) return '';
-    return array(
+    elseif (empty($values->currcode)) return '0';
+    else return array(
       '#theme' => 'worth_item',
       '#currcode' => $values->currcode,
       '#quantity' => $values->{$this->field_alias}

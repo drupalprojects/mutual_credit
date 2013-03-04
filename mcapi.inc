@@ -577,70 +577,69 @@ function worths_element_validate(&$element, &$form_state) {
       form_error($element, t('!name field is required.', array('!name' => $element['#title'])));
     }
   }
-  //very important for rendering that the $item keys are straight
-  //form_set_value($element, $items, $form_state);
 }
 
 
 function _worths_element_process($element, &$form_state) {
   $currencies = &drupal_static('currencies');
-  $field = field_info_field('worth');
-  $element['#type'] = 'worths';
-
-  //ensure all currencies are present if default_value is empty or if this is config mode
-  if (empty($element['#default_value']) || $element['#preset']) {
+  //the default value also tells us which currencies are available
+  //if no defaults are set then all currencies should be present
+  if (!isset($element['#default_value']) || empty($element['#default_value']) || @$element['#preset']) {
     $element['#default_value'] = (array)$element['#default_value'];
     foreach ($currencies as $currcode => $currency) {
       $element['#default_value'] += array($currcode => '');
     }
   }
-  //define the sub-element for each currency
-  //if mixed transaction flag is off, then we don't increment the delta
-  //and instead just add to the #currcodes
   $delta = 0;
-  foreach($element['#default_value'] as $currcode => $quant) {
-    if (empty($currencies[$currcode])) {
-      //this should only happen when a currency has been deleted and some config still expects
-      drupal_set_message(t("Cannot put unknown currency in form: @name", array('@name' => $currcode)));
-      continue;
-    }
-    $element[$delta]['#currcodes'][] = $currcode;
-
-    if(!$delta || variable_get('mcapi_mixed_transactions', 0)) {
+  if (variable_get('mcapi_mixed_transactions', TRUE) || @$element['#preset']) {
+    //construct one widget for each default, each with its own currcode
+    foreach($element['#default_value'] as $currcode => $quant) {
       $element[$delta]['#title'] = $currencies[$currcode]->human_name;
-      $element[$delta]['#title_display'] = 'attribute';
-      $element[$delta]['#type'] = 'worth';
-      $element[$delta]['#calc'] = @$element['#calc'];
-      $element[$delta]['#preset'] = @$element['#preset'];
-    }
-    if (variable_get('mcapi_mixed_transactions', 0) == 1 || strlen($quant) || count($element[$delta]['#currcodes']) == 1) {
+      $element[$delta]['#currcodes']= array($currcode);
       $element[$delta]['#default_value'] = array(
         'currcode' => $currcode,
-        'quantity' => $quant == '' ? 0 : $quant
+        'quantity' => $quant
       );
+      $delta++;
     }
-    $delta += variable_get('mcapi_mixed_transactions', 0);
   }
+  else {
+    $element[0]['#title'] = t('Worth');
+    foreach($element['#default_value'] as $currcode => $quant) {
+      $element[0]['#currcodes'][] = $currcode;
+      if (strlen($quant)) {
+        $element[0]['#default_value'] = array(
+          'currcode' => $currcode,
+          'quantity' => $quant
+        );
+      }
+    }
+  }
+  //now populate all the subwidgets with defaults
+  foreach (element_children($element) as $delta) {
+    $element[$delta]['#type'] = 'worth';
+    $element[$delta]['#calc'] = @$element['#calc'];
+    $element[$delta]['#preset'] = @$element['#preset'];
+  }
+
   return $element;
 }
 
 
 function _worth_element_process($element, &$form_state) {
-  $currencies = &drupal_static('currencies');
+  $element['#title_display'] = 'attribute';
   $main_quant = '';
   $quantity = @$element['#default_value']['quantity'];
+  //the element is aware of a set of currcodes
   if (empty($element['#currcodes'])) {
     //best not rely on this, supply your own currencies that the user is permitted to use.
     //this defaults to all
-    $element['#currcodes'] = array_keys($currencies);
+    $element['#currcodes'] = array_keys(currencies_load($GLOBALS['user']));
   }
   $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
-  $currcode = isset($element['currcode']['#value']) ? $element['currcode']['#value'] : $element['currcode']['#default_value'];
-  $currency = currency_load($currcode);
-  $element['#title'] = $currency->human_name;
-  $element['#title_display'] = 'attribute';
 
   if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
+    $currency = currency_load(current($element['#currcodes']));
     $use_div_subelement = in_array($currency->display['divisions'], array(CURRENCY_DIVISION_MODE_CUSTOM, CURRENCY_DIVISION_MODE_CENTS_FIELD));
   }
   //work out the defaults for each subfield
@@ -703,20 +702,24 @@ function _worth_element_process($element, &$form_state) {
  */
 function theme_worth_item(&$variables) {
   $currency = currency_load($variables['currcode']);
-  list($replacements['@integer'], $replacements['@subdivision'], $replacements['@minus']) = currency_explode($variables['quantity']);
+  list($integer, $subdivision) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :
-      $replacements['@subdivision'] = @$currency->display['divisions_allowed'][intval($replacements['@subdivision'])];
+      $subdivision = @$currency->display['divisions_allowed'][intval($subdivision)];
       break;
     case CURRENCY_DIVISION_MODE_CENTS_FIELD:
     case CURRENCY_DIVISION_MODE_CENTS_INLINE:
-      $replacements['@subdivision'] = str_pad($replacements['@subdivision'], 2, STR_PAD_LEFT);
+      $subdivision = str_pad($subdivision, 2, STR_PAD_LEFT);
       break;
   }
   //I don't know how to account for different languages in number format
-  $replacements['@integer'] = number_format(floatval($replacements['@integer']));
+  $quantity = number_format(floatval($integer));
+  if (isset($subdivision)) {
+    $quantity .= $currency->display['delimiter'] . $subdivision;
+  }
+  $minus = $variables['quantity'] < 0 ? '-' : '';
   //add the extra space to save writing a multiple rendering function
-  return strtr($currency->display['format'], $replacements) .' ';
+  return $minus . str_replace('[quantity]', $quantity, $currency->display['format']) .' ';
 }
 
 /*
@@ -725,21 +728,22 @@ function theme_worth_item(&$variables) {
  */
 function theme_worth_element($variables) {
   $element = &$variables['element'];
-  $currcode = drupal_render($element['currcode']);
-  if ($element['currcode']['#type'] == 'hidden') {
-    $vars = array(
-      '@minus' => '',//no negative values in a form widget
-      '@integer' => drupal_render($element['main_quant']),
-      '@subdivision' => !empty($element['div_quant']) ? drupal_render($element['div_quant']) : '',
-    );
-    //output starts with the currency field, whether hidden or showing
-    $quantity = strtr(currency_load($element['#value']['currcode'])->display['format'], $vars);
+  $curr_select = drupal_render($element['currcode']);
+  $quant_field = drupal_render($element['main_quant']);
+
+  if ($element['currcode']['#type'] == 'hidden') {//if the currency is preset, then we can use its display format
+    $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
+    $currency_display = currency_load($currcode)->display;
+    if (!empty($element['div_quant'])) {
+      $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
+    }
+    $quantity = str_replace('[quantity]', $quant_field, $currency_display['format'], $vars);
   }
-  else {//this will be a select widget and a textfield
+  else {//this is always a textfield to write the value in
     $quantity = drupal_render($element['main_quant']);
   }
   $element['#attributes']['class'][] = "worth-widget";
-  return '<div ' . drupal_attributes($element['#attributes']) . '>'. $currcode . $quantity .'</div>';
+  return '<div ' . drupal_attributes($element['#attributes']) . '>'. $curr_select . $quantity .'</div>';
 }
 
 
@@ -795,25 +799,13 @@ function mcapi_balances_view($uid, $currcodes) {
  * Utility functions
  */
 
-//deficit is an array keyed by by uid, ordered asc
-//this is awkward, but the variable is needed for the intertrading module to assess participation credentials
-//and there's no easy way to get the lowest balances on this system
-function _save_smallest($balance, $uid) {
-  $deficits = variable_get('mcapi_deficit', array());
-  $deficits[$uid] = $balance;
-  sort($deficits);
-  //save only the most extreme 3
-  variable_set('mcapi_deficit', array_slice($deficits, 0, 3));
-}
-
-
 //returns an array of integer, hundredths, and minus sign if applicable
 //if a the passed value is not a number, then pass it through
 function currency_explode($number) {
   if (is_numeric($number)) {
-    return array_merge(explode('.', number_format(abs($number), 2, '.', '')), array($number < 0 ? '-' : ''));
+    return array_merge(explode('.', number_format(abs($number), 2, '.', '')));
   }
-  return array($number, 0, '');
+  return array($number, 0);
 }
 
 /*

@@ -147,7 +147,6 @@ function mcapi_mass_pay_insert($values, $really) {
       $transactions[] = clone $template;
     }
   }
-  debug($transactions, $really);
   try {
     $serial = transaction_cluster_write($transactions, $really);
   }
