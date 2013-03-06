@@ -10,6 +10,6 @@
 class views_handler_field_mcapi_index_currcode extends views_handler_field {
 
   function render($values) {
-    return currency_load($values->currcode)->human_name;
+    return currency_load($values->{$this->field_alias})->human_name;
   }
 }

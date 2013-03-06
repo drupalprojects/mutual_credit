@@ -17,6 +17,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
   }
 
   function render($values) {
+    $currcode = &$values->{$this->aliases['currcode']};
     if (empty($this->uid)) {
       $arg = array_search('uid1', array_keys($this->view->argument));
       if (is_numeric($arg)) {
@@ -32,7 +33,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
     }
     return array(
       '#theme' => 'worth_item',
-      '#currcode' => $values->currcode,
+      '#currcode' => $currcode,
       '#quantity' => db_query(
         "SELECT SUM(diff) FROM {mcapi_index}
           WHERE uid1 = :uid
@@ -41,7 +42,7 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
         array(
           ':xid' => $values->{$this->aliases['xid']},
           ':uid' => $this->uid,
-          ':currcode' => $values->currcode
+          ':currcode' => $currcode
         )
       )->fetchField()
     );

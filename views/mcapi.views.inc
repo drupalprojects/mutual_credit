@@ -169,6 +169,9 @@ function transaction_access_callback_payee_views($query, $condition, $state) {
 function transaction_access_callback_payer_views($query, $condition, $state) {
   $condition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
 }
+function transaction_access_callback_open_views($query, $condition, $state) {
+  $condition->condition(1, 1);
+}
 
 /*
  * implements hook_query_TAG_alter for views on the mcapi_transactions table
@@ -178,7 +181,7 @@ function transaction_access_callback_payer_views($query, $condition, $state) {
  * or views pager won't know how many results there were
  */
 function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $query) {
-  $query->addJoin('LEFT', 'field_data_worth', 'w', 'w.entity_id = mcapi_transactions.xid');
+  $query->addJoin('LEFT', 'field_data_worth', 'w', 'w.entity_id = mcapi_transactions.xid');return;
   $states = array_keys(mcapi_get_states());
   //what currencies can the current user see?
   $currencies = currencies_load($GLOBALS['user']);
@@ -220,6 +223,7 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
  */
 function mcapi_views_pre_render(&$view) {
   if (in_array($view->base_table, array('mcapi_transactions', 'mcapi_index_views')))  {
+    module_load_include('inc', 'mcapi');
     foreach($view->result as $rowid => $row) {
       if (!property_exists($row, 'field_worth')) return;
       foreach ($row->field_worth as $delta => $item) {

@@ -60,7 +60,7 @@ class mcapi_ui extends ctools_export_ui {
       'data' => array(
         '#theme' => 'worth_item',
         '#currcode' => $currcode,
-        '#quantity' => -99.00
+        '#quantity' => 99
       )
     );
     //fourth col, storage

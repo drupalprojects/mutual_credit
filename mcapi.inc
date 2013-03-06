@@ -318,6 +318,9 @@ function transaction_access_callback_payee($transaction) {
 function transaction_access_callback_payer($transaction) {
   return $account->uid == $transaction->payer;
 }
+function transaction_access_callback_open($transaction) {
+  return TRUE;
+}
 
 /*
  * action callback
@@ -524,7 +527,8 @@ function template_preprocess_certificate(&$variables) {
 }
 
 //this will adjust the rendering of zero worth in accordance with the currency display zero property
-//it is not used every time a 'worth' is rendered, but onlyl when transactions are displayed
+//it is not used every time a 'worth' is rendered, but only when transactions are displayed.
+//for this reason, though it seems inelegant, this function should be called from wherever the transaction is rendered
 function worth_item_zero_adjustment(&$worth_render_array) {
   $currencies = &drupal_static('currencies');
   if ($worth_render_array['#quantity'] == 0) {
@@ -701,14 +705,14 @@ function _worth_element_process($element, &$form_state) {
  */
 function theme_worth_item(&$variables) {
   $currency = currency_load($variables['currcode']);
-  list($integer, $subdivision) = currency_explode($variables['quantity']);
+  list($integer, $cents) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :
-      $subdivision = @$currency->display['divisions_allowed'][intval($subdivision)];
+      $subdivision = @$currency->display['divisions_allowed'][intval($cents)];
       break;
     case CURRENCY_DIVISION_MODE_CENTS_FIELD:
     case CURRENCY_DIVISION_MODE_CENTS_INLINE:
-      $subdivision = str_pad($subdivision, 2, STR_PAD_LEFT);
+      $subdivision = str_pad($cents, 2, STR_PAD_LEFT);
       break;
   }
   //I don't know how to account for different languages in number format
@@ -742,7 +746,7 @@ function theme_worth_element($variables) {
     if (!empty($element['div_quant'])) {
       $quant_field .= drupal_render($element['div_quant']);
     }
-    $output .= $curr_select . $quant_field;
+    $output = $curr_select . $quant_field;
   }
   return '<div ' . drupal_attributes($element['#attributes']) . '>'. $output .'</div>';
 }

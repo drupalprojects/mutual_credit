@@ -33,7 +33,7 @@ function mcapi_variable_info() {
   );
   */
   $vars['mcapi_mixed_transactions'] = array(
-    'type' => 'integer',
+    'type' => 'boolean',
     'title' => t('Mixed transactions'),
     'default' => TRUE,
     'description' => t('Whether to allow more than one transaction per currency'),

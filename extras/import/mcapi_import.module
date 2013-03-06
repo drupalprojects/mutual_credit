@@ -3,9 +3,7 @@
 define('CENTRAL_ACCOUNT_UID', 1);
 
 function mcapi_import_init() {
-  if(user_access('manage all currencies')) {
-    drupal_set_message('The Community Account import module is installed, and should be disabled and uninstalled when importing is complete.', 'warning');
-  }
+
 }
 
 function mcapi_import_help($path) {
@@ -35,6 +33,10 @@ function mcapi_import_help($path) {
  * Implements hook_menu.
  */
 function mcapi_import_menu() {
+  if(user_access('manage all currencies')) {
+    drupal_set_message('The Community Account import module is installed, and should be disabled and uninstalled when importing is complete.', 'warning', FALSE);
+  }
+
   $items['admin/accounting/import'] = array (
     'title' => 'Import Tools',
     'page callback' => 'drupal_get_form',

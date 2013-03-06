@@ -22,7 +22,6 @@ function mcapi_index_views_views_data() {
     'help' => t('The Unique database key of the transaction'),
     'field' => array(
       'handler' => 'views_handler_field',
-      'additional fields' => array('currcode'),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -33,7 +32,7 @@ function mcapi_index_views_views_data() {
     'field' => array(
       'help' => t('The serial number of the transaction and dependents'),
       'handler' => 'views_handler_field_transaction',
-      'additional fields' => array('currcode'),
+      //'additional fields' => array('currcode'),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -45,7 +44,6 @@ function mcapi_index_views_views_data() {
     'help' => t('The transactor, whose perspective we are looking from'),
     'field' => array(
       'handler' => 'views_handler_field',
-      'additional fields' => array('currcode'),
     ),
     'filter' => array(
       'handler' => 'views_handler_filter_numeric'
@@ -66,7 +64,6 @@ function mcapi_index_views_views_data() {
     'help' => t("The transactee"),
     'field' => array(
       'handler' => 'views_handler_field',
-      'additional fields' => array('currcode'),
     ),
     //can't 'think of a use case for a filter here
     'argument' => array(
@@ -85,7 +82,6 @@ function mcapi_index_views_views_data() {
     'help' => t('Which form or module which created the transaction'),
     'field' => array(
       'handler' => 'views_handler_field',
-      'additional fields' => array('currcode'),
       'click sortable' => TRUE
     ),
     'filter' => array(
@@ -97,7 +93,6 @@ function mcapi_index_views_views_data() {
     'help' => t('Number of units of currency incoming'),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
-      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -113,7 +108,6 @@ function mcapi_index_views_views_data() {
     'help' => t('Number of units of currency outgoing'),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
-      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -129,7 +123,6 @@ function mcapi_index_views_views_data() {
     'help' => t("Change in the users balance"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
-      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -144,7 +137,6 @@ function mcapi_index_views_views_data() {
     'help' => t("Absolute value of the trade"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_quantity',
-      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -167,7 +159,6 @@ function mcapi_index_views_views_data() {
     'help' => t('The moment the transaction was registered'),
     'field' => array(
       'handler' => 'views_handler_field_date',
-      'additional fields' => array('currcode'),
       'click sortable' => TRUE,
     ),
     'sort' => array(
@@ -189,7 +180,6 @@ function mcapi_index_views_views_data() {
       'title' => t('Currency'),
       'help' => t("The currency ID"),
       'field' => array(
-        //this needs a custom handler
         'handler' => 'views_handler_field_mcapi_index_currcode',
         'click sortable' => TRUE,
       ),
@@ -269,6 +259,13 @@ function mcapi_index_views_views_plugins() {
   return array(
     'module' => 'views', // This just tells our themes are elsewhere.
     'access' => array(
+      'curr' => array(
+        'title' => t('Currencies'),
+        'help' => t('Granted according to the settings of all the currencies mentioned in the filters'),
+        'handler' => 'views_plugin_access_currency',
+        'uses options' => TRUE,
+      ),
+      //this doesn't really belong in this module
       'arg1user' => array(
         'title' => t('Arg 1 user'),
         'help' => t('Access will be granted only to users is on their own profile pages - user/%'),
@@ -280,19 +277,15 @@ function mcapi_index_views_views_plugins() {
 }
 
 
-/*
- * implements hook_query_TAG_alter
- * The transaction_index table doesn't care about states,
- * but we do have to add an access check concerning aggregated data for each currency
- */
-function mcapi_query_transaction_view_access_index_alter(QueryAlterableInterface $query) {
-  $currencies = &drupal_static('currencies');
-  $or_currcodes = db_or();//where currcode = A OR currcode = B
-  foreach ($currencies as $currcode => $currency) {
-    if (currency_access('trader_data', $currcode)) {
-      $or_currcodes->condition('currcode', $currcode);
+function mcapi_views_ensure_currcode($field_query_handler, &$alias_name) {
+  if (strlen($alias_name)) return;
+  //check for the presence of a currcode field.
+  //we can't add it using additional_fields, because it gets wasted by the groupby
+  foreach ($field_query_handler->fields as $alias => $field) {
+    if ($field['field'] == 'currcode') {
+      $alias_name = $alias;
+      return;
     }
   }
-  //to see this working, show the sql query on admin/structure/views/settings/basic
-  $query->condition($or_currcodes);
+  $alias_name = $field_query_handler->add_field('mcapi_index', 'currcode', 'currcode_alias');
 }

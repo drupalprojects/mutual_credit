@@ -20,14 +20,16 @@ function mcapi_forms_menu() {
     if (!empty($form->disabled)) continue;
     $settings = &$form->data;
     $menu_link = &$settings['architecture']['menu_link'];
+    $uchoo_callback = strtok($settings['architecture']['access'], ':');
+    $uchoo_arg = strtok(':');
     $items[$settings['architecture']['path']] = array(
       'title' => 'Designed form',
       'title callback' => 'mcapi_form_title',
       'title arguments' => array($ctools_id),
       'page callback' => 'mcapi_get_form',
       'page arguments' => array($ctools_id),
-      'access callback' => 'user_chooser_access',
-      'access arguments' => explode(':', $settings['architecture']['access']),
+      'access callback' => 'in_user_chooser_segment',
+      'access arguments' => array($uchoo_callback, array($uchoo_arg)),
       'menu_name' => is_numeric($menu_link) ? 'navigation' :$menu_link,
       'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
     );

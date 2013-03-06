@@ -16,9 +16,8 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   }
 
   function option_definition() {
-    $currencies = &drupal_static('currencies');
     $options = parent::option_definition();
-    $options['currcode'] = array('default' => @key($currencies));
+    $options['currcode'] = array('default' => array());
     $options['total'] = array('default' => 'balance');
     return $options;
   }
@@ -26,7 +25,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   function options_form(&$form, &$form_state) {
     $currencies = &drupal_static('currencies');
     module_load_include('inc', 'mcapi');
-    $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode']);
+    $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode'], TRUE);
 
     $form['total'] = array(
       '#title' => t('Aggregate'),
@@ -45,9 +44,8 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   }
 
   function render($values) {
-    $currencies = &drupal_static('currencies');
     $uid = &$values->uid;
-    $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array_keys($currencies);
+    $currcodes = empty($this->options['currcode']) ? array_keys(currencies_load(user_load($uid))): $this->options['currcode'];
     $key = $this->options['total'];
     foreach ($currcodes as $currcode) {
       if (empty($this->fetched[$uid][$currcode])) {

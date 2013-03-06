@@ -121,10 +121,11 @@ function drush_mcapi_delnodes() {
 }
 
 function hard_delete($serials) {
+
   foreach ($serials as $serial) {
     $transaction = transaction_load($serial);
     field_attach_delete('transaction', $transaction);
     module_invoke_all('entity_delete', $transaction, 'transaction');
-    entity_get_controller('transaction')->undo($serial, TRUE);
   }
+  entity_get_controller('transaction')->delete($serials, TRUE);
 }

@@ -74,7 +74,7 @@ function mcapi_mcapicurrencies_default() {
   $mcapicurrency = new stdClass();
   $mcapicurrency->disabled = FALSE; /* Edit this to true to make a default mcapicurrency disabled initially */
   $mcapicurrency->api_version = 3;
-  $mcapicurrency->currcode = 'national';
+  $mcapicurrency->currcode = 'escrow';
   $mcapicurrency->data = (object) array(
     'info' => array(
       'currcode' => $mcapicurrency->currcode,

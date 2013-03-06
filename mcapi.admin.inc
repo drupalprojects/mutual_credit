@@ -491,7 +491,7 @@ function mcapi_currency_form(&$form, &$form_state){
 
 //currency form validate callback
 function mcapi_currency_validate_format(&$element, $form_state) {
-  if (!strpos($element['#value'], '[quantity]')) {
+  if (strpos($element['#value'], '[quantity]') === FALSE) {
     form_error($element, t("Currency format must contain token '[quantity]'"));
   }
 }

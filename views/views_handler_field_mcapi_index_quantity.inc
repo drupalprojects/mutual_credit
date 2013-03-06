@@ -9,9 +9,12 @@
  */
 class views_handler_field_mcapi_index_quantity extends views_handler_field {
 
+  var $currcode_alias;
+
   function query() {
-    //$this->ensure_my_table();
-    $this->add_additional_fields();
+
+    mcapi_views_ensure_currcode($this->query, $this->currcode_alias);
+
     //increment the name of the alias in case this field is used more than once in the same display
     static $i;
     $i++;
@@ -22,10 +25,9 @@ class views_handler_field_mcapi_index_quantity extends views_handler_field {
 
   function render($values) {
     if ($this->options['hide_empty'] && $values->{$this->field_alias} == 0) return '';
-    elseif (empty($values->currcode)) return '0';
     else return array(
       '#theme' => 'worth_item',
-      '#currcode' => $values->currcode,
+      '#currcode' => $values->{$this->currcode_alias},
       '#quantity' => $values->{$this->field_alias}
     );
   }

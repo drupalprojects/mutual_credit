@@ -725,6 +725,7 @@ function mcapi_transaction_access_callbacks() {
     'transaction_access_callback_perm_manage_all' => t("Users with permission to '@perm'", array('@perm' => t('Manage all transactions'))),
     'transaction_access_callback_payee' => t('The payee in the transaction'),
     'transaction_access_callback_payer' => t('The payer in the transaction'),
+    'transaction_access_callback_open' => t('Anyone, even anonymous users'),
   );
 }
 
@@ -762,7 +763,14 @@ function mcapi_mail_alter(&$message) {
  */
 function currency_access($op, $currcode, $account = NULL) {
   if (!$account) $account = $GLOBALS['user'];
-  return user_access(currency_load($currcode)->access[$op], $account);
+  $uid = is_object($account) ? $account->uid : $GLOBALS['user']->uid;
+  static $calculated = array();
+  if (!isset($calculated[$op][$currcode][$uid])) {
+    $callback = strtok(currency_load($currcode)->access[$op], ':');
+    $arg = strtok(':');
+    $calculated[$op][$currcode][$uid] = in_user_chooser_segment($callback, array($arg), $account->uid);
+  }
+  return $calculated[$op][$currcode][$uid];
 }
 
 
@@ -817,7 +825,7 @@ function currency_load($currcode = NULL) {
     array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1))
   );
   debug("update problems with currency id: $currcode isn't available");
-  if (module_exists('devel' && $GLOBALS['user']->uid == 1)) ddebug_backtrace();//temp!
+  if (module_exists('devel') && $GLOBALS['user']->uid == 1) ddebug_backtrace();//temp!
   return current($currencies);
 }
 /*
@@ -1214,9 +1222,9 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
   }
   //this must be the final check in this function
   //checks that at least one of the $items is populated
-  if (!empty($entity)) {
+  if (!empty($entity) && $instance['required']) {
     if (count($items)) return;
-    $errors[$field['field_name']][$langcode][] = array(
+    $errors[$field['field_name']][$langcode][][] = array(
       'error' => 'mcapi_empty_worth',
       'message' =>  t('!name field is required.', array('!name' => $instance['label']))
     );

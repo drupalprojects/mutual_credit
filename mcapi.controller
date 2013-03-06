@@ -6,17 +6,28 @@
  * Each function supports the choice of database connections.
  * the class should be named thus:
  * MODULENAME_EntityController
+ * This controller test writes the transaction during validation
  */
 if (module_exists('entity')) {
 class mcapiEntityController extends EntityAPIController {
 
   /*
-   * This controller test writes the transaction during validation
-   * mostly copied from the node controller
-   * need to see what the entity module has to offer
-   * no support for revisions
-   * returns an error if the transaction id is invalid
+   * We need to define a set of $conditions and a syntax for retrieving transactions
+   * Like our own transaction query language
+   * This will not be based on the db field names, and must support operators
+   * $conditions = array(
+   *   'created' => array(
+   *     'val' => 11982827367,
+   *     'op' => '>'
+   *   ),
+   *   'state' => array(
+   *     'val' => 1,
+   *     'op' => '<>'
+   *   )
+   * )
    */
+
+  //conditions here are the same as in the node entity controller, which is to say, they assume they know what table they're reading to
   public function load($xids = array(), $conditions = array()) {
     $entities = array();
     $passed_ids = !empty($xids) ? array_flip($xids) : FALSE;
@@ -257,6 +268,7 @@ class mcapiEntityController extends EntityAPIController {
    * states array, defaults to array(0) which is completed transactions only
    * no pager is provided in this function
    * views is much better
+   * this hasn't been used yet
    */
   public function get_period($uid, $variables) {
     $variables += array(
@@ -267,9 +279,9 @@ class mcapiEntityController extends EntityAPIController {
     );
     extract($variables);
     //db_set_active(variable_get('mcapi_db_read', 'default'));
-    $query = db_select('mcapi_transactions', 'x')->fields('x');
-    //db_set_active();
-    $query->condition(db_or()
+    $query = db_select('mcapi_transactions', 'x')
+      ->fields('x', array('xid'))
+      ->condition(db_or()
       ->condition('payer', $uid)
       ->condition('payee', $uid)
     )
@@ -277,15 +289,20 @@ class mcapiEntityController extends EntityAPIController {
     ->condition('created', $from, '>')
     ->condition('created', $to,  '<')
     ->orderby('created');
+    //db_set_active();
     if ($currcode) {
       $query->condition('currcode', $currcode);
     }
-    return $query->execute()->fetchAll();
+    return $this->load($query->execute()->fetchCol());
   }
 
   //this function is not 100% robust against creating simultaneous transactions
   public function next_serial() {
     return db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
+  }
+
+  public function delete($serials) {
+    db_delete('mcapi_transactions')->condition('serial', $serials)->execute();
   }
 }
 

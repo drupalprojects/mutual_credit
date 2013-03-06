@@ -19,6 +19,7 @@ function mcapi_index_views_views_api() {
 
 //views access control callback
 function views_plugin_access_user_arg_check() {
+  if ($GLOBALS['user']->uid == 1) drupal_set_message('Contact matslats as this views access plugin will be discontinued', 'warning',FALSE);
   return $GLOBALS['user']->uid == arg(1) || user_access('manage all transactions');
 }
 
@@ -34,7 +35,7 @@ function get_balance_history($account, $currcodes = array(), $mode = 'diagonal',
   }
   foreach ($currcodes as $currcode) {
     //make a starting point, before the first transaction
-    //then retrive up the WHOLE transaction history
+    //then retrieve up the WHOLE transaction history
     //the first entry is zero meaning the account created time, zero meaning starting balance
     $histories[$currcode] = array(0 => 0) +
     db_query("SELECT created - :born, (@csum := @csum + diff) as balance
@@ -73,14 +74,15 @@ function mcapi_index_views_backup_migrate_profiles_alter(&$profiles) {
  * Dividing the sum of all the debit balances by the average daily sales gives us the sales performance ratio for the system.
  */
 function mcapi_index_views_cron() {
-  $currencies = currencies_load();
-  foreach ($currencies as $currency) {
+  currencies_load();
+  $currencies = &drupal_static('currencies');
+  foreach ($currencies as $currcode => $currency) {
     $sum_of_all_debit_balances = 0;
     //get the sum of all debit balances of all accounts in this currency
     //get a list of all the users
     $callback = strtok($currency->access['membership'], ':');
     $args = array(strtok(':'));
-    $uids = user_chooser_retrieve_many($callback, $args, array('#allow_blocked' => TRUE));
+    $uids = user_chooser_segment($callback, $args, array('#allow_blocked' => TRUE));
     foreach ($uids as $uid) {
       $balance = transaction_totals($uid, $currcode)->balance;
       if ($balance > 0) {
@@ -99,7 +101,7 @@ function mcapi_index_views_cron() {
     $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
 
     if ($average_daily_sales) {
-      $indicator = $sum_of_all_debit_balances / $average_daily_sales;
+      $indicator = round($sum_of_all_debit_balances / $average_daily_sales, 1);
     }
     else {
       $indicator = NULL;
