@@ -172,6 +172,9 @@ function transaction_access_callback_payer_views($query, $condition, $state) {
 function transaction_access_callback_open_views($query, $condition, $state) {
   $condition->condition(1, 1);
 }
+function transaction_access_callback_creator_views($query, $condition, $state) {
+  $condition->condition('mcapi_transactions.creator', $GLOBALS['user']->uid);
+}
 
 /*
  * implements hook_query_TAG_alter for views on the mcapi_transactions table

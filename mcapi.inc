@@ -313,13 +313,16 @@ function transaction_access_callback_perm_manage_all($transaction) {
   return user_access('manage all transactions');
 }
 function transaction_access_callback_payee($transaction) {
-  return $account->uid == $transaction->payee;
+  return $GLOBALS['user']->uid == $transaction->payee;
 }
 function transaction_access_callback_payer($transaction) {
-  return $account->uid == $transaction->payer;
+  return $GLOBALS['user']->uid == $transaction->payer;
 }
 function transaction_access_callback_open($transaction) {
   return TRUE;
+}
+function transaction_access_callback_creator($transaction) {
+  return $GLOBALS['user']->uid == $transaction->creator;
 }
 
 /*
@@ -575,7 +578,6 @@ function worths_element_validate(&$element, &$form_state) {
   //first of all set the form_State value, which could not be set from the form_type_worths_value
   //because of the way it is populated from the container inwards
   drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], $element['#value']);
-
   if ($element['#required']) {//note that this checks all the $items together
     if (empty($element['#value'])) {
       form_error($element, t('!name field is required.', array('!name' => $element['#title'])));
@@ -691,7 +693,6 @@ function _worth_element_process($element, &$form_state) {
       );
     }
   }
-  else $element['div_quant'] = array();
   return $element;
 }
 
@@ -737,7 +738,7 @@ function theme_worth_element($variables) {
   if ($element['currcode']['#type'] == 'hidden') {//if the currency is preset, then we can use its own display format
     $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
     $currency_display = currency_load($currcode)->display;
-    if (!empty($element['div_quant'])) {
+    if (isset($element['div_quant'])) {
       $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
     }
     $output = $curr_select . str_replace('[quantity]', $quant_field, $currency_display['format'], $vars);

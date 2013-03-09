@@ -334,14 +334,14 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   elseif (element_children($empty_element)) {//this is a normal fieldAPI field - not checkboxes or radios
     foreach (element_children($empty_element) as $delta) {
       foreach (element_children($empty_element[$delta]) as $col) {
-        if (strlen($preset[$delta][$col])) {
-          $element['preset'][$delta][$col]['#default_value'] = $preset[$delta][$col];
+        $val = isset($preset[LANGUAGE_NONE][$delta][$col]) ? $preset[LANGUAGE_NONE][$delta][$col] : $preset[$delta][$col];
+        if (strlen($val)) {
+          $element['preset'][$delta][$col]['#default_value'] = $val;
         }
       }
     }
   }
-  else {//this is a normal field
-    //the payer, payee, secondperson, direction, fields are required and cannot be set
+  else {//this is a transaction entity property and is required
     $element['#description'] = t("This field is required");
     $element['preset']['#default_value'] = $preset;
   }

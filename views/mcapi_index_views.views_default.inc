@@ -214,10 +214,16 @@ function mcapi_index_views_views_default_views() {
 
   /* Display: Block */
   $handler = $view->new_display('block', 'System trading stats', 'system');
+  $handler->display->display_options['defaults']['access'] = FALSE;
+  $handler->display->display_options['access']['type'] = 'curr';
+  $handler->display->display_options['access']['mode'] = 'system_data';
   $handler->display->display_options['block_description'] = 'Trading summary';
 
   /* Display: Bloc */
   $handler = $view->new_display('block', 'User trading stats', 'user');
+  $handler->display->display_options['defaults']['access'] = FALSE;
+  $handler->display->display_options['access']['type'] = 'curr';
+  $handler->display->display_options['access']['mode'] = 'user_data';
   $handler->display->display_options['title'] = 'User\'s trading summary';
   $handler->display->display_options['defaults']['relationships'] = FALSE;
   /* Relation: Transaction index : 1st user */

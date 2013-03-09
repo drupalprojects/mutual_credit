@@ -1,10 +1,5 @@
 <?php
 
-function intertrading_install() {
-  $currencies = &drupal_static();
-  variable_set('intertrading_currcode', key($currencies));
-}
-
 function intertrading_enable() {
   user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array('access statement'));
   drupal_set_message(t("Anonymous users have been granted permission to see the stats. However this is not required to be part of the intertrading network"), 'warning');

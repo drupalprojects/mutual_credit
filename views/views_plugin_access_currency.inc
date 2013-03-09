@@ -46,11 +46,12 @@ class views_plugin_access_currency extends views_plugin_access {
 
   }
 
-/*
+
   function get_access_callback() {
+    if (module_exists('devel'))ddebug_backtrace();
     return array('currency_access', $this->options['mode'], CURRCODE, 'account');
   }
-*/
+
   function summary_title() {
     switch($this->options['mode']) {
       case 'membership': return t('Membership');

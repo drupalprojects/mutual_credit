@@ -69,16 +69,16 @@ function mcapi_limits_accounting_validate(array $cluster) {
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? array_filter($currency->limits['skip']) : array();
       if (isset($skips['user1']) && $GLOBALS['user']->uid == 1) {
-        $message = t("Skipped balance limit check because you are user 1.");
+        $message = t("Skipped @currency balance limit check because you are user 1.", array('@currency' => $currency->human_name));
       }
       elseif (isset($skips['owner']) && $GLOBALS['user']->uid == $currency->uid) {
-        $message = t("Skipped balance limit check because you are the currency owner.");
+        $message = t("Skipped @currency balance limit check because you are the currency owner.", array('@currency' => $currency->human_name));
       }
       elseif (isset($skips['auto']) && current($cluster)->type == 'auto') {
-        $message = t("Skipped balance limit checks for automated transactions.");
+        $message = t("Skipped balance limit checks for automated transactions with @currency.", array('@currency' => $currency->human_name));
       }
       elseif (isset($skips['reservoir']) && $uid = $currency->reservoir )  {
-        $message = t("Skipped balance limit checks for transactions involving the reservoir account.");
+        $message = t("Skipped balance limit checks for @currency transactions involving the reservoir account.", array('@currency' => $currency->human_name));
       }
       if (isset($message)) {
         $config_page = l(t('See currency settings'), 'admin/accounting/currencies/list/'.$currcode.'/edit');

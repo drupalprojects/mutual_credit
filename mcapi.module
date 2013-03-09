@@ -142,8 +142,8 @@ function transaction_totals($uid, $currcode = NULL, $filters = array()) {
     $currencies = &drupal_static('currencies');
     $currcode = key($currencies);
   }
-  if (empty($conditions)) {
-    $conditions = array(array('state', 0, '>'));
+  if (empty($filters)) {
+    $filters = array(array('state', 0, '>'));
   }
   //convert it to an object for cleaner syntax in php5
   return (object)entity_get_controller('transaction')->sums($uid, $currcode, $filters);
@@ -726,6 +726,7 @@ function mcapi_transaction_access_callbacks() {
     'transaction_access_callback_payee' => t('The payee in the transaction'),
     'transaction_access_callback_payer' => t('The payer in the transaction'),
     'transaction_access_callback_open' => t('Anyone, even anonymous users'),
+    'transaction_access_callback_creator' => t('The creator of the transaction'),
   );
 }
 
@@ -824,8 +825,8 @@ function currency_load($currcode = NULL) {
   watchdog('mcapi', "Nonexistent currency '@currcode' requested from: @list",
     array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1))
   );
-  debug("update problems with currency id: $currcode isn't available");
-  if (module_exists('devel') && $GLOBALS['user']->uid == 1) ddebug_backtrace();//temp!
+//  debug("update problems with currency id: $currcode isn't available");
+//  if (module_exists('devel') && $GLOBALS['user']->uid == 1) ddebug_backtrace();//temp!
   return current($currencies);
 }
 /*
@@ -1034,6 +1035,7 @@ function mcapi_element_info() {
       '#element_validate' => array('worths_element_validate'),
       '#theme_wrappers' => array('form_element'),
       '#process' => array('worths_element_process'),
+      '#tree' => TRUE,
       //custom properties, used for configuration
       '#preset' => FALSE,//ensures all currencies are showing
       '#calc' => FALSE,//allow a formula
@@ -1082,16 +1084,15 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
   if ($edit == FALSE) return;
   $value = array();
 
-
   foreach ($edit as $delta => $item) {
     $value[$delta]['currcode'] = $item['currcode'];
 
     if (!strlen($item['main_quant']) && empty($item['div_quant'])) {
       $value[$delta]['quantity'] = '';
     }
-    elseif (is_numeric($item['main_quant'])) {
+    elseif (is_numeric($item['main_quant']) || empty($item['main_quant'])) {
       $value[$delta]['quantity'] = floatval($item['main_quant']);
-      if (is_integer($value[$delta]['quantity']) && !empty($item['div_quant'])) {
+      if (!empty($item['div_quant'])) {
         $value[$delta]['quantity'] += ($item['div_quant'] + 0) / 100;
       }
     }
@@ -1329,9 +1330,12 @@ function worth_setter(&$empty_entity, $fieldname, $passed_item, $lang, $entity_t
 
 
 function _worthitems_to_worths(array $worthitems) {
+  $currencies = &drupal_static('currencies');
   $worths = array();
   foreach ($worthitems as $worth_item) {
-    $worths[$worth_item['currcode']] = $worth_item['quantity'];
+    if (isset($currencies[$worth_item['currcode']])) {
+      $worths[$worth_item['currcode']] = $worth_item['quantity'];
+    }
   }
   return $worths;
 }

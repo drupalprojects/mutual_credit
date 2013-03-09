@@ -133,7 +133,7 @@ class mcapiEntityController extends EntityAPIController {
         $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $currcode, 'quantity' => $quantity);
       }
     }
-    elseif(isset($values['quantity'])) {
+    elseif(isset($values['quantity']) && isset($values['quantity'])) {
       $currencies = &drupal_static('currencies');
       $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
       $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);

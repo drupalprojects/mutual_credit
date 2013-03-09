@@ -55,14 +55,6 @@ class mcapi_ui extends ctools_export_ui {
     $this->rows[$currcode]['data'][2] = array(
       'data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField()
     );
-    //third col, format
-    $this->rows[$currcode]['data'][3] = array(
-      'data' => array(
-        '#theme' => 'worth_item',
-        '#currcode' => $currcode,
-        '#quantity' => 99
-      )
-    );
     //fourth col, storage
     $this->rows[$currcode]['data'][4] = array(
       'data' => check_plain($item->type),
@@ -103,7 +95,6 @@ class mcapi_ui extends ctools_export_ui {
     }
 
     $header[] = array('data' => t('Transactions'), 'class' => array('ctools-export-ui-storage'));
-    $header[] = array('data' => t('Display format'), 'class' => array('ctools-export-ui-name'));
     $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
 
@@ -143,11 +134,10 @@ class mcapi_ui extends ctools_export_ui {
     $prefix = ctools_export_ui_plugin_base_path($plugin);
 
     //matslats
-    foreach ($this->items as $name => $item) {
-      if (empty($item->disabled)) $enabled[] = $name;
+    foreach ($this->items as $currcode => $item) {
+      if (empty($item->disabled)) $enabled[] = $currcode;
     }
-
-    foreach ($this->items as $name => $item) {
+    foreach ($this->items as $currcode => $item) {
       // Call through to the filter and see if we're going to render this
       // row. If it returns TRUE, then this row is filtered out.
       if ($this->list_filter($form_state, $item)) {
@@ -171,23 +161,33 @@ class mcapi_ui extends ctools_export_ui {
         unset($allowed_operations['revert']);
         unset($allowed_operations['delete']);
       }
-      //matslats
-      if (count($enabled) == 1 && $enabled[0] == $name) {
+      //prevent the last enabled currency from being disabled or deleted
+      if (count($enabled) == 1 && $enabled[0] == $currcode) {
         unset($allowed_operations['disable']);
         unset($allowed_operations['delete']);
       }
-      if(!in_array($name, $enabled)) {
+      //prevent both 'enable' and 'disable' being present
+      if(!in_array($currcode, $enabled)) {
         unset($allowed_operations['disable']);
       }
       else {
         unset($allowed_operations['enable']);
+      }
+      //prevent it being deleted if there are any non-deleted transactions
+      $used= db_query(
+        "SELECT count(xid)
+          FROM {mcapi_transactions} t LEFT JOIN {field_data_worth} w ON t.xid = w.entity_id
+          WHERE t.state > 0 AND w.worth_currcode = :currcode", array(':currcode' => $currcode)
+      )->fetchField();
+      if ($used) {
+        unset($allowed_operations['delete']);
       }
       $operations = array();
 
       foreach ($allowed_operations as $op) {
         $operations[$op] = array(
           'title' => $plugin['allowed operations'][$op]['title'],
-          'href' => ctools_export_ui_plugin_menu_path($plugin, $op, $name),
+          'href' => ctools_export_ui_plugin_menu_path($plugin, $op, $currcode),
         );
         if (!empty($plugin['allowed operations'][$op]['ajax'])) {
           //matslats
