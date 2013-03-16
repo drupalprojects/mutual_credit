@@ -54,12 +54,15 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'links':
         $ops = array();
-        if ($transaction->serial) {
+        if (property_exists($transaction, 'serial')) {
           foreach (transaction_get_links($transaction) as $link) {
             $ops[] = drupal_render($link);
           }
+          $replacements[$original] = implode(' ', $ops);
         }
-        $replacements[$original] = implode(' ', $ops);
+        break;
+      case 'url':
+        $replacements[$original] = url('transaction/'.$transaction->serial, array('absolute' => TRUE));
         break;
       default: //hopefully a field API field
        // drupal_set_message("Unknown token $name");
@@ -69,7 +72,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
 }
 
 function mcapi_token_info() {
-  return array(
+  $info = array(
     'types' => array(
       'transaction' => array(
         'name' => t('Transaction'),
@@ -118,6 +121,13 @@ function mcapi_token_info() {
       )
     )
   );
+  if (!module_exists('entity_token')) {//because there's a problem with it at the moment
+    $info['tokens']['transaction']['url'] = array(
+      'name' => t('Absolute url'),
+      'description' => t("A link to the transaction's own page.")
+    );
+  }
+  return $info;
 }
 /*
  * implements hook_token_info_alter

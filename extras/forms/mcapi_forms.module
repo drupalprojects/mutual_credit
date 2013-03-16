@@ -34,7 +34,6 @@ function mcapi_forms_menu() {
       'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
     );
   }
-
   return $items;
 }
 
@@ -187,19 +186,26 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
   //So it has fields either payer and payee OR direction and secondperson
   //plus the fieldAPI fields
   if (empty($transaction)) {//only under exceptional cases might an existing transaction be passed
-    $fieldnames = array_merge(array('payer', 'payee'), array_keys(field_info_instances('transaction', 'transaction')));
+    //get all the fieldAPI fields and attempt to populate them with the form presets
     $defaults = array();
-    foreach($fieldnames as $fieldname) {
-      if (isset($settings[$fieldname]['preset'])) {
-        if ($fieldname == 'worth') {
-          foreach ($settings[$fieldname]['preset'] as $item) {
+    $instances = field_info_instances('transaction', 'transaction');
+    foreach($instances as $instance) {
+      $field_name = &$instance['field_name'];
+      if (isset($settings[$field_name]['preset'])) {
+        if ($field_name == 'worth') {
+          //this field has a different format to what is saved
+          foreach ($settings[$field_name]['preset'] as $item) {
             $defaults['worths'][$item['currcode']] = $item['quantity'];
           }
         }
         else {
-          $defaults[$fieldname] = $settings[$fieldname]['preset'];
+          $defaults[$field_name] = $settings[$field_name]['preset'];
         }
       }
+    }
+    if ($settings['perspective'] == 3) {
+      $defaults['payer'] = $settings['payer']['preset'];
+      $defaults['payee'] = $settings['payee']['preset'];
     }
     $transaction = entity_create('transaction', $defaults);
     if ($settings['perspective'] == 1) {

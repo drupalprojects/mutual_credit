@@ -37,9 +37,9 @@ class views_plugin_access_currency extends views_plugin_access {
       '#description' => t("See the settings on each currency's page."),
       '#type' => 'radios',
       '#options' => array(
-        'membership' => t('According to the membership of the currency'),
-        'user_data' => t('According to whether the user summary data is accessible'),
-        'system_data' => t('According to whether the system summary data is accessible'),
+        'membership'  => t("Users who have '@perm' for all shown currencies", array('@perm' => t('Use the currency'))),
+        'trader_data' => t("Users who have '@perm' for all shown currencies", array('@perm' => t('View aggregated user transaction data'))),
+        'system_data' => t("Users who have '@perm' for all shown currencies", array('@perm' => t('View aggregated system data'))),
       ),
       '#default_value' => $this->options['mode']
     );
@@ -55,7 +55,7 @@ class views_plugin_access_currency extends views_plugin_access {
   function summary_title() {
     switch($this->options['mode']) {
       case 'membership': return t('Membership');
-      case 'user_data': return t('User summary data');
+      case 'trader_data': return t('User summary data');
       case 'system_data': return t('System-wide summary data');
     }
   }

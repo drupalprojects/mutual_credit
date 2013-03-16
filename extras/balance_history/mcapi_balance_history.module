@@ -1,5 +1,12 @@
 <?php
 
+
+/**
+ * Implements hook_init().
+ */
+function google_chart_tools_init() {
+}
+
 /*
  * implements hook_block_info
  */
@@ -23,9 +30,33 @@ function mcapi_balance_history_block_view($delta) {
         '#theme' => 'balance_history',
         '#account' => $settings['account'],
         '#histories' => get_balance_history($settings['account'], $settings['currcodes']),
+        '#width' => $settings['width'],
+        '#resample' => $settings['resample']
       )
     );
   }
+}
+
+/*
+ * Implements views hook_block_configure
+ */
+function mcapi_balance_history_block_configure($delta) {
+  $form['width'] = array(
+    '#title' => t('Width in pixels'),
+    '#type' => 'textfield',
+    '#element_validate' => array('element_validate_integer_positive'),
+    'max_size' => 4
+  );
+  $form['resample'] = array(
+    '#title' => t('Sampling'),
+    '#description' => t('How to resample the data, if it is too large'),
+    '#type' => 'select',
+    '#options' => array(
+      'decimate' => t('Remove points, (quicker)'),
+      'smooth' => t('Resample points (more accurate)')
+    )
+  );
+  return mcapi_block_configure($delta, $form);
 }
 
 /*
@@ -34,65 +65,74 @@ function mcapi_balance_history_block_view($delta) {
 function mcapi_balance_history_theme() {
   return array(
     'balance_history' => array(
-      'template' => 'balance_history_gchart',
+      'template' => 'balance_history',
       'variables' => array(
         'account' => NULL,
         'histories' => array(),
+        'width' => 0,
+        'resample' => 'simple'
+        //also curvetype is added by template_process_balance_history
       )
     )
   );
 }
 
-
-//for google charts, which is the default implementation, we need to limit the number of points
-function template_preprocess_balance_history_gchart(&$vars) {
-  //this is calcluated as 2048 max chars in a google charts url
-  //- 250 characters for all the other data divided by 13 characters per chart-point
-  $max_points = 140;
-  $points = 0;
-  foreach ($vars['histories'] as $history) {
-    $points += count($history);
-  }
-  if ($points < $max_points /2 ) $vars['mode'] = 'square';
-  elseif($points > $max_points)$vars['mode'] = $max_points;
-  else $vars['mode'] = 'diagonal';
-}
-
-function template_process_balance_history_gchart(&$vars) {
+//do any smoothing so that the data set doesn't get too large, say more than 100 moments in total
+function template_process_balance_history(&$vars) {
+  $vars['curvetype'] = 'none';
   foreach ($vars['histories'] as $currcode => $history) {
-    //draws straight diagonal lines between the points
-    $times = array_keys($history);
-    $values = array_values($history);
-
-    if($vars['mode'] == 'square') {//adds intermediate points to produce perpendicular lines
-      //make two points for each point, then slip the x against the y to make the step effect
-      $times = sort(array_merge($times , $times));
-      foreach ($values as $val) {
-        $values[] = $val;
-        $values[] = $val;
+    $step_change = $vars['width'] / 3;
+    $prop = count($history) / $step_change;
+    if ($prop > 1) {//too many for the step method
+      if ($vars['resample'] == 'decimate') {
+        $vars['curvetype'] = 'function';
+        //simplesmoothing, just remove some points and render it as a curve
+        //what proportion of points to remove?
+        //what does array_reduce do?
       }
-      $values = $values;
-      unset($values2);
-      //remove the first time and the last value to make the stepped effect!
-      array_shift($times);
-      array_pop($values);
+      else {//resample
+        $num_of_points = $vars['width'] / 2;
+        $last_time = end($times );
+        $values[] = end($values);//repeat the last time because it has to have the same number of elements as the temp array, with the sample moment added
+
+        $sampling_interval = ceil(($last_time) / $num_of_points);
+        for ($i = 0; $i <= 100; $i++) {
+          $sample_time = $i * $sampling_interval;
+          $new_times[] = $sample_time;
+          $temp = $times + array($sample_time);
+          sort($temp);
+          $sample_position = array_search($sample_time, $temp);
+          $new_values[] = $values[$sample_position];
+        }
+        $times = $new_times;
+        $values = $new_values;
+      }
     }
-    elseif(is_numeric($vars['mode'])) {//sampling using $mode as the number of points required
-      $last_time = end($times );
-      $values[] = end($values);//repeat the last time because it has to have the same number of elements as the temp array, with the sample moment added
+    else {//step method
 
-      $sampling_interval = ceil(($last_time) / $vars['mode']);
-      for ($i = 0; $i <= $vars['mode']; $i++) {
-        $sample_time = $i * $sampling_interval;
-        $new_times[] = $sample_time;
-        $temp = $times + array($sample_time);
-        sort($temp);
-        $sample_position = array_search($sample_time, $temp);
-        $new_values[] = $values[$sample_position];
-      }
-      $times = $new_times;
-      $values = $new_values;
     }
     $vars['histories'][$currcode] = array_combine($times, $values);
   }
 }
+
+/*
+ * to draw diagonal lines between the points:
+ *
+    $times = array_keys($history);
+    $values = array_values($history);
+    //square mode
+    if(count($times < 100 )) {//adds intermediate points to produce perpendicular lines
+      //make two points for each point, then slip the x against the y to make the step effect
+
+      $times = array_merge($times, $times);
+      sort($times);
+      foreach ($values as $val) {
+        $values2[] = $val;
+        $values2[] = $val;
+      }
+      $values = $values2;
+      unset($values2);
+      //remove the first time and the last value to make the stepped effect!
+      array_shift($times);
+      array_pop($values);
+ */

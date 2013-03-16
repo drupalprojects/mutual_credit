@@ -15,9 +15,7 @@ function mcapi_import_help($path) {
       break;
     case 'admin/accounting/import/transactions' :
       $currencies = &drupal_static('currencies');
-      $currcode = variable_get('mcapi_import_currcode');
       $help[] = t("Import a whole transaction history using the user 'uid' property.");
-      $help[] = t("All transactions will be in '@currency', according to the settings.", array('@currency' => $currencies[$currcode]->human_name));
       if (module_exists('mcapi_limits')) {
         $help[] = t("It is advised to disable the currency's balance limits before importing.");
       }
@@ -34,27 +32,22 @@ function mcapi_import_help($path) {
  */
 function mcapi_import_menu() {
   if(user_access('manage all currencies')) {
-    drupal_set_message('The Community Account import module is installed, and should be disabled and uninstalled when importing is complete.', 'warning', FALSE);
+    drupal_set_message('The Community Accounting import module is installed, and should be disabled and uninstalled when importing is complete.', 'warning', FALSE);
   }
 
   $items['admin/accounting/import'] = array (
     'title' => 'Import Tools',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_settings_form'),
-    'access arguments' => array('configure currencies'),
+    'access arguments' => array('configure all currencies'),
     'weight' => 0
-  );
-  $items['admin/accounting/import/settings'] = array(
-    'title' => 'Settings',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 2
   );
   $items['admin/accounting/import/balances'] = array(
     'title' => 'Import balances',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_balances_form'),
-    'access arguments' => array('configure currencies'),
-    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('configure all currencies'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 4
   );
   $items['admin/accounting/import/transactions'] = array(
@@ -62,47 +55,30 @@ function mcapi_import_menu() {
     'description' => 'Import transactions for users already on the system.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_transactions_form'),
-    'access arguments' => array('configure currencies'),
+    'access arguments' => array('configure all currencies'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 6
   );
   return $items;
 }
 
-function import_settings_form($form, $form_state) {
-  module_load_include('inc', 'mcapi');
-  $currencies = &drupal_static('currencies');
-  $form['mcapi_import_currcode'] = currency_picker_element(array_keys($currencies), variable_get('mcapi_import_currcode'));
-  $form['mcapi_import_type'] = array(
-    '#title' => t('Transaction type for imported transactions'),
-    '#type' => 'select',
-    '#options' => mcapi_get_types(),
-    '#default_value' => variable_get('mcapi_import_type', current(mcapi_get_types())),
-  );
-  //this widget and variable is also used in intertrading.module
-  $fields = array();
-  foreach(field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
-    if ($fieldname == 'worth') continue; //this field is reserved!
-    $fields[$fieldname] = $instance['label'];
-  }
-  return system_settings_form($form);
-}
-
 /*
  * form called by menu
  */
 function import_transactions_form($form, $form_state) {
-  $columns = array('payer', 'payee', 'quantity', 'created');
+  $columns = array('"payer"', '"payee"', '"quantity"', '"created"');
   if ($desc = variable_get('transaction_description_field', '')) {
     //we don't actually use the name of the field here
-    $columns[] = 'description';
+    $columns[] = '"description"';
   }
   $form['#prefix'] = implode(' ', array(
     t('Prepare a csv file, without quotes'),
+    t('Payer and Payee should be user IDs or email addresses'),
     t("'created' is optional, but will be converted to unixtime using php function !strtotime", array('@strtotime' => l('strtotime', 'http://php.net/strtotime'), array('absolute' => TRUE))),
     t('Use the following column headings, in any order: !columns', array('!columns' => '<blockquote>'.implode(', ', $columns).'</blockquote>'))
   ));
-  $form['#prefix'] .= '<br />'. mcapi_import_ready();
+  $currencies = &drupal_static('currencies');
+  $form['currcode'] = currency_picker_element(array_keys($currcodes), $default = 'credunit', 0);
   $form['data'] = array (
     '#type' => 'textarea',
     '#title' => 'paste data',
@@ -127,14 +103,15 @@ function import_transactions_form_validate(&$form, &$form_state) {
   module_load_include('inc', 'mcapi');
   $rows = parse_getcsv($form_state['values']['data']);
   foreach ($rows as $row) {
-    $uids[] = $row['payer'];
-    $uids[] = $row['payee'];
+    $user_ids[] = $row['payer'];
+    $user_ids[] = $row['payee'];
   }
-  if ($errors = check_users($uids, TRUE)) {
+  if ($errors = check_users($user_ids, TRUE)) {
     form_set_error('data', implode('<br />', $errors));
     return;
   }
-  foreach (mcapi_import_generate_transactions($rows) as $transaction) {
+
+  foreach (mcapi_import_generate_transactions($rows, $form_state['values']['currcode'], $form_state['values']['transaction_type']) as $transaction) {
     try{
       $transactions = array($transaction);
       //each will have its own serial number
@@ -155,7 +132,7 @@ function import_transactions_form_submit($form, &$form_state) {
     $earliest[$row['payee']][] = $transaction['created'];
   }
   //create the transactions
-  foreach(mcapi_import_generate_transactions($csv) as $transaction) {
+  foreach(mcapi_import_generate_transactions($csv, $form_state['values']['currcode'], $form_state['values']['transaction_type']) as $transaction) {
     $cluster = array($transaction);
     transaction_cluster_write($cluster, TRUE);
   }
@@ -167,15 +144,15 @@ function import_transactions_form_submit($form, &$form_state) {
   }
 }
 
-function mcapi_import_generate_transactions($rows) {
+function mcapi_import_generate_transactions($rows, $currcode, $type) {
   foreach ($rows as $row) {
     $props = array(
-      'payer' => trim($row['payer']),
-      'payee' => trim($row['payee']),
+      'payer' => mcapi_import_get_uid($row['payer']),
+      'payee' => mcapi_import_get_uid($row['payer']),
       'quantity' => trim($row['quantity']),
-      'currcode' => variable_get('mcapi_import_currcode', ''),
+      'currcode' => $currcode,
       'state' => TRANSACTION_STATE_FINISHED,
-      'type' => variable_get('mcapi_import_type', current(mcapi_get_types())),
+      'type' => $type,
       'description' => trim($row['description'])
     );
     if (isset($row['created'])) {
@@ -186,19 +163,32 @@ function mcapi_import_generate_transactions($rows) {
   return $transactions;
 }
 
-function import_balances_form($form, &$form_state) {
-  $columns = array('UserID', 'Balance', 'GrossIncome');
-  $form['#prefix'] = implode(' ', array(
-    t("Paste 2 or 3 comma separated columns into the field below, the first column should be the uid or username, the second column the current balance, and optionally the third column should be the user's gross income until now (turnover)."),
-    t("This tool assumes there is only one currency in the system. The second column SHOULD add up to 0 for LETS and other zero balance systems, but this will not be checked."),
-    t("The first line of the field should read (third column is optional): !code", array('!code' => '<blockquote>'.implode($columns).'</blockquote>'))
-  ));
-  $form['#prefix'] .= '<br />'. mcapi_import_ready();
+function mcapi_import_get_uid($string) {
+  if (is_numeric($string)) return $uid;
+  else return user_load_by_mail($string)->uid;
+}
 
+function import_balances_form($form, &$form_state) {
+  $columns = array('User', 'Balance', 'GrossIncome');
+  $form['#prefix'] = implode(' ', array(
+    t("Paste 2 or 3 comma separated columns into the field below, the first column should be the uid or email, the second column the current balance, and optionally the third column should be the user's gross income until now (turnover)."),
+    t("The second column SHOULD add up to 0 for LETS and other zero balance systems, but this will not be checked."),
+    t("Do not use quotes"),
+    t("The first line should read (third column is optional): !code", array('!code' => '<blockquote>'.implode(', ', $columns).'</blockquote>'))
+  ));
+  $form['transaction_type'] = array(
+    '#title' => t('Transaction type for imported transactions'),
+    '#type' => 'select',
+    '#options' => mcapi_get_types(),
+    '#required' => TRUE
+  );
+  $currencies = &drupal_static('currencies');
+  $form['currcode'] = currency_picker_element(array_keys($currcodes), $default = 'credunit', 0);
+  $form['currcode']['#required'] = TRUE;
   $form['data'] = array (
     '#type' => 'textarea',
     '#title' => 'paste data',
-    '#default_value' => isset($form_state['values']['data']) ? $form_state['values']['data'] : implode($columns),
+    '#default_value' => isset($form_state['values']['data']) ? $form_state['values']['data'] : implode(", ", $columns),
     '#required' => TRUE
   );
   $form['import_balances'] = array (
@@ -213,13 +203,13 @@ function import_balances_form_validate($form, &$form_state) {
   $form_state['values']['data'] .= "\n";
   $rows = parse_getcsv($form_state['values']['data']);
   foreach ($rows as $row) {
-    $uids[] = $row['UserID'];
+    $user_ids[] = $row['UserID'];
   }
-  check_users($uids, FALSE);
+  check_users($user_ids, FALSE);
   foreach ($rows as $rownum => $row) {
     //check integrity of balances, the second field
     if (!is_numeric($row['Balance'])) {
-      form_set_error('data', t("Balance (second item) on row @num is not numeric: @val", array('@num'=>$rownum +1, '@val' => $row['Balance'])));
+      form_set_error('data', t("Balance (second item) on row @num is not numeric: @val", array('@num' => $rownum +1, '@val' => $row['Balance'])));
     }
     //check integrity of gross income, the optional third field
     if (!empty($row['GrossIncome'])){
@@ -235,83 +225,88 @@ function import_balances_form_validate($form, &$form_state) {
 
 function import_balances_form_submit($form, &$form_state) {
   $rows = parse_getcsv($form_state['values']['data']);
-    $currencies = &drupal_static('currencies');
-    $def_cur = key($currencies);
-  foreach ($rows as $key=>$stats) {
+  $currencies = &drupal_static('currencies');
+  $def_cur = key($currencies);
+  foreach ($rows as $key => $stats) {
     mcapi_import_balances_member(
-      $stats['UserID'],
-      isset($stats['currcode']) ? $stats['currcode'] : $def_cur,
+      mcapi_import_get_uid($stats['UserID']),
+      $form_state['values']['currcode'],
+      $form_state['values']['transaction_type'],
       $stats['Balance'],
-      $stats['GrossIncome']
+      @$stats['GrossIncome']
     );
   }
 }
 
 
-function mcapi_import_balances_member($uid, $currcode, $balance, $gross_income = NULL, $currcode) {
+function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_income = 0) {
   global $language;
-  $currency = $currencies['currcode'];
+  $currency = currency_load($currcode);
   $transactions = array();
-  $transaction = entity_create('transaction', array(
-    'type' => variable_get('mcapi_import_type', current(mcapi_get_types())),
+  $values = array(
+    'type' => $type,
     'state' => TRANSACTION_STATE_FINISHED,
-    'worth' => array(LANGUAGE_NONE => array(0 => array('currcode' => $currcode)))
-  ));
+    'currcode' => $currcode
+  );
+
+  $transaction = entity_create('transaction', $values);
+
   if ($gross_income) {
     $gross_expenditure = $gross_income - $balance;
-    $in = $transaction;
-    $out = clone($transaction);
+    $in = $values;
+    $out = clone($values);
+    $in['quantity'] = $gross_expenditure;
+    $in['payer'] = $currency->reservoir;
+    $in['payee'] = $uid;
+    $transactions[] =  entity_create('transaction', $in);
+    $out['quantity'] = $gross_income;
+    $out['payer'] = $uid;
+    $out['payee'] = $currency->reservoir;
     if ($desc_field = variable_get('transaction_description_field', '')) {
-      $in->{$desc_field}[$language->language][0]['value'] = t("Gross income");
-      $out->{$desc_field}[$language->language][0]['value'] = t("Gross expenditure");
+      $in['description'] = t("Gross income");
+      $out['description'] = t("Gross expenditure");
     }
-    $in->worth[LANGUAGE_NONE][0]['quantity'] = $gross_expenditure;
-    $in->worth[LANGUAGE_NONE][0]['currcode'] = $currcode;
-    $in->payer = $currency->reservoir;
-    $in->payee = $uid;
-    $transactions[] = $in;
-    $out->worth[LANGUAGE_NONE][0]['quantity'] = $gross_income;
-    $out->worth[LANGUAGE_NONE][0]['currcode'] = $currcode;
-    $out->payer = $uid;
-    $out->payee = $currency->reservoir;
-    $transactions[] = $out;
+    $transactions[] =  entity_create('transaction', $out);
   }
   elseif ($balance != 0) {//if there is only balance, we do one exchange, which is simply + balance
-    $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $balance;
     if ($balance > 0) {
-      $transaction->payer = $currency->reservoir;
-      $transaction->payee = $uid;
+      $values['payer'] = $currency->reservoir;
+      $values['payee'] = $uid;
+      $values['quantity'] = $balance;
     }
     else {
-      $transaction->payer = $uid;
-      $transaction->payee = $currency->reservoir;
+      $values['payer'] = $uid;
+      $values['payee'] = $currency->reservoir;
+      $values['quantity'] = -$balance;
     }
     if ($desc_field = variable_get('transaction_description_field', '')) {
-      $transaction->{$desc_field}[$language->language][0]['value'] = t("Carried Forward");
+      $values['description'] = t("Carried Forward");
     }
-    $transactions[] = $transaction;
+    $transactions[] = entity_create('transaction', $values);
   }
-  if ($transactions) transactions_insert($transactions);
+  if ($transactions) transaction_cluster_write($transactions, TRUE);
 }
 
 
 
 //check that the user ids or names actually correspond to a user on the system
 //coming from the csv all keys and values will be strings, surrounded by quotes
-function check_users($uids, $allow1 = FALSE) {
+function check_users($user_ids, $allow1 = FALSE) {
 
   $errors = array();
-  $uids = array_unique($uids);
-  foreach ($uids as $uid){
+  $user_ids = array_unique($user_ids);
+  foreach ($user_ids as $user_id){
+    if (!is_numeric($user_id)) {
+      if (valid_email_address($user_id)) {
+        $uid = user_load_by_mail($user_id)->uid;
+      }
+      else {
+        $errors[] = t('Invalid email: @string', array('@string' => $user_id));
+      }
+    }
+    else ($uid = $user_id);
     if (!is_numeric($uid)) {
-      $errors[] = t('Payer and Payee must be numeric user IDs: @value)', array('@value' => $uid));
-    }
-    $min = $allow1 ? 1 : 2;
-    if ($uid < $min) {
-      $errors[] = t('Cannot import transaction data for users 1 or 0');
-    }
-    if (!is_object(user_load($uid))) {
-      $errors[] = t('User @num does not exist', array('@num' => $uid));
+      $errors[] = t('User not identified @value)', array('@value' => $user_id));
     }
   }
   return $errors;
@@ -327,7 +322,7 @@ function parse_getcsv($input, $delimiter = ",", $enclosure = '"', $escape = "\\"
     $i++;
     $values = explode($delimiter, $row);
     foreach ($headers as $header) {
-      $data[$i][$header] = array_shift($values);
+      $data[$i][$header] = trim(array_shift($values));
     }
     //append any other values to the final field, which must have been a string with commas in
     if ($extra = implode(',', $values)) {
@@ -342,21 +337,12 @@ function csv2array($input, $delimiter = ",", $enclosure = '"', $escape = "\\") {
   $input = str_replace(' ', '', trim($input));
   $fields = explode($delimiter, $input);
   foreach ($fields as $key => $value) {
-    $fields[$key]=str_replace($escape.$enclosure, $enclosure, $value);
+    $fields[trim($key)]=str_replace($escape.$enclosure, $enclosure, trim($value));
   }
   return($fields);
 }
 
 
-function mcapi_import_ready() {
-  if (($type = variable_get('mcapi_import_type', 0)) && ($code = variable_get('mcapi_import_currcode', 0))) {
-    return t('Currency code: !code', array('!code' => '<strong>'.$code.'</strong>')) .'<br />'.
-      t('Transaction type: !type', array('!type' => '<strong>'.$type.'</strong>')) .'<br />'.
-      t('Description field: !field', array('!field' => '<strong>'.variable_get('transaction_description_field', '').'</strong>')) ;
-  }
-  drupal_set_message('Settings are required before import is allowed');
-  drupal_goto('admin/accounting/import');
-}
 
 /**
  * Implementation of hook_uif_help().
@@ -382,43 +368,6 @@ function mcapi_import_uif_post_create($account, $user_data, $form_state) {
       $currencies = &drupal_static('currencies');
       $user_data['currcode'] = key($currencies);
     }
-    mcapi_import_balances_member($account->uid, $user_data['currcode'], $user_data['balance'], @$user_data['gross_income']);
+    mcapi_import_balances_member($account->uid, $user_data['currcode'], 'auto', $user_data['balance'], @$user_data['gross_income']);
   }
-}
-
-function mcapi_import_variable_info() {
-  return array(
-    'mcapi_import_type' => array(
-      'title' => t('Transaction type'),
-      'description' => t('Transaction type to be used for next import'),
-      'type' => 'select',
-      'options callback' => 'mcapi_get_types',
-      'default' => 'mass',
-      'required' => TRUE,
-      'group' => 'mcapi',
-    ),
-    'mcapi_import_currcode' => array(
-      'title' => t('Transaction Currency'),
-      'description' => t('Transaction currency to be used for next import'),
-      'type' => 'select',
-      //we have the currency_picker_element for this normally, but I don't think it will work.
-      'options callback' => 'mcapi_get_import_currencies',
-      'default' => 'mass',
-      'required' => TRUE,
-      'group' => 'mcapi'
-    ),
-  );
-}
-
-function mcapi_get_import_currencies() {
-  $currences = &drupal_static('currencies');
-  foreach (drupal_static('currencies') as $currcode => $currency) {
-    $options[$currcode] = $currency->human_name;
-  }
-  return $options;
-}
-
-function mcapi_import_uninstall() {
-  variable_del('mcapi_import_type');
-  variable_del('mcapi_import_currcode');
 }

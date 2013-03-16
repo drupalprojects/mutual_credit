@@ -60,30 +60,27 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
 function mcapi_limits_accounting_validate(array $cluster) {
   $errors = array();
   module_load_include('inc', 'mcapi');
+  $messages = array();
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each user with their limits
   foreach (_transactions_diff($cluster) as $uid => $percurrency) {
     foreach ($percurrency as $currcode => $diffs) {
       //check to see if any of the skip settings apply.
+      //these check, or at least these reports should possiblly be done after the check, and only if the check failed
       $currency = currency_load($currcode);
       //upgraded sites need to check for the presence of the skip property
-      $skips = isset($currency->limits['skip']) ? array_filter($currency->limits['skip']) : array();
-      if (isset($skips['user1']) && $GLOBALS['user']->uid == 1) {
-        $message = t("Skipped @currency balance limit check because you are user 1.", array('@currency' => $currency->human_name));
+      $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
+      if ($skips['user1'] && $GLOBALS['user']->uid == 1) {
+        $messages[$currcode] = t("Skipped @currency balance limit check because you are user 1.", array('@currency' => $currency->human_name));
       }
-      elseif (isset($skips['owner']) && $GLOBALS['user']->uid == $currency->uid) {
-        $message = t("Skipped @currency balance limit check because you are the currency owner.", array('@currency' => $currency->human_name));
+      elseif ($skips['owner'] && $GLOBALS['user']->uid == $currency->uid) {
+        $messages[$currcode] = t("Skipped @currency balance limit check because you are the currency owner.", array('@currency' => $currency->human_name));
       }
-      elseif (isset($skips['auto']) && current($cluster)->type == 'auto') {
-        $message = t("Skipped balance limit checks for automated transactions with @currency.", array('@currency' => $currency->human_name));
+      elseif ($skips['auto'] && current($cluster)->type == 'auto') {
+        $messages[$currcode] = t("Skipped balance limit checks for automated transactions with @currency.", array('@currency' => $currency->human_name));
       }
-      elseif (isset($skips['reservoir']) && $uid = $currency->reservoir )  {
-        $message = t("Skipped balance limit checks for @currency transactions involving the reservoir account.", array('@currency' => $currency->human_name));
-      }
-      if (isset($message)) {
-        $config_page = l(t('See currency settings'), 'admin/accounting/currencies/list/'.$currcode.'/edit');
-        drupal_set_message($message . ' '.$config_page, 'warning', FALSE);
-        continue;
+      elseif ($skips['reservoir'] && $uid == $currency->reservoir )  {
+        $messages[$currcode] = t("Skipped balance limit checks for @currency transactions involving the reservoir account.", array('@currency' => $currency->human_name));
       }
       $balance = transaction_totals($uid, $currcode)->balance;
       $projected = $balance + array_sum($diffs);
@@ -109,7 +106,15 @@ function mcapi_limits_accounting_validate(array $cluster) {
   //the only way I can think of to pass both messages and codes back,
   //short of defining my own exception is to nest exceptions
   try {
-    if (count($errors)) throw new Exception(serialize($errors));
+    if (count($errors)) {
+      if (count($messages)) {
+        foreach ($messages as $currcode => $message) {
+          drupal_set_message($message, 'warning', FALSE);
+        }
+        return;
+      }
+      throw new Exception(serialize($errors));
+    }
   }
   catch (exception $e) {
     $message = mcapi_limits_exception_parse(unserialize($e->getMessage()));

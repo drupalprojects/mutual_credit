@@ -119,24 +119,28 @@ class mcapiEntityController extends EntityAPIController {
       'state' => TRANSACTION_STATE_FINISHED
     );
     foreach ($properties as $key => $val) {
-      $transaction->$key = isset($values[$key]) ? $values[$key] : $val;
+      $transaction->$key = array_key_exists($key, $values) && !empty($values[$key]) ? $values[$key] : $val;
+      unset($values[$key]);
     }
     if (isset($values['worth'])) {
       $items = isset($values['worth'][LANGUAGE_NONE]) ? $values['worth'][LANGUAGE_NONE] : $values['worth'];
       foreach ($items as $delta => $item) {
         $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $item['currcode'], 'quantity' => $item['quantity']);
       }
+      unset($values['worth']);
     }
     //another format which might be used
     elseif(isset($values['worths'])) {
       foreach ($values['worths'] as $currcode => $quantity) {
         $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $currcode, 'quantity' => $quantity);
       }
+      unset($values['worths']);
     }
     elseif(isset($values['quantity']) && isset($values['quantity'])) {
       $currencies = &drupal_static('currencies');
       $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
       $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
+      unset($values['quantity'], $values['currcode']);
     }
     else {//if worths is not indicated, create a value for each currency the user is permitted to use
       //check that the creator is actually permitted to use this currency
@@ -154,12 +158,31 @@ class mcapiEntityController extends EntityAPIController {
       //assumes that the description field is not called 'description'
       if (isset($values['description'])) {
         $transaction->{$desc_fieldname} = array(LANGUAGE_NONE => array(0 => array('value' => $values['description'])));
+        unset($values['description']);
       }
       elseif (isset($values[$desc_fieldname])) {
         if (isset($values[$desc_fieldname][LANGUAGE_NONE])) $values[$desc_fieldname] = $values[$desc_fieldname][LANGUAGE_NONE];
         $transaction->{$desc_fieldname} = array(
           LANGUAGE_NONE => $values[$desc_fieldname]
         );
+        unset($values[$desc_fieldname]);
+      }
+    }
+    //finally any other fields...
+    foreach($values as $fieldname => $default) {
+      //special presetting for taxonomy fields
+      $field = field_info_field($fieldname);
+      if ($field['type'] == 'taxonomy_term_reference') {
+        if (is_array($default)) {
+          foreach ($default as $val) {
+            $val = (array)$val;
+            //I've seen different formats being saved.
+            $transaction->{$fieldname}[LANGUAGE_NONE][] = array('tid' => reset($val));
+          }
+        }
+      }
+      else {
+        $transaction->{$fieldname}[LANGUAGE_NONE][] = $default;
       }
     }
     $transaction->dependents = array();

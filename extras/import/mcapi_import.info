@@ -1,6 +1,6 @@
 ; $Id:
 name = Import transactions
-description = Paste a csv to import transactions. Assumes one currency.
+description = Paste a csv to import initial user balances or a whole transaction history.
 package = Community Accounting
 core = 7.x
 configure = admin/accounting/import

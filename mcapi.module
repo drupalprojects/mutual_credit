@@ -279,7 +279,10 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'file' => 'mcapi.inc'
     ),
     'transaction_totals' => array(
+      'template' => 'transaction_totals',
+      'pattern' => 'transaction_totals__',
       'variables' => array(
+        'currcode' => '',
         'totals' => array()
       ),
       'file' => 'mcapi.inc'
@@ -422,11 +425,11 @@ function mcapi_block_view($delta) {
 /*
  * implements hook_block_configure
  */
-function mcapi_block_configure($delta) {
+function mcapi_block_configure($delta, $form = array()) {
   $currencies = &drupal_static('currencies');
   module_load_include('inc', 'mcapi');
   $settings = variable_get('block_'. $delta, array('currcodes' => array(), 'user_source' => 0));
-  $form['currcodes'] = currency_picker_element(array_keys($currencies), @$settings['currcodes'], TRUE);
+  $form['currcodes'] = currency_picker_element(array_keys($currencies), NULL, TRUE);
   $form['user_source'] = array(
     '#title' => t('User'),
     '#type' => 'radios',
@@ -434,8 +437,10 @@ function mcapi_block_configure($delta) {
       0 => t('Show as part of profile being viewed'),
       1 => t('Show for logged in user')
     ),
-    '#default_value' => intval(@$settings['user_source'])
   );
+  foreach ($form as $fieldname => $element) {
+    $form[$fieldname]['#default_value'] = @$settings[$fieldname];
+  }
   return $form;
 }
 
@@ -549,11 +554,14 @@ function mcapi_transaction_operations() {
  */
 function transaction_form($form, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
+  $arg0 = &$form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG];
 
+  if (!empty($arg0) && !is_object($arg0)) {
+    throw new Exception('Bad argument passed to transaction_form(): '.print_r($arg0, 1));
+  }
   //populate the form's #transaction either with submitted values, or with the build argument, or with an empty transaction
   $form['#transaction'] = isset($form_state['values']) ? entity_create('transaction', $form_state['values']) : (
-    !empty($form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG]) ? $form_state['build_info']['args'][TRANSACTION_BUILD_INFO_ARG] :
-      entity_create('transaction', array()));
+    !empty($arg0) ? $arg0 : entity_create('transaction', array()));
 
   _transaction_form($form, $form_state);
   field_attach_form('transaction', $form['#transaction'], $form, $form_state);
@@ -679,8 +687,6 @@ function mcapi_mcapi_info_drupal_permissions() {
     )
   );
 }
-
-
 
 /*
  * entity_access callback (needs to be in .module) also used directly in mcapi_menu
@@ -1245,7 +1251,7 @@ function mcapi_field_widget_error(&$element, $error, $form, &$form_state) {
  * allows zero values to be saved, but not NULL
  */
 function mcapi_field_is_empty($item) {
-  return !strlen($item['quantity']);
+  return !(array_key_exists('quantity', $item) && strlen($item['quantity']));
 }
 
 

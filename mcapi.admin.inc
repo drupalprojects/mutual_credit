@@ -135,6 +135,8 @@ function _mcapi_menu() {
 
   foreach (transaction_operations(NULL, FALSE, FALSE) as $op => $info) {
     $items["transaction/%transaction/$op"] = array(
+      'title' => $info['imperative'],
+      'description' => $info['description'],
       'page callback' => 'drupal_get_form',
       'page arguments' => array('transaction_operation_form', $op, $transaction_argument_position),
       'access callback' => 'entity_access',
@@ -155,14 +157,6 @@ function _mcapi_menu() {
  */
 function mcapi_menu_alter(&$items) {
   $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
-
-  //this is an attempt to get around the locale requirements
-  //that menu item title and descriptions should be literal strings
-  //by using menu_alter instead of menu.
-  foreach (transaction_operations(NULL, FALSE, FALSE) as $op => $info) {
-    $items["transaction/%transaction/$op"]['title'] = $info['imperative'];
-    $items["transaction/%transaction/$op"]['description'] = $info['description'];
-  }
 }
 
 /*
@@ -385,7 +379,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#description' => t('Use html.') .' ',
     '#type' => 'textfield',
     '#default_value' => $default_display['zero'],
-    '#required' => !empty($zeros),
+    '#required' => property_exists($currency, 'display') ? count(transaction_load_multiple(NULL, array('quantity' => 0, 'currcode' => $currency->info['currcode']))) : FALSE,
     '#weight' => 5
   );
   if ($zeros) {
@@ -502,6 +496,7 @@ function mcapi_currency_validate_format(&$element, $form_state) {
 function mcapi_currency_validate_divisions(&$element, &$form_state) {
   if ($form_state['values']['display']['divisions'] != CURRENCY_DIVISION_MODE_CUSTOM) return;
   $validated = array();
+  $lines = explode("\n", $element['#value']);
   foreach (explode("\n", $element['#value']) as $line) {
     if (strpos($line, '|') === FALSE) {
       form_error($element, t('line "@val" should contain a pipe character, |', array('@val' => $line)));
@@ -515,6 +510,9 @@ function mcapi_currency_validate_divisions(&$element, &$form_state) {
       );
     }
     $validated[intval($cents)] = check_plain($display);
+  }
+  if (count($lines) <> count($validated)) {
+    form_error($element, t('Keys must be unique in field @fieldname', array('@fieldname' => $element['#title'])));
   }
   if (count($validated) < 2) {
     form_error($element, t("There should be at least two lines in field '@fieldname'", array('@fieldname' => $element['#title'])));
@@ -572,7 +570,7 @@ function currencies_load_all() {
     );
     foreach ($accesses as $prop => $name) {
       if (property_exists($data, $prop)) continue;
-      $message = t( "Resave currency $data->human_name, paying attention to $name : ");
+      $message = t("Resave currency @name, paying attention to '@prop'", array('@name' => $data->human_name, '@prop' => $prop));
       drupal_set_message($message, 'warning');
     }
     $currencies[$currcode] = $currency;
@@ -585,7 +583,7 @@ function currencies_load_all() {
  * declared in plugins/export/mcapi_ui
  * set the $form_state['item'] for ctools to save
  */
-function mcapi_currency_form_validate($form, &$form_state){
+function mcapi_currency_form_validate($form, &$form_state) {
   //check that the reservoir account is allowed to use the currency
   $callback = 'in_'. strtok($form_state['values']['access']['membership'], ':');
   $arg = strtok(':');
@@ -646,7 +644,7 @@ function mcapi_mixed_transactions($form) {
       1 => t('Many currencies per transaction')
     ),
     //something is setting this value to empty during upgrade I think
-    '#default_value' => intval(variable_get('mcapi_mixed_transactions', 0))
+    '#default_value' => intval(variable_get('mcapi_mixed_transactions', TRUE))
   );
   $form['submit'] = array(
     '#type' => 'submit',

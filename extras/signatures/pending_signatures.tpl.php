@@ -10,21 +10,22 @@
  *
  */
 //inject a bit of css to change the background picture of the transaction certificate
-$background =  "background-repeat: no-repeat; background-position: center;";
+$background =  "background-repeat: no-repeat; background-position: center; background-size: 32px";
 
 foreach ($transaction->pending_signatures as $uid => $status) {
+  $path = url(drupal_get_path('module', 'mcapi_signatures'));
   if ($status == 1)  {
     $row = array(
       'title' => t('Awaiting signature'),
       'class' => 'pending',
-      'style' => "background-image:url(\"".url('misc')."/message-24-warning.png\"); width:20px; $background"
+      'style' => "background-image:url(\"$path/pending.png\"); width:32px; height:32px; $background"
     );
   }
   else {
     $row = array(
       'title' => t('Signed'),
       'class' => 'signed',
-      'style' => "background-image:url(\"".url('misc')."/message-24-ok.png\"); width:20px; $background"
+      'style' => "background-image:url(\"$path/finished.png\"); width:32px; height:32px; $background"
     );
   }
 

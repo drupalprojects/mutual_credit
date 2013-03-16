@@ -171,6 +171,10 @@ function _edit_mcapi_form(&$form, &$form_state) {
         $default_items = &$settings[$fieldname];
         $empty_field = $transaction_widgets[$fieldname][LANGUAGE_NONE];
         $form[$fieldname] = _mcapi_form_config_fieldset($default_items, $empty_field, $fieldname);
+        if ($instance['widget']['module'] == 'hs_taxonomy') {
+          $form[$fieldname]['preset']['#disabled'] = TRUE;
+          $form[$fieldname]['preset']['#description'] = t('Hierarchical select widget cannot remember default values placed here');
+        }
     }
   }
   $form['worth']['preset']['#preset'] = TRUE;

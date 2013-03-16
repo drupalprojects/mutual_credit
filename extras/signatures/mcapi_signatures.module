@@ -1,17 +1,7 @@
 <?php
 // $Id:
-//much of this module could be hived off into an inc file
 
 define ('TRANSACTION_STATE_PENDING', -1);
-
-/*
- * implements hook_help
- */
-function mcapi_signatures_help($path) {
-  if ($path != 'admin/accounting/signatures') return;
-  $help = t('Require signatures for certain transaction types before they are cleared.');
-  return $help;
-}
 
 /*
  * Introduces a new transaction state, 'pending', and
@@ -23,6 +13,19 @@ function mcapi_signatures_help($path) {
  * Also to sign all a user's transactions.
  * There is also a 'cancel' operation for pending transactions, permissions defined in the currency.
   */
+
+/*
+ * implements hook_help()
+ */
+function mcapi_signatures_help($path) {
+  if ($path != 'admin/accounting/signatures') return;
+  $help = t('Require signatures for certain transaction types before they are cleared.');
+  return $help;
+}
+
+/*
+ * implements hook_menu()
+ */
 function mcapi_signatures_menu() {
   //this item makes it possible to sign on someone elses behalf, if the link is provided.
   //That's not in the scope of this module
@@ -46,7 +49,8 @@ function mcapi_signatures_menu() {
 }
 
 /*
- * Will implement hook_entity_load or some such
+ * Implements hook_entity_load()
+ * put the signatories into the transaction entity
  */
 function mcapi_signatures_entity_load($entities, $type) {
   if ($type != 'transaction') return;
@@ -57,7 +61,8 @@ function mcapi_signatures_entity_load($entities, $type) {
 }
 
 /*
- * Will implement hook_entity_delete or some such
+ * Implements hook_entity_delete()
+ * remove the signatories from the database
  */
 function mcapi_signatures_entity_delete($transaction, $type) {
   if ($type == 'transaction') {
@@ -69,6 +74,7 @@ function mcapi_signatures_entity_delete($transaction, $type) {
 
 /*
  * Implements hook_mcapi_info_states
+ * declare the pending transaction state.
  */
 function mcapi_signatures_mcapi_info_states() {
   return array(
@@ -125,7 +131,7 @@ function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
  * implements hook_block_info
  */
 function mcapi_signatures_block_info() {
-  //this is very hard to do in views
+  //these may be possible to construct in views, but in the end it was easier to write my own functions
   return array(
     'user_pending' => array(
       'info' => t('All pending transactions (per user)')

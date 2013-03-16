@@ -752,33 +752,23 @@ function theme_worth_element($variables) {
   return '<div ' . drupal_attributes($element['#attributes']) . '>'. $output .'</div>';
 }
 
-
 /*
- * default implementation of theme callback
+ * implements theme template_preprocess_HOOK
+ * adds per-currency theming
  */
-function theme_transaction_totals(&$variables) {
-  foreach ($variables['totals'] as $currcode => $totals) {
-    $balance = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->balance));
-    $income = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->gross_in));
-    $volume = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->volume));
-    $output = '<div class="balance">'. $balance ."</div>";
-    $output .= '<div class="gross-in">'.t('Income: !quant', array('!quant' => $income)) ."</div>";
-    $output .= '<div class="volume">'.t('Volume: !volume', array('!volume' => $volume)) ."</div>";
-    $output .= '<div class="count">'.t('Transactions: @count', array('@count' => $totals->count)) ."</div>";
-    $outputs[] = "<div class = \"transaction-totals $currcode\">$output</div>";
-  }
-  return implode("<br />", $outputs);
+function template_preprocess_transaction_totals(&$variables) {
+  $variables['theme_hook_suggestion'] = 'transaction_totals__' . $variables['currcode'];
 }
+
 
 function transaction_get_links($transaction) {
   $links = array();
   foreach (transaction_operations(NULL, TRUE, TRUE) as $op => $info) {
     if (!transaction_operation_access($op, $transaction)) continue;
-    $t = 't';
     $links[] = array(
       '#theme' => 'link',
       '#path' => 'transaction/'.$transaction->serial.'/'.$op,
-      '#text' => $t($info['imperative']),//t function should only be used directly with literal strings
+      '#text' => t($info['imperative']),//t function should only be used directly with literal strings
       '#options' => array(
         'attributes' => array(),
         'html' => FALSE
@@ -793,9 +783,12 @@ function transaction_get_links($transaction) {
  * block function a nice display of user balances in a currency
  */
 function mcapi_balances_view($uid, $currcodes) {
-  $render_array = array('#theme' => 'transaction_totals');
   foreach ($currcodes as $currcode) {
-    $render_array['#totals'][$currcode] = transaction_totals($uid, $currcode);
+    $render_array[$currcode] = array(
+      '#theme' => 'transaction_totals',
+      '#currcode' => $currcode,
+      '#totals' => transaction_totals($uid, $currcode),
+    );
   }
   return $render_array;
 }

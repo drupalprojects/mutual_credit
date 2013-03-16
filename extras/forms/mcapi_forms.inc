@@ -104,6 +104,9 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
       array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
     }
+    if ($form['#settings']['experience']['sure_title']) {
+      $form['buttons']['submit']['#value'] = t('Preview');
+    }
   }
   elseif ($form['#step'] == 2) {
     //we unset most of the fields so they don't display or change from what's in storage
@@ -159,12 +162,14 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   }
   //save button
   $form['buttons']['#type'] = 'actions';
-  if (strpos($settings['submission']['button'], '/')) {
-    $form['buttons']['submit']['#type'] = 'image_button';
-    $form['buttons']['submit']['#src'] = $settings['submission']['button'];
-  }
-  else {
-    $form['buttons']['submit']['#value'] = $settings['submission']['button'];
+  if (empty($form['buttons']['submit']['#value'])) {
+    if (strpos($settings['submission']['button'], '/')) {
+      $form['buttons']['submit']['#type'] = 'image_button';
+      $form['buttons']['submit']['#src'] = $settings['submission']['button'];
+    }
+    else {
+      $form['buttons']['submit']['#value'] = $settings['submission']['button'];
+    }
   }
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
   $form['#validate'][] = 'mcapi_forms_validate';

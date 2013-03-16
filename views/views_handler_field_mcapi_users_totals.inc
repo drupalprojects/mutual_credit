@@ -47,6 +47,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
     $uid = &$values->uid;
     $currcodes = empty($this->options['currcode']) ? array_keys(currencies_load(user_load($uid))): $this->options['currcode'];
     $key = $this->options['total'];
+    $elements = array();
     foreach ($currcodes as $currcode) {
       if (empty($this->fetched[$uid][$currcode])) {
         $this->fetched[$uid][$currcode] = transaction_totals($uid, $currcode);

@@ -135,7 +135,7 @@ function mcapi_forms_mcapiforms_default_alter($forms){
           ),
         ),
       );
-      $forms[$fid]->data['experience']['template'] .= "\n".t('Description:') . "[transaction:$fieldname]";
+      $forms[$fid]->data['experience']['template'] .= "\n".t('Description:') .' '. "[mcapiform:$fieldname]";
     }
   }
 }

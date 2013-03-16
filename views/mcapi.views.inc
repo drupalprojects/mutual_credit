@@ -235,3 +235,21 @@ function mcapi_views_pre_render(&$view) {
     }
   }
 }
+
+
+/**
+ * Implements hook_views_plugins().
+ */
+function mcapi_views_plugins() {
+  return array(
+    'module' => 'views',
+    'access' => array(
+      'curr' => array(
+        'title' => t('Per currency access'),
+        'help' => t("Visible to users with access to every currency shown."),
+        'handler' => 'views_plugin_access_currency',
+        'uses options' => TRUE,
+      ),
+    )
+  );
+}

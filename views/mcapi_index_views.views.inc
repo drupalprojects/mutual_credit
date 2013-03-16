@@ -254,18 +254,12 @@ function mcapi_index_views_views_data_alter(&$tables) {
 /**
  * Implements hook_views_plugins().
  * I'm not sure this is useful at all any more, or whether it works
+ * in any case, this doesn't really belong in this module and will be deprecated
  */
 function mcapi_index_views_views_plugins() {
   return array(
     'module' => 'views', // This just tells our themes are elsewhere.
     'access' => array(
-      'curr' => array(
-        'title' => t('Currencies'),
-        'help' => t('Granted according to the settings of all the currencies mentioned in the filters'),
-        'handler' => 'views_plugin_access_currency',
-        'uses options' => TRUE,
-      ),
-      //this doesn't really belong in this module
       'arg1user' => array(
         'title' => t('Arg 1 user'),
         'help' => t('Access will be granted only to users is on their own profile pages - user/%'),

@@ -10,7 +10,7 @@ function mcapi_signatures_install() {
   variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
   $mcapi_sign_notify_template = array(
     'subject' =>  t('Your signature is required'),
-    'body' => t('Your signature is required on @token', array('@token' => '[transaction:url:absolute]'))
+    'body' => t('Your signature is required on @token', array('@token' => '[transaction:url]'))
   );
   variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
   //signatures
