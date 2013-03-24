@@ -195,22 +195,23 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
   $handler->display->display_options['filters']['currcode']['value'] = array(key($currencies));
 
-  /* Filtre contextuel: Transaction index : Created moment */
-  $handler->display->display_options['arguments']['created']['id'] = 'created';
-  $handler->display->display_options['arguments']['created']['table'] = 'mcapi_index';
-  $handler->display->display_options['arguments']['created']['field'] = 'created';
-  $handler->display->display_options['arguments']['created']['default_argument_type'] = 'fixed';
-  $handler->display->display_options['arguments']['created']['default_argument_skip_url'] = 0;
-  $handler->display->display_options['arguments']['created']['summary']['number_of_records'] = '0';
-  $handler->display->display_options['arguments']['created']['summary']['format'] = 'default_summary';
-  $handler->display->display_options['arguments']['created']['summary_options']['items_per_page'] = '25';
-  $handler->display->display_options['arguments']['created']['operator'] = '>';
   /* Filter criterion: Transaction index: Value */
   $handler->display->display_options['filters']['diff']['id'] = 'diff';
   $handler->display->display_options['filters']['diff']['table'] = 'mcapi_index';
   $handler->display->display_options['filters']['diff']['field'] = 'diff';
   $handler->display->display_options['filters']['diff']['operator'] = '>';
   $handler->display->display_options['filters']['diff']['value']['value'] = '0';
+
+  /* Filter criterion: Date: Date (mcapi_index) */
+  $handler->display->display_options['filters']['date_filter']['id'] = 'date_filter';
+  $handler->display->display_options['filters']['date_filter']['table'] = 'mcapi_index';
+  $handler->display->display_options['filters']['date_filter']['field'] = 'date_filter';
+  $handler->display->display_options['filters']['date_filter']['operator'] = '>';
+  $handler->display->display_options['filters']['date_filter']['default_date'] = '-365 days';
+  $handler->display->display_options['filters']['date_filter']['year_range'] = '-3:+0';
+  $handler->display->display_options['filters']['date_filter']['date_fields'] = array(
+    'mcapi_index.created' => 'mcapi_index.created',
+  );
 
   /* Display: Block */
   $handler = $view->new_display('block', 'System trading stats', 'system');
@@ -263,16 +264,6 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['arguments']['uid1']['summary_options']['items_per_page'] = '25';
   $handler->display->display_options['arguments']['uid1']['break_phrase'] = 0;
   $handler->display->display_options['arguments']['uid1']['not'] = 0;
-  /* Filtre contextuel: Transaction index : Created moment */
-  $handler->display->display_options['arguments']['created']['id'] = 'created';
-  $handler->display->display_options['arguments']['created']['table'] = 'mcapi_index';
-  $handler->display->display_options['arguments']['created']['field'] = 'created';
-  $handler->display->display_options['arguments']['created']['default_argument_type'] = 'fixed';
-  $handler->display->display_options['arguments']['created']['default_argument_skip_url'] = 0;
-  $handler->display->display_options['arguments']['created']['summary']['number_of_records'] = '0';
-  $handler->display->display_options['arguments']['created']['summary']['format'] = 'default_summary';
-  $handler->display->display_options['arguments']['created']['summary_options']['items_per_page'] = '25';
-  $handler->display->display_options['arguments']['created']['operator'] = '>';
 
   $handler->display->display_options['defaults']['filter_groups'] = FALSE;
   $handler->display->display_options['defaults']['filters'] = FALSE;

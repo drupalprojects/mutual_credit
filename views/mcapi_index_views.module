@@ -31,28 +31,38 @@ function views_plugin_access_user_arg_check() {
 function get_balance_history($account, $currcodes = array(), $mode = 'diagonal', $since = NULL) {
   db_query("SET @csum := 0");
   if (empty($currcodes)) {
-    $currcodes = array_keys(currencies_load($account));
+    $currencies = &drupal_static('currencies');
+    $currcodes = array_keys($currencies);
   }
   foreach ($currcodes as $currcode) {
-    //make a starting point, before the first transaction
-    //then retrieve up the WHOLE transaction history
-    //the first entry is zero meaning the account created time, zero meaning starting balance
-    $histories[$currcode] = db_query(
-      "SELECT created, (@csum := @csum + diff) as balance
-      FROM {mcapi_index}
-      WHERE currcode = :currcode AND uid1 = :uid
-      ORDER BY created",
-      array(
-        ':currcode' => $currcode,
-        ':uid' => $account->uid
-      )
-    )->fetchAllKeyed(0);
-    //make an end point now with the balance the same as the last point
-    $histories[$currcode][REQUEST_TIME] = end($histories[$currcode]);
-    //now we need to curtail the history using $since
-    //that means removing every value in the array whose key is less than $since
-    //how to do that without iterating through what might be a large array?
+    $histories[$currcode][$account->created] = 0;
   }
+
+  //then retrieve up the WHOLE transaction history
+  //I wish there was a better way to do this. Unless a filter has been applied, we want all the transaction in all currencies ever
+  //not only the currencies currently permitted. And we want to do as much with the SQL as possible (in case of long lists)
+  $all_balances = db_query(//currcode = :currcode AND
+    "SELECT currcode, created, (@csum := @csum + diff) as balance
+    FROM {mcapi_index}
+    WHERE uid1 = :uid
+    ORDER BY currcode, created",
+    array(
+      ':uid' => $account->uid
+    )
+  )->fetchAll();
+  //process the points into the right format
+  foreach ($all_balances as $point) {
+    $histories [$point->currcode][$point->created] = $point->balance;
+  }
+  foreach ($histories as $currcode => &$history) {
+    if (count($history) > 1) {
+      //make a straight line until now
+      $histories[$currcode][REQUEST_TIME] = end($history);
+    }
+    //remove any currencies that weren't used
+    else unset($histories[$currcode]);
+  }
+
   return $histories;
 }
 

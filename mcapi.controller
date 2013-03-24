@@ -109,6 +109,7 @@ class mcapiEntityController extends EntityAPIController {
    *
    */
   public function create(array $values = array(), $for_me = FALSE) {
+    $transaction = new stdClass;
     $properties = array(
       'payer' => 0,
       'payee' => 0,

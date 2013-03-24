@@ -10,14 +10,14 @@
  * really sorry but I couldn't get entity tokens to work properly with the worth field
  */
 function mcapi_requirements($phase) {
-  // Ensure translations don't break at install time
-  $t = get_t();
-  if ($phase == 'install') {
+  if ($phase != 'update') {
+    // Ensure translations don't break at install time
+    $t = get_t();
     if (module_exists('entity_token')) {
       return array('mcapi' => array(
         'title' => $t('Community Accounting'),
-        'value' => $t('Community Accounting is not compatible with Entity tokens module'),
-        'severity' => REQUIREMENT_ERROR,
+        'value' => $t("'Entity tokens' module has a longstanding issue and will only render the worth field as separate properties, currcode, and quantity"),
+        'severity' => REQUIREMENT_WARNING,
       ));
     }
   }

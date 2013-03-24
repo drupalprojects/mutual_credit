@@ -782,7 +782,9 @@ function transaction_get_links($transaction) {
 /*
  * block function a nice display of user balances in a currency
  */
-function mcapi_balances_view($uid, $currcodes) {
+function mcapi_balances_view($uid, $currcodes = array()) {
+  if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
+  $render_array = array();
   foreach ($currcodes as $currcode) {
     $render_array[$currcode] = array(
       '#theme' => 'transaction_totals',

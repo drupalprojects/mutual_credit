@@ -17,13 +17,14 @@ class views_handler_field_mcapi_index_greco extends views_handler_field {
   function render($values) {
     $data = variable_get('mcapi_greco_system_health', array());
     if (module_exists('advanced_help')) {
-      $render[] = array(
+      $adv = array(
         '#theme' => 'advanced_help_topic',
         '#module' => 'mcapi_index_views',
         '#topic' => 'greco'
       );
+      $render[]['#markup'] = drupal_render($adv);
     }
-    $render['#markup'] = $data[$values->{$this->currcode_alias}];
+    $render[]['#markup'] = $data[$values->{$this->currcode_alias}];
     return $render;
   }
 }

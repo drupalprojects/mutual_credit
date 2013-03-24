@@ -67,5 +67,5 @@ function mcapi_entity_property_info() {
  */
 function mcapi_entity_views_field_handlers_alter(&$field_handlers) {
   //this views handler isn't written yet coz I haven't worked out how the entity module integrates with views
-  $field_handlers['worth'] = 'entity_views_handler_field_mcapi_worth';
+  //$field_handlers['worth'] = 'entity_views_handler_field_mcapi_worth';
 }

@@ -82,7 +82,7 @@ function _mcapi_menu() {
     'title' => 'Configuration',
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
-  $items['transact'] = array(
+  $items['transact/log'] = array(
     'title' => t('Record transaction'),
     'description' => t('Log a transaction in the database'),
     'page callback' => 'drupal_get_form',
@@ -92,11 +92,6 @@ function _mcapi_menu() {
     'access arguments' => array('transact'),
     'file' => 'mcapi.inc',
     'file path' => drupal_get_path('module', 'mcapi')
-  );
-  $items['transact/default'] = array(
-    'title' => t('Log'),
-    'description' => t('Basic transaction creation form'),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/accounting/misc'] = array(
     'title' => t('Misc settings'),

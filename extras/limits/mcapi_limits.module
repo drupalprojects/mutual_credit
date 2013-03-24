@@ -243,6 +243,7 @@ function mcapi_limits_limits_info() {
  * put the limits field on the user proifile form
  */
 function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
+  if ($form['#user_category'] != 'account') return;
   if (!user_access('manage all transactions')) return;
   form_load_include($form_state, 'inc', 'mcapi_limits');
   //get all the currencies with personal limits, so as to display config fields on the user profile form
@@ -397,9 +398,10 @@ function mcapi_limits_variable_info() {
 /*
  * callback to return render array showing balance limits
  */
-function balance_limits_view($uid, $currcodes) {
+function balance_limits_view($uid, $currcodes = array()) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
+  if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
   foreach ($currcodes as $currcode) {
     if (!currency_access('trader_data', $currcode)) continue;
     $limits = limits_get($currcode, $uid);
@@ -418,9 +420,10 @@ function balance_limits_view($uid, $currcodes) {
 /*
  * callback to return render array showing how much credit / debit is available to the user
  */
-function trading_limits_view($uid, $currcodes) {
+function trading_limits_view($uid, $currcodes = array()) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
+  if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
   foreach ($currcodes as $currcode) {
     if (!currency_access('trader_data', $currcode)) continue;
     $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);

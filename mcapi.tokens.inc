@@ -7,7 +7,7 @@
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'transaction') return array();
-  $transaction = &$data['transaction'];
+  $transaction = &$data[$type];
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);
   $language_code = NULL;
@@ -136,5 +136,4 @@ function mcapi_token_info() {
  */
 function mcapi_token_info_alter(&$items) {
   unset($items['tokens']['transaction']['original']);
-
 }

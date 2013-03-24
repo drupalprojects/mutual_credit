@@ -773,7 +773,14 @@ function currency_access($op, $currcode, $account = NULL) {
   $uid = is_object($account) ? $account->uid : $GLOBALS['user']->uid;
   static $calculated = array();
   if (!isset($calculated[$op][$currcode][$uid])) {
-    $callback = strtok(currency_load($currcode)->access[$op], ':');
+    $currency = currency_load($currcode);
+//gracefully fail if the currcode is not known
+//TODO remove this later
+if (!$currency){
+  if ($GLOBALS['user']->uid == 1){ini_set('display_errors', 1);die(print_r(debug_backtrace(), 1));}
+  drupal_set_message("problem loading currency;"); return FALSE;
+}
+    $callback = strtok($currency->access[$op], ':');
     $arg = strtok(':');
     $calculated[$op][$currcode][$uid] = in_user_chooser_segment($callback, array($arg), $account->uid);
   }
@@ -1140,8 +1147,8 @@ function mcapi_field_info() {
       'default_formatter' => 'worth_field',
       'translatable' => FALSE,
       //following properties are for the entity API module.
-      'property_type' => 'field_item_worth',
-      'property_callbacks' => array('entity_metadata_field_worth_property_callback'),
+      'property_type' => 'worthfield',
+      'property_callbacks' => array('worthfield_property_info_callback'),
     )
   );
 }
@@ -1287,51 +1294,43 @@ function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
 
 
 //this is a property callback for the worth field in mcapi_field_info
-function entity_metadata_field_worth_property_callback(&$info, $entity_type, $field, $instance, $field_type) {
+function worthfield_property_info_callback(&$info, $entity_type, $field, $instance, $field_type) {
   $property = &$info[$entity_type]['bundles'][$instance['bundle']]['properties'][$field['field_name']];
-  //overwrite some defaults
-  $property['getter callback'] = 'worth_getter';
-  $property['setter callback'] = 'worth_setter';
-
-  $property['property info'] = entity_property_field_item_worth_info();
-
+  $property['type'] = ($field['cardinality'] != 1) ? 'list<worthfield>' : 'worthfield';
+  $property['getter callback'] = 'entity_metadata_field_verbatim_get';
+  $property['setter callback'] = 'entity_metadata_field_verbatim_set';
+//  $property['auto creation'] = 'worthfield_default_values';
+  $property['property info'] = worthfield_data_property_info();
+  unset($property['query callback']);
 }
 
 /*
  * PROPERTY_TYPE is referenced in hook_field_info
  */
-function entity_property_field_item_worth_info() {
-
-  return array();
-  //TODO The value below causes rules to work but also causes entity_token to return a value 'Property worth'
-
+function worthfield_data_property_info() {
   return array(
     'currcode' => array(
       'type' => 'text',
       'label' => t('Currency code'),
+      'options list' => '_currcode_options',
+      'getter callback' => 'entity_property_verbatim_get',
+      'setter callback' => 'entity_property_verbatim_set',
     ),
     'quantity' => array(
       'type' => 'decimal',
       'label' => t('Quantity'),
+      'getter callback' => 'entity_property_verbatim_get',
+      'setter callback' => 'entity_property_verbatim_set',
     ),
   );
 }
-
-/*
- * getter callback
- * gets the worth field from the entity, FIRST ITEM ONLY
- * not sure why the entity module can't do this - its just a standard field
- */
-function worth_getter($entity, array $options, $property_name, $entity_type, $info) {
-  return $entity->{$property_name}[LANGUAGE_NONE][0];
+function _currcode_options() {
+  foreach (currencies_load($GLOBALS['user']) as $currcode => $currency) {
+    $options[$currcode] = $currency->human_name;
+  }
+  return $options;
 }
 
-function worth_setter(&$empty_entity, $fieldname, $passed_item, $lang, $entity_type, $field_info) {
-  $empty_entity->{$fieldname}[$lang][0] = array(
-    'currcode' => 'def_drup',
-    'quantity' => 99
-  );
-}
 
 
 
