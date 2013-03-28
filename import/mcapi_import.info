@@ -1,5 +1,5 @@
 name = MCAPI Import
-description = Import exchange history and users including Carried forward balances. Launch site. Built for Fernie, Canada
+description = Import exchange history and users including Carried forward balances.
 core = "6.x"
 dependencies[] = mcapi
 dependencies[] = user_import

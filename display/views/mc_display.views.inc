@@ -59,6 +59,7 @@ function mc_display_views_data() {
 
   $data['mc_exchanges']['payer_uid'] = array(
     'title' => t('Payer'), // The item it appears as on the UI,
+    'help' => t('The user who gave currency in the exchange.'),
     'field' => array(
       'help' => t('The user id who spent currency in the exchange.'),
       'handler' => 'views_handler_field_mc_trader',
@@ -71,6 +72,12 @@ function mc_display_views_data() {
     'argument' => array(
       'help' => t('The user who gave currency in the exchange.'),
       'handler' => 'views_handler_argument'
+    ),
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'base field' => 'uid',
+      'label' => t('user'),
     ),
   );
   $data['mc_exchanges']['payee_uid'] = array(
@@ -87,6 +94,12 @@ function mc_display_views_data() {
     'argument' => array(
       'help' => t('The user who received currency in the exchange'),
       'handler' => 'views_handler_argument'
+    ),
+    'relationship' => array(
+      'handler' => 'views_handler_relationship',
+      'base' => 'users',
+      'base field' => 'uid',
+      'label' => t('user'),
     ),
   );
   $data['mc_exchanges']['quantity'] = array(
@@ -156,7 +169,7 @@ function mc_display_views_data() {
       'title' => t('Other user'),
       'help' => t("Show the other user who wasn't passed in the views argument"),
       'handler' => 'views_handler_field_other_participant',
-      'click sortable' => TRUE 
+      'click sortable' => TRUE
     )
   );
   $data['mc_exchanges']['running_balance'] = array(
@@ -294,24 +307,6 @@ function mc_exchanges_all_view() {
     ),
     'title' => array(
       'label' => t('Description'),
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
@@ -324,24 +319,6 @@ function mc_exchanges_all_view() {
     ),
     'payer_uid' => array(
       'label' => t('Payer'),
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
@@ -358,24 +335,6 @@ function mc_exchanges_all_view() {
     ),
     'payee_uid' => array(
       'label' => t('Payee'),
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
@@ -481,9 +440,6 @@ function mc_exchanges_all_view() {
       'field' => 'exchange_type',
       'relationship' => 'none',
       'reduce_duplicates' => 0,
-      'override' => array(
-        'button' => 'Override',
-      ),
     ),
   ));
   $handler->override_option('access', array(
@@ -512,7 +468,6 @@ function mc_exchanges_all_view() {
       'payer_uid' => 'payer_uid',
       'payee_uid' => 'payee_uid',
       'quantity' => 'quantity',
-      'rating' => 'rating',
     ),
     'info' => array(
       'created' => array(
@@ -531,10 +486,6 @@ function mc_exchanges_all_view() {
       ),
       'quantity' => array(
         'sortable' => 1,
-        'separator' => '',
-      ),
-      'rating' => array(
-        'sortable' => 0,
         'separator' => '',
       ),
     ),
@@ -797,7 +748,6 @@ function mc_exchanges_all_view() {
       'payer_uid' => 'payer_uid',
       'payee_uid' => 'payee_uid',
       'quantity' => 'quantity',
-      'rating' => 'rating',
     ),
     'info' => array(
       'changed' => array(
@@ -819,11 +769,7 @@ function mc_exchanges_all_view() {
       'quantity' => array(
         'sortable' => 1,
         'separator' => '',
-      ),
-      'rating' => array(
-        'sortable' => 1,
-        'separator' => '',
-      ),
+      )
     ),
     'default' => '-1',
   ));
@@ -846,24 +792,6 @@ function mc_exchanges_all_view() {
   $handler->override_option('fields', array(
     'payer_uid' => array(
       'label' => '',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 0,
-        'ellipsis' => 0,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
@@ -872,32 +800,11 @@ function mc_exchanges_all_view() {
       'id' => 'payer_uid',
       'table' => 'mc_exchanges',
       'field' => 'payer_uid',
-      'override' => array(
-        'button' => 'Use default',
-      ),
       'relationship' => 'none',
       'link_to_trader' => 1,
     ),
     'payee_uid' => array(
       'label' => '',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
@@ -906,9 +813,6 @@ function mc_exchanges_all_view() {
       'id' => 'payee_uid',
       'table' => 'mc_exchanges',
       'field' => 'payee_uid',
-      'override' => array(
-        'button' => 'Use default',
-      ),
       'relationship' => 'none',
       'link_to_trader' => 1,
     ),
@@ -917,20 +821,6 @@ function mc_exchanges_all_view() {
       'alter' => array(
         'alter_text' => 1,
         'text' => t('[payer_uid] gave [quantity] to [payee_uid]'),
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
       ),
       'empty' => '',
       'hide_empty' => 0,
@@ -940,9 +830,6 @@ function mc_exchanges_all_view() {
       'table' => 'mc_exchanges',
       'field' => 'quantity',
       'relationship' => 'none',
-      'override' => array(
-        'button' => 'Use default',
-      ),
     ),
   ));
   $handler->override_option('items_per_page', 5);
@@ -967,24 +854,6 @@ function mc_exchanges_all_view() {
   $handler->override_option('fields', array(
     'title' => array(
       'label' => '',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => '',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
@@ -994,30 +863,9 @@ function mc_exchanges_all_view() {
       'table' => 'node',
       'field' => 'title',
       'relationship' => 'none',
-      'override' => array(
-        'button' => 'Use default',
-      ),
     ),
     'quantity' => array(
       'label' => '',
-      'alter' => array(
-        'alter_text' => 0,
-        'text' => ':[quantity]',
-        'make_link' => 0,
-        'path' => '',
-        'link_class' => '',
-        'alt' => '',
-        'prefix' => '',
-        'suffix' => '',
-        'target' => '',
-        'help' => '',
-        'trim' => 0,
-        'max_length' => '',
-        'word_boundary' => 1,
-        'ellipsis' => 1,
-        'html' => 0,
-        'strip_tags' => 0,
-      ),
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
@@ -1025,9 +873,6 @@ function mc_exchanges_all_view() {
       'id' => 'quantity',
       'table' => 'mc_exchanges',
       'field' => 'quantity',
-      'override' => array(
-        'button' => 'Use default',
-      ),
       'relationship' => 'none',
     ),
   ));
@@ -1131,9 +976,6 @@ function mc_exchanges_user_view() {
       'table' => 'mc_exchanges',
       'field' => 'quantity',
       'relationship' => 'none',
-      'override' => array(
-        'button' => 'Override',
-      ),
     ),
     'quantity_1' => array(
       'label' => t('incoming'),
@@ -1145,9 +987,6 @@ function mc_exchanges_user_view() {
       'id' => 'quantity_1',
       'table' => 'mc_exchanges',
       'field' => 'quantity',
-      'override' => array(
-        'button' => 'Override',
-      ),
       'relationship' => 'none',
     ),
     'quantity_2' => array(
@@ -1160,9 +999,6 @@ function mc_exchanges_user_view() {
       'id' => 'quantity_2',
       'table' => 'mc_exchanges',
       'field' => 'quantity',
-      'override' => array(
-        'button' => 'Override',
-      ),
       'relationship' => 'none',
     ),
     'quantity_3' => array(
@@ -1175,9 +1011,6 @@ function mc_exchanges_user_view() {
       'id' => 'quantity_3',
       'table' => 'mc_exchanges',
       'field' => 'quantity',
-      'override' => array(
-        'button' => 'Override',
-      ),
       'relationship' => 'none',
     ),
     'running_balance' => array(
@@ -1189,9 +1022,6 @@ function mc_exchanges_user_view() {
       'id' => 'running_balance',
       'table' => 'mc_exchanges',
       'field' => 'running_balance',
-      'override' => array(
-        'button' => 'Remplacer',
-      ),
       'relationship' => 'none',
     ),
     'participant' => array(
@@ -1204,9 +1034,6 @@ function mc_exchanges_user_view() {
       'id' => 'participant',
       'table' => 'mc_exchanges',
       'field' => 'participant',
-      'override' => array(
-        'button' => 'Override',
-      ),
       'relationship' => 'none',
     ),
   ));
@@ -1231,9 +1058,6 @@ function mc_exchanges_user_view() {
       'validate_user_argument_type' => 'uid',
       'validate_user_roles' => array(
         '2' => 0,
-      ),
-      'override' => array(
-        'button' => 'Override',
       ),
       'relationship' => 'none',
       'default_options_div_prefix' => '',

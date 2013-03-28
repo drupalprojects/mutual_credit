@@ -65,15 +65,16 @@ function drush_mcapi_balances() {
   mc_balances_refresh();
 }
 
-function drush_mcapi_wipeslate($hard = TRUE) {
-  if ($hard) {
-    $result = db_query("SELECT nid FROM {node} WHERE type = 'exchange'");
-    while($nid = db_result($result)) {
-      $nids[] = $nid;
-      node_delete($nid);
-    }
+function drush_mcapi_wipeslate() {
+  $result = db_query("SELECT nid FROM {node} WHERE type = 'exchange'");
+  if ($GLOBALS['user']->uid == 0) {
+    drush_print("You must be authenticated to delete nodes. use '-u 1'");
+    return;
   }
-  $count = count($xids);
+  while($nid = db_result($result)) {
+    $count++;
+    node_delete($nid);
+  }
   drush_print("erased $count transactions");
   if (drush_get_option('purge')) {
     drush_mcapi_purge();

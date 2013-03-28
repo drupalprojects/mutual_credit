@@ -34,6 +34,7 @@ function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
   if (count(form_get_errors())) {
     $result->nodes = $exchanges;
     $result->messages['error'] = form_get_errors();
+    watchdog('mcapi', 'Exchange failed validation: @exchange', array('@exchange' => print_r($exchange, 1)));
     return $result;
   }
   else {
@@ -72,7 +73,9 @@ function mcapi_add_node($payer_uid, $payee_uid, $quantity, $options = array()) {
  */
 function mc_api_check_user_limits($account, $difference, $cid, $nid = NULL) {
   module_load_include('inc', 'mcapi');
-  static $projected_totals;
+  //last minute hack for the intertrading module
+  //this used to be static but now is global so that it can be reset if necessary
+  global $projected_totals;
   $uid = &$account->uid;
 
   if (!isset($projected_totals[$uid])) {
@@ -83,7 +86,7 @@ function mc_api_check_user_limits($account, $difference, $cid, $nid = NULL) {
   $balance = $balances['cleared_balance'] + $balances['pending_dif'];
 
   //bit of an afterthought this
-  //if the node is already saved, we adjust the retrived the balance without counting the saved node
+  //if the node is already saved, we adjust the retrieved the balance without counting the saved node
   if ($nid) {
     $exchange = node_load($nid);
     if ($exchange->state == EXCHANGE_STATE_FINISHED) {
@@ -92,7 +95,6 @@ function mc_api_check_user_limits($account, $difference, $cid, $nid = NULL) {
     }
   }
   $projected_totals[$uid] += $balance + $difference;
-  
   $messages = array();
   if (is_numeric($limits['max']) && (float)$difference > 0) {
     $surplus = $projected_totals[$uid] - $limits['max'];
@@ -122,7 +124,6 @@ function mc_api_check_user_limits($account, $difference, $cid, $nid = NULL) {
     return $message;
   }
 }
-
 
 
 /**

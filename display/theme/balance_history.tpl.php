@@ -5,7 +5,7 @@
 define ('MAX_CHART_POINTS', 140);
 
  /*
-  * Balance History Google Chart 
+  * Balance History Google Chart
   * Takes data in the format below and outputs an <img> tag for a google chart.
   * Feel free to tweak the initial variables
   * //TODO This could be cached.
@@ -21,7 +21,7 @@ define ('MAX_CHART_POINTS', 140);
   */
 $dimensions = array('x' => 250, 'y' => 200);
 $lines = $line_styles = $line_colors = $maxes = $mins = array();
-
+$maxes = array(0); $mins = array(0);
 //this loop draws one line for each currency
 foreach ($histories as $cid => $history){
   $currency = node_load($cid);
@@ -63,7 +63,7 @@ foreach ($histories as $cid => $history){
       $times[] = floor(($sample_time-$first_time)/10000);
       $values[] = $history_values[$sample_position];
     }
-  } 
+  }
   else { //using given data
     //draws straight diagonal lines between the points
     foreach ($history as $time => $value) {
@@ -77,7 +77,7 @@ foreach ($histories as $cid => $history){
 
   $maxes[] = max($values);
   $mins[] = min($values);
-  
+
   $line_colors['mainline'. $cid] = $currency->data['color'];
   $curr_names[] = $currency->title;
 }
@@ -87,7 +87,6 @@ foreach ($histories as $cid => $history){
 $params = array(
   'cht' => 'lxy',
   'chs' => implode('x', $dimensions),
-  'chd' => 't:' . @implode('|', $lines),
   //optional parameters
   'chxt' => 'x,y', //needed for axis labels
   'chls' => implode('|', $line_styles),
@@ -97,13 +96,16 @@ if (count($lines) > 1) {
   $params['chdl'] = implode('|', $curr_names);
   $params['chdlp'] = 'b';
 }
+$params['chd'] = 't:' . @implode('|', $lines);
 
 $max = max($maxes);
 $min = min($mins);
 
-if ($min != 0) { //0.5 means half way up, 0.6 must be larger than 0.5, thickness, priority
-  $params['chm'] = "h,dddddd,0,". 1-abs($min)/(abs($min)+$max) .":1:1,1,1";
+$divisor = abs($min) + $max;
+if (!empty($divisor)) { //0.5 means half way up, 0.6 must be larger than 0.5, thickness, priority
+  $params['chm'] = "h,dddddd,0,". 1-abs($min)/$divisor .":1:1,1,1";
 }
+
 $params['chds'] = implode(',',array(-1, array_pop($times)+1 ,$min, $max));
 $params['chxl'] = '0:|' . date('M y', $first_time) . '|' . t('Now') . '|1:|' . $min . '|' . $max;
 
@@ -117,11 +119,12 @@ foreach ($params as $key=>$val) {
 }
 
 $url =  GOOGLE_CHARTS_URI .implode('&', $args);
+/*
 if (strlen($url) > 2048) {
   $replacements = array('@user' => $account->uid, '@count1' => count($times), '@count2' => strlen($url));
   watchdog('mcapi', "Error creating balance chart for account @user: url to google charts exceeded 2048 chars with @count1 points and @count2 chars.", $replacements);
   drupal_set_message(t("Error creating balance chart for account @user: url to google charts exceeded 2048 chars with @count1 points and @count2 chars.", $replacements), 'warning');
-}
+}*/
 
 //can't use theme_image because it checks for the presence of a file
-print '<img src = "' . $url . '" alt = "' . $legend . '" title = "' . $legend . '" class = "chart" />';
+print '<img src = "' . substr($url, 0, 2048) . '" alt = "' . $legend . '" title = "' . $legend . '" class = "chart" />';

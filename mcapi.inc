@@ -274,7 +274,7 @@ function mc_preprocess_exchange($node) {
 //this could almost have been done with a view, but as this is the API module, we're saving a dependency
 function currency_list() {
   $currencies = currencies_load();
-  $headers = array(t('Name'), '-99 '. t('Format'), t('usage'));
+  $headers = array(t('Name'), t('Display format'), t('usage'), '');
   $output = '';
   foreach ($currencies as $currency) {
     $row['name'] = l($currency->title, 'node/'.$currency->nid);
@@ -392,7 +392,7 @@ function _mcapi_default_mails($key) {
       return t('An exchange with !username was recorded and your balance updated');
 
     case 'mc_notification_body':
-      return t("Dear !username,") ."\n\n". 
+      return t("Dear !username,") ."\n\n".
         t('The following exchange was recorded on !site by !creator') ."\n\n!summary\n\n".
         t('Your balance has been updated.') ."\n\n". t("The team at !site");
 
@@ -481,7 +481,7 @@ function mcapi_notify($op, $exchange) {
       if ($throttle < 3) continue; //to the next transactee
     }
     elseif ($throttle < 1) {//for the other user
-      continue; 
+      continue;
     }
     //because this node might not be properly loaded.
     //We can't reload node at this stage because this mail operation is already called from a nodeapi 'insert/update'
@@ -588,7 +588,7 @@ function theme_exchange_summary($node) {
 }
 function get_trader_uids() {
   //can't use user_roles() here because it matches with mysql LIKE which gives inaccurate results
-  $result = db_query("SELECT distinct(rid) FROM {permission} WHERE perm LIKE '%%exchange,%%' OR perm = 'exchange'");
+  $result = db_query("SELECT DISTINCT(rid) FROM {permission} WHERE perm LIKE '%%exchange,%%' OR perm = 'exchange'");
   while ($rid = db_result($result)) {
     $rids[] = $rid;
   }
@@ -597,6 +597,9 @@ function get_trader_uids() {
   if (count($rids)) {
     if (!in_array(DRUPAL_AUTHENTICATED_RID, $rids)) {
       $where[] = 'rid in ('. implode(', ', $rids) .')';
+    }
+    if ($i_uid = variable_get('intertrading_uid', 0)) {
+      $where[] = 'u.uid <> '. $i_uid;
     }
     $results = db_query("SELECT DISTINCT u.uid
       FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid

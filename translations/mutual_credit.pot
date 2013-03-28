@@ -62,9 +62,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: mcapi.api.inc:38
-msgid "Exchange failed validation"
-msgstr ""
 
 #: mcapi.api.inc:47
 msgid "Failed to create exchange. Details have been forwarded to the site administrator"

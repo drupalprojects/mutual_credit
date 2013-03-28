@@ -85,23 +85,17 @@ function mcapi_enable() {
       'type' => 'currency',
       'status' => TRUE,
       'uid' => 1,
-      'min' => -100,
-      'max' => 100,
-      'sub' => 0,
-      'icon' => $module_path .'/theme/cc.png',
-      'symbol' => '@minus@icon@integer',
-      'data' => array(
-        'color' => '00ff00',
-        'subtype_bitmask' => 3,
-        'divisions' => ''
-      )
     );
     node_save($currency);
-    //seems that node save works differently in different installation contexts
-    if(!db_result(db_query('SELECT nid from {mc_currencies}'))) {
-      drupal_set_message('saving currency');
-      drupal_write_record('mc_currencies', $currency);
-    }
+    //because the node_insert hook isn't working yet
+    db_query(
+      "REPLACE INTO {mc_currencies} (nid, min, max, sub, icon, symbol, data) VALUES (%d, -100, 100, 0, '%s', '@minus@icon@integer', '%s')",
+      array(
+        $currency->nid,
+        $module_path .'/theme/cc.png',
+        serialize(array('color' => '00ff00', 'subtype_bitmask' => 3, 'divisions' => ''))
+      )
+    );
 
     drupal_set_message(t('Your defult currency is @name. !edit', array(
       '@name' => $currency->title,
@@ -497,7 +491,7 @@ function mcapi_update_6004() {
 /*
  * this isn't working very well - you may need to resave the currency
  */
-function mcapi_update_6005() {
+function mcapi_update_6008() {
   @mkdir(file_directory_path() . '/currencies');
   foreach(currencies_load() as $node) {
     $data = &$node->data;
@@ -509,20 +503,34 @@ function mcapi_update_6005() {
       db_query("UPDATE {mc_currencies} SET data = '%s' WHERE nid = $node->nid", serialize($data));
     }
   }
-  return array();
-}
-/*
- * there was integrity problem when users were deleted
- * this is now solved so we rebuild the balance cache
- */
-function mcapi_update_6006() {
   module_load_include('inc', 'mcapi');
   mc_balances_refresh();
   return array();
 }
-
-function mcapi_update_6007() {
+function mcapi_update_6009() {
   $ret = array();
   db_drop_field($ret, 'mc_currencies', 'value');
   return $ret;
+}
+
+/**
+ * Amazingly there's still a installation problem with saving the default currency fields
+ */
+function mcapi_update_6010() {
+  if (db_result(db_query("SELECT * FROM mc_currencies"))) return;
+  $nid = db_result(db_query("SELECT nid FROM {node} WHERE type = 'currency'"));
+  $currency = array(
+    'nid' => $nid,
+    'min' => -100,
+    'max' => 100,
+    'sub' => 0,
+    'icon' => $module_path .'/theme/cc.png',
+    'symbol' => '@minus@icon@integer',
+    'data' => array(
+      'color' => '00ff00',
+      'subtype_bitmask' => 3,
+      'divisions' => ''
+    )
+  );
+  drupal_write_record('mc_currencies', $currency);
 }

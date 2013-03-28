@@ -2,7 +2,7 @@
 
 
 /**
-* http://api.drupal.org/api/function/hook_user/6
+* implements hook_user
 * This hook is required for modules to define one or more node types.
 */
 function mc_user_limits_user($op, &$edit, &$account, $category = NULL) {
@@ -64,7 +64,9 @@ function mc_user_limits_user($op, &$edit, &$account, $category = NULL) {
       );
   }
 }
-
+/*
+ * implements hook_theme
+ */
 function mc_user_limits_theme() {
   return array(
     //shows min & max limits for several currencies
@@ -78,6 +80,7 @@ function mc_user_limits_theme() {
 }
 
 /*
+ * Implementation of theme callback
  * variables:
  *
  * $currencies = array(of currency nodes)

@@ -5,9 +5,9 @@
  * Balance_limits.tpl.php
  * Themed display the user's balance limits for a given currency
  * Some variables can be set at the start
- * 
+ *
  * variables:
- * 
+ *
  * $account
  * $min = array($cid => -100...);
  * $max = array($cid => 100...);
@@ -20,9 +20,10 @@ $colors = array('FF0000', $currency->data['color'], 'FFFFFF', $currency->data['c
 //or to skew the needle!
 
 $params = array(
-  'cht' => 'gom',
+  'cht' => 'gm',
   'chs' => '200x110',
-  'chxt' => 'x,y',
+  'chxt' => 'y',
+  'chxr' => "0,$min,$max",
   'chds' => $min .','. $max,
   //'chxr' => '1,'.$account->balances[$cid]['limit_min'] .','. $account->balances[$cid]['limit_max'] .'25',
   'chd' => 't:'.$balance,

@@ -145,6 +145,10 @@ function mcapi_menu() {
  * $ops can be array('view', 'update', 'delete', 'create')
  */
 function mcapi_access($op, $node, $account = NULL) {
+  //first of all deny access to edit intertrading transactions
+  $intertrading_uid = variable_get('intertrading_uid', 0);
+  if ($intertrading_uid && in_array($intertrading_uid, array($node->payer_uid, $node->payee_uid)) && $op != 'view') return FALSE;
+
   if (user_access('edit all exchanges')) {
     return TRUE;
   }
@@ -445,11 +449,10 @@ function theme_money($quant, $cid, $richtext = TRUE) {
     if (isset($currencies[$cid]->divisions[$fraction])) {
       $subdivision = $currencies[$cid]->divisions[$fraction];
     }
-    else $subdivision = $fraction;
+    else $subdivision = str_pad($fraction, 2, STR_PAD_LEFT);
   }
   $sign = $quant < 0 ? '-' : '';
   $icon = isset($currencies[$cid]->icon) ? theme('image', $currencies[$cid]->icon) : '';
-
   return strtr(
     $currencies[$cid]->symbol,
     array(
