@@ -278,7 +278,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
  * save the currency limits into the $account object
  */
 function mcapi_limits_user_presave(&$edit, $account, $category) {
-  if ($category != 'account' || empty($account->uid)) return;
+  if (empty($account->uid)) return;
   $currencies = currencies_load($account);
   foreach($currencies as $currcode => $currency) {
     if (isset($currency->limits['personal'])) {

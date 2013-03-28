@@ -735,7 +735,7 @@ function theme_worth_element($variables) {
   $element['#attributes']['class'][] = "worth-widget";
   $curr_select = drupal_render($element['currcode']);
   $quant_field = drupal_render($element['main_quant']);
-  if ($element['currcode']['#type'] == 'hidden') {//if the currency is preset, then we can use its own display format
+  if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
     $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
     $currency_display = currency_load($currcode)->display;
     if (isset($element['div_quant'])) {

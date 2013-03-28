@@ -1257,7 +1257,7 @@ function mcapi_field_widget_error(&$element, $error, $form, &$form_state) {
  * implements field hook_field_is_empty
  * allows zero values to be saved, but not NULL
  */
-function mcapi_field_is_empty($item) {
+function mcapi_field_is_empty($item) {ddebug_backtrace();
   return !(array_key_exists('quantity', $item) && strlen($item['quantity']));
 }
 

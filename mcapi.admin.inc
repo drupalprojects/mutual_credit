@@ -325,6 +325,20 @@ function mcapi_currency_form(&$form, &$form_state){
     '#default_value' => $default_display['divisions'],
     '#weight' => 1
   );
+  $form['display']['delimiter'] = array(
+    '#title' => t('Delimiter'),
+    '#description' => t('A character to go in between your integer and cents or other formatted subdivisions'),
+    '#type' => 'textfield',
+    '#max_length' => 3,
+    '#size' => 1,
+    '#default_value' => $default_display['delimiter'],
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_NONE),
+      ),
+    ),
+    '#weight' => 2
+  );
   $form['display']['divisions_setting'] = array(
     '#title' => t('Allowed subdivisions'),
     '#description' => t('On each line put "hundredths| visible text". The visible text will be displayed after the delimiter.'),
@@ -340,20 +354,6 @@ function mcapi_currency_form(&$form, &$form_state){
       ),
       'required' => array(
         ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_CUSTOM),
-      ),
-    ),
-    '#weight' => 2
-  );
-  $form['display']['delimiter'] = array(
-    '#title' => t('Delimiter'),
-    '#description' => t('A character to go in between your integer and cents or other formatted subdivisions'),
-    '#type' => 'textfield',
-    '#max_length' => 3,
-    '#size' => 1,
-    '#default_value' => $default_display['delimiter'],
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="display[divisions]"]' => array('value' => array(CURRENCY_DIVISION_MODE_NONE)),
       ),
     ),
     '#weight' => 3
@@ -464,7 +464,6 @@ function mcapi_currency_form(&$form, &$form_state){
   foreach (module_invoke_all('transaction_operations') as $callback => $info) {
     $form['access_operations'][$callback] = array(
       '#title' => $info['description'],
-      '#description' => @$info['description'],
       '#type' => 'checkboxes',
       '#options' => $access_callbacks,
       '#default_value' => property_exists($currency, 'access_operations') && isset($currency->access_operations[$callback]) ?

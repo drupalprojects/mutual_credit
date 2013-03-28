@@ -32,7 +32,7 @@ class mcapiEntityController extends EntityAPIController {
     $entities = array();
     $passed_ids = !empty($xids) ? array_flip($xids) : FALSE;
 
-    //get from cache where available
+    //get from static cache where available
     if ($this->cache) {
       $entities += $this->cacheGet($xids, $conditions);
       // If any entities were loaded, remove them from the ids still to load.
