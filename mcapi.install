@@ -80,11 +80,10 @@ function mcapi_uninstall() {
   //db_query('TRUNCATE table {field_data_worth}');
   //db_query('TRUNCATE table {field_revision_worth}');
 
-  variable_del('mcapi_controller');
-  variable_del('mcapi_db_read');
-  variable_del('mcapi_db_write');
+  //need to detatch the worth field before the module will uninstall
+
+  db_query("DELETE FROM {variable} WHERE name LIKE 'mcapi_%'");
   variable_del('currency_default');
-  variable_del('mcapi_mixed_transactions');
   cache_clear_all('currencies', 'cache');
 }
 
@@ -246,47 +245,48 @@ function mcapi_schema() {
 function mcapi_check_fields() {
   field_associate_fields('mcapi');//sets field_config definition to active
   $field = current(_update_7000_field_read_fields(array('module' => 'mcapi'), 'field_name'));
-
+  list($default_field, $default_instance) = _define_worth();
   if (empty($field)) {
-    $field = array(
-      'field_name' => 'worth',
-      'type' => 'worth_field',
-      'module' => 'mcapi',
-      'entity_types' => array('transaction', 'node', 'user'),
-    );
-    _update_7000_field_create_field($field);
+    _update_7000_field_create_field($default_field);
   }
   // Create the instance if needed.
   if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
-    $instance = array(
-      'field_name' => $field['field_name'],
-      'description' => t("Use up to two decimal places, with a point '.' if necessary"),
-      'label' => t('Worth'),
-      'entity_type' => 'transaction',
-      'bundle' => 'transaction',
-      'settings' => array(),
-      'required' => TRUE,
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'worth_field',
-          'weight' => 0,
-          'module' => 'mcapi'
-        ),
-      ),
-      'widget' => array(
-        'type' => 'worths_widget',
-        'module' => 'mcapi',
-        'settings' => array(),
-        'weight' => 5,
-      ),
-      'default value' => array(
-        'currcode' => '',
-        'quantity' => 0
-      )
-    );
-    _update_7000_field_create_instance($field, $instance);
+    _update_7000_field_create_instance($default_field, $default_instance);
   }
+}
+
+function _define_worth() {
+  $field = array(
+    'field_name' => 'worth',
+    'type' => 'worth_field',
+    'module' => 'mcapi',
+    'entity_types' => array('transaction', 'node', 'user'),
+    'cardinality' => 1,
+  );
+  $instance = array(
+    'field_name' => $field['field_name'],
+    'description' => t("Use up to two decimal places, with a point '.' if necessary"),
+    'label' => t('Worth'),
+    'entity_type' => 'transaction',
+    'bundle' => 'transaction',
+    'settings' => array(),
+    'required' => TRUE,
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'type' => 'worth_field',
+        'weight' => 0,
+        'module' => 'mcapi'
+      ),
+    ),
+    'widget' => array(
+      'type' => 'worths_widget',
+      'module' => 'mcapi',
+      'settings' => array(),
+      'weight' => 5,
+    )
+  );
+  return array($field, $instance);
 }
 
 function _mcapi_module_weights() {
@@ -397,17 +397,13 @@ function mcapi_update_7000() {
   //replace the old module with the new, so as to retain the version number, and keeping it installed
   db_delete('system')->condition('name', 'mcapi_signatures')->execute();
   db_update('system')
-    ->fields(array('name' => 'mcapi_signatures', 'schema_version' => 7007))
+    ->fields(array(
+        'name' => 'mcapi_signatures',
+        'filename' => drupal_get_path('module', 'mcapi_signatures').'/mcapi_signatures.info'
+    ))
     ->condition('name', 'mc_signatures')
     ->execute();  //rename and update the table
-  if(!db_query("SHOW TABLES LIKE 'mcapi_signatures'")->fetchfield()) {//this prevents an error if we try to do it twice or if the module isn't installed
-    db_rename_table('mc_unsigned', 'mcapi_signatures');
-    module_load_install('mcapi_signatures');
-    $tables = mcapi_signatures_schema();
-    db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
-    db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
-    db_query("UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL");
-  }
+  //so now the module should update itself
 }
 
 /**
@@ -436,7 +432,8 @@ function mcapi_update_7001() {
     $currency->display = array(
       'format' => str_replace(array('[', ']', '@icon'), array('@', '', ''), $old_currency->symbol),
       'divisions' => $old_currency->divisions ? CURRENCY_DIVISION_MODE_CUSTOM : $old_currency->sub,
-      'divisions_setting' => trim($old_currency->divisions)
+      'divisions_setting' => trim($old_currency->divisions),
+      'zero' => ''
     );
     //there are 3 possible modes for old limits callbacks - none, user or global
     //we're going to assume for upgrading, that user limits was enabled, since there's no way of knowing
@@ -595,16 +592,19 @@ function mcapi_update_7003(&$sandbox) {
   }
   $limit = 100;
   $nids = db_query_range("SELECT nid FROM {mc_exchanges} WHERE nid > :nid ORDER BY nid ASC", 0, $limit, array(':nid' => $sandbox['progress']))->fetchCol();
-  $sandbox['progress'] = mcapi_upgrade_transactions($nids);
+  if (count($nids)) {
+    $sandbox['progress'] = mcapi_upgrade_transactions($nids);
+    // Indicate our current progress to the batch update system. If there's no
+    // max value then there's nothing to update and we're finished.
+    $sandbox['#finished'] = $sandbox['progress'] ==  $sandbox['last_nid'];
+  }
+  else $sandbox['#finished'] = 1;
 
-  // Indicate our current progress to the batch update system. If there's no
-  // max value then there's nothing to update and we're finished.
-  $sandbox['#finished'] = $sandbox['progress'] ==  $sandbox['last_nid'];
-  if (isset($sandbox['#finished']) && $sandbox['#finished'] == 1) {
+  if (!empty($sandbox['#finished']) && $sandbox['#finished'] == 1) {
     mcapi_upgrade_transactions_finished();
     db_drop_table('mc_currencies');
     db_drop_table('mc_cache');
-    db_drop_table('mc_exchanges');
+    //db_drop_table('mc_exchanges');
   }
 }
 
@@ -625,10 +625,10 @@ function mcapi_upgrade_transactions($nids) {
     'incoming signed' => '1stparty',
     'outgoing direct' => '1stparty',
     'incoming direct' => '1stparty',
-    'onetomany' => 'one2many',
-    'onetoall' => 'one2many',
-    'manytoone' => 'one2many',
-    'alltoone' => 'one2many',
+    'onetomany' => 'mass',
+    'onetoall' => 'mass',
+    'manytoone' => 'mass',
+    'alltoone' => 'mass',
   );
   //convert each old transaction into a transaction object
   $transactions = db_query("SELECT * FROM {mc_exchanges} x
@@ -755,34 +755,29 @@ function mcapi_update_7005() {
  * update the transaction notification handling
  */
 function mcapi_update_7006() {
-  if ($subject = variable_get('mc_notification_subject', '') && $body = variable_get('mc_notification_body', '')) {
-    include_once('includes/actions.inc');
-    module_load_include('inc', 'mcapi');
-    module_load_include('admin.inc', 'mcapi');
-    $form = mcapi_transaction_mail_action_form();
-    //special exception for mail_all_signatories_action
-    if (isset($form['mail'])) $form = $form['mail'];
-    //this is tricky but we're getting the default values out of the action form
-    foreach (element_children($form) as $fieldname) {
-      if (isset($form[$fieldname]['#default_value'])) {
-        $params[$fieldname] = $form[$fieldname]['#default_value'];
-      }
-    }
-    $params['subject'] = $subject;
-    $params['body'] = $body;
-    $aid = actions_save('mcapi_transaction_mail_action', 'transaction', $params, t('Notify transactees'));
-    $tables = db_query("SHOW TABLES")->fetchCol();
-    if (in_array('system', $tables)) {
-      // Borrowed from trigger_assign_form_submit
-      db_insert('trigger_assignments')->fields(
-        array(
-          'hook' => 'transaction_state',
-          'aid' => $aid,
-          'weight' => 0,
-        )
-      )->execute();
+  //set up the action which notifies for completed transactions
+  include_once('includes/actions.inc');
+  module_load_include('inc', 'mcapi');
+  module_load_include('admin.inc', 'mcapi');
+  $form = mcapi_transaction_mail_action_form();
+  //special exception for mail_all_signatories_action
+  if (isset($form['mail'])) $form = $form['mail'];
+  //this is tricky but we're getting the default values out of the action form
+  foreach (element_children($form) as $fieldname) {
+    if (isset($form[$fieldname]['#default_value'])) {
+      $params[$fieldname] = $form[$fieldname]['#default_value'];
     }
   }
+  $aid = actions_save('mcapi_transaction_mail_action', 'transaction', $params, t('Notify transactees'));
+
+  // Borrowed from trigger_assign_form_submit
+  db_insert('trigger_assignments')->fields(
+    array(
+      'hook' => 'transaction_state',
+      'aid' => $aid,
+      'weight' => 0,
+    )
+  )->execute();
 
   variable_del('mc_notification_subject');
   variable_del('mc_notification_body');
@@ -795,16 +790,8 @@ function mcapi_update_7009() {
   $tables = mcapi_schema();
   //in case the following doesn't work properly
   db_query("update {system} SET weight = 2 where name = 'mcapi_signatures'");
-  if (module_exists('mcapi_pending')) {
-    db_query("DELETE FROM {system} WHERE name = 'mcapi_signatures'");
-    db_query("UPDATE {system} set name = 'mcapi_signatures' WHERE name = 'mcapi_pending'");
-    drupal_set_message("Best delete the mcapi_pending module, which has been replaced by mcapi_signatures");
-  }
-  else {
-    db_query("DELETE FROM {system} WHERE name = 'mcapi_pending'");
-  }
+  db_query("DELETE FROM {system} WHERE name = LIKE 'mc_%'");
   db_query("DELETE FROM {field_config_instance} WHERE bundle IN ('comment_node_currency', 'comment_node_exchange')");
-
   //customised menu items need to be renamed
   db_query("UPDATE {menu_links} SET link_path = 'transactions' WHERE link_path = 'exchanges'");
   db_query("DELETE FROM {menu_links} WHERE link_path LIKE 'exchange%'");
@@ -814,7 +801,7 @@ function mcapi_update_7009() {
 
   if (module_exists('mcapi_signatures')) {
     $d6tokens = array('!username', '!site', '!uri', '!date', '!login_url', '!creator', '!exchange_uri', '!summary');
-    $d7tokens = array('[transaction:creator]', '[site:name]', '[transaction:uri]', '[transaction:created]', '[site:login-url]', '[transaction:creator]', '[transaction:uri]', '[transaction:summary]');
+    $d7tokens = array('[transaction:creator]', '[site:name]', '[transaction:url]', '[transaction:created]', '[site:login-url]', '[transaction:creator]', '[transaction:url]', '[transaction:summary]');
     variable_set('mcapi_sign_notify_template', array(
       'subject' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_notification_subject')),
       'body' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_notification_body')),

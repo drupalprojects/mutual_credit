@@ -180,3 +180,72 @@ function mcapi_limits_validate_max(&$element, $form_state) {
     form_error($element, t('Maximum balance must be larger than 0'));
   }
 }
+
+
+function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+  if (!currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)) {
+    drupal_set_message('Balance limits module should be disabled while only currencies of acknowledgement are present.');
+  }
+  $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
+  //of course this is meaningless if we are creating the currency for the first time
+
+  //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
+  $warning[] = t("With great power comes great responsibility!");
+  $warning[] = t("The first rule of accounting is: no account should issue more credit than it can redeem.");
+  $warning[] = t("Even fiat currencies can be run sustainably if they are used to pay tax.");
+  $warning[] = t("Trust in the system can be increased by limiting the right to issue credit to trusted, known, productive actors in the economy, which may or not include the goverment!");
+  $warning[] = t("Transactions will be rejected which take accounts beyond these limits.");
+  $warning[] = t("Choose which method to use, and configure it.");
+  $form['limits'] = array(
+    '#title' => t('Balance limits'),
+    '#description' => implode(' ', $warning),
+    '#type' => 'fieldset',
+    '#weight' => 20,
+    '#group' => 'additional_settings',
+    '#collapsible' => TRUE,
+    '#collapsed' => isset($form['#currency']->limits_callback),
+    //'#group' => 'additional_settings',
+    'limits_callback' => array(
+      '#title' => t('Method'),
+      '#description' => t('How will the limits be determined?'),
+      '#type' => 'select',
+      '#options' => module_invoke_all('limits_info'),
+      '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'no_limits',
+      '#weight' => -1,
+      '#ajax' => array(
+        'callback' => 'limits_settings_subform',
+        'wrapper' => 'limits-settings',
+      )
+    ),
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="issuance"]' => array('value' => 'acknowledgement')
+      )
+    )
+  );
+  $form['acknowledgement']['#children'] .= '<br /><br /><strong>'.t('Balance limits to not apply to this currency type.').'</strong>';
+  limits_settings_subform($form, $form_state, $currency);
+  //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
+  $form['limits']['personal'] = array(
+    '#title' => t('Personal limits'),
+    '#description' => t('Settings on the user profiles override these general limits.'),
+    '#type' => 'checkbox',
+    '#default_value' => isset($currency->limits['personal']) ? $currency->limits['personal'] : 0,
+    '#weight' => 5,
+  );
+  $form['limits']['skip'] = array(
+    '#title' => t('Skip balance limit check'),
+    '#description' => t('Especially useful for mass transactions and automated transactions'),
+    '#type' => 'checkboxes',
+    '#default_value' => isset($currency->limits['skip']) ? $currency->limits['skip'] : array(),
+    //would be nice if this was pluggable, but not needed for the foreseeable
+    '#options' => array(
+      'auto' => t("for transactions of type 'auto'"),
+      'mass' => t("for transactions of type 'mass'"),
+      'user1' => t("for transactions created by user 1"),
+      'owner' => t("for transactions created by the currency owner"),
+      'reservoir' => t("for the reservoir account")
+    ),
+    '#weight' => 6,
+  );
+}

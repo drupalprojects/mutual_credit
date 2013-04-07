@@ -31,12 +31,16 @@ $replacements = array(
   '!payee' => $payee,
   '!worth' => $worth,
 );
-  $replacements['!worth'] = '<span class = "quantity">'. $replacements['!worth'] .'</span>';
-  $certificate_string = t(
-    'On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth',
-    $replacements
-  );
-  $certificate_string = str_replace('<br />', '<br /><br />', $certificate_string);
+if ($desc_fieldname = variable_get('transaction_description_field')) {
+  $replacements['!description'] = render($additional[$desc_fieldname]);
+}
+
+$replacements['!worth'] = '<span class = "quantity">'. $replacements['!worth'] .'</span>';
+$certificate_string = t(
+  'On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth',
+  $replacements
+);
+$certificate_string = str_replace('<br />', '<br /><br />', $certificate_string);
 
 ?>
 <!--transaction.tpl.php-->
@@ -44,10 +48,10 @@ $replacements = array(
   <?php print render($pending); //floating on the right, by default ?>
   <?php print $certificate_string; ?>
 
-  <?php if ($desc_fieldname = variable_get('transaction_description_field')) : ?>
+  <?php if (array_key_exists('!description', $replacements)) : ?>
     <strong><?php print t('For:');?></strong><br />
-    <?php print render($additional[$desc_fieldname]) ?><br />
-    <?php endif; ?>
+    <?php print $replacements['!description'] ?><br />
+  <?php endif; ?>
 
   <?php if (isset($dependents)) : // all the remaining transactions are already rendered as tokenised strings ?>
   <div id="dependent-transactions">

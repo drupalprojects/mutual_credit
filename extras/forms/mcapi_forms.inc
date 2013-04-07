@@ -217,7 +217,7 @@ function theme_mcapi_form($variables) {
     }
     return token_replace(
       check_markup($form['#template'], MCAPIFORM_STRING_FORMAT),
-      array('mcapiform' => $form),
+      array('mcapiform' => $form, 'user' => $GLOBALS['user']),
       array('sanitize' => FALSE)
     );
   }

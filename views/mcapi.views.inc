@@ -5,7 +5,7 @@
  * this is the entityAPI approach
  * normally we would implement hook_views_data
  */
-if (module_exists('entity')) {
+//if (class_exists('entity')) {
 class transactionDefaultViewsController extends EntityDefaultViewsController {
 
   /**
@@ -134,6 +134,7 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
     return $data;
   }
 }
+//}
 
 /*
  * implements hook_views_data_alter
@@ -218,7 +219,7 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
 }
-}
+
 
 /*
  * implements hook_views_pre_render

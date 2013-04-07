@@ -850,11 +850,6 @@ function transaction_quant($transaction, $currcode = NULL) {
  */
 function intertrading_form_transaction_form_alter(&$form, &$form_state, $form_id) {
   if (empty($form_state['build_info']['args'][0])) return;
-  //prevent all editing of transactions with the intertrading account
-  if (in_array($form_state['build_info']['args'][0]->type, intertrading_mcapi_info_types())) {
-    drupal_set_message(t('Transactions with the intertrading account cannot be modified'), 'warning');
-    $form['#printed'] = TRUE;
-  }
   //ensure that the intertrading account never validates in mcapi_forms
   if (!in_array($form_id, array('remote_incoming_form', 'remote_outgoing_form'))) {
     $form['#validate'][] = 'intertrading_occlude_account';

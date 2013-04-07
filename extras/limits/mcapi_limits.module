@@ -68,6 +68,7 @@ function mcapi_limits_accounting_validate(array $cluster) {
       //check to see if any of the skip settings apply.
       //these check, or at least these reports should possiblly be done after the check, and only if the check failed
       $currency = currency_load($currcode);
+      if ($currency->display['issuance'] == 'acknowledgement') continue;
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
       if ($skips['user1'] && $GLOBALS['user']->uid == 1) {
@@ -109,7 +110,7 @@ function mcapi_limits_accounting_validate(array $cluster) {
     if (count($errors)) {
       if (count($messages)) {
         foreach ($messages as $currcode => $message) {
-          drupal_set_message($message, 'warning', FALSE);
+          if (user_access('manage all transactions')) drupal_set_message($message, 'warning', FALSE);
         }
         return;
       }
@@ -161,64 +162,10 @@ function mcapi_limits_exception_parse($errors) {
 function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   if (isset($form_state['plugin']['schema']) && $form_state['plugin']['schema'] == 'mcapi_currencies') {
     form_load_include($form_state, 'inc', 'mcapi_limits');
-    $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
-    //of course this is meaningless if we are creating the currency for the first time
-
-    //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
-    $warning[] = t("With great power comes great responsibility!");
-    $warning[] = t("The first rule of accounting is: no account should issue more credit than it can redeem.");
-    $warning[] = t("Even fiat currencies can be run sustainably if they are used to pay tax.");
-    $warning[] = t("Trust in the system can be increased by limiting the right to issue credit to trusted, known, productive actors in the economy, which may or not include the goverment!");
-    $warning[] = t("Transactions will be rejected which take accounts beyond these limits.");
-    $warning[] = t("Choose which method to use, and configure it.");
-    $form['limits'] = array(
-      '#title' => t('Balance limits'),
-      '#description' => implode(' ', $warning),
-      '#type' => 'fieldset',
-      '#weight' => 20,
-      '#group' => 'additional_settings',
-      '#collapsible' => TRUE,
-      '#collapsed' => isset($form['#currency']->limits_callback),
-      //'#group' => 'additional_settings',
-      'limits_callback' => array(
-        '#title' => t('Method'),
-        '#description' => t('How will the limits be determined?'),
-        '#type' => 'select',
-        '#options' => module_invoke_all('limits_info'),
-        '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'no_limits',
-        '#weight' => -1,
-        '#ajax' => array(
-          'callback' => 'limits_settings_subform',
-          'wrapper' => 'limits-settings',
-        )
-      )
-    );
-    limits_settings_subform($form, $form_state, $currency);
-    //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
-    $form['limits']['personal'] = array(
-      '#title' => t('Personal limits'),
-      '#description' => t('Settings on the user profiles override these general limits.'),
-      '#type' => 'checkbox',
-      '#default_value' => isset($currency->limits['personal']) ? $currency->limits['personal'] : 0,
-      '#weight' => 5,
-    );
-    $form['limits']['skip'] = array(
-      '#title' => t('Skip balance limit check'),
-      '#description' => t('Especially useful for mass transactions and automated transactions'),
-      '#type' => 'checkboxes',
-      '#default_value' => isset($currency->limits['skip']) ? $currency->limits['skip'] : array(),
-      //would be nice if this was pluggable, but not needed for the foreseeable
-      '#options' => array(
-        'auto' => t("for transactions of type 'auto'"),
-        'mass' => t("for transactions of type 'mass'"),
-        'user1' => t("for transactions created by user 1"),
-        'owner' => t("for transactions created by the currency owner"),
-        'reservoir' => t("for the reservoir account")
-      ),
-      '#weight' => 6,
-    );
+    _mcapi_limits_form_ctools_export_ui_edit_item_form_alter($form, $form_state);
   }
 }
+
 
 function mcapi_limits_hook_info() {
   return array('limits_info' => array());
@@ -292,7 +239,6 @@ function mcapi_limits_user_presave(&$edit, $account, $category) {
   }
 }
 
-
 /*
  * Implements views hook_views_api
  */
@@ -302,7 +248,6 @@ function mcapi_limits_views_api() {
     'path' => drupal_get_path('module', 'mcapi_limits').'/views',
   );
 }
-
 
 /*
  * Implements hook_theme
@@ -334,13 +279,18 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
  * Implements views hook_block_list
  */
 function mcapi_limits_block_info() {
-  //the block names are the same as the theme callbacks
-  $blocks['balance_limits'] = array(
-    'info' => 'MC '. t("Balance limits")
-  );
-  $blocks['trading_limits'] = array(
-    'info' => 'MC '. t("Trading limits (adjusted for the balance)")
-  );
+  $blocks = array();
+  $currencies = &drupal_static('currencies');
+  //only show these blocks if not all currencies are of acknowledgement.
+  if (currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)) {
+    //the block names are the same as the theme callbacks
+    $blocks['balance_limits'] = array(
+      'info' => 'MC '. t("Balance limits")
+    );
+    $blocks['trading_limits'] = array(
+      'info' => 'MC '. t("Trading limits (adjusted for the balance)")
+    );
+  }
   return $blocks;
 }
 
@@ -368,7 +318,15 @@ function mcapi_limits_block_view($delta) {
  * Implements views hook_block_configure
  */
 function mcapi_limits_block_configure($delta) {
-  return mcapi_block_configure($delta);
+  $form = mcapi_block_configure($delta);
+  //ensure that acknowledgement currencies can't be chosen
+  //rebuild the provided currency picker, using currencies filtered by type.
+  $form['currcodes'] = currency_picker_element(
+    currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY),
+    $form['currcodes']['#default_value'],
+    $form['currcodes']['#multiple']
+  );
+  return $form;
 }
 
 /*
@@ -402,6 +360,7 @@ function balance_limits_view($uid, $currcodes = array()) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
   if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
+  $currcodes = array_intersect($currcodes, array_keys(currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)));
   foreach ($currcodes as $currcode) {
     if (!currency_access('trader_data', $currcode)) continue;
     $limits = limits_get($currcode, $uid);
@@ -424,6 +383,7 @@ function trading_limits_view($uid, $currcodes = array()) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
   if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
+  $currcodes = array_intersect($currcodes, array_keys(currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)));
   foreach ($currcodes as $currcode) {
     if (!currency_access('trader_data', $currcode)) continue;
     $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);

@@ -221,7 +221,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     ),
     'token_tree1' => array(
       '#theme' => 'token_tree',
-      '#token_types' => array('mcapiform'),
+      '#token_types' => array('mcapiform', 'user'),
       '#global_types' => FALSE,
       '#weight' => 3,
     ),

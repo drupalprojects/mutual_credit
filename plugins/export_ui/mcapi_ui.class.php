@@ -51,8 +51,16 @@ class mcapi_ui extends ctools_export_ui {
       'data' => check_plain($item->data->human_name),
       'class' => array('ctools-export-ui-title')
     );
-    //second col, usage
-    $this->rows[$currcode]['data'][2] = array(
+    $type_names = array(
+      CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement'),
+      CURRENCY_TYPE_EXCHANGE => t('Exchange'),
+      CURRENCY_TYPE_COMMODITY => t('Commodity')
+    );
+    //second col, issuance
+    $type = property_exists($item->data, 'issuance') ? $item->data->issuance : CURRENCY_TYPE_ACKNOWLEDGEMENT;
+    $this->rows[$currcode]['data'][2] = $type_names[$type];
+    //third col, usage
+    $this->rows[$currcode]['data'][3] = array(
       'data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField()
     );
     //fourth col, storage
@@ -94,6 +102,7 @@ class mcapi_ui extends ctools_export_ui {
       $header[] = array('data' => t('Currency code'), 'class' => array('ctools-export-ui-name'));
     }
 
+    $header[] = array('data' => t('Issuance'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Transactions'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
     $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));

@@ -254,7 +254,7 @@ function mcapi_signatures_config($form, $form_state) {
       t('Compose the email notifying signatories that a transaction needs their attention.'),
       t('Use the tokens provided.'),
       t("To notify users when a transaction is completed, use the action and triggers: !link",
-        array('admin/config/system/actions', 'admin/config/system/actions'))
+        array('!link' => l('admin/config/system/actions', 'admin/config/system/actions')))
     )),
     '#type' => 'fieldset',
     'subject' => array(

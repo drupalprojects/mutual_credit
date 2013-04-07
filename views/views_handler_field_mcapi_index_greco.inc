@@ -16,6 +16,8 @@ class views_handler_field_mcapi_index_greco extends views_handler_field {
 
   function render($values) {
     $data = variable_get('mcapi_greco_system_health', array());
+    if (!array_key_exists($values->{$this->currcode_alias}, $data)) return array();
+    $render = array();
     if (module_exists('advanced_help')) {
       $adv = array(
         '#theme' => 'advanced_help_topic',
@@ -25,6 +27,7 @@ class views_handler_field_mcapi_index_greco extends views_handler_field {
       $render[]['#markup'] = drupal_render($adv);
     }
     $render[]['#markup'] = $data[$values->{$this->currcode_alias}];
+
     return $render;
   }
 }

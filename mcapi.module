@@ -1,16 +1,19 @@
 <?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
 
 
-
 //delete modes
 define('MCAPI_CURRENCY_UNDO_DELETE', 0);
 define('MCAPI_CURRENCY_UNDO_ERASE', 1);
 define('MCAPI_CURRENCY_UNDO_REVERSE', 2);
 
-define ('CURRENCY_DIVISION_MODE_NONE', 0);
-define ('CURRENCY_DIVISION_MODE_CENTS_INLINE', 1);
-define ('CURRENCY_DIVISION_MODE_CENTS_FIELD', 2);
-define ('CURRENCY_DIVISION_MODE_CUSTOM', 3);
+define('CURRENCY_DIVISION_MODE_NONE', 0);
+define('CURRENCY_DIVISION_MODE_CENTS_INLINE', 1);
+define('CURRENCY_DIVISION_MODE_CENTS_FIELD', 2);
+define('CURRENCY_DIVISION_MODE_CUSTOM', 3);
+
+define('CURRENCY_TYPE_ACKNOWLEDGEMENT', 'acknowledgement');
+define('CURRENCY_TYPE_EXCHANGE', 'exchange');
+define('CURRENCY_TYPE_COMMODITY', 'commodity');
 
 //states are mutually exclusive
 //the convention is that states > 0 are counted (but sometimes you might want to count pending (-1) as well)
@@ -78,7 +81,6 @@ function transaction_cluster_write(array $cluster, $really = TRUE) {
  * NB No accounting checks take place before deletings.
  */
 function transaction_undo($serial) {
-
   $transactions = entity_load('transaction', array(), array('serial' => $serial));
   switch(variable_get('mcapi_controller_delete_mode')) {
     case MCAPI_CURRENCY_UNDO_ERASE:
@@ -875,6 +877,15 @@ function currencies_load($account = NULL, $refresh = FALSE) {
   return $filtered;
 }
 
+function currencies_filter() {
+  $currencies = &drupal_static('currencies');
+  $output = array();
+  foreach ($currencies as $currcode => $currency) {
+    if (property_exists($currency, 'issuance') && in_array($currency->issuance, func_get_args())) $output[$currcode] = $currency;
+  }
+  return $output;
+}
+
 //returns operations with untranslated 'imperative' and 'description'
 function transaction_operations($op_name = NULL, $load = FALSE, $localize = TRUE) {
   if ($cached = cache_get('transaction_operations')) {
@@ -1257,7 +1268,7 @@ function mcapi_field_widget_error(&$element, $error, $form, &$form_state) {
  * implements field hook_field_is_empty
  * allows zero values to be saved, but not NULL
  */
-function mcapi_field_is_empty($item) {ddebug_backtrace();
+function mcapi_field_is_empty($item) {
   return !(array_key_exists('quantity', $item) && strlen($item['quantity']));
 }
 
@@ -1343,4 +1354,32 @@ function _worthitems_to_worths(array $worthitems) {
     }
   }
   return $worths;
+}
+
+
+/*
+ * implements alter hook_form_user_cancel_confirm_form
+ * if they have already traded, they can only be blocked, not deleted
+ */
+function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
+  form_load_include($form_state, 'admin.inc', 'mcapi');
+  $traded = db_query(
+    "SELECT xid FROM {mcapi_transactions} WHERE (payer = :uid OR payee = :uid) AND state > 0",
+    array(':uid' => $form['uid']['#value']->uid)
+  )->fetchfield();
+  if ($traded) {
+    unset($form['user_cancel_method']['user_cancel_reassign']);
+    unset($form['user_cancel_method']['user_cancel_delete']);
+  }
+}
+
+/*
+ * implements alter hook_user_cancel_methods
+ * creates a new method
+ */
+function mcapi_user_cancel_methods_alter(&$methods) {
+  $methods['user_cancel_mcapi'] = array(
+    'title' => t('Disable the account and delete its content.'),
+    'description' => t('Your account will be blocked and you will no longer be able to log in. All of your content will be deleted.'),
+  );
 }

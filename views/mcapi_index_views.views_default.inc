@@ -184,6 +184,7 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['greco']['table'] = 'mcapi_index';
   $handler->display->display_options['fields']['greco']['field'] = 'greco';
   $handler->display->display_options['fields']['greco']['label'] = '';
+  $handler->display->display_options['fields']['greco']['hide_empty'] = TRUE;
   $handler->display->display_options['fields']['greco']['alter']['alter_text'] = TRUE;
   $handler->display->display_options['fields']['greco']['alter']['text'] = 'Greco index [greco]';
   $handler->display->display_options['fields']['greco']['element_label_colon'] = FALSE;

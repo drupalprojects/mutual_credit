@@ -10,10 +10,10 @@ function google_chart_tools_init() {
 /*
  * implements hook_block_info
  */
-function mcapi_index_views_block_info() {
+function mcapi_balance_history_block_info() {
   return array(
     'balance_history' => array(
-      'info' => t('Balance over time')
+      'info' => t('Balance over time. ')
     )
   );
 }
@@ -36,6 +36,12 @@ function mcapi_balance_history_block_view($delta) {
   }
 }
 
+function mcapi_balance_history_help($path, $args) {
+  if ($args[5] == 'balance_history') {
+    return t("This data perspective is most valuable for exchange currencies, in which users' balances should stay within range of zero.");
+  }
+}
+
 /*
  * Implements views hook_block_configure
  */
@@ -44,7 +50,7 @@ function mcapi_balance_history_block_configure($delta) {
     '#title' => t('Width in pixels'),
     '#type' => 'textfield',
     '#element_validate' => array('element_validate_integer_positive'),
-    'max_size' => 4
+    '#max_size' => 4
   );
   return mcapi_block_configure($delta, $form);
 }

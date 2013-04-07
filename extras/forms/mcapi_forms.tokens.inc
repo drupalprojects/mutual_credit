@@ -34,9 +34,9 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
     }
     if (isset($element['#children']) && strlen($element['#children'])) continue;//have already been rendered (and replaced, above)
     //hide all the unused form elements
-    mcapi_element_children_value($element, '#theme', 'hidden');
-    mcapi_unset_recursive($element, '#type');
-    mcapi_unset_recursive($element, '#theme_wrappers');
+    if ($element['#type'] == 'container') {//so its probably a fieldAPI field
+      $element['#access'] = FALSE;
+    }
     $replacements[$original] .= drupal_render($element);
   }
   return $replacements;

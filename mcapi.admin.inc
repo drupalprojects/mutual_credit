@@ -277,6 +277,65 @@ function mcapi_currency_form(&$form, &$form_state){
   //nice to do a live machine name preview here, like views does, but I could work out how!
   //http://api.drupal.org/api/drupal/includes%21form.inc/function/form_process_machine_name/7
 
+  $form['acknowledgement'] = array(
+    '#type' => 'container',
+    '#children' => implode("\n<br /><br />\n", array(
+      t("Acknowledgement currencies are issued whenever work of value is done; they can be used as a medium of exchange, there is guarantee of redemption."),
+      t("These are sometimes called 'social' currencies, because by encouraging and recognising volunteer service, they bind the community together."),
+      t("This is the choice for all timebanking systems and most LETS.")
+    )),
+    '#attributes' => array('style' => 'float:right;width:350px;'),
+    '#weight' => 2,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_ACKNOWLEDGEMENT)
+      )
+    ),
+  );
+  $form['exchange'] = array(
+    '#type' => 'container',
+    '#children' => implode("\n<br /><br />\n", array(
+      t("Exchange currencies are reciprocal logs of credit and debt between members of the community."),
+      t("The sum of all balances of active accounts, including the reservoir account, is zero, and the policy must be to return accounts to zero before deactivating them."),
+      t("This model is a way for the community to offer itself free credit / additional liquidity, usually within agreed limits, without recourse to money."),
+      t("This is the choice for all some LETS and all 'barter' systems.")
+    )),
+    '#attributes' => array('style' => 'float:right;width:350px;'),
+    '#weight' => 2,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_EXCHANGE)
+      )
+    )
+  );
+  $form['commodity'] = array(
+    '#type' => 'container',
+    '#children' => implode("\n<br /><br />\n", array(
+      t("Commodity currencies are like warehouse receipts representing claims on an actual commodity or basket (including commercial currencies) stored by a trusted party."),
+      t("They are issued according to the quantity of commodity stored, valued according to that commodity, and redeemed for that commodity."),
+      t("This link to tangible goods lends confidence to the currency, but requires a quantity of commodity to 'sit' in storage."),
+      t("This would be the choice for all 'dollar-backed' complementary currencies.")
+    )),
+    '#attributes' => array('style' => 'float:right;width:350px;'),
+    '#weight' => 2,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_COMMODITY)
+      )
+    )
+  );
+  $form['issuance'] = array(
+    '#title' => t('Basis of issuance'),
+    '#description' => t('Currently only affects visualisation.'),
+    '#type' => 'radios',
+    '#options' => array(
+      CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', array(), array('context' => 'currency-type')),
+      CURRENCY_TYPE_EXCHANGE => t('Exchange', array(), array('context' => 'currency-type')),
+      CURRENCY_TYPE_COMMODITY => t('Backed by a commodity', array(), array('context' => 'currency-type')),
+    ),
+    '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
+    '#weight' => 3
+  );
   $form['uid'] = array(
     '#title' => t('Declared by'),
     '#type' => 'user_chooser_few',
@@ -285,7 +344,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#default_value' => property_exists($currency, 'uid') ? $currency->uid : $GLOBALS['user']->name,
     '#multiple' => FALSE,
     '#required' => TRUE,
-    '#weight' => 3,
+    '#weight' => 4,
   );
   $form['reservoir'] = array(
     '#title' => t('Reservoir account'),
@@ -297,16 +356,16 @@ function mcapi_currency_form(&$form, &$form_state){
     '#multiple' => FALSE,
     '#weight' => 4
   );
-
   $form['display'] = array(
     '#title' => t('Appearance'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#weight' => 5
   );
-  $default_display = property_exists($currency, 'display') ? $currency->display :
+  $default_display = property_exists($currency, 'display') ?
+    $currency->display :
     array(
-      'format' => '',
+      'format' => '[quantity]',
       'divisions' => CURRENCY_DIVISION_MODE_NONE,
       'delimiter' => ':',
       'divisions_setting' => "0|/.\n25|1/4\n50|1/2\n75|3/4",
@@ -969,4 +1028,15 @@ function _transaction_type_selector($default, $multiple = TRUE, $exclude = NULL)
     '#required' => TRUE,
     '#element_validate' => array('mcapi_validate_ttype')
   );
+}
+
+
+//user cancel method callback
+//see mcapi_form_user_cancel_confirm_form_alter
+function mcapi_user_cancel($edit, $account, $method) {
+  if ($method == 'user_cancel_mcapi') {
+    foreach(node_load_multiple(NULL, array('uid' => $account->uid)) as $node) {
+      node_delete($node);
+    }
+  }
 }

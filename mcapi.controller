@@ -8,7 +8,7 @@
  * MODULENAME_EntityController
  * This controller test writes the transaction during validation
  */
-if (module_exists('entity')) {
+//if (class_exists('EntityAPIController')) {
 class mcapiEntityController extends EntityAPIController {
 
   /*
@@ -205,8 +205,10 @@ class mcapiEntityController extends EntityAPIController {
     foreach ($transactions as $transaction) {
       //$transaction->temp = isset($transaction->xid) ? $transaction->xid : 0;
       //creator is set unambiguously here in the controller, to be sure its not tampered with
-      $transaction->creator = $GLOBALS['user']->uid;
-      $transaction->created = REQUEST_TIME;
+      if (!property_exists($transaction, 'created')) {
+        //originally this was hardcoded here, but that meant we couldn't import transaction histories.
+        $transaction->created = REQUEST_TIME;
+      }
       //after 2 years there's still no use for this field
       $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
       if (!empty($transaction->serial)) {
@@ -350,4 +352,4 @@ function mcapi_parse_conditions($conditions) {
   }
   return ' AND '. implode(' AND ', $where);
 }
-}
+//}

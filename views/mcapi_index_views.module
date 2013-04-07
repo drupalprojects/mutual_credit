@@ -84,7 +84,7 @@ function mcapi_index_views_backup_migrate_profiles_alter(&$profiles) {
  */
 function mcapi_index_views_cron() {
   currencies_load();
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_filter(CURRENCY_TYPE_EXCHANGE);
   foreach ($currencies as $currcode => $currency) {
     $sum_of_all_debit_balances = 0;
     //get the sum of all debit balances of all accounts in this currency

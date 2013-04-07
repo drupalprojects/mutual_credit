@@ -85,6 +85,7 @@ function mcapi_mcapicurrencies_default() {
       'divisions_setting' => '',
       'delimiter' => ':',
       'format' => '€[quantity]',
+      'zero' => '',
     ),
     'access' => array(
       'membership' => 'user_chooser_segment_perms:transact',

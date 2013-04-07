@@ -77,7 +77,7 @@ function drush_mcapi_wipeslate() {
     return;
   }
   if (module_exists('mcapi_signatures')) {
-    db_query("TRUNCATE table {mcapi_signatures}");
+    db_truncate("mcapi_signatures")->execute();
   }
   //how to do "are you sure?" messages in drush!
   //this should be protected with the huser 1 password
@@ -85,12 +85,12 @@ function drush_mcapi_wipeslate() {
     '@purged' => count(db_query("SELECT count(serial) FROM {mcapi_transactions}")->fetchField()),
   )));
 
-  foreach (field_read_instances(array('entity_type' => 'transaction', 'bundle' => 'transaction')) as $instance) {
+  foreach (field_info_instances('transaction','transaction') as $instance) {
     db_delete('field_data_'.$instance['field_name'])->condition('entity_type', 'transaction')->execute();
     db_delete('field_revision_'.$instance['field_name'])->condition('entity_type', 'transaction')->execute();
   }
   db_truncate('mcapi_transactions')->execute();
-  db_truncate('cache_field')->execute();
+  field_cache_clear();
   variable_set('change_undo_mode', TRUE);
 }
 
