@@ -22,6 +22,7 @@
  * https://developers.google.com/chart/interactive/docs/gallery/linechart
  */
 
+$currcodes = array_keys($histories);
 $color_sequence = array('21a0db', '2aab49');
 foreach ($histories as $currcode => $history) {
   $colors[] = "'".array_pop($color_sequence) ."'";
@@ -33,9 +34,11 @@ if (empty($timeline))return '';
 //$timeline is now a list of times and changes of balance in currencies
 ksort($timeline);
 //what we need is a list of times with both balances per moment
-$prev = array();
+//starting with a default 'prev value
+foreach (array_keys($histories) as $currcode) $prev[$currcode] = 0;
 foreach ($timeline as $timestamp => $balances) {
-  $timeline[$timestamp] = $balances + $prev;
+  $val = array_merge($prev, $balances);
+  $timeline[$timestamp] = $vals;
   $prev = $timeline[$timestamp];
 }
 $id = 'uid-'.$account->uid.'-'.implode('',array_keys($histories));?>
@@ -44,7 +47,7 @@ function drawBalanceHistory() {
   var data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
 <?php foreach (array_keys(current($timeline)) as $currcode) { ?>
-  data.addColumn('number', '<?php print $currcode; ?>');
+  data.addColumn('number', '<?php print currency_load($currcode)->human_name; ?>');
 <?php } ?>
 
 <?php foreach ($timeline as $timestamp => $balances) {

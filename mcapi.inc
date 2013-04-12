@@ -164,11 +164,9 @@ function transaction_form_validate($form, &$form_state) {
   $transaction = entity_create('transaction', $form_state['values']);
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
-
   //finish building the transaction entity from form_state and validate that
   //Actually I don't believe this does anything we need
   //entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-
   if (form_get_errors()) return;
   try{
     //add the dependent transactions, validate, test write and put the checked cluster in form_state
@@ -262,18 +260,6 @@ function mcapi_validate_state(&$element, &$form_state) {
   $states = mcapi_get_states('#full');
   if (!isset($states[$element['#value']])) {
     form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['$value'])));
-  }
-}
-
-/*
- * Validate callback for transaction form 'type' element
- */
-function mcapi_validate_ttype(&$element, $form_state) {
-  $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
-  foreach ($values as $value) {
-    if (!in_array($value, module_invoke_all('mcapi_info_types'))) {
-      form_error($element, t('Invalid transaction type: @value', array('@value' => $value)));
-    }
   }
 }
 

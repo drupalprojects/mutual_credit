@@ -42,19 +42,25 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['fields']['serial']['alter']['path'] = 'transaction/[serial]';
   $handler->display->display_options['fields']['serial']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['serial']['link_to_transaction'] = 0;
+  if ($fieldname = variable_get('transaction_description_field')) {
+    /* Field: Echange: Description */
+    $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
+    $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
+    $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;
+    $handler->display->display_options['fields'][$fieldname]['label'] = '';
+    $handler->display->display_options['fields'][$fieldname]['element_label_colon'] = FALSE;
+  }
   /* Field: Transaction: Worth */
   $handler->display->display_options['fields']['worth']['id'] = 'worth';
   $handler->display->display_options['fields']['worth']['table'] = 'field_data_worth';
   $handler->display->display_options['fields']['worth']['field'] = 'worth';
   $handler->display->display_options['fields']['worth']['label'] = '';
   $handler->display->display_options['fields']['worth']['element_label_colon'] = FALSE;
-  $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
-  /* Field: Signatures: Sign here */
-  $handler->display->display_options['fields']['sign']['id'] = 'sign';
-  $handler->display->display_options['fields']['sign']['table'] = 'mcapi_signatures';
-  $handler->display->display_options['fields']['sign']['field'] = 'sign';
-  $handler->display->display_options['fields']['sign']['label'] = '';
-  $handler->display->display_options['fields']['sign']['element_label_colon'] = FALSE;
+  /* Field: Transaction: Actions */
+  $handler->display->display_options['fields']['operations']['id'] = 'operations';
+  $handler->display->display_options['fields']['operations']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['operations']['field'] = 'operations';
+  $handler->display->display_options['fields']['operations']['link_to_transaction'] = 0;
   /* Sort criterion: Transaction: Créé */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'mcapi_transactions';

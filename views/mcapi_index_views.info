@@ -18,6 +18,7 @@ files[] = views_handler_field_mcapi_index_currcode.inc
 files[] = views_handler_field_mcapi_index_greco.inc
 files[] = views_handler_field_mcapi_index_quantity.inc
 files[] = views_handler_filter_mcapi_index_diff.inc
+files[] = views_handler_filter_mcapi_index_traded.inc
 files[] = views_handler_sort_mcapi_users_balance.inc
 files[] = views_plugin_access_user_arg1.inc
 files[] = views_plugin_access_currency.inc

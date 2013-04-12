@@ -776,12 +776,14 @@ function currency_access($op, $currcode, $account = NULL) {
   static $calculated = array();
   if (!isset($calculated[$op][$currcode][$uid])) {
     $currency = currency_load($currcode);
-//gracefully fail if the currcode is not known
-//TODO remove this later
-if (!$currency){
-  if ($GLOBALS['user']->uid == 1){ini_set('display_errors', 1);die(print_r(debug_backtrace(), 1));}
-  drupal_set_message("problem loading currency;"); return FALSE;
-}
+
+    /* gracefully fail if the currcode is not known
+    if (!$currency){
+      if ($GLOBALS['user']->uid == 1){ini_set('display_errors', 1);die(print_r(debug_backtrace(), 1));}
+      drupal_set_message("problem loading currency;"); return FALSE;
+    }
+     *
+     */
     $callback = strtok($currency->access[$op], ':');
     $arg = strtok(':');
     $calculated[$op][$currcode][$uid] = in_user_chooser_segment($callback, array($arg), $account->uid);
@@ -840,8 +842,6 @@ function currency_load($currcode = NULL) {
   watchdog('mcapi', "Nonexistent currency '@currcode' requested from: @list",
     array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1))
   );
-//  debug("update problems with currency id: $currcode isn't available");
-//  if (module_exists('devel') && $GLOBALS['user']->uid == 1) ddebug_backtrace();//temp!
   return current($currencies);
 }
 /*
@@ -1382,4 +1382,18 @@ function mcapi_user_cancel_methods_alter(&$methods) {
     'title' => t('Disable the account and delete its content.'),
     'description' => t('Your account will be blocked and you will no longer be able to log in. All of your content will be deleted.'),
   );
+}
+
+//is needed by action settings, where we can't add a form_load_include
+
+/*
+ * Validate callback for transaction form 'type' element
+ */
+function mcapi_validate_ttype(&$element, $form_state) {
+  $values = is_array($element['#value']) ? $element['#value'] : array($element['#value']);
+  foreach ($values as $value) {
+    if (!in_array($value, module_invoke_all('mcapi_info_types'))) {
+      form_error($element, t('Invalid transaction type: @value', array('@value' => $value)));
+    }
+  }
 }

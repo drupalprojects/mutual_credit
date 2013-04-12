@@ -110,7 +110,7 @@ class mcapiEntityController extends EntityAPIController {
    */
   public function create(array $values = array(), $for_me = FALSE) {
     $transaction = new stdClass;
-    $properties = array(
+    $default_props = array(
       'payer' => 0,
       'payee' => 0,
       'creator' => $GLOBALS['user']->uid,
@@ -119,7 +119,7 @@ class mcapiEntityController extends EntityAPIController {
       'extra' => array(),
       'state' => TRANSACTION_STATE_FINISHED
     );
-    foreach ($properties as $key => $val) {
+    foreach ($default_props as $key => $val) {
       $transaction->$key = array_key_exists($key, $values) && !empty($values[$key]) ? $values[$key] : $val;
       unset($values[$key]);
     }
@@ -169,21 +169,25 @@ class mcapiEntityController extends EntityAPIController {
         unset($values[$desc_fieldname]);
       }
     }
-    //finally any other fields...
-    foreach($values as $fieldname => $default) {
+        //finally any other fields...
+    foreach($values as $fieldname => $value) {
+      if (empty($value)) continue;
       //special presetting for taxonomy fields
       $field = field_info_field($fieldname);
       if ($field['type'] == 'taxonomy_term_reference') {
-        if (is_array($default)) {
-          foreach ($default as $val) {
-            $val = (array)$val;
-            //I've seen different formats being saved.
-            $transaction->{$fieldname}[LANGUAGE_NONE][] = array('tid' => reset($val));
+        if (is_string($value)) {//the incoming value is a string of comma separated tags
+          if ($value = "_none") continue;
+          foreach(drupal_explode_tags($value) as $term_name) {
+            $transaction->{$fieldname}[LANGUAGE_NONE][] = array('tid' => taxonomy_get_term_by_name($term_name)->tid);
           }
         }
+        elseif (is_array($value)) {//must be a fieldAPI thing
+          $transaction->{$fieldname} = $value;
+        }
+        else throw new Exception("Don't know how to add terms in this format: ".print_r($value, 1));
       }
       else {
-        $transaction->{$fieldname}[LANGUAGE_NONE][] = $default;
+        $transaction->{$fieldname}[LANGUAGE_NONE][]['value'] = $value;
       }
     }
     $transaction->dependents = array();

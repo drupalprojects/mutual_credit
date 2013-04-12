@@ -19,7 +19,7 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
   foreach ($tokens as $name => $original) {
     $replacements[$original] = drupal_render($form[$name]);
   }
-  //stick the button on the end if it hasn't already been rendered as a token
+  //tack the button on the end of the last replacement if it hasn't already been rendered as a token
   unset($form['buttons']['#theme_wrappers']);
   $replacements[$original] .= drupal_render($form['buttons']);
 
@@ -65,6 +65,10 @@ function mcapi_forms_token_info() {
     'secondperson' => array(
       'name' => t('1st party: Second person'),
       'description' => t("The 'other' user in the transaction, not the logged in user"),
+    ),
+    'created' => array(
+      'name' => t('Created date'),
+      'description' => t("A popup field for choosing the date"),
     ),
   );
 

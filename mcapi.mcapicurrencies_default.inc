@@ -14,6 +14,7 @@ function mcapi_mcapicurrencies_default() {
       'currcode' => $currency->currcode,
     ),
     'human_name' =>  t('Community Coins'),
+    'issuance' => 'acknowledgement',
     'display' => array(
       'divisions' => CURRENCY_DIVISION_MODE_CUSTOM,
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
@@ -80,6 +81,7 @@ function mcapi_mcapicurrencies_default() {
       'currcode' => $mcapicurrency->currcode,
     ),
     'human_name' => t('Euros'),
+    'issuance' => 'commodity',
     'display' => array(
       'divisions' => CURRENCY_DIVISION_MODE_CENTS_INLINE,
       'divisions_setting' => '',

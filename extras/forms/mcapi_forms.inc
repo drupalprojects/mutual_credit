@@ -104,6 +104,12 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       //this validation function must run BEFORE the main one in the API, because its add payer and payee, which are required for normal validation
       array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
     }
+    if (strpos($settings['experience']['template'], 'created]')) {
+      $form['created'] = array(
+        '#type' => 'date',
+        '#element_validate' => array('mcapi_date_validate')
+      );
+    }
     if ($form['#settings']['experience']['sure_title']) {
       $form['buttons']['submit']['#value'] = t('Preview');
     }
@@ -172,7 +178,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     }
   }
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
-  $form['#validate'][] = 'mcapi_forms_validate';
+  $form['#validate'][] = 'mcapi_forms_validate';//this goes last
   $form['#attributes']['class'][] = 'step-'.$form['#step'];
   $form['#contextual_links']['mcapi_forms'] = array('admin/accounting/forms/list', array($settings['info']['name']));
 }
@@ -348,3 +354,8 @@ if (!function_exists('array_replace_recursive')) {
   }
 }
 
+function mcapi_date_validate(&$element, &$form_state) {
+  date_validate($element, $form_state);
+  $d = $form_state['values']['created'];
+  form_set_value($element, strtotime($d['year'] .'-'. $d['month'] .'-'. $d['day']), $form_state);
+}

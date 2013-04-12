@@ -247,7 +247,7 @@ function mcapi_views_plugins() {
     'access' => array(
       'curr' => array(
         'title' => t('Per currency access'),
-        'help' => t("Visible to users with access to every currency shown."),
+        'help' => t("Visible to users with access to the (first) currency in the filter or contextual filter."),
         'handler' => 'views_plugin_access_currency',
         'uses options' => TRUE,
       ),

@@ -85,7 +85,7 @@ function mcapi_signatures_update_7000() {
   db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
   db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
   db_query("UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL");
-  
+
   db_delete('block')->condition('delta', array('sig_blocks-my_sig_needed', 'sig_blocks-anybodys_sig_needed'))->execute();
   db_query("UPDATE {block} SET delta = 'sig_blocks-my_sig_needed' WHERE delta = 'signature_blocks-block_1'");
   db_query("UPDATE {block} SET delta = 'sig_blocks-anybodys_sig_needed' WHERE delta = 'signature_blocks-block_2'");
@@ -97,8 +97,6 @@ function mcapi_signatures_update_7000() {
 function mcapi_signatures_update_7005() {
   foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
     $string = variable_get($var);
-    $string = str_replace('transaction:uri]', 'transaction:url]', $string);
-    $string = str_replace('transaction:url]', 'transaction:url:absolute]', $string);
     variable_set($var, $string);
   }
   views_flush_caches();
@@ -122,6 +120,18 @@ function mcapi_signatures_update_7009() {
     $var['notify'] = $var['complete'];
     unset($var['complete']);
     variable_set($varname, $var);
+  }
+}
+
+
+/**
+ * update email tokens, better late than never
+ */
+function mcapi_signatures_update_7010() {
+  foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
+    $string = str_replace('transaction:uri]', 'transaction:url]', variable_get($var));
+    $string = str_replace('transaction:url:absolute]', 'transaction:url]', $string);
+    variable_set($var, $string);
   }
 }
 

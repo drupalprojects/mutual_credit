@@ -48,8 +48,22 @@ class views_plugin_access_currency extends views_plugin_access {
 
 
   function get_access_callback() {
-    if (module_exists('devel'))ddebug_backtrace();
-    return array('currency_access', $this->options['mode'], CURRCODE, 'account');
+    if (array_key_exists('worth_currcode', $this->view->filter)) {
+      $currcode = $this->view->filter['worth_currcode']->value;
+    }
+    elseif(array_key_exists('worth_currcode', $this->view->argument)) {
+      $currcode = $this->view->argument['worth_currcode']->value;
+      if (!$currcode) {
+        if ($this->view->argument['worth_currcode']->options['default_argument_type'] = 'fixed') {//get the default
+          $currcode = $this->view->argument['worth_currcode']->options['default_argument_options']['argument'];
+        }
+        else $currcode = 'credunit';
+      }
+    }
+    ////this a hack because one site's currency filter
+    //  seems to extend the wrong class
+    if (is_array($currcode))$currcode = key($currcode);
+    return array('currency_access', array($this->options['mode'], $currcode));
   }
 
   function summary_title() {

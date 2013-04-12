@@ -120,7 +120,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
 
   //load the transaction form so we can re-use the widgets
   $array = array();
-  $transaction_widgets = transaction_form($array, $array);
+  $transaction_widgets = transaction_form($array, $form_state);
   //adjust the empty worth transaction widget because in these forms empty is blank not zero
   foreach ($transaction_widgets['worth'][LANGUAGE_NONE]['#default_value'] as $currcode => $quantity) {
     $transaction_widgets['worth'][LANGUAGE_NONE]['#default_value'][$currcode] = $quantity == '0' ? '' : $quantity;
