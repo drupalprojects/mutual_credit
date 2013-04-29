@@ -484,14 +484,12 @@ function template_preprocess_certificate(&$variables) {
   $variables['date'] = format_date($transaction->created, 'long');
 
   $variables['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
-  if (empty($transaction->xid)) $variables['classes_array'][] = 'preview';
-
-  //fieldAPI expects several at a time, keyed by entity key
-  //NB in preview mode the xid hasn't been determined but it doesn't seem to matter
-  $transactions = array($transaction->xid => $transaction);
-  //note that the $transaction is changed by reference
-  field_attach_prepare_view('transaction', $transactions, 'certificate');
-  entity_prepare_view('transaction', $transactions);
+  if (!property_exists($transaction, 'xid') || empty($transaction->xid)) {
+    $variables['classes_array'][] = 'preview';
+    //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
+    if (in_array($fieldname, array('worth', variable_get('transaction_description_field', '')))) continue;
+    unset($transaction->$fieldname);
+  }
 
   //this returns a render array
   $variables['additional'] = field_attach_view('transaction', $transaction, 'certificate');

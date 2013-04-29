@@ -7,6 +7,7 @@
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'transaction') return array();
+  module_load_include('inc', 'mcapi');
   $transaction = &$data[$type];
   $url_options = array('absolute' => TRUE);
   $sanitize = !empty($options['sanitize']);

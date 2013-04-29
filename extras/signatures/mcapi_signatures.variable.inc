@@ -1,4 +1,4 @@
-<?
+<?php
 
 /*
  * implements hook_variable
@@ -16,7 +16,7 @@ function mcapi_signatures_variable() {
       'description' => t('A mail template (subject, body) for alerting users a transaction has been signed off.'),
       'type' => 'array',
     ),
-     * 
+     *
      */
   );
   $types = _get_signable_transaction_types();

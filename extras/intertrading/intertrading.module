@@ -30,20 +30,27 @@ function intertrading_menu() {
     $items['transact/remote'] = array(
       'title' => 'Remote transaction',
       'description' => 'Trade with another exchange in the network',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('remote_incoming_form', $transaction),
+      'page callback' => array('intertrading_direction'),
       'access arguments' => array('intertrade'),
       'menu_name' => 'main-menu',
       'type' => MENU_LOCAL_TASK,
-      'file' => 'mcapi.inc',
-      'file path' => drupal_get_path('module', 'mcapi'),
+      'weight' => 1
+    );
+    $items['transact/remote/choose'] = array(
+      'title' => 'Remote claim',
+      'description' => 'Request credit from another exchange',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => 1
     );
     $items['transact/remote/incoming'] = array(
       'title' => 'Remote claim',
       'description' => 'Request credit from another exchange',
-      'page arguments' => array('remote_outgoing_form', $transaction),
-      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('remote_incoming_form', $transaction),
+      'access arguments' => array('intertrade'),
+      'type' => MENU_LOCAL_TASK,
+      'file' => 'mcapi.inc',
+      'file path' => drupal_get_path('module', 'mcapi'),
       'weight' => 1
     );
     $items['transact/remote/outgoing'] = array(
@@ -456,6 +463,23 @@ function intertrading_json_client_request($path, $data = array()) {
     )
   );
 }
+//menu callback
+//force a deliberate choice of intertrading form
+function intertrading_direction() {
+  return array(
+    array(
+      '#markup' => t('Which way will the transaction go?')
+    ),
+    array(
+      '#theme' => 'item_list',
+      '#type' => 'ul',
+      '#items' => array(
+        l('Pay out to another site', 'transact/remote/outgoing'),
+        l('Request in from another site', 'transact/remote/incoming'),
+      )
+    )
+  );
+}
 
 /*
  * implements  hook_form_remote_incoming_form_alter
@@ -558,10 +582,9 @@ function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $for
       if (in_array($fieldname, array('actions', 'form_id', 'form_build_id', 'form_token'))) continue;
       unset($form[$fieldname]);
     }
-    $transaction = entity_create('transaction', $form_state['storage']);
     $form['preview'] = array(
       '#type' => 'markup',
-      '#markup' => drupal_render(transaction_view($transaction), 'token')
+      '#markup' => drupal_render(transaction_view($form_state['transactions'], 'certificate'), 'token')
     );
     $form['buttons']['submit']['#value'] = t('Confirm');
   }
@@ -601,7 +624,9 @@ function intertrading_transaction_form_validate($form, &$form_state) {
     }
     $form_state['step']++;
     $form_state['rebuild'] = TRUE;
-    $form_state['storage'] = $form_state['values'];
+    $copy = $form_state;
+    form_state_values_clean($copy);
+    $form_state['storage'] = $copy['values'];
   }
 }
 

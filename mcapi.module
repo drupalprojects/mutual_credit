@@ -92,7 +92,6 @@ function transaction_undo($serial) {
       mcapi_invoke('transaction_deleted', $serial);
       foreach ($transactions as $transaction) {
         field_attach_delete('transaction', $transaction);
-        module_invoke_all('entity_delete', $transaction, 'transaction');
         $xids[] = $transaction->xid;
       }
       entity_get_controller('transaction')->delete($xids);
@@ -122,6 +121,9 @@ function transaction_undo($serial) {
       }
       transaction_state($serial, $reversed->state);
       break;
+  }
+  foreach($transactions as $transaction) {
+    module_invoke_all('entity_delete', $transaction, 'transaction');
   }
   variable_del('change_undo_mode');
 }
@@ -801,10 +803,26 @@ function currency_access($op, $currcode, $account = NULL) {
  * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
  */
 function transaction_view($transactions, $view_mode) {
-  if (!is_array($transactions)) {//we have been passed a single transaction
-    $transactions = array($transactions->xid => $transactions);
-  }
+  if (!is_array($transactions))$transactions = array($transactions);
   global $language;
+
+  if (!property_exists(current($transactions), 'xid') || empty($transaction->xid)) {
+    foreach ($transactions as $xid => $transaction) {
+      $variables['classes_array'][] = 'preview';
+      //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
+      foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
+        if (in_array($fieldname, array('worth', variable_get('transaction_description_field'))))continue;
+        unset($transaction->$fieldname);
+      }
+    }
+  }
+  //in transaction preview mode, there is no $transaction->xid so we remove extraneous field api fields which cannot be rendered
+  else {
+    field_attach_prepare_view('transaction', $transactions, 'certificate');
+  }
+
+  entity_prepare_view('transaction', $transactions);
+
   foreach ($transactions as $transaction) {
     switch ($view_mode) {
       case 'certificate':
@@ -828,6 +846,7 @@ function transaction_view($transactions, $view_mode) {
   drupal_alter(array('transaction_view', 'entity_view'), $renderable, $type);
   return $renderable;
 }
+
 
 
 /*
@@ -1365,7 +1384,7 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
   form_load_include($form_state, 'admin.inc', 'mcapi');
   $traded = db_query(
     "SELECT xid FROM {mcapi_transactions} WHERE (payer = :uid OR payee = :uid) AND state > 0",
-    array(':uid' => $form['uid']['#value']->uid)
+    array(':uid' => $form['uid']['#value'])
   )->fetchfield();
   if ($traded) {
     unset($form['user_cancel_method']['user_cancel_reassign']);

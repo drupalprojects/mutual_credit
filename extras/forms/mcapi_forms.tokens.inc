@@ -32,13 +32,19 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
       drupal_set_message(t("nonexistent field '@fieldname' in transaction form", array('@fieldname' => $name)));
       continue;
     }
-    if (isset($element['#children']) && strlen($element['#children'])) continue;//have already been rendered (and replaced, above)
-    //hide all the unused form elements
-    if ($element['#type'] == 'container') {//so its probably a fieldAPI field
+    if (!empty($element['#printed'])) {
+      continue;//have already been rendered (and replaced, above)
+    }
+    //hide all the unused fieldAPI elements
+    elseif ($name == 'worth') {
+      $element['#prefix'] = '<style>div#edit-worth{display:none;}</style>';
+    }
+    elseif (array_key_exists('#type', $element) && $element['#type'] == 'container') {
       $element['#access'] = FALSE;
     }
     $replacements[$original] .= drupal_render($element);
   }
+
   return $replacements;
 }
 

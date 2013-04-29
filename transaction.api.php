@@ -80,21 +80,22 @@ transactions_delete($serials);
  */
 
 /*
- * Insert a cluster of validated transactions, which will receive the same serial number
+ * Insert a validated transaction cluster, and allocate a serial number to the cluster
  * N.B. Contrib modules would normally call wrapper function transaction_cluster_create()
  * which fires the hook_transactions inserted
  * $transactions is a flat array
  * All $transactions will be given the same serial numbers
  */
 try {
-  transaction_insert_cluster($transactions, $really);
+  transaction_cluster_write($transactions, $really);
 }
 catch(exception $e){}
+
 /*
- * Insert a single transaction entity, with a serial number already determined.
+ * Insert a single transaction entity, running the accounting_validate hook on it first
  */
 try {
-  transaction_insert_one($transaction, $really);
+  transaction_cluster_create($transaction, $really);
 }
 catch(exception $e){}
 

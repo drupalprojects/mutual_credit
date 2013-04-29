@@ -904,7 +904,7 @@ msgid "Read accounting information from"
 msgstr ""
 
 #: mcapi.module:113
-msgid "Edit currency '@name'"
+msgid "Edit currency '!name'"
 msgstr ""
 
 #: mcapi.module:113,260

@@ -42,10 +42,17 @@ function mcapi_signatures_menu() {
     'description' => 'Put your signature on all transactions which require it',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_signall', 1),
-    'access arguments' => array('transact'),
+    'access callback' => 'mcapi_signall_access',
+    'access arguments' => array(1),
     'file' => 'mcapi_signatures.inc'
   );
   return $items;
+}
+
+function mcapi_signall_access($account) {
+  if (db_query("SELECT TRUE FROM {mcapi_signatures} WHERE uid = $account->uid AND pending = 1")->fetchField()) {
+    return $account->uid == $GLOBALS['user']->uid || user_access('manage all transactions');
+  }
 }
 
 /*
@@ -111,7 +118,7 @@ function mcapi_get_signatories($serial = NULL, $uid = NULL) {
  * changing state of all transaction forms EXCEPT those made with mcapi_forms module
  */
 function mcapi_signatures_form_transaction_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'mcapi_forms_form') return;
+  if ($form_id == 'mcapi_forms_form' || !array_key_exists('type', $form)) return;
   module_load_include('inc', 'mcapi_signatures');
   _set_form_state_to_pending($form, $form_state);
 }

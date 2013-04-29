@@ -324,7 +324,7 @@ function mcapi_limits_block_configure($delta) {
   $form['currcodes'] = currency_picker_element(
     currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY),
     $form['currcodes']['#default_value'],
-    $form['currcodes']['#multiple']
+    !empty($form['currcodes']['#multiple'])
   );
   return $form;
 }

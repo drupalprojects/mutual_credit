@@ -620,6 +620,11 @@ function mcapi_upgrade_transactions($nids) {
     0 => TRANSACTION_STATE_FINISHED,
     1 => 0 //use the integar value in case signatures module is not present
   );
+  $keys = array_keys($nids);
+  drupal_set_message(t(
+    'Upgrading @count transaction nodes from nid @first to nid @last',
+    array('@count' => count($nids), '@first' => min($keys), '@last' => max($keys))
+  ));
   $types = array(
     'outgoing signed' => '1stparty',
     'incoming signed' => '1stparty',
@@ -768,6 +773,7 @@ function mcapi_update_7006() {
       $params[$fieldname] = $form[$fieldname]['#default_value'];
     }
   }
+  $params['transaction_types'] = array('1stparty', '3rdparty');
   $aid = actions_save('mcapi_transaction_mail_action', 'transaction', $params, t('Notify transactees'));
 
   // Borrowed from trigger_assign_form_submit
@@ -790,7 +796,7 @@ function mcapi_update_7009() {
   $tables = mcapi_schema();
   //in case the following doesn't work properly
   db_query("update {system} SET weight = 2 where name = 'mcapi_signatures'");
-  db_query("DELETE FROM {system} WHERE name = LIKE 'mc_%'");
+  db_query("DELETE FROM {system} WHERE name LIKE 'mc_%'");
   db_query("DELETE FROM {field_config_instance} WHERE bundle IN ('comment_node_currency', 'comment_node_exchange')");
   //customised menu items need to be renamed
   db_query("UPDATE {menu_links} SET link_path = 'transactions' WHERE link_path = 'exchanges'");
@@ -821,20 +827,18 @@ function mcapi_update_7009() {
   db_query("DELETE FROM {variable} WHERE name LIKE 'mc_trader%'");
 
   if (module_exists('block')) {
-    db_query("DELETE FROM {block_role} WHERE module LIKE ('mc_%')");
-    db_query("DELETE FROM {block_role} WHERE delta LIKE ('cc_%')");
-    db_query("DELETE FROM {block_role} WHERE delta LIKE ('pending_exchanges%')");
-    db_query("DELETE FROM {block_role} WHERE module = 'transactions'");
-
+    db_delete('block_role')->condition('module', 'mc_%', 'LIKE')->execute();
+    db_delete('block_role')->condition('delta', 'cc_%', 'LIKE')->execute();
+    db_delete('block_role')->condition('delta', 'pending_exchanges%', 'LIKE')->execute();
+    db_delete('block_role')->condition('module', 'transactions')->execute();
   }
-
 
   module_enable(array('mcapi_index_views'), TRUE);
-  $tables = drupal_get_schema();
-  if (!db_query("SHOW TABLES LIKE 'mcapi_submitted'")->fetchField()) {
-    db_create_table('mcapi_submitted', $tables['mcapi_submitted']);
-  }
+  if (db_query("SHOW TABLES LIKE 'mcapi_submitted'")->fetchField()) return;
+  $table = drupal_get_schema('mcapi_submitted', TRUE);
+  db_create_table('mcapi_submitted', $table);
 }
+
 
 
 /**
@@ -1033,7 +1037,21 @@ function mcapi_update_7019() {
   variable_set('mcapi_greco_system_health', $greco);
   cache_clear_all('currencies', 'cache');
 }
-
+/**
+ * Update the structure of the currency definition
+ * set the default issuance
+ */
+function mcapi_update_7020() {
+  field_cache_clear();
+  $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
+  foreach ($datas as $currcode => $data) {
+    $currency = unserialize($data);
+    if (property_exists($currency, 'issuance')) continue;
+    $currency->issuance = 'acknowledgement';
+    db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
+  }
+  cache_clear_all('currencies', 'cache');
+}
 
 /* I think this turned out to be not necessary and also broke things
   $worth_db_field = array(

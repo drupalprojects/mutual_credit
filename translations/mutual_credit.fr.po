@@ -660,8 +660,8 @@ msgid "Transaction #@serial"
 msgstr "Échange #@serial"
 
 #: mcapi.admin.inc:273 extras/mcapi.admin.inc:275
-msgid "Edit currency '@name'"
-msgstr "Modifier la devise '@name'"
+msgid "Edit currency '!name'"
+msgstr "Modifier la devise '!name'"
 
 #: mcapi.admin.inc:624 extras/mcapi.admin.inc:597
 msgid "Completed transaction notification"

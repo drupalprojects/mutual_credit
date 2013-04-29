@@ -8,7 +8,7 @@
  * MODULENAME_EntityController
  * This controller test writes the transaction during validation
  */
-//if (class_exists('EntityAPIController')) {
+
 class mcapiEntityController extends EntityAPIController {
 
   /*
@@ -154,6 +154,9 @@ class mcapiEntityController extends EntityAPIController {
         );
       }
     }
+    //probably the following fieldapi fields should be handled someotherhow, but this works
+    //and is particularly convenient for when transactions are created without awareness of the field API.
+    //
     //allow the description to come in with various names
     if ($desc_fieldname = variable_get('transaction_description_field')) {
       //assumes that the description field is not called 'description'
@@ -169,16 +172,17 @@ class mcapiEntityController extends EntityAPIController {
         unset($values[$desc_fieldname]);
       }
     }
-        //finally any other fields...
+    //finally any other fields...
     foreach($values as $fieldname => $value) {
       if (empty($value)) continue;
       //special presetting for taxonomy fields
       $field = field_info_field($fieldname);
       if ($field['type'] == 'taxonomy_term_reference') {
         if (is_string($value)) {//the incoming value is a string of comma separated tags
-          if ($value = "_none") continue;
+          if ($value == "_none") continue;
           foreach(drupal_explode_tags($value) as $term_name) {
-            $transaction->{$fieldname}[LANGUAGE_NONE][] = array('tid' => taxonomy_get_term_by_name($term_name)->tid);
+            $term = current(taxonomy_get_term_by_name($term_name));
+            $transaction->{$fieldname}[LANGUAGE_NONE][] = array('tid' => $term->tid);
           }
         }
         elseif (is_array($value)) {//must be a fieldAPI thing
@@ -356,4 +360,4 @@ function mcapi_parse_conditions($conditions) {
   }
   return ' AND '. implode(' AND ', $where);
 }
-//}
+

@@ -144,6 +144,18 @@ function _mcapi_menu() {
       $items["transaction/%transaction/$op"]['file path'] = drupal_get_path('module', $info['module']);
     }
   }
+  if ($aid = db_query("SELECT aid FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchfield()) {
+    $items['admin/accounting/mail_action'] = array(
+      'title' => 'Completion mails',
+      'description' => 'configure mail notifications sent when the transaction completes',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('system_actions_configure', $aid),
+      'access arguments' => array('administer actions'),
+      'weight' => 8,
+      'file' => 'system.admin.inc',
+      'file path' => drupal_get_path('module', 'system')
+    );
+  }
   return $items;
 }
 
@@ -259,7 +271,7 @@ function mcapi_currency_form(&$form, &$form_state){
     ($form_state['item']->data ? $form_state['item']->data : new stdClass);
   //copy some settings from the default currency
   if (property_exists($currency, 'human_name')) {
-    drupal_set_title( !empty($currency->human_name) ? $title = t("Edit currency '@name'", array('@name' => $currency->human_name)) : t('Declare currency') );
+    drupal_set_title( !empty($currency->human_name) ? $title = t("Edit currency '!name'", array('!name' => $currency->human_name)) : t('Declare currency') );
   }
   if (isset($form_state['values']['uid'])) {
     $currency->uid = $form_state['values']['uid'];
@@ -427,13 +439,14 @@ function mcapi_currency_form(&$form, &$form_state){
     '#required' => TRUE,
     '#weight' => 4
   );
-  $zeros = transaction_load_multiple(NULL, array('quantity' => 0, 'currcode' => $currency->info['currcode']));
+
+  $zeros = property_exists($currency, 'info') && transaction_load_multiple(NULL, array('quantity' => 0, 'currcode' => $currency->info['currcode']));
   $form['display']['zero'] = array(
     '#title' => t('Zero value display'),
     '#description' => t('Use html.') .' ',
     '#type' => 'textfield',
     '#default_value' => $default_display['zero'],
-    '#required' => property_exists($currency, 'display') ? count(transaction_load_multiple(NULL, array('quantity' => 0, 'currcode' => $currency->info['currcode']))) : FALSE,
+    '#required' => property_exists($currency, 'display') ? $zeros : FALSE,
     '#weight' => 5
   );
   if ($zeros) {
@@ -641,7 +654,7 @@ function mcapi_currency_form_validate($form, &$form_state) {
   $callback = 'in_'. strtok($form_state['values']['access']['membership'], ':');
   $arg = strtok(':');
   if (!$callback(array($arg), $form_state['values']['reservoir'])) {
-    form_set_error(t('Reservoir account does not have access to the currency!'));
+    form_set_error('reservoir', t('Reservoir account does not have access to the currency!'));
   }
 }
 

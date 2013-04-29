@@ -87,7 +87,7 @@ function import_transactions_form($form, $form_state) {
   list($field_info, $vocab) =  mcapi_import_detect_categories();
   if ($field_info) {
     $field_name = $field_info['field_name'];
-    $columns['"categories"'] = t("Comma separated category names to be imported into the '@name' vocabulary", array('@name' => $vocab->name));
+    $columns['"$field_name"'] = t("Comma separated category names to be imported into the '@name' vocabulary", array('@name' => $vocab->name));
   }
   $form['#prefix'] = '<p>'.t('The possible headings for the csv array are: (* required)') ."</p>\n<ul>";
   foreach ($columns as $key => $val) {
@@ -171,6 +171,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
     foreach (field_info_instances('transaction', 'transaction') as $instance) {
       if (array_key_exists($instance['field_name'], $row)) {
         $field_info = field_info_field($instance['field_name']);
+        if ($field_info['module'] == 'taxonomy') continue;
         if (array_key_exists('value', $field_info['columns'])) {
           drupal_set_message(t('Field @fieldname will be imported.', array('@fieldname' => $instance['field_name'])));
         }
@@ -226,8 +227,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
  * )
  */
 function mcapi_import_review_transaction_data($success, $results, $operations, $secs) {
-  $results['feedback'][] = t('testing mode is ON!');
-  array_merge((array)$_SESSION['messages']['error'], $results['feedback']);
+  $_SESSION['messages']['error'][] = t('testing mode is ON!');
   $_SESSION['messages']['status'][] = t('Successfully simulated import of @num transactions',
     array('@num' => $results['count'])
   );
@@ -319,7 +319,7 @@ function _mcapi_import_generate_transactions($rows, &$settings) {
       'currcode' => $settings['currcode'],
       'state' => $settings['state'],
       'type' => $settings['transaction_type'],
-      'description' => trim($row['description'])
+      'description' => trim(str_replace(array("\r", "\r\n", "\n"), "\n", $row['description']))
     );
     if (isset($row['created'])) {
       $props['created'] = is_numeric($row['created']) ? trim($row['created']) : strtotime($row['created']);
@@ -545,8 +545,8 @@ function mcapi_import_check_terms($rows, $create) {
   list($field_info, $vocab) =  mcapi_import_detect_categories();
   if (!$field_info) return array();
   foreach ($rows as $row) {
-    if (empty($row['categories'])) continue;
-    foreach (explode(',', $row['categories']) as $name) {
+    if (empty($row[$field_info['field_name']])) continue;
+    foreach (explode(',', $row[$field_info['field_name']]) as $name) {
       $imported_terms[trim(strtolower($name))] = 1;//uses the array key to prevent duplication
     }
   }

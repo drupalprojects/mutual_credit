@@ -888,7 +888,7 @@ msgid "Transaction #@serial"
 msgstr ""
 
 #: mcapi.module:877
-msgid "Edit currency '@name'"
+msgid "Edit currency '!name'"
 msgstr ""
 
 #: mcapi.module:1018

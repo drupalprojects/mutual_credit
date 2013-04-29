@@ -71,9 +71,6 @@ function mcapi_index_views_uninstall() {
  * update function to rebuild the mysql index view
  */
 function mcapi_index_views_update_7003() {
-  foreach (mcapi_index_views_schema() as $tablename => $table) {
-    db_create_table($tablename, $table);
-  }
   variable_set('mcapi_greco_period', 90);
 }
 /**

@@ -21,7 +21,6 @@
  *
  * https://developers.google.com/chart/interactive/docs/gallery/linechart
  */
-
 $currcodes = array_keys($histories);
 $color_sequence = array('21a0db', '2aab49');
 foreach ($histories as $currcode => $history) {
@@ -37,7 +36,7 @@ ksort($timeline);
 //starting with a default 'prev value
 foreach (array_keys($histories) as $currcode) $prev[$currcode] = 0;
 foreach ($timeline as $timestamp => $balances) {
-  $val = array_merge($prev, $balances);
+  $vals = array_merge($prev, $balances);
   $timeline[$timestamp] = $vals;
   $prev = $timeline[$timestamp];
 }
@@ -59,6 +58,7 @@ function drawBalanceHistory() {
     width: 250,
     height: 200,
     colors: [<?php print implode(', ', $colors);?>],
+    legend: {position: 'none'}
   }
   new google.visualization.LineChart(document.getElementById('<?php print $id; ?>')).draw(data, options);
 }
