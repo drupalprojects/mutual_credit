@@ -85,7 +85,7 @@ function mcapi_mass_pay_validate($form, &$form_state) {
     $form_state['values']['creator'] = $GLOBALS['user']->uid;
     $form_state['values']['type'] = 'mass';
     $form_state['values']['state'] = TRANSACTION_STATE_FINISHED;
-    $transactions = mcapi_mass_pay_insert($form_state['values'], FALSE);
+    $transactions = mcapi_mass_pay_insert($form_state, FALSE);
     if (form_get_errors()) return;
     $form_state['rebuild'] = TRUE;
     drupal_set_title(t('Are you sure?'));
@@ -105,13 +105,11 @@ function mcapi_mass_pay_submit($form, &$form_state) {
   $params = variable_get('mcapi_accounting_masspay_mail');
   $form_state['values'] = &$form_state['storage'];
   form_state_values_clean($form_state);
-  $values = $form_state['values'];
-  unset($values['subject'], $values['body']);
   //the transactions are actually saved here
-  $serial = mcapi_mass_pay_insert($values, TRUE);
+  $serial = mcapi_mass_pay_insert($form_state, TRUE);
   //now start preparing the mail
   if (strlen($params['subject']) && strlen($params['body'])) {
-    $mailto = count($values['payees']) > 1 ? 'payee' : 'payer';
+    $mailto = count($form_state['values']['payees']) > 1 ? 'payee' : 'payer';
     global $language;
     foreach (transaction_load_multiple(NULL, array('serial' => $serial)) as $transaction) {
       $params['transactions'][$serial] = $transaction;
@@ -131,11 +129,15 @@ function accountant_ui_mail($key, &$message, $params) {
   $message['body'][] = token_replace($params['body'], $params, $options);
 }
 
-function mcapi_mass_pay_insert($values, $really) {
+function mcapi_mass_pay_insert($form_state, $really) {
+  $values = &$form_state['values'];
+  unset($values['subject'], $values['body']);
+
   $payers = (array)$values['payers'];
   $payees = (array)$values['payees'];
   unset($values['payers'], $values['payees']);
   $template = entity_create('transaction', $values);
+  entity_form_submit_build_entity('transaction', $template, $form_state['complete form'], $form_state);
   foreach ($payers as $payer) {
     foreach ($payees as $payee) {
       if ($payer == $payee) {

@@ -197,7 +197,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
 
   $form['experience'] = array(
     '#title' => t('User experience'),
-    '#description' => t('Deteriming how the form and the confirmation work for the user'),
+    '#description' => t('Form & confirmation form appearance'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#type' => 'fieldset',

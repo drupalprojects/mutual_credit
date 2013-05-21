@@ -41,7 +41,7 @@ function mcapi_install() {
 
   mcapi_check_fields();
 
-  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]');
+  variable_set('mcapi_sentence', t('[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]'));
   variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
 
   //create a new user if only user 1 exists.
@@ -384,7 +384,6 @@ function mcapi_update_dependencies() {
  * create new tables and enable new modules
  */
 function mcapi_update_7000() {
-  _mcapi_module_weights();
   $tables = mcapi_schema();
   if(!db_query("SHOW TABLES LIKE 'mcapi_currencies'")->fetchfield()) {
     db_create_table('mcapi_currencies', $tables['mcapi_currencies']);
@@ -610,11 +609,8 @@ function mcapi_update_7003(&$sandbox) {
 
 //batch callback
 function mcapi_upgrade_transactions($nids) {
-  mcapi_init();//ensure the currencies are loaded up
-  $currencies = &drupal_static('currencies');
-  $currcodes = array_keys($currencies);
+  $currcodes = variable_get('mcapi_currcode_update', array('credunit'));
   $controller = entity_get_controller('transaction');
-  $currcodes = variable_get('mcapi_currcode_update', array());
   $states = array(
     -1 => MCAPI_CURRENCY_UNDO_ERASE,
     0 => TRANSACTION_STATE_FINISHED,
@@ -657,7 +653,7 @@ function mcapi_upgrade_transactions($nids) {
         LANGUAGE_NONE => array(
           0 => array(
             'quantity' => $old->quantity,
-            'currcode' => $currcodes[$old->cid] ? $currcodes[$old->cid] : 'credunit'
+            'currcode' => array_key_exists($old->cid, $currcodes) ? $currcodes[$old->cid] : 'credunit'
           )
         )
       ),
@@ -671,7 +667,7 @@ function mcapi_upgrade_transactions($nids) {
     );
     drupal_write_record('mcapi_transactions', $transaction);
     _update_7000_field_sql_storage_write('transaction', 'transaction',  $xid,  $xid, 'worth', $transaction->worth);
-    _update_7000_field_sql_storage_write('transaction', 'transaction', $xid, $xid, transaction_description, $transaction->description_field);
+    _update_7000_field_sql_storage_write('transaction', 'transaction', $xid, $xid, 'transaction_description', $transaction->description_field);
   }
   return $xid;
 }
@@ -775,7 +771,7 @@ function mcapi_update_7006() {
   }
   $params['transaction_types'] = array('1stparty', '3rdparty');
   $aid = actions_save('mcapi_transaction_mail_action', 'transaction', $params, t('Notify transactees'));
-
+  module_enable(array('trigger'));
   // Borrowed from trigger_assign_form_submit
   db_insert('trigger_assignments')->fields(
     array(
@@ -793,9 +789,7 @@ function mcapi_update_7006() {
  * Cleanup
  */
 function mcapi_update_7009() {
-  $tables = mcapi_schema();
   //in case the following doesn't work properly
-  db_query("update {system} SET weight = 2 where name = 'mcapi_signatures'");
   db_query("DELETE FROM {system} WHERE name LIKE 'mc_%'");
   db_query("DELETE FROM {field_config_instance} WHERE bundle IN ('comment_node_currency', 'comment_node_exchange')");
   //customised menu items need to be renamed
@@ -833,19 +827,18 @@ function mcapi_update_7009() {
     db_delete('block_role')->condition('module', 'transactions')->execute();
   }
 
-  module_enable(array('mcapi_index_views'), TRUE);
-  if (db_query("SHOW TABLES LIKE 'mcapi_submitted'")->fetchField()) return;
-  $table = drupal_get_schema('mcapi_submitted', TRUE);
-  db_create_table('mcapi_submitted', $table);
+  if (!db_query("SHOW TABLES LIKE 'mcapi_submitted'")->fetchField()) {
+    $table = drupal_get_schema('mcapi_submitted', TRUE);
+    db_create_table('mcapi_submitted', $table);
+  }
 }
-
 
 
 /**
  * Convert a transaction access callback which was superfluous
  */
 function mcapi_update_7010() {
-  mcapi_init();
+  currencies_load();
   $currencies = &drupal_static('currencies');
   foreach ($currencies as $currcode => $currency) {
     if (!isset($currency->transaction_access)) continue;
@@ -883,18 +876,17 @@ function mcapi_update_7013() {
   variable_del('cc_trader_selector');
   variable_del('cc_transaction_qualities');
   variable_del('mc_trader_autocomplete');
-	variable_del('mc_trader_selector');
-	variable_del('mc_webform_destination');
-	variable_del('mc_webform_special_theme');
-	variable_del('mc_webform_sure');
+  variable_del('mc_trader_selector');
+  variable_del('mc_webform_destination');
+  variable_del('mc_webform_special_theme');
+  variable_del('mc_webform_sure');
   variable_del('mc_notification_footer');
-	variable_del('mc_notification_option');
-	variable_del('mc_notification_throttle_default');
-	variable_del('mc_stats_exclude');
+  variable_del('mc_notification_option');
+  variable_del('mc_notification_throttle_default');
+  variable_del('mc_stats_exclude');
   db_delete("menu_links")->condition('plid', 0)->condition('link_path', 'admin/accounting/fields')->execute();
   db_delete('system')->condition('status', 0)->condition('name', 'cc_%', 'LIKE')->execute();
   //looks like this might not have been set earlier on some cases
-  _mcapi_module_weights();
   cache_clear_all(NULL, 'cache_bootstrap');
 }
 /**
@@ -912,8 +904,9 @@ function mcapi_update_7014() {
       ->condition('aid', $aid)
       ->execute();
   }
-  variable_set('mcapi_sentence', '[transaction:payer] paid [transaction:payee] [transaction:worth]');
+  variable_set('mcapi_sentence', t('[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]'));
 }
+
 /**
  * refresh currencies whose internal format has changed - again
  */
@@ -935,7 +928,6 @@ function mcapi_update_7015() {
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
 
-  drupal_set_message("Check your currencies' access callbacks");
   drupal_set_message('Resave all your transaction forms, paying attention to default transaction field values: '.l('admin/accounting/forms', 'admin/accounting/forms'));
 
   $sentence = variable_get('mcapi_sentence');
@@ -961,7 +953,9 @@ function mcapi_update_7016() {
 
   $field = field_read_field('worth');
   $currencies = &drupal_static('currencies');
-  $field['cardinality'] = variable_get('mcapi_mixed_transactions', TRUE) ? count($currencies) : 1;
+  if (count($currencies)) {
+    $field['cardinality'] = variable_get('mcapi_mixed_transactions', TRUE) ? count($currencies) : 1;
+  }
   field_update_field($field);
 
   $instance = field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE));
@@ -980,7 +974,7 @@ function mcapi_update_7016() {
  * remove the actions from d6
  */
 function mcapi_update_7017() {
- 	db_delete('actions')
+  db_delete('actions')
     ->condition('callback', array("transactions_email_starter_action", 'transactions_email_completer_action'))
     ->execute();
   mcapi_check_fields();
@@ -1019,14 +1013,18 @@ function mcapi_update_7019() {
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);
-    if (property_exists($currency, 'view_transaction_states')) continue;
-    $currency->access['membership'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
-    $currency->access['trader_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
-    $currency->access['system_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['currency_aggregated_view'];
-    $currency->view_transaction_states = $currency->transaction_view_access;
-    $currency->access_operations = $currency->transaction_operation_access;
-    if (strpos($currency->display['format'], '.')) $currency->display['delimiter'] = '.';
-    else $currency->display['delimiter'] = '.';
+    if (property_exists($currency, 'currency_access')) {
+      $currency->access['membership'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
+      $currency->access['trader_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
+      $currency->access['system_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['currency_aggregated_view'];
+    }
+    if (property_exists($currency, 'transaction_view_access')) {
+      $currency->view_transaction_states = $currency->transaction_view_access;
+    }
+    if (property_exists($currency, 'transaction_operation_access')) {
+      $currency->access_operations = $currency->transaction_operation_access;
+    }
+    $currency->display['delimiter'] = strpos($currency->display['format'], '.') ? '.' : ':';
     str_replace($currency->display['delimiter'], '', $currency->display['format']);
     $replacements = array('@integer' => '[quantity]', '@subdivision' => '', '@minus' => '');
     $currency->display['format'] = strtr($currency->display['format'], $replacements);
@@ -1042,6 +1040,7 @@ function mcapi_update_7019() {
  * set the default issuance
  */
 function mcapi_update_7020() {
+  module_enable(array('mcapi_index_views'));
   field_cache_clear();
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {

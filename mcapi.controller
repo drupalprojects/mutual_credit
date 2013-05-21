@@ -111,8 +111,8 @@ class mcapiEntityController extends EntityAPIController {
   public function create(array $values = array(), $for_me = FALSE) {
     $transaction = new stdClass;
     $default_props = array(
-      'payer' => 0,
-      'payee' => 0,
+      'payer' => NULL,
+      'payee' => NULL,
       'creator' => $GLOBALS['user']->uid,
       'created' => REQUEST_TIME,
       'type' => 'default',
@@ -191,7 +191,9 @@ class mcapiEntityController extends EntityAPIController {
         else throw new Exception("Don't know how to add terms in this format: ".print_r($value, 1));
       }
       else {
-        $transaction->{$fieldname}[LANGUAGE_NONE][]['value'] = $value;
+        //this caused an error on text fields e.g. the transaction description field when variable 'transaction_description_field' is unset
+        //$transaction->{$fieldname}[LANGUAGE_NONE][]['value'] = $value;
+        $transaction->{$fieldname}[LANGUAGE_NONE] = $value;
       }
     }
     $transaction->dependents = array();

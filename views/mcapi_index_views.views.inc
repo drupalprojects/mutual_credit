@@ -32,7 +32,7 @@ function mcapi_index_views_views_data() {
     'field' => array(
       'help' => t('The serial number of the transaction and dependents'),
       'handler' => 'views_handler_field_transaction',
-      //'additional fields' => array('currcode'),
+      'additional fields' => array('serial'),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -151,7 +151,7 @@ function mcapi_index_views_views_data() {
     'help' => t("Indexed running balance after each transaction. (1 database query per row)"),
     'field' => array(
       'handler' => 'views_handler_field_mcapi_index_balance',
-      'additional fields' => array('xid', 'currcode')
+      'additional fields' => array('currcode', 'created')
     ),
   );
   $data['mcapi_index']['created'] = array(
@@ -191,11 +191,12 @@ function mcapi_index_views_views_data() {
       ),
     );
   }
-  $data['mcapi_index']['links'] = array(
-    'title' => t('Transaction links'),
-    'help' => t("View and undo links"),
+  $data['mcapi_index']['operations'] = array(
+    'title' => t('Operations'),
+    'help' => t("What the user can do to the transaction"),
     'field' => array(
-      'handler' => 'views_handler_field_transaction_link',
+      'handler' => 'views_handler_field_transaction_operations',
+      'additional fields' => array('serial')
     )
   );
   $data['mcapi_index']['greco'] = array(

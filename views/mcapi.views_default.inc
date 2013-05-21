@@ -128,8 +128,8 @@ function mcapi_views_default_views() {
   $handler = $view->new_display('page', 'Transactions', 'transactions');
   $handler->display->display_options['path'] = 'transactions';
   $handler->display->display_options['menu']['type'] = 'normal';
-  $handler->display->display_options['menu']['title'] = 'transactions';
-  $handler->display->display_options['menu']['name'] = 'main-menu';
+  $handler->display->display_options['menu']['title'] = 'Transactions';
+  $handler->display->display_options['menu']['name'] = 'navigation';
 
   if ($fieldname = variable_get('transaction_description_field')) {
     /* Display: Who gave what */

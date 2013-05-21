@@ -14,7 +14,7 @@ function mcapi_mcapicurrencies_default() {
       'currcode' => $currency->currcode,
     ),
     'human_name' =>  t('Community Coins'),
-    'issuance' => 'acknowledgement',
+    'issuance' => 'exchange',
     'display' => array(
       'divisions' => CURRENCY_DIVISION_MODE_CUSTOM,
       'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",

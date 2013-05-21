@@ -78,7 +78,7 @@ function limits_equations($currency, $uid) {
   $values = (array)transaction_totals($uid, $currency->info['currcode']);
   sort($values);
   $replacements = array_combine(
-    array('@balance', '@gross_in', '@gross_out', '@trades'),//sorted as declared
+    array('@trades', '@gross_in', '@gross_out', '@balance', '@volume'),//sorted as declared
     $values
   );
   $max_formula = strtr($currency->limits['limits_equations']['max'], $replacements);
@@ -215,13 +215,13 @@ function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
       '#ajax' => array(
         'callback' => 'limits_settings_subform',
         'wrapper' => 'limits-settings',
-      )
+      ),
     ),
     '#states' => array(
       'invisible' => array(
-        ':input[name="issuance"]' => array('value' => 'acknowledgement')
+        ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_ACKNOWLEDGEMENT)
       )
-    )
+    ),
   );
   $form['acknowledgement']['#children'] .= '<br /><br /><strong>'.t('Balance limits to not apply to this currency type.').'</strong>';
   limits_settings_subform($form, $form_state, $currency);

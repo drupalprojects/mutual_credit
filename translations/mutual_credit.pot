@@ -3039,3 +3039,5 @@ msgstr ""
 msgid "A transaction index using a mysql VIEW, with powerful views integration and some example views"
 msgstr ""
 
+msgid "[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]"
+msgstr ""

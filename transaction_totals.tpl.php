@@ -15,6 +15,7 @@ if ($totals->gross_in == 0 && $totals->gross_out== 0) return;
 $id = "given-gotten-".$currcode;
 ?>
 <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+<?php print $currency->human_name; ?>
 <script type="text/javascript">
 function drawGivenGotten() {
   var data = google.visualization.arrayToDataTable([
@@ -22,15 +23,15 @@ function drawGivenGotten() {
     ['', <?php print $totals->gross_in;?>, <?php print $totals->gross_out;?>],
   ]);
   var options = {
-    title:"<?php print $currency->human_name ."\n" .t('Given / Gotten'); ?>",
+    title:"<?php print t('Given / Gotten'); ?>",
     width:100,
     height:200,
     enableInteractivity: false,
     vAxis: {viewWindowMode: 'explicit'},
-    vAxis: {viewWindow: {min: 0, {max: <?php print 5 * ceil(max($totals->gross_in, $totals->gross_out) / 5); ?>}},
+    vAxis: {viewWindow: {min: 0, max: <?php print 5 * ceil(max($totals->gross_in, $totals->gross_out) / 5); ?>}},
     hAxis: {title: "<?php print $totals->gross_in;?>, <?php print $totals->gross_out; ?>"},
     colors: ['#2aab49', '#21a0db'],
-    legend: {position: 'none'},
+    legend: {position: 'none'}
   };
   new google.visualization.ColumnChart(document.getElementById('<?php print $id; ?>')).draw(data, options);
 }

@@ -31,19 +31,16 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
         return 'error';
       }
     }
+
     return array(
       '#theme' => 'worth_item',
       '#currcode' => $currcode,
       '#quantity' => db_query(
         "SELECT SUM(diff) FROM {mcapi_index}
-          WHERE uid1 = :uid
-          AND xid <= :xid
-          AND currcode = :currcode",
-        array(
-          ':xid' => $values->{$this->aliases['xid']},
-          ':uid' => $this->uid,
-          ':currcode' => $currcode
-        )
+          WHERE uid1 = $this->uid
+          AND created <= :created
+          AND currcode = '$currcode'",
+        array(':created' => $values->{$this->aliases['created']})
       )->fetchField()
     );
   }

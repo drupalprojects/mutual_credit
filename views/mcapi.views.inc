@@ -33,7 +33,7 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
       'field' => array(
         'help' => t('The serial number of the transaction and dependents'),
         'handler' => 'views_handler_field_transaction',
-        'additional fields' => array('serial')
+        'additional fields' => array('serial'),
       ),
       'sort' => array(
         'handler' => 'views_handler_sort',
@@ -42,12 +42,15 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
     $data['mcapi_transactions']['payer'] = array(
       'title' => t('Payer'),
       'help' => t('The user who gave currency in the transaction.'),
+      'field' => array(
+        'handler' => 'views_handler_field',
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_numeric',
+      ),
       'argument' => array(
         'handler' => 'views_handler_argument_numeric',
         'click sortable' => TRUE,
-      ),
-      'field' => array(
-        'handler' => 'views_handler_field',
       ),
       'relationship' => array(
         'handler' => 'views_handler_relationship',
@@ -58,12 +61,15 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
     $data['mcapi_transactions']['payee'] = array(
       'title' => t('Payee'),
       'help' => t('The user who gave currency in the transaction.'),
+      'field' => array(
+        'handler' => 'views_handler_field',
+      ),
+      'filter' => array(
+        'handler' => 'views_handler_filter_numeric',
+      ),
       'argument' => array(
         'handler' => 'views_handler_argument_numeric',
         'click sortable' => TRUE,
-      ),
-      'field' => array(
-        'handler' => 'views_handler_field',
       ),
       'relationship' => array(
         'handler' => 'views_handler_relationship',

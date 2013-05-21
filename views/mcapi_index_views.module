@@ -85,37 +85,39 @@ function mcapi_index_views_backup_migrate_profiles_alter(&$profiles) {
 function mcapi_index_views_cron() {
   currencies_load();
   $currencies = currencies_filter(CURRENCY_TYPE_EXCHANGE);
-  foreach ($currencies as $currcode => $currency) {
-    $sum_of_all_debit_balances = 0;
-    //get the sum of all debit balances of all accounts in this currency
-    //get a list of all the users
-    $callback = strtok($currency->access['membership'], ':');
-    $args = array(strtok(':'));
-    $uids = user_chooser_segment($callback, $args, array('#allow_blocked' => TRUE));
-    foreach ($uids as $uid) {
-      $balance = transaction_totals($uid, $currcode)->balance;
-      if ($balance > 0) {
-        $sum_of_all_debit_balances += $balance;
+  if ($currencies) {
+    foreach ($currencies as $currcode => $currency) {
+      $sum_of_all_debit_balances = 0;
+      //get the sum of all debit balances of all accounts in this currency
+      //get a list of all the users
+      $callback = strtok($currency->access['membership'], ':');
+      $args = array(strtok(':'));
+      $uids = user_chooser_segment($callback, $args, array('#allow_blocked' => TRUE));
+      foreach ($uids as $uid) {
+        $balance = transaction_totals($uid, $currcode)->balance;
+        if ($balance > 0) {
+          $sum_of_all_debit_balances += $balance;
+        }
       }
-    }
-    //now get the average daily sales
-    $since = strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days');
-    $total_daily_sales = db_query(
-      "SELECT SUM(income) FROM mcapi_index WHERE created > :time AND currcode = :currcode",
-      array(
-        ':time' => $since,
-        ':currcode' => $currcode
-      )
-    )->fetchfield();
-    $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
+      //now get the average daily sales
+      $since = strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days');
+      $total_daily_sales = db_query(
+        "SELECT SUM(income) FROM mcapi_index WHERE created > :time AND currcode = :currcode",
+        array(
+          ':time' => $since,
+          ':currcode' => $currcode
+        )
+      )->fetchfield();
+      $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
 
-    if ($average_daily_sales) {
-      $indicator = round($sum_of_all_debit_balances / $average_daily_sales, 1);
+      if ($average_daily_sales) {
+        $indicator = round($sum_of_all_debit_balances / $average_daily_sales, 1);
+      }
+      else {
+        $indicator = NULL;
+      }
+      $data[$currcode] = $indicator;
     }
-    else {
-      $indicator = NULL;
-    }
-    $data[$currcode] = $indicator;
+    variable_set('mcapi_greco_system_health', $data);
   }
-  variable_set('mcapi_greco_system_health', $data);
 }

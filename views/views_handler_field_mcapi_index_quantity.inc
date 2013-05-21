@@ -11,6 +11,9 @@ class views_handler_field_mcapi_index_quantity extends views_handler_field {
 
   var $currcode_alias;
 
+  //would be really great to have a filter by currency option here.
+  //to allow showing different currency totals in different instances of this field
+
   function query() {
 
     mcapi_views_ensure_currcode($this->query, $this->currcode_alias);

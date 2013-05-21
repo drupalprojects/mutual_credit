@@ -137,7 +137,7 @@ function _transaction_form(&$form, &$form_state) {
   );
   $form['creator'] = array(
     '#title' => t('Recorded by'),
-    '#type' => 'user_chooser_permissions',
+    '#type' => 'user_chooser_segment_perms',
     '#default_value' => $form['#transaction']->creator,
     '#args' => array('transact'),
     '#required' => TRUE,
@@ -486,9 +486,12 @@ function template_preprocess_certificate(&$variables) {
   $variables['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
   if (!property_exists($transaction, 'xid') || empty($transaction->xid)) {
     $variables['classes_array'][] = 'preview';
-    //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
-    if (in_array($fieldname, array('worth', variable_get('transaction_description_field', '')))) continue;
-    unset($transaction->$fieldname);
+    foreach (array_keys(field_info_instances('transation', 'transaction')) as $fieldname) {
+      //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
+      if (!in_array($fieldname, array('worth', variable_get('transaction_description_field', '')))) {
+        unset($transaction->$fieldname);
+      }
+    }
   }
 
   //this returns a render array
