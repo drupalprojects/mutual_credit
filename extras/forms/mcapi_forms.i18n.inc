@@ -22,6 +22,7 @@ function mcapi_forms_i18n_object_info() {
   $info['payform_experience'] = array(
     // Generic object title.
     'title' => t('Community accounting designed forms'),
+    'class' => 'i18nmcapiform',
     // The object (or array) key field.
     'key' => 'name',
     // Placeholders for automatic paths.
@@ -52,8 +53,34 @@ function mcapi_forms_i18n_object_info() {
         'feedback' => t('Confirmation message')
       ),
       // Path to translate strings to every language.
-      'translate path' => 'admin/accounting/forms/list/%ctools_export_ui/translate',
+      'translate path' => 'admin/accounting/forms/list/%ctools_export_ui/translate/%i18n_language',
     )
   );
   return $info;
+}
+
+class i18nmcapiform extends i18n_string_object_wrapper {
+  /**
+   * Get string context
+   */
+  public function ____get_string_context() {
+    return array('views', $this->object->name);
+  }
+
+  /**
+   * Get translatable properties
+   */
+  protected function build_properties() {
+    $strings = parent::build_properties();
+    $mcapiform_experience = (array)$this->object;
+    foreach ($strings['payforms']['experience'][$mcapiform_experience['name']] as $fieldname => $item) {
+      //debug($strings['payforms']['experience'][$this->object->name][$fieldname]['title']);
+      $properties[$fieldname] = array(
+        'title' => $item['title'],
+        'string' => @$mcapiform_experience[$fieldname]
+      );
+    }
+    $strings[$this->get_textgroup()]['experience'][$mcapiform_experience['name']] = $properties;
+    return $strings;
+  }
 }
