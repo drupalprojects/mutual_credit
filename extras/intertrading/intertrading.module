@@ -680,7 +680,7 @@ function intertrading_passive() {
   $local_trader_mail = $post['dest_url'] == $post['payer_url'] ? $post['payer'] : $post['payee'];
   if ($local_trader = user_load_by_mail($local_trader_mail)) {
     $outgoing = $post['dest_url'] == $post['payee_url'];
-    $transaction = array(
+    $props = array(
       'creator' => variable_get('intertrading_uid'),
       'state' => TRANSACTION_STATE_FINISHED,
       'payer' => $outgoing ? variable_get('intertrading_uid', 0) : $local_trader->uid,
@@ -694,16 +694,9 @@ function intertrading_passive() {
           )
         )
       ),
+      'description' => urldecode($post['description'])
     );
-    if($description_field = variable_get('transaction_description_field', '')) {
-      $transaction[$description_field] = array(
-        LANGUAGE_NONE => array(
-          0 => array(
-            'value' => urldecode($post['description'])
-          )
-        )
-      );
-    }
+    $transaction = entity_create('transaction', $props);
   }
   else {
     intertrading_respond(28, array('@client' => INTERTRADING_REF_URL, '@mail' => $local_trader_mail));
@@ -711,24 +704,21 @@ function intertrading_passive() {
 
   try {
     //should be using entity_API_create to create the transaction here
-    transaction_cluster_create((object)$transaction, $post['really']);
+    transaction_cluster_create($transaction, $post['really']);
     intertrading_respond('OK');
   }
   catch (Exception $e) {
-    $message = $e->getMessage();
     if ($d = $e->getPrevious()) {
       $errors = unserialize($d->getMessage());//see limits exception handling
       //convert the values FROM minutes to the src systems currency
-      intertrading_respond(24, array('@message' =>  serialize($errors)));
+      intertrading_respond(24, array('@message' =>  $d->getMessage()));//the message is deprecated because it was too complicated
     }
-    else {
-      $code = 25;
-      $args = array('@message' => $message . print_r($transaction, 1));
-    }
+    $code = 25;
+    $args = array('@message' => $e->getMessage() . print_r($transaction, 1));
 
     watchdog('intertrading', '@message: @transaction', array(
       '@message' => intertrading_error_codes($code, $args),
-      '@transaction' => print_r($transaction, 1)
+      '@transaction' => print_r($transaction, 1) //this may repeat the above $transaction
     ), WATCHDOG_ERROR);
     //we should really convert the excess here
     intertrading_respond($code, $args);
@@ -866,28 +856,5 @@ function transaction_quant($transaction, $currcode = NULL) {
   if (empty($currcode)) return $flows[0]['quantity'];
   foreach ($flows as $item) {
     if ($item['currcode'] == $currcode) return $item['quantity'];
-  }
-}
-
-/*
- * implements hook_form_FORM_ID_alter
- * prevent
- */
-function intertrading_form_transaction_form_alter(&$form, &$form_state, $form_id) {
-  if (empty($form_state['build_info']['args'][0])) return;
-  //ensure that the intertrading account never validates in mcapi_forms
-  if (!in_array($form_id, array('remote_incoming_form', 'remote_outgoing_form'))) {
-    $form['#validate'][] = 'intertrading_occlude_account';
-  }
-}
-/*
- * form_alter validation callback
- * checks that no-one is attempting to trade with the intertrading account
- */
-function intertrading_occlude_account(&$form, &$form_state) {
-  foreach (array('payer', 'payee') as $participant) {
-    if (isset($form_state['values'][$participant]) && $form_state['values'][$participant] && $form_state['values'][$participant] == variable_get('intertrading_uid', 0)) {
-      form_set_error($participant, t('Intertrading is not possible with this form.'));
-    }
   }
 }

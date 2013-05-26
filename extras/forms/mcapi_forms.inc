@@ -17,7 +17,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   $settings = &$form['#settings'];
   $transaction = &$form['#transaction'];
   //change the 5 translatable strings
-  if (module_exists('i18n_string')) {
+  if (function_exists('i18n_string_object_translate')) {
     //prepare the i18n pseudo_object, because i18n expects a flat object and the mcapi_form just isn't, sorry
     $object = _mcapi_i18n_object($settings);
     //translate the object
@@ -28,6 +28,8 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     $settings['experience']['sure_title'] = $translations['sure_title'];
     $settings['submission']['button'] = $translations['button'];
     $settings['submission']['feedback'] = $translations['feedback'];
+    $settings['direction']['incoming'] = $translations['incoming'];
+    $settings['direction']['outgoing'] = $translations['outgoing'];
   }
 
   if (!empty($form_state['storage']) && $form_state['step'] == 1) {

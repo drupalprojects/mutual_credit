@@ -42,7 +42,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['perspective']['#options'] = array($form_state['values']['perspective'] => $perspectives[$form_state['values']['perspective']]);
     $form['perspective']['#description'] = 'Technical limitations prohibit this being flipped more than once. Reload the whole page to change it back';
   }
-
   $menus = module_exists('menu') ? menu_get_menus() : menu_list_system_menus();
   $form['architecture'] = array(
     '#title' => t('Architecture'),
@@ -297,6 +296,9 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['experience']['sure_title']['#description'] = $note . @$form['experience']['sure_title']['#description'];
     $form['submission']['button']['#description'] = $note . $form['submission']['button']['#description'];
     $form['submission']['feedback']['#description'] = $note . $form['submission']['feedback']['#description'];
+    if ($perspective == 1) {
+      $form['direction']['#description'] = $note . $form['direction']['#description'];
+    }
   }
 }
 

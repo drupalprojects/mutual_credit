@@ -489,7 +489,7 @@ function template_preprocess_certificate(&$variables) {
     foreach (array_keys(field_info_instances('transation', 'transaction')) as $fieldname) {
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
       if (!in_array($fieldname, array('worth', variable_get('transaction_description_field', '')))) {
-        unset($transaction->$fieldname);
+        if (property_exists($transaction, $fieldname)) unset($transaction->$fieldname);
       }
     }
   }

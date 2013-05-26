@@ -454,7 +454,14 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     }
     $transactions[] = entity_create('transaction', $values);
   }
-  if ($transactions) transaction_cluster_write($transactions, TRUE);
+  if ($transactions) {
+    try{
+      transaction_cluster_write($transactions, TRUE);
+    }
+    catch(Exception $e) {
+      drupal_set_message(t('Failed to import balance for member @uid: '. $e->getMessage(), array('@uid' => $uid)), 'warning');
+    }
+  }
 }
 
 

@@ -50,7 +50,9 @@ function mcapi_forms_i18n_object_info() {
         ),
         'sure_title' => t('Sure title'),
         'button' => t('Save button label'),
-        'feedback' => t('Confirmation message')
+        'feedback' => t('Confirmation message'),
+        'incoming' => t('Incoming direction'),
+        'outgoing' => t('Outgoing direction'),
       ),
       // Path to translate strings to every language.
       'translate path' => 'admin/accounting/forms/list/%ctools_export_ui/translate/%i18n_language',
@@ -60,12 +62,6 @@ function mcapi_forms_i18n_object_info() {
 }
 
 class i18nmcapiform extends i18n_string_object_wrapper {
-  /**
-   * Get string context
-   */
-  public function ____get_string_context() {
-    return array('views', $this->object->name);
-  }
 
   /**
    * Get translatable properties
@@ -73,14 +69,13 @@ class i18nmcapiform extends i18n_string_object_wrapper {
   protected function build_properties() {
     $strings = parent::build_properties();
     $mcapiform_experience = (array)$this->object;
+    $textgroup = $this->get_textgroup();
     foreach ($strings['payforms']['experience'][$mcapiform_experience['name']] as $fieldname => $item) {
-      //debug($strings['payforms']['experience'][$this->object->name][$fieldname]['title']);
-      $properties[$fieldname] = array(
+      $strings[$textgroup]['experience'][$mcapiform_experience['name']][$fieldname] = array(
         'title' => $item['title'],
         'string' => @$mcapiform_experience[$fieldname]
       );
     }
-    $strings[$this->get_textgroup()]['experience'][$mcapiform_experience['name']] = $properties;
     return $strings;
   }
 }

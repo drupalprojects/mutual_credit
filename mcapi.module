@@ -50,17 +50,11 @@ function mcapi_xaction_load() {
 /*
  * Community Accounting API function, see transaction.api.php
  * return the serial number if $really is TRUE
+ * this should always be inside a try!!!
  */
 function transaction_cluster_write(array $cluster, $really = TRUE) {
   //put all the transactions side by side ready for the entity controller to validate and insert
-  try{
-    module_invoke_all('accounting_validate', $cluster);
-  }
-  catch (Exception $e){
-    drupal_set_message($e->getMessage(), 'error');
-    return;
-  }
-
+  module_invoke_all('accounting_validate', $cluster);
   $serial = entity_get_controller('transaction')->insert_cluster($cluster, $really);
   if ($serial) {
     //the transaction was really inserted, so we'll write the fieldAPI fields now
@@ -908,7 +902,7 @@ function currencies_filter() {
 //returns operations with untranslated 'imperative' and 'description'
 function transaction_operations($op_name = NULL, $load = FALSE, $localize = TRUE) {
   if ($cached = cache_get('transaction_operations')) {
-    //$operations = $cached->data;
+    $operations = $cached->data;
   }
   if (empty($operations)) {
     $operations = array();

@@ -56,6 +56,12 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
     unset($form['mail']['cc']);
     $form['mail']['#description'] = t('Some tokens may not apply.');
+    $form['mail']['token_tree'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('transaction'),
+      '#global_types' => FALSE,
+      '#weight' => 3,
+    );
   }
   else {
     $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'));

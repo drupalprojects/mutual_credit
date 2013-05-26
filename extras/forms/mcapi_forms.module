@@ -398,6 +398,8 @@ function _mcapi_i18n_object($settings) {
     'template' => $settings['experience']['template'],
     'sure_title' => @$settings['experience']['sure_title'],
     'button' => @$settings['submission']['button'],
-    'feedback' => @$settings['submission']['feedback']
+    'feedback' => @$settings['submission']['feedback'],
+    'incoming' => @$settings['direction']['incoming'],
+    'outgoing' => @$settings['direction']['outgoing']
   );
 }
