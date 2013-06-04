@@ -927,8 +927,9 @@ function currencies_load($account = NULL, $refresh = FALSE) {
 function currencies_filter() {
   $currencies = &drupal_static('currencies');
   $output = array();
+  $args = func_get_args();
   foreach ($currencies as $currcode => $currency) {
-    if (property_exists($currency, 'issuance') && in_array($currency->issuance, func_get_args())) $output[$currcode] = $currency;
+    if (property_exists($currency, 'issuance') && in_array($currency->issuance, $args)) $output[$currcode] = $currency;
   }
   return $output;
 }
@@ -1079,7 +1080,7 @@ function mcapi_transaction_entity_uid($context) {
     transaction_cluster_write($transactions, TRUE);
   }
   catch (Exception $e) {
-    drupal_set_message(t('Automated transaction failed: @message', array('@message' => $e->message)), 'error');
+    drupal_set_message(t('Automated transaction failed: @message', array('@message' => $e->getMessage)), 'error');
   }
 }
 
