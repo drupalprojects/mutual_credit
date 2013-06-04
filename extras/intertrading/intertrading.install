@@ -9,8 +9,21 @@ function intertrading_uninstall() {
   variable_del('intertrading_server');
   variable_del('intertrading_uid');
   variable_del('intertrading_currcode');
-  variable_del('ticks');
+  variable_del('intertrading_ticks');
   variable_del('description_field');
   variable_del('site_latitude');
   variable_del('site_longitude');
+}
+
+/*
+ * ensure the intertrading account never took part in a mass transaction
+ */
+function intertrading_update_7001() {
+  if ($uid = variable_get('intertrading_uid', 0)) {
+    $xids = db_query("SELECT xid FROM {mcapi_transactions} WHERE (payer = $uid OR payee = $uid) AND type = 'mass'")->fetchCol();
+  }
+  //not very clean, but we don't have a command to deal with individual entities, only clusters
+  db_delete('mcapi_transactions')->condition('xid', $xids)->execute();
+  db_delete('field_data_worth')->condition('entity_id', $xids)->condition('entity_type', 'transaction')->execute();
+  db_delete('field_revision_worth')->condition('entity_id', $xids)->condition('entity_type', 'transaction')->execute();
 }

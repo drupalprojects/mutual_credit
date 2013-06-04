@@ -439,15 +439,14 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     $transactions[] =  entity_create('transaction', $out);
   }
   elseif ($balance != 0) {//if there is only balance, we do one exchange, which is simply + balance
+    $values['quantity'] = $balance;
     if ($balance > 0) {
       $values['payer'] = $currency->reservoir;
       $values['payee'] = $uid;
-      $values['quantity'] = $balance;
     }
     else {
       $values['payer'] = $uid;
       $values['payee'] = $currency->reservoir;
-      $values['quantity'] = -$balance;
     }
     if ($desc_field = variable_get('transaction_description_field', '')) {
       $values['description'] = t("Carried Forward");
@@ -492,8 +491,10 @@ function check_users($user_ids) {
 function mcapi_import_get_uid($string, $default) {
   if (is_numeric($string)) $account = user_load($string);
   else $account = user_load_by_mail($string);
+
   if (is_object($account) && $account->uid) return $account->uid;
   else return $default;
+
 }
 
 

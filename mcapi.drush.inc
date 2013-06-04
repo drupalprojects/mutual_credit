@@ -17,7 +17,7 @@ function mcapi_drush_help($section) {
     case 'mcapi:mcapi-wipeslate':
       return dt('Undo all transactions according to the currency settings');
     case 'drush:mcapi-delete':
-      return dt('Completely remove all references to transactions in state < TRANSACTION_STATE_PENDING');
+      return dt('Completely remove all references to transactions with given serial number');
     case 'drush:mcapi-purge':
       return dt('Remove all erased and reversed transactions and unfreeze the deletemode');
     case 'drush:mcapi-nodedel':
@@ -51,7 +51,7 @@ function mcapi_drush_command() {
   );
   $items['mcapi-delete'] = array(
     'callback' => 'drush_mcapi_delete',
-    'description' => dt('Selectively delete transactions. Pass the serial numbers, comma separated'),
+    'description' => dt('Selectively delete transactions. Pass the serial numbers as individual arguments'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
@@ -82,7 +82,7 @@ function drush_mcapi_wipeslate() {
   //how to do "are you sure?" messages in drush!
   //this should be protected with the huser 1 password
   drush_print(dt("@purged transactions purged", array(
-    '@purged' => count(db_query("SELECT count(serial) FROM {mcapi_transactions}")->fetchField()),
+    '@purged' => db_query("SELECT count(serial) FROM {mcapi_transactions}")->fetchField(),
   )));
 
   foreach (field_info_instances('transaction','transaction') as $instance) {

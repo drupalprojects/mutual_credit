@@ -55,7 +55,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     $form['mail'] = mcapi_mail_config_fieldset('mcapi_accounting_masspay', array('transactions'), FALSE, 21);
     $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
     unset($form['mail']['cc']);
-    $form['mail']['#description'] = t('Some tokens may not apply.');
+    $form['mail']['#description'] = t('Do not use payer and payee tokens because all will receive the same mail.');
     $form['mail']['token_tree'] = array(
       '#theme' => 'token_tree',
       '#token_types' => array('transaction'),
@@ -118,7 +118,7 @@ function mcapi_mass_pay_submit($form, &$form_state) {
     $mailto = count($form_state['values']['payees']) > 1 ? 'payee' : 'payer';
     global $language;
     foreach (transaction_load_multiple(NULL, array('serial' => $serial)) as $transaction) {
-      $params['transactions'][$serial] = $transaction;
+      $params['transaction'] = $transaction;
       $account = user_load($transaction->$mailto);
       drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);
     }

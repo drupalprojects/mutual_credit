@@ -209,41 +209,6 @@ function transaction_form_submit($form, &$form_state) {
   $form_state['values']['serial'] = $transaction->serial;
 }
 
-
-
-/*
- * implements hook_accounting_validate
- * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
- */
-function mcapi_accounting_validate($transactions){
-  $errors = array();
-  foreach ($transactions as $key => $transaction) {
-    //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
-    if ($transaction->payer > 0) {
-      if ($transaction->payer == $transaction->payee) {
-        if ($key == 0) {
-          $errors[] = t('A transaction must involve two different users');
-        }
-        else {
-          unset($transactions[$key]);
-        }
-      }
-    }
-    //a transaction can only be finished if all these fields are filled in.
-    if ($transaction->state >= TRANSACTION_STATE_FINISHED) {
-      $required = array('payer', 'payee',  'type');
-      foreach ($required as $fieldname) {
-        if (!$transaction->$fieldname) {
-          $errors[] = t("@fieldname required for completed transaction", array('@fieldname' => $fieldname));
-        }
-      }
-    }
-  }
-  if ($errors) {
-    throw new Exception(implode("<br />", $errors));
-  }
-}
-
 /*
  * form element validation callback functions
  */

@@ -124,7 +124,7 @@ function intertrading_forms($form_id, $args) {
 /*
  * access callback for menu items
  */
-function intertrading_check_key() {           return true;
+function intertrading_check_key() {
   $post = intertrading_get_post();
   if (empty($post) || substr($_GET['q'], 0, 10) != 'intertrade' || $GLOBALS['user']->uid) {
     return FALSE;
@@ -187,29 +187,6 @@ function intertrading_settings() {
     '#weight' => 2
   );
 
-  //this widget and variable is also used in intertrading.module
-  $fields = array();
-  foreach(field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
-    if ($fieldname == 'worth') continue; //this field is reserved!
-    $fields[$fieldname] = $instance['label'];
-  }
-  if (count($fields)) {
-    $form['transaction_description_field'] = array(
-      '#title' => 'Description field',
-      '#description' => t("Which field API field on the transaction entity should be used for 'description'"),
-      '#type' => 'select',
-      '#options' => $fields,
-      '#default_value' => variable_get('transaction_description_field', ''),
-      '#weight' => 5
-    );
-  }
-  else {
-    drupal_set_message(t('Intertrading works better when the transaction entity has a description field'), 'warning', FALSE);
-    $form['transaction_description_field'] = array(
-      '#type' => 'hidden',
-      '#default_value' => ''
-    );
-  }
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Handshake with server'),
@@ -322,8 +299,12 @@ function _intertrading_handshake() {
   $stats['transactions'] = db_query(
     "SELECT COUNT(xid) from {mcapi_transactions} t
     LEFT JOIN {field_data_worth} fw ON t.xid = fw.entity_id
-    WHERE t.state = :state AND fw.worth_currcode = '$currcode' AND created > :created",
-    array(':state' => TRANSACTION_STATE_FINISHED, ':created' => strtotime('-30 days'))
+    WHERE t.state = :state AND fw.worth_currcode = :currcode AND created > :created",
+    array(
+      ':state' => TRANSACTION_STATE_FINISHED,
+      ':currcode' => variable_get('intertrading_currcode', ''),
+      ':created' => strtotime('-30 days')
+    )
   )->FetchField();
 
   $stats['first_trade'] = db_query("SELECT min(created) FROM {mcapi_transactions}")->fetchField();
@@ -726,48 +707,6 @@ function intertrading_passive() {
 }
 
 /*
- * Implements variable module's hook_variable_info
- * only block settings really
- */
-function intertrading_variable_info() {
-  $vars['intertrading_server'] = array(
-    'type' => 'string',
-    'title' => t('Intertrading server url'),
-    'default' => '',
-    'description' => t('The url of the server. Contact the server administrator to change this'),
-    'required' => TRUE,
-  );
-  $vars['intertrading_ticks'] = array(
-    'type' => 'string',
-    'title' => t('Ticks'),
-    'default' => '10',
-    'description' => t('The value of the currency, relative to a common denominator.') . '<br />'.
-      t('If 1 tick is 1 minute and your currency is hours, then enter 60'),
-    'required' => TRUE,
-  );
-  $vars['intertrading_currcode'] = array(
-    'type' => 'string',
-    'title' => t('Currency used for intertrading'),
-    'default' => '',
-    'required' => TRUE,
-  );
-  $vars['intertrading_uid'] = array(
-    'type' => 'string',
-    'title' => t('The account on this exchange used for intertrading'),
-    'default' => '',
-    'description' => t('Enter the account number'),
-    'required' => TRUE,
-  );
-  $vars['transaction_description_field'] = array(
-    'type' => 'string',
-    'title' => t('Description field'),
-    'default' => '',
-    'description' => t('Choose from these fields which have been added to the transaction entity'),
-    'required' => TRUE,
-  );
-  return $vars;
-}
-/*
  * implements hook_help
  */
 function intertrading_help($path, $args) {
@@ -815,37 +754,34 @@ function report_intertrading_history() {
   $intertrading_currcode = variable_get('intertrading_currcode', '');
   $output = array();
 
-  $serials = db_query("SELECT serial FROM {mcapi_transactions} t
+  $xids = db_query("SELECT t.xid FROM {mcapi_transactions} t
     LEFT JOIN {field_data_worth} w ON t.xid = w.entity_id
     WHERE (payer = :payer OR payee = :payee) AND state > 0 AND w.worth_currcode = :currcode",
       array(':payer' => $intertrading_uid, ':payee' => $intertrading_uid, ':currcode' => $intertrading_currcode))
   ->fetchCol();
 
-  if (count($serials)) {
-    $transactions = transaction_load_multiple(array(), array('serial' => $serials));
-    foreach ($transactions as $transaction) {
+  foreach (transaction_load_multiple($xids) as $transaction) {
+    $outgoing = FALSE;
+    if ($transaction->payee == $intertrading_uid) $outgoing = TRUE;
 
-      $outgoing = FALSE;
-      if ($transaction->payee_uid == $intertrading_uid) $outgoing = TRUE;
-
-      $output[$transaction->xid] = array(
-        'payer' => $outgoing ? user_load($transaction->payer)->mail : '',
-        'payer_url' => $outgoing ? INTERTRADING_REF_URL : '',
-        'payee' => $outgoing ? 0 : user_load($transaction->payee)->mail,
-        'payee_url' => $outgoing ? '' : INTERTRADING_REF_URL,
-        'src_url' => INTERTRADING_REF_URL, //the url of the client OR blank
-        'dest_url' => '', //the url of the client OR blank
-        'quantity' => transaction_quant($transaction, $intertrading_currcode), //denominated in src units
-        'date' => $transaction->created, //unixtime
-      );
-      if ($desc = variable_get('transaction_description_field', '')) {
-        $field = field_view_field('transaction', $transaction, $desc);
-      }
-      //rendering the children removes the the title field and stuff
-      $output[$transaction->xid]['description'] = isset($field) ? strip_tags(drupal_render_children($field)) : '';
+    $output[$transaction->xid] = array(
+      'payer' => $outgoing ? user_load($transaction->payer)->mail : '',
+      'payer_url' => $outgoing ? INTERTRADING_REF_URL : '',
+      'payee' => $outgoing ? 0 : user_load($transaction->payee)->mail,
+      'payee_url' => $outgoing ? '' : INTERTRADING_REF_URL,
+      'src_url' => INTERTRADING_REF_URL, //the url of the client OR blank
+      'dest_url' => '', //the url of the client OR blank
+      'quantity' => transaction_quant($transaction, $intertrading_currcode), //denominated in src units
+      'date' => $transaction->created, //unixtime
+    );
+    if ($desc = variable_get('transaction_description_field', '')) {
+      $field = field_view_field('transaction', $transaction, $desc);
     }
-    watchdog('intertrading', 'Uploaded @num transactions to intertrading server', array('@num' => count($output)));
+    //rendering the children removes the the title field and stuff
+    $output[$transaction->xid]['description'] = isset($field) ? strip_tags(drupal_render_children($field)) : '';
   }
+  watchdog('intertrading', 'Uploaded @num transactions to intertrading server', array('@num' => count($output)));
+
   intertrading_respond('OK', $output);
 }
 
@@ -856,5 +792,41 @@ function transaction_quant($transaction, $currcode = NULL) {
   if (empty($currcode)) return $flows[0]['quantity'];
   foreach ($flows as $item) {
     if ($item['currcode'] == $currcode) return $item['quantity'];
+  }
+}
+/*
+ * implements hook_accounting_validate
+ * ensures that the the intertrading account isn't included inadvertently in any transactions
+ */
+function intertrading_accounting_validate($cluster) {
+  foreach ($cluster as $key => $transaction) {
+    if (in_array($transaction->type, array('remote receipt', 'remote payment'))) {
+      if (!in_array(variable_get('intertrading_uid'), array($transaction->payer, $transaction->payee))) {
+        throw new Exception(t('Remote payments must involve the intertrading account'));
+      }
+    }
+    else {//normal transactions
+      if (in_array(variable_get('intertrading_uid'), array($transaction->payer, $transaction->payee))) {
+        unset($cluster[$key]);
+        drupal_set_message(t('Payment involving intertrading account was excluded'), 'warning', FALSE);
+      }
+    }
+  }
+}
+/*
+ * implements hook_form_transaction_form_alter
+ * attempt to remove the intertrading account from the list of users
+ */
+function intertrading_form_transaction_form_alter($form) {
+  foreach (array('payer', 'payee', 'secondperson') as $participant) {
+    if (array_key_exists($participant, $form)) {
+      $uid = variable_get('intertrading_uid');
+      if (in_array($form[$participant]['#type'], array('user_chooser_few', 'user_chooser_many'))) {
+        $form[$participant]['#exclude'][] = $uid;
+      }
+      elseif (array_key_exists('#options', $form[$participant])) {
+        unset($form[$participant]['#options'][$uid]);
+      }
+    }
   }
 }

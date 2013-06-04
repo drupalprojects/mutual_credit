@@ -33,37 +33,37 @@ function mcapi_variable_info() {
   );
   */
   $vars['mcapi_mixed_transactions'] = array(
-    'type' => 'boolean',
     'title' => t('Mixed transactions'),
-    'default' => TRUE,
     'description' => t('Whether to allow more than one transaction per currency'),
-    'required' => FALSE,
+    'type' => 'boolean',
+    'default' => TRUE,
     'group' => 'mcapi',
+    'required' => FALSE,
   );
   $vars['transaction_description_field'] = array(
     'type' => 'select',
     'title' => t('Transaction description field'),
     'default' => '',
     'description' => t('Optional nominated fieldAPI field for describing the transaction'),
-    'required' => FALSE,
     'group' => 'mcapi',
-    'type' => 'select',
     'options callback' => 'mcapi_variable_options_callback',
+    'required' => FALSE,
   );
   $vars['mcapi_controller_delete_mode'] = array(
     'title' => t('Transaction delete mode'),
     'default' => 0,
     'description' => t('Whether transactions should be deleted, erased or offset'),
-    'required' => FALSE,
-    'group' => 'mcapi',
     'type' => 'select',
+    'group' => 'mcapi',
     'options callback' => 'mcapi_variable_options_callback',
+    'required' => FALSE,
   );
   $vars['mcapi_sentence'] = array(
     'type' => 'string',
     'title' => t('Transaction sentence template'),
+    'description' => t('A tokenised string used for rendering a transaction in one sentence or statement.'),
+    'group' => 'mcapi',
     'required' => TRUE,
-    'group' => 'mcapi'
   );
   return $vars;
 }
@@ -74,4 +74,15 @@ function __mcapi_variable_options_callback() {
 
 function __mcapi_variable_type_info() {
   //might want to make something for worth or worths
+}
+
+function mcapi_variable_group_info() {
+  return array(
+    'mcapi' => array(
+      'title' => t('Accounting variables'),
+      'description' => '',
+      'access' => 'configure all currencies',
+//      'path' => 'admin/config/regional/mcapi',
+    )
+  );
 }

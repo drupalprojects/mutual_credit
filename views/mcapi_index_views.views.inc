@@ -218,10 +218,12 @@ function mcapi_index_views_views_data() {
 function mcapi_index_views_views_data_alter(&$tables) {
 
   foreach ($tables as $table => $info) {
-    //ignore the fields we know about, this is just intended for fields added via field API
+    //ignore the fields we know about, this is just intended for fields added to transactions via field API
     if (in_array($table, array('field_data_worth', 'mcapi_signatures'))) continue;
-    if (isset($info['table']['join']['mcapi_transactions'])) {
+    if (array_key_exists('table', $info) && array_key_exists('join', $info['table']) && array_key_exists('mcapi_transactions', $info['table']['join'])) {
       $tables[$table]['table']['join']['mcapi_index'] = $info['table']['join']['mcapi_transactions'];
+      if (!array_key_exists('entity_id', $info)) continue;
+      //can't remember what 'moved to' is for
       $fieldname = $info['entity_id']['field']['moved to'][1];
       if (is_array($info[$fieldname]['field']['entity_tables'])) {
         $tables[$table][$fieldname]['field']['entity_tables']['mcapi_index'] = 'transaction';
