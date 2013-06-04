@@ -119,9 +119,16 @@ function mcapi_limits_accounting_validate(array $cluster) {
   }
   catch (exception $e) {
     $message = mcapi_limits_exception_parse(unserialize($e->getMessage()));
-    throw new Exception($message, 0, $e);
+    if (phpversion() >= 5.3) {
+      throw new Exception($message, 0, $e);
+    }
+    else {
+      throw new Exception($message);
+    }
   }
 }
+
+
 /*
  * utility parse the error messages which hitherto, were coded.
  */
