@@ -438,8 +438,10 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     }
     $transactions[] =  entity_create('transaction', $out);
   }
-  elseif ($balance != 0) {//if there is only balance, we do one exchange, which is simply + balance
-    $values['quantity'] = $balance;
+  elseif ($balance != 0) {
+    //if there is only balance, we do one exchange,
+    //which is simply reservoir pays +balance to account
+    //or account pays +balance to reservoir
     if ($balance > 0) {
       $values['payer'] = $currency->reservoir;
       $values['payee'] = $uid;
@@ -447,7 +449,10 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     else {
       $values['payer'] = $uid;
       $values['payee'] = $currency->reservoir;
+      $balance = -$balance;
     }
+    $values['quantity'] = $balance;
+    
     if ($desc_field = variable_get('transaction_description_field', '')) {
       $values['description'] = t("Carried Forward");
     }

@@ -294,8 +294,8 @@ class mcapiEntityController extends EntityAPIController {
       FROM {mcapi_transactions} t
       LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
       LEFT JOIN {field_data_worth} w2 ON t.xid = w2.entity_id AND w2.worth_currcode = '$currcode' AND t.payee = $uid
-      WHERE (t.payer = $uid OR t.payee = $uid)";
-    if ($result = db_query($query . mcapi_parse_conditions($conditions))->fetchAssoc()) {
+      WHERE (t.payer = $uid OR t.payee = $uid)" . mcapi_parse_conditions($conditions);
+    if ($result = db_query($query)->fetchAssoc()) {
       return $result;
     }
     return array('count' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0);

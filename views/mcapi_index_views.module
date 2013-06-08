@@ -87,6 +87,7 @@ function mcapi_index_views_cron() {
   $currencies = currencies_filter(CURRENCY_TYPE_EXCHANGE);
   if ($currencies) {
     foreach ($currencies as $currcode => $currency) {
+      if ($currency->issuance != CURRENCY_TYPE_EXCHANGE) continue;
       $sum_of_all_debit_balances = 0;
       //get the sum of all debit balances of all accounts in this currency
       //get a list of all the users
@@ -118,6 +119,6 @@ function mcapi_index_views_cron() {
       }
       $data[$currcode] = $indicator;
     }
-    variable_set('mcapi_greco_system_health', $data);
+    if ($data) variable_set('mcapi_greco_system_health', $data);
   }
 }

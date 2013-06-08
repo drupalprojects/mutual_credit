@@ -68,7 +68,7 @@ function mcapi_command_settings_form() {
     )),
     '#type' => 'textarea',
     '#rows' => 3,
-    '#element_validate' => array('mcapi_validate_commands'),
+    '#element_validate' => array('mcapi_validate_commands_syntax'),
     '#default_value' => variable_get('mcapi_command_strings', ''),
   );
 
@@ -106,7 +106,7 @@ function mcapi_command_settings_form() {
  * element validate callback
  * ensures that command syntax contains the critical tokens
  */
-function mcapi_validate_commands(&$element, &$form_state) {
+function mcapi_validate_commands_syntax(&$element, &$form_state) {
   $templates = explode("\n", $element['#value']);
   foreach($templates as $template) {
     //check it has quantity in it
@@ -186,30 +186,10 @@ function process_mcapi_command($message, $sender_account = NULL) {
  * create the transaction from the command, and return it
  */
 function mcapi_command_execute($message, $sender_account) {
-
-  $translations = array(
-    '[transaction:quantity]' => '([0-9.]+)',
-    '[transaction:payer]' => '([^ ]+)',
-    '[transaction:payee]' => '([^ ]+)',
-    '[transaction:description]' => '(.*)',
-  );
-  $most_matches = array();
-  foreach ( explode("\n", variable_get('mcapi_command_strings', '')) as $expression) {
-    $expression = trim($expression); //get the linebreak off it yuk
-    $pattern = '/'.strtr($expression, $translations) .'/i';
-    preg_match($pattern, $message, $matches);
-    if (count($matches) > count($most_matches)) {
-      $most_matches = $matches;
-      $final_expression = $expression;
-    }
-  }
-  if (count($most_matches) < 3) {
-    throw new Exception(variable_get('mcapi_sms_syntax_error', ''));
-  }
-  array_shift($most_matches);//remove the first which was the matched expression
+  $matches = mcapi_validate_command($message);//would throw an error
 
   //find all the tokens in the expression
-  preg_match_all("/\[[^ ]*\]/", $final_expression, $tokens);
+  preg_match_all("/\[[^ ]*\]/", $message, $tokens);
   foreach ($tokens[0] as $token) {
     $pseudotokens[] = substr($token, 13, -1);
   }
@@ -230,10 +210,34 @@ function mcapi_command_execute($message, $sender_account) {
   }
 
   $transaction = entity_create('transaction', $props);
-
   transaction_cluster_create($transaction, TRUE);//thrown errors will be caught elsewhere
   //if we are still here, that means the transaction was created
   return $transaction;
+}
+
+function mcapi_parse_command(&$message) {
+  $translations = array(
+    '[transaction:quantity]' => '([0-9.]+)',
+    '[transaction:payer]' => '([^ ]+)',
+    '[transaction:payee]' => '([^ ]+)',
+    '[transaction:description]' => '(.*)',
+  );
+  $most_matches = array();
+  foreach (explode("\n", variable_get('mcapi_command_strings', '')) as $expression) {
+    $expression = trim($expression); //get the linebreak off it yuk
+    $pattern = '/'.strtr($expression, $translations) .'/i';
+    preg_match($pattern, $message, $matches);
+    if (count($matches) > count($most_matches)) {
+      $most_matches = $matches;
+      $final_expression = $expression;
+    }
+  }
+  if (count($most_matches) < 3) {
+    throw new Exception(variable_get('mcapi_sms_syntax_error', ''));
+  }
+  $message = $final_expression;
+  array_shift($most_matches);//remove the first which was the matched expression
+  return $matches;
 }
 
 /*
@@ -277,31 +281,63 @@ function mcapi_command_sms_incoming($op, $number, $message) {
   $language = user_preferred_language($sender);
   try {
     $transaction = mcapi_command_execute($message, $sender);
-    $options = array('langcode' => user_preferred_language($sender)->language);
-    if ($transaction->state == 1) {
-      $response = t(
-        "Transaction created. Your current balance is @num",
-        array('@num' => transaction_totals($sender_account->uid, variable_get('mcapi_commands_currcode'))->balance),
-        $options
-      );
-    }
-    else {
-      $states = mcapi_get_states();
-
-
-      debug($states);
-
-
-      $response = t(
-        "Transaction created into state '@state'",
-        array('@state' => $states[$transaction->state]),
-        $options
-      );
-    }
-    sms_send($number, $response);
   }
   catch (Exception $e) {
      sms_send($number, $e->getmessage());
   }
 
+  $options = array('langcode' => user_preferred_language($sender)->language);
+  if ($transaction->state == TRANSACTION_STATE_COMPLETED) {
+    $response = t(
+      "Transaction created. Your new balance is @num",
+      array('@num' => transaction_totals($sender_account->uid, variable_get('mcapi_commands_currcode'))->balance),
+      $options
+    );
+  }
+  else {
+    $states = mcapi_get_states();
+    $response = t(
+      "Transaction created into state '@state'",
+      array('@state' => $states[$transaction->state]),
+      $options
+    );
+  }
+  sms_send($number, $response);
+
 }
+
+/*
+ * implements hook_twitter_status_save().
+ * parse the tweet as it is saved
+ * this module does NOT ISSUE COMMANDS OR RESPONSES via twitter
+ * likely to be fired on cron
+ */
+function mcapi_command_twitter_status_save($status) {
+  $message = $status->text;
+  //convert any twitter id to a username, because the command expects usernames
+  preg_match('/@[^ ]*/', $message, $matches);
+  if (count($matches)) {
+    $otherusername = twitter_account_load(trim($matches[0], '@,.;:!'))->name;
+    //so the tweet mentions another user known to this
+    $message = str_replace($otherusername, $matches[0], $message);
+  }
+
+
+  //first arg of twitter_set_status is key of db table {twitter}, an integer
+  //Also twitter responses should be a response to the original tweet. how is that done?
+  $twitter_uid = 1;
+
+  try {
+    $transaction = mcapi_command_execute($message, $status->user);
+  }
+  catch (Exception $e) {
+    if ($e->getMessage() != variable_get('mcapi_sms_syntax_error', '')) {
+      //we don't publish syntax error messages, but we do log non-syntax error message
+      watchdog('mcapi command', 'Failed to execute twitter command: @message', array('@message' => $status->text));
+      twitter_set_status($twitter_uid, $e->getMessage());
+    }
+  }
+  //could use a variable instead of transaction completed.
+  twitter_set_status($twitter_uid, t('Transaction completed'));
+}
+
