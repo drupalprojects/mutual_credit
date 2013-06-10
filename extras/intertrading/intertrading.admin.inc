@@ -77,7 +77,10 @@ function intertrading_settings() {
 
   $form['intertrading_uid'] = array(
     '#title' => t('Account for external transactions'),
-    '#description' => t('WARNING. This cannot and should not be easily changed once your account on the intertrading server is created'),
+    '#description' => t('WARNING. This cannot and should not be easily changed once your account on the intertrading server is created') .' '.
+      t('Please ensure the mail for this account goes to a responsible person: @mail',
+        array('@mail' => l($account->mail, "user/$account->uid/edit"))
+      ),
     '#type' => 'user_chooser_few',
     '#callback' => 'user_chooser_segment_perms',
     '#args' => array('transact'),
@@ -101,6 +104,16 @@ function intertrading_settings() {
     '#required' => TRUE,
     '#weight' => 2
   );
+
+  //if the intertrading account has traded, then all these fields should be disabled.
+  if ($currcode = variable_get('intertrading_currcode')) {
+    $balances = mc_balances($account, variable_get('intertrading_currcode'));
+    if ($balances->count) {
+      $form['intertrading_server']['#disabled'] = TRUE;
+      $form['intertrading_ticks']['#disabled'] = TRUE;
+      $form['intertrading_uid']['#disabled'] = TRUE;
+    }
+  }
 
   $form['submit'] = array(
     '#type' => 'submit',

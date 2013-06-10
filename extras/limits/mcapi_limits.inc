@@ -209,7 +209,7 @@ function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
       '#title' => t('Method'),
       '#description' => t('How will the limits be determined?'),
       '#type' => 'select',
-      '#options' => module_invoke_all('limits_info'),
+      '#options' => module_invoke_all('mcapi_limits_info'),
       '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'no_limits',
       '#weight' => -1,
       '#ajax' => array(

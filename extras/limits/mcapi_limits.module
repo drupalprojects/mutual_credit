@@ -173,17 +173,13 @@ function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_
   }
 }
 
-
-function mcapi_limits_hook_info() {
-  return array('limits_info' => array());
-}
 /*
- * implements hook_limits_info
+ * implements hook_mcapi_limits_info
  * declare callbacks for determining the balance limits
  * each callback is a function name for calculating the limts
  * and must have a settings form function called CALLBACK_form()
  */
-function mcapi_limits_limits_info() {
+function mcapi_limits_mcapi_limits_info() {
   return array(
     'limits_none' => t('No limits'),
     'limits_global' => t('Everyone has the same limits, stated below'),
@@ -295,7 +291,7 @@ function mcapi_limits_block_info() {
       'info' => 'MC '. t("Balance limits")
     );
     $blocks['trading_limits'] = array(
-      'info' => 'MC '. t("Trading limits (adjusted for the balance)")
+      'info' => 'MC '. t("Trading limits (How much the user can earn and spend)")
     );
   }
   return $blocks;
