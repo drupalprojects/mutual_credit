@@ -117,7 +117,9 @@ function mcapi_mass_pay_submit($form, &$form_state) {
   if (strlen($params['subject']) && strlen($params['body'])) {
     $mailto = count($form_state['values']['payees']) > 1 ? 'payee' : 'payer';
     global $language;
-    foreach (transaction_load_multiple(NULL, array('serial' => $serial)) as $transaction) {
+    $xids = array_keys(transaction_filter(array('serial' => $serial)));
+    //TODO batch this
+    foreach (transaction_load_multiple($xids) as $transaction) {
       $params['transaction'] = $transaction;
       $account = user_load($transaction->$mailto);
       drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);

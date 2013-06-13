@@ -286,7 +286,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#default_value' => property_exists($currency, 'human_name') ? $currency->human_name : '',
     '#weight' => -1,
   );
-  //nice to do a live machine name preview here, like views does, but I could work out how!
+  //TODO: nice to do a live machine name preview here, like views does, but I could work out how!
   //http://api.drupal.org/api/drupal/includes%21form.inc/function/form_process_machine_name/7
 
   $form['acknowledgement'] = array(
@@ -346,7 +346,9 @@ function mcapi_currency_form(&$form, &$form_state){
       CURRENCY_TYPE_COMMODITY => t('Backed by a commodity', array(), array('context' => 'currency-type')),
     ),
     '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
-    '#weight' => 3
+    '#weight' => 3,
+    //this should have an API function to work with other transaction controllers
+    '#disabled' => transaction_filter(array('currcode' => $currency->info['currcode']))
   );
   $form['uid'] = array(
     '#title' => t('Declared by'),
@@ -440,7 +442,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#weight' => 4
   );
 
-  $zeros = property_exists($currency, 'info') && transaction_load_multiple(NULL, array('quantity' => 0, 'currcode' => $currency->info['currcode']));
+  $zeros = property_exists($currency, 'info') && transaction_filter(array('quantity' => 0, 'currcode' => $currency->info['currcode']));
   $form['display']['zero'] = array(
     '#title' => t('Zero value display'),
     '#description' => t('Use html.') .' ',

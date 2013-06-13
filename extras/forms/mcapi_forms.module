@@ -30,9 +30,11 @@ function mcapi_forms_menu() {
       'page arguments' => array($ctools_id),
       'access callback' => 'in_user_chooser_segment',
       'access arguments' => array($uchoo_callback, array($uchoo_arg)),
-      'menu_name' => is_numeric($menu_link) ? 'navigation' :$menu_link,
       'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
     );
+    if (!is_numeric($menu_link) || $menu_link != 'navigation') {
+      $items[$settings['architecture']['path']]['menu_name'] = $menu_link;
+    }
   }
   return $items;
 }

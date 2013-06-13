@@ -61,7 +61,7 @@ class mcapi_ui extends ctools_export_ui {
     $this->rows[$currcode]['data'][2] = $type_names[$type];
     //third col, usage
     $this->rows[$currcode]['data'][3] = array(
-      'data' => db_query("SELECT COUNT(entity_id) FROM {field_data_worth} WHERE worth_currcode = '$item->currcode'")->fetchField()
+      'data' => count(transaction_filter(array('currcode' => $item->currcode)))
     );
     //fourth col, storage
     $this->rows[$currcode]['data'][4] = array(

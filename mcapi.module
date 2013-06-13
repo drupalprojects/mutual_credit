@@ -34,14 +34,15 @@ define('TRANSACTION_BUILD_INFO_ARG', 0);
  * Entity load callback
  * Community Accounting API function, see transaction.api.php
  */
-function transaction_load_multiple($xids = array(), $conditions = array(), $reset = FALSE) {
-  $transactions = entity_load('transaction', $xids, $conditions, $reset);
+function transaction_load_multiple($xids = array(), $reset = FALSE) {
+  $transactions = entity_load('transaction', $xids, $reset);
   module_invoke_all('entity_load', $transactions, 'transaction');
   return $transactions;
 }
 
 /*
  * entityAPI load callback - not used AFAIK
+ * needs to be explicit because there was a namespace conflict with commerce module
  */
 function mcapi_xaction_load() {
   debug(func_get_args());
@@ -153,33 +154,38 @@ function transaction_totals($uid, $currcode = NULL, $filters = array()) {
  * this is used to as a menu loader, so can't be in an inc file
  * entity_load($entity_type, $ids = FALSE, $conditions = array(), $reset = FALSE)
  */
-function transaction_load($serial) {
+function transaction_load($serial = NULL) {
   //the menu system alone may call this function several times in one page request
   //so it is worth caching it
-  static $serials = array();
+  static $loaded = array();
   //if no serial specified replace with the last transaction that this user created.
-  if ($serial == 0) {
+  if ($serial === NULL) {
     static $last;
     if (!$last) {
-      $transactions = transaction_load_multiple(array(), array('creator' => $GLOBALS['user']->uid));
-      if (count($transactions)) {
-        $transaction = array_pop($transactions);
-        $serials[$transaction->serial] = $transaction;
+      $xids = transaction_filter(array('creator' => $GLOBALS['user']->uid));
+      if (count($xids)) {
+        $xid = end($xids);
+        $loaded[$transaction->serial] = transaction_load_multiple(array($xid));
       }
     }
   }
-  if (empty($serials[$serial])) {
-    $transactions = transaction_load_multiple(array(), array('serial' => $serial));
-    if (empty($transactions)) {
-      throw new Exception(t('Unable to load transaction @serial', array('@serial' => $serial)));
+  $serials = (array)$serial;
+  foreach ($serials as $serial_num) {
+    if (empty($loaded[$serial_num])) {
+      $xids = array_keys(transaction_filter(array('serial' => $serial_num)));
+      $transactions = transaction_load_multiple($xids);
+      if (empty($transactions)) {
+        throw new Exception(t('Unable to load transaction @serial', array('@serial' => $serial_num)));
+      }
+      //take the first one off and make the rest its dependents, preserving their keys
+      $transactions = array_reverse($transactions, TRUE);
+      $transaction = array_pop($transactions);
+      $transaction->dependents = $transactions;
+      $loaded[$serial_num] = $transaction;
     }
-    //take the first one off and make the rest its dependents, preserving their keys
-    $transactions = array_reverse($transactions, TRUE);
-    $transaction = array_pop($transactions);
-    $transaction->dependents = $transactions;
-    $serials[$serial] = $transaction;
   }
-  return $serials[$serial];
+  if (is_array($serial)) return array_intersect_key($loaded, array_flip($serial));
+  else return $loaded[$serial];
 }
 
 /*
@@ -195,6 +201,10 @@ function transaction_cluster_create($transaction, $really = TRUE) {
   drupal_alter('transaction_cluster', $transactions);
   transaction_cluster_write($transactions, $really);
   return $transactions;
+}
+
+function transaction_filter($conditions) {
+  return entity_get_controller('transaction')->filter($conditions);
 }
 
 /*

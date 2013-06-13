@@ -50,7 +50,7 @@ function transaction_operation_access_undo_pending($callbacks, $transaction) {
 
 function mcapi_signall($form, $form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
-  $transactions = transaction_load_multiple(array(), array('serial' => $serials));
+  $transactions = transaction_load_multiple(transaction_filter(array('serial' => $serials)));
   $form['preview'] = transaction_view($transactions, variable_get('mcapi_sentence'));
   $form['uid'] = array(
     '#type' => 'hidden',
@@ -79,7 +79,7 @@ function _set_form_state_to_pending(&$form, $form_state) {
   $type = isset($form['type']['#value']) ? $form['type']['#value'] : $form['type']['#default_value'];//yuk
   if (in_array($type, _get_signable_transaction_types())) {
     $config = _signature_settings_default($type);
-    if (@$config['participants'] || count(@$config['countersignatories'])) {
+    if ($config['participants'] || count($config['countersignatories'])) {
       $form['state'] = array(
         '#type' => 'value',
         '#value' => TRANSACTION_STATE_PENDING
@@ -104,8 +104,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
   $output = array();
   $serials = transactions_needing_sig_of_user($uid);
   if ($serials) {
-    $transactions = transaction_load_multiple(array(), array('serial' => $serials));
-    if (count($transactions) > 1) {
+    if (count($serials) > 1) {
       $output[] = array(
         '#theme' => 'link',
         '#text' => t('Sign all'),
@@ -116,23 +115,21 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
         )
       );
     }
-    $output[] = transaction_view($transactions, variable_get('mcapi_sentence'));
+    $output[] = transaction_view(transaction_load($serials), variable_get('mcapi_sentence'));
   }
   return $output;
 }
 function list_waiting_not_on_uid($uid, $currcodes = array()) {
   $output = array();
-  $serials = db_query(
-    "SELECT DISTINCT t.serial FROM {mcapi_transactions} t
-     LEFT JOIN {mcapi_signatures} s ON t.serial = s.serial
-     WHERE t.state = :pending
-       AND (t.payer = $uid OR t.payee = $uid)
-       AND (s.uid = $uid AND s.pending = 0)
-      ORDER BY xid ASC",
-    array(':pending' => TRANSACTION_STATE_PENDING)
-  )->fetchCol();
-  foreach($serials as $serial) {
-    $output[] = transaction_view(transaction_load($serial), variable_get('mcapi_sentence'));
+  $serials = transaction_filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
+  $transactions = transaction_load(array_unique($serials));
+  foreach ($transactions as $transaction) {
+    if (empty($transaction->pending_signatures[$uid])) {
+      unset($transactions[$transaction->serial]);
+    }
+  }
+  foreach($transactions as $transaction) {
+    $output[] = transaction_view($transaction, variable_get('mcapi_sentence'));
   }
   return $output;
 }
@@ -322,9 +319,9 @@ function mcapi_signatures_mail($key, &$message, $params) {
 function _signature_settings_default($type) {
   if ($setting = variable_get('mcapi_signatures_'.$type, 0)) return $setting;
   return array(
-    'participants' => $type == 'mass' ? FALSE : TRUE,
+    'participants' => FALSE,
     'countersignatories' => array(),
-    'notify' => $type == 'mass' ? FALSE : TRUE
+    'notify' => FALSE
   );
 }
 

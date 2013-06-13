@@ -48,7 +48,7 @@ class mcapi_forms_ui extends ctools_export_ui {
     $this->rows[$name]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
 
     //first col, name
-    $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
+    $this->rows[$name]['data'][] = array('data' => check_plain($item->data['experience']['title']), 'class' => array('ctools-export-ui-name'));
 
     //second col, path
     $path = $item->data['architecture']['path'];
@@ -76,11 +76,6 @@ class mcapi_forms_ui extends ctools_export_ui {
     }
     $ops = theme('links__ctools_dropbutton', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline'))));
     $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
-
-    // Add an automatic mouseover of the description if one exists.
-    if (!empty($this->plugin['export']['admin_description'])) {
-      $this->rows[$name]['title'] = $item->{$this->plugin['export']['admin_description']};
-    }
   }
 
   /**

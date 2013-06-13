@@ -86,6 +86,40 @@ transactions_delete($serials);
  * $transactions is a flat array
  * All $transactions will be given the same serial numbers
  */
+
+/*
+ * load several raw transactions, by xid
+ * return them, keyed by xid
+ */
+transaction_load_multiple((array)$xids);
+
+/*
+ * filter transactions
+ * returns an array of serial numbers keyed by xid
+ *
+ * arguments, in any order can be
+ * serial, integer or array
+ * from // unixtime
+ * to //unixtime
+ * state integer or array
+ * creator integer or array($uids)
+ * payer integer or array($uids)
+ * payee integer or array($uids)
+ * involving integer or array($uids)
+ * currcode string or array($currcodes)
+ * type string or array($types)
+ * no pager is provided in this function
+ * views is much better
+ * this hasn't been used yet
+ */
+$conditions = array('serial' => array('AB123', 'AB124'));
+//or
+$conditions = array('involving' => array(234, 567));
+
+transaction_filter((array)$conditions);
+
+
+
 try {
   transaction_cluster_write($transactions, $really);
 }
@@ -120,14 +154,6 @@ try {
   transaction_state($serial, $newstate);
 }
 catch(exception $e){}
-
-
-//retrieve an arbitrary transaction
-//actually default entity controller only does integer serial numbers
-$conditions = array('serial' => array('AB123', 'AB124'));
-//or
-$xids = array(234, 567);
-$transactions = transaction_load_multiple($xids, $conditions, $clearcache);
 
 
 /*

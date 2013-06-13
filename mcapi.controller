@@ -11,51 +11,21 @@
 
 class mcapiEntityController extends EntityAPIController {
 
-  /*
-   * We need to define a set of $conditions and a syntax for retrieving transactions
-   * Like our own transaction query language
-   * This will not be based on the db field names, and must support operators
-   * $conditions = array(
-   *   'created' => array(
-   *     'val' => 11982827367,
-   *     'op' => '>'
-   *   ),
-   *   'state' => array(
-   *     'val' => 1,
-   *     'op' => '<>'
-   *   )
-   * )
-   */
-
-  //conditions here are the same as in the node entity controller, which is to say, they assume they know what table they're reading to
-  public function load($xids = array(), $conditions = array()) {
+  public function load($xids = array(), $reset = FALSE) {
     $entities = array();
     $passed_ids = !empty($xids) ? array_flip($xids) : FALSE;
 
     //get from static cache where available
-    if ($this->cache) {
-      $entities += $this->cacheGet($xids, $conditions);
+    if ($this->cache && !$reset) {
+      $entities += $this->cacheGet($xids);
       // If any entities were loaded, remove them from the ids still to load.
       if ($passed_ids) {
         $xids = array_keys(array_diff_key($passed_ids, $entities));
       }
     }
     $queried_entities = array();
-    if (array_key_exists('quantity', $conditions) || array_key_exists('currcode', $conditions)) {
-      $query1 = db_select('field_data_worth', 'w')
-        ->fields('w', array('entity_id'))
-        ->condition('entity_type', 'transaction');
-      if (array_key_exists('quantity', $conditions)) {
-        $query1->condition('worth_quantity', $conditions['quantity']);
-      }
-      if (array_key_exists('currcode', $conditions)) {
-        $query1->condition('worth_currcode', $conditions['currcode']);
-      }
-      unset($conditions['quantity'], $conditions['currcode']);
-      $xids = $query1->execute()->fetchCol('entity_id');
-    }
 
-    if ($xids === FALSE || $xids || ($conditions && !$passed_ids)) {
+    if ($xids === FALSE || $xids) {
       //db_set_active(variable_get('mcapi_db_read', 'default'));
       $query2 = db_select('mcapi_transactions');
       //db_set_active();
@@ -63,9 +33,6 @@ class mcapiEntityController extends EntityAPIController {
       // Build the query.
       if ($xids) {
         $query2->condition("mcapi_transactions.xid", $xids);
-      }
-      foreach ($conditions as $field => $value) {
-        $query2->condition('mcapi_transactions.' . $field, $value);
       }
       $queried_entities += $query2->execute()->fetchAllAssoc('xid');
     }
@@ -205,8 +172,10 @@ class mcapiEntityController extends EntityAPIController {
     $transaction->dependents = array();
     return $transaction;
   }
-
+  /*
   public function save($transaction){} //we have no use for this
+  */
+
   /*
    * put a new cluster of transactions in the database
    * all will be given the SAME serial number, which is what makes them a cluster
@@ -302,40 +271,54 @@ class mcapiEntityController extends EntityAPIController {
   }
 
   /*
-   * alternative to using views
-   * Get a list of transactions for a user, between unixtimes
-   * arguments, in any order can be
-   * from // unixtime
-   * to //unixtime
-   * states array, defaults to array(0) which is completed transactions only
-   * no pager is provided in this function
-   * views is much better
-   * this hasn't been used yet
+   * Get a list of xids and serial numbers
+   * see transaction.api.php for arguments
    */
-  public function get_period($uid, $variables) {
-    $variables += array(
-      'from' => 0,
-      'to' => REQUEST_TIME + 1,
-      'states' => array(TRANSACTION_STATE_FINISHED),
-      'currcode' => NULL
-    );
-    extract($variables);
+  public function filter(array $conditions) {
+    extract($conditions);//
     //db_set_active(variable_get('mcapi_db_read', 'default'));
     $query = db_select('mcapi_transactions', 'x')
-      ->fields('x', array('xid'))
-      ->condition(db_or()
-      ->condition('payer', $uid)
-      ->condition('payee', $uid)
-    )
-    ->condition('state', $states)
-    ->condition('created', $from, '>')
-    ->condition('created', $to,  '<')
-    ->orderby('created');
+      ->fields('x', array('xid', 'serial'))
+      ->orderby('created');
     //db_set_active();
-    if ($currcode) {
-      $query->condition('currcode', $currcode);
+    if (isset($serial)) {
+      $query->condition('serial', (array)$serial);
     }
-    return $this->load($query->execute()->fetchCol());
+    if (isset($state)) {
+      $query->condition('state', (array)$state);
+    }
+    if (isset($payer)) {
+      $query->condition('payer', (array)$payer);
+    }
+    if (isset($payee)) {
+      $query->condition('payee', (array)$payee);
+    }
+    if (isset($creator)) {
+      $query->condition('creator', (array)$creator);
+    }
+    if (isset($involving)) {
+      $query->condition(db_or()
+        ->condition('payer', (array)$involving)
+        ->condition('payee', (array)$involving)
+      );
+    }
+    if (isset($from)) {
+      $query->condition('created', $from, '>');
+    }
+    if (isset($to)) {
+      $query->condition('created', $to,  '<');
+    }
+
+    if (isset($currcode) || isset($quantity)) {
+      $query->join('field_data_worth', 'w', 'x.xid = w.entity_id');
+      if (isset($currcode)) {
+        $query->condition('worth_currcode', $currcode);
+      }
+      if (isset($quantity)) {
+        $query->condition('worth_quantity', $quantity);
+      }
+    }
+    return $query->execute()->fetchAllKeyed();
   }
 
   //this function is not 100% robust against creating simultaneous transactions

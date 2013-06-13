@@ -43,6 +43,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     $form['perspective']['#description'] = 'Technical limitations prohibit this being flipped more than once. Reload the whole page to change it back';
   }
   $menus = module_exists('menu') ? menu_get_menus() : menu_list_system_menus();
+  $menus['navigation'] = t('Default');
   $form['architecture'] = array(
     '#title' => t('Architecture'),
     '#description' => t("Every form is a menu callback with its own access control. Don't forget currencies have their own access control as well."),
@@ -193,7 +194,6 @@ function _edit_mcapi_form(&$form, &$form_state) {
     if (in_array($name, array('search_index', 'search_result', 'token'))) continue;
     $view_modes[$name] = $mode['label'];
   }
-
   $form['experience'] = array(
     '#title' => t('User experience'),
     '#description' => t('Form & confirmation form appearance'),

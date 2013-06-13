@@ -619,7 +619,7 @@ function mcapi_upgrade_transactions($nids) {
   $keys = array_keys($nids);
   drupal_set_message(t(
     'Upgrading @count transaction nodes from nid @first to nid @last',
-    array('@count' => count($nids), '@first' => min($keys), '@last' => max($keys))
+    array('@count' => count($nids), '@first' => min($nids), '@last' => max($nids))
   ));
   $types = array(
     'outgoing signed' => '1stparty',

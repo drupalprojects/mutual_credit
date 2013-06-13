@@ -628,12 +628,7 @@ function report_intertrading_history() {
   $intertrading_currcode = variable_get('intertrading_currcode', '');
   $output = array();
 
-  $xids = db_query("SELECT t.xid FROM {mcapi_transactions} t
-    LEFT JOIN {field_data_worth} w ON t.xid = w.entity_id
-    WHERE (payer = :payer OR payee = :payee) AND state > 0 AND w.worth_currcode = :currcode",
-      array(':payer' => $intertrading_uid, ':payee' => $intertrading_uid, ':currcode' => $intertrading_currcode))
-  ->fetchCol();
-
+  $xids = array_keys(transaction_filter(array('involving' => $intertrading_uid, 'currcode' => $intertrading_currcode, 'state' => TRANSACTION_STATE_FINISHED)));
   foreach (transaction_load_multiple($xids) as $transaction) {
     $outgoing = FALSE;
     if ($transaction->payee == $intertrading_uid) $outgoing = TRUE;
