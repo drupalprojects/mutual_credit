@@ -398,19 +398,26 @@ function mcapi_update_index() {
     }
     search_index($serial, 'mcapi', implode(' ', $text));
   }
-  // Save the changed time of the most recent indexed transaction, for the search results half-life calculation.
-  // actually not doing this coz only updating new transactions since last cron.
-  //variable_set('mcapi_cron_last', transaction_load($serial)->created);
 }
 
+function mcapi_user_view($account, $mode, $language) {
+  $options = variable_get('mcapi_show_balances', array('block' => TRUE, 'profile' => FALSE));
+  if ($options['profile']) {
+    module_load_include('inc', 'mcapi');
+    $account->content['balances'] = mcapi_balances_view($account->uid);
+  }
+}
 
 /*
  * implements hook_block_info
  */
 function mcapi_block_info() {
-  $blocks['balances'] = array(
-    'info' => 'MC '. t("Balances"),
-  );
+  $options = variable_get('mcapi_show_balances', array('block' => TRUE, 'profile' => FALSE));
+  if ($options['block']) {
+    $blocks['balances'] = array(
+      'info' => 'MC '. t("Balances"),
+    );
+  }
   return $blocks;
 }
 /*
@@ -841,11 +848,13 @@ function currency_access($op, $currcode, $account = NULL) {
  * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
  */
 function transaction_view($transactions, $view_mode) {
-  if (!is_array($transactions))$transactions = array($transactions);
+  if (!is_array($transactions))$transactions = array($transactions->xid => $transactions);
   global $language;
-
-  if (!property_exists(current($transactions), 'xid') || empty($transaction->xid)) {
-    foreach ($transactions as $xid => $transaction) {
+  $transaction = &current($transactions);
+  //special case for the are you sure form where the transaction was test written and deleted
+  //that means the fieldAPI data cannot be retrieved the normal way
+  if (!property_exists($transaction, 'serial') || empty($transaction->serial)) {
+    foreach ($transactions as $transaction) {
       $variables['classes_array'][] = 'preview';
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
       foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
@@ -858,7 +867,6 @@ function transaction_view($transactions, $view_mode) {
   else {
     field_attach_prepare_view('transaction', $transactions, 'certificate');
   }
-
   entity_prepare_view('transaction', $transactions);
 
   foreach ($transactions as $transaction) {

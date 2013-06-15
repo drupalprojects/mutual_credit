@@ -255,7 +255,7 @@ function mcapi_parse_command($message) {
   }
 
   //now the extracted tokens line up with the matches from before
-  if (count($tokens) == count($most_matches)) {
+  if (count($tokens[0]) == count($most_matches)) {
     return array_combine($pseudotokens, $most_matches);
   }
   elseif ($most_matches) {
@@ -354,13 +354,14 @@ function mcapi_command_twitter_status_save($status) {
 
   try {
     $uid = db_query("SELECT uid FROM twitter_account WHERE twitter_uid = ".$status->user->id)->fetchfield();
+
     $transaction = mcapi_command_execute($message, user_load($uid), TRUE);
     if (!$transaction) return;//that means there was a syntax error.
   }
   catch (Exception $e) {
     if ($e->getMessage() != variable_get('mcapi_command_syntax_error', '')) {
       //we don't publish syntax error messages, but we do log non-syntax error message
-      watchdog('mcapi command', 'Failed to execute twitter command: @message', array('@message' => $status->text));
+      watchdog('mcapi command', 'Failed to execute twitter command: @message', array('@message' => "$status->text :". $e->getMessage()));
       $response = $e->getMessage();
     }
   }

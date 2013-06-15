@@ -130,10 +130,6 @@ msgstr "'@val' devrait être un entier entre 0 et 99, suivi directement par une 
 msgid "Invalid currency specified: @num"
 msgstr "Unité d'échange invalide : @num"
 
-#: currencies.inc:230 extras/mcapi.admin.inc:557
-msgid "edit"
-msgstr "modifier"
-
 #: mcapi.admin.inc:836;939 mcapi.inc:597 mcapi.module:1070;1167;1187;1215 mcapi.install:269 views/mcapi.views_default.inc:182
 msgid "Worth"
 msgstr "Valeur"

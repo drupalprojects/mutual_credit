@@ -65,6 +65,18 @@ function mcapi_variable_info() {
     'group' => 'mcapi',
     'required' => TRUE,
   );
+  $vars['mcapi_show_balances'] = array(
+    'type' => 'options',
+    'title' => t('Show balances'),
+    'description' => t('Whether to render the balances, in a block and in the user profile'),
+    'group' => 'mcapi',
+    'required' => FALSE,
+    'options' => array(
+      'block' => t('In a block'),
+      'profile' => t('On the user profile page')
+    ),
+    'default' => array('block' => 'block', 'profile' => FALSE),
+  );
   return $vars;
 }
 

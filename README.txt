@@ -10,9 +10,8 @@ please see http://matslats.net/mutual-credit-architecture-3
 WARNING!
 The intention behind this module is to foster a culter of experimentation, not to impose ideological constraints about how a money system should work.
 Consequently it can be used as straight mutual credit, as the name implies, or for fiat or commodity currencies in which units are 'issued' into circulation from an account allocated for that purpose.
-Nonetheless, be warned; many lessons have already been learned about currency design and the process of encouraging communities to adopt them.
-Fools rush in where angels fear to tread!
-A badly managed money system can cause people to lose out and create bad feeling and resistance to future innovation.
+Nonetheless, fools rush in where angels fear to tread! Many lessons have already been learned about currency design and the process of encouraging communities to adopt them.
+A badly managed money system can cause people to lose out and create bad feeling and resistance to future innovation, especially because few people understand how money actually works.
 
 ***********************
 **  BASIC SETUP   **
@@ -102,22 +101,27 @@ Intended for webshops and skilled Drupal developers
 1. Transaction workflow.
 There is a simple system for defining transaction states and defining the permission callbacks for the operations to move between states.
 By default, transactions are created in FINISHED state, and the UNDO operation is visible only to permitted users. Transactions should never be edited.
-The signatures module declares another state, 'pending', and 3 operations, 'sign', 'sign off' and 'delete pending', and provides lots more logic and displays and some configuration around that.
+Note that currently, transactions can be deleted but not edited; a module could be created to do that.
+There is a hook to declare transaction_operations and new transaction states, so you can code your own workflow.
+For example the signatures module declares another state, 'pending', and 2 operations, 'sign' and 'sign off' (plus various other logic & config).
+The module supports THREE undo modes.
+- change 'state' to undone
+- remove transaction completely
+- write a counter-transaction and set both to state 'undone'
+
 
 2. Currency Design
-The currencies are full (ctools) configuration objects and contain a lot of information about behaviour and access control.
-There are three kinds of access control,
-- access, which determines who can trade with, and see aggregated data in that currency
-- view_transaction_states, which gives different visibility for each transaction state.
-- access_operations which allow users to move transactions between states.
-An extensible series of callbacks is provided to give fine-grained control. The signature module provides such callbacks, for example so that only a user who needs to sign a transaction can access the 'sign' operation.
+Pay careful attention to the 'issuance' because this can affect other features. Reputation currencies are possible but other solutions like userpoints and fivestar should also be considered.
+Each transaction operation has a permission setting per currency. Those permission options can be extended using a hook.
+
 
 3. Forms
 Of course you can build your own forms using modules for creating transactions, but this powerful form builder is provided. Each form has its own address in the menu system, access control, and can be available as a block also.
 The administrator can design forms in HTML for different purposes and different places in the site.
-The HTML template contains tokens for each transaction property / field, or excluded elements are hidden.
-Properties and fields can be preset or otherwise configured also
+The HTML template contains tokens for each transaction property / field, elements not referenced by tokens are hidden and must have preset values. Properties and fields can be preset or otherwise configured also Note that most fields can also be 'stripped' which removes the outer box, making them easier to theme.
+The date field is available (as a token only) to allow transactions to be backdated.
 The form has an optional confirmation page, the format of which can also be determined.
+
 
 3. Actions and rules.
 Three actions are provided by the core module,
@@ -129,6 +133,7 @@ Plus there are triggers for all transaction workflow operations.
 Rules attempts to re-deply the them, but I got stuck describing the worth field to entity_token.
 So for now, rules integration only works for events and conditions not involving field 'worth', but not transaction actions.
 
+
 4. Internal API
 
 The transaction entity has 3 forms
@@ -138,15 +143,10 @@ Loaded entity, in which the dependent transactions (with the same serial number)
 Don't forget all the transactions on their way to the theme system, which might be called $build or $transaction
 
 Standard accounting database operations are conducted through an API described in transaction.api.php
-Entity module is used where I could make sesnse of it.
-The intention is that the entity controller can be swopped so that transactions can live in different formats in different databases.
-That concept has been proved, but more needs to be done to allow each currency to have its own transaction controller.
+There is full integration with the entity module.
 All transaction state changes, including creation must be done with a call to transactions_state()
 The transaction_totals() function is mostly duplicated by the mcapi_index_views module, but external entity controllers will have difficulty integrating with views I should think.
-The module supports THREE undo modes which need to move to the transaction entity controller where they will be selected per currency.
-- change 'state' to undone
-- remove transaction completely
-- write a counter-transaction and set both to state 'undone'
+
 
 5. Limits system
 
@@ -166,23 +166,3 @@ All the transaction_view_access callbacks have versions for modifying transactio
 The mcapi_index_views module does what the transaction table cannot do, by installing a mysql VIEW and providing views integration with that. This allows a whole new perspective on the transactions, and allows new forms of statistics also.
 
 
-
-*************************
-** BUILDING A WORKFLOW **
-*************************
-
-The problem is that a transaction actually starts life as a product in the directory,with a description, vendor, and price.
-Gradually the buyer, is added, the price is agreed, the payment made, and the ratings added.
-The many possible variations on this process made it very hard for me to generalise
-
-However a basic, extensible transaction workflow is included, consisting of states and operations, declared in hooks
-At the moment a transaction once created, cannot be edited, but can only change state.
-SO you might want to build your workflow around a directory listing, which becomes a contract, which converts to a transaction towards the end.
-Transactions can be 'locked' in the final stages using the pending state or something like it.
-You need to show the users balance as 2 figures. X amount, of which Y is locked.
-Then you'll need to reconsider the transaction validation procedure where it checks if there is enough money in the account.
-You might want to write your own balance checking functions for that.
-When all required users have signed, the transaction moves from PENDING to the FINISHED state
-If you want traders to each rate the transaction, you could combine the rating with transaction signing.
-That means you ask each of them to rate, and that means implicitly that they have signed.
-This might cut a step out of the workflow.

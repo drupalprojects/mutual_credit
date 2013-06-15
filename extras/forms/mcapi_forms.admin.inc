@@ -6,16 +6,7 @@ include ('mcapi_forms.inc');
  */
 function mcapi_forms_help($path, $args) {
   if (substr($path, 0, 22) == 'admin/accounting/forms') {
-    if (strlen($path) > 22) {
-      $help[] = t('Edit transaction form.');
-      if (module_exists('locale')) {
-        $help[] = t('To work in many languages this form should be exported to a custom module, then not overwritten, and the strings wrapped in t().');
-      }
-      return implode(' ', $help);
-    }
-    else {
-      return t('Create transaction forms for specific use-cases. Use with caution as not all permutations are meaningful.');
-    }
+    return t('Create transaction forms for specific use-cases. Use with caution as not all permutations are meaningful.');
   }
 }
 

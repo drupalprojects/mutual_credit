@@ -379,6 +379,25 @@ function mcapi_update_dependencies() {
   );
   return $dependencies;
 }
+/*
+ * import po files BEFORE running mcapi updates
+ */
+function mcapi_update_6999() {
+  $languages = language_list('enabled');
+  unset($languages[1]['en']);
+  if (!count($languages[1])) return;
+  $language_list = join('|', array_keys($languages[1]));
+  foreach (file_scan_directory(drupal_get_path('module', 'mcapi'), "/(^|\.)($language_list)\.po$/") as $po_file) {
+    _locale_import_read_po(
+      'db-store',
+      $po_file,
+      LOCALE_IMPORT_OVERWRITE,
+      $language_list,
+      'default'
+    );
+    $messages[] = 'Imported strings from '.$po_file->uri;
+  }
+}
 
 /**
  * create new tables and enable new modules
@@ -612,9 +631,9 @@ function mcapi_upgrade_transactions($nids) {
   $currcodes = variable_get('mcapi_currcode_update', array('credunit'));
   $controller = entity_get_controller('transaction');
   $states = array(
-    -1 => MCAPI_CURRENCY_UNDO_ERASE,
+    -1 => TRANSACTION_STATE_UNDONE,
     0 => TRANSACTION_STATE_FINISHED,
-    1 => 0 //use the integar value in case signatures module is not present
+    1 => -1 //use the integar value in case signatures module is not present
   );
   $keys = array_keys($nids);
   drupal_set_message(t(
@@ -800,15 +819,13 @@ function mcapi_update_7009() {
 
 
   if (module_exists('mcapi_signatures')) {
-    $d6tokens = array('!username', '!site', '!uri', '!date', '!login_url', '!creator', '!exchange_uri', '!summary');
-    $d7tokens = array('[transaction:creator]', '[site:name]', '[transaction:url]', '[transaction:created]', '[site:login-url]', '[transaction:creator]', '[transaction:url]', '[transaction:summary]');
     variable_set('mcapi_sign_notify_template', array(
-      'subject' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_notification_subject')),
-      'body' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_notification_body')),
+      'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_subject')),
+      'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_body')),
     ));
     variable_set('mcapi_signed_off_notify_template', array(
-      'subject' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_signoff_subject')),
-      'body' => str_replace($d6tokens, $d7tokens, variable_get('mc_signatures_signoff_body')),
+      'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_subject')),
+      'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_body')),
     ));
   }
   variable_del('mc_subtypes');
@@ -833,6 +850,11 @@ function mcapi_update_7009() {
   }
 }
 
+function mcapi_update_7000_tokens($string) {
+  $d6tokens = array('!username', '!site', '!uri', '!date', '!login_url', '!creator', '!exchange_uri', '!summary', '!sign_link');
+  $d7tokens = array('[transaction:creator]', '[site:name]', '[transaction:url]', '[transaction:created]', '[site:login-url]', '[transaction:creator]', '[transaction:url]', '[transaction:summary]', '[transaction:url]');
+  return str_replace($d6tokens, $d7tokens, $string);
+}
 
 /**
  * Convert a transaction access callback which was superfluous
@@ -890,7 +912,7 @@ function mcapi_update_7013() {
   cache_clear_all(NULL, 'cache_bootstrap');
 }
 /**
- * update email tokens from transaction:uri to transaction:uri
+ * update email tokens from transaction:uri to transaction:url
  * some variables but also some action settings
  * create mcapi_sentence variable
  */

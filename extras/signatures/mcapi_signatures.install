@@ -76,8 +76,19 @@ function mcapi_signatures_schema() {
   );
   return $schema;
 }
+
+function mcapi_signatures_update_dependencies() {
+  $dependencies = array(
+    'mcapi_signatures' => array(
+      7000 => array(
+        'mcapi' => 7003
+      )
+    )
+  );
+}
+
 /**
- * rename the signature blocks following the renaming of the views displays
+ * update the signatures table
  */
 function mcapi_signatures_update_7000() {
   db_rename_table('mc_unsigned', 'mcapi_signatures');
@@ -85,29 +96,49 @@ function mcapi_signatures_update_7000() {
   db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
   db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
   db_query("UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL");
+  $pending = db_query("SELECT xid, serial, payer, payee s.uid
+    FROM {mcapi_transactions} t
+    LEFT JOIN {mcapi_signatures} s
+    ON t.serial = s.serial
+    WHERE t.state = :state", array(':state' => TRANSACTION_STATE_PENDING));
+  foreach ($pending as $transaction) {
+    db_query("UPDATE {mcapi_signatures} SET serial = :serial WHERE serial = :xid", array($transaction-serial, $transaction->xid));
+    //make a new row for the user who already signed
+    db_query(
+      "INSERT INTO {mcapi_signatures} (serial, uid, pending), VALUES {:serial, :uid, 0}",
+      array(
+        ':serial' => $transaction->serial,
+        ':uid' => $transaction->payer == $transaction->uid ? $transaction->payee : $transaction->payer
+      )
+    );
+  }
+  signature_integrity_check();
+}
 
+/**
+ * rename the signature blocks following the renaming of the views displays.
+ * update email templates
+ */
+function mcapi_signatures_update_7005() {
   db_delete('block')->condition('delta', array('sig_blocks-my_sig_needed', 'sig_blocks-anybodys_sig_needed'))->execute();
   db_query("UPDATE {block} SET delta = 'sig_blocks-my_sig_needed' WHERE delta = 'signature_blocks-block_1'");
   db_query("UPDATE {block} SET delta = 'sig_blocks-anybodys_sig_needed' WHERE delta = 'signature_blocks-block_2'");
-}
 
-/**
- * update email tokens from transaction:uri to transaction:url
- */
-function mcapi_signatures_update_7005() {
-  foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
-    $string = variable_get($var);
-    variable_set($var, $string);
-  }
+  module_load_install('mcapi');
+  variable_set('mcapi_sign_notify_template', array(
+    'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_subject')),
+    'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_body')),
+  ));
+  variable_set('mcapi_signed_off_notify_template', array(
+    'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_subject')),
+    'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_body')),
+  ));
+
+  variable_del('mcapi_sign_notify_template');
+  variable_del('mcapi_signed_off_notify_template');
   views_flush_caches();
 }
 
-/**
- * check that signatures are congruent with transaction states
- */
-function mcapi_signatures_update_7008() {
-  signature_integrity_check();
-}
 /**
  * update an array key in the signature settings
  */
@@ -125,14 +156,11 @@ function mcapi_signatures_update_7009() {
 
 
 /**
- * update email tokens, better late than never
+ * delete d6 variable and check signature data integrity
  */
 function mcapi_signatures_update_7010() {
-  foreach (array('mcapi_sign_notify_template', 'mcapi_signed_off_notify_template') as $var) {
-    $string = str_replace('transaction:uri]', 'transaction:url]', variable_get($var));
-    $string = str_replace('transaction:url:absolute]', 'transaction:url]', $string);
-    variable_set($var, $string);
-  }
+  variable_del('cc_pending_notification_template');
+  signature_integrity_check();
 }
 
 function signature_integrity_check() {

@@ -37,7 +37,12 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
       continue;
     }
     elseif (in_array($name, array('secondperson', 'direction', 'worth', 'payer', 'payee'))) {
-      $element['#prefix'] = "<style>#edit-$name{display:none;}</style>";
+      if ($name == 'direction' && !empty($element['#strip'])) {
+        $element['#prefix'] = "<style>.form-item-direction{display:none;}</style>";
+      }
+      else {
+        $element['#prefix'] = "<style>#edit-$name{display:none;}</style>";
+      }
     }
     //hide any other fieldAPI elements
     elseif (array_key_exists('#type', $element) && $element['#type'] == 'container') {

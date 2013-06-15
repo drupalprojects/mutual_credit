@@ -243,6 +243,18 @@ function mcapi_misc_options_form($form_state) {
     '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE),
     '#disabled' => !variable_get('change_undo_mode', FALSE)
   );
+  $form['mcapi_show_balances'] = array(//see mcapi.variable.inc
+    '#title' => t('Show balances'),
+    '#type' => 'checkboxes',
+    '#options' => array(
+      'block' => t('In a block'),
+      'profile' => t('On the user profile page')
+    ),
+    '#default_value' => variable_get('mcapi_show_balances', array(
+      'block' => 'block',
+      'profile' => FALSE
+    ))
+  );
 
   $form['mcapi_sentence'] = array(
     '#title' => t('Transaction sentence template'),
@@ -691,7 +703,7 @@ function _mcapi_action_info() {
     'mcapi_transaction_entity_uid' => array(
       'type' => 'transactions',
       'label' => t('Create transaction with entity owner'),
-      'description' => t('Pay or charge the user or node owner.'),
+      'description' => t('Pay or charge the node or comment owner, or the user'),
       'configurable' => TRUE,
       'triggers' => array(//all the core triggers, except taxonomy
         'node_presave', 'node_insert', 'node_update', 'node_delete', 'node_view',

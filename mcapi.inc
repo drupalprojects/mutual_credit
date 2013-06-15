@@ -730,7 +730,6 @@ function transaction_get_links($transaction) {
   return ($links);
 }
 
-
 /*
  * block function a nice display of user balances in a currency
  */
