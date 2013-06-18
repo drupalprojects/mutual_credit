@@ -70,27 +70,39 @@ function intertrading_settings() {
       t('WARNING. This cannot and should not be easily changed once your account on the intertrading server is created'),
     '#field_prefix' => 'http://',
     '#type' => 'textfield',
-    '#default_value' => variable_get('intertrading_server', 'intertesting.communityforge.net'),
+    '#default_value' => variable_get('intertrading_server', 'clearingcentral.communityforge.net'),
     '#disabled' => variable_get('intertrading_server', 0),
-    '#required' => TRUE
-  );
-
-  $form['intertrading_uid'] = array(
-    '#title' => t('Account for external transactions'),
-    '#description' => t('WARNING. This cannot and should not be easily changed once your account on the intertrading server is created') .' '.
-      t('Please ensure the mail for this account goes to a responsible person: @mail',
-        array('@mail' => l($account->mail, "user/$account->uid/edit"))
-      ),
-    '#type' => 'user_chooser_few',
-    '#callback' => 'user_chooser_segment_perms',
-    '#args' => array('transact'),
-    '#default_value' => variable_get('intertrading_uid', 0),
-    '#disabled' => variable_get('intertrading_uid', 0),
     '#required' => TRUE
   );
 
   $currencies = &drupal_static('currencies');
   $form['intertrading_currcode'] =  currency_picker_element(array_keys($currencies), variable_get('intertrading_currcode', 0));
+  //strictly speaking the list of available users depends on the currency having been set already
+  //get all the users who haven't traded yet
+  $users = db_query("SELECT DISTINCT u.uid, name
+    FROM {users} u
+    LEFT JOIN {users_roles} ur ON u.uid = ur.uid
+    LEFT JOIN {role_permission} rp ON ur.rid = rp.rid
+    WHERE rp.permission = 'transact'")->fetchAllKeyed(0);
+  $transactors = db_query("SELECT DISTINCT uid1
+    FROM {mcapi_index}
+    WHERE currcode = :currcode",
+    array(':currcode' => variable_get('intertrading_currcode', 0))
+  )->fetchCol();
+
+  $account = user_load(variable_get('intertrading_uid', 0));
+  $form['intertrading_uid'] = array(
+    '#title' => t('Account for external transactions'),
+    '#description' => t('WARNING. Once set, this cannot be changed.') .' '.
+      t('Please ensure the mail for this account goes to a responsible person: @mail',
+        array('@mail' => l($account->mail, "user/$account->uid/edit"))
+      ),
+    '#type' => 'select',
+    '#options' => array_diff_key($users, array_keys($transactors)),
+    '#default_value' => variable_get('intertrading_uid', 0),
+    '#disabled' => $account->uid && transaction_filter(array('involving' => variable_get('intertrading_uid', 0))),
+    '#required' => TRUE
+  );
 
   $form['intertrading_ticks'] = array(
     '#title' => 'Ticks',//this is a reference to the forex base comparision unit
@@ -107,7 +119,7 @@ function intertrading_settings() {
 
   //if the intertrading account has traded, then all these fields should be disabled.
   if ($currcode = variable_get('intertrading_currcode')) {
-    $balances = mc_balances($account, variable_get('intertrading_currcode'));
+    $balances = transaction_totals($account->uid, variable_get('intertrading_currcode'));
     if ($balances->count) {
       $form['intertrading_server']['#disabled'] = TRUE;
       $form['intertrading_ticks']['#disabled'] = TRUE;

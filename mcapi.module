@@ -399,9 +399,11 @@ function mcapi_update_index() {
     search_index($serial, 'mcapi', implode(' ', $text));
   }
 }
-
+/*
+ * implement hook_user_view().
+ */
 function mcapi_user_view($account, $mode, $language) {
-  $options = variable_get('mcapi_show_balances', array('block' => TRUE, 'profile' => FALSE));
+  $options = variable_get('mcapi_show_balances', FALSE);
   if ($options['profile']) {
     module_load_include('inc', 'mcapi');
     $account->content['balances'] = mcapi_balances_view($account->uid);
@@ -409,19 +411,16 @@ function mcapi_user_view($account, $mode, $language) {
 }
 
 /*
- * implements hook_block_info
+ * implements hook_block_info().
  */
 function mcapi_block_info() {
-  $options = variable_get('mcapi_show_balances', array('block' => TRUE, 'profile' => FALSE));
-  if ($options['block']) {
-    $blocks['balances'] = array(
-      'info' => 'MC '. t("Balances"),
-    );
-  }
-  return $blocks;
+  return array(
+    'balances' => array('info' => 'MC '. t("Balances"))
+  );
 }
+
 /*
- * implements hook_block_view
+ * implements hook_block_view().
  */
 function mcapi_block_view($delta) {
   module_load_include('inc', 'mcapi');
@@ -438,7 +437,7 @@ function mcapi_block_view($delta) {
 }
 
 /*
- * implements hook_block_configure
+ * implements hook_block_configure().
  */
 function mcapi_block_configure($delta, $form = array()) {
   $currencies = &drupal_static('currencies');
@@ -460,7 +459,7 @@ function mcapi_block_configure($delta, $form = array()) {
 }
 
 /*
- * implements hook_block_save
+ * implements hook_block_save().
  * used by dependent modules - save these two values
  */
 function mcapi_block_save($delta, $values) {
@@ -474,7 +473,7 @@ function mcapi_block_save($delta, $values) {
 
 
 /*
- * implements hook_init
+ * implements hook_init().
  * make the drupal_static variable 'currencies' available
  */
 function mcapi_init() {
@@ -483,7 +482,7 @@ function mcapi_init() {
 }
 
 /**
- * Implements hook_entity_info()
+ * Implements hook_entity_info().
  */
 function mcapi_entity_info(){
   module_load_include('admin.inc', 'mcapi');
@@ -492,7 +491,7 @@ function mcapi_entity_info(){
 
 
 /*
- * implements hook_uid_renum from uid_login module
+ * implements hook_uid_renum() from uid_login module
  */
 function mcapi_uid_renum($old, $new) {
   foreach(array('payer', 'payee') as $participant) {
@@ -502,7 +501,7 @@ function mcapi_uid_renum($old, $new) {
 
 
 /*
- * Implements ctools hook_ctools_plugin_api
+ * Implements ctools hook_ctools_plugin_api().
  */
 function mcapi_ctools_plugin_api() {
   return array(
@@ -511,7 +510,7 @@ function mcapi_ctools_plugin_api() {
   );
 }
 /*
- * Implements ctools hook_ctools_plugin_directory
+ * Implements ctools hook_ctools_plugin_directory().
  */
 function mcapi_ctools_plugin_directory($module, $plugin) {
   if ($module == 'ctools' && $plugin == 'export_ui') {
@@ -519,7 +518,7 @@ function mcapi_ctools_plugin_directory($module, $plugin) {
   }
 }
 /*
- * Implements views hook_views_api
+ * Implements views hook_views_api().
  */
 function mcapi_views_api() {
   return array(
@@ -529,7 +528,7 @@ function mcapi_views_api() {
 }
 
 /*
- * implements hook_transaction_operations
+ * implements hook_transaction_operations().
  * returns an array of operation infos keyed by the operation key
  * imperative //this is the button text - DO NOT WRAP IN t() as the menu system will do it
  * description //for the menu local action and currency permission settings - DO NOT WRAP IN t() as the menu system will do it
@@ -621,14 +620,14 @@ function mcapi_accounting_validate($transactions){
 }
 
 /*
- * implements mcapi hook_info_controller
+ * implements mcapi hook_info_controller().
  * the presence of this hook indicates there is a .controller file
  * with the name MODULE.controller
  */
 function mcapi_transaction_controller(){}
 
 /*
- * implements mcapi hook_info_states
+ * implements mcapi hook_info_states().
  * DON"T call this hook directly as the keys will be lost. use mcapi_get_states()
  */
 function mcapi_mcapi_info_states() {
@@ -666,7 +665,7 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
 
 
 /*
- * implements mcapi hook_info_types
+ * implements mcapi hook_info_types().
  */
 function mcapi_mcapi_info_types() {
   $types = array('default', 'dependent');
@@ -713,7 +712,7 @@ function mcapi_get_types() {
 
 
 /*
- * implements mcapi hook_mcapi_info_drupal_permissions
+ * implements mcapi hook_mcapi_info_drupal_permissions().
  * make permissions appear altogether on the permissions page
  */
 function mcapi_mcapi_info_drupal_permissions() {
@@ -767,7 +766,7 @@ function transaction_operation_access($op, $transaction, $account = NULL) {
 }
 
 /*
- * implements hook mcapi_permissions
+ * implements hook mcapi_permissions().
  * each callback refers to 2 functions - itself and CALLBACK_views
  * Declare the access callbacks for (transactions in) currencies
  * each callback takes the following args
@@ -787,7 +786,7 @@ function mcapi_transaction_access_callbacks() {
 
 
 /*
- * implements hook_mail
+ * implements hook_mail().
  */
 function mcapi_mail($key, &$message, $params) {
   if ($key == 'transaction_mail_action') {
@@ -800,7 +799,7 @@ function mcapi_mail($key, &$message, $params) {
 }
 
 /*
- * implements hook_mail_alter
+ * implements hook_mail_alter().
  * add the cc
  */
 function mcapi_mail_alter(&$message) {
@@ -1016,7 +1015,7 @@ function mcapi_invoke($hook, $serial, $arg1 = NULL) {
 }
 
 /*
- * implements hook_trigger_info
+ * implements hook_trigger_info().
  */
 function mcapi_trigger_info() {
   if (variable_get('mcapi_controller_delete_mode') == MCAPI_CURRENCY_UNDO_DELETE) {
@@ -1032,7 +1031,7 @@ function mcapi_trigger_info() {
 }
 
 /*
- * implements trigger hook_transaction_cluster_alter
+ * implements trigger hook_transaction_cluster_alter().
  * will only fire if the trigger module is enabled
  * sends the volitional transaction to the action callbacks where it can be changed.
  * Action callbacks may return a new transaction to be added to the $transactions
@@ -1050,7 +1049,7 @@ function trigger_transaction_cluster_alter(&$cluster) {
 }
 
 /*
- * implement mcapi hook_transaction_state
+ * implement mcapi hook_transaction_state().
  * triggers actions whenever the state changes
  */
 function trigger_transaction_state($transaction, $new_state) {
@@ -1060,7 +1059,7 @@ function trigger_transaction_state($transaction, $new_state) {
 }
 
 /*
- * Implements hook_action_info
+ * Implements hook_action_info().
  * provides some simple actions, without conditions
  */
 function mcapi_action_info() {
@@ -1113,7 +1112,7 @@ function mcapi_transaction_entity_uid($context) {
 
 
 /*
- * implements_hook_element_info
+ * implements_hook_element_info().
  */
 function mcapi_element_info() {
   return array(
@@ -1210,7 +1209,7 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
 
 
 /*
- * Imlements hook_field_info
+ * Imlements hook_field_info().
  */
 function mcapi_field_info() {
   return array(
@@ -1231,7 +1230,7 @@ function mcapi_field_info() {
 }
 
 /*
- * implements hook_field_formatter_info
+ * implements hook_field_formatter_info().
  */
 function mcapi_field_formatter_info() {
   return array(
@@ -1243,7 +1242,7 @@ function mcapi_field_formatter_info() {
 }
 
 /*
- * implements hook_field_formatter_view
+ * implements hook_field_formatter_view().
  * prepare a render array containing all (worth) $items
  */
 function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items) {
@@ -1259,7 +1258,7 @@ function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $l
 }
 
 /*
- * implements hook_field_widget_info
+ * implements hook_field_widget_info().
  */
 function mcapi_field_widget_info() {
   return array(
@@ -1271,7 +1270,7 @@ function mcapi_field_widget_info() {
   );
 }
 /*
- * implements hook_field_widget_form
+ * implements hook_field_widget_form().
  * This is called once for ALL $items because the widget 'behavior' determines it, like checkboxes
  * See entity_metadata_create_transaction() for default $items
  */
@@ -1292,7 +1291,7 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
 
 
 /*
- * implements hook_field_validate
+ * implements hook_field_validate().
  * check if the current user has permission to use the currency in this flow.
  * if $entity is not set that means the field was used in configuration somewhere
  */
@@ -1331,7 +1330,7 @@ function mcapi_field_widget_error(&$element, $error, $form, &$form_state) {
   return form_error($element, $error['message']);
 }
 /*
- * implements field hook_field_is_empty
+ * implements field hook_field_is_empty().
  * allows zero values to be saved, but not NULL
  */
 function mcapi_field_is_empty($item) {
@@ -1340,7 +1339,7 @@ function mcapi_field_is_empty($item) {
 
 
 /*
- * implements hook_form_field_ui_field_edit_form_alter
+ * implements hook_form_field_ui_field_edit_form_alter().
  * remove the default 'worth' setting from the field settings form i.e. cardinality
  * tell the widget that it is in config mode
  */
@@ -1356,7 +1355,7 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
 }
 
 /*
- * Imlements hook_form_form_ID_alter
+ * Imlements hook_form_form_ID_alter().
  * prevents editing of the worth field attached to the transaction entity.
  */
 function mcapi_form_field_ui_field_overview_form_alter(&$form, $form_state) {
@@ -1382,7 +1381,7 @@ function worthfield_property_info_callback(&$info, $entity_type, $field, $instan
 }
 
 /*
- * PROPERTY_TYPE is referenced in hook_field_info
+ * PROPERTY_TYPE is referenced in hook_field_info().
  */
 function worthfield_data_property_info() {
   return array(
@@ -1424,7 +1423,7 @@ function _worthitems_to_worths(array $worthitems) {
 
 
 /*
- * implements alter hook_form_user_cancel_confirm_form
+ * implements alter hook_form_user_cancel_confirm_form().
  * if they have already traded, they can only be blocked, not deleted
  */
 function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
@@ -1440,7 +1439,7 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
 }
 
 /*
- * implements alter hook_user_cancel_methods
+ * implements alter hook_user_cancel_methods().
  * creates a new method
  */
 function mcapi_user_cancel_methods_alter(&$methods) {

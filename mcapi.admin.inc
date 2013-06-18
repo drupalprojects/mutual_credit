@@ -244,16 +244,10 @@ function mcapi_misc_options_form($form_state) {
     '#disabled' => !variable_get('change_undo_mode', FALSE)
   );
   $form['mcapi_show_balances'] = array(//see mcapi.variable.inc
-    '#title' => t('Show balances'),
-    '#type' => 'checkboxes',
-    '#options' => array(
-      'block' => t('In a block'),
-      'profile' => t('On the user profile page')
-    ),
-    '#default_value' => variable_get('mcapi_show_balances', array(
-      'block' => 'block',
-      'profile' => FALSE
-    ))
+    '#title' => t('View balances in user profile'),
+    '#description' => t('Small impact on performance; it may be necessary to edit user-profile.tpl.php'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('mcapi_show_balances', FALSE)
   );
 
   $form['mcapi_sentence'] = array(

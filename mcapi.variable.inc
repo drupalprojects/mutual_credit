@@ -66,16 +66,12 @@ function mcapi_variable_info() {
     'required' => TRUE,
   );
   $vars['mcapi_show_balances'] = array(
-    'type' => 'options',
+    'type' => 'boolean',
     'title' => t('Show balances'),
-    'description' => t('Whether to render the balances, in a block and in the user profile'),
+    'description' => t('Whether to render the balances in the user profile (a block is already available)'),
     'group' => 'mcapi',
     'required' => FALSE,
-    'options' => array(
-      'block' => t('In a block'),
-      'profile' => t('On the user profile page')
-    ),
-    'default' => array('block' => 'block', 'profile' => FALSE),
+    'default' => FALSE,
   );
   return $vars;
 }
