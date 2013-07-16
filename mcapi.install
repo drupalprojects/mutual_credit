@@ -1082,6 +1082,24 @@ function mcapi_update_7021() {
   field_update_instance($instance);
 }
 
+/**
+ * Ensure that transaction created moments are unique, so they don't screw with running balances.
+ */
+function mcapi_update_7022() {
+  $ts = db_query("SELECT xid, created FROM {mcapi_transactions} ORDER BY created ASC")->fetchAllKeyed(0);
+  $newest = 0;
+  foreach ($ts as $xid => $created) {
+    if ($created > $newest) {
+      $newest = $created;
+    }
+    else {
+      $next = $newest + 1;
+      db_query("UPDATE {mcapi_transactions} SET created = $next WHERE xid = $xid AND created = $created");
+      $newest = $next;
+    }
+  }
+}
+
 /* I think this turned out to be not necessary and also broke things
   $worth_db_field = array(
     'description' => 'Price',
