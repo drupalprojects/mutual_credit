@@ -639,10 +639,8 @@ function mcapi_mcapi_info_states() {
     ),
   );
   $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
-  $description = t(
-    //dont' link the link coz this function can run while bootstrapping and that means trouble
-    "See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc')
-  );
+  //don't attempt to liven the link coz this function can run while bootstrapping and that means trouble
+  $description = t("See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc'));
   if ($deletemode != MCAPI_CURRENCY_UNDO_DELETE) {
     $states[TRANSACTION_STATE_UNDONE] = array(
       'name' => t('Undone'),
@@ -753,7 +751,7 @@ function transaction_operation_access($op, $transaction, $account = NULL) {
     }
     else {
       if (empty($transaction->serial)) return FALSE;
-      $info = transaction_operations($op, TRUE, FALSE);//this loads the include file
+      $info = transaction_operations($op, TRUE, FALSE);
       //its possible, if a new module was installed and the currency not resaved, that that $op doesn't exist.
       //TODO check the ops when the currencies are loaded so we can assume here and delete this line
       if (!isset($currency->access_operations[$op])) return FALSE;
@@ -822,14 +820,6 @@ function currency_access($op, $currcode, $account = NULL) {
   static $calculated = array();
   if (!isset($calculated[$op][$currcode][$uid])) {
     $currency = currency_load($currcode);
-
-    /* gracefully fail if the currcode is not known
-    if (!$currency){
-      if ($GLOBALS['user']->uid == 1){ini_set('display_errors', 1);die(print_r(debug_backtrace(), 1));}
-      drupal_set_message("problem loading currency;"); return FALSE;
-    }
-     *
-     */
     $callback = strtok($currency->access[$op], ':');
     $arg = strtok(':');
     $calculated[$op][$currcode][$uid] = in_user_chooser_segment($callback, array($arg), $account->uid);
@@ -1139,6 +1129,7 @@ function mcapi_element_info() {
       '#theme' => 'worth_element',
       //custom properties, used for configuration
       '#calc' => FALSE,
+      '#max' => NULL
     )
   );
 }

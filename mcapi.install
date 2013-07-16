@@ -265,7 +265,7 @@ function _define_worth() {
   );
   $instance = array(
     'field_name' => $field['field_name'],
-    'description' => t("Use up to two decimal places, with a point '.' if necessary"),
+    'description' => '',
     'label' => t('Worth'),
     'entity_type' => 'transaction',
     'bundle' => 'transaction',
@@ -395,7 +395,7 @@ function mcapi_update_6999() {
       $language_list,
       'default'
     );
-    $messages[] = 'Imported strings from '.$po_file->uri;
+    drupal_set_message('Imported strings from '.$po_file->uri);
   }
 }
 
@@ -1072,6 +1072,14 @@ function mcapi_update_7020() {
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
   cache_clear_all('currencies', 'cache');
+}
+
+/**
+ * redefine the worth field, without the description
+ */
+function mcapi_update_7021() {
+  list($field, $instance) = _define_worth();
+  field_update_instance($instance);
 }
 
 /* I think this turned out to be not necessary and also broke things

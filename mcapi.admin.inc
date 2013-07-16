@@ -298,7 +298,7 @@ function mcapi_currency_form(&$form, &$form_state){
   $form['acknowledgement'] = array(
     '#type' => 'container',
     '#children' => implode("\n<br /><br />\n", array(
-      t("Acknowledgement currencies are issued whenever work of value is done; they can be used as a medium of exchange, there is guarantee of redemption."),
+      t("Acknowledgement currencies are abundant - they are issued whenever valued is created; they can be used as a medium of exchange but there is no guarantee of redemption."),
       t("These are sometimes called 'social' currencies, because by encouraging and recognising volunteer service, they bind the community together."),
       t("This is the choice for all timebanking systems and most LETS.")
     )),
@@ -313,10 +313,10 @@ function mcapi_currency_form(&$form, &$form_state){
   $form['exchange'] = array(
     '#type' => 'container',
     '#children' => implode("\n<br /><br />\n", array(
-      t("Exchange currencies are reciprocal logs of credit and debt between members of the community."),
-      t("The sum of all balances of active accounts, including the reservoir account, is zero, and the policy must be to return accounts to zero before deactivating them."),
-      t("This model is a way for the community to offer itself free credit / additional liquidity, usually within agreed limits, without recourse to money."),
-      t("This is the choice for all some LETS and all 'barter' systems.")
+      t("Exchange currencies are 'sufficient' - they are issued and redeemed as as users earn and spend."),
+      t("The sum of all balances of active accounts, including the reservoir account, is zero, and ideally, accounts are returned to zero before being deactivated."),
+      t("To stop accounts straying too far from zero, positive and negative balance limits are often used."),
+      t("This model is sometimes called mutual credit, barter, or reciprocal exchange."),
     )),
     '#attributes' => array('style' => 'float:right;width:350px;'),
     '#weight' => 2,
@@ -329,9 +329,9 @@ function mcapi_currency_form(&$form, &$form_state){
   $form['commodity'] = array(
     '#type' => 'container',
     '#children' => implode("\n<br /><br />\n", array(
-      t("Commodity currencies are like warehouse receipts representing claims on an actual commodity or basket (including commercial currencies) stored by a trusted party."),
-      t("They are issued according to the quantity of commodity stored, valued according to that commodity, and redeemed for that commodity."),
-      t("This link to tangible goods lends confidence to the currency, but requires a quantity of commodity to 'sit' in storage."),
+      t("Commodity currencies are scarce - the quantity is tied to the amount of a valuable commodity in a trusted warehouse."),
+      t("They are valued according to that commodity, and redeemed for that commodity, although fractional reserve rules may apply."),
+      t('Effectively the commodity is monetised, this brings confidence to the commodity, for the cost of the stuff in storage.'),
       t("This would be the choice for all 'dollar-backed' complementary currencies.")
     )),
     '#attributes' => array('style' => 'float:right;width:350px;'),

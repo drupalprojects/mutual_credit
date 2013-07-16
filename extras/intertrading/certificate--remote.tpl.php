@@ -25,6 +25,21 @@
  *
  * If anyone can think of a more elegant way to make this translatable...
  */
+
+
+//extra info for the remote transaction type
+extract($object->extra); //should create $dest_url and $dest_user, an email address
+$dest = t(
+  '@remoteuser at @remotesite',
+  array(
+    '@remoteuser' => user_access('manage all transactions') ? $dest_user : substr($dest_user, 0, strpos($dest_user, '@')),
+    '@remotesite' => $dest_url
+  )
+);
+//replace the intertrading account with the remote user
+$object->payer == variable_get('intertrading_uid') ? $payer = $dest : $payee = $dest;
+debug($object->payer, variable_get('intertrading_uid'));
+
 $replacements = array(
   '@recorded' => $recorded,
   '!payer' => $payer,
@@ -41,6 +56,8 @@ $certificate_string = t(
   $replacements
 );
 $certificate_string = str_replace('<br />', '<br /><br />', $certificate_string);
+
+
 
 ?>
 <!--transaction.tpl.php-->
@@ -63,4 +80,3 @@ $certificate_string = str_replace('<br />', '<br /><br />', $certificate_string)
   <?php print render($additional); //any fields we don't know about'?>
 
 </div><!-- end transaction-->
-

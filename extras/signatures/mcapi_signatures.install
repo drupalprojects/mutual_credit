@@ -96,7 +96,7 @@ function mcapi_signatures_update_7000() {
   db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
   db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
   db_query("UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL");
-  $pending = db_query("SELECT xid, serial, payer, payee s.uid
+  $pending = db_query("SELECT xid, s.serial, payer, payee, s.uid
     FROM {mcapi_transactions} t
     LEFT JOIN {mcapi_signatures} s
     ON t.serial = s.serial

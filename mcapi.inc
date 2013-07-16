@@ -241,6 +241,7 @@ function transaction_operation_do_undo($serial) {
  */
 function transaction_operation_access_undo($callbacks, $transaction) {
   if ($transaction->state != TRANSACTION_STATE_FINISHED) return FALSE;
+  if ($transaction->type == 'remote') return FALSE;//otherwise the intertrading module has to somehow intervene
   return _transaction_check_access_callbacks($callbacks, $transaction);
 }
 /*
@@ -472,7 +473,8 @@ function template_preprocess_certificate(&$variables) {
   unset($variables['additional']['worth']);
   //choose the transaction theme template based on the first currency of the transaction
   $first_item = reset($transaction->worth[LANGUAGE_NONE]);
-  $variables['theme_hook_suggestion'] = 'transaction__' . $first_item['currcode'];
+  $variables['theme_hook_suggestions'][] = 'certificate__' . $first_item['currcode'];
+  $variables['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
   if (isset($transaction->dependents)) {
     $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'));
     foreach ($transaction->dependents as $child) {
@@ -498,6 +500,10 @@ function worth_item_zero_adjustment(&$worth_render_array) {
  */
 function worth_element_validate(&$element, &$form_state, $form) {
   if (!isset($element['#value']['quantity'])) return;
+  $currency = currency_load($element['#value']['currcode']);
+  if (!$currency) {
+    form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
+  }
   $quant = &$element['#value']['quantity'];
   if (strlen($quant) && !is_numeric($quant) && !$element['#calc']) {
     form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
@@ -506,16 +512,14 @@ function worth_element_validate(&$element, &$form_state, $form) {
     form_error($element, t('Negative values not allowed'));
   }
 
-  $currencies = &drupal_static('currencies');
-  if (!isset($currencies[$element['#value']['currcode']])) {
-    form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
-  }
   if ($division = $quant - intval($quant)) {
-    $currency = currency_load($element['#value']['currcode']);
     //check that divisions match allowed values for the currency
     if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
       form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));
     }
+  }
+  if (array_key_exists('#max', $element) && $element['#max'] && $element['#value']['quantity'] > $element['#max']) {
+    form_error($element, t('Maximum value exceeded for !currency', array('!currency' => $currency->human_name)));
   }
 }
 
@@ -571,6 +575,9 @@ function _worths_element_process($element, &$form_state) {
           'quantity' => $quant
         );
       }
+    }
+    if (array_key_exists('#max', $element) && $element['#max']) {
+      $element['#description'] = $element['#description'] . t('Max: !num', array('!num' => $element['#max']));
     }
   }
   //now populate all the subwidgets with defaults
@@ -714,13 +721,15 @@ function template_preprocess_transaction_totals(&$variables) {
 
 
 function transaction_get_links($transaction) {
+  global $language;
   $links = array();
   foreach (transaction_operations(NULL, TRUE, TRUE) as $op => $info) {
     if (!transaction_operation_access($op, $transaction)) continue;
     $links[] = array(
       '#theme' => 'link',
       '#path' => 'transaction/'.$transaction->serial.'/'.$op,
-      '#text' => t($info['imperative']),//t function should only be used directly with literal strings
+      //using locale here because t expects a string, but the string was in cache so can't be translated.
+      '#text' => locale($info['imperative'], '', isset($language->language) ? $language->language : 'en'),
       '#options' => array(
         'attributes' => array(),
         'html' => FALSE

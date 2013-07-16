@@ -13,27 +13,6 @@
  *   the dependent transactions share a serial number and state, but probably have a different 'type'
  *  When a transaction is loaded from the db, the dependents are put into (array)$transaction->dependents.
  *
- * Typical procedure for form processing might be
- * form validation
- *   //create the transaction object and save the extranneous fields
- *   //use drupal_alter to add any dependent transactions
- *   $transactions = array($transaction);
- *   drupal_alter('transactions', $transactions);
- *   transaction_cluster_write($transactions, FALSE)
- *     hook_transaction_validate
- *     EntityController->insert($transactions, FALSE)
- * end form validation
- * form submission
- *   //use drupal_alter to add any dependent transactions
- *   $transactions = array($transaction);
- *   drupal_alter('transactions', $transactions);
- *   transaction_cluster_write($transactions, TRUE);
- *     hook_transaction_validate
- *     EntityController->insert($transactions, TRUE)
- *     field_attach_insert('transaction', $transaction);
- *       hook_transaction_state
- * end form submission
- *
  */
 
 /*

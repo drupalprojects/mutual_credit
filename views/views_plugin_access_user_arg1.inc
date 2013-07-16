@@ -14,6 +14,6 @@ class views_plugin_access_user_arg1 extends views_plugin_access {
   }
 
   function summary_title() {
-    return t('Arg 1 user');
+    return t('Arg 1 user & transaction manager');
   }
 }

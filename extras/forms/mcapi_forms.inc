@@ -290,6 +290,12 @@ function mcapi_forms_validate($form, &$form_state) {
  */
 function mcapi_forms_form_presubmit($form, &$form_state) {
   $form_state['values'] = $form_state['storage'];
+    //because it confuses the running balance calculations, we reduce the chances of identical created dates for these users
+  if ($form_state['values']['created']) {
+    while (db_query("SELECT xid FROM {mcapi_transactions} WHERE (payer = :payer OR payee = :payee) AND created = :created", array(':payer' => $form_state['values']['payer'], ':payee' => $form_state['values']['payee'], ':created' => $form_state['values']['created']))->fetchField()) {
+      $form_state['values']['created']++;
+    }
+  }
 }
 
 /*

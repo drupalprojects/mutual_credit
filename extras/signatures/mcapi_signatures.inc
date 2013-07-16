@@ -337,7 +337,7 @@ function _mcapi_signatures_transaction_operations() {
     'undo_pending' => array(
       'imperative' => 'Undo',
       'description' => t('Undo pending transactions'),
-      'sure_message' => t('Are you sure you want to cancel this pending transaction?'),
+      'sure_message' => t('Are you sure you want to undo this pending transaction?'),
       'weight' => 3,
       'redirect' => 'user',
       'file_extension' => 'inc'

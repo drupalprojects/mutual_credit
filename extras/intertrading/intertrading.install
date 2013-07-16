@@ -15,7 +15,7 @@ function intertrading_uninstall() {
   variable_del('site_longitude');
 }
 
-/*
+/**
  * ensure the intertrading account never took part in a mass transaction
  */
 function intertrading_update_7001() {
@@ -26,4 +26,5 @@ function intertrading_update_7001() {
   db_delete('mcapi_transactions')->condition('xid', $xids)->execute();
   db_delete('field_data_worth')->condition('entity_id', $xids)->condition('entity_type', 'transaction')->execute();
   db_delete('field_revision_worth')->condition('entity_id', $xids)->condition('entity_type', 'transaction')->execute();
+  db_query("UPDATE {mcapi_transactions} set type = 'remote' WHERE type LIKE 'remote%'");
 }

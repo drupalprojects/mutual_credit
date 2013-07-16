@@ -206,7 +206,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
       drupal_set_message(t('The following new terms would be created: @terms', array('@terms' => implode(', ', $new_terms))), 'warning');
     }
     if ($unknown = check_users($user_ids)) {
-      drupal_set_message(t('Unknown users would be replaced with the reservoir account:' . implode(', ', $unknown)), 'warning');
+      drupal_set_message(t('Unknown users would be replaced with the reservoir account: @users', array(implode(', ', $unknown))), 'warning');
     }
     //break it up into batches of 100 transactions
     foreach (array_chunk($csv, MCAPI_IMPORT_TRANSACTION_BATCH_SIZE) as $chunk) {
@@ -452,7 +452,7 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
       $balance = -$balance;
     }
     $values['quantity'] = $balance;
-    
+
     if ($desc_field = variable_get('transaction_description_field', '')) {
       $values['description'] = t("Carried Forward");
     }
@@ -463,7 +463,7 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
       transaction_cluster_write($transactions, TRUE);
     }
     catch(Exception $e) {
-      drupal_set_message(t('Failed to import balance for member @uid: '. $e->getMessage(), array('@uid' => $uid)), 'warning');
+      drupal_set_message(t('Failed to import balance for member @uid: !message', array('@uid' => $uid, '@message' => $e->getMessage())), 'warning');
     }
   }
 }

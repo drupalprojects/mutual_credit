@@ -228,9 +228,8 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
  * save the currency limits into the $account object
  */
 function mcapi_limits_user_presave(&$edit, $account, $category) {
-  if (empty($account->uid)) return;
-  $currencies = currencies_load($account);
-  foreach($currencies as $currcode => $currency) {
+  if (property_exists($account, 'is_new') || empty($account->uid)) return;
+  foreach(currencies_load($account) as $currcode => $currency) {
     if (isset($currency->limits['personal'])) {
       if (isset($edit['min-'.$currcode])) {
         $edit['data']['limits_personal'][$currcode]['min'] = $edit['min-'.$currcode];

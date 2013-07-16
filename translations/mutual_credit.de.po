@@ -1,8 +1,15 @@
-1# $Id$
+# $Id$
 #
-# LANGUAGE translation of Drupal (general)
+# German translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
 # Generated from files:
+#  node-exchange.tpl.php,v 1.1.2.3 2010/12/06 13:19:46 hutch
+#  transaction_totals.tpl.php: n/a
+#  mcapi.admin.inc: n/a
+#  mcapi.rules.inc: n/a
+#  mcapi.tokens.inc: n/a
+#  views/mcapi.views.inc: n/a
+#  mcapi.variable.inc: n/a
 #  mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats
 #  plugins/export_ui/mcapi_ui.class.php: n/a
 #  views/views_plugin_access_currency.inc: n/a
@@ -24,6 +31,7 @@
 #  extras/import/mcapi_import.module: n/a
 #  extras/bank_slave/bank_slave.views_template.inc: n/a
 #  mcapi.info: n/a
+#  mc_sms.info,v 1.1.2.1 2010/12/06 13:19:46 hutch
 #  extras/balance_history/mcapi_balance_history.info: n/a
 #  extras/forms/mcapi_forms.info: n/a
 #  extras/import/mcapi_import.info: n/a
@@ -70,14 +78,14 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2013-06-18 21:58+0200\n"
-"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"POT-Creation-Date: 2013-06-18 23:06+0200\n"
+"PO-Revision-Date: 2013-06-18 23:06+0200\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"Language-Team: German <EMAIL@ADDRESS>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
 
 #: certificate.tpl.php:39
 msgid "On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth"
@@ -199,7 +207,7 @@ msgstr ""
 msgid "Edit currency '!name'"
 msgstr ""
 
-#: mcapi.admin.inc:280 mcapi.module:733
+#: mcapi.admin.inc:280 mcapi.module:731
 msgid "Declare currency"
 msgstr ""
 
@@ -554,9 +562,9 @@ msgstr ""
 msgid "Account 1 pays user"
 msgstr ""
 
-#: mcapi.admin.inc:844;947 mcapi.inc:565 mcapi.module:1121;1218;1238;1266 mcapi.install:269 views/mcapi.views_default.inc:182
+#: mcapi.admin.inc:844;947 mcapi.inc:565 mcapi.module:1119;1216;1236;1264 mcapi.install:269 views/mcapi.views_default.inc:182
 msgid "Worth"
-msgstr ""
+msgstr "Wert"
 
 #: mcapi.admin.inc:847
 msgid "What is the fixed value of this transaction?"
@@ -668,7 +676,7 @@ msgstr ""
 
 #: mcapi.inc:70
 msgid "Cancel"
-msgstr ""
+msgstr "Abbrechen"
 
 #: mcapi.inc:105
 msgid "Account to be debited"
@@ -680,7 +688,7 @@ msgstr ""
 
 #: mcapi.inc:130 mcapi.info.inc:53 extras/accountant_ui/accountant_ui.views_default.inc:293 views/mcapi.views.inc:81 views/views_handler_filter_mcapi_states.inc:13;36;74
 msgid "State"
-msgstr ""
+msgstr "Zustand"
 
 #: mcapi.inc:139
 msgid "Recorded by"
@@ -722,13 +730,13 @@ msgstr ""
 msgid "@division is not a permitted division of currency @name"
 msgstr ""
 
-#: mcapi.inc:535 mcapi.module:1319
+#: mcapi.inc:535 mcapi.module:1317
 msgid "!name field is required."
 msgstr ""
 
-#: mcapi.inc:615 mcapi.module:1397 extras/accountant_ui/accountant_ui.views_default.inc:295
+#: mcapi.inc:615 mcapi.module:1395 extras/accountant_ui/accountant_ui.views_default.inc:295
 msgid "Quantity"
-msgstr ""
+msgstr "Menge"
 
 #: mcapi.inc:629
 msgid "Fraction"
@@ -738,7 +746,7 @@ msgstr ""
 msgid "Cents"
 msgstr ""
 
-#: mcapi.inc:794 views/mcapi_index_views.views.inc:180 views/mcapi_index_views.views_default.inc:115;289 views/mcapi_index_views.views_template.inc:620 views/views_handler_filter_mcapi_currency.inc:41
+#: mcapi.inc:796 views/mcapi_index_views.views.inc:180 views/mcapi_index_views.views_default.inc:115;289 views/mcapi_index_views.views_template.inc:620 views/views_handler_filter_mcapi_currency.inc:41
 msgid "Currency"
 msgstr ""
 
@@ -752,7 +760,7 @@ msgstr ""
 
 #: mcapi.info.inc:24 extras/accountant_ui/accountant_ui.inc:37 extras/accountant_ui/accountant_ui.views_default.inc:292 views/mcapi.views.inc:43;58 views/mcapi.views_default.inc:179
 msgid "Payer"
-msgstr ""
+msgstr "Zahlender"
 
 #: mcapi.info.inc:25
 msgid "The user ID of the payer"
@@ -760,7 +768,7 @@ msgstr ""
 
 #: mcapi.info.inc:32 extras/accountant_ui/accountant_ui.inc:47 extras/accountant_ui/accountant_ui.views_default.inc:291 views/mcapi.views.inc:62;77 views/mcapi.views_default.inc:178
 msgid "Payee"
-msgstr ""
+msgstr "Zahlungsempfänger"
 
 #: mcapi.info.inc:33
 msgid "The user ID of the payee"
@@ -828,7 +836,7 @@ msgstr ""
 
 #: mcapi.tokens.inc:99 views/mcapi.views.inc:113 views/mcapi_index_views.views_default.inc:50
 msgid "Created"
-msgstr ""
+msgstr "Erstellt"
 
 #: mcapi.tokens.inc:100
 msgid "When the transaction was created"
@@ -952,7 +960,7 @@ msgstr ""
 
 #: mcapi.module:418 extras/import/mcapi_import.module:55
 msgid "Balances"
-msgstr ""
+msgstr "Saldo"
 
 #: mcapi.module:431
 msgid "Trading status"
@@ -1002,107 +1010,111 @@ msgstr ""
 msgid "the last state of the workflow"
 msgstr ""
 
-#: mcapi.module:648
+#: mcapi.module:643
+msgid "See 'delete mode' settings for more info, !link"
+msgstr ""
+
+#: mcapi.module:646
 msgid "Undone"
 msgstr ""
 
-#: mcapi.module:695
+#: mcapi.module:693
 msgid "State explanations: @explanations"
 msgstr ""
 
-#: mcapi.module:721;778
+#: mcapi.module:719;776
 msgid "Transact"
 msgstr ""
 
-#: mcapi.module:722
+#: mcapi.module:720
 msgid "Register exchanges with other members, subject each currency's permissions"
 msgstr ""
 
-#: mcapi.module:725;779
+#: mcapi.module:723;777
 msgid "Manage all transactions"
 msgstr ""
 
-#: mcapi.module:726
+#: mcapi.module:724
 msgid "Retrospectively manage transactions"
 msgstr ""
 
-#: mcapi.module:729
+#: mcapi.module:727
 msgid "Configure all currencies"
 msgstr ""
 
-#: mcapi.module:730
+#: mcapi.module:728
 msgid "Edit the properties of any currency"
 msgstr ""
 
-#: mcapi.module:734
+#: mcapi.module:732
 msgid "Create a new currency"
 msgstr ""
 
-#: mcapi.module:778;779
+#: mcapi.module:776;777
 msgid "Users with permission to '@perm'"
 msgstr ""
 
-#: mcapi.module:780
+#: mcapi.module:778
 msgid "The payee in the transaction"
 msgstr ""
 
-#: mcapi.module:781
+#: mcapi.module:779
 msgid "The payer in the transaction"
 msgstr ""
 
-#: mcapi.module:782
+#: mcapi.module:780
 msgid "Anyone, even anonymous users"
 msgstr ""
 
-#: mcapi.module:783
+#: mcapi.module:781
 msgid "The creator of the transaction"
 msgstr ""
 
-#: mcapi.module:1023
+#: mcapi.module:1021
 msgid "A transaction was deleted"
 msgstr ""
 
-#: mcapi.module:1025
+#: mcapi.module:1023
 msgid "Check for dependent transactions before inserting"
 msgstr ""
 
-#: mcapi.module:1026
+#: mcapi.module:1024
 msgid "A transaction was inserted or changed state"
 msgstr ""
 
-#: mcapi.module:1100
+#: mcapi.module:1098
 msgid "Automated transaction failed: @message"
 msgstr ""
 
-#: mcapi.module:1219
+#: mcapi.module:1217
 msgid "One or more values, each denominated in a currency"
 msgstr ""
 
-#: mcapi.module:1308
+#: mcapi.module:1306
 msgid "User @name cannot use @currency"
 msgstr ""
 
-#: mcapi.module:1390 plugins/export_ui/mcapi_ui.class.php:102
+#: mcapi.module:1388 plugins/export_ui/mcapi_ui.class.php:102
 msgid "Currency code"
 msgstr ""
 
-#: mcapi.module:1447
+#: mcapi.module:1445
 msgid "Disable the account and delete its content."
 msgstr ""
 
-#: mcapi.module:1448
+#: mcapi.module:1446
 msgid "Your account will be blocked and you will no longer be able to log in. All of your content will be deleted."
 msgstr ""
 
-#: mcapi.module:1461
+#: mcapi.module:1459
 msgid "Invalid transaction type: @value"
 msgstr ""
 
-#: mcapi.module:906
+#: mcapi.module:904
 msgid "mcapi"
 msgstr ""
 
-#: mcapi.module:906
+#: mcapi.module:904
 msgid "Nonexistent currency '@currcode' requested from: @list"
 msgstr ""
 
@@ -1132,7 +1144,7 @@ msgstr ""
 
 #: mcapi.install:572 extras/bank_slave/bank_slave.views_template.inc:166
 msgid "Description"
-msgstr ""
+msgstr "Beschreibung"
 
 #: mcapi.install:639
 msgid "Upgrading @count transaction nodes from nid @first to nid @last"
@@ -1196,7 +1208,7 @@ msgstr ""
 
 #: extras/accountant_ui/accountant_ui.views_default.inc:294 views/mcapi.views.inc:93 views/mcapi_index_views.views.inc:81
 msgid "Type"
-msgstr ""
+msgstr "Typ"
 
 #: extras/accountant_ui/accountant_ui.module:9
 msgid "Mass payments"
@@ -1256,7 +1268,7 @@ msgstr ""
 
 #: extras/balance_history/mcapi_balance_history.info:0
 msgid "Balance History"
-msgstr ""
+msgstr "vergangenes Saldo"
 
 #: extras/balance_history/mcapi_balance_history.info:0
 msgid "A google charts implementation showing the account balance over time"
@@ -1308,7 +1320,7 @@ msgstr ""
 
 #: extras/bank_slave/bank_slave.views_template.inc:169 views/mcapi_index_views.views.inc:150 views/mcapi_index_views.views_default.inc:287 views/mcapi_index_views.views_template.inc:621 views/views_handler_field_mcapi_users_totals.inc:38
 msgid "Balance"
-msgstr ""
+msgstr "Saldo"
 
 #: extras/bank_slave/bank_slave.module:31
 msgid "Log bank transactions"
@@ -1672,7 +1684,7 @@ msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:196 plugins/export_ui/mcapi_ui.class.php:99
 msgid "Title"
-msgstr ""
+msgstr "Titel"
 
 #: extras/forms/mcapi_forms.admin.inc:197
 msgid "For use in block title and menu links."
@@ -1806,8 +1818,12 @@ msgstr ""
 msgid "Radio buttons"
 msgstr ""
 
+#: extras/forms/mcapi_forms.admin.inc:497
+msgid "'incoming' option label"
+msgstr ""
+
 #: extras/forms/mcapi_forms.admin.inc:503
-msgid "'@label' option label"
+msgid "'outgoing' option label"
 msgstr ""
 
 #: extras/forms/mcapi_forms.admin.inc:520
@@ -1916,7 +1932,7 @@ msgstr ""
 
 #: extras/forms/mcapi_forms.tokens.inc:82
 msgid "Created date"
-msgstr ""
+msgstr "Erstellungsdatum"
 
 #: extras/forms/mcapi_forms.tokens.inc:83
 msgid "A popup field for choosing the date"
@@ -1984,7 +2000,7 @@ msgstr ""
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:92 views/mcapi.views_default.inc:181 views/mcapi_index_views.views_default.inc:288
 msgid "Name"
-msgstr ""
+msgstr "Name"
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:95 plugins/export_ui/mcapi_ui.class.php:107
 msgid "Storage"
@@ -2186,6 +2202,10 @@ msgstr ""
 msgid "The following new terms would be created: @terms"
 msgstr ""
 
+#: extras/import/mcapi_import.module:209
+msgid "Unknown users would be replaced with the reservoir account: @users"
+msgstr ""
+
 #: extras/import/mcapi_import.module:215;256
 msgid "Importing transactions"
 msgstr ""
@@ -2238,6 +2258,10 @@ msgstr ""
 msgid "Carried Forward"
 msgstr ""
 
+#: extras/import/mcapi_import.module:466
+msgid "Failed to import balance for member @uid: !message"
+msgstr ""
+
 #: extras/import/mcapi_import.module:515
 msgid "Number of fields does not match header in row @num"
 msgstr ""
@@ -2264,7 +2288,7 @@ msgstr ""
 
 #: extras/import/mcapi_import.module:60 plugins/export_ui/mcapi_ui.class.php:106 views/mcapi.views.inc:21 views/mcapi.views_default.inc:17;187;191
 msgid "Transactions"
-msgstr ""
+msgstr "Transaktionen"
 
 #: extras/import/mcapi_import.module:61
 msgid "Import transactions for users already on the system."
@@ -2361,6 +2385,8 @@ msgstr ""
 #: extras/intertrading/intertrading.admin.inc:97
 msgid "Please ensure the mail for this account goes to a responsible person: @mail"
 msgstr ""
+"Bitte vergewissern Sie sich dass das Mail für diese Konto zu der "
+"verantwortlichen Person geht: @mail"
 
 #: extras/intertrading/intertrading.admin.inc:109 extras/intertrading/intertrading.variable.inc:19
 msgid "The value of the currency, relative to a common denominator."
@@ -3244,7 +3270,7 @@ msgstr ""
 
 #: plugins/export_ui/mcapi_ui.inc:24
 msgid "currency"
-msgstr ""
+msgstr "Währung"
 
 #: plugins/export_ui/mcapi_ui.inc:25;27
 msgid "Currencies"
@@ -3332,7 +3358,7 @@ msgstr ""
 
 #: views/mcapi.views_default.inc:180
 msgid "Serial number"
-msgstr ""
+msgstr "Seriennummer"
 
 #: views/mcapi.views_default.inc:183
 msgid "Value"
@@ -3340,11 +3366,11 @@ msgstr ""
 
 #: views/mcapi.views_default.inc:184
 msgid "Who paid whom"
-msgstr ""
+msgstr "Wer zahlte wem"
 
 #: views/mcapi.views_default.inc:185
 msgid "[name] paid [name_1]"
-msgstr ""
+msgstr "[name] zahlte [name_1]"
 
 #: views/mcapi.views_default.inc:186
 msgid "Income & Expenditure"
@@ -3544,7 +3570,7 @@ msgstr ""
 
 #: views/mcapi_index_views.views_template.inc:615
 msgid "Offset"
-msgstr ""
+msgstr "Ausgleich"
 
 #: views/mcapi_index_views.views_template.inc:622
 msgid "Running balance"
@@ -3576,7 +3602,7 @@ msgstr ""
 
 #: views/views_handler_filter_mcapi_index_diff.inc:15
 msgid "None"
-msgstr ""
+msgstr "Keine"
 
 #: views/views_handler_filter_mcapi_index_diff.inc:16
 msgid "none"

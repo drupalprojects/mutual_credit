@@ -105,7 +105,7 @@ function intertrading_settings() {
   );
 
   $form['intertrading_ticks'] = array(
-    '#title' => 'Ticks',//this is a reference to the forex base comparision unit
+    '#title' => t('Ticks'),//this is a reference to the forex base comparision unit
     '#description' => t('The value of the currency, relative to a common denominator.') . '<br />'.
       t('If 1 tick is 1 minute and your currency is hours, then enter 60') . '<br />' .
       t('WARNING. This cannot and should not be easily changed once your account on the intertrading server is created'),
@@ -145,6 +145,7 @@ function intertrading_settings_validate(&$form, &$form_state) {
 }
 
 function intertrading_settings_submit($form, $form_state) {
+  module_load_include('variable.inc', 'intertrading');
   $vars = array_keys(intertrading_variable_info());//or could use form_state_clean function
   foreach ($vars as $var) {
     variable_set($var, $form_state['values'][$var]);

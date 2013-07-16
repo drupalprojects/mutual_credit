@@ -494,13 +494,13 @@ function _mcapi_direction_config_fields($defaults) {
       '#weight' => 1
     ),
     'incoming' => array(
-      '#title' => t("'incoming' option label"),
+      '#title' => t("@label option label", array('@label' => t('Incoming'))),
       '#type' => 'textfield',
       '#default_value' => $defaults['incoming'],
       '#weight' => 2
     ),
     'outgoing' => array(
-      '#title' => t("'outgoing' option label"),
+      '#title' => t("@label option label",  array('@label' => t('Outgoing'))),
       '#type' => 'textfield',
       '#default_value' => $defaults['outgoing'],
       '#weight' => 3

@@ -41,7 +41,7 @@ function mcapi_drush_help($section) {
  */
 function mcapi_drush_command() {
   $items['mcapi-wipeslate'] = array(
-    'callback' => 'drush_mcapi_wipeslate',
+    //'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Trucate the transactions table and fieldAPI fields. USE WITH CARE.'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
@@ -50,23 +50,34 @@ function mcapi_drush_command() {
     ),
   );
   $items['mcapi-delete'] = array(
-    'callback' => 'drush_mcapi_delete',
+    //'callback' => 'drush_mcapi_delete',
     'description' => dt('Selectively delete transactions. Pass the serial numbers as individual arguments'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
   $items['mcapi-purge'] = array(
-    'callback' => 'drush_mcapi_purge',
+    //'callback' => 'drush_mcapi_purge',
     'description' => dt('Remove all erased and reversed transactions and unfreeze the deletemode'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
   $items['mcapi-nodedel'] = array(
-    'callback' => 'drush_mcapi_delnodes',
+    //'callback' => 'drush_mcapi_nodedel',
     'description' => dt('remove the exchange nodes following the d6 upgrade'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUPAL_BOOTSTRAP_DATABASE,
   );
+  if (function_exists('devel_generate_drush_command')) {
+    $items['generate-transactions'] = array(
+      //'callback' => 'drush_mcapi_purge',
+      'description' => dt('Generate (10) transactions, random users, types, states, dates, currencies, quantities'),
+      'drupal dependencies' => array('mcapi'),
+      'arguments' => array(
+        'num_transactions' => dt('Number of transactions to create. Defaults to 10.'),
+      ),
+      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+    );
+  }
   return $items;
 }
 
@@ -110,7 +121,7 @@ function drush_mcapi_purge() {
   variable_set('change_undo_mode', TRUE);
 }
 
-function drush_mcapi_delnodes() {
+function drush_mcapi_nodedel() {
   $nodes = db_query("SELECT nid FROM {node} WHERE type = 'exchange'")->fetchCol();
   $nids = implode(', ', $nodes);
   db_query("DELETE FROM {node} WHERE nid in ($nids)");
@@ -121,11 +132,46 @@ function drush_mcapi_delnodes() {
 }
 
 function hard_delete($serials) {
-
   foreach ($serials as $serial) {
     $transaction = transaction_load($serial);
     field_attach_delete('transaction', $transaction);
     module_invoke_all('entity_delete', $transaction, 'transaction');
   }
   entity_get_controller('transaction')->delete($serials, TRUE);
+}
+
+
+function drush_devel_generate_transactions($num_transactions = 10) {
+  //get all the possible variables
+  $transact_uids = db_query(
+    "SELECT uid from {users_roles} WHERE rid IN (:roles)",
+    array(':roles' => array_keys(user_roles(FALSE, 'transact')))
+  )->fetchCol();
+  $transact_uids = array_flip($transact_uids);
+  unset($transact_uids[0], $transact_uids[1], $transact_uids[variable_get('intertrading_uid', 0)]);
+  $transact_uids = array_flip($transact_uids);
+
+  drush_print('Available users are: '.implode($transact_uids));
+  $states = array_keys(mcapi_get_states());
+  $types = mcapi_get_types();
+  $currencies = drupal_static('currencies');
+  unset($types['remote'], $types['mass'], $types['dependent']);
+
+  for ($i = 0; $i < $num_transactions; $i++) {
+    $uids = $transact_uids;//make sure we don't pick the same uid for payer and payee
+    shuffle($uids);
+    $props = array(
+      'payer' => array_pop($uids),
+      'payee' => array_pop($uids),
+      'type' => array_rand($types),
+      'state' => array_rand($states),
+      'quantity' => rand(1, 10),
+      'currcode' => array_rand($currencies),
+      'created' => rand(strtotime('-1 month'), REQUEST_TIME),
+      'description' => 'randomly generated transaction'
+    );
+    $cluster = array(entity_create('transaction', $props));
+    transaction_cluster_write($cluster, TRUE);
+    drush_print(strip_tags(drupal_render(transaction_view($cluster, variable_get('mcapi_sentence')))));
+  }
 }

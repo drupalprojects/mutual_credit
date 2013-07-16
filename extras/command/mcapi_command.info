@@ -1,6 +1,6 @@
 ; $Id: mc_sms.info,v 1.1.2.1 2010/12/06 13:19:46 hutch Exp $
 name = Transaction commands
-description = Interact with accounting module using string commands. Works with SMS Framework or Twitter modules
+description = Users log transactions using string commands from sources such as SMS Framework or Twitter modules
 package = Community Accounting
 core = "7.x"
 dependencies[] = mcapi

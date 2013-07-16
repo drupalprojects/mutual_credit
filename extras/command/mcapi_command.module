@@ -1,10 +1,6 @@
 <?php
 // $Id:
 
-/*
- * sms_send($number, $message, $options = array());
- * sms_incoming($number, $message, $options = array());
- */
 
 
 /**
@@ -78,10 +74,6 @@ function mcapi_command_settings_form() {
 
   $form['responses'] = array(
     '#title' => t('Responses'),
-    '#description' => t('Messages send to phones') .' '.
-      t("Try to include variations and get feedback from your users as to what works.") .' '.
-      t("Use the following tokens:") .' '.
-      theme('item_list', $tokens) .' ',
     '#type' => 'fieldset',
     '#weight' => -2
   );
@@ -294,6 +286,8 @@ function mcapi_command_get_uid($string) {
 /*
  * implementation of hook 'sms_incoming'
  * $op = 'pre process', 'process', 'post process'
+ * sms_send($number, $message, $options = array());
+ * sms_incoming($number, $message, $options = array());
  */
 function mcapi_command_sms_incoming($op, $number, $message) {
   if ($op != 'process') return;

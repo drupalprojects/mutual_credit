@@ -1,5 +1,4 @@
 <?php 
-To provide a new method for calculating balance limits do this
 
 /*
  * implements hook_mcapi_limits_info
@@ -28,7 +27,7 @@ function my_callback($currency, $uid) {
  * Made from my_callback + _form
  * Params
  * * Currency (object) derived from currency_load($currcode)
- * * $defaults, the saved values 
+ * * $defaults, the saved values
  * Returns
  * a formAPI array
  */
