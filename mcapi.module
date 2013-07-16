@@ -62,9 +62,9 @@ function transaction_cluster_write(array $cluster, $really = TRUE) {
     foreach ($cluster as $transaction) {
       field_attach_insert('transaction', $transaction);
     }
-    //all the transactions have the same serial, and the same state,
+    //all the transactions in the cluster have the same serial, and the same state,
     //so we just get the last serial num of the last transaction used
-    //tell the system that the new transaction is going from NULL to whatever the form specified
+    //notify the system that this cluster has moved into its present
     transaction_state($serial, $transaction->state);
     return $serial;
   }
@@ -1129,7 +1129,6 @@ function mcapi_element_info() {
       '#theme' => 'worth_element',
       //custom properties, used for configuration
       '#calc' => FALSE,
-      '#max' => NULL
     )
   );
 }

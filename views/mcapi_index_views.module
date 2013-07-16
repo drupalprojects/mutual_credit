@@ -34,11 +34,17 @@ function get_balance_history($account, $currcodes = array(), $mode = 'diagonal',
     $currencies = &drupal_static('currencies');
     $currcodes = array_keys($currencies);
   }
+    //check access. Either it has to be the current user, or reduce the currcodes down
+  foreach ($currcodes as $key => $currcode) {
+    if (!currency_access('trader_data', $currcode)) unset($currcodes[$key]);
+  }
+  if ($GLOBALS['user']->uid != $account->uid && empty($currcodes)) return array();
+
   foreach ($currcodes as $currcode) {
     $histories[$currcode][$account->created] = 0;
   }
 
-  //then retrieve up the WHOLE transaction history
+  //then retrieve the WHOLE transaction history
   //I wish there was a better way to do this. Unless a filter has been applied, we want all the transaction in all currencies ever
   //not only the currencies currently permitted. And we want to do as much with the SQL as possible (in case of long lists)
   $all_balances = db_query(//currcode = :currcode AND

@@ -184,22 +184,17 @@ class mcapiEntityController extends EntityAPIController {
   public function insert_cluster(array $transactions, $really = FALSE) {
     //I never worked out how to properly lock the serial numbers and ensure they were sequential.
     //this could make a mess on heavily used multithreaded server
-    $serial = $this->next_serial(current($transactions));
+    if (!empty($transaction->serial)) {
+      throw new Exception ('Cannot insert transactions which already have a serial numbers: '.$transaction->serial);
+    }
+    $serial = $this->next_serial();
 
     $db_transaction = db_transaction();
     foreach ($transactions as $transaction) {
-      //$transaction->temp = isset($transaction->xid) ? $transaction->xid : 0;
-      //creator is set unambiguously here in the controller, to be sure its not tampered with
-      if (!property_exists($transaction, 'created')) {
-        //originally this was hardcoded here, but that meant we couldn't import transaction histories.
-        $transaction->created = REQUEST_TIME;
-      }
-      //after 2 years there's still no use for this field
+      $transaction->serial = $serial;
+      //this property is used for example in the intertrading module to save the remote participant's details.
       $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
-      if (!empty($transaction->serial)) {
-        throw new Exception ('Cannot insert transactions which already have a serial numbers: '.$transaction->serial);
-      }
-      else $transaction->serial = $serial;
+
       try{
         $this->insert_one($transaction, $really);
       }
@@ -210,10 +205,10 @@ class mcapiEntityController extends EntityAPIController {
       //because the serial number mustn't be set until its actually written
       if (!$really) unset($transaction->serial);
     }
-    if (!$really) {
-      $db_transaction->rollback();
+    if ($really) {
+      return $serial;
     }
-    else return $serial;
+    $db_transaction->rollback();
   }
 
   //writes one line to the transactions table. Serial number must be provided already, using $this->next_serial()
@@ -221,6 +216,14 @@ class mcapiEntityController extends EntityAPIController {
   //this can be called from outside if necessary
   public function insert_one ($transaction, $really) {
     //foreach (array_filter(variable_get('mcapi_db_write', array('default'))) as $connection) {db_set_active($connection);
+   if (empty($transaction->created)) {
+      $transaction->created = REQUEST_TIME;
+    }
+    //because it confuses the running balance calculations, we reduce the chances of identical created dates for these users
+    while (db_query("SELECT xid FROM {mcapi_transactions} WHERE (payer = :payer OR payee = :payee) AND created = :created", array(':payer' => $transaction->payer, ':payee' => $transaction->payee, ':created' => $transaction->created))->fetchField()) {
+      $transaction->created++;
+    }
+
     if(drupal_write_record('mcapi_transactions', $transaction) != SAVED_NEW) {
       throw new Exception(
         t('Failed to insert into table @tablename of database @database',

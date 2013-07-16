@@ -468,7 +468,7 @@ function intertrading_form_prepare(&$form, &$form_state) {
               $form['#disabled'] = TRUE;
             }
             else {
-              $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['earn_limit'];
+              //$form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['earn_limit'];
               drupal_set_message(t('The most @name can receive is !amount', array(
                 '@name' => variable_get('site_name', NULL),
                 '!amount' => theme('worth_item', array('quantity' => $form_state['server_params']['earn_limit'], 'currcode' => $currcode))
@@ -483,7 +483,7 @@ function intertrading_form_prepare(&$form, &$form_state) {
               $form['#disabled'] = TRUE;
             }
             else {
-              $form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['spend_limit'];
+              //$form['worth'][LANGUAGE_NONE][0]['#max'][$currcode] = $form_state['server_params']['spend_limit'];
               drupal_set_message(t('The most @name can pay is !amount', array(
                 '@name' => variable_get('site_name', NULL),
                 '!amount' => theme('worth_item', array('quantity' => $form_state['server_params']['spend_limit'], 'currcode' => $currcode))
@@ -766,6 +766,7 @@ function intertrading_accounting_validate($cluster) {
     }
   }
 }
+
 /*
  * implements hook_form_transaction_form_alter
  * attempt to remove the intertrading account from the list of users

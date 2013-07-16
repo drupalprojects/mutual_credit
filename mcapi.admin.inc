@@ -408,7 +408,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#title' => t('Delimiter'),
     '#description' => t('A character to go in between your integer and cents or other formatted subdivisions'),
     '#type' => 'textfield',
-    '#max_length' => 3,
+    '#maxlength' => 3,
     '#size' => 1,
     '#default_value' => $default_display['delimiter'],
     '#states' => array(

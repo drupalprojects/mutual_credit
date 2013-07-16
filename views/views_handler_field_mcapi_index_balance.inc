@@ -5,6 +5,14 @@
  * @file
  * Field handler to retrieve the running balance by adding the previous transactions
  * NB this doesn't apply to the worth_field and mcapi_transactions table, only to the transaction_index table
+ * Unlike conventional accounting, in which each transaction is written indelibly into a log,
+ * this system allows backdated transactions, which means the xid / serial number is no guarantee of chronology.
+ * The only chronology we have therefore is the transaction->created date.
+ * Since the running balance isn't stored in the virtual table, so can't be looked up by views,
+ * this handler must calculate the running balance for every row, by looking at all the previous rows, cronologically
+ * If transactions were created in the same second, this may produce unusual results
+ * However the transaction->insert method tries to ensure that no user has a transaction in the same second
+ *
  * @ingroup views_field_handlers
  */
 class views_handler_field_mcapi_index_balance extends views_handler_field {

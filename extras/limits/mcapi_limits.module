@@ -365,7 +365,7 @@ function balance_limits_view($uid, $currcodes = array()) {
   if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
   $currcodes = array_intersect($currcodes, array_keys(currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)));
   foreach ($currcodes as $currcode) {
-    if (!currency_access('trader_data', $currcode)) continue;
+    if ($GLOBALS['user']->uid != $uid && !currency_access('trader_data', $currcode)) continue;
     $limits = limits_get($currcode, $uid);
     //this chart makes no sense if there isn't a max (or min) limit
     if (empty($limits['max']) && empty($limits['min'])) continue;
@@ -379,6 +379,7 @@ function balance_limits_view($uid, $currcodes = array()) {
   }
   return $renderable;
 }
+
 /*
  * callback to return render array showing how much credit / debit is available to the user
  */
@@ -388,7 +389,7 @@ function trading_limits_view($uid, $currcodes = array()) {
   if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
   $currcodes = array_intersect($currcodes, array_keys(currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)));
   foreach ($currcodes as $currcode) {
-    if (!currency_access('trader_data', $currcode)) continue;
+    if ($GLOBALS['user']->uid != $uid && !currency_access('trader_data', $currcode)) continue;
     $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);
     if(empty($limits)) continue;
     $renderable[$currcode] = array(

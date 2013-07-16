@@ -86,20 +86,17 @@ function bank_slave_accounting_validate($cluster) {
       if (!array_intersect(variable_get('mcapi_bank_slave_uids'), array($transaction->payer, $transaction->payee))) {
         throw new Exception(t('Bank payments must involve a designated bank account'));
       }
-      $currcheck = TRUE;
-    }
-    //ensure normal transactions, and mass transaction don't accidentally include the bank account
-    elseif($intersection = array_intersect(variable_get('mcapi_bank_slave_uids'), array($transaction->payer, $transaction->payee))) {
-      unset($cluster[$key]);
-      drupal_set_message(t('Payment involving bank account @num was excluded', array('@num' => current($intersection))), 'warning', FALSE);
-      $currcheck = TRUE;
-    }
-    if (isset($currcheck)) {
       foreach (field_get_items('transaction', $transaction, 'worth') as $item) {
         if (currency_load($item['currcode'])->issuance != 'commodity') {
           throw new Exception(t('Banks can only use commodity currencies'));
         }
       }
+    }
+    //ensure normal transactions, and mass transaction don't accidentally include the bank account
+    elseif($intersection = array_intersect(variable_get('mcapi_bank_slave_uids'), array($transaction->payer, $transaction->payee))) {
+      unset($cluster[$key]);
+      drupal_set_message(t('Payment involving bank account @num was excluded', array('@num' => current($intersection))), 'warning', FALSE);
+      return;
     }
   }
 }
