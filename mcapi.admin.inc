@@ -829,8 +829,8 @@ function mcapi_transaction_entity_uid_form($context) {
     '#title' => t('Direction'),
     '#type' => 'radios',
     '#options' => array(
-      'uidpays' => t('User pays account 1'),
-      'paysuid' => t('Account 1 pays user')
+      'uidpays' => t('User pays reservoir account'),
+      'paysuid' => t('Reservoir account pays user')
     ),
     '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
   );
@@ -853,8 +853,9 @@ function mcapi_transaction_entity_uid_form($context) {
       '#preset' => TRUE,//ensures that all currencies are rendered
     )
   );
-  $form[$fieldset_name]['round'] = array(
+  $form['round'] = array(
     '#title' => t('Rounding'),
+    '#description' => t('Used if this transaction depends on another transaction'),
     '#type' => 'radios',
     '#options' => array('up' => t('Up'), 'down' => t('Down')),
     '#default_value' => isset($context['worth_items']['round']) ? $context['worth_items']['round'] : 'down',
@@ -862,7 +863,7 @@ function mcapi_transaction_entity_uid_form($context) {
   );
 
   if (variable_get('transaction_description_field')) {
-    $form[$fieldset_name]['description'] = array(
+    $form['description'] = array(
       '#title' => t('Transaction description text'),
       '#type' => 'textfield',
       '#default_value' => @$context['worth_items']['description'],

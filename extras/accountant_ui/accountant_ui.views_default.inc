@@ -293,6 +293,9 @@ function accountant_ui_views_default_views() {
     t('State'),
     t('Type'),
     t('Quantity'),
+    t('Recorded'),
+    t('Worth'),
+    t('Serial'),
   );
 
   $views[$view->name] = $view;

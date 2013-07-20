@@ -725,11 +725,14 @@ function transaction_get_links($transaction) {
   $links = array();
   foreach (transaction_operations(NULL, TRUE, TRUE) as $op => $info) {
     if (!transaction_operation_access($op, $transaction)) continue;
+    if (function_exists('locale')) {
+      $info['imperative'] = locale($info['imperative'], '', isset($language->language) ? $language->language : 'en');
+    }
     $links[] = array(
       '#theme' => 'link',
       '#path' => 'transaction/'.$transaction->serial.'/'.$op,
       //using locale here because t expects a string, but the string was in cache so can't be translated.
-      '#text' => locale($info['imperative'], '', isset($language->language) ? $language->language : 'en'),
+      '#text' => $info['imperative'],
       '#options' => array(
         'attributes' => array(),
         'html' => FALSE

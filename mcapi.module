@@ -45,7 +45,7 @@ function transaction_load_multiple($xids = array(), $reset = FALSE) {
  * needs to be explicit because there was a namespace conflict with commerce module
  */
 function mcapi_xaction_load() {
-  debug(func_get_args());
+  if ($GLOBALS['user']-uid == 1)debug(func_get_args());
 }
 
 /*
@@ -1063,7 +1063,7 @@ function mcapi_action_info() {
  * mail the transaction participants, and cc
  * $transaction may have dependents
  */
-function mcapi_transaction_entity_uid($context) {
+function mcapi_transaction_entity_uid($object = NULL, $context) {
   extract($context);//gives $group, $hook, $form_values, $user, actions_label, $direction, $worth_items
   $entity = $$group;
   $transaction = array(
@@ -1072,8 +1072,9 @@ function mcapi_transaction_entity_uid($context) {
     'type' => 'auto',
     'state' => TRANSACTION_STATE_FINISHED
   );
-  $transaction['description'] = $worth_items['description'];
-
+  if (isset($description)) {
+    $transaction['description'] = $description;
+  }
   if ($direction == 'uidpays') {
     $transaction['payee'] = 1;
     $transaction['payer'] = $entity->uid;

@@ -96,6 +96,7 @@ Intended for webshops and skilled Drupal developers
 4. Internal API
 5. Limits system
 6. Views integration
+7. Migration from Drupal 6
 
 
 1. Transaction workflow.
@@ -165,4 +166,13 @@ First of all the transaction properties are exposed, and most of them as filters
 All the transaction_view_access callbacks have versions for modifying transaction views.
 The mcapi_index_views module does what the transaction table cannot do, by installing a mysql VIEW and providing views integration with that. This allows a whole new perspective on the transactions, and allows new forms of statistics also.
 
-
+7. Migration from Drupal 6
+If a site is not being upgraded, but migrated from Drupal 6 to Drupal 7, the following query, run on the d6 data base can be used to pull the transaction data into csv format ready to import into Drupal 7 with the mcapi_import module.
+All non-deleted transactions are assumed to be in 'finished' state.
+If tweaking this query remember that the transaction states in d6 and d7 are different.
+SELECT n.nid as xid, n.title as description, u1.mail as payer, u2.mail as payee, e.quantity, '1stparty' as type, 1 as state
+FROM node n
+LEFT JOIN mc_exchanges e ON n.nid = e.nid
+LEFT JOIN users u1 on e.payer_uid = u1.uid
+LEFT JOIN users u2 on e.payee_uid = u1.uid
+WHERE e.state <> -1

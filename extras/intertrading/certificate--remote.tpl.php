@@ -28,17 +28,12 @@
 
 
 //extra info for the remote transaction type
-extract($object->extra); //should create $dest_url and $dest_user, an email address
-$dest = t(
-  '@remoteuser at @remotesite',
-  array(
-    '@remoteuser' => user_access('manage all transactions') ? $dest_user : substr($dest_user, 0, strpos($dest_user, '@')),
-    '@remotesite' => $dest_url
-  )
-);
+$remote_name = remote_participant($object->extra);
+
 //replace the intertrading account with the remote user
-$object->payer == variable_get('intertrading_uid') ? $payer = $dest : $payee = $dest;
-debug($object->payer, variable_get('intertrading_uid'));
+if ($object->payer == variable_get('intertrading_uid')) $payer = $remote_name;
+else $payee = $remote_name;
+//debug($object->payer, variable_get('intertrading_uid'));
 
 $replacements = array(
   '@recorded' => $recorded,

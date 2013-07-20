@@ -797,3 +797,14 @@ function intertrading_theme_registry_alter(&$callbacks) {
     'path' => drupal_get_path('module', 'intertrading')
   ) + $callbacks['certificate'];
 }
+
+//create a string for the remote participant which can be used in the template without creating a new translatable string
+function remote_participant($data) {
+  extract($data); //should create $dest_url and $dest_user, an email address
+  return t('@remoteuser at @remotesite',
+    array(
+      '@remoteuser' => user_access('manage all transactions') ? $dest_user : substr($dest_user, 0, strpos($dest_user, '@')),
+      '@remotesite' => str_replace('/?q=', '', $dest_url)
+    )
+  );
+}
