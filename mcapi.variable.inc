@@ -61,6 +61,7 @@ function mcapi_variable_info() {
   $vars['mcapi_sentence'] = array(
     'type' => 'string',
     'title' => t('Transaction sentence template'),
+    'default' => mcapi_sentence_default(),//this is already localised
     'description' => t('A tokenised string used for rendering a transaction in one sentence or statement.'),
     'group' => 'mcapi',
     'required' => TRUE,

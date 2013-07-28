@@ -30,7 +30,7 @@ function mcapi_balance_history_block_view($delta) {
         '#theme' => 'balance_history',
         '#account' => $settings['account'],
         '#histories' => get_balance_history($settings['account'], $settings['currcodes']),
-        '#width' => $settings['width'],
+        '#width' => array_key_exists('width', $settings) ? $settings['width'] : 250,
       )
     );
   }
@@ -43,14 +43,18 @@ function mcapi_balance_history_help($path, $args) {
 }
 
 /*
- * Implements views hook_block_configure
+ * Implements hook_block_configure
  */
 function mcapi_balance_history_block_configure($delta) {
+  module_load_include('inc', 'mcapi');
+  $settings = _mcapiblock_settings($delta, 'trader_data');
   $form['width'] = array(
     '#title' => t('Width in pixels'),
     '#type' => 'textfield',
     '#element_validate' => array('element_validate_integer_positive'),
-    '#max_size' => 4
+    '#default_value' => array_key_exists('width', $settings) ? $settings['width'] : 250,
+    '#max_size' => 4,
+    '#required' => TRUE
   );
   return mcapi_block_configure($delta, $form);
 }

@@ -41,7 +41,6 @@ function mcapi_install() {
 
   mcapi_check_fields();
 
-  variable_set('mcapi_sentence', t('[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]'));
   variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
 
   //create a new user if only user 1 exists.
@@ -914,7 +913,6 @@ function mcapi_update_7013() {
 /**
  * update email tokens from transaction:uri to transaction:url
  * some variables but also some action settings
- * create mcapi_sentence variable
  */
 function mcapi_update_7014() {
   $actions = db_query("SELECT aid, parameters FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchAllKeyed();
@@ -926,7 +924,6 @@ function mcapi_update_7014() {
       ->condition('aid', $aid)
       ->execute();
   }
-  variable_set('mcapi_sentence', t('[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]'));
 }
 
 /**
@@ -952,8 +949,6 @@ function mcapi_update_7015() {
 
   drupal_set_message('Resave all your transaction forms, paying attention to default transaction field values: '.l('admin/accounting/forms', 'admin/accounting/forms'));
 
-  $sentence = variable_get('mcapi_sentence');
-  variable_set('mcapi_sentence',  $sentence .= '[transaction:links]');
   cache_clear_all('*', 'cache_token', TRUE);
   cache_clear_all('currencies', 'cache');
 }
@@ -1097,6 +1092,14 @@ function mcapi_update_7022() {
       db_query("UPDATE {mcapi_transactions} SET created = $next WHERE xid = $xid AND created = $created");
       $newest = $next;
     }
+  }
+}
+/**
+ * adjust mcapi_sentence variable, which wasn't being translated
+ */
+function mcapi_update_7023() {
+  if (variable_get('mcapi_sentence') == '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]') {
+    variable_del('mcapi_sentence');
   }
 }
 

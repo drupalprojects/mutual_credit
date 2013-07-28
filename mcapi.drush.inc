@@ -172,6 +172,6 @@ function drush_devel_generate_transactions($num_transactions = 10) {
     );
     $cluster = array(entity_create('transaction', $props));
     transaction_cluster_write($cluster, TRUE);
-    drush_print(strip_tags(drupal_render(transaction_view($cluster, variable_get('mcapi_sentence')))));
+    drush_print(strip_tags(drupal_render(transaction_view($cluster, variable_get('mcapi_sentence', mcapi_sentence_default())))));
   }
 }

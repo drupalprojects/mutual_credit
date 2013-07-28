@@ -739,28 +739,31 @@ function mcapi_mcapi_info_drupal_permissions() {
  * Grant access to a transaction for an operation
  * this is slightly crude, since the callbacks can't know know what to do with all possible operations
  */
-function transaction_operation_access($op, $transaction, $account = NULL) {
+function transaction_operation_access($op, $transaction = NULL, $account = NULL) {
   module_load_include('inc', 'mcapi');
-  if (!$account) $account = $GLOBALS['user'];
-  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    $currency = currency_load($item['currcode']);
-    if ($op == 'view') {
-      //this operation is special because it works per transaction state
-      $callbacks = array_filter($currency->view_transaction_states[$transaction->state]);
-      return _transaction_check_access_callbacks($callbacks, $transaction);
-    }
-    else {
-      if (empty($transaction->serial)) return FALSE;
-      $info = transaction_operations($op, TRUE, FALSE);
-      //its possible, if a new module was installed and the currency not resaved, that that $op doesn't exist.
-      //TODO check the ops when the currencies are loaded so we can assume here and delete this line
-      if (!isset($currency->access_operations[$op])) return FALSE;
-      $callbacks = array_filter($currency->access_operations[$op]);
-      $op_access_callback = 'transaction_operation_access_'.$op;
-      if (!$op_access_callback($callbacks, $transaction)) return FALSE;
+  if (is_object($transaction)) {
+    if (!$account) $account = $GLOBALS['user'];
+    foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
+      $currency = currency_load($item['currcode']);
+      if ($op == 'view') {
+        //this operation is special because it works per transaction state
+        $callbacks = array_filter($currency->view_transaction_states[$transaction->state]);
+        return _transaction_check_access_callbacks($callbacks, $transaction);
+      }
+      else {
+        if (empty($transaction->serial)) return FALSE;
+        $info = transaction_operations($op, TRUE, FALSE);
+        //its possible, if a new module was installed and the currency not resaved, that that $op doesn't exist.
+        //TODO check the ops when the currencies are loaded so we can assume here and delete this line
+        if (!isset($currency->access_operations[$op])) return FALSE;
+        $callbacks = array_filter($currency->access_operations[$op]);
+        $op_access_callback = 'transaction_operation_access_'.$op;
+        if (!$op_access_callback($callbacks, $transaction)) return FALSE;
+      }
     }
   }
-  return TRUE;
+  elseif ($op == 'create') return user_access('transact');
+  return FALSE;
 }
 
 /*
@@ -1452,4 +1455,18 @@ function mcapi_validate_ttype(&$element, $form_state) {
       form_error($element, t('Invalid transaction type: @value', array('@value' => $value)));
     }
   }
+}
+
+function mcapi_sentence_default() {
+  return t('[transaction:payer] paid [transaction:payee] [transaction:worth]. [transaction:links]');
+}
+/*
+ * implements restws module's hook_restws_response_alter().
+ * After creating a transaction return not the transaction enttity key,
+ * as presumed by restws_resource_uri()
+ * but the serial number, which is what the client needs to view the transaction.
+ */
+function mcapi_restws_response_alter(&$ref, $function) {
+  if ($function != 'createResource') return;
+  $ref['uri'] = str_replace($ref['id'], current(transaction_load_multiple(array($ref['id'])))->serial,  $ref['uri']);
 }

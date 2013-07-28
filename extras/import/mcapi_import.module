@@ -165,7 +165,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
       form_set_error('data', t("'created'must evaluate using strtotime() in line @num: @val", array('@num' => $key, '@val' => $row['created'])));
     }
   }
-
+  $user_ids = array_unique($user_ids);
   if ($form_state['values']['test']) {
     //test for any other field_api fields.
     foreach (field_info_instances('transaction', 'transaction') as $instance) {
@@ -206,7 +206,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
       drupal_set_message(t('The following new terms would be created: @terms', array('@terms' => implode(', ', $new_terms))), 'warning');
     }
     if ($unknown = check_users($user_ids)) {
-      drupal_set_message(t('Unknown users would be replaced with the reservoir account: @users', array(implode(', ', $unknown))), 'warning');
+      drupal_set_message(t('Unknown users would be replaced with the reservoir account: @users', array('@users' => implode(', ', $unknown))), 'warning');
     }
     //break it up into batches of 100 transactions
     foreach (array_chunk($csv, MCAPI_IMPORT_TRANSACTION_BATCH_SIZE) as $chunk) {
@@ -245,12 +245,20 @@ function import_transactions_form_submit($form, $form_state) {
     $earliest = array();
     foreach ($csv as $row) {
       if (empty($row['created'])) continue;
-      $earliest[$row['payer']][] = $transaction['created'];
-      $earliest[$row['payee']][] = $transaction['created'];
+      $earliest[$row['payer']][] = $row['created'];
+      $earliest[$row['payee']][] = $row['created'];
     }
     //set the user created to 1 day before the transaction
-    foreach($earliest as $uid => $times) {
-      db_query("UPDATE {users} SET created = :created WHERE uid = $uid", array(':created' => min($times)));
+    if ($form_state['values']['test']) {
+      debug($earliest, 'would set user created dates to:', 1);
+    }
+    else {
+      foreach($earliest as $uid => $times) {
+        db_query(
+          "UPDATE {users} SET created = :created WHERE uid = :uid",
+          array(':created' => min($times), ':uid' => mcapi_import_get_uid($user_id, 0))
+        );
+      }
     }
   }
   $batch = array('title' => t('Importing transactions'));
@@ -481,9 +489,6 @@ function check_users($user_ids) {
       if (valid_email_address($user_id)) {
         $account = user_load_by_mail($user_id);
       }
-      else {
-        $unknown[] = $user_id;
-      }
     }
     else ($account = user_load($user_id));
     if (!is_object($account) || $account->uid == 0) {
@@ -494,7 +499,9 @@ function check_users($user_ids) {
 }
 
 function mcapi_import_get_uid($string, $default) {
-  if (is_numeric($string)) $account = user_load($string);
+  if (is_numeric($string)) {
+    $account = user_load($string);
+  }
   else $account = user_load_by_mail($string);
 
   if (is_object($account) && $account->uid) return $account->uid;
@@ -505,17 +512,16 @@ function mcapi_import_get_uid($string, $default) {
 
 function mcapi_parse_getcsv($string) {
   $data = str_getcsv($string, "\n"); //parse the rows
-  $firstrow = str_getcsv(array_shift($data), ",");
+  $firstrow = array_shift($data);
   foreach ($firstrow as &$field) {
     $field = strtolower(trim($field));
   }
   foreach($data as $key => &$row) {
-    $nextrow = str_getcsv($row);
-    if (count($nextrow) != count($firstrow)) {
+    if (count($row) != count($firstrow)) {
       form_set_error('data', t('Number of fields does not match header in row @num',  array('@num' => $key + 1)));
       continue;
     }
-    $row = array_combine($firstrow, str_getcsv($row));
+    $row = array_combine($firstrow, $row);
     foreach ($row as &$field) $field = trim($field);
   }
   return $data;

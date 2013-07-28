@@ -170,9 +170,23 @@ The mcapi_index_views module does what the transaction table cannot do, by insta
 If a site is not being upgraded, but migrated from Drupal 6 to Drupal 7, the following query, run on the d6 data base can be used to pull the transaction data into csv format ready to import into Drupal 7 with the mcapi_import module.
 All non-deleted transactions are assumed to be in 'finished' state.
 If tweaking this query remember that the transaction states in d6 and d7 are different.
-SELECT n.nid as xid, n.title as description, u1.mail as payer, u2.mail as payee, e.quantity, '1stparty' as type, 1 as state
+SELECT n.nid as xid, u1.mail as payer, u2.mail as payee, e.quantity, n.created, '1stparty' as type, 1 as state, n.title as description
 FROM node n
 LEFT JOIN mc_exchanges e ON n.nid = e.nid
 LEFT JOIN users u1 on e.payer_uid = u1.uid
-LEFT JOIN users u2 on e.payee_uid = u1.uid
+LEFT JOIN users u2 on e.payee_uid = u2.uid
 WHERE e.state <> -1
+
+8. use with restws module
+Install RestWS and try the following
+mysite.com/transaction/1.xml //show a single transaction based on its xid
+mysite.com/transaction.xml?serial=1 //show a list with one transaction cluster
+mysite.com/transaction.xml?payer=3 //show all user 3 debits
+mysite.com/transaction.xml?payer=3&sort=created&direction=ASC&limit=10&page=0 //self explantory
+to POST a new transaction:
+mysite.com/transaction.xml
+Content type: application/xml 
+Header: X-CSRF-Token: (retrieved from http://mysite.com/transaction.xml/restws/session/token)
+Data must be either json encoded:{"payer":3,"payee":1,"transaction_type":"1stparty","worth":{"quantity":1,"currcode":"credunit"}}
+
+or xml encoded 

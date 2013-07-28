@@ -2057,10 +2057,6 @@ msgstr "Échanges en attente de confirmation"
 msgid "Text to display"
 msgstr "Texte à afficher"
 
-#: extras/sms/mcapi_sms.module:15;27
-msgid "Define the SMS syntax for recording exchanges"
-msgstr "Définir la syntaxe SMS pour enregistrer des échanges"
-
 #: extras/command/mcapi_command.module:29
 msgid "Transact via sms"
 msgstr "Échanger par sms"
@@ -2081,31 +2077,11 @@ msgstr "Définir la forme des messages texte."
 msgid "Try to include variations and get feedback from your users as to what works."
 msgstr "Essayer d'inclure des variations et d'avoir un retour de vos membres sur ce qui fonctionne."
 
-#: extras/sms/mcapi_sms.module:66;100
-msgid "Put the longer ones first"
-msgstr "Mettre les plus longs d'abord"
-
-#: extras/sms/mcapi_sms.module:72
-msgid "Expressions for recording an incoming transfer"
-msgstr "Expressions pour enregistrer un transfert entrant"
-
-#: extras/sms/mcapi_sms.module:79
-msgid "Expressions for recording an outgoing transfer"
-msgstr "Expressions pour enregistrer un transfert sortant"
 
 #: extras/command/mcapi_command.module:65
 msgid "One per line."
 msgstr "Un par ligne."
 
-#: extras/sms/mcapi_sms.module:88
-msgid "Exchanges triggered by SMS require confirmation?"
-msgstr "Les échanges amorcés par SMS demandent-ils confirmation ?"
-
-#: extras/sms/mcapi_sms.module:89
-msgid "Check this for new exchanges to be created as pending."
-msgstr "Vérifier ceci pour les nouveaux échanges qui doivent être créés avec le statut \"en attente\""
-
-#: extras/command/mcapi_command.module:80
 msgid "Responses"
 msgstr "Réponses"
 
@@ -2116,54 +2092,6 @@ msgstr "Messages envoyés aux téléphones"
 #: extras/command/mcapi_command.module:89
 msgid "Response for a successful exchange"
 msgstr "Réponse signalant un échange réussi."
-
-#: extras/sms/mcapi_sms.module:106;113
-msgid "Leave blank for no response, or put [inherit] "
-msgstr "Laisser vide si vous ne désirez pas de réponse, ou introduire [inherit]."
-
-#: extras/command/mcapi_command.module:96
-msgid "Error response"
-msgstr "Erreur"
-
-#: extras/sms/mcapi_sms.module:120
-msgid "Response in case the message doesn't fit any of the above templates"
-msgstr "Réponse au cas où le message ne correspond à aucun des gabarits ci-dessus."
-
-#: extras/sms/mcapi_sms.module:134
-msgid "'@template' should include '@token'"
-msgstr "'@template' devrait inclure '@token'"
-
-#: extras/sms/mcapi_sms.module:182
-msgid "SMS response: Syntax error"
-msgstr "Réponse SMS : erreur de syntaxe"
-
-#: extras/sms/mcapi_sms.module:189
-msgid "Your number is not registered at @sitename"
-msgstr "Votre numéro n'est pas enregistré à @sitename"
-
-#: extras/sms/mcapi_sms.module:191
-msgid "Unknown user: @user"
-msgstr "Utilisateur inconnu : @user"
-
-#: extras/sms/mcapi_sms.module:194
-msgid "You do not have permission to trade via SMS"
-msgstr "Vous n'avez pas le droit d'échanger via SMS"
-
-#: extras/sms/mcapi_sms.module:198
-msgid "@name does not have permission to trade."
-msgstr "@name n'a pas le droit d'échanger."
-
-#: extras/sms/mcapi_sms.module:229
-msgid "Your balance is @num"
-msgstr "Votre solde est @num"
-
-#: extras/sms/mcapi_sms.module:26 extras/sms/mcapi_sms.info:0
-msgid "SMS transactions"
-msgstr "Échanges SMS"
-
-#: extras/sms/mcapi_sms.info:0
-msgid "Untested with SMS module!! Trigger exchanges from your phone using SMS"
-msgstr "Non testé avec le module SMS !! Entraîne des échanges depuis votre téléphone en utilisant SMS"
 
 #: extras/import/mcapi_import.module:60 plugins/export_ui/mcapi_ui.class.php:106 views/mcapi.views.inc:21 views/mcapi.views_default.inc:17;187;191
 msgid "Transactions"
@@ -3677,7 +3605,7 @@ msgstr "Visible pour les utilisateurs ayant accès à la (première) unité d'é
 msgid "Users who have '@perm' for all shown currencies"
 msgstr "Utilisateurs qui ont '@perm' pour toutes les unités d'échange affichées."
 
-#: 
+#:
 msgid "[transaction:payer] paid [transaction:payee] [transaction:worth]"
 msgstr "[transaction:payer] a donné à [transaction:payee] [transaction:worth]"
 
@@ -4030,3 +3958,5 @@ msgstr "Le paiement impliquant le compte d'inter-échanges a été exclu."
 msgid "Trading limits (How much the user can earn and spend)"
 msgstr "Limites de l’échange (combien l'utilisateur peut recevoir et dépenser)."
 
+msgid "[transaction:payer] paid [transaction:payee] [transaction:worth]. [transaction:links]"
+msgstr "[transaction:payer] a payé [transaction:payee] [transaction:worth]. [transaction:links]"

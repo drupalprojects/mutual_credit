@@ -1146,7 +1146,7 @@ msgstr ""
 msgid "Community Accounting"
 msgstr ""
 
-#: (duplicate) mcapi.install:19 
+#: (duplicate) mcapi.install:19
 msgid "'Entity tokens' module has a longstanding issue and will only render the worth field as separate properties, currcode, and quantity"
 msgstr ""
 
@@ -3626,3 +3626,5 @@ msgstr ""
 msgid "A transaction indexing system, exposed to views, including views and views templates"
 msgstr ""
 
+msgid "[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]"
+msgstr ""

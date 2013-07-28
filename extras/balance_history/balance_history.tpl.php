@@ -46,7 +46,7 @@ function drawBalanceHistory() {
   var data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
 <?php foreach (array_keys(current($timeline)) as $currcode) { ?>
-  data.addColumn('number', '<?php print currency_load($currcode)->human_name; ?>');
+  data.addColumn('number', "<?php print currency_load($currcode)->human_name; ?>");
 <?php } ?>
 
 <?php foreach ($timeline as $timestamp => $balances) {
@@ -64,4 +64,4 @@ function drawBalanceHistory() {
 }
 google.setOnLoadCallback(drawBalanceHistory);
 </script>
-<div id="<?php print $id;?>" style="width:<?php print $width; ?>px; height:<?php print intval(3*$width/4);?> px;"></div>
+<div id="<?php print $id;?>" style="width:<?php print $width; ?>px; height:<?php print intval(3*$width/4);?>px;"></div>

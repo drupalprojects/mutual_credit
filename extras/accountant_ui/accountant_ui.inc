@@ -64,7 +64,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     );
   }
   else {
-    $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'));
+    $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()));
     //we have to preview these separately to see them all
     foreach ($form_state['confirmed'] as $transaction) {
       $form['preview'][] = transaction_view(array($transaction), $sentence);

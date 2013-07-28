@@ -51,7 +51,7 @@ function transaction_operation_access_undo_pending($callbacks, $transaction) {
 function mcapi_signall($form, $form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
   $transactions = transaction_load_multiple(transaction_filter(array('serial' => $serials)));
-  $form['preview'] = transaction_view($transactions, variable_get('mcapi_sentence'));
+  $form['preview'] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()));
   $form['uid'] = array(
     '#type' => 'hidden',
     '#value' => $account->uid
@@ -115,7 +115,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
         )
       );
     }
-    $output[] = transaction_view(transaction_load($serials), variable_get('mcapi_sentence'));
+    $output[] = transaction_view(transaction_load($serials), variable_get('mcapi_sentence', mcapi_sentence_default()));
   }
   return $output;
 }
@@ -129,7 +129,7 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
     }
   }
   foreach($transactions as $transaction) {
-    $output[] = transaction_view($transaction, variable_get('mcapi_sentence'));
+    $output[] = transaction_view($transaction, variable_get('mcapi_sentence', mcapi_sentence_default()));
   }
   return $output;
 }

@@ -476,7 +476,7 @@ function template_preprocess_certificate(&$variables) {
   $variables['theme_hook_suggestions'][] = 'certificate__' . $first_item['currcode'];
   $variables['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
   if (isset($transaction->dependents)) {
-    $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'));
+    $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'), mcapi_sentence_default());
     foreach ($transaction->dependents as $xid => $child) {
       $variables['dependents'][] = transaction_view(array($xid => $child), $sentence, TRUE);
     }

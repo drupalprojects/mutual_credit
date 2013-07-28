@@ -13,7 +13,7 @@ function _mcapi_entity_info() {
     'fieldable' => TRUE,
     'entity keys' => array(
       'id' => 'xid',
-      'name' => 'serial',//name is required by entity API module
+      //'name' => 'serial',//name is required by entity API module for exporting if exportable were TRUE
     ),
     'bundles' => array(
       'transaction' => array(
@@ -40,7 +40,8 @@ function _mcapi_entity_info() {
     'view callback' => 'transaction_view',
     //'form callback' => 'transaction_form',//implement this later perhaps
     'views controller class' => 'transactionDefaultViewsController',
-    'rules controller class' => 'TransactionRulesController'
+    'rules controller class' => 'TransactionRulesController',
+    'entity cache' => FALSE //because we would need to write special methods for this
     //'access_callback'
 
     /* I don't know how to make this work, or if its necessary
@@ -254,7 +255,7 @@ function mcapi_misc_options_form($form_state) {
     '#title' => t('Transaction sentence template'),
     '#description' => t('Use the tokens to define how the transaction will read when displayed in sentence mode'),
     '#type' => 'textfield',
-    '#default_value' => variable_get('mcapi_sentence'),
+    '#default_value' => variable_get('mcapi_sentence', mcapi_sentence_default()),
     '#weight' => 5
   );
   $form['token_tree'] = array(
@@ -358,9 +359,10 @@ function mcapi_currency_form(&$form, &$form_state){
   );
   $form['uid'] = array(
     '#title' => t('Declared by'),
+    '#description' => t("Choose from users with permission '@permission'", array('@permission' => t('Declare currency'))),
     '#type' => 'user_chooser_few',
     '#callback' => 'user_chooser_segment_perms',
-    '#args' => array('manage all transactions'),
+    '#args' => array('declare currency'),
     '#default_value' => property_exists($currency, 'uid') ? $currency->uid : $GLOBALS['user']->name,
     '#multiple' => FALSE,
     '#required' => TRUE,
