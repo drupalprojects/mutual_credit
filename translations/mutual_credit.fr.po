@@ -484,7 +484,6 @@ msgstr "Code d'unité d'échange"
 msgid "Community Coins"
 msgstr "Monnaie communautaire"
 
-#: (duplicate) mcapi.install:18  mcapi.info:0 extras/accountant_ui/accountant_ui.info:0 extras/balance_history/mcapi_balance_history.info:0 extras/bank_slave/bank_slave.info:0 extras/command/mcapi_command.info:0 extras/forms/mcapi_forms.info:0 extras/import/mcapi_import.info:0 extras/intertrading/intertrading.info:0 extras/limits/mcapi_limits.info:0 extras/signatures/mcapi_signatures.info:0 views/mcapi_index_views.info:0
 msgid "Community Accounting"
 msgstr "Comptabilité de la communauté"
 

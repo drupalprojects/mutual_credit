@@ -106,7 +106,7 @@ function mcapi_index_views_cron() {
       //now get the average daily sales
       $since = strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days');
       $total_daily_sales = db_query(
-        "SELECT SUM(income) FROM mcapi_index WHERE created > :time AND currcode = :currcode",
+        "SELECT SUM(income) FROM {mcapi_index} WHERE created > :time AND currcode = :currcode",
         array(
           ':time' => $since,
           ':currcode' => $currcode

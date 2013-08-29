@@ -5,7 +5,7 @@
  * this is the entityAPI approach
  * normally we would implement hook_views_data
  */
-//if (class_exists('entity')) {
+if (class_exists('EntityDefaultViewsController')) {
 class transactionDefaultViewsController extends EntityDefaultViewsController {
 
   /**
@@ -27,7 +27,6 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
       ),
       'entity type' => 'transaction',//so the entity module can expose this table
     );
-
     $data['mcapi_transactions']['serial'] = array(
       'title' => t('Serial'), // The item it appears as on the UI,
       'field' => array(
@@ -140,7 +139,7 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
     return $data;
   }
 }
-//}
+}
 
 /*
  * implements hook_views_data_alter

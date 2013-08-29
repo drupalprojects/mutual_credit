@@ -150,13 +150,12 @@ function import_transactions_form($form, $form_state) {
 function import_transactions_form_validate(&$form, &$form_state) {
   module_load_include('inc', 'mcapi');
   $currency = currency_load($form_state['values']['currcode']);
-
   $csv = mcapi_parse_getcsv($form_state['values']['data']);
   foreach ($csv as $key => $row) {
     $user_ids[] = $row['payer'];
     $user_ids[] = $row['payee'];
     if (!is_numeric($row['quantity']) || $row['quantity'] < 0) {
-      form_set_error('data',  t("'quantity' must be greater than 0 in line @num", array('@num' => $key)));
+      form_set_error('data',  t("'quantity' must be greater than 0 in line @num: @quant", array('@num' => $key, '@quant' => $row['quantity'])));
     }
     if ($row['quantity'] == 0 && empty($currency->display['zero'])) {
       form_set_error('data',  t("'quantity' must be greater than 0 in line @num", array('@num' => $key)));
@@ -212,6 +211,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
     foreach (array_chunk($csv, MCAPI_IMPORT_TRANSACTION_BATCH_SIZE) as $chunk) {
       $batch['operations'][] = array('mcapi_import_batch_create_transaction', array($chunk, $form_state['values']));
     }
+    //echo print_r($batch['operations'], 1);    die();
     $batch['title'] = t('Importing transactions');
     $batch['finished'] = 'mcapi_import_review_transaction_data';
     batch_set($batch);
@@ -510,21 +510,26 @@ function mcapi_import_get_uid($string, $default) {
 }
 
 
-function mcapi_parse_getcsv($string) {
-  $data = str_getcsv($string, "\n"); //parse the rows
-  $firstrow = array_shift($data);
+function mcapi_parse_getcsv($csv) {
+  $lines = explode("\n", $csv);
+  $firstline = array_shift($lines);
+  $firstrow = str_getcsv($firstline);
   foreach ($firstrow as &$field) {
     $field = strtolower(trim($field));
   }
-  foreach($data as $key => &$row) {
+  foreach($lines as $key => &$line) {
+    $row = str_getcsv($line);
     if (count($row) != count($firstrow)) {
       form_set_error('data', t('Number of fields does not match header in row @num',  array('@num' => $key + 1)));
       continue;
     }
     $row = array_combine($firstrow, $row);
-    foreach ($row as &$field) $field = trim($field);
+    foreach ($row as &$field) {
+      $field = trim($field);
+    }
+    $rows[$key] = $row;
   }
-  return $data;
+  return $rows;
 }
 
 

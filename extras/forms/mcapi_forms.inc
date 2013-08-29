@@ -78,6 +78,10 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     }
     else {
       //I-thou exchanges
+      $form['firstperson'] = array(
+        '#type' => 'hidden',
+        '#value' => $GLOBALS['user']->uid
+      );
       $form['secondperson'] = array(
         '#title' => t('Other person'), //this isn't supposed to be rendered
         '#default_value' => $transaction->secondperson
@@ -247,10 +251,10 @@ function mcapi_forms_validate_secondperson($form, &$form_state) {
   }
   if ($values['direction'] == 'incoming') {
     $values['payer'] = $values['secondperson'];
-    $values['payee'] = $GLOBALS['user']->uid;
+    $values['payee'] = $values['firstperson'];
   }
   elseif ($values['direction'] == 'outgoing') {
-    $values['payer'] = $GLOBALS['user']->uid;
+    $values['payer'] = $values['firstperson'];
     $values['payee'] = $values['secondperson'];
   }
 }

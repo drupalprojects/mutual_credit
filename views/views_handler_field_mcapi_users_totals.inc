@@ -45,7 +45,8 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
 
   function render($values) {
     $uid = &$values->uid;
-    $currcodes = empty($this->options['currcode']) ? array_keys(currencies_load(user_load($uid))): $this->options['currcode'];
+    //the settings imply there is only one currcode, but actually many can be rendered
+    $currcodes = empty($this->options['currcode']) ? array_keys(currencies_load(user_load($uid))): (array)$this->options['currcode'];
     $key = $this->options['total'];
     $elements = array();
     foreach ($currcodes as $currcode) {

@@ -653,9 +653,10 @@ function mcapi_upgrade_transactions($nids) {
   $transactions = db_query("SELECT * FROM {mc_exchanges} x
     INNER JOIN {node} n on n.nid = x.nid
     LEFT JOIN {node_revision} v on n.vid = v.vid
-    WHERE n.nid IN (:nids)", array(':nids' => $nids)
+    WHERE n.nid IN (:nids) ORDER BY n.nid ASC", array(':nids' => $nids)
   )->fetchAllAssoc('nid');
-  foreach ($transactions as $xid => $old) {
+  while (list($xid, $old) = each($transactions)) {
+//foreach ($transactions as $xid => $old) {
     //bypasses the transaction controller
     $transaction = (object)array(
       'xid' => $xid,
@@ -687,7 +688,7 @@ function mcapi_upgrade_transactions($nids) {
     _update_7000_field_sql_storage_write('transaction', 'transaction',  $xid,  $xid, 'worth', $transaction->worth);
     _update_7000_field_sql_storage_write('transaction', 'transaction', $xid, $xid, 'transaction_description', $transaction->description_field);
   }
-  return $xid;
+  return end($nids);
 }
 
 function mcapi_upgrade_transactions_finished() {
@@ -828,7 +829,7 @@ function mcapi_update_7009() {
     ));
   }
   variable_del('mc_subtypes');
-	variable_del('mc_live_stats');
+  variable_del('mc_live_stats');
   db_query("DELETE FROM {variable} WHERE name LIKE '%exchange'");
   db_query("DELETE FROM {variable} WHERE name LIKE 'mc_stats%'");
   db_query("DELETE FROM {variable} WHERE name LIKE 'mc_notif%'");
@@ -941,9 +942,8 @@ function mcapi_update_7015() {
       foreach ((array)$currency->transaction_access as $state => $callbacks) {
         $currency->transaction_view_access[$state] = array_filter($currency->transaction_access[$state]);
       }
-      drupal_set_message($currency, 'transaction_view_access should have been copied from transaction access; otherwise check your currency settings');
+      drupal_set_message("transaction_view_access settings are lost for each currency", 'warning');
     }
-    //unset($currency->transaction_access);
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
 

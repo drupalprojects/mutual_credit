@@ -5,6 +5,7 @@
  * $currency
  * $spend_limit
  * $earn_limit
+ * $uid
  */
 ?>
 

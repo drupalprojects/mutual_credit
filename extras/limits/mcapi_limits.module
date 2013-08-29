@@ -261,6 +261,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
       'template' => 'balance_limits',
       'variables' => array(
         'currcode' => '',
+        'uid' => 0,
         'min' => 0,
         'balance' => 0,
         'max' => 0
@@ -270,6 +271,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
       'template' => 'trading_limits',
       'variables' => array(
         'currcode' => '',
+        'uid' => 0,
         'earn_limit' => 0,
         'spend_limit' => 0
       )
@@ -362,8 +364,9 @@ function mcapi_limits_variable_info() {
 function balance_limits_view($uid, $currcodes = array()) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
-  if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
-  $currcodes = array_intersect($currcodes, array_keys(currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)));
+  if (empty($currcodes)) {
+    $currcodes = array_keys(currencies_load(user_load($uid)));
+  }
   foreach ($currcodes as $currcode) {
     if ($GLOBALS['user']->uid != $uid && !currency_access('trader_data', $currcode)) continue;
     $limits = limits_get($currcode, $uid);
@@ -374,10 +377,14 @@ function balance_limits_view($uid, $currcodes = array()) {
       '#currcode' => $currcode,
       '#min' => @$limits['min'],
       '#max' => @$limits['max'],
-      '#balance' => transaction_totals($uid, $currcode)->balance
+      '#uid' => $uid,
     );
   }
   return $renderable;
+}
+
+function template_preprocess_balance_limits(&$vars) {
+  $vars['balance'] = transaction_totals($vars['uid'], $vars['currcode'])->balance;
 }
 
 /*
@@ -394,7 +401,8 @@ function trading_limits_view($uid, $currcodes = array()) {
     if(empty($limits)) continue;
     $renderable[$currcode] = array(
       '#theme' => 'trading_limits',
-      '#currcode' => $currcode
+      '#currcode' => $currcode,
+      '#uid' => $uid
     );
     if (isset($limits['spend_limit'])) {
       $renderable[$currcode]['#spend_limit'] = $limits['spend_limit'];

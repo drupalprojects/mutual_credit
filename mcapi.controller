@@ -8,7 +8,7 @@
  * MODULENAME_EntityController
  * This controller test writes the transaction during validation
  */
-
+if (class_exists('EntityAPIController')) {
 class mcapiEntityController extends EntityAPIController {
 
   public function load($xids = array(), $reset = FALSE) {
@@ -277,12 +277,13 @@ class mcapiEntityController extends EntityAPIController {
    * Get a list of xids and serial numbers
    * see transaction.api.php for arguments
    */
-  public function filter(array $conditions) {
+  public function filter(array $conditions, $offset, $limit) {
     extract($conditions);//
     //db_set_active(variable_get('mcapi_db_read', 'default'));
-    $query = db_select('mcapi_transactions', 'x')
+    $query = db_select('mcapi_transactions', 'x')//should we use db_query_range?
       ->fields('x', array('xid', 'serial'))
-      ->orderby('created');
+      ->orderby('created', 'DESC')
+      ->range($offset, $limit);
     //db_set_active();
     if (isset($serial)) {
       $query->condition('serial', (array)$serial);
@@ -354,4 +355,4 @@ function mcapi_parse_conditions($conditions) {
   }
   return ' AND '. implode(' AND ', $where);
 }
-
+}

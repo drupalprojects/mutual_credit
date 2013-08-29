@@ -1,6 +1,7 @@
 This document contains the following
 
 ** Basic setup **
+** Architecture **
 ** Advanced usage **
 
 This document is a work in progress and may not be entirely up-to-date!
@@ -20,7 +21,7 @@ A badly managed money system can cause people to lose out and create bad feeling
 Where defaults have been appropriate, the timebanking model has been preferred.
 
 ENABLE MODULES
-Enable Mutual Credit API, Mutual Credit transaction forms (which depends on specially created module, user_chooser), and Views integration
+Enable User Chooser, Entity API, Community Accounting API, Forms and form builder UI, and Views for transactions
 Optionally enable the other modules in the Complementary Currencies Section.
 The present author has also written, based on the needs of many groups
 uid_login - for LETS groups who commonly use their User ID
@@ -81,9 +82,15 @@ The first level of architecture is in menus, blocks, views, mcapi_forms
 For more ideas visit demo.communityforge.net
 The cforge_custom installation profile which makes the demo module, is available her http://code.google.com/p/cforge-custom/
 
-N.B. Entity API module http://drupal.org/project/entity
-At time of writing, Feb 2012, Entity module looks like it is the way forward. However my attempt to depend on it has failed owing to poor documentation. Since all the CRUD controls are already written, views handlers also, there is little benefit to reworking everything to suit entity API at present.
 
+***********************
+**   ARCHITECTURE    **
+***********************
+
+http://matslats.net/mutual-credit-accounting-standards
+http://matslats.net/mutual-credit-limits
+http://matslats.net/drupal7-mutual-credit-webforms
+http://matslats.net/mutual-credit-views
 
 ***********************
 **  ADVANCED TIPS    **
@@ -185,8 +192,8 @@ mysite.com/transaction.xml?payer=3 //show all user 3 debits
 mysite.com/transaction.xml?payer=3&sort=created&direction=ASC&limit=10&page=0 //self explantory
 to POST a new transaction:
 mysite.com/transaction.xml
-Content type: application/xml 
+Content type: application/xml
 Header: X-CSRF-Token: (retrieved from http://mysite.com/transaction.xml/restws/session/token)
 Data must be either json encoded:{"payer":3,"payee":1,"transaction_type":"1stparty","worth":{"quantity":1,"currcode":"credunit"}}
 
-or xml encoded 
+or xml encoded

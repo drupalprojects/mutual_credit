@@ -43,6 +43,11 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['relationships']['uid2']['table'] = 'mcapi_index';
   $handler->display->display_options['relationships']['uid2']['field'] = 'uid2';
   $handler->display->display_options['relationships']['uid2']['required'] = TRUE;
+  /* Field: Transaction index: Unique serial number */
+  $handler->display->display_options['fields']['serial']['id'] = 'serial';
+  $handler->display->display_options['fields']['serial']['table'] = 'mcapi_index';
+  $handler->display->display_options['fields']['serial']['field'] = 'serial';
+  $handler->display->display_options['fields']['serial']['link_to_transaction'] = 0;
   /* Field: Transaction index: Created moment */
   $handler->display->display_options['fields']['created']['id'] = 'created';
   $handler->display->display_options['fields']['created']['table'] = 'mcapi_index';
@@ -61,6 +66,8 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['transaction_description']['id'] = 'transaction_description';
   $handler->display->display_options['fields']['transaction_description']['table'] = 'field_data_transaction_description';
   $handler->display->display_options['fields']['transaction_description']['field'] = 'transaction_description';
+  $handler->display->display_options['fields']['transaction_description']['alter']['make_link'] = TRUE;
+  $handler->display->display_options['fields']['transaction_description']['alter']['path'] = 'transaction/[serial]';
   /* Field: Transaction index: Expenditure */
   $handler->display->display_options['fields']['expenditure']['id'] = 'expenditure';
   $handler->display->display_options['fields']['expenditure']['table'] = 'mcapi_index';

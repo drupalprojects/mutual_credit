@@ -35,7 +35,7 @@ function accountant_ui_views_default_views() {
     'worth' => 'worth',
     'field_cat' => 'field_cat',
   );
-  $handler->display->display_options['style_options']['default'] = 'created';
+  $handler->display->display_options['style_options']['default'] = '-1';
   $handler->display->display_options['style_options']['info'] = array(
     'participant' => array(
       'sortable' => 0,
@@ -301,3 +301,4 @@ function accountant_ui_views_default_views() {
   $views[$view->name] = $view;
   return $views;
 }
+

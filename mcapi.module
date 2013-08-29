@@ -203,8 +203,8 @@ function transaction_cluster_create($transaction, $really = TRUE) {
   return $transactions;
 }
 
-function transaction_filter($conditions) {
-  return entity_get_controller('transaction')->filter($conditions);
+function transaction_filter($conditions, $offset = 0, $limit = 25) {
+  return entity_get_controller('transaction')->filter($conditions, $offset = 0, $limit = 25);
 }
 
 /*

@@ -2,9 +2,10 @@
 /*
  * preprocessor should do the theming here
  * balance_limits.tpl.php
- * $currency
+ * $currcode
  * $max
  * $min
+ * $uid
  * $balance
  */
 

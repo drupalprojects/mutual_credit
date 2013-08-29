@@ -6,3 +6,4 @@ core = 7.x
 configure = admin/accounting/import
 
 dependencies[] = mcapi
+php = 5.3

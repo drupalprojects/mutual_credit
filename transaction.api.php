@@ -95,7 +95,7 @@ $conditions = array('serial' => array('AB123', 'AB124'));
 //or
 $conditions = array('involving' => array(234, 567));
 
-transaction_filter((array)$conditions);
+transaction_filter((array)$conditions, $offset, $limit);
 
 
 
