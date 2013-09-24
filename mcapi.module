@@ -973,6 +973,7 @@ function transaction_operations($op_name = NULL, $load = FALSE, $localize = TRUE
   }
   //the imperative and description need to have t() where they are declared, like in saved views
   if ($localize) {
+    $callback = 't'; //this prevents potx from noticing these non-literal strings
     foreach($operations as $key => $info) {
       $operations[$key]['imperative'] = $callback($info['imperative']);
       $operations[$key]['description'] = $callback($info['description']);

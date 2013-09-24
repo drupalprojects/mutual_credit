@@ -243,16 +243,19 @@ function mcapi_schema() {
 }
 
 function mcapi_check_fields() {
+  module_load_install('field');
   field_associate_fields('mcapi');//sets field_config definition to active
   $field = current(_update_7000_field_read_fields(array('module' => 'mcapi'), 'field_name'));
   list($default_field, $default_instance) = _define_worth();
   if (empty($field)) {
     _update_7000_field_create_field($default_field);
   }
+  else field_update_field($default_field);
   // Create the instance if needed.
   if (!field_read_instance('transaction', 'worth', 'transaction', array('include_inactive' => TRUE))) {
     _update_7000_field_create_instance($default_field, $default_instance);
   }
+  else field_update_instance($default_instance);
 }
 
 function _define_worth() {

@@ -2752,21 +2752,10 @@ msgstr "Tout confirmer"
 msgid "Send 'pending' notification"
 msgstr "Envoyer un avis 'en attente'"
 
-#: mcapi_signatures.inc:358 views/mcapi_signatures.views_default.inc:123
-msgid "Sign"
-msgstr ""
-
-#: mcapi_signatures.inc:359
-msgid "Sign a pending transaction"
-msgstr ""
 
 #: mcapi_signatures.inc:360
 msgid "Are you sure you want to sign?"
 msgstr "Êtes-vous sûrs de vouloir confirmer ?"
-
-#: mcapi_signatures.inc:361
-msgid "Undo"
-msgstr ""
 
 #: mcapi_signatures.inc:362
 msgid "Undo pending transactions"
@@ -2776,9 +2765,6 @@ msgstr "Supprimer les échanges en attente"
 msgid "Are you sure you want to undo this pending transaction?"
 msgstr "Êtes-vous sûr de vouloir supprimer cet échange en attente ?"
 
-#: mcapi_signatures.inc:364
-msgid "Sign off"
-msgstr ""
 
 #: mcapi_signatures.inc:365
 msgid "Sign a pending transaction on behalf of all signatories"
@@ -4063,3 +4049,19 @@ msgstr "Etes-vous sûr(e) de vouloir annuler cet échange en attente?"
 msgid "Arg 1 user & transaction manager"
 msgstr "Arg 1 utilisateur & gestionnaire des échanges"
 
+
+#: mcapi_signatures.inc:358 views/mcapi_signatures.views_default.inc:123
+msgid "Sign"
+msgstr ""
+
+#: mcapi_signatures.inc:359
+msgid "Sign a pending transaction"
+msgstr ""
+
+#: mcapi_signatures.inc:364
+msgid "Sign off"
+msgstr ""
+
+#: mcapi_signatures.inc:361
+msgid "Undo"
+msgstr ""
