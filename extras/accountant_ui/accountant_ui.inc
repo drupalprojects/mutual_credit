@@ -5,6 +5,8 @@
  * $type denontes which of the 2 mass payments requested, many2one, one2many
  */
 function mcapi_mass_pay($form, &$form_state, $vector) {
+  $router_item = menu_get_item();
+  drupal_set_title($router_item['title']);
   form_load_include($form_state, 'inc', 'accountant_ui');
   form_load_include($form_state, 'admin.inc', 'mcapi');
   $form = array();

@@ -91,7 +91,9 @@ function mcapi_signatures_update_dependencies() {
  * update the signatures table
  */
 function mcapi_signatures_update_7000() {
-  db_rename_table('mc_unsigned', 'mcapi_signatures');
+  if (db_query("SHOW TABLES LIKE '%mc_unsigned'")->fetch()) {
+    db_rename_table('mc_unsigned', 'mcapi_signatures');
+  }
   $tables = mcapi_signatures_schema();
   db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
   db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);

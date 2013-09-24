@@ -7,7 +7,7 @@ function mcapi_views_default_views() {
   $view->description = '';
   $view->tag = 'mcapi';
   $view->base_table = 'mcapi_transactions';
-  $view->human_name = 'transactions';
+  $view->human_name = 'Transactions';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -185,8 +185,6 @@ $translatables['transactions'] = array(
   t('[name] paid [name_1]'),
   t('Income & Expenditure'),
   t('Transactions'),
-  t('No transactions'),
   t('Trade'),
-  t('This year\'s transactions'),
-  t('Transactions'),
+  t("This year's transactions"),
 );

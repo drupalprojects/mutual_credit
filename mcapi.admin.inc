@@ -543,7 +543,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
   );
-  foreach (module_invoke_all('transaction_operations') as $callback => $info) {
+  foreach (transaction_operations() as $callback => $info) {
     $form['access_operations'][$callback] = array(
       '#title' => $info['description'],
       '#type' => 'checkboxes',

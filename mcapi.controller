@@ -145,7 +145,10 @@ class mcapiEntityController extends EntityAPIController {
       //special presetting for taxonomy fields
       $field = field_info_field($fieldname);
       if ($field['type'] == 'taxonomy_term_reference') {
-        if (is_string($value)) {//the incoming value is a string of comma separated tags
+        if (is_numeric($value)) {//because the forms module will return just one number if we're not careful
+          $transaction->{$fieldname}[LANGUAGE_NONE][]['tid'] = $value;
+        }
+        elseif (!is_numeric($value) && is_string($value)) {//the incoming value is a string of comma separated tags
           if ($value == "_none") continue;
           foreach(drupal_explode_tags($value) as $term_name) {
             $term = current(taxonomy_get_term_by_name($term_name));

@@ -362,6 +362,7 @@ if (!function_exists('array_replace_recursive')) {
 }
 
 function mcapi_date_validate(&$element, &$form_state) {
+  if (!array_key_exists('created', $form_state['values']));
   date_validate($element, $form_state);
   $d = $form_state['values']['created'];
   form_set_value($element, strtotime($d['year'] .'-'. $d['month'] .'-'. $d['day']), $form_state);

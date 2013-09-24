@@ -3453,25 +3453,43 @@ msgstr ""
 msgid "Your signature required"
 msgstr "Απαιτείται η υπογραφή σας"
 
-#: extras/signatures/mcapi_signatures.inc:333
+
+#: mcapi_signatures.inc:358 views/mcapi_signatures.views_default.inc:123
+msgid "Sign"
+msgstr ""
+
+#: mcapi_signatures.inc:359
+msgid "Sign a pending transaction"
+msgstr ""
+
+#: mcapi_signatures.inc:361
+msgid "Undo"
+msgstr ""
+
+#: mcapi_signatures.inc:364
+msgid "Sign off"
+msgstr ""
+
+#: mcapi_signatures.inc:365
+msgid "Sign a pending transaction on behalf of all signatories"
+msgstr ""
+
+#: mcapi_signatures.inc:360
 msgid "Are you sure you want to sign?"
 msgstr "Είστε σίγουροι για την υπογραφή;"
 
-#: extras/signatures/mcapi_signatures.inc:339
+#: mcapi_signatures.inc:362
 msgid "Undo pending transactions"
 msgstr "Αναιρέσετε εκκρεμείς συναλλαγές"
 
-#: extras/signatures/mcapi_signatures.inc:340
-msgid "Are you sure you want to cancel this pending transaction?"
-msgstr ""
-"Είσαι σίγουρος ότι θέλεις να "
-"ακυρώσεις αυτήν τη συναλλαγή;"
+#: mcapi_signatures.inc:363
+msgid "Are you sure you want to undo this pending transaction?"
+msgstr "Είσαι σίγουρος ότι θέλεις να ακυρώσεις αυτήν τη συναλλαγή;"
 
-#: extras/signatures/mcapi_signatures.inc:348
+
+#: mcapi_signatures.inc:366
 msgid "Are you sure you want to sign off this transaction?"
-msgstr ""
-"Είσαι σίγουρος ότι θέλεις να "
-"επικυρώσεις αυτήν τη συναλλαγή;"
+msgstr "Είσαι σίγουρος ότι θέλεις να επικυρώσεις αυτήν τη συναλλαγή;"
 
 #: extras/signatures/mcapi_signatures.variable.inc:9
 msgid "Transaction signature notification template"

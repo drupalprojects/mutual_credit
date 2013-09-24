@@ -184,7 +184,8 @@ function mcapi_limits_validate_max(&$element, $form_state) {
 
 function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
   if (!currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)) {
-    drupal_set_message('Balance limits module should be disabled while only currencies of acknowledgement are present.');
+    //couldn't be bothered to enforce this
+    //drupal_set_message('Balance limits module should be disabled while only currencies of acknowledgement are present.');
   }
   $currency = isset($form_state['values']) ? (object)$form_state['values'] : $form_state['item']->data;
   //of course this is meaningless if we are creating the currency for the first time

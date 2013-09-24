@@ -115,7 +115,12 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
         )
       );
     }
-    $output[] = transaction_view(transaction_load($serials), variable_get('mcapi_sentence', mcapi_sentence_default()));
+    $transactions = array();
+    foreach ($serials as $serial) {
+      $transaction = transaction_load($serial);
+      $transactions[$transaction->xid] = $transaction;
+    }
+    $output[] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()));
   }
   return $output;
 }
@@ -330,14 +335,14 @@ function _mcapi_signatures_transaction_operations() {
     'sign' => array(
       'imperative' => 'Sign',
       'description' => 'Sign a pending transaction',
-      'sure_message' => t('Are you sure you want to sign?'),
+      'sure_message' => 'Are you sure you want to sign?',
       'weight' => 2,
       'file_extension' => 'inc'
     ),
     'undo_pending' => array(
       'imperative' => 'Undo',
-      'description' => t('Undo pending transactions'),
-      'sure_message' => t('Are you sure you want to undo this pending transaction?'),
+      'description' => 'Undo pending transactions',
+      'sure_message' => 'Are you sure you want to undo this pending transaction?',
       'weight' => 3,
       'redirect' => 'user',
       'file_extension' => 'inc'
@@ -345,11 +350,20 @@ function _mcapi_signatures_transaction_operations() {
     'signoff' => array(
       'imperative' => 'Sign off',
       'description' => 'Sign a pending transaction on behalf of all signatories',
-      'sure_message' => t('Are you sure you want to sign off this transaction?'),
+      'sure_message' => 'Are you sure you want to sign off this transaction?',
       'weight' => 5,
       'file_extension' => 'inc'
     )
   );
+  t('Sign');
+  t('Sign a pending transaction');
+  t('Are you sure you want to sign?');
+  t('Undo');
+  t('Undo pending transactions');
+  t('Are you sure you want to undo this pending transaction?');
+  t('Sign off');
+  t('Sign a pending transaction on behalf of all signatories');
+  t('Are you sure you want to sign off this transaction?');
 }
 
 //utility function

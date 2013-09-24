@@ -38,7 +38,8 @@ function mcapi_install() {
   }
   //this variable is deleted when the first transaction is erased
   variable_set('change_undo_mode', TRUE);
-
+  //import the translations before building the fields
+  mcapi_update_6999();
   mcapi_check_fields();
 
   variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
@@ -294,9 +295,9 @@ function _mcapi_module_weights() {
   //could all these be done in one query?
   $weights = array(
     -1 => array('mcapi'),//before ctools
-    1 => array('mcapi_forms', 'mcapi_limits', 'intertrading'),
-    2 => array('mcapi_signatures', 'mcapi_sms'),
-    3 => array('mcapi_index_views', 'mcapi_sms')
+    1 => array('mcapi_forms', 'mcapi_limits', 'intertrading', 'bank_slave'),
+    2 => array('mcapi_signatures', 'mcapi_command'),
+    3 => array('mcapi_index_views', 'mcapi_command')
   );
   foreach ($weights as $weight => $modules) {
     db_update('system')->fields(array('weight' => $weight))->condition('name', $modules)->execute();
@@ -385,8 +386,10 @@ function mcapi_update_6999() {
   $languages = language_list('enabled');
   unset($languages[1]['en']);
   if (!count($languages[1])) return;
+  require_once(DRUPAL_ROOT . '/includes/locale.inc');
   $language_list = join('|', array_keys($languages[1]));
   foreach (file_scan_directory(drupal_get_path('module', 'mcapi'), "/(^|\.)($language_list)\.po$/") as $po_file) {
+    drupal_set_message('importing transactions for Community Accounting.');
     _locale_import_read_po(
       'db-store',
       $po_file,
@@ -410,6 +413,8 @@ function mcapi_update_7000() {
     db_create_table('mcapi_transactions', $tables['mcapi_transactions']);
   }
   module_enable(array('mcapi_limits', 'accountant_ui', 'mcapi_forms', 'user_chooser'), TRUE);
+  drupal_set_message('Installed Community Accounting extra modules');
+  drupal_static_reset('system_rebuild_module_data');
 
   //replace the old module with the new, so as to retain the version number, and keeping it installed
   db_delete('system')->condition('name', 'mcapi_signatures')->execute();
@@ -420,7 +425,7 @@ function mcapi_update_7000() {
     ))
     ->condition('name', 'mc_signatures')
     ->execute();  //rename and update the table
-  //so now the module should update itself
+  //however I think the module doesn't update itself until the dependency tree is rebuilt
 }
 
 /**
@@ -809,7 +814,6 @@ function mcapi_update_7006() {
  */
 function mcapi_update_7009() {
   //in case the following doesn't work properly
-  db_query("DELETE FROM {system} WHERE name LIKE 'mc_%'");
   db_query("DELETE FROM {field_config_instance} WHERE bundle IN ('comment_node_currency', 'comment_node_exchange')");
   //customised menu items need to be renamed
   db_query("UPDATE {menu_links} SET link_path = 'transactions' WHERE link_path = 'exchanges'");
@@ -845,8 +849,8 @@ function mcapi_update_7009() {
   }
 
   if (!db_query("SHOW TABLES LIKE 'mcapi_submitted'")->fetchField()) {
-    $table = drupal_get_schema('mcapi_submitted', TRUE);
-    db_create_table('mcapi_submitted', $table);
+    $tables = mcapi_schema();
+    db_create_table('mcapi_submitted', $tables['mcapi_submitted']);
   }
 }
 
@@ -1030,10 +1034,17 @@ function mcapi_update_7019() {
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);
-    if (property_exists($currency, 'currency_access')) {
-      $currency->access['membership'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
-      $currency->access['trader_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
-      $currency->access['system_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['currency_aggregated_view'];
+    if (!property_exists($currency, 'access')) {
+      if (property_exists($currency, 'currency_access')) {
+        $currency->access['membership'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
+        $currency->access['trader_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
+        $currency->access['system_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['currency_aggregated_view'];
+      }
+      else {
+        $currency->access['membership'] = 'user_chooser_segment_perms:transact' ;
+        $currency->access['trader_data'] = 'user_chooser_segment_perms:transact';
+        $currency->access['system_data'] = 'user_chooser_segment_perms:transact';
+      }
     }
     if (property_exists($currency, 'transaction_view_access')) {
       $currency->view_transaction_states = $currency->transaction_view_access;
@@ -1100,6 +1111,13 @@ function mcapi_update_7022() {
 function mcapi_update_7023() {
   if (variable_get('mcapi_sentence') == '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]') {
     variable_del('mcapi_sentence');
+  }
+  //if by this time the mcapi_signatures updates haven't run, call them
+  $version = db_query("SELECT schema_version from {system} WHERE name = 'mcapi_signatures'");
+  if ($version < 7000) {
+    mcapi_signatures_update_7000();
+    mcapi_signatures_update_7005();
+    mcapi_signatures_update_7009();
   }
 }
 

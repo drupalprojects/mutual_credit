@@ -825,6 +825,7 @@ function currency_access($op, $currcode, $account = NULL) {
     $currency = currency_load($currcode);
     $callback = strtok($currency->access[$op], ':');
     $arg = strtok(':');
+    if (empty($callback)) debug($currency);// this might happen during upgrade from d6
     $calculated[$op][$currcode][$uid] = in_user_chooser_segment($callback, array($arg), $account->uid);
   }
   return $calculated[$op][$currcode][$uid];
@@ -836,7 +837,7 @@ function currency_access($op, $currcode, $account = NULL) {
  * build a render array for any number of transactions
  * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in transaction_load
  * not sure what the best file for this function is, not that it works in conjunction with the preprocess
- * $transactions an array of transactions, each one having its dependents already set
+ * $transactions an array of transactions, keyed by xid, each one having its dependents already set
  * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
  */
 function transaction_view($transactions, $view_mode) {
@@ -851,7 +852,7 @@ function transaction_view($transactions, $view_mode) {
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
       foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
         if (in_array($fieldname, array('worth', variable_get('transaction_description_field'))))continue;
-        unset($transaction->$fieldname);
+        unset($transaction->{$fieldname});
       }
     }
   }
@@ -884,8 +885,6 @@ function transaction_view($transactions, $view_mode) {
   drupal_alter(array('transaction_view', 'entity_view'), $renderable, $type);
   return $renderable;
 }
-
-
 
 /*
  * return one currency object, assuming the user has permission to use it
@@ -926,7 +925,7 @@ function currencies_load($account = NULL, $refresh = FALSE) {
 
   module_load_include('inc', 'mcapi');
   foreach ($currencies as $currcode => $currency) {
-    if (currency_access('membership', $currcode, $account)) {
+    if ($account->uid && currency_access('membership', $currcode, $account)) {
       //we're actually stripping the ctools metadata wrapper of the currency away here for convenience everywhere else
       $filtered[$currcode] = $currency;
     }
@@ -972,10 +971,8 @@ function transaction_operations($op_name = NULL, $load = FALSE, $localize = TRUE
   if ($op_name) {
     $operations = array($op_name => $operations[$op_name]);
   }
-  //I don't know how this will work regarding picking up strings for po files
-  //but we need to pass untranslated strings to the menu somehow
+  //the imperative and description need to have t() where they are declared, like in saved views
   if ($localize) {
-    $callback = 't';//this is how to avoid errors during the string extraction when the string is a variable
     foreach($operations as $key => $info) {
       $operations[$key]['imperative'] = $callback($info['imperative']);
       $operations[$key]['description'] = $callback($info['description']);
