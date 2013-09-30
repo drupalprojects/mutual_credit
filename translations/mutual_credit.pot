@@ -986,6 +986,10 @@ msgstr ""
 msgid "Only the site administrator will be able to restore this transaction."
 msgstr ""
 
+#: mcapi.module:568
+msgid "Undo a finished transaction, and its dependents"
+msgstr ""
+
 #: mcapi.module:600
 msgid "A transaction must involve two different users"
 msgstr ""

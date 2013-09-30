@@ -244,7 +244,7 @@ function mcapi_misc_options_form($form_state) {
     '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE),
     '#disabled' => !variable_get('change_undo_mode', FALSE)
   );
-  $form['mcapi_show_balances'] = array(//see mcapi.variable.inc
+  $form['mcapi_show_balances'] = array(
     '#title' => t('View balances in user profile'),
     '#description' => t('Small impact on performance; it may be necessary to edit user-profile.tpl.php'),
     '#type' => 'checkbox',
@@ -355,7 +355,10 @@ function mcapi_currency_form(&$form, &$form_state){
     '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
     '#weight' => 3,
     //this should have an API function to work with other transaction controllers
-    '#disabled' => transaction_filter(array('currcode' => $currency->info['currcode']))
+    //disable this if transactions have already happened
+    '#disabled' => property_exists($currency, 'info') ?
+      transaction_filter(array('currcode' => $currency->info['currcode'])) :
+      FALSE
   );
   $form['uid'] = array(
     '#title' => t('Declared by'),

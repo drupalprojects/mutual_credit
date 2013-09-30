@@ -262,7 +262,6 @@ function mcapi_permission() {
   return module_invoke_all('mcapi_info_drupal_permissions');
 }
 
-
 /**
  * implements hook_theme
  */
@@ -403,10 +402,11 @@ function mcapi_update_index() {
  * implement hook_user_view().
  */
 function mcapi_user_view($account, $mode, $language) {
-  $options = variable_get('mcapi_show_balances', FALSE);
-  if ($options['profile']) {
-    module_load_include('inc', 'mcapi');
-    $account->content['balances'] = mcapi_balances_view($account->uid);
+  if ($account->uid == $GLOBALS['user']->uid || currency_access('trader_data', 'credunit')) {
+    if (variable_get('mcapi_show_balances', FALSE)) {
+      module_load_include('inc', 'mcapi');
+      $account->content['balances'] = mcapi_balances_view($account->uid);
+    }
   }
 }
 
@@ -553,7 +553,7 @@ function mcapi_transaction_operations() {
   }
   return array(
     'undo' => array(
-      'imperative' => 'Undo',
+      'imperative' => "Undo",
       'description' => "Undo a finished transaction, and its dependents",
       'sure_message' => $message,
       'redirect' => 'user',
@@ -561,6 +561,11 @@ function mcapi_transaction_operations() {
       'file_extension' => 'inc'
     )
   );
+  t("Are you sure you want to delete?");
+  t("Only the site administrator will be able to restore this transaction.");
+  t("This transaction will disappear without a trace (apart from site backups)");
+  t("Undo");
+  t("Undo a finished transaction, and its dependents");
 }
 
 /*
@@ -741,6 +746,7 @@ function mcapi_mcapi_info_drupal_permissions() {
  */
 function transaction_operation_access($op, $transaction = NULL, $account = NULL) {
   module_load_include('inc', 'mcapi');
+  if ($op == 'create') return user_access('transact');
   if (is_object($transaction)) {
     if (!$account) $account = $GLOBALS['user'];
     foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
@@ -761,9 +767,8 @@ function transaction_operation_access($op, $transaction = NULL, $account = NULL)
         if (!$op_access_callback($callbacks, $transaction)) return FALSE;
       }
     }
+    return TRUE;
   }
-  elseif ($op == 'create') return user_access('transact');
-  return FALSE;
 }
 
 /*

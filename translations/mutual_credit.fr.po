@@ -245,7 +245,7 @@ msgstr "Compte à créditer"
 msgid "Transaction type"
 msgstr "Type d'échange"
 
-#: mcapi.inc:130 mcapi.info.inc:53 extras/accountant_ui/accountant_ui.views_default.inc:293 
+#: mcapi.inc:130 mcapi.info.inc:53 extras/accountant_ui/accountant_ui.views_default.inc:293
 msgid "State"
 msgstr "État"
 
@@ -454,7 +454,7 @@ msgstr "Identifiant de l'échange"
 msgid "The unique serial number of the transaction."
 msgstr "Le numéro de série unique de l'échange"
 
-#: mcapi.info.inc:24 extras/accountant_ui/accountant_ui.inc:37 
+#: mcapi.info.inc:24 extras/accountant_ui/accountant_ui.inc:37
 msgid "Payer"
 msgstr "Donneur"
 
@@ -462,7 +462,7 @@ msgstr "Donneur"
 msgid "The user ID of the payer"
 msgstr "L'identifiant du donneur"
 
-#: mcapi.info.inc:32 extras/accountant_ui/accountant_ui.inc:47 
+#: mcapi.info.inc:32 extras/accountant_ui/accountant_ui.inc:47
 msgid "Payee"
 msgstr "Receveur"
 
@@ -482,7 +482,7 @@ msgstr "Code d'unité d'échange"
 msgid "Community Coins"
 msgstr "Monnaie communautaire"
 
-#: (duplicate) mcapi.install:18  
+#: (duplicate) mcapi.install:18
 msgid "Community Accounting"
 msgstr "Comptabilité de la communauté"
 
@@ -686,7 +686,7 @@ msgstr "Le membre @name ne peut pas utiliser @currency"
 msgid "!name field is required."
 msgstr "Le champ !name est exigé."
 
-#: mcapi.inc:806 views/mcapi_index_views.views.inc:180 
+#: mcapi.inc:806 views/mcapi_index_views.views.inc:180
 msgid "Currency"
 msgstr "Unité d'échange"
 
@@ -1134,7 +1134,7 @@ msgstr "Constructeur de formulaire d'échange exportable"
 msgid "Storage"
 msgstr "Stockage"
 
-#: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:96 
+#: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:96
 msgid "Operations"
 msgstr "Actions"
 
@@ -1214,11 +1214,11 @@ msgstr "Le revenu brut (troisième élément) sur la ligne @rownum n'est pas un 
 msgid "gross income (third item) on row @rownum cannot be less than 0: @val"
 msgstr "le revenu brut (troisième élément) sur la ligne @rownum ne peut pas être plus petit que 0: @val"
 
-#: extras/import/mcapi_import.module:444 
+#: extras/import/mcapi_import.module:444
 msgid "Gross income"
 msgstr "Revenu brut"
 
-#: extras/import/mcapi_import.module:445 
+#: extras/import/mcapi_import.module:445
 msgid "Gross expenditure"
 msgstr "Dépenses brutes"
 
@@ -2092,7 +2092,7 @@ msgstr "Laisser vide si vous ne désirez pas de réponse, ou introduire [inherit
 msgid "Error response"
 msgstr "Erreur"
 
-#: extras/import/mcapi_import.module:60 
+#: extras/import/mcapi_import.module:60
 msgid "Transactions"
 msgstr "Échanges"
 
@@ -2264,7 +2264,7 @@ msgstr "Volume"
 msgid "Absolute value of the trade"
 msgstr "Valeur absolue de l'échange"
 
-#: extras/bank_slave/bank_slave.views_template.inc:169 
+#: extras/bank_slave/bank_slave.views_template.inc:169
 msgid "Balance"
 msgstr "Solde"
 
@@ -2768,7 +2768,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer cet échange en attente ?"
 
 #: mcapi_signatures.inc:365
 msgid "Sign a pending transaction on behalf of all signatories"
-msgstr ""
+msgstr "Confirmer un échange en attente au nom de tous les signataires"
 
 #: mcapi_signatures.inc:366
 msgid "Are you sure you want to sign off this transaction?"
@@ -3610,7 +3610,7 @@ msgstr "Visible pour les utilisateurs ayant accès à la (première) unité d'é
 msgid "Users who have '@perm' for all shown currencies"
 msgstr "Utilisateurs qui ont '@perm' pour toutes les unités d'échange affichées."
 
-#: 
+#:
 msgid "[transaction:payer] paid [transaction:payee] [transaction:worth]"
 msgstr "[transaction:payer] a donné à [transaction:payee] [transaction:worth]"
 
@@ -4049,19 +4049,18 @@ msgstr "Etes-vous sûr(e) de vouloir annuler cet échange en attente?"
 msgid "Arg 1 user & transaction manager"
 msgstr "Arg 1 utilisateur & gestionnaire des échanges"
 
-
 #: mcapi_signatures.inc:358 views/mcapi_signatures.views_default.inc:123
 msgid "Sign"
-msgstr ""
+msgstr "Confirmer"
 
 #: mcapi_signatures.inc:359
 msgid "Sign a pending transaction"
-msgstr ""
+msgstr "Confirmer un échange en attente"
 
 #: mcapi_signatures.inc:364
 msgid "Sign off"
-msgstr ""
+msgstr "Conclure"
 
 #: mcapi_signatures.inc:361
 msgid "Undo"
-msgstr ""
+msgstr "Supprimer"

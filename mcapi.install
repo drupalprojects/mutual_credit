@@ -1116,7 +1116,7 @@ function mcapi_update_7023() {
     variable_del('mcapi_sentence');
   }
   //if by this time the mcapi_signatures updates haven't run, call them
-  $version = db_query("SELECT schema_version from {system} WHERE name = 'mcapi_signatures'");
+  $version = db_query("SELECT schema_version from {system} WHERE name = 'mcapi_signatures'")->fetchField();
   if ($version < 7000) {
     mcapi_signatures_update_7000();
     mcapi_signatures_update_7005();
