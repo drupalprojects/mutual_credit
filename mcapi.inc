@@ -144,6 +144,8 @@ function _transaction_form(&$form, &$form_state) {
     '#weight' => 20,
   );
 
+  field_attach_form('transaction', $form['#transaction'], $form, $form_state);
+
   $form['buttons'] = array(
     'submit' => array(
       '#type' => 'submit',

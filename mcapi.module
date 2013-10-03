@@ -162,18 +162,15 @@ function transaction_load($serial = NULL) {
   if ($serial === NULL) {
     static $last;
     if (!$last) {
-      $xids = transaction_filter(array('creator' => $GLOBALS['user']->uid));
-      if (count($xids)) {
-        $xid = end($xids);
-        $loaded[$transaction->serial] = transaction_load_multiple(array($xid));
-      }
+      $serials = transaction_filter(array('creator' => $GLOBALS['user']->uid));
+      if (count($serials)) $serial = max($serials);
     }
   }
   $serials = (array)$serial;
   foreach ($serials as $serial_num) {
     if (empty($loaded[$serial_num])) {
-      $xids = array_keys(transaction_filter(array('serial' => $serial_num)));
-      $transactions = transaction_load_multiple($xids);
+      $serials = transaction_filter(array('serial' => $serial_num));
+      $transactions = transaction_load_multiple(array_keys($serials));
       if (empty($transactions)) {
         throw new Exception(t('Unable to load transaction @serial', array('@serial' => $serial_num)));
       }
@@ -184,6 +181,7 @@ function transaction_load($serial = NULL) {
       $loaded[$serial_num] = $transaction;
     }
   }
+  //only return the one or ones we asked for
   if (is_array($serial)) return array_intersect_key($loaded, array_flip($serial));
   else return $loaded[$serial];
 }
@@ -583,7 +581,6 @@ function transaction_form($form, &$form_state) {
     !empty($arg0) ? $arg0 : entity_create('transaction', array()));
 
   _transaction_form($form, $form_state);
-  field_attach_form('transaction', $form['#transaction'], $form, $form_state);
   //this determines whether the function calls transaction_cluster_create() or transaction_cluster_write()
   $form['#validate'] = array('transaction_form_validate');
   $form['#submit'] = array('transaction_form_submit');
