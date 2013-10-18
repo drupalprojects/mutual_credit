@@ -1,7 +1,0 @@
-name = Cc Import
-description = Import Offers, Wants and carried forward balances using No 1 account. Built for Fernie, Canada
-core = "6.x"
-dependencies[] = transactions
-dependencies[] = user_import
-package = Complementary Currencies
-files[] = cc_import.module

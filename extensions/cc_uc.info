@@ -1,6 +1,0 @@
-; $Id:
-name = Cc Ubercart
-description =  Use Ubercart to create Complementary Currency payments (experimental)
-core = 6.x
-package = Complementary Currencies
-dependencies[] = transactions
