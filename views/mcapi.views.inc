@@ -170,16 +170,16 @@ function transaction_access_callback_perm_manage_all_views($query, $condition, $
   $condition->condition(1, user_access('manage all transactions'));
 }
 function transaction_access_callback_payee_views($query, $condition, $state) {
-  $condition->condition('mcapi_transactions.payee', $GLOBALS['user']->uid);
+  $condition->condition('mcapi_transactions.payee', \Drupal::currentUser()->id());
 }
 function transaction_access_callback_payer_views($query, $condition, $state) {
-  $condition->condition('mcapi_transactions.payer', $GLOBALS['user']->uid);
+  $condition->condition('mcapi_transactions.payer', \Drupal::currentUser()->id());
 }
 function transaction_access_callback_open_views($query, $condition, $state) {
   $condition->condition(1, 1);
 }
 function transaction_access_callback_creator_views($query, $condition, $state) {
-  $condition->condition('mcapi_transactions.creator', $GLOBALS['user']->uid);
+  $condition->condition('mcapi_transactions.creator', \Drupal::currentUser()->id());
 }
 
 /*
@@ -193,7 +193,7 @@ function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $quer
   $query->addJoin('LEFT', 'field_data_worth', 'w', 'w.entity_id = mcapi_transactions.xid');return;
   $states = array_keys(mcapi_get_states());
   //what currencies can the current user see?
-  $currencies = currencies_load($GLOBALS['user']);
+  $currencies = currencies_load(\Drupal::currentUser());
   $or_currcodes = db_or();//where ((currcode = A and (blah)) OR ((currcode = B and (blah))
   foreach ($currencies as $currcode => $currency) {
     //where (currcode = A and (state = x) OR (state = Y) )

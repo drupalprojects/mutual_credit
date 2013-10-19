@@ -76,7 +76,7 @@ class mcapiEntityController extends EntityAPIController {
     $default_props = array(
       'payer' => NULL,
       'payee' => NULL,
-      'creator' => $GLOBALS['user']->uid,
+      'creator' => \Drupal::currentUser()->id(),
       'created' => REQUEST_TIME,
       'type' => 'default',
       'extra' => array(),
@@ -108,7 +108,7 @@ class mcapiEntityController extends EntityAPIController {
     }
     else {//if worths is not indicated, create a value for each currency the user is permitted to use
       //check that the creator is actually permitted to use this currency
-      if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
+      if ($for_me) $currencies =  currencies_load(\Drupal::currentUser());
       else $currencies = currencies_load();
       foreach (array_keys($currencies) as $currcode) {
         $transaction->worth[LANGUAGE_NONE][] = array(

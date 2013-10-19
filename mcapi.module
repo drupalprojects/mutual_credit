@@ -211,7 +211,7 @@ function transaction_load($serial = NULL) {
   if ($serial === NULL) {
     static $last;
     if (!$last) {
-      $serials = transaction_filter(array('creator' => $GLOBALS['user']->uid));
+      $serials = transaction_filter(array('creator' => \Drupal::currentUser()->id()));
       if (count($serials)) $serial = max($serials);
     }
   }
@@ -420,7 +420,7 @@ function mcapi_search_execute($keys = NULL, $conditions = NULL) {
   foreach ($find as $item) {
     // Render the node.
     $transaction = transaction_load($item->sid);//sid is actually the serial number
-    if (!transaction_operation_access('mcapi_view', $transaction, $GLOBALS['user'])) continue;
+    if (!transaction_operation_access('mcapi_view', $transaction, \Drupal::currentUser())) continue;
     $uri = entity_uri('transaction', $transaction);
     $results[$item->sid] = array(
       'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
@@ -461,7 +461,7 @@ function mcapi_update_index() {
  * implement hook_user_view().
  */
 function mcapi_user_view($account, $mode, $language) {
-  if ($account->uid == $GLOBALS['user']->uid || currency_access('trader_data', 'credunit')) {
+  if ($account->id() == \Drupal::currentUser()->id() || currency_access('trader_data', 'credunit')) {
     if (!variable_get('mcapi_show_balances', 0)) {
       module_load_include('inc', 'mcapi');
       $account->content['balances'] = mcapi_balances_view($account->uid);
@@ -488,7 +488,7 @@ function mcapi_block_view($delta) {
   if ($settings = _mcapiblock_settings($delta, 'trader_data')) {
     if (empty($settings['account']) || empty($settings['account']->uid)) return;
     return array(
-      'subject' => $settings['account']->uid == $GLOBALS['user']->uid ?
+      'subject' => $settings['account']->uid == \Drupal::currentUser()->id() ?
         t('Trading status') :
         t("@user's account", array('@user' => strip_tags(format_username($settings['account'])))),
       'content' => mcapi_balances_view($settings['account']->uid, $settings['currcodes']),
@@ -835,8 +835,8 @@ function mcapi_mail_alter(&$message) {
  * each containing a permission
  */
 function currency_access($op, $currcode, $account = NULL) {
-  if (!$account) $account = $GLOBALS['user'];
-  $uid = is_object($account) ? $account->uid : $GLOBALS['user']->uid;
+  if (!$account) $account = \Drupal::currentUser();
+  $uid = is_object($account) ? $account->uid : \Drupal::currentUser()->id();
   static $calculated = array();
   if (!isset($calculated[$op][$currcode][$uid])) {
     $currency = currency_load($currcode);
@@ -1428,7 +1428,7 @@ function worthfield_data_property_info() {
   );
 }
 function _currcode_options() {
-  foreach (currencies_load($GLOBALS['user']) as $currcode => $currency) {
+  foreach (currencies_load(\Drupal::currentUser()) as $currcode => $currency) {
     $options[$currcode] = $currency->human_name;
   }
   return $options;

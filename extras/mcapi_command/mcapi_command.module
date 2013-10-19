@@ -140,7 +140,7 @@ function mcapi_command_input() {
     '#callback' => 'user_chooser_segment_perms',//because I haven't built a per-currency callback yet
     '#args' => array('transact'),
     '#required' => FALSE,
-    '#default_value' => $GLOBALS['user']->uid
+    '#default_value' => \Drupal::currentUser()->id()
   );
   $form['command']['input'] = array(
     '#title' => t('Command'),
@@ -176,7 +176,7 @@ function mcapi_command_input_submit($form, $form_state) {
  * returns a message
  */
 function process_mcapi_command($message, $sender_account = NULL, $really = FALSE) {
-  if (!$sender_account) $sender_account = user_load($GLOBALS['user']->uid);
+  if (!$sender_account) $sender_account = user_load(\Drupal::currentUser()->id());
   $transaction = mcapi_command_execute($message, $sender_account);
   //this has no idea whether the transaction is pending.
   if ($really) {

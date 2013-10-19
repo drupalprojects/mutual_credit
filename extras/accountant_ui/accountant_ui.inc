@@ -90,7 +90,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
  */
 function mcapi_mass_pay_validate($form, &$form_state) {
   if (!isset($form_state['confirmed'])) {
-    $form_state['values']['creator'] = $GLOBALS['user']->uid;
+    $form_state['values']['creator'] = \Drupal::currentUser()->id();
     $form_state['values']['type'] = 'mass';
     $form_state['values']['state'] = TRANSACTION_STATE_FINISHED;
     $transactions = mcapi_mass_pay_insert($form_state, FALSE);

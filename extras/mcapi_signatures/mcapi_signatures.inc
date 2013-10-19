@@ -52,7 +52,7 @@ function _mcapi_signatures_transaction_operations() {
  * operation callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_sign($op, $transaction) {
-  $message = transaction_sign($transaction, $GLOBALS['user']->uid);
+  $message = transaction_sign($transaction, \Drupal::currentUser()->id());
   return transaction_view($transaction);
 }
 /*
@@ -340,7 +340,7 @@ function mcapi_signatures_config($form, $form_state) {
 function mcapi_sig_transaction_create($transaction, $really = 0) {
   //check the settings for this content type to see what signatures are required if any.
   $config = _signature_settings_default($transaction->type);
-  $uid = &$GLOBALS['user']->uid;
+  $uid = &\Drupal::currentUser()->id();
   if ($transaction->state == TRANSACTION_STATE_PENDING) {
     //put the signatures in the transaction object,
     if ($config['participants']) {

@@ -80,7 +80,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       //I-thou exchanges
       $form['firstperson'] = array(
         '#type' => 'hidden',
-        '#value' => $GLOBALS['user']->uid
+        '#value' => \Drupal::currentUser()->id()
       );
       $form['secondperson'] = array(
         '#title' => t('Other person'), //this isn't supposed to be rendered
@@ -93,7 +93,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $form['secondperson']['#args'] = $uchoo_setup;
       $form['secondperson']['#required'] = TRUE;
       $form['secondperson']['#multiple'] = FALSE;
-      $form['secondperson']['#exclude'] = array($GLOBALS['user']->uid);
+      $form['secondperson']['#exclude'] = array(\Drupal::currentUser()->id());
       $type = $settings['direction']['widget'] ? $settings['direction']['widget'] : 'select';
       $options = ($type == 'select' && empty($settings['direction']['preset'])) ? array(t('Please choose...')) : array();
       $form['direction'] = array(
@@ -230,7 +230,7 @@ function theme_mcapi_form($variables) {
     }
     return token_replace(
       check_markup($form['#template'], MCAPIFORM_STRING_FORMAT),
-      array('mcapiform' => $form, 'user' => $GLOBALS['user']),
+      array('mcapiform' => $form, 'user' => \Drupal::currentUser()),
       array('sanitize' => FALSE)
     );
   }
@@ -312,7 +312,7 @@ function mcapi_forms_form_postsubmit($form, &$form_state) {
     drupal_goto('transaction/' . $serial);
   }
   else {
-    $replacements = array('%user' => $GLOBALS['user']->uid, '%transaction' => $serial);
+    $replacements = array('%user' => \Drupal::currentUser()->id(), '%transaction' => $serial);
     drupal_goto(strtr($submission['redirect'], $replacements));
   }
 }

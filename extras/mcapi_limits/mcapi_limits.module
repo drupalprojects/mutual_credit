@@ -71,10 +71,10 @@ function mcapi_limits_accounting_validate(array $cluster) {
       if ($currency->issuance == 'acknowledgement') continue;
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
-      if ($skips['user1'] && $GLOBALS['user']->uid == 1) {
+      if ($skips['user1'] && \Drupal::currentUser()->id() == 1) {
         $messages[$currcode] = t("Skipped @currency balance limit check because you are user 1.", array('@currency' => $currency->human_name));
       }
-      elseif ($skips['owner'] && $GLOBALS['user']->uid == $currency->uid) {
+      elseif ($skips['owner'] && \Drupal::currentUser()->id() == $currency->uid) {
         $messages[$currcode] = t("Skipped @currency balance limit check because you are the currency owner.", array('@currency' => $currency->human_name));
       }
       elseif ($skips['auto'] && current($cluster)->type == 'auto') {
@@ -307,7 +307,7 @@ function mcapi_limits_block_view($delta) {
     require_once('mcapi_limits.inc');
     $uid = $settings['account']->uid;
     $function = $delta .'_view';
-    $is_me = $uid == $GLOBALS['user']->uid;
+    $is_me = $uid == \Drupal::currentUser()->id();
     $content = array_filter($function($uid, $settings['currcodes']));
     if (empty($content)) return;
     return array(
@@ -368,7 +368,7 @@ function balance_limits_view($uid, $currcodes = array()) {
     $currcodes = array_keys(currencies_load(user_load($uid)));
   }
   foreach ($currcodes as $currcode) {
-    if ($GLOBALS['user']->uid != $uid && !currency_access('trader_data', $currcode)) continue;
+    if (\Drupal::currentUser()->id() != $uid && !currency_access('trader_data', $currcode)) continue;
     $limits = limits_get($currcode, $uid);
     //this chart makes no sense if there isn't a max (or min) limit
     if (empty($limits['max']) && empty($limits['min'])) continue;
@@ -396,7 +396,7 @@ function trading_limits_view($uid, $currcodes = array()) {
   if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
   $currcodes = array_intersect($currcodes, array_keys(currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)));
   foreach ($currcodes as $currcode) {
-    if ($GLOBALS['user']->uid != $uid && !currency_access('trader_data', $currcode)) continue;
+    if (\Drupal::currentUser()->id() != $uid && !currency_access('trader_data', $currcode)) continue;
     $limits = limits_get_adjusted($currcode, $uid, transaction_totals($uid, $currcode)->balance);
     if(empty($limits)) continue;
     $renderable[$currcode] = array(

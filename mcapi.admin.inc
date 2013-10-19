@@ -470,7 +470,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#type' => 'user_chooser_few',
     '#callback' => 'user_chooser_segment_perms',
     '#args' => array('declare currency'),
-    '#default_value' => property_exists($currency, 'uid') ? $currency->uid : $GLOBALS['user']->name,
+    '#default_value' => property_exists($currency, 'uid') ? $currency->uid : \Drupal::currentUser()->label(),
     '#multiple' => FALSE,
     '#required' => TRUE,
     '#weight' => 4,
@@ -739,7 +739,7 @@ function mcapi_validate_currcode(&$element, $form_state) {
  * access to the ctools currency edit page
  */
 function currency_edit_access($currency) {
-  return user_access('configure all currencies') || $currency->uid == $GLOBALS['user']->uid;
+  return user_access('configure all currencies') || $currency->uid == \Drupal::currentUser()->id();
 }
 /*
  * load the currencies from ctools and alter them before they get used

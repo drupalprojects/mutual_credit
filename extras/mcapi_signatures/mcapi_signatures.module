@@ -51,7 +51,7 @@ function mcapi_signatures_menu() {
 
 function mcapi_signall_access($account) {
   if (db_query("SELECT TRUE FROM {mcapi_signatures} WHERE uid = $account->uid AND pending = 1")->fetchField()) {
-    return $account->uid == $GLOBALS['user']->uid || user_access('manage all transactions');
+    return $account->uid == \Drupal::currentUser()->id() || user_access('manage all transactions');
   }
 }
 
@@ -328,7 +328,7 @@ function transaction_access_callback_signatory($transaction) {
   if (!isset($transaction->pending_signatures)) return FALSE;
   //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
   if (!property_exists($transaction, 'pending_signatures')) return FALSE;
-  return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
+  return in_array(\Drupal::currentUser()->id(), array_keys($transaction->pending_signatures));
 }
 
 /*
@@ -336,7 +336,7 @@ function transaction_access_callback_signatory($transaction) {
  */
 function transaction_access_callback_pending_signatory($transaction) {
   if (transaction_access_callback_signatory($transaction)) {
-    return $transaction->pending_signatures[$GLOBALS['user']->uid];
+    return $transaction->pending_signatures[\Drupal::currentUser()->id()];
   }
 }
 
@@ -349,7 +349,7 @@ function transaction_access_callback_signatory_views($query, $condition, $state)
     $query->addJoin('LEFT', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
   }
   $query->distinct();
-  $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);
+  $condition->condition('mcapi_signatures.uid', \Drupal::currentUser()->id());
 }
 
 /*
@@ -363,7 +363,7 @@ function transaction_access_callback_pending_signatory_views($query, $condition,
   }
   $query->distinct();
   //note that this condition applies to the whole query, otherwise we'll get one result for each signature.
-  $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);
+  $condition->condition('mcapi_signatures.uid', \Drupal::currentUser()->id());
   $condition->condition('mcapi_transactions.state', TRANSACTION_STATE_PENDING);
 }
 

@@ -197,10 +197,10 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
       }
       if ($direction == 'incoming') {
         $defaults['payer'] = $entity->uid;
-        $defaults['payee'] = $GLOBALS['user']->uid;
+        $defaults['payee'] = \Drupal::currentUser()->id();
       }
       else {
-        $defaults['payer'] = $GLOBALS['user']->uid;
+        $defaults['payer'] = \Drupal::currentUser()->id();
         $defaults['payee'] = $entity->uid;
       }
       //that was all very nice matching instance for instance, but really we want the node title in the transaction description

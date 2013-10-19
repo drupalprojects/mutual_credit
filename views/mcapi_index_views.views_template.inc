@@ -207,7 +207,7 @@ function mcapi_index_views_views_templates() {
     $views[$view->name] = $view;
   }
   else {
-    if ($GLOBALS['user']->uid == 1) drupal_set_message('Install date_views module for better paging', 'warning');
+    if (\Drupal::currentUser()->id() == 1) drupal_set_message('Install date_views module for better paging', 'warning');
   }
 
 

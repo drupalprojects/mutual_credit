@@ -19,8 +19,8 @@ function mcapi_index_views_views_api() {
 
 //views access control callback
 function views_plugin_access_user_arg_check() {
-  if ($GLOBALS['user']->uid == 1) drupal_set_message('Contact matslats as this views access plugin will be discontinued', 'warning',FALSE);
-  return $GLOBALS['user']->uid == arg(1) || user_access('manage all transactions');
+  if (\Drupal::currentUser()->id() == 1) drupal_set_message('Contact matslats as this views access plugin will be discontinued', 'warning',FALSE);
+  return \Drupal::currentUser()->id() == arg(1) || user_access('manage all transactions');
 }
 
 /*
@@ -36,7 +36,7 @@ function get_balance_history($account, $currcodes = array(), $mode = 'diagonal',
   }
     //check access. Either it has to be the current user, or reduce the currcodes down
   foreach ($currcodes as $key => $currcode) {
-    if ($account->uid == $GLOBALS['user']->uid) continue;
+    if ($account->uid == \Drupal::currentUser()->id()) continue;
     if (!currency_access('trader_data', $currcode)) unset($currcodes[$key]);
   }
   if (empty($currcodes)) return array();

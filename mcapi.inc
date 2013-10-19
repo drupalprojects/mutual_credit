@@ -342,16 +342,16 @@ function transaction_access_callback_perm_manage_all() {
   return user_access('manage all transactions');
 }
 function transaction_access_callback_payee($transaction) {
-  return $GLOBALS['user']->uid == $transaction->payee;
+  return \Drupal::currentUser()->id() == $transaction->payee;
 }
 function transaction_access_callback_payer($transaction) {
-  return $GLOBALS['user']->uid == $transaction->payer;
+  return \Drupal::currentUser()->id() == $transaction->payer;
 }
 function transaction_access_callback_open() {
   return TRUE;
 }
 function transaction_access_callback_creator($transaction) {
-  return $GLOBALS['user']->uid == $transaction->creator;
+  return \Drupal::currentUser()->id() == $transaction->creator;
 }
 
 /*
@@ -368,7 +368,7 @@ function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
 
   $params = $settings + array('transaction' => $transaction);
   foreach (array($transaction->payer, $transaction->payee) as $uid) {
-    if ($GLOBALS['user']->uid != $uid) {
+    if (\Drupal::currentUser()->id() != $uid) {
       $params['user'] = user_load($uid);
       drupal_mail('mcapi', 'transaction_mail_action', $params['user']->mail, user_preferred_language($params['user']), $params);
     }
@@ -472,7 +472,7 @@ function _mcapiblock_settings($delta, $currency_access_mode) {
     else return;
   }
   else {
-    $settings['account'] = $GLOBALS['user'];
+    $settings['account'] = \Drupal::currentUser();
   }
   if (empty($settings['currcodes'])) {
     $settings['currcodes'] = array_keys(currencies_load($settings['account']));
@@ -672,7 +672,7 @@ function _worth_element_process($element, &$form_state) {
   if (empty($element['#currcodes'])) {
     //best not rely on this, supply your own currencies that the user is permitted to use.
     //this defaults to all
-    $element['#currcodes'] = array_keys(currencies_load($GLOBALS['user']));
+    $element['#currcodes'] = array_keys(currencies_load(\Drupal::currentUser()));
   }
   $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
 
