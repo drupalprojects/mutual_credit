@@ -74,12 +74,10 @@ function _mcapi_entity_info() {
 
 function _mcapi_menu() {
   $items['admin/accounting'] = array(
-    'title' => "Accounting",
-    'description' => "Manage all aspects of your community's money system",
-    'page callback' => 'mcapi_accounting',
-    'access arguments' => array('manage all transactions'),
-    'file' => 'mcapi.admin.inc',
-    'weight' => 2
+    'title' => t('Accounting'),
+    'description' => t("Manage all aspects of your community's money system"),
+    'weight' => 2,
+    'route_name' => 'mcapi.admin',
   );
   $items['admin/accounting/workflow'] = array(
     'title' => "Workflow",
@@ -91,8 +89,13 @@ function _mcapi_menu() {
   );
   $items['admin/accounting/config'] = array(
     'title' => 'Configuration',
-    'type' => MENU_DEFAULT_LOCAL_TASK
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
   );
+  $items['admin/accounting/misc'] = array(
+    'title' => t('Misc settings'),
+    'route_name' => 'mcapi.admin_misc',
+  );
+  /*
   $items['transact/log'] = array(
     'title' => "Record transaction",
     'description' => "Log a transaction in the database",
@@ -103,14 +106,6 @@ function _mcapi_menu() {
     'access arguments' => array('transact'),
     'file' => 'mcapi.inc',
     'file path' => drupal_get_path('module', 'mcapi')
-  );
-  $items['admin/accounting/misc'] = array(
-    'title' => "Misc settings",
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('mcapi_misc_options_form'),
-    'access arguments' => array('manage all transactions'),
-    'file' => 'mcapi.admin.inc',
-    'weight' => 10
   );
   $items['admin/accounting/currencies/%currency/edit'] = array(
     'title' => "Configure currency",
@@ -178,6 +173,7 @@ function _mcapi_menu() {
       'file path' => drupal_get_path('module', 'system')
     );
   }
+  */
   return $items;
 }
 

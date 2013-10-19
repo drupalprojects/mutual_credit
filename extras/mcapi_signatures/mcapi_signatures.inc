@@ -95,7 +95,7 @@ function transaction_op_undo_pending_access($callbacks, $transaction) {
 function mcapi_signall($form, $form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
   $transactions = entity_load('transaction', transaction_filter(array('serial' => $serials)));
-  $form['preview'] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()));
+  $form['preview'] = transaction_view($transactions, \Drupal::config('mcapi.misc')->get('sentence_template')));
   $form['uid'] = array(
     '#type' => 'hidden',
     '#value' => $account->uid
@@ -171,7 +171,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
       $transaction = transaction_load($serial);
       $transactions[$transaction->xid] = $transaction;
     }
-    $output[] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()), TRUE);
+    $output[] = transaction_view($transactions, \Drupal::config('mcapi.misc')->get('sentence_template')));
   }
   return $output;
 }
@@ -189,7 +189,7 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
     }
   }
   if (count($volitional_transactions)) {
-    return transaction_view($volitional_transactions, variable_get('mcapi_sentence', mcapi_sentence_default()));
+    return transaction_view($volitional_transactions, \Drupal::config('mcapi.misc')->get('sentence_template'));
   }
   return array();
 }

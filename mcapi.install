@@ -36,7 +36,6 @@ function mcapi_install() {
     _allow_text_on_transaction();
   }
   //this variable is deleted when the first transaction is erased
-  variable_set('change_undo_mode', TRUE);
   //import the translations before building the fields
   mcapi_update_6999();
   mcapi_check_fields();

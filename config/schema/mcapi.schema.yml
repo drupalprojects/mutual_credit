@@ -1,0 +1,16 @@
+mcapi.misc:
+  type: mapping
+  label: 'Mutual Credit Misc settings'
+  mapping:
+    delete_mode:
+      type: integer
+      label: 'Delete mode'
+    show_balances:
+      type: boolean
+      label: 'Show balances'
+    change_undo_mode:
+      type: boolean
+      label: Change undo mode
+    sentence_template:
+      type: text
+      label: Transaction sentence template

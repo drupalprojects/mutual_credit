@@ -554,7 +554,7 @@ function template_preprocess_certificate(&$vars) {
   if (isset($transaction->dependents) && !empty($transaction->dependents)) {
     $vars['dependents'] = transaction_view(
       $transaction->dependents,
-      str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()))
+      str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
     );
   }
 }

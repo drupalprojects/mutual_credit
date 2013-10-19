@@ -102,7 +102,7 @@ function drush_mcapi_wipeslate() {
   }
   db_truncate('mcapi_transactions')->execute();
   field_cache_clear();
-  variable_set('change_undo_mode', TRUE);
+  \Drupal::config('mcapi.misc')->set('change_undo_mode', TRUE);
 }
 
 function drush_mcapi_delete() {
@@ -118,7 +118,7 @@ function drush_mcapi_purge() {
     )
   ->execute()->fetchCol();
   hard_delete($serials);
-  variable_set('change_undo_mode', TRUE);
+  \Drupal::config('mcapi.misc')->set('change_undo_mode', TRUE);
 }
 
 function drush_mcapi_nodedel() {
@@ -173,6 +173,6 @@ function drush_devel_generate_transactions($num_transactions = 10) {
     $cluster = array(entity_create('transaction', $props));
     $serial = transaction_cluster_write($cluster, TRUE);
     $transaction = transaction_load($serial);
-    drush_print(strip_tags(drupal_render(transaction_view($transaction, variable_get('mcapi_sentence', mcapi_sentence_default())))));
+    drush_print(strip_tags(drupal_render(transaction_view($transaction, \Drupal::config('mcapi.misc')->get('sentence_template'))))));
   }
 }

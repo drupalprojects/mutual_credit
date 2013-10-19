@@ -177,7 +177,7 @@ function transaction_undo($serial) {
   }
   module_invoke_all('transaction_undo', $serial);
   //once even one transaction has been deleted, the undo_mode cannot be changed
-  variable_del('change_undo_mode');
+  \Drupal::config('mcapi.misc')->set('change_undo_mode', FALSE);
 }
 
 /**
@@ -462,7 +462,7 @@ function mcapi_update_index() {
  */
 function mcapi_user_view($account, $mode, $language) {
   if ($account->id() == \Drupal::currentUser()->id() || currency_access('trader_data', 'credunit')) {
-    if (!variable_get('mcapi_show_balances', 0)) {
+    if (\Drupal::config('mcapi.misc')->get('show_balances')) {
       module_load_include('inc', 'mcapi');
       $account->content['balances'] = mcapi_balances_view($account->uid);
     }
@@ -661,7 +661,7 @@ function mcapi_mcapi_info_states() {
       'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
   );
-  $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
+  $deletemode = \Drupal::config('mcapi.misc')->get('delete_mode');
   //don't attempt to liven the link coz this function can run while bootstrapping and that means trouble
   $description = t("See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc'));
   if ($deletemode != MCAPI_CURRENCY_UNDO_DELETE) {
@@ -690,7 +690,7 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
  */
 function mcapi_mcapi_info_types() {
   $types = array('default', 'dependent');
-  if (variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_REVERSE) {
+  if (\Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_CURRENCY_UNDO_REVERSE) {
     $types[] = 'reversal';
   }
   return $types;
@@ -1487,10 +1487,6 @@ function mcapi_validate_ttype(&$element, $form_state) {
       form_error($element, t('Invalid transaction type: @value', array('@value' => $value)));
     }
   }
-}
-
-function mcapi_sentence_default() {
-  return t('[transaction:payer] paid [transaction:payee] [transaction:worth]. [transaction:links]');
 }
 
 /*

@@ -1,0 +1,15 @@
+mcapi.admin:
+  path: '/admin/accounting'
+  defaults:
+    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Accounting'
+  requirements:
+    _permission: 'manage all transactions'
+
+mcapi.admin_misc:
+  path: '/admin/accounting/misc'
+  defaults:
+    _form: Drupal\mcapi\Form\AccountingAdminMiscForm
+    _title: Misc settings
+  requirements:
+    _permission: 'manage all transactions'

@@ -1,0 +1,5 @@
+mcapi.admin_tab:
+  route_name: mcapi.admin
+  title: Configuration
+  root_tab_id: mcapi.admin_tab
+  weight: 0
