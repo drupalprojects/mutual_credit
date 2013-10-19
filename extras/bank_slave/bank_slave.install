@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  * implements hook_install
  */
 function bank_slave_install() {
@@ -14,14 +14,11 @@ function bank_slave_install() {
     ));
   }
 
-
   //ensure the escrow currency is enabled
   $stati = variable_get('default_mcapi_currencies', array());
   unset($stati['escrow']);
   variable_set('default_mcapi_currencies', $stati);
   cache()->invalidate('currencies')
-  
+
+  module_set_weight('bank_slave', 1);
 }
-
-
-

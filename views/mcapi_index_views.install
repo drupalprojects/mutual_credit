@@ -14,6 +14,14 @@ function mcapi_index_views_requirements() {
   );
   return $requirements;
 }
+
+/**
+ * Implements hook_install().
+ */
+function mcapi_index_views_install() {
+  module_set_weight('mcapi_index_views', 3);
+}
+
 /*
  * implements hook_enable
  */

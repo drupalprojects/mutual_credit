@@ -1,6 +1,13 @@
 <?php
-/*
- * implements hook_forms_enable
+/**
+ * Implements hook_install().
+ */
+function mcapi_forms_install() {
+  module_set_weight('mcapi_forms', 1);
+}
+
+/**
+ * implements hook_enable().
  */
 function mcapi_forms_enable() {
   mcapiforms_setup_filter();

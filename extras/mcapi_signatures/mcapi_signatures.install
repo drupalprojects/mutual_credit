@@ -18,6 +18,8 @@ function mcapi_signatures_install() {
   foreach (_get_signable_transaction_types() as $type) {
     _make_signable($type);
   }
+
+  module_set_weight('mcapi_signatures', 2);
 }
 
 function _make_signable($type) {

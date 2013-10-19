@@ -30,7 +30,7 @@ function mcapi_install() {
   entity_load('user_role', DRUPAL_AUTHENTICATED_RID)->grantPermission('transact');
   drupal_set_message(t("For ease of setup, authenticated user has been granted 'transact' permission."));
 
-  _mcapi_module_weights();
+  module_set_weight('mcapi', -1);
 
   if (module_exists('text')) {
     _allow_text_on_transaction();
@@ -289,21 +289,6 @@ function _define_worth() {
     )
   );
   return array($field, $instance);
-}
-
-function _mcapi_module_weights() {
-  //here we set all the module weights together
-  //the main module must be heavier than contact module, because it needs to modify after contact_form_alter
-  //could all these be done in one query?
-  $weights = array(
-    -1 => array('mcapi'),//before ctools
-    1 => array('mcapi_forms', 'mcapi_limits', 'intertrading', 'bank_slave'),
-    2 => array('mcapi_signatures', 'mcapi_command'),
-    3 => array('mcapi_index_views')
-  );
-  foreach ($weights as $weight => $modules) {
-    db_update('system')->fields(array('weight' => $weight))->condition('name', $modules)->execute();
-  }
 }
 
 /* this feature has been commented out entirely for now

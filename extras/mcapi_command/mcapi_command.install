@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function mcapi_command_install() {
+  module_set_weight('mcapi_command', 3);
+}
