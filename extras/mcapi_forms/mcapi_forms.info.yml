@@ -1,0 +1,10 @@
+name: Forms and form builder UI
+description: Exportable transaction form builder
+package: Community Accounting
+core: 7.x
+type: module
+
+# configure: admin/accounting/forms
+
+dependencies:
+  - mcapi

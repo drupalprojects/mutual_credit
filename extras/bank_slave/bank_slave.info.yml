@@ -1,0 +1,7 @@
+name: Bank Slave
+description: "Increase your organisation's transparency: designate an account as a bank account, and track all transactions in that account & publish the accounts."
+package: Community Accounting
+core: 7.x
+type: module
+dependencies:
+  - mcapi_forms

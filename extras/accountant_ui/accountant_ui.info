@@ -1,8 +1,0 @@
-
-name = Interface for accountants
-description = Navigate transactions and create new ones
-package = Community Accounting
-core = "7.x"
-dependencies[] = mcapi
-dependencies[] = user_chooser
-
