@@ -32,7 +32,7 @@ function mcapi_install() {
 
   module_set_weight('mcapi', -1);
 
-  if (module_exists('text')) {
+  /* if (module_exists('text')) {
     _allow_text_on_transaction();
   }
   //this variable is deleted when the first transaction is erased
@@ -54,7 +54,7 @@ function mcapi_install() {
       "A new user was created for trading. uid: :uid name: demo, pass: demo",
       array(':uid' => $account->uid, ':delete' => l('Delete', 'user/'.$account->uid.'/delete'))
     ));
-  }
+  } */
 }
 
 /**
