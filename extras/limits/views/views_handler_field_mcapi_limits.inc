@@ -4,14 +4,14 @@
 class views_handler_field_mcapi_limits extends views_handler_field {
 
   function option_definition() {
-    $currencies = &drupal_static('currencies');
+    $currencies = currencies_load();
     $options = parent::option_definition();
     $options['currcode'] = array('default' => key($currencies));
     return $options;
   }
 
   function options_form(&$form, &$form_state) {
-    $currencies = &drupal_static('currencies');
+    $currencies = currencies_load();
     module_load_include('inc', 'mcapi');
     $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode']);
     parent::options_form($form, $form_state);

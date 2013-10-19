@@ -4,7 +4,7 @@
 function accountant_ui_views_default_views() {
   drupal_load('module', 'mcapi');
   currencies_load(); //because this seems to run before mcapi_init()
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $view = new view;
   $view->name = 'transactions_all';
   $view->description = 'For admin or accountant to manage transactions';

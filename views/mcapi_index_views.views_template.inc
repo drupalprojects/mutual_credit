@@ -6,7 +6,7 @@
  */
 function mcapi_index_views_views_templates() {
   currencies_load(); //because this seems to run before mcapi_init()
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $multicurrencies = count($currencies) > 1;
 
   if (module_exists('date_views')) {

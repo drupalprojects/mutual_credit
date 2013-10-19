@@ -40,62 +40,6 @@ function transaction_uri($transaction) {
   );
 }
 
-/*
- * default form callback for all transaction operations
- */
-function transaction_operation_form($form, &$form_state, $op, $transaction) {
-  $info = transaction_operations($op, FALSE, TRUE);
-  mcapi_hide_tabs();
-  $form['serial'] = array(
-    '#type' => 'hidden',
-    '#value' => $transaction->serial
-  );
-  $form['operation'] = array(
-    '#type' => 'hidden',
-    '#value' => $op
-  );
-  $form['#redirect'] = isset($info['redirect']) ? $info['redirect'] : 'transaction/'. $transaction->serial;
-  $form_callback = 'mcapi_operation_'.$op.'_form';
-  if (function_exists($form_callback)) {
-    $form += $form_callback($transaction);
-  }
-  $form['certificate'] = transaction_view($transaction, 'certificate');
-  $form['certificate']['#weight'] = 1;
-  $form = confirm_form(
-    $form,
-    $info['sure_message'],
-    isset($info['redirect']) ? $info['redirect'] : 'transaction/'. $transaction->serial,
-    '',
-    $info['imperative'],
-    t('Cancel'),
-    $op
-  );
-  return $form;
-}
-
-function transaction_operation_form_submit($form, $form_state) {
-  //I think the access has been checked already...
-  $values = &$form_state['values'];
-  //do the operation
-  $real_submit = 'transaction_operation_do_'.$values['operation'];
-  $real_submit($values['serial'], $form_state['values']);
-  //and invoke trigger and rules
-  mcapi_invoke($values['operation'], $values['serial']);
-  drupal_goto($form['#redirect']);
-}
-
-/*
- * menu callback
- * build the most basic possible transaction form
- */
-function transaction_default_form($form, &$form_state) {
-  $form = transaction_form($form, $form_state);
-  $form['state']['#type'] = 'value';
-  $form['type']['#type'] = 'value';
-  $form['creator']['#type'] = 'value';
-  return $form;
-}
-
 /**
  * All transaction forms should use this function as a basis using hook_forms
  */
@@ -229,41 +173,139 @@ function mcapi_validate_state(&$element, &$form_state) {
     form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['$value'])));
   }
 }
-
-
 /*
- * do callback derived from mcapi_transaction_operations
+ * menu page callback
+ * builds 'are you sure' operations form for both ajax and nojs
  */
-function transaction_operation_do_undo($serial) {
-  transaction_undo($serial);
+function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
+  drupal_add_js('misc/ajax.js', array('type' => 'file'));
+  $operations = transaction_operations();
+
+  if (array_key_exists('form callback', $operations[$op])) {
+    $form = drupal_get_form('transaction_operation_form', $op, $transaction);
+    //this form will sumit and expect ajax
+    $form['actions']['submit']['#attributes']['class'][] = 'use-ajax-submit';
+    drupal_add_js('misc/jquery.form.js');
+    drupal_add_js('misc/ajax.js', array('type' => 'file'));
+  }
+  //return normally, or via ajax if called via ajax
+  if ($mode == 'nojs') {//return a render array for delivery as a page
+    //return an 'are you sure form'
+    if (isset($form)) {
+      return $form;
+    }
+    //do the operation directly, without a form, and return the render array
+    else {
+      return mcapi_submit_op_form($operations[$op], $transaction);
+    }
+  }
+  elseif ($mode == 'ajax') {//return ajax commands
+    //when the button is clicked replace the whole transaction div with the results.
+    $commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($form));
+    return array(
+      '#type' => 'ajax',
+      '#commands' => $commands
+    );
+  }
+
 }
 
 /*
- * access callback derived from mcapi_transaction_operations
+ * default form callback for all transaction operations
  */
-function transaction_operation_access_undo($callbacks, $transaction) {
+function transaction_operation_form($form, &$form_state, $op, $transaction) {
+  $operations = transaction_operations(TRUE, FALSE);
+  $info = $operations[$op];
+  mcapi_hide_tabs();
+  $form['serial'] = array(
+    '#type' => 'hidden',
+    '#value' => $transaction->serial
+  );
+  $form_state['transaction_operation'] = $operations[$op]; //pass the op to the submit handler
+
+  if (array_key_exists('form callback', $info) && function_exists($info['form callback'])) {
+    $form += $info['form callback']($op, $transaction);
+  }
+  $form['certificate'] = transaction_view($transaction, 'certificate', TRUE);
+  //we might want to write something a bit cleaner than this
+  $form = confirm_form(
+    $form,
+    entity_label('transaction', $transaction),//this page title stays in place throughout the ajax operation
+    isset($info['redirect']) ? $info['redirect'] : 'transaction/'. $transaction->serial,
+    $info['sure'],
+    $info['title'],
+    t('Not so sure'),
+    $op
+  );
+  return $form;
+}
+//this is only called from the are you sure form, and always from ajax
+function transaction_operation_form_submit($form, &$form_state) {
+  $transaction = transaction_load($form_state['values']['serial']);
+  $result = mcapi_submit_op_form($form_state['transaction_operation'], $transaction, $form_state['values']);
+  //if this is ajax we return the result, otherwise redirect the form
+
+  $commands[] = ajax_command_replace('#transaction-operation-form', drupal_render($result));
+  ajax_deliver(array(
+    '#type' => 'ajax',
+    '#commands' => $commands
+  ));
+  exit();
+}
+
+//this is called in operation form submission OR ajax
+function mcapi_submit_op_form($operation, $transaction, $values = array()) {
+  $result = array();
+  if (array_key_exists('submit callback', $operation)) {
+    $function = $operation['submit callback'];
+    //this changes the $transaction
+    $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
+  }
+  //and invoke trigger and rules using the changed transaction
+  mcapi_invoke($operation['op'], $transaction, $values);
+  return $result;
+}
+
+
+function mcapi_view_access($op, $transaction) {
+  return _transaction_check_access_callbacks($op, $transaction);
+}
+
+/*
+ * These two callbacks from transaction_operation 'undo'
+ * Undo is the only 'exposed' operation in this module
+ */
+function transaction_op_undo_access($op, $transaction) {
   if ($transaction->state != TRANSACTION_STATE_FINISHED) return FALSE;
   if ($transaction->type == 'remote') return FALSE;//otherwise the intertrading module has to somehow intervene
-  return _transaction_check_access_callbacks($callbacks, $transaction);
+  return _transaction_check_access_callbacks($op, $transaction);
 }
+function transaction_op_undo($operation, $transaction, $values = array()) {
+  transaction_undo($transaction->serial);
+  return array('#markup' => t('The transaction is undone.'));
+}
+
 /*
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
  */
-function _transaction_check_access_callbacks($callbacks, $transaction) {
-  foreach ($callbacks as $function) {
-    if ($function($transaction)) return TRUE;
+function _transaction_check_access_callbacks($op, $transaction) {
+  $currencies = currencies_load();
+  //normally would use $items = field_get_items($transaction), but we are sure of language
+  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
+    foreach ($currencies[$item['currcode']]->access_operations[$op] as $function) {
+      if ($function($transaction)) return TRUE;
+    }
   }
-  return FALSE;
 }
 
 /*
  * transaction_access callbacks
  * $ops are determined in hook_transation_operations
  */
-function transaction_access_callback_perm_transact($transaction) {
+function transaction_access_callback_perm_transact() {
   return user_access('transact');
 }
-function transaction_access_callback_perm_manage_all($transaction) {
+function transaction_access_callback_perm_manage_all() {
   return user_access('manage all transactions');
 }
 function transaction_access_callback_payee($transaction) {
@@ -272,7 +314,7 @@ function transaction_access_callback_payee($transaction) {
 function transaction_access_callback_payer($transaction) {
   return $GLOBALS['user']->uid == $transaction->payer;
 }
-function transaction_access_callback_open($transaction) {
+function transaction_access_callback_open() {
   return TRUE;
 }
 function transaction_access_callback_creator($transaction) {
@@ -285,9 +327,9 @@ function transaction_access_callback_creator($transaction) {
  * NB Ignored here, but note that $transaction may have ->dependents property
  * with other transactions and other payees / payers
  */
-function mcapi_transaction_mail_action($transaction, $settings, $new_state) {
+function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
   //pending transaction notifications are handled by the signatures module
-  if ($new_state != TRANSACTION_STATE_FINISHED) return;
+  if ($transaction->state != TRANSACTION_STATE_FINISHED) return;
   //the actions settings allow to filter by transaction type
   if (empty($settings['transaction_types'][$transaction->type])) return;
 
@@ -389,7 +431,7 @@ function _mcapi_calc($formula, $base_value) {
  * 1 //the user argument is the current user
  */
 function _mcapiblock_settings($delta, $currency_access_mode) {
-  $settings = variable_get('mcapiblock_'. $delta, array('currcodes' => array(), 'user_source' => 1));
+  $settings = variable_get('mcapiblock_'. $delta, array('currcodes' => array(), 'user_source' => 0));
   if (@$settings['user_source'] == 0) {//Show as part of profile being viewed
     if (arg(0) == 'user') {//and we are viewing a profile...
       $settings['account'] = user_uid_optional_load(arg(1));
@@ -442,18 +484,17 @@ function _transactions_diff($transaction) {
  * $variables['transaction'] may have ->dependents from transaction_load
  * or it may be a simulated transaction with no xid and serial or dependents
  */
-function template_preprocess_certificate(&$variables) {
-  $transaction = &$variables['object'];
-  $variables['payer'] = format_username(user_load($transaction->payer));
-  $variables['payee'] = format_username(user_load($transaction->payee));
-  $variables['state'] = $transaction->state;
-  $variables['recorded'] = format_date($transaction->created, 'medium');
-  $variables['type'] = $transaction->type;
-  $variables['date'] = format_date($transaction->created, 'long');
-
-  $variables['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
+function template_preprocess_certificate(&$vars) {
+  $transaction = &$vars['object'];
+  $vars['payer'] = format_username(user_load($transaction->payer));
+  $vars['payee'] = format_username(user_load($transaction->payee));
+  $vars['state'] = $transaction->state;
+  $vars['recorded'] = format_date($transaction->created, 'medium');
+  $vars['type'] = $transaction->type;
+  $vars['date'] = format_date($transaction->created, 'long');
+  $vars['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
   if (!property_exists($transaction, 'xid') || empty($transaction->xid)) {
-    $variables['classes_array'][] = 'preview';
+    $vars['classes_array'][] = 'preview';
     foreach (array_keys(field_info_instances('transation', 'transaction')) as $fieldname) {
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
       if (!in_array($fieldname, array('worth', variable_get('transaction_description_field', '')))) {
@@ -463,25 +504,25 @@ function template_preprocess_certificate(&$variables) {
   }
 
   //this returns a render array
-  $variables['additional'] = field_attach_view('transaction', $transaction, 'certificate');
+  $vars['additional'] = field_attach_view('transaction', $transaction, 'certificate');
   //this populates top level of variables with the render array
-  field_attach_preprocess('transaction', $transaction, $variables['additional'], $variables);
+  field_attach_preprocess('transaction', $transaction, $vars['additional'], $vars);
 
-  foreach (element_children($variables['additional']['worth']) as $delta) {
-    worth_item_zero_adjustment($variables['additional']['worth'][$delta]);
+  foreach (element_children($vars['additional']['worth']) as $delta) {
+    worth_item_zero_adjustment($vars['additional']['worth'][$delta]);
   }
-  //move worth field to the top of $variables where we would expect to find it
-  $variables['worth'] = drupal_render($variables['additional']['worth']);
-  unset($variables['additional']['worth']);
+  //move worth field to the top of $vars where we would expect to find it
+  $vars['worth'] = drupal_render($vars['additional']['worth']);
+  unset($vars['additional']['worth']);
   //choose the transaction theme template based on the first currency of the transaction
   $first_item = reset($transaction->worth[LANGUAGE_NONE]);
-  $variables['theme_hook_suggestions'][] = 'certificate__' . $first_item['currcode'];
-  $variables['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
-  if (isset($transaction->dependents)) {
-    $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence'), mcapi_sentence_default());
-    foreach ($transaction->dependents as $xid => $child) {
-      $variables['dependents'][] = transaction_view(array($xid => $child), $sentence, TRUE);
-    }
+  $vars['theme_hook_suggestions'][] = 'certificate__' . $first_item['currcode'];
+  $vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
+  if (isset($transaction->dependents) && !empty($transaction->dependents)) {
+    $vars['dependents'] = transaction_view(
+      $transaction->dependents,
+      str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()))
+    );
   }
 }
 
@@ -489,7 +530,7 @@ function template_preprocess_certificate(&$variables) {
 //it is not used every time a 'worth' is rendered, but only when transactions are displayed.
 //for this reason, though it seems inelegant, this function should be called from wherever the transaction is rendered
 function worth_item_zero_adjustment(&$worth_render_array) {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   if ($worth_render_array['#quantity'] == 0) {
     $worth_render_array = array('#markup' => $currencies[$worth_render_array['#currcode']]->display['zero']);
   }
@@ -545,7 +586,7 @@ function worths_element_validate(&$element, &$form_state) {
 
 
 function _worths_element_process($element, &$form_state) {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   //the default value also tells us which currencies are available
   //if no defaults are set then all currencies should be present
   if (!isset($element['#default_value']) || empty($element['#default_value']) || @$element['#preset']) {
@@ -571,11 +612,9 @@ function _worths_element_process($element, &$form_state) {
     $element[0]['#title'] = t('Worth');
     foreach($element['#default_value'] as $currcode => $quant) {
       $element[0]['#currcodes'][] = $currcode;
+      $element[0]['#default_value']['currcode'] = $currcode;
       if (strlen($quant)) {
-        $element[0]['#default_value'] = array(
-          'currcode' => $currcode,
-          'quantity' => $quant
-        );
+        $element[0]['#default_value']['quantity'] = $quant;
       }
     }
     if (array_key_exists('#max', $element) && $element['#max']) {
@@ -613,11 +652,14 @@ function _worth_element_process($element, &$form_state) {
   if (!empty($use_div_subelement)) {
     list($main_quant, $div_quant) = currency_explode($quantity);
   }
-  else {
+  elseif($currency && $currency->display['divisions']) {
     $main_quant = $quantity;
   }
+  else{
+    $main_quant = intval($quantity);
+  }
   //in normal mode, show a blank field where the default value is 0
-  if ($main_quant == '0' && empty($element['#preset'])) $main_quant = '';
+  if (empty($main_quant) && empty($element['#preset'])) $main_quant = '';
   //while we return a float, the widget may want to show two fields.
   //in any case we show a main field, and an optional division field
   $element['main_quant'] = array(
@@ -722,26 +764,37 @@ function template_preprocess_transaction_totals(&$variables) {
 }
 
 
-function transaction_get_links($transaction) {
+function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
   global $language;
-  $links = array();
-  foreach (transaction_operations(NULL, TRUE, TRUE) as $op => $info) {
-    if (!transaction_operation_access($op, $transaction)) continue;
-    if (function_exists('locale')) {
-      $info['imperative'] = locale($info['imperative'], '', isset($language->language) ? $language->language : 'en');
-    }
-    $links[] = array(
-      '#theme' => 'link',
-      '#path' => 'transaction/'.$transaction->serial.'/'.$op,
-      //using locale here because t expects a string, but the string was in cache so can't be translated.
-      '#text' => $info['imperative'],
-      '#options' => array(
-        'attributes' => array(),
-        'html' => FALSE
-      )
-    );
+  static $operations;
+  if (!$operations) {
+    $operations = transaction_operations(TRUE, FALSE);
   }
-  return ($links);
+  if (empty($transaction->serial)) {
+    return array();//this happens on the transaction preview page
+  }
+  $renderable = array(
+    '#theme' => 'links',
+    //'#heading' => t('Operations'),
+    '#attributes' => array('class' => array('transaction-operations')),
+    '#links' => array()
+  );
+  $base = 'transaction/'. $transaction->serial;
+  foreach ($operations as $op => $info) {
+    if (!$view && $op == 'mcapi_view') continue;
+    if (transaction_operation_access($op, $transaction)) {
+      $renderable['#links'][$op] = array(
+        'title' => $info['title'],
+        'href' =>  $base,
+        'attributes' => array('class' => array('use-ajax'))
+      );
+      if ($op != 'mcapi_view') {
+        $renderable['#links'][$op]['href'] .= '/nojs/'. $op;
+      }
+    }
+  }
+  if ($ajax) drupal_add_js('misc/ajax.js', array('type' => 'file'));
+  return $renderable;
 }
 
 /*
@@ -799,7 +852,7 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
 
 
 function currency_picker_element(array $currcodes, $default = NULL, $multiple = 0) {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   if (count($currcodes) > 1) {
     foreach ($currcodes as $currcode) {
       $options[$currcode] = $currencies[$currcode]->human_name;
@@ -819,4 +872,16 @@ function currency_picker_element(array $currcodes, $default = NULL, $multiple = 
       '#value' => current($currcodes)
     );
   }
+}
+
+/*
+ * menu callback
+ * build the most basic possible transaction form
+ */
+function transaction_default_form($form, &$form_state) {
+  $form = transaction_form($form, $form_state);
+  $form['state']['#type'] = 'value';
+  $form['type']['#type'] = 'value';
+  $form['creator']['#type'] = 'value';
+  return $form;
 }

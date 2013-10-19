@@ -300,7 +300,7 @@ function _mcapi_module_weights() {
     -1 => array('mcapi'),//before ctools
     1 => array('mcapi_forms', 'mcapi_limits', 'intertrading', 'bank_slave'),
     2 => array('mcapi_signatures', 'mcapi_command'),
-    3 => array('mcapi_index_views', 'mcapi_command')
+    3 => array('mcapi_index_views')
   );
   foreach ($weights as $weight => $modules) {
     db_update('system')->fields(array('weight' => $weight))->condition('name', $modules)->execute();
@@ -802,7 +802,7 @@ function mcapi_update_7006() {
   // Borrowed from trigger_assign_form_submit
   db_insert('trigger_assignments')->fields(
     array(
-      'hook' => 'transaction_state',
+      'hook' => 'transaction_update',
       'aid' => $aid,
       'weight' => 0,
     )
@@ -868,7 +868,7 @@ function mcapi_update_7000_tokens($string) {
  */
 function mcapi_update_7010() {
   currencies_load();
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   foreach ($currencies as $currcode => $currency) {
     if (!isset($currency->transaction_access)) continue;
     foreach ($currency->transaction_access as $state => $callbacks) {
@@ -976,7 +976,7 @@ function mcapi_update_7016() {
   variable_get('mcapi_mixed_transactions', TRUE);
 
   $field = field_read_field('worth');
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   if (count($currencies)) {
     $field['cardinality'] = variable_get('mcapi_mixed_transactions', TRUE) ? count($currencies) : 1;
   }
@@ -1122,6 +1122,41 @@ function mcapi_update_7023() {
     mcapi_signatures_update_7005();
     mcapi_signatures_update_7009();
   }
+}
+/**
+ * API change: trigger 'transaction_state' becomes 'transaction_update'
+ * Correct and filter operation permissions for each currency
+ * rename block settings variables
+ */
+function mcapi_update_7024() {
+  db_update('trigger_assignments')
+   ->fields(array('hook' => 'transaction_update'))
+   ->condition('hook', 'transaction_state')
+   ->execute();
+  $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
+  foreach ($datas as $currcode => $data) {
+    $currency = unserialize($data);
+    unset($currency->access_operations['sign']);
+    foreach ($currency->access_operations as $key => $permissions) {
+      $newkey = 'mcapi_'.$key;
+      $currency->access_operations[$newkey] = array_filter($permissions);
+      unset($currency->access_operations[$key]);
+    }
+    db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
+  }
+  //change the names of the block settings variables - this was a bug
+  $deltas = db_query("SELECT delta FROM {block} WHERE module LIKE 'mcap%'")->fetchcol();
+  foreach ($deltas as $delta) {
+    db_query(
+      'UPDATE {variable} SET name = :new where name = :old',
+      array(
+        ':new' => 'mcapiblock_'.$delta,
+        ':old' => 'block_'.$delta
+      )
+    );
+  }
+
+  cache_clear_all('currencies', 'cache');
 }
 
 /* I think this turned out to be not necessary and also broke things

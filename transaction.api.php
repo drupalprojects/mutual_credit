@@ -12,7 +12,6 @@
  *   which means they were created automatically, from the volitional
  *   the dependent transactions share a serial number and state, but probably have a different 'type'
  *  When a transaction is loaded from the db, the dependents are put into (array)$transaction->dependents.
- *
  */
 
 /*
@@ -25,13 +24,13 @@
 
 
 /*
- * wrapper around Community Accounting API function transaction_load_multiple
+ * wrapper around entity_load
  * load a cluster of transactions sharing a serial number
  * The first transaction will be the 'volitional' transaction and the rest are loaded into
  * $transaction->children where the theme layer expects to find them
- *
+ * $serial can be varchar or an array of varchars
  */
-transaction_load($serial);
+stdClass transaction_load($serial);
 
 
 /*
@@ -40,23 +39,14 @@ transaction_load($serial);
  * returns them as an array
  */
 try {
-  transaction_cluster_create($transaction, $really = TRUE);
+  array transaction_cluster_create($transaction, $really = TRUE);
 }
 catch(exception $e){}
 
- /*
-  * the following can be used for development
-  */
-transactions_delete($serials);
-
-
-
 /*
- * TRANSACTION ENTITY CONTROLLER INTERFACE
- * This is the actual api for transaction entity controllers
- * Currently the module supports only one entity controller per drupal instance
- * But it would be really powerful to support one entity controller  per currency
+ * the following can be used for development
  */
+transactions_delete($serials);
 
 /*
  * Insert a validated transaction cluster, and allocate a serial number to the cluster
@@ -65,12 +55,20 @@ transactions_delete($serials);
  * $transactions is a flat array
  * All $transactions will be given the same serial numbers
  */
+try {
+  transaction_cluster_write($transactions, $really);
+}
+catch(exception $e){}
+
 
 /*
- * load several raw transactions, by xid
- * return them, keyed by xid
+ * Insert a single transaction entity, running the accounting_validate hook on it first
+ * note that this includes a call to transaction_cluster_write()
  */
-transaction_load_multiple((array)$xids);
+try {
+  transaction_cluster_create($transaction, $really);
+}
+catch(exception $e){}
 
 /*
  * filter transactions
@@ -95,28 +93,27 @@ $conditions = array('serial' => array('AB123', 'AB124'));
 //or
 $conditions = array('involving' => array(234, 567));
 
-transaction_filter((array)$conditions, $offset, $limit);
-
-
-
-try {
-  transaction_cluster_write($transactions, $really);
-}
-catch(exception $e){}
-
 /*
- * Insert a single transaction entity, running the accounting_validate hook on it first
+ * this is a substitute for views
+ * arguments:
+ *  $conditions - an array of transaction properties, each with a value or array of values to filter for
+ *  $offset - used for paging
+ *  $limit - used for paging
+ *  $fieldapi_conditions - more conditions for testing against loaded transactions.
+ *   NB this could be expensive in memory
+ *   NB paging is ignored
+ *   NB in multiple cardinality fields, only the first value is filtered for
  */
-try {
-  transaction_cluster_create($transaction, $really);
-}
-catch(exception $e){}
+array transaction_filter((array)$conditions, $offset, $limit, $fieldapi_conditions);
+
+
 
 /*
  * The default entity controller supports 3 ways to undo
  * Utter delete
  * Change state to erased
  * Create counter-transaction and set state of both to TRANSACTION_STATE_UNDONE
+ * NB this function goes on to call mcapi_invoke('mcapi_undo', $transaction)
  */
 try {
   transaction_undo($transaction);
@@ -125,12 +122,13 @@ catch(exception $e){}
 
 
 /*
- * very important to use this one for any state change,
- * note that there is a hook that goes with it,
- * hook_transaction_state($clusters, $new_state)
+ * hook_transaction_update($clusters, $old_state)
+ * All changes to transactions should be passed through this
+ * it saves the new state and field API and fires hooks and triggers wotnot
+ * if the $old_state is set, that indicates this was a workflow operation
  */
 try {
-  transaction_state($serial, $newstate);
+  transaction_update($newly_saved_transaction, $old_state);
 }
 catch(exception $e){}
 
@@ -151,7 +149,7 @@ catch(exception $e){}
  * - gross_out
  * - count
  */
-transaction_totals($uid, $currcode, $filters);
+array transaction_totals($uid, $currcode, $filters);
 
 
 /*
@@ -160,134 +158,101 @@ transaction_totals($uid, $currcode, $filters);
  */
 //declare new transaction controllers
 function hook_transaction_controller(){}
+
 //check the transactions and the system integrity after the transactions would go through
 function hook_accounting_validate(){}
+
 //respond to the insertion of a transaction cluster
 function hook_transaction_cluster_write(){}
+
 //respond to the removal, or undoing of a transaction
 function hook_transactions_undone(){}
+
 //preparing a transaction for rendering
 function hook_transactions_view(){}
+
 //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
 function hook_transaction_access_callbacks(){}
-//things that can be done to transactions
-function hook_transaction_operations(){}
-//change of transaction state - takes serials
-function hook_transaction_state(){}
+
+
 //declare transaction states
-function hook_mcapi_info_states(){}
-//declare transaction types
-function hook_mcapi_info_types(){}
+function hook_mcapi_info_states(){
+  return array(
+    99 => array(//ensure this number doesn't clash with existing states
+      'name' => t('Rejected'),
+      'description' => t('transaction was terminated by payee'),
+      'default_access_callbacks' => array('mcapi_access_authenticated')//see hook_transaction_access_callbacks
+    ),
+  );
+}
+//declare transaction types, perhaps one for each workflow process
+function hook_mcapi_info_types(){
+  return array('donate', 'charge', 'rebate');
+}
+
 //declare permissions to go into the community accounting section of the drupal permissions page
 function hook_mcapi_info_drupal_permissions(){}
+
 //add transactions to a new cluster (this is not actually invoked with drupal_alter, but could be)
 function hook_transaction_cluster_alter(){}
+
+
+
+/**
+ * Transaction operations
+ * User stories are built up using transaction operations to make a workflow.
+ * Operations allow transactions to be edited in a very controlled way.
+ * They are declared in a hook, and shown to the user as a virtual transaction property, depending on access control
+ * The following operations provided in mcapi.module are for internal use only (they have no access callback):
+ * -transaction_register -> create
+ * -transaction_field_update -> update
+ * -transaction_deleted -> delete
+ *
+ * Each operation issues has a 'trigger' for user 1 or other modules to react.
+ * See transaction_operation_form_submit for some insight.
+ */
+
+//things that can be done to transactions, typically changing state but also maybe editing fields.
+function hook_transaction_operations(){
+  return array(
+    //the array key is a hook, so be careful with the namespace
+    'mcapi_undo' => array(
+      //this is used for the MENU_LOCAL_ACTION
+      //operations without a title are for internal use only
+      'title' => "Undo",
+      //a tooltop over the MENU_LOCAL_ACTION
+      'description' => "Undo a finished transaction, and its dependents",
+      //a message asking if the user is sure they want to do the operation
+      'sure' => "Are you sure you want to undo? Only the site administrator will be able to restore this transaction.",
+      //(optional) affects the order the operations are shown in.
+      'weight' => 3,
+      //function taking args $op and $transaction to see if the current user can do the op.
+      'access callback' => 'mcapi_undo_access',
+      //optional key to provide config form widget in currency
+      'access form' => 'operations_config_default_access',//this is the default, can also be left blank
+      //(optional), path to file, relative to the module root, containing form and submit callbacks
+      'filepath' => 'mcapi.inc',
+      //callback where the operation actually happens
+      //it takes the ($operation, $transaction, $values) and returns a render array to replace the transaction
+      'submit callback' => 'mcapi_undo',
+      //(optional) inject any fields into the 'are you sure' page.
+      //if it is empty or absent there will be NO CONFIRMATION STEP
+      //if the callback name doesn't exist it won't break.
+      //also a chance to drupal_set_title of that page (nojs mode only)
+      'form callback' => 'TRUE',
+      //this applies for the form, not for ajax. default will redirect to the transaction/$serial
+      'redirect' => 'user'
+    )
+  );
+  //Dont' forget to include these t()s
+  t("Undo");
+  t("Undo a finished transaction, and its dependents");
+  t("Are you sure you want to undo? Only the site administrator will be able to restore this transaction.");
+}
+
 //alter hooks, more could be added, if necessary!
 function hook_transaction_operations_alter(){}
 
-
-
- /*
- * Hooks provided by entity API module for this the transaction entity.
- * THESE ARE PLACEHOLDERS, since the transaction entity does things quite differently
- * to what the entity API module expects and it hasn't been coded yet
- * constructed from template http://drupal.org/node/999936
- */
-
 /**
- * Acts on transactions being loaded from the database.
- *
- * This hook is invoked during transaction loading, which is handled by
- * entity_load(), via the EntityCRUDController.
- *
- * @param array $transactions
- *   An array of transaction entities being loaded, keyed by id.
- *
- * @see hook_entity_load()
+ * Note that more hooks are provided by entity API module for any transaction entity.
  */
-function hook_transaction_load(array $transactions) {
-  $result = db_query('SELECT pid, foo FROM {mytable} WHERE pid IN(:ids)', array(':ids' => array_keys($entities)));
-  foreach ($result as $record) {
-    $entities[$record->pid]->foo = $record->foo;
-  }
-}
-
-
-/**
- * Act on a transaction that is being assembled before rendering.
- *
- * @param $transaction
- *   The transaction entity.
- * @param $view_mode
- *   The view mode the transaction is rendered in.
- * @param $langcode
- *   The language code used for rendering.
- *
- * The module may add elements to $transaction->content prior to rendering. The
- * structure of $transaction->content is a renderable array as expected by
- * drupal_render().
- *
- * @see hook_entity_prepare_view()
- * @see hook_entity_view()
- */
-function hook_transaction_view($transaction, $view_mode, $langcode) {
-  $transaction->content['my_additional_field'] = array(
-    '#markup' => $additional_field,
-    '#weight' => 10,
-    '#theme' => 'mymodule_my_additional_field',
-  );
-}
-
-/**
- * Alter the results of entity_view() for transactions.
- *
- * @param $build
- *   A renderable array representing the transaction content.
- *
- * This hook is called after the content has been assembled in a structured
- * array and may be used for doing processing which requires that the complete
- * transaction content structure has been built.
- *
- * If the module wishes to act on the rendered HTML of the transaction rather than
- * the structured content array, it may use this hook to add a #post_render
- * callback. Alternatively, it could also implement hook_preprocess_transaction().
- * See drupal_render() and theme() documentation respectively for details.
- *
- * @see hook_entity_view_alter()
- */
-function hook_transaction_view_alter($build) {
-  if ($build['#view_mode'] == 'full' && isset($build['an_additional_field'])) {
-    // Change its weight.
-    $build['an_additional_field']['#weight'] = -10;
-
-    // Add a #post_render callback to act on the rendered HTML of the entity.
-    $build['#post_render'][] = 'my_module_post_render';
-  }
-}
-
-/**
- * Define default transaction configurations.
- *
- * @return
- *   An array of default transactions, keyed by machine names.
- *
- * @see hook_default_transaction_alter()
- */
-function hook_default_transaction() {
-  $defaults['main'] = entity_create('transaction', array(
-    // …
-  ));
-  return $defaults;
-}
-
-/**
- * Alter default transaction configurations.
- *
- * @param array $defaults
- *   An array of default transactions, keyed by machine names.
- *
- * @see hook_default_transaction()
- */
-function hook_default_transaction_alter(array &$defaults) {
-  $defaults['main']->name = 'custom name';
-}

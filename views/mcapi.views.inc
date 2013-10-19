@@ -155,7 +155,7 @@ function mcapi_views_data_alter(&$data) {
     )
   );
 
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   if (count($currencies) > 1) {
     //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
     $data['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';

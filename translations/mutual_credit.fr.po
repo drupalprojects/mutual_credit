@@ -8,16 +8,9 @@ msgstr ""
 "Language: fr\n"
 
 #. <br> a été supprimé de la traduction car le module localization, aux derniers essais, ne reconnait pas la balise et n'importe pas la chaîne
-msgid "On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth"
-msgstr "Le @recorded !payer <strong>a donné à</strong> !payee la somme de !worth"
+msgid "On @recorded !payer paid !payee the sum of !worth"
+msgstr "Le @recorded !payer a donné à !payee la somme de !worth"
 
-#: transaction.tpl.php:53
-msgid "On @recorded, !payer gave !payee !worth"
-msgstr "Le @recorded, !payer a donné à !payee !worth"
-
-#: transaction.tpl.php:56
-msgid "On @recorded, !payer will give !payee !worth"
-msgstr "Le @recorded, !payer donnera à !payee !worth"
 
 #: certificate.tpl.php:58 extras/intertrading/certificate--remote.tpl.php:70
 msgid "Dependent transactions"

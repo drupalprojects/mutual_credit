@@ -20,7 +20,7 @@ function mcapi_forms_mcapiforms_default() {
 }
 
 function mcapiform_default_1stparty() {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $mcapiform = new stdClass;
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default mcapi_form disabled initially */
   $mcapiform->api_version = 3;
@@ -70,7 +70,7 @@ Direction: [mcapiform:direction]
 }
 
 function mcapiform_default_3rdparty() {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $mcapiform = new stdClass;
   $mcapiform->disabled = FALSE; /* Edit this to true to make a default form disabled initially */
   $mcapiform->api_version = 3;

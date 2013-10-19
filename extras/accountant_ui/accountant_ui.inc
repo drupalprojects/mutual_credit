@@ -69,7 +69,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
     $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()));
     //we have to preview these separately to see them all
     foreach ($form_state['confirmed'] as $transaction) {
-      $form['preview'][] = transaction_view(array($transaction), $sentence);
+      $form['preview'][] = transaction_view($transaction, $sentence);
     }
   }
   $form['buttons'] = array(
@@ -121,7 +121,7 @@ function mcapi_mass_pay_submit($form, &$form_state) {
     global $language;
     $xids = array_keys(transaction_filter(array('serial' => $serial)));
     //TODO batch this
-    foreach (transaction_load_multiple($xids) as $transaction) {
+    foreach (entity_load('transaction', $xids) as $transaction) {
       $params['transaction'] = $transaction;
       $account = user_load($transaction->$mailto);
       drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);

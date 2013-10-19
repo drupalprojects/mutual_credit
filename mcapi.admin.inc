@@ -30,7 +30,9 @@ function _mcapi_entity_info() {
         'custom settings' => FALSE,
       ),
     ),
-    'load hook' => 'mcapi_xaction_load',//this isn't used but must avoid conflict with commerce module which has transaction_load
+    //this isn't implemented but must be declared here to avoid conflict with commerce module
+    //which has a function transaction_load
+    'load hook' => 'mcapi_xaction_load',
     //entity API properties
     //generally we want the entity controller only to contain the read/write functions
     //so it is easy to replace
@@ -72,8 +74,8 @@ function _mcapi_entity_info() {
 
 function _mcapi_menu() {
   $items['admin/accounting'] = array(
-    'title' => t('Accounting'),
-    'description' => t("Manage all aspects of your community's money system"),
+    'title' => "Accounting",
+    'description' => "Manage all aspects of your community's money system",
     'page callback' => 'mcapi_accounting',
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.admin.inc',
@@ -84,8 +86,8 @@ function _mcapi_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
   $items['transact/log'] = array(
-    'title' => t('Record transaction'),
-    'description' => t('Log a transaction in the database'),
+    'title' => "Record transaction",
+    'description' => "Log a transaction in the database",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('transaction_default_form'),
     //we use this permission but it's possible to create a paradox since each currency has its own permission
@@ -95,7 +97,7 @@ function _mcapi_menu() {
     'file path' => drupal_get_path('module', 'mcapi')
   );
   $items['admin/accounting/misc'] = array(
-    'title' => t('Misc settings'),
+    'title' => "Misc settings",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_misc_options_form'),
     'access arguments' => array('manage all transactions'),
@@ -103,25 +105,26 @@ function _mcapi_menu() {
     'weight' => 10
   );
   $items['admin/accounting/currencies/%currency/edit'] = array(
-    'title' => t('Configure currency'),
+    'title' => "Configure currency",
     'page callback' => 'drupal_get_form',
     'page arguments' => array('currency_form', 3),
     'access callback' => 'currency_edit_access',
     'access arguments' => array(3),
     'type' => MENU_CALLBACK,
-    'file' => 'currencies.inc'
   );
-  $transaction_argument_position = 1;
+  $operations = transaction_operations(FALSE, FALSE);
+  //this item is for a the special transaction operation, 'view'
   $items['transaction/%transaction'] = array(
-    'title' => t('Transaction certificate'),
     'title callback' => 'entity_label',
-    'title arguments' => array('transaction', $transaction_argument_position),
+    'title arguments' => array('transaction', 1),
     // The page callback also invokes drupal_set_title() in case
     // the menu router's title is overridden by a menu link.
     'page callback' => 'transaction_view',
-    'page arguments' => array($transaction_argument_position, 'certificate'),
+    'page arguments' => array(1, 'certificate'),
+    //this is quicker than using entity_access
+    //note that this function includes mcapi.inc itself
     'access callback' => 'entity_access',
-    'access arguments' => array('view', 'transaction', $transaction_argument_position),
+    'access arguments' => array('mcapi_view', 'transaction', 1),
     'type' => MENU_CALLBACK,
   );
   $items['transaction/%transaction/view'] = array(
@@ -129,22 +132,32 @@ function _mcapi_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
 
-  foreach (transaction_operations(NULL, FALSE, FALSE) as $op => $info) {
-    $items["transaction/%transaction/$op"] = array(
-      'title' => $info['imperative'],
-      'description' => $info['description'],
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('transaction_operation_form', $op, $transaction_argument_position),
-      'access callback' => 'entity_access',
-      'access arguments' => array($op, 'transaction', $transaction_argument_position),
-      'weight' => 1,
-      'type' => MENU_LOCAL_ACTION,
+  //these are all the other exposed operations
+  $items["transaction/%transaction/nojs/%"] = array(
+    'page callback' => 'mcapi_get_op_form',
+    'page arguments' => array(3, 1),
+    'access callback' => 'entity_access',
+    'access arguments' => array(3, 'transaction', 1),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_deliver_html_page',
+    'file' => 'mcapi.inc'
+  );
+  $items["transaction/%transaction/ajax/%"] = array(
+    'page callback' => 'mcapi_get_op_form',
+    'page arguments' => array(3, 1, 2),
+    'access callback' => 'entity_access',
+    'access arguments' => array(3, 'transaction', 1),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'ajax_deliver',
+    'file' => 'mcapi.inc'
+  );
+  if (isset($info['filepath'])) {
+    $items["transaction/%transaction/$ajax/%"] += array(
+      'file' => $info['filepath'],
+      'file path' => drupal_get_path('module', $info['module'])
     );
-    if (isset($info['file_extension'])) {
-      $items["transaction/%transaction/$op"]['file'] = $info['module'] .'.'. $info['file_extension'];
-      $items["transaction/%transaction/$op"]['file path'] = drupal_get_path('module', $info['module']);
-    }
   }
+
   if ($aid = db_query("SELECT aid FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchfield()) {
     $items['admin/accounting/mail_action'] = array(
       'title' => 'Completion mails',
@@ -241,7 +254,7 @@ function mcapi_misc_options_form($form_state) {
       MCAPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
       MCAPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
     ),
-    '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE),
+    '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE),
     '#disabled' => !variable_get('change_undo_mode', FALSE)
   );
   $form['mcapi_show_balances'] = array(
@@ -299,9 +312,9 @@ function mcapi_currency_form(&$form, &$form_state){
   $form['acknowledgement'] = array(
     '#type' => 'container',
     '#children' => implode("\n<br /><br />\n", array(
-      t("Acknowledgement currencies are abundant - they are issued whenever valued is created; they can be used as a medium of exchange but there is no guarantee of redemption."),
+      t('Acknowledgement currencies are abundant - they are issued whenever valued is created; they can be used as a medium of exchange but there is no guarantee of redemption.'),
       t("These are sometimes called 'social' currencies, because by encouraging and recognising volunteer service, they bind the community together."),
-      t("This is the choice for all timebanking systems and most LETS.")
+      t('This is the choice for all timebanking systems and most LETS.')
     )),
     '#attributes' => array('style' => 'float:right;width:350px;'),
     '#weight' => 2,
@@ -402,7 +415,7 @@ function mcapi_currency_form(&$form, &$form_state){
     '#type' => 'select',
     '#options' => array(
       CURRENCY_DIVISION_MODE_NONE => t('Integer values only'),
-      CURRENCY_DIVISION_MODE_CENTS_INLINE => t("Cents in same field"),
+      CURRENCY_DIVISION_MODE_CENTS_INLINE => t('Cents in same field'),
       CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
       CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions')
     ),
@@ -480,8 +493,6 @@ function mcapi_currency_form(&$form, &$form_state){
     '#weight' => -1
   );
   $weight = 0;
-
-
   foreach (module_implements('permission') as $module) {
     $function = $module .'_permission';
     foreach ($function() as $perm => $info) {
@@ -518,16 +529,31 @@ function mcapi_currency_form(&$form, &$form_state){
     '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
     '#weight' => $weight++,
   );
+  $i = 0;
+  $access_callbacks = module_invoke_all('transaction_access_callbacks');
+  //These two fieldsets should REALLY use a grid of checkboxes, like on admin/people/permissions,
+  //but I couldn't work out how to do it, and it might require an hook_update to convert the saved $currency objects
+  $form['access_operations'] = array(
+    '#title' => t('Transaction operations'),
+    '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
+    '#type' => 'fieldset',
+    '#group' => 'additional_settings',
+    '#weight' => 2
+  );
+  foreach (transaction_operations(TRUE, FALSE) as $callback => $op_info) {
+    if ($callback == 'mcapi_view') continue;
+    if ($op_info['access form']) {
+      $form['access_operations'][$callback] = $op_info['access form']($op_info, $currency);
+    }
+  }
 
-  static $i = 0;
-  static $j = 0;
   $form['view_transaction_states'] = array(
     '#title' => t('Privacy'),
     '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
     '#type' => 'fieldset',
     '#group' => 'additional_settings',
+    '#weight' => 5
   );
-  $access_callbacks = module_invoke_all('transaction_access_callbacks');
   foreach (mcapi_get_states('#full') as $constant => $state) {
     $states = isset($currency->view) ? $currency->view : array();
     $form['view_transaction_states'][$constant] = array(
@@ -537,29 +563,34 @@ function mcapi_currency_form(&$form, &$form_state){
       '#options' => $access_callbacks,
       '#default_value' => property_exists($currency, 'view_transaction_states') && isset($currency->view_transaction_states[$constant]) ?
          $currency->view_transaction_states[$constant] : array(current($access_callbacks)),
-      '#weight' => $j++,
+      '#weight' => $i++,
     );
   }
-  $form['access_operations'] = array(
-    '#title' => t('Transaction operations'),
-    '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
-    '#type' => 'fieldset',
-    '#group' => 'additional_settings',
-  );
-  foreach (transaction_operations() as $callback => $info) {
-    $form['access_operations'][$callback] = array(
-      '#title' => $info['description'],
-      '#type' => 'checkboxes',
-      '#options' => $access_callbacks,
-      '#default_value' => property_exists($currency, 'access_operations') && isset($currency->access_operations[$callback]) ?
-        $currency->access_operations[$callback] : array(current($access_callbacks)),
-      '#weight' => $j++,
-    );
-  }
+
 
   if (property_exists($currency, 'currcode')) {
     $form['buttons']['submit']['#value'] = t('Update');
   }
+}
+//default form for configuring access to operations, per currency
+function operations_config_default_access($op_info, $currency) {
+  static $access_callbacks;
+  if (!$access_callbacks) {
+    $access_callbacks = module_invoke_all('transaction_access_callbacks');
+  }
+  $element = array(
+    '#title' => $op_info['title'],
+    '#description' => array_key_exists('description', $op_info) ? $op_info['description'] : '',
+    '#type' => 'checkboxes',
+    '#options' => $access_callbacks,
+    '#default_value' => array(),//this will be overwritten
+    '#weight' => @$op_info['weight'],
+  );
+  $callback = $op_info['op'];
+  if (property_exists($currency, 'access_operations') && array_key_exists($callback, $currency->access_operations)) {
+    $element['#default_value'] = $currency->access_operations[$callback];
+  }
+  return $element;
 }
 
 //currency form validate callback
@@ -678,6 +709,10 @@ function mcapi_currency_form_validate($form, &$form_state) {
  */
 function mcapi_currency_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
+  //reduce the size of this object which is always in memory
+  foreach ($form_state['values']['access_operations'] as $key => $permissions) {
+    $form_state['values']['access_operations'][$key] = array_filter($permissions);
+  }
   //things got a little out of kilter here - this shouldn't be necessary
   $form_state['item']->currcode = $form_state['values']['info']['currcode'];
   $form_state['item']->data = (object)$form_state['values'];
@@ -735,7 +770,7 @@ function mcapi_mixed_transactions_submit($form, &$form_state) {
   $val = &$form_state['values']['mcapi_mixed_transactions'];
   variable_set('mcapi_mixed_transactions', $val);
   $field = field_read_field('worth');
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $field['cardinality'] = $val ? count($currencies) : 1;
   field_update_field($field);
 }
@@ -840,7 +875,7 @@ function mcapi_transaction_entity_uid_form($context) {
     '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
   );
 
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $defaults = array();
   foreach (@$context['worth_items']['worths'] as $item) {
     $defaults[$item['currcode']] = $item['quantity'];
@@ -849,7 +884,7 @@ function mcapi_transaction_entity_uid_form($context) {
     '#title' => t('Worth'),
     '#type' => 'fieldset',
     '#name' => 'worth_items',//this helps in the fieldset validation
-    '#description' => t('What is the fixed value of this transaction?') .' '. t("this value will be overwritten if the passed entity has the 'worth' field"),
+    '#description' => t('What is the fixed value of this transaction?') .' '. t("This value will be overwritten if the passed entity has the 'worth' field"),
     '#tree' => TRUE,
     'worths' => array(
       //'#title' => t('Worths'),
@@ -1042,6 +1077,98 @@ function _mcapi_get_text_instances() {
   return $options;
 }
 
+//caches and returns and ALL the transaction operations
+function _transaction_operations() {
+  $operations = array();
+  foreach (module_implements('transaction_operations') as $module) {
+    $ops = array();
+    $function = $module .'_transaction_operations';
+    $ops = $function();
+    foreach ($ops as $op => &$info) {
+      $info += array(
+        'access form' => 'operations_config_default_access',
+        'op' => $op,
+        'module' => $module
+      );
+      mcapi_operation_include($info);
+      $props = array('submit callback', 'access callback', 'form callback');
+      foreach ($props as $propname) {
+        if (array_key_exists($propname, $info) && !is_bool($info[$propname]) && !function_exists($info[$propname])) {
+          throw new Exception("Missing function or failed include in operation $op: '$propname' ".print_r($info, 1));
+        }
+      }
+    }
+    $operations += $ops;
+  }
+  uasort($operations, 'drupal_sort_weight');
+  //now order the ops by weight
+  drupal_alter('transaction_operations', $operations);
+  cache_set('transaction_operations', $operations, 'cache', CACHE_PERMANENT);
+  return $operations;
+}
+
+
+/*
+ * implements hook_transaction_operations().
+ * returns an array of operation infos keyed by the operation key
+ * see transaction.api.php for more info
+ *
+ * Each op will have a MENU_LOCAL_ACTION at transaction/%serial/$op
+ * note that filepath mcapi.inc is not needed because that file is included automatically
+ */
+function mcapi_transaction_operations() {
+  $operations['mcapi_view'] = array(
+    'title' => "View",
+    'access callback' => 'mcapi_view_access',
+    'weight' => 0
+  );
+  t("View");
+  $operations['mcapi_register'] = array(
+    'title' => "Register (internal use only)",
+    'description' => "A new transaction was registered",
+    'weight' => 1
+  );
+  t("Register (internal use only)");
+  t("A new transaction was registered");
+  $operations['mcapi_update'] = array(
+    'title' => "Update (internal use only)",
+    'description' => "A transaction was changed",
+    'weight' => 2
+  );
+  t("Update (internal use only)");
+  t("A transaction was changed");
+
+  $operations['mcapi_undo'] = array(
+    'title' => "Undo",
+    'description' => "Undo a finished transaction, and its dependents",
+    'sure' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE ?
+      "Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)" :
+      "Are you sure you want to undo? Only the site administrator will be able to restore this transaction.",
+    'access callback' => 'transaction_op_undo_access',
+    'submit callback' => 'transaction_op_undo',
+    'form callback' => TRUE,
+    'redirect' => 'user',
+    'weight' => 10,
+  );
+  return $operations;
+  t("Undo");
+  t("Undo a finished transaction, and its dependents");
+  t("Are you sure you want to undo? Only the site administrator will be able to restore this transaction.");
+  t("Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)");
+}
+
+/*
+ * user cancel method callback
+ * see mcapi_form_user_cancel_confirm_form_alter
+ */
+function mcapi_user_cancel($edit, $account, $method) {
+  if ($method == 'user_cancel_mcapi') {
+    foreach(node_load_multiple(NULL, array('uid' => $account->uid)) as $node) {
+      node_delete($node);
+    }
+  }
+}
+
 function _transaction_type_selector($default, $multiple = TRUE, $exclude = NULL) {
   if (!is_array($exclude)) {
     $exclude = array('child');
@@ -1055,15 +1182,4 @@ function _transaction_type_selector($default, $multiple = TRUE, $exclude = NULL)
     '#required' => TRUE,
     '#element_validate' => array('mcapi_validate_ttype')
   );
-}
-
-
-//user cancel method callback
-//see mcapi_form_user_cancel_confirm_form_alter
-function mcapi_user_cancel($edit, $account, $method) {
-  if ($method == 'user_cancel_mcapi') {
-    foreach(node_load_multiple(NULL, array('uid' => $account->uid)) as $node) {
-      node_delete($node);
-    }
-  }
 }

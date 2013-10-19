@@ -9,14 +9,14 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
   //this is waiting for a suitable hook function so that modules can declare their own exchange types.
   function get_value_options() {
     module_load_include('inc', 'mcapi');
-    $currencies = &drupal_static('currencies');
+    $currencies = currencies_load();
     $field = currency_picker_element(array_keys($currencies));
     $this->value_options = $field['#options'];
   }
 
   function value_form(&$form, &$form_state) {
     module_load_include('inc', 'mcapi');
-    $currencies = &drupal_static('currencies');
+    $currencies = currencies_load();
     $form['value'] = currency_picker_element(array_keys($currencies), $this->value, TRUE);
     if (!empty($this->options['exposed'])) {
       $identifier = $this->options['expose']['identifier'];

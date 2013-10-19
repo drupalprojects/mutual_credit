@@ -154,7 +154,7 @@ function drush_devel_generate_transactions($num_transactions = 10) {
   drush_print('Available users are: '.implode($transact_uids));
   $states = array_keys(mcapi_get_states());
   $types = mcapi_get_types();
-  $currencies = drupal_static('currencies');
+  $currencies = currencies_load();
   unset($types['remote'], $types['mass'], $types['dependent']);
 
   for ($i = 0; $i < $num_transactions; $i++) {
@@ -171,7 +171,8 @@ function drush_devel_generate_transactions($num_transactions = 10) {
       'description' => 'randomly generated transaction'
     );
     $cluster = array(entity_create('transaction', $props));
-    transaction_cluster_write($cluster, TRUE);
-    drush_print(strip_tags(drupal_render(transaction_view($cluster, variable_get('mcapi_sentence', mcapi_sentence_default())))));
+    $serial = transaction_cluster_write($cluster, TRUE);
+    $transaction = transaction_load($serial);
+    drush_print(strip_tags(drupal_render(transaction_view($transaction, variable_get('mcapi_sentence', mcapi_sentence_default())))));
   }
 }

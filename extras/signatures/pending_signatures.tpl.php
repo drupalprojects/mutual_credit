@@ -11,7 +11,7 @@
  */
 //inject a bit of css to change the background picture of the transaction certificate
 $background =  "background-repeat: no-repeat; background-position: center; background-size: 32px";
-
+$rows = array();
 foreach ($transaction->pending_signatures as $uid => $status) {
   $path = url(drupal_get_path('module', 'mcapi_signatures'));
   if ($status == 1)  {

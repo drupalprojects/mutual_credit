@@ -43,29 +43,6 @@ function intertrading_menu() {
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => 1
     );
-    /*
-    $items['transact/remote/incoming'] = array(
-      'title' => 'Remote claim',
-      'description' => 'Request credit from another exchange',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('remote_incoming_form', $transaction),
-      'access arguments' => array('manage all transactions'),
-      'type' => MENU_LOCAL_TASK,
-      'file' => 'intertrading.admin.inc',
-      'weight' => 2
-    );
-    $items['transact/remote/outgoing'] = array(
-      'title' => 'Remote payment',
-      'description' => 'Credit someone in another exchange',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('remote_outgoing_form', $transaction),
-      'access arguments' => array('manage all transactions'),
-      'type' => MENU_LOCAL_TASK,
-      'file' => 'intertrading.admin.inc',
-      'weight' => 3
-    );
-     *
-     */
     $items['intertrade/replicate'] = array(
       'title' => 'Replicate transaction history to server',
       'page callback' => 'report_intertrading_history',
@@ -395,63 +372,6 @@ function intertrading_form_remote_1stpary_form_alter(&$form, &$form_state) {
   }
 }
 
-/*
- * implements  hook_form_remote_incoming_form_alter
- * heavily modifies the base transaction form
- */
-/*
-function intertrading_form_remote_incoming_form_alter(&$form, &$form_state, $form_id) {
-  $form['direction']['#value'] = $form_id == 'remote_incoming_form' ? 'incoming' : 'outgoing';
-  if (empty($form_state['step']) || $form_state['step'] == 1)  {
-    //page title is blank coz its too much along with the tabs and otherwise 'Home' appears
-    drupal_set_title('');
-    $currcode = variable_get('intertrading_currcode', NULL);
-    intertrading_form_prepare($form, $form_state);
-    $form['creator']['#type'] = 'hidden';
-
-    if ($form['direction']['#value'] == 'incoming') {
-      $form['dest_user']['#title'] = t('Remote payer email address');
-      $form['payee']['#value'] = $GLOBALS['user']->uid;
-      $form['payer']['#value'] = variable_get('intertrading_uid', 0);
-    }
-    else {
-      $form['dest_user']['#title'] =  t('Remote payee email address');
-      $form['payer']['#value'] = $GLOBALS['user']->uid;
-      $form['payee']['#value'] = variable_get('intertrading_uid', 0);
-    }
-    $form['payer']['#type'] = 'hidden';
-    $form['payee']['#type'] = 'hidden';
-    //this replaces the usual transaction form validation
-    $form['#validate'] = array('intertrading_transaction_form_validate');
-    $form['#submit'] = array('intertrading_transaction_form_submit');
-  }
-  else {//step 2
-    drupal_set_title(t('Are you sure?'));
-    //clear the transaction fields because the value is in form_state['storage']
-    foreach(element_children($form) as $fieldname) {
-      if (in_array($fieldname, array('actions', 'form_id', 'form_build_id', 'form_token'))) continue;
-      unset($form[$fieldname]);
-    }
-    $form['preview'] = array(
-      '#type' => 'markup',
-      '#markup' => drupal_render(transaction_view($form_state['transactions'], 'certificate'), 'token')
-    );
-    $form['buttons']['submit']['#value'] = t('Confirm');
-  }
-}
- *
- */
-/*
- * form function for menu callback
- * provide a basic form for intertrading
- */
-/*
-function intertrading_form_remote_outgoing_form_alter(&$form, &$form_state, $form_id) {
-  return intertrading_form_remote_incoming_form_alter($form, $form_state, $form_id);
-}
- *
- */
-
 
 function intertrading_form_prepare(&$form, &$form_state) {
   $form_state['step'] = 1;
@@ -712,7 +632,7 @@ function report_intertrading_history() {
   $output = array();
 
   $xids = array_keys(transaction_filter(array('involving' => $intertrading_uid, 'currcode' => $intertrading_currcode, 'state' => TRANSACTION_STATE_FINISHED)));
-  foreach (transaction_load_multiple($xids) as $transaction) {
+  foreach (entity_load('transaction', $xids) as $transaction) {
     $outgoing = FALSE;
     if ($transaction->payee == $intertrading_uid) $outgoing = TRUE;
 

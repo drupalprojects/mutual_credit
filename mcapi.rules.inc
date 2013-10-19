@@ -39,7 +39,7 @@ class TransactionRulesController extends EntityDefaultRulesController{
       if ($trigger_callback == 'transaction_cluster_alter') continue;
 
       switch($trigger_callback) {
-        case 'transaction_state':
+        case 'transaction_update':
           //state is the same as the other events except it expects a second argument
           $variables = array(
             'transaction' => array(

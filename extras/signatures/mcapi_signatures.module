@@ -71,11 +71,35 @@ function mcapi_signatures_entity_load($entities, $type) {
  * Implements hook_entity_delete()
  * remove the signatories from the database
  */
-function mcapi_signatures_entity_delete($transaction, $type) {
+function mcapi_signatures_entity_delete($transaction, $type) {debug($transaction, $type);
   if ($type == 'transaction') {
     db_delete("mcapi_signatures")
     ->condition('serial', $transaction->serial)
     ->execute();
+  }
+}
+
+/*
+ * implements mcapi hook_mcapi_create
+ * saves the new signatures
+ */
+function mcapi_signatures_mcapi_create($transaction) {
+  module_load_include('inc', 'mcapi_signatures');
+  mcapi_sig_transaction_save($transaction);
+}
+
+/**
+ * implement hook_transaction_update
+ * ensures that signatures for undone transactions are not left pending.
+ */
+ //could equally use hook_undo pending if it exists....
+function mcapi_signatures_mcapi_update($transaction, $old_state = NULL) {
+  //check the different delete nodes and respond appropriately on the mcapi_transactions table
+  if (isset($old_state) && $old_state == TRANSACTION_STATE_PENDING) {
+    if ($transaction->state == TRANSACTION_STATE_UNDONE) {
+      db_update('mcapi_signatures')->fields('pending', 0)->condition('serial', $transaction->serial)->execute();
+      debug('signed deleted pending transaction');
+    }
   }
 }
 
@@ -233,17 +257,6 @@ function mcapi_signatures_cron() {
 }
 
 
-/*
- * implements mcapi hook_transaction_state
- * saves the signatures and sends any notifications needed
- * The incoming $transaction clusters have already been saved and reloade,
- * all have the same state and serial number
- * so we process one a time children which aren't needed here
- */
-function mcapi_signatures_transaction_state($transaction, $new_state) {
-  module_load_include('inc', 'mcapi_signatures');
-  _mcapi_signatures_transaction_state($transaction, $new_state);
-}
 
 /*
  * implements hook_theme
@@ -273,15 +286,6 @@ function mcapi_signatures_init() {
   drupal_add_css(drupal_get_path('module', 'mcapi_signatures').'/signatures.css');
 }
 
-/*
- * Implements views hook_views_api
- */
-function mcapi_signatures_views_api() {
-  return array(
-    'api' => 3,
-    'path' => drupal_get_path('module', 'mcapi_signatures') . '/views',
-  );
-}
 
 /*
  * implements theming hook_process_transaction
@@ -378,3 +382,14 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
     )
   );
 }
+
+/*
+ * Implements views hook_views_api
+ */
+function mcapi_signatures_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi_signatures') . '/views',
+  );
+}
+

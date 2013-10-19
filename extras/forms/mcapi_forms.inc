@@ -129,7 +129,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     }
     //put the back button only for last step if there are values from step 1
     if (!empty($form_state['values'])) {//coming from step 1
-      $transactions = &$form_state['transactions'];
+      $transactions = &$form_state['transactions'];//these have no xid keys
       mcapi_hide_tabs();
       $form['buttons']['back'] = array(
         '#type' => 'submit',

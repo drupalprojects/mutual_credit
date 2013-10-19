@@ -19,14 +19,20 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
     $options = parent::option_definition();
     $options['currcode'] = array('default' => array());
     $options['total'] = array('default' => 'balance');
+    $options['strip'] = array('default' => FALSE);
     return $options;
   }
 
   function options_form(&$form, &$form_state) {
-    $currencies = &drupal_static('currencies');
+    $currencies = currencies_load();
     module_load_include('inc', 'mcapi');
     $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode'], TRUE);
-
+    $form['strip'] = array(
+      '#title' => t('Strip formatting'),
+      '#description' => t('Just show the unformatted quantity (best with only one currency)'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->options['strip']
+    );
     $form['total'] = array(
       '#title' => t('Aggregate'),
       '#description' => t('How do you want to summarise the the transaction totals?'),
@@ -47,15 +53,14 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
     $uid = &$values->uid;
     //the settings imply there is only one currcode, but actually many can be rendered
     $currcodes = empty($this->options['currcode']) ? array_keys(currencies_load(user_load($uid))): (array)$this->options['currcode'];
-    $key = $this->options['total'];
     $elements = array();
     foreach ($currcodes as $currcode) {
       if (empty($this->fetched[$uid][$currcode])) {
         $this->fetched[$uid][$currcode] = transaction_totals($uid, $currcode);
       }
-      $quant = $this->fetched[$uid][$currcode]->$key;
-      if ($key == 'count') {
-        $elements[$currcode] = array('#type' => 'markup', '#markup' => $quant);
+      $quant = $this->fetched[$uid][$currcode]->{$this->options['total']};
+      if ($this->options['strip']) {
+        $elements[$currcode][] = array('#type' => 'markup', '#markup' => $quant);
       }
       else {
         $elements[$currcode] = array(
@@ -65,6 +70,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
         );
       }
     }
+      drupal_set_message($elements[$currcode]['#markup']);
     return $elements;
   }
 }

@@ -12,7 +12,7 @@ function statement() {
 
 //this could be made prettier
 function theme_statement($variables) {
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $data = &$variables['data'];
   unset($data['api'], $data['divisions'], $data['mail'], $data['name'], $data['logo'], $data['first_trade']);
   $currcode = variable_get('intertrading_currcode', key($currencies));
@@ -75,7 +75,7 @@ function intertrading_settings() {
     '#required' => TRUE
   );
 
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $form['intertrading_currcode'] =  currency_picker_element(array_keys($currencies), variable_get('intertrading_currcode', 0));
   //strictly speaking the list of available users depends on the currency having been set already
   //get all the users who haven't traded yet

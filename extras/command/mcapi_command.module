@@ -68,7 +68,7 @@ function mcapi_command_settings_form() {
     '#default_value' => variable_get('mcapi_command_strings', ''),
   );
 
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $form['mcapi_commands_currcode'] =  currency_picker_element(array_keys($currencies), variable_get('mcapi_commands_currcode', 0));
   $form['mcapi_commands_currcode']['#description'] = t('Currently the commands will only work with one currency, in order to keep the user interface simple.');
 

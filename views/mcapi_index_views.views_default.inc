@@ -3,7 +3,7 @@
 
 function mcapi_index_views_views_default_views() {
   currencies_load(); //because this seems to run before mcapi_init()
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   $multicurrencies = count($currencies) > 1;
 
   $view = new view();

@@ -174,7 +174,7 @@ function mcapi_index_views_views_data() {
     ),
   );
   currencies_load();//because mcapi_init hasn't run yet
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   if (count($currencies) > 1) {
     $data['mcapi_index']['currcode'] = array(
       'title' => t('Currency'),

@@ -80,7 +80,7 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #: certificate.tpl.php:39
-msgid "On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth"
+msgid "On @recorded !payer paid !payee the sum of !worth"
 msgstr ""
 
 #: certificate.tpl.php:52

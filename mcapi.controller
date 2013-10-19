@@ -105,7 +105,7 @@ class mcapiEntityController extends EntityAPIController {
       unset($values['worths']);
     }
     elseif(isset($values['quantity']) && isset($values['quantity'])) {
-      $currencies = &drupal_static('currencies');
+      $currencies = currencies_load();
       $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
       $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
       unset($values['quantity'], $values['currcode']);
@@ -113,7 +113,7 @@ class mcapiEntityController extends EntityAPIController {
     else {//if worths is not indicated, create a value for each currency the user is permitted to use
       //check that the creator is actually permitted to use this currency
       if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
-      else $currencies = drupal_static('currencies');
+      else $currencies = currencies_load();
       foreach (array_keys($currencies) as $currcode) {
         $transaction->worth[LANGUAGE_NONE][] = array(
           'quantity' => 0,
@@ -241,7 +241,6 @@ class mcapiEntityController extends EntityAPIController {
    * This does not count as updating it, which is subject to different permissions
    */
   public function state(array $serials, $new_state) {
-    if (empty($serials)) return;
     db_update('mcapi_transactions')
       ->fields(array('state' => $new_state))
       ->condition('serial', $serials)
@@ -259,9 +258,8 @@ class mcapiEntityController extends EntityAPIController {
     //when we join the tables like this, half of all values will be NULL, and NULL values do not add
     //so these NULL values need to be selected as 0 before adding
     //there may well be a more elegant way
-
     $query = "SELECT
-      COUNT(w1.worth_quantity) as count,
+      COUNT(w1.worth_quantity) + COUNT(w2.worth_quantity) as count,
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)), 0) as gross_in,
       COALESCE(SUM(COALESCE(w1.worth_quantity, 0)), 0) as gross_out,
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0)), 0) as balance,
@@ -285,8 +283,10 @@ class mcapiEntityController extends EntityAPIController {
     //db_set_active(variable_get('mcapi_db_read', 'default'));
     $query = db_select('mcapi_transactions', 'x')//should we use db_query_range?
       ->fields('x', array('xid', 'serial'))
-      ->orderby('created', 'DESC')
-      ->range($offset, $limit);
+      ->orderby('created', 'DESC');
+    if ($limit) {
+      $query->range($offset, $limit);
+    }
     //db_set_active();
     if (isset($serial)) {
       $query->condition('serial', (array)$serial);

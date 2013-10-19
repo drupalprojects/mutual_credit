@@ -169,7 +169,7 @@ function _edit_mcapi_form(&$form, &$form_state) {
     }
   }
   $form['worth']['preset']['#preset'] = TRUE;
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   if (count($currencies) > 1) {
     $help = array(
       t('Use zero to include a currency as an option on the form.'),

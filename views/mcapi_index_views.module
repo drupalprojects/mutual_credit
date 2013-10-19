@@ -31,7 +31,7 @@ function views_plugin_access_user_arg_check() {
 function get_balance_history($account, $currcodes = array(), $mode = 'diagonal', $since = NULL) {
   db_query("SET @csum := 0");
   if (empty($currcodes)) {
-    $currencies = &drupal_static('currencies');
+    $currencies = currencies_load();
     $currcodes = array_keys($currencies);
   }
     //check access. Either it has to be the current user, or reduce the currcodes down

@@ -228,7 +228,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
  * save the currency limits into the $account object
  */
 function mcapi_limits_user_presave(&$edit, $account, $category) {
-  if (property_exists($account, 'is_new') || empty($account->uid)) return;
+  if ((property_exists($account, 'is_new') && $account->is_new) || empty($account->uid)) return;
   foreach(currencies_load($account) as $currcode => $currency) {
     if (isset($currency->limits['personal'])) {
       if (isset($edit['min-'.$currcode])) {
@@ -284,7 +284,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
  */
 function mcapi_limits_block_info() {
   $blocks = array();
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   //only show these blocks if not all currencies are of acknowledgement.
   if (currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)) {
     //the block names are the same as the theme callbacks

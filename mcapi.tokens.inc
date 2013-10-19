@@ -39,7 +39,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);
         break;
       case 'certificate':
-        $replacements[$original] = drupal_render(transaction_view(array($transaction), 'certificate'));
+        $replacements[$original] = drupal_render(transaction_view($transaction, 'certificate'));
         break;
       case 'payer_diff':
       case 'payee_diff':
@@ -55,12 +55,11 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'links':
         $ops = array();
+        //the mcapi_forms module renders a transaction before it is saved with a serial numbmer
         if (property_exists($transaction, 'serial')) {
-          foreach (transaction_get_links($transaction) as $link) {
-            $ops[] = drupal_render($link);
-          }
-          $replacements[$original] = implode(' ', $ops);
+          $ops = transaction_get_links($transaction, FALSE, TRUE);
         }
+        $replacements[$original] = drupal_render($ops);
         break;
       case 'url':
         $replacements[$original] = url('transaction/'.$transaction->serial, array('absolute' => TRUE));
