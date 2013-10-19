@@ -1,4 +1,4 @@
-; $Id:
+
 name = Community Accounting API
 description = Defines transaction entity with a swoppable controller, a default currency, 'worth' field, and the forms, views theme callbacks for basic manipulation
 package = Community Accounting

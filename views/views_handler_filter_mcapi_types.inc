@@ -1,5 +1,5 @@
 <?php
-// $Id: views_handler_filter_mcapi_types.inc,
+
 /**
  * Filter handler for exchange types
  */

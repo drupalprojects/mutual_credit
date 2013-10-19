@@ -1,5 +1,5 @@
 <?php
-// $Id:
+
 
 /*
  * returns an array of min and max, if the keys are unset that means there is no limit.

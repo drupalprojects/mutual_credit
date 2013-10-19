@@ -1,5 +1,5 @@
 <?php
-//$Id:
+
 
 /*
  * implements hook_views_data_alter

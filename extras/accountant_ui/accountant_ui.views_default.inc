@@ -1,5 +1,5 @@
 <?php
-// $Id:
+
 
 function accountant_ui_views_default_views() {
   drupal_load('module', 'mcapi');

@@ -1,5 +1,5 @@
 <?php
-// $Id: certificate.tpl.php,v 1.1.2.3 2010/12/06 13:19:46 matslats Exp $
+
 /*
  * NOTE:
  *

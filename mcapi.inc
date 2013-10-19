@@ -1,5 +1,5 @@
 <?php
-// $Id: mcapi.inc,v 1.1.2.7 2010/12/22 19:30:29 matslats Exp $
+
 
 $controller_mod = variable_get('mcapi_controller', 'mcapi');
 require_once(drupal_get_path('module', $controller_mod) .'/'. $controller_mod).'.controller';

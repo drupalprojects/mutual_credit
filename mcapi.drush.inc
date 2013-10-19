@@ -1,5 +1,5 @@
 <?php
-// $Id:
+
 /**
  * Implementation of hook_drush_help().
  *

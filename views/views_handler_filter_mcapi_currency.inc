@@ -1,5 +1,5 @@
 <?php
-// $Id: views_handler_filter_mcapi_currency.inc,
+
 /**
  * Filter handler for currencies
  * is only available when more than one currency is enabled

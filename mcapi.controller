@@ -1,5 +1,5 @@
 <?php
-// $Id:
+
 
 if (class_exists('EntityAPIController')) {
 class mcapiEntityController extends EntityAPIController {

@@ -1,5 +1,5 @@
 <?php
-// $Id:
+
 
 define ('TRANSACTION_STATE_PENDING', -1);
 

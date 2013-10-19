@@ -2,7 +2,7 @@
 <script type="text/javascript">
   google.load('visualization', '1', {packages: ['corechart']});</script>
 <?php
-////$Id: balance_history.tpl.php,v 1.3 2010/12/08 11:43:18 matslats Exp $
+
 
 /*
  * Balance History Google Chart
