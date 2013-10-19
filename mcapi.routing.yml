@@ -13,3 +13,31 @@ mcapi.admin_misc:
     _title: Misc settings
   requirements:
     _permission: 'manage all transactions'
+
+mcapi.admin_currency_list:
+  path: '/admin/accounting/currencies'
+  defaults:
+    _entity_list: 'mcapi_currencies'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_currency_add:
+  path: '/admin/accounting/currencies/add'
+  defaults:
+    _entity_form: 'mcapi_currencies.add'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_currency_edit:
+  path: '/admin/accounting/currencies/{mcapi_currencies}'
+  defaults:
+    _entity_form: 'mcapi_currencies.edit'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_currency_delete:
+  path: '/admin/accounting/currencies/{mcapi_currencies}/delete'
+  defaults:
+    _entity_form: 'mcapi_currencies.delete'
+  requirements:
+    _permission: 'configure all currencies'

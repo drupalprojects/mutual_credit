@@ -1,0 +1,5 @@
+mcapi.admin_currency_add:
+  route_name: mcapi.admin_currency_add
+  title: 'Add currency'
+  appears_on:
+    - mcapi.admin_currency_list

@@ -1,0 +1,42 @@
+id: escro
+uuid: 1b93baa9-95b9-4f05-8900-b13ccc9657cc
+name: Euro
+issuance: exchange
+uid: 1
+reservoir: 1
+display:
+  divisions: '1'
+  delimiter: ':'
+  divisions_setting: ''
+  format: '€[quantity]'
+  zero: ''
+access:
+  membership: 'user_chooser_segment_perms:transact'
+  trader_data: 'user_chooser_segment_perms:transact'
+  system_data: 'user_chooser_segment_perms:transact'
+view_transaction_states:
+  1:
+    transaction_access_callback_perm_transact: transaction_access_callback_perm_transact
+    transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
+    transaction_access_callback_payee: 0
+    transaction_access_callback_payer: 0
+    transaction_access_callback_open: 0
+    transaction_access_callback_creator: 0
+  0:
+    transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
+    transaction_access_callback_perm_transact: 0
+    transaction_access_callback_payee: 0
+    transaction_access_callback_payer: 0
+    transaction_access_callback_open: 0
+    transaction_access_callback_creator: 0
+access_operations:
+  undo:
+    transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
+    transaction_access_callback_perm_transact: 0
+    transaction_access_callback_payee: 0
+    transaction_access_callback_payer: 0
+    transaction_access_callback_open: 0
+    transaction_access_callback_creator: 0
+weight: '-9'
+status: true
+langcode: en

@@ -14,3 +14,79 @@ mcapi.misc:
     sentence_template:
       type: text
       label: Transaction sentence template
+
+mcapi.currency.*:
+  type: mapping
+  label: 'Currency configuration'
+  mapping:
+    id:
+      type: string
+      label: 'Currency identifier'
+    uuid:
+      type: string
+      label: 'UUID'
+    name:
+      type: label
+      label: 'Currency Name'
+    insurance:
+      type: string
+      label: 'Insurance type'
+    uid:
+      type: integer
+      label: 'Declared by'
+    reservoir:
+      type: integer
+      label: 'Reservoir account'
+    display:
+      type: mapping
+      label: 'Appearence'
+      mapping:
+        divisions:
+          type: integer
+          label: 'Subdivisions'
+        delimiter:
+          type: string
+          label: 'Delimiter'
+        divisions_setting:
+          type: text
+          label: 'Allowed subdivisions'
+        format:
+          type: string
+          label: 'Display format'
+        zero:
+          type: string
+          label: 'Zero value display'
+    access:
+      type: mapping
+      label: 'Currency access'
+      mapping:
+        membership:
+          type: string
+          label: 'Use the currency'
+        trader_data:
+          type: string
+          label: 'View aggregated user transaction data'
+        system_data:
+          type: string
+          label: 'View aggregated system data'
+    view_transaction_states:
+      type: sequence
+      label: 'Privacy'
+      sequence:
+        - type: sequence
+          label: 'Transaction in state'
+          sequence:
+            - type: boolean
+              label: 'Enabled'
+    access_operations:
+      type: sequence
+      label: 'Transaction operations'
+      sequence:
+        - type: sequence
+          label: 'Operation'
+          sequence:
+            - type: boolean
+              label: 'Enabled'
+    weight:
+      type: integer
+      label: 'Weight'

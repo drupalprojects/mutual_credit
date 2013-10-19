@@ -1,0 +1,9 @@
+
+#edit-commodity, #edit-acknowledgement, #edit-exchange {
+  float:right;
+  width:350px;
+}
+
+#edit-display {
+  clear: both;
+}
