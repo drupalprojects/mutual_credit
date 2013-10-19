@@ -15,4 +15,3 @@ Then there are 2 interesting enhancements:
 However a more usable option is provided which assumes that the logged in user is initiating the transaction, so the unknown factors are then who is the other participant and which direction is the trade in. Some use-cases only allow trade in one direction and it's on profile pages a block can infer the other user from the url, which means the transaction form can be mostly pre-filled.
 
 2) The 3rd party transactions have an option to allow multiple payers OR multiple payees.
-

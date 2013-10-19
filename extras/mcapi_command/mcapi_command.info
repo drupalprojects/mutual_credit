@@ -1,7 +1,5 @@
-
 name = Transaction commands
 description = Users log transactions using string commands from sources such as SMS Framework or Twitter modules
 package = Community Accounting
 core = "7.x"
 dependencies[] = mcapi
-

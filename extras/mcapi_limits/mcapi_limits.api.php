@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 /*
  * implements hook_mcapi_limits_info
@@ -40,4 +40,3 @@ function my_callback_form($currency, array $defaults) {
   );
   return $form;
 }
-
