@@ -958,7 +958,7 @@ function currencies_load($account = NULL) {
       foreach (currencies_load_all() as $currcode => $currency) {
         $currencies[$currcode] = $currency->data;
       }
-      cache_set('currencies', $currencies);
+      cache()->set('currencies', $currencies);
     }
   }
   if (!$account) return $currencies;//having set the $currencies static
@@ -992,7 +992,7 @@ function transaction_operations($localize = '1', $all = '0') {
   static $preloaded = array();
   $key = strval($localize).strval($all);
   if (empty($all_operations)) {
-    $data = cache_get('transaction_operations', 'cache');
+    $data = cache()->get('transaction_operations');
     if (is_object($data)) {
       $all_operations = $data->data;
     }

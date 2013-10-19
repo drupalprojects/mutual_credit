@@ -92,7 +92,7 @@ function mcapiforms_setup_filter() {
   );
   //ensure anyone who can edit the transaction form can use the filter
   global $language;
-  cache_clear_all("filter_formats:{$language->language}", 'cache');
+  //FIXME: cache_clear_all("filter_formats:{$language->language}", 'cache');
   foreach (user_roles(TRUE, 'design transaction forms') as $rid => $rolename) {
     user_role_grant_permissions($rid, array("use text format ".MCAPIFORM_STRING_FORMAT));
   }
@@ -105,7 +105,7 @@ function mcapiforms_setup_filter() {
       array(':data' => serialize($settings), ':name' => $name)
     );
   }
-  cache_clear_all('mcapi_forms', 'cache');
+  cache()->invalidate('mcapi_forms');
 }
 
 /**

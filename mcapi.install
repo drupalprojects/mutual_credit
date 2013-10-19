@@ -84,7 +84,7 @@ function mcapi_uninstall() {
 
   db_query("DELETE FROM {variable} WHERE name LIKE 'mcapi_%'");
   variable_del('currency_default');
-  cache_clear_all('currencies', 'cache');
+  cache()->invalidate('currencies');
 }
 
 /**
@@ -99,7 +99,7 @@ function mcapi_enable() {
 }
 
 function mcapi_disable() {
-  cache_clear_all('currencies', 'cache');
+  cache()->invalidate('currencies');
 }
 
 /**
@@ -305,7 +305,6 @@ function _mcapi_module_weights() {
   foreach ($weights as $weight => $modules) {
     db_update('system')->fields(array('weight' => $weight))->condition('name', $modules)->execute();
   }
-  cache_clear_all('*', 'cache_bootstrap', TRUE);
 }
 
 /* this feature has been commented out entirely for now

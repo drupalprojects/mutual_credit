@@ -807,7 +807,7 @@ function mcapi_currency_form_submit($form, &$form_state) {
   //things got a little out of kilter here - this shouldn't be necessary
   $form_state['item']->currcode = $form_state['values']['info']['currcode'];
   $form_state['item']->data = (object)$form_state['values'];
-  cache_clear_all('currencies', 'cache');
+  cache()->invalidate('currencies');
 }
 
 function _mcapi_action_info() {
@@ -1194,7 +1194,7 @@ function _transaction_operations() {
   uasort($operations, 'drupal_sort_weight');
   //now order the ops by weight
   drupal_alter('transaction_operations', $operations);
-  cache_set('transaction_operations', $operations, 'cache', CACHE_PERMANENT);
+  cache()->set('transaction_operations', $operations);
   return $operations;
 }
 
