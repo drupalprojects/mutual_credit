@@ -27,7 +27,7 @@ function mcapi_requirements($phase) {
  * Implements hook_install().
  */
 function mcapi_install() {
-  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('transact'));
+  entity_load('user_role', DRUPAL_AUTHENTICATED_RID)->grantPermission('transact');
   drupal_set_message(t("For ease of setup, authenticated user has been granted 'transact' permission."));
 
   _mcapi_module_weights();
