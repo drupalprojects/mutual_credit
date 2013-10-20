@@ -1515,3 +1515,9 @@ function mcapi_operation_include($info) {
     }
   }
 }
+
+function mcapi_toolbar() {
+  if (\Drupal::currentUser()->hasPermission('manage all transactions')) {
+    drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
+  }
+}
