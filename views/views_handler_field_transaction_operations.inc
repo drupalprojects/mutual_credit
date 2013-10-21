@@ -14,7 +14,6 @@ class views_handler_field_transaction_operations extends views_handler_field_tra
     $transaction = transaction_load($values->{$this->aliases['serial']});
     $links = array();
     foreach (transaction_get_links($transaction, '', TRUE) as $link) {
-    //debug($link);
       $links[] = drupal_render($link);
     }
     return drupal_render(transaction_get_links($transaction, FALSE, TRUE));

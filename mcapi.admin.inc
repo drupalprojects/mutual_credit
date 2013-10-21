@@ -36,15 +36,15 @@ function _mcapi_entity_info() {
     //entity API properties
     //generally we want the entity controller only to contain the read/write functions
     //so it is easy to replace
-    'label callback' => 'transaction_label',
-    'access callback' => 'transaction_operation_access',
-    'save callback' => 'transaction_cluster_create',
-    'view callback' => 'transaction_view',
+    'save callback' => 'transaction_cluster_create',//not advised to use with existing transactions
+    'label callback' => 'transaction_label',//doesn't belong in the controller
+    'access callback' => 'transaction_operation_access',//doesn't belong in the controller
+    'view callback' => 'transaction_view',//doesn't belong in the controller
+    //'creation callback' => not needed because controller implements create()
     //'form callback' => 'transaction_form',//implement this later perhaps
     'views controller class' => 'transactionDefaultViewsController',
     'rules controller class' => 'TransactionRulesController',
     'entity cache' => FALSE //because we would need to write special methods for this
-    //'access_callback'
 
     /* I don't know how to make this work, or if its necessary
     'exportable' => TRUE,
@@ -77,6 +77,14 @@ function _mcapi_menu() {
     'title' => "Accounting",
     'description' => "Manage all aspects of your community's money system",
     'page callback' => 'mcapi_accounting',
+    'access arguments' => array('manage all transactions'),
+    'file' => 'mcapi.admin.inc',
+    'weight' => 2
+  );
+  $items['admin/accounting/workflow'] = array(
+    'title' => "Workflow",
+    'description' => "Configuration around transaction states, types and operations",
+    'page callback' => 'mcapi_workflow_settings',
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.admin.inc',
     'weight' => 2
@@ -243,9 +251,23 @@ function mcapi_misc_options_form($form_state) {
   }
    *
    */
-  $form['mcapi_controller_delete_mode'] = array(
-    '#title' => t('Undo mode'),
-    '#description' => t('What should happen when a user or admin deletes a transaction.?') .' '.
+  $form['undoing'] = array(
+    '#title' => t('Undo options'),
+    '#description' => t("Undo can mean any of three different actions on the transaction."),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    'mcapi_undo_notify' => array(
+      '#title' => t('Undo notification template'),
+      '#description' => t('Use the tokens in the table below to reference the specific transaction in the mail.'),
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+      '#weight' => 1
+    )
+  );
+  $form['undoing']['mcapi_controller_delete_mode'] = array(
+    '#title' => t('Mode'),
+    '#description' => t('What should happen when a user or admin deletes a transaction?') .' '.
       t("Some system operations may 'scratch' transactions") .' '.
       t('Cannot be changed after a transaction has been undone'),
     '#type' => 'radios',
@@ -257,28 +279,97 @@ function mcapi_misc_options_form($form_state) {
     '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE),
     '#disabled' => !variable_get('change_undo_mode', FALSE)
   );
-  $form['mcapi_show_balances'] = array(
-    '#title' => t('View balances in user profile'),
-    '#description' => t('Small impact on performance; it may be necessary to edit user-profile.tpl.php'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('mcapi_show_balances', FALSE)
+  $message = variable_get('mcapi_undo_notify', array('subject' => '', 'body' => ''));
+  $form['undoing']['mcapi_undo_notify']['subject'] = array(
+    '#title' => t('Subject'),
+    '#type' => 'textfield',
+    '#default_value' => $message['subject'],
+    '#weight' => 1,
   );
-
-  $form['mcapi_sentence'] = array(
+  $form['undoing']['mcapi_undo_notify']['body'] = array(
+    '#title' => t('Subject'),
+    '#type' => 'textarea',
+    '#default_value' => $message['body'],
+    '#rows' => 4,
+    '#weight' => 2,
+  );
+  $form['sentence'] = array(
     '#title' => t('Transaction sentence template'),
-    '#description' => t('Use the tokens to define how the transaction will read when displayed in sentence mode'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['sentence']['mcapi_sentence'] = array(
+    '#title' => t('Sentence format'),
+    '#description' => t('Use the tokens in the table below to define how the transaction will read when displayed in sentence mode'),
     '#type' => 'textfield',
     '#default_value' => variable_get('mcapi_sentence', mcapi_sentence_default()),
     '#weight' => 5
   );
+  $form['mcapi_show_balances'] = array(
+    '#title' => t('User balances block'),
+    '#description' => t('Choose where in the architecture the user balances should appear.'),
+    '#type' => 'radios',
+    '#options' => array(
+      0 => t("In the user profile (it may be necessary to edit user-profile.tpl.php)"),
+      1 => t("In a block")
+    ),
+    '#default_value' => variable_get('mcapi_show_balances', FALSE),
+    '#weight' => 5
+  );
+
   $form['token_tree'] = array(
     '#theme' => 'token_tree',
     '#token_types' => array('transaction'),
     '#global_types' => FALSE,
-    '#weight' => 6
+    '#weight' => 10
   );
-
   return system_settings_form($form);
+}
+
+//menu callback. there is hook_help for this
+function mcapi_workflow_settings() {
+  module_load_include('admin.inc', 'system');
+  return system_admin_menu_block_page();
+}
+function mcapi_workflow_help() {
+  drupal_add_css('table.help{float:left;margin-right:1em;} ul.admin-list{clear:both;s}', array('type' => 'inline'));
+  $renderable = array(
+    'states' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
+      '#header' => array(t('Name'), t('Description')),
+      '#attributes' => array('class' => array('help'), 'style' => 'width:39%')
+    ),
+    'types' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
+      '#header' => array(t('machine name')),
+      '#attributes' => array('class' => array('help'), 'style' => 'width:19%')
+    ),
+    'ops' => array(
+      '#theme' => 'table',
+      '#caption' => t('Operations, from !hook.', array('!hook' => "\n<br />hook_transaction_operations()")),
+      '#header' => array(t('Name'), t('Description')),
+      '#attributes' => array('class' => array('help'), 'style' => 'width:39%')
+    ),
+  );
+  foreach (mcapi_get_states('#full') as $name => $info) {
+    $renderable['states']['#rows'][$name]['name'] = $info['name'];
+    $renderable['states']['#rows'][$name]['dscription'] = $info['description'];
+  }
+  foreach (mcapi_get_types() as $type) {
+    $renderable['types']['#rows'][$type]['name'] = $type;
+  }
+  foreach (transaction_operations('1', '0') as $op => $info) {
+    if ($op == 'mcapi_view')continue;
+    $renderable['ops']['#rows'][$op] = array(
+      'name' => $info['title'],
+      'description' =>  $info['description'],
+      //'form' => empty($info['form callback']) ? t('No'): t('Yes'),
+    );
+  }
+  return drupal_render($renderable);
 }
 
 /*
@@ -1118,43 +1209,43 @@ function _transaction_operations() {
  */
 function mcapi_transaction_operations() {
   $operations['mcapi_view'] = array(
-    'title' => "View",
+    'title' => 'View',
     'access callback' => 'mcapi_view_access',
     'weight' => 0
   );
-  t("View");
+  t('View');
   $operations['mcapi_register'] = array(
-    'title' => "Register (internal use only)",
-    'description' => "A new transaction was registered",
+    'title' => 'Register (internal use only)',
+    'description' => 'A new transaction was registered',
     'weight' => 1
   );
-  t("Register (internal use only)");
-  t("A new transaction was registered");
+  t('Register (internal use only)');
+  t('A new transaction was registered');
   $operations['mcapi_update'] = array(
-    'title' => "Update (internal use only)",
-    'description' => "A transaction was changed",
+    'title' => 'Update (internal use only)',
+    'description' => 'A transaction was changed',
     'weight' => 2
   );
-  t("Update (internal use only)");
-  t("A transaction was changed");
+  t('Update (internal use only)');
+  t('A transaction was changed');
 
   $operations['mcapi_undo'] = array(
-    'title' => "Undo",
-    'description' => "Undo a finished transaction, and its dependents",
+    'title' => 'Undo',
+    'description' => 'Undo a finished transaction, and its dependents',
     'sure' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE ?
-      "Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)" :
-      "Are you sure you want to undo? Only the site administrator will be able to restore this transaction.",
+      'Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)' :
+      'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
     'access callback' => 'transaction_op_undo_access',
     'submit callback' => 'transaction_op_undo',
-    'form callback' => TRUE,
+    'form callback' => 'transaction_op_undo_form',
     'redirect' => 'user',
     'weight' => 10,
   );
   return $operations;
-  t("Undo");
-  t("Undo a finished transaction, and its dependents");
-  t("Are you sure you want to undo? Only the site administrator will be able to restore this transaction.");
-  t("Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)");
+  t('Undo');
+  t('Undo a finished transaction, and its dependents');
+  t('Are you sure you want to undo? Only the site administrator will be able to restore this transaction.');
+  t('Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)');
 }
 
 /*

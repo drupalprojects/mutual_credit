@@ -664,7 +664,6 @@ function mcapi_upgrade_transactions($nids) {
     WHERE n.nid IN (:nids) ORDER BY n.nid ASC", array(':nids' => $nids)
   )->fetchAllAssoc('nid');
   while (list($xid, $old) = each($transactions)) {
-//foreach ($transactions as $xid => $old) {
     //bypasses the transaction controller
     $transaction = (object)array(
       'xid' => $xid,
@@ -1118,6 +1117,7 @@ function mcapi_update_7023() {
   //if by this time the mcapi_signatures updates haven't run, call them
   $version = db_query("SELECT schema_version from {system} WHERE name = 'mcapi_signatures'")->fetchField();
   if ($version < 7000) {
+    module_load_install('mcapi_signatures');
     mcapi_signatures_update_7000();
     mcapi_signatures_update_7005();
     mcapi_signatures_update_7009();

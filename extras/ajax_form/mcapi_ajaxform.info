@@ -1,0 +1,8 @@
+; $Id:
+name = Ajax transaction forms
+description = Experimental helper module for 1stparty ajax transaction forms. Does nothing by itself
+package = Community Accounting
+core = 7.x
+
+dependencies[] = mcapi
+

@@ -99,7 +99,7 @@ class RulesDataUIWorth extends RulesDataUI implements RulesDataDirectInputFormIn
     return $form;
   }
 
-  public static function render($value) {debug('rules render');
+  public static function render($value) {
     //this is similar to mcapi_field_formatter_view, but just renders a single item
     //I don't know how to invoke this or test it
     $renderable = array(

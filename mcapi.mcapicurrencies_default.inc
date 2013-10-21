@@ -17,7 +17,7 @@ function mcapi_mcapicurrencies_default() {
     'issuance' => 'exchange',
     'display' => array(
       'divisions' => CURRENCY_DIVISION_MODE_CUSTOM,
-      'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45mins",
+      'divisions_setting' => "0|00\n25|15 mins\n50|30 mins\n75|45 mins",
       'delimiter' => ':',
       'format' => '<strong>CC</strong>[quantity]',
       'zero' => '',

@@ -4,34 +4,6 @@
  * Implements variable module's hook_variable_info
  */
 function mcapi_variable_info() {
-  /*
-  $vars['mcapi_controller'] = array(
-    'type' => 'select',
-    'title' => t('Transaction entity controller'),
-    'default' => 'mcapi',
-    'description' => t('The module that controls how the transactions are read and written to the database.'),
-    'required' => TRUE,
-    'group' => 'mcapi',
-    'type' => 'select',
-    'options callback' => 'mcapi_variable_options_callback',
-  );
-  $vars['mcapi_db_write'] = array(
-    'type' => 'select',
-    'title' => t('Transaction write Db'),
-    'description' => t('Database connections for writing transactions (Default controller only)'),
-    'required' => FALSE,
-    'group' => 'mcapi',
-    'type' => 'select',//this is multiple
-    'options callback' => 'mcapi_variable_options_callback',
-  );
-  $vars['mcapi_db_read'] = array(
-    'type' => 'select',
-    'title' => t('Transaction read Db'),
-    'description' => t('Database connection for reading transactions (Default controller only)'),
-    'required' => FALSE,
-    'group' => 'mcapi'
-  );
-  */
   $vars['mcapi_mixed_transactions'] = array(
     'title' => t('Mixed transactions'),
     'description' => t('Whether to allow more than one transaction per currency'),
@@ -65,6 +37,14 @@ function mcapi_variable_info() {
     'description' => t('A tokenised string used for rendering a transaction in one sentence or statement.'),
     'group' => 'mcapi',
     'required' => TRUE,
+  );
+  $vars['mcapi_undo_notify'] = array(
+    'type' => 'string',
+    'title' => t('Transaction sentence template'),
+    'default' => array(
+      'subject' => '[site:name]: '. t('Your signature required'),
+      'body' => '[transaction:url:absolute]'
+    )
   );
   $vars['mcapi_show_balances'] = array(
     'type' => 'boolean',

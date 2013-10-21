@@ -58,6 +58,8 @@ Notice that views queries even to this table respect the currency access control
 Visit admin/people/permissions
 Note that these are general permissions, but there is a whole per-currency permission system
 
+Explore admin/accounting/misc
+
 Limits
 Most projects require that accounts have 'overdraft' limits and, in mutual credit, positive balance limits.
 Enable the limits module and edit the currency and choose how you want the limits to be determined.
@@ -99,7 +101,7 @@ Intended for webshops and skilled Drupal developers
 
 1. Transaction Worflow
 2. Currency design
-3. Actions and RUles
+3. Actions and Rules
 4. Internal API
 5. Limits system
 6. Views integration
@@ -107,15 +109,12 @@ Intended for webshops and skilled Drupal developers
 
 
 1. Transaction workflow.
-There is a simple system for defining transaction states and defining the permission callbacks for the operations to move between states.
-By default, transactions are created in FINISHED state, and the UNDO operation is visible only to permitted users. Transactions should never be edited.
-Note that currently, transactions can be deleted but not edited; a module could be created to do that.
-There is a hook to declare transaction_operations and new transaction states, so you can code your own workflow.
-For example the signatures module declares another state, 'pending', and 2 operations, 'sign' and 'sign off' (plus various other logic & config).
-The module supports THREE undo modes.
-- change 'state' to undone
-- remove transaction completely
-- write a counter-transaction and set both to state 'undone'
+There is no built in way to 'edit' transactions, since such operations should be strictly controlled.
+There is a hook system for defining transaction states and defining the permission callbacks for the operations to move between states.
+By default, transactions are created in FINISHED state, and the 'mcapi_undo' operation is visible only to permitted users. 
+The signatures module shows how a transaction workflow can be created using operations, states, and $transaction->type
+It declares another state, 'pending', and 2 operations, 'sign' and 'sign off' (plus various other logic & config).
+Operations show on the transaction as a field, and work through ajax. Each operation defined in hook_transaction_operations specifies the strings and callbacks needed. Each one determines under what circumstances it should appear and has an opportunity to inject elements into the confirm_form.
 
 
 2. Currency Design

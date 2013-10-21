@@ -27,7 +27,7 @@
  * wrapper around entity_load
  * load a cluster of transactions sharing a serial number
  * The first transaction will be the 'volitional' transaction and the rest are loaded into
- * $transaction->children where the theme layer expects to find them
+ * $transaction->dependents where the theme layer expects to find them
  * $serial can be varchar or an array of varchars
  */
 stdClass transaction_load($serial);
@@ -44,16 +44,13 @@ try {
 catch(exception $e){}
 
 /*
- * the following can be used for development
- */
-transactions_delete($serials);
-
-/*
  * Insert a validated transaction cluster, and allocate a serial number to the cluster
  * N.B. Contrib modules would normally call wrapper function transaction_cluster_create()
- * which fires the hook_transactions inserted
- * $transactions is a flat array
- * All $transactions will be given the same serial numbers
+ * @variable
+ *  $transactions is a flat array
+ * All $transactions will be given the same serial number
+ * includes a call to hook_accounting_validate before writing
+ * includes a call to hook_transaction_cluster_write
  */
 try {
   transaction_cluster_write($transactions, $really);
@@ -63,10 +60,33 @@ catch(exception $e){}
 
 /*
  * Insert a single transaction entity, running the accounting_validate hook on it first
- * note that this includes a call to transaction_cluster_write()
+ * note that this includes a call to hook_transaction_post_insert
  */
 try {
   transaction_cluster_create($transaction, $really);
+}
+catch(exception $e){}
+
+/*
+ * The default entity controller supports 3 undo modes
+ * Utter delete
+ * Change state to erased
+ * Create counter-transaction and set state of both to TRANSACTION_STATE_UNDONE
+ * NB this function goes on to call hook_transaction_undo()
+ */
+try {
+  transaction_undo(serial);
+}
+catch(exception $e){}
+
+/*
+ * All changes to transactions should be passed through this
+ * it saves the new state and field API and fires hooks and triggers wotnot
+ * if the $old_state is set, that indicates this was a workflow operation
+ * Calls hook_transaction_update
+ */
+try {
+  transaction_update($newly_saved_transaction, $old_state);
 }
 catch(exception $e){}
 
@@ -109,31 +129,6 @@ array transaction_filter((array)$conditions, $offset, $limit, $fieldapi_conditio
 
 
 /*
- * The default entity controller supports 3 ways to undo
- * Utter delete
- * Change state to erased
- * Create counter-transaction and set state of both to TRANSACTION_STATE_UNDONE
- * NB this function goes on to call mcapi_invoke('mcapi_undo', $transaction)
- */
-try {
-  transaction_undo($transaction);
-}
-catch(exception $e){}
-
-
-/*
- * hook_transaction_update($clusters, $old_state)
- * All changes to transactions should be passed through this
- * it saves the new state and field API and fires hooks and triggers wotnot
- * if the $old_state is set, that indicates this was a workflow operation
- */
-try {
-  transaction_update($newly_saved_transaction, $old_state);
-}
-catch(exception $e){}
-
-
-/*
  *
  * Retrieves transaction summary data for a user in a given currency
  *
@@ -156,20 +151,29 @@ array transaction_totals($uid, $currcode, $filters);
  * list of hooks called in this module
  * no need to put hook_info coz that's just for lazy loading
  */
-//declare new transaction controllers
+
+//declare new transaction controllers - only the function name is needed.
 function hook_transaction_controller(){}
 
 //check the transactions and the system integrity after the transactions would go through
-function hook_accounting_validate(){}
+//do NOT change the transaction
+function hook_accounting_validate(array $transactions){}
 
-//respond to the insertion of a transaction cluster
-function hook_transaction_cluster_write(){}
+//do your own writing for the transaction cluster
+function hook_transaction_cluster_write(array $transactions){}
 
-//respond to the removal, or undoing of a transaction
-function hook_transactions_undone(){}
+
+//respond to the creation of a transaction
+function hook_transaction_post_insert($transaction){}
 
 //preparing a transaction for rendering
-function hook_transactions_view(){}
+function hook_transactions_view($transactions, $view_mode, $suppress_ops){}
+
+//respond to the changing of a transaction
+function hook_transaction_update($serial){}
+
+//respond to the removal, or undoing of a transaction
+function hook_transaction_undo($serial){}
 
 //declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
 function hook_transaction_access_callbacks(){}

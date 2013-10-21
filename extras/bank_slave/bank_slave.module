@@ -48,7 +48,7 @@ function bank_slave_settings($form, $form_state) {
     '#default_value' => variable_get('mcapi_bank_slave_uids', array()),
   );
 
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   foreach(currencies_filter('commodity') as $currcode => $currency) {
     $options[$currcode] = $currency->human_name;
   }

@@ -107,7 +107,10 @@ function _transaction_form(&$form, &$form_state) {
  * By this time each of the form values should be well enough validated not to fail on writing to db
  */
 function transaction_form_validate($form, &$form_state) {
-  $transaction = entity_create('transaction', $form_state['values']);
+  $props = $form_state['values'];
+
+  //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
+  $transaction = entity_create('transaction', $props);
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   //finish building the transaction entity from form_state and validate that
@@ -116,6 +119,8 @@ function transaction_form_validate($form, &$form_state) {
   if (form_get_errors()) return;
   try{
     //add the dependent transactions, validate, test write and put the checked cluster in form_state
+    //might have used entity_save here, but it doesn't return the value we need
+    //these transactions are stored in the form to be used for a preview perhaps in step 2.
     $form_state['transactions'] = transaction_cluster_create($transaction, FALSE);
   }
   catch (Exception $e) {
@@ -222,7 +227,6 @@ function transaction_operation_form($form, &$form_state, $op, $transaction) {
     '#value' => $transaction->serial
   );
   $form_state['transaction_operation'] = $operations[$op]; //pass the op to the submit handler
-
   if (array_key_exists('form callback', $info) && function_exists($info['form callback'])) {
     $form += $info['form callback']($op, $transaction);
   }
@@ -242,10 +246,9 @@ function transaction_operation_form($form, &$form_state, $op, $transaction) {
 //this is only called from the are you sure form, and always from ajax
 function transaction_operation_form_submit($form, &$form_state) {
   $transaction = transaction_load($form_state['values']['serial']);
-  $result = mcapi_submit_op_form($form_state['transaction_operation'], $transaction, $form_state['values']);
+  $renderable = mcapi_submit_op_form($form_state['transaction_operation'], $transaction, $form_state['values']);
   //if this is ajax we return the result, otherwise redirect the form
-
-  $commands[] = ajax_command_replace('#transaction-operation-form', drupal_render($result));
+  $commands[] = ajax_command_replace('#transaction-operation-form', drupal_render($renderable));
   ajax_deliver(array(
     '#type' => 'ajax',
     '#commands' => $commands
@@ -256,13 +259,14 @@ function transaction_operation_form_submit($form, &$form_state) {
 //this is called in operation form submission OR ajax
 function mcapi_submit_op_form($operation, $transaction, $values = array()) {
   $result = array();
-  if (array_key_exists('submit callback', $operation)) {
+  $old_state = $transaction->state;
+  //if (array_key_exists('submit callback', $operation)) {
     $function = $operation['submit callback'];
     //this changes the $transaction
     $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
-  }
+  //}
   //and invoke trigger and rules using the changed transaction
-  mcapi_invoke($operation['op'], $transaction, $values);
+  transaction_update($operation['op'], $transaction, $old_state);
   return $result;
 }
 
@@ -280,9 +284,28 @@ function transaction_op_undo_access($op, $transaction) {
   if ($transaction->type == 'remote') return FALSE;//otherwise the intertrading module has to somehow intervene
   return _transaction_check_access_callbacks($op, $transaction);
 }
-function transaction_op_undo($operation, $transaction, $values = array()) {
+function transaction_op_undo_form($op, $transaction) {
+  return array('notify' => array(
+    '#title' => t('Notify participants'),
+    '#type' => 'checkbox',
+    '#weight' => 3
+  ));
+}
+function transaction_op_undo($operation, $transaction, $values) {
   transaction_undo($transaction->serial);
-  return array('#markup' => t('The transaction is undone.'));
+  $message = t('The transaction is undone.') .' ';
+  if ($values['notify']) {
+    $params = array('transaction' => $transaction) + variable_get('mcapi_undo_notification', array());
+    if ($params['subject']) {
+      $payer = user_load($transaction->payer);
+      $payee = user_load($transaction->payer);
+      drupal_mail('mcapi', 'undo', $payer->mail, user_preferred_language($payer), $params);
+      drupal_mail('mcapi', 'undo', $payee->mail, user_preferred_language($payee), $params);
+      $message .= t('The participants have been notified');
+    }
+    else $message .= t('Mail template not configured. See !link', array('!link' => l("Misc settings", 'admin/accounting/misc')));
+  }
+  return array('#markup' => $message);
 }
 
 /*
@@ -290,12 +313,22 @@ function transaction_op_undo($operation, $transaction, $values = array()) {
  */
 function _transaction_check_access_callbacks($op, $transaction) {
   $currencies = currencies_load();
+  if ($op == 'mcapi_view') {
+    $property = 'view_transaction_states';
+    $key = $transaction->state;
+  }
+  else {
+    $property = 'access_operations';
+    $key = $op;
+  }
   //normally would use $items = field_get_items($transaction), but we are sure of language
   foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    foreach ($currencies[$item['currcode']]->access_operations[$op] as $function) {
+    $callbacks = &$currencies[$item['currcode']]->{$property}[$key];
+    foreach ($callbacks as $function) {
       if ($function($transaction)) return TRUE;
     }
   }
+  return FALSE;
 }
 
 /*
@@ -801,7 +834,9 @@ function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
  * block function a nice display of user balances in a currency
  */
 function mcapi_balances_view($uid, $currcodes = array()) {
-  if (empty($currcodes)) $currcodes = array_keys(currencies_load(user_load($uid)));
+  if (empty($currcodes)) {
+    $currcodes = array_keys(currencies_load(user_load($uid)));
+  }
   $render_array = array();
   foreach ($currcodes as $currcode) {
     $render_array[$currcode] = array(

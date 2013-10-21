@@ -31,22 +31,99 @@ define('TRANSACTION_STATE_UNDONE', 0);
 define('TRANSACTION_BUILD_INFO_ARG', 0);
 
 
+
+/**
+ * Community Accounting API wrapper function, see transaction.api.php
+ * arguments:
+ *   $transaction - an object, probably originally created by entity_controller->create()
+ *   $really - Boolean whether to actually save this, or just test-write and revoke.
+ * Defaults to TRUE to be compatible with the Entity API 'save callback'
+ */
+function transaction_cluster_create(stdclass $transaction, $really = TRUE) {
+  $transactions = array($transaction);
+  //this is where the transaction can acquire dependents,
+  drupal_alter('transaction_cluster', $transactions);
+  $serial = transaction_cluster_write($transactions, $really);
+  //all the transactions in the cluster have the same serial, and the same state,
+  if ($really) {
+    module_invoke_all('transaction_post_insert', $serial);
+  }
+  //the transactions have been altered I think
+  return $transactions;
+}
+
 /**
  * Community Accounting API function, see transaction.api.php
+ * all will be given the SAME serial number, which is what makes them a cluster
  * return the serial number if $really is TRUE
  * this should always be inside a try!!!
  */
 function transaction_cluster_write(array $cluster, $really = TRUE) {
+  if (!empty(current($cluster)->serial)) {
+    throw new Exception ('Cannot insert transactions which already have a serial numbers: '.$transaction->serial);
+  }
+
   //put all the transactions side by side ready for the entity controller to validate and insert
   module_invoke_all('accounting_validate', $cluster);
-  $serial = entity_get_controller('transaction')->insert_cluster($cluster, $really);
-  if ($serial) {
-    //the transaction was really inserted, so we'll write the fieldAPI fields now
+
+  $serial = entity_get_controller('transaction')->next_serial();
+  $t = db_transaction();
+  $created = REQUEST_TIME -1;
+
+  try{
+    module_invoke_all('transaction_pre_insert', $cluster);
     foreach ($cluster as $transaction) {
+      $transaction->serial = $serial;
+      //it makes a mess of the running balances if transactions with the same serial number have the same time as well.
+      $transaction->created = $created++;
+      //this property is used for example in the intertrading module to save the remote participant's details.
+      $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
+      //$wrapper = entity_metadata_wrapper('transaction', $transaction);
+      //$wrapper->insert();
+      ///TEMP
+      entity_get_controller('transaction')->insert($transaction, $really);
+      //write the fields
       field_attach_insert('transaction', $transaction);
     }
+    module_invoke_all('transaction_cluster_write', $cluster, $really);
+  }
+  catch (Exception $e) {
+    $t->rollback();
+    watchdog_exception('transaction', $e);
+    throw $e;
+  }
+  if ($really) {
     return $serial;
   }
+  $t->rollback();
+  reset($cluster)->serial = 0;
+  return $cluster;
+}
+
+/**
+ * Community Accounting API wrapper function, see transaction.api.php
+ * update the transaction and notify the rest of the system
+ * WARNING updating a transaction will NOT update the dependent transactions
+ * $transaction is the main, or volitional transaction. $children are ignored
+ * $op is the machine name of the operation
+ */
+function transaction_update($op, $transaction, $old_state = NULL) {
+  //entity_metadata_wrapper('transaction', $transaction)->update();
+  entity_get_controller('transaction')->update($transaction);
+  //this will have fired
+  //hook_entity_presave
+  //hook_entity_insert OR hook_entity_update
+  //it is rare that field API fields will have changed, but we'll just save them here to be sure.
+  field_attach_update('transaction', $transaction);
+  module_invoke_all('transaction_update', $op, $transaction, $old_state);
+
+/*
+  //this is a bit of a shortcut past normal rules invocation - possibly bad practice
+  if (module_exists('rules') && $event = rules_get_cache('event_' . $hook)) {
+    //because the rules integration only understands the type entity:transaction
+    $event->executeByArgs(array($transaction, $arg1));
+  }
+  */
 }
 
 /*
@@ -63,11 +140,9 @@ function transaction_undo($serial) {
       $transaction = current($transactions);
       $old_state = $transaction->state;
       $transaction->state = TRANSACTION_STATE_UNDONE;
-      transaction_update($transaction, $old_state);
       break;
 
     case MCAPI_CURRENCY_UNDO_DELETE:
-      mcapi_invoke('mcapi_undo', reset($transactions));
       foreach ($transactions as $transaction) {
         field_attach_delete('transaction', $transaction);
         $xids[] = $transaction->xid;
@@ -92,39 +167,17 @@ function transaction_undo($serial) {
       }
       try{
         //this is basically the same as in transaction_cluster_write, but without invoking accounting_validate
-        $serial = entity_get_controller('transaction')->insert(array($reversed), TRUE);
+        entity_metadata_wrapper('transaction', $reversed)->insert(TRUE);
         field_attach_insert('transaction', $reversed);
       }
       catch (Exception $e){
         drupal_set_message(t('Failed to reverse transaction: @message', array('@message' => $e->getMessage())));
       }
-      transaction_update($reversed, $transaction->state);
       break;
   }
+  module_invoke_all('transaction_undo', $serial);
   //once even one transaction has been deleted, the undo_mode cannot be changed
   variable_del('change_undo_mode');
-}
-
-/**
- * Community Accounting API wrapper function, see transaction.api.php
- * ONLY updates fieldAPI and transaction->state for now
- * WARNING updating a transaction will NOT update the dependent transactions
- * $transaction is the main, or volitional transaction. $hildren are ignored
- */
-function transaction_update($transaction, $old_state = NULL) {
-  //it is rare that field API fields will have changed, but we'll just save them here to be sure.
-  field_attach_update('transaction', $transaction);
-  //act on changes of state.
-  if (!is_null($old_state)) {//this is a worflow operation
-    //save the new state
-    $serials = array($transaction->serial);
-    entity_get_controller('transaction')->state($serials, $transaction->state);
-    //awkard but we passed the new state to the controller and old state to the rest of the system
-    mcapi_invoke('mcapi_update', $transaction, $old_state);
-  }
-  else{//this is some other edit operation
-    mcapi_invoke('mcapi_update', $transaction);
-  }
 }
 
 /**
@@ -182,24 +235,6 @@ function transaction_load($serial = NULL) {
   else return $loaded[$serial];
 }
 
-/**
- * Community Accounting API wrapper function, see transaction.api.php
- * arguments:
- *   $transaction - an object, probably originally created by entity_controller->create()
- *   $really - Boolean whether to actually save this, or just test-write and revoke.
- * Defaults to TRUE to be compatible with the Entity API 'save callback'
- */
-function transaction_cluster_create(stdclass $transaction, $really = TRUE) {
-  $transactions = array($transaction);
-  //this is where the transaction can acquire dependents,
-  drupal_alter('transaction_cluster', $transactions);
-  $serial = transaction_cluster_write($transactions, $really);
-  //all the transactions in the cluster have the same serial, and the same state,
-  if ($really) {
-    mcapi_invoke('mcapi_create', transaction_load($serial));
-  }
-  return $transactions;
-}
 
 /**
  * Community Accounting API wrapper function, see transaction.api.php
@@ -239,6 +274,8 @@ function mcapi_help($section, $arg) {
         t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital."),
         t("This software has been five years in the conceiving and making and has been supported only by informal donations.")
       ));
+    case 'admin/accounting/workflow':
+      return mcapi_workflow_help();
     case 'admin/accounting/fields':
       module_load_include('admin.inc', 'mcapi');
       return drupal_render(drupal_get_form('mcapi_description_field'));
@@ -425,7 +462,7 @@ function mcapi_update_index() {
  */
 function mcapi_user_view($account, $mode, $language) {
   if ($account->uid == $GLOBALS['user']->uid || currency_access('trader_data', 'credunit')) {
-    if (variable_get('mcapi_show_balances', FALSE)) {
+    if (!variable_get('mcapi_show_balances', 0)) {
       module_load_include('inc', 'mcapi');
       $account->content['balances'] = mcapi_balances_view($account->uid);
     }
@@ -436,9 +473,11 @@ function mcapi_user_view($account, $mode, $language) {
  * implements hook_block_info().
  */
 function mcapi_block_info() {
-  return array(
-    'balances' => array('info' => 'MC '. t("Balances"))
-  );
+  $blocks = array();
+  if (variable_get('mcapi_show_balances', 0)) {
+    $blocks[balances] = array('info' => 'MC '. t("Balances"));
+  }
+  return $blocks;
 }
 
 /**
@@ -769,6 +808,12 @@ function mcapi_mail($key, &$message, $params) {
     $message['subject'] =  token_replace($params['subject'], $params, $options);
     $message['body'][] =  token_replace($params['body'], $params, $options);
   }
+  elseif ($key == 'undo') {
+    $options = array('language' => $message['language'], 'sanitize' => FALSE);
+    $conf = variable_get('mcapi_undo_notification', array());
+    $message['subject'] =  token_replace($conf['subject'], $params, $options);
+    $message['body'][] =  token_replace($conf['body'], $params, $options);
+  }
 }
 
 /**
@@ -811,8 +856,9 @@ function currency_access($op, $currcode, $account = NULL) {
  * $transactions an array of transactions, keyed by xid, each one having its dependents already set
  * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
  */
-function transaction_view($transactions, $view_mode, $suppress_ops = FALSE) {
+function transaction_view($transactions, $view_mode = 'certificate', $suppress_ops = FALSE) {
   if (!is_array($transactions))$transactions = array($transactions->xid => $transactions);
+
   global $language;
   //special case for the 'are you sure' form where the transaction was test written and deleted
   //that means the fieldAPI data cannot be retrieved the normal way
@@ -857,8 +903,6 @@ function transaction_view($transactions, $view_mode, $suppress_ops = FALSE) {
         );
         break;
     }
-    //this is more of an event trigger than an opportunity to change the transactions
-    mcapi_invoke('mcapi_view', $transaction);
     $renderable['transaction'][$transaction->xid] = $tx;
   }
   $type = 'transaction';//must be sent as a reference
@@ -982,44 +1026,19 @@ function transaction_operations($localize = '1', $all = '0') {
 }
 
 /*
- * wrapper for calling mcapi hooks and rules
- * - $hook, any operation as declared in hook_transaction_operation
- * - $transaction - the transaction after having been acted on
- * - $arg1, anything else
- */
-function mcapi_invoke($hook, stdClass $transaction, $arg1 = NULL) {
-  //debug('hook_'.$hook);
-  foreach (module_implements($hook) as $module) {
-
-  //debug($module.'_'.$hook);
-    $function = $module .'_'. $hook;
-    $function($transaction, $arg1);
-  }
-  //this is a bit of a shortcut past normal rules invocation - possibly bad practice
-  if (module_exists('rules') && $event = rules_get_cache('event_' . $hook)) {
-    //because the rules integration only understands the type entity:transaction
-    $event->executeByArgs(array($transaction, $arg1));
-  }
-}
-
-/*
  * implements hook_trigger_info().
  * we need a trigger for each transaction_operation
  */
 function mcapi_trigger_info() {
-  $triggers['mcapi']['transaction_cluster_alter']['label'] = t('Check for dependent transactions before inserting');
-  foreach (transaction_operations(TRUE, TRUE) as $op => $info) {
-    $title = array_key_exists('description', $info) ? $info['description'] : $info['title'];
-    $triggers['mcapi']['transaction_operation_'.$op]= array(
-      'label' => $title,
-      'weight' => @$info['weight']//although weight isn't used in d7
-    );
-  }
+  $triggers['mcapi']['transaction_cluster_alter']['label'] = t('Create dependent transactions before inserting.');
+  $triggers['mcapi']['transaction_undo']['label'] = t('Respond to transaction deletion.');
+  $triggers['mcapi']['transaction_update']['label'] = t('Respond to transaction changing.');
+  $triggers['mcapi']['transaction_post_insert']['label'] = t('Respond to a new transaction.');
   return $triggers;
 }
 
 /*
- * implements trigger hook_transaction_cluster_alter().
+ * pull trigger transaction_cluster_alter().
  * will only fire if the trigger module is enabled
  * sends the volitional transaction to the action callbacks where it can be changed.
  * Action callbacks may return a new transaction to be added to the $transactions
@@ -1037,13 +1056,31 @@ function trigger_transaction_cluster_alter(&$cluster) {
 }
 
 /*
- * implement mcapi hook_transaction_update().
- * triggers actions whenever the state changes
+ * pull trigger transaction_update().
  * if the $old_state is set, that indicates this was a workflow operation
  */
-function trigger_transaction_update($transaction, $old_state = NULL) {
-  foreach (trigger_get_assigned_actions('transaction_state') as $aid => $info) {
+function trigger_transaction_update($op, $transaction, $old_state = NULL) {
+  foreach (trigger_get_assigned_actions('transaction_update') as $aid => $info) {
     actions_do($aid, $transaction, $info, $old_state);
+  }
+}
+
+/*
+ * pull trigger transaction_undo().
+ * if the $old_state is set, that indicates this was a workflow operation
+ */
+function trigger_transaction_undo($serial) {
+  foreach (trigger_get_assigned_actions('transaction_undo') as $aid => $info) {
+    actions_do($aid, transaction_load($serial), $info);
+  }
+}
+
+/*
+ * pull trigger transaction_post_insert().
+ */
+function trigger_transaction_post_insert($serial) {
+  foreach (trigger_get_assigned_actions('transaction_undo') as $aid => $info) {
+    actions_do($aid, transaction_load($serial), $info);
   }
 }
 

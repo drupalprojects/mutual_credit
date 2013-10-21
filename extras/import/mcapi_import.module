@@ -250,7 +250,7 @@ function import_transactions_form_submit($form, $form_state) {
     }
     //set the user created to 1 day before the transaction
     if ($form_state['values']['test']) {
-      debug($earliest, 'would set user created dates to:', 1);
+      drupal_set_message('Would set user created dates to: '.$earliest);
     }
     else {
       foreach($earliest as $uid => $times) {
@@ -457,11 +457,11 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     }
     $values['worth'] = $balance;
     $values['description'] = t("Carried Forward");
-    $transactions[] = entity_create('transaction', $values);
+    $cluster[] = entity_create('transaction', $values);
   }
-  if ($transactions) {
+  if ($cluster) {
     try{
-      transaction_cluster_write($transactions, TRUE);
+      transaction_cluster_write($cluster, TRUE);
     }
     catch(Exception $e) {
       drupal_set_message(t('Failed to import balance for member @uid: !message', array('@uid' => $uid, '!message' => $e->getMessage())), 'warning');

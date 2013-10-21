@@ -99,10 +99,10 @@ function template_process_balance_history(&$vars) {
     elseif ($point_count > $vars['width']) {//decimate the array, for a large number of points
 
       //we can assume that $max_size(1 point per pixes) is smaller than $count
-      $ratio = $vars['width'] / $point_count;  //debug("$max_size / $count", 'ratio');
+      $ratio = $vars['width'] / $point_count;
       //how to turn this into a fraction involving 1?
-      $reciprocal = 1/$ratio;//  debug($reciprocal, 'reciprocal');
-      $factor = intval($reciprocal + 1); //debug($factor); //this is how to always round up
+      $reciprocal = 1/$ratio;
+      $factor = intval($reciprocal + 1);
       //now iterate through the array taking 1 out of every $factor values
       $i = 0;
       foreach($history as $key => $value) {
@@ -113,3 +113,4 @@ function template_process_balance_history(&$vars) {
     }
   }
 }
+

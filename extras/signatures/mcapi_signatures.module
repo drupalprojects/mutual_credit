@@ -29,7 +29,7 @@ function mcapi_signatures_help($path) {
 function mcapi_signatures_menu() {
   //this item makes it possible to sign on someone elses behalf, if the link is provided.
   //That's not in the scope of this module
-  $items['admin/accounting/signatures'] = array(
+  $items['admin/accounting/workflow/signatures'] = array(
     'title' => 'Signatures',
     'description' => 'Require signatures before transactions enter pending state',
     'page callback' => 'drupal_get_form',
@@ -71,7 +71,7 @@ function mcapi_signatures_entity_load($entities, $type) {
  * Implements hook_entity_delete()
  * remove the signatories from the database
  */
-function mcapi_signatures_entity_delete($transaction, $type) {debug($transaction, $type);
+function mcapi_signatures_entity_delete($transaction, $type) {
   if ($type == 'transaction') {
     db_delete("mcapi_signatures")
     ->condition('serial', $transaction->serial)
@@ -81,26 +81,25 @@ function mcapi_signatures_entity_delete($transaction, $type) {debug($transaction
 
 /*
  * implements mcapi hook_mcapi_create
- * saves the new signatures
+ * saves the new signatures with the new transaction
  */
-function mcapi_signatures_mcapi_create($transaction) {
+function mcapi_signatures_transaction_cluster_write($cluster, $really) {
   module_load_include('inc', 'mcapi_signatures');
-  mcapi_sig_transaction_save($transaction);
+  //we only need to put the signatures on the volitional transaction
+  $transaction = reset($cluster);
+  //any test writes will be rolled back
+  mcapi_sig_transaction_create($transaction, $really);
 }
 
 /**
- * implement hook_transaction_update
+ * implement mcapi hook_transaction_update
  * ensures that signatures for undone transactions are not left pending.
  */
  //could equally use hook_undo pending if it exists....
-function mcapi_signatures_mcapi_update($transaction, $old_state = NULL) {
-  //check the different delete nodes and respond appropriately on the mcapi_transactions table
-  if (isset($old_state) && $old_state == TRANSACTION_STATE_PENDING) {
-    if ($transaction->state == TRANSACTION_STATE_UNDONE) {
-      db_update('mcapi_signatures')->fields('pending', 0)->condition('serial', $transaction->serial)->execute();
-      debug('signed deleted pending transaction');
-    }
-  }
+function mcapi_signatures_transaction_undo($serial) {
+  db_delete('mcapi_signatures')
+    ->condition('serial', $serial)
+    ->execute();
 }
 
 /*

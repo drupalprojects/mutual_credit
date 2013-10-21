@@ -37,7 +37,6 @@ class views_handler_field_transaction extends views_handler_field {
   }
 
   function render($values) {
-//    debug($values);
     //TODO for some reason the serial number wasn't added as an additional field
     $serial = &$values->{$this->aliases['serial']};
     if (!$this->options['link_to_transaction']) return $serial;
