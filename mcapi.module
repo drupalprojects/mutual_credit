@@ -952,7 +952,7 @@ function currency_load($currcode = NULL) {
 function currencies_load($account = NULL) {
   $currencies = &drupal_static(__FUNCTION__);
   if (empty($currencies)) {//first time this function is running
-    if ($cache = cache_get('currencies')) {
+    if ($cache = \Drupal::cache()->get('currencies')) {
       $currencies = $cache->data;
     }
     else {
@@ -1025,6 +1025,29 @@ function transaction_operations($localize = '1', $all = '0') {
     }
   }
   return $preloaded[$key];
+}
+
+/**
+ * default form for configuring access to operations, per currency
+ */
+function operations_config_default_access($op_info, $currency) {
+  static $access_callbacks;
+  if (!$access_callbacks) {
+    $access_callbacks = module_invoke_all('transaction_access_callbacks');
+  }
+  $element = array(
+    '#title' => $op_info['title'],
+    '#description' => array_key_exists('description', $op_info) ? $op_info['description'] : '',
+    '#type' => 'checkboxes',
+    '#options' => $access_callbacks,
+    '#default_value' => array(),//this will be overwritten
+    '#weight' => @$op_info['weight'],
+  );
+  $callback = $op_info['op'];
+  if (property_exists($currency, 'access_operations') && array_key_exists($callback, $currency->access_operations)) {
+    $element['#default_value'] = $currency->access_operations[$callback];
+  }
+  return $element;
 }
 
 /*

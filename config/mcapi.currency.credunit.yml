@@ -2,8 +2,8 @@ id: credunit
 uuid: 4450dc37-0564-480e-8800-a3d78c18f12d
 name: 'Community Coins'
 issuance: acknowledgement
-uid: 1
-reservoir: 1
+uid: '1'
+reservoir: '1'
 display:
   divisions: '3'
   delimiter: ':'
@@ -18,25 +18,12 @@ view_transaction_states:
   1:
     transaction_access_callback_perm_transact: transaction_access_callback_perm_transact
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
-    transaction_access_callback_payee: 0
-    transaction_access_callback_payer: 0
-    transaction_access_callback_open: 0
-    transaction_access_callback_creator: 0
   0:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
-    transaction_access_callback_perm_transact: 0
-    transaction_access_callback_payee: 0
-    transaction_access_callback_payer: 0
-    transaction_access_callback_open: 0
-    transaction_access_callback_creator: 0
 access_operations:
-  undo:
+  mcapi_view: {  }
+  mcapi_undo:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
-    transaction_access_callback_perm_transact: 0
-    transaction_access_callback_payee: 0
-    transaction_access_callback_payer: 0
-    transaction_access_callback_open: 0
-    transaction_access_callback_creator: 0
 weight: '-10'
 status: true
 langcode: en

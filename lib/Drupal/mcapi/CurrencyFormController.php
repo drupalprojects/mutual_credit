@@ -40,9 +40,9 @@ class CurrencyFormController extends EntityFormController {
     $form['acknowledgement'] = array(
       '#type' => 'container',
       '#children' => implode("\n<br /><br />\n", array(
-        t("Acknowledgement currencies are abundant - they are issued whenever valued is created; they can be used as a medium of exchange but there is no guarantee of redemption."),
+        t('Acknowledgement currencies are abundant - they are issued whenever valued is created; they can be used as a medium of exchange but there is no guarantee of redemption.'),
         t("These are sometimes called 'social' currencies, because by encouraging and recognising volunteer service, they bind the community together."),
-        t("This is the choice for all timebanking systems and most LETS.")
+        t('This is the choice for all timebanking systems and most LETS.')
       )),
       '#weight' => 2,
       '#states' => array(
@@ -141,7 +141,7 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'select',
       '#options' => array(
         CURRENCY_DIVISION_MODE_NONE => t('Integer values only'),
-        CURRENCY_DIVISION_MODE_CENTS_INLINE => t("Cents in same field"),
+        CURRENCY_DIVISION_MODE_CENTS_INLINE => t('Cents in same field'),
         CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
         CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions')
       ),
@@ -257,17 +257,32 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
       '#weight' => $weight++,
     );
+    $i = 0;
+    $access_callbacks = module_invoke_all('transaction_access_callbacks');
+    //These two fieldsets should REALLY use a grid of checkboxes, like on admin/people/permissions,
+    //but I couldn't work out how to do it, and it might require an hook_update to convert the saved $currency objects
+    $form['access_operations'] = array(
+      '#title' => t('Transaction operations'),
+      '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
+      '#type' => 'details',
+      '#group' => 'additional_settings',
+      '#weight' => 2
+    );
+    foreach (transaction_operations(TRUE, FALSE) as $callback => $op_info) {
+      if ($callback == 'mcapi_view') continue;
+      if ($op_info['access form']) {
+        $form['access_operations'][$callback] = $op_info['access form']($op_info, $currency);
+      }
+    }
 
-    static $i = 0;
-    static $j = 0;
     $form['view_transaction_states'] = array(
       '#title' => t('Privacy'),
       '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
       '#type' => 'details',
       '#group' => 'additional_settings',
       '#tree' => TRUE,
+      '#weight' => 5
     );
-    $access_callbacks = module_invoke_all('transaction_access_callbacks');
     foreach (mcapi_get_states('#full') as $constant => $state) {
       $states = isset($currency->view) ? $currency->view : array();
       $form['view_transaction_states'][$constant] = array(
@@ -277,24 +292,7 @@ class CurrencyFormController extends EntityFormController {
         '#options' => $access_callbacks,
         '#default_value' => property_exists($currency, 'view_transaction_states') && isset($currency->view_transaction_states[$constant]) ?
            $currency->view_transaction_states[$constant] : array(current($access_callbacks)),
-        '#weight' => $j++,
-      );
-    }
-    $form['access_operations'] = array(
-      '#title' => t('Transaction operations'),
-      '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
-      '#type' => 'details',
-      '#group' => 'additional_settings',
-      '#tree' => TRUE,
-    );
-    foreach (transaction_operations() as $callback => $info) {
-      $form['access_operations'][$callback] = array(
-        '#title' => !empty($info['description']) ? $info['description'] : NULL,
-        '#type' => 'checkboxes',
-        '#options' => $access_callbacks,
-        '#default_value' => property_exists($currency, 'access_operations') && isset($currency->access_operations[$callback]) ?
-          $currency->access_operations[$callback] : array(current($access_callbacks)),
-        '#weight' => $j++,
+        '#weight' => $i++,
       );
     }
 
@@ -327,6 +325,12 @@ class CurrencyFormController extends EntityFormController {
    */
   public function save(array $form, array &$form_state) {
     $currency = $this->entity;
+    foreach (array('access_operations', 'view_transaction_states') as $property) {
+      foreach ($currency->{$property} as $key => $values) {
+        $currency->{$property}[$key] = array_filter($values);
+      }
+    }
+
     $status = $currency->save();
 
     if ($status == SAVED_UPDATED) {
