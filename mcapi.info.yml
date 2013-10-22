@@ -7,5 +7,5 @@ type: module
 dependencies:
   - field
 #  - token
-#  - user_chooser (>=1.2)
+  - user_chooser
   - entity
