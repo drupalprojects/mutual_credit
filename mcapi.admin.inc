@@ -79,14 +79,7 @@ function _mcapi_menu() {
     'weight' => 2,
     'route_name' => 'mcapi.admin',
   );
-  $items['admin/accounting/workflow'] = array(
-    'title' => "Workflow",
-    'description' => "Configuration around transaction states, types and operations",
-    'page callback' => 'mcapi_workflow_settings',
-    'access arguments' => array('manage all transactions'),
-    'file' => 'mcapi.admin.inc',
-    'weight' => 2
-  );
+
   $items['admin/accounting/config'] = array(
     'title' => 'Configuration',
     'type' => MENU_VISIBLE_IN_BREADCRUMB,
@@ -99,6 +92,12 @@ function _mcapi_menu() {
     'title' => t('Currencies'),
     'description' => t('Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.'),
     'route_name' => 'mcapi.admin_currency_list',
+  );
+  $items['admin/accounting/workflow'] = array(
+    'title' => "Workflow",
+    'description' => "Configuration around transaction states, types and operations",
+    'weight' => 2,
+    'route_name' => 'mcapi.workflow',
   );
   /*
   $items['transact/log'] = array(
@@ -187,6 +186,52 @@ function _mcapi_menu() {
  */
 function mcapi_menu_alter(&$items) {
   $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
+}
+
+function mcapi_workflow_help() {
+  $renderable = array(
+    '#attached' => array(
+      'css' => array(
+        drupal_get_path('module', 'mcapi') . '/css/mcapi.workflow.css',
+      ),
+    ),
+    '#type' => 'container',
+    '#attributes' => array('id' => 'mcapi-workflow-container', 'class' => 'clearfix'),
+    'states' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
+      '#header' => array(t('Name'), t('Description')),
+      '#attributes' => array('class' => array('mcapi-workflow-states'))
+    ),
+    'types' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
+      '#header' => array(t('machine name')),
+      '#attributes' => array('class' => array('mcapi-workflow-types'))
+    ),
+    'ops' => array(
+      '#theme' => 'table',
+      '#caption' => t('Operations, from !hook.', array('!hook' => "\n<br />hook_transaction_operations()")),
+      '#header' => array(t('Name'), t('Description')),
+      '#attributes' => array('class' => array('mcapi-workflow-operations'))
+    ),
+  );
+  foreach (mcapi_get_states('#full') as $name => $info) {
+    $renderable['states']['#rows'][$name]['name'] = $info['name'];
+    $renderable['states']['#rows'][$name]['dscription'] = $info['description'];
+  }
+  foreach (mcapi_get_types() as $type) {
+    $renderable['types']['#rows'][$type]['name'] = $type;
+  }
+  foreach (transaction_operations('1', '0') as $op => $info) {
+    if ($op == 'mcapi_view')continue;
+    $renderable['ops']['#rows'][$op] = array(
+      'name' => $info['title'],
+      'description' =>  $info['description'],
+      //'form' => empty($info['form callback']) ? t('No'): t('Yes'),
+    );
+  }
+  return render($renderable);
 }
 
 /*

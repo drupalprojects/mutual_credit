@@ -41,3 +41,11 @@ mcapi.admin_currency_delete:
     _entity_form: 'mcapi_currencies.delete'
   requirements:
     _permission: 'configure all currencies'
+
+mcapi.workflow:
+  path: '/admin/accounting/workflow'
+  defaults:
+    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Workflow'
+  requirements:
+    _permission: 'manage all transactions'

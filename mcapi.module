@@ -275,6 +275,7 @@ function mcapi_help($section, $arg) {
         t("This software has been five years in the conceiving and making and has been supported only by informal donations.")
       ));
     case 'admin/accounting/workflow':
+      module_load_include('admin.inc', 'mcapi');
       return mcapi_workflow_help();
     case 'admin/accounting/fields':
       module_load_include('admin.inc', 'mcapi');
