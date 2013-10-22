@@ -281,11 +281,12 @@ function mcapi_help($section, $arg) {
       module_load_include('admin.inc', 'mcapi');
       return drupal_render(drupal_get_form('mcapi_description_field'));
     case 'admin/accounting/currencies':
-      $currencies = currencies_load();
+      //TODO: Move this setting onto the Misc settings page.
+      /* $currencies = currencies_load();
       if (count($currencies) > 1) {
         module_load_include('admin.inc', 'mcapi');
         return drupal_render(drupal_get_form('mcapi_mixed_transactions'));
-      }
+      } */
     case 'admin/accounting/misc':
       return implode(' ', array(
         t("Send mail notifications for completed transactions using the action/trigger system: !link", array('!link' => l('admin/config/system/actions', 'admin/config/system/actions')))
