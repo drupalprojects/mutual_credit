@@ -1,11 +1,9 @@
 name: 'Community Accounting API'
-description: "Defines transaction entity with a swoppable controller, a default currency, 'worth' field, and the forms, views theme callbacks for basic manipulation"
+description: "Build a complete exchange network with the provided transaction entity, currencies, 'worth' field, workflow, views and theme callbacks."
 package: "Community Accounting"
 configure: mcapi.admin
 core: 8.x
 type: module
 dependencies:
   - field
-#  - token
   - user_chooser
-  - entity
