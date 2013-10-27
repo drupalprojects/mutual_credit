@@ -270,7 +270,7 @@ function currencies_load_all() {
     );
     foreach ($accesses as $prop => $name) {
       if (property_exists($data, $prop)) continue;
-      $message = t("Resave currency @name, paying attention to '@prop'", array('@name' => $data->human_name, '@prop' => $prop));
+      $message = t("Resave currency @name, paying attention to '@prop'", array('@name' => $data->name, '@prop' => $prop));
       drupal_set_message($message, 'warning');
     }
     $currencies[$currcode] = $currency;

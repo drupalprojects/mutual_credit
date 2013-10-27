@@ -24,7 +24,7 @@
  * need to do some more work on the icon size
  * for now, you might want to include your own large-size graphic instead
  * using $transaction->quantity
- * tip: $currency = currency_load($transaction->currcode);
+ * tip: $currency = entity_load('mcapi_currencies', $transaction->currcode);
  *
  * If anyone can think of a more elegant way to make this translatable...
  */

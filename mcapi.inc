@@ -591,11 +591,11 @@ function worth_element_validate(&$element, &$form_state, $form) {
   if ($division = $quant - intval($quant)) {
     //check that divisions match allowed values for the currency
     if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
-      form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));
+      form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->name)));
     }
   }
   if (array_key_exists('#max', $element) && $element['#max'] && $element['#value']['quantity'] > $element['#max']) {
-    form_error($element, t('Maximum value exceeded for !currency', array('!currency' => $currency->human_name)));
+    form_error($element, t('Maximum value exceeded for !currency', array('!currency' => $currency->name)));
   }
 }
 
@@ -632,7 +632,7 @@ function _worths_element_process($element, &$form_state) {
   if (variable_get('mcapi_mixed_transactions', TRUE) || @$element['#preset']) {
     //construct one widget for each default, each with its own currcode
     foreach($element['#default_value'] as $currcode => $quant) {
-      $element[$delta]['#title'] = $currencies[$currcode]->human_name;
+      $element[$delta]['#title'] = $currencies[$currcode]->name;
       $element[$delta]['#currcodes']= array($currcode);
       $element[$delta]['#default_value'] = array(
         'currcode' => $currcode,
@@ -773,7 +773,7 @@ function theme_worth_element($variables) {
   $quant_field = drupal_render($element['main_quant']);
   if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
     $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
-    $currency_display = currency_load($currcode)->display;
+    $currency_display = entity_load('mcapi_currencies', $currcode)->display;
     if (isset($element['div_quant'])) {
       $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
     }
@@ -890,7 +890,7 @@ function currency_picker_element(array $currcodes, $default = NULL, $multiple = 
   $currencies = currencies_load();
   if (count($currcodes) > 1) {
     foreach ($currcodes as $currcode) {
-      $options[$currcode] = $currencies[$currcode]->human_name;
+      $options[$currcode] = $currencies[$currcode]->name;
     }
     return array(
       '#title' => t('Currency'),

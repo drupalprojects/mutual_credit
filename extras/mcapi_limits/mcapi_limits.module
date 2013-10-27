@@ -72,16 +72,16 @@ function mcapi_limits_accounting_validate(array $cluster) {
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
       if ($skips['user1'] && \Drupal::currentUser()->id() == 1) {
-        $messages[$currcode] = t("Skipped @currency balance limit check because you are user 1.", array('@currency' => $currency->human_name));
+        $messages[$currcode] = t("Skipped @currency balance limit check because you are user 1.", array('@currency' => $currency->name));
       }
       elseif ($skips['owner'] && \Drupal::currentUser()->id() == $currency->uid) {
-        $messages[$currcode] = t("Skipped @currency balance limit check because you are the currency owner.", array('@currency' => $currency->human_name));
+        $messages[$currcode] = t("Skipped @currency balance limit check because you are the currency owner.", array('@currency' => $currency->name));
       }
       elseif ($skips['auto'] && current($cluster)->type == 'auto') {
-        $messages[$currcode] = t("Skipped balance limit checks for automated transactions with @currency.", array('@currency' => $currency->human_name));
+        $messages[$currcode] = t("Skipped balance limit checks for automated transactions with @currency.", array('@currency' => $currency->name));
       }
       elseif ($skips['reservoir'] && $uid == $currency->reservoir )  {
-        $messages[$currcode] = t("Skipped balance limit checks for @currency transactions involving the reservoir account.", array('@currency' => $currency->human_name));
+        $messages[$currcode] = t("Skipped balance limit checks for @currency transactions involving the reservoir account.", array('@currency' => $currency->name));
       }
       $balance = transaction_totals($uid, $currcode)->balance;
       $projected = $balance + array_sum($diffs);
@@ -202,7 +202,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
     if (!empty($currency->limits['personal'])) {
       $form['limits_personal'][$currcode] = array(
          '#type' => 'fieldset',
-         '#title' => $currency->human_name,
+         '#title' => $currency->name,
          '#attributes' => array('style' => 'float:left;')
       );
       $fields = min_max_fields(limits_get($currcode, $form['#user']->uid));
