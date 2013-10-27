@@ -48,7 +48,7 @@ class mcapi_ui extends ctools_export_ui {
     $this->rows[$currcode]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
     //first col, Name
     $this->rows[$currcode]['data'][1] = array(
-      'data' => check_plain($item->data->human_name),
+      'data' => check_plain($item->data->name),
       'class' => array('ctools-export-ui-title')
     );
     $type_names = array(

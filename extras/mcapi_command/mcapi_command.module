@@ -276,7 +276,7 @@ function mcapi_command_get_uid($string) {
   elseif (!currency_access('membership', variable_get('mcapi_commands_currcode', user_load($uid)))) {
     throw new Exception(t('@user may not use %currency', array(
       '@user' => $string,
-      '%currency' => currency_load(variable_get('mcapi_commands_currcode'))->human_name
+      '%currency' => entity_load('mcapi_currencies', variable_get('mcapi_commands_currcode'))->name
     )));
   }
   else return $uid;

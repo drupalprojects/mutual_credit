@@ -50,7 +50,7 @@ function bank_slave_settings($form, $form_state) {
 
   $currencies = currencies_load();
   foreach(currencies_filter('commodity') as $currcode => $currency) {
-    $options[$currcode] = $currency->human_name;
+    $options[$currcode] = $currency->name;
   }
 
   $form['mcapi_bank_slave_currcodes'] = array(
@@ -87,7 +87,7 @@ function bank_slave_accounting_validate($cluster) {
         throw new Exception(t('Bank payments must involve a designated bank account'));
       }
       foreach (field_get_items('transaction', $transaction, 'worth') as $item) {
-        if (currency_load($item['currcode'])->issuance != 'commodity') {
+        if (entity_load('mcapi_currencies', $item['currcode'])->issuance != 'commodity') {
           throw new Exception(t('Banks can only use commodity currencies'));
         }
       }

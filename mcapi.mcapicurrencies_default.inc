@@ -13,7 +13,7 @@ function mcapi_mcapicurrencies_default() {
     'info' => array(//this wierd structure is for ctools benefit
       'currcode' => $currency->currcode,
     ),
-    'human_name' =>  t('Community Coins'),
+    'name' =>  t('Community Coins'),
     'issuance' => 'exchange',
     'display' => array(
       'divisions' => CURRENCY_DIVISION_MODE_CUSTOM,
@@ -80,7 +80,7 @@ function mcapi_mcapicurrencies_default() {
     'info' => array(
       'currcode' => $mcapicurrency->currcode,
     ),
-    'human_name' => t('Euros'),
+    'name' => t('Euros'),
     'issuance' => 'commodity',
     'display' => array(
       'divisions' => CURRENCY_DIVISION_MODE_CENTS_INLINE,

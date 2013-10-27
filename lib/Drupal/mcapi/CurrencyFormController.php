@@ -126,15 +126,6 @@ class CurrencyFormController extends EntityFormController {
       '#weight' => 5,
       '#tree' => TRUE,
     );
-    $default_display = property_exists($currency, 'display') ?
-      $currency->display :
-      array(
-        'format' => '[quantity]',
-        'divisions' => CURRENCY_DIVISION_MODE_NONE,
-        'delimiter' => ':',
-        'divisions_setting' => "0|/.\n25|1/4\n50|1/2\n75|3/4",
-        'zero' => ''
-      );
 
     $form['display']['divisions'] = array(
       '#title' => t('Subdivisions'),
@@ -145,7 +136,7 @@ class CurrencyFormController extends EntityFormController {
         CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
         CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions')
       ),
-      '#default_value' => $default_display['divisions'],
+      '#default_value' => $currency->display['divisions'],
       '#weight' => 1
     );
     $form['display']['delimiter'] = array(
@@ -154,7 +145,7 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'textfield',
       '#maxlength' => 3,
       '#size' => 1,
-      '#default_value' => $default_display['delimiter'],
+      '#default_value' => $currency->display['delimiter'],
       '#states' => array(
         'invisible' => array(
           ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_NONE),
@@ -169,7 +160,7 @@ class CurrencyFormController extends EntityFormController {
       '#cols' => 60,
       '#rows' => 4,
       '#resizable' => FALSE,
-      '#default_value' => $default_display['divisions_setting'],
+      '#default_value' => $currency->display['divisions_setting'],
       '#element_validate' => array(array($this, 'validate_divisions')),
       '#states' => array(
         'visible' => array(
@@ -186,7 +177,7 @@ class CurrencyFormController extends EntityFormController {
       '#description' => t('Write an expression to control the display of the currency using html, css and [quantity].') .'<br />'.
          t('For example, !a shows as !b', array('!a' => '<strong>BHrs[quantity]</strong>', '!b' => '<strong>BHrs99:99</strong>')),
       '#type' => 'textfield',
-      '#default_value' => $default_display['format'],
+      '#default_value' => $currency->display['format'],
       '#element_validate' => array(array($this, 'validate_format')),
       '#required' => TRUE,
       '#weight' => 4
@@ -197,7 +188,7 @@ class CurrencyFormController extends EntityFormController {
       '#title' => t('Zero value display'),
       '#description' => t('Use html.') .' ',
       '#type' => 'textfield',
-      '#default_value' => $default_display['zero'],
+      '#default_value' => $currency->display['zero'],
       '#required' => property_exists($currency, 'display') ? $zeros : FALSE,
       '#weight' => 5
     );
@@ -221,18 +212,6 @@ class CurrencyFormController extends EntityFormController {
     );
     $weight = 0;
 
-    foreach (module_implements('permission') as $module) {
-      $function = $module .'_permission';
-      foreach ($function() as $perm => $info) {
-        $options[$module][$perm] = strip_tags($info['title']);
-      }
-    }
-    $default_access = property_exists($currency, 'access') ? $currency->access :
-      array(
-        'membership' => array(current($options)),
-        'trader_data' => array(current($options)),
-        'system_data' => array(current($options))
-      );
     $form['access']['membership'] = array(
       '#title' => t('Use the currency'),
       '#description' => t('Determine which users are permitted to use this currency'),
@@ -266,10 +245,13 @@ class CurrencyFormController extends EntityFormController {
       '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
       '#type' => 'details',
       '#group' => 'additional_settings',
-      '#weight' => 2
+      '#weight' => 2,
+      '#tree' => TRUE,
     );
     foreach (transaction_operations(TRUE, FALSE) as $callback => $op_info) {
-      if ($callback == 'mcapi_view') continue;
+      if ($callback == 'mcapi_view') {
+        continue;
+      }
       if ($op_info['access form']) {
         $form['access_operations'][$callback] = $op_info['access form']($op_info, $currency);
       }

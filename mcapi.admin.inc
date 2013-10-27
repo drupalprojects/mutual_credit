@@ -245,10 +245,9 @@ function currency_edit_access($currency) {
  * load the currencies from ctools and alter them before they get used
  */
 function currencies_load_all() {
-  ctools_include('export');
   $currencies = array();
   $functions = array_keys(module_invoke_all('transaction_access_callbacks'));
-  $all = ctools_export_crud_load_all('mcapi_currencies');
+  $all = entity_load_multiple('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
   foreach($all as $currcode => $currency) {
     if (!empty($currency->disabled)) continue;
@@ -271,7 +270,7 @@ function currencies_load_all() {
     );
     foreach ($accesses as $prop => $name) {
       if (property_exists($data, $prop)) continue;
-      $message = t("Resave currency @name, paying attention to '@prop'", array('@name' => $data->human_name, '@prop' => $prop));
+      $message = t("Resave currency @name, paying attention to '@prop'", array('@name' => $data->name, '@prop' => $prop));
       drupal_set_message($message, 'warning');
     }
     $currencies[$currcode] = $currency;

@@ -123,8 +123,8 @@ function bank_slave_views_templates() {
   foreach (variable_get('mcapi_bank_slave_uids', array()) as $bank_uid) {
     $bankname = user_load($bank_uid)->name;
     foreach (variable_get('mcapi_bank_slave_currcodes') as $currcode) {
-      $currency = currency_load($currcode);
-      $tabname = t("@name @currency", array('@name' => $bankname, '@currency' => $currency->human_name));
+      $currency = entity_load('mcapi_currencies', $currcode);
+      $tabname = t("@name @currency", array('@name' => $bankname, '@currency' => $currency->name));
       $i++;
       $handler = $view->new_display('page', $tabname, 'page_'.$i);
       $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;

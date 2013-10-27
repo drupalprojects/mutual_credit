@@ -9,13 +9,13 @@
  *   'volume' => float
  *   'count' => integer
  */
-$currency = currency_load($currcode);
+$currency = entity_load('mcapi_currencies', $currcode);
 if ($currency->issuance == 'acknowledgement') {//A bar chart comparing given to gotten.
 if ($totals->gross_in == 0 && $totals->gross_out== 0) return;
 $id = "given-gotten-".$currcode;
 ?>
 <script type="text/javascript" src="http://www.google.com/jsapi"></script>
-<?php print $currency->human_name; ?>
+<?php print $currency->name; ?>
 <script type="text/javascript">
 function drawGivenGotten() {
   var data = google.visualization.arrayToDataTable([
