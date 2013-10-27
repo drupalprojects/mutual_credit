@@ -55,4 +55,32 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $view_transaction_states;
   public $access_operations;
   public $weight;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
+    foreach (module_implements('permission') as $module) {
+      $function = $module .'_permission';
+      foreach ($function() as $perm => $info) {
+        $options[$module][$perm] = strip_tags($info['title']);
+      }
+    }
+
+    $values += array(
+      'display' => array(
+        'format' => '[quantity]',
+        'divisions' => CURRENCY_DIVISION_MODE_NONE,
+        'delimiter' => ':',
+        'divisions_setting' => "0|/.\n25|1/4\n50|1/2\n75|3/4",
+        'zero' => ''
+      ),
+      'access' => array(
+        'membership' => array(current($options)),
+        'trader_data' => array(current($options)),
+        'system_data' => array(current($options))
+      ),
+      'access_operations' => array(),
+    );
+  }
 }
