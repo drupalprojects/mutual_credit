@@ -841,7 +841,7 @@ function currency_access($op, $currcode, $account = NULL) {
   $uid = is_object($account) ? $account->uid : \Drupal::currentUser()->id();
   static $calculated = array();
   if (!isset($calculated[$op][$currcode][$uid])) {
-    $currency = currency_load($currcode);
+    $currency = entity_load('mcapi_currencies', $currcode);
     $callback = strtok($currency->access[$op], ':');
     $arg = strtok(':');
     $calculated[$op][$currcode][$uid] = in_user_chooser_segment($callback, array($arg), $account->uid);
@@ -929,6 +929,9 @@ function theme_transaction($vars) {
   </div>';
 }
 
+function mcapi_currencies_load($currcode) {
+  return entity_load('mcapi_currencies', $currcode);
+}
 
 /**
  * return one currency object, assuming the user has permission to use it
@@ -944,7 +947,9 @@ function currency_load($currcode = NULL) {
   );
   return current($currencies);
 }
-/*
+
+/**
+ * TODO: Remove this function in favour of the entity_load_multiple() and entity_load_multiple_by_properties().
  * Load all the currencies from cache filter
  * then optionally return them filtered for which ones an account has membership i.e. can use
  * wish I understood ctools better. not sure I need to cache here
@@ -1242,7 +1247,7 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
     }
 
     //set the value to zero if the field is empty and the currency allows it
-    $currency = currency_load($item['currcode']);
+    $currency = entity_load('mcapi_currencies', $item['currcode']);
     //we can remove the @ when everybody has upgraded to RC6
     if (empty($value[$delta]['quantity']) && @$currency->display['zero']) {
       $value[$delta]['quantity'] = '0';

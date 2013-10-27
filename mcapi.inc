@@ -576,7 +576,7 @@ function worth_item_zero_adjustment(&$worth_render_array) {
  */
 function worth_element_validate(&$element, &$form_state, $form) {
   if (!isset($element['#value']['quantity'])) return;
-  $currency = currency_load($element['#value']['currcode']);
+  $currency = entity_load('mcapi_currencies', $element['#value']['currcode']);
   if (!$currency) {
     form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
   }
@@ -677,7 +677,7 @@ function _worth_element_process($element, &$form_state) {
   $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
 
   if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
-    $currency = currency_load(current($element['#currcodes']));
+    $currency = entity_load('mcapi_currencies', current($element['#currcodes']));
     $use_div_subelement = in_array($currency->display['divisions'], array(CURRENCY_DIVISION_MODE_CUSTOM, CURRENCY_DIVISION_MODE_CENTS_FIELD));
   }
   //work out the defaults for each subfield
@@ -741,7 +741,7 @@ function _worth_element_process($element, &$form_state) {
  * 'currcode'
  */
 function theme_worth_item(&$variables) {
-  $currency = currency_load($variables['currcode']);
+  $currency = entity_load('mcapi_currencies', $variables['currcode']);
   list($integer, $cents) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :
@@ -866,7 +866,7 @@ function currency_explode($number) {
  * rounds a transaction quantity up or down, according to currency settings
  */
 function mcapi_round($quant, $currcode, $up = FALSE) {
-  $currency = currency_load($currcode);
+  $currency = entity_load('mcapi_currencies', $currcode);
   switch ($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM:
       //calculate the number of hundredths from each division to the fraction, and choose the smallest

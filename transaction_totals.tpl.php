@@ -9,7 +9,7 @@
  *   'volume' => float
  *   'count' => integer
  */
-$currency = currency_load($currcode);
+$currency = entity_load('mcapi_currencies', $currcode);
 if ($currency->issuance == 'acknowledgement') {//A bar chart comparing given to gotten.
 if ($totals->gross_in == 0 && $totals->gross_out== 0) return;
 $id = "given-gotten-".$currcode;
