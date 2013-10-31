@@ -324,6 +324,7 @@ function _transaction_check_access_callbacks($op, $transaction) {
   //normally would use $items = field_get_items($transaction), but we are sure of language
   foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
     $callbacks = &$currencies[$item['currcode']]->{$property}[$key];
+//    if (empty($callbacks)){ddebug_backtrace();die();}
     foreach ($callbacks as $function) {
       if ($function($transaction)) return TRUE;
     }
@@ -798,6 +799,8 @@ function template_preprocess_transaction_totals(&$variables) {
 
 
 function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
+
+  if ($ajax) drupal_add_js('misc/ajax.js', array('type' => 'file'));
   global $language;
   static $operations;
   if (!$operations) {
@@ -819,14 +822,13 @@ function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
       $renderable['#links'][$op] = array(
         'title' => $info['title'],
         'href' =>  $base,
-        'attributes' => array('class' => array('use-ajax'))
+        'attributes' => $ajax ? array('class' => array('use-ajax')) : array()
       );
       if ($op != 'mcapi_view') {
         $renderable['#links'][$op]['href'] .= '/nojs/'. $op;
       }
     }
   }
-  if ($ajax) drupal_add_js('misc/ajax.js', array('type' => 'file'));
   return $renderable;
 }
 
@@ -919,4 +921,28 @@ function transaction_default_form($form, &$form_state) {
   $form['type']['#type'] = 'value';
   $form['creator']['#type'] = 'value';
   return $form;
+}
+
+
+
+//this is called via mcapi_dependent_transaction_action_form
+//where we don't have the opportunity to form_load_include because it is called through the action system
+function mcapi_configure_worth_accept_formula($element) {
+  foreach (element_children($element) as $delta) {
+    //this field will accept a formula, not just a number
+    $element[$delta]['main_quant']['#size'] = 10;
+    $element[$delta]['main_quant']['#maxlength'] = 10;
+    $element[$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_formula');
+  }
+  return $element;
+}
+/*
+ * element validate callback
+ * ensures that the formula for calculating a quantity works
+ */
+function validate_mcapi_configure_worth_formula(&$element, $form_state) {
+  if (empty($element['#value'])) return;
+  if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
+    form_error($element, t('Invalid formula'));
+  }
 }

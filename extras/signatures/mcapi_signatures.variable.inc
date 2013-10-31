@@ -23,8 +23,8 @@ function mcapi_signatures_variable() {
       'description' => t('Specifies who should sign and who should be notified for transactions of this type'),
       'type' => 'array',
       'default' => array(
-        'participants' => FALSE
-        'countersignatories' => array()
+        'participants' => FALSE,
+        'countersignatories' => array(),
         'notify' => FALSE
       )
     );

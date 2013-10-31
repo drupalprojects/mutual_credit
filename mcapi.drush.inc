@@ -173,6 +173,7 @@ function drush_devel_generate_transactions($num_transactions = 10) {
     $cluster = array(entity_create('transaction', $props));
     $serial = transaction_cluster_write($cluster, TRUE);
     $transaction = transaction_load($serial);
-    drush_print(strip_tags(drupal_render(transaction_view($transaction, variable_get('mcapi_sentence', mcapi_sentence_default())))));
+    $renderable = transaction_view($transaction, variable_get('mcapi_sentence', mcapi_sentence_default()));
+    drush_print(strip_tags(drupal_render()));
   }
 }

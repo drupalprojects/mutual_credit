@@ -84,7 +84,7 @@ function _mcapi_menu() {
   $items['admin/accounting/workflow'] = array(
     'title' => "Workflow",
     'description' => "Configuration around transaction states, types and operations",
-    'page callback' => 'mcapi_workflow_settings',
+    'page callback' => 'mcapi_workflow',
     'access arguments' => array('manage all transactions'),
     'file' => 'mcapi.admin.inc',
     'weight' => 2
@@ -326,32 +326,28 @@ function mcapi_misc_options_form($form_state) {
   );
   return system_settings_form($form);
 }
-
+function mcapi_workflow_help() {}
 //menu callback. there is hook_help for this
-function mcapi_workflow_settings() {
-  module_load_include('admin.inc', 'system');
-  return system_admin_menu_block_page();
-}
-function mcapi_workflow_help() {
+function mcapi_workflow() {
   drupal_add_css('table.help{float:left;margin-right:1em;} ul.admin-list{clear:both;s}', array('type' => 'inline'));
   $renderable = array(
     'states' => array(
       '#theme' => 'table',
       '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
       '#header' => array(t('Name'), t('Description')),
-      '#attributes' => array('class' => array('help'), 'style' => 'width:39%')
+      '#attributes' => array('class' => array('help'), 'style' => 'width:38%')
     ),
     'types' => array(
       '#theme' => 'table',
       '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
       '#header' => array(t('machine name')),
-      '#attributes' => array('class' => array('help'), 'style' => 'width:19%')
+      '#attributes' => array('class' => array('help'), 'style' => 'width:18%')
     ),
     'ops' => array(
       '#theme' => 'table',
       '#caption' => t('Operations, from !hook.', array('!hook' => "\n<br />hook_transaction_operations()")),
       '#header' => array(t('Name'), t('Description')),
-      '#attributes' => array('class' => array('help'), 'style' => 'width:39%')
+      '#attributes' => array('class' => array('help'), 'style' => 'width:38%')
     ),
   );
   foreach (mcapi_get_states('#full') as $name => $info) {
@@ -369,9 +365,10 @@ function mcapi_workflow_help() {
       //'form' => empty($info['form callback']) ? t('No'): t('Yes'),
     );
   }
-  return drupal_render($renderable);
+  module_load_include('admin.inc', 'system');
+  $renderable['items']['#markup'] = system_admin_menu_block_page();
+  return $renderable;
 }
-
 /*
  * ctools plugin callback for editing a currency, determined by the ctools export_plugin
  * The form_id is actually ctools_export_ui_edit_item_form
@@ -1053,11 +1050,10 @@ function mcapi_dependent_transaction_action_form($context) {
     '#weight' => 0,
     'participants' => array(
       '#title' => t('Participants'),
-      '#description' => t('Determine who will pay whom'),
       '#type' => 'fieldset',
       'mapping' => array(
-        '#title' => t('Mapping'),
-        '#description' => t('On a node trigger, the payer and payee will both evaluate to the node author'),
+        '#title' => t('Determine who will pay whom'),
+        '#description' => t('If this action is triggered on a node, substitute the node author for both payer and payee below.'),
         '#type' => 'radios',
         '#options' => array(
           'payerpays' => t('Payer pays other'),
@@ -1069,7 +1065,8 @@ function mcapi_dependent_transaction_action_form($context) {
       ),
       'otheruser' => array(
         '#title' => t('Other account'),
-        '#type' => 'user_chooser_segment_perms',
+        '#type' => 'user_chooser_few',
+        '#callback' => 'user_chooser_segment_perms',
         '#args' => array('transact'),
         '#default_value' => isset($context['presets']['participants']['otheruser']) ? $context['presets']['participants']['otheruser'] : 1,
         '#weight' => 1,
@@ -1112,16 +1109,6 @@ function mcapi_dependent_transaction_action_form($context) {
   return $form;
 }
 
-function mcapi_configure_worth_accept_formula($element) {
-  foreach (element_children($element) as $delta) {
-    //this field will accept a formula, not just a number
-    $element[$delta]['main_quant']['#size'] = 10;
-    $element[$delta]['main_quant']['#maxlength'] = 10;
-    $element[$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_formula');
-  }
-  return $element;
-}
-
 /*
  * configuration action submit callback
  */
@@ -1129,19 +1116,6 @@ function mcapi_dependent_transaction_action_submit($form, $form_state) {
   form_state_values_clean($form_state);
   return $form_state['values'];
 }
-
-
-/*
- * element validate callback
- * ensures that the formula for calculating a quantity works
- */
-function validate_mcapi_configure_worth_formula(&$element, $form_state) {
-  if (empty($element['#value'])) return;
-  if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
-    form_error($element, t('Invalid formula'));
-  }
-}
-
 
 function mcapi_description_field($form, $form_state) {
   $options = array('' => 'none');

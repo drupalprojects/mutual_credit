@@ -1129,10 +1129,12 @@ function mcapi_update_7023() {
  * rename block settings variables
  */
 function mcapi_update_7024() {
-  db_update('trigger_assignments')
-   ->fields(array('hook' => 'transaction_update'))
-   ->condition('hook', 'transaction_state')
-   ->execute();
+  if (db_query('SHOW TABLES LIKE {trigger_assignments}')->fetch()) {
+    db_update('trigger_assignments')
+     ->fields(array('hook' => 'transaction_update'))
+     ->condition('hook', 'transaction_state')
+     ->execute();
+  }
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);

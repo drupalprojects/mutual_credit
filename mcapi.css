@@ -9,9 +9,10 @@ div.sentence .link {
 #dependent-transactions {
   border: medium solid grey;
   text-align: center;
+  clear:both;
 }
 div.transaction.certificate {
-  padding: 3em 3em 1em 3em;
+  padding: 0 3em 1em 3em;
   text-align: center;
 }
 div.transaction.certificate span.quantity {

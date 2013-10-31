@@ -475,7 +475,7 @@ function mcapi_user_view($account, $mode, $language) {
 function mcapi_block_info() {
   $blocks = array();
   if (variable_get('mcapi_show_balances', 0)) {
-    $blocks[balances] = array('info' => 'MC '. t("Balances"));
+    $blocks['balances'] = array('info' => 'MC '. t("Balances"));
   }
   return $blocks;
 }
@@ -766,6 +766,7 @@ function transaction_operation_access($op, $transaction = NULL) {
   $operations = transaction_operations();
   if (is_object($transaction)) {
     mcapi_operation_include($operations[$op]);
+//    if (!$transaction->worth)debug($transaction);
     foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
       if ($operations[$op]['access callback']($op, $transaction)) continue;
       return FALSE;
@@ -933,7 +934,6 @@ function theme_transaction($vars) {
  */
 function currency_load($currcode = NULL) {
   $currencies = currencies_load();
-  if (empty($currencies))currencies_load();//filters
   if ($currcode && isset($currencies[$currcode])) {
     return $currencies[$currcode];
   }
@@ -1050,7 +1050,7 @@ function trigger_transaction_cluster_alter(&$cluster) {
     $volitional_transaction = reset($cluster);
     $result = actions_do($aid, $volitional_transaction, $info);
     if (is_object($result[$aid])) {
-      $cluster[] = $result[$aid];
+      $cluster[$result[$aid]->xid] = $result[$aid];
     }
   }
 }
@@ -1519,3 +1519,4 @@ function mcapi_operation_include($info) {
     }
   }
 }
+
