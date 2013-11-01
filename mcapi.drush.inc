@@ -137,7 +137,7 @@ function hard_delete($serials) {
     field_attach_delete('transaction', $transaction);
     module_invoke_all('entity_delete', $transaction, 'transaction');
   }
-  entity_get_controller('transaction')->delete($serials, TRUE);
+  entity_get_controller('mcapi_transaction')->delete($serials, TRUE);
 }
 
 

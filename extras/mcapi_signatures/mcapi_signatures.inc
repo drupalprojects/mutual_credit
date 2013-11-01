@@ -94,7 +94,7 @@ function transaction_op_undo_pending_access($callbacks, $transaction) {
 
 function mcapi_signall($form, $form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
-  $transactions = entity_load('transaction', transaction_filter(array('serial' => $serials)));
+  $transactions = entity_load('mcapi_transaction', transaction_filter(array('serial' => $serials)));
   $form['preview'] = transaction_view($transactions, \Drupal::config('mcapi.misc')->get('sentence_template')));
   $form['uid'] = array(
     '#type' => 'hidden',

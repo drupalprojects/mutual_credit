@@ -123,7 +123,7 @@ function mcapi_mass_pay_submit($form, &$form_state) {
     global $language;
     $xids = array_keys(transaction_filter(array('serial' => $serial)));
     //TODO batch this
-    foreach (entity_load('transaction', $xids) as $transaction) {
+    foreach (entity_load('mcapi_transaction', $xids) as $transaction) {
       $params['transaction'] = $transaction;
       $account = user_load($transaction->$mailto);
       drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);

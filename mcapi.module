@@ -66,7 +66,7 @@ function transaction_cluster_write(array $cluster, $really = TRUE) {
   //put all the transactions side by side ready for the entity controller to validate and insert
   module_invoke_all('accounting_validate', $cluster);
 
-  $serial = entity_get_controller('transaction')->next_serial();
+  $serial = entity_get_controller('mcapi_transaction')->next_serial();
   $t = db_transaction();
   $created = REQUEST_TIME -1;
 
@@ -81,7 +81,7 @@ function transaction_cluster_write(array $cluster, $really = TRUE) {
       //$wrapper = entity_metadata_wrapper('transaction', $transaction);
       //$wrapper->insert();
       ///TEMP
-      entity_get_controller('transaction')->insert($transaction, $really);
+      entity_get_controller('mcapi_transaction')->insert($transaction, $really);
       //write the fields
       field_attach_insert('transaction', $transaction);
     }
@@ -109,7 +109,7 @@ function transaction_cluster_write(array $cluster, $really = TRUE) {
  */
 function transaction_update($op, $transaction, $old_state = NULL) {
   //entity_metadata_wrapper('transaction', $transaction)->update();
-  entity_get_controller('transaction')->update($transaction);
+  entity_get_controller('mcapi_transaction')->update($transaction);
   //this will have fired
   //hook_entity_presave
   //hook_entity_insert OR hook_entity_update
@@ -134,7 +134,7 @@ function transaction_update($op, $transaction, $old_state = NULL) {
 function transaction_undo($serial) {
   //load all the transactions sharing this serial as equals in an array, not as parent/children
   $xids = array_keys(transaction_filter(array('serial' => $serial)));
-  $transactions = entity_load('transaction', $xids);
+  $transactions = entity_load('mcapi_transaction', $xids);
   switch(variable_get('mcapi_controller_delete_mode')) {
     case MCAPI_CURRENCY_UNDO_ERASE:
       $transaction = current($transactions);
@@ -147,7 +147,7 @@ function transaction_undo($serial) {
         field_attach_delete('transaction', $transaction);
         $xids[] = $transaction->xid;
       }
-      entity_get_controller('transaction')->delete($xids);
+      entity_get_controller('mcapi_transaction')->delete($xids);
       entity_delete_multiple($entity_type, $xids);
       break;
 
@@ -192,7 +192,7 @@ function transaction_totals($uid, $currcode = NULL, $filters = array()) {
     $filters = array(array('state', 0, '>'));
   }
   //convert it to an object for cleaner syntax in php5
-  return (object)entity_get_controller('transaction')->sums($uid, $currcode, $filters);
+  return (object)entity_get_controller('mcapi_transaction')->sums($uid, $currcode, $filters);
 }
 
 /*
@@ -219,7 +219,7 @@ function transaction_load($serial = NULL) {
   foreach ($serials as $serial_num) {
     if (empty($loaded[$serial_num])) {
       $serials = transaction_filter(array('serial' => $serial_num));
-      $transactions = entity_load('transaction', array_keys($serials));
+      $transactions = entity_load('mcapi_transaction', array_keys($serials));
       if (empty($transactions)) {
         throw new Exception(t('Unable to load transaction @serial', array('@serial' => $serial_num)));
       }
@@ -243,12 +243,12 @@ function transaction_filter(array $conditions, $offset = 0, $limit = 25, $fielda
   if ($fieldapi) {
     $offset = 0; $limit = 0;
   }
-  $serials = entity_get_controller('transaction')->filter($conditions, $offset, $limit);
+  $serials = entity_get_controller('mcapi_transaction')->filter($conditions, $offset, $limit);
   if ($serials && $fieldapi) {
     $filtered = array();
     //we just need to load one transaction for each serial number
     $serials = array_unique($serials);//TODO ONLINE ENSURE THAT KEYS ARE PRESERVED
-    foreach (entity_load('transaction', array_keys($serials)) as $transaction) {
+    foreach (entity_load('mcapi_transaction', array_keys($serials)) as $transaction) {
       foreach ($fieldapi as $fieldname => $value) {
         $items = field_get_items('transaction', $transaction, $fieldname);
         if (current($items[0]) == $value) $filtered[$transaction->xid] = $transaction->serial;
@@ -1527,7 +1527,7 @@ function mcapi_validate_ttype(&$element, $form_state) {
  */
 function mcapi_restws_response_alter(&$ref, $function) {
   if ($function != 'createResource') return;
-  $ref['uri'] = str_replace($ref['id'], current(entity_load('transaction', array($ref['id'])))->serial,  $ref['uri']);
+  $ref['uri'] = str_replace($ref['id'], current(entity_load('mcapi_transaction', array($ref['id'])))->serial,  $ref['uri']);
 }
 
 function mcapi_operation_include($info) {
