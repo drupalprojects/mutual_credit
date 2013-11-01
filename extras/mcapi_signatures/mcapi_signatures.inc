@@ -62,8 +62,8 @@ function transaction_op_sign($op, $transaction) {
 function transaction_op_sign_access($callbacks, $transaction) {
   if ($transaction->state == TRANSACTION_STATE_PENDING &&
     property_exists($transaction, 'pending_signatures') &&
-    array_key_exists($GLOBALS['user']->uid, $transaction->pending_signatures) &&
-    $transaction->pending_signatures[$GLOBALS['user']->uid]) return TRUE;
+    array_key_exists(\Drupal::currentUser()->id(), $transaction->pending_signatures) &&
+    $transaction->pending_signatures[\Drupal::currentUser()->id()]) return TRUE;
 }
 
 /*

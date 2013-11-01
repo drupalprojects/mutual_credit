@@ -16,8 +16,8 @@ function mcapi_ajaxform($form, $form_state) {
   if ($form_state['step'] == 1) {
     $form = transaction_form($form, $form_state);
     //sort out the first and second parties from the payer and payee
-    if ($transaction->payer == $GLOBALS['user']->uid) $direction = 'outgoing';
-    elseif($transaction->payee == $GLOBALS['user']->uid) $direction = 'incoming';
+    if ($transaction->payer == \Drupal::currentUser()->id()) $direction = 'outgoing';
+    elseif($transaction->payee == \Drupal::currentUser()->id()) $direction = 'incoming';
     //if neither payee nor payer is the firstparty, we have to choose one direction as default
     else $direction = 'outgoing';
 
@@ -29,7 +29,7 @@ function mcapi_ajaxform($form, $form_state) {
     );
     $form['firstperson'] = array(
       '#type' => 'hidden',
-      '#value' => $GLOBALS['user']->uid,
+      '#value' => \Drupal::currentUser()->id(),
      );
      $form['secondperson'] = array(
       '#title' => 'Other person',

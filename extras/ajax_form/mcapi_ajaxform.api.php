@@ -6,15 +6,15 @@
  */
   $node = node_load(8);
   //you can't do transactions with yourself
-  if ($node->uid == $GLOBALS['user']->uid) return '';
+  if ($node->uid == \Drupal::currentUser()->id()) return '';
   //the only way to set the default direction is by setting the payer or payee
   if ($node->want) {
-    $props['payer'] = $GLOBALS['user']->uid;
+    $props['payer'] = \Drupal::currentUser()->id();
     $props['payee'] = $node->uid;
   }
   else {
     $props['payer'] = $node->uid;
-    $props['payee'] = $GLOBALS['user']->uid;
+    $props['payee'] = \Drupal::currentUser()->id();
   }
   //any fields which exist both on the passed entity bundle and on the transaction entity
   //will be copied over to prepopulate the transaction entity.
