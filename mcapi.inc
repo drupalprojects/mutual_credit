@@ -176,7 +176,7 @@ function mcapi_validate_title(&$element, $form_state) {
 function mcapi_validate_state(&$element, &$form_state) {
   $states = mcapi_get_states('#full');
   if (!isset($states[$element['#value']])) {
-    form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['$value'])));
+    form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['#value'])));
   }
 }
 /*
