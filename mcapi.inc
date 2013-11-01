@@ -24,6 +24,7 @@ class transaction extends Entity {
 }
 }
 
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Template\Attribute;
 
 /*
@@ -610,7 +611,7 @@ function worths_element_validate(&$element, &$form_state) {
   //unless the currency settings explicitly allow it.
   //first of all set the form_State value, which could not be set from the form_type_worths_value
   //because of the way it is populated from the container inwards
-  drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], $element['#value']);
+  NestedArray::setValue($form_state['values'], $element['#array_parents'], $element['#value']);
   if ($element['#required']) {//note that this checks all the $items together
     if (empty($element['#value'])) {
       form_error($element, t('!name field is required.', array('!name' => $element['#title'])));
