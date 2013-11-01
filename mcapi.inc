@@ -24,6 +24,7 @@ class transaction extends Entity {
 }
 }
 
+use Drupal\Core\Template\Attribute;
 
 /*
  * transaction entity definition 'label callback'
@@ -95,7 +96,7 @@ function _transaction_form(&$form, &$form_state) {
       '#type' => 'submit',
       '#value' => t('Record'),
       //this prevents double click, but doesn't prevent going back and resubmitting the form
-      '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();"),
+      '#attributes' => new Attribute(array('onclick' => "this.disabled=true,this.form.submit();")),
     ),
     '#weight' => 25
   );
@@ -769,6 +770,7 @@ function theme_worth_item(&$variables) {
 function theme_worth_element($variables) {
   $element = &$variables['element'];
   $element['#attributes']['class'][] = "worth-widget";
+  $element['#attributes'] = new Attribute($element['#attributes']);
   $curr_select = drupal_render($element['currcode']);
   $quant_field = drupal_render($element['main_quant']);
   if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
@@ -785,7 +787,7 @@ function theme_worth_element($variables) {
     }
     $output = $curr_select . $quant_field;
   }
-  return '<div ' . drupal_attributes($element['#attributes']) . '>'. $output .'</div>';
+  return '<div ' . $element['#attributes'] . '>'. $output .'</div>';
 }
 
 /*
@@ -809,7 +811,7 @@ function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
   $renderable = array(
     '#theme' => 'links',
     //'#heading' => t('Operations'),
-    '#attributes' => array('class' => array('transaction-operations')),
+    '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
     '#links' => array()
   );
   $base = 'transaction/'. $transaction->serial;

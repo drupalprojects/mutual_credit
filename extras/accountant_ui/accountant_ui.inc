@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Template\Attribute;
+
 /*
  * menu form callback
  * $type denontes which of the 2 mass payments requested, many2one, one2many
@@ -78,7 +80,7 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
       '#type' => 'submit',
       '#value' => t('Record'),
       //this prevents double click, but doesn't prevent going back and resubmitting the form
-      '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();"),
+      '#attributes' => new Attribute(array('onclick' => "this.disabled=true,this.form.submit();")),
       '#weight' => 20
     )
   );

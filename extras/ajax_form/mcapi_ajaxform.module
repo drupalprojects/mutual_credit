@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Template\Attribute;
+
 /*
  * This is a like a 1stparty form
  * INTENDED TO BE ALTERED using hook_form_mcapi_ajaxform_alter()
@@ -70,10 +72,10 @@ function mcapi_ajaxform($form, $form_state) {
   }
 
   //both steps use the same ajax button
-  $form['buttons']['submit']['#attributes']= array(
+  $form['buttons']['submit']['#attributes']=  new Attribute(array(
     'class' => array('use-ajax'),
     'onClick' => "this.disabled=true,this.form.submit();"
-  );
+  ));
   return $form;
 }
 

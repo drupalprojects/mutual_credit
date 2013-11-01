@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Template\Attribute;
+
 /*
  * this is called by the hook mcapi_entity_info
  */
@@ -196,24 +198,24 @@ function mcapi_workflow_help() {
       ),
     ),
     '#type' => 'container',
-    '#attributes' => array('id' => 'mcapi-workflow-container', 'class' => 'clearfix'),
+    '#attributes' => new Attribute(array('id' => 'mcapi-workflow-container', 'class' => 'clearfix')),
     'states' => array(
       '#theme' => 'table',
       '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
       '#header' => array(t('Name'), t('Description')),
-      '#attributes' => array('class' => array('mcapi-workflow-states'))
+      '#attributes' => new Attribute(array('class' => array('mcapi-workflow-states'))),
     ),
     'types' => array(
       '#theme' => 'table',
       '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
       '#header' => array(t('machine name')),
-      '#attributes' => array('class' => array('mcapi-workflow-types'))
+      '#attributes' => new Attribute(array('class' => array('mcapi-workflow-types'))),
     ),
     'ops' => array(
       '#theme' => 'table',
       '#caption' => t('Operations, from !hook.', array('!hook' => "\n<br />hook_transaction_operations()")),
       '#header' => array(t('Name'), t('Description')),
-      '#attributes' => array('class' => array('mcapi-workflow-operations'))
+      '#attributes' => new Attribute(array('class' => array('mcapi-workflow-operations'))),
     ),
   );
   foreach (mcapi_get_states('#full') as $name => $info) {

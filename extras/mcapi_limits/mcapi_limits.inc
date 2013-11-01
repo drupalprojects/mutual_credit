@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Template\Attribute;
+
 /*
  * callback for the currency edit form
  * when building the initial page, the $currency is passed, AJAX builds use form_state
@@ -140,7 +142,7 @@ function min_max_fields($defaults) {
       '#element_validate' => array('mcapi_validate_optional_num', 'mcapi_limits_validate_min'),
       '#size' => 7,
       '#maxlength' => 7,
-      '#attributes' => array('style' => 'width:inherit;')
+      '#attributes' =>  new Attribute(array('style' => 'width:inherit;'))
      ),
      'max' => array(
       '#title' => t('Optional maximum balance'),
@@ -151,7 +153,7 @@ function min_max_fields($defaults) {
       '#size' => 6,
       '#maxlength' => 6,
       '#weight' => 1,
-      '#attributes' => array('style' => 'width:inherit;'),
+      '#attributes' =>  new Attribute(array('style' => 'width:inherit;')),
     )
   );
 }

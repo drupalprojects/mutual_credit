@@ -1,5 +1,6 @@
 <?php
 
+use Drupal\Core\Template\Attribute;
 
 /*
  * returns an array of min and max, if the keys are unset that means there is no limit.
@@ -203,7 +204,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
       $form['limits_personal'][$currcode] = array(
          '#type' => 'fieldset',
          '#title' => $currency->name,
-         '#attributes' => array('style' => 'float:left;')
+         '#attributes' =>  new Attribute(array('style' => 'float:left;'))
       );
       $fields = min_max_fields(limits_get($currcode, $form['#user']->uid));
       $form['limits_personal'][$currcode]['min-'.$currcode] = $fields['min'];

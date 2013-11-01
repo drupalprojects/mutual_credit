@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Template\Attribute;
+
 class mcapi_ui extends ctools_export_ui {
 
   function init($plugin) {
@@ -72,7 +74,7 @@ class mcapi_ui extends ctools_export_ui {
     $ops = array(
       '#theme' => 'links__ctools_dropbutton',
       '#links' => $operations,
-      '#attributes' => array('class' => array('links', 'inline'))
+      '#attributes' =>  new Attribute(array('class' => array('links', 'inline'))),
     );
     $this->rows[$currcode]['data'][5] = array(
       'data' => $ops,

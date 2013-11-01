@@ -1,5 +1,8 @@
 <?php
-/*
+
+use Drupal\Core\Template\Attribute;
+
+/**
  * theme implementation of pending_signatures
  * show the $transaction->pending signatures, signed and unsigned, with links
  *
@@ -36,7 +39,7 @@ foreach ($transaction->pending_signatures as $uid => $status) {
 }
 $table = array(
   '#theme' => 'table',
-  '#attributes' => array('style' => "width:15em;"),
+  '#attributes' =>  new Attribute(array('style' => "width:15em;")),
   '#rows' => $rows
 );
 ?>

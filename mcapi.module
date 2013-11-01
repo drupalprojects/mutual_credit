@@ -924,7 +924,7 @@ function theme_transaction($vars) {
   }
   element_set_attributes($transaction, array('class', 'id'));
   //id is hardcoded here because ajax operations will break if it changes
-  return '<div '. drupal_attributes($transaction['#attributes']) . '>
+  return '<div '. $transaction['#attributes'] . '>
     '. $transaction['#children'] .'
   </div>';
 }
