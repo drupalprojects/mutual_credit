@@ -1,29 +1,5 @@
 <?php
 
-
-$controller_mod = variable_get('mcapi_controller', 'mcapi');
-require_once(drupal_get_path('module', $controller_mod) .'/'. $controller_mod).'.controller';
-
-/*
- * I don't really know how to use this
- * copied from http://www.trellon.com/content/blog/creating-own-entities-entity-api
- */
-if (class_exists('Entity')) {
-class transaction extends Entity {
-  protected function defaultLabel() {
-    return $this->title;
-  }
-
-  public function identifier() {
-    return $this->serial;
-  }
-
-  protected function defaultUri() {
-    return array('path' => 'transaction/' . $this->serial);
-  }
-}
-}
-
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Template\Attribute;
 

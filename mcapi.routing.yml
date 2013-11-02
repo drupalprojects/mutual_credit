@@ -49,3 +49,11 @@ mcapi.workflow:
     _title: 'Workflow'
   requirements:
     _permission: 'manage all transactions'
+
+mcapi.transaction_log:
+  path: '/transaction/log'
+  defaults:
+    _entity_form: 'mcapi_transaction.add'
+    _title: 'Record transaction'
+  requirements:
+    _permission: 'transact'

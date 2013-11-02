@@ -101,26 +101,12 @@ function _mcapi_menu() {
     'weight' => 2,
     'route_name' => 'mcapi.workflow',
   );
-  /*
   $items['transact/log'] = array(
     'title' => "Record transaction",
     'description' => "Log a transaction in the database",
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('transaction_default_form'),
-    //we use this permission but it's possible to create a paradox since each currency has its own permission
-    //if we knew what currency we would use callback 'access' and arg 'membership'
-    'access arguments' => array('transact'),
-    'file' => 'mcapi.inc',
-    'file path' => drupal_get_path('module', 'mcapi')
+    'route_name' => 'mcapi.transaction_log',
   );
-  $items['admin/accounting/currencies/%currency/edit'] = array(
-    'title' => "Configure currency",
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('currency_form', 3),
-    'access callback' => 'currency_edit_access',
-    'access arguments' => array(3),
-    'type' => MENU_CALLBACK,
-  );
+  /*
   $operations = transaction_operations(FALSE, FALSE);
   //this item is for a the special transaction operation, 'view'
   $items['transaction/%transaction'] = array(
