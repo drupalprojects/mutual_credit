@@ -1308,7 +1308,7 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
         if (currency_access('membership', $item['currcode'])) continue;
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'currency_access_membership',
-          'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->$uid)->name, '@currency' => $currency->human_name))
+          'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->$uid)->name, '@currency' => $currency->name))
         );
       }
     }
