@@ -1,8 +1,5 @@
 
 /*div.sentence, */
-div.worth-widget div.form-item {
-  display: inline
-}
 div.sentence .link {
   padding: 0 0 0 1em;
 }
@@ -30,10 +27,6 @@ div.transaction.state-0{
 
 .vertical-tabs .form-type-textfield input {
   width: inherit;
-}
-
-div.worth-widget {
-  margin-bottom: 5px;
 }
 
 .transaction-totals .balance {

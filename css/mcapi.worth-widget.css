@@ -1,0 +1,10 @@
+/**
+ * Styling for the Worth Widget
+ */
+div.worth-widget {
+  margin-bottom: 5px;
+}
+
+div.worth-widget div.form-item {
+  display: inline
+}

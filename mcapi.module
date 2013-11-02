@@ -1178,10 +1178,11 @@ function mcapi_element_info() {
       '#title' => t('Worth'),
       '#input' => TRUE,
       '#title_display' => 'before',
-      '#element_validate' => array('worths_element_validate'),
+      '#element_validate' => array('mcapi_worths_element_validate'),
       '#theme_wrappers' => array('form_element'),
-      '#process' => array('worths_element_process'),
+      '#process' => array('mcapi_worths_element_process'),
       '#tree' => TRUE,
+      '#value_callback' => 'mcapi_form_type_worths_value',
       //custom properties, used for configuration
       '#preset' => FALSE,//ensures all currencies are showing
       '#calc' => FALSE,//allow a formula
@@ -1191,11 +1192,16 @@ function mcapi_element_info() {
     'worth' => array(
       '#input' => TRUE,
       '#title_display' => 'attribute',
-      '#process' => array('worth_element_process'),
-      '#element_validate' => array('worth_element_validate'),
+      '#process' => array('mcapi_worth_element_process'),
+      '#element_validate' => array('mcapi_worth_element_validate'),
       '#theme' => 'worth_element',
       //custom properties, used for configuration
       '#calc' => FALSE,
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'mcapi') . '/css/mcapi.worth-widget.css',
+        )
+      ),
     )
   );
 }
@@ -1204,7 +1210,7 @@ function mcapi_element_info() {
  * element process callback
  * is called once for each $item
  */
-function worth_element_process($element, &$form_state) {
+function mcapi_worth_element_process($element, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
   return _worth_element_process($element, $form_state);
 }
@@ -1217,7 +1223,7 @@ function worth_element_process($element, &$form_state) {
  * or many widgets with fixed currencies
  * $element['default_value'] is an array of all the currencies to be rendered as keys against quantitites
  */
-function worths_element_process($element, &$form_state) {
+function mcapi_worths_element_process($element, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
   return _worths_element_process($element, $form_state);
 }
@@ -1226,8 +1232,11 @@ function worths_element_process($element, &$form_state) {
  * implements form_type_ELEMENT_NAME_value
  * default value_callback for worths
  */
-function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
-  if ($edit == FALSE) return;
+function mcapi_form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
+  if ($edit == FALSE) {
+    return;
+  }
+
   $value = array();
 
   foreach ($edit as $delta => $item) {
@@ -1256,96 +1265,9 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
       unset($value[$delta]);
     }
   }
-  //renumber the items or field_API will break!
-  $value = array_values($value);
-  //we have to set the form_state[values] here because they have probably already been set by the parent element
-  //they are only set automatically if they haven't been set at all
-  //drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], @$value);
+
   return $value;
 }
-
-
-/*
- * Imlements hook_field_info().
- */
-function mcapi_field_info() {
-  return array(
-    //oops the field type has the same name as the default_formatter
-    'worth_field' => array(
-      'label' => t('Worth'),
-      'description' => t("One or more values, each denominated in a currency"),
-      'settings' => array(),
-      'instance_settings' => array(),
-      'default_widget' => 'worths_widget',
-      'default_formatter' => 'worth_field',
-      'translatable' => FALSE,
-      //following properties are for the entity API module.
-      'property_type' => 'worthfield',
-      'property_callbacks' => array('worthfield_property_info_callback'),
-    )
-  );
-}
-
-/*
- * implements hook_field_formatter_info().
- */
-function mcapi_field_formatter_info() {
-  return array(
-    'worth_field' => array(
-      'label' => t('Worth'),
-      'field types' => array('worth_field'),
-    )
-  );
-}
-
-/*
- * implements hook_field_formatter_view().
- * prepare a render array containing all (worth) $items
- */
-function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items) {
-  $element = array();
-  foreach($items as $delta => $item) {
-    $element[$delta] = array(
-      '#theme' => 'worth_item',
-      '#currcode' => $item['currcode'],
-      '#quantity' => $item['quantity'],
-    );
-  }
-  return $element;
-}
-
-/*
- * implements hook_field_widget_info().
- */
-function mcapi_field_widget_info() {
-  return array(
-    'worths_widget' => array(
-      'label' => t('Worth'),
-      'field types' => array('worth_field'),
-      'behaviors' => array('multiple values' => FIELD_BEHAVIOR_CUSTOM)
-    )
-  );
-}
-/*
- * implements hook_field_widget_form().
- * This is called once for ALL $items because the widget 'behavior' determines it, like checkboxes
- * See entity_metadata_create_transaction() for default $items
- */
-function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-  form_load_include($form_state, 'inc', 'mcapi');
-  $element['#type'] = 'worths';
-  $defaults = count($items) ? $items : (array)$instance['default_value'];
-  //set the instance defaults exactly as saved in mcapi_form_field_ui_field_edit_form_alter
-  //these are used when the element is processed
-  foreach ($defaults as $item) {
-    $element['#default_value'][$item['currcode']] = $item['quantity'];
-  }
-  if (!isset($element['#default_value'])) {
-    $element['#default_value'] = array();
-  }
-  return $element;
-}
-
 
 /*
  * implements hook_field_validate().
@@ -1437,29 +1359,9 @@ function worthfield_property_info_callback(&$info, $entity_type, $field, $instan
   unset($property['query callback']);
 }
 
-/*
- * PROPERTY_TYPE is referenced in hook_field_info().
- */
-function worthfield_data_property_info() {
-  return array(
-    'currcode' => array(
-      'type' => 'text',
-      'label' => t('Currency code'),
-      'options list' => '_currcode_options',
-      'getter callback' => 'entity_property_verbatim_get',
-      'setter callback' => 'entity_property_verbatim_set',
-    ),
-    'quantity' => array(
-      'type' => 'decimal',
-      'label' => t('Quantity'),
-      'getter callback' => 'entity_property_verbatim_get',
-      'setter callback' => 'entity_property_verbatim_set',
-    ),
-  );
-}
 function _currcode_options() {
   foreach (currencies_load(\Drupal::currentUser()) as $currcode => $currency) {
-    $options[$currcode] = $currency->human_name;
+    $options[$currcode] = $currency->name;
   }
   return $options;
 }
