@@ -273,22 +273,12 @@ function mcapi_transaction_entity_uid_form($context) {
     '#weight' => 1
   );
 
-<<<<<<< HEAD
-  if (\Drupal::config(mcapi.misc)->get('sentence_template')) {
-    $form['description'] = array(
-      '#title' => t('Transaction description text'),
-      '#type' => 'textfield',
-      '#default_value' => @$context['worth_items']['description'],
-    );
-  }
-=======
   $form['description'] = array(
     '#title' => t('Transaction description text'),
     '#type' => 'textfield',
     '#default_value' => @$context['worth_items']['description'],
   );
 
->>>>>>> got rid of transaction_description_field variable
   return $form;
 }
 /*
