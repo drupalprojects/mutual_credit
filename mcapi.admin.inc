@@ -466,7 +466,7 @@ function mcapi_transaction_entity_uid_form($context) {
     '#weight' => 1
   );
 
-  if (variable_get('transaction_description_field')) {
+  if (\Drupal::config(mcapi.misc)->get('sentence_template')) {
     $form['description'] = array(
       '#title' => t('Transaction description text'),
       '#type' => 'textfield',
@@ -574,7 +574,7 @@ function mcapi_dependent_transaction_action_form($context) {
     )
   );
 
-  if (variable_get('transaction_description_field')) {
+  if (\Drupal::config(mcapi.misc)->get('sentence_template')) {
     $form['presets']['description'] = array(
       '#title' => t('Transaction description text'),
       '#type' => 'textfield',
@@ -624,7 +624,7 @@ function mcapi_description_field($form, $form_state) {
     '#title' => 'Description field',
     '#description' => t("Which of the text fields below is used for the transaction description?."),
     '#options' => $options,
-    '#default_value' => variable_get('transaction_description_field', ''),
+    '#default_value' => \Drupal::config(mcapi.misc)->get('sentence_template'),
   );
   return system_settings_form($form);
 }
@@ -705,7 +705,7 @@ function mcapi_transaction_operations() {
   $operations['mcapi_undo'] = array(
     'title' => 'Undo',
     'description' => 'Undo a finished transaction, and its dependents',
-    'sure' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE ?
+    'sure' => \Drupal::config(mcapi.misc)->get('delete_mode') == MCAPI_CURRENCY_UNDO_DELETE ?
       'Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)' :
       'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
     'access callback' => 'transaction_op_undo_access',

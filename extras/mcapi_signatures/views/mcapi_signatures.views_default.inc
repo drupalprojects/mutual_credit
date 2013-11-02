@@ -42,7 +42,7 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['fields']['serial']['alter']['path'] = 'transaction/[serial]';
   $handler->display->display_options['fields']['serial']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['serial']['link_to_transaction'] = 0;
-  if ($fieldname = variable_get('transaction_description_field')) {
+  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     /* Field: Echange: Description */
     $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
     $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;

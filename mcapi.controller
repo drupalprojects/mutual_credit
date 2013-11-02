@@ -121,7 +121,7 @@ class mcapiEntityController extends EntityAPIController {
     //and is particularly convenient for when transactions are created without awareness of the field API.
     //
     //allow the description to come in with various names
-    if ($desc_fieldname = variable_get('transaction_description_field')) {
+    if ($desc_fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
       //assumes that the description field is not called 'description'
       if (isset($values['description'])) {
         $transaction->{$desc_fieldname} = array(LANGUAGE_NONE => array(0 => array('value' => $values['description'])));

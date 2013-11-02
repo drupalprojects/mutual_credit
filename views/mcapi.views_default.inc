@@ -84,7 +84,7 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
   $handler->display->display_options['fields']['worth']['field_api_classes'] = 0;
 
-  if ($fieldname = variable_get('transaction_description_field')) {
+  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     /* Field: Transaction: Description */
     $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
     $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
@@ -131,7 +131,7 @@ function mcapi_views_default_views() {
   $handler->display->display_options['menu']['title'] = 'Transactions';
   $handler->display->display_options['menu']['name'] = 'navigation';
 
-  if ($fieldname = variable_get('transaction_description_field')) {
+  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     /* Display: Who gave what */
     $handler = $view->new_display('block', 'Who gave what', 'who_gave_what');
     $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;

@@ -94,7 +94,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
     $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
     /* Field: Transaction: Description */
-    if ($fieldname = variable_get('transaction_description_field')) {
+    if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
       $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
       $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
       $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;
@@ -170,7 +170,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
     $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
     /* Field: Transaction: Description */
-    if ($fieldname = variable_get('transaction_description_field')) {
+    if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
       $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
       $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
       $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;

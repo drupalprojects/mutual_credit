@@ -40,8 +40,6 @@ function mcapi_install() {
   mcapi_update_6999();
   mcapi_check_fields();
 
-  variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
-
   //create a new user if only user 1 exists.
   if (db_query("SELECT count(uid) FROM {users}")->fetchField() < 2) {
     $account = user_save(NULL, array(

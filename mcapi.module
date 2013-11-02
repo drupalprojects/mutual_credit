@@ -138,7 +138,7 @@ function transaction_undo($serial) {
   //load all the transactions sharing this serial as equals in an array, not as parent/children
   $xids = array_keys(transaction_filter(array('serial' => $serial)));
   $transactions = entity_load('mcapi_transaction', $xids);
-  switch(variable_get('mcapi_controller_delete_mode')) {
+  switch(\Drupal::config(mcapi.misc)->get('delete_mode')) {
     case MCAPI_CURRENCY_UNDO_ERASE:
       $transaction = current($transactions);
       $old_state = $transaction->state;
@@ -162,7 +162,7 @@ function transaction_undo($serial) {
         $reversed->payee = $transaction->payer;
         $reversed->type = 'reversal';
         unset($reversed->created);
-        if ($field = variable_get('transaction_description_field', '')) {
+        if ($field = \Drupal::config(mcapi.misc)->get('sentence_template')) {
           $entity = entity_get_info('transaction');
           $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => $entity['label callback']($transaction)));
         }

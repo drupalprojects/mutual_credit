@@ -34,7 +34,7 @@ $replacements = array(
   '!payee' => $payee."\n",
   '!worth' => '<span class = "quantity">'. $worth.'</span>'."\n",
 );
-if ($desc_fieldname = variable_get('transaction_description_field')) {
+if ($desc_fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
   $replacements['!description'] = render($additional[$desc_fieldname]);
 }
 

@@ -138,7 +138,7 @@ function accountant_ui_views_default_views() {
   $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
   $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
   $handler->display->display_options['fields']['worth']['field_api_classes'] = 0;
-  if ($fieldname = variable_get('transaction_description_field')) {
+  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     /* Field: Transaction: Description */
     $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
     $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;

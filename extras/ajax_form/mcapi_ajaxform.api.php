@@ -22,7 +22,7 @@
     $props[$instance['field_name']] = field_get_items('node', $node, $instance['field_name']);
   }
   //or maybe the node body is a different field to the designated 'transaction description field'
-  if ($fieldname = variable_get('transaction_description_field')) {
+  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     $items = field_get_items('node', $node, 'body');
     //$props[$fieldname][LANGUAGE_NONE] = $items;
     $props['description'] = $items[0]['value'];//these two produce the same

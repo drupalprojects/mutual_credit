@@ -122,7 +122,7 @@ Payee: [mcapiform:payee]
  * ensure that the transaction _description field is at least present on all default forms
  */
 function mcapi_forms_mcapiforms_default_alter($forms){
-  if ($fieldname = variable_get('transaction_description_field')) {
+  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     foreach ($forms as $fid => $mcapiform){
       if (isset($forms[$fid]->data[$fieldname])) continue;
       $forms[$fid]->data[$fieldname] = array(
