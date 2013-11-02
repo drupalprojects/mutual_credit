@@ -520,7 +520,7 @@ function template_preprocess_certificate(&$vars) {
   field_attach_preprocess('transaction', $transaction, $vars['additional'], $vars);
 
   foreach (element_children($vars['additional']['worth']) as $delta) {
-    worth_item_zero_adjustment($vars['additional']['worth'][$delta]);
+    mcapi_worth_item_zero_adjustment($vars['additional']['worth'][$delta]);
   }
   //move worth field to the top of $vars where we would expect to find it
   $vars['worth'] = drupal_render($vars['additional']['worth']);
@@ -540,7 +540,7 @@ function template_preprocess_certificate(&$vars) {
 //this will adjust the rendering of zero worth in accordance with the currency display zero property
 //it is not used every time a 'worth' is rendered, but only when transactions are displayed.
 //for this reason, though it seems inelegant, this function should be called from wherever the transaction is rendered
-function worth_item_zero_adjustment(&$worth_render_array) {
+function mcapi_worth_item_zero_adjustment(&$worth_render_array) {
   $currencies = currencies_load();
   if ($worth_render_array['#quantity'] == 0) {
     $worth_render_array = array('#markup' => $currencies[$worth_render_array['#currcode']]->display['zero']);
@@ -552,8 +552,11 @@ function worth_item_zero_adjustment(&$worth_render_array) {
  * check the centiles value is valid
  * check that the $quantity is a number
  */
-function worth_element_validate(&$element, &$form_state, $form) {
-  if (!isset($element['#value']['quantity'])) return;
+function mcapi_worth_element_validate(&$element, &$form_state, $form) {
+  if (!isset($element['#value']['quantity'])) {
+    return;
+  }
+
   $currency = entity_load('mcapi_currencies', $element['#value']['currcode']);
   if (!$currency) {
     form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
@@ -582,7 +585,7 @@ function worth_element_validate(&$element, &$form_state, $form) {
  * and check required
  * clear the $items which are empty
  */
-function worths_element_validate(&$element, &$form_state) {
+function mcapi_worths_element_validate(&$element, &$form_state) {
   //we need to drop the empty values to prevent them being written to the database
   //unless the currency settings explicitly allow it.
   //first of all set the form_State value, which could not be set from the form_type_worths_value
