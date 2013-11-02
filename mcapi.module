@@ -1,6 +1,9 @@
 <?php
 
 
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Cache\CacheBackendInterface;
+
 //delete modes
 define('MCAPI_CURRENCY_UNDO_DELETE', 0);
 define('MCAPI_CURRENCY_UNDO_ERASE', 1);
@@ -931,6 +934,27 @@ function theme_transaction($vars) {
 
 function mcapi_currencies_load($currcode) {
   return entity_load('mcapi_currencies', $currcode);
+}
+
+function mcapi_get_available_currencies(AccountInterface $account = NULL) {
+  if (!isset($account)) {
+    $account = \Drupal::currentUser();
+  }
+  $cid = 'currencies:' . $account->id();
+
+  if (!$cache = \Drupal::cache()->get($cid)) {
+    $avaiable = array();
+    foreach (entity_load_multiple('mcapi_currencies') as $currency) {
+      if ($currency->access('membership', $account)) {
+        $avaiable[$currency->id()] = $currency->name;
+      }
+    }
+    \Drupal::cache()->set($cid, $avaiable, CacheBackendInterface::CACHE_PERMANENT, array('mcapi.available_currency'));
+    return $avaiable;
+  }
+  else {
+    return $cache->data;
+  }
 }
 
 /**

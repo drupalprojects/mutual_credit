@@ -600,26 +600,24 @@ function mcapi_worths_element_validate(&$element, &$form_state) {
 
 
 function _worths_element_process($element, &$form_state) {
-  $currencies = currencies_load();
+  $currencies = mcapi_get_available_currencies();
   //the default value also tells us which currencies are available
   //if no defaults are set then all currencies should be present
   if (!isset($element['#default_value']) || empty($element['#default_value']) || @$element['#preset']) {
-    $element['#default_value'] = (array)$element['#default_value'];
+    $element['#default_value'] = isset($element['#default_value']) ? (array)$element['#default_value'] : array();
     foreach ($currencies as $currcode => $currency) {
-      $element['#default_value'] += array($currcode => '');
+      $element['#default_value'] += array($currcode => array('currcode' => $currcode, 'quantity' => ''));
     }
   }
-  $delta = 0;
   if (variable_get('mcapi_mixed_transactions', TRUE) || @$element['#preset']) {
     //construct one widget for each default, each with its own currcode
-    foreach($element['#default_value'] as $currcode => $quant) {
-      $element[$delta]['#title'] = $currencies[$currcode]->name;
-      $element[$delta]['#currcodes']= array($currcode);
-      $element[$delta]['#default_value'] = array(
-        'currcode' => $currcode,
-        'quantity' => $quant
+    foreach ($currencies as $currcode => $name) {
+      $element[$currcode]['#title'] = $name;
+      $element[$currcode]['#currcodes']= array($currcode);
+      $element[$currcode]['#default_value'] = array(
+        'currcode' => $element['#default_value']->{$currcode}['currcode'],
+        'quantity' => $element['#default_value']->{$currcode}['quantity'],
       );
-      $delta++;
     }
   }
   else {
@@ -653,7 +651,7 @@ function _worth_element_process($element, &$form_state) {
   if (empty($element['#currcodes'])) {
     //best not rely on this, supply your own currencies that the user is permitted to use.
     //this defaults to all
-    $element['#currcodes'] = array_keys(currencies_load(\Drupal::currentUser()));
+    $element['#currcodes'] = array_keys(mcapi_get_available_currencies());
   }
   $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
 
@@ -673,7 +671,9 @@ function _worth_element_process($element, &$form_state) {
     $main_quant = intval($quantity);
   }
   //in normal mode, show a blank field where the default value is 0
-  if (empty($main_quant) && empty($element['#preset'])) $main_quant = '';
+  if (empty($main_quant) && empty($element['#preset'])) {
+    $main_quant = '';
+  }
   //while we return a float, the widget may want to show two fields.
   //in any case we show a main field, and an optional division field
   $element['main_quant'] = array(
@@ -869,7 +869,7 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
 
 
 function currency_picker_element(array $currcodes, $default = NULL, $multiple = 0) {
-  $currencies = currencies_load();
+  $currencies = mcapi_get_available_currencies();
   if (count($currcodes) > 1) {
     foreach ($currcodes as $currcode) {
       $options[$currcode] = $currencies[$currcode]->name;
