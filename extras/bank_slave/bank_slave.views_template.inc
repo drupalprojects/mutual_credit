@@ -78,9 +78,9 @@ function bank_slave_views_templates() {
   $handler->display->display_options['fields']['created']['label'] = 'Date';
   $handler->display->display_options['fields']['created']['date_format'] = 'short';
   /* Champ: Echange : Description */
-  $handler->display->display_options['fields']['transaction_description']['id'] = 'transaction_description';
-  $handler->display->display_options['fields']['transaction_description']['table'] = 'field_data_transaction_description';
-  $handler->display->display_options['fields']['transaction_description']['field'] = 'transaction_description';
+  $handler->display->display_options['fields']['description']['id'] = 'description';
+  $handler->display->display_options['fields']['description']['table'] = 'field_data_description';
+  $handler->display->display_options['fields']['description']['field'] = 'description';
   /* Champ: Index d'échanges : Unités données */
   $handler->display->display_options['fields']['expenditure']['id'] = 'expenditure';
   $handler->display->display_options['fields']['expenditure']['table'] = 'mcapi_index';

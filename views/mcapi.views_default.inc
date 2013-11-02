@@ -84,12 +84,20 @@ function mcapi_views_default_views() {
   $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
   $handler->display->display_options['fields']['worth']['field_api_classes'] = 0;
 
+<<<<<<< HEAD
   if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     /* Field: Transaction: Description */
     $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
     $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
     $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;
   }
+=======
+  /* Field: Transaction: Description */
+  $handler->display->display_options['fields']['description']['id'] = 'description';
+  $handler->display->display_options['fields']['description']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['description']['field'] = 'description';
+
+>>>>>>> got rid of transaction_description_field variable
   /* Field: Transaction: Operations */
   $handler->display->display_options['fields']['operations']['id'] = 'operations';
   $handler->display->display_options['fields']['operations']['table'] = 'mcapi_transactions';

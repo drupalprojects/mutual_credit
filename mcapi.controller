@@ -80,36 +80,29 @@ class mcapiEntityController extends EntityAPIController {
       'created' => REQUEST_TIME,
       'type' => 'default',
       'extra' => array(),
-      'state' => TRANSACTION_STATE_FINISHED
+      'state' => TRANSACTION_STATE_FINISHED,
+      'description' => t('No description provided'),
+      'worths' => array()
     );
     foreach ($default_props as $key => $val) {
       $transaction->$key = array_key_exists($key, $values) && !empty($values[$key]) ? $values[$key] : $val;
       unset($values[$key]);
     }
-    if (isset($values['worth'])) {
-      $items = isset($values['worth'][LANGUAGE_NONE]) ? $values['worth'][LANGUAGE_NONE] : $values['worth'];
-      foreach ($items as $delta => $item) {
-        $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $item['currcode'], 'quantity' => $item['quantity']);
-      }
-      unset($values['worth']);
-    }
-    //another format which might be used
-    elseif(isset($values['worths'])) {
+    if (isset($values['worths'])) {
       foreach ($values['worths'] as $currcode => $quantity) {
-        $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $currcode, 'quantity' => $quantity);
+        //TODO check that the currency exists and that payer and payee, if set, can use it.
+        $transaction->worth[$currcode] = $quantity;
       }
       unset($values['worths']);
     }
-    elseif(isset($values['quantity']) && isset($values['quantity'])) {
-      $currencies = currencies_load();
-      $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
-      $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
-      unset($values['quantity'], $values['currcode']);
+    elseif(array_key_exists('quantity', $values)) {
+      //TODO get the default currcode
+      $transaction->worth[$currcode] = $quantity;
+      unset($values['quantity']);
     }
-    else {//if worths is not indicated, create a value for each currency the user is permitted to use
+    else {//if worths is not indicated, set 0 for each currency the user is permitted to use
       //check that the creator is actually permitted to use this currency
-      if ($for_me) $currencies =  currencies_load(\Drupal::currentUser());
-      else $currencies = currencies_load();
+      $currencies = $for_me ? currencies_load(\Drupal::currentUser()) : currencies_load();
       foreach (array_keys($currencies) as $currcode) {
         $transaction->worth[LANGUAGE_NONE][] = array(
           'quantity' => 0,
@@ -119,22 +112,6 @@ class mcapiEntityController extends EntityAPIController {
     }
     //probably the following fieldapi fields should be handled someotherhow, but this works
     //and is particularly convenient for when transactions are created without awareness of the field API.
-    //
-    //allow the description to come in with various names
-    if ($desc_fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-      //assumes that the description field is not called 'description'
-      if (isset($values['description'])) {
-        $transaction->{$desc_fieldname} = array(LANGUAGE_NONE => array(0 => array('value' => $values['description'])));
-        unset($values['description']);
-      }
-      elseif (isset($values[$desc_fieldname])) {
-        if (isset($values[$desc_fieldname][LANGUAGE_NONE])) $values[$desc_fieldname] = $values[$desc_fieldname][LANGUAGE_NONE];
-        $transaction->{$desc_fieldname} = array(
-          LANGUAGE_NONE => $values[$desc_fieldname]
-        );
-        unset($values[$desc_fieldname]);
-      }
-    }
     //finally any other fields...
     foreach($values as $fieldname => $value) {
       if (empty($value)) continue;
@@ -158,10 +135,9 @@ class mcapiEntityController extends EntityAPIController {
         else throw new Exception("Don't know how to add terms in this format: ".print_r($value, 1));
       }
       else {
+        //YUK
         if (is_array($value)) $value = array_pop($value);
         if (is_array($value)) $value = array_pop($value);
-        //this caused an error on text fields e.g. the transaction description field when variable 'transaction_description_field' is unset
-        //$transaction->{$fieldname}[LANGUAGE_NONE][]['value'] = $value;
         $transaction->{$fieldname}[LANGUAGE_NONE][] = $value;
       }
     }

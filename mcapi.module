@@ -162,10 +162,7 @@ function transaction_undo($serial) {
         $reversed->payee = $transaction->payer;
         $reversed->type = 'reversal';
         unset($reversed->created);
-        if ($field = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-          $entity = entity_get_info('transaction');
-          $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => $entity['label callback']($transaction)));
-        }
+        $reversed->description = t('Reversal of: @label', array('@label' => $entity['label callback']($transaction)));
         $reverseds[] = $reversed;
       }
       try{
@@ -280,16 +277,6 @@ function mcapi_help($section, $arg) {
     case 'admin/accounting/workflow':
       module_load_include('admin.inc', 'mcapi');
       return mcapi_workflow_help();
-    case 'admin/accounting/fields':
-      module_load_include('admin.inc', 'mcapi');
-      return drupal_render(drupal_get_form('mcapi_description_field'));
-    case 'admin/accounting/currencies':
-      //TODO: Move this setting onto the Misc settings page.
-      /* $currencies = currencies_load();
-      if (count($currencies) > 1) {
-        module_load_include('admin.inc', 'mcapi');
-        return drupal_render(drupal_get_form('mcapi_mixed_transactions'));
-      } */
     case 'admin/accounting/misc':
       return implode(' ', array(
         t("Send mail notifications for completed transactions using the action/trigger system: !link", array('!link' => l('admin/config/system/actions', 'admin/config/system/actions')))
@@ -302,15 +289,100 @@ function mcapi_help($section, $arg) {
  * implements hook_menu()
  */
 function mcapi_menu() {
-  module_load_include('admin.inc', 'mcapi');
-  //take this opportunity of an occasional hook to check that the description field is set
-  if (!variable_get('transaction_description_field', '')) {
-    if (count(_mcapi_get_text_instances())) {
-      drupal_set_message(t('Is the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
-    }
+  $items['admin/accounting'] = array(
+    'title' => t('Accounting'),
+    'description' => t("Manage all aspects of your community's money system"),
+    'weight' => 2,
+    'route_name' => 'mcapi.admin',
+  );
+
+  $items['admin/accounting/config'] = array(
+    'title' => 'Configuration',
+    'type' => MENU_VISIBLE_IN_BREADCRUMB,
+  );
+  $items['admin/accounting/misc'] = array(
+    'title' => t('Misc settings'),
+    'route_name' => 'mcapi.admin_misc',
+  );
+  $items['admin/accounting/currencies'] = array(
+    'title' => t('Currencies'),
+    'description' => t('Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.'),
+    'route_name' => 'mcapi.admin_currency_list',
+  );
+  $items['admin/accounting/workflow'] = array(
+    'title' => "Workflow",
+    'description' => "Configuration around transaction states, types and operations",
+    'weight' => 2,
+    'route_name' => 'mcapi.workflow',
+  );
+  $items['transact/log'] = array(
+    'title' => "Record transaction",
+    'description' => "Log a transaction in the database",
+    'route_name' => 'mcapi.transaction_log',
+  );
+  /*
+  $operations = transaction_operations(FALSE, FALSE);
+  //this item is for a the special transaction operation, 'view'
+  $items['transaction/%transaction'] = array(
+    'title callback' => 'entity_label',
+    'title arguments' => array('transaction', 1),
+    // The page callback also invokes drupal_set_title() in case
+    // the menu router's title is overridden by a menu link.
+    'page callback' => 'transaction_view',
+    'page arguments' => array(1, 'certificate'),
+    //this is quicker than using entity_access
+    //note that this function includes mcapi.inc itself
+    'access callback' => 'entity_access',
+    'access arguments' => array('mcapi_view', 'transaction', 1),
+    'type' => MENU_CALLBACK,
+  );
+  $items['transaction/%transaction/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  //these are all the other exposed operations
+  $items["transaction/%transaction/nojs/%"] = array(
+    'page callback' => 'mcapi_get_op_form',
+    'page arguments' => array(3, 1),
+    'access callback' => 'entity_access',
+    'access arguments' => array(3, 'transaction', 1),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_deliver_html_page',
+    'file' => 'mcapi.inc'
+  );
+  $items["transaction/%transaction/ajax/%"] = array(
+    'page callback' => 'mcapi_get_op_form',
+    'page arguments' => array(3, 1, 2),
+    'access callback' => 'entity_access',
+    'access arguments' => array(3, 'transaction', 1),
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'ajax_deliver',
+    'file' => 'mcapi.inc'
+  );
+  if (isset($info['filepath'])) {
+    $items["transaction/%transaction/$ajax/%"] += array(
+      'file' => $info['filepath'],
+      'file path' => drupal_get_path('module', $info['module'])
+    );
   }
-  return _mcapi_menu();
+
+  if ($aid = db_query("SELECT aid FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchfield()) {
+    $items['admin/accounting/mail_action'] = array(
+      'title' => 'Completion mails',
+      'description' => 'configure mail notifications sent when the transaction completes',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('system_actions_configure', $aid),
+      'access arguments' => array('administer actions'),
+      'weight' => 8,
+      'file' => 'system.admin.inc',
+      'file path' => drupal_get_path('module', 'system')
+    );
+  }
+  */
+  return $items;
 }
+
 
 /**
  * implements hook_permission
@@ -366,7 +438,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
  * Implements hook_search_info().
  */
 function mcapi_search_info() {
-  if (!variable_get('transaction_description_field', '')) return array();
   return array(
     'title' => 'Transactions',
     'path' => 'transaction',
@@ -378,7 +449,6 @@ function mcapi_search_info() {
  * the reality is more complex since the transactions are visible according to currency settings
  */
 function mcapi_search_access() {
-  if (!variable_get('transaction_description_field', '')) return;
   return user_access('transact');
 }
 
@@ -386,7 +456,6 @@ function mcapi_search_access() {
  * Implements hook_search_reset().
  */
 function mcapi_search_reset() {
-  if (!variable_get('transaction_description_field', '')) return;
   db_update('search_dataset')
     ->fields(array('reindex' => REQUEST_TIME))
     ->condition('type', 'transaction')
@@ -398,7 +467,6 @@ function mcapi_search_reset() {
  * based on node_search_status()
  */
 function mcapi_search_status() {
-  if (!variable_get('transaction_description_field', '')) return;
   return array(
     'remaining' => db_query("SELECT COUNT(*) FROM {mcapi_transactions} x LEFT JOIN {search_dataset} d ON d.type = 'transaction' AND d.sid = x.xid WHERE d.sid IS NULL OR d.reindex <> 0")->fetchField(),
     'total' => db_query('SELECT COUNT(*) FROM {mcapi_transactions}')->fetchField()
@@ -410,7 +478,6 @@ function mcapi_search_status() {
  * based on node_search_execute()
  */
 function mcapi_search_execute($keys = NULL, $conditions = NULL) {
-  if (!variable_get('transaction_description_field', '')) return array();
   // Build matching conditions
   $query = db_select('search_index', 'i', array('target' => 'slave'))->extend('SearchQuery')->extend('PagerDefault');
   $query->join('mcapi_transactions', 'x', 'x.serial = i.sid');
@@ -451,15 +518,25 @@ function mcapi_update_index() {
     //is this achievable using GROUP BY?
     $xids[$trans->serial][] = $trans->xid;
   }
-  foreach ($xids as $serial => $xids) {
-    $text = array();
-    foreach(_mcapi_get_text_instances() as $fieldname) {
-      $info = field_info_field($fieldname);
-      $table = 'field_data_'.$fieldname;
-      $column = $fieldname.'_value';
-      $text[] = db_query("SELECT $column FROM {$table} WHERE entity_id IN (".implode(',', $xids).") AND entity_type = 'transaction'")->fetchField();
+
+  //coz field_info_fields isn't available during update.php
+  //D8 surely this is done automatically?S
+  if (substr($_SERVER['SCRIPT_NAME'], -9) == 'index.php' && module_exists('field')) {
+    foreach(field_info_fields() as $field) {
+      if ($field['module'] == 'text' && isset($field['bundles']['transaction'])) {
+        $instances[$field['field_name']] = $field['field_name'];
+      }
     }
-    search_index($serial, 'mcapi', implode(' ', $text));
+    foreach ($xids as $serial => $xids) {
+      $text = array();
+      foreach(instances as $fieldname) {
+        $info = field_info_field($fieldname);
+        $table = 'field_data_'.$fieldname;
+        $column = $fieldname.'_value';
+        $text[] = db_query("SELECT $column FROM {$table} WHERE entity_id IN (".implode(',', $xids).") AND entity_type = 'transaction'")->fetchField();
+      }
+      search_index($serial, 'mcapi', implode(' ', $text));
+    }
   }
 }
 /*
@@ -550,8 +627,21 @@ function mcapi_init() {
  * Implements hook_entity_info().
  */
 function mcapi_entity_info(){
-  module_load_include('admin.inc', 'mcapi');
-  return _mcapi_entity_info();
+  //TODO
+  // Search integration is provided by node.module, so search-related
+  // view modes for nodes are defined here and not in search.module.
+  if (module_exists('search')) {
+    $entities['transaction']['view modes'] += array(
+      'search_index' => array(
+        'label' => t('Search index'),
+        'custom settings' => FALSE,
+      ),
+      'search_result' => array(
+        'label' => t('Search result'),
+        'custom settings' => FALSE,
+      ),
+    );
+  }
 }
 
 
@@ -873,7 +963,6 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
       $variables['classes_array'][] = 'preview';
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
       foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
-        if (in_array($fieldname, array('worth', variable_get('transaction_description_field'))))continue;
         unset($transaction->{$fieldname});
       }
     }

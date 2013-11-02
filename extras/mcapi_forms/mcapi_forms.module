@@ -204,8 +204,8 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
         $defaults['payee'] = $entity->uid;
       }
       //that was all very nice matching instance for instance, but really we want the node title in the transaction description
-      if ($entity_type == 'node' && $field_name = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-        $defaults[$field_name][LANGUAGE_NONE][0]['value'] = $entity->title;
+      if ($entity_type == 'node'){
+        $defaults['description'] = entity_label('node', $entity);
       }
     }
     $transaction = entity_create('transaction', $defaults);

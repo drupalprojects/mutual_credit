@@ -52,11 +52,21 @@ class AccountingAdminMiscForm extends ConfigFormBase {
     );
 
     $form['sentence_template'] = array(
-      '#title' => t('Transaction sentence template'),
+      '#title' => t('Default transaction sentence'),
       '#description' => t('Use the tokens to define how the transaction will read when displayed in sentence mode'),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 5
+    );
+
+    $form['mix_mode'] = array(
+      '#title' => t('Currencies per transaction'),
+      '#type' => 'radios',
+      '#options' => array(
+        0 => t('One currency per transaction'),
+        1 => t('Many currencies per transaction')
+      ),
+      '#default_value' => intval($config->get('mix_mode'))
     );
 
     return parent::buildForm($form, $form_state);
@@ -70,8 +80,16 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       ->set('delete_mode', $form_state['values']['delete_mode'])
       ->set('show_balances', $form_state['values']['show_balances'])
       ->set('sentence_template', $form_state['values']['sentence_template'])
+      ->set('mix_mode', $form_state['values']['mix_mode'])
       ->save();
 
     parent::submitForm($form, $form_state);
   }
+}
+
+
+function mcapi_mixed_transactions_submit($form, &$form_state) {
+  $val = &$form_state['values']['mcapi_mixed_transactions'];
+  variable_set('mcapi_mixed_transactions', $val);
+
 }

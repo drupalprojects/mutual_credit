@@ -3,173 +3,6 @@
 use Drupal\Core\Template\Attribute;
 
 /*
- * this is called by the hook mcapi_entity_info
- */
-function _mcapi_entity_info() {
-  $entities['transaction'] = array(
-    'label' => t('Transaction'),
-    'entity class' => 'transaction',
-    'controller class' => variable_get('mcapi_controller', 'mcapi') .'EntityController',
-    'base table' => 'mcapi_transactions',
-    'module' => 'mcapi',
-    'fieldable' => TRUE,
-    'entity keys' => array(
-      'id' => 'xid',
-      //'name' => 'serial',//name is required by entity API module for exporting if exportable were TRUE
-    ),
-    'bundles' => array(
-      'transaction' => array(
-        'label' => t('Transaction'),
-        'admin' => array(
-          'path' => 'admin/accounting',
-          'access arguments' => array('manage all transactions')
-        )
-      )
-    ),
-    'view modes' => array(
-      'certificate' => array(
-        'label' => t("A transaction certificate"),
-        'custom settings' => FALSE,
-      ),
-    ),
-    //this isn't implemented but must be declared here to avoid conflict with commerce module
-    //which has a function transaction_load
-    'load hook' => 'mcapi_xaction_load',
-    //entity API properties
-    //generally we want the entity controller only to contain the read/write functions
-    //so it is easy to replace
-    'save callback' => 'transaction_cluster_create',//not advised to use with existing transactions
-    'label callback' => 'transaction_label',//doesn't belong in the controller
-    'access callback' => 'transaction_operation_access',//doesn't belong in the controller
-    'view callback' => 'transaction_view',//doesn't belong in the controller
-    //'creation callback' => not needed because controller implements create()
-    //'form callback' => 'transaction_form',//implement this later perhaps
-    'views controller class' => 'transactionDefaultViewsController',
-    'rules controller class' => 'TransactionRulesController',
-    'entity cache' => FALSE //because we would need to write special methods for this
-
-    /* I don't know how to make this work, or if its necessary
-    'exportable' => TRUE,
-    'export' => array(
-      'default hook' => 'transaction_export_callback_test'
-    ),
-     */
-  );
-
-  // Search integration is provided by node.module, so search-related
-  // view modes for nodes are defined here and not in search.module.
-  if (module_exists('search')) {
-    $entities['transaction']['view modes'] += array(
-      'search_index' => array(
-        'label' => t('Search index'),
-        'custom settings' => FALSE,
-      ),
-      'search_result' => array(
-        'label' => t('Search result'),
-        'custom settings' => FALSE,
-      ),
-    );
-  }
-  return $entities;
-}
-
-
-function _mcapi_menu() {
-  $items['admin/accounting'] = array(
-    'title' => t('Accounting'),
-    'description' => t("Manage all aspects of your community's money system"),
-    'weight' => 2,
-    'route_name' => 'mcapi.admin',
-  );
-
-  $items['admin/accounting/config'] = array(
-    'title' => 'Configuration',
-    'type' => MENU_VISIBLE_IN_BREADCRUMB,
-  );
-  $items['admin/accounting/misc'] = array(
-    'title' => t('Misc settings'),
-    'route_name' => 'mcapi.admin_misc',
-  );
-  $items['admin/accounting/currencies'] = array(
-    'title' => t('Currencies'),
-    'description' => t('Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.'),
-    'route_name' => 'mcapi.admin_currency_list',
-  );
-  $items['admin/accounting/workflow'] = array(
-    'title' => "Workflow",
-    'description' => "Configuration around transaction states, types and operations",
-    'weight' => 2,
-    'route_name' => 'mcapi.workflow',
-  );
-  $items['transact/log'] = array(
-    'title' => "Record transaction",
-    'description' => "Log a transaction in the database",
-    'route_name' => 'mcapi.transaction_log',
-  );
-  /*
-  $operations = transaction_operations(FALSE, FALSE);
-  //this item is for a the special transaction operation, 'view'
-  $items['transaction/%transaction'] = array(
-    'title callback' => 'entity_label',
-    'title arguments' => array('transaction', 1),
-    // The page callback also invokes drupal_set_title() in case
-    // the menu router's title is overridden by a menu link.
-    'page callback' => 'transaction_view',
-    'page arguments' => array(1, 'certificate'),
-    //this is quicker than using entity_access
-    //note that this function includes mcapi.inc itself
-    'access callback' => 'entity_access',
-    'access arguments' => array('mcapi_view', 'transaction', 1),
-    'type' => MENU_CALLBACK,
-  );
-  $items['transaction/%transaction/view'] = array(
-    'title' => 'View',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  );
-
-  //these are all the other exposed operations
-  $items["transaction/%transaction/nojs/%"] = array(
-    'page callback' => 'mcapi_get_op_form',
-    'page arguments' => array(3, 1),
-    'access callback' => 'entity_access',
-    'access arguments' => array(3, 'transaction', 1),
-    'type' => MENU_CALLBACK,
-    'delivery callback' => 'drupal_deliver_html_page',
-    'file' => 'mcapi.inc'
-  );
-  $items["transaction/%transaction/ajax/%"] = array(
-    'page callback' => 'mcapi_get_op_form',
-    'page arguments' => array(3, 1, 2),
-    'access callback' => 'entity_access',
-    'access arguments' => array(3, 'transaction', 1),
-    'type' => MENU_CALLBACK,
-    'delivery callback' => 'ajax_deliver',
-    'file' => 'mcapi.inc'
-  );
-  if (isset($info['filepath'])) {
-    $items["transaction/%transaction/$ajax/%"] += array(
-      'file' => $info['filepath'],
-      'file path' => drupal_get_path('module', $info['module'])
-    );
-  }
-
-  if ($aid = db_query("SELECT aid FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchfield()) {
-    $items['admin/accounting/mail_action'] = array(
-      'title' => 'Completion mails',
-      'description' => 'configure mail notifications sent when the transaction completes',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('system_actions_configure', $aid),
-      'access arguments' => array('administer actions'),
-      'weight' => 8,
-      'file' => 'system.admin.inc',
-      'file path' => drupal_get_path('module', 'system')
-    );
-  }
-  */
-  return $items;
-}
-
-/*
  * implements hook_menu_alter
  */
 function mcapi_menu_alter(&$items) {
@@ -313,32 +146,6 @@ function _mcapi_action_info() {
 }
 
 
-function mcapi_mixed_transactions($form) {
-  $form['field']['mcapi_mixed_transactions'] = array(
-    '#title' => t('Currencies per transaction'),
-    '#type' => 'radios',
-    '#options' => array(
-      0 => t('One currency per transaction'),
-      1 => t('Many currencies per transaction')
-    ),
-    //something is setting this value to empty during upgrade I think
-    '#default_value' => intval(variable_get('mcapi_mixed_transactions', TRUE))
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit')
-  );
-  return $form;
-}
-function mcapi_mixed_transactions_submit($form, &$form_state) {
-  $val = &$form_state['values']['mcapi_mixed_transactions'];
-  variable_set('mcapi_mixed_transactions', $val);
-  $field = field_read_field('worth');
-  $currencies = currencies_load();
-  $field['cardinality'] = $val ? count($currencies) : 1;
-  field_update_field($field);
-}
-
 
 /*
  * settings form callback for action mcapi_transaction_mail_action
@@ -466,6 +273,7 @@ function mcapi_transaction_entity_uid_form($context) {
     '#weight' => 1
   );
 
+<<<<<<< HEAD
   if (\Drupal::config(mcapi.misc)->get('sentence_template')) {
     $form['description'] = array(
       '#title' => t('Transaction description text'),
@@ -473,6 +281,14 @@ function mcapi_transaction_entity_uid_form($context) {
       '#default_value' => @$context['worth_items']['description'],
     );
   }
+=======
+  $form['description'] = array(
+    '#title' => t('Transaction description text'),
+    '#type' => 'textfield',
+    '#default_value' => @$context['worth_items']['description'],
+  );
+
+>>>>>>> got rid of transaction_description_field variable
   return $form;
 }
 /*
@@ -573,14 +389,11 @@ function mcapi_dependent_transaction_action_form($context) {
       )
     )
   );
-
-  if (\Drupal::config(mcapi.misc)->get('sentence_template')) {
-    $form['presets']['description'] = array(
-      '#title' => t('Transaction description text'),
-      '#type' => 'textfield',
-      '#default_value' => @$context['presets']['description'],
-    );
-  }
+  $form['presets']['description'] = array(
+    '#title' => t('Transaction description text'),
+    '#type' => 'textfield',
+    '#default_value' => @$context['presets']['description'],
+  );
 
   return $form;
 }
@@ -615,31 +428,6 @@ function validate_mcapi_configure_worth_formula(&$element, $form_state) {
   }
 }
 
-
-function mcapi_description_field($form, $form_state) {
-  $options = array('' => 'none');
-  $options += _mcapi_get_text_instances();
-  $form['transaction_description_field'] = array(
-    '#type' => 'select',
-    '#title' => 'Description field',
-    '#description' => t("Which of the text fields below is used for the transaction description?."),
-    '#options' => $options,
-    '#default_value' => \Drupal::config(mcapi.misc)->get('sentence_template'),
-  );
-  return system_settings_form($form);
-}
-
-function _mcapi_get_text_instances() {
-  $options = array();
-  if (substr($_SERVER['SCRIPT_NAME'], -9) == 'index.php' && module_exists('field')) {//coz field_info_fields isn't available during update.php
-    foreach(field_info_fields() as $field) {
-      if ($field['module'] == 'text' && isset($field['bundles']['transaction'])) {
-        $options[$field['field_name']] = $field['field_name'];
-      }
-    }
-  }
-  return $options;
-}
 
 //caches and returns and ALL the transaction operations
 function _transaction_operations() {

@@ -138,17 +138,16 @@ function accountant_ui_views_default_views() {
   $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
   $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
   $handler->display->display_options['fields']['worth']['field_api_classes'] = 0;
-  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-    /* Field: Transaction: Description */
-    $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
-    $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
-    $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;
-    $handler->display->display_options['fields'][$fieldname]['label'] = 'Description';
-    $handler->display->display_options['fields'][$fieldname]['alter']['make_link'] = TRUE;
-    $handler->display->display_options['fields'][$fieldname]['alter']['path'] = 'transaction/[serial]';
-    $handler->display->display_options['fields'][$fieldname]['element_label_colon'] = FALSE;
-    $handler->display->display_options['fields'][$fieldname]['type'] = 'text_plain';
-  }
+  /* Field: Transaction: Description */
+  $handler->display->display_options['fields']['description']['id'] = 'description';
+  $handler->display->display_options['fields']['description']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['description']['field'] = 'description';
+  $handler->display->display_options['fields']['description']['label'] = 'Description';
+  $handler->display->display_options['fields']['description']['alter']['make_link'] = TRUE;
+  $handler->display->display_options['fields']['description']['alter']['path'] = 'transaction/[serial]';
+  $handler->display->display_options['fields']['description']['element_label_colon'] = FALSE;
+  $handler->display->display_options['fields']['description']['type'] = 'text_plain';
+
 
   /* Field: Transaction: State */
   $handler->display->display_options['fields']['state']['id'] = 'state';

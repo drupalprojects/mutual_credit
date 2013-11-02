@@ -311,7 +311,7 @@ function _transaction_check_access_callbacks($op, $transaction) {
 
 /*
  * transaction_access callbacks
- * $ops are determined in hook_transation_operations
+ * $ops are determined in hook_transaction_operations
  */
 function transaction_access_callback_perm_transact() {
   return user_access('transact');
@@ -503,14 +503,14 @@ function template_preprocess_certificate(&$vars) {
   $vars['recorded'] = format_date($transaction->created, 'medium');
   $vars['type'] = $transaction->type;
   $vars['date'] = format_date($transaction->created, 'long');
+  $vars['description'] = $transaction->description;
   $vars['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
   if (!property_exists($transaction, 'xid') || empty($transaction->xid)) {
     $vars['classes_array'][] = 'preview';
-    foreach (array_keys(field_info_instances('transation', 'transaction')) as $fieldname) {
+    foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
-      if (!in_array($fieldname, array('worth', \Drupal::config(mcapi.misc)->get('sentence_template')))) {
-        if (property_exists($transaction, $fieldname)) unset($transaction->$fieldname);
-      }
+      //TODO There's no way this will be necessary in drupal8
+      if (property_exists($transaction, $fieldname)) unset($transaction->$fieldname);
     }
   }
 
@@ -519,15 +519,15 @@ function template_preprocess_certificate(&$vars) {
   //this populates top level of variables with the render array
   field_attach_preprocess('transaction', $transaction, $vars['additional'], $vars);
 
-  foreach (element_children($vars['additional']['worth']) as $delta) {
-    mcapi_worth_item_zero_adjustment($vars['additional']['worth'][$delta]);
+  foreach (element_children($vars['worths']) as $delta) {
+    //TODO this probably isn't needed in d8
+    mcapi_worth_item_zero_adjustment($vars['worth'][$delta]);
   }
-  //move worth field to the top of $vars where we would expect to find it
-  $vars['worth'] = drupal_render($vars['additional']['worth']);
-  unset($vars['additional']['worth']);
+  //TODO not sure how to get a render array for worths
+  $vars['worths'] = 'WORTHS NOT RENDERED YET';
   //choose the transaction theme template based on the first currency of the transaction
-  $first_item = reset($transaction->worth[LANGUAGE_NONE]);
-  $vars['theme_hook_suggestions'][] = 'certificate__' . $first_item['currcode'];
+  //not sure if this is worth the processing power at the moment
+  $vars['theme_hook_suggestions'][] = 'certificate__' . reset(array_keys($transaction->worths));
   $vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
   if (isset($transaction->dependents) && !empty($transaction->dependents)) {
     $vars['dependents'] = transaction_view(
@@ -540,6 +540,7 @@ function template_preprocess_certificate(&$vars) {
 //this will adjust the rendering of zero worth in accordance with the currency display zero property
 //it is not used every time a 'worth' is rendered, but only when transactions are displayed.
 //for this reason, though it seems inelegant, this function should be called from wherever the transaction is rendered
+//I can't remember the difference. this is called from transaction_preprocess and from the views field
 function mcapi_worth_item_zero_adjustment(&$worth_render_array) {
   $currencies = currencies_load();
   if ($worth_render_array['#quantity'] == 0) {
@@ -609,7 +610,10 @@ function _worths_element_process($element, &$form_state) {
       $element['#default_value'] += array($currcode => array('currcode' => $currcode, 'quantity' => ''));
     }
   }
-  if (variable_get('mcapi_mixed_transactions', TRUE) || @$element['#preset']) {
+
+  $mixed = \Drupal::config('mcapi.misc')->get('mix_mode');;
+
+  if ($mixed || @$element['#preset']) {
     //construct one widget for each default, each with its own currcode
     foreach ($currencies as $currcode => $name) {
       $element[$currcode]['#title'] = $name;

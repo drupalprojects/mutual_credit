@@ -42,14 +42,14 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['fields']['serial']['alter']['path'] = 'transaction/[serial]';
   $handler->display->display_options['fields']['serial']['element_label_colon'] = FALSE;
   $handler->display->display_options['fields']['serial']['link_to_transaction'] = 0;
-  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-    /* Field: Echange: Description */
-    $handler->display->display_options['fields'][$fieldname]['id'] = $fieldname;
-    $handler->display->display_options['fields'][$fieldname]['table'] = 'field_data_'.$fieldname;
-    $handler->display->display_options['fields'][$fieldname]['field'] = $fieldname;
-    $handler->display->display_options['fields'][$fieldname]['label'] = '';
-    $handler->display->display_options['fields'][$fieldname]['element_label_colon'] = FALSE;
-  }
+
+  /* Field: Echange: Description */
+  $handler->display->display_options['fields']['description']['id'] = 'description';
+  $handler->display->display_options['fields']['description']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['description']['field'] = 'description';
+  $handler->display->display_options['fields']['description']['label'] = '';
+  $handler->display->display_options['fields']['description']['element_label_colon'] = FALSE;
+
   /* Field: Transaction: Worth */
   $handler->display->display_options['fields']['worth']['id'] = 'worth';
   $handler->display->display_options['fields']['worth']['table'] = 'field_data_worth';

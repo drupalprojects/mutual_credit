@@ -33,10 +33,8 @@ $replacements = array(
   '!payer' => "\n".$payer,
   '!payee' => $payee."\n",
   '!worth' => '<span class = "quantity">'. $worth.'</span>'."\n",
+  '!description' => render($description)
 );
-if ($desc_fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-  $replacements['!description'] = render($additional[$desc_fieldname]);
-}
 
 $certificate_string = t('On @recorded !payer paid !payee the sum of !worth', $replacements);
 $certificate_string = str_replace("\n", '<br /><br />', $certificate_string);

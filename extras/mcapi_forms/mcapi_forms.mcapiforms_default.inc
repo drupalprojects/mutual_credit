@@ -52,6 +52,10 @@ function mcapiform_default_1stparty() {
       'preset' => array(),
       'strip' => 1,
     ),
+    'description' => array(
+      'preset' => '',
+      'strip' => 1,
+    ),
     'submission' => array(
       'button' => 'Submit',
       'redirect' => '',
@@ -100,6 +104,10 @@ function mcapiform_default_3rdparty() {
       'preset' => array(),
       'strip' => 1,
     ),
+    'description' => array(
+      'preset' => '',
+      'strip' => 1,
+    ),
     'submission' => array(
       'button' => 'Submit',
       'redirect' => '',
@@ -117,25 +125,3 @@ Payee: [mcapiform:payee]
   return $mcapiform;
 }
 
-/*
- * implements hook_mcapiforms_default_alter
- * ensure that the transaction _description field is at least present on all default forms
- */
-function mcapi_forms_mcapiforms_default_alter($forms){
-  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-    foreach ($forms as $fid => $mcapiform){
-      if (isset($forms[$fid]->data[$fieldname])) continue;
-      $forms[$fid]->data[$fieldname] = array(
-        'strip' => 1,
-        'preset' => array(
-          'und' => array(
-            0 => array(
-              'value' => '',
-            ),
-          ),
-        ),
-      );
-      $forms[$fid]->data['experience']['template'] .= "\n".t('Description:') .' '. "[mcapiform:$fieldname]";
-    }
-  }
-}

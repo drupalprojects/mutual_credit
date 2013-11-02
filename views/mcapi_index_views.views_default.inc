@@ -63,11 +63,11 @@ function mcapi_index_views_views_default_views() {
   $handler->display->display_options['fields']['name']['label'] = 'With';
   $handler->display->display_options['fields']['name']['hide_alter_empty'] = FALSE;
   /* Field: Transaction: Description */
-  $handler->display->display_options['fields']['transaction_description']['id'] = 'transaction_description';
-  $handler->display->display_options['fields']['transaction_description']['table'] = 'field_data_transaction_description';
-  $handler->display->display_options['fields']['transaction_description']['field'] = 'transaction_description';
-  $handler->display->display_options['fields']['transaction_description']['alter']['make_link'] = TRUE;
-  $handler->display->display_options['fields']['transaction_description']['alter']['path'] = 'transaction/[serial]';
+  $handler->display->display_options['fields']['description']['id'] = 'description';
+  $handler->display->display_options['fields']['description']['table'] = 'mcapi_description';
+  $handler->display->display_options['fields']['description']['field'] = 'description';
+  $handler->display->display_options['fields']['description']['alter']['make_link'] = TRUE;
+  $handler->display->display_options['fields']['description']['alter']['path'] = 'transaction/[serial]';
   /* Field: Transaction index: Expenditure */
   $handler->display->display_options['fields']['expenditure']['id'] = 'expenditure';
   $handler->display->display_options['fields']['expenditure']['table'] = 'mcapi_index';

@@ -79,11 +79,8 @@ function import_transactions_form($form, $form_state) {
     '"created"' => t("a string which can be parsed by php's !strtotime", array('!strtotime' => l('strtotime()', 'http://php.net/strtotime'))),
     '"state"' => t('integer transaction state'),
     '"type"' => t('machine name of transaction type'),
+    '"description"' => t('one line describing what was exchanged')
   );
-  if ($desc = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-    //we don't actually use the name of the field here
-    $columns['"description"'] = t('one line describing what was exchanged');
-  }
   list($field_info, $vocab) =  mcapi_import_detect_categories();
   if ($field_info) {
     $field_name = $field_info['field_name'];
@@ -312,10 +309,13 @@ function _mcapi_import_generate_transactions($rows, &$settings) {
   $reservoir = entity_load('mcapi_currencies', $settings['currcode'])->reservoir;
   list($field_info, $vocab) = mcapi_import_detect_categories();
   $instances = field_info_instances('transaction', 'transaction');
+<<<<<<< HEAD
   unset($instances['worth']);
   if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
     unset($instances[$fieldname]);
   }
+=======
+>>>>>>> got rid of transaction_description_field variable
   if (array_key_exists($field_info['field_name'], $instances)) {
     unset($instances[$fieldname]);
   }
@@ -420,7 +420,10 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
   global $language;
   $currency = entity_load('mcapi_currencies', $currcode);
   $transactions = array();
+<<<<<<< HEAD
   $desc_field = \Drupal::config(mcapi.misc)->get('sentence_template');
+=======
+>>>>>>> got rid of transaction_description_field variable
   $values = array(
     'type' => $type,
     'state' => TRANSACTION_STATE_FINISHED,

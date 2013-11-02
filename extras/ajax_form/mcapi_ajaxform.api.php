@@ -21,12 +21,8 @@
   foreach (field_read_instances(array('bundle' => 'proposition')) as $id => $instance) {
     $props[$instance['field_name']] = field_get_items('node', $node, $instance['field_name']);
   }
-  //or maybe the node body is a different field to the designated 'transaction description field'
-  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-    $items = field_get_items('node', $node, 'body');
-    //$props[$fieldname][LANGUAGE_NONE] = $items;
-    $props['description'] = $items[0]['value'];//these two produce the same
-  }
+  $props['description'] = $node->title;
+
   //don't forget to declare your transaction type in hook_mcapi_info_types
   //or use one of the existing types
   //otherwise there is a 'default' type.

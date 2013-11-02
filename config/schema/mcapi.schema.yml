@@ -14,6 +14,10 @@ mcapi.misc:
     sentence_template:
       type: text
       label: Transaction sentence template
+    mix_mode:
+      type: boolean
+      label: Allow more than one currency in transactions
+
 
 mcapi.currency.*:
   type: mapping

@@ -12,15 +12,6 @@ function mcapi_variable_info() {
     'group' => 'mcapi',
     'required' => FALSE,
   );
-  $vars['transaction_description_field'] = array(
-    'type' => 'select',
-    'title' => t('Transaction description field'),
-    'default' => '',
-    'description' => t('Optional nominated fieldAPI field for describing the transaction'),
-    'group' => 'mcapi',
-    'options callback' => 'mcapi_variable_options_callback',
-    'required' => FALSE,
-  );
   $vars['mcapi_controller_delete_mode'] = array(
     'title' => t('Transaction delete mode'),
     'default' => 0,
