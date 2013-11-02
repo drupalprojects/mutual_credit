@@ -44,4 +44,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     $query->execute();
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function nextSerial(TransactionInterface $transaction) {
+    //TODO: I think this needs some form of locking so that we can't get duplicate transactions.
+    $transaction->serial->value = $this->database->query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
+  }
 }

@@ -50,6 +50,15 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * {@inheritdoc}
    */
+  public function preSave(EntityStorageControllerInterface $storage_controller) {
+    if ($this->isNew() && !$this->serial->value) {
+      $storage_controller->nextSerial($this);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function postSave(EntityStorageControllerInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
 
