@@ -55,9 +55,9 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'container',
       '#children' => implode("\n<br /><br />\n", array(
         t("Exchange currencies are 'sufficient' - they are issued and redeemed as as users earn and spend."),
-        t("The sum of all balances of active accounts, including the reservoir account, is zero, and ideally, accounts are returned to zero before being deactivated."),
-        t("To stop accounts straying too far from zero, positive and negative balance limits are often used."),
-        t("This model is sometimes called mutual credit, barter, or reciprocal exchange."),
+        t('The sum of all balances of active accounts, including the reservoir account, is zero, and ideally, accounts are returned to zero before being deactivated.'),
+        t('To stop accounts straying too far from zero, positive and negative balance limits are often used.'),
+        t('This model is sometimes called mutual credit, barter, or reciprocal exchange.'),
       )),
       '#weight' => 2,
       '#states' => array(
@@ -69,8 +69,8 @@ class CurrencyFormController extends EntityFormController {
     $form['commodity'] = array(
       '#type' => 'container',
       '#children' => implode("\n<br /><br />\n", array(
-        t("Commodity currencies are scarce - the quantity is tied to the amount of a valuable commodity in a trusted warehouse."),
-        t("They are valued according to that commodity, and redeemed for that commodity, although fractional reserve rules may apply."),
+        t('Commodity currencies are scarce - the quantity is tied to the amount of a valuable commodity in a trusted warehouse.'),
+        t('They are valued according to that commodity, and redeemed for that commodity, although fractional reserve rules may apply.'),
         t('Effectively the commodity is monetised, this brings confidence to the commodity, for the cost of the stuff in storage.'),
         t("This would be the choice for all 'dollar-backed' complementary currencies.")
       )),
@@ -127,16 +127,36 @@ class CurrencyFormController extends EntityFormController {
       '#tree' => TRUE,
     );
 
-    $form['display']['divisions'] = array(
-      '#title' => t('Subdivisions'),
+    $form['display']['type'] = array(
+      '#title' => t('Type'),
+      '#type' => 'radios',
+      '#options' => array(
+        //TODO wrap this in t() when finalised
+        'time' => 'Time (minutes, formated by php locale)',
+        'decimal' => 'Decimal (to 2 places, for now)'
+      ),
+      '#default_value' => $currency->display['type'],
+      '#weight' => 1
+    );
+    $form['display']['granularity'] = array(
+      '#title' => t('Granularity'),
+      '#type' => 'number',
+      '#max_length' => 1,
+      '#size' => 1,
+      '#min' => 0,
+      '#max' => 8,
+      '#default_value' => $currency->display['granularity'],
+      '#weight' => 2
+    );
+    $form['display']['widget'] = array(
+      '#title' => t('Widget'),
       '#type' => 'select',
       '#options' => array(
-        CURRENCY_DIVISION_MODE_NONE => t('Integer values only'),
-        CURRENCY_DIVISION_MODE_CENTS_INLINE => t('Cents in same field'),
-        CURRENCY_DIVISION_MODE_CENTS_FIELD => t('Cents in separate field'),
-        CURRENCY_DIVISION_MODE_CUSTOM => t('Allowed subdivisions')
+        CURRENCY_WIDGET_SINGLEFIELD => t('Cents in same field'),
+        CURRENCY_WIDGET_TEXT => t('Cents in separate field'),
+        CURRENCY_WIDGET_SELECT => t('Custom divisions')
       ),
-      '#default_value' => $currency->display['divisions'],
+      '#default_value' => $currency->display['widget'],
       '#weight' => 1
     );
     $form['display']['delimiter'] = array(
@@ -148,39 +168,39 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => $currency->display['delimiter'],
       '#states' => array(
         'invisible' => array(
-          ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_NONE),
+          ':input[name="display[type]"]' => array('value' => 'decimal'),
         ),
       ),
       '#weight' => 2
     );
-    $form['display']['divisions_setting'] = array(
-      '#title' => t('Allowed subdivisions'),
-      '#description' => t('On each line put "hundredths| visible text". The visible text will be displayed after the delimiter.'),
+    $form['display']['select'] = array(
+      '#title' => t('Custom divisions'),
+      '#description' => t('Key value pairs'),
       '#type' => 'textarea',
-      '#cols' => 60,
       '#rows' => 4,
-      '#resizable' => FALSE,
-      '#default_value' => $currency->display['divisions_setting'],
-      '#element_validate' => array(array($this, 'validate_divisions')),
+      '#default_value' => $currency->display['options'],
       '#states' => array(
         'visible' => array(
-          ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_CUSTOM),
-        ),
-        'required' => array(
-          ':input[name="display[divisions]"]' => array('value' => CURRENCY_DIVISION_MODE_CUSTOM),
+          ':input[name="display[widget]"]' => array('value' => CURRENCY_WIDGET_SELECT),
         ),
       ),
-      '#weight' => 3
+      '#weight' => 2
     );
-    $form['display']['format'] = array(
-      '#title' => t('Display format'),
-      '#description' => t('Write an expression to control the display of the currency using html, css and [quantity].') .'<br />'.
-         t('For example, !a shows as !b', array('!a' => '<strong>BHrs[quantity]</strong>', '!b' => '<strong>BHrs99:99</strong>')),
+    $form['display']['before'] = array(
+      '#title' => t('Css before'),
       '#type' => 'textfield',
-      '#default_value' => $currency->display['format'],
-      '#element_validate' => array(array($this, 'validate_format')),
-      '#required' => TRUE,
+      '#default_value' => $currency->display['before'],
+      '#max_length' => 6,
+      '#size' => 6,
       '#weight' => 4
+    );
+    $form['display']['after'] = array(
+      '#title' => t('Css after'),
+      '#type' => 'textfield',
+      '#max_length' => 6,
+      '#size' => 6,
+      '#default_value' => $currency->display['after'],
+      '#weight' => 5
     );
 
     $zeros = property_exists($currency, 'info') && transaction_filter(array('quantity' => 0, 'currcode' => $currency->info['currcode']));
@@ -190,7 +210,7 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'textfield',
       '#default_value' => $currency->display['zero'],
       '#required' => property_exists($currency, 'display') ? $zeros : FALSE,
-      '#weight' => 5
+      '#weight' => 6
     );
     if ($zeros) {
       $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");
@@ -331,7 +351,7 @@ class CurrencyFormController extends EntityFormController {
    * this sorts out any leading zeros on the centiles
    */
   public function validate_divisions(array &$element, array &$form_state) {
-    if ($form_state['values']['display']['divisions'] != CURRENCY_DIVISION_MODE_CUSTOM) {
+    if ($form_state['values']['display']['divisions'] != CURRENCY_WIDGET_SELECT) {
       return;
     }
     $validated = array();

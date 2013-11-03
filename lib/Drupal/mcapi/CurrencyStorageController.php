@@ -17,7 +17,8 @@ class CurrencyStorageController extends ConfigStorageController {
     parent::attachLoad($queried_entities, $revision_id);
 
     foreach ($queried_entities as $entity) {
-      if ($entity->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
+      if ($entity->display['widget'] == CURRENCY_WIDGET_SELECT) {
+        drupal_set_message('need to work on custom custom divisions');
         foreach(explode("\n", $entity->display['divisions_setting']) as $line) {
           list($cent, $display) = explode('|', $line);
           $entity->display['divisions_allowed'][$cent] = trim($display);

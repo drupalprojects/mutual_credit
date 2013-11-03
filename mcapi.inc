@@ -238,11 +238,17 @@ function transaction_operation_form_submit($form, &$form_state) {
 function mcapi_submit_op_form($operation, $transaction, $values = array()) {
   $result = array();
   $old_state = $transaction->state;
-  //if (array_key_exists('submit callback', $operation)) {
-    $function = $operation['submit callback'];
-    //this changes the $transaction
-    $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
-  //}
+  $function = $operation['submit callback'];
+  //this changes the $transaction
+  $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
+  if ($operation['mail']) {
+    //here we are just sending one mail, in one language
+    global $language;
+    $to = implode(user_load($transaction->payer)->mail, user_load($transaction->payee)->mail);
+    $params['transaction'] = $transaction;
+    $params['config'] = $this->configFactory->get('mcapi.operation.'.$operation['op']);
+    drupal_mail('mcapi', 'operation', $to, $language->language, $params);
+  }
   //and invoke trigger and rules using the changed transaction
   transaction_update($operation['op'], $transaction, $old_state);
   return $result;
@@ -262,27 +268,10 @@ function transaction_op_undo_access($op, $transaction) {
   if ($transaction->type == 'remote') return FALSE;//otherwise the intertrading module has to somehow intervene
   return _transaction_check_access_callbacks($op, $transaction);
 }
-function transaction_op_undo_form($op, $transaction) {
-  return array('notify' => array(
-    '#title' => t('Notify participants'),
-    '#type' => 'checkbox',
-    '#weight' => 3
-  ));
-}
+
 function transaction_op_undo($operation, $transaction, $values) {
   transaction_undo($transaction->serial);
   $message = t('The transaction is undone.') .' ';
-  if ($values['notify']) {
-    $params = array('transaction' => $transaction) + variable_get('mcapi_undo_notification', array());
-    if ($params['subject']) {
-      $payer = user_load($transaction->payer);
-      $payee = user_load($transaction->payer);
-      drupal_mail('mcapi', 'undo', $payer->mail, user_preferred_language($payer), $params);
-      drupal_mail('mcapi', 'undo', $payee->mail, user_preferred_language($payee), $params);
-      $message .= t('The participants have been notified');
-    }
-    else $message .= t('Mail template not configured. See !link', array('!link' => l("Misc settings", 'admin/accounting/misc')));
-  }
   return array('#markup' => $message);
 }
 
@@ -661,7 +650,7 @@ function _worth_element_process($element, &$form_state) {
 
   if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
     $currency = entity_load('mcapi_currencies', current($element['#currcodes']));
-    $use_div_subelement = in_array($currency->display['divisions'], array(CURRENCY_DIVISION_MODE_CUSTOM, CURRENCY_DIVISION_MODE_CENTS_FIELD));
+    $use_div_subelement = in_array($currency->display['widget'], array(CURRENCY_WIDGET_TEXT, CURRENCY_WIDGET_SELECT));
   }
   //work out the defaults for each subfield
   //null is not presumed to be zero, and is preserved
@@ -693,16 +682,16 @@ function _worth_element_process($element, &$form_state) {
   //we only show the division field if the currency requires it
   if (isset($div_quant)) {//that means $currency is also set
 
-    if ($currency->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
+    if ($currency->display['widget'] == CURRENCY_WIDGET_SELECT) {
       $element['div_quant'] = array(
         '#title' => t('Fraction'),
         '#title_display' => 'attribute',
         '#type' => 'select',
-        '#options' => $currency->display['divisions_allowed'],
+        '#options' => $currency->display['OPTIONS'],//TODO this property doesn't exist yet
         '#default_value' => $div_quant
       );
     }
-    else {//must be CURRENCY_DIVISION_MODE_CENTS_FIELD
+    else {//must be CURRENCY_WIDGET_TEXT
       $element['div_quant'] = array(
         '#title' => t('Cents'),
         '#title_display' => 'attribute',
@@ -728,12 +717,12 @@ function _worth_element_process($element, &$form_state) {
 function theme_worth_item(&$variables) {
   $currency = entity_load('mcapi_currencies', $variables['currcode']);
   list($integer, $cents) = currency_explode($variables['quantity']);
-  switch($currency->display['divisions']) {
-    case CURRENCY_DIVISION_MODE_CUSTOM :
+  switch($currency->display['widget']) {
+    case CURRENCY_WIDGET_SELECT :
       $subdivision = @$currency->display['divisions_allowed'][intval($cents)];
       break;
-    case CURRENCY_DIVISION_MODE_CENTS_FIELD:
-    case CURRENCY_DIVISION_MODE_CENTS_INLINE:
+    case CURRENCY_WIDGET_SINGLEFIELD:
+    case CURRENCY_WIDGET_SELECT
       $subdivision = str_pad($cents, 2, STR_PAD_LEFT);
       break;
   }
@@ -853,20 +842,20 @@ function currency_explode($number) {
  */
 function mcapi_round($quant, $currcode, $up = FALSE) {
   $currency = entity_load('mcapi_currencies', $currcode);
-  switch ($currency->display['divisions']) {
-    case CURRENCY_DIVISION_MODE_CUSTOM:
+  switch ($currency->display['widget']) {
+    case CURRENCY_WIDGET_SELECT:
       //calculate the number of hundredths from each division to the fraction, and choose the smallest
       list($int, $fraction) = array_pad(explode('.', $quant), 2, 0);
+      //divisions allowed exists in loaded currencies only
       foreach ($currency->display['divisions_allowed'] as $division) {
         $diffs[$division] = abs($fraction - $division);
       }
       asort($diffs);
       return "$int.". key($diffs);
       break;
-    case CURRENCY_DIVISION_MODE_CENTS_FIELD:
-    case CURRENCY_DIVISION_MODE_CENTS_INLINE:
+    case CURRENCY_WIDGET_SINGLEFIELD:
       $quant = round($quant, 2);
-    case CURRENCY_DIVISION_MODE_NONE:
+    case CURRENCY_WIDGET_TEXT:
       return $quant;
   }
 }

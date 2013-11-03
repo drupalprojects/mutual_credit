@@ -45,18 +45,27 @@ mcapi.currency.*:
       type: mapping
       label: 'Appearence'
       mapping:
-        divisions:
+        type:
+          type: string
+          label: 'Type'
+        widget:
           type: integer
-          label: 'Subdivisions'
+          label: 'Widget'
+        granularity:
+          type: integer
+          label: 'Granularity'
         delimiter:
           type: string
           label: 'Delimiter'
-        divisions_setting:
+        select:
           type: text
-          label: 'Allowed subdivisions'
-        format:
+          label: Options
+        before:
           type: string
-          label: 'Display format'
+          label: 'CSS before'
+        after:
+          type: string
+          label: 'CSS after'
         zero:
           type: string
           label: 'Zero value display'
@@ -94,3 +103,18 @@ mcapi.currency.*:
     weight:
       type: integer
       label: 'Weight'
+
+
+mcapi.operation.*:
+  type: mapping
+  label: 'Currency configuration'
+  mapping:
+    subject:
+      type: string
+      label: Subject
+    body:
+      type: text
+      label: Body
+    cc:
+      type: string
+      label: Copy to

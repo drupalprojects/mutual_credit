@@ -1,4 +1,4 @@
-<?php
+mcapi_ <?php
 /**
  * @file
  * Formal description of transaction handling function and Entity controller functions
@@ -220,7 +220,7 @@ function hook_transaction_cluster_alter(){}
 function hook_transaction_operations(){
   return array(
     //the array key is a hook, so be careful with the namespace
-    'mcapi_undo' => array(
+    'undo' => array(
       //this is used for the MENU_LOCAL_ACTION
       //operations without a title are for internal use only
       'title' => "Undo",
@@ -246,6 +246,8 @@ function hook_transaction_operations(){
       'form callback' => 'TRUE',
       //this applies for the form, not for ajax. default will redirect to the transaction/$serial
       'redirect' => 'user'
+      //whether or not the operation should send a mail
+      'mail' => TRUE
     )
   );
   //Dont' forget to include these t()s

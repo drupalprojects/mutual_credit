@@ -11,7 +11,7 @@ define ('TRANSACTION_STATE_PENDING', -1);
  * Signatures happen via menu callbacks
  * Its possible both to sign a transaction 'off' thus 'finishing' it
  * Also to sign all a user's transactions.
- * There is also a 'cancel' operation for pendingf transactions, permissions defined in the currency.
+ * There is also a 'cancel' operation for pending transactions, permissions defined in the currency.
   */
 
 /*
@@ -382,13 +382,4 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
   );
 }
 
-/*
- * Implements views hook_views_api
- */
-function mcapi_signatures_views_api() {
-  return array(
-    'api' => 3,
-    'path' => drupal_get_path('module', 'mcapi_signatures') . '/views',
-  );
-}
 

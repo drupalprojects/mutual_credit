@@ -69,10 +69,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
 
     $values += array(
       'display' => array(
-        'format' => '[quantity]',
-        'divisions' => CURRENCY_DIVISION_MODE_NONE,
+        'type' => 'decimal',
+        'granularity' => '2',
+        'widget' => CURRENCY_WIDGET_TEXT,
         'delimiter' => ':',
-        'divisions_setting' => "0|/.\n25|1/4\n50|1/2\n75|3/4",
+        'before' => '$',
+        'after' => '',
         'zero' => ''
       ),
       'access' => array(

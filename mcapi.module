@@ -9,10 +9,9 @@ define('MCAPI_CURRENCY_UNDO_DELETE', 0);
 define('MCAPI_CURRENCY_UNDO_ERASE', 1);
 define('MCAPI_CURRENCY_UNDO_REVERSE', 2);
 
-define('CURRENCY_DIVISION_MODE_NONE', 0);
-define('CURRENCY_DIVISION_MODE_CENTS_INLINE', 1);
-define('CURRENCY_DIVISION_MODE_CENTS_FIELD', 2);
-define('CURRENCY_DIVISION_MODE_CUSTOM', 3);
+define('CURRENCY_WIDGET_SINGLEFIELD', 1);
+define('CURRENCY_WIDGET_TEXT', 2);
+define('CURRENCY_WIDGET_SELECT', 3);
 
 define('CURRENCY_TYPE_ACKNOWLEDGEMENT', 'acknowledgement');
 define('CURRENCY_TYPE_EXCHANGE', 'exchange');
@@ -265,7 +264,6 @@ function transaction_filter(array $conditions, $offset = 0, $limit = 25, $fielda
 
 /**
  * implements hook_help()
- * provides on-page advice and some configuration
  */
 function mcapi_help($section, $arg) {
   switch ($section) {
@@ -277,10 +275,6 @@ function mcapi_help($section, $arg) {
     case 'admin/accounting/workflow':
       module_load_include('admin.inc', 'mcapi');
       return mcapi_workflow_help();
-    case 'admin/accounting/misc':
-      return implode(' ', array(
-        t("Send mail notifications for completed transactions using the action/trigger system: !link", array('!link' => l('admin/config/system/actions', 'admin/config/system/actions')))
-      ));
   }
 }
 
@@ -297,12 +291,9 @@ function mcapi_menu() {
   );
 
   $items['admin/accounting/config'] = array(
-    'title' => 'Configuration',
-    'type' => MENU_VISIBLE_IN_BREADCRUMB,
-  );
-  $items['admin/accounting/misc'] = array(
     'title' => t('Misc settings'),
     'route_name' => 'mcapi.admin_misc',
+    'weight' => 20,
   );
   $items['admin/accounting/currencies'] = array(
     'title' => t('Currencies'),
@@ -310,14 +301,14 @@ function mcapi_menu() {
     'route_name' => 'mcapi.admin_currency_list',
   );
   $items['admin/accounting/workflow'] = array(
-    'title' => "Workflow",
-    'description' => "Configuration around transaction states, types and operations",
+    'title' => 'Workflow',
+    'description' => 'Configuration around transaction states, types and operations',
     'weight' => 2,
     'route_name' => 'mcapi.workflow',
   );
   $items['transact/log'] = array(
-    'title' => "Record transaction",
-    'description' => "Log a transaction in the database",
+    'title' => 'Record transaction',
+    'description' => 'Log a transaction in the database',
     'route_name' => 'mcapi.transaction_log',
   );
   /*
@@ -903,11 +894,13 @@ function mcapi_mail($key, &$message, $params) {
     $message['subject'] =  token_replace($params['subject'], $params, $options);
     $message['body'][] =  token_replace($params['body'], $params, $options);
   }
-  elseif ($key == 'undo') {
+  elseif ($key == 'operation') {
     $options = array('language' => $message['language'], 'sanitize' => FALSE);
-    $conf = variable_get('mcapi_undo_notification', array());
-    $message['subject'] =  token_replace($conf['subject'], $params, $options);
-    $message['body'][] =  token_replace($conf['body'], $params, $options);
+    $message['subject'] =  token_replace($params['config']['subject'], $params, $options);
+    $message['body'][] =  token_replace($params['config']['body'], $params, $options);
+    $message['body'][] =  token_replace($params['config']['body'], $params, $options);
+    $message['headers']['cc'] = $params['config']['cc'];
+    $message['headers']['bcc'] = $params['config']['bcc'];
   }
 }
 
@@ -1126,7 +1119,7 @@ function transaction_operations($localize = '1', $all = '0') {
     //we're caching up to 4 versions of this array based on the incoming args
     $preloaded[$key] = $all_operations;
     foreach ($preloaded[$key] as $op => $info) {
-      if (array_key_exists('access callback', $info)) {
+      if (array_key_exists('weight', $info)) {
         //translate the title and description of all (non-internal) operations
         if ($localize) {
           foreach (array('title', 'description') as $prop) {
@@ -1137,7 +1130,7 @@ function transaction_operations($localize = '1', $all = '0') {
         }
       }
       elseif (!$all) {
-        //remove internal operations which have no access callback
+        //remove internal operations which have no weight
         unset($preloaded[$key][$op]);
       }
     }
@@ -1171,8 +1164,9 @@ function operations_config_default_access($op_info, $currency) {
 /*
  * implements hook_trigger_info().
  * we need a trigger for each transaction_operation
+ * TODO convert these into rules, or something
  */
-function mcapi_trigger_info() {
+function __mcapi_trigger_info() {
   $triggers['mcapi']['transaction_cluster_alter']['label'] = t('Create dependent transactions before inserting.');
   $triggers['mcapi']['transaction_undo']['label'] = t('Respond to transaction deletion.');
   $triggers['mcapi']['transaction_update']['label'] = t('Respond to transaction changing.');
@@ -1218,58 +1212,6 @@ function trigger_transaction_undo($serial) {
   }
 }
 
-/*
- * pull trigger transaction_post_insert().
- */
-function trigger_transaction_post_insert($serial) {
-  foreach (trigger_get_assigned_actions('transaction_undo') as $aid => $info) {
-    actions_do($aid, transaction_load($serial), $info);
-  }
-}
-
-/*
- * Implements hook_action_info().
- * provides some simple actions, without conditions
- */
-function mcapi_action_info() {
-  module_load_include('admin.inc', 'mcapi');
-  return _mcapi_action_info();
-}
-
-
-/*
- * action callback
- * mail the transaction participants, and cc
- * $transaction may have dependents
- */
-function mcapi_transaction_entity_uid($object = NULL, $context) {
-  extract($context);//gives $group, $hook, $form_values, $user, actions_label, $direction, $worth_items
-  $entity = $$group;
-  $transaction = array(
-    //allow a price to be fixed on the entity using the worth field.
-    'worth' => isset($entity->worth) ? $entity->worth : $worth_items['worths'],
-    'type' => 'auto',
-    'state' => TRANSACTION_STATE_FINISHED
-  );
-  if (isset($description)) {
-    $transaction['description'] = $description;
-  }
-  if ($direction == 'uidpays') {
-    $transaction['payee'] = 1;
-    $transaction['payer'] = $entity->uid;
-  }
-  else {
-    $transaction['payee'] = $entity->uid;
-    $transaction['payer'] = 1;
-  }
-  $transactions = array(entity_create('transaction', $transaction));
-  try{
-    transaction_cluster_write($transactions, TRUE);
-  }
-  catch (Exception $e) {
-    drupal_set_message(t('Automated transaction failed: @message', array('@message' => $e->getMessage)), 'error');
-  }
-}
 
 /*
  * Everything below here concerns the 'worth' fieldAPI field and the 2 elements which it uses
@@ -1564,5 +1506,17 @@ function mcapi_operation_include($info) {
 function mcapi_toolbar() {
   if (\Drupal::currentUser()->hasPermission('manage all transactions')) {
     drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
+  }
+}
+
+/*
+ * form field validate callback
+ * used in operations settings form for the cc addresses
+ */
+function mcapi_validate_emails(&$element, &$form_state) {
+  $mails = $element['#value'];
+  foreach(explode(',', $mails) as $mail) {
+    $element['#value'] = trim($mail);
+    form_validate_email($element, $form_state);
   }
 }

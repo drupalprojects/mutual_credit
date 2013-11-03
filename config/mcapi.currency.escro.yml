@@ -5,11 +5,14 @@ issuance: exchange
 uid: '1'
 reservoir: '1'
 display:
-  divisions: '1'
-  delimiter: ':'
-  divisions_setting: ''
-  format: '€[quantity]'
-  zero: ''
+  type: decimal
+  granularity: 2
+  widget: CURRENCY_WIDGET_SINGLEFIELD
+  select:
+  delimiter:
+  before: €
+  after:
+  zero:
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'
@@ -21,8 +24,8 @@ view_transaction_states:
   0:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 access_operations:
-  mcapi_view: {  }
-  mcapi_undo:
+  view: {  }
+  undo:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 weight: '-9'
 status: true

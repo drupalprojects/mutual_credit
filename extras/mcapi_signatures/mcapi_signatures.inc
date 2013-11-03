@@ -4,7 +4,7 @@
 function _mcapi_signatures_transaction_operations() {
   //note that strings are given in English and translated elsewhere, as in the menu system
   return array(
-    'mcapi_sign' => array(
+    'sign' => array(
       'title' => 'Sign',
       'description' => 'Sign a pending transaction',
       'sure' => 'Are you sure you want to sign?',
@@ -14,7 +14,7 @@ function _mcapi_signatures_transaction_operations() {
       'weight' => 2,
       'filepath' => 'mcapi_signatures.inc'
     ),
-    'mcapi_signoff' => array(
+    'signoff' => array(
       'title' => 'Sign off',
       'description' => "Sign a pending transaction on behalf of all signatories, so that it moved into 'finished' state.",
       'sure' => 'Are you sure you want to sign off this transaction?',
@@ -24,7 +24,7 @@ function _mcapi_signatures_transaction_operations() {
       'weight' => 5,
       'filepath' => 'mcapi_signatures.inc'
     ),
-    'mcapi_undo_pending' => array(
+    'undo_pending' => array(
       'title' => 'Cancel',
       'description' => 'Cancel a pending transaction',
       'sure' => 'Are you sure you want to cancel this pending transaction?',

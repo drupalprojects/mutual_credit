@@ -111,7 +111,7 @@ Intended for webshops and skilled Drupal developers
 1. Transaction workflow.
 There is no built in way to 'edit' transactions, since such operations should be strictly controlled.
 There is a hook system for defining transaction states and defining the permission callbacks for the operations to move between states.
-By default, transactions are created in FINISHED state, and the 'mcapi_undo' operation is visible only to permitted users. 
+By default, transactions are created in FINISHED state, and the 'undo' operation is visible only to permitted users.
 The signatures module shows how a transaction workflow can be created using operations, states, and $transaction->type
 It declares another state, 'pending', and 2 operations, 'sign' and 'sign off' (plus various other logic & config).
 Operations show on the transaction as a field, and work through ajax. Each operation defined in hook_transaction_operations specifies the strings and callbacks needed. Each one determines under what circumstances it should appear and has an opportunity to inject elements into the confirm_form.

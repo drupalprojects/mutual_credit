@@ -1,0 +1,3 @@
+subject: Notice for transaction operation: [operation]
+body: Operation '[operation]' happened to [transaction:serial]
+cc: test@test.com

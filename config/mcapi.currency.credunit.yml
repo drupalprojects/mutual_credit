@@ -5,11 +5,14 @@ issuance: acknowledgement
 uid: '1'
 reservoir: '1'
 display:
-  divisions: '3'
-  delimiter: ':'
-  divisions_setting: "0|00\r\n25|15 mins\r\n50|30 mins\r\n75|45 mins"
-  format: '<strong>CC</strong>[quantity]'
-  zero: ''
+  type: decimal
+  granularity: 0
+  widget: CURRENCY_WIDGET_SINGLEFIELD
+  select:
+  delimiter:
+  before: CC
+  after:
+  zero:
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'
@@ -21,8 +24,10 @@ view_transaction_states:
   0:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 access_operations:
-  mcapi_undo:
+  undo:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 weight: '-10'
 status: true
 langcode: en
+
+        'zero' => ''

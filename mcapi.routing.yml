@@ -7,10 +7,10 @@ mcapi.admin:
     _permission: 'manage all transactions'
 
 mcapi.admin_misc:
-  path: '/admin/accounting/misc'
+  path: '/admin/accounting/config'
   defaults:
     _form: Drupal\mcapi\Form\AccountingAdminMiscForm
-    _title: Misc settings
+    _title: Settings
   requirements:
     _permission: 'manage all transactions'
 
@@ -45,10 +45,20 @@ mcapi.admin_currency_delete:
 mcapi.workflow:
   path: '/admin/accounting/workflow'
   defaults:
-    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
     _title: 'Workflow'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'configure all currencies'
+
+
+mcapi.workflow_settings:
+  path: '/admin/accounting/workflow/op/{op}'
+  defaults:
+    _form: Drupal\mcapi\Form\OperationSettingsForm
+    _title: 'Configure transaction operation'
+  requirements:
+    _permission: 'configure all currencies'
+
 
 mcapi.transaction_log:
   path: '/transaction/log'

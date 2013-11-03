@@ -9,52 +9,6 @@ function mcapi_menu_alter(&$items) {
   $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
 }
 
-function mcapi_workflow_help() {
-  $renderable = array(
-    '#attached' => array(
-      'css' => array(
-        drupal_get_path('module', 'mcapi') . '/css/mcapi.workflow.css',
-      ),
-    ),
-    '#type' => 'container',
-    '#attributes' => new Attribute(array('id' => 'mcapi-workflow-container', 'class' => 'clearfix')),
-    'states' => array(
-      '#theme' => 'table',
-      '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
-      '#header' => array(t('Name'), t('Description')),
-      '#attributes' => new Attribute(array('class' => array('mcapi-workflow-states'))),
-    ),
-    'types' => array(
-      '#theme' => 'table',
-      '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
-      '#header' => array(t('machine name')),
-      '#attributes' => new Attribute(array('class' => array('mcapi-workflow-types'))),
-    ),
-    'ops' => array(
-      '#theme' => 'table',
-      '#caption' => t('Operations, from !hook.', array('!hook' => "\n<br />hook_transaction_operations()")),
-      '#header' => array(t('Name'), t('Description')),
-      '#attributes' => new Attribute(array('class' => array('mcapi-workflow-operations'))),
-    ),
-  );
-  foreach (mcapi_get_states('#full') as $name => $info) {
-    $renderable['states']['#rows'][$name]['name'] = $info['name'];
-    $renderable['states']['#rows'][$name]['dscription'] = $info['description'];
-  }
-  foreach (mcapi_get_types() as $type) {
-    $renderable['types']['#rows'][$type]['name'] = $type;
-  }
-  foreach (transaction_operations('1', '0') as $op => $info) {
-    if ($op == 'mcapi_view')continue;
-    $renderable['ops']['#rows'][$op] = array(
-      'name' => $info['title'],
-      'description' =>  $info['description'],
-      //'form' => empty($info['form callback']) ? t('No'): t('Yes'),
-    );
-  }
-  return render($renderable);
-}
-
 /*
  * menu access callback
  * access to the ctools currency edit page
@@ -75,25 +29,14 @@ function currencies_load_all() {
     $data = &$currency->data;
     //convert the divisions_allowed into an array
     $divisions = array();
-    if ($data->display['divisions'] == CURRENCY_DIVISION_MODE_CUSTOM) {
-      foreach(explode("\n", $data->display['divisions_setting']) as $line) {
+    if ($data->display['widget'] == CURRENCY_WIDGET_SELECT) {
+      foreach(explode("\n", $data->display['select']) as $line) {
         list($cent, $display) = explode('|', $line);
         $divisions[$cent] = trim($display);
       }
     }
+    //this property exists only in memory, it is the array version of the custom options text field
     $data->display['divisions_allowed'] = $divisions;
-    //TEMP
-    //this is a good moment to check that all the currencies for all the operations, for all the states, have access callbacks
-    $accesses = array(
-      'view_transaction_states' => t('Privacy'),
-      'access_operations' => t('Transaction operations'),
-      'access' => t('Currency Access')
-    );
-    foreach ($accesses as $prop => $name) {
-      if (property_exists($data, $prop)) continue;
-      $message = t("Resave currency @name, paying attention to '@prop'", array('@name' => $data->name, '@prop' => $prop));
-      drupal_set_message($message, 'warning');
-    }
     $currencies[$currcode] = $currency;
   }
   return $currencies;
@@ -114,58 +57,6 @@ function mcapi_currency_form_submit($form, &$form_state) {
   $form_state['item']->currcode = $form_state['values']['info']['currcode'];
   $form_state['item']->data = (object)$form_state['values'];
   cache()->invalidate('currencies');
-}
-
-function _mcapi_action_info() {
-  return array(
-    'mcapi_dependent_transaction_action' => array(
-      'type' => 'transactions',
-      'label' => t('Make a dependent payment'),
-      'configurable' => TRUE,
-      'triggers' => array('transaction_cluster_alter'),
-    ),
-    'mcapi_transaction_mail_action' => array(
-      'type' => 'transactions',
-      'label' => t('Completed transaction notification'),
-      'description' => t('Mail sent to the participants when the transaction completes'),
-      'configurable' => TRUE,
-      'triggers' => array('transaction_state'),
-    ),
-    'mcapi_transaction_entity_uid' => array(
-      'type' => 'transactions',
-      'label' => t('Create transaction with entity owner'),
-      'description' => t('Pay or charge the node or comment owner, or the user'),
-      'configurable' => TRUE,
-      'triggers' => array(//all the core triggers, except taxonomy
-        'node_presave', 'node_insert', 'node_update', 'node_delete', 'node_view',
-        'comment_presave', 'comment_insert', 'comment_update', 'comment_delete', 'comment_view',
-        'user_insert', 'user_update', 'user_delete', 'user_login', 'user_logout',  'user_view',
-      ),
-    )
-  );
-}
-
-
-
-/*
- * settings form callback for action mcapi_transaction_mail_action
- */
-function mcapi_transaction_mail_action_form($context = array()) {
-  $context += array(//set the defaults
-    'subject' => t('Transaction saved by [transaction:creator]'),
-    'body' => "[user:name],\n\n".
-      t('A transaction for [transaction:worth] has been finalised')."\n\n".
-      t('More details can be found at:') ."\n[transaction:url:absolute]\n\n".
-      t('To change your notification settings, visit your profile at:') ."\n[user:edit-url]\n\n".
-      t('The team at [site:name]')
-  );
-  $form['mail'] = mcapi_mail_config_fieldset($context, array('transaction', 'user'), TRUE, 5);
-  $form['mail']['#description'] = t('Mail will be sent to the payer and payee, except for the logged in user.');
-  $def_types = isset($context['transaction_types']) ? $context['transaction_types'] : array();
-  $form['transaction_types'] = _transaction_type_selector($def_types, TRUE, array('mass', 'child'));
-  $form['transaction_types']['#description'] = t('Only send for these transaction types.');
-  unset($form['transaction_types']['#options']['auto'], $form['transaction_types']['#options']['undo']);
-  return $form;
 }
 
 /*
@@ -273,22 +164,12 @@ function mcapi_transaction_entity_uid_form($context) {
     '#weight' => 1
   );
 
-<<<<<<< HEAD
-  if (\Drupal::config(mcapi.misc)->get('sentence_template')) {
-    $form['description'] = array(
-      '#title' => t('Transaction description text'),
-      '#type' => 'textfield',
-      '#default_value' => @$context['worth_items']['description'],
-    );
-  }
-=======
   $form['description'] = array(
     '#title' => t('Transaction description text'),
     '#type' => 'textfield',
     '#default_value' => @$context['worth_items']['description'],
   );
 
->>>>>>> got rid of transaction_description_field variable
   return $form;
 }
 /*
@@ -417,6 +298,33 @@ function mcapi_dependent_transaction_action_submit($form, $form_state) {
 }
 
 
+function mcapi_workflow_help() {
+  drupal_add_css('table.help{float:left;margin-right:1em; width:50%;} ul.admin-list{clear:both;}', array('type' => 'inline'));
+  $renderable = array(
+    'states' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
+      '#header' => array(t('Name'), t('Description')),
+      '#attributes' => array('class' => array('help'))
+    ),
+    'types' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
+      '#header' => array(t('machine name')),
+      '#attributes' => array('class' => array('help'))
+    ),
+  );
+  foreach (mcapi_get_states('#full') as $name => $info) {
+    $renderable['states']['#rows'][$name]['name'] = $info['name'];
+    $renderable['states']['#rows'][$name]['dscription'] = $info['description'];
+  }
+  foreach (mcapi_get_types() as $type) {
+    $renderable['types']['#rows'][$type]['name'] = $type;
+  }
+  debug($renderable);
+  return $renderable;
+}
+
 /*
  * element validate callback
  * ensures that the formula for calculating a quantity works
@@ -440,11 +348,12 @@ function _transaction_operations() {
       $info += array(
         'access form' => 'operations_config_default_access',
         'op' => $op,
-        'module' => $module
+        'module' => $module,
+        'mail' => FALSE
       );
       mcapi_operation_include($info);
-      $props = array('submit callback', 'access callback', 'form callback');
-      foreach ($props as $propname) {
+      $required = array('submit callback', 'access callback', 'form callback');
+      foreach ($required as $propname) {
         if (array_key_exists($propname, $info) && !is_bool($info[$propname]) && !function_exists($info[$propname])) {
           throw new Exception("Missing function or failed include in operation $op: '$propname' ".print_r($info, 1));
         }
@@ -459,7 +368,6 @@ function _transaction_operations() {
   return $operations;
 }
 
-
 /*
  * implements hook_transaction_operations().
  * returns an array of operation infos keyed by the operation key
@@ -469,36 +377,35 @@ function _transaction_operations() {
  * note that filepath mcapi.inc is not needed because that file is included automatically
  */
 function mcapi_transaction_operations() {
-  $operations['mcapi_view'] = array(
+  $operations['view'] = array(
     'title' => 'View',
     'access callback' => 'mcapi_view_access',
     'weight' => 0
   );
   t('View');
-  $operations['mcapi_register'] = array(
+  $operations['register'] = array(
     'title' => 'Register (internal use only)',
     'description' => 'A new transaction was registered',
-    'weight' => 1
   );
   t('Register (internal use only)');
   t('A new transaction was registered');
-  $operations['mcapi_update'] = array(
+  $operations['update'] = array(
     'title' => 'Update (internal use only)',
     'description' => 'A transaction was changed',
-    'weight' => 2
   );
   t('Update (internal use only)');
   t('A transaction was changed');
 
-  $operations['mcapi_undo'] = array(
+  $operations['undo'] = array(
     'title' => 'Undo',
     'description' => 'Undo a finished transaction, and its dependents',
-    'sure' => \Drupal::config(mcapi.misc)->get('delete_mode') == MCAPI_CURRENCY_UNDO_DELETE ?
+    'sure' => \Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_CURRENCY_UNDO_DELETE ?
       'Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)' :
       'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
     'access callback' => 'transaction_op_undo_access',
     'submit callback' => 'transaction_op_undo',
-    'form callback' => 'transaction_op_undo_form',
+//    'form callback' => 'transaction_op_undo_form',
+    'mail' => TRUE,
     'redirect' => 'user',
     'weight' => 10,
   );

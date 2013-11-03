@@ -60,12 +60,9 @@ class AccountingAdminMiscForm extends ConfigFormBase {
     );
 
     $form['mix_mode'] = array(
-      '#title' => t('Currencies per transaction'),
-      '#type' => 'radios',
-      '#options' => array(
-        0 => t('One currency per transaction'),
-        1 => t('Many currencies per transaction')
-      ),
+      '#title' => t('Restrict transactions to one currency'),
+      '#description' => t('Applies only when more than one currency is available'),
+      '#type' => 'checkbox',
       '#default_value' => intval($config->get('mix_mode'))
     );
 
@@ -85,11 +82,4 @@ class AccountingAdminMiscForm extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
   }
-}
-
-
-function mcapi_mixed_transactions_submit($form, &$form_state) {
-  $val = &$form_state['values']['mcapi_mixed_transactions'];
-  variable_set('mcapi_mixed_transactions', $val);
-
 }
