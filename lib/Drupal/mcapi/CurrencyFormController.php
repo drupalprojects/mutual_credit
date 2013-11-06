@@ -333,6 +333,16 @@ class CurrencyFormController extends EntityFormController {
       }
     }
 
+    if ($currency->display['widget'] == CURRENCY_WIDGET_SELECT) {
+      foreach(explode("\n", $currency->display['select']) as $line) {
+        list($cent, $display) = explode('|', $line);
+        $currency->display['divisions'][$cent] = trim($display);
+      }
+    }
+    else {
+      $currency->display['divisions'] = array();
+    }
+
     $status = $currency->save();
 
     if ($status == SAVED_UPDATED) {

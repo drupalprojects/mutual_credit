@@ -59,7 +59,13 @@ mcapi.currency.*:
           label: 'Delimiter'
         select:
           type: text
-          label: Options
+          label: 'Options'
+        divisions:
+          type: sequence
+          label: 'Divisions'
+          sequence:
+            - type: string
+              label: 'Division'
         prefix:
           type: string
           label: 'Prefix'

@@ -6,13 +6,14 @@ uid: '1'
 reservoir: '1'
 display:
   type: decimal
-  granularity: 2
-  widget: CURRENCY_WIDGET_SINGLEFIELD
-  select:
-  delimiter:
+  granularity: '2'
+  widget: '1'
+  delimiter: ''
+  select: ''
   prefix: €
-  suffix:
-  zero:
+  suffix: ''
+  zero: ''
+  divisions: {  }
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'

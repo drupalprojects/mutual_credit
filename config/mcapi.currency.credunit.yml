@@ -5,14 +5,19 @@ issuance: acknowledgement
 uid: '1'
 reservoir: '1'
 display:
-  type: decimal
-  granularity: 0
-  widget: CURRENCY_WIDGET_SINGLEFIELD
-  select:
-  delimiter:
+  type: time
+  granularity: '0'
+  widget: '3'
+  delimiter: ':'
+  select: "0|00\r\n25|15 mins\r\n50|30 mins\r\n75|45 mins"
   prefix: CC
-  suffix:
-  zero:
+  suffix: ''
+  zero: ''
+  divisions:
+    0: '00'
+    25: '15 mins'
+    50: '30 mins'
+    75: '45 mins'
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'
@@ -24,6 +29,7 @@ view_transaction_states:
   0:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 access_operations:
+  view: {  }
   undo:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 weight: '-10'
