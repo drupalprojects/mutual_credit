@@ -8,6 +8,7 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\FieldableDatabaseStorageController;
+use Drupal\mcapi\Plugin\field\field_type\Worth;
 
 class TransactionStorageController extends FieldableDatabaseStorageController implements TransactionStorageControllerInterface {
 
@@ -17,10 +18,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   function attachLoad(&$queried_entities, $load_revision = FALSE) {
     $result = $this->database->query('SELECT * FROM {mcapi_transactions_worth} WHERE xid IN (:xids)', array(':xids' => array_keys($queried_entities)));
     foreach ($result as $record) {
-      $queried_entities[$record->xid]->worth[$record->currcode] = array(
+      $queried_entities[$record->xid]->worth[$record->currcode] = new Worth(array(
         'currcode' => $record->currcode,
         'quantity' => $record->quantity,
-      );
+      ));
     }
 
     parent::attachLoad($queried_entities, $load_revision);
