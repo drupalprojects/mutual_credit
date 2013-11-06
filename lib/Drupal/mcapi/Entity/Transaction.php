@@ -47,6 +47,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $this->get('xid')->value;
   }
 
+  public function label($langcode = NULL) {
+    return t("Transaction #@serial", array('@serial' => $this->serial->value));
+  }
+
   /**
    * {@inheritdoc}
    */
