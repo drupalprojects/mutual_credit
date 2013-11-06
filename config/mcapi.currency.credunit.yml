@@ -10,8 +10,8 @@ display:
   widget: CURRENCY_WIDGET_SINGLEFIELD
   select:
   delimiter:
-  before: CC
-  after:
+  prefix: CC
+  suffix:
   zero:
 access:
   membership: 'user_chooser_segment_perms:transact'
@@ -29,5 +29,3 @@ access_operations:
 weight: '-10'
 status: true
 langcode: en
-
-        'zero' => ''

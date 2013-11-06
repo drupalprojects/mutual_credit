@@ -186,20 +186,20 @@ class CurrencyFormController extends EntityFormController {
       ),
       '#weight' => 2
     );
-    $form['display']['before'] = array(
-      '#title' => t('Css before'),
+    $form['display']['prefix'] = array(
+      '#title' => t('Prefix'),
       '#type' => 'textfield',
-      '#default_value' => $currency->display['before'],
+      '#default_value' => $currency->display['prefix'],
       '#max_length' => 6,
       '#size' => 6,
       '#weight' => 4
     );
-    $form['display']['after'] = array(
-      '#title' => t('Css after'),
+    $form['display']['suffix'] = array(
+      '#title' => t('Suffix'),
       '#type' => 'textfield',
       '#max_length' => 6,
       '#size' => 6,
-      '#default_value' => $currency->display['after'],
+      '#default_value' => $currency->display['suffix'],
       '#weight' => 5
     );
 

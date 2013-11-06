@@ -60,12 +60,12 @@ mcapi.currency.*:
         select:
           type: text
           label: Options
-        before:
+        prefix:
           type: string
-          label: 'CSS before'
-        after:
+          label: 'Prefix'
+        suffix:
           type: string
-          label: 'CSS after'
+          label: 'Suffix'
         zero:
           type: string
           label: 'Zero value display'
