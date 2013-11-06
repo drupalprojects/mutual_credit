@@ -75,6 +75,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
     $values += array(
       'description' => '',
+      'parent' => 0,
       'payer' => NULL,
       'payee' => NULL,
       'creator' => \Drupal::currentUser()->id(),
@@ -132,6 +133,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'type' => 'integer_field',
       'read-only' => TRUE,
     );
+    $properties['parent'] = array(
+      'label' => t('Parent'),
+      'description' => t('Parent transaction that created this transaction'),
+      'type' => 'entity_reference_field',
+      'settings' => array(
+        'target_type' => 'mcapi_transaction',
+      ),
+    );
     $properties['worths'] = array(
       'label' => t('Worth'),
       'description' => t('Value of this transaction'),
@@ -187,6 +196,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'label' => t('Created'),
       'description' => t('The time that the transaction was created.'),
       'type' => 'integer_field',
+    );
+    $properties['children'] = array(
+      'label' => t('Children'),
+      'description' => t('List of all child transactions.'),
+      'type' => 'entity_reference_field',
+      'settings' => array(
+        'target_type' => 'mcapi_transaction',
+      ),
     );
     return $properties;
   }

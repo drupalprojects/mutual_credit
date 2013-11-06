@@ -24,6 +24,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       ));
     }
 
+    // Load all the children
+    $result = $this->database->query('SELECT xid FROM {mcapi_transactions} WHERE parent IN (:parents)', array(':parents' => array_keys($queried_entities)));
+    foreach ($result as $record) {
+      $queried_entities[$record->xid]->children[$record->xid] = $record->xid;
+    }
+
     parent::attachLoad($queried_entities, $load_revision);
   }
 

@@ -136,6 +136,13 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
+      'parent' => array(
+        'description' => 'Xid of the parent transaction',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => FALSE,
+        'default' => 0,
+      ),
       'payer' => array(
         'description' => 'the user id of the payer',
         'type' => 'int',
@@ -182,6 +189,9 @@ function mcapi_schema() {
       ),
     ),
     'primary key' => array('xid'),
+    'indexes' => array(
+      'parent' => array('parent'),
+    ),
     'foreign keys' => array(
       'payer' => array(
         'table' => 'users',
