@@ -63,7 +63,7 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       '#title' => t('Restrict transactions to one currency'),
       '#description' => t('Applies only when more than one currency is available'),
       '#type' => 'checkbox',
-      '#default_value' => intval($config->get('mix_mode'))
+      '#default_value' => !$config->get('mix_mode'),
     );
 
     return parent::buildForm($form, $form_state);
@@ -77,7 +77,7 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       ->set('delete_mode', $form_state['values']['delete_mode'])
       ->set('show_balances', $form_state['values']['show_balances'])
       ->set('sentence_template', $form_state['values']['sentence_template'])
-      ->set('mix_mode', $form_state['values']['mix_mode'])
+      ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->save();
 
     parent::submitForm($form, $form_state);

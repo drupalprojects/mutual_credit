@@ -600,9 +600,7 @@ function _worths_element_process($element, &$form_state) {
     }
   }
 
-  $mixed = \Drupal::config('mcapi.misc')->get('mix_mode');;
-
-  if ($mixed || @$element['#preset']) {
+  if (\Drupal::config('mcapi.misc')->get('mix_mode') || @$element['#preset']) {
     //construct one widget for each default, each with its own currcode
     foreach ($currencies as $currcode => $name) {
       $element[$currcode]['#title'] = $name;
