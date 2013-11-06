@@ -722,7 +722,7 @@ function theme_worth_item(&$variables) {
       $subdivision = @$currency->display['divisions_allowed'][intval($cents)];
       break;
     case CURRENCY_WIDGET_SINGLEFIELD:
-    case CURRENCY_WIDGET_SELECT
+    case CURRENCY_WIDGET_SELECT:
       $subdivision = str_pad($cents, 2, STR_PAD_LEFT);
       break;
   }
