@@ -178,7 +178,7 @@ class CurrencyFormController extends EntityFormController {
       '#description' => t('Key value pairs'),
       '#type' => 'textarea',
       '#rows' => 4,
-      '#default_value' => $currency->display['options'],
+      '#default_value' => $currency->display['select'],
       '#states' => array(
         'visible' => array(
           ':input[name="display[widget]"]' => array('value' => CURRENCY_WIDGET_SELECT),
