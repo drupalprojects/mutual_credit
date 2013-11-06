@@ -87,7 +87,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     if (empty($values['worth'])) {
       $values['worth'] = array();
       foreach (mcapi_get_available_currencies() as $currcode => $name) {
-        $values['worth'][$currcode] = array(
+        $values['worths'][$currcode] = array(
           'currcode' => $currcode,
           'quantity' => NULL,
         );
@@ -95,7 +95,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
     else {
       foreach ($values['worth'] as $currcode => $value) {
-        $values['worth'] += array(
+        $values['worths'] += array(
           'currcode' => $currcode,
           'quantity' => NULL,
         );
@@ -132,7 +132,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'type' => 'integer_field',
       'read-only' => TRUE,
     );
-    $properties['worth'] = array(
+    $properties['worths'] = array(
       'label' => t('Worth'),
       'description' => t('Value of this transaction'),
       'type' => 'worths_field',

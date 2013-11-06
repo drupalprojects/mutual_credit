@@ -16,7 +16,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * Overrides Drupal\Core\Entity\DatabaseStorageController::attachLoad().
    */
   function attachLoad(&$queried_entities, $load_revision = FALSE) {
-    $result = $this->database->query('SELECT * FROM {mcapi_transactions_worth} WHERE xid IN (:xids)', array(':xids' => array_keys($queried_entities)));
+    $result = $this->database->query('SELECT * FROM {mcapi_transactions_worths} WHERE xid IN (:xids)', array(':xids' => array_keys($queried_entities)));
     foreach ($result as $record) {
       $queried_entities[$record->xid]->worth[$record->currcode] = new Worth(array(
         'currcode' => $record->currcode,
@@ -31,12 +31,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * {@inheritdoc}
    */
   public function saveWorths(TransactionInterface $transaction) {
-    $this->database->delete('mcapi_transactions_worth')
+    $this->database->delete('mcapi_transactions_worths')
       ->condition('xid', $transaction->id())
       ->execute();
 
-    $query = $this->database->insert('mcapi_transactions_worth')->fields(array('xid', 'currcode', 'quantity'));
-    foreach ($transaction->worth[0] as $currcode => $currency) {
+    $query = $this->database->insert('mcapi_transactions_worths')->fields(array('xid', 'currcode', 'quantity'));
+    foreach ($transaction->worths[0] as $currcode => $currency) {
       $query->values(array(
         'xid' => $transaction->id(),
         'currcode' => $currcode,

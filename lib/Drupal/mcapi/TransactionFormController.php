@@ -26,11 +26,11 @@ class TransactionFormController extends EntityFormController {
       '#title' => t('Description'),
       '#default_value' => $transaction->description->value,
     );
-    $form['worth'] = array(
+    $form['worths'] = array(
       '#type' => 'worths',
       '#title' => t('Worth'),
       '#required' => TRUE,
-      '#default_value' => $transaction->worth,
+      '#default_value' => $transaction->worths,
     );
     //the default payer and payee widgets will autocomplete any user on the system, and permissions will be checked later
     $form['payer'] = array(

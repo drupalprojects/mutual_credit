@@ -194,7 +194,7 @@ function mcapi_schema() {
     )
   );
 
-  $schema['mcapi_transactions_worth'] = array(
+  $schema['mcapi_transactions_worths'] = array(
     'description' => 'Transaction worth amounts.',
     'fields' => array(
       'xid' => array(
