@@ -33,6 +33,16 @@ class Worth extends ConfigFieldItemBase {
   /**
    * {@inheritdoc}
    */
+  public function __get($name) {
+    if ($name == 'currency') { //FIXME: This is a giant hack!
+      return entity_load('mcapi_currencies', $this->currcode);
+    }
+    return parent::__get($name);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getPropertyDefinitions() {
     if (!isset(static::$propertyDefinitions)) {
       static::$propertyDefinitions = parent::getPropertyDefinitions();
