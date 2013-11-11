@@ -67,3 +67,15 @@ mcapi.transaction_log:
     _title: 'Record transaction'
   requirements:
     _permission: 'transact'
+
+mcapi.transaction_view:
+  path: '/transaction/{mcapi_transaction}'
+  defaults:
+    _content: '\Drupal\mcapi\Controller\TransactionController::page'
+    _title_callback: '\Drupal\mcapi\Controller\TransactionController::pageTitle'
+  requirements:
+    _entity_access: 'mcapi_transaction.view'
+  options:
+    parameters:
+      mcapi_transaction:
+        serial: TRUE

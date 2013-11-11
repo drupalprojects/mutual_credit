@@ -389,6 +389,10 @@ function mcapi_permission() {
  */
 function mcapi_theme($existing, $type, $theme, $path) {
   $items = array(
+    'mcapi_transaction' => array(
+      'render element' => 'transaction',
+      'template' => 'transaction'
+    ),
     'transaction' => array(
       'render element' => 'transaction'
     ),

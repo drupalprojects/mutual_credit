@@ -21,6 +21,7 @@ use Drupal\mcapi\TransactionInterface;
  *   module = "mcapi",
  *   controllers = {
  *     "storage" = "Drupal\mcapi\TransactionStorageController",
+ *     "render" = "Drupal\mcapi\TransactionRenderController",
  *     "access" = "Drupal\mcapi\TransactionAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi\TransactionFormController",
@@ -36,7 +37,10 @@ use Drupal\mcapi\TransactionInterface;
  *   },
  *   fieldable = TRUE,
  *   translatable = FALSE,
- *   route_base_path = "admin/accounting"
+ *   route_base_path = "admin/accounting",
+ *   links = {
+ *     "canonical" = "/transaction/{mcapi_transaction}"
+ *   }
  * )
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
@@ -55,6 +59,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public function preSave(EntityStorageControllerInterface $storage_controller) {
+    //TODO: Change this so that you only create new serial numbers on the parent transaction.
     if ($this->isNew() && !$this->serial->value) {
       $storage_controller->nextSerial($this);
     }
