@@ -1317,7 +1317,7 @@ function mcapi_form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
     //set the value to zero if the field is empty and the currency allows it
     $currency = entity_load('mcapi_currencies', $item['currcode']);
     //we can remove the @ when everybody has upgraded to RC6
-    if (empty($value[$delta]['quantity']) && @$currency->display['zero']) {
+    if (empty($value[$delta]['quantity']) && $currency->display['zero']) {
       $value[$delta]['quantity'] = '0';
     }
     elseif(empty($value[$delta]['quantity']) && empty($element['#preset'])) {

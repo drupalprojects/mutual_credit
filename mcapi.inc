@@ -685,11 +685,11 @@ function _worth_element_process($element, &$form_state) {
         '#title' => t('Fraction'),
         '#title_display' => 'attribute',
         '#type' => 'select',
-        '#options' => $currency->display['OPTIONS'],//TODO this property doesn't exist yet
-        '#default_value' => $div_quant
+        '#options' => $currency->display['divisions'],
+        '#default_value' => $div_quant,
       );
     }
-    else {//must be CURRENCY_WIDGET_TEXT
+    else { //must be CURRENCY_WIDGET_TEXT
       $element['div_quant'] = array(
         '#title' => t('Cents'),
         '#title_display' => 'attribute',
@@ -697,7 +697,7 @@ function _worth_element_process($element, &$form_state) {
         '#size' => 2,
         '#maxlength' => 2,
         '#default_value' => $div_quant,
-        '#theme_wrappers' => array()//to prevent the default form_element wrapper
+        '#theme_wrappers' => array(), //to prevent the default form_element wrapper
       );
     }
   }
@@ -750,7 +750,7 @@ function theme_worth_element($variables) {
     if (isset($element['div_quant'])) {
       $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
     }
-    $output = $curr_select . str_replace('[quantity]', $quant_field, $currency_display['format'], $vars);
+    $output = $curr_select . $quant_field;
   }
   else {//if there is no known currcode, the
     if (!empty($element['div_quant'])) {
