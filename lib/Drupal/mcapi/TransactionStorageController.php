@@ -18,10 +18,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   function attachLoad(&$queried_entities, $load_revision = FALSE) {
     $result = $this->database->query('SELECT * FROM {mcapi_transactions_worths} WHERE xid IN (:xids)', array(':xids' => array_keys($queried_entities)));
     foreach ($result as $record) {
-      $queried_entities[$record->xid]->worths[$record->currcode] = new Worth(array(
+      $queried_entities[$record->xid]->worths[$record->currcode] = array(
         'currcode' => $record->currcode,
         'quantity' => $record->quantity,
-      ));
+      );
     }
 
     // Load all the children
