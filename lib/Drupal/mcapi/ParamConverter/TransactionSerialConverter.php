@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\views_ui\ParamConverter\TransactionSerialConverter.
+ * Contains \Drupal\mcapi\ParamConverter\TransactionSerialConverter.
  */
 
 namespace Drupal\mcapi\ParamConverter;
