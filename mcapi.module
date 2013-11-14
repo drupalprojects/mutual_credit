@@ -313,24 +313,6 @@ function mcapi_menu() {
   );
   /*
   $operations = transaction_operations(FALSE, FALSE);
-  //this item is for a the special transaction operation, 'view'
-  $items['transaction/%transaction'] = array(
-    'title callback' => 'entity_label',
-    'title arguments' => array('transaction', 1),
-    // The page callback also invokes drupal_set_title() in case
-    // the menu router's title is overridden by a menu link.
-    'page callback' => 'transaction_view',
-    'page arguments' => array(1, 'certificate'),
-    //this is quicker than using entity_access
-    //note that this function includes mcapi.inc itself
-    'access callback' => 'entity_access',
-    'access arguments' => array('mcapi_view', 'transaction', 1),
-    'type' => MENU_CALLBACK,
-  );
-  $items['transaction/%transaction/view'] = array(
-    'title' => 'View',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  );
 
   //these are all the other exposed operations
   $items["transaction/%transaction/nojs/%"] = array(
