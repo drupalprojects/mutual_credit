@@ -329,11 +329,13 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
     }
   }
   elseif (element_children($empty_element)) {//this is a normal fieldAPI field - not checkboxes or radios
-    foreach (element_children($empty_element) as $delta) {
-      foreach (element_children($empty_element[$delta]) as $col) {
-        $val = isset($preset[LANGUAGE_NONE][$delta][$col]) ? $preset[LANGUAGE_NONE][$delta][$col] : $preset[$delta][$col];
-        if (strlen($val)) {
-          $element['preset'][$delta][$col]['#default_value'] = $val;
+    if(is_array($preset)) {
+      foreach (element_children($empty_element) as $delta) {
+        foreach (element_children($empty_element[$delta]) as $col) {
+          $val = isset($preset[LANGUAGE_NONE][$delta][$col]) ? $preset[LANGUAGE_NONE][$delta][$col] : $preset[$delta][$col];
+          if (strlen($val)) {
+            $element['preset'][$delta][$col]['#default_value'] = $val;
+          }
         }
       }
     }

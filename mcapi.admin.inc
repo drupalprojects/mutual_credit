@@ -200,57 +200,6 @@ function mcapi_accounting() {
  * drupal_get_form callback for menu item admin/accounting/misc
  */
 function mcapi_misc_options_form($form_state) {
-
-  /*
-  $controllers = module_implements('transaction_controller');
-  $form['mcapi_controller'] = array(
-    '#title' => 'Entity controller module',
-    '#description' => t('Choose which module, with a .controller file, to use.'),
-    '#type' => 'radios',
-    '#options' => drupal_map_assoc($controllers),
-    '#default_value' => variable_get('mcapi_controller', 'mcapi'),
-    '#ajax' => array(
-      'callback' => 'mcapi_controller_options_form_ajax',
-      'wrapper' => 'mcapi-controller-options-form',
-    ),
-  );
-  global $databases;
-  if (count($databases) > 1) {
-    foreach($databases as $key => $data) {
-      $options[$key] = $key;
-    }
-    $form['master_slave'] = array(
-      '#title' => t('Databases'),
-      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
-        t('Write accounting information to more than one database, and read from one database, making a sort of master/slave arrangement.') .' '.
-        t("Don't forget each database connection itself can have master/slave arrangement, but we are concerned only with accounting here.") .' '.
-        t("the database should be appropriate for the controller."),
-      '#type' => 'fieldset',
-      '#attributes' => array('id' => 'master-slave'),
-    );
-    $form['master_slave']['mcapi_db_write'] = array(
-      '#title' => t('Write accounting information to'),
-      '#description' => t('See @file for how to enable more databases.', array('@file' => 'settings.php')) .' '.
-        t('Use with caution as fields added to transactions and currencies will still be saved locally') .' '.
-        t("the database should be appropriate for the controller."),
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => variable_get('mcapi_db_write', array('default' => 'default')),
-      '#ajax' => array(
-        'callback' => 'mcapi_controller_options_form_ajax',
-        'wrapper' => 'master-slave',
-      ),
-    );
-    $form['master_slave']['mcapi_db_read'] = array(
-      '#title' => t('Read accounting information from'),
-      '#type' => 'select',
-      '#options' =>  $options,
-      '#default_value' => variable_get('mcapi_db_read', 'default'),
-      '#weight' => 1,
-    );
-  }
-   *
-   */
   $form['undoing'] = array(
     '#title' => t('Undo options'),
     '#description' => t("Undo can mean any of three different actions on the transaction."),
@@ -329,7 +278,7 @@ function mcapi_misc_options_form($form_state) {
 function mcapi_workflow_help() {}
 //menu callback. there is hook_help for this
 function mcapi_workflow() {
-  drupal_add_css('table.help{float:left;margin-right:1em;} ul.admin-list{clear:both;s}', array('type' => 'inline'));
+  drupal_add_css('table.help{float:left;margin-right:1em;} ul.admin-list{clear:both;}', array('type' => 'inline'));
   $renderable = array(
     'states' => array(
       '#theme' => 'table',

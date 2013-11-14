@@ -84,8 +84,10 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       );
       $form['secondperson'] = array(
         '#title' => t('Other person'), //this isn't supposed to be rendered
-        '#default_value' => $transaction->secondperson
       ) + $form['payee'];
+      if (property_exists($transaction, 'secondperson')) {
+        $form['secondperson']['#default_value'] = $transaction->secondperson;
+      }
       //specifies which user_chooser widget
       $uchoo_setup = explode(':', $settings['secondperson']['user_chooser_config']);
       $form['secondperson']['#type'] = 'user_chooser_few';
@@ -224,7 +226,7 @@ function theme_mcapi_form($variables) {
           elseif(isset($form[$fieldname][LANGUAGE_NONE][0]['#entity'])) {
             mcapi_unset_recursive($form[$fieldname], '#theme_wrappers');
           }
-          else drupal_set_message('Cannot strip field: '.$fieldname);
+//          else drupal_set_message('Cannot strip field: '.$fieldname);
         }
       }
     }

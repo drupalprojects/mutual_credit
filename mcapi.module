@@ -239,7 +239,7 @@ function transaction_load($serial = NULL) {
 /**
  * Community Accounting API wrapper function, see transaction.api.php
  */
-function transaction_filter(array $conditions, $offset = 0, $limit = 25, $fieldapi = array()) {
+function transaction_filter(array $conditions, $offset = 0, $limit = 0, $fieldapi = array()) {
   if ($fieldapi) {
     $offset = 0; $limit = 0;
   }
@@ -689,7 +689,7 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
  * implements mcapi hook_info_types().
  */
 function mcapi_mcapi_info_types() {
-  $types = array('default', 'dependent');
+  $types = array('default', 'dependent', 'auto');
   if (variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_REVERSE) {
     $types[] = 'reversal';
   }
@@ -1009,7 +1009,7 @@ function transaction_operations($localize = '1', $all = '0') {
       if (array_key_exists('access callback', $info)) {
         //translate the title and description of all (non-internal) operations
         if ($localize) {
-          foreach (array('title', 'description') as $prop) {
+          foreach (array('title', 'description', 'sure') as $prop) {
             if (array_key_exists($prop, $info)) {
               $preloaded[$key][$op][$prop] = $t($info[$prop]);
             }
@@ -1434,9 +1434,6 @@ function _currcode_options() {
   return $options;
 }
 
-
-
-
 function _worthitems_to_worths(array $worthitems) {
   $currencies = currencies_load();
   $worths = array();
@@ -1447,7 +1444,6 @@ function _worthitems_to_worths(array $worthitems) {
   }
   return $worths;
 }
-
 
 /*
  * implements alter hook_form_user_cancel_confirm_form().

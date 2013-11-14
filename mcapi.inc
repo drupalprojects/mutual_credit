@@ -95,7 +95,7 @@ function _transaction_form(&$form, &$form_state) {
       '#type' => 'submit',
       '#value' => t('Record'),
       //this prevents double click, but doesn't prevent going back and resubmitting the form
-      '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();"),
+      //'#attributes' => array('onclick' => "this.disabled=true,this.form.submit();"),
     ),
     '#weight' => 25
   );
@@ -143,7 +143,7 @@ function transaction_form_submit($form, &$form_state) {
     drupal_set_message(t('Transaction was already submitted'), 'error');
     return;
   }
-  //check that the form won't be submitted again
+  //ensure that the form won't be submitted again
   db_query('INSERT INTO {mcapi_submitted} (form_build_id, time) VALUES (:form_build_id, :time)',
     array(':form_build_id' => $form_build_id, ':time' => REQUEST_TIME)
   );
@@ -175,7 +175,7 @@ function mcapi_validate_title(&$element, $form_state) {
 function mcapi_validate_state(&$element, &$form_state) {
   $states = mcapi_get_states('#full');
   if (!isset($states[$element['#value']])) {
-    form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['$value'])));
+    form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['@value'])));
   }
 }
 /*
@@ -334,7 +334,7 @@ function _transaction_check_access_callbacks($op, $transaction) {
 
 /*
  * transaction_access callbacks
- * $ops are determined in hook_transation_operations
+ * $ops are determined in hook_transaction_operations
  */
 function transaction_access_callback_perm_transact() {
   return user_access('transact');
@@ -529,7 +529,7 @@ function template_preprocess_certificate(&$vars) {
   $vars['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
   if (!property_exists($transaction, 'xid') || empty($transaction->xid)) {
     $vars['classes_array'][] = 'preview';
-    foreach (array_keys(field_info_instances('transation', 'transaction')) as $fieldname) {
+    foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
       if (!in_array($fieldname, array('worth', variable_get('transaction_description_field', '')))) {
         if (property_exists($transaction, $fieldname)) unset($transaction->$fieldname);
@@ -841,11 +841,21 @@ function mcapi_balances_view($uid, $currcodes = array()) {
   }
   $render_array = array();
   foreach ($currcodes as $currcode) {
-    $render_array[$currcode] = array(
-      '#theme' => 'transaction_totals',
-      '#currcode' => $currcode,
-      '#totals' => transaction_totals($uid, $currcode),
-    );
+    $issuance = currency_load($currcode)->issuance;
+    if ($issuance == 'acknowledgement') {
+      $render_array[$currcode] = array(
+        '#theme' => 'transaction_totals',
+        '#currcode' => $currcode,
+        '#totals' => transaction_totals($uid, $currcode),
+      );
+    }
+    elseif ($issuance == 'exchange') {
+      $render_array[$currcode] = array(
+        '#theme' => 'transaction_totals',
+        '#currcode' => $currcode,
+        '#totals' => transaction_totals($uid, $currcode),
+      );
+    }
   }
   return $render_array;
 }

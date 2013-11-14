@@ -402,6 +402,7 @@ function mcapi_update_6999() {
     );
     drupal_set_message('Imported strings from '.$po_file->uri);
   }
+  module_enable(array('ctools'));
 }
 
 /**
@@ -640,7 +641,7 @@ function mcapi_upgrade_transactions($nids) {
   $states = array(
     -1 => TRANSACTION_STATE_UNDONE,
     0 => TRANSACTION_STATE_FINISHED,
-    1 => -1 //use the integar value in case signatures module is not present
+    1 => -1 //use the integer value in case signatures module is not present
   );
   $keys = array_keys($nids);
   drupal_set_message(t(
@@ -823,17 +824,6 @@ function mcapi_update_7009() {
   db_delete('menu_links')->condition('link_path', array('statement', 'node/add/currency', 'exchange_stats'))->execute();
   db_query("DELETE FROM {menu_links} WHERE link_path LIKE 'admin/mc%'");
 
-
-  if (module_exists('mcapi_signatures')) {
-    variable_set('mcapi_sign_notify_template', array(
-      'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_subject')),
-      'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_body')),
-    ));
-    variable_set('mcapi_signed_off_notify_template', array(
-      'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_subject')),
-      'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_body')),
-    ));
-  }
   variable_del('mc_subtypes');
   variable_del('mc_live_stats');
   db_query("DELETE FROM {variable} WHERE name LIKE '%exchange'");
@@ -1113,14 +1103,6 @@ function mcapi_update_7022() {
 function mcapi_update_7023() {
   if (variable_get('mcapi_sentence') == '[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]') {
     variable_del('mcapi_sentence');
-  }
-  //if by this time the mcapi_signatures updates haven't run, call them
-  $version = db_query("SELECT schema_version from {system} WHERE name = 'mcapi_signatures'")->fetchField();
-  if ($version < 7000) {
-    module_load_install('mcapi_signatures');
-    mcapi_signatures_update_7000();
-    mcapi_signatures_update_7005();
-    mcapi_signatures_update_7009();
   }
 }
 /**

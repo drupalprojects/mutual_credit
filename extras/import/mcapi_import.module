@@ -300,7 +300,7 @@ function mcapi_import_batch_create_transaction($csv, $settings, &$context) {
     }
     catch (Exception $e) {
       if ($settings['test']) {
-        $context['results']['feedback'][] = $e->message();
+        $context['results']['feedback'][] = $e->getMessage();
       }
       else throw $e;
     }

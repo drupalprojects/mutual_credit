@@ -7,10 +7,17 @@ msgstr ""
 "Project-Id-Version: mutual_credit\n"
 "Language: fr\n"
 
-#. <br> a été supprimé de la traduction car le module localization, aux derniers essais, ne reconnait pas la balise et n'importe pas la chaîne
-msgid "On @recorded !payer paid !payee the sum of !worth"
-msgstr "Le @recorded !payer a donné à !payee la somme de !worth"
+#: certificate.tpl.php:39 extras/intertrading/certificate--remote.tpl.php:49
+msgid "On @recorded<br />!payer <strong>paid</strong> !payee</br />the sum of !worth"
+msgstr "Le @recorded !payer <strong>a donné à</strong> !payee la somme de !worth"
 
+#: transaction.tpl.php:53
+msgid "On @recorded, !payer gave !payee !worth"
+msgstr "Le @recorded, !payer a donné à !payee !worth"
+
+#: transaction.tpl.php:56
+msgid "On @recorded, !payer will give !payee !worth"
+msgstr "Le @recorded, !payer donnera à !payee !worth"
 
 #: certificate.tpl.php:58 extras/intertrading/certificate--remote.tpl.php:70
 msgid "Dependent transactions"
@@ -25,11 +32,11 @@ msgstr "Nom de l'unité d'échange"
 msgid "Use the plural"
 msgstr "Utiliser le pluriel"
 
-#: mcapi.admin.inc:382
+#: mcapi.admin.inc:384
 msgid "Appearance"
 msgstr "Apparence"
 
-#: mcapi.admin.inc:443
+#: mcapi.admin.inc:445
 msgid "Display format"
 msgstr "Format d'affichage"
 
@@ -37,15 +44,15 @@ msgstr "Format d'affichage"
 msgid "Write an expression to control the display of the currency using html, css and the following tokens:"
 msgstr "Écrivez une formule pour contrôler l'affichage de l'unité d'échange en utilisant du html, css et les jetons suivants:"
 
-#: mcapi.admin.inc:445
+#: mcapi.admin.inc:447
 msgid "For example, !a shows as !b"
 msgstr "Par exemple : !a s'affiche comme !b"
 
-#: mcapi.admin.inc:398
+#: mcapi.admin.inc:400
 msgid "Subdivisions"
 msgstr "Subdivisions"
 
-#: mcapi.admin.inc:401
+#: mcapi.admin.inc:403
 msgid "Integer values only"
 msgstr "Uniquement des nombres entiers"
 
@@ -53,7 +60,7 @@ msgstr "Uniquement des nombres entiers"
 msgid "Cents in same field, delimited by '.'"
 msgstr "Les centimes dans le même champ, délimités par  '.'"
 
-#: mcapi.admin.inc:403
+#: mcapi.admin.inc:405
 msgid "Cents in separate field"
 msgstr "Les centimes dans un champ séparé"
 
@@ -61,7 +68,7 @@ msgstr "Les centimes dans un champ séparé"
 msgid "Allowed subdivisions, below"
 msgstr "Ci-dessous, les subdivisions autorisées"
 
-#: mcapi.admin.inc:404;424
+#: mcapi.admin.inc:406;426
 msgid "Allowed subdivisions"
 msgstr "Subdivisions autorisées"
 
@@ -69,31 +76,31 @@ msgstr "Subdivisions autorisées"
 msgid "On each line put \"hundredths| visible text\". The visible text replaces the @subdivision in the display format, above."
 msgstr "Sur chaque ligne mettre \"centièmes| texte visible\". Le texte visible remplace @subdivision dans le format affiché ci-dessus."
 
-#: mcapi.admin.inc:496
+#: mcapi.admin.inc:498
 msgid "Determine which users are permitted to use this currency"
 msgstr "Déterminer quels utilisateurs sont autorisés à utiliser cette unité d'échange"
 
-#: mcapi.admin.inc:503 views/views_plugin_access_currency.inc:41
+#: mcapi.admin.inc:505 views/views_plugin_access_currency.inc:41
 msgid "View aggregated user transaction data"
 msgstr "Voir l'ensemble des données de l'échange de l'utilisateur"
 
-#: mcapi.admin.inc:511 views/views_plugin_access_currency.inc:42
+#: mcapi.admin.inc:513 views/views_plugin_access_currency.inc:42
 msgid "View aggregated system data"
 msgstr "Voir l'ensemble des données systèmes"
 
-#: mcapi.admin.inc:523
+#: mcapi.admin.inc:525
 msgid "Determine who can view transactions in each state."
 msgstr "Déterminer qui peut voir l'échange à chaque étape"
 
-#: mcapi.admin.inc:523
+#: mcapi.admin.inc:525
 msgid "Any the checked conditions must return TRUE"
 msgstr "Chaque condition cochée doit renvoyer VRAI"
 
-#: mcapi.admin.inc:361
+#: mcapi.admin.inc:363
 msgid "Declared by"
 msgstr "Déclaré par"
 
-#: mcapi.admin.inc:558
+#: mcapi.admin.inc:560
 msgid "Update"
 msgstr "Mettre à jour"
 
@@ -105,19 +112,19 @@ msgstr "Le format de l'unité d'échange doit inclure le jeton '@integer'"
 msgid "Currency format must contain token '@subdivision'"
 msgstr "Le format de l'unité d'échange doit inclure le jeton '@subdivision'"
 
-#: mcapi.admin.inc:594
+#: mcapi.admin.inc:596
 msgid "There should be at least two lines in field '@fieldname'"
 msgstr "Il devrait y avoir au moins deux lignes dans le champs '@fieldname'"
 
-#: mcapi.admin.inc:578
+#: mcapi.admin.inc:580
 msgid "line \"@val\" should contain a pipe character, |"
 msgstr "ligne \"@val\" devrait inclure un caractère \"barre verticale\", |"
 
-#: mcapi.admin.inc:583
+#: mcapi.admin.inc:585
 msgid "'@val' should be an integer from  0 to 99, followed directly by a pipe, |, followed directly by a word or phrase with no unusual characters"
 msgstr "'@val' devrait être un entier entre 0 et 99, suivi directement par une barre verticale, | , directement suivi par un mot ou une phrase sans caractères spéciaux"
 
-#: mcapi.admin.inc:608
+#: mcapi.admin.inc:610
 msgid "Invalid currency specified: @num"
 msgstr "Unité d'échange invalide : @num"
 
@@ -125,7 +132,6 @@ msgstr "Unité d'échange invalide : @num"
 msgid "edit"
 msgstr "modifier"
 
-#: mcapi.admin.inc:846;950 mcapi.inc:569 mcapi.module:1115;1212;1232;1260
 msgid "Worth"
 msgstr "Valeur"
 
@@ -137,11 +143,11 @@ msgstr "Nombre en virgule flottante, avec 2 chiffres après la virgule"
 msgid "Units"
 msgstr "Unités"
 
-#: mcapi.inc:645
+#: mcapi.inc:647
 msgid "Cents"
 msgstr "Centimes"
 
-#: mcapi.inc:636
+#: mcapi.inc:638
 msgid "Fraction"
 msgstr "Fraction"
 
@@ -198,11 +204,11 @@ msgstr "Introduire un nombre, un pourcentage, ou une formule en utilisant [q] po
 msgid "Calculation method"
 msgstr "Méthode de calcul"
 
-#: mcapi.admin.inc:862;968
+#: mcapi.admin.inc:864;970
 msgid "Up"
 msgstr "Haut"
 
-#: mcapi.admin.inc:862;968
+#: mcapi.admin.inc:864;970
 msgid "Down"
 msgstr "Bas"
 
@@ -210,7 +216,7 @@ msgstr "Bas"
 msgid "Does not return a number for transaction quantity 1: @notnum"
 msgstr "Ne retourne pas un nombre pour la quantité d'échange 1: @notnum"
 
-#: mcapi.admin.inc:8;20 mcapi.rules.inc:47;61 mcapi.tokens.inc:79 views/mcapi.views.inc:16
+#: mcapi.admin.inc:8;20 mcapi.rules.inc:47;61 mcapi.tokens.inc:79 views/mcapi.views.inc:17
 msgid "Transaction"
 msgstr "Échange"
 
@@ -234,11 +240,10 @@ msgstr "Compte à débiter"
 msgid "Account to be credited"
 msgstr "Compte à créditer"
 
-#: mcapi.admin.inc:1048 mcapi.inc:121 mcapi.info.inc:16
+#: mcapi.admin.inc:1050 mcapi.inc:121 mcapi.info.inc:16
 msgid "Transaction type"
 msgstr "Type d'échange"
 
-#: mcapi.inc:130 mcapi.info.inc:53 extras/accountant_ui/accountant_ui.views_default.inc:293
 msgid "State"
 msgstr "État"
 
@@ -247,7 +252,7 @@ msgstr "État"
 msgid "Recorded by"
 msgstr "Enregistré par"
 
-#: mcapi.inc:150 extras/accountant_ui/accountant_ui.inc:77
+#: mcapi.inc:150 extras/accountant_ui/accountant_ui.inc:79
 msgid "Record"
 msgstr "Enregistrement"
 
@@ -283,23 +288,23 @@ msgstr "Biffer - utiliser l'état 'supprimé' de l'échange"
 msgid "Reverse - create an equal and opposite transaction"
 msgstr "Inverser - créer un échange égal et opposé"
 
-#: mcapi.admin.inc:716
+#: mcapi.admin.inc:718
 msgid "Currencies per transaction"
 msgstr "Unités d'échange par échange"
 
-#: mcapi.admin.inc:719
+#: mcapi.admin.inc:721
 msgid "One currency per transaction"
 msgstr "Une unité d'échange par échange"
 
-#: mcapi.admin.inc:720
+#: mcapi.admin.inc:722
 msgid "Many currencies per transaction"
 msgstr "Plusieurs unités d'échange par échange"
 
-#: mcapi.module:600
+#: mcapi.module:599
 msgid "A transaction must involve two different users"
 msgstr "Un échange doit impliquer deux utilisateurs différents"
 
-#: mcapi.module:612
+#: mcapi.module:611
 msgid "@fieldname required for completed transaction"
 msgstr "@fieldname obligatoire pour conclure un échange"
 
@@ -311,55 +316,55 @@ msgstr "Annuler"
 msgid "Invalid transaction state: @value."
 msgstr "État de l'échange non valide: @value."
 
-#: mcapi.module:1455
+#: mcapi.module:1456
 msgid "Invalid transaction type: @value"
 msgstr "Type d'échange non valide: @value."
 
-#: mcapi.admin.inc:746
+#: mcapi.admin.inc:748
 msgid "Transaction saved by [transaction:creator]"
 msgstr "Échange enregistré par [transaction:creator]"
 
-#: mcapi.admin.inc:748
+#: mcapi.admin.inc:750
 msgid "A transaction for [transaction:worth] has been finalised"
 msgstr "Un échange de [transaction:worth] a été finalisé"
 
-#: mcapi.admin.inc:749
+#: mcapi.admin.inc:751
 msgid "More details can be found at:"
 msgstr "Pour plus de détails voir:"
 
-#: mcapi.admin.inc:750
+#: mcapi.admin.inc:752
 msgid "To change your notification settings, visit your profile at:"
 msgstr "Pour modifier vos paramètres de notification, aller dans votre profil :"
 
-#: mcapi.admin.inc:751
+#: mcapi.admin.inc:753
 msgid "The team at [site:name]"
 msgstr "L'équipe du [site:name]"
 
-#: mcapi.admin.inc:757
+#: mcapi.admin.inc:759
 msgid "Only send for these transaction types."
 msgstr "Envoyé seulement pour ces types d'échange."
 
-#: mcapi.admin.inc:1048
+#: mcapi.admin.inc:1050
 msgid "Transaction types"
 msgstr "Types d'échange"
 
-#: mcapi.admin.inc:779
+#: mcapi.admin.inc:781
 msgid "Mail template"
 msgstr "Modèle de courriel"
 
-#: mcapi.admin.inc:783 extras/signatures/mcapi_signatures.inc:258
+#: mcapi.admin.inc:785 extras/signatures/mcapi_signatures.inc:271
 msgid "Subject"
 msgstr "Sujet"
 
-#: mcapi.admin.inc:789 extras/signatures/mcapi_signatures.inc:264
+#: mcapi.admin.inc:791 extras/signatures/mcapi_signatures.inc:277
 msgid "Body"
 msgstr "Corps du texte"
 
-#: mcapi.admin.inc:804
+#: mcapi.admin.inc:806
 msgid "Carbon copy"
 msgstr "CC"
 
-#: mcapi.admin.inc:805
+#: mcapi.admin.inc:807
 msgid "Send an extra copy to this address"
 msgstr "Envoyer une copie supplémentaire à cette adresse"
 
@@ -367,75 +372,75 @@ msgstr "Envoyer une copie supplémentaire à cette adresse"
 msgid "That e-mail address is not valid."
 msgstr "Cette adresse mail n'est pas valide."
 
-#: mcapi.admin.inc:930
+#: mcapi.admin.inc:932
 msgid "Mapping"
 msgstr "Cartographie"
 
-#: mcapi.admin.inc:934
+#: mcapi.admin.inc:936
 msgid "Payer pays other"
 msgstr "Le donneur donne"
 
-#: mcapi.admin.inc:935
+#: mcapi.admin.inc:937
 msgid "Payee pays other"
 msgstr "Le receveur donne"
 
-#: mcapi.admin.inc:936
+#: mcapi.admin.inc:938
 msgid "Other pays payer"
 msgstr "Un autre donne au donneur"
 
-#: mcapi.admin.inc:937
+#: mcapi.admin.inc:939
 msgid "Other pays payee"
 msgstr "Un autre donne au receveur"
 
-#: mcapi.admin.inc:942
+#: mcapi.admin.inc:944
 msgid "Other account"
 msgstr "Autre compte"
 
-#: mcapi.admin.inc:849
+#: mcapi.admin.inc:851
 msgid "What is the fixed value of this transaction?"
 msgstr "Quelle est la valeur fixe de cet échange ?"
 
-#: mcapi.admin.inc:951
+#: mcapi.admin.inc:953
 msgid "The value of the transction may depend on the value of the main transaction."
 msgstr "La valeur de l'échange pourrait dépendre de la valeur de l'échange principal."
 
-#: mcapi.admin.inc:957
+#: mcapi.admin.inc:959
 msgid "Enter a number, a percentage, or a formula using [q] for the transaction quantity."
 msgstr "Introduire un nombre, un pourcentage ou une formule en utilisant [q] pour le montant de l'échange."
 
-#: mcapi.admin.inc:859;966
+#: mcapi.admin.inc:861;968
 msgid "Rounding"
 msgstr "Arrondi"
 
-#: mcapi.admin.inc:1012
+#: mcapi.admin.inc:1014
 msgid "Invalid formula"
 msgstr "formule invalide"
 
-#: mcapi.admin.inc:1023
+#: mcapi.admin.inc:1025
 msgid "Which of the text fields below is used for the transaction description?."
 msgstr "Lequel des champs texte ci-dessous est utilisé pour la description de l'échange?."
 
-#: mcapi.inc:509
+#: mcapi.inc:511
 msgid "@fieldname must be numeric"
 msgstr "@fieldname doit être numérique"
 
-#: mcapi.inc:512
+#: mcapi.inc:514
 msgid "Negative values not allowed"
 msgstr "Des valeurs négatives ne sont pas autorisées"
 
-#: mcapi.inc:505
+#: mcapi.inc:507
 msgid "This currency does not exist: @currcode"
 msgstr "Cette unité d'échange n'existe pas: @currcode"
 
-#: mcapi.inc:622 mcapi.module:1391 extras/accountant_ui/accountant_ui.views_default.inc:295
+#: mcapi.inc:624 mcapi.module:1392 extras/accountant_ui/accountant_ui.views_default.inc:295
 msgid "Quantity"
 msgstr "Quantité"
 
-#: transaction_totals.tpl.php:47
+#: transaction_totals.tpl.php:46
 msgid "Income: !quant"
 msgstr "Revenu: !quant"
 
-#: transaction_totals.tpl.php:49
+#: transaction_totals.tpl.php:48
 msgid "Transactions: @count"
 msgstr "Echanges: @count"
 
@@ -447,7 +452,6 @@ msgstr "Identifiant de l'échange"
 msgid "The unique serial number of the transaction."
 msgstr "Le numéro de série unique de l'échange"
 
-#: mcapi.info.inc:24 extras/accountant_ui/accountant_ui.inc:37
 msgid "Payer"
 msgstr "Donneur"
 
@@ -455,7 +459,6 @@ msgstr "Donneur"
 msgid "The user ID of the payer"
 msgstr "L'identifiant du donneur"
 
-#: mcapi.info.inc:32 extras/accountant_ui/accountant_ui.inc:47
 msgid "Payee"
 msgstr "Receveur"
 
@@ -467,7 +470,7 @@ msgstr "L'identifiant du receveur"
 msgid "User who created the transaction"
 msgstr "Le membre qui a créé l'échange"
 
-#: mcapi.module:1384 plugins/export_ui/mcapi_ui.class.php:102
+#: mcapi.module:1385 plugins/export_ui/mcapi_ui.class.php:102
 msgid "Currency code"
 msgstr "Code d'unité d'échange"
 
@@ -475,7 +478,6 @@ msgstr "Code d'unité d'échange"
 msgid "Community Coins"
 msgstr "Monnaie communautaire"
 
-#: (duplicate) mcapi.install:18
 msgid "Community Accounting"
 msgstr "Comptabilité de la communauté"
 
@@ -531,7 +533,7 @@ msgstr "Changement total du solde des donneurs du groupe d'échange"
 msgid "Certificate"
 msgstr "Certificat"
 
-#: mcapi.tokens.inc:99 views/mcapi.views.inc:111 views/mcapi_index_views.views_default.inc:55
+#: mcapi.tokens.inc:99 views/mcapi.views.inc:112 views/mcapi_index_views.views_default.inc:55
 msgid "Created"
 msgstr "Créé"
 
@@ -539,7 +541,7 @@ msgstr "Créé"
 msgid "When the transaction was created"
 msgstr "Quand l'échange a été créé"
 
-#: mcapi.tokens.inc:103 views/mcapi.views.inc:102;107
+#: mcapi.tokens.inc:103 views/mcapi.views.inc:103;108
 msgid "Creator"
 msgstr "Concepteur"
 
@@ -567,79 +569,79 @@ msgstr "Mode de suppression de l'échange"
 msgid "Whether transactions should be deleted, erased or offset"
 msgstr "Les échanges doivent-ils être détruits, effacés ou remplacés"
 
-#: mcapi.module:178
+#: mcapi.module:176
 msgid "Unable to load transaction @serial"
 msgstr "Impossible de charger l'échange @serial"
 
-#: mcapi.module:250
+#: mcapi.module:248
 msgid "Is the textfield on your transaction used for the description? !link"
 msgstr "Le champs texte dans votre échange est-il utllisé pour la description? !link"
 
-#: mcapi.module:418 extras/import/mcapi_import.module:55
+#: mcapi.module:417 extras/import/mcapi_import.module:56
 msgid "Balances"
 msgstr "Soldes"
 
-#: mcapi.module:431
+#: mcapi.module:430
 msgid "Trading status"
 msgstr "Statut de l'échange"
 
-#: mcapi.module:432
+#: mcapi.module:431
 msgid "@user's account"
 msgstr "compte de @user"
 
-#: mcapi.module:448
+#: mcapi.module:447
 msgid "User"
 msgstr "Utilisateur"
 
-#: mcapi.module:451
+#: mcapi.module:450
 msgid "Show as part of profile being viewed"
 msgstr "Mettre dans le profil visible"
 
-#: mcapi.module:452
+#: mcapi.module:451
 msgid "Show for logged in user"
 msgstr "Montrer à un utilisateur connecté"
 
-#: mcapi.module:636
+#: mcapi.module:635
 msgid "Cleared"
 msgstr "Acquitté"
 
-#: mcapi.module:637
+#: mcapi.module:636
 msgid "the last state of the workflow"
 msgstr "le dernier état du flux de travail"
 
-#: mcapi.module:693
+#: mcapi.module:692
 msgid "State explanations: @explanations"
 msgstr "Explication de l'état: @explanations"
 
-#: mcapi.module:719;779
+#: mcapi.module:718;779
 msgid "Transact"
 msgstr "Échanger"
 
-#: mcapi.module:720
+#: mcapi.module:719
 msgid "Register exchanges with other members, subject each currency's permissions"
 msgstr "Enregistrer des échanges avec d'autres membres, soumettre les permissions de chaque unité d'échange"
 
-#: mcapi.module:723;780
+#: mcapi.module:722;780
 msgid "Manage all transactions"
 msgstr "Gérer tous les échanges"
 
-#: mcapi.module:724
+#: mcapi.module:723
 msgid "Retrospectively manage transactions"
 msgstr "Gérer les échanges rétroactivement"
 
-#: mcapi.module:727
+#: mcapi.module:726
 msgid "Configure all currencies"
 msgstr "Configurer toutes les unités d'échange"
 
-#: mcapi.module:728
+#: mcapi.module:727
 msgid "Edit the properties of any currency"
 msgstr "Modifier les propriétés de n'importe quelle unité d'échange"
 
-#: mcapi.admin.inc:281;362 mcapi.module:731
+#: mcapi.admin.inc:281;364 mcapi.module:730
 msgid "Declare currency"
 msgstr "Déclarer une unité d'échange"
 
-#: mcapi.module:732
+#: mcapi.module:731
 msgid "Create a new currency"
 msgstr "Créer une nouvelles unités d'échange"
 
@@ -659,35 +661,34 @@ msgstr "Échange #@serial"
 msgid "Edit currency '@name'"
 msgstr "Modifier l'unité d'échange '@name'"
 
-#: mcapi.admin.inc:694
+#: mcapi.admin.inc:696
 msgid "Completed transaction notification"
 msgstr "Notification de l'échange conclu"
 
-#: mcapi.admin.inc:695
+#: mcapi.admin.inc:697
 msgid "Mail sent to the participants when the transaction completes"
 msgstr "Courriel envoyé aux participants quand l'échange est accompli"
 
-#: mcapi.module:1213
+#: mcapi.module:1214
 msgid "One or more values, each denominated in a currency"
 msgstr "Un ou plusieurs nombres, chacun nommé dans une unité d'échange"
 
-#: mcapi.module:1302
+#: mcapi.module:1303
 msgid "User @name cannot use @currency"
 msgstr "Le membre @name ne peut pas utiliser @currency"
 
-#: mcapi.inc:539 mcapi.module:1313
+#: mcapi.inc:541 mcapi.module:1314
 msgid "!name field is required."
 msgstr "Le champ !name est exigé."
 
-#: mcapi.inc:806 views/mcapi_index_views.views.inc:180
 msgid "Currency"
 msgstr "Unité d'échange"
 
-#: mcapi.module:899
+#: mcapi.module:900
 msgid "mcapi"
 msgstr "mcapi"
 
-#: mcapi.module:899
+#: mcapi.module:900
 msgid "Nonexistent currency '@currcode' requested from: @list"
 msgstr "L'unité d'échange inexistante '@currcode' exigée par: @list"
 
@@ -695,19 +696,19 @@ msgstr "L'unité d'échange inexistante '@currcode' exigée par: @list"
 msgid "For ease of setup, authenticated user has been granted 'transact' permission."
 msgstr "Pour la facilité de la configuration, les utilisateurs authentifiés ont reçu la permission 'échanger'"
 
-#: mcapi.install:205
+#: mcapi.install:206
 msgid "Universal currency code (8 chars, immutable)"
 msgstr "Code d'unité d'échange universel (8 caract., inaltérable)"
 
-#: mcapi.install:493
+#: mcapi.install:499
 msgid "@num currencies have been upgraded"
 msgstr "Les unités d'échange @num ont été mises à jour"
 
-#: mcapi.install:571 extras/bank_slave/bank_slave.views_template.inc:166
+#: mcapi.install:577 extras/bank_slave/bank_slave.views_template.inc:166
 msgid "Description"
 msgstr "Description"
 
-#: mcapi.install:791
+#: mcapi.install:797
 msgid "Notify transactees"
 msgstr "Avertir les échangeurs"
 
@@ -719,15 +720,15 @@ msgstr "API pour une comptabilité communautaire"
 msgid "Defines transaction entity with a swoppable controller, a default currency, 'worth' field, and the forms, views theme callbacks for basic manipulation"
 msgstr "Définit l'entité échange avec un rappel de thème de vues pour un contrôleur swoppable, une unité d'échange par défaut, un champs 'valeur', et les formulaires pour une manipulation basique"
 
-#: extras/accountant_ui/accountant_ui.inc:17 extras/bank_slave/bank_slave.variable.inc:12
+#: extras/accountant_ui/accountant_ui.inc:19 extras/bank_slave/bank_slave.variable.inc:12
 msgid "A username, email, or user ID"
 msgstr "Un nom, une adresse électronique ou un numéro d'utilisateur"
 
-#: extras/accountant_ui/accountant_ui.inc:56
+#: extras/accountant_ui/accountant_ui.inc:58
 msgid "Mail all payees (optional)"
 msgstr "Envoyer un mail à tous les receveurs (optionnel)"
 
-#: extras/accountant_ui/accountant_ui.inc:56
+#: extras/accountant_ui/accountant_ui.inc:58
 msgid "Mail all payers (optional)"
 msgstr "Envoyer un mail à tous les donneurs (optionnel)"
 
@@ -735,7 +736,7 @@ msgstr "Envoyer un mail à tous les donneurs (optionnel)"
 msgid "Some tokens may not apply."
 msgstr "Certains jetons pourraient ne pas s'appliquer."
 
-#: extras/accountant_ui/accountant_ui.inc:97 extras/intertrading/intertrading.module:379
+#: extras/accountant_ui/accountant_ui.inc:99 extras/intertrading/intertrading.module:379
 msgid "Are you sure?"
 msgstr "Êtes-vous certain(e) ?"
 
@@ -743,7 +744,7 @@ msgstr "Êtes-vous certain(e) ?"
 msgid "A transaction view with all the filters exposed."
 msgstr "Une vue d'échange avec tous les filtres exposés."
 
-#: extras/accountant_ui/accountant_ui.views_default.inc:294 views/mcapi.views.inc:91 views/mcapi_index_views.views.inc:81
+#: extras/accountant_ui/accountant_ui.views_default.inc:294 views/mcapi.views.inc:92 views/mcapi_index_views.views.inc:81
 msgid "Type"
 msgstr "Type"
 
@@ -875,7 +876,7 @@ msgstr "Selon que ceci est complété par un tiers ou par un participant."
 msgid "Other user"
 msgstr "Autre utilisateur"
 
-#: mcapi.admin.inc:831 extras/forms/mcapi_forms.admin.inc:136 extras/forms/mcapi_forms.inc:100 extras/intertrading/intertrading.module:357
+#: mcapi.admin.inc:833 extras/forms/mcapi_forms.admin.inc:136 extras/forms/mcapi_forms.inc:102 extras/intertrading/intertrading.module:357
 msgid "Direction"
 msgstr "Direction"
 
@@ -927,7 +928,7 @@ msgstr "Soumission de formulaire"
 msgid "Settings for @field"
 msgstr "Paramètres pour @field"
 
-#: mcapi.admin.inc:727 extras/forms/mcapi_forms.admin.inc:252
+#: mcapi.admin.inc:729 extras/forms/mcapi_forms.admin.inc:252
 msgid "Submit"
 msgstr "Soumettre"
 
@@ -1051,15 +1052,15 @@ msgstr "Titre sûr"
 msgid "Other person"
 msgstr "Autre personne"
 
-#: extras/forms/mcapi_forms.inc:98 extras/intertrading/intertrading.module:517
+#: extras/forms/mcapi_forms.inc:100 extras/intertrading/intertrading.module:517
 msgid "Please choose..."
 msgstr "Veuillez choisir..."
 
-#: extras/forms/mcapi_forms.inc:136
+#: extras/forms/mcapi_forms.inc:138
 msgid "Back"
 msgstr "Précédent"
 
-#: extras/forms/mcapi_forms.inc:250
+#: extras/forms/mcapi_forms.inc:252
 msgid "Who was it with?"
 msgstr "Avec qui était-ce ?"
 
@@ -1083,31 +1084,31 @@ msgstr "Tester votre formulaire avant de l'activer pour les membres !"
 msgid "Transaction form:"
 msgstr "Formulaire d'échange:"
 
-#: extras/forms/mcapi_forms.module:256
+#: extras/forms/mcapi_forms.module:262
 msgid "Design transaction forms"
 msgstr "Composez les formulaires d'échange"
 
-#: extras/forms/mcapi_forms.module:257
+#: extras/forms/mcapi_forms.module:263
 msgid "Create and edit the forms used to record and edit transactions"
 msgstr "Créer et modifier les formulaires utilisés pour enregistrer et mettre à jour les échanges"
 
-#: extras/forms/mcapi_forms.module:332
+#: extras/forms/mcapi_forms.module:338
 msgid "Css menu tab identifier"
 msgstr "Identifiant de l'onglet menu Css"
 
-#: extras/forms/mcapi_forms.module:333
+#: extras/forms/mcapi_forms.module:339
 msgid "The second stage of the the transaction form works best when the menu tabs are hidden."
 msgstr "La deuxième étape du formulaire d'échange fonctionne mieux quand les onglets du menu sont cachés."
 
-#: extras/forms/mcapi_forms.module:334
+#: extras/forms/mcapi_forms.module:340
 msgid "Write the css identifier for the div on this page containing the menu items which 'List', 'Update' & 'Settings'."
 msgstr "Écrire l'identifiant css pour le div sur cette page contenant les éléments de menu parmi  'List', 'Update' et 'Settings'."
 
-#: extras/forms/mcapi_forms.module:335
+#: extras/forms/mcapi_forms.module:341
 msgid "Don't forget the leading . or #"
 msgstr "N'oubliez pas le . ou # du début"
 
-#: extras/forms/mcapi_forms.module:378
+#: extras/forms/mcapi_forms.module:384
 msgid "The default values are set in the form designer: !link"
 msgstr "Les valeurs par défaut sont mises dans l'interface du formulaire: !link"
 
@@ -1123,11 +1124,19 @@ msgstr "Formulaires et interface de création de formulaire."
 msgid "Exportable transaction form builder"
 msgstr "Constructeur de formulaire d'échange exportable"
 
+#: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:73
+msgid "Translate"
+msgstr "Traduire"
+
+#: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:92 views/mcapi.views_default.inc:181 views/mcapi_index_views.views_default.inc:295
+msgid "Name"
+msgstr "Nom"
+
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:95 plugins/export_ui/mcapi_ui.class.php:107
 msgid "Storage"
 msgstr "Stockage"
 
-#: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:96
+#: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:96 plugins/export_ui/mcapi_ui.class.php:108 views/mcapi.views.inc:132 views/mcapi_index_views.views.inc:195
 msgid "Operations"
 msgstr "Actions"
 
@@ -1167,11 +1176,11 @@ msgstr "Le formulaire a été supprimé."
 msgid "The 'migrate' module is too complex for this, so this bespoke solution is provided."
 msgstr "The module 'migrate' est trop complexe, c'est pourquoi cette solution sur mesure est fournie."
 
-#: extras/import/mcapi_import.module:33
+#: extras/import/mcapi_import.module:34
 msgid "This page allows you to import users' balances and gross incomes for users already on the system."
 msgstr "Cette page vous permet d'importer les soldes des utilisateurs et le revenu brut pour les utilisateurs déjà dans le système."
 
-#: extras/import/mcapi_import.module:348
+#: extras/import/mcapi_import.module:349
 msgid "Transaction type for imported transactions"
 msgstr "Type d'échange pour échanges importés"
 
@@ -1195,7 +1204,7 @@ msgstr "Coller 2 ou 3 colonnes séparées par des virgules dans le champ ci-dess
 msgid "The first line of the field should read (third column is optional): !code"
 msgstr "La première ligne du champ devrait afficher (la troisième colonne est optionnelle): !code"
 
-#: extras/import/mcapi_import.module:391
+#: extras/import/mcapi_import.module:392
 msgid "Balance (second item) on row @num is not numeric: @val"
 msgstr "Le solde (deuxième élément) sur la ligne  @num n'est pas un nombre: @val"
 
@@ -1203,19 +1212,19 @@ msgstr "Le solde (deuxième élément) sur la ligne  @num n'est pas un nombre: @
 msgid "Gross income (third item) on row @rownum is not a number: @val"
 msgstr "Le revenu brut (troisième élément) sur la ligne @rownum n'est pas un nombre: @val"
 
-#: extras/import/mcapi_import.module:399
+#: extras/import/mcapi_import.module:400
 msgid "gross income (third item) on row @rownum cannot be less than 0: @val"
 msgstr "le revenu brut (troisième élément) sur la ligne @rownum ne peut pas être plus petit que 0: @val"
 
-#: extras/import/mcapi_import.module:444
+#: extras/import/mcapi_import.module:438 views/mcapi_index_views.views_template.inc:618 views/views_handler_field_mcapi_users_totals.inc:42
 msgid "Gross income"
 msgstr "Revenu brut"
 
-#: extras/import/mcapi_import.module:445
+#: extras/import/mcapi_import.module:443 views/mcapi_index_views.views_template.inc:617 views/views_handler_field_mcapi_users_totals.inc:43
 msgid "Gross expenditure"
 msgstr "Dépenses brutes"
 
-#: extras/import/mcapi_import.module:465
+#: extras/import/mcapi_import.module:460
 msgid "Carried Forward"
 msgstr "Solde reporté"
 
@@ -1243,15 +1252,15 @@ msgstr "Type d'échange :  !type"
 msgid "Description field: !field"
 msgstr "Champs de description : !field"
 
-#: extras/import/mcapi_import.module:537
+#: extras/import/mcapi_import.module:539;555
 msgid "The starting balance of the imported user"
 msgstr "Le solde de démarrage de l'utilisateur importé"
 
-#: extras/import/mcapi_import.module:538
+#: extras/import/mcapi_import.module:543;556
 msgid "The total income ever of this user."
 msgstr "Le revenu de ce membre depuis le début."
 
-#: extras/import/mcapi_import.module:541
+#: extras/import/mcapi_import.module:559
 msgid "Importing balance (and gross income) per user is incompatible with importing the transaction history."
 msgstr "Importer le solde (et les revenus bruts) par utilisateur est incompatible avec l'importation de l'historique des échanges."
 
@@ -1271,7 +1280,7 @@ msgstr "Importer les soldes"
 msgid "Import transactions"
 msgstr "Importer les échanges"
 
-#: extras/import/mcapi_import.module:61
+#: extras/import/mcapi_import.module:62
 msgid "Import transactions for users already on the system."
 msgstr "Importer les échanges pour les utilsateurs déjà dans le système."
 
@@ -1720,23 +1729,23 @@ msgstr "Client d'échanges intersel"
 msgid "Exchange with other mutual credit systems using a ClearingCentral 2 server. Contact Community Forge for details"
 msgstr "Échanger avec un autre système de crédit mutuel utilisant un serveur ClearingCentral 2. Contacter Community Forge pour plus de détails"
 
-#: extras/limits/balance_limits.tpl.php:11
+#: extras/limits/balance_limits.tpl.php:12
 msgid "Balance:"
 msgstr "Solde:"
 
-#: extras/limits/balance_limits.tpl.php:13
+#: extras/limits/balance_limits.tpl.php:14
 msgid "Min:"
 msgstr "Min:"
 
-#: extras/limits/balance_limits.tpl.php:15
+#: extras/limits/balance_limits.tpl.php:16
 msgid "Max:"
 msgstr "Max:"
 
-#: extras/limits/trading_limits.tpl.php:11
+#: extras/limits/trading_limits.tpl.php:12
 msgid "Spending limit:"
 msgstr "Limite de dépense:"
 
-#: extras/limits/trading_limits.tpl.php:13
+#: extras/limits/trading_limits.tpl.php:14
 msgid "Receiving limit:"
 msgstr "Limite de réception:"
 
@@ -1796,7 +1805,6 @@ msgstr "L'échange mettrait @name !quant au-dessus du solde maximum de !max"
 msgid "Transaction would take @name !quant below the minimum balance of !min"
 msgstr "L'échange mettrait @name !quant en-dessous du solde minimum de !min"
 
-#: extras/limits/mcapi_limits.inc:200
 msgid "Balance limits"
 msgstr "Limites des soldes"
 
@@ -1840,15 +1848,15 @@ msgstr "Ceci outrepasse toutes les limites définies dansl'unité d'échange."
 msgid "Trading limits (adjusted for the balance)"
 msgstr "Les limites d'échange (ajustées pour le solde)"
 
-#: extras/limits/mcapi_limits.module:312
+#: extras/limits/mcapi_limits.module:314
 msgid "My limits"
 msgstr "Mes limites"
 
-#: extras/limits/mcapi_limits.module:312
+#: extras/limits/mcapi_limits.module:314
 msgid "@user's limits"
 msgstr "Les limites de @user"
 
-#: extras/limits/mcapi_limits.module:352
+#: extras/limits/mcapi_limits.module:354
 msgid "Block settings"
 msgstr "Paramètres du bloc"
 
@@ -1884,31 +1892,31 @@ msgstr "En attente"
 msgid "awaiting signatures before becoming 'finished'."
 msgstr "en attente de confirmation avant d'être 'conclu'."
 
-#: extras/signatures/mcapi_signatures.inc:222
+#: extras/signatures/mcapi_signatures.inc:235
 msgid "Both participants must sign"
 msgstr "Les deux participants doivent confirmer"
 
-#: extras/signatures/mcapi_signatures.inc:223
+#: extras/signatures/mcapi_signatures.inc:236
 msgid "Logged in user signs automatically"
 msgstr "L'utilisateur connecté confirme automatiquement"
 
-#: extras/signatures/mcapi_signatures.inc:228
+#: extras/signatures/mcapi_signatures.inc:241
 msgid "Counter-signers"
 msgstr "Ceux qui contresignent"
 
-#: extras/signatures/mcapi_signatures.inc:229
+#: extras/signatures/mcapi_signatures.inc:242
 msgid "Choose one or more users"
 msgstr "Choisir un ou plusieurs utilisateurs"
 
-#: extras/signatures/mcapi_signatures.inc:239
+#: extras/signatures/mcapi_signatures.inc:252
 msgid "Use the email template on this page to notify all signatories"
 msgstr "Utiliser le gabarit de courriel sur cet page pour avertir tous les signataires"
 
-#: extras/signatures/mcapi_signatures.inc:249
+#: extras/signatures/mcapi_signatures.inc:262
 msgid "Signature notification"
 msgstr "Avis de confirmation"
 
-#: extras/signatures/mcapi_signatures.inc:260
+#: extras/signatures/mcapi_signatures.inc:273
 msgid "Your signature required"
 msgstr "Votre confirmation exigée"
 
@@ -1916,19 +1924,19 @@ msgstr "Votre confirmation exigée"
 msgid "Transaction signed off"
 msgstr "Échange terminé"
 
-#: extras/signatures/mcapi_signatures.inc:168
+#: extras/signatures/mcapi_signatures.inc:181
 msgid "Transaction #@serial is already signed by @name"
 msgstr "L'échange #@serial a déjà été confirmé par @name"
 
-#: extras/signatures/mcapi_signatures.inc:162
+#: extras/signatures/mcapi_signatures.inc:175
 msgid "Transaction @serial is signed off"
 msgstr "L'échange @serial est terminé"
 
-#: extras/signatures/views/mcapi_signatures.views_default.inc:123
+#: extras/signatures/mcapi_signatures.inc:366 extras/signatures/views/mcapi_signatures.views_default.inc:123
 msgid "Sign"
 msgstr "Confirmer"
 
-#: extras/signatures/views/views_handler_field_mcapi_sign.inc:42
+#: extras/signatures/mcapi_signatures.inc:372
 msgid "Sign off"
 msgstr "Conclure"
 
@@ -1956,15 +1964,15 @@ msgstr "Signatures"
 msgid "Require signatures before transactions enter pending state"
 msgstr "Exige des confirmations avant que les échanges ne soient  'en attente'"
 
-#: extras/signatures/mcapi_signatures.install:58
+#: extras/signatures/mcapi_signatures.install:62
 msgid "the transaction to which this entry is attached"
 msgstr "l'échange auquel cette donnée est attachée"
 
-#: extras/signatures/mcapi_signatures.install:63
+#: extras/signatures/mcapi_signatures.install:67
 msgid "the uid of the signatory"
 msgstr "L'identifiant du signataire"
 
-#: extras/signatures/mcapi_signatures.install:68
+#: extras/signatures/mcapi_signatures.install:72
 msgid "whether it is awaiting a signature"
 msgstr "s'il est en attente d'une confirmation"
 
@@ -2040,6 +2048,10 @@ msgstr "Échanges en attente de confirmation"
 msgid "Text to display"
 msgstr "Texte à afficher"
 
+#: extras/sms/mcapi_sms.module:15;27
+msgid "Define the SMS syntax for recording exchanges"
+msgstr "Définir la syntaxe SMS pour enregistrer des échanges"
+
 #: extras/command/mcapi_command.module:25
 msgid "Transact via sms"
 msgstr "Échanger par sms"
@@ -2060,10 +2072,29 @@ msgstr "Définir la forme des messages texte."
 msgid "Try to include variations and get feedback from your users as to what works."
 msgstr "Essayer d'inclure des variations et d'avoir un retour de vos membres sur ce qui fonctionne."
 
+#: extras/sms/mcapi_sms.module:66;100
+msgid "Put the longer ones first"
+msgstr "Mettre les plus longs d'abord"
+
+#: extras/sms/mcapi_sms.module:72
+msgid "Expressions for recording an incoming transfer"
+msgstr "Expressions pour enregistrer un transfert entrant"
+
+#: extras/sms/mcapi_sms.module:79
+msgid "Expressions for recording an outgoing transfer"
+msgstr "Expressions pour enregistrer un transfert sortant"
+
 #: extras/command/mcapi_command.module:61
 msgid "One per line."
 msgstr "Un par ligne."
 
+#: extras/sms/mcapi_sms.module:88
+msgid "Exchanges triggered by SMS require confirmation?"
+msgstr "Les échanges amorcés par SMS demandent-ils confirmation ?"
+
+#: extras/sms/mcapi_sms.module:89
+msgid "Check this for new exchanges to be created as pending."
+msgstr "Vérifier ceci pour les nouveaux échanges qui doivent être créés avec le statut \"en attente\""
 
 #: extras/command/mcapi_command.module:76
 msgid "Responses"
@@ -2085,7 +2116,46 @@ msgstr "Laisser vide si vous ne désirez pas de réponse, ou introduire [inherit
 msgid "Error response"
 msgstr "Erreur"
 
-#: extras/import/mcapi_import.module:60
+#: extras/sms/mcapi_sms.module:120
+msgid "Response in case the message doesn't fit any of the above templates"
+msgstr "Réponse au cas où le message ne correspond à aucun des gabarits ci-dessus."
+
+#: extras/sms/mcapi_sms.module:134
+msgid "'@template' should include '@token'"
+msgstr "'@template' devrait inclure '@token'"
+
+#: extras/sms/mcapi_sms.module:182
+msgid "SMS response: Syntax error"
+msgstr "Réponse SMS : erreur de syntaxe"
+
+#: extras/sms/mcapi_sms.module:189
+msgid "Your number is not registered at @sitename"
+msgstr "Votre numéro n'est pas enregistré à @sitename"
+
+#: extras/sms/mcapi_sms.module:191
+msgid "Unknown user: @user"
+msgstr "Utilisateur inconnu : @user"
+
+#: extras/sms/mcapi_sms.module:194
+msgid "You do not have permission to trade via SMS"
+msgstr "Vous n'avez pas le droit d'échanger via SMS"
+
+#: extras/sms/mcapi_sms.module:198
+msgid "@name does not have permission to trade."
+msgstr "@name n'a pas le droit d'échanger."
+
+#: extras/sms/mcapi_sms.module:229
+msgid "Your balance is @num"
+msgstr "Votre solde est @num"
+
+#: extras/sms/mcapi_sms.module:26 extras/sms/mcapi_sms.info:0
+msgid "SMS transactions"
+msgstr "Échanges SMS"
+
+#: extras/sms/mcapi_sms.info:0
+msgid "Untested with SMS module!! Trigger exchanges from your phone using SMS"
+msgstr "Non testé avec le module SMS !! Entraîne des échanges depuis votre téléphone en utilisant SMS"
+
 msgid "Transactions"
 msgstr "Échanges"
 
@@ -2117,11 +2187,10 @@ msgstr "Cette action enlèvera de manière permanente l'unité d'échange de vot
 msgid "The currency has been deleted."
 msgstr "L'unité d'échange a été supprimée."
 
-#: extras/balance_history/balance_history.tpl.php:67 extras/balance_history/balance_history_gchart.tpl.php:67 views/balance_history.tpl.php:116
 msgid "Now"
 msgstr "Maintenant"
 
-#: views/mcapi.views.inc:21
+#: views/mcapi.views.inc:22
 msgid "Records of transactions between users"
 msgstr "Enregistrements des échanges entre membres"
 
@@ -2129,43 +2198,43 @@ msgstr "Enregistrements des échanges entre membres"
 msgid "Serial number"
 msgstr "Numéro de série"
 
-#: views/mcapi.views.inc:32 views/mcapi_index_views.views.inc:33
+#: views/mcapi.views.inc:33 views/mcapi_index_views.views.inc:33
 msgid "The serial number of the transaction and dependents"
 msgstr "Le numéro de série de l'échange et des subordonnés"
 
-#: views/mcapi.views.inc:42;61
+#: views/mcapi.views.inc:43;62
 msgid "The user who gave currency in the transaction."
 msgstr "Le membre qui a donné des unités d'échange."
 
-#: views/mcapi.views.inc:80
+#: views/mcapi.views.inc:81
 msgid "Transactions move between states, until they are 'finished'."
 msgstr "Les échanges évoluent entre les états, jusqu'à ce qu'ils soient conclus."
 
-#: views/mcapi.views.inc:92 views/mcapi_index_views.views.inc:82
+#: views/mcapi.views.inc:93 views/mcapi_index_views.views.inc:82
 msgid "Which form or module which created the transaction"
 msgstr "Quel formulaire ou module a créé l'échange"
 
-#: views/mcapi.views.inc:103
+#: views/mcapi.views.inc:104
 msgid "The user who first created the transaction."
 msgstr "L'utilisateur qui a introduit l'échange"
 
-#: views/mcapi.views.inc:112
+#: views/mcapi.views.inc:113
 msgid "The second the transaction was created."
 msgstr "La seconde à laquelle l'échange a été créé"
 
-#: views/mcapi.views.inc:124 views/mcapi_index_views.views.inc:171
+#: views/mcapi.views.inc:125 views/mcapi_index_views.views.inc:171
 msgid "Better to use the handler from date_views module"
 msgstr "Il vaut mieux utiliser le gestionnaire du module date_views"
 
-#: views/mcapi.views.inc:149
+#: views/mcapi.views.inc:151
 msgid "Transaction statistic"
 msgstr "Statistique d'échange"
 
-#: views/mcapi.views.inc:151
+#: views/mcapi.views.inc:153
 msgid "The balance, trading volume, or transaction count for each user"
 msgstr "Le solde, le volume d'échange, ou le total d'échange pour chaque membre"
 
-#: views/mcapi.views.inc:221
+#: views/mcapi.views.inc:223
 msgid "Comma separated usernames"
 msgstr "Noms d'utilisateurs séparés par des virgules"
 
@@ -2249,7 +2318,7 @@ msgstr "Changer dans le solde"
 msgid "Change in the users balance"
 msgstr "Changer dans le solde des membres"
 
-#: views/mcapi_index_views.views.inc:136
+#: views/mcapi_index_views.views.inc:136 views/mcapi_index_views.views_default.inc:289 views/mcapi_index_views.views_template.inc:596
 msgid "Volume"
 msgstr "Volume"
 
@@ -2257,7 +2326,6 @@ msgstr "Volume"
 msgid "Absolute value of the trade"
 msgstr "Valeur absolue de l'échange"
 
-#: extras/bank_slave/bank_slave.views_template.inc:169
 msgid "Balance"
 msgstr "Solde"
 
@@ -2385,15 +2453,15 @@ msgstr "Date actuelle"
 msgid "Week @week"
 msgstr "Semaine @week"
 
-#: views/views_handler_field_mcapi_users_totals.inc:31
+#: views/views_handler_field_mcapi_users_totals.inc:37
 msgid "Aggregate"
 msgstr "Agréger"
 
-#: views/views_handler_field_mcapi_users_totals.inc:32
+#: views/views_handler_field_mcapi_users_totals.inc:38
 msgid "How do you want to summarise the the transaction totals?"
 msgstr "Comment voulez-vous résumer les totaux des échanges ?"
 
-#: views/views_handler_field_mcapi_users_totals.inc:35
+#: views/views_handler_field_mcapi_users_totals.inc:41
 msgid "Number of transactions"
 msgstr "Nombre d'échanges"
 
@@ -2453,23 +2521,23 @@ msgstr "Modèle de phrase pour l'échange"
 msgid "Use the tokens to define how the transaction will read when displayed in sentence mode"
 msgstr "Utiliser les jetons pour définir comment l'échange apparaîtra lorsqu'il sera affiché en mode phrase"
 
-#: mcapi.inc:518
+#: mcapi.inc:520
 msgid "@division is not a permitted division of currency @name"
 msgstr "@division n'est pas une division de l'unité d'échange autorisée @name"
 
-#: mcapi.module:222
+#: mcapi.module:220
 msgid "The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital."
 msgstr "Le but de cet ensemble est de mettre le pouvoir de création d'une monnaie dans les mains des producteurs et utilisateurs de la monnaie et de réduire la dépendance des gens simples par rapport à la rapacité du capital financier global."
 
-#: mcapi.module:223
+#: mcapi.module:221
 msgid "This software has been five years in the conceiving and making and has been supported only by informal donations."
 msgstr "Ce logiciel a pris 5 ans pour la conception et réalisation et a été  soutenu uniquement grâce à des dons non officiels."
 
-#: mcapi.module:236
+#: mcapi.module:234
 msgid "Send mail notifications for completed transactions using the action/trigger system: !link"
 msgstr "Envoyer des avis par mail pour les échanges conclus en utilisant le système action/déclencheur : !link"
 
-#: extras/accountant_ui/accountant_ui.inc:152
+#: extras/accountant_ui/accountant_ui.inc:154
 msgid "Skipped transaction in which account '@account' pays itself"
 msgstr "Échange omis dans lequel le compte '@account' se crédite lui-même"
 
@@ -2613,7 +2681,7 @@ msgstr "Analyse des échanges"
 msgid "User rankings"
 msgstr "Classements des membres"
 
-#: views/views_handler_field_mcapi_users_totals.inc:39
+#: views/views_handler_field_mcapi_users_totals.inc:45
 msgid "Participation"
 msgstr "Participation"
 
@@ -2621,35 +2689,35 @@ msgstr "Participation"
 msgid "A transaction indexing system, exposed to views, including views and views templates"
 msgstr "Un système d'indexation  d'échanges, exposé aux vues, comprenant les vues et  les modèles de vues."
 
-#: mcapi.admin.inc:495 views/views_plugin_access_currency.inc:40
+#: mcapi.admin.inc:497 views/views_plugin_access_currency.inc:40
 msgid "Use the currency"
 msgstr "Utiliser l'unité d'échange"
 
-#: mcapi.admin.inc:504
+#: mcapi.admin.inc:506
 msgid "Such as users' balances, gross income, number of transactions"
 msgstr "Tels que les soldes des membres, le revenu brut, le nombre d'échanges"
 
-#: mcapi.admin.inc:512
+#: mcapi.admin.inc:514
 msgid "Look at currency usage stats stripped of personal information"
 msgstr "Jeter un coup d'oeil aux statistiques d'utilisation des unités d'échange, sans information personnelle"
 
-#: mcapi.admin.inc:522;643
+#: mcapi.admin.inc:524;645
 msgid "Privacy"
 msgstr "Confidentialité"
 
-#: mcapi.admin.inc:531
+#: mcapi.admin.inc:533
 msgid "Transactions in state '@state'"
 msgstr "Échanges en phase: '@state'"
 
-#: mcapi.admin.inc:541;644
+#: mcapi.admin.inc:543;646
 msgid "Transaction operations"
 msgstr "Opérations sur l'échange"
 
-#: mcapi.admin.inc:542
+#: mcapi.admin.inc:544
 msgid "Determine who can do what to transactions"
 msgstr "Déterminer qui peut faire quoi concernant les échanges"
 
-#: mcapi.admin.inc:542
+#: mcapi.admin.inc:544
 msgid "Any of the checked conditions must return TRUE"
 msgstr "Toutes les conditions vérifiées doivent renvoyer VRAI"
 
@@ -2657,11 +2725,11 @@ msgstr "Toutes les conditions vérifiées doivent renvoyer VRAI"
 msgid "A transaction certificate"
 msgstr "Un certificat d'échange"
 
-#: mcapi.admin.inc:754
+#: mcapi.admin.inc:756
 msgid "Mail will be sent to the payer and payee, except for the logged in user."
 msgstr "Un mail sera envoyé au donneur et au receveur, à l'exception du membre connecté."
 
-#: mcapi.module:1094
+#: mcapi.module:1095
 msgid "Automated transaction failed: @message"
 msgstr "Échec de l'échange automatique : @message"
 
@@ -2673,23 +2741,23 @@ msgstr "Le compte 1 donne au membre"
 msgid "User pays account 1"
 msgstr "Le membre donne au compte 1"
 
-#: mcapi.admin.inc:849
+#: mcapi.admin.inc:851
 msgid "this value will be overwritten if the passed entity has the 'worth' field"
 msgstr "ce nombre sera écrasé si l'entité transmise comporte le champ 'valeur'"
 
-#: mcapi.admin.inc:926
+#: mcapi.admin.inc:928
 msgid "Participants"
 msgstr "Participants"
 
-#: mcapi.admin.inc:927
+#: mcapi.admin.inc:929
 msgid "Determine who will pay whom"
 msgstr "Déterminer qui donnera à qui"
 
-#: mcapi.admin.inc:931
+#: mcapi.admin.inc:933
 msgid "On a node trigger, the payer and payee will both evaluate to the node author"
 msgstr "Lors du déclenchement d'un noeud, le donneur et le receveur seront tous deux considérés comme créateurs du noeud"
 
-#: mcapi.admin.inc:869;977
+#: mcapi.admin.inc:871;979
 msgid "Transaction description text"
 msgstr "La description de l'échange"
 
@@ -2705,15 +2773,15 @@ msgstr "Liens"
 msgid "Links to transaction operations"
 msgstr "Liens vers les opérations sur l'échange"
 
-#: mcapi.module:547
+#: mcapi.module:546
 msgid "Are you sure you want to delete?"
 msgstr "Êtes-vous sûrs de vouloir supprimer ?"
 
-#: mcapi.module:549
+#: mcapi.module:548
 msgid "This transaction will disappear without a trace (apart from site backups)"
 msgstr "Cet échange disparaîtra sans laisser de trace (si ce n'est sur les sauvegardes du site)"
 
-#: mcapi.module:552
+#: mcapi.module:551
 msgid "Only the site administrator will be able to restore this transaction."
 msgstr "Seul l'administrateur du site sera en mesure de rétablir cet échange."
 
@@ -2721,11 +2789,11 @@ msgstr "Seul l'administrateur du site sera en mesure de rétablir cet échange."
 msgid "Users with permission to '@perm'"
 msgstr "Membres avec les droits '@perm'"
 
-#: mcapi.admin.inc:688
+#: mcapi.admin.inc:690
 msgid "Make a dependent payment"
 msgstr "Créer un échange subordonné"
 
-#: mcapi.admin.inc:701
+#: mcapi.admin.inc:703
 msgid "Create transaction with entity owner"
 msgstr "Créer un échange avec le propriétaire de l'entité"
 
@@ -2737,35 +2805,29 @@ msgstr "Impossible de mettre une unité d'échange inconnue dans le formulaire :
 msgid "nonexistent field '@fieldname' in transaction form"
 msgstr "'@fieldname' est un champ inexistant dans le formulaire d'échange"
 
-#: extras/signatures/mcapi_signatures.inc:61;110
+#: extras/signatures/mcapi_signatures.inc:61;113
 msgid "Sign all"
 msgstr "Tout confirmer"
 
-#: extras/signatures/mcapi_signatures.inc:238
+#: extras/signatures/mcapi_signatures.inc:251
 msgid "Send 'pending' notification"
 msgstr "Envoyer un avis 'en attente'"
 
-
-#: mcapi_signatures.inc:360
+#: extras/signatures/mcapi_signatures.inc:368
 msgid "Are you sure you want to sign?"
 msgstr "Êtes-vous sûrs de vouloir confirmer ?"
 
-#: mcapi_signatures.inc:362
+#: extras/signatures/mcapi_signatures.inc:370
 msgid "Undo pending transactions"
 msgstr "Supprimer les échanges en attente"
 
-#: mcapi_signatures.inc:363
-msgid "Are you sure you want to undo this pending transaction?"
+#: extras/signatures/mcapi_signatures.inc:340
+msgid "Are you sure you want to cancel this pending transaction?"
 msgstr "Êtes-vous sûr de vouloir supprimer cet échange en attente ?"
 
-
-#: mcapi_signatures.inc:365
-msgid "Sign a pending transaction on behalf of all signatories"
-msgstr "Confirmer un échange en attente au nom de tous les signataires"
-
-#: mcapi_signatures.inc:366
+#: extras/signatures/mcapi_signatures.inc:374
 msgid "Are you sure you want to sign off this transaction?"
-msgstr "Êtes-vous sûr de vouloir confirmer cet échange?"
+msgstr "Êtes-vous sûr de vouloir conclure cet échange?"
 
 #: extras/signatures/mcapi_signatures.module:147
 msgid "Signatures for user to sign"
@@ -2783,7 +2845,7 @@ msgstr "Signataires de l'échange"
 msgid "Signatories to the transaction who have not signed"
 msgstr "Les signataires de l'échanges qui n'ont pas confirmé"
 
-#: extras/signatures/mcapi_signatures.install:27
+#: extras/signatures/mcapi_signatures.install:33
 msgid "Currencies should be reviewed to take account of transaction signing. !link"
 msgstr "Les unités d'échange devraient être revues pour prendre en compte de la confirmation de l'échange. !link"
 
@@ -2807,11 +2869,11 @@ msgstr "[expenditure] donnés"
 msgid "For:"
 msgstr "Pour :"
 
-#: mcapi.admin.inc:372
+#: mcapi.admin.inc:374
 msgid "Reservoir account"
 msgstr "Compte de réserve"
 
-#: mcapi.admin.inc:373
+#: mcapi.admin.inc:375
 msgid "Account used for issuing and taxing"
 msgstr "Compte utilisé pour l'émission et la taxation"
 
@@ -2819,27 +2881,27 @@ msgstr "Compte utilisé pour l'émission et la taxation"
 msgid "Pay or charge the user or node owner."
 msgstr "Payer ou facturer à l'utilisateur ou au propriétaire du nœud."
 
-#: mcapi.admin.inc:912
+#: mcapi.admin.inc:914
 msgid "Conditions"
 msgstr "Conditions"
 
-#: mcapi.admin.inc:913
+#: mcapi.admin.inc:915
 msgid "A dependent transaction will only be created when the main transaction meets these conditions"
 msgstr "Un échange subordonné ne sera créé que lorsque l'échange principal répond à ces conditions"
 
-#: mcapi.admin.inc:921
+#: mcapi.admin.inc:923
 msgid "Presets"
 msgstr "Préréglages"
 
-#: mcapi.admin.inc:922
+#: mcapi.admin.inc:924
 msgid "Specify the properties of the dependent transaction"
 msgstr "Précisez les propriétés de l'échange subordonné"
 
-#: mcapi.admin.inc:922
+#: mcapi.admin.inc:924
 msgid "It will have the type 'dependent'."
 msgstr "Il aura le type \"subordonné\""
 
-#: transaction_totals.tpl.php:48
+#: transaction_totals.tpl.php:47
 msgid "Volume: !volume"
 msgstr "Volume : !volume"
 
@@ -2859,31 +2921,31 @@ msgstr "Etat de l'échange"
 msgid "Worth at least"
 msgstr "Valeur d'au moins"
 
-#: mcapi.module:105
+#: mcapi.module:103
 msgid "Reversal of @label"
 msgstr "Inversion de @label"
 
-#: mcapi.module:115
+#: mcapi.module:113
 msgid "Failed to reverse transaction: @message"
 msgstr "Échec de l'inversion de l'échange : @message"
 
-#: mcapi.module:646
+#: mcapi.module:645
 msgid "Undone"
 msgstr "Annulé"
 
-#: mcapi.module:1016
+#: mcapi.module:1017
 msgid "A transaction was deleted"
 msgstr "Un échange a été supprimé"
 
-#: mcapi.module:1018
+#: mcapi.module:1019
 msgid "Check for dependent transactions before inserting"
 msgstr "Vérifiez les échanges subordonnés avant d'introduire"
 
-#: mcapi.module:1019
+#: mcapi.module:1020
 msgid "A transaction was inserted or changed state"
 msgstr "Un échange a été inséré ou changé d'état"
 
-#: mcapi.install:53
+#: mcapi.install:54
 msgid "A new user was created for trading. uid: :uid name: demo, pass: demo"
 msgstr "Un nouvel utilisateur a été créé pour entamer des échanges. Login: demo, mot de passe : demo"
 
@@ -2939,15 +3001,15 @@ msgstr "pour des échanges réalisés par le propriétaire de l'unité d'échang
 msgid "Leave blank to inherit the values from the currency's settings"
 msgstr "Laissez vide pour hériter des valeurs de paramètres de l'unité d'échange"
 
-#: extras/signatures/mcapi_signatures.inc:251
+#: extras/signatures/mcapi_signatures.inc:264
 msgid "Compose the email notifying signatories that a transaction needs their attention."
 msgstr "Compose le courriel informant les signataires qu'un échange a besoin de leur attention."
 
-#: extras/signatures/mcapi_signatures.inc:252
+#: extras/signatures/mcapi_signatures.inc:265
 msgid "Use the tokens provided."
 msgstr "Utilisez les jetons fournis."
 
-#: extras/signatures/mcapi_signatures.inc:253
+#: extras/signatures/mcapi_signatures.inc:266
 msgid "To notify users when a transaction is completed, use the action and triggers: !link"
 msgstr "Pour avertir les utilisateurs lorsque l'échange est terminé, utilisez l'action et les déclencheurs: !link"
 
@@ -2959,11 +3021,11 @@ msgstr "Avez-vous confirmé tous vos échanges ?"
 msgid "Put your signature on all transactions which require it"
 msgstr "Confirmer tous les échanges qui le réclament"
 
-#: extras/accountant_ui/accountant_ui.views_default.inc:298 views/mcapi.views.inc:30
+#: extras/accountant_ui/accountant_ui.views_default.inc:298 views/mcapi.views.inc:31
 msgid "Serial"
 msgstr "En série"
 
-#: views/mcapi.views.inc:132 views/mcapi_index_views.views.inc:196
+#: views/mcapi.views.inc:133 views/mcapi_index_views.views.inc:196
 msgid "What the user can do to the transaction"
 msgstr "Ce que l'utilisateur peut faire à l'échange"
 
@@ -3003,59 +3065,59 @@ msgstr "Configurer l'unité d'échange"
 msgid "Transaction certificate"
 msgstr "Certificat d'échange"
 
-#: mcapi.admin.inc:402
+#: mcapi.admin.inc:404
 msgid "Cents in same field"
 msgstr "Les centimes dans le même champ"
 
-#: mcapi.admin.inc:425
+#: mcapi.admin.inc:427
 msgid "On each line put \"hundredths| visible text\". The visible text will be displayed after the delimiter."
 msgstr "À chaque ligne, \"centièmes| texte à afficher\". Le texte à afficher sera placé derrière le délimiteur."
 
-#: mcapi.admin.inc:410
+#: mcapi.admin.inc:412
 msgid "Delimiter"
 msgstr "Délimiteur"
 
-#: mcapi.admin.inc:411
+#: mcapi.admin.inc:413
 msgid "A character to go in between your integer and cents or other formatted subdivisions"
 msgstr "Un caractère à placer entre le nombre entier et les centimes ou autres fractions d'unité d'échange"
 
-#: mcapi.admin.inc:444
+#: mcapi.admin.inc:446
 msgid "Write an expression to control the display of the currency using html, css and [quantity]."
 msgstr "Écrire une expression pour contrôler la présentation de l'unité d'échange en HTML, CSS et [quantity]."
 
-#: mcapi.admin.inc:455
+#: mcapi.admin.inc:457
 msgid "Zero value display"
 msgstr "Affichage de la valeur zéro"
 
-#: mcapi.admin.inc:456
+#: mcapi.admin.inc:458
 msgid "Use html."
 msgstr "Utiliser l'HTML"
 
-#: mcapi.admin.inc:463
+#: mcapi.admin.inc:465
 msgid "Zero transaction already exist so this field is required"
 msgstr "Des échanges de valeur zéro existent déjà, donc ce champ est requis"
 
-#: mcapi.admin.inc:466
+#: mcapi.admin.inc:468
 msgid "Leave blank to disallow zero value transactions"
 msgstr "Laissez vide pour ne pas permettre d'échange de valeur zéro"
 
-#: mcapi.admin.inc:474
+#: mcapi.admin.inc:476
 msgid "Currency access"
 msgstr "Accès à l'unité d'échange"
 
-#: mcapi.admin.inc:565
+#: mcapi.admin.inc:567
 msgid "Currency format must contain token '[quantity]'"
 msgstr "Le format de l'unité d'échange contenir le jeton '[quantity]'"
 
-#: mcapi.admin.inc:591
+#: mcapi.admin.inc:593
 msgid "Keys must be unique in field @fieldname"
 msgstr "Dans le champ @fieldname, les clés doivent être uniques"
 
-#: mcapi.admin.inc:645
+#: mcapi.admin.inc:647
 msgid "Currency Access"
 msgstr "L'accès à l'unité d'échange"
 
-#: mcapi.admin.inc:667
+#: mcapi.admin.inc:669
 msgid "Reservoir account does not have access to the currency!"
 msgstr "Le compte de réserve n'a pas accès à l'unité d'échange!"
 
@@ -3087,11 +3149,11 @@ msgstr "Tout le monde, même les utilisateurs anonymes"
 msgid "The creator of the transaction"
 msgstr "Le créateur de l'échange"
 
-#: extras/accountant_ui/accountant_ui.inc:41
+#: extras/accountant_ui/accountant_ui.inc:43
 msgid "Payees"
 msgstr "Les receveurs"
 
-#: extras/accountant_ui/accountant_ui.inc:51
+#: extras/accountant_ui/accountant_ui.inc:53
 msgid "Payers"
 msgstr "Les donneurs"
 
@@ -3131,7 +3193,7 @@ msgstr "Importer l'historique complet des échanges, en utilisant la propriété
 msgid "All transactions will be in '@currency', according to the settings."
 msgstr "Tous les échanges seront en '@currency', conformément à la configuration."
 
-#: extras/import/mcapi_import.module:34
+#: extras/import/mcapi_import.module:35
 msgid "To import users, see the User Import Framework (UIF) module."
 msgstr "Pour importer des utilisateurs, voyez le module User Import Framework (UIF)."
 
@@ -3143,7 +3205,7 @@ msgstr "'créé' est facultatif mais sera converti au format unixtime en utilisa
 msgid "The second column SHOULD add up to 0 for LETS and other zero balance systems, but this will not be checked."
 msgstr "La deuxième colonne DEVRAIT s'élever à 0 pour les SEL et autres systèmes au solde équilibré mais cela ne sera pas vérifié. "
 
-#: extras/import/mcapi_import.module:539
+#: extras/import/mcapi_import.module:547;557
 msgid "The currency code (optional, default is @currcode)"
 msgstr "Le code d'unité d'échange (facultatif, par défaut : @currcode)"
 
@@ -3323,19 +3385,19 @@ msgctxt "currency-type"
 msgid "Backed by a commodity"
 msgstr "Valeur étayée par un bien"
 
-#: mcapi.admin.inc:649
+#: mcapi.admin.inc:651
 msgid "Resave currency @name, paying attention to '@prop'"
 msgstr "Enregistrer à nouveau l'iunité d'échange @name, en faisant attention à '@prop'"
 
-#: mcapi.module:1441
+#: mcapi.module:1442
 msgid "Disable the account and delete its content."
 msgstr "Désactiver le compte et effacer son contenu"
 
-#: mcapi.module:1442
+#: mcapi.module:1443
 msgid "Your account will be blocked and you will no longer be able to log in. All of your content will be deleted."
 msgstr "Votre compte sera bloqué et vous ne pourrez plus vous y connecter. Tout son contenu sera effacé"
 
-#: mcapi.install:638
+#: mcapi.install:644
 msgid "Upgrading @count transaction nodes from nid @first to nid @last"
 msgstr "Mise à jour de @count noeuds de transactions de nid @first à nid @last"
 
@@ -3359,7 +3421,7 @@ msgstr "Largeur en pixels"
 msgid "Hierarchical select widget cannot remember default values placed here"
 msgstr "L’outil de sélection hiérarchique ne peut se souvenir des valeurs par défaut placées ici."
 
-#: extras/forms/mcapi_forms.inc:121
+#: extras/forms/mcapi_forms.inc:123
 msgid "Preview"
 msgstr "Aperçu"
 
@@ -3375,7 +3437,7 @@ msgstr "Un champ contextuel pour choisir la date"
 msgid "Create transactions to and from the currency reservoir account to create 'Carried forward' balances."
 msgstr "Génère des transactions vers et à partir du compte de réserve de l'unité d'échange pour obtenir des soldes à reporter."
 
-#: extras/import/mcapi_import.module:11;26
+#: extras/import/mcapi_import.module:11;27
 msgid "Prepare a csv file and paste as text into the box below."
 msgstr "Préparez un fichier csv et collez-le sous forme de texte dans la case ci-dessous."
 
@@ -3403,98 +3465,98 @@ msgstr "La première ligne devrait indiquer: !code (la troisième colonne est en
 msgid "Ensure your balance limits settings will not conflict with the import. Consider temporarily disabling the limits module"
 msgstr "Assurez-vous que votre configuration de limite des soldes n'entre pas en conflit avec l'importation. Vous pouvez envisager de désactiver temporairement le module des limites"
 
-#: extras/import/mcapi_import.module:25
+#: extras/import/mcapi_import.module:26
 msgid "Import a whole transaction history."
 msgstr "Importer l'historique complet d'une transaction.\n"
 "."
 
-#: extras/import/mcapi_import.module:27
+#: extras/import/mcapi_import.module:28
 msgid "Payer and Payee should be user IDs or email addresses."
 msgstr "'Payer' (le donneur) et 'Payee' (le receveur) devraient être un identifiant ou une adresse courriel"
 
-#: extras/import/mcapi_import.module:28
+#: extras/import/mcapi_import.module:29
 msgid "Category names should be comma separated in the same field."
 msgstr "Les noms de catégorie doivent être séparés par des virgules dans le même champ."
 
-#: extras/import/mcapi_import.module:29
+#: extras/import/mcapi_import.module:30
 msgid "'created' is optional, but will be converted to unixtime using php function !strtotime."
 msgstr "'created' (date de création) est facultatif, mais sera converti en unixtime en utilisant la fonction php !strtotime."
 
 #. Cardinality???
-#: extras/import/mcapi_import.module:30
+#: extras/import/mcapi_import.module:31
 msgid "Other field API fields must have the same name; a cardinality of 1 will be assumed and the value will be put in the 'value' column."
 msgstr "Les autres champs API doivent avoir le même nom. Une base de 1 sera assumée et la valeur sera inscrite dans la colone 'valeur'"
 
-#: extras/import/mcapi_import.module:76;77
+#: extras/import/mcapi_import.module:77;78
 msgid "uid or email of a user"
 msgstr "Identifiant ou adresse courriel de l'utilisateur"
 
 #. ???
-#: extras/import/mcapi_import.module:78
+#: extras/import/mcapi_import.module:79
 msgid "floating point number, consistent with the currency settings"
 msgstr "nombre avec décimales, conformément à la configuration de l'unité d'échange"
 
-#: extras/import/mcapi_import.module:79
+#: extras/import/mcapi_import.module:80
 msgid "a string which can be parsed by php's !strtotime"
 msgstr "une chaîne qui peut être analysée par !strtotime de php"
 
-#: extras/import/mcapi_import.module:80
+#: extras/import/mcapi_import.module:81
 msgid "integer transaction state"
 msgstr "indicateur numérique de l'état de la transaction"
 
-#: extras/import/mcapi_import.module:81
+#: extras/import/mcapi_import.module:82
 msgid "machine name of transaction type"
 msgstr "Nom machine du type de transaction"
 
-#: extras/import/mcapi_import.module:85
+#: extras/import/mcapi_import.module:86
 msgid "one line describing what was exchanged"
 msgstr "une ligne avec la description de l'échange"
 
-#: extras/import/mcapi_import.module:90
+#: extras/import/mcapi_import.module:91
 msgid "Comma separated category names to be imported into the '@name' vocabulary"
 msgstr "Les noms de catégorie séparés par des virgules destinées à être importés dans le glossaire '@name'"
 
-#: extras/import/mcapi_import.module:92
+#: extras/import/mcapi_import.module:93
 msgid "The possible headings for the csv array are: (* required)"
 msgstr "Les entêtes proposées pour le tableau csv sont: (* requis)"
 
-#: extras/import/mcapi_import.module:103
+#: extras/import/mcapi_import.module:104
 msgid "Fallback transaction type"
 msgstr "Type par défaut de transaction"
 
-#: extras/import/mcapi_import.module:104
+#: extras/import/mcapi_import.module:105
 msgid "If no valid transaction type is provided, use this."
 msgstr "Si aucun type de transaction valide n'est fourni, utiliser ceci"
 
-#: extras/import/mcapi_import.module:112
+#: extras/import/mcapi_import.module:113
 msgid "Fallback transaction state"
 msgstr "Etat par défaut de transaction"
 
-#: extras/import/mcapi_import.module:113
+#: extras/import/mcapi_import.module:114
 msgid "If no valid transaction state is provided, use this."
 msgstr "Si aucun état de transaction valide n'est fourni, utiliser ceci"
 
-#: extras/import/mcapi_import.module:122
+#: extras/import/mcapi_import.module:123
 msgid "paste data"
 msgstr "coller des données"
 
-#: extras/import/mcapi_import.module:129
+#: extras/import/mcapi_import.module:130
 msgid "Adjust user created date"
 msgstr "Ajuster la date de création de l'utilisateur"
 
-#: extras/import/mcapi_import.module:130
+#: extras/import/mcapi_import.module:131
 msgid "Set account created property to one day before the first transaction. This is useful if member import didn't work!"
 msgstr "Mettre la date de création du compte à 1 jour avant la première transaction. Ceci peut être utile si l'importation du membre n'a pas fonctionné."
 
-#: extras/import/mcapi_import.module:136
+#: extras/import/mcapi_import.module:137
 msgid "Test"
 msgstr "Tester"
 
-#: extras/import/mcapi_import.module:137
+#: extras/import/mcapi_import.module:138
 msgid "Don't import. Just report back on the user ids."
 msgstr "N'importez pas. Rapportez-nous juste les identifiants des utilisateurs"
 
-#: extras/import/mcapi_import.module:159;162
+#: extras/import/mcapi_import.module:162
 msgid "'quantity' must be greater than 0 in line @num"
 msgstr "La quantité doit être supérieure à zéro à la ligne @num"
 
@@ -3523,39 +3585,39 @@ msgstr "Les états suivants sont erronés et sont remplacés par @state: @state"
 msgid "The following new terms would be created: @terms"
 msgstr "Les termes suivants seront créés: @terms"
 
-#: extras/import/mcapi_import.module:215;264
+#: extras/import/mcapi_import.module:216;265
 msgid "Importing transactions"
 msgstr "Importation de transactions"
 
-#: extras/import/mcapi_import.module:230
+#: extras/import/mcapi_import.module:231
 msgid "testing mode is ON!"
 msgstr "le mode test est ACTIVE!"
 
-#: extras/import/mcapi_import.module:231
+#: extras/import/mcapi_import.module:232
 msgid "Successfully simulated import of @num transactions"
 msgstr "Simulation d'importation réussie de @num transactions"
 
-#: extras/import/mcapi_import.module:308
+#: extras/import/mcapi_import.module:309
 msgid "@count transactions ignored."
 msgstr "@count transactions ignorées."
 
-#: extras/import/mcapi_import.module:380
+#: extras/import/mcapi_import.module:381
 msgid "The following users are unknown to this site: @users"
 msgstr "Les utilisateurs suivants ne sont pas connus de ce site: @users"
 
-#: extras/import/mcapi_import.module:384
+#: extras/import/mcapi_import.module:385
 msgid "The following users already have transactions: @users"
 msgstr "Les utilisateurs suivants ont déjà des transactions: @users"
 
-#: extras/import/mcapi_import.module:397
+#: extras/import/mcapi_import.module:398
 msgid "Gross income (third item) on row @rownum is not numeric: @val"
 msgstr "Le revenu brut (troisième élément) de la ligne @rownum n'est pas numérique: @val"
 
-#: extras/import/mcapi_import.module:521
+#: extras/import/mcapi_import.module:517
 msgid "Number of fields does not match header in row @num"
 msgstr "Le nombre de champs ne correspond pas à l'en-tête à la ligne  @num"
 
-#: extras/import/mcapi_import.module:48
+#: extras/import/mcapi_import.module:49
 msgid "Import"
 msgstr "Importer"
 
@@ -3591,11 +3653,11 @@ msgstr "Bien"
 msgid "Issuance"
 msgstr "Emission"
 
-#: views/mcapi.views.inc:252
+#: views/mcapi.views.inc:254
 msgid "Per currency access"
 msgstr "Pour accéder à l'unité d'échange"
 
-#: views/mcapi.views.inc:253
+#: views/mcapi.views.inc:255
 msgid "Visible to users with access to the (first) currency in the filter or contextual filter."
 msgstr "Visible pour les utilisateurs ayant accès à la (première) unité d'échange dans le filtre ou le filtre contextuel."
 
@@ -3603,7 +3665,7 @@ msgstr "Visible pour les utilisateurs ayant accès à la (première) unité d'é
 msgid "Users who have '@perm' for all shown currencies"
 msgstr "Utilisateurs qui ont '@perm' pour toutes les unités d'échange affichées."
 
-#:
+#: 
 msgid "[transaction:payer] paid [transaction:payee] [transaction:worth]"
 msgstr "[transaction:payer] a donné à [transaction:payee] [transaction:worth]"
 
@@ -3666,7 +3728,7 @@ msgid "Effectively the commodity is monetised, this brings confidence to the com
 msgstr "En réalité, le bien est monétarisé. Ceci donne une garantie pour le montant de la valeur de ce bien stocké."
 
 #. en fonction du contexte payer ou facturer n'est peut être pas correct
-#: mcapi.admin.inc:702
+#: mcapi.admin.inc:704
 #, fuzzy
 msgid "Pay or charge the node or comment owner, or the user"
 msgstr "Payer ou facturer le noeud ou notifier le propriétaire ou l’utilisateur."
@@ -3689,9 +3751,9 @@ msgstr "Variables comptables"
 
 #: mcapi.install:44;929
 msgid "[transaction:payer] paid [transaction:payee] [transaction:worth] [transaction:links]"
-msgstr "[transaction:payer] a payé [transaction:payee] [transaction:worth] [transaction:links]"
+msgstr "[transaction:payer] a donné à [transaction:payee] [transaction:worth] [transaction:links]"
 
-#: extras/accountant_ui/accountant_ui.inc:58
+#: extras/accountant_ui/accountant_ui.inc:60
 msgid "Do not use payer and payee tokens because all will receive the same mail."
 msgstr "Ne pas utiliser les jetons des 'payer' et 'payee' sinon tous recevront le même courrier."
 
@@ -3800,7 +3862,6 @@ msgstr "Esclave de la banque."
 msgid "Increase your organisation's transparency: designate an account as a bank account, and track all transactions in that account & publish the accounts."
 msgstr "Pour augmenter la transparence de votre organisation: désignez un compte en tant que compte bancaire, suivez tous les échanges effectués sur ce compte et publiez-les."
 
-#. "Expressions" n'est sûrement pas le terme idéal, mais n'ayant pas la contexte, je ne sais pas de quoi il s'agit. Peut-être "Séquences", s'il s'agit d'instructions informatiques?
 #: extras/command/mcapi_command.module:59
 #, fuzzy
 msgid "Expressions for recording a transfer"
@@ -3952,41 +4013,41 @@ msgstr "Les paiements à l'extérieur de la communauté doivent impliquer le com
 msgid "Payment involving intertrading account was excluded"
 msgstr "Le paiement impliquant le compte d'inter-échanges a été exclu."
 
-#: extras/limits/mcapi_limits.module:293
+#: extras/limits/mcapi_limits.module:295
 msgid "Trading limits (How much the user can earn and spend)"
 msgstr "Limites de l’échange (combien l'utilisateur peut recevoir et dépenser)."
 
-#: mcapi.admin.inc:362
+#: mcapi.admin.inc:364
 msgid "Choose from users with permission '@permission'"
 msgstr "Choisissez parmi les membres avec la permission de '@permission'"
 
-#: mcapi.admin.inc:834
+#: mcapi.admin.inc:836
 msgid "User pays reservoir account"
 msgstr "Le membre donne au compte de réserve"
 
-#: mcapi.admin.inc:835
+#: mcapi.admin.inc:837
 msgid "Reservoir account pays user"
 msgstr "Le compte de réserve donne au membre"
 
-#: mcapi.admin.inc:860
+#: mcapi.admin.inc:862
 msgid "Used if this transaction depends on another transaction"
 msgstr "Utilisé si cet échange dépend d'un autre échange"
 
-#: mcapi.inc:522
+#: mcapi.inc:524
 msgid "Maximum value exceeded for !currency"
 msgstr "Valeur maximale dépassée pour !currency"
 
-#: mcapi.inc:580
+#: mcapi.inc:582
 msgid "Max: !num"
 msgstr "Max: !num"
 
-#: mcapi.module:643
+#: mcapi.module:642
 msgid "See 'delete mode' settings for more info, !link"
 msgstr "Voir les paramètres du mode 'suppression' pour plus d'info, !link"
 
-#: mcapi.module:1461
+#: mcapi.module:1462
 msgid "[transaction:payer] paid [transaction:payee] [transaction:worth]. [transaction:links]"
-msgstr "!transaction:payer] a payé [transaction:payee] [transaction:worth]. [transaction:links]"
+msgstr "[transaction:payer] a donné à [transaction:payee] [transaction:worth]. [transaction:links]"
 
 #: extras/accountant_ui/accountant_ui.views_default.inc:296
 msgid "Recorded"
@@ -4004,7 +4065,7 @@ msgstr "@label étiquette pour les choix"
 msgid "Unknown users would be replaced with the reservoir account: @users"
 msgstr "Les membres inconnus seraient remplacés par le compte de réserve:  @users"
 
-#: extras/import/mcapi_import.module:474
+#: extras/import/mcapi_import.module:468
 msgid "Failed to import balance for member @uid: !message"
 msgstr "Echec à l'importation du solde du membre @uid: !message"
 
@@ -4033,7 +4094,7 @@ msgstr "Mon échange"
 msgid "Transfer with another exchange"
 msgstr "Transférer à un autre échange"
 
-#: extras/signatures/mcapi_signatures.inc:340
+#: extras/signatures/mcapi_signatures.inc:371
 msgid "Are you sure you want to undo this pending transaction?"
 msgstr "Etes-vous sûr(e) de vouloir annuler cet échange en attente?"
 
@@ -4042,18 +4103,40 @@ msgstr "Etes-vous sûr(e) de vouloir annuler cet échange en attente?"
 msgid "Arg 1 user & transaction manager"
 msgstr "Arg 1 utilisateur & gestionnaire des échanges"
 
-#: mcapi_signatures.inc:358 views/mcapi_signatures.views_default.inc:123
-msgid "Sign"
-msgstr "Confirmer"
+#: extras/signatures/mcapi_signatures.inc:373
+msgid "Sign a pending transaction on behalf of all signatories"
+msgstr "Confirmer un échange en attente au nom de tous les signataires"
 
-#: mcapi_signatures.inc:359
+#: extras/signatures/mcapi_signatures.inc:367
 msgid "Sign a pending transaction"
 msgstr "Confirmer un échange en attente"
 
-#: mcapi_signatures.inc:364
-msgid "Sign off"
-msgstr "Conclure"
-
-#: mcapi_signatures.inc:361
+#: extras/signatures/mcapi_signatures.inc:369
 msgid "Undo"
 msgstr "Supprimer"
+
+#: 
+msgid "Undo a finished transaction, and its dependents"
+msgstr "Supprimer un échange confirmé, et ses subordonnés"
+
+#: extras/import/mcapi_import.module:159
+msgid "'quantity' must be greater than 0 in line @num: @quant"
+msgstr "'quantité' doit être plus grand que 0 sur la ligne  @num: @quant\n"
+""
+
+#: extras/signatures/mcapi_signatures.install:24
+msgid "mcapi install"
+msgstr "installation mcapi"
+
+#: extras/signatures/mcapi_signatures.install:24
+msgid "requiring signatures on transaction type @type"
+msgstr "demande de confirmation sur le type de transaction @type"
+
+#: views/views_handler_field_mcapi_users_totals.inc:31
+msgid "Strip formatting"
+msgstr "Formatage des données"
+
+#: views/views_handler_field_mcapi_users_totals.inc:32
+msgid "Just show the unformatted quantity (best with only one currency)"
+msgstr "Montrer uniquement la quantité non formatée (de préférence avec une seule unité d'échange)"
+

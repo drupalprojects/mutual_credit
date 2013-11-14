@@ -40,6 +40,10 @@ foreach ($timeline as $timestamp => $balances) {
   $timeline[$timestamp] = $vals;
   $prev = $timeline[$timestamp];
 }
+$height = intval(5*$width/4);
+
+if (count($histories) == 1) $title = t('!currency history', array('!currency' => currency_load($currcode)->human_name));
+else $title = t('Balance history');
 $id = 'uid-'.$account->uid.'-'.implode('',array_keys($histories));?>
 <script type="text/javascript">
 function drawBalanceHistory() {
@@ -55,13 +59,14 @@ function drawBalanceHistory() {
 <?php } ?>
   var options = {
     curveType: "<?php print $curvetype; ?>",
-    width: 250,
-    height: 200,
+    width: <?php print $width; ?>,
+    height: <?php print $height; ?>,
     colors: [<?php print implode(', ', $colors);?>],
     legend: {position: 'none'}
+    title: '<?php print $title ?>'
   }
   new google.visualization.LineChart(document.getElementById('<?php print $id; ?>')).draw(data, options);
 }
 google.setOnLoadCallback(drawBalanceHistory);
 </script>
-<div id="<?php print $id;?>" style="width:<?php print $width; ?>px; height:<?php print intval(3*$width/4);?>px;"></div>
+<div id="<?php print $id;?>" class = "balance-history" style="width:<?php print $width; ?>px; height:<?php print $height; ?>px;"></div>

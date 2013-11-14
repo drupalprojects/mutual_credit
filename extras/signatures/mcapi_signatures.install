@@ -101,22 +101,26 @@ function mcapi_signatures_update_7000() {
   $tables = mcapi_signatures_schema();
   db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
   db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
-  db_query("UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL");
-  $pending = db_query("SELECT xid, s.serial, payer, payee, s.uid
-    FROM {mcapi_transactions} t
-    LEFT JOIN {mcapi_signatures} s
-    ON t.serial = s.serial
-    WHERE t.state = :state", array(':state' => TRANSACTION_STATE_PENDING));
+  db_query('UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL');
+  $pending = db_query("SELECT xid, payer, payee, s.uid, s.serial
+    FROM {mcapi_signatures} s
+    LEFT JOIN {mcapi_transactions} t
+    ON t.xid = s.serial
+    WHERE t.state = :state", array(':state' => TRANSACTION_STATE_PENDING))->fetchAll();
   foreach ($pending as $transaction) {
-    db_query("UPDATE {mcapi_signatures} SET serial = :serial WHERE serial = :xid", array($transaction-serial, $transaction->xid));
-    //make a new row for the user who already signed
-    db_query(
-      "INSERT INTO {mcapi_signatures} (serial, uid, pending), VALUES {:serial, :uid, 0}",
-      array(
-        ':serial' => $transaction->serial,
-        ':uid' => $transaction->payer == $transaction->uid ? $transaction->payee : $transaction->payer
-      )
+    //change the serial number, coz it used to be the xid, converted from the nid in the existing row
+    db_update('mcapi_signatures')
+      ->fields(array('serial' => $transaction-serial, 'pending' => 1))
+      ->condition('serial', $transaction->xid)
+      ->execute();
+    //make a new row for the user who already signed, to be consistent with future data
+    $values = array(
+      'serial' => $transaction->serial,
+      'uid' => $transaction->payer == $transaction->uid ? $transaction->payee : $transaction->payer,
+      'pending' => 0
     );
+    drupal_set_message(print_r($values, 1));
+    db_insert('mcapi_signatures')->fields($values)->execute();
   }
   signature_integrity_check();
 }
@@ -160,6 +164,14 @@ function mcapi_signatures_update_7009() {
     unset($var['complete']);
     variable_set($varname, $var);
   }
+  variable_set('mcapi_sign_notify_template', array(
+    'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_subject')),
+    'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_body')),
+  ));
+  variable_set('mcapi_signed_off_notify_template', array(
+    'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_subject')),
+    'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_body')),
+  ));
 }
 
 

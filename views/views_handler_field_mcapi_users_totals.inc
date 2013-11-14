@@ -70,7 +70,6 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
         );
       }
     }
-      drupal_set_message($elements[$currcode]['#markup']);
     return $elements;
   }
 }

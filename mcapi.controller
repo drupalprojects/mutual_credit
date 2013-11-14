@@ -86,37 +86,42 @@ class mcapiEntityController extends EntityAPIController {
       $transaction->$key = array_key_exists($key, $values) && !empty($values[$key]) ? $values[$key] : $val;
       unset($values[$key]);
     }
+    $worths = array();
     if (isset($values['worth'])) {
       $items = isset($values['worth'][LANGUAGE_NONE]) ? $values['worth'][LANGUAGE_NONE] : $values['worth'];
       foreach ($items as $delta => $item) {
-        $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $item['currcode'], 'quantity' => $item['quantity']);
+        if ($item['quantity']) {
+          $worths[] = array('currcode' => $item['currcode'], 'quantity' => $item['quantity']);
+        }
       }
       unset($values['worth']);
     }
     //another format which might be used
     elseif(isset($values['worths'])) {
       foreach ($values['worths'] as $currcode => $quantity) {
-        $transaction->worth[LANGUAGE_NONE][] = array('currcode' => $currcode, 'quantity' => $quantity);
+        $worths[] = array('currcode' => $currcode, 'quantity' => $quantity);
       }
       unset($values['worths']);
     }
     elseif(isset($values['quantity']) && isset($values['quantity'])) {
       $currencies = currencies_load();
-      $transaction->worth[LANGUAGE_NONE][0]['quantity'] = $values['quantity'];
-      $transaction->worth[LANGUAGE_NONE][0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
+      $worths[0]['quantity'] = $values['quantity'];
+      $worths[0]['currcode'] = $values['currcode'] ? $values['currcode'] : key($currencies);
       unset($values['quantity'], $values['currcode']);
     }
-    else {//if worths is not indicated, create a value for each currency the user is permitted to use
+    if (empty($worths)) {
+    //if worths is not indicated, create a value for each currency the user is permitted to use
       //check that the creator is actually permitted to use this currency
       if ($for_me) $currencies =  currencies_load($GLOBALS['user']);
       else $currencies = currencies_load();
       foreach (array_keys($currencies) as $currcode) {
-        $transaction->worth[LANGUAGE_NONE][] = array(
+        $worths[] = array(
           'quantity' => 0,
           'currcode' => $currcode
         );
       }
     }
+    $transaction->worth[LANGUAGE_NONE] = $worths;
     //probably the following fieldapi fields should be handled someotherhow, but this works
     //and is particularly convenient for when transactions are created without awareness of the field API.
     //
@@ -286,6 +291,9 @@ class mcapiEntityController extends EntityAPIController {
     }
     if (isset($creator)) {
       $query->condition('creator', (array)$creator);
+    }
+    if (isset($type)) {
+      $query->condition('type', (array)$type);
     }
     if (isset($involving)) {
       $query->condition(db_or()

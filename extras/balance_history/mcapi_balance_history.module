@@ -1,12 +1,5 @@
 <?php
 
-
-/**
- * Implements hook_init().
- */
-function google_chart_tools_init() {
-}
-
 /*
  * implements hook_block_info
  */

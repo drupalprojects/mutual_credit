@@ -33,7 +33,6 @@ function accountant_ui_views_default_views() {
     'type' => 'type',
     'state' => 'state',
     'worth' => 'worth',
-    'field_cat' => 'field_cat',
   );
   $handler->display->display_options['style_options']['default'] = '-1';
   $handler->display->display_options['style_options']['info'] = array(
@@ -279,6 +278,7 @@ function accountant_ui_views_default_views() {
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
+  $handler->display->display_options['query']['options']['distinct'] = TRUE;
   $handler->display->display_options['path'] = 'admin/accounting/transactions';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'Manage transactions';

@@ -41,6 +41,51 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
 }
 
 /*
+ * implements hook_field_extra_fields
+ */
+function mcapi_limits_field_extra_fields() {
+  return array(
+    'user' => array(
+      'user' => array(
+        'form' => array(
+          'limits_personal' => array(
+            'label' => t('Balance limits'),
+            'description' => t('Trading limits per currency'),
+            'weight' => 0,
+          ),
+        ),
+        'display' => array(
+          'limits_personal' => array(
+            'label' => t('Balance limits'),
+            'description' => t('Trading limits per currency'),
+            'weight' => 0,
+          ),
+        )
+      )
+    )
+  );
+}
+
+/*
+ * implements hook_user_view
+ */
+function mcapi_limits_user_view($account, $view_mode, $langcode) {
+  module_load_include('inc', 'mcapi_limits');
+  //get all the currencies with personal limits, so as to display config fields on the user profile form
+  foreach (currencies_load($account) as $currcode => $currency) {
+    $limits = limits_get($currcode, $account->uid);
+    $account->content['balance_limits'] = array(
+      '#theme' => 'balance_limits',
+      '#currcode' => $currcode,
+      '#uid' => $account->uid,
+      '#min' => $limits['min'],
+      '#max' => $limits['max'],
+      '#balance' => NULL
+    );
+  }
+}
+
+/*
  * implements mcapi hook_transactions_validate
  * runs only on transaction insertion
  * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
@@ -219,7 +264,6 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
       '#description' => t('These override any limits defined in the currency.') .' '.
          t("Leave blank to inherit the values from the currency's settings"),
       '#type' => 'fieldset',
-      '#weight' => 2
     );
   }
 }
@@ -365,6 +409,7 @@ function balance_limits_view($uid, $currcodes = array()) {
   module_load_include('inc', 'mcapi');
   $renderable = array();
   if (empty($currcodes)) {
+    //attempts to show the balance limits for ALL currencies, not only exchange currencies
     $currcodes = array_keys(currencies_load(user_load($uid)));
   }
   foreach ($currcodes as $currcode) {
@@ -412,4 +457,21 @@ function trading_limits_view($uid, $currcodes = array()) {
     }
   }
   return $renderable;
+}
+
+/*
+ * implements hook_form_mcapi_misc_options_form_alter
+ * TODO implement this
+ */
+function mcapi_limits_form_mcapi_misc_options_form_alter(&$form, &$form_state) {
+  $form['mcapi_show_limits'] = array(
+    '#title' => t('Show balance limits on profile page'),
+    '#description' => t('Show only personal overrides in profile page') . 'NOT IMPLEMENTED',
+    '#type' => 'radios',
+    '#options' => array(
+      0 => t('Show only personal overrides'),
+      1 => t('Show limits for all currencies'),
+    ),
+    '#default_value' => variable_get('mcapi_show_limits', 1)
+  );
 }

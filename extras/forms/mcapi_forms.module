@@ -211,7 +211,10 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
     $transaction = entity_create('transaction', $defaults);
     //now we have to carefully
     if ($settings['perspective'] == 1) {
-      $transaction->secondperson = $settings['secondperson']['preset'];
+      if (arg(0) == 'user' && $uid = arg(1)) {
+        $transaction->secondperson = $uid;
+      }
+      else $settings['secondperson']['preset'];
       $transaction->direction = $settings['direction']['preset'];
       if (isset($direction)) {
         $transaction->direction = $direction;

@@ -153,25 +153,26 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
   $output = array();
   $serials = transactions_needing_sig_of_user($uid);
   if ($serials) {
-    if (count($serials) > 1) {
-      //add a link to sign all the users transactions at once.
-      //actually need to check permissions here!!!
-      $output[] = array(
-        '#theme' => 'link',
-        '#text' => t('Sign all'),
-        '#path' => "user/$uid/signall",
-        '#options' => array(
-          'attributes' => array(),
-          'html' => FALSE
-        )
-      );
-    }
     $transactions = array();
     foreach ($serials as $serial) {
       $transaction = transaction_load($serial);
+      if (!transaction_operation_access('view', $transaction)) continue;
       $transactions[$transaction->xid] = $transaction;
     }
     $output[] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()), TRUE);
+  }
+  if (count($output) > 1) {
+    //add a link to sign all the users transactions at once.
+    //actually need to check permissions here!!!
+    $output[] = array(
+      '#theme' => 'link',
+      '#text' => t('Sign all'),
+      '#path' => "user/$uid/signall",
+      '#options' => array(
+        'attributes' => array(),
+        'html' => FALSE
+      )
+    );
   }
   return $output;
 }
@@ -282,6 +283,18 @@ function mcapi_signatures_config($form, $form_state) {
         '#type' => 'checkbox',
         '#default_value' => $settings['participants']
       ),
+      'notify' => array(
+        '#title' => t("Send 'pending' notification"),
+        '#description' => t('Use the email template on this page to notify all signatories'),
+        '#type' => 'checkbox',
+        '#default_value' => $settings['notify'],
+        '#weight' => 1,
+        '#states' => array(
+          'visible' => array(
+            ':input[name="notify"]' => array('value' => 1)
+          )
+        ),
+      ),
       'countersignatories' => array(
         '#title' => t('Counter-signers'),
         '#description' => t('Choose one or more users'),
@@ -291,13 +304,7 @@ function mcapi_signatures_config($form, $form_state) {
         '#default_value' => $settings['countersignatories'],
         '#multiple' => TRUE,
         '#required' => FALSE,
-      ),
-      'notify' => array(
-        '#title' => t("Send 'pending' notification"),
-        '#description' => t('Use the email template on this page to notify all signatories'),
-        '#type' => 'checkbox',
-        '#default_value' => $settings['notify'],
-        '#weight' => 5,
+        '#weight' => 2,
       ),
       '#weight' => $w++
     );
@@ -321,7 +328,7 @@ function mcapi_signatures_config($form, $form_state) {
     'body' => array(
       '#title' => t('Body'),
       '#type' => 'textarea',
-      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url:absolute]',
+      '#default_value' => isset($mail_def['body']) ? $mail_def['body'] : '[transaction:url]',
       '#required' => TRUE,
       '#weight' => 1
     ),
