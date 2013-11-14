@@ -9,3 +9,9 @@ mcapi.admin_misc_tab:
   title: Misc
   tab_root_id: mcapi.admin_misc_tab
   weight: 0
+
+mcapi.transaction_view_tab:
+  route_name: mcapi.transaction_view
+  title: View
+  tab_root_id: mcapi.transaction_view_tab
+  weight: 0
