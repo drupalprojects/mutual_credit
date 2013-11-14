@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\CurrencyType;
 
+use Drupal\mcapi\CurrencyTypeBase;
 use Drupal\mcapi\CurrencyTypeInterface;
 
 /**
@@ -18,6 +19,6 @@ use Drupal\mcapi\CurrencyTypeInterface;
  *   description = @Translation("Standard numeric currency")
  * )
  */
-class Decimal implements CurrencyTypeInterface {
+class Decimal extends CurrencyTypeBase implements CurrencyTypeInterface {
 
 }

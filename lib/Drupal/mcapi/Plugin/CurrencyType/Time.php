@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\CurrencyType;
 
+use Drupal\mcapi\CurrencyTypeBase;
 use Drupal\mcapi\CurrencyTypeInterface;
 
 /**
@@ -18,6 +19,6 @@ use Drupal\mcapi\CurrencyTypeInterface;
  *   description = @Translation("Currency based upon time")
  * )
  */
-class Time implements CurrencyTypeInterface {
+class Time extends CurrencyTypeBase implements CurrencyTypeInterface {
 
 }
