@@ -1,4 +1,8 @@
 services:
+  plugin.manager.mcapi.currency_type:
+    class: Drupal\mcapi\Plugin\CurrencyTypePluginManager
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
+
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
     arguments: ['@entity.manager']

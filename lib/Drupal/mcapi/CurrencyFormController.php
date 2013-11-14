@@ -127,14 +127,17 @@ class CurrencyFormController extends EntityFormController {
       '#tree' => TRUE,
     );
 
+    $currency_type_manager = \Drupal::service('plugin.manager.mcapi.currency_type');
+
+    $options = array();
+    foreach ($currency_type_manager->getDefinitions() as $type) {
+      $options[$type['id']] = $type['label'] . ' - ' . $type['description'];
+    }
+
     $form['display']['type'] = array(
       '#title' => t('Type'),
       '#type' => 'radios',
-      '#options' => array(
-        //TODO wrap this in t() when finalised
-        'time' => 'Time (minutes, formated by php locale)',
-        'decimal' => 'Decimal (to 2 places, for now)'
-      ),
+      '#options' => $options,
       '#default_value' => $currency->display['type'],
       '#weight' => 1
     );
