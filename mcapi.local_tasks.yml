@@ -4,8 +4,8 @@ mcapi.admin_tab:
   tab_root_id: mcapi.admin_tab
   weight: 0
 
-mcapi.admin_misc:
+mcapi.admin_misc_tab:
   route_name: mcapi.admin_misc
   title: Misc
-  tab_root_id: mcapi.admin_misc
+  tab_root_id: mcapi.admin_misc_tab
   weight: 0
