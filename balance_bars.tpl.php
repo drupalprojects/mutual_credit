@@ -9,13 +9,12 @@
  *   'volume' => float
  *   'count' => integer
  */
+
 $currency = currency_load($currcode);
-if ($currency->issuance == 'acknowledgement') {//A bar chart comparing given to gotten.
 if ($totals->gross_in == 0 && $totals->gross_out== 0) return;
 $id = "given-gotten-".$currcode;
 ?>
 <script type="text/javascript" src="http://www.google.com/jsapi"></script>
-<?php print $currency->human_name; ?>
 <script type="text/javascript">
 function drawGivenGotten() {
   var data = google.visualization.arrayToDataTable([
@@ -23,7 +22,7 @@ function drawGivenGotten() {
     ['', <?php print $totals->gross_in;?>, <?php print $totals->gross_out;?>],
   ]);
   var options = {
-    title:"<?php print t('Given / Gotten'); ?>",
+    title:"<?php print $currency->human_name .' '. t('Given / Gotten'); ?>",
     width:100,
     height:200,
     enableInteractivity: false,
@@ -39,19 +38,3 @@ google.load('visualization', '1', {packages: ['corechart']});
 google.setOnLoadCallback(drawGivenGotten);
 </script>
 <div id="<?php print $id; ?>" style="width:100px; height:200px;"></div>
-
-<?php return; } else {
-
-  //for exchange and commodity currencies, something a little more numeric
-  $balance = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->balance));
-  $income = t('Income: !quant', array('!quant' => theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->gross_in))));
-  $volume = t('Volume: !volume', array('!volume' => theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->volume))));
-  $count = t('Transactions: @count', array('@count' => $totals->count));
-  ?>
-  <div class = "transaction-totals <?php print $currcode;?>">
-    <div class="balance"><?php print $balance; ?></div>
-    <div class="gross-in"><?php print $income; ?></div>
-    <div class="volume"><?php print $volume; ?></div>
-    <div class="count"><?php print $count; ?></div>
-  </div>
-<?php } ?>

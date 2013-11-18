@@ -789,17 +789,8 @@ function theme_worth_element($variables) {
   return '<div ' . drupal_attributes($element['#attributes']) . '>'. $output .'</div>';
 }
 
-/*
- * implements theme template_preprocess_HOOK
- * adds per-currency theming
- */
-function template_preprocess_transaction_totals(&$variables) {
-  $variables['theme_hook_suggestion'] = 'transaction_totals__' . $variables['currcode'];
-}
-
 
 function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
-
   if ($ajax) drupal_add_js('misc/ajax.js', array('type' => 'file'));
   global $language;
   static $operations;
@@ -831,35 +822,6 @@ function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
   }
   return $renderable;
 }
-
-/*
- * block function a nice display of user balances in a currency
- */
-function mcapi_balances_view($uid, $currcodes = array()) {
-  if (empty($currcodes)) {
-    $currcodes = array_keys(currencies_load(user_load($uid)));
-  }
-  $render_array = array();
-  foreach ($currcodes as $currcode) {
-    $issuance = currency_load($currcode)->issuance;
-    if ($issuance == 'acknowledgement') {
-      $render_array[$currcode] = array(
-        '#theme' => 'transaction_totals',
-        '#currcode' => $currcode,
-        '#totals' => transaction_totals($uid, $currcode),
-      );
-    }
-    elseif ($issuance == 'exchange') {
-      $render_array[$currcode] = array(
-        '#theme' => 'transaction_totals',
-        '#currcode' => $currcode,
-        '#totals' => transaction_totals($uid, $currcode),
-      );
-    }
-  }
-  return $render_array;
-}
-
 
 /*
  * Utility functions

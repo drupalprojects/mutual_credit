@@ -67,25 +67,6 @@ function mcapi_limits_field_extra_fields() {
 }
 
 /*
- * implements hook_user_view
- */
-function mcapi_limits_user_view($account, $view_mode, $langcode) {
-  module_load_include('inc', 'mcapi_limits');
-  //get all the currencies with personal limits, so as to display config fields on the user profile form
-  foreach (currencies_load($account) as $currcode => $currency) {
-    $limits = limits_get($currcode, $account->uid);
-    $account->content['balance_limits'] = array(
-      '#theme' => 'balance_limits',
-      '#currcode' => $currcode,
-      '#uid' => $account->uid,
-      '#min' => $limits['min'],
-      '#max' => $limits['max'],
-      '#balance' => NULL
-    );
-  }
-}
-
-/*
  * implements mcapi hook_transactions_validate
  * runs only on transaction insertion
  * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
@@ -331,10 +312,6 @@ function mcapi_limits_block_info() {
   $currencies = currencies_load();
   //only show these blocks if not all currencies are of acknowledgement.
   if (currencies_filter(CURRENCY_TYPE_EXCHANGE, CURRENCY_TYPE_COMMODITY)) {
-    //the block names are the same as the theme callbacks
-    $blocks['balance_limits'] = array(
-      'info' => 'MC '. t("Balance limits")
-    );
     $blocks['trading_limits'] = array(
       'info' => 'MC '. t("Trading limits (How much the user can earn and spend)")
     );
@@ -350,9 +327,8 @@ function mcapi_limits_block_view($delta) {
   if ($settings = _mcapiblock_settings($delta, 'trader_data')) {
     require_once('mcapi_limits.inc');
     $uid = $settings['account']->uid;
-    $function = $delta .'_view';
     $is_me = $uid == $GLOBALS['user']->uid;
-    $content = array_filter($function($uid, $settings['currcodes']));
+    $content = array_filter(trading_limits_view($uid, $settings['currcodes']));
     if (empty($content)) return;
     return array(
       'subject' => $is_me ? t('My limits') : t("@user's limits", array('@user' => strip_tags(format_username($settings['account'])))),
@@ -360,7 +336,6 @@ function mcapi_limits_block_view($delta) {
     );
   }
 }
-
 
 /*
  * Implements views hook_block_configure
@@ -402,34 +377,24 @@ function mcapi_limits_variable_info() {
   return $vars;
 }
 
-/*
- * callback to return render array showing balance limits
- */
-function balance_limits_view($uid, $currcodes = array()) {
-  module_load_include('inc', 'mcapi');
-  $renderable = array();
-  if (empty($currcodes)) {
-    //attempts to show the balance limits for ALL currencies, not only exchange currencies
-    $currcodes = array_keys(currencies_load(user_load($uid)));
-  }
-  foreach ($currcodes as $currcode) {
-    if ($GLOBALS['user']->uid != $uid && !currency_access('trader_data', $currcode)) continue;
-    $limits = limits_get($currcode, $uid);
-    //this chart makes no sense if there isn't a max (or min) limit
-    if (empty($limits['max']) && empty($limits['min'])) continue;
-    $renderable[$currcode] = array(
-      '#theme' => 'balance_limits',
-      '#currcode' => $currcode,
-      '#min' => @$limits['min'],
-      '#max' => @$limits['max'],
-      '#uid' => $uid,
-    );
-  }
-  return $renderable;
+function mcapi_limits_element_info_alter(&$elements) {
+  $elements['wallet']['#pre_render'][] = 'mcapi_limits_pre_render_wallet';
 }
 
-function template_preprocess_balance_limits(&$vars) {
-  $vars['balance'] = transaction_totals($vars['uid'], $vars['currcode'])->balance;
+function mcapi_limits_pre_render_wallet($element) {
+  if (currency_load($element['#currcode'])->issuance != 'commodity') {
+    $limits = limits_get($element['#currcode'], $element['#uid']);
+    if (!empty($limits['min']) && !empty($limits['max'])) {
+      if (abs($limits['min']) == $limits['max']) {
+        //use the gauge
+        $element['#theme'] = 'balance_limits';
+        $element['#min'] = $limits['min'];
+        $element['#balance'] = $element['#totals']->balance;
+        $element['#max'] = $limits['max'];
+      }
+    }
+  }
+  return $element;
 }
 
 /*

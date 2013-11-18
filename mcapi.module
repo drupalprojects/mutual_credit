@@ -345,11 +345,19 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'file' => 'mcapi.inc'
     ),
     'transaction_totals' => array(
-      'template' => 'transaction_totals',
-      'pattern' => 'transaction_totals__',
       'variables' => array(
+        'uid' => '',
         'currcode' => '',
-        'totals' => array()
+        'totals' => NULL
+      ),
+      'file' => 'mcapi.inc'
+    ),
+    'balance_bars' => array(
+      'template' => 'balance_bars',
+      'variables' => array(
+        'uid' => '',
+        'currcode' => '',
+        'totals' => NULL
       ),
       'file' => 'mcapi.inc'
     ),
@@ -463,8 +471,13 @@ function mcapi_update_index() {
 function mcapi_user_view($account, $mode, $language) {
   if ($account->uid == $GLOBALS['user']->uid || currency_access('trader_data', 'credunit')) {
     if (!variable_get('mcapi_show_balances', 0)) {
-      module_load_include('inc', 'mcapi');
-      $account->content['balances'] = mcapi_balances_view($account->uid);
+      foreach (array_keys(currencies_load($account)) as $currcode) {
+        $account->content['wallet'][$currcode] = array(
+          '#type' => 'wallet',
+          '#uid' => $account->uid,
+          '#currcode' => $currcode,
+        );
+      }
     }
   }
 }
@@ -487,11 +500,18 @@ function mcapi_block_view($delta) {
   module_load_include('inc', 'mcapi');
   if ($settings = _mcapiblock_settings($delta, 'trader_data')) {
     if (empty($settings['account']) || empty($settings['account']->uid)) return;
+    foreach ($settings['currcodes'] as $currcode) {
+      $content[$currcode] = array(
+        '#type' => 'wallet',
+        '#uid' => $settings['account']->uid,
+        '#currcode' => $currcode,
+      );
+    }
     return array(
       'subject' => $settings['account']->uid == $GLOBALS['user']->uid ?
         t('Trading status') :
         t("@user's account", array('@user' => strip_tags(format_username($settings['account'])))),
-      'content' => mcapi_balances_view($settings['account']->uid, $settings['currcodes']),
+      'content' => $content,
       '#settings' => $settings,//this is read by mcapi_signatures_block_view_alter
     );
   }
@@ -1166,8 +1186,38 @@ function mcapi_element_info() {
       '#theme' => 'worth_element',
       //custom properties, used for configuration
       '#calc' => FALSE,
-    )
+    ),
+    'wallet' => array(
+      '#input' => FALSE,
+      '#theme' => 'transaction_totals',
+      '#pre_render' => array('mcapi_prerender_wallet'),
+      '#uid' => 0,
+      '#currcode' => array('credunit'),
+      '#totals' =>array()
+    ),
   );
+}
+function mcapi_prerender_wallet($element) {
+  $element['#totals'] = transaction_totals($element['#uid'], $element['#currcode']);
+  if (currency_load($element['#currcode'])->issuance == 'acknowledgement') {
+    $element['#theme'] = 'balance_bars';
+  }
+  return $element;
+}
+
+function theme_transaction_totals($vars) {
+  extract($vars);
+  //for exchange and commodity currencies, something a little more numeric
+  $balance = theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->balance));
+  $income = t('Income: !quant', array('!quant' => theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->gross_in))));
+  $volume = t('Volume: !volume', array('!volume' => theme('worth_item', array('currcode' => $currcode, 'quantity' => $totals->volume))));
+  return '
+  <div class = "transaction-totals '. $currcode.'">
+    <div class="balance">'. $balance. '</div>
+    <div class="gross-in">'. $income .'</div>
+    <div class="volume">'.$volume .'</div>
+    <div class="count">'. t('Transactions: @count', array('@count' => $totals->count)).'</div>
+  </div>';
 }
 
 /*

@@ -141,7 +141,7 @@ function _mcapi_menu() {
   );
 
   //these are all the other exposed operations
-  $items["transaction/%transaction/nojs/%"] = array(
+  $items['transaction/%transaction/nojs/%'] = array(
     'page callback' => 'mcapi_get_op_form',
     'page arguments' => array(3, 1),
     'access callback' => 'entity_access',
@@ -150,7 +150,7 @@ function _mcapi_menu() {
     'delivery callback' => 'drupal_deliver_html_page',
     'file' => 'mcapi.inc'
   );
-  $items["transaction/%transaction/ajax/%"] = array(
+  $items['transaction/%transaction/ajax/%'] = array(
     'page callback' => 'mcapi_get_op_form',
     'page arguments' => array(3, 1, 2),
     'access callback' => 'entity_access',
@@ -160,7 +160,7 @@ function _mcapi_menu() {
     'file' => 'mcapi.inc'
   );
   if (isset($info['filepath'])) {
-    $items["transaction/%transaction/$ajax/%"] += array(
+    $items['transaction/%transaction/$ajax/%'] += array(
       'file' => $info['filepath'],
       'file path' => drupal_get_path('module', $info['module'])
     );
@@ -252,6 +252,7 @@ function mcapi_misc_options_form($form_state) {
     '#title' => t('Sentence format'),
     '#description' => t('Use the tokens in the table below to define how the transaction will read when displayed in sentence mode'),
     '#type' => 'textfield',
+    '#size' => 80,
     '#default_value' => variable_get('mcapi_sentence', mcapi_sentence_default()),
     '#weight' => 5
   );

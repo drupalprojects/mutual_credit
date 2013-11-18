@@ -747,13 +747,14 @@ function mcapi_update_7004() {
   db_query("DELETE FROM {views_display} WHERE id = 'who_paid_whom'");
   db_query("UPDATE {block} SET delta = 'who_gave_what' WHERE delta = 'who_paid_whom' ");
 
-  db_query("UPDATE {block} SET module = 'mcapi', delta = 'balances' WHERE delta = 'mc_balances'");
-
-  db_query("DELETE FROM {block} WHERE module = 'mcapi_limits' AND delta = 'balance_limits'");
-  db_query("UPDATE {block} SET module = 'mcapi_limits' WHERE delta = 'balance_limits'");
-
-  db_query("UPDATE {block} SET module = 'webforms' WHERE module LIKE '%c_webform%'");
-
+  db_delete('block')->condition('delta', 'mc_balances')->execute();
+  db_delete('block')->condition('delta', 'balance_limits')->execute();
+  db_update('block')
+    ->fields(array('module' => 'mcapi_limits'))
+    ->condition('delta', 'balance_limits')->execute();
+  db_update('block')
+    ->fields(array('module' => 'webforms'))
+    ->condition('delta', '%c_webform%')->execute();
 
   db_delete('block')->condition('delta', array(
     'mc_exchanges_all-block_2',//description field is no longer part of this module
@@ -1111,7 +1112,7 @@ function mcapi_update_7023() {
  * rename block settings variables
  */
 function mcapi_update_7024() {
-  if (db_query('SHOW TABLES LIKE {trigger_assignments}')->fetch()) {
+  if (db_query("SHOW TABLES LIKE '{trigger_assignments}'")->fetch()) {
     db_update('trigger_assignments')
      ->fields(array('hook' => 'transaction_update'))
      ->condition('hook', 'transaction_state')

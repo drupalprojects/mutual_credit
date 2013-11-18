@@ -102,11 +102,19 @@ function mcapi_signatures_update_7000() {
   db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
   db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
   db_query('UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL');
+}
+
+/**
+ * update the signature data
+ */
+function mcapi_signatures_update_7001() {
   $pending = db_query("SELECT xid, payer, payee, s.uid, s.serial
     FROM {mcapi_signatures} s
     LEFT JOIN {mcapi_transactions} t
     ON t.xid = s.serial
-    WHERE t.state = :state", array(':state' => TRANSACTION_STATE_PENDING))->fetchAll();
+    WHERE t.state = :state
+    ORDER BY s.serial DESC", array(':state' => TRANSACTION_STATE_PENDING))->fetchAll();
+
   foreach ($pending as $transaction) {
     //change the serial number, coz it used to be the xid, converted from the nid in the existing row
     db_update('mcapi_signatures')
