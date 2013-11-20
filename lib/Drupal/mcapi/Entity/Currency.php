@@ -39,7 +39,7 @@ use Drupal\Core\Annotation\Translation;
  *     "weight" = "weight"
  *   },
  *   links = {
- *     "edit-form" = "admin/accounting/currencies/{mcapi_currencies}"
+ *     "edit-form" = "mcapi.admin_currency_edit"
  *   }
  * )
  */
