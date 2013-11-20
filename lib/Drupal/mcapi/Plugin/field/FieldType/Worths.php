@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\field\Worth.
+ * Contains \Drupal\mcapi\Plugin\Field\FieldType\Worth.
  */
 
-namespace Drupal\mcapi\Plugin\field\field_type;
+namespace Drupal\mcapi\Plugin\Field\FieldType;
 
-use Drupal\field\Plugin\Type\FieldType\ConfigFieldItemBase;
+use Drupal\Core\Field\ConfigFieldItemBase;
 use Drupal\field\FieldInterface;
 use Drupal\Core\TypedData\Annotation\DataType;
 use Drupal\Core\Annotation\Translation;

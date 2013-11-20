@@ -3,10 +3,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\formatter\Worth.
+ * Contains \Drupal\mcapi\Plugin\Field\FieldFormatter\Worth.
  */
 
-namespace Drupal\mcapi\Plugin\field\formatter;
+namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 
 use Drupal\field\Plugin\Type\Formatter\FormatterBase;
 use Drupal\Core\Entity\Field\FieldItemListInterface;
@@ -15,14 +15,14 @@ use Drupal\Core\Entity\Field\FieldItemListInterface;
  * Plugin implementation of the 'text_default' formatter.
  *
  * @FieldFormatter(
- *   id = "worths",
- *   label = @Translation("Worths"),
+ *   id = "worth",
+ *   label = @Translation("Worth"),
  *   field_types = {
  *     "worth",
  *   }
  * )
  */
-class WorthsFormatter extends FormatterBase {
+class WorthFormatter extends FormatterBase {
 
   /**
    * {@inheritdoc}

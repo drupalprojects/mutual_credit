@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\field\widget\WorthfieldWidget.
+ * Contains \Drupal\mcapi\Plugin\Field\FieldWidget\WorthfieldWidget.
  */
 
-namespace Drupal\mcapi\Plugin\field\widget;
+namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Entity\Field\FieldItemListInterface;
 use Drupal\field\Plugin\Type\Widget\WidgetBase;
