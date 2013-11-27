@@ -30,9 +30,9 @@ function mcapi_forms_i18n_object_info() {
       '%ctools_export_ui' => 'name',
     ),
     // To produce edit links automatically.
-    'edit path' => 'admin/accounting/forms/list/%ctools_export_ui/edit',
+    'edit path' => 'admin/accounting/workflow/forms/list/%ctools_export_ui/edit',
     // Auto-generate translate tab.
-    'translate tab' => 'admin/accounting/forms/list/%ctools_export_ui/translate',
+    'translate tab' => 'admin/accounting/workflow/forms/list/%ctools_export_ui/translate',
     // Properties for string translation.
     'string translation' => array(
       // Text group that will handle this object's strings.

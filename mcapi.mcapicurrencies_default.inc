@@ -37,16 +37,16 @@ function mcapi_mcapicurrencies_default() {
       ),
     ),
     'access_operations' => array(
-      'mcapi_undo' => array(
+      'undo' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
-      'mcapi_sign' => array(
+      'sign' => array(
         'transaction_access_callback_pending_signatory' => 'transaction_access_callback_pending_signatory'
       ),
-      'mcapi_undo_pending' => array(
+      'undo_pending' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
-      'mcapi_signoff' => array(
+      'signoff' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       )
     ),
@@ -104,16 +104,16 @@ function mcapi_mcapicurrencies_default() {
       ),
     ),
     'access_operations' => array(
-      'mcapi_undo' => array(
+      'undo' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
-      'mcapi_sign' => array(
+      'sign' => array(
         'transaction_access_callback_pending_signatory' => 'transaction_access_callback_pending_signatory'
       ),
-      'mcapi_undo_pending' => array(
+      'undo_pending' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       ),
-      'mcapi_signoff' => array(
+      'signoff' => array(
         'transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'
       )
     ),

@@ -29,7 +29,7 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
         if ($form['value']['#type'] != 'select') {
           $any_label = check_plain($any_label);
         }
-        $form['value']['#options'] = array('All' => $any_label) + $form['value']['#options'];
+        $form['value']['#options'] = array('All' => $any_label) + (array)$form['value']['#options'];
       }
       return $form;
     }

@@ -259,8 +259,10 @@ class mcapiEntityController extends EntityAPIController {
     return db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
   }
 
-  public function delete($serials) {
-    db_delete('mcapi_transactions')->condition('serial', $serials)->execute();
+  public function delete($xids) {
+    if (count($xids)) {
+      db_delete('mcapi_transactions')->condition('serial', $xids)->execute();
+    }
   }
 
   /*
@@ -319,7 +321,25 @@ class mcapiEntityController extends EntityAPIController {
     }
     return $query->execute()->fetchAllKeyed();
   }
-
+  //this is undocumented.
+  //when users are deleted, their uids should not persist in the transaction table.
+  public function mergeAccounts($main) {
+    $uids = func_get_args();
+    $main = array_shift($uids);
+    foreach ($uids as $uid) {
+      db_update('mcapi_transactions')
+        ->fields(array('payer' => $main))
+        ->condition('payer', $uid)->execute();
+      db_update('mcapi_transactions')
+        ->fields(array('payee' => $main))
+        ->condition('payee', $uid)->execute();
+      $serials = transaction_filter(array('payer' => $main, 'payee' => $main));
+      //this is usually a small number, but strictly speaking should be done in a batch.
+      foreach (array_unique($serials) as $serial) {
+        transaction_undo($serial, MCAPI_CURRENCY_UNDO_DELETE);
+      }
+    }
+  }
 }
 
 function mcapi_parse_conditions($conditions) {

@@ -19,7 +19,6 @@ function mcapi_index_views_views_api() {
 
 //views access control callback
 function views_plugin_access_user_arg_check() {
-  if ($GLOBALS['user']->uid == 1) drupal_set_message('Contact matslats as this views access plugin will be discontinued', 'warning',FALSE);
   return $GLOBALS['user']->uid == arg(1) || user_access('manage all transactions');
 }
 

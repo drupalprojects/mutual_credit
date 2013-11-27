@@ -58,5 +58,6 @@ $certificate_string = str_replace("\n", '<br /><br />', $certificate_string);
   <?php endif; ?>
 
   <?php print render($additional); //any fields we don't know about'?>
+  <?php print render($links); ?>
 <!--/transaction.tpl.php-->
 

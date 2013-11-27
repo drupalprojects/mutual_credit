@@ -20,6 +20,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
     $options['currcode'] = array('default' => array());
     $options['total'] = array('default' => 'balance');
     $options['strip'] = array('default' => FALSE);
+    $options['separator'] = array('default' => ', ');
     return $options;
   }
 
@@ -46,6 +47,15 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
       ),
       '#default_value' => $this->options['total']
     );
+    if (count(currencies_load()) > 1) {
+      $form['separator'] = array(
+        '#title' => t('Separator'),
+        '#description' => t('in case of more than one currency'),
+        '#type' => 'textfield',
+        '#size' => 10,
+        '#default_value' => $this->options['separator']
+      );
+    }
     parent::options_form($form, $form_state);
   }
 
@@ -66,10 +76,13 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
         $elements[$currcode] = array(
           '#theme' => 'worth_item',
           '#quantity' => $quant,
-          '#currcode' => $currcode
+          '#currcode' => $currcode,
+          '#suffix' => $this->options['separator']
         );
       }
     }
+    //remove the last sepator
+    unset($elements[$currcode]['#suffix']);
     return $elements;
   }
 }

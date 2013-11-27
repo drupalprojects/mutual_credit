@@ -857,6 +857,7 @@ function mcapi_update_7000_tokens($string) {
  * Convert a transaction access callback which was superfluous
  */
 function mcapi_update_7010() {
+  module_enable(array('entity'));
   currencies_load();
   $currencies = currencies_load();
   foreach ($currencies as $currcode => $currency) {
@@ -1118,6 +1119,7 @@ function mcapi_update_7024() {
      ->condition('hook', 'transaction_state')
      ->execute();
   }
+  /*
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);
@@ -1129,6 +1131,7 @@ function mcapi_update_7024() {
     }
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
+  */
   //change the names of the block settings variables - this was a bug
   $deltas = db_query("SELECT delta FROM {block} WHERE module LIKE 'mcap%'")->fetchcol();
   foreach ($deltas as $delta) {

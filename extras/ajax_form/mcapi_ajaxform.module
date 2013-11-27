@@ -126,3 +126,12 @@ function mcapi_ajaxform_finished($form, &$form_state) {
 }
 
 
+/**
+ * Implements ctools hook_ctools_plugin_directory().
+ */
+function mcapi_ajaxform_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'content_types') {
+    return 'plugins/content_types';//directory
+  }
+}
+

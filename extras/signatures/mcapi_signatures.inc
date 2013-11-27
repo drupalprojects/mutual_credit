@@ -4,7 +4,7 @@
 function _mcapi_signatures_transaction_operations() {
   //note that strings are given in English and translated elsewhere, as in the menu system
   return array(
-    'mcapi_sign' => array(
+    'sign' => array(
       'title' => 'Sign',
       'description' => 'Sign a pending transaction',
       'sure' => 'Are you sure you want to sign?',
@@ -14,7 +14,7 @@ function _mcapi_signatures_transaction_operations() {
       'weight' => 2,
       'filepath' => 'mcapi_signatures.inc'
     ),
-    'mcapi_signoff' => array(
+    'signoff' => array(
       'title' => 'Sign off',
       'description' => "Sign a pending transaction on behalf of all signatories, so that it moved into 'finished' state.",
       'sure' => 'Are you sure you want to sign off this transaction?',
@@ -24,7 +24,7 @@ function _mcapi_signatures_transaction_operations() {
       'weight' => 5,
       'filepath' => 'mcapi_signatures.inc'
     ),
-    'mcapi_undo_pending' => array(
+    'undo_pending' => array(
       'title' => 'Cancel',
       'description' => 'Cancel a pending transaction',
       'sure' => 'Are you sure you want to cancel this pending transaction?',
@@ -59,7 +59,7 @@ function transaction_op_sign($op, $transaction) {
  * operation access callback from mcapi_signatures_transaction_operations
  * this doesn't rely on user settings at all.
  */
-function transaction_op_sign_access($callbacks, $transaction) {
+function transaction_op_sign_access($op, $transaction, $currency) {
   if ($transaction->state == TRANSACTION_STATE_PENDING &&
     property_exists($transaction, 'pending_signatures') &&
     array_key_exists($GLOBALS['user']->uid, $transaction->pending_signatures) &&
@@ -79,17 +79,17 @@ function transaction_op_signoff($op, $transaction) {
 /*
  * operation access callback from mcapi_signatures_transaction_operations
  */
-function transaction_op_signoff_access($callbacks, $transaction) {
+function transaction_op_signoff_access($op, $transaction, $currency) {
   if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
-  return _transaction_check_access_callbacks($callbacks, $transaction);
+  return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
 /*
  * operation access callback from mcapi_signatures_transaction_operations
  */
-function transaction_op_undo_pending_access($callbacks, $transaction) {
+function transaction_op_undo_pending_access($op, $transaction, $currency) {
   if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
-  return _transaction_check_access_callbacks($callbacks, $transaction);
+  return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
 function mcapi_signall($form, $form_state, $account) {
@@ -124,7 +124,7 @@ function _set_form_state_to_pending(&$form, $form_state) {
   $type = isset($form['type']['#value']) ? $form['type']['#value'] : $form['type']['#default_value'];//yuk
   if (in_array($type, _get_signable_transaction_types())) {
     $config = _signature_settings_default($type);
-    if ($config['participants'] || count($config['countersignatories'])) {
+    if ($config['participants'] || $config['countersignatories']) {
       $form['state'] = array(
         '#type' => 'value',
         '#value' => TRANSACTION_STATE_PENDING
@@ -139,7 +139,7 @@ function list_pending_for_uid($uid, $currcodes = array()) {
   //couldn't be bothered with a theme callback for this
   $waiting_on = list_waiting_on_uid($uid, $currcodes);
   $waiting_not_on = list_waiting_not_on_uid($uid, $currcodes);
-  if (count($waiting_on || count($waiting_not_on))) {
+  if (count($waiting_on) ||count($waiting_not_on)) {
     return array(
       '#prefix' => '<div class = "user-pending">',
       'waiting on' => $waiting_on,

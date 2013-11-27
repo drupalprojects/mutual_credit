@@ -131,11 +131,12 @@ function transaction_update($op, $transaction, $old_state = NULL) {
  * Undo according to the appropriate delete mode.
  * NB No accounting checks take place before deletings.
  */
-function transaction_undo($serial) {
+function transaction_undo($serial, $mode = NULL) {
   //load all the transactions sharing this serial as equals in an array, not as parent/children
   $xids = array_keys(transaction_filter(array('serial' => $serial)));
   $transactions = entity_load('transaction', $xids);
-  switch(variable_get('mcapi_controller_delete_mode')) {
+  if (is_null($mode)) $mode = variable_get('mcapi_controller_delete_mode');
+  switch($mode) {
     case MCAPI_CURRENCY_UNDO_ERASE:
       $transaction = current($transactions);
       $old_state = $transaction->state;
@@ -148,7 +149,7 @@ function transaction_undo($serial) {
         $xids[] = $transaction->xid;
       }
       entity_get_controller('transaction')->delete($xids);
-      entity_delete_multiple($entity_type, $xids);
+      entity_delete_multiple('transaction', $xids);
       break;
 
     case MCAPI_CURRENCY_UNDO_REVERSE:
@@ -161,7 +162,7 @@ function transaction_undo($serial) {
         unset($reversed->created);
         if ($field = variable_get('transaction_description_field', '')) {
           $entity = entity_get_info('transaction');
-          $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => $entity['label callback']($transaction)));
+          $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => entity_label('transaction', $transaction)));
         }
         $reverseds[] = $reversed;
       }
@@ -428,7 +429,7 @@ function mcapi_search_execute($keys = NULL, $conditions = NULL) {
   foreach ($find as $item) {
     // Render the node.
     $transaction = transaction_load($item->sid);//sid is actually the serial number
-    if (!transaction_operation_access('mcapi_view', $transaction, $GLOBALS['user'])) continue;
+    if (!transaction_operation_access('view', $transaction, $GLOBALS['user'])) continue;
     $uri = entity_uri('transaction', $transaction);
     $results[$item->sid] = array(
       'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
@@ -786,9 +787,9 @@ function transaction_operation_access($op, $transaction = NULL) {
   $operations = transaction_operations();
   if (is_object($transaction)) {
     mcapi_operation_include($operations[$op]);
-//    if (!$transaction->worth)debug($transaction);
     foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-      if ($operations[$op]['access callback']($op, $transaction)) continue;
+      $currency = currency_load($item['currcode']);
+      if ($operations[$op]['access callback']($op, $transaction, $currency)) continue;
       return FALSE;
     }
     return TRUE;
@@ -934,7 +935,6 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
 /**
  * theme wrapper implementation
  * a wrapper round transactions of all view modes
- * puts the operations after the transaction
  */
 function theme_transaction($vars) {
   $transaction = $vars['transaction'];
@@ -1346,6 +1346,7 @@ function mcapi_field_widget_info() {
     )
   );
 }
+
 /*
  * implements hook_field_widget_form().
  * This is called once for ALL $items because the widget 'behavior' determines it, like checkboxes
@@ -1496,31 +1497,21 @@ function _worthitems_to_worths(array $worthitems) {
 }
 
 /*
- * implements alter hook_form_user_cancel_confirm_form().
- * if they have already traded, they can only be blocked, not deleted
+ * implements hook_user_delete().
+ * all transactions revert to the reservoir
  */
-function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
-  form_load_include($form_state, 'admin.inc', 'mcapi');
-  $traded = db_query(
-    "SELECT xid FROM {mcapi_transactions} WHERE (payer = :uid OR payee = :uid) AND state > 0",
-    array(':uid' => $form['uid']['#value'])
-  )->fetchfield();
-  if ($traded) {
-    unset($form['user_cancel_method']['user_cancel_reassign']);
-    unset($form['user_cancel_method']['user_cancel_delete']);
+function mcapi_user_delete($account) {
+  foreach (currencies_load($account) as $currency) {
+    entity_get_controller('transaction')->mergeAccounts($currency->reservoir, $account->uid);
   }
 }
 
 /*
- * implements alter hook_user_cancel_methods().
- * creates a new method
+ * implements alter hook_user_cancel_confirm_form_alter().
+ * Explain what happens to transactions
  */
-function mcapi_user_cancel_methods_alter(&$methods) {
-  module_load_include('admin.inc', 'mcapi');
-  $methods['user_cancel_mcapi'] = array(
-    'title' => t('Disable the account and delete its content.'),
-    'description' => t('Your account will be blocked and you will no longer be able to log in. All of your content will be deleted.'),
-  );
+function mcapi_form_user_cancel_confirm_form_alter(&$form, $form_state) {
+  $form['user_cancel_method']['#description'] = t('WARNING: deleting the account will reassign the transactions to the reservoir account.');
 }
 
 /*

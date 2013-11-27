@@ -183,23 +183,18 @@ function mcapi_signatures_block_view($delta) {
   if (empty($settings['account']) || empty($settings['account']->uid)) return;
   module_load_include('inc', 'mcapi_signatures');
   if ($delta == 'user_pending') {
-    return array(
-      'subject' => t('Pending transactions'),
-      'content' => list_pending_for_uid($settings['account']->uid, $settings['currcodes'])
-    );
+    $title = t('Pending transactions');
+    $content = list_pending_for_uid($settings['account']->uid, $settings['currcodes']);
   }
   elseif($delta == 'waiting_on_uid') {
-    return array(
-      'subject' => t('Awaiting my signature'),
-      'content' => list_waiting_on_uid($settings['account']->uid, $settings['currcodes'])
-    );
+    $title = t('Awaiting my signature');
+    $content = list_waiting_on_uid($settings['account']->uid, $settings['currcodes']);
   }
   elseif($delta == 'uid_waiting_on') {
-    return array(
-      'subject' => t('Awaiting another signature'),
-      'content' => list_waiting_not_on_uid($settings['account']->uid, $settings['currcodes'])
-    );
+    $title = t('Awaiting another signature');
+    $content = list_waiting_not_on_uid($settings['account']->uid, $settings['currcodes']);
   }
+  return array('title' => $title, 'content' => $content);
 }
 /*
  * implements hook_block_configure
@@ -317,7 +312,6 @@ function mcapi_signatures_transaction_operations() {
 function mcapi_signatures_transaction_access_callbacks() {
   return array(
     'transaction_access_callback_signatory' => t('Signatories to the transaction'),
-    'transaction_access_callback_pending_signatory' => t('Signatories to the transaction who have not signed'),
   );
 }
 /*
@@ -329,15 +323,6 @@ function transaction_access_callback_signatory($transaction) {
   //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
   if (!property_exists($transaction, 'pending_signatures')) return FALSE;
   return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
-}
-
-/*
- * callback for transaction_access
- */
-function transaction_access_callback_pending_signatory($transaction) {
-  if (transaction_access_callback_signatory($transaction)) {
-    return $transaction->pending_signatures[$GLOBALS['user']->uid];
-  }
 }
 
 /*
@@ -380,6 +365,26 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
       'transaction_access_callback_perm_manage_all'
     )
   );
+}
+
+/*
+ * implements hook_user_delete
+ * delete all pending transactions and remove all signatures
+ */
+function mcapi_signatures_user_delete($account) {
+  $serials = array_unique(mcapi_filter(array('state' => TRANSACTION_STATE_PENDING)));
+  foreach ($serials as $serial) {
+    transaction_undo($serial, MCAPI_CURRENCY_UNDO_DELETE);
+  }
+  db_delete('mcapi_signatures')->condition('uid', $account->uid)->execute();
+}
+
+/*
+ * implements alter hook_user_cancel_confirm_form_alter().
+ * Explain what happens to pending transactions
+ */
+function mcapi_signatures_form_user_cancel_confirm_form_alter(&$form, $form_state) {
+  $form['user_cancel_method']['#description'] .= ' '. t('Pending transactions will be completely deleted.');
 }
 
 /*

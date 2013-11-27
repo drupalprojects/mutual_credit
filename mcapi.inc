@@ -271,18 +271,18 @@ function mcapi_submit_op_form($operation, $transaction, $values = array()) {
 }
 
 
-function mcapi_view_access($op, $transaction) {
-  return _transaction_check_access_callbacks($op, $transaction);
+function mcapi_view_access($op, $transaction, $currency) {
+  return _transaction_check_access_callbacks($currency->view_transaction_states[$transaction->state], $transaction);
 }
 
 /*
  * These two callbacks from transaction_operation 'undo'
  * Undo is the only 'exposed' operation in this module
  */
-function transaction_op_undo_access($op, $transaction) {
+function transaction_op_undo_access($op, $transaction, $currency) {
   if ($transaction->state != TRANSACTION_STATE_FINISHED) return FALSE;
   if ($transaction->type == 'remote') return FALSE;//otherwise the intertrading module has to somehow intervene
-  return _transaction_check_access_callbacks($op, $transaction);
+  return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 function transaction_op_undo_form($op, $transaction) {
   return array('notify' => array(
@@ -307,27 +307,12 @@ function transaction_op_undo($operation, $transaction, $values) {
   }
   return array('#markup' => $message);
 }
-
 /*
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
  */
-function _transaction_check_access_callbacks($op, $transaction) {
-  $currencies = currencies_load();
-  if ($op == 'mcapi_view') {
-    $property = 'view_transaction_states';
-    $key = $transaction->state;
-  }
-  else {
-    $property = 'access_operations';
-    $key = $op;
-  }
-  //normally would use $items = field_get_items($transaction), but we are sure of language
-  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    $callbacks = &$currencies[$item['currcode']]->{$property}[$key];
-//    if (empty($callbacks)){ddebug_backtrace();die();}
-    foreach ($callbacks as $function) {
-      if ($function($transaction)) return TRUE;
-    }
+function _transaction_check_access_callbacks($callbacks, $transaction) {
+  foreach ($callbacks as $function) {
+    if ($function($transaction)) return TRUE;
   }
   return FALSE;
 }
@@ -759,8 +744,7 @@ function theme_worth_item(&$variables) {
     $quantity .= $currency->display['delimiter'] . $subdivision;
   }
   $minus = $variables['quantity'] < 0 ? '-' : '';
-  //add the extra space to save writing a multiple rendering function
-  return $minus . str_replace('[quantity]', $quantity, $currency->display['format']) .' ';
+  return $minus . str_replace('[quantity]', $quantity, $currency->display['format']);
 }
 
 /*
@@ -808,14 +792,14 @@ function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
   );
   $base = 'transaction/'. $transaction->serial;
   foreach ($operations as $op => $info) {
-    if (!$view && $op == 'mcapi_view') continue;
+    if (!$view && $op == 'view') continue;
     if (transaction_operation_access($op, $transaction)) {
       $renderable['#links'][$op] = array(
         'title' => $info['title'],
         'href' =>  $base,
         'attributes' => $ajax ? array('class' => array('use-ajax')) : array()
       );
-      if ($op != 'mcapi_view') {
+      if ($op != 'view') {
         $renderable['#links'][$op]['href'] .= '/nojs/'. $op;
       }
     }

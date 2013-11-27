@@ -113,6 +113,7 @@ function mcapi_forms_form_mcapi_forms_form_alter(&$form, &$form_state, $form_id)
  * Implements hook_block_info
  */
 function mcapi_forms_block_info() {
+  if (!module_exists('block')) return;//we have a panels plugin instead
   $mcapi_forms = mcapi_forms_load();
   $blocks = array();
   foreach ($mcapi_forms as $mcapi_form) {
@@ -134,6 +135,8 @@ function mcapi_forms_block_view($delta) {
   $menu_item = menu_get_item();
   if ($menu_item['page_callback'] == 'mcapi_get_form') return;
   //load the form and check access first
+  $form = mcapi_forms_load($delta);
+  if (empty($form->data)) return;//for example if the form has been disabled
   $settings = mcapi_forms_load($delta)->data['architecture'];
   //we know that the access is a user_chooser callback separated from a single arg by a colon
   $access_settings = explode(':', $settings['access']);
@@ -295,14 +298,17 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
  * load an mcapi_form by name, using ctools
  * it seems that ctools isn't doing any caching
  */
-function mcapi_forms_load($name = '') {
+function mcapi_forms_load($name = '', $all = FALSE) {
   static $items;
   if (empty($items)) {
-    $cache = cache_get('mcapi_forms');
+    //$cache = cache_get('mcapi_forms');
     if (empty($cache->data)) {
       ctools_include('export');
       $items = ctools_export_crud_load_all('mcapi_forms');
       drupal_alter('mcapi_forms', $items);
+      foreach ($items as $key => $item) {
+      	if (empty($item->status) && !$all) unset($items[$key]);
+      }
       cache_set('mcapi_forms', $items);
     }
     else $items = &$cache->data;
@@ -317,8 +323,10 @@ function mcapi_forms_load($name = '') {
  * Implements ctools hook_ctools_plugin_directory
  */
 function mcapi_forms_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'ctools' && $plugin == 'export_ui') {
-    return 'plugins/export_ui';//directory
+  if ($module == 'ctools') {
+    if (in_array($plugin, array('export_ui', 'content_types'))) {
+       return 'plugins/'.$plugin;
+    }
   }
 }
 /*
@@ -398,7 +406,7 @@ function mcapi_forms_form_field_ui_field_edit_form_alter(&$form, $form_state) {
  */
 function _mcapi_i18n_object($settings) {
   if (is_string($settings)) {
-    $settings = mcapi_forms_load($settings)->data;
+    $settings = mcapi_forms_load($settings, TRUE)->data;
   }
   return array(
     'name' => $settings['info']['name'],

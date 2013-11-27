@@ -22,20 +22,17 @@ function limits_settings_subform(&$form, $form_state, $currency) {
     $limits_callback = 'limits_none';
     $defaults = array();
   }
-  $form_callback = $limits_callback .'_form';
-  if (!function_exists($form_callback)) {
-    return array();
-  }
-  if (empty($form['limits'][$limits_callback])) {
-    $form['limits'][$limits_callback] = array();
-  }
-  //get the fields
-  $form['limits'][$limits_callback] += $form_callback($currency, $defaults);
 
-  $form['limits'][$limits_callback] += array(
-    '#prefix' => '<div id="limits-settings">',
-    '#suffix' => '</div>',
+  $form['limits'][$limits_callback] = array(
+  		'#prefix' => '<div id="limits-settings">',
+  		'#suffix' => '</div>',
   );
+
+  $form_callback = $limits_callback .'_form';
+  if (function_exists($form_callback)) {
+    //get the fields
+    $form['limits'][$limits_callback] += $form_callback($currency, $defaults);
+  }
   //we return the array for the sake of the ajax callback but also the main form builder has been altered by reference
   return $form['limits'][$limits_callback];
 }
@@ -211,20 +208,14 @@ function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
       '#description' => t('How will the limits be determined?'),
       '#type' => 'select',
       '#options' => module_invoke_all('mcapi_limits_info'),
-      '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'no_limits',
+      '#default_value' => isset($currency->limits['limits_callback']) ? $currency->limits['limits_callback'] : 'limits_none',
       '#weight' => -1,
       '#ajax' => array(
         'callback' => 'limits_settings_subform',
         'wrapper' => 'limits-settings',
       ),
     ),
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_ACKNOWLEDGEMENT)
-      )
-    ),
   );
-  $form['acknowledgement']['#children'] .= '<br /><br /><strong>'.t('Balance limits to not apply to this currency type.').'</strong>';
   limits_settings_subform($form, $form_state, $currency);
   //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
   $form['limits']['personal'] = array(
@@ -233,6 +224,11 @@ function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
     '#type' => 'checkbox',
     '#default_value' => isset($currency->limits['personal']) ? $currency->limits['personal'] : 0,
     '#weight' => 5,
+  	'#states' => array(
+  	  'invisible' => array(
+  		  ':input[name="limits[limits_callback]"]' => array('value' => 'limits_none')
+  	  )
+  	)
   );
   $form['limits']['skip'] = array(
     '#title' => t('Skip balance limit check'),
@@ -247,6 +243,11 @@ function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
       'owner' => t("for transactions created by the currency owner"),
       'reservoir' => t("for the reservoir account")
     ),
+  	'#states' => array(
+  	  'invisible' => array(
+  		  ':input[name="limits[limits_callback]"]' => array('value' => 'limits_none')
+  	  )
+  	),
     '#weight' => 6,
   );
 }

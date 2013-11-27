@@ -220,7 +220,7 @@ function hook_transaction_cluster_alter(){}
 function hook_transaction_operations(){
   return array(
     //the array key is a hook, so be careful with the namespace
-    'mcapi_undo' => array(
+    'undo' => array(
       //this is used for the MENU_LOCAL_ACTION
       //operations without a title are for internal use only
       'title' => "Undo",
@@ -230,9 +230,9 @@ function hook_transaction_operations(){
       'sure' => "Are you sure you want to undo? Only the site administrator will be able to restore this transaction.",
       //(optional) affects the order the operations are shown in.
       'weight' => 3,
-      //function taking args $op and $transaction to see if the current user can do the op.
+      //function taking args $op, $transaction, $currency to see if the current user can do the op.
       'access callback' => 'mcapi_undo_access',
-      //optional key to provide config form widget in currency
+      //optional key to provide operation access settings in currency configuration
       'access form' => 'operations_config_default_access',//this is the default, can also be left blank
       //(optional), path to file, relative to the module root, containing form and submit callbacks
       'filepath' => 'mcapi.inc',

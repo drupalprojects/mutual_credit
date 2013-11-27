@@ -132,7 +132,7 @@ function _mcapi_menu() {
     //this is quicker than using entity_access
     //note that this function includes mcapi.inc itself
     'access callback' => 'entity_access',
-    'access arguments' => array('mcapi_view', 'transaction', 1),
+    'access arguments' => array('view', 'transaction', 1),
     'type' => MENU_CALLBACK,
   );
   $items['transaction/%transaction/view'] = array(
@@ -252,7 +252,8 @@ function mcapi_misc_options_form($form_state) {
     '#title' => t('Sentence format'),
     '#description' => t('Use the tokens in the table below to define how the transaction will read when displayed in sentence mode'),
     '#type' => 'textfield',
-    '#size' => 80,
+    '#size' => 100,
+    '#maxlength' => 160,
     '#default_value' => variable_get('mcapi_sentence', mcapi_sentence_default()),
     '#weight' => 5
   );
@@ -308,7 +309,7 @@ function mcapi_workflow() {
     $renderable['types']['#rows'][$type]['name'] = $type;
   }
   foreach (transaction_operations('1', '0') as $op => $info) {
-    if ($op == 'mcapi_view')continue;
+    if ($op == 'view')continue;
     $renderable['ops']['#rows'][$op] = array(
       'name' => $info['title'],
       'description' =>  $info['description'],
@@ -578,10 +579,10 @@ function mcapi_currency_form(&$form, &$form_state){
     '#group' => 'additional_settings',
     '#weight' => 2
   );
-  foreach (transaction_operations(TRUE, FALSE) as $callback => $op_info) {
-    if ($callback == 'mcapi_view') continue;
+  foreach (transaction_operations(TRUE, FALSE) as $op => $op_info) {
+    if ($op == 'view') continue;
     if ($op_info['access form']) {
-      $form['access_operations'][$callback] = $op_info['access form']($op_info, $currency);
+      $form['access_operations'][$op] = $op_info['access form']($op_info, $currency);
     }
   }
 
@@ -1132,20 +1133,20 @@ function _transaction_operations() {
  * note that filepath mcapi.inc is not needed because that file is included automatically
  */
 function mcapi_transaction_operations() {
-  $operations['mcapi_view'] = array(
+  $operations['view'] = array(
     'title' => 'View',
     'access callback' => 'mcapi_view_access',
     'weight' => 0
   );
   t('View');
-  $operations['mcapi_register'] = array(
+  $operations['register'] = array(
     'title' => 'Register (internal use only)',
     'description' => 'A new transaction was registered',
     'weight' => 1
   );
   t('Register (internal use only)');
   t('A new transaction was registered');
-  $operations['mcapi_update'] = array(
+  $operations['update'] = array(
     'title' => 'Update (internal use only)',
     'description' => 'A transaction was changed',
     'weight' => 2
@@ -1153,7 +1154,7 @@ function mcapi_transaction_operations() {
   t('Update (internal use only)');
   t('A transaction was changed');
 
-  $operations['mcapi_undo'] = array(
+  $operations['undo'] = array(
     'title' => 'Undo',
     'description' => 'Undo a finished transaction, and its dependents',
     'sure' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE ?
@@ -1170,18 +1171,6 @@ function mcapi_transaction_operations() {
   t('Undo a finished transaction, and its dependents');
   t('Are you sure you want to undo? Only the site administrator will be able to restore this transaction.');
   t('Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)');
-}
-
-/*
- * user cancel method callback
- * see mcapi_form_user_cancel_confirm_form_alter
- */
-function mcapi_user_cancel($edit, $account, $method) {
-  if ($method == 'user_cancel_mcapi') {
-    foreach(node_load_multiple(NULL, array('uid' => $account->uid)) as $node) {
-      node_delete($node);
-    }
-  }
 }
 
 function _transaction_type_selector($default, $multiple = TRUE, $exclude = NULL) {
