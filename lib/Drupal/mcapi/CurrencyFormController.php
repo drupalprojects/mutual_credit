@@ -8,8 +8,37 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\EntityFormController;
+use Drupal\Component\Plugin\PluginManagerBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CurrencyFormController extends EntityFormController {
+
+  /**
+   * The widget or formatter plugin manager.
+   *
+   * @var \Drupal\Component\Plugin\PluginManagerBase
+   */
+  protected $pluginWidgetManager;
+
+  /**
+   * Constructs a new CurrencyFormController.
+   *
+   * @param \Drupal\Component\Plugin\PluginManagerBase $plugin_manager
+   *   The widget or formatter plugin manager.
+   */
+  public function __construct(PluginManagerBase $plugin_manager) {
+    $this->pluginWidgetManager = $plugin_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('plugin.manager.mcapi.currency_widget')
+    );
+  }
+
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */

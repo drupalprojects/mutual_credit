@@ -3,6 +3,10 @@ services:
     class: Drupal\mcapi\Plugin\CurrencyTypePluginManager
     arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
 
+  plugin.manager.mcapi.currency_widget:
+    class: Drupal\mcapi\Plugin\CurrencyWidgetManager
+    arguments: ['@container.namespaces', '@cache.field', '@module_handler', '@language_manager', '@plugin.manager.field.field_type']
+
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
     arguments: ['@entity.manager']
