@@ -68,6 +68,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
+    $widgetManager = \Drupal::service('plugin.manager.mcapi.currency_widget');
+    $widgets = array_keys($widgetManager->getOptions($values['type']));
+
     $values += array(
       'settings' => array(),
       'prefix' => '$',
@@ -75,9 +78,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'zero' => '',
       'access' => array(),
       'access_operations' => array(),
+      'widget' => reset($widgets),
+      'widget_settings' => array(),
     );
 
     $values['settings'] += \Drupal::service('plugin.manager.mcapi.currency_type')->getDefaultSettings($values['type']);
+
+    $values['widget_settings'] += $widgetManager->getDefaultSettings($values['widget']);
+
     $values['access'] += array(
       'membership' => 'user_chooser_segment_perms:transact',
       'trader_data' => 'user_chooser_segment_perms:transact',
