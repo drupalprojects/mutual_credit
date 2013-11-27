@@ -50,7 +50,15 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $issuance;
   public $uid;
   public $reservoir;
-  public $display;
+  public $type;
+  public $settings;
+  public $prefix;
+  public $suffix;
+  public $zero;
+  public $widget;
+  public $widget_settings;
+  public $formatter;
+  public $formatter_settings;
   public $access;
   public $view_transaction_states;
   public $access_operations;
