@@ -18,6 +18,21 @@ mcapi.misc:
       type: boolean
       label: Allow more than one currency in transactions
 
+mcapi.currency.settings.decimal:
+  type: mapping
+  label: Decimal Currency Settings
+  mapping:
+    scale:
+      type: integer
+      label: Number of Decimals
+
+mcapi.currency.settings.time:
+  type: mapping
+  label: Time Currency Settings
+
+mcapi.currency.settings.lollipops:
+  type: mapping
+  label: Lollipops Currency Settings
 
 mcapi.currency.*:
   type: mapping
@@ -41,40 +56,30 @@ mcapi.currency.*:
     reservoir:
       type: integer
       label: 'Reservoir account'
-    display:
-      type: mapping
-      label: 'Appearence'
-      mapping:
-        type:
-          type: string
-          label: 'Type'
-        widget:
-          type: integer
-          label: 'Widget'
-        granularity:
-          type: integer
-          label: 'Granularity'
-        delimiter:
-          type: string
-          label: 'Delimiter'
-        select:
-          type: text
-          label: 'Options'
-        divisions:
-          type: sequence
-          label: 'Divisions'
-          sequence:
-            - type: string
-              label: 'Division'
-        prefix:
-          type: string
-          label: 'Prefix'
-        suffix:
-          type: string
-          label: 'Suffix'
-        zero:
-          type: string
-          label: 'Zero value display'
+    type:
+      type: string
+      label: 'Type'
+    settings:
+      type: mcapi.currency.settings.[%parent.type]
+    widget:
+      type: string
+      label: 'Widget'
+    widget_settings:
+      type: mcapi.currency.widget.[%parent.widget]
+    formatter:
+      type: string
+      label: 'Formatter'
+    formatter_settings:
+      type: mcapi.currency.formatter.[%parent.formatter]
+    prefix:
+      type: string
+      label: 'Prefix'
+    suffix:
+      type: string
+      label: 'Suffix'
+    zero:
+      type: string
+      label: 'Zero value display'
     access:
       type: mapping
       label: 'Currency access'

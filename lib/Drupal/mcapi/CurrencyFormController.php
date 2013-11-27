@@ -8,8 +8,53 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\EntityFormController;
+use Drupal\Component\Plugin\PluginManagerBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CurrencyFormController extends EntityFormController {
+
+  /**
+   * The currency plugin manager
+   *
+   * @var \Drupal\Component\Plugin\PluginManagerBase
+   */
+  protected $pluginCurrencyManager;
+
+  /**
+   * The widget  plugin manager.
+   *
+   * @var \Drupal\Component\Plugin\PluginManagerBase
+   */
+  protected $pluginWidgetManager;
+
+  /**
+   * Constructs a new CurrencyFormController.
+   *
+   * @param \Drupal\Component\Plugin\PluginManagerBase $plugin_manager
+   *   The widget or formatter plugin manager.
+   */
+  public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager) {
+    $this->pluginCurrencyManager = $currency_manager;
+    $this->pluginWidgetManager = $widget_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('plugin.manager.mcapi.currency_type'),
+      $container->get('plugin.manager.mcapi.currency_widget')
+    );
+  }
+
+  /**
+   * Get the widget options.
+   */
+  public function getWidgetOptions($currency_type) {
+    return $this->pluginWidgetManager->getOptions($currency_type);
+  }
+
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
@@ -124,75 +169,38 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
       '#weight' => 5,
+    );
+
+    $currency_type = $this->pluginCurrencyManager->createInstance($currency->type);
+    $type_definition = $this->pluginCurrencyManager->getDefinition($currency->type);
+
+    $form['display']['type'] = array(
+      '#type' => 'markup',
+      '#markup' => $this->t('@label - @description', array('@label' => $type_definition['label'], '@description' => $type_definition['description'])),
+    );
+
+    if (method_exists($currency_type, 'settingsForm')) {
+      $form['display']['settings'] = array(
+        '#tree' => TRUE,
+      );
+      $form['display']['settings'] = $currency_type->settingsForm($form['display']['settings'], $form_state, $currency);
+    }
+
+    $form['display']['widget'] = array(
+      '#type' => 'select',
+      '#title' => $this->t('Widget'),
+      '#default_value' => $currency->widget,
+      '#options' => $this->getWidgetOptions($currency->type),
+    );
+
+    $form['display']['widget_settings'] = array(
       '#tree' => TRUE,
     );
 
-    $currency_type_manager = \Drupal::service('plugin.manager.mcapi.currency_type');
-
-    $options = array();
-    foreach ($currency_type_manager->getDefinitions() as $type) {
-      $options[$type['id']] = $type['label'] . ' - ' . $type['description'];
-    }
-
-    $form['display']['type'] = array(
-      '#title' => t('Type'),
-      '#type' => 'radios',
-      '#options' => $options,
-      '#default_value' => $currency->display['type'],
-      '#weight' => 1
-    );
-    $form['display']['granularity'] = array(
-      '#title' => t('Granularity'),
-      '#type' => 'number',
-      '#max_length' => 1,
-      '#size' => 1,
-      '#min' => 0,
-      '#max' => 8,
-      '#default_value' => $currency->display['granularity'],
-      '#weight' => 2
-    );
-    $form['display']['widget'] = array(
-      '#title' => t('Widget'),
-      '#type' => 'select',
-      '#options' => array(
-        CURRENCY_WIDGET_SINGLEFIELD => t('Cents in same field'),
-        CURRENCY_WIDGET_TEXT => t('Cents in separate field'),
-        CURRENCY_WIDGET_SELECT => t('Custom divisions')
-      ),
-      '#default_value' => $currency->display['widget'],
-      '#weight' => 1
-    );
-    $form['display']['delimiter'] = array(
-      '#title' => t('Delimiter'),
-      '#description' => t('A character to go in between your integer and cents or other formatted subdivisions'),
-      '#type' => 'textfield',
-      '#maxlength' => 3,
-      '#size' => 1,
-      '#default_value' => $currency->display['delimiter'],
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="display[type]"]' => array('value' => 'decimal'),
-        ),
-      ),
-      '#weight' => 2
-    );
-    $form['display']['select'] = array(
-      '#title' => t('Custom divisions'),
-      '#description' => t('Key value pairs'),
-      '#type' => 'textarea',
-      '#rows' => 4,
-      '#default_value' => $currency->display['select'],
-      '#states' => array(
-        'visible' => array(
-          ':input[name="display[widget]"]' => array('value' => CURRENCY_WIDGET_SELECT),
-        ),
-      ),
-      '#weight' => 2
-    );
     $form['display']['prefix'] = array(
       '#title' => t('Prefix'),
       '#type' => 'textfield',
-      '#default_value' => $currency->display['prefix'],
+      '#default_value' => $currency->prefix,
       '#max_length' => 6,
       '#size' => 6,
       '#weight' => 4
@@ -202,7 +210,7 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'textfield',
       '#max_length' => 6,
       '#size' => 6,
-      '#default_value' => $currency->display['suffix'],
+      '#default_value' => $currency->suffix,
       '#weight' => 5
     );
 
@@ -211,8 +219,8 @@ class CurrencyFormController extends EntityFormController {
       '#title' => t('Zero value display'),
       '#description' => t('Use html.') .' ',
       '#type' => 'textfield',
-      '#default_value' => $currency->display['zero'],
-      '#required' => property_exists($currency, 'display') ? $zeros : FALSE,
+      '#default_value' => $currency->zero,
+      //'#required' => property_exists($currency, 'display') ? $zeros : FALSE,
       '#weight' => 6
     );
     if ($zeros) {
@@ -308,6 +316,10 @@ class CurrencyFormController extends EntityFormController {
     );
 
     return $form;
+  }
+
+  public function currencyTypeCallback($form, $form_state) {
+    return array('display' => $form['display']);
   }
 
   /**

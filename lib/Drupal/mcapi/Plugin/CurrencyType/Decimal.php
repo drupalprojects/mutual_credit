@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\CurrencyType;
 
+use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\CurrencyTypeBase;
 use Drupal\mcapi\CurrencyTypeInterface;
 
@@ -16,9 +17,26 @@ use Drupal\mcapi\CurrencyTypeInterface;
  * @CurrencyType(
  *   id = "decimal",
  *   label = @Translation("Decimal"),
- *   description = @Translation("Standard numeric currency")
+ *   description = @Translation("Standard numeric currency"),
+ *   settings = {
+ *     "scale" = 2
+ *   }
  * )
  */
 class Decimal extends CurrencyTypeBase implements CurrencyTypeInterface {
 
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, array &$form_state, CurrencyInterface $currency) {
+    $form['scale'] = array(
+      '#type' => 'select',
+      '#title' => t('Scale'),
+      '#options' => drupal_map_assoc(range(0, 10)),
+      '#default_value' => $currency->settings['scale'],
+      '#description' => t('The number of digits to the right of the decimal.'),
+    );
+
+    return $form;
+  }
 }

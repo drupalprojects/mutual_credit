@@ -50,7 +50,15 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $issuance;
   public $uid;
   public $reservoir;
-  public $display;
+  public $type;
+  public $settings;
+  public $prefix;
+  public $suffix;
+  public $zero;
+  public $widget;
+  public $widget_settings;
+  public $formatter;
+  public $formatter_settings;
   public $access;
   public $view_transaction_states;
   public $access_operations;
@@ -60,29 +68,28 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
-    foreach (module_implements('permission') as $module) {
-      $function = $module .'_permission';
-      foreach ($function() as $perm => $info) {
-        $options[$module][$perm] = strip_tags($info['title']);
-      }
-    }
+    $widgetManager = \Drupal::service('plugin.manager.mcapi.currency_widget');
+    $widgets = array_keys($widgetManager->getOptions($values['type']));
 
     $values += array(
-      'display' => array(
-        'type' => 'decimal',
-        'granularity' => '2',
-        'widget' => CURRENCY_WIDGET_TEXT,
-        'delimiter' => ':',
-        'before' => '$',
-        'after' => '',
-        'zero' => ''
-      ),
-      'access' => array(
-        'membership' => array(current($options)),
-        'trader_data' => array(current($options)),
-        'system_data' => array(current($options))
-      ),
+      'settings' => array(),
+      'prefix' => '$',
+      'suffix' => '',
+      'zero' => '',
+      'access' => array(),
       'access_operations' => array(),
+      'widget' => reset($widgets),
+      'widget_settings' => array(),
+    );
+
+    $values['settings'] += \Drupal::service('plugin.manager.mcapi.currency_type')->getDefaultSettings($values['type']);
+
+    $values['widget_settings'] += $widgetManager->getDefaultSettings($values['widget']);
+
+    $values['access'] += array(
+      'membership' => 'user_chooser_segment_perms:transact',
+      'trader_data' => 'user_chooser_segment_perms:transact',
+      'system_data' => 'user_chooser_segment_perms:transact',
     );
   }
 }

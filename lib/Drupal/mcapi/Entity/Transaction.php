@@ -21,7 +21,7 @@ use Drupal\mcapi\TransactionInterface;
  *   module = "mcapi",
  *   controllers = {
  *     "storage" = "Drupal\mcapi\TransactionStorageController",
- *     "render" = "Drupal\mcapi\TransactionRenderController",
+ *     "view_builder" = "Drupal\mcapi\TransactionViewBuilder",
  *     "access" = "Drupal\mcapi\TransactionAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi\TransactionFormController",

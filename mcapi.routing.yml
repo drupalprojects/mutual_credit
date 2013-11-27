@@ -21,13 +21,6 @@ mcapi.admin_currency_list:
   requirements:
     _permission: 'configure all currencies'
 
-mcapi.admin_currency_add:
-  path: '/admin/accounting/currencies/add'
-  defaults:
-    _entity_form: 'mcapi_currencies.add'
-  requirements:
-    _permission: 'configure all currencies'
-
 mcapi.admin_currency_edit:
   path: '/admin/accounting/currencies/{mcapi_currencies}'
   defaults:

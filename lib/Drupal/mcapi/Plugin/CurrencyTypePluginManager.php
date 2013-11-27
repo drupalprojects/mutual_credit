@@ -25,4 +25,19 @@ class CurrencyTypePluginManager extends DefaultPluginManager {
     $this->setCacheBackend($cache_backend, $language_manager, 'currency_type');
   }
 
+  /**
+   * Returns the default settings of a currency type.
+   *
+   * @param string $type
+   *   A currency type name.
+   *
+   * @return array
+   *   The widget type's default settings, as provided by the plugin
+   *   definition, or an empty array if type or settings are undefined.
+   */
+  public function getDefaultSettings($type) {
+    $info = $this->getDefinition($type);
+    return isset($info['settings']) ? $info['settings'] : array();
+  }
+
 }

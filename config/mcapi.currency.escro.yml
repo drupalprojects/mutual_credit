@@ -4,16 +4,14 @@ name: Euro
 issuance: exchange
 uid: '1'
 reservoir: '1'
-display:
-  type: decimal
-  granularity: '2'
-  widget: '1'
-  delimiter: ''
-  select: ''
-  prefix: €
-  suffix: ''
-  zero: ''
-  divisions: {  }
+type: decimal
+settings:
+  scale: '2'
+widget: currency_single
+widget_settings: {  }
+prefix: €
+suffix: ''
+zero: ''
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'

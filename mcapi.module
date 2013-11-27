@@ -1376,6 +1376,7 @@ function mcapi_field_is_empty($item) {
  * remove the default 'worth' setting from the field settings form i.e. cardinality
  * tell the widget that it is in config mode
  */
+/*
 function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   if ($form['#field']['type'] == 'worth_field') {
     unset($form['field']['#type']);
@@ -1386,7 +1387,7 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   }
   $form['instance']['default_value_widget']['worth'][LANGUAGE_NONE]['#preset'] = TRUE;
 }
-
+*/
 /*
  * Imlements hook_form_form_ID_alter().
  * prevents editing of the worth field attached to the transaction entity.
