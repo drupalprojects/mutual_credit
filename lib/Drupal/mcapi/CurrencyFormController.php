@@ -14,7 +14,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class CurrencyFormController extends EntityFormController {
 
   /**
-   * The widget or formatter plugin manager.
+   * The currency plugin manager
+   *
+   * @var \Drupal\Component\Plugin\PluginManagerBase
+   */
+  protected $pluginCurrencyManager;
+
+  /**
+   * The widget  plugin manager.
    *
    * @var \Drupal\Component\Plugin\PluginManagerBase
    */
@@ -26,8 +33,9 @@ class CurrencyFormController extends EntityFormController {
    * @param \Drupal\Component\Plugin\PluginManagerBase $plugin_manager
    *   The widget or formatter plugin manager.
    */
-  public function __construct(PluginManagerBase $plugin_manager) {
-    $this->pluginWidgetManager = $plugin_manager;
+  public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager) {
+    $this->pluginCurrencyManager = $currency_manager;
+    $this->pluginWidgetManager = $widget_manager;
   }
 
   /**
@@ -35,6 +43,7 @@ class CurrencyFormController extends EntityFormController {
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('plugin.manager.mcapi.currency_type'),
       $container->get('plugin.manager.mcapi.currency_widget')
     );
   }
@@ -162,9 +171,8 @@ class CurrencyFormController extends EntityFormController {
       '#weight' => 5,
     );
 
-    $currency_type_manager = \Drupal::service('plugin.manager.mcapi.currency_type'); // TODO: turn this into a private field
-    $currency_type = $currency_type_manager->createInstance($currency->type);
-    $type_definition = $currency_type_manager->getDefinition($currency->type);
+    $currency_type = $this->pluginCurrencyManager->createInstance($currency->type);
+    $type_definition = $this->pluginCurrencyManager->getDefinition($currency->type);
 
     $form['display']['type'] = array(
       '#type' => 'markup',
