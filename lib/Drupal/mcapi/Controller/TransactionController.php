@@ -51,6 +51,6 @@ class TransactionController extends ControllerBase {
    *   An array suitable for drupal_render().
    */
   protected function buildPage(TransactioInterface $transaction) {
-    return array('transactions' => $this->entityManager()->getRenderController('mcapi_transaction')->view($transaction));
+    return array('transactions' => $this->entityManager()->getViewBuilder('mcapi_transaction')->view($transaction));
   }
 }

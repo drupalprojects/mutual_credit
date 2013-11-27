@@ -2,19 +2,19 @@
 
 /**
  * @file
- * Definition of Drupal\node\NodeRenderController.
+ * Definition of Drupal\node\NodeViewBuilder.
  */
 
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityRenderController;
+use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\entity\Entity\EntityDisplay;
 
 /**
  * Render controller for nodes.
  */
-class TransactionRenderController extends EntityRenderController {
+class TransactionViewBuilder extends EntityViewBuilder {
 
   /**
    * Overrides Drupal\Core\Entity\EntityRenderController::buildContent().
