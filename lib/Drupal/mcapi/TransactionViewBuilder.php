@@ -36,8 +36,8 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
       foreach ($entity->worths[0] as $currency => $worth) {
         $entity->content['worths'][$currency] = array(
-          '#prefix' => $worth->currency->display['prefix'],
-          '#suffix' => $worth->currency->display['suffix'],
+          '#prefix' => $worth->currency->prefix,
+          '#suffix' => $worth->currency->suffix,
           '#markup' => $worth->quantity,
         );
       }

@@ -51,7 +51,7 @@ class CurrencyListController extends DraggableListController {
     $row['type'] = array(
       '#markup' => $definition['label'],
     );
-    $row['insurance'] = array(
+    $row['issuance'] = array(
       '#markup' => $type_names[$type],
     );
     return $row + parent::buildRow($entity);

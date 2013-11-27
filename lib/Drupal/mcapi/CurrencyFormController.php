@@ -279,12 +279,12 @@ class CurrencyFormController extends EntityFormController {
       '#weight' => 2,
       '#tree' => TRUE,
     );
-    foreach (transaction_operations(TRUE, FALSE) as $callback => $op_info) {
-      if ($callback == 'mcapi_view') {
+    foreach (transaction_operations(TRUE, FALSE) as $op => $op_info) {
+      if ($op == 'view') {
         continue;
       }
       if ($op_info['access form']) {
-        $form['access_operations'][$callback] = $op_info['access form']($op_info, $currency);
+        $form['access_operations'][$op] = $op_info['access form']($op_info, $currency);
       }
     }
 
@@ -348,14 +348,15 @@ class CurrencyFormController extends EntityFormController {
       }
     }
 
-    if ($currency->display['widget'] == CURRENCY_WIDGET_SELECT) {
-      foreach(explode("\n", $currency->display['select']) as $line) {
+    if ($currency->widget == CURRENCY_WIDGET_SELECT) {
+      foreach(explode("\n", $currency->select) as $line) {
         list($cent, $display) = explode('|', $line);
-        $currency->display['divisions'][$cent] = trim($display);
+        //TODO: this will all be handled by the plugin.
+        $currency->divisions[$cent] = trim($display);
       }
     }
     else {
-      $currency->display['divisions'] = array();
+      $currency->divisions = array();
     }
 
     $status = $currency->save();
