@@ -291,6 +291,7 @@ function mcapi_edit_mcapi_form(&$form, &$form_state) {
 /*
  * load an mcapi_form by name, using ctools
  * it seems that ctools isn't doing any caching
+ * TODO D8 ensure that disabled forms aren't returned
  */
 function mcapi_forms_load($name = '') {
   static $items;

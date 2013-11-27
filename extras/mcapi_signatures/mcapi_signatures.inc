@@ -1,95 +1,94 @@
 <?php
 
-
 function _mcapi_signatures_transaction_operations() {
-  //note that strings are given in English and translated elsewhere, as in the menu system
-  return array(
-    'sign' => array(
-      'title' => 'Sign',
-      'description' => 'Sign a pending transaction',
-      'sure' => 'Are you sure you want to sign?',
-      'submit callback' => 'transaction_op_sign',
-      'access callback' => 'transaction_op_sign_access',
-      'access form' => '',//this has no configuration, not even the default callback
-      'weight' => 2,
-      'filepath' => 'mcapi_signatures.inc'
-    ),
-    'signoff' => array(
-      'title' => 'Sign off',
-      'description' => "Sign a pending transaction on behalf of all signatories, so that it moved into 'finished' state.",
-      'sure' => 'Are you sure you want to sign off this transaction?',
-      'submit callback' => 'transaction_op_signoff',
-      'access callback' => 'transaction_op_signoff_access',
-      'form callback' => TRUE,
-      'weight' => 5,
-      'filepath' => 'mcapi_signatures.inc'
-    ),
-    'undo_pending' => array(
-      'title' => 'Cancel',
-      'description' => 'Cancel a pending transaction',
-      'sure' => 'Are you sure you want to cancel this pending transaction?',
-      'submit callback' => 'transaction_op_undo',
-      'access callback' => 'transaction_op_undo_pending_access',
-      'form callback' => 'transaction_op_undo_form',
-      'weight' => 9,
-      'redirect' => 'user',
-      'filepath' => 'mcapi_signatures.inc'
-    ),
-  );
-  //these are just here for the potx module
-  t('Sign');
-  t('Sign a pending transaction');
-  t('Are you sure you want to sign?');
-  t('Sign off');
-  t("Sign a pending transaction on behalf of all signatories, so that it moved into 'finished' state.");
-  t('Are you sure you want to sign off this transaction?');
-  t('Cancel');
-  t('Cancel a pending transaction');
-  t('Are you sure you want to cancel this pending transaction?');
+	//note that strings are given in English and translated elsewhere, as in the menu system
+	return array(
+			'sign' => array(
+					'title' => 'Sign',
+					'description' => 'Sign a pending transaction',
+					'sure' => 'Are you sure you want to sign?',
+					'submit callback' => 'transaction_op_sign',
+					'access callback' => 'transaction_op_sign_access',
+					'access form' => '',//this has no configuration, not even the default callback
+					'weight' => 2,
+					'filepath' => 'mcapi_signatures.inc'
+			),
+			'signoff' => array(
+					'title' => 'Sign off',
+					'description' => "Sign a pending transaction on behalf of all signatories, so that it moved into 'finished' state.",
+					'sure' => 'Are you sure you want to sign off this transaction?',
+					'submit callback' => 'transaction_op_signoff',
+					'access callback' => 'transaction_op_signoff_access',
+					'form callback' => TRUE,
+					'weight' => 5,
+					'filepath' => 'mcapi_signatures.inc'
+			),
+			'undo_pending' => array(
+					'title' => 'Cancel',
+					'description' => 'Cancel a pending transaction',
+					'sure' => 'Are you sure you want to cancel this pending transaction?',
+					'submit callback' => 'transaction_op_undo',
+					'access callback' => 'transaction_op_undo_pending_access',
+					'form callback' => 'transaction_op_undo_form',
+					'weight' => 9,
+					'redirect' => 'user',
+					'filepath' => 'mcapi_signatures.inc'
+							),
+	);
+	//these are just here for the potx module
+	t('Sign');
+	t('Sign a pending transaction');
+	t('Are you sure you want to sign?');
+	t('Sign off');
+	t("Sign a pending transaction on behalf of all signatories, so that it moved into 'finished' state.");
+	t('Are you sure you want to sign off this transaction?');
+	t('Cancel');
+	t('Cancel a pending transaction');
+	t('Are you sure you want to cancel this pending transaction?');
 }
 
 /*
  * operation callback from mcapi_signatures_transaction_operations
- */
+*/
 function transaction_op_sign($op, $transaction) {
-  $message = transaction_sign($transaction, \Drupal::currentUser()->id());
-  return transaction_view($transaction);
+	$message = transaction_sign($transaction, $GLOBALS['user']->uid);
+	return transaction_view($transaction);
 }
 /*
  * operation access callback from mcapi_signatures_transaction_operations
- * this doesn't rely on user settings at all.
- */
-function transaction_op_sign_access($callbacks, $transaction) {
-  if ($transaction->state == TRANSACTION_STATE_PENDING &&
-    property_exists($transaction, 'pending_signatures') &&
-    array_key_exists(\Drupal::currentUser()->id(), $transaction->pending_signatures) &&
-    $transaction->pending_signatures[\Drupal::currentUser()->id()]) return TRUE;
+* this doesn't rely on user settings at all.
+*/
+function transaction_op_sign_access($op, $transaction, $currency) {
+	if ($transaction->state == TRANSACTION_STATE_PENDING &&
+	property_exists($transaction, 'pending_signatures') &&
+	array_key_exists($GLOBALS['user']->uid, $transaction->pending_signatures) &&
+	$transaction->pending_signatures[$GLOBALS['user']->uid]) return TRUE;
 }
 
 /*
  * operation callback from mcapi_signatures_transaction_operations
- */
+*/
 function transaction_op_signoff($op, $transaction) {
-  $needed = array_filter(mcapi_get_signatories($transaction->serial));
-  foreach (array_keys($needed) as $uid) {
-    $message = transaction_sign($transaction, $uid);
-  }
-  return transaction_view($transaction, 'certificate');
+	$needed = array_filter(mcapi_get_signatories($transaction->serial));
+	foreach (array_keys($needed) as $uid) {
+		$message = transaction_sign($transaction, $uid);
+	}
+	return transaction_view($transaction, 'certificate');
 }
 /*
  * operation access callback from mcapi_signatures_transaction_operations
- */
-function transaction_op_signoff_access($callbacks, $transaction) {
-  if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
-  return _transaction_check_access_callbacks($callbacks, $transaction);
+*/
+function transaction_op_signoff_access($op, $transaction, $currency) {
+	if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
+	return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
 /*
  * operation access callback from mcapi_signatures_transaction_operations
- */
-function transaction_op_undo_pending_access($callbacks, $transaction) {
-  if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
-  return _transaction_check_access_callbacks($callbacks, $transaction);
+*/
+function transaction_op_undo_pending_access($op, $transaction, $currency) {
+	if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
+	return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
 function mcapi_signall($form, $form_state, $account) {

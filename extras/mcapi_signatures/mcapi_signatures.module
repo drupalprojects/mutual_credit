@@ -67,16 +67,31 @@ function mcapi_signatures_entity_load($entities, $type) {
   }
 }
 
+
+//TWO DIFFERENT WAYS OF DOING THE SAME THING...
+//MAY BE FIRED DIFFERENTLY IN DIFFERENT DELETE MODES
+
 /*
  * Implements hook_entity_delete()
- * remove the signatories from the database
- */
+* remove the signatories from the database
+*/
 function mcapi_signatures_entity_delete($transaction, $type) {
-  if ($type == 'transaction') {
-    db_delete("mcapi_signatures")
-    ->condition('serial', $transaction->serial)
-    ->execute();
-  }
+	if ($type == 'transaction') {
+		db_delete("mcapi_signatures")
+		->condition('serial', $transaction->serial)
+		->execute();
+	}
+}
+
+/**
+ * implement mcapi hook_transaction_update
+ * ensures that signatures for undone transactions are not left pending.
+ */
+//could equally use hook_undo pending if it exists....
+function mcapi_signatures_transaction_undo($serial) {
+	db_delete('mcapi_signatures')
+	->condition('serial', $serial)
+	->execute();
 }
 
 /*

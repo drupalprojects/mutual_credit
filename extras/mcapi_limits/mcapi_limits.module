@@ -341,6 +341,33 @@ function mcapi_limits_block_save($delta, $values) {
   mcapi_block_save($delta, $values);
 }
 
+
+/*
+ * implements hook_field_extra_fields
+*/
+function mcapi_limits_field_extra_fields() {
+	return array(
+		'user' => array(
+			'user' => array(
+				'form' => array(
+					'limits_personal' => array(
+						'label' => t('Balance limits'),
+						'description' => t('Trading limits per currency'),
+						'weight' => 0,
+					),
+				),
+				'display' => array(
+					'limits_personal' => array(
+						'label' => t('Balance limits'),
+						'description' => t('Trading limits per currency'),
+						'weight' => 0,
+					),
+				)
+			)
+		)
+	);
+}
+
 /*
  * Implements variable module's hook_variable_info
  * only block settings really

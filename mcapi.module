@@ -775,10 +775,13 @@ function mcapi_mcapi_info_types() {
  * #full is the full array returned from the callback, keyed by constant value
  */
 function mcapi_get_states($return_mode = '#options') {
-  $states = array();
-  foreach(module_implements('mcapi_info_states') as $module) {
-    $function = $module . '_mcapi_info_states';
-    $states += $function('states');
+  static $states;
+  if (empty($states)) {
+    $states = array();
+    foreach(module_implements('mcapi_info_states') as $module) {
+      $function = $module . '_mcapi_info_states';
+      $states += $function('states');
+    }
   }
   if ($return_mode == '#full') return $states;
   elseif ($return_mode == '#description') {
@@ -868,6 +871,16 @@ function mcapi_transaction_access_callbacks() {
   );
 }
 
+
+/*
+ * implements hook_user_delete().
+* all transactions revert to the reservoir
+*/
+function mcapi_user_delete($account) {
+	foreach (currencies_load($account) as $currency) {
+		entity_get_controller('transaction')->mergeAccounts($currency->reservoir, $account->uid);
+	}
+}
 
 /**
  * implements hook_mail().
