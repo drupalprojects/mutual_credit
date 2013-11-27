@@ -255,18 +255,23 @@ function mcapi_submit_op_form($operation, $transaction, $values = array()) {
 }
 
 
-function mcapi_view_access($op, $transaction) {
-  return _transaction_check_access_callbacks($op, $transaction);
+/*
+ *  access callback for transaction operation 'view'
+ */
+function mcapi_view_access($op, $transaction, $currency) {
+	return _transaction_check_access_callbacks(
+		$currency->view_transaction_states[$transaction->state->value],
+		$transaction
+  );
 }
 
 /*
- * These two callbacks from transaction_operation 'undo'
+ * access callback for transaction operation 'undo'
  * Undo is the only 'exposed' operation in this module
  */
-function transaction_op_undo_access($op, $transaction) {
-  if ($transaction->state != TRANSACTION_STATE_FINISHED) return FALSE;
-  if ($transaction->type == 'remote') return FALSE;//otherwise the intertrading module has to somehow intervene
-  return _transaction_check_access_callbacks($op, $transaction);
+function transaction_op_undo_access($op, $transaction, $currency) {
+	if ($transaction->state->value != TRANSACTION_STATE_FINISHED) return FALSE;
+	return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
 function transaction_op_undo($operation, $transaction, $values) {
@@ -277,25 +282,12 @@ function transaction_op_undo($operation, $transaction, $values) {
 
 /*
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
- */
-function _transaction_check_access_callbacks($op, $transaction) {
-  $currencies = currencies_load();
-  if ($op == 'mcapi_view') {
-    $property = 'view_transaction_states';
-    $key = $transaction->state;
-  }
-  else {
-    $property = 'access_operations';
-    $key = $op;
-  }
-  //normally would use $items = field_get_items($transaction), but we are sure of language
-  foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-    $callbacks = &$currencies[$item['currcode']]->{$property}[$key];
-    foreach ($callbacks as $function) {
-      if ($function($transaction)) return TRUE;
-    }
-  }
-  return FALSE;
+*/
+function _transaction_check_access_callbacks($callbacks, $transaction) {
+	foreach ($callbacks as $function) {
+		if ($function($transaction)) return TRUE;
+	}
+	return FALSE;
 }
 
 /*

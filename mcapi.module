@@ -407,6 +407,15 @@ function mcapi_theme($existing, $type, $theme, $path) {
       ),
       'file' => 'mcapi.inc'
     ),
+  	'balance_bars' => array(
+  		'template' => 'balance_bars',
+  		'variables' => array(
+  			'uid' => '',
+  			'currcode' => '',
+  			'totals' => NULL
+  		),
+  	  'file' => 'mcapi.inc'
+  	),
   );
   return $items;
 }
@@ -832,25 +841,6 @@ function mcapi_mcapi_info_drupal_permissions() {
   );
 }
 
-/*
- * entity_access callback (needs to be in .module) also used directly in mcapi_menu
- * Grant access to a transaction for an operation
- * this is slightly crude, since the callbacks can't know know what to do with all possible operations
- */
-function transaction_operation_access($op, $transaction = NULL) {
-  $operations = transaction_operations();
-  if (is_object($transaction)) {
-    mcapi_operation_include($operations[$op]);
-    foreach ($transaction->worth[LANGUAGE_NONE] as $item) {
-      if ($operations[$op]['access callback']($op, $transaction)) continue;
-      return FALSE;
-    }
-    return TRUE;
-  }
-  elseif ($op == 'register') {
-    return user_access('transact');
-  }
-}
 
 /**
  * implements hook mcapi_permissions().

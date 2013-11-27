@@ -20,8 +20,17 @@ class TransactionAccessController extends EntityAccessController {
   /**
    * {@inheritdoc}
    */
-  public function checkAccess(EntityInterface $entity, $operation, $langcode, AccountInterface $account) {
-    //FIXME: Make this work properly
-    return TRUE;
+  public function checkAccess(EntityInterface $transaction, $op, $langcode, AccountInterface $account) {
+    //might want to store the operations in the object since this is likely to be called many times
+  	$operations = transaction_operations();
+    mcapi_operation_include($operations[$op]);
+
+    foreach ($transaction->worths[0] as $item) {
+    	if ($operations[$op]['access callback']($op, $transaction, $item->currency)) {
+    		continue;
+    	}
+    	return FALSE;
+    }
+  	return TRUE;
   }
 }

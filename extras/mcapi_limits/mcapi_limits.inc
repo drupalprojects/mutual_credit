@@ -24,20 +24,17 @@ function limits_settings_subform(&$form, $form_state, $currency) {
     $limits_callback = 'limits_none';
     $defaults = array();
   }
-  $form_callback = $limits_callback .'_form';
-  if (!function_exists($form_callback)) {
-    return array();
-  }
-  if (empty($form['limits'][$limits_callback])) {
-    $form['limits'][$limits_callback] = array();
-  }
-  //get the fields
-  $form['limits'][$limits_callback] += $form_callback($currency, $defaults);
 
-  $form['limits'][$limits_callback] += array(
-    '#prefix' => '<div id="limits-settings">',
-    '#suffix' => '</div>',
+  $form['limits'][$limits_callback] = array(
+  		'#prefix' => '<div id="limits-settings">',
+  		'#suffix' => '</div>',
   );
+
+  $form_callback = $limits_callback .'_form';
+  if (function_exists($form_callback)) {
+    //get the fields
+    $form['limits'][$limits_callback] += $form_callback($currency, $defaults);
+  }
   //we return the array for the sake of the ajax callback but also the main form builder has been altered by reference
   return $form['limits'][$limits_callback];
 }
@@ -235,6 +232,11 @@ function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
     '#type' => 'checkbox',
     '#default_value' => isset($currency->limits['personal']) ? $currency->limits['personal'] : 0,
     '#weight' => 5,
+  	'#states' => array(
+  		'invisible' => array(
+  			':input[name="limits[limits_callback]"]' => array('value' => 'limits_none')
+  		)
+  	)
   );
   $form['limits']['skip'] = array(
     '#title' => t('Skip balance limit check'),
@@ -250,5 +252,10 @@ function _mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form
       'reservoir' => t("for the reservoir account")
     ),
     '#weight' => 6,
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="limits[limits_callback]"]' => array('value' => 'limits_none')
+      )
+    ),
   );
 }
