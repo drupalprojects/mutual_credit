@@ -407,15 +407,15 @@ function mcapi_theme($existing, $type, $theme, $path) {
       ),
       'file' => 'mcapi.inc'
     ),
-  	'balance_bars' => array(
-  		'template' => 'balance_bars',
-  		'variables' => array(
-  			'uid' => '',
-  			'currcode' => '',
-  			'totals' => NULL
-  		),
-  	  'file' => 'mcapi.inc'
-  	),
+    'balance_bars' => array(
+      'template' => 'balance_bars',
+      'variables' => array(
+        'uid' => '',
+        'currcode' => '',
+        'totals' => NULL
+      ),
+      'file' => 'mcapi.inc'
+    ),
   );
   return $items;
 }
@@ -642,33 +642,6 @@ function mcapi_uid_renum($old, $new) {
 
 
 /**
- * Implements ctools hook_ctools_plugin_api().
- */
-function mcapi_ctools_plugin_api() {
-  return array(
-    'api' => 3,
-    'path' => drupal_get_path('module', 'mcapi'),
-  );
-}
-/**
- * Implements ctools hook_ctools_plugin_directory().
- */
-function mcapi_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'ctools' && $plugin == 'export_ui') {
-    return 'plugins/export_ui';//directory
-  }
-}
-/**
- * Implements views hook_views_api().
- */
-function mcapi_views_api() {
-  return array(
-    'api' => 3,
-    'path' => drupal_get_path('module', 'mcapi') . '/views',
-  );
-}
-
-/**
  * menu callback for adding transaction entity
  */
 function transaction_form($form, &$form_state) {
@@ -867,9 +840,9 @@ function mcapi_transaction_access_callbacks() {
 * all transactions revert to the reservoir
 */
 function mcapi_user_delete($account) {
-	foreach (currencies_load($account) as $currency) {
-		entity_get_controller('transaction')->mergeAccounts($currency->reservoir, $account->uid);
-	}
+  foreach (currencies_load($account) as $currency) {
+    entity_get_controller('transaction')->mergeAccounts($currency->reservoir, $account->uid);
+  }
 }
 
 /**
@@ -970,6 +943,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
         $tx['#theme'] = 'certificate';
         //we will reveal the ajax links only on the certificate
         $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
+        debug($tx['#links']);
         break;
       default: //an arbitrary token string, don't forget there is a token for [transaction:links]
         $tx['#markup'] = token_replace(
@@ -1057,10 +1031,7 @@ function currencies_load($account = NULL) {
     }
     else {
       module_load_include('admin.inc', 'mcapi');
-      foreach (currencies_load_all() as $currcode => $currency) {
-        $currencies[$currcode] = $currency->data;
-      }
-      cache()->set('currencies', $currencies);
+      cache()->set('currencies', currencies_load_all());
     }
   }
   if (!$account) return $currencies;//having set the $currencies static
@@ -1510,3 +1481,4 @@ function mcapi_validate_emails(&$element, &$form_state) {
     form_validate_email($element, $form_state);
   }
 }
+

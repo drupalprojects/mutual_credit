@@ -25,18 +25,17 @@ function currencies_load_all() {
   $all = entity_load_multiple('mcapi_currencies');
   //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
   foreach($all as $currcode => $currency) {
-    if (!empty($currency->disabled)) continue;
-    $data = &$currency->data;
+    if (!$currency->status) continue;
     //convert the divisions_allowed into an array
     $divisions = array();
-    if ($data->display['widget'] == CURRENCY_WIDGET_SELECT) {
-      foreach(explode("\n", $data->display['select']) as $line) {
+    if ($currency->widget == CURRENCY_WIDGET_SELECT) {
+      foreach(explode("\n", $currency->settings['divisions']) as $line) {
         list($cent, $display) = explode('|', $line);
         $divisions[$cent] = trim($display);
       }
     }
     //this property exists only in memory, it is the array version of the custom options text field
-    $data->display['divisions_allowed'] = $divisions;
+    $currency->divisions_allowed = $divisions;
     $currencies[$currcode] = $currency;
   }
   return $currencies;
