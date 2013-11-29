@@ -357,6 +357,65 @@ function mcapi_menu() {
 }
 
 
+function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
+  global $language;
+  static $operations;
+  if (!$operations) {
+    $operations = transaction_operations(TRUE, FALSE);
+  }
+  if (empty($transaction->serial->value)) {
+    return array();//this happens on the transaction preview page
+  }
+  $renderable = array(
+    '#theme' => 'links',
+    //'#heading' => t('Operations'),
+    '#attributes' => array('class' => array('transaction-operations')),
+    '#attached' => array('css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')),
+    //Attribute class not found
+    //'#attributes' => new Attribute(array('class' => array('transaction-operations'))),
+    '#links' => array()
+  );
+  if ($ajax) $renderable['#attached']['js'][] = 'misc/ajax.js';
+  $base = 'transaction/'. $transaction->serial->value;
+  foreach ($operations as $op => $info) {
+    if (!$view && $op == 'mcapi_view') continue;
+    if (transaction_operation_access($op, $transaction)) {
+      $renderable['#links']['op-'.$op] = array(
+        'title' => $info['title'],
+        'href' =>  $base,
+        //'route_name' => 'mcapi.transaction_view',
+        //'route_parameters' => array('mcapi_transaction' => $transaction->serial->value),
+        'attributes' => array('class' => array('use-ajax'))
+      );
+      if ($op != 'mcapi_view') {
+        $renderable['#links']['op-'.$op]['href'] .= '/nojs/'. $op;
+      }
+    }
+  }
+  return $renderable;
+}
+
+/*
+ * entity_access callback (needs to be in .module) also used directly in mcapi_menu
+ * Grant access to a transaction for an operation
+ * this is slightly crude, since the callbacks can't know know what to do with all possible operations
+ */
+function transaction_operation_access($op, $transaction = NULL) {
+  $operations = transaction_operations();
+  if (is_object($transaction)) {
+    mcapi_operation_include($operations[$op]);
+    foreach ($transaction->worths[0]->getValue() as $item) {
+      $currency = currency_load($item['currcode']);
+      if ($operations[$op]['access callback']($op, $transaction, $currency)) continue;
+      return FALSE;
+    }
+    return TRUE;
+  }
+  elseif ($op == 'register') {
+    return user_access('transact');
+  }
+}
+
 /**
  * implements hook_permission
  * This hook can supply permissions that the module defines.
@@ -374,9 +433,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
     'mcapi_transaction' => array(
       'render element' => 'transaction',
       'template' => 'transaction'
-    ),
-    'transaction' => array(
-      'render element' => 'transaction'
     ),
     'certificate' => array(
       'template' => 'certificate',
@@ -598,15 +654,6 @@ function mcapi_block_save($delta, $values) {
       'user_source' => $values['user_source']
     )
   );
-}
-
-
-/*
- * implements hook_init().
- * make the drupal_static variable 'currencies' available
- */
-function mcapi_init() {
-  drupal_add_css(drupal_get_path('module', 'mcapi') .'/mcapi.css');
 }
 
 /**
@@ -897,89 +944,24 @@ function currency_access($op, $currcode, $account = NULL) {
   return $calculated[$op][$currcode][$uid];
 }
 
-
-/**
- * menu callback (also declared as $entity_info['view callback'])
- * build a render array for any number of transactions
- * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in transaction_load
- * not sure what the best file for this function is, not that it works in conjunction with the preprocess
- * $transactions an array of transactions, keyed by xid, each one having its dependents already set
- * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
- */
-function transaction_view($transactions, $view_mode = 'certificate', $suppress_ops = FALSE) {
-  if (!is_array($transactions))$transactions = array($transactions->xid => $transactions);
-
-  global $language;
-  //special case for the 'are you sure' form where the transaction was test written and deleted
-  //that means the fieldAPI data cannot be retrieved the normal way
-  $transaction = &current($transactions);
-  if (!property_exists($transaction, 'serial') || empty($transaction->serial)) {
-    foreach ($transactions as $transaction) {
-      $variables['classes_array'][] = 'preview';
-      //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
-      foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
-        unset($transaction->{$fieldname});
-      }
-    }
-  }
-  else {
-    field_attach_prepare_view('transaction', $transactions, 'certificate');
-  }
-  entity_prepare_view('transaction', $transactions);
-
-  foreach ($transactions as $transaction) {
-    $tx = array(
-      '#theme_wrappers' => array('transaction'),
-      '#class' => array(
-         'transaction',
-         $view_mode == 'certificate' ? 'certificate' : 'sentence',
-         'state-'.$transaction->state,
-         $transaction->type
-      ),
-      '#object' => $transaction,
-    );
-    switch ($view_mode) {
-      case 'certificate':
-        $tx['#theme'] = 'certificate';
-        //we will reveal the ajax links only on the certificate
-        $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
-        debug($tx['#links']);
-        break;
-      default: //an arbitrary token string, don't forget there is a token for [transaction:links]
-        $tx['#markup'] = token_replace(
-          $view_mode,
-          array('transaction' => $transaction),
-          array('language' => $language, 'sanitize' => FALSE)
-        );
-        break;
-    }
-    $renderable['transaction'][$transaction->xid] = $tx;
-  }
-  $type = 'transaction';//must be sent as a reference
-  drupal_alter(array('transaction_view', 'entity_view'), $renderable, $type);
-  return $renderable;
-}
-
-/**
- * theme wrapper implementation
- * a wrapper round transactions of all view modes
- * puts the operations after the transaction
- */
-function theme_transaction($vars) {
-  $transaction = $vars['transaction'];
+function mcapi_preprocess_transaction(&$vars) {
+  $transaction = &$vars['transaction'];
   if (property_exists($transaction['#object'], 'serial')) {
+  //id is hardcoded here because ajax operations will break if it changes
     $transaction['#id'] = 'transaction-'. $transaction['#object']->serial;
   }
   element_set_attributes($transaction, array('class', 'id'));
-  //id is hardcoded here because ajax operations will break if it changes
-  return '<div '. $transaction['#attributes'] . '>
-    '. $transaction['#children'] .'
-  </div>';
+}
+
+function mcapi_preprocess_certificate(&$vars) {
+  //print_r('mcapi_preprocess_certificate');
+  $vars['test'] = 'test';
 }
 
 function mcapi_currencies_load($currcode) {
   return entity_load('mcapi_currencies', $currcode);
 }
+
 
 function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!isset($account)) {
@@ -1011,9 +993,7 @@ function currency_load($currcode = NULL) {
   if ($currcode && isset($currencies[$currcode])) {
     return $currencies[$currcode];
   }
-  watchdog('mcapi', "Nonexistent currency '@currcode' requested from: @list",
-    array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1))
-  );
+  debug($currencies, "can't find currency ".$currcode);
   return current($currencies);
 }
 
@@ -1031,7 +1011,8 @@ function currencies_load($account = NULL) {
     }
     else {
       module_load_include('admin.inc', 'mcapi');
-      cache()->set('currencies', currencies_load_all());
+      $currencies = currencies_load_all();
+      cache()->set('currencies', $currencies);
     }
   }
   if (!$account) return $currencies;//having set the $currencies static
@@ -1055,6 +1036,13 @@ function currencies_filter() {
     if (property_exists($currency, 'issuance') && in_array($currency->issuance, $args)) $output[$currcode] = $currency;
   }
   return $output;
+}
+
+function mcapi_currency_list($account = NULL) {
+  foreach (currencies_load($account) as $currcode => $currency) {
+    $list[$currcode] = $currency->name;
+  }
+  return $list;
 }
 
 /**

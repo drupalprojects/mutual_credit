@@ -2,23 +2,30 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\Operations
+ * Definition of Drupal\taxonomy\Plugin\views\field\Taxonomy.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+//TODO which of these are actually needed?
+use Drupal\views\Plugin\views\area\Result;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
-use Drupal\Component\Annotation\PluginID;
+use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
+use Drupal\views\ViewExecutable;
+use Drupal\Component\Annotation\PluginID;
 
 /**
- * Field handler to present a link to the node.
+ * Field handler to provide simple renderer that allows linking to a taxonomy
+ * term.
+ *
+ * @todo This handler should use entities directly.
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("transaction_operations")
+ * @PluginID("worths")
  */
-class Operations extends FieldPluginBase {
+class Worths extends FieldPluginBase {
 
   protected function defineOptions() {
     $options = parent::defineOptions();
@@ -38,15 +45,18 @@ class Operations extends FieldPluginBase {
     );
     parent::buildOptionsForm($form, $form_state);
   }
+
+  public function query() {
+    $this->ensureMyTable();
+  }
+
   /**
    * {@inheritdoc}
    */
-  public function query() {
-    $this->addAdditionalFields();
-  }
-
-  function render(ResultRow $values) {
-    return transaction_get_links($this->getEntity($values), '', TRUE);
+  public function render(ResultRow $values) {
+    $worths = current($this->getEntity($values)->worths->getValue());
+    //TODO there needs to be a system setting for the separator for mixed transactions
+    return 'theme me!';
   }
 
 }

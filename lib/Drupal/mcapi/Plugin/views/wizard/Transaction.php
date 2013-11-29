@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\dblog\Plugin\views\wizard\Transaction.
+ * Contains \Drupal\mcapi\Plugin\views\wizard\Transaction.
  */
 
 namespace Drupal\mcapi\Plugin\views\wizard;

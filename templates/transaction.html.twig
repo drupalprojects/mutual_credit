@@ -1,12 +1,3 @@
-<div>
-  <div class="transaction-created">
-    On {{ transaction.created }}
-  </div>
-  <div class="transaction-users">
-    {{ transaction.payer }} paid {{ transaction.payee }}
-  </div>
-  <div class="transaction-worth">
-    the sum of {{ transaction.worths }}
-  </div>
+<div class = "{{ transaction.attributes }}">
   {{ transaction }}
 </div>

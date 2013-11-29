@@ -1,12 +1,4 @@
 
-/*div.sentence, */
-div.sentence .link {
-  padding: 0 0 0 1em;
-}
-#dependent-transactions {
-  border: medium solid grey;
-  text-align: center;
-}
 div.transaction.certificate {
   padding: 3em 3em 1em 3em;
   text-align: center;
@@ -24,35 +16,37 @@ div.transaction.certificate .field-label {
 div.transaction.state-0{
   opacity: 0.5;
 }
-
-.vertical-tabs .form-type-textfield input {
-  width: inherit;
-}
-
-.transaction-totals .balance {
-  font-size: 2em;
-}
-
-tr.ctools-export-ui-disabled td {
-  color: #aaa;
-}
-
-div.block input#edit-transaction-description-und-0-value {
-  width: 100%;
-}
-ul.transaction-operations{
-  display:inline;
-}
 div.transaction.certificate ul.transaction-operations{
   display: block;
   list-style: none;
   text-align: center;
   margin-top: 1em;
 }
+div.transaction.certificate#dependent-transactions {
+  border: medium solid grey;
+  text-align: center;
+}
 
+ul.transaction-operations{
+  display:inline;
+}
+ul.transaction-operations{
+  display: inline;
+  padding: 0 0.5em;
+}
+/* these separators aren't very flexible I'm afraid but there's no way I can see to do it in php */
 ul.transaction-operations li{
   display: inline;
+  padding: 0 0.5em;
+  border-right: thin solid grey;
+}
+ul.transaction-operations li:last-child{
+  border-right: none !important;
 }
 ul.transaction-operations li a{
   text-decoration: none;
+}
+/*div.sentence, */
+div.sentence .link {
+  padding: 0 0 0 1em;
 }

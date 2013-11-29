@@ -27,6 +27,20 @@ function mcapi_views_data() {
     ),
     'wizard_id'=> 'transaction',//not documented dunno what for
   );
+  //TODO
+  //This isn't working to join the table to all transaction entity queries
+  //I've no idea how it is supposed to work, especially as this is a one-to-many relationship
+  $data['mcapi_transactions_worths']['table'] = array(
+    'entity type' => 'mcapi_transaction',
+    'group' => t('Transaction'),
+    'join' => array(
+      'mcapi_transactions' => array(
+        'left_field' => 'xid',
+        'field' => 'xid',
+        'type' => 'LEFT'//not sure about this
+      ),
+    )
+  );
 
   $data['mcapi_transactions']['serial'] = array(
     'title' => t('Serial'), // The item it appears as on the UI,
@@ -57,6 +71,7 @@ function mcapi_views_data() {
       'base' => 'users',
       'field' => 'uid',
       'label' => t('Payer'),
+      'relationship field' => 'payer'
     ),
     'filter' => array(
       'id' => 'user_name',
@@ -76,6 +91,7 @@ function mcapi_views_data() {
       'base' => 'users',
       'field' => 'uid',
       'label' => t('Payee'),
+      'relationship field' => 'payee'
     ),
     'filter' => array(
       'id' => 'user_name',
@@ -96,7 +112,10 @@ function mcapi_views_data() {
       //'click sortable' => TRUE,
     ),
     'filter' => array(
-      //'id' => 'mcapi_state',
+      'id' => 'mcapi_state',
+    ),
+    'sort' => array(
+      'id' => 'standard',
     ),
   );
 
@@ -108,7 +127,10 @@ function mcapi_views_data() {
       //'click sortable' => TRUE
     ),
     'filter' => array(
-      //'id' => 'mcapi_type',
+      'id' => 'mcapi_type',
+    ),
+    'sort' => array(
+      'id' => 'standard',
     ),
   );
   $data['mcapi_transactions']['creator'] = array(
@@ -119,6 +141,7 @@ function mcapi_views_data() {
       'base' => 'users',
       'field' => 'uid',
       'label' => t('Creator'),
+      'relationship field' => 'creator'
     ),
     'filter' => array(
       'id' => 'user_name',
@@ -143,6 +166,7 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
+  //virtual fields
 
   $data['mcapi_transactions']['operations'] = array(
     'title' => t('Operations'),
@@ -152,6 +176,35 @@ function mcapi_views_data() {
       'additional fields' => array('serial')
     )
   );
+
+  $data['mcapi_transactions']['worths'] = array(
+    'title' => t('Amounts'),
+    'help' => t('Currency flows per transaction'),
+    'field' => array(
+      'id' => 'worths',
+    )
+  );
+
+  $data['mcapi_transactions_worths']['currcode'] = array(
+    'title' => t('Currency'),
+    'help' => t('Transactions using specific currencies'),
+    'filter' => array(
+      'id' => 'currcode',
+    ),
+    'argument' => array(
+      'id' => 'string',
+    )
+  );
+  $data['mcapi_transactions_worths']['quantity'] = array(
+    'title' => t('Quantity'),
+    'filter' => array(
+      'id' => 'numeric',
+    ),
+    'argument' => array(
+      'id' => 'numeric',
+    )
+  );
+
   return $data;
 }
 

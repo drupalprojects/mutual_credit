@@ -32,7 +32,7 @@ class TransactionController extends ControllerBase {
    * The _title_callback for the node.view route.
    *
    * @param NodeInterface $transaction
-   *   The current node.
+   *   The current transaction.
    *
    * @return string
    *   The page title.
@@ -45,14 +45,14 @@ class TransactionController extends ControllerBase {
    * Builds a transaction page render array.
    *
    * @param \Drupal\mcapi\TransactionInterface $transaction
-   *   The node we are displaying.
+   *   The transaction we are displaying.
    *
    * @return array
    *   An array suitable for drupal_render().
    */
-  protected function buildPage(TransactioInterface $transaction) {
+  protected function buildPage(TransactionInterface $transaction) {
     return array(
-    	'transactions' => $this->entityManager()->getViewBuilder('mcapi_transaction')->view($transaction)
+      'transaction' => $this->entityManager()->getViewBuilder('mcapi_transaction')->view($transaction, 'certificate')
     );
   }
 }

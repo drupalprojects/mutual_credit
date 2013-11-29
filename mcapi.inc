@@ -259,9 +259,9 @@ function mcapi_submit_op_form($operation, $transaction, $values = array()) {
  *  access callback for transaction operation 'view'
  */
 function mcapi_view_access($op, $transaction, $currency) {
-	return _transaction_check_access_callbacks(
-		$currency->view_transaction_states[$transaction->state->value],
-		$transaction
+  return _transaction_check_access_callbacks(
+    $currency->view_transaction_states[$transaction->state->value],
+    $transaction
   );
 }
 
@@ -270,8 +270,8 @@ function mcapi_view_access($op, $transaction, $currency) {
  * Undo is the only 'exposed' operation in this module
  */
 function transaction_op_undo_access($op, $transaction, $currency) {
-	if ($transaction->state->value != TRANSACTION_STATE_FINISHED) return FALSE;
-	return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
+  if ($transaction->state->value != TRANSACTION_STATE_FINISHED) return FALSE;
+  return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
 function transaction_op_undo($operation, $transaction, $values) {
@@ -284,10 +284,10 @@ function transaction_op_undo($operation, $transaction, $values) {
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
 */
 function _transaction_check_access_callbacks($callbacks, $transaction) {
-	foreach ($callbacks as $function) {
-		if ($function($transaction)) return TRUE;
-	}
-	return FALSE;
+  foreach ($callbacks as $function) {
+    if ($function($transaction)) return TRUE;
+  }
+  return FALSE;
 }
 
 /*
@@ -301,10 +301,10 @@ function transaction_access_callback_perm_manage_all() {
   return user_access('manage all transactions');
 }
 function transaction_access_callback_payee($transaction) {
-  return \Drupal::currentUser()->id() == $transaction->payee;
+  return \Drupal::currentUser()->id() == $transaction->payee->value;
 }
 function transaction_access_callback_payer($transaction) {
-  return \Drupal::currentUser()->id() == $transaction->payer;
+  return \Drupal::currentUser()->id() == $transaction->payer->value;
 }
 function transaction_access_callback_open() {
   return TRUE;
@@ -478,15 +478,15 @@ function _transactions_diff($transaction) {
  */
 function template_preprocess_certificate(&$vars) {
   $transaction = &$vars['object'];
-  $vars['payer'] = format_username(user_load($transaction->payer));
-  $vars['payee'] = format_username(user_load($transaction->payee));
-  $vars['state'] = $transaction->state;
-  $vars['recorded'] = format_date($transaction->created, 'medium');
-  $vars['type'] = $transaction->type;
-  $vars['date'] = format_date($transaction->created, 'long');
-  $vars['description'] = $transaction->description;
-  $vars['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
-  if (!property_exists($transaction, 'xid') || empty($transaction->xid)) {
+  $vars['payer'] = $transaction->payer->name;
+  $vars['payee'] = user_load($transaction->payee)->name;
+  $vars['state'] = $transaction->state->value;
+  $vars['recorded'] = format_date($transaction->created->value, 'medium');
+  $vars['type'] = $transaction->type->value;
+  $vars['date'] = format_date($transaction->created->value, 'long');
+  $vars['description'] = $transaction->description->value;
+  $vars['classes_array'] = array('transaction', 'certificate', $transaction->type->value, 'state-'.$transaction->state->value);
+  if (!property_exists($transaction, 'xid') || empty($transaction->xid->value)) {
     $vars['classes_array'][] = 'preview';
     foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
@@ -496,9 +496,13 @@ function template_preprocess_certificate(&$vars) {
   }
 
   //this returns a render array
-  $vars['additional'] = field_attach_view('transaction', $transaction, 'certificate');
+  //api.drupal.org says of field_attach_view "as of Drupal 8 use the entity system instead"
+  //could be more helpful...
+//  $vars['additional'] = field_attach_view('transaction', $transaction, 'certificate');
+
+
   //this populates top level of variables with the render array
-  field_attach_preprocess('transaction', $transaction, $vars['additional'], $vars);
+  field_attach_preprocess($transaction, $vars['additional'], $vars);
 
   foreach (element_children($vars['worths']) as $delta) {
     //TODO this probably isn't needed in d8
@@ -762,38 +766,6 @@ function template_preprocess_transaction_totals(&$variables) {
 }
 
 
-function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
-  global $language;
-  static $operations;
-  if (!$operations) {
-    $operations = transaction_operations(TRUE, FALSE);
-  }
-  if (empty($transaction->serial)) {
-    return array();//this happens on the transaction preview page
-  }
-  $renderable = array(
-    '#theme' => 'links',
-    //'#heading' => t('Operations'),
-    '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
-    '#links' => array()
-  );
-  $base = 'transaction/'. $transaction->serial;
-  foreach ($operations as $op => $info) {
-    if (!$view && $op == 'mcapi_view') continue;
-    if (transaction_operation_access($op, $transaction)) {
-      $renderable['#links'][$op] = array(
-        'title' => $info['title'],
-        'href' =>  $base,
-        'attributes' => array('class' => array('use-ajax'))
-      );
-      if ($op != 'mcapi_view') {
-        $renderable['#links'][$op]['href'] .= '/nojs/'. $op;
-      }
-    }
-  }
-  if ($ajax) drupal_add_js('misc/ajax.js', array('type' => 'file'));
-  return $renderable;
-}
 
 /*
  * block function a nice display of user balances in a currency

@@ -1,0 +1,25 @@
+On @recorded !payer paid !payee the sum of !worth
+
+  {{ dump() }}
+  {{ certificate.links }}
+  {{ certificate.test }}
+<!--
+$certificate_string = str_replace("\n", '<br /><br />', $certificate_string);
+?>
+  <?php print render($pending); //floating on the right, by default ?>
+  <?php print $certificate_string; ?>
+
+  <?php if (array_key_exists('!description', $replacements)) : ?>
+    <strong><?php print t('For:');?></strong>
+    <?php print $replacements['!description'] ?><br />
+  <?php endif; ?>
+
+  <?php if (isset($dependents)) : // all the remaining transactions are already rendered as tokenised strings ?>
+  <div id="dependent-transactions">
+    <h3><?php print t('Dependent transactions'); ?></h3>
+    <?php print render ($dependents); ?>
+  </div>
+  <?php endif; ?>
+
+  <?php print render($additional); //any fields we don't know about'?>
+-->

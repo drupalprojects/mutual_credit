@@ -17,7 +17,7 @@ use Drupal\Core\Controller\ControllerBase;
 class Workflow extends ControllerBase {
 
   function summaryPage() {
-    drupal_set_message('should states, types and operations go in a yml file?', 'warning');
+    drupal_set_message('States, types and operations SHOULD go in a yml file', 'warning');
     $renderable = array(
       'ops' => array(
         '#theme' => 'table',
