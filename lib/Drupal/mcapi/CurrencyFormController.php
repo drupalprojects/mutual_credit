@@ -89,7 +89,6 @@ class CurrencyFormController extends EntityFormController {
         t("These are sometimes called 'social' currencies, because by encouraging and recognising volunteer service, they bind the community together."),
         t('This is the choice for all timebanking systems and most LETS.')
       )),
-      '#weight' => 2,
       '#states' => array(
         'visible' => array(
           ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_ACKNOWLEDGEMENT)
@@ -104,7 +103,6 @@ class CurrencyFormController extends EntityFormController {
         t('To stop accounts straying too far from zero, positive and negative balance limits are often used.'),
         t('This model is sometimes called mutual credit, barter, or reciprocal exchange.'),
       )),
-      '#weight' => 2,
       '#states' => array(
         'visible' => array(
           ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_EXCHANGE)
@@ -119,7 +117,6 @@ class CurrencyFormController extends EntityFormController {
         t('Effectively the commodity is monetised, this brings confidence to the commodity, for the cost of the stuff in storage.'),
         t("This would be the choice for all 'dollar-backed' complementary currencies.")
       )),
-      '#weight' => 2,
       '#states' => array(
         'visible' => array(
           ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_COMMODITY)
@@ -136,7 +133,6 @@ class CurrencyFormController extends EntityFormController {
         CURRENCY_TYPE_COMMODITY => t('Backed by a commodity', array(), array('context' => 'currency-type')),
       ),
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
-      '#weight' => 3,
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
       '#disabled' => property_exists($currency, 'info') ?
@@ -152,7 +148,6 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => property_exists($currency, 'uid') ? $currency->uid : \Drupal::currentUser()->name,
       '#multiple' => FALSE,
       '#required' => TRUE,
-      '#weight' => 4,
     );
     $form['reservoir'] = array(
       '#title' => t('Reservoir account'),
@@ -162,13 +157,11 @@ class CurrencyFormController extends EntityFormController {
       '#args' => array('transact'),
       '#default_value' => property_exists($currency, 'reservoir') ? $currency->reservoir : 1,
       '#multiple' => FALSE,
-      '#weight' => 4
     );
     $form['display'] = array(
       '#title' => t('Appearance'),
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
-      '#weight' => 5,
     );
 
     $currency_type = $this->pluginCurrencyManager->createInstance($currency->type);
@@ -203,7 +196,6 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => $currency->prefix,
       '#max_length' => 6,
       '#size' => 6,
-      '#weight' => 4
     );
     $form['display']['suffix'] = array(
       '#title' => t('Suffix'),
@@ -211,7 +203,6 @@ class CurrencyFormController extends EntityFormController {
       '#max_length' => 6,
       '#size' => 6,
       '#default_value' => $currency->suffix,
-      '#weight' => 5
     );
 
     $zeros = property_exists($currency, 'info') && transaction_filter(array('quantity' => 0, 'currcode' => $currency->info['currcode']));
@@ -221,7 +212,6 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'textfield',
       '#default_value' => $currency->zero,
       //'#required' => property_exists($currency, 'display') ? $zeros : FALSE,
-      '#weight' => 6
     );
     if ($zeros) {
       $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");
@@ -232,13 +222,11 @@ class CurrencyFormController extends EntityFormController {
 
     $form['additional_settings'] = array(
       '#type' => 'vertical_tabs',
-      '#weight' => 10,
     );
     $form['access'] = array(
       '#title' => t('Currency access'),
       '#type' => 'details',
       '#group' => 'additional_settings',
-      '#weight' => -1,
       '#tree' => TRUE,
     );
     $weight = 0;
@@ -249,7 +237,6 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'user_chooser_many',
       '#config' => TRUE,
       '#default_value' => property_exists($currency, 'access') ? $currency->access['membership'] : 'user_chooser_segment_perms:transact',
-      '#weight' => $weight++,
     );
     $form['access']['trader_data'] = array(
       '#title' => t('View aggregated user transaction data'),
@@ -257,7 +244,6 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'user_chooser_many',
       '#config' => TRUE,
       '#default_value' => property_exists($currency, 'access') ? $currency->access['trader_data'] : 'user_chooser_segment_perms:transact',
-      '#weight' => $weight++,
     );
     $form['access']['system_data'] = array(
       '#title' => t('View aggregated system data'),
@@ -265,7 +251,6 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'user_chooser_many',
       '#config' => TRUE,
       '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
-      '#weight' => $weight++,
     );
     $i = 0;
     $access_callbacks = module_invoke_all('transaction_access_callbacks');
@@ -276,7 +261,6 @@ class CurrencyFormController extends EntityFormController {
       '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
       '#type' => 'details',
       '#group' => 'additional_settings',
-      '#weight' => 2,
       '#tree' => TRUE,
     );
     foreach (transaction_operations(TRUE, FALSE) as $op => $op_info) {
@@ -294,7 +278,6 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'details',
       '#group' => 'additional_settings',
       '#tree' => TRUE,
-      '#weight' => 5
     );
     foreach (mcapi_get_states('#full') as $constant => $state) {
       $states = isset($currency->view) ? $currency->view : array();
@@ -305,7 +288,6 @@ class CurrencyFormController extends EntityFormController {
         '#options' => $access_callbacks,
         '#default_value' => property_exists($currency, 'view_transaction_states') && isset($currency->view_transaction_states[$constant]) ?
            $currency->view_transaction_states[$constant] : array(current($access_callbacks)),
-        '#weight' => $i++,
       );
     }
 
