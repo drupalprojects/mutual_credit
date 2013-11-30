@@ -993,7 +993,7 @@ function currency_load($currcode = NULL) {
   if ($currcode && isset($currencies[$currcode])) {
     return $currencies[$currcode];
   }
-  debug($currencies, "can't find currency ".$currcode);
+  debug(array_keys($currencies), "can't find currency ".$currcode);
   return current($currencies);
 }
 

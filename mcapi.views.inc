@@ -22,7 +22,8 @@ function mcapi_views_data() {
       'access query tag' => 'transaction_views_access',
       'weight' => 5,
       'defaults' => array(
-        'field' => 'serial',
+        //'field' => 'serial',//only base field itself works at the moment
+        'field' => 'xid',
       )
     ),
     'wizard_id'=> 'transaction',//not documented dunno what for
@@ -166,8 +167,8 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
-  //virtual fields
 
+  //virtual fields
   $data['mcapi_transactions']['operations'] = array(
     'title' => t('Operations'),
     'help' => t('What the user can do to the transaction'),
@@ -176,7 +177,6 @@ function mcapi_views_data() {
       'additional fields' => array('serial')
     )
   );
-
   $data['mcapi_transactions']['worths'] = array(
     'title' => t('Amounts'),
     'help' => t('Currency flows per transaction'),
@@ -184,24 +184,35 @@ function mcapi_views_data() {
       'id' => 'worths',
     )
   );
-
+  //working with raw values directly from the worths table
   $data['mcapi_transactions_worths']['currcode'] = array(
     'title' => t('Currency'),
-    'help' => t('Transactions using specific currencies'),
+    'field' => array(
+      'help' => t('Show the currency only'),
+      'id' => 'currcode',
+      'additional fields' => array('currcode')
+    ),
     'filter' => array(
+      'help' => t('Transactions using specific currencies'),
       'id' => 'currcode',
     ),
     'argument' => array(
+      'help' => t('Transactions using specific currencies'),
       'id' => 'string',
     )
   );
   $data['mcapi_transactions_worths']['quantity'] = array(
     'title' => t('Quantity'),
+    'help' => t('The raw numerical value of the transaction'),
+    'field' => array(
+      'id' => 'quantity',
+      'additional fields' => array('quantity')
+    ),
     'filter' => array(
       'id' => 'numeric',
     ),
-    'argument' => array(
-      'id' => 'numeric',
+    'sort' => array(
+      'id' => 'standard',
     )
   );
 

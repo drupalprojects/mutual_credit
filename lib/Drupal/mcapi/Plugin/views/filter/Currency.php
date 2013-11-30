@@ -9,11 +9,9 @@ namespace Drupal\mcapi\Plugin\views\filter;
 
 use Drupal\views\Plugin\views\filter\InOperator;
 use Drupal\Component\Annotation\PluginID;
-use Drupal\views\Plugin\views\field\FieldPluginBase;
-
 
 /**
- * Filter by published status.
+ * Filter by currency code.
  *
  * @ingroup views_filter_handlers
  *
@@ -27,7 +25,7 @@ class Currency extends InOperator {
 
 
   public function query($use_groupby = FALSE) {
-    $this->join('mcapi_transactions_worths', 'w', 'w.xid = mcapi_transactions.xid');
-    $this->query->addWhere(0, 'currcode', $this->options['value']);
+    $table = $this->ensureMyTable();
+    $this->query->addWhere(0, "$table.currcode", $this->options['value']);
   }
 }
