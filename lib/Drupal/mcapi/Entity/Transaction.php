@@ -55,6 +55,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return t("Transaction #@serial", array('@serial' => $this->serial->value));
   }
 
+  public function uri($rel = 'canonical') {
+    $renderable = parent::uri($rel);
+    $renderable['path'] = 'transaction/'. $this->get('serial')->value;
+    return $renderable;
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -72,6 +78,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     parent::postSave($storage_controller, $update);
 
     $storage_controller->saveWorths($this);
+    $storage_controller->addIndex($this);
   }
 
   /**

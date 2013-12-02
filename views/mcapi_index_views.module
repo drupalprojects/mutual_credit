@@ -2,24 +2,10 @@
 //$Id
 
 define('GRECO_SAMPLE_PERIOD_DAYS', '90');
-/*
- * Having created a mysql view and exposed it to views, this .module file handles the greco index
- */
 
-
-/*
- * Implements views hook_views_api
- */
-function mcapi_index_views_views_api() {
-  return array(
-    'api' => 3,
-    'path' => drupal_get_path('module', 'mcapi_index_views'),
-  );
-}
 
 //views access control callback
 function views_plugin_access_user_arg_check() {
-  if (\Drupal::currentUser()->id() == 1) drupal_set_message('Contact matslats as this views access plugin will be discontinued', 'warning',FALSE);
   return \Drupal::currentUser()->id() == arg(1) || user_access('manage all transactions');
 }
 
@@ -76,9 +62,9 @@ function get_balance_history($account, $currcodes = array(), $mode = 'diagonal',
  */
 function mcapi_index_views_backup_migrate_profiles_alter(&$profiles) {
   foreach ($profiles as $name => $profile) {
-    $profile->filters['destinations']['db']['exclude_tables']['mcapi_index'] = 'mcapi_index';
+    $profile->filters['destinations']['db']['exclude_tables']['mcapi_transactions_index'] = 'mcapi_transactions_index';
   }
-  drupal_set_message("Disable and re-enable the 'Views for transactions' module on the destination system to restore the 'mcapi_index_views' database view");
+  drupal_set_message("On restoring the database, don't forget to refresh the transaction index on !link", l('admin/accounting/misc', 'admin/accounting/misc'));
 }
 
 /*

@@ -27,7 +27,7 @@ class Quantity extends FieldPluginBase {
   }
 
   function render(ResultRow $values) {
-    return$values->mcapi_transactions_worths_quantity;
+    return $values->mcapi_transactions_worths_quantity;
   }
 
 }

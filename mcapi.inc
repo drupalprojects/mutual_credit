@@ -3,113 +3,10 @@
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Template\Attribute;
 
-/*
- * transaction entity definition 'label callback'
- */
-function transaction_label($transaction){
-  return t('Transaction #@serial', array('@serial' => $transaction->serial));
-}
-/*
- * transaction entity definition 'uri callback'
- */
-function transaction_uri($transaction) {
-  return array(
-    'path' => 'transaction/' . $transaction->serial,
-  );
-}
-
-/**
- * All transaction forms should use this function as a basis using hook_forms
- */
-function _transaction_form(&$form, &$form_state) {
-  //the default payer and payee widgets will autocomplete any user on the system, and permissions will be checked later
-  $form['payer'] = array(
-    '#title' => t('Account to be debited'),
-    '#type' => 'user_chooser_few',
-    '#callback' => 'user_chooser_segment_perms',
-    '#args' => array('transact'),
-    '#default_value' => $form['#transaction']->payer,
-    '#weight' => 6,
-  );
-  $form['payee'] = array(
-    '#title' => t('Account to be credited'),
-    '#type' => 'user_chooser_few',
-    '#callback' => 'user_chooser_segment_perms',
-    '#args' => array('transact'),
-    '#default_value' => $form['#transaction']->payee,
-    '#weight' => 9,
-  );
-  $form['type'] = array(
-    '#title' => t('Transaction type'),
-    '#options' => drupal_map_assoc(module_invoke_all('mcapi_info_types')),
-    '#type' => 'select',
-    '#default_value' => $form['#transaction']->type,
-    '#element_validate' => array('mcapi_validate_ttype'),
-    '#required' => TRUE,
-    '#weight' => 15
-  );
-  $form['state'] = array(
-    '#title' => t('State'),
-    '#description' => mcapi_get_states('#description'),
-    '#type' => 'radios',
-    '#options' => mcapi_get_states('#options'),
-    '#default_value' => $form['#transaction']->state,
-    '#element_validate' => array('mcapi_validate_state'),
-    '#weight' => 18
-  );
-  $form['creator'] = array(
-    '#title' => t('Recorded by'),
-    '#type' => 'user_chooser_segment_perms',
-    '#default_value' => $form['#transaction']->creator,
-    '#args' => array('transact'),
-    '#required' => TRUE,
-    '#weight' => 20,
-  );
-
-  field_attach_form('transaction', $form['#transaction'], $form, $form_state);
-
-  $form['buttons'] = array(
-    'submit' => array(
-      '#type' => 'submit',
-      '#value' => t('Record'),
-      //this prevents double click, but doesn't prevent going back and resubmitting the form
-      '#attributes' => new Attribute(array('onclick' => "this.disabled=true,this.form.submit();")),
-    ),
-    '#weight' => 25
-  );
-}
-
-/*
- * standard form-level validation callback for ALL transaction forms
- * fields have already been validated individually
- * By this time each of the form values should be well enough validated not to fail on writing to db
- */
-function transaction_form_validate($form, &$form_state) {
-  $props = $form_state['values'];
-
-  //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
-  $transaction = entity_create('transaction', $props);
-  //validate the Field API fields
-  field_attach_form_validate('transaction', $transaction, $form, $form_state);
-  //finish building the transaction entity from form_state and validate that
-  //Actually I don't believe this does anything we need
-  //entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-  if (form_get_errors()) return;
-  try{
-    //add the dependent transactions, validate, test write and put the checked cluster in form_state
-    //might have used entity_save here, but it doesn't return the value we need
-    //these transactions are stored in the form to be used for a preview perhaps in step 2.
-    $form_state['transactions'] = transaction_cluster_create($transaction, FALSE);
-  }
-  catch (Exception $e) {
-    form_set_error('', $e->getMessage());
-  }
-}
 
 
 /*
- * form submit callback from the base transaction form, hence USED BY ALL forms
- * this is what actually saves the data
+ * TODO: where should this function be moved to?
  */
 function transaction_form_submit($form, &$form_state) {
   $form_build_id = $form_state['values']['form_build_id'];
@@ -138,24 +35,6 @@ function transaction_form_submit($form, &$form_state) {
   $form_state['values']['serial'] = $transaction->serial;
 }
 
-/*
- * form element validation callback functions
- */
-function mcapi_validate_title(&$element, $form_state) {
-  //don't know the max length of 'small' text field. Will be just truncated
-  $form_state['values']['title'] = check_plain($element['#value']);
-}
-
-/*
- * Validate callback for transaction form 'state' element
- * as a form element validation callback, this is assumed to happen BEFORE transactions_validate is called
- */
-function mcapi_validate_state(&$element, &$form_state) {
-  $states = mcapi_get_states('#full');
-  if (!isset($states[$element['#value']])) {
-    form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['#value'])));
-  }
-}
 /*
  * menu page callback
  * builds 'are you sure' operations form for both ajax and nojs
@@ -344,6 +223,7 @@ function _mcapi_validate_mail_element($element, $form_state) {
 /*
  * action callback for hook_transaction_cluster_alter
  * Alters the original transaction and/or returns a dependent
+ * TODO This goes with RULES
  */
 function mcapi_dependent_transaction_action($transaction, $settings) {
   if (!in_array($transaction->type, $settings['conditions']['transaction_types'])) return;
@@ -421,6 +301,7 @@ function _mcapi_calc($formula, $base_value) {
  * the possible values of user_source should be made into php constants
  * 0 //the user argument comes from the current path
  * 1 //the user argument is the current user
+ * TODO: this should be done elsewhere. It is a sort of addon to any block
  */
 function _mcapiblock_settings($delta, $currency_access_mode) {
   $settings = variable_get('mcapiblock_'. $delta, array('currcodes' => array(), 'user_source' => 0));
@@ -533,174 +414,6 @@ function mcapi_worth_item_zero_adjustment(&$worth_render_array) {
   }
 }
 
-/**
- * element validation callback
- * check the centiles value is valid
- * check that the $quantity is a number
- */
-function mcapi_worth_element_validate(&$element, &$form_state, $form) {
-  if (!isset($element['#value']['quantity'])) {
-    return;
-  }
-
-  $currency = entity_load('mcapi_currencies', $element['#value']['currcode']);
-  if (!$currency) {
-    form_error($element, t('This currency does not exist: @currcode', array('@currcode' => $element['#value']['currcode'])));
-  }
-  $quant = &$element['#value']['quantity'];
-  if (strlen($quant) && !is_numeric($quant) && !$element['#calc']) {
-    form_error($element, t('@fieldname must be numeric', array('@fieldname' => $element['#title'])));
-  }
-  if ($quant < 0) {
-    form_error($element, t('Negative values not allowed'));
-  }
-
-  if ($division = $quant - intval($quant)) {
-    //check that divisions match allowed values for the currency
-    if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
-      form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->name)));
-    }
-  }
-  if (array_key_exists('#max', $element) && $element['#max'] && $element['#value']['quantity'] > $element['#max']) {
-    form_error($element, t('Maximum value exceeded for !currency', array('!currency' => $currency->name)));
-  }
-}
-
-/*
- * default worths element validator
- * and check required
- * clear the $items which are empty
- */
-function mcapi_worths_element_validate(&$element, &$form_state) {
-  //we need to drop the empty values to prevent them being written to the database
-  //unless the currency settings explicitly allow it.
-  //first of all set the form_State value, which could not be set from the form_type_worths_value
-  //because of the way it is populated from the container inwards
-  NestedArray::setValue($form_state['values'], $element['#array_parents'], $element['#value']);
-  if ($element['#required']) {//note that this checks all the $items together
-    if (empty($element['#value'])) {
-      form_error($element, t('!name field is required.', array('!name' => $element['#title'])));
-    }
-  }
-}
-
-
-function _worths_element_process($element, &$form_state) {
-  $currencies = mcapi_get_available_currencies();
-  //the default value also tells us which currencies are available
-  //if no defaults are set then all currencies should be present
-  if (!isset($element['#default_value']) || empty($element['#default_value']) || @$element['#preset']) {
-    $element['#default_value'] = isset($element['#default_value']) ? (array)$element['#default_value'] : array();
-    foreach ($currencies as $currcode => $currency) {
-      $element['#default_value'] += array($currcode => array('currcode' => $currcode, 'quantity' => ''));
-    }
-  }
-
-  if (\Drupal::config('mcapi.misc')->get('mix_mode') || @$element['#preset']) {
-    //construct one widget for each default, each with its own currcode
-    foreach ($currencies as $currcode => $name) {
-      $element[$currcode]['#title'] = $name;
-      $element[$currcode]['#currcodes']= array($currcode);
-      $element[$currcode]['#default_value'] = array(
-        'currcode' => $element['#default_value']->{$currcode}['currcode'],
-        'quantity' => $element['#default_value']->{$currcode}['quantity'],
-      );
-    }
-  }
-  else {
-    $element[0]['#title'] = t('Worth');
-    foreach($element['#default_value'] as $currcode => $quant) {
-      $element[0]['#currcodes'][] = $currcode;
-      $element[0]['#default_value']['currcode'] = $currcode;
-      if (strlen($quant)) {
-        $element[0]['#default_value']['quantity'] = $quant;
-      }
-    }
-    if (array_key_exists('#max', $element) && $element['#max']) {
-      $element['#description'] = $element['#description'] . t('Max: !num', array('!num' => $element['#max']));
-    }
-  }
-  //now populate all the subwidgets with defaults
-  foreach (element_children($element) as $delta) {
-    $element[$delta]['#type'] = 'worth';
-    $element[$delta]['#calc'] = @$element['#calc'];
-    $element[$delta]['#preset'] = @$element['#preset'];
-  }
-  return $element;
-}
-
-
-function _worth_element_process($element, &$form_state) {
-  $element['#title_display'] = 'attribute';
-  $main_quant = '';
-  $quantity = @$element['#default_value']['quantity'];
-  //the element is aware of a set of currcodes
-  if (empty($element['#currcodes'])) {
-    //best not rely on this, supply your own currencies that the user is permitted to use.
-    //this defaults to all
-    $element['#currcodes'] = array_keys(mcapi_get_available_currencies());
-  }
-  $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
-
-  if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
-    $currency = entity_load('mcapi_currencies', current($element['#currcodes']));
-    $use_div_subelement = in_array($currency->display['widget'], array(CURRENCY_WIDGET_TEXT, CURRENCY_WIDGET_SELECT));
-  }
-  //work out the defaults for each subfield
-  //null is not presumed to be zero, and is preserved
-  if (!empty($use_div_subelement)) {
-    list($main_quant, $div_quant) = currency_explode($quantity);
-  }
-  elseif($currency && $currency->display['divisions']) {
-    $main_quant = $quantity;
-  }
-  else{
-    $main_quant = intval($quantity);
-  }
-  //in normal mode, show a blank field where the default value is 0
-  if (empty($main_quant) && empty($element['#preset'])) {
-    $main_quant = '';
-  }
-  //while we return a float, the widget may want to show two fields.
-  //in any case we show a main field, and an optional division field
-  $element['main_quant'] = array(
-    '#title' => t('Quantity'),//this is only really needed for errors, and maybe not even then
-    '#title_display' => 'attribute',
-    '#type' => 'textfield',
-    '#default_value' => strlen($main_quant) ? $main_quant : '',
-    '#size' => 4,
-    '#maxlength' => 6,
-    '#theme_wrappers' => array()//to prevent the default form_element wrapper
-  );
-
-  //we only show the division field if the currency requires it
-  if (isset($div_quant)) {//that means $currency is also set
-
-    if ($currency->display['widget'] == CURRENCY_WIDGET_SELECT) {
-      $element['div_quant'] = array(
-        '#title' => t('Fraction'),
-        '#title_display' => 'attribute',
-        '#type' => 'select',
-        '#options' => $currency->display['divisions'],
-        '#default_value' => $div_quant,
-      );
-    }
-    else { //must be CURRENCY_WIDGET_TEXT
-      $element['div_quant'] = array(
-        '#title' => t('Cents'),
-        '#title_display' => 'attribute',
-        '#type' => 'textfield',
-        '#size' => 2,
-        '#maxlength' => 2,
-        '#default_value' => $div_quant,
-        '#theme_wrappers' => array(), //to prevent the default form_element wrapper
-      );
-    }
-  }
-  return $element;
-}
-
-
 /*
  * Default implementation of theme 'worth_field'
  * Converts the quantity into tokens and replaces them into the currency display format
@@ -790,14 +503,6 @@ function mcapi_balances_view($uid, $currcodes = array()) {
  * Utility functions
  */
 
-//returns an array of integer, hundredths, and minus sign if applicable
-//if a the passed value is not a number, then pass it through
-function currency_explode($number) {
-  if (is_numeric($number)) {
-    return array_merge(explode('.', number_format(abs($number), 2, '.', '')));
-  }
-  return array($number, 0);
-}
 
 /*
  * rounds a transaction quantity up or down, according to currency settings

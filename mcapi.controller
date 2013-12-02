@@ -1,57 +1,5 @@
 <?php
 
-
-if (class_exists('EntityAPIController')) {
-class mcapiEntityController extends EntityAPIController {
-
-  /*
-   * Loads the transaction entity and its children
-   */
-  public function load($xids = array(), $reset = FALSE) {
-    $entities = array();
-    $passed_ids = !empty($xids) ? array_flip($xids) : FALSE;
-
-    //get from static cache where available
-    if ($this->cache && !$reset) {
-      $entities += $this->cacheGet($xids);
-      // If any entities were loaded, remove them from the ids still to load.
-      if ($passed_ids) {
-        $xids = array_keys(array_diff_key($passed_ids, $entities));
-      }
-    }
-    $queried_entities = array();
-
-    if ($xids === FALSE || $xids) {
-      //db_set_active(variable_get('mcapi_db_read', 'default'));
-      $query2 = db_select('mcapi_transactions');
-      //db_set_active();
-      $query2->fields('mcapi_transactions', $this->entityInfo['schema_fields_sql']['base table']);
-      // Build the query.
-      if ($xids) {
-        $query2->condition("mcapi_transactions.xid", $xids);
-      }
-      $queried_entities += $query2->execute()->fetchAllAssoc('xid');
-    }
-    if (!empty($queried_entities)) {
-      //extract the serialized data into 'extra' property
-      //there isn't acutally a use for the extra property at the moment.
-      foreach ($queried_entities as $entity) {
-        $entity->extra = unserialize($entity->data);
-        unset($entity->data);
-      }
-      $this->attachLoad($queried_entities);
-      $entities += $queried_entities;
-    }
-    if ($this->cache) {
-      if (!empty($queried_entities)) {
-        $this->cacheSet($queried_entities);
-      }
-    }
-    ksort($entities);//this ensures that the primary transaction in a cluster is first
-    return $entities;
-  }
-
-
   /*
    * creates a transaction-shaped object using the passed values
    * the transaction would fail its own validation without being populated though
@@ -145,79 +93,19 @@ class mcapiEntityController extends EntityAPIController {
     return $transaction;
   }
 
-  //this should never be used because a save callback is defined in mcapi_entity_info
-  //if it was used it would attempt to send clusters and transactions to be saved by the right functions
-  //assuming $really to be TRUE
-  //however for update functions it wouldn't work because no $op is specified
-  public function save($transaction, $arg1 = NULL, $arg2 = NULL) {
-    if (is_array($transaction)) {//this is a cluster
-      return transaction_cluster_write($transaction, $arg1);
-    }
-    elseif (is_object($transaction) && property_exists($transaction, 'serial') && empty($transaction->serial)) {
-      return transaction_cluster_create($transaction, $arg1);
-    }
-    else{
-      drupal_set_message('Problem with entity_save', 'error');
-      continue;
-      transaction_update($op, $transaction, $values);
-    }
-  }
-
-  //writes one line to the transactions table. Serial number must be provided already, using $this->next_serial()
-  //undoes the db_transaction if $really is FALSE
-  //this can be called from outside if necessary
-  public function insert($transaction) {
-    //$result = drupal_write_record('mcapi_transactions', $this->raw());
-    $result = drupal_write_record('mcapi_transactions', $transaction);
-    if($result != SAVED_NEW) {
-      throw new Exception(
-        t('Failed to insert into table @tablename of database @database',
-        array('@tablename' => 'mcapi_transactions', '@database' => $connection)
-      ));
-    }
-    module_invoke_all('entity_insert', $transaction, 'transaction');
-  }
-
-  /*
-   * change the state of a transaction and its dependents
-   * This does not count as updating it, which is subject to different permissions
-   */
-  public function update($transaction, $new_state) {
-    $t = db_transaction();
-    try{
-      $this->invoke('presave', $transaction);
-      //drupal_write_record($this->entityInfo['base table'], $this->raw(), 'xid');
-      drupal_write_record($this->entityInfo['base table'], $transaction, 'xid');
-      $this->resetCache(array($transaction->xid));
-      $this->invoke('update', $entity);
-    }
-    catch (Exception $e) {
-      $t->rollback();
-      watchdog_exception($this->entityType, $e);
-      throw $e;
-    }
-    module_invoke_all('entity_update', $transaction, 'transaction');
-  }
-
   /*
    * get some stats by adding up the transactions for a given user
    * this is currently used for the limits module and for the views handler per-row
-   * caching running balances is dangerous because they would all need recalculating any time a transaction changed state
+   * caching running balances is innappropriate because they would all need recalculating any time a transaction changed state
    */
   public function sums($uid, $currcode, $conditions) {
-    //this COALESCE is only tested for mysql.
-    //when we join the tables like this, half of all values will be NULL, and NULL values do not add
-    //so these NULL values need to be selected as 0 before adding
-    //there may well be a more elegant way
     $query = "SELECT
       COUNT(w1.worth_quantity) + COUNT(w2.worth_quantity) as count,
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)), 0) as gross_in,
       COALESCE(SUM(COALESCE(w1.worth_quantity, 0)), 0) as gross_out,
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)) - SUM(COALESCE(w1.worth_quantity, 0)), 0) as balance,
       COALESCE(SUM(COALESCE(w2.worth_quantity, 0)) + SUM(COALESCE(w1.worth_quantity, 0)), 0) as volume
-      FROM {mcapi_transactions} t
-      LEFT JOIN {field_data_worth} w1 ON t.xid = w1.entity_id AND w1.worth_currcode = '$currcode' AND t.payer = $uid
-      LEFT JOIN {field_data_worth} w2 ON t.xid = w2.entity_id AND w2.worth_currcode = '$currcode' AND t.payee = $uid
+
       WHERE (t.payer = $uid OR t.payee = $uid)" . mcapi_parse_conditions($conditions);
     if ($result = db_query($query)->fetchAssoc()) {
       return $result;
@@ -225,9 +113,25 @@ class mcapiEntityController extends EntityAPIController {
     return array('count' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0);
   }
 
-  //this function is not 100% robust against creating simultaneous transactions
-  public function next_serial() {
-    return db_query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
+  function mcapi_parse_conditions($conditions) {
+    if (empty($conditions)) return '';
+    $where = array();
+    foreach ($conditions as $condition) {
+      if (is_array($condition)) {
+        $condition[] = '=';
+        list($field, $value, $operator) = $condition;
+        if (empty($operator)) $operator = ' = ';
+        if (is_array($value)) {
+          $value = '('.implode(', ', $value) .')';
+          $operator = ' IN ';
+        }
+        $where[] = " ( t.$field $operator $value ) ";
+      }
+      else {//the condition is already provided as a string
+        $where[] = " $condition ";
+      }
+    }
+    return ' AND '. implode(' AND ', $where);
   }
 
   public function delete($xids) {
@@ -292,8 +196,8 @@ class mcapiEntityController extends EntityAPIController {
     }
     return $query->execute()->fetchAllKeyed();
   }
-  
-  
+
+
   //this is undocumented.
   //when users are deleted, their uids should not persist in the transaction table.
   public function mergeAccounts($main) {
@@ -313,28 +217,4 @@ class mcapiEntityController extends EntityAPIController {
       }
     }
   }
-}
-
-}
-
-function mcapi_parse_conditions($conditions) {
-  if (empty($conditions)) return '';
-  $where = array();
-  foreach ($conditions as $condition) {
-    if (is_array($condition)) {
-      $condition[] = '=';
-      list($field, $value, $operator) = $condition;
-      if (empty($operator)) $operator = ' = ';
-      if (is_array($value)) {
-        $value = '('.implode(', ', $value) .')';
-        $operator = ' IN ';
-      }
-      $where[] = " ( t.$field $operator $value ) ";
-    }
-    else {//the condition is already provided as a string
-      $where[] = " $condition ";
-    }
-  }
-  return ' AND '. implode(' AND ', $where);
-}
 }

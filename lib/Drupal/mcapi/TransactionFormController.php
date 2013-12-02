@@ -17,6 +17,19 @@ class TransactionFormController extends EntityFormController {
    */
   public function form(array $form, array &$form_state) {
     $form = parent::form($form, $form_state);
+    if (empty($form_state['mcapi_submitted'])) {
+      $this->form_step_1($form, $form_state);
+      $form['#submit'] = array(array($this, 'step_1_submit'));
+    }
+    else {
+      $this->form_step_2($form, $form_state);
+      $form['#validate'] = array(array($this, 'step_2_validate'));
+      $form['#submit'] = array(array($this, 'step_2_submit'));
+    }
+    return $form;
+  }
+
+  private function form_step_1(&$form, &$form_state) {
     $transaction = $this->entity;
 
     unset($form['langcode']); // No language so we remove it.
@@ -52,20 +65,17 @@ class TransactionFormController extends EntityFormController {
     $form['type'] = array(
       '#title' => t('Transaction type'),
       '#options' => drupal_map_assoc(module_invoke_all('mcapi_info_types')),
-      '#type' => 'value',
+      '#type' => 'mcapi_types',
       '#default_value' => $transaction->type->value,
-      '#element_validate' => array('mcapi_validate_ttype'),
       '#required' => TRUE,
-      '#weight' => 15
+      '#weight' => 12,
     );
     $form['state'] = array(
       '#title' => t('State'),
       '#description' => mcapi_get_states('#description'),
-      '#type' => 'value',
-      '#options' => mcapi_get_states('#options'),
+      '#type' => 'mcapi_states',
       '#default_value' => $transaction->state->value,
-      '#element_validate' => array('mcapi_validate_state'),
-      '#weight' => 18
+      '#weight' => 15
     );
     $form['creator'] = array(
       '#title' => t('Recorded by'),
@@ -86,14 +96,39 @@ class TransactionFormController extends EntityFormController {
       ),
       '#weight' => 25
     ); */
+  }
 
-    return $form;
+  private function form_step_2(&$form, &$form_state) {
+
   }
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::validate().
    */
   public function validate(array $form, array &$form_state) {
+    //TODO this is all D7 code
+    drupal_set_message('Do the transaction Entity form validation');
+    /*
+    $props = $form_state['values'];
+
+    //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
+    $transaction = entity_create('transaction', $props);
+    //validate the Field API fields
+    field_attach_form_validate('transaction', $transaction, $form, $form_state);
+    //finish building the transaction entity from form_state and validate that
+    //Actually I don't believe this does anything we need
+    //entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
+    if (form_get_errors()) return;
+    try{
+      //add the dependent transactions, validate, test write and put the checked cluster in form_state
+      //might have used entity_save here, but it doesn't return the value we need
+      //these transactions are stored in the form to be used for a preview perhaps in step 2.
+      $form_state['transactions'] = transaction_cluster_create($transaction, FALSE);
+    }
+    catch (Exception $e) {
+      form_set_error('', $e->getMessage());
+    }
+    */
   }
 
   /**
@@ -121,3 +156,4 @@ class TransactionFormController extends EntityFormController {
   }
 
 }
+

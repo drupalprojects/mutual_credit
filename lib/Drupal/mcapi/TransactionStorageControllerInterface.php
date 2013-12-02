@@ -18,5 +18,10 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
    *  Transaction currently being saved.
    */
   public function saveWorths(TransactionInterface $transaction);
+  public function addIndex(TransactionInterface $transaction);
+
+  public function indexRebuild();
+  public function indexCheck();
+
 
 }

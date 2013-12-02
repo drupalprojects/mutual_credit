@@ -68,7 +68,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
           //we will reveal the ajax links only on the certificate
           $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
           $tx['#attached']['css'] = array(drupal_get_path('module', 'mcapi') .'/mcapi.css');
-          debug($tx['#attached']);
           break;
         default: //an arbitrary token string, don't forget there is a token for [transaction:links]
           $token_service = \Drupal::token();

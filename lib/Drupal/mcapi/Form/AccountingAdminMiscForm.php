@@ -65,6 +65,16 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       '#type' => 'checkbox',
       '#default_value' => !$config->get('mix_mode'),
     );
+    $form['rebuild_mcapi_index'] = array(
+      '#title' => t('Rebuild index'),
+      '#description' => t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
+      '#type' => 'fieldset',
+      '#weight' => 10,
+      'button' => array(
+        '#type' => 'submit',
+        '#value' => 'rebuild_mcapi_index',
+      )
+    );
 
     return parent::buildForm($form, $form_state);
   }
@@ -81,5 +91,14 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       ->save();
 
     parent::submitForm($form, $form_state);
+
+    if($form_state['triggering_element']['#value'] == 'rebuild_mcapi_index') {
+      //not sure where to put this function
+       \Drupal::entityManager()->getStorageController('mcapi_transaction')->indexRebuild();
+       drupal_set_message("Index table is rebuilt");
+       $form_state['redirect'] = 'admin/reports/status';
+    }
   }
 }
+
+

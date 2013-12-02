@@ -58,10 +58,9 @@ class OperationSettingsForm extends ConfigFormBase {
     );
     $form['cc'] = array(
       '#title' => t('Carbon copy to'),
-      '#description' => 'Comma separated email addresses',
-      '#type' => 'textfield',
+      '#description' => 'A valid email address',
+      '#type' => 'email',
       '#default_value' => $config->get('cc'),
-      '#element_validate' => array('mcapi_validate_emails'),
       '#weight' => 3
     );
 
@@ -81,6 +80,5 @@ class OperationSettingsForm extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
   }
-
 }
 
