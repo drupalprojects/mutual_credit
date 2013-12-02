@@ -615,7 +615,7 @@ function mcapi_user_view($account, $mode, $language) {
  */
 function mcapi_block_info() {
   $blocks = array();
-  if (variable_get('mcapi_show_balances', 0)) {
+  if (\Drupal::config('mcapi.misc')->get('show_balances')) {
     $blocks[balances] = array('info' => 'MC '. t("Balances"));
   }
   return $blocks;
@@ -1261,8 +1261,7 @@ function mcapi_worths_element_process($element, &$form_state) {
   }
   $delta = 0;
 
-
-  if (variable_get('mcapi_mixed_transactions', TRUE) || @$element['#preset']) {
+  if (\Drupal::config('mcapi.misc')->get('mix_mode') || $element['#preset']) {
     //construct one widget for each default, each with its own currcode
     foreach($element['#default_value'] as $currcode => $quant) {
       $element[$delta]['#title'] = $currencies[$currcode]->human_name;
