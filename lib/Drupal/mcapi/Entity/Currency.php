@@ -68,8 +68,11 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
+    $currencyTypeManager = \Drupal::service('plugin.manager.mcapi.currency_type');
     $widgetManager = \Drupal::service('plugin.manager.mcapi.currency_widget');
     $widgets = array_keys($widgetManager->getOptions($values['type']));
+
+    $defintions = $currencyTypeManager->getDefinition($values['type']);
 
     $values += array(
       'settings' => array(),
@@ -78,11 +81,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'zero' => '',
       'access' => array(),
       'access_operations' => array(),
-      'widget' => reset($widgets),
+      'view_transaction_states' => array(),
+      'widget' => $defintions['default_widget'],
       'widget_settings' => array(),
     );
 
-    $values['settings'] += \Drupal::service('plugin.manager.mcapi.currency_type')->getDefaultSettings($values['type']);
+    $values['settings'] += $currencyTypeManager->getDefaultSettings($values['type']);
 
     $values['widget_settings'] += $widgetManager->getDefaultSettings($values['widget']);
 
@@ -91,5 +95,24 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'trader_data' => 'user_chooser_segment_perms:transact',
       'system_data' => 'user_chooser_segment_perms:transact',
     );
+
+    $values['access_operations'] += array(
+      'undo' => array('transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'),
+    );
+
+    $values['view_transaction_states'] += array(
+      0 => array('transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'),
+      1 => array('transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact')
+    );
+  }
+
+  /**
+   * Fetch the Currency Type.
+   *
+   * @return string
+   *  The plugin Id for the Currency Type.
+   */
+  public function getCurrencyType() {
+    return $this->type;
   }
 }
