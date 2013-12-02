@@ -7,8 +7,48 @@
 namespace Drupal\mcapi\Plugin;
 
 use Drupal\Core\Field\WidgetPluginManager;
+use Drupal\mcapi\Plugin\CurrencyTypePluginManager;
+use Drupal\mcapi\CurrencyFieldDefinitions;
 
 class CurrencyWidgetManager extends WidgetPluginManager {
+
+  /*
+   * {@inheritdoc}
+   */
+  public function getInstance(array $options) {
+    // Fill in defaults for missing properties.
+    $options += array(
+      'configuration' => array(),
+      'prepare' => TRUE,
+    );
+
+    $configuration = $options['configuration'];
+    $currency = $options['currency'];
+    $currency_type = $currency->getCurrencyType();
+
+    // Fill in default configuration if needed.
+    if ($options['prepare']) {
+      $configuration = $this->prepareConfiguration($currency_type, $configuration);
+    }
+
+    $plugin_id = $configuration['type'];
+
+    // Switch back to default widget if either:
+    // - $type_info doesn't exist (the widget type is unknown),
+    // - the field type is not allowed for the widget.
+    $definition = $this->getDefinition($configuration['type']);
+    if (!isset($definition['class']) || !(in_array('currency_type_' . $currency_type, $definition['field_types']))) {
+      // Grab the default widget for the field type.
+      $field_type_definition = $this->fieldTypeManager->getDefinition($currency_type);
+      $plugin_id = $field_type_definition['default_widget'];
+    }
+
+    $configuration += array(
+      'currency' => $currency,
+      'field_definition' => new CurrencyFieldDefinitions(),
+    );
+    return $this->createInstance($plugin_id, $configuration);
+  }
 
   /**
    * {@inheritdoc}
@@ -29,7 +69,7 @@ class CurrencyWidgetManager extends WidgetPluginManager {
       $this->widgetOptions = $options;
     }
     if (isset($currency_type)) {
-      return (!empty($this->widgetOptions['currency_type_' . $currency_type]) ? $this->widgetOptions['currency_type_' . $currency_type] : array()) + (!empty($this->widgetOptions['currency_type']) ? $this->widgetOptions['currency_type'] : array());
+      return (!empty($this->widgetOptions['currency_type_' . $currency_type]) ? $this->widgetOptions['currency_type_' . $currency_type] : array());
     }
 
     return $this->widgetOptions;

@@ -20,7 +20,8 @@ use Drupal\mcapi\CurrencyTypeInterface;
  *   description = @Translation("Standard numeric currency"),
  *   settings = {
  *     "scale" = 2
- *   }
+ *   },
+ *   default_widget = "currency_decimal_single"
  * )
  */
 class Decimal extends CurrencyTypeBase implements CurrencyTypeInterface {

@@ -48,6 +48,19 @@ class CurrencyFormController extends EntityFormController {
     );
   }
 
+  public function getWidgetPlugin($configuration) {
+    $plugin = NULL;
+
+    if ($configuration) {
+      $plugin = $this->pluginWidgetManager->getInstance(array(
+        'currency' => $this->entity,
+        'configuration' => $configuration
+      ));
+    }
+
+    return $plugin;
+  }
+
   /**
    * Get the widget options.
    */
@@ -61,6 +74,13 @@ class CurrencyFormController extends EntityFormController {
   public function form(array $form, array &$form_state) {
     $form = parent::form($form, $form_state);
     $currency = $this->entity;
+
+    $form_state += array(
+      'widget_settings_edit' => NULL,
+      'widget_settings' => array(
+        $currency->widget => $currency->widget_settings
+      ),
+    );
 
     $form['name'] = array(
       '#type' => 'textfield',
@@ -162,6 +182,8 @@ class CurrencyFormController extends EntityFormController {
       '#title' => t('Appearance'),
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
+      '#prefix' => '<div id="currency-display-wrapper">',
+      '#suffix' => '</div>',
     );
 
     $currency_type = $this->pluginCurrencyManager->createInstance($currency->type);
@@ -184,11 +206,110 @@ class CurrencyFormController extends EntityFormController {
       '#title' => $this->t('Widget'),
       '#default_value' => $currency->widget,
       '#options' => $this->getWidgetOptions($currency->type),
+      '#attributes' => array('class' => array('field-plugin-type')),
     );
 
     $form['display']['widget_settings'] = array(
       '#tree' => TRUE,
     );
+
+    $form['display']['widget_summary'] = array();
+
+    $widget_type = isset($form_state['input']['widget']) ? $form_state['input']['widget'] : $currency->widget;
+
+    $options = array(
+      'type' => $widget_type,
+      'settings' => isset($form_state['widget_settings'][$widget_type]) ? $form_state['widget_settings'][$widget_type] : array(),
+    );
+    $widgetPlugin = $this->getWidgetPlugin($options);
+
+    $base_button = array(
+      '#submit' => array(array($this, 'multistepSubmit')),
+      '#ajax' => array(
+        'callback' => array($this, 'multistepAjax'),
+        'wrapper' => 'currency-display-wrapper',
+        'effect' => 'fade',
+      ),
+    );
+
+    if ($form_state['widget_settings_edit']) {
+      // We are currently editing this field's plugin settings. Display the
+      // settings form and submit buttons.
+      $field_row['plugin']['settings_edit_form'] = array();
+
+      if ($widgetPlugin) {
+        // Generate the settings form and allow other modules to alter it.
+        $settings_form = $widgetPlugin->settingsForm($form, $form_state);
+        $this->alterWidgetSettingsForm($settings_form, $widgetPlugin, $form, $form_state);
+
+        if ($settings_form) {
+          $form['display']['widget_settings'] = array(
+            '#type' => 'container',
+            '#attributes' => array('class' => array('widget-plugin-settings-edit-form')),
+            'label' => array(
+              '#markup' => $this->t('Plugin settings'),
+            ),
+            'widget_settings' => array('#tree' => TRUE) + $settings_form,
+            'actions' => array(
+              '#type' => 'actions',
+              'save_settings' => $base_button + array(
+                '#type' => 'submit',
+                '#name' => 'widget_plugin_settings_update',
+                '#value' => $this->t('Update'),
+                '#op' => 'update',
+                '#limit_validation_errors' => array(array('widget_settings')),
+              ),
+              'cancel_settings' => $base_button + array(
+                '#type' => 'submit',
+                '#name' => 'widget_plugin_settings_cancel',
+                '#value' => $this->t('Cancel'),
+                '#op' => 'cancel',
+                // Do not check errors for the 'Cancel' button, but make sure we
+                // get the value of the 'plugin type' select.
+                '#limit_validation_errors' => array(),
+              ),
+            ),
+          );
+        }
+      }
+    }
+    else {
+      if ($widgetPlugin) {
+        // Display a summary of the current plugin settings, and (if the
+        // summary is not empty) a button to edit them.
+        $summary = $widgetPlugin->settingsSummary();
+
+        // Allow other modules to alter the summary.
+        $this->alterWidgetSettingsSummary($summary, $widgetPlugin);
+        $form['display']['widget_summary'] = array();
+
+        if (!empty($summary)) {
+          $form['display']['widget_summary']['summary'] = array(
+            '#markup' => '<div class="widget-plugin-summary">' . implode('<br />', $summary) . '</div>',
+          );
+        }
+        if ($widgetPlugin->getSettings()) {
+          $form['display']['widget_summary']['edit'] = $base_button + array(
+            '#type' => 'image_button',
+            '#name' => 'widget_settings_edit',
+            '#src' => 'core/misc/configure-dark.png',
+            '#attributes' => array('class' => array('widget-plugin-settings-edit'), 'alt' => $this->t('Edit')),
+            '#op' => 'edit',
+            // Do not check errors for the 'Edit' button, but make sure we get
+            // the value of the 'plugin type' select.
+            '#limit_validation_errors' => array(),
+            '#prefix' => '<div class="widget-plugin-settings-edit-wrapper">',
+            '#suffix' => '</div>',
+          );
+        }
+        if (!empty($form['display']['widget_summary'])) {
+          $form['display']['widget_summary'] += array(
+            '#prefix' => '<div class="currency-plugin-summary clearfix">',
+            '#suffix' => '</div>',
+          );
+        }
+      }
+    }
 
     $form['display']['prefix'] = array(
       '#title' => t('Prefix'),
@@ -291,16 +412,61 @@ class CurrencyFormController extends EntityFormController {
       );
     }
 
+    $form['refresh'] = array(
+      '#type' => 'submit',
+      '#value' => $this->t('Refresh'),
+      '#op' => 'refresh_display',
+      '#limit_validation_errors' => array(),
+      '#submit' => array(array($this, 'multistepSubmit')),
+      '#ajax' => array(
+        'callback' => array($this, 'multistepAjax'),
+        'wrapper' => 'currency-display-wrapper',
+        'effect' => 'fade',
+        // The button stays hidden, so we hide the Ajax spinner too. Ad-hoc
+        // spinners will be added manually by the client-side script.
+        'progress' => 'none',
+      ),
+      '#attributes' => array('class' => array('visually-hidden'))
+    );
+
     $form['#attached'] = array(
       'css' => array(
         drupal_get_path('module', 'mcapi') . '/css/admin_currency.css',
+      ),
+      'js' => array(
+        drupal_get_path('module', 'mcapi') . '/js/admin_currency.js',
       ),
     );
 
     return $form;
   }
 
-  public function currencyTypeCallback($form, $form_state) {
+  public function multistepSubmit($form, &$form_state) {
+    $trigger = $form_state['triggering_element'];
+    $op = $trigger['#op'];
+
+    switch ($op) {
+      case 'edit':
+        $form_state['widget_settings_edit'] = TRUE;
+        break;
+
+      case 'update':
+        $form_state['widget_settings'][$form_state['input']['widget']] = $form_state['values']['widget_settings'];
+        $form_state['widget_settings_edit'] = NULL;
+        break;
+
+      case 'cancel':
+        $form_state['widget_settings_edit'] = NULL;
+        break;
+
+      case 'refresh_display':
+        break;
+    }
+
+    $form_state['rebuild'] = TRUE;
+  }
+
+  public function multistepAjax($form, &$form_state) {
     return array('display' => $form['display']);
   }
 
@@ -317,6 +483,15 @@ class CurrencyFormController extends EntityFormController {
     elseif (!$callback(array($arg), $form_state['values']['reservoir'])) {
       form_set_error('reservoir', t('Reservoir account does not have access to the currency!'));
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submit(array $form, array &$form_state) {
+    $form_state['values']['widget_settings'] = isset($form_state['widget_settings'][$form_state['values']['widget']]) ? $form_state['widget_settings'][$form_state['values']['widget']] : array();
+
+    parent::submit($form, $form_state);
   }
 
   /**
@@ -405,5 +580,29 @@ class CurrencyFormController extends EntityFormController {
    */
   public function delete(array $form, array &$form_state) {
     $form_state['redirect'] = 'admin/accounting/currencies/' . $this->entity->id() . '/delete';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function alterWidgetSettingsForm(array &$settings_form, $plugin, array $form, array &$form_state) {
+    $context = array(
+      'widget' => $plugin,
+      'form_mode' => 'full',
+      'form' => $form,
+    );
+    drupal_alter('field_widget_settings_form', $settings_form, $form_state, $context);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function alterWidgetSettingsSummary(array &$summary, $plugin) {
+    $context = array(
+      'widget' => $plugin,
+      'field' => 'currency_type_' . $this->entity->type,
+      'entity' => $this->entity,
+    );
+    drupal_alter('field_widget_settings_summary', $summary, $context);
   }
 }

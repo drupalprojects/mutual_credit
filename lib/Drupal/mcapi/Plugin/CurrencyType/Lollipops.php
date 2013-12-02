@@ -15,7 +15,8 @@ use Drupal\mcapi\CurrencyTypeInterface;
  * @CurrencyType(
  *   id = "lollipops",
  *   label = @Translation("Lollipops"),
- *   description = @Translation("Currency based upon lollipops")
+ *   description = @Translation("Currency based upon lollipops"),
+ *   default_widget = "currency_decimal_single"
  * )
  */
 class Lollipops extends Decimal implements CurrencyTypeInterface {

@@ -16,7 +16,8 @@ use Drupal\mcapi\CurrencyTypeInterface;
  * @CurrencyType(
  *   id = "time",
  *   label = @Translation("Time"),
- *   description = @Translation("Currency based upon time")
+ *   description = @Translation("Currency based upon time"),
+ *   default_widget = "currency_time_single"
  * )
  */
 class Time extends CurrencyTypeBase implements CurrencyTypeInterface {
