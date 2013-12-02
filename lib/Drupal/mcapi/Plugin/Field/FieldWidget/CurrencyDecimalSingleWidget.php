@@ -7,20 +7,21 @@
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
-use Drupal\Core\Entity\Field\FieldItemListInterface;
-use Drupal\field\Plugin\Type\Widget\WidgetBase;
+use Drupal\Core\Field\WidgetBase;
+use Drupal\Core\Field\FieldItemListInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 
 /**
  * Plugin implementation of the 'text_textfield' widget.
  *
  * @FieldWidget(
- *   id = "currency_single",
+ *   id = "currency_decimal_single",
  *   label = @Translation("Single Field"),
  *   field_types = {
- *     "currency_type"
+ *     "currency_type_decimal"
  *   }
  * )
  */
-class CurrencySingleWidget extends WidgetBase {
+class CurrencyDecimalSingleWidget extends CurrencySingleWidgetBase {
+
 }
