@@ -351,58 +351,6 @@ function _transactions_diff($transaction) {
   return $diff;
 }
 
-/*
- * theme implementation of template_preprocess_HOOK
- * make the transaction variables into something which can be nicely themed
- * $variables['transaction'] may have ->dependents from transaction_load
- * or it may be a simulated transaction with no xid and serial or dependents
- */
-function template_preprocess_certificate(&$vars) {
-  $transaction = &$vars['object'];
-  $vars['payer'] = $transaction->payer->name;
-  $vars['payee'] = user_load($transaction->payee)->name;
-  $vars['state'] = $transaction->state->value;
-  $vars['recorded'] = format_date($transaction->created->value, 'medium');
-  $vars['type'] = $transaction->type->value;
-  $vars['date'] = format_date($transaction->created->value, 'long');
-  $vars['description'] = $transaction->description->value;
-  $vars['classes_array'] = array('transaction', 'certificate', $transaction->type->value, 'state-'.$transaction->state->value);
-  if (!property_exists($transaction, 'xid') || empty($transaction->xid->value)) {
-    $vars['classes_array'][] = 'preview';
-    foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
-      //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
-      //TODO There's no way this will be necessary in drupal8
-      if (property_exists($transaction, $fieldname)) unset($transaction->$fieldname);
-    }
-  }
-
-  //this returns a render array
-  //api.drupal.org says of field_attach_view "as of Drupal 8 use the entity system instead"
-  //could be more helpful...
-//  $vars['additional'] = field_attach_view('transaction', $transaction, 'certificate');
-
-
-  //this populates top level of variables with the render array
-  field_attach_preprocess($transaction, $vars['additional'], $vars);
-
-  foreach (element_children($vars['worths']) as $delta) {
-    //TODO this probably isn't needed in d8
-    mcapi_worth_item_zero_adjustment($vars['worth'][$delta]);
-  }
-  //TODO not sure how to get a render array for worths
-  $vars['worths'] = 'WORTHS NOT RENDERED YET';
-  //choose the transaction theme template based on the first currency of the transaction
-  //not sure if this is worth the processing power at the moment
-  $vars['theme_hook_suggestions'][] = 'certificate__' . reset(array_keys($transaction->worths));
-  $vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
-  if (isset($transaction->dependents) && !empty($transaction->dependents)) {
-    $vars['dependents'] = transaction_view(
-      $transaction->dependents,
-      str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
-    );
-  }
-}
-
 //this will adjust the rendering of zero worth in accordance with the currency display zero property
 //it is not used every time a 'worth' is rendered, but only when transactions are displayed.
 //for this reason, though it seems inelegant, this function should be called from wherever the transaction is rendered

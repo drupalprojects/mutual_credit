@@ -456,7 +456,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'pattern' => 'certificate__',
       'variables' => array(
         'object' => NULL,
-        'id' => '',
         'links' => array(),
       ),
       'file' => 'mcapi.inc'
@@ -961,18 +960,70 @@ function currency_access($op, $currcode, $account = NULL) {
   return $calculated[$op][$currcode][$uid];
 }
 
-function mcapi_preprocess_transaction(&$vars) {
+function template_preprocess_mcapi_transaction(&$vars) {
   $transaction = &$vars['transaction'];
-  if (property_exists($transaction['#object'], 'serial')) {
-  //id is hardcoded here because ajax operations will break if it changes
-    $transaction['#id'] = 'transaction-'. $transaction['#object']->serial;
-  }
+  //don't know if this is needed in d8
   element_set_attributes($transaction, array('class', 'id'));
+
+  $vars['attributes']['class'] = array(
+  	'transaction',
+ 		'transaction-'. $transaction['#object']->serial->value,
+  	$transaction['#view_mode'] == 'certificate' ? 'certificate' : 'sentence',
+  	$transaction['#object']->type->value,
+  	'state-'.$transaction['#object']->state->value
+  );
 }
 
-function mcapi_preprocess_certificate(&$vars) {
-  $vars['test'] = 'test';
-  debug(array_keys($vars));
+function template_preprocess_certificate(&$vars) {
+  $transaction = &$vars['object'];
+  $payer = array(
+    '#theme' => 'username',
+    '#account' => $transaction->payer->entity,
+    '#link_options' => array('attributes' => array('rel' => 'author')),
+  );
+  $payee = array(
+    '#theme' => 'username',
+    '#account' => $transaction->payee->entity,
+    '#link_options' => array('attributes' => array('rel' => 'author')),
+  );
+  $vars['payer'] = drupal_render($payer);
+  $vars['payee'] = drupal_render($payee);
+  //TODO not sure how to get a render array for worths
+  $vars['worths'] = 'WORTHS NOT RENDERED YET';
+  $vars['state'] = $transaction->state->value;
+  $vars['date'] = format_date($transaction->created->value, 'medium');
+  $vars['type'] = $transaction->type->value;
+  $vars['description'] = $transaction->description->value;
+
+  if (!property_exists($transaction, 'xid') || empty($transaction->xid->value)) {
+    $vars['attributes']['class'][] = 'preview';
+    foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
+      //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
+      //TODO There's no way this will be necessary in drupal8
+      if (property_exists($transaction, $fieldname)) unset($transaction->$fieldname);
+    }
+  }
+  foreach (element_children($transaction->content) as $field_name) {
+  	$vars['additional'][$field_name] = $transaction->content[$field_name];
+
+  }
+
+
+  foreach (element_children($vars['worths']) as $delta) {
+    //TODO this probably isn't needed in d8
+    mcapi_worth_item_zero_adjustment($vars['worth'][$delta]);
+  }
+  //choose the transaction theme template based on the first currency of the transaction
+  //not sure if this is worth the processing power at the moment
+  $vars['theme_hook_suggestions'][] = 'certificate__' . reset(array_keys($transaction->worths));
+  $vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
+  $vars['children'] = array();
+  if (isset($transaction->children) && !empty($transaction->dependents)) {
+    $vars['children'] = transaction_view(
+      $transaction->dependents,
+      str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
+    );
+  }
 }
 
 function mcapi_currencies_load($currcode) {

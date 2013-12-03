@@ -56,7 +56,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
 
     $query = $this->database->insert('mcapi_transactions_worths')
       ->fields(array('xid', 'currcode', 'quantity'));
-    foreach ($transaction->worths[0] as $currcode => $currency) {
+    foreach ($transaction->worths[0] as $currcode => $worthitem) {
       $query->values(array(
         'xid' => $transaction->id(),
         'currcode' => $currcode,
@@ -78,7 +78,9 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     //we only index transactions with positive state values
     if ($transaction->state->value < 1) return;
 
-    foreach ($transaction->worths[0] as $currcode => $currency) {
+    debug($transaction->worths[0], 'failing to extract worths for index table');
+
+    foreach ($transaction->worths[0] as $currcode => $worthitem) {
       $query = $this->database->insert('mcapi_transactions_index')
         ->fields(array('xid', 'currcode', 'quantity'));
       $query->values(array(
@@ -86,11 +88,11 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'serial' => $transaction->serial->value,
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
-        'currcode' => $currency->currcode,
-        'volume' => $currency->quantity,
+        'currcode' => $currcode,
+        'volume' => $worthitem->quantity,
         'incoming' => 0,
-        'outgoing' => $currency->quantity,
-        'diff' => -$currency->quantity,
+        'outgoing' => $worthitem->quantity,
+        'diff' => -$worthitem->quantity,
         'type' => $transaction->type->value
       ),
       array(
@@ -98,11 +100,11 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'serial' => $transaction->serial->value,
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
-        'currcode' => $currency->currcode,
-        'volume' => $currency->quantity,
-        'incoming' => $currency->quantity,
+        'currcode' => $currcode,
+        'volume' => $worthitem->quantity,
+        'incoming' => $worthitem->quantity,
         'outgoing' => 0,
-        'diff' => $currency->quantity,
+        'diff' => $worthitem->quantity,
         'type' => $transaction->type->value
       ));
       $query->execute();

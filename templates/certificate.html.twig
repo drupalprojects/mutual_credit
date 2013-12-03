@@ -1,27 +1,38 @@
-The certificate isn't visible to twig: {{ test }}
+{#
+/**
+ * @file
+ * Default theme implementation to display a node.
+ *
+ * Available variables:
+ * - node: Full mcapi_transaction entity including
+  *   - created: unixtime of creation date. Preprocess functions can reformat it by
+ *     calling format_date()
+ * - payer: The formatted username of the payer
+ * - payee: The formatted username of the payee
+ * - worths: The formatted currency quantities
+ * - state: The name of the transaction state
+ * - type: The transaction type
+ * - description: The one line description
+ * - date: Formatted creation date
+ * - attributes
+ * -   attributes.class
+ * - links: The transaction operations, formatted as a list
+ * if the mcapi_limits module is enabled:
+ * - pending
+ * extra fieldAPI fields
+ * - additional
+ * child transactions, rendered as sentences
+ * - children
+#}
+
+
+
+On {{ date }}, {{ payer }} paid {{ payee }} the sum of 
+<br />{{ worths }} {{ links }}
+<br />{{ additional }}
+
 <br />
-On @recorded {{ element.payer }} paid {{ payee }} the sum of !worth
-
-  {{ dump() }}
-  {{ certificate.links }}
-  {{ certificate.test }}
-<!--
-$certificate_string = str_replace("\n", '<br /><br />', $certificate_string);
-?>
-  <?php print render($pending); //floating on the right, by default ?>
-  <?php print $certificate_string; ?>
-
-  <?php if (array_key_exists('!description', $replacements)) : ?>
-    <strong><?php print t('For:');?></strong>
-    <?php print $replacements['!description'] ?><br />
-  <?php endif; ?>
-
-  <?php if (isset($dependents)) : // all the remaining transactions are already rendered as tokenised strings ?>
-  <div id="dependent-transactions">
-    <h3><?php print t('Dependent transactions'); ?></h3>
-    <?php print render ($dependents); ?>
-  </div>
-  <?php endif; ?>
-
-  <?php print render($additional); //any fields we don't know about'?>
--->
+<br /><b>Testing variables:</b>
+<br />pending: {{ pending }}
+<br />children: {{ children }}
+<br />

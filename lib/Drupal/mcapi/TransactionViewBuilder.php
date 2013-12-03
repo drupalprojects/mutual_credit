@@ -25,25 +25,11 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
    */
   public function buildContent(array $transactions, array $displays, $view_mode = 'certificate', $langcode = NULL, $suppress_ops = FALSE) {
-
+    //TODO Gordon for some reason the $transactions haven't got the field API fields loaded
     parent::buildContent($transactions, $displays, $view_mode, $langcode);
-    //special case for the 'are you sure' form where the transaction was test written and deleted
-    //TODO probably not needed in D8?
-    if (!property_exists(current($transactions), 'serial') || empty($transaction->serial->value)) {
-      foreach ($transactions as $transaction) {
-        $variables['classes_array'][] = 'preview';
-        //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
-        foreach (field_info_instances('transaction', 'transaction') as $fieldname => $instance) {
-          unset($transaction->{$fieldname});
-        }
-      }
-    }
-    else {
-      field_attach_prepare_view('transaction', $transactions, 'certificate');
-    }
 
-    foreach ($transactions as $transaction) {
-      //temporary for the worth field
+    foreach ($transactions as $transaction->xid => $transaction) {
+      //TODO move this closer to the worths object
       foreach ($transaction->worths[0] as $currency => $worth) {
         $transaction->content['worths'][$currency] = array(
           '#prefix' => $worth->currency->prefix,
@@ -51,38 +37,36 @@ class TransactionViewBuilder extends EntityViewBuilder {
           '#markup' => $worth->quantity,
         );
       }
-
       $tx = array(
-        '#theme_wrappers' => array('mcapi_transaction'),
-        '#class' => array(
-           'transaction',
-           $view_mode == 'certificate' ? 'certificate' : 'sentence',
-           'state-'.$transaction->state->value,
-           $transaction->type->value
-        ),
+        '#theme' => array('mcapi_transaction'),
         '#object' => $transaction,
       );
-      switch ($view_mode) {
-        case 'certificate':
-          $tx['#theme'] = 'certificate';
-          //we will reveal the ajax links only on the certificate
-          $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
-          $tx['#attached']['css'] = array(drupal_get_path('module', 'mcapi') .'/mcapi.css');
-          break;
-        default: //an arbitrary token string, don't forget there is a token for [transaction:links]
-          $token_service = \Drupal::token();
-          global $language;
-          $tx['#markup'] = $token_service->replace(
-            $view_mode,
-            array('transaction' => $transaction),
-            array('language' => $language, 'sanitize' => FALSE)
-          );
-          break;
+      if ($view_mode == 'certificate') {
+        //we will reveal the ajax links only on the certificate
+        $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
+        $tx['#attached']['css'] = array(drupal_get_path('module', 'mcapi') .'/mcapi.css');
+        $tx['certificate'] = array(
+        	'#theme' => 'certificate',
+        	'#object' => clone $transaction,
+        );
+        //because we are passing the $transaction->content down we can remove it
+        $transaction->content = array();
       }
-      $transaction->content = $tx;
+      else { //an arbitrary token string, don't forget there is a token for [transaction:links]
+        $token_service = \Drupal::token();
+        global $language;
+        $tx['inner']['#markup'] = $token_service->replace(
+          $view_mode,
+          array('transaction' => $transaction),
+          array('language' => $language, 'sanitize' => FALSE)
+        );
+      }
+      $transaction->content = array_merge($transaction->content, $tx);
     }
     $type = 'transaction';//must be sent as a reference
     drupal_alter(array('transaction_view', 'entity_view'), $transaction->content, $type);
   }
 
 }
+
+
