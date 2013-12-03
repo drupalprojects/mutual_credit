@@ -988,12 +988,14 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
 
   if (!$cache = \Drupal::cache()->get($cid)) {
     $avaiable = array();
+    $cache_tags = array('mcapi.available_currency' => array());
     foreach (entity_load_multiple('mcapi_currencies') as $currency) {
       if ($currency->access('membership', $account)) {
         $avaiable[$currency->id()] = $currency->name;
+        $cache_tags['mcapi.available_currency'] = $currency->id();
       }
     }
-    \Drupal::cache()->set($cid, $avaiable, CacheBackendInterface::CACHE_PERMANENT, array('mcapi.available_currency'));
+    \Drupal::cache()->set($cid, $avaiable, CacheBackendInterface::CACHE_PERMANENT, $cache_tags);
     return $avaiable;
   }
   else {
