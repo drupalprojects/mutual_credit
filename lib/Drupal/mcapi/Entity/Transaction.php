@@ -134,6 +134,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     );
     $properties['description'] = array(
       'label' => t('Description'),
+      'description' => t('A one line description of what was exchanged.'),
       'type' => 'string_field',
       'property_constraints' => array(
         'value' => array('Length' => array('max' => 128)),
