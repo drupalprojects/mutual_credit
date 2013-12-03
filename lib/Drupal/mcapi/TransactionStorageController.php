@@ -57,10 +57,11 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $query = $this->database->insert('mcapi_transactions_worths')
       ->fields(array('xid', 'currcode', 'quantity'));
     foreach ($transaction->worths[0] as $currcode => $worthitem) {
+    	if (!$worthitem->quantity) continue;
       $query->values(array(
         'xid' => $transaction->id(),
         'currcode' => $currcode,
-        'quantity' => $currency->quantity,
+        'quantity' => $worthitem->quantity,
       ));
     }
     $query->execute();
@@ -78,14 +79,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     //we only index transactions with positive state values
     if ($transaction->state->value < 1) return;
 
-    debug($transaction->worths[0], 'failing to extract worths for index table');
-
     foreach ($transaction->worths[0] as $currcode => $worthitem) {
+    	if ($worthitem->quantity == 0) continue;
       $query = $this->database->insert('mcapi_transactions_index')
-        ->fields(array('xid', 'currcode', 'quantity'));
+        ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
       $query->values(array(
         'xid' => $transaction->id(),
-        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
         'currcode' => $currcode,
@@ -93,11 +92,11 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'incoming' => 0,
         'outgoing' => $worthitem->quantity,
         'diff' => -$worthitem->quantity,
-        'type' => $transaction->type->value
+        'type' => $transaction->type->value,
+      	'created' => $transaction->created->value
       ),
       array(
         'xid' => $transaction->id(),
-        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
         'currcode' => $currcode,
@@ -105,7 +104,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'incoming' => $worthitem->quantity,
         'outgoing' => 0,
         'diff' => $worthitem->quantity,
-        'type' => $transaction->type->value
+        'type' => $transaction->type->value,
+      	'created' => $transaction->created->value
       ));
       $query->execute();
     }
