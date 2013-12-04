@@ -23,5 +23,5 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
   public function indexRebuild();
   public function indexCheck();
 
-
+  //there seems to be no delete() in this interface
 }

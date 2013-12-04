@@ -1,39 +1,9 @@
 <?php
 
 use Drupal\Component\Utility\NestedArray;
-use Drupal\Core\Template\Attribute;
 
 
 
-/*
- * TODO: where should this function be moved to?
- */
-function transaction_form_submit($form, &$form_state) {
-  $form_build_id = $form_state['values']['form_build_id'];
-  //check the form hasn't been submitted already
-  if(db_query(
-    'SELECT count(form_build_id) FROM {mcapi_submitted} where form_build_id = :id',
-    array(':id' => $form_build_id)
-  )->fetchField() ) {
-    drupal_set_message(t('Transaction was already submitted'), 'error');
-    return;
-  }
-  //check that the form won't be submitted again
-  db_query('INSERT INTO {mcapi_submitted} (form_build_id, time) VALUES (:form_build_id, :time)',
-    array(':form_build_id' => $form_build_id, ':time' => REQUEST_TIME)
-  );
-  form_state_values_clean($form_state);
-  $transaction = entity_create('transaction', $form_state['values']);
-  //build the transaction object from the $form_state[values]
-  entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-  try{
-    transaction_cluster_create($transaction, TRUE);
-  }
-  catch (Exception $e) {
-    form_set_error('', $e->getMessage());
-  }
-  $form_state['values']['serial'] = $transaction->serial;
-}
 
 /*
  * menu page callback
@@ -221,9 +191,8 @@ function _mcapi_validate_mail_element($element, $form_state) {
 }
 
 /*
- * action callback for hook_transaction_cluster_alter
- * Alters the original transaction and/or returns a dependent
- * TODO This goes with RULES
+ * action callback for hook_transaction_children
+ * //TODO This goes with RULES
  */
 function mcapi_dependent_transaction_action($transaction, $settings) {
   if (!in_array($transaction->type, $settings['conditions']['transaction_types'])) return;
@@ -395,6 +364,8 @@ function theme_worth_item(&$variables) {
  * default theme implementation for callback 'worth_element'
  * called once per $item
  */
+
+use Drupal\Core\Template\Attribute;
 function theme_worth_element($variables) {
   $element = &$variables['element'];
   $element['#attributes']['class'][] = "worth-widget";
@@ -472,30 +443,6 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
       $quant = round($quant, 2);
     case CURRENCY_WIDGET_TEXT:
       return $quant;
-  }
-}
-
-
-function currency_picker_element(array $currcodes, $default = NULL, $multiple = 0) {
-  $currencies = mcapi_get_available_currencies();
-  if (count($currcodes) > 1) {
-    foreach ($currcodes as $currcode) {
-      $options[$currcode] = $currencies[$currcode]->name;
-    }
-    return array(
-      '#title' => t('Currency'),
-      '#title_display' => 'attribute',
-      '#type' => 'select',
-      '#options' => $options,
-      '#default_value' => $default,
-      '#multiple' => $multiple
-    );
-  }
-  else {
-    return array(
-      '#type' => 'hidden',
-      '#value' => current($currcodes)
-    );
   }
 }
 

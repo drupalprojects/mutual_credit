@@ -398,7 +398,7 @@ function mcapi_transaction_operations() {
   $operations['undo'] = array(
     'title' => 'Undo',
     'description' => 'Undo a finished transaction, and its dependents',
-    'sure' => \Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_CURRENCY_UNDO_DELETE ?
+    'sure' => \Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_UNDO_STATE_DELETE ?
       'Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)' :
       'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
     'access callback' => 'transaction_op_undo_access',

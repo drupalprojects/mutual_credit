@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\node\NodeViewBuilder.
+ * Definition of Drupal\mcapi\TransactionViewBuilder.
  */
 
 namespace Drupal\mcapi;

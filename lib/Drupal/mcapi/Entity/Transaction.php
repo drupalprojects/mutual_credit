@@ -44,6 +44,8 @@ use Drupal\mcapi\TransactionInterface;
  * )
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
+
+  //var $really;
   /**
    * Implements Drupal\Core\Entity\EntityInterface::id().
    */
@@ -61,14 +63,47 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $renderable;
   }
 
+  public function buildChildren() {
+  	foreach (module_invoke_all('transaction_children', $this) as $transaction) {
+      $transaction->parent = 'temp';//TODO how do we know the parent?
+  		$this->children[] = $transaction;
+  	}
+  }
+
   /**
-   * {@inheritdoc}
+   * preSave
+   * TODO put this in an interface
+   * passes the transaction around allowing modules
+   * populates the children property
    */
   public function preSave(EntityStorageControllerInterface $storage_controller) {
     //TODO: Change this so that you only create new serial numbers on the parent transaction.
     if ($this->isNew() && !$this->serial->value) {
-      $storage_controller->nextSerial($this);
+      $storage_controller->nextSerial($this);//this serial number is not final, or at least not nocked
     }
+    //build children if they haven't been built already
+    if ($this->isNew() && !$this->parent && empty($this->children)) {
+    	//note that children do not have a serial number or parent xid until the postSave
+    	$this->buildChildren();
+    }
+  }
+
+  /**
+   * Validate a cluster of transactions
+   * TODO put this in an interface
+   * This should ALWAYS be run inside a try{}
+    * Should there be a transaction Exception class?
+   */
+  public function validate() {
+    parent::validate();//the TypedData validator is complaining about something
+
+    //validate hooks should know how to read in the children
+    //or perhaps they could be sent a flat array like this
+    $cluster = array($this);
+    foreach ($this->children as $child) {
+      $cluster[] = $child;
+    }
+    module_invoke_all('accounting_validate', $cluster);
   }
 
   /**
@@ -76,9 +111,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public function postSave(EntityStorageControllerInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
-
     $storage_controller->saveWorths($this);
     $storage_controller->addIndex($this);
+    //save the children if there are any
+    foreach ($this->children as $transaction) {
+    	$transaction->serial->value = $this->serial->value;
+    	$transaction->parent->value = $this->xid->value;
+    }
   }
 
   /**
@@ -113,6 +152,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
           'quantity' => NULL,
         );
       }
+    }
+    //ask the system if any children are needed
+    if ($values['parent'] == 0) {
+
     }
   }
 

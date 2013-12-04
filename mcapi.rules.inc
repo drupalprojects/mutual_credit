@@ -13,11 +13,11 @@ function mcapi_rules_data_info() {
  * implements hook_rules_action_info
  */
 function mcapi_rules_action_info() {
-  //I'd really really like a way for rules to add dependent transactions to the cluster during hook_transaction_cluster_alter
+  //I'd really really like a way for rules to add dependent transactions to the cluster during hook_transaction_children
   //however rules doesn't expect to alter its own parameters as far as i can see
   //So this would involve:
   //creating a new rules datatype, for the transaction cluster
-  //pass it by reference by calling $event->executeByArgs($args) directly during hook_transaction_cluster_alter
+  //pass it by reference by calling $event->executeByArgs($args) directly during hook_transaction_children
   //
   //A half way measure would involve inserting the transaction after it was created, but using the same serial number.
   //this would mean the transaction wouldn't show up on the 'are you sure' page but would appear afterwards in the cluster.
@@ -35,8 +35,8 @@ class TransactionRulesController extends EntityDefaultRulesController{
     $triggers = mcapi_trigger_info();
     //we'll use the triggers declared
     foreach ($triggers['mcapi'] as $trigger_callback => $trigger) {
-      //There were just too many obstacles to making 'transaction_cluster_alter' work with rules
-      if ($trigger_callback == 'transaction_cluster_alter') continue;
+      //There were just too many obstacles to making 'transaction_children' work with rules
+      if ($trigger_callback == 'transaction_children') continue;
 
       switch($trigger_callback) {
         case 'transaction_update':

@@ -33,18 +33,51 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
 
     parent::attachLoad($queried_entities, $load_revision);
   }
-
-  public function delete(array $entities) {
-    foreach ($entities as $transaction) {
-      $this->database->delete('mcapi_transactions_worths')
-        ->condition('xid', $transaction->id())
-        ->execute();
-      //and the index table
-      $this->database->delete('mcapi_transactions_index')
-        ->condition('xid', $transaction->id())
-        ->execute();
-    }
+  /*
+   * overrides of this delete function may choose to ignore the delete mode
+   */
+  public function delete(array $transaction) {
+    $delete_state = \Drupal::config(mcapi.misc)->get('delete_mode');
+  	switch($delete_state) {
+  		case MCAPI_UNDO_STATE_REVERSE:
+  			//add reverse transactions to the children and change the state.
+  			foreach (array_merge(array($transaction), $transaction->children) as $transaction) {
+  				$reversed = clone $transaction;
+  				$reversed->payer = $transaction->payee;
+  				$reversed->payee = $transaction->payer;
+  				$reversed->type = 'reversal';
+  				unset($reversed->created);
+  				$reversed->description = t('Reversal of: @label', array('@label' => $entity['label callback']($transaction)));
+  				$reverseds[] = $reversed;
+  			}
+  			$transaction->children = array_merge($transaction->children, $reversed);
+        //running on..
+  	  case MCAPI_UNDO_STATE_ERASE:
+  			$old_state = $transaction->state;
+  			$transaction->state = $delete_state;
+  			try{
+  	  		//notice we don't validate here
+  				$transaction->save();
+  				drupal_set_message('update hook needed in TransactionStorageController->delete()');
+  			}
+  			catch (Exception $e){
+  				drupal_set_message(t('Failed to undo transaction: @message', array('@message' => $e->getMessage())));
+  			}
+  			break;
+  		case MCAPI_UNDO_STATE_DELETE:
+	      $this->database->delete('mcapi_transactions_worths')
+	        ->condition('xid', $transaction->id())
+	        ->execute();
+	      //and the index table
+	      $this->database->delete('mcapi_transactions_index')
+	        ->condition('xid', $transaction->id())
+	        ->execute();
+  	}
+	  module_invoke_all('transaction_undo', $transaction->serial->value);
+	  //once even one transaction has been deleted, the undo_mode cannot be changed
+	  \Drupal::config('mcapi.misc')->set('change_undo_mode', FALSE);
   }
+
 
   /**
    * {@inheritdoc}
@@ -53,7 +86,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $this->database->delete('mcapi_transactions_worths')
       ->condition('xid', $transaction->id())
       ->execute();
-
+drupal_set_message("failing to saveWorths");
     $query = $this->database->insert('mcapi_transactions_worths')
       ->fields(array('xid', 'currcode', 'quantity'));
     foreach ($transaction->worths[0] as $currcode => $worthitem) {
@@ -78,9 +111,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       ->execute();
     //we only index transactions with positive state values
     if ($transaction->state->value < 1) return;
-
+    drupal_set_message('Failing to retrieve worthItems in TransactionStorageController -> addIndex');return;
     foreach ($transaction->worths[0] as $currcode => $worthitem) {
-    	if ($worthitem->quantity == 0) continue;
       $query = $this->database->insert('mcapi_transactions_index')
         ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
       $query->values(array(

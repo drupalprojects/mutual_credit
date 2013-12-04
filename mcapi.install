@@ -195,7 +195,7 @@ function mcapi_schema() {
         'type' => 'varchar',
         'length' => '8',
       ),
-      'income' => array(
+      'incoming' => array(
         'description' => 'Income',
         'type' => 'numeric',
         'size' => 'normal',

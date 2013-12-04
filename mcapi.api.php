@@ -34,38 +34,20 @@ stdClass transaction_load($serial);
 
 
 /*
- * Entity API callback and wrapper around Community Accounting API function transaction_cluster_write
- * take one volitional transaction and allow the system to add dependents before sending the cluster to be written
- * returns them as an array
+ * create child transactions and return an array of them
+ * then will then be added to the transaction->children
  */
-try {
-  array transaction_cluster_create($transaction, $really = TRUE);
+function hook_transaction_presave(TransactionInterface $transaction){
+  return array();
 }
-catch(exception $e){}
 
 /*
- * Insert a validated transaction cluster, and allocate a serial number to the cluster
- * N.B. Contrib modules would normally call wrapper function transaction_cluster_create()
- * @variable
- *  $transactions is a flat array
- * All $transactions will be given the same serial number
- * includes a call to hook_accounting_validate before writing
- * includes a call to hook_transaction_cluster_write
+ * create child transactions
+ * return an array of transaction objects
  */
-try {
-  transaction_cluster_write($transactions, $really);
-}
-catch(exception $e){}
+function hook_transaction_children(TransactionInterface $transaction) {
 
-
-/*
- * Insert a single transaction entity, running the accounting_validate hook on it first
- * note that this includes a call to hook_transaction_post_insert
- */
-try {
-  transaction_cluster_create($transaction, $really);
 }
-catch(exception $e){}
 
 /*
  * The default entity controller supports 3 undo modes
@@ -196,9 +178,6 @@ function hook_mcapi_info_types(){
 
 //declare permissions to go into the community accounting section of the drupal permissions page
 function hook_mcapi_info_drupal_permissions(){}
-
-//add transactions to a new cluster (this is not actually invoked with drupal_alter, but could be)
-function hook_transaction_cluster_alter(){}
 
 
 

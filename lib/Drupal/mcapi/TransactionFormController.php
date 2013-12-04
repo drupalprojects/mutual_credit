@@ -1,30 +1,31 @@
 <?php
 
-use Drupal\Core\Template\Attribute;
-
 /**
  * @file
- * Definition of Drupal\mcapi\CurrencyFormController.
+ * Definition of Drupal\mcapi\TransactionFormController.
  */
 
 namespace Drupal\mcapi;
-
+use Drupal\Core\Template\Attribute;
 use Drupal\Core\Entity\EntityFormController;
+use Drupal\mcapi\TransactionViewBuilder;
 
 class TransactionFormController extends EntityFormController {
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
   public function form(array $form, array &$form_state) {
-    $form = parent::form($form, $form_state);
+
     if (empty($form_state['mcapi_submitted'])) {
+      $form = parent::form($form, $form_state);
       $this->form_step_1($form, $form_state);
-      $form['#submit'] = array(array($this, 'step_1_submit'));
+      $form['#validate'][] = array($this, 'step_1_validate');
+      $form['#submit'][] = array($this, 'step_1_submit');
     }
     else {
       $this->form_step_2($form, $form_state);
-      $form['#validate'] = array(array($this, 'step_2_validate'));
-      $form['#submit'] = array(array($this, 'step_2_submit'));
+      $form['#validate'][] = array($this, 'step_2_validate');
+      $form['#submit'][] = array($this, 'step_2_submit');
     }
     return $form;
   }
@@ -85,58 +86,75 @@ class TransactionFormController extends EntityFormController {
       '#required' => TRUE,
       '#weight' => 20,
     );
-
-    //FIXME: Fix up submit button to say 'Record' instead of save
-    /* $form['buttons'] = array(
-      'submit' => array(
-        '#type' => 'submit',
-        '#value' => t('Record'),
-        //this prevents double click, but doesn't prevent going back and resubmitting the form
-        '#attributes' => array('onclick' => "this.disabled=true,this.form.submit();"),
-      ),
-      '#weight' => 25
-    ); */
   }
 
   private function form_step_2(&$form, &$form_state) {
-
+  	$transactions = array();//need the transactions as if loaded, with children and all
+  	$form['preview'] = array();
+  	$form['#markup'] = 'Are you sure?';
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::validate().
+   * form validation callback
    */
-  public function validate(array $form, array &$form_state) {
-    //TODO this is all D7 code
-    drupal_set_message('Do the transaction Entity form validation');
-    /*
-    $props = $form_state['values'];
+  public function step_1_validate(array $form, array &$form_state) {
+    //I don't think any more form level validation is required
+  }
 
-    //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
-    $transaction = entity_create('transaction', $props);
-    //validate the Field API fields
-    field_attach_form_validate('transaction', $transaction, $form, $form_state);
-    //finish building the transaction entity from form_state and validate that
-    //Actually I don't believe this does anything we need
-    //entity_form_submit_build_entity('transaction', $transaction, $form, $form_state);
-    if (form_get_errors()) return;
+  public function step_1_submit(array $form, array &$form_state) {
+    //enables the entity to be rebuilt from the same data in step 2
+    $form_state['storage'] = $form_state['values'];
+    $form_state['rebuild'] = TRUE;
+    $form_state['mcapi_submitted'] = TRUE;//this means we move to step 2 regardless
+
     try{
-      //add the dependent transactions, validate, test write and put the checked cluster in form_state
-      //might have used entity_save here, but it doesn't return the value we need
-      //these transactions are stored in the form to be used for a preview perhaps in step 2.
-      $form_state['transactions'] = transaction_cluster_create($transaction, FALSE);
+      $this->entity->buildChildren();
+      $this->entity->validate();
+      //throw new Exception ("blah");
     }
-    catch (Exception $e) {
-      form_set_error('', $e->getMessage());
+    catch (Exception $e){
+  		$message = t('Transaction not allowed: !message', array('!message' => $e->getMessage));
+  	  \Drupal::formBuilder()->setErrorByName('blah', $form_state, $message);
     }
-    */
+  }
+
+  public function step_2_validate(array $form, array &$form_state) {
+    //$form_state['values'] = $form_state['storage'];//this is needed to validate
+  }
+  /**
+   * form submit callback
+   */
+  public function step_2_submit($form, &$form_state) {
+    //check the form hasn't been submitted already
+    $form_build_id = &$form_state['input']['form_build_id'];
+    if(db_query(
+      'SELECT count(form_build_id) FROM {mcapi_submitted} where form_build_id = :id',
+        array(':id' => $form_build_id)
+      )->fetchField()) {
+      drupal_set_message(t('Transaction was already submitted'), 'error');
+      return;
+    }
+    //ensure that the form won't be submitted again
+    db_insert('mcapi_submitted')
+      ->fields(array('form_build_id' => $form_build_id, 'time' => REQUEST_TIME))
+      ->execute();
   }
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::save().
    */
   public function save(array $form, array &$form_state) {
-    $transaction = $this->entity;
-    $status = $transaction->save();
+  	$transaction = $this->entity;
+    try {
+    	$db_t = db_transaction();
+    	$storage_controller = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+    	$transaction->validate();
+    	$status = $transaction->save($form, $form_state);
+    }
+    catch (Exception $e) {
+    	form_set_error(t("Failed to save transaction: @message", array('@message' => $e->getMessage)));
+    	$db_t->rollback();
+    }
 
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Transaction %label has been updated.', array('%label' => $transaction->label())));
@@ -144,16 +162,44 @@ class TransactionFormController extends EntityFormController {
     else {
       drupal_set_message(t('Transaction %label has been added.', array('%label' => $transaction->label())));
     }
-
-    $form_state['redirect'] = '';
+    $link = $transaction->uri();
+    $form_state['redirect'] = $link['path'];
   }
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::delete().
+   * Currently there is no transaction delete form
    */
   public function delete(array $form, array &$form_state) {
     //$form_state['redirect'] = 'admin/accounting/currencies/' . $this->entity->id() . '/delete';
   }
 
+  /**
+   * Returns an array of supported actions for the current entity form.
+   */
+  protected function actions(array $form, array &$form_state) {
+  	$actions = array(
+  		// @todo Rename the action key from submit to save.
+  		'submit' => array(
+  			'#value' => $this->t('Save'),
+  			'#validate' => array(
+  		    array($this, 'validate'),
+  			),
+  			'#submit' => array(
+  				array($this, 'submit'),
+  		  ),
+  		),
+  	);
+  	if (empty($form_state['mcapi_submitted'])) {//step 1
+  		$actions['submit']['#validate'][] = array($this, 'step_1_validate');
+  		$actions['submit']['#submit'][] = array($this, 'step_1_submit');
+  	}
+  	else {//setp 2
+  		$actions['submit']['#validate'][] = array($this, 'step_2_validate');
+  		$actions['submit']['#submit'][] = array($this, 'step_2_submit');
+  		$actions['submit']['#submit'][] = array($this, 'save');
+  	}
+    return $actions;
+  }
 }
 

@@ -213,7 +213,7 @@
       $serials = transaction_filter(array('payer' => $main, 'payee' => $main));
       //this is usually a small number, but strictly speaking should be done in a batch.
       foreach (array_unique($serials) as $serial) {
-        transaction_undo($serial, MCAPI_CURRENCY_UNDO_DELETE);
+        transaction_undo($serial, MCAPI_UNDO_STATE_DELETE);
       }
     }
   }

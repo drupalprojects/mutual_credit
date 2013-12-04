@@ -5,9 +5,9 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 
 //delete modes
-define('MCAPI_CURRENCY_UNDO_DELETE', 0);
-define('MCAPI_CURRENCY_UNDO_ERASE', 1);
-define('MCAPI_CURRENCY_UNDO_REVERSE', 2);
+define('MCAPI_UNDO_STATE_DELETE', NULL);
+define('MCAPI_UNDO_STATE_ERASE', 0);
+define('MCAPI_UNDO_STATE_REVERSE', 2);
 
 define('CURRENCY_WIDGET_SINGLEFIELD', 1);
 define('CURRENCY_WIDGET_TEXT', 2);
@@ -53,74 +53,6 @@ function mcapi_requirements($phase) {
 
 /**
  * Community Accounting API wrapper function, see transaction.api.php
- * arguments:
- *   $transaction - an object, probably originally created by entity_controller->create()
- *   $really - Boolean whether to actually save this, or just test-write and revoke.
- * Defaults to TRUE to be compatible with the Entity API 'save callback'
- */
-function transaction_cluster_create(stdclass $transaction, $really = TRUE) {
-  $transactions = array($transaction);
-  //this is where the transaction can acquire dependents,
-  drupal_alter('transaction_cluster', $transactions);
-  $serial = transaction_cluster_write($transactions, $really);
-  //all the transactions in the cluster have the same serial, and the same state,
-  if ($really) {
-    module_invoke_all('transaction_post_insert', $serial);
-  }
-  //the transactions have been altered I think
-  return $transactions;
-}
-
-/**
- * Community Accounting API function, see transaction.api.php
- * all will be given the SAME serial number, which is what makes them a cluster
- * return the serial number if $really is TRUE
- * this should always be inside a try!!!
- */
-function transaction_cluster_write(array $cluster, $really = TRUE) {
-  if (!empty(current($cluster)->serial)) {
-    throw new Exception ('Cannot insert transactions which already have a serial numbers: '.$transaction->serial);
-  }
-
-  //put all the transactions side by side ready for the entity controller to validate and insert
-  module_invoke_all('accounting_validate', $cluster);
-
-  $serial = entity_get_controller('mcapi_transaction')->next_serial();
-  $t = db_transaction();
-  $created = REQUEST_TIME -1;
-
-  try{
-    module_invoke_all('transaction_pre_insert', $cluster);
-    foreach ($cluster as $transaction) {
-      $transaction->serial = $serial;
-      //it makes a mess of the running balances if transactions with the same serial number have the same time as well.
-      $transaction->created = $created++;
-      //this property is used for example in the intertrading module to save the remote participant's details.
-      $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
-      //$wrapper = entity_metadata_wrapper('transaction', $transaction);
-      //$wrapper->insert();
-      ///TEMP
-      entity_get_controller('mcapi_transaction')->insert($transaction, $really);
-      //write the fields
-      field_attach_insert('transaction', $transaction);
-    }
-    module_invoke_all('transaction_cluster_write', $cluster, $really);
-  }
-  catch (Exception $e) {
-    $t->rollback();
-    watchdog_exception('transaction', $e);
-    throw $e;
-  }
-  if ($really) {
-    return $serial;
-  }
-  $t->rollback();
-  reset($cluster)->serial = 0;
-  return $cluster;
-}
-
-/**
- * Community Accounting API wrapper function, see transaction.api.php
  * update the transaction and notify the rest of the system
  * WARNING updating a transaction will NOT update the dependent transactions
  * $transaction is the main, or volitional transaction. $children are ignored
@@ -152,48 +84,7 @@ function transaction_update($op, $transaction, $old_state = NULL) {
  */
 function transaction_undo($serial) {
   //load all the transactions sharing this serial as equals in an array, not as parent/children
-  $xids = array_keys(transaction_filter(array('serial' => $serial)));
-  $transactions = entity_load('mcapi_transaction', $xids);
-  switch(\Drupal::config(mcapi.misc)->get('delete_mode')) {
-    case MCAPI_CURRENCY_UNDO_ERASE:
-      $transaction = current($transactions);
-      $old_state = $transaction->state;
-      $transaction->state = TRANSACTION_STATE_UNDONE;
-      break;
 
-    case MCAPI_CURRENCY_UNDO_DELETE:
-      foreach ($transactions as $transaction) {
-        field_attach_delete('transaction', $transaction);
-        $xids[] = $transaction->xid;
-      }
-      entity_get_controller('mcapi_transaction')->delete($xids);
-      entity_delete_multiple($entity_type, $xids);
-      break;
-
-    case MCAPI_CURRENCY_UNDO_REVERSE:
-      foreach($transactions as $transaction) {
-        $reversed = clone $transaction;
-        $reversed->xid = NULL;
-        $reversed->payer = $transaction->payee;
-        $reversed->payee = $transaction->payer;
-        $reversed->type = 'reversal';
-        unset($reversed->created);
-        $reversed->description = t('Reversal of: @label', array('@label' => $entity['label callback']($transaction)));
-        $reverseds[] = $reversed;
-      }
-      try{
-        //this is basically the same as in transaction_cluster_write, but without invoking accounting_validate
-        entity_metadata_wrapper('transaction', $reversed)->insert(TRUE);
-        field_attach_insert('transaction', $reversed);
-      }
-      catch (Exception $e){
-        drupal_set_message(t('Failed to reverse transaction: @message', array('@message' => $e->getMessage())));
-      }
-      break;
-  }
-  module_invoke_all('transaction_undo', $serial);
-  //once even one transaction has been deleted, the undo_mode cannot be changed
-  \Drupal::config('mcapi.misc')->set('change_undo_mode', FALSE);
 }
 
 /**
@@ -730,12 +621,16 @@ function transaction_form($form, &$form_state) {
  * implements hook_accounting_validate
  * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
  */
-function mcapi_accounting_validate($transactions){
+function mcapi_accounting_validate(array $transactions){
   $errors = array();
   foreach ($transactions as $key => $transaction) {
+
+  	//TODO How to get the uids????
+  	continue;
+
     //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
     if ($transaction->payer > 0) {
-      if ($transaction->payer == $transaction->payee) {
+      if ($transaction->payer->value == $transaction->payee->value) {
         if ($key == 0) {
           $errors[] = t('A transaction must involve two different users');
         }
@@ -748,7 +643,7 @@ function mcapi_accounting_validate($transactions){
     if ($transaction->state >= TRANSACTION_STATE_FINISHED) {
       $required = array('payer', 'payee',  'type');
       foreach ($required as $fieldname) {
-        if (!$transaction->$fieldname) {
+        if (!$transaction->$fieldname->value) {
           $errors[] = t("@fieldname required for completed transaction", array('@fieldname' => $fieldname));
         }
       }
@@ -781,7 +676,7 @@ function mcapi_mcapi_info_states() {
   $deletemode = \Drupal::config('mcapi.misc')->get('delete_mode');
   //don't attempt to liven the link coz this function can run while bootstrapping and that means trouble
   $description = t("See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc'));
-  if ($deletemode != MCAPI_CURRENCY_UNDO_DELETE) {
+  if ($deletemode != MCAPI_UNDO_STATE_DELETE) {
     $states[TRANSACTION_STATE_UNDONE] = array(
       'name' => t('Undone'),
       'description' => $description,
@@ -807,7 +702,7 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
  */
 function mcapi_mcapi_info_types() {
   $types = array('default', 'dependent');
-  if (\Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_CURRENCY_UNDO_REVERSE) {
+  if (\Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_UNDO_STATE_REVERSE) {
     $types[] = 'reversal';
   }
   return $types;
@@ -1054,7 +949,7 @@ function mcapi_currencies_load($currcode) {
   return entity_load('mcapi_currencies', $currcode);
 }
 
-
+//get all the currencies a user can access
 function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!isset($account)) {
     $account = \Drupal::currentUser();
@@ -1097,7 +992,7 @@ function currency_load($currcode = NULL) {
  * then optionally return them filtered for which ones an account has membership i.e. can use
  * wish I understood ctools better. not sure I need to cache here
  */
-function currencies_load($account = NULL) {
+function currencies_load() {
   $currencies = &drupal_static(__FUNCTION__);
   if (empty($currencies)) {//first time this function is running
     if ($cache = \Drupal::cache()->get('currencies')) {
@@ -1109,19 +1004,10 @@ function currencies_load($account = NULL) {
       cache()->set('currencies', $currencies);
     }
   }
-  if (!$account) return $currencies;//having set the $currencies static
-
-  $filtered = array();
-  module_load_include('inc', 'mcapi');
-  foreach ($currencies as $currcode => $currency) {
-    if ($account->id() && currency_access('membership', $currcode, $account)) {
-      //we're actually stripping the ctools metadata wrapper of the currency away here for convenience everywhere else
-      $filtered[$currcode] = $currency;
-    }
-  }
-  return $filtered;
+  return $currencies;//having set the $currencies static
 }
 
+//filter currencies by issuance. Could change the name of this function. Not sure it is even needed.
 function currencies_filter() {
   $currencies = currencies_load();
   $output = array();
@@ -1133,7 +1019,8 @@ function currencies_filter() {
 }
 
 function mcapi_currency_list($account = NULL) {
-  foreach (currencies_load($account) as $currcode => $currency) {
+	$currs = $account ? mcapi_get_available_currencies($account) : currencies_load();
+  foreach ($currs as $currcode => $currency) {
     $list[$currcode] = $currency->name;
   }
   return $list;
@@ -1209,7 +1096,7 @@ function operations_config_default_access($op_info, $currency) {
  * TODO convert these into rules, or something
  */
 function __mcapi_trigger_info() {
-  $triggers['mcapi']['transaction_cluster_alter']['label'] = t('Create dependent transactions before inserting.');
+  $triggers['mcapi']['transaction_children']['label'] = t('Create dependent transactions before inserting.');
   $triggers['mcapi']['transaction_undo']['label'] = t('Respond to transaction deletion.');
   $triggers['mcapi']['transaction_update']['label'] = t('Respond to transaction changing.');
   $triggers['mcapi']['transaction_post_insert']['label'] = t('Respond to a new transaction.');
@@ -1217,13 +1104,13 @@ function __mcapi_trigger_info() {
 }
 
 /*
- * pull trigger transaction_cluster_alter().
+ * pull trigger transaction_children().
  * will only fire if the trigger module is enabled
  * sends the volitional transaction to the action callbacks where it can be changed.
  * Action callbacks may return a new transaction to be added to the $transactions
  */
-function trigger_transaction_cluster_alter(&$cluster) {
-  foreach (trigger_get_assigned_actions('transaction_cluster_alter') as $aid => $info) {
+function trigger_transaction_presave(&$cluster) {
+  foreach (trigger_get_assigned_actions('transaction_children') as $aid => $info) {
     module_load_include('admin.inc', 'mcapi');
     //each action might return ONE transaction object
     $volitional_transaction = reset($cluster);
@@ -1275,7 +1162,7 @@ function mcapi_element_info() {
       '#title' => t('Worth'),
       '#input' => TRUE,
       '#title_display' => 'before',
-      '#element_validate' => array('mcapi_worths_element_validate'),
+      //'#element_validate' => array('mcapi_worths_element_validate'),
       '#theme_wrappers' => array('form_element'),
       '#process' => array('mcapi_worths_element_process'),
       '#tree' => TRUE,
@@ -1290,7 +1177,7 @@ function mcapi_element_info() {
       '#input' => TRUE,
       '#title_display' => 'attribute',
       '#process' => array('mcapi_worth_element_process'),
-      '#element_validate' => array('mcapi_worth_element_validate'),
+      //'#element_validate' => array('mcapi_worth_element_validate'),
       '#theme' => 'worth_element',
       //custom properties, used for configuration
       '#calc' => FALSE,
@@ -1316,7 +1203,7 @@ function mcapi_element_info() {
     ),
     'mcapi_currcodes' => array(
       '#input' => TRUE,
-      '#title_display' => 'before',
+      '#title_display' => 'attribute',
       '#process' => array('mcapi_process_currcodes'),
       '#theme_wrappers' => array('form_element'),
       '#theme' => 'select',
@@ -1346,6 +1233,7 @@ function mcapi_worths_element_process($element, &$form_state) {
         'currcode' => $element['#default_value']->{$currcode}['currcode'],
         'quantity' => $element['#default_value']->{$currcode}['quantity'],
       );
+      $element[$currcode]['#required'] = TRUE;
     }
   }
   else {
@@ -1372,6 +1260,7 @@ function mcapi_worths_element_process($element, &$form_state) {
 
 
 function mcapi_worth_element_process($element, &$form_state) {
+	module_load_include('inc', 'mcapi');//TODO remove this when theme function has moved
   $element['#title_display'] = 'attribute';
   $main_quant = '';
   $quantity = @$element['#default_value']['quantity'];
@@ -1381,18 +1270,22 @@ function mcapi_worth_element_process($element, &$form_state) {
     //this defaults to all
     $element['#currcodes'] = array_keys(mcapi_get_available_currencies());
   }
-  $element['currcode'] = currency_picker_element($element['#currcodes'], @$element['#default_value']['currcode']);
-
+  $element['currcode'] = array(
+  	'#title' => t('Currency'),
+  	'#type' => 'mcapi_currcodes',
+  	'#options' => $element['#currcodes'],
+  	'#default_value' => @$element['#default_value']['currcode']
+  );
   if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
     $currency = entity_load('mcapi_currencies', current($element['#currcodes']));
-    $use_div_subelement = in_array($currency->display['widget'], array(CURRENCY_WIDGET_TEXT, CURRENCY_WIDGET_SELECT));
+    $use_div_subelement = in_array($currency->widget, array(CURRENCY_WIDGET_TEXT, CURRENCY_WIDGET_SELECT));
   }
   //work out the defaults for each subfield
   //null is not presumed to be zero, and is preserved
   if (!empty($use_div_subelement)) {
     list($main_quant, $div_quant) = currency_explode($quantity);
   }
-  elseif($currency && $currency->display['divisions']) {
+  elseif($currency && $currency->widget == 'currency_select') {
     $main_quant = $quantity;
   }
   else{
@@ -1440,6 +1333,7 @@ function mcapi_worth_element_process($element, &$form_state) {
   }
   return $element;
 }
+
 
 function mcapi_process_states($element) {
   $element['#options'] = mcapi_get_states('#options');
