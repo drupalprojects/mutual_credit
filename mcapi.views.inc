@@ -388,24 +388,15 @@ function mcapi_views_data() {
 * implements hook_views_data_alter
 */
 function mcapi_views_data_alter(&$data) {
-
-  return;
-
   //this is a powerful way for virtual field balances to be accessible to views based on the user table
   //however it does require a query for each row which calls on a special API function
   $data['users']['current_balance'] = array(
     'title' => t('Transaction statistic'),
+    'help' => t('The balance, trading volume, or transaction count for each user'),
     'field' => array(
-      'help' => t('The balance, trading volume, or transaction count for each user'),
-      'handler' => 'views_handler_field_mcapi_users_totals',
+      'id' => 'mcapi_userstat',
     )
   );
-
-  $currencies = currencies_load();
-  if (count($currencies) > 1) {
-    //override the default text handler put there for fieldAPI fields, so the filter shows a dropdown
-    $data['field_data_worth']['worth_currcode']['filter']['handler'] = 'views_handler_filter_mcapi_currency';
-  }
 }
 
 

@@ -96,6 +96,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public function validate() {
     parent::validate();//the TypedData validator is complaining about something
+    $errors = array();
+    //check that each trader has permission to use all the currencies
+    foreach (array($this->payer, $this->payee) as $account) {
+	    foreach ($this->worths as $worth) {
+	    	drupal_set_message("sort out validation when 'worth' is working");continue;
+	    	if (!$worth->currency->access('membership', $account)) {
+	    		$errors[] = t('!user cannot use !currency', array('!user' => $account->name, '!currency' => $currency->name));
+	    	}
+	    }
+    }
+    if (count($errors)) throw new Exception(implode(' ', $errors));
 
     //validate hooks should know how to read in the children
     //or perhaps they could be sent a flat array like this

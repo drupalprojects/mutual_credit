@@ -83,13 +83,17 @@ function transaction_undo($serial) {
  */
 //function template_preprocess_mcapi_summary(&$vars) {
 function mcapi_pre_render_summary($element) {
-  //convert it to an object for cleaner syntax in php5
-  $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-  $result = $storage->summaryData($element['#account'], $element['#currency'], $element['#filters']);
-  foreach ($result as $key => $val) {
-  	$element['#'.$key] = $val;
+  //occasionally we'll appreciate a static result
+  static $results = array();//TODO should this be drupal_static?
+  if (!array_key_exists($uid, $results)) {
+    $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+    $result = $storage->summaryData($element['#account'], $element['#currency'], $element['#filters']);
+    foreach ($result as $key => $val) {
+      $stats['#'.$key] = $val;
+    }
+    $results[$element['#account']->uid] = $stats;
   }
-  return $element;
+  return $element + $results[$uid];
 }
 
 /*
@@ -709,18 +713,18 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
     $account = \Drupal::currentUser();
   }
   $cid = 'currencies:' . $account->id();
-
   if (!$cache = \Drupal::cache()->get($cid)) {
-    $avaiable = array();
+    $available = array();
     $cache_tags = array('mcapi.available_currency' => array());
     foreach (entity_load_multiple('mcapi_currencies') as $currency) {
       if ($currency->access('membership', $account)) {
-        $avaiable[$currency->id()] = $currency->name;
+        $available[$currency->id()] = $currency->name;
         $cache_tags['mcapi.available_currency'] = $currency->id();
       }
     }
-    \Drupal::cache()->set($cid, $avaiable, CacheBackendInterface::CACHE_PERMANENT, $cache_tags);
-    return $avaiable;
+    //TODO this cache should be cleared whenever a currency is edited
+    \Drupal::cache()->set($cid, $available, CacheBackendInterface::CACHE_PERMANENT, $cache_tags);
+    return $available;
   }
   else {
     return $cache->data;
