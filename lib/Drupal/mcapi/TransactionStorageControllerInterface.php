@@ -22,6 +22,7 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
 
   public function indexRebuild();
   public function indexCheck();
+  public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters);
 
   //there seems to be no delete() in this interface
 }

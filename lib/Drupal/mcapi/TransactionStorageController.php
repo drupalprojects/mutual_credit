@@ -117,6 +117,7 @@ drupal_set_message("failing to saveWorths");
         ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
       $query->values(array(
         'xid' => $transaction->id(),
+        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
         'currcode' => $currcode,
@@ -129,6 +130,7 @@ drupal_set_message("failing to saveWorths");
       ),
       array(
         'xid' => $transaction->id(),
+        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
         'currcode' => $currcode,
@@ -198,4 +200,54 @@ drupal_set_message("failing to saveWorths");
     //TODO: I think this needs some form of locking so that we can't get duplicate transactions.
     $transaction->serial->value = $this->database->query("SELECT MAX(serial) FROM {mcapi_transactions}")->fetchField() + 1;
   }
+
+
+  /*
+   * get some stats by adding up the transactions for a given user
+  * this is currently used for the limits module and for the views handler per-row
+  * caching running balances is innappropriate because they would all need recalculating any time a transaction changed state
+  * Because this uses the index table, it knows nothing of transactions with state <  1
+  */
+  public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters) {
+  	$query = "SELECT
+      COUNT(xid) as count,
+      SUM(incoming) as gross_in,
+      SUM(outgoing) as gross_out,
+      SUM(diff) as balance,
+      SUM(volume) as volume,
+      COUNT(DISTINCT uid2) as partners
+      FROM {mcapi_transactions_index}
+      WHERE uid1 = :uid1 AND currcode = :currcode " . mcapi_parse_conditions($filters);
+  	$params = array(
+  		':uid1' => $account->id(),
+  		':currcode' => $currency->id()
+    );
+  	if ($result = db_query($query, $params)->fetchAssoc()) {
+  		return $result;
+  	}
+    //if there are no transactions for this user
+    return array('count' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0, 'partners' => 0);
+  }
+}
+
+
+function mcapi_parse_conditions($conditions) {
+	if (empty($conditions)) return '';
+	$where = array();
+	foreach ($conditions as $condition) {
+		if (is_array($condition)) {
+			$condition[] = '=';
+			list($field, $value, $operator) = $condition;
+			if (empty($operator)) $operator = ' = ';
+			if (is_array($value)) {
+				$value = '('.implode(', ', $value) .')';
+				$operator = ' IN ';
+			}
+			$where[] = " ( t.$field $operator $value ) ";
+		}
+		else {//the condition is already provided as a string
+			$where[] = " $condition ";
+		}
+	}
+	return ' AND '. implode(' AND ', $where);
 }

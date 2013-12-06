@@ -389,30 +389,25 @@ function theme_worth_element($variables) {
   return '<div ' . $element['#attributes'] . '>'. $output .'</div>';
 }
 
-/*
- * implements theme template_preprocess_HOOK
- * adds per-currency theming
- */
-function template_preprocess_transaction_totals(&$variables) {
-  $variables['theme_hook_suggestion'] = 'transaction_totals__' . $variables['currcode'];
-}
-
-
 
 /*
  * block function a nice display of user balances in a currency
  */
-function mcapi_balances_view($uid, $currcodes = array()) {
+function mcapi_balances_view($account, $currcodes = array()) {
   if (empty($currcodes)) {
-    $currcodes = array_keys(currencies_load(user_load($uid)));
+  	//TODO what's the current way to load all currencies for a user?
+    $currnames = mcapi_get_available_currencies($account);
   }
   $render_array = array();
-  foreach ($currcodes as $currcode) {
-    $render_array[$currcode] = array(
-      '#theme' => 'transaction_totals',
-      '#currcode' => $currcode,
-      '#totals' => transaction_totals($uid, $currcode),
-    );
+  foreach ($currnames as $currcode => $currname) {
+  	$currency = currency_load($currcode);
+  	if ($currency->access('trader_data')) {
+	    $render_array[$currcode] = array(
+	      '#type' => 'mcapi_summary',
+	      '#currency' => $currency,
+	      '#account' => $account
+	    );
+  	}
   }
   return $render_array;
 }
