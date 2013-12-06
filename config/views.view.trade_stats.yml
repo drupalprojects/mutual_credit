@@ -1,9 +1,23 @@
 base_field: xid
-base_table: mcapi_transactions
+base_table: mcapi_transactions_index
 core: 8.x
-description: 'A starter view for Community Accounting'
+description: ''
 status: true
 display:
+  page_1:
+    display_plugin: page
+    id: page_1
+    display_title: Page
+    position: 1
+    display_options:
+      path: user/%/statement
+      menu:
+        type: tab
+        title: Statement
+        description: ''
+        name: admin
+        weight: '0'
+        context: 0
   default:
     display_plugin: default
     id: default
@@ -37,7 +51,7 @@ display:
       pager:
         type: full
         options:
-          items_per_page: 10
+          items_per_page: '10'
           offset: 0
           id: 0
           total_pages: ''
@@ -69,8 +83,56 @@ display:
           description: ''
           columns:
             xid: xid
+            uid1: uid1
+            uid2: uid2
+            worths: worths
+            operations: operations
+            state: state
+            type: type
           info:
             xid:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            uid1:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            uid2:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            worths:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            operations:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            state:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            type:
               sortable: 0
               default_sort_order: asc
               align: ''
@@ -81,65 +143,10 @@ display:
           empty_table: 0
       row:
         type: fields
-        options:
-          inline: {  }
-          separator: ''
-          hide_empty: false
-          default_field_elements: true
       fields:
-        serial:
-          id: serial
-          table: mcapi_transactions
-          field: serial
-          relationship: none
-          group_type: group
-          admin_label: ''
-          label: Serial
-          exclude: 0
-          alter:
-            alter_text: 0
-            text: ''
-            make_link: 0
-            path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
-            path_case: none
-            trim_whitespace: 0
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: 0
-            max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: 0
-            trim: 0
-            preserve_tags: ''
-            html: 0
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: 1
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: 1
-          empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          plugin_id: standard
-          provider: views
         created:
           id: created
-          table: mcapi_transactions
+          table: mcapi_transactions_index
           field: created
           relationship: none
           group_type: group
@@ -190,14 +197,64 @@ display:
           timezone: ''
           plugin_id: date
           provider: views
-        name_1:
-          id: name_1
-          table: users
-          field: name
-          relationship: payer
+        serial:
+          id: serial
+          table: mcapi_transactions_index
+          field: serial
+          relationship: none
           group_type: group
           admin_label: ''
-          label: Payer
+          label: Serial
+          exclude: 0
+          alter:
+            alter_text: 0
+            text: ''
+            make_link: 0
+            path: ''
+            absolute: 0
+            external: 0
+            replace_spaces: 0
+            path_case: none
+            trim_whitespace: 0
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: 0
+            max_length: ''
+            word_boundary: 1
+            ellipsis: 1
+            more_link: 0
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: 0
+            trim: 0
+            preserve_tags: ''
+            html: 0
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: 1
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: 1
+          empty: ''
+          hide_empty: 0
+          empty_zero: 0
+          hide_alter_empty: 1
+          plugin_id: standard
+          provider: views
+        uid2:
+          id: uid2
+          table: mcapi_transactions_index
+          field: uid2
+          relationship: none
+          group_type: group
+          admin_label: ''
+          label: '2nd trader'
           exclude: 0
           alter:
             alter_text: 0
@@ -239,19 +296,16 @@ display:
           empty_zero: 0
           hide_alter_empty: 1
           link_to_user: 1
-          overwrite_anonymous: 1
-          anonymous_text: ''
-          format_username: 1
-          plugin_id: user_name
-          provider: user
-        name:
-          id: name
-          table: users
-          field: name
-          relationship: payee
+          plugin_id: trader
+          provider: mcapi
+        type:
+          id: type
+          table: mcapi_transactions_index
+          field: type
+          relationship: none
           group_type: group
           admin_label: ''
-          label: Payee
+          label: Type
           exclude: 0
           alter:
             alter_text: 0
@@ -292,15 +346,11 @@ display:
           hide_empty: 0
           empty_zero: 0
           hide_alter_empty: 1
-          link_to_user: 1
-          overwrite_anonymous: 1
-          anonymous_text: ''
-          format_username: 1
-          plugin_id: user_name
-          provider: user
+          plugin_id: standard
+          provider: views
         worths:
           id: worths
-          table: mcapi_transactions
+          table: mcapi_transactions_index
           field: worths
           relationship: none
           group_type: group
@@ -349,109 +399,9 @@ display:
           separator: ''
           plugin_id: worths
           provider: mcapi
-        state:
-          id: state
-          table: mcapi_transactions
-          field: state
-          relationship: none
-          group_type: group
-          admin_label: ''
-          label: State
-          exclude: 0
-          alter:
-            alter_text: 0
-            text: ''
-            make_link: 0
-            path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
-            path_case: none
-            trim_whitespace: 0
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: 0
-            max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: 0
-            trim: 0
-            preserve_tags: ''
-            html: 0
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: 1
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: 1
-          empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          plugin_id: mcapi_state
-          provider: mcapi
-        type:
-          id: type
-          table: mcapi_transactions
-          field: type
-          relationship: none
-          group_type: group
-          admin_label: ''
-          label: Type
-          exclude: 0
-          alter:
-            alter_text: 0
-            text: ''
-            make_link: 0
-            path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
-            path_case: none
-            trim_whitespace: 0
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: 0
-            max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: 0
-            trim: 0
-            preserve_tags: ''
-            html: 0
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: 1
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: 1
-          empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          plugin_id: standard
-          provider: views
         operations:
           id: operations
-          table: mcapi_transactions
+          table: mcapi_transactions_index
           field: operations
           relationship: none
           group_type: group
@@ -501,53 +451,31 @@ display:
           plugin_id: transaction_operations
           provider: mcapi
       filters: {  }
-      sorts:
-        quantity:
-          id: quantity
-          table: mcapi_transactions_worths
-          field: quantity
-          relationship: none
-          group_type: group
-          admin_label: ''
-          order: DESC
-          exposed: false
-          expose:
-            label: ''
-          plugin_id: standard
-          provider: views
+      sorts: {  }
+      title: 'trade stats'
       header: {  }
       footer: {  }
       empty: {  }
       relationships:
-        payee:
-          id: payee
-          table: mcapi_transactions
-          field: payee
+        uid2:
+          id: uid2
+          table: mcapi_transactions_index
+          field: uid2
           relationship: none
           group_type: group
-          admin_label: Payee
-          required: 1
-          plugin_id: standard
-          provider: views
-        payer:
-          id: payer
-          table: mcapi_transactions
-          field: payer
-          relationship: none
-          group_type: group
-          admin_label: Payer
+          admin_label: '2nd trader'
           required: 1
           plugin_id: standard
           provider: views
       arguments:
-        currcode:
-          id: currcode
-          table: mcapi_transactions_worths
-          field: currcode
+        uid1:
+          id: uid1
+          table: mcapi_transactions_index
+          field: uid1
           relationship: none
           group_type: group
           admin_label: ''
-          default_action: ignore
+          default_action: 'not found'
           exception:
             value: all
             title_enable: 0
@@ -574,20 +502,13 @@ display:
             type: none
             fail: 'not found'
           validate_options: {  }
-          glossary: 0
-          limit: '0'
-          case: none
-          path_case: none
-          transform_dash: 0
           break_phrase: 0
-          plugin_id: string
+          not: 0
+          plugin_id: numeric
           provider: views
-      filter_groups:
-        operator: AND
-        groups: {  }
-label: 'Member transactions'
+label: 'trade stats'
 module: views
-id: mcapi_transactions
+id: trade_stats
 tag: 'Community Accounting'
-uuid: 7ba3bb18-3608-44e3-a418-240b11424ab6
+uuid: de8d07ec-77ac-4545-9f00-ab2686b92bbd
 langcode: en

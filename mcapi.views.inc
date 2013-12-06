@@ -26,7 +26,7 @@ function mcapi_views_data() {
         'field' => 'xid',
       )
     ),
-    'wizard_id'=> 'transaction',//not documented dunno what for
+  	'wizard_id'=> 'transactions',//this links it to the wizard plugin
   );
   //TODO
   //This isn't working to join the table to all transaction entity queries
@@ -36,6 +36,11 @@ function mcapi_views_data() {
     'group' => t('Transaction'),
     'join' => array(
       'mcapi_transactions' => array(
+        'left_field' => 'xid',
+        'field' => 'xid',
+        'type' => 'LEFT'//not sure about this
+      ),
+      'mcapi_transactions_worths' => array(
         'left_field' => 'xid',
         'field' => 'xid',
         'type' => 'LEFT'//not sure about this
@@ -104,13 +109,25 @@ function mcapi_views_data() {
       'id' => 'trader',
     ),
   );
+  $data['mcapi_transactions']['description'] = array(
+    'title' => t('Description'),
+    'help' =>  t('A one line description of what was exchanged.'),
+    'filter' => array(
+      'id' => 'string',
+    ),
+    'argument' => array(
+      'id' => 'string',
+    ),
+    'field' => array(
+      'id' => 'standard',
+    ),
+  );
 
   $data['mcapi_transactions']['state'] = array(
     'title' => t('State'),
     'help' => t('The name of the workflow state of the transaction'),
     'field' => array(
       'id' => 'mcapi_state',
-      //'click sortable' => TRUE,
     ),
     'filter' => array(
       'id' => 'mcapi_state',
@@ -125,7 +142,6 @@ function mcapi_views_data() {
     'help' => t('Which form or module which created the transaction'),
     'field' => array(
       'id' => 'standard',
-      //'click sortable' => TRUE
     ),
     'filter' => array(
       'id' => 'mcapi_type',
@@ -214,6 +230,155 @@ function mcapi_views_data() {
     'sort' => array(
       'id' => 'standard',
     )
+  );
+
+  $data['mcapi_transactions_index']['table'] = array(
+  	'group'  => t('Transaction index'),
+  	'entity type' => 'mcapi_transaction',
+  	'base' => array(
+  		'field' => 'xid',
+  	  'title' => t('Transaction index'),
+  		'help' => t('Transaction index table'),
+  		'access query tag' => 'transaction_views_access',
+  		'weight' => 5,
+  		'defaults' => array(
+    		//'field' => 'serial',//only base field itself works at the moment
+  			'field' => 'xid',
+  		)
+  	),
+  	'wizard_id'=> 'transaction_index',//this links it to the wizard plugin
+  );
+
+  $data['mcapi_transactions_index']['serial'] = array(
+  	'title' => t('Serial'), // The item it appears as on the UI,
+  	'help' => t('The serial number of the transaction and dependents'),
+  	'field' => array(
+  		'id' => 'standard',
+  	),
+  	'sort' => array(
+  		'id' => 'standard',
+  	),
+  );
+  $data['mcapi_transactions_index']['xid'] = array(
+  	'title' => t('Transaction id'), // The item it appears as on the UI,
+  	'help' => t('The unique database key of the transaction'),
+  	'field' => array(
+  		'id' => 'numeric',//this might be 'transaction' if it exists
+  	),
+  	'sort' => array(
+  		'id' => 'standard',
+  	),
+  );
+  $data['mcapi_transactions_index']['uid1'] = array(
+  	'title' => t('1st trader'),
+  	'help' => t('The user we are concerned about'),
+  	'relationship' => array(
+  		'id' => 'standard',
+  		'base' => 'users',
+  		'field' => 'uid',
+  		'label' => t('1st trader'),
+  		'relationship field' => 'uid1'
+  	),
+  	'filter' => array(
+  		'id' => 'user_name',
+  	),
+  	'argument' => array(
+  		'id' => 'numeric',
+  	),
+  	'field' => array(
+  		'id' => 'trader',
+  	),
+  );
+  $data['mcapi_transactions_index']['uid2'] = array(
+  	'title' => t('2nd trader'),
+  	'help' => t('The user the 1st user traded with'),
+  	'relationship' => array(
+  		'id' => 'standard',
+  		'base' => 'users',
+  		'field' => 'uid',
+  		'label' => t('2nd trader'),
+  		'relationship field' => 'uid2'
+  	),
+  	'filter' => array(
+  		'id' => 'user_name',
+  	),
+  	'argument' => array(
+  		'id' => 'numeric',
+  	),
+  	'field' => array(
+  		'id' => 'trader',
+  	),
+  );
+  $data['mcapi_transactions_index']['description'] = array(
+    'title' => t('Description'),
+    'help' =>  t('A one line description of what was exchanged.'),
+    'filter' => array(
+      'id' => 'string',
+    ),
+    'argument' => array(
+      'id' => 'string',
+    ),
+    'field' => array(
+      'id' => 'standard',
+    ),
+  );
+
+  $data['mcapi_transactions_index']['state'] = array(
+  	'title' => t('State'),
+  	'help' => t('The name of the workflow state of the transaction'),
+  	'field' => array(
+  		'id' => 'mcapi_state',
+  	),
+  	'filter' => array(
+  		'id' => 'mcapi_state',
+  	),
+  	'sort' => array(
+  		'id' => 'standard',
+  	),
+  );
+
+  $data['mcapi_transactions_index']['type'] = array(
+  	'title' => t('Type'),
+  	'help' => t('Which form or module which created the transaction'),
+  	'field' => array(
+  		'id' => 'standard',
+  	),
+  	'filter' => array(
+  		'id' => 'mcapi_type',
+  	),
+  	'sort' => array(
+  		'id' => 'standard',
+  	),
+  );
+  $data['mcapi_transactions_index']['created'] = array(
+    'title' => t('Created'),
+    'help' => t('The second the transaction was created.'),
+    'field' => array(
+      'id' => 'date',
+    ),
+    'sort' => array(
+      'id' => 'date'
+    ),
+    'filter' => array(
+      'id' => 'date',
+    ),
+  );
+
+  //virtual fields
+  $data['mcapi_transactions_index']['operations'] = array(
+  	'title' => t('Operations'),
+  	'help' => t('What the user can do to the transaction'),
+  	'field' => array(
+  		'id' => 'transaction_operations',
+  		'additional fields' => array('serial')
+  	)
+  );
+  $data['mcapi_transactions_index']['worths'] = array(
+  	'title' => t('Amounts'),
+  	'help' => t('Currency flows per transaction'),
+  	'field' => array(
+  		'id' => 'worths',
+  	)
   );
 
   return $data;
