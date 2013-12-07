@@ -3,120 +3,6 @@
 use Drupal\Core\Template\Attribute;
 
 /*
- * implements hook_menu_alter
- */
-function mcapi_menu_alter(&$items) {
-  $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
-}
-
-/*
- * menu access callback
- * access to the ctools currency edit page
- */
-function currency_edit_access($currency) {
-  return user_access('configure all currencies') || $currency->uid == \Drupal::currentUser()->id();
-}
-/*
- * load the currencies from ctools and alter them before they get used
- */
-function currencies_load_all() {
-  $currencies = array();
-  $functions = array_keys(module_invoke_all('transaction_access_callbacks'));
-  $all = entity_load_multiple('mcapi_currencies');
-  //unpack them - this is a bit of a shortcut, but ctools takes you right round the park
-  foreach($all as $currcode => $currency) {
-    if (!$currency->status) continue;
-    //convert the divisions_allowed into an array
-    $divisions = array();
-    if ($currency->widget == CURRENCY_WIDGET_SELECT) {
-      foreach(explode("\n", $currency->settings['divisions']) as $line) {
-        list($cent, $display) = explode('|', $line);
-        $divisions[$cent] = trim($display);
-      }
-    }
-    //this property exists only in memory, it is the array version of the custom options text field
-    $currency->divisions_allowed = $divisions;
-    $currencies[$currcode] = $currency;
-  }
-  return $currencies;
-}
-
-/*
- * Submit callback for mcapi_currency_form
- * declared in plugins/export/mcapi_ui
- * set the $form_state['item'] for ctools to save
- */
-function mcapi_currency_form_submit($form, &$form_state) {
-  form_state_values_clean($form_state);
-  //reduce the size of this object which is always in memory
-  foreach ($form_state['values']['access_operations'] as $key => $permissions) {
-    $form_state['values']['access_operations'][$key] = array_filter($permissions);
-  }
-  //things got a little out of kilter here - this shouldn't be necessary
-  $form_state['item']->currcode = $form_state['values']['info']['currcode'];
-  $form_state['item']->data = (object)$form_state['values'];
-  cache()->invalidate('currencies');
-}
-
-/*
- * retrieve a form fieldset which allows a mail to be configured.
- * $key is either a variable name prefix or an array containing the defaults subject and body and optionallly cc
- *
- */
-function mcapi_mail_config_fieldset($key, $tokens = array('transaction'), $required = TRUE, $weight = 0) {
-  if (is_array($key)) {
-    extract($key);
-    $key = '';
-  }
-  else{
-    $key .= '_';
-    $subject = variable_get($key . 'subject');
-    $body = variable_get($key . 'body');
-    $cc = variable_get($key . 'cc', NULL);
-  }
-  $fieldset =  array(
-    '#title' => t('Mail template'),
-    '#type' => 'fieldset',
-    '#weight' => $weight,
-    $key.'subject' => array(
-      '#title' => t('Subject'),
-      '#type' => 'textfield',
-      '#default_value' => $subject,
-      '#required' => $required,
-    ),
-    $key.'body' => array(
-      '#title' => t('Body'),
-      '#type' => 'textarea',
-      '#default_value' => $body,
-      '#required' => $required,
-      '#weight' => 2
-    ),
-    'token_tree' => array(
-      '#theme' => 'token_tree',
-      '#token_types' => $tokens,//array('user'),
-      '#global_types' => FALSE,
-      '#weight' => 3
-    )
-  );
-  if (isset($cc)) {
-    $fieldset[$key.'cc'] = array(
-      '#title' => t('Carbon copy'),
-      '#description' => t('Send an extra copy to this address'),
-      '#type' => 'textfield',
-      '#default_value' => $cc,
-      '#element_validate' => array('_mcapi_validate_mail_element'),
-      '#weight' => 1
-    );
-  }
-  return $fieldset;
-}
-
-function mcapi_transaction_mail_action_submit($form, $form_state) {
-  form_state_values_clean($form_state);
-  return $form_state['values'];
-}
-
-/*
  * Settings form callback for action mcapi_transaction_entity_uid
  */
 function mcapi_transaction_entity_uid_form($context) {
@@ -320,7 +206,6 @@ function mcapi_workflow_help() {
   foreach (mcapi_get_types() as $type) {
     $renderable['types']['#rows'][$type]['name'] = $type;
   }
-  debug($renderable);
   return $renderable;
 }
 

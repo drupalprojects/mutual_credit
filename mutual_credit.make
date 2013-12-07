@@ -2,4 +2,4 @@
 core = 7.x
 api = 2
 
-;projects[user_chooser][version] = "1.3"
+projects[user_chooser][version] = "1.3"

@@ -106,7 +106,7 @@ $conditions = array('involving' => array(234, 567));
  *   NB paging is ignored
  *   NB in multiple cardinality fields, only the first value is filtered for
  */
-array transaction_filter((array)$conditions, $offset, $limit, $fieldapi_conditions);
+array transaction_filter((array)$conditions, $offset, $limit);
 
 
 
@@ -224,7 +224,7 @@ function hook_transaction_operations(){
       //also a chance to drupal_set_title of that page (nojs mode only)
       'form callback' => 'TRUE',
       //this applies for the form, not for ajax. default will redirect to the transaction/$serial
-      'redirect' => 'user'
+      'redirect' => 'user',
       //whether or not the operation should send a mail
       'mail' => TRUE
     )

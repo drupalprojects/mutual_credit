@@ -163,34 +163,6 @@ function transaction_access_callback_creator($transaction) {
 }
 
 /*
- * action callback
- * mail the transaction participants, and cc
- * NB Ignored here, but note that $transaction may have ->dependents property
- * with other transactions and other payees / payers
- */
-function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
-  //pending transaction notifications are handled by the signatures module
-  if ($transaction->state != TRANSACTION_STATE_FINISHED) return;
-  //the actions settings allow to filter by transaction type
-  if (empty($settings['transaction_types'][$transaction->type])) return;
-
-  $params = $settings + array('transaction' => $transaction);
-  foreach (array($transaction->payer, $transaction->payee) as $uid) {
-    if (\Drupal::currentUser()->id() != $uid) {
-      $params['user'] = user_load($uid);
-      drupal_mail('mcapi', 'transaction_mail_action', $params['user']->mail, user_preferred_language($params['user']), $params);
-    }
-  }
-}
-
-//this should really be in core...
-function _mcapi_validate_mail_element($element, $form_state) {
-  if ($element['#value'] && !valid_email_address($element['#value'])) {
-    form_error($element, t('That e-mail address is not valid.'));
-  }
-}
-
-/*
  * action callback for hook_transaction_children
  * //TODO This goes with RULES
  */
@@ -259,40 +231,6 @@ function _mcapi_calc($formula, $base_value) {
   $val = eval('return '. $equation);
   if (is_numeric($val)) return $val;
   drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
-}
-//TODO
-//Parse error: syntax error, unexpected '/' in /var/www/drupal7/sites/all/modules/matslats/mutual_credit/mcapi.inc(853) : eval()'d code on line 1
-
-
-/*
- * helper to get block settings and load whichever user we like
- * may return nothing if no user is determined
- * the possible values of user_source should be made into php constants
- * 0 //the user argument comes from the current path
- * 1 //the user argument is the current user
- * TODO: this should be done elsewhere. It is a sort of addon to any block
- */
-function _mcapiblock_settings($delta, $currency_access_mode) {
-  $settings = variable_get('mcapiblock_'. $delta, array('currcodes' => array(), 'user_source' => 0));
-  if (@$settings['user_source'] == 0) {//Show as part of profile being viewed
-    if (arg(0) == 'user') {//and we are viewing a profile...
-      $settings['account'] = user_uid_optional_load(arg(1));
-    }
-    else return;
-  }
-  else {
-    $settings['account'] = \Drupal::currentUser();
-  }
-  if (empty($settings['currcodes'])) {
-    $settings['currcodes'] = array_keys(currencies_load($settings['account']));
-  }
-  //check that the current user can see the aggregated trading data in this currency
-  foreach($settings['currcodes'] as $key => $currcode) {
-    if (!currency_access($currency_access_mode, $currcode)) unset($settings['currcodes'][$key]);
-  }
-  if (empty($settings['currcodes']))return;
-
-  return $settings;
 }
 
 
@@ -391,16 +329,16 @@ function theme_worth_element($variables) {
 
 
 /*
- * block function a nice display of user balances in a currency
+ * a nice display of user balances in a currency
  */
 function mcapi_balances_view($account, $currcodes = array()) {
   if (empty($currcodes)) {
   	//TODO what's the current way to load all currencies for a user?
-    $currnames = mcapi_get_available_currencies($account);
+    $currcodes = mcapi_get_available_currencies($account);
   }
   $render_array = array();
-  foreach ($currnames as $currcode => $currname) {
-  	$currency = currency_load($currcode);
+  foreach ($currcodes as $currcode) {
+  	$currency = entity_load('mcapi_currencies', $currcode);
   	if ($currency->access('trader_data')) {
 	    $render_array[$currcode] = array(
 	      '#type' => 'mcapi_summary',
@@ -411,12 +349,6 @@ function mcapi_balances_view($account, $currcodes = array()) {
   }
   return $render_array;
 }
-
-
-/*
- * Utility functions
- */
-
 
 /*
  * rounds a transaction quantity up or down, according to currency settings
@@ -439,16 +371,4 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
     case CURRENCY_WIDGET_TEXT:
       return $quant;
   }
-}
-
-/*
- * menu callback
- * build the most basic possible transaction form
- */
-function transaction_default_form($form, &$form_state) {
-  $form = transaction_form($form, $form_state);
-  $form['state']['#type'] = 'value';
-  $form['type']['#type'] = 'value';
-  $form['creator']['#type'] = 'value';
-  return $form;
 }

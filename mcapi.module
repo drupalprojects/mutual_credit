@@ -83,17 +83,18 @@ function transaction_undo($serial) {
  */
 //function template_preprocess_mcapi_summary(&$vars) {
 function mcapi_pre_render_summary($element) {
-  //occasionally we'll appreciate a static result
   static $results = array();//TODO should this be drupal_static?
-  if (!array_key_exists($uid, $results)) {
+	$uid = $element['#account']->uid->value;
+  //occasionally we'll appreciate a static result
+  $result = &$results[$uid][$element['#currency']->id()];
+  if (empty($result)) {
     $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-    $result = $storage->summaryData($element['#account'], $element['#currency'], $element['#filters']);
-    foreach ($result as $key => $val) {
-      $stats['#'.$key] = $val;
+    $data = $storage->summaryData($element['#account'], $element['#currency'], $element['#filters']);
+    foreach ($data as $key => $val) {
+      $result['#'.$key] = $val;
     }
-    $results[$element['#account']->uid] = $stats;
   }
-  return $element + $results[$uid];
+  return $element + $result;
 }
 
 /*
@@ -301,75 +302,12 @@ function mcapi_search_info() {
  * implement hook_user_view().
  */
 function mcapi_user_view($account, $mode, $language) {
-  //if (\Drupal::config('mcapi.misc')->get('show_balances')) {
+  if (\Drupal::config('mcapi.misc')->get('profile_summary')) {
     module_load_include('inc', 'mcapi');
-    $account->content['balances'] = mcapi_balances_view($account);
-   //}
-}
-
-/**
- * implements hook_block_info().
- */
-function mcapi_block_info() {
-  $blocks = array();
-  if (\Drupal::config('mcapi.misc')->get('show_balances')) {
-    $blocks[balances] = array('info' => 'MC '. t("Balances"));
-  }
-  return $blocks;
-}
-
-/**
- * implements hook_block_view().
- */
-function mcapi_block_view($delta) {
-  module_load_include('inc', 'mcapi');
-  if ($settings = _mcapiblock_settings($delta, 'trader_data')) {
-    if (empty($settings['account']) || empty($settings['account']->uid)) return;
-    return array(
-      'subject' => $settings['account']->uid == \Drupal::currentUser()->id() ?
-        t('Trading status') :
-        t("@user's account", array('@user' => strip_tags(format_username($settings['account'])))),
-      'content' => mcapi_balances_view($settings['account']->uid, $settings['currcodes']),
-      '#settings' => $settings,//this is read by mcapi_signatures_block_view_alter
-    );
+    $account->content['mcapi_summary'] = mcapi_user_summary($account);
+    $account->content['mcapi_summary']['#weight'] = 5;
   }
 }
-
-/**
- * implements hook_block_configure().
- */
-function mcapi_block_configure($delta, $form = array()) {
-  $currencies = currencies_load();
-  module_load_include('inc', 'mcapi');
-  $settings = variable_get('mcapiblock_'. $delta, array('currcodes' => array(), 'user_source' => 0));
-  $form['currcodes'] = currency_picker_element(array_keys($currencies), NULL, TRUE);
-  $form['user_source'] = array(
-    '#title' => t('User'),
-    '#type' => 'radios',
-    '#options' => array(
-      0 => t('Show as part of profile being viewed'),
-      1 => t('Show for logged in user')
-    ),
-  );
-  foreach ($form as $fieldname => $element) {
-    $form[$fieldname]['#default_value'] = @$settings[$fieldname];
-  }
-  return $form;
-}
-
-/*
- * implements hook_block_save().
- * used by dependent modules - save these two values
- */
-function mcapi_block_save($delta, $values) {
-  variable_set('mcapiblock_'. $delta,
-    array(
-      'currcodes' => (array)$values['currcodes'],
-      'user_source' => $values['user_source']
-    )
-  );
-}
-
 
 
 /**
@@ -553,10 +491,11 @@ function mcapi_transaction_access_callbacks() {
 
 /*
  * implements hook_user_delete().
-* all transactions revert to the reservoir
-*/
+ * all transactions revert to the reservoir
+ * Of course normally you wouldn't delete a user in a mutual credit system
+ */
 function mcapi_user_delete($account) {
-  foreach (currencies_load($account) as $currency) {
+  foreach (mcapi_currency_list($account) as $currency) {
     entity_get_controller('transaction')->mergeAccounts($currency->reservoir, $account->uid);
   }
 }
@@ -590,27 +529,6 @@ function mcapi_mail_alter(&$message) {
   if (isset($message['params']['cc'])) {
     $message['headers']['Cc'] = $message['params']['cc'];
   }
-}
-
-/**
- * access control for currency
- * there are three ops possible
- * - membership
- * - trader_data
- * - system_data
- * each containing a permission
- */
-function currency_access($op, $currcode, $account = NULL) {
-  if (!$account) $account = \Drupal::currentUser();
-  $uid = is_object($account) ? $account->id() : \Drupal::currentUser()->id();
-  static $calculated = array();
-  if (!isset($calculated[$op][$currcode][$uid])) {
-    $currency = entity_load('mcapi_currencies', $currcode);
-    $callback = strtok($currency->access[$op], ':');
-    $arg = strtok(':');
-    $calculated[$op][$currcode][$uid] = in_user_chooser_segment($callback, array($arg), $uid);
-  }
-  return $calculated[$op][$currcode][$uid];
 }
 
 function template_preprocess_mcapi_transaction(&$vars) {
@@ -703,8 +621,22 @@ function mcapi_field_extra_fields() {
 	return $extra;
 }
 
-function mcapi_currencies_load($currcode) {
+//return a currency
+function mcapi_currency_load($currcode) {
   return entity_load('mcapi_currencies', $currcode);
+}
+
+/*
+ * get an #options list of all the currencies (for one account)
+ */
+function mcapi_currency_list($account = NULL, $options = FALSE) {
+	$currs = $account ? mcapi_get_available_currencies($account) : entity_load_multiple('mcapi_currencies');
+  if ($options) {
+	  foreach ($currs as $currcode => $currency) {
+	    $currs[$currcode] = $currency->name;
+	  }
+  }
+  return $currs;
 }
 
 //get all the currencies a user can access, ready for an #options array
@@ -718,70 +650,17 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
     $cache_tags = array('mcapi.available_currency' => array());
     foreach (entity_load_multiple('mcapi_currencies') as $currency) {
       if ($currency->access('membership', $account)) {
-        $available[$currency->id()] = $currency->name;
+        $available[] = $currency->id();
         $cache_tags['mcapi.available_currency'] = $currency->id();
       }
     }
-    //TODO this cache should be cleared whenever a currency is edited
+    //TODO this cache should be cleared whenever a currency is edited and whenever a user's entitlement to use a currency could be affected
     \Drupal::cache()->set($cid, $available, CacheBackendInterface::CACHE_PERMANENT, $cache_tags);
     return $available;
   }
   else {
     return $cache->data;
   }
-}
-
-/**
- * return one currency object, assuming the user has permission to use it
- */
-function currency_load($currcode = NULL) {
-  $currencies = currencies_load();
-  if (empty($currencies))currencies_load();//filters
-  if ($currcode && isset($currencies[$currcode])) {
-    return $currencies[$currcode];
-  }
-  debug(array_keys($currencies), "can't find currency ".$currcode);
-  return current($currencies);
-}
-
-/**
- * TODO: Remove this function in favour of the entity_load_multiple() and entity_load_multiple_by_properties().
- * Load all the currencies from cache filter
- * then optionally return them filtered for which ones an account has membership i.e. can use
- * wish I understood ctools better. not sure I need to cache here
- */
-function currencies_load() {
-  $currencies = &drupal_static(__FUNCTION__);
-  if (empty($currencies)) {//first time this function is running
-    if ($cache = \Drupal::cache()->get('currencies')) {
-      $currencies = $cache->data;
-    }
-    else {
-      module_load_include('admin.inc', 'mcapi');
-      $currencies = currencies_load_all();
-      cache()->set('currencies', $currencies);
-    }
-  }
-  return $currencies;//having set the $currencies static
-}
-
-//filter currencies by issuance. Could change the name of this function. Not sure it is even needed.
-function currencies_filter() {
-  $currencies = currencies_load();
-  $output = array();
-  $args = func_get_args();
-  foreach ($currencies as $currcode => $currency) {
-    if (property_exists($currency, 'issuance') && in_array($currency->issuance, $args)) $output[$currcode] = $currency;
-  }
-  return $output;
-}
-
-function mcapi_currency_list($account = NULL) {
-	$currs = $account ? mcapi_get_available_currencies($account) : currencies_load();
-  foreach ($currs as $currcode => $currency) {
-    $list[$currcode] = $currency->name;
-  }
-  return $list;
 }
 
 /**
@@ -948,23 +827,24 @@ function mcapi_element_info() {
     'mcapi_states' => array(
       '#input' => TRUE,
       '#title_display' => 'before',
-      '#process' => array('mcapi_process_states'),
+      '#process' => array('mcapi_process_states', 'ajax_process_form'),
       '#theme_wrappers' => array('radios'),
       '#pre_render' => array('form_pre_render_conditional_form_element'),
     ),
     'mcapi_types' => array(
       '#input' => TRUE,
       '#title_display' => 'before',
-      '#process' => array('mcapi_process_types'),
+      '#process' => array('mcapi_process_types', 'ajax_process_form'),
       '#theme_wrappers' => array('form_element'),
       '#theme' => 'select'
     ),
     'mcapi_currcodes' => array(
       '#input' => TRUE,
       '#title_display' => 'attribute',
-      '#process' => array('mcapi_process_currcodes'),
+      '#process' => array('mcapi_process_currcodes','ajax_process_form'),
       '#theme_wrappers' => array('form_element'),
       '#theme' => 'select',
+    	'#multiple' => TRUE,
       '#options' => array(),//array of currcodes and currency names
     ),
   	'mcapi_summary' => array(
@@ -1113,30 +993,22 @@ function mcapi_process_types($element) {
 }
 
 function mcapi_process_currcodes($element) {
-  if ($element['#options'] == 'all') {
-    $element['#options'] = mcapi_currency_list();
+  if (empty($element['#options']) || $element['#options'] == 'all') {
+    $account = empty($element['#options']) ?  \Drupal::currentUser() : NULL;
+    $element['#options'] = mcapi_currency_list($account, TRUE);
   }
-  elseif (empty($element['#options'])) {//assume it is a user object
-    //limit the choice to the currencies available to this user
-    $element['#options'] = mcapi_currency_list(\Drupal::currentUser());
+  if (count($element['#options']) == 1) {
+  	//nothing to choose from
+  	return array(
+  	 	'#type' => 'value',
+  		'#input' => TRUE,
+  		'#value' => reset($element['#options'])
+  	);
   }
-  return $element;
+  $element['#size'] = min(count($element['#options']), 10);
+  return form_process_select($element);
 }
 
-//TODO: is this still needed?
-//Converts array(0 => array('currcode' => 'credunit', 'quantity' => '1'))
-//to
-//array('currcode' => 1);
-function _worthitems_to_worths(array $worthitems) {
-  $currencies = currencies_load();
-  $worths = array();
-  foreach ($worthitems as $worth_item) {
-    if (isset($currencies[$worth_item['currcode']])) {
-      $worths[$worth_item['currcode']] = $worth_item['quantity'];
-    }
-  }
-  return $worths;
-}
 
 /*
  * implements alter hook_form_user_cancel_confirm_form().

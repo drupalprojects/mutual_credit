@@ -1,5 +1,5 @@
 delete_mode: '0'
-show_balances: 0
+profile_summary: true
 change_undo_mode: true
 sentence_template: '[transaction:payer] paid [transaction:payee] [transaction:worth]. [transaction:links]'
 mix_mode: true
