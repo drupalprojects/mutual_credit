@@ -93,15 +93,14 @@ class CurrencyFormController extends EntityFormController {
     );
 
     $form['id'] = array(
-      '#type' => 'machine_name',
-      '#default_value' => $currency->id(),
-      '#machine_name' => array(
-        'exists' => 'mcapi_currencies_load',
-        'source' => array('name'),
-      ),
-      '#disabled' => !$currency->isNew(),
+    	'#type' => 'machine_name',
+    	'#default_value' => $currency->id(),
+    	'#machine_name' => array(
+    		'exists' => 'mcapi_currency_load',
+    		'source' => array('name'),
+    	),
+    	'#disabled' => !$currency->isNew(),
     );
-
     $form['acknowledgement'] = array(
       '#type' => 'container',
       '#children' => implode("\n<br /><br />\n", array(
@@ -340,6 +339,13 @@ class CurrencyFormController extends EntityFormController {
     else {
       $form['display']['zero']['#description'] = t("Leave blank to disallow zero value transactions");
     }
+    $form['display']['color'] = array(
+    	'#title' => t('Colour'),
+    	'#description' => t('Colour may be used in visualisations'),
+    	'#type' => 'color',
+    	'#default_value' => $currency->color,
+//    	'#weight' =>
+    );
 
     $form['additional_settings'] = array(
       '#type' => 'vertical_tabs',
@@ -579,6 +585,7 @@ class CurrencyFormController extends EntityFormController {
    * Overrides Drupal\Core\Entity\EntityFormController::delete().
    */
   public function delete(array $form, array &$form_state) {
+  	\Drupal::cache()->deleteTags(array('mcapi.available_currency'));
     $form_state['redirect'] = 'admin/accounting/currencies/' . $this->entity->id() . '/delete';
   }
 

@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * @file
  * Contains \Drupal\mcapi\Entity\Transaction.
@@ -15,6 +14,8 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\TransactionInterface;
 
 /**
+ * Defines the Transaction entity.
+ *
  * @EntityType(
  *   id = "mcapi_transaction",
  *   label = @Translation("Transaction"),

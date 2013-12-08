@@ -1,7 +1,8 @@
 id: escro
 uuid: 1b93baa9-95b9-4f05-8900-b13ccc9657cc
 name: Euro
-issuance: exchange
+status: 0
+issuance: commodity
 uid: '1'
 reservoir: '1'
 type: decimal
@@ -12,6 +13,7 @@ widget_settings: {  }
 prefix: €
 suffix: ''
 zero: ''
+color: '#00ff00'
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'

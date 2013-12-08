@@ -284,6 +284,16 @@ function mcapi_theme($existing, $type, $theme, $path) {
       ),
       'file' => 'mcapi.inc'
     ),
+    'balance_histories_gchart' => array(
+      'template' => 'balance_histories_gchart',
+      'variables' => array(
+        'account' => NULL,
+      	'currcodes' =>array(),
+        'width' => 250,
+        'resample' => 'simple'
+      ),
+      'file' => 'mcapi.inc'
+    )
   );
   return $items;
 }
@@ -1059,4 +1069,5 @@ function mcapi_toolbar() {
     drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
   }
 }
+
 

@@ -1,6 +1,7 @@
 id: credunit
 uuid: 4450dc37-0564-480e-8800-a3d78c18f12d
 name: 'Community Coins'
+status: 1
 issuance: acknowledgement
 uid: '1'
 reservoir: '1'
@@ -15,6 +16,7 @@ settings:
 prefix: CC
 suffix: ''
 zero: ''
+color: #000000
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'

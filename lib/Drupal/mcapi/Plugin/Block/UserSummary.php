@@ -14,7 +14,7 @@ use Drupal\mcapi\Plugin\Block\McapiBlockBase;
  * Provides a user balances block.
  *
  * @Block(
- *   id = "mcapi_balances",
+ *   id = "mcapi_user_summary",
  *   admin_label = @Translation("Balances"),
  *   category = @Translation("Community Accounting")
  * )

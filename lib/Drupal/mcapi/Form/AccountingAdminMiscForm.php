@@ -37,9 +37,9 @@ class AccountingAdminMiscForm extends ConfigFormBase {
         t('Cannot be changed after a transaction has been undone'),
       '#type' => 'radios',
       '#options' => array(
-        MCAPI_DELETE_STATE_DELETE => t('Wipe slate - remove transactions from database'),
-        MCAPI_DELETE_STATE_ERASE => t('Scratch - use deleted transaction state'),
-        MCAPI_DELETE_STATE_REVERSE => t('Reverse - create an equal and opposite transaction'),
+        MCAPI_UNDO_STATE_DELETE => t('Wipe slate - remove transactions from database'),
+        MCAPI_UNDO_STATE_ERASE => t('Scratch - use deleted transaction state'),
+        MCAPI_UNDO_STATE_REVERSE => t('Reverse - create an equal and opposite transaction'),
       ),
       '#default_value' => $config->get('delete_mode'),
       '#disabled' => !$config->get('change_undo_mode'),

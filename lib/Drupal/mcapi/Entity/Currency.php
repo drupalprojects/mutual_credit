@@ -26,7 +26,9 @@ use Drupal\Core\Annotation\Translation;
  *     "form" = {
  *       "add" = "Drupal\mcapi\CurrencyFormController",
  *       "edit" = "Drupal\mcapi\CurrencyFormController",
- *       "delete" = "Drupal\mcapi\Form\CurrencyDeleteConfirm"
+ *       "delete" = "Drupal\mcapi\Form\CurrencyDeleteConfirm",
+ *       "enable" = "Drupal\mcapi\Form\CurrencyEnableConfirm",
+ *       "disable" = "Drupal\mcapi\Form\CurrencyDisableConfirm"
  *     },
  *     "list" = "Drupal\mcapi\CurrencyListController",
  *   },
@@ -36,7 +38,8 @@ use Drupal\Core\Annotation\Translation;
  *     "id" = "id",
  *     "label" = "name",
  *     "uuid" = "uuid",
- *     "weight" = "weight"
+ *     "weight" = "weight",
+ *     "status" = "status"
  *   },
  *   links = {
  *     "edit-form" = "mcapi.admin_currency_edit"
@@ -47,6 +50,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $id;
   public $uuid;
   public $name;
+  public $status;
   public $issuance;
   public $uid;
   public $reservoir;
@@ -55,6 +59,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $prefix;
   public $suffix;
   public $zero;
+  public $color;
   public $widget;
   public $widget_settings;
   public $formatter;
@@ -76,9 +81,11 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
 
     $values += array(
       'settings' => array(),
+    	'issuance' => 'acknowledgement',
       'prefix' => '$',
       'suffix' => '',
       'zero' => '',
+      'color' => '',
       'access' => array(),
       'access_operations' => array(),
       'view_transaction_states' => array(),

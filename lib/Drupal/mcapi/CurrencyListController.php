@@ -26,7 +26,7 @@ class CurrencyListController extends DraggableListController {
     $header['title'] = t('Title');
     $header['id'] = t('Machine Name');
     $header['type'] = t('Type');
-    $header['insurance'] = t('Issuance');
+    $header['issuance'] = t('Issuance');
     return $header + parent::buildHeader();
   }
 
@@ -54,7 +54,32 @@ class CurrencyListController extends DraggableListController {
     $row['issuance'] = array(
       '#markup' => $type_names[$type],
     );
+    //TODO load mcapi.css somehow. Also see the McapiForm list controller.
+    $row['#attributes']['style'] = $entity->status ? '' : 'color:#999';
+    //$row['#attributes']['class'][] = $entity->status ? 'enabled' : 'disabled';
+
     return $row + parent::buildRow($entity);
+  }
+
+
+  /**
+   * {@inheritdoc}
+	 * ensure that the last currency can't be switched off or disabled
+   */
+  public function getOperations(EntityInterface $entity) {
+  	$operations = parent::getOperations($entity);
+  	static $done = 0;
+  	//we only need to run this on the first currency
+  	if (!$done) {
+	  	$count = 0;
+	  	foreach ($this->storage->loadMultiple() as $entity) {
+	  		if ($entity->status)$count++;
+	  	}
+	  	if ($count < 2) {
+	  		unset($operations['delete'], $operations['disable']);
+	  	}
+  	}
+  	return $operations;
   }
 
   /**
@@ -64,7 +89,6 @@ class CurrencyListController extends DraggableListController {
     $form = parent::buildForm($form, $form_state);
 
     $form['entities']['new'] = array(
-      //'#attributes' => array('class' => array('draggable')),
       '#weight' => 99,
     );
     $form['entities']['new']['title'] = array(
@@ -81,7 +105,7 @@ class CurrencyListController extends DraggableListController {
       '#size' => 15,
       '#maxlength' => 32,
       '#machine_name' => array(
-        'exists' => 'mcapi_currencies_load',
+        'exists' => 'mcapi_currency_load',
         'source' => array('entities', 'new', 'title'),
         'standalone' => TRUE,
       ),
@@ -103,7 +127,7 @@ class CurrencyListController extends DraggableListController {
       '#prefix' => '<div class="add-new-placeholder">&nbsp;</div>',
     );
 
-    $form['entities']['new']['insurance'] = array(
+    $form['entities']['new']['issuance'] = array(
       '#markup' => '',
     );
 
@@ -113,7 +137,7 @@ class CurrencyListController extends DraggableListController {
       '#default_value' => 99,
     );
 
-    $form['actions']['submit']['#value'] = t('Save');
+    $form['actions']['submit']['#value'] = t('Continue');
     return $form;
   }
 

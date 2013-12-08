@@ -80,6 +80,9 @@ mcapi.currency.*:
     zero:
       type: string
       label: 'Zero value display'
+    color:
+      type: string
+      label: 'Colour'
     access:
       type: mapping
       label: 'Currency access'

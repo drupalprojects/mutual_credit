@@ -331,7 +331,7 @@ function theme_worth_element($variables) {
 /*
  * a nice display of user balances in a currency
  */
-function mcapi_balances_view($account, $currcodes = array()) {
+function mcapi_user_summary($account, $currcodes = array()) {
   if (empty($currcodes)) {
   	//TODO what's the current way to load all currencies for a user?
     $currcodes = mcapi_get_available_currencies($account);
@@ -371,4 +371,133 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
     case CURRENCY_WIDGET_TEXT:
       return $quant;
   }
+}
+
+/*
+ * callback to give times and balances
+* $mode can be either
+*   diagonal, square, or the number of points required after sampling
+*/
+function get_balance_history($account, $currcodes = array(), $since = NULL) {
+	if (empty($currcodes)) {
+		$currencies = mcapi_get_available_currencies($account);
+	}
+	else {
+		foreach ($currcodes as $currcode) {
+			$currency = mcapi_currency_load($currcode);
+			if ($currency->access('trader data', \Drupal::currentUser()) || $account->id() == \Drupal::currentUser()->id()) {
+  		  $currencies[$currcode] = $currency;
+		  }
+		}
+	}
+	if (empty($currencies)) return;
+	$histories = array();
+	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+	foreach ($currencies as $currcode => $currency) {
+		$history = array($account->created->value => 0);
+		$history += $storage->timesBalances($account, $currency);
+		if (count($history) > 1) {
+			//make a straight line until now
+			$history[REQUEST_TIME] = end($history);
+			$histories[$currcode] = $history;
+		}
+		//ignore histories with no transactions
+	}
+	return $histories;
+}
+
+//modify the history points for aesthetic reasons, or to save resources
+function template_preprocess_balance_histories_gchart(&$vars) {
+	$histories = get_balance_history($vars['account'], $vars['currcodes']);
+	foreach ($histories as $currcode => &$history) {
+		$point_count = count($history);
+		if ($point_count < $vars['width'] / 3) {//step method, for a small number of points
+			$times = $values = array();
+			//make two values for each one in the keys and values
+			foreach ($history as $time => $bal) {
+				$times[] = $time;
+				$times[] = $time+1;
+				$values[] = $bal;
+				$values[] = $bal;
+			}
+			//now slide the arrays against each other
+			array_pop($values);
+			array_shift($times);
+			$history = array_combine($times, $values);
+		}
+		elseif ($point_count > $vars['width']) {//decimate the array, for a large number of points
+			//we can assume that $max_size(1 point per pixes) is smaller than $count
+			$ratio = $vars['width'] / $point_count;
+			//how to turn this into a fraction involving 1?
+			$reciprocal = 1/$ratio;
+			$factor = intval($reciprocal + 1);
+			//now iterate through the array taking 1 out of every $factor values
+			$i = 0;
+			foreach($history as $key => $value) {
+				if ($i % $factor != 0) unset($history[$key]);
+				$i++;
+			}
+			$vars['curvetype'] = 'function';
+		}
+		$vars['histories'][$currcode] = $history;
+	}
+}
+
+
+//produce and include the actual javascript
+function mcapi_process_balance_histories_gchart(&$vars) {
+	$histories = &$vars['histories'];
+	$id = 'uid-'.$vars['account']->id().'-'.implode('',array_keys($histories));
+	$vars['id'] = $id;
+	$color_sequence = array('21a0db', '2aab49');
+	foreach ($histories as $currcode => $history) {
+		$colors[] = "'".currency_load($currcode)->color ."'";
+		foreach ($history as $timestamp => $balance) {
+			$timeline[$timestamp][$currcode] = $balance;
+		}
+	}
+	if (empty($timeline))return '';
+	//$timeline is now a list of times and changes of balance in currencies
+	ksort($timeline);
+	//what we need is a list of times with both balances per moment
+	//starting with a default 'prev value
+	foreach (array_keys($histories) as $currcode) {
+		$prev[$currcode] = 0;
+	}
+	foreach ($timeline as $timestamp => $balances) {
+		$vals = array_merge($prev, $balances);
+		$timeline[$timestamp] = $vals;
+		$prev = $timeline[$timestamp];
+	}
+	$vars['height'] = 3* $vars['width']/4;
+
+	$js = "
+	google.load('visualization', '1', {packages: ['corechart']});
+	function drawBalanceHistory() {
+		var data = new google.visualization.DataTable();
+		data.addColumn('date', 'Date');";
+	foreach (array_keys(current($timeline)) as $currcode) {
+		$currname = entity_load('mcapi_currencies', $currcode)->name;
+	  $js .= "\n  data.addColumn('number', '$currname')";
+	}
+	foreach ($timeline as $timestamp => $balances) {
+	  $date = "\n  new Date('".date('m/d/Y', $timestamp)."')";
+	  $balances = implode(', ', $balances);
+	  $js .= "\n  data.addRow([$date, $balances])";
+	}
+	$colors = implode(', ', $colors);
+	$js .= "\nvar options = {
+	    curveType: '$curvetype',
+	    width: 250,
+	    height: 200,
+	    colors: [$colors],
+	    legend: {position: 'none'}
+	  }
+	  new google.visualization.LineChart(document.getElementById('$id')).draw(data, options);
+	}
+	google.setOnLoadCallback(drawBalanceHistory);
+	";
+	drupal_add_js('http://www.google.com/jsapi');
+	drupal_add_js($js, array('type'=> 'inline', 'group' => JS_THEME, 'preprocess' => FALSE));
+  debug($vars);
 }
