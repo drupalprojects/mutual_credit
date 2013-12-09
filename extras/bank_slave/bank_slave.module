@@ -87,7 +87,7 @@ function bank_slave_accounting_validate($cluster) {
         throw new Exception(t('Bank payments must involve a designated bank account'));
       }
       foreach (field_get_items('transaction', $transaction, 'worth') as $item) {
-        if (entity_load('mcapi_currencies', $item['currcode'])->issuance != 'commodity') {
+        if (entity_load('mcapi_currency', $item['currcode'])->issuance != 'commodity') {
           throw new Exception(t('Banks can only use commodity currencies'));
         }
       }
