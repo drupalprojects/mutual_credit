@@ -437,7 +437,6 @@ function template_preprocess_balance_histories_gchart(&$vars) {
 				if ($i % $factor != 0) unset($history[$key]);
 				$i++;
 			}
-			$vars['curvetype'] = 'function';
 		}
 		$vars['histories'][$currcode] = $history;
 	}
@@ -445,13 +444,14 @@ function template_preprocess_balance_histories_gchart(&$vars) {
 
 
 //produce and include the actual javascript
-function mcapi_process_balance_histories_gchart(&$vars) {
+//TODO cache this and clear the cache
+//theme preprocessor
+function mcapi_preprocess_balance_histories_gchart(&$vars) {
 	$histories = &$vars['histories'];
-	$id = 'uid-'.$vars['account']->id().'-'.implode('',array_keys($histories));
+	$id = 'uid-'.$vars['account']->id().'-'.implode('-',array_keys($histories));
 	$vars['id'] = $id;
-	$color_sequence = array('21a0db', '2aab49');
 	foreach ($histories as $currcode => $history) {
-		$colors[] = "'".currency_load($currcode)->color ."'";
+		$colors[] = "'".mcapi_currency_load($currcode)->color ."'";
 		foreach ($history as $timestamp => $balance) {
 			$timeline[$timestamp][$currcode] = $balance;
 		}
@@ -470,34 +470,32 @@ function mcapi_process_balance_histories_gchart(&$vars) {
 		$prev = $timeline[$timestamp];
 	}
 	$vars['height'] = 3* $vars['width']/4;
-
 	$js = "
-	google.load('visualization', '1', {packages: ['corechart']});
-	function drawBalanceHistory() {
-		var data = new google.visualization.DataTable();
-		data.addColumn('date', 'Date');";
+function drawBalanceHistory() {
+  data.addColumn('date', 'Date');";
 	foreach (array_keys(current($timeline)) as $currcode) {
 		$currname = entity_load('mcapi_currencies', $currcode)->name;
 	  $js .= "\n  data.addColumn('number', '$currname')";
 	}
 	foreach ($timeline as $timestamp => $balances) {
-	  $date = "\n  new Date('".date('m/d/Y', $timestamp)."')";
+		//this has a resolution of one day, not very satisfying perhaps
+	  $date = "new Date('".date('m/d/Y', $timestamp)."')";
 	  $balances = implode(', ', $balances);
-	  $js .= "\n  data.addRow([$date, $balances])";
+	  $js .= "\n  data.addRow([$date, $balances]);";
 	}
 	$colors = implode(', ', $colors);
-	$js .= "\nvar options = {
-	    curveType: '$curvetype',
-	    width: 250,
-	    height: 200,
-	    colors: [$colors],
-	    legend: {position: 'none'}
-	  }
-	  new google.visualization.LineChart(document.getElementById('$id')).draw(data, options);
-	}
-	google.setOnLoadCallback(drawBalanceHistory);
-	";
-	drupal_add_js('http://www.google.com/jsapi');
-	drupal_add_js($js, array('type'=> 'inline', 'group' => JS_THEME, 'preprocess' => FALSE));
-  debug($vars);
+	$js .= "
+  var options = {
+    curveType: 'function',
+    width: ".$vars['width'].",
+    height: ".$vars['height'].",
+    colors: [$colors],
+    legend: {position: 'none'}
+  }
+  new google.visualization.LineChart(document.getElementById('$id')).draw(data, options);
+}";
+	//
+//	drupal_add_js('http://www.google.com/jsapi');
+	drupal_add_js("google.load('visualization', '1', {packages: ['corechart']});\ngoogle.setOnLoadCallback(drawBalanceHistory);", 'inline');
+	$vars['javascript'] = $js;
 }

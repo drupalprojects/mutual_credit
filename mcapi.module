@@ -81,7 +81,6 @@ function transaction_undo($serial) {
 /**
  * element pre_render callback
  */
-//function template_preprocess_mcapi_summary(&$vars) {
 function mcapi_pre_render_summary($element) {
   static $results = array();//TODO should this be drupal_static?
 	$uid = $element['#account']->uid->value;
@@ -640,7 +639,7 @@ function mcapi_currency_load($currcode) {
  * get an #options list of all the currencies (for one account)
  */
 function mcapi_currency_list($account = NULL, $options = FALSE) {
-	$currs = $account ? mcapi_get_available_currencies($account) : entity_load_multiple('mcapi_currencies');
+	$currs = $account ? mcapi_get_available_currencies($account) : entity_load_multiple_by_properties('mcapi_currencies', array('status' => 1));
   if ($options) {
 	  foreach ($currs as $currcode => $currency) {
 	    $currs[$currcode] = $currency->name;
@@ -659,7 +658,7 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
     $available = array();
     $cache_tags = array('mcapi.available_currency' => array());
     foreach (entity_load_multiple('mcapi_currencies') as $currency) {
-      if ($currency->access('membership', $account)) {
+      if ($currency->status && $currency->access('membership', $account)) {
         $available[] = $currency->id();
         $cache_tags['mcapi.available_currency'] = $currency->id();
       }
