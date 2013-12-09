@@ -17,7 +17,7 @@ use Drupal\Core\Annotation\Translation;
  * Defines the Currency entity.
  *
  * @EntityType(
- *   id = "mcapi_currencies",
+ *   id = "mcapi_currency",
  *   label = @Translation("Currency"),
  *   module = "mcapi",
  *   controllers = {

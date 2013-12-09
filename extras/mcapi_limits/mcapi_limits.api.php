@@ -10,7 +10,7 @@ function MYMODULE_mcapi_limits_info() {
 /*
  * Your callback to determine the limits
  * Params
- * * Currency (object) derived from entity_load('mcapi_currencies', $currcode)
+ * * Currency (object) derived from entity_load('mcapi_currency', $currcode)
  * * $uid (integer)
  * Returns
  * an array with keys min and/or max with numeric values or NULL for each
@@ -26,7 +26,7 @@ function my_callback($currency, $uid) {
  * Optional callback to configure the limits on the currency form
  * Made from my_callback + _form
  * Params
- * * Currency (object) derived from entity_load('mcapi_currencies', $currcode)
+ * * Currency (object) derived from entity_load('mcapi_currency', $currcode)
  * * $defaults, the saved values
  * Returns
  * a formAPI array

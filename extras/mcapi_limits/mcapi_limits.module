@@ -7,7 +7,7 @@ use Drupal\Core\Template\Attribute;
  */
 function limits_get($currcode, $uid){
   module_load_include('inc', 'mcapi_limits');
-  $currency = entity_load('mcapi_currencies', $currcode);
+  $currency = entity_load('mcapi_currency', $currcode);
   $callback = @$currency->limits['limits_callback'];
   $personal = @$currency->limits['personal'];
 
@@ -68,7 +68,7 @@ function mcapi_limits_accounting_validate(array $cluster) {
     foreach ($percurrency as $currcode => $diffs) {
       //check to see if any of the skip settings apply.
       //these check, or at least these reports should possiblly be done after the check, and only if the check failed
-      $currency = entity_load('mcapi_currencies', $currcode);
+      $currency = entity_load('mcapi_currency', $currcode);
       if ($currency->issuance == 'acknowledgement') continue;
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
@@ -168,7 +168,7 @@ function mcapi_limits_exception_parse($errors) {
  * Perhaps in drupal 8
  */
 function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
-  if (isset($form_state['plugin']['schema']) && $form_state['plugin']['schema'] == 'mcapi_currencies') {
+  if (isset($form_state['plugin']['schema']) && $form_state['plugin']['schema'] == 'mcapi_currency') {
     form_load_include($form_state, 'inc', 'mcapi_limits');
     _mcapi_limits_form_ctools_export_ui_edit_item_form_alter($form, $form_state);
   }

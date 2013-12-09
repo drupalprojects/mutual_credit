@@ -504,8 +504,8 @@ function mcapi_transaction_access_callbacks() {
  * Of course normally you wouldn't delete a user in a mutual credit system
  */
 function mcapi_user_delete($account) {
-  foreach (mcapi_currency_list($account) as $currency) {
-    entity_get_controller('transaction')->mergeAccounts($currency->reservoir, $account->uid);
+  foreach (mcapi_currency_list(NULL, $account, TRUE) as $currcode => $currname) {
+    entity_get_controller('transaction')->mergeAccounts(mcapi_currency_load($currcode)->reservoir, $account->uid);
   }
 }
 
@@ -632,20 +632,37 @@ function mcapi_field_extra_fields() {
 
 //return a currency
 function mcapi_currency_load($currcode) {
-  return entity_load('mcapi_currencies', $currcode);
+  return entity_load('mcapi_currency', $currcode);
 }
 
 /*
  * get an #options list of all the currencies (for one account)
  */
-function mcapi_currency_list($account = NULL, $options = FALSE) {
-	$currs = $account ? mcapi_get_available_currencies($account) : entity_load_multiple_by_properties('mcapi_currencies', array('status' => 1));
-  if ($options) {
-	  foreach ($currs as $currcode => $currency) {
-	    $currs[$currcode] = $currency->name;
-	  }
+function mcapi_currency_list(array $currencies = NULL, AccountInterface $account = NULL, $check_access = TRUE) {
+  $list = array();
+
+  if (!$account) {
+    $account = \Drupal::currentUser();
   }
-  return $currs;
+
+  if (empty($currencies)) {
+    if ($check_access) {
+      $currencies = mcapi_get_available_currencies($account);
+      $check_access = FALSE; // No need to check the access again, so set it to false;
+    }
+    else {
+      $currencies = entity_load_multiple('mcapi_currency');
+    }
+  }
+
+  if ($check_access) {
+    $currencies = array_intersect_key($currencies, mcapi_get_available_currencies($account));
+  }
+
+  foreach ($currencies as $currency) {
+    $list[$currency->id()] = $currency->label();
+  }
+  return $list;
 }
 
 //get all the currencies a user can access, ready for an #options array
@@ -1004,7 +1021,7 @@ function mcapi_process_types($element) {
 function mcapi_process_currcodes($element) {
   if (empty($element['#options']) || $element['#options'] == 'all') {
     $account = empty($element['#options']) ?  \Drupal::currentUser() : NULL;
-    $element['#options'] = mcapi_currency_list($account, TRUE);
+    $element['#options']= mcapi_currency_list(NULL, $account, TRUE);
   }
   if (count($element['#options']) == 1) {
   	//nothing to choose from

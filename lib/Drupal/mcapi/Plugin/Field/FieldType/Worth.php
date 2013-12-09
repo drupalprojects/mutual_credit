@@ -35,7 +35,7 @@ class Worth extends ConfigFieldItemBase {
    */
   public function __get($name) {
     if ($name == 'currency') { //FIXME: This is a giant hack!
-      return entity_load('mcapi_currencies', $this->currcode);
+      return entity_load('mcapi_currency', $this->currcode);
     }
     return parent::__get($name);
   }
