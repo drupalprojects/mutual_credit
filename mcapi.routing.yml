@@ -9,8 +9,8 @@ mcapi.admin:
 mcapi.admin_misc:
   path: '/admin/accounting/config'
   defaults:
-    _form: Drupal\mcapi\Form\AccountingAdminMiscForm
-    _title: Settings
+    _form: 'Drupal\mcapi\Form\AccountingAdminMiscForm'
+    _title: 'Settings'
   requirements:
     _permission: 'manage all transactions'
 
@@ -35,6 +35,65 @@ mcapi.admin_currency_delete:
   requirements:
     _permission: 'configure all currencies'
 
+mcapi.admin_currency_disable:
+  path: '/admin/accounting/currencies/{mcapi_currencies}/disable'
+  defaults:
+    _entity_form: 'mcapi_currencies.disable'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_currency_enable:
+  path: '/admin/accounting/currencies/{mcapi_currencies}/enable'
+  defaults:
+    _entity_form: 'mcapi_currencies.enable'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin.mcapiform.add:
+  path: '/admin/accounting/workflow/forms/add'
+  defaults:
+    _entity_form: 'mcapi_form.add'
+    _title: 'Transaction form designer'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_mcapiform_list:
+  path: '/admin/accounting/workflow/forms'
+  defaults:
+    _entity_list: 'mcapi_form'
+    _title: 'Transaction forms'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_mcapiform_edit:
+  path: '/admin/accounting/workflow/forms/{mcapi_form}'
+  defaults:
+    _entity_form: 'mcapi_form.edit'
+    _title: 'Transaction form designer'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_mcapiform_delete:
+  path: '/admin/accounting/workflow/forms/{mcapi_form}/delete'
+  defaults:
+    _entity_form: 'mcapi_form.delete'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_mcapiform_disable:
+  path: '/admin/accounting/workflow/forms/{mcapi_form}/disable'
+  defaults:
+    _entity_form: 'mcapi_form.disable'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.admin_mcapiform_enable:
+  path: '/admin/accounting/workflow/forms/{mcapi_form}/enable'
+  defaults:
+    _entity_form: 'mcapi_form.enable'
+  requirements:
+    _permission: 'configure all currencies'
+
 mcapi.workflow:
   path: '/admin/accounting/workflow'
   defaults:
@@ -43,18 +102,16 @@ mcapi.workflow:
   requirements:
     _permission: 'configure all currencies'
 
-
 mcapi.workflow_settings:
   path: '/admin/accounting/workflow/op/{op}'
   defaults:
-    _form: Drupal\mcapi\Form\OperationSettingsForm
+    _form: 'Drupal\mcapi\Form\OperationSettingsForm'
     _title: 'Configure transaction operation'
   requirements:
     _permission: 'configure all currencies'
 
-
-mcapi.transaction_log:
-  path: '/transaction/log'
+mcapi.transaction_create:
+  path: '/transaction/create'
   defaults:
     _entity_form: 'mcapi_transaction.add'
     _title: 'Record transaction'
@@ -64,11 +121,18 @@ mcapi.transaction_log:
 mcapi.transaction_view:
   path: '/transaction/{mcapi_transaction}'
   defaults:
-    _content: '\Drupal\mcapi\Controller\TransactionController::page'
+    _entity_view: 'mcapi_transaction.certificate'
     _title_callback: '\Drupal\mcapi\Controller\TransactionController::pageTitle'
   requirements:
     _entity_access: 'mcapi_transaction.view'
   options:
     parameters:
       mcapi_transaction:
-        serial: TRUE
+        serial: true
+
+mcapi.transaction.op:
+  path: 'transaction/{mcapi_transaction}/{op}'
+  defaults:
+    _form: '\Drupal\mcapi\Form\OperationForm'
+  requirements:
+    _entity_access: 'mcapi_transaction'

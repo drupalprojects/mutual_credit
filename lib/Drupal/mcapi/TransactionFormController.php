@@ -46,7 +46,9 @@ class TransactionFormController extends EntityFormController {
       '#required' => TRUE,
       '#default_value' => $transaction->worths,
     );
-    //the default payer and payee widgets will autocomplete any user on the system, and permissions will be checked later
+    //the default payer and payee widgets allow anyone with 'transact' permission
+    //the transaction entity will check that the users have permission to use the currencies
+    //if we know the currency of the transaction, we can form_alter these
     $form['payer'] = array(
       '#title' => t('Account to be debited'),
       '#type' => 'user_chooser_few',

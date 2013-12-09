@@ -16,7 +16,10 @@ function mcapi_install() {
   module_set_weight('mcapi', -1);
 
   //create a new user if only user 1 exists.
-  if (db_query("SELECT count(uid) FROM {users}")->fetchField() < 2) {
+  //TODO this isn't working
+  $users = db_query("SELECT count(uid) FROM {users}")->fetchField();
+  drupal_set_message("usercount:".$users);
+  if ($users < 2) {
     $account = user_save(NULL, array(
       'name' => 'demo',
       'mail' => 'demo@'.$_SERVER['SERVER_NAME'],
@@ -159,6 +162,12 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => TRUE,
       ),
+      'serial' => array(
+        'description' => 'serial number (integer)',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
       'uid1' => array(
         'description' => 'the user id of the 1st trader',
         'type' => 'int',
@@ -232,7 +241,7 @@ function mcapi_schema() {
         'default' => 0
       ),
     ),
-    'primary key' => array('uid1, uid2, xid'),
+    'primary key' => array('xid', 'uid1', 'currcode'),//should there be another key for uid2
     'indexes' => array(
       'uid1' => array('uid1'),
       'uid2' => array('uid2'),

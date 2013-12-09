@@ -1,7 +1,7 @@
 name: Forms and form builder UI
 description: Exportable transaction form builder
 package: Community Accounting
-core: 7.x
+core: 8.x
 type: module
 
 # configure: admin/accounting/forms

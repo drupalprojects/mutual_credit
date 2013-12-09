@@ -34,6 +34,7 @@ ul.transaction-operations{
   display: inline;
   padding: 0 0.5em;
 }
+table#edit-entities tr.disabled{color:#999;}
 /* these separators aren't very flexible I'm afraid but there's no way I can see to do it in php */
 ul.transaction-operations li{
   display: inline;

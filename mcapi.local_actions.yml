@@ -1,0 +1,5 @@
+mcapi_add_form:
+  route_name: mcapi.admin.mcapiform.add
+  title: 'Add new form'
+  appears_on:
+    - mcapi.admin_mcapiform_list

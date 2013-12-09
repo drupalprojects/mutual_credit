@@ -21,7 +21,7 @@ class CurrencyFormController extends EntityFormController {
   protected $pluginCurrencyManager;
 
   /**
-   * The widget  plugin manager.
+   * The widget plugin manager.
    *
    * @var \Drupal\Component\Plugin\PluginManagerBase
    */

@@ -177,4 +177,5 @@ class CurrencyListController extends DraggableListController {
       $form_state['redirect'] = 'admin/accounting/currencies/' . $currency->id();
     }
   }
+
 }

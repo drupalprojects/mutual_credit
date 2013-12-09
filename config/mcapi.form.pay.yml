@@ -1,0 +1,30 @@
+id: pay
+title: 'Pay someone'
+status: 1
+type: default
+partner:
+  user_chooser_config: 'user_chooser_segment_perms:transact'
+  preset: ''
+description:
+  preset: ''
+worths: {  }
+created:
+  show: 0
+step1:
+  template1: "Pay: [mcapiform:secondperson]\r\n[mcapiform:worth]\r\nfor [mcapiform:description]"
+  button1: Preview
+  next1: page
+step2:
+  format2: '0'
+  template2: ''
+  button2: Confirm
+  next2: page
+  redirect: ''
+redirect: null
+langcode: en
+direction:
+  preset: outgoing
+  widget: radios
+  incoming: ''
+  outgoing: ''
+message: 'The transaction has been logged'
