@@ -17,21 +17,21 @@ mcapi.admin_misc:
 mcapi.admin_currency_list:
   path: '/admin/accounting/currencies'
   defaults:
-    _entity_list: 'mcapi_currencies'
+    _entity_list: 'mcapi_currency'
   requirements:
     _permission: 'configure all currencies'
 
 mcapi.admin_currency_edit:
-  path: '/admin/accounting/currencies/{mcapi_currencies}'
+  path: '/admin/accounting/currencies/{mcapi_currency}'
   defaults:
-    _entity_form: 'mcapi_currencies.edit'
+    _entity_form: 'mcapi_currency.edit'
   requirements:
     _permission: 'configure all currencies'
 
 mcapi.admin_currency_delete:
-  path: '/admin/accounting/currencies/{mcapi_currencies}/delete'
+  path: '/admin/accounting/currencies/{mcapi_currency}/delete'
   defaults:
-    _entity_form: 'mcapi_currencies.delete'
+    _entity_form: 'mcapi_currency.delete'
   requirements:
     _permission: 'configure all currencies'
 

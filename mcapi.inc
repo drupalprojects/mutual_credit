@@ -131,7 +131,7 @@ function transaction_op_undo($operation, $transaction, $values) {
 
 /*
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
-*/
+ */
 function _transaction_check_access_callbacks($callbacks, $transaction) {
   foreach ($callbacks as $function) {
     if ($function($transaction)) return TRUE;
@@ -277,7 +277,7 @@ function mcapi_worth_item_zero_adjustment(&$worth_render_array) {
  * 'currcode'
  */
 function theme_worth_item(&$variables) {
-  $currency = entity_load('mcapi_currencies', $variables['currcode']);
+  $currency = entity_load('mcapi_currency', $variables['currcode']);
   list($integer, $cents) = currency_explode($variables['quantity']);
   switch($currency->display['widget']) {
     case CURRENCY_WIDGET_SELECT :
@@ -312,7 +312,7 @@ function theme_worth_element($variables) {
   $quant_field = drupal_render($element['main_quant']);
   if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
     $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
-    $currency_display = entity_load('mcapi_currencies', $currcode)->display;
+    $currency_display = entity_load('mcapi_currency', $currcode)->display;
     if (isset($element['div_quant'])) {
       $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
     }
@@ -338,8 +338,8 @@ function mcapi_user_summary($account, $currcodes = array()) {
   }
   $render_array = array();
   foreach ($currcodes as $currcode) {
-  	$currency = entity_load('mcapi_currencies', $currcode);
-  	if ($currency->access('trader_data')) {
+    $currency = entity_load('mcapi_currency', $currcode);
+    if ($currency->access('trader_data')) {
 	    $render_array[$currcode] = array(
 	      '#type' => 'mcapi_summary',
 	      '#currency' => $currency,
@@ -354,7 +354,7 @@ function mcapi_user_summary($account, $currcodes = array()) {
  * rounds a transaction quantity up or down, according to currency settings
  */
 function mcapi_round($quant, $currcode, $up = FALSE) {
-  $currency = entity_load('mcapi_currencies', $currcode);
+  $currency = entity_load('mcapi_currency', $currcode);
   switch ($currency->display['widget']) {
     case CURRENCY_WIDGET_SELECT:
       //calculate the number of hundredths from each division to the fraction, and choose the smallest
@@ -477,7 +477,7 @@ function mcapi_process_balance_histories_gchart(&$vars) {
 		var data = new google.visualization.DataTable();
 		data.addColumn('date', 'Date');";
 	foreach (array_keys(current($timeline)) as $currcode) {
-		$currname = entity_load('mcapi_currencies', $currcode)->name;
+		$currname = entity_load('mcapi_currency', $currcode)->name;
 	  $js .= "\n  data.addColumn('number', '$currname')";
 	}
 	foreach ($timeline as $timestamp => $balances) {

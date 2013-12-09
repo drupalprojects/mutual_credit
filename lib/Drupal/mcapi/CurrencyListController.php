@@ -171,7 +171,7 @@ class CurrencyListController extends DraggableListController {
         'type' => $new['type'],
       );
 
-      $currency = entity_create('mcapi_currencies', $values);
+      $currency = entity_create('mcapi_currency', $values);
       $currency->save();
 
       $form_state['redirect'] = 'admin/accounting/currencies/' . $currency->id();

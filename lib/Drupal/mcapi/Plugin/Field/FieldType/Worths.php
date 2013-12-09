@@ -31,7 +31,7 @@ class Worths extends ConfigFieldItemBase {
   public function getPropertyDefinitions() {
     $definitions = array();
     foreach ($this->values as $currcode => $value) {
-      if ($currency = entity_load('mcapi_currencies', $currcode)) {
+      if ($currency = entity_load('mcapi_currency', $currcode)) {
         $definitions[$currcode] = array(
           'type' => 'field_item:worth',
           'label' => $currency->name,
