@@ -610,24 +610,24 @@ function template_preprocess_certificate(&$vars) {
  * implements hook_field_extra_fields().
  */
 function mcapi_field_extra_fields() {
-	$props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
-  $fields = array('payer', 'payee', 'worths', 'description', 'state');
+  $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
+  $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
   $form = array('payer', 'payee', 'worths', 'description');
-	foreach ($fields as $weight => $fieldname) {
-		$extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
-			'label' => $props[$fieldname]['label'],
-			'description' => $props[$fieldname]['description'],
-			'weight' => $weight,
-		);
-	}
-	foreach ($fields as $weight => $fieldname) {
-		$extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
-			'label' => $props[$fieldname]['label'],
-			'description' => $props[$fieldname]['description'],
-			'weight' => $weight,
-		);
-	}
-	return $extra;
+  foreach ($fields as $weight => $fieldname) {
+    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
+      'label' => $props[$fieldname]['label'],
+      'description' => $props[$fieldname]['description'],
+      'weight' => $weight,
+    );
+  }
+  foreach ($fields as $weight => $fieldname) {
+    $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
+      'label' => $props[$fieldname]['label'],
+      'description' => $props[$fieldname]['description'],
+      'weight' => $weight,
+    );
+  }
+  return $extra;
 }
 
 //return a currency
