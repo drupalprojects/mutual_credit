@@ -241,7 +241,7 @@ function mcapi_schema() {
         'default' => 0
       ),
     ),
-    'primary key' => array('xid', 'uid1', 'currcode'),//should there be another key for uid2
+    'primary key' => array('xid', 'uid1', 'uid2', 'currcode'),
     'indexes' => array(
       'uid1' => array('uid1'),
       'uid2' => array('uid2'),
