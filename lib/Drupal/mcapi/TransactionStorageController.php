@@ -104,7 +104,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       };
       $query->values(array(
         'xid' => $transaction->id(),
-        'currcode' => $currcode,
+        'currcode' => $worth->currcode,
         'value' => $worth->value,
       ));
     }
@@ -131,7 +131,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'xid' => $transaction->id(),
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
-        'currcode' => $currcode,
+        'currcode' => $worth->currcode,
         'volume' => $worth->value+0,
         'incoming' => 0,
         'outgoing' => $worth->value+0,
@@ -143,7 +143,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'xid' => $transaction->id(),
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
-        'currcode' => $currcode,
+        'currcode' => $worth->currcode,
         'volume' => $worth->value+0,
         'incoming' => $worth->value+0,
         'outgoing' => 0,

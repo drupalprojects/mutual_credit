@@ -899,13 +899,11 @@ function mcapi_element_info() {
 
 function mcapi_worths_element_process($element, &$form_state) {
   $currencies = mcapi_get_available_currencies();
+
   //the default value also tells us which currencies are available
   //if no defaults are set then all currencies should be present
   if (!isset($element['#default_value']) || empty($element['#default_value']) || $element['#preset']) {
     $element['#default_value'] = isset($element['#default_value']) ? (array)$element['#default_value'] : array();
-    foreach ($currencies as $currcode => $currency) {
-      $element['#default_value'] += array($currcode => array('currcode' => $currcode, 'quantity' => ''));
-    }
   }
 
   if (\Drupal::config('mcapi.misc')->get('mix_mode') || $element['#preset']) {
@@ -914,18 +912,17 @@ function mcapi_worths_element_process($element, &$form_state) {
       $element[$currcode]['#title'] = $name;
       $element[$currcode]['#currcodes']= array($currcode);
       $element[$currcode]['#default_value'] = $element['#default_value']->{$currcode};
-      $element[$currcode]['#required'] = TRUE;
+      $element[$currcode]['#required'] = $element['#required'];
     }
   }
   else {
-    $element[0]['#title'] = t('Worth');
-    foreach($element['#default_value'] as $currcode => $quant) {
-      $element[0]['#currcodes'][] = $currcode;
-      $element[0]['#default_value']['currcode'] = $currcode;
-      if (strlen($quant)) {
-        $element[0]['#default_value']['quantity'] = $quant;
-      }
-    }
+    $keys = array_keys($currencies);
+    $key = reset($keys);
+    $element[$key] = array(
+      '#title' => t('Worth'),
+      '#currcodes' => $element['#currcodes'],
+      '#default_value' => $element['#default_value']->$key,
+    );
     if (array_key_exists('#max', $element) && $element['#max']) {
       $element['#description'] = $element['#description'] . t('Max: !num', array('!num' => $element['#max']));
     }
