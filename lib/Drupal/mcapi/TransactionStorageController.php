@@ -217,54 +217,55 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * this would be more useful when views isn't available
    */
   public function filter(array $conditions, $offset, $limit) {
-  	extract($conditions);
-  	$query = db_select('mcapi_transactions', 'x')
-  	->fields('x', array('xid', 'serial'))
-  	->orderby('created', 'DESC');
-  	if ($limit) {
-  		$query->range($offset, $limit);
-  	}
-  	if (isset($serial)) {
-  		$query->condition('serial', (array)$serial);
-  	}
-  	if (isset($state)) {
-  		$query->condition('state', (array)$state);
-  	}
-  	if (isset($payer)) {
-  		$query->condition('payer', (array)$payer);
-  	}
-  	if (isset($payee)) {
-  		$query->condition('payee', (array)$payee);
-  	}
-  	if (isset($creator)) {
-  		$query->condition('creator', (array)$creator);
-  	}
-  	if (isset($type)) {
-  		$query->condition('type', (array)$type);
-  	}
-  	if (isset($involving)) {
-  		$query->condition(db_or()
-  			->condition('payer', (array)$involving)
-  			->condition('payee', (array)$involving)
-  		);
-  	}
-  	if (isset($from)) {
-  		$query->condition('created', $from, '>');
-  	}
-  	if (isset($to)) {
-  		$query->condition('created', $to,  '<');
-  	}
+    extract($conditions);
+    $query = db_select('mcapi_transactions', 'x')
+      ->fields('x', array('xid', 'serial'))
+      ->orderby('created', 'DESC');
 
-  	if (isset($currcode) || isset($quantity)) {
-  		$query->join('mcapi_transactions_worths', 'w', 'x.xid = w.xid');
-  		if (isset($currcode)) {
-  			$query->condition('currcode', $currcode);
-  		}
-  		if (isset($quantity)) {
-  			$query->condition('quantity', $quantity);
-  		}
-  	}
-  	return $query->execute()->fetchAllKeyed();
+    if ($limit) {
+      $query->range($offset, $limit);
+    }
+    if (isset($serial)) {
+      $query->condition('serial', (array)$serial);
+    }
+    if (isset($state)) {
+      $query->condition('state', (array)$state);
+    }
+    if (isset($payer)) {
+      $query->condition('payer', (array)$payer);
+    }
+    if (isset($payee)) {
+      $query->condition('payee', (array)$payee);
+    }
+    if (isset($creator)) {
+      $query->condition('creator', (array)$creator);
+    }
+    if (isset($type)) {
+      $query->condition('type', (array)$type);
+    }
+    if (isset($involving)) {
+      $query->condition(db_or()
+        ->condition('payer', (array)$involving)
+        ->condition('payee', (array)$involving)
+      );
+    }
+    if (isset($from)) {
+      $query->condition('created', $from, '>');
+    }
+    if (isset($to)) {
+      $query->condition('created', $to,  '<');
+    }
+
+    if (isset($currcode) || isset($quantity)) {
+      $query->join('mcapi_transactions_worths', 'w', 'x.xid = w.xid');
+      if (isset($currcode)) {
+        $query->condition('currcode', $currcode);
+      }
+      if (isset($quantity)) {
+        $query->condition('quantity', $quantity);
+      }
+    }
+    return $query->execute()->fetchAllKeyed();
   }
 
   /*
@@ -274,42 +275,43 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   * Because this uses the index table, it knows nothing of transactions with state <  1
   */
   public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters) {
-  	$query = "SELECT
-      COUNT(DISTINCT serial) as trades,
-      SUM(incoming) as gross_in,
-      SUM(outgoing) as gross_out,
-      SUM(diff) as balance,
-      SUM(volume) as volume,
-      COUNT(DISTINCT uid2) as partners
-      FROM {mcapi_transactions_index}
-      WHERE uid1 = :uid1 AND currcode = :currcode " . mcapi_parse_conditions($filters);
-  	$params = array(
-  		':uid1' => $account->id(),
-  		':currcode' => $currency->id()
+    $query = "SELECT
+      COUNT(DISTINCT t.serial) as trades,
+      SUM(i.incoming) as gross_in,
+      SUM(i.outgoing) as gross_out,
+      SUM(i.diff) as balance,
+      SUM(i.volume) as volume,
+      COUNT(DISTINCT i.uid2) as partners
+      FROM {mcapi_transactions_index} i
+      LEFT JOIN {mcapi_transactions} t ON i.xid = t.xid
+      WHERE i.uid1 = :uid1 AND i.currcode = :currcode " . mcapi_parse_conditions($filters);
+    $params = array(
+      ':uid1' => $account->id(),
+      ':currcode' => $currency->id()
     );
-  	if ($result = db_query($query, $params)->fetchAssoc()) {
-  		return $result;
-  	}
+    if ($result = db_query($query, $params)->fetchAssoc()) {
+      return $result;
+    }
     //if there are no transactions for this user
     return array('trades' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0, 'partners' => 0);
   }
 
   public function mergeAccounts($main) {
-  	$uids = func_get_args();
-  	$main = array_shift($uids);
-  	foreach ($uids as $uid) {
-  		db_update('mcapi_transactions')
-  		->fields(array('payer' => $main))
-  		->condition('payer', $uid)->execute();
-  		db_update('mcapi_transactions')
-  		->fields(array('payee' => $main))
-  		->condition('payee', $uid)->execute();
-  		$serials = transaction_filter(array('payer' => $main, 'payee' => $main));
-  		//this is usually a small number, but strictly speaking should be done in a batch.
-  		foreach (array_unique($serials) as $serial) {
-  			transaction_undo($serial, MCAPI_UNDO_STATE_DELETE);
-  		}
-  	}
+    $uids = func_get_args();
+    $main = array_shift($uids);
+    foreach ($uids as $uid) {
+      db_update('mcapi_transactions')
+      ->fields(array('payer' => $main))
+      ->condition('payer', $uid)->execute();
+      db_update('mcapi_transactions')
+      ->fields(array('payee' => $main))
+      ->condition('payee', $uid)->execute();
+      $serials = transaction_filter(array('payer' => $main, 'payee' => $main));
+      //this is usually a small number, but strictly speaking should be done in a batch.
+      foreach (array_unique($serials) as $serial) {
+        transaction_undo($serial, MCAPI_UNDO_STATE_DELETE);
+      }
+    }
   }
 
   /*
@@ -317,17 +319,17 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    */
   public function timesBalances(AccountInterface $account, CurrencyInterface $currency, $since = 0) {
     //this is a way to add up the results as we go along
-  	db_query("SET @csum := 0");
+    db_query("SET @csum := 0");
     //I wish there was a better way to do this.
     //It is cheaper to do stuff in mysql
     $all_balances = db_query(
-    	"SELECT created, (@csum := @csum + diff) as balance
-    	  FROM {mcapi_transactions_index}
-    	  WHERE uid1 = :uid1 AND currcode = :currcode
-    	  ORDER BY created",
-    	array(
-    		':uid1' => $account->id(),
-    		':currcode' => $currency->id()
+      "SELECT created, (@csum := @csum + diff) as balance
+        FROM {mcapi_transactions_index}
+        WHERE uid1 = :uid1 AND currcode = :currcode
+        ORDER BY created",
+      array(
+        ':uid1' => $account->id(),
+        ':currcode' => $currency->id()
       )
     )->fetchAll();
     $history = array();
@@ -335,9 +337,9 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     //process the points into the right format
     //if two transactions happen on the same second, the latter running balance will be shown only
     foreach ($all_balances as $point) {
-    	if ($point->created > $since) {
+      if ($point->created > $since) {
         $history[$point->created] = $point->balance;
-    	}
+      }
     }
     return $history;
   }
@@ -345,22 +347,22 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
 
 
 function mcapi_parse_conditions($conditions) {
-	if (empty($conditions)) return '';
-	$where = array();
-	foreach ($conditions as $condition) {
-		if (is_array($condition)) {
-			$condition[] = '=';
-			list($field, $value, $operator) = $condition;
-			if (empty($operator)) $operator = ' = ';
-			if (is_array($value)) {
-				$value = '('.implode(', ', $value) .')';
-				$operator = ' IN ';
-			}
-			$where[] = " ( t.$field $operator $value ) ";
-		}
-		else {//the condition is already provided as a string
-			$where[] = " $condition ";
-		}
-	}
-	return ' AND '. implode(' AND ', $where);
+  if (empty($conditions)) return '';
+  $where = array();
+  foreach ($conditions as $condition) {
+    if (is_array($condition)) {
+      $condition[] = '=';
+      list($field, $value, $operator) = $condition;
+      if (empty($operator)) $operator = ' = ';
+      if (is_array($value)) {
+        $value = '('.implode(', ', $value) .')';
+        $operator = ' IN ';
+      }
+      $where[] = " ( t.$field $operator $value ) ";
+    }
+    else {//the condition is already provided as a string
+      $where[] = " $condition ";
+    }
+  }
+  return ' AND '. implode(' AND ', $where);
 }

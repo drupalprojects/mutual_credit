@@ -309,13 +309,6 @@ function _mcapi_import_generate_transactions($rows, &$settings) {
   $reservoir = entity_load('mcapi_currency', $settings['currcode'])->reservoir;
   list($field_info, $vocab) = mcapi_import_detect_categories();
   $instances = field_info_instances('transaction', 'transaction');
-<<<<<<< HEAD
-  unset($instances['worth']);
-  if ($fieldname = \Drupal::config(mcapi.misc)->get('sentence_template')) {
-    unset($instances[$fieldname]);
-  }
-=======
->>>>>>> got rid of transaction_description_field variable
   if (array_key_exists($field_info['field_name'], $instances)) {
     unset($instances[$fieldname]);
   }
@@ -420,10 +413,6 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
   global $language;
   $currency = entity_load('mcapi_currency', $currcode);
   $transactions = array();
-<<<<<<< HEAD
-  $desc_field = \Drupal::config(mcapi.misc)->get('sentence_template');
-=======
->>>>>>> got rid of transaction_description_field variable
   $values = array(
     'type' => $type,
     'state' => TRANSACTION_STATE_FINISHED,
