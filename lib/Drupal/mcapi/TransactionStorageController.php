@@ -21,14 +21,14 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     foreach ($result as $record) {
       $queried_entities[$record->xid]->worths[$record->currcode] = array(
         'currcode' => $record->currcode,
-        'quantity' => $record->quantity,
+        'value' => $record->value,
       );
     }
 
     // Load all the children
     $result = $this->database->query('SELECT xid FROM {mcapi_transactions} WHERE parent IN (:parents)', array(':parents' => array_keys($queried_entities)));
     foreach ($result as $record) {
-      $queried_entities[$record->xid]->children[$record->xid] = $record->xid;
+      $queried_entities[$record->xid]->children[$record->xid] = NULL;
     }
 
     parent::attachLoad($queried_entities, $load_revision);
@@ -40,8 +40,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * so the delete mode is an optional second argument
    */
   public function delete(array $entities) {
-  	$delete_state = func_get_arg(2);
-  	if (is_null($delete_state)) {
+    $delete_state = func_get_arg(2);
+    if (is_null($delete_state)) {
       $delete_state = \Drupal::config(mcapi.misc)->get('delete_mode');
     }
     //TODO
@@ -98,13 +98,15 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       ->execute();
 drupal_set_message("failing to saveWorths");
     $query = $this->database->insert('mcapi_transactions_worths')
-      ->fields(array('xid', 'currcode', 'quantity'));
-    foreach ($transaction->worths[0] as $currcode => $worthitem) {
-      if (!$worthitem->quantity) continue;
+      ->fields(array('xid', 'currcode', 'value'));
+    foreach ($transaction->worths[0] as $currcode => $worth) {
+      if (!$worth->value) {
+        continue;
+      };
       $query->values(array(
         'xid' => $transaction->id(),
         'currcode' => $currcode,
-        'quantity' => $worthitem->quantity,
+        'value' => $worth->value,
       ));
     }
     $query->execute();
@@ -131,10 +133,10 @@ drupal_set_message("failing to saveWorths");
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
         'currcode' => $currcode,
-        'volume' => $worthitem->quantity,
+        'volume' => $worth->value+0,
         'incoming' => 0,
-        'outgoing' => $worthitem->quantity,
-        'diff' => -$worthitem->quantity,
+        'outgoing' => $worth->value+0,
+        'diff' => -$worth->value+0,
         'type' => $transaction->type->value,
         'created' => $transaction->created->value
       ),
@@ -144,10 +146,10 @@ drupal_set_message("failing to saveWorths");
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
         'currcode' => $currcode,
-        'volume' => $worthitem->quantity,
-        'incoming' => $worthitem->quantity,
+        'volume' => $worth->value+0,
+        'incoming' => $worth->value+0,
         'outgoing' => 0,
-        'diff' => $worthitem->quantity,
+        'diff' => $worth->value+0,
         'type' => $transaction->type->value,
         'created' => $transaction->created->value
       ));
@@ -167,9 +169,9 @@ drupal_set_message("failing to saveWorths");
         t.created,
         w.currcode,
         0 AS incoming,
-        w.quantity AS outgoing,
-        - w.quantity AS diff,
-        w.quantity AS volume
+        w.value AS outgoing,
+        - w.value AS diff,
+        w.value AS volume
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
       WHERE state > 0) "
@@ -183,10 +185,10 @@ drupal_set_message("failing to saveWorths");
         t.type,
         t.created,
         w.currcode,
-        w.quantity AS incoming,
+        w.value AS incoming,
         0 AS outgoing,
-        w.quantity AS diff,
-        w.quantity AS volume
+        w.value AS diff,
+        w.value AS volume
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
       WHERE state > 0) "
@@ -198,7 +200,7 @@ drupal_set_message("failing to saveWorths");
   public function indexCheck() {
     if (db_query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
       $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
-      $volume = db_query("SELECT sum(quantity) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
+      $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
       if ($volume_index == $volume) return TRUE;
     }
     return FALSE;

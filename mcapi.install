@@ -153,6 +153,37 @@ function mcapi_schema() {
     )
   );
 
+  $schema['mcapi_transactions_worths'] = array(
+    'description' => 'Transaction worth amounts.',
+    'fields' => array(
+      'xid' => array(
+        'description' => 'the unique transaction ID',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'currcode' => array(
+        'description' => 'The currency ID',
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'value' => array(
+        'description' => 'Value',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('xid', 'currcode'),
+    'foreign keys' => array(
+      'mcapi_transactions' => array(
+        'table' => 'mcapi_transactions',
+        'columns' => array('xid' => 'xid'),
+      ),
+    ),
+  );
+
   $schema['mcapi_transactions_index'] = array(
     'description' => 'currency transactions between users',
     'fields' => array(
@@ -202,41 +233,33 @@ function mcapi_schema() {
       'currcode' => array(
         'description' => 'The currency ID',
         'type' => 'varchar',
-        'length' => '8',
+        'length' => '32',
       ),
       'incoming' => array(
         'description' => 'Income',
-        'type' => 'numeric',
+        'type' => 'int',
         'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
         'not null' => TRUE,
         'default' => 0
       ),
       'outgoing' => array(
         'description' => 'Outgoing',
-        'type' => 'numeric',
+        'type' => 'int',
         'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
         'not null' => TRUE,
         'default' => 0
       ),
       'diff' => array(
         'description' => 'Change in balance',
-        'type' => 'numeric',
+        'type' => 'int',
         'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
         'not null' => TRUE,
         'default' => 0
       ),
       'volume' => array(
         'description' => 'Volume',
-        'type' => 'numeric',
+        'type' => 'int',
         'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
         'not null' => TRUE,
         'default' => 0
       ),
@@ -245,39 +268,6 @@ function mcapi_schema() {
     'indexes' => array(
       'uid1' => array('uid1'),
       'uid2' => array('uid2'),
-    ),
-  );
-
-  $schema['mcapi_transactions_worths'] = array(
-    'description' => 'Transaction worth amounts.',
-    'fields' => array(
-      'xid' => array(
-        'description' => 'the unique transaction ID',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'currcode' => array(
-        'description' => 'The currency ID',
-        'type' => 'varchar',
-        'length' => '8',
-      ),
-      'quantity' => array(
-        'description' => 'Price',
-        'type' => 'numeric',
-        'size' => 'normal',
-        'precision' => 8,
-        'scale' => 2,
-        'not null' => TRUE,
-        'default' => 0
-      ),
-    ),
-    'primary key' => array('xid', 'currcode'),
-    'foreign keys' => array(
-      'mcapi_transactions' => array(
-        'table' => 'mcapi_transactions',
-        'columns' => array('xid' => 'xid'),
-      ),
     ),
   );
 
@@ -297,9 +287,7 @@ function mcapi_schema() {
         'not null' => TRUE,
       )
     ),
-    'unique keys' => array(
-      'name' => array('form_build_id')
-    )
+    'primary key' => array('form_build_id'),
   );
   return $schema;
 }

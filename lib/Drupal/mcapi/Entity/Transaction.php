@@ -128,8 +128,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $storage_controller->addIndex($this);
     //save the children if there are any
     foreach ($this->children as $transaction) {
-    	$transaction->serial->value = $this->serial->value;
-    	$transaction->parent->value = $this->xid->value;
+      $transaction->serial->value = $this->serial->value;
+      $transaction->parent->value = $this->xid->value;
     }
   }
 
@@ -154,7 +154,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       foreach (mcapi_get_available_currencies() as $currcode => $name) {
         $values['worths'][$currcode] = array(
           'currcode' => $currcode,
-          'quantity' => NULL,
+          'value' => NULL,
         );
       }
     }
@@ -162,7 +162,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       foreach ($values['worth'] as $currcode => $value) {
         $values['worths'] += array(
           'currcode' => $currcode,
-          'quantity' => NULL,
+          'value' => NULL,
         );
       }
     }
