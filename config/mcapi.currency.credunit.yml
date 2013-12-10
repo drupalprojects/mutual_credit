@@ -1,22 +1,21 @@
 id: credunit
 uuid: 4450dc37-0564-480e-8800-a3d78c18f12d
 name: 'Community Coins'
-status: 1
+status: true
 issuance: acknowledgement
 uid: '1'
 reservoir: '1'
 type: time
-settings:
-  select: "0|00\r\n25|15 mins\r\n50|30 mins\r\n75|45 mins"
-  divisions:
-    0: '00'
-    25: '15 mins'
-    50: '30 mins'
-    75: '45 mins'
+settings: { }
 prefix: CC
 suffix: ''
 zero: ''
-color: #000000
+color: '#000000'
+widget: currency_time_single
+widget_settings:
+  placeholder: 'h:m:s'
+formatter: null
+formatter_settings: null
 access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'
@@ -28,9 +27,7 @@ view_transaction_states:
   0:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 access_operations:
-  view: {  }
   undo:
     transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
 weight: '-10'
-status: true
 langcode: en

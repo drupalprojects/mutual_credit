@@ -30,9 +30,21 @@ mcapi.currency.settings.time:
   type: mapping
   label: Time Currency Settings
 
-mcapi.currency.settings.lollipops:
+mcapi.currency.widget.currency_time_single:
   type: mapping
-  label: Lollipops Currency Settings
+  label: Single Time Widget Settings
+  mapping:
+    placeholder:
+      type: string
+      label: Placeholder for the text field.
+
+mcapi.currency.widget.currency_decimal_single:
+  type: mapping
+  label: Single Decimal Widget Settings
+  mapping:
+    placeholder:
+      type: string
+      label: Placeholder for the text field.
 
 mcapi.currency.*:
   type: mapping
