@@ -40,7 +40,8 @@ use Drupal\mcapi\TransactionInterface;
  *   translatable = FALSE,
  *   route_base_path = "admin/accounting",
  *   links = {
- *     "canonical" = "/transaction/{mcapi_transaction}"
+ *     "canonical" = "/transaction/{mcapi_transaction}",
+ *     "admin-form" = "mcapi.admin"
  *   }
  * )
  */
