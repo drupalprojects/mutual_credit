@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Definition of Drupal\mcapi\McapiFormListController.
+ * Definition of Drupal\mcapi\FirstPartyEditFormList.
  */
 
 namespace Drupal\mcapi;
@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityInterface;
 /**
  * Provides a listing of contact categories.
  */
-class McapiFormListController extends ConfigEntityListController {
+class FirstPartyEditFormList extends ConfigEntityListController {
 
   /**
    * Overrides Drupal\Core\Entity\EntityListController::buildHeader().
@@ -30,17 +30,22 @@ class McapiFormListController extends ConfigEntityListController {
   public function buildRow(EntityInterface $entity) {
   	$style = array('style' => $entity->status ? '' : 'color:#999');
   	//$class = array('style' => $entity->status ? 'enabled' : 'disabled');
+
     $row['title'] = $style + array(
     	'data' => array('#markup' => $entity->id())
     );
+
     //a list of the currencies used in this form
     $row['currencies'] = $style + array(
     	'data' => array('#markup' => 'currencies')
     );
+
     $row['transaction_type'] = $style + array(
     	'data' => array('#markup' => $entity->type)
     );
-    //TODO load mcapi.css somehow. Also see the McapiForm list controller.
+
+    //TODO load mcapi.css somehow to show the disabled forms in gray using ths class above.
+    //Also see the McapiForm list controller.
     return $row + parent::buildRow($entity);
   }
 

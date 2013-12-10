@@ -2,16 +2,18 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\TransactionFormController.
+ * Definition of Drupal\mcapi\Form\TransactionForm.
+ * Edit all the fields on a transaction
  */
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Entity\EntityFormController;
 use Drupal\mcapi\TransactionViewBuilder;
 
-class TransactionFormController extends EntityFormController {
+class TransactionForm extends EntityFormController {
+
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
@@ -73,20 +75,29 @@ class TransactionFormController extends EntityFormController {
       '#required' => TRUE,
       '#weight' => 12,
     );
+    $form['creator'] = array(
+      '#title' => t('Recorded by'),
+      '#type' => 'user_chooser_few',
+    	'#callback' => 'user_chooser_segment_perms',
+    	'#args' => array('transact'),
+      '#default_value' => $transaction->creator->value,
+      '#args' => array('transact'),
+      '#required' => TRUE,
+      '#weight' => 15,
+    );
+    $form['created'] = array(
+      '#title' => t('Recorded on'),
+      '#type' => 'date',
+      '#default_value' => $transaction->created->value,
+      '#required' => FALSE,
+      '#weight' => 18,
+    );
     $form['state'] = array(
       '#title' => t('State'),
       '#description' => mcapi_get_states('#description'),
       '#type' => 'mcapi_states',
       '#default_value' => $transaction->state->value,
-      '#weight' => 15
-    );
-    $form['creator'] = array(
-      '#title' => t('Recorded by'),
-      '#type' => 'value',
-      '#default_value' => $transaction->creator->value,
-      '#args' => array('transact'),
-      '#required' => TRUE,
-      '#weight' => 20,
+      '#weight' => 21
     );
   }
 

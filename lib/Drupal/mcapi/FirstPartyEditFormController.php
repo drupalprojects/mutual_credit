@@ -2,14 +2,15 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\McapiFormFormController.
+ * Definition of Drupal\mcapi\FirstPartyEditFormController.
+ * This configuration entity is used for generating transaction forms.
  */
 
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\EntityFormController;
 
-class McapiFormFormController extends EntityFormController {
+class FirstPartyEditFormController extends EntityFormController {
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
@@ -266,7 +267,7 @@ class McapiFormFormController extends EntityFormController {
     	'redirect' => array(
     		'#title' => t('Redirect path'),
     		'#type' => 'textfield',
-    		'#default_value' => $mcapiform->redirect['format'],
+    		'#default_value' => $mcapiform->step2['redirect'],
     		'#weight' => 5,
     		'#placeholder' => 'transaction/%serial',
     		'#states' => array(
@@ -358,5 +359,4 @@ class McapiFormFormController extends EntityFormController {
   }
 
 }
-
 

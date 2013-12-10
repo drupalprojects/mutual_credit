@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Entity\Currency.
+ * Contains \Drupal\mcapi\Entity\FirstPartyEditForm.
  */
 
 namespace Drupal\mcapi\Entity;
@@ -14,36 +14,36 @@ use Drupal\Core\Entity\Annotation\EntityType;
 use Drupal\Core\Annotation\Translation;
 
 /**
- * Defines the Mcapi Form entity.
+ * Defines the 1stparty_form entity.
  *
  * @EntityType(
- *   id = "mcapi_form",
+ *   id = "1stparty_editform",
  *   label = @Translation("Designed transaction form"),
  *   module = "mcapi",
  *   controllers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigStorageController",
  *     "form" = {
- *       "add" = "Drupal\mcapi\McapiFormFormController",
- *       "edit" = "Drupal\mcapi\McapiFormFormController",
- *       "delete" = "Drupal\mcapi\Form\McapiFormDeleteConfirm",
- *       "enable" = "Drupal\mcapi\Form\McapiFormEnableConfirm",
- *       "disable" = "Drupal\mcapi\Form\McapiFormDisableConfirm"
+ *       "add" = "Drupal\mcapi\FirstPartyEditFormController",
+ *       "edit" = "Drupal\mcapi\FirstPartyEditFormController",
+ *       "delete" = "Drupal\mcapi\Form\FirstPartyEditFormDeleteConfirm",
+ *       "enable" = "Drupal\mcapi\Form\FirstPartyEditFormEnableConfirm",
+ *       "disable" = "Drupal\mcapi\Form\FirstPartyEditFormDisableConfirm"
  *     },
- *     "list" = "Drupal\mcapi\McapiFormListController",
+ *     "list" = "Drupal\mcapi\FirstPartyEditFormList",
  *   },
  *   admin_permission = "configure all currencies",
- *   config_prefix = "mcapi.form",
+ *   config_prefix = "mcapi.1stparty",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",
  *     "status" = "status"
  *   },
  *   links = {
- *     "edit-form" = "mcapi.admin_mcapiform_edit"
+ *     "edit-form" = "mcapi.admin_1stparty_editform_edit"
  *   }
  * )
  */
-class Mcapiform extends ConfigEntityBase {
+class FirstPartyEditForm extends ConfigEntityBase {
 
   public $id;
   public $title;
@@ -108,4 +108,7 @@ Direction: [mcapiform:direction]
 
   }
 
+  public function label($langcode = NULL) {
+  	return $this->title;
+  }
 }

@@ -177,10 +177,10 @@ function mcapi_menu() {
     'weight' => 2,
     'route_name' => 'mcapi.workflow',
   );
-  $items['transact/log'] = array(
+  $items['transact/admin'] = array(
     'title' => 'Record transaction',
     'description' => 'Log a transaction in the database',
-    'route_name' => 'mcapi.transaction_create',
+    'route_name' => 'mcapi.transaction_admin',
   );
   return $items;
 }
@@ -530,15 +530,6 @@ function mcapi_mail($key, &$message, $params) {
   }
 }
 
-/**
- * implements hook_mail_alter().
- * add the cc
- */
-function mcapi_mail_alter(&$message) {
-  if (isset($message['params']['cc'])) {
-    $message['headers']['Cc'] = $message['params']['cc'];
-  }
-}
 
 function template_preprocess_mcapi_transaction(&$vars) {
   $transaction = &$vars['transaction'];
@@ -620,13 +611,6 @@ function mcapi_field_extra_fields() {
 			'weight' => $weight,
 		);
 	}
-	foreach ($fields as $weight => $fieldname) {
-		$extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
-			'label' => $props[$fieldname]['label'],
-			'description' => $props[$fieldname]['description'],
-			'weight' => $weight,
-		);
-	}
 	return $extra;
 }
 
@@ -674,7 +658,7 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!$cache = \Drupal::cache()->get($cid)) {
     $available = array();
     $cache_tags = array('mcapi.available_currency' => array());
-    foreach (entity_load_multiple('mcapi_currencies') as $currency) {
+    foreach (entity_load_multiple('mcapi_currency') as $currency) {
       if ($currency->status && $currency->access('membership', $account)) {
         $available[] = $currency->id();
         $cache_tags['mcapi.available_currency'] = $currency->id();
@@ -949,7 +933,7 @@ function mcapi_worth_element_process($element, &$form_state) {
   	'#default_value' => @$element['#default_value']['currcode']
   );
   if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
-    $currency = entity_load('mcapi_currencies', current($element['#currcodes']));
+    $currency = entity_load('mcapi_currency', current($element['#currcodes']));
     $use_div_subelement = in_array($currency->widget, array(CURRENCY_WIDGET_TEXT, CURRENCY_WIDGET_SELECT));
   }
   //work out the defaults for each subfield

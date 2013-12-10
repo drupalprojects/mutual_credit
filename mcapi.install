@@ -18,8 +18,8 @@ function mcapi_install() {
   //create a new user if only user 1 exists.
   //TODO this isn't working
   $users = db_query("SELECT count(uid) FROM {users}")->fetchField();
-  drupal_set_message("usercount:".$users);
-  if ($users < 2) {
+  //we should have anon and user1
+  if ($users < 3) {
     $account = user_save(NULL, array(
       'name' => 'demo',
       'mail' => 'demo@'.$_SERVER['SERVER_NAME'],

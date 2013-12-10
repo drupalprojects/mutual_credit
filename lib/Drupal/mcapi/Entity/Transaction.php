@@ -25,8 +25,8 @@ use Drupal\mcapi\TransactionInterface;
  *     "view_builder" = "Drupal\mcapi\TransactionViewBuilder",
  *     "access" = "Drupal\mcapi\TransactionAccessController",
  *     "form" = {
- *       "add" = "Drupal\mcapi\TransactionFormController",
- *       "edit" = "Drupal\mcapi\TransactionFormController",
+ *       "admin" = "Drupal\mcapi\Form\TransactionForm",
+ *       "1stparty" = "Drupal\mcapi\Form\FirstPartyTransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm"
  *     },
  *   },
@@ -81,6 +81,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //TODO: Change this so that you only create new serial numbers on the parent transaction.
     if ($this->isNew() && !$this->serial->value) {
       $storage_controller->nextSerial($this);//this serial number is not final, or at least not nocked
+    }
+    if (empty($this->date)) {
+    	$this->date = REQUEST_TIME;
+    	drupal_set_message('populating date field:'.$this->date);
     }
     //build children if they haven't been built already
     if ($this->isNew() && !$this->parent && empty($this->children)) {
@@ -142,7 +146,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'payer' => NULL,
       'payee' => NULL,
       'creator' => \Drupal::currentUser()->id(),
-      'created' => REQUEST_TIME,
+      'created' => '',
       'type' => 'default',
       'extra' => array(),
       'state' => TRANSACTION_STATE_FINISHED
