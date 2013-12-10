@@ -155,20 +155,20 @@ function mcapi_help($section, $arg) {
  */
 function mcapi_menu() {
   $items['admin/accounting'] = array(
-    'title' => t('Accounting'),
-    'description' => t("Manage all aspects of your community's money system"),
-    'weight' => 2,
+    'title' => 'Accounting',
+    'description' => "Manage all aspects of your community's money system",
     'route_name' => 'mcapi.admin',
+    'position' => 'right',
   );
-
   $items['admin/accounting/config'] = array(
-    'title' => t('Misc settings'),
+    'title' => 'Settings',
+    'description' => 'Miscellaneous settings which effect the system globally.',
     'route_name' => 'mcapi.admin_misc',
     'weight' => 20,
   );
   $items['admin/accounting/currencies'] = array(
-    'title' => t('Currencies'),
-    'description' => t('Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.'),
+    'title' => 'Currencies',
+    'description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.',
     'route_name' => 'mcapi.admin_currency_list',
   );
   $items['admin/accounting/workflow'] = array(
