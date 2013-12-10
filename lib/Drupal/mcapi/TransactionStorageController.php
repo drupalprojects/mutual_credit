@@ -159,7 +159,6 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     db_truncate('mcapi_transactions_index')->execute();
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
-    		t.serial,
         t.payer AS uid1,
         t.payee AS uid2,
         t.state,
@@ -176,7 +175,6 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     );
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
-    		t.serial,
         t.payee AS uid1,
         t.payer AS uid2,
         t.state,
