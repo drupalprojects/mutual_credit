@@ -36,16 +36,16 @@ mcapi.admin_currency_delete:
     _permission: 'configure all currencies'
 
 mcapi.admin_currency_disable:
-  path: '/admin/accounting/currencies/{mcapi_currencies}/disable'
+  path: '/admin/accounting/currencies/{mcapi_currency}/disable'
   defaults:
-    _entity_form: 'mcapi_currencies.disable'
+    _entity_form: 'mcapi_currency.disable'
   requirements:
     _permission: 'configure all currencies'
 
 mcapi.admin_currency_enable:
-  path: '/admin/accounting/currencies/{mcapi_currencies}/enable'
+  path: '/admin/accounting/currencies/{mcapi_currency}/enable'
   defaults:
-    _entity_form: 'mcapi_currencies.enable'
+    _entity_form: 'mcapi_currency.enable'
   requirements:
     _permission: 'configure all currencies'
 

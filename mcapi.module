@@ -179,10 +179,10 @@ function mcapi_menu() {
     'weight' => 2,
     'route_name' => 'mcapi.workflow',
   );
-  $items['transact/log'] = array(
+  $items['transact/create'] = array(
     'title' => 'Record transaction',
     'description' => 'Log a transaction in the database',
-    'route_name' => 'mcapi.transaction_log',
+    'route_name' => 'mcapi.transaction_create',
   );
   return $items;
 }
@@ -676,7 +676,7 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!$cache = \Drupal::cache()->get($cid)) {
     $available = array();
     $cache_tags = array('mcapi.available_currency' => array());
-    foreach (entity_load_multiple('mcapi_currencies') as $currency) {
+    foreach (entity_load_multiple('mcapi_currency') as $currency) {
       if ($currency->status && $currency->access('membership', $account)) {
         $available[$currency->id()] = $currency->label();
         $cache_tags['mcapi.available_currency'] = $currency->id();
