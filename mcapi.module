@@ -676,7 +676,10 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!$cache = \Drupal::cache()->get($cid)) {
     $available = array();
     $cache_tags = array('mcapi.available_currency' => array());
-    foreach (entity_load_multiple('mcapi_currency') as $currency) {
+    $currencies = entity_load_multiple('mcapi_currency');
+    $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
+    uasort($currencies, array($info['class'], 'sort'));
+    foreach ($currencies as $currency) {
       if ($currency->status && $currency->access('membership', $account)) {
         $available[$currency->id()] = $currency->label();
         $cache_tags['mcapi.available_currency'] = $currency->id();
@@ -969,7 +972,11 @@ function mcapi_worth_element_process($element, &$form_state) {
     '#value' => $element['#default_value']->value,
   );
 
-  foreach (entity_load_multiple('mcapi_currency', $element['#currcodes']) as $currency) {
+  $currencies = entity_load_multiple('mcapi_currency', $element['#currcodes']);
+  $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
+  uasort($currencies, array($info['class'], 'sort'));
+
+  foreach ($currencies as $currency) {
     $plugin = $currency->getWidgetPlugin();
 
     if (empty($element[$currency->widget])) {
