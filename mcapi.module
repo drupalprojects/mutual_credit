@@ -3,6 +3,8 @@
 
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\Core\Field\FieldItemList;
+use Drupal\mcapi\Plugin\Field\FieldType\Worth;
 
 //delete modes
 define('MCAPI_UNDO_STATE_DELETE', NULL);
@@ -676,7 +678,7 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
     $cache_tags = array('mcapi.available_currency' => array());
     foreach (entity_load_multiple('mcapi_currencies') as $currency) {
       if ($currency->status && $currency->access('membership', $account)) {
-        $available[] = $currency->id();
+        $available[$currency->id()] = $currency->label();
         $cache_tags['mcapi.available_currency'] = $currency->id();
       }
     }
@@ -829,10 +831,15 @@ function mcapi_element_info() {
       '#theme_wrappers' => array('form_element'),
       '#process' => array('mcapi_worths_element_process'),
       '#tree' => TRUE,
-      '#value_callback' => 'mcapi_form_type_worths_value',
+      //'#value_callback' => 'mcapi_form_type_worths_value',
       //custom properties, used for configuration
       '#preset' => FALSE,//ensures all currencies are showing
       '#calc' => FALSE,//allow a formula
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'mcapi') . '/css/worths-element.css',
+        )
+      ),
     ),
     //this one is used internally only,
     //although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
@@ -840,13 +847,15 @@ function mcapi_element_info() {
       '#input' => TRUE,
       '#title_display' => 'attribute',
       '#process' => array('mcapi_worth_element_process'),
-      //'#element_validate' => array('mcapi_worth_element_validate'),
-      '#theme' => 'worth_element',
+      '#value_callback' => 'mcapi_form_type_worth_value',
+      '#element_validate' => array('mcapi_worth_element_validate'),
+      //'#theme' => 'worth_element',
+      '#theme_wrappers' => array('form_element'),
       //custom properties, used for configuration
       '#calc' => FALSE,
       '#attached' => array(
         'css' => array(
-          drupal_get_path('module', 'mcapi') . '/css/mcapi.worth-widget.css',
+          drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
         )
       ),
     ),
@@ -866,20 +875,20 @@ function mcapi_element_info() {
     ),
     'mcapi_currcodes' => array(
       '#input' => TRUE,
-      '#title_display' => 'attribute',
+      '#title_display' => 'invisible',
       '#process' => array('mcapi_process_currcodes','ajax_process_form'),
       '#theme_wrappers' => array('form_element'),
       '#theme' => 'select',
-    	'#multiple' => TRUE,
+      '#multiple' => TRUE,
       '#options' => array(),//array of currcodes and currency names
     ),
-  	'mcapi_summary' => array(
-    	'#pre_render' => array('mcapi_pre_render_summary'),
-  		//other themes are possible, like and balance_bars and google-ometer
-  		'#theme' => 'mcapi_summary',
-  		'#currcode' => 'credunit',
-  		'#account' => NULL,//needed
-  		'#filters' => array()
+    'mcapi_summary' => array(
+      '#pre_render' => array('mcapi_pre_render_summary'),
+      //other themes are possible, like and balance_bars and google-ometer
+      '#theme' => 'mcapi_summary',
+      '#currcode' => 'credunit',
+      '#account' => NULL,//needed
+      '#filters' => array()
     )
   );
 }
@@ -889,22 +898,19 @@ function mcapi_worths_element_process($element, &$form_state) {
   $currencies = mcapi_get_available_currencies();
   //the default value also tells us which currencies are available
   //if no defaults are set then all currencies should be present
-  if (!isset($element['#default_value']) || empty($element['#default_value']) || @$element['#preset']) {
+  if (!isset($element['#default_value']) || empty($element['#default_value']) || $element['#preset']) {
     $element['#default_value'] = isset($element['#default_value']) ? (array)$element['#default_value'] : array();
     foreach ($currencies as $currcode => $currency) {
       $element['#default_value'] += array($currcode => array('currcode' => $currcode, 'quantity' => ''));
     }
   }
 
-  if (\Drupal::config('mcapi.misc')->get('mix_mode') || @$element['#preset']) {
+  if (\Drupal::config('mcapi.misc')->get('mix_mode') || $element['#preset']) {
     //construct one widget for each default, each with its own currcode
     foreach ($currencies as $currcode => $name) {
       $element[$currcode]['#title'] = $name;
       $element[$currcode]['#currcodes']= array($currcode);
-      $element[$currcode]['#default_value'] = array(
-        'currcode' => $element['#default_value']->{$currcode}['currcode'],
-        'quantity' => $element['#default_value']->{$currcode}['quantity'],
-      );
+      $element[$currcode]['#default_value'] = $element['#default_value']->{$currcode};
       $element[$currcode]['#required'] = TRUE;
     }
   }
@@ -924,18 +930,20 @@ function mcapi_worths_element_process($element, &$form_state) {
   //now populate all the subwidgets with defaults
   foreach (element_children($element) as $delta) {
     $element[$delta]['#type'] = 'worth';
-    $element[$delta]['#calc'] = @$element['#calc'];
-    $element[$delta]['#preset'] = @$element['#preset'];
+    $element[$delta]['#calc'] = $element['#calc'];
+    $element[$delta]['#preset'] = $element['#preset'];
   }
   return $element;
 }
 
 
 function mcapi_worth_element_process($element, &$form_state) {
-	module_load_include('inc', 'mcapi');//TODO remove this when theme function has moved
+  $typedDataManager = \Drupal::typedData();
+  if (!is_object($element['#default_value'])) {
+    $element['#default_value'] = $typedDataManager->create(array('type' => 'field_item:worth', 'list' => TRUE), $element['#default_value']);
+  }
+
   $element['#title_display'] = 'attribute';
-  $main_quant = '';
-  $quantity = @$element['#default_value']['quantity'];
   //the element is aware of a set of currcodes
   if (empty($element['#currcodes'])) {
     //best not rely on this, supply your own currencies that the user is permitted to use.
@@ -943,69 +951,78 @@ function mcapi_worth_element_process($element, &$form_state) {
     $element['#currcodes'] = array_keys(mcapi_get_available_currencies());
   }
   $element['currcode'] = array(
-  	'#title' => t('Currency'),
-  	'#type' => 'mcapi_currcodes',
-  	'#options' => $element['#currcodes'],
-  	'#default_value' => @$element['#default_value']['currcode']
+    '#title' => t('Currency'),
+    '#type' => 'mcapi_currcodes',
+    '#currcodes' => $element['#currcodes'],
+    '#default_value' => $element['#default_value']->currcode,
   );
-  if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
-    $currency = entity_load('mcapi_currencies', current($element['#currcodes']));
-    $use_div_subelement = in_array($currency->widget, array(CURRENCY_WIDGET_TEXT, CURRENCY_WIDGET_SELECT));
+  $parents =  $element['#parents'];
+  $parents[] = 'currcode';
+
+  $name = array_shift($parents);
+  if (count($parents)) {
+    $name .= '[' . implode('][', $parents) . ']';
   }
-  //work out the defaults for each subfield
-  //null is not presumed to be zero, and is preserved
-  if (!empty($use_div_subelement)) {
-    list($main_quant, $div_quant) = currency_explode($quantity);
-  }
-  elseif($currency && $currency->widget == 'currency_select') {
-    $main_quant = $quantity;
-  }
-  else{
-    $main_quant = intval($quantity);
-  }
-  //in normal mode, show a blank field where the default value is 0
-  if (empty($main_quant) && empty($element['#preset'])) {
-    $main_quant = '';
-  }
-  //while we return a float, the widget may want to show two fields.
-  //in any case we show a main field, and an optional division field
-  $element['main_quant'] = array(
-    '#title' => t('Quantity'),//this is only really needed for errors, and maybe not even then
-    '#title_display' => 'attribute',
-    '#type' => 'textfield',
-    '#default_value' => strlen($main_quant) ? $main_quant : '',
-    '#size' => 4,
-    '#maxlength' => 6,
-    '#theme_wrappers' => array()//to prevent the default form_element wrapper
+
+  $element['value'] = array(
+    '#type' => 'value',
+    '#value' => $element['#default_value']->value,
   );
 
-  //we only show the division field if the currency requires it
-  if (isset($div_quant)) {//that means $currency is also set
+  foreach (entity_load_multiple('mcapi_currency', $element['#currcodes']) as $currency) {
+    $plugin = $currency->getWidgetPlugin();
 
-    if ($currency->display['widget'] == CURRENCY_WIDGET_SELECT) {
-      $element['div_quant'] = array(
-        '#title' => t('Fraction'),
-        '#title_display' => 'attribute',
-        '#type' => 'select',
-        '#options' => $currency->display['divisions'],
-        '#default_value' => $div_quant,
+    if (empty($element[$currency->widget])) {
+      $element[$currency->widget] = array(
+        '#title_display' => 'invisible',
       );
+      if (count($element['#currcodes']) == 1) {
+        $element[$currency->widget] += array(
+          '#field_prefix' => $currency->prefix,
+          '#field_suffix' => $currency->suffix,
+        );
+      }
+      else {
+        // Set up the dependent fields when the currency select box is changed.
+        $element[$currency->widget]['#states'] = array(
+          'visible' => array(
+            ':input[name="' . $name . '"]' => array(
+              array('value' => $currency->id()),
+            ),
+          ),
+        );
+      }
+
+      $element[$currency->widget] = $plugin->formElement($element['#default_value'], 0, $element[$currency->widget], $form, $form_state);
     }
-    else { //must be CURRENCY_WIDGET_TEXT
-      $element['div_quant'] = array(
-        '#title' => t('Cents'),
-        '#title_display' => 'attribute',
-        '#type' => 'textfield',
-        '#size' => 2,
-        '#maxlength' => 2,
-        '#default_value' => $div_quant,
-        '#theme_wrappers' => array(), //to prevent the default form_element wrapper
-      );
+    else {
+      // add the new additional currency.
+      $element[$currency->widget]['#states']['visible'][':input[name="' . $name . '"]'][] = array('value' => $currency->id());
     }
   }
+
   return $element;
 }
 
+function mcapi_worth_element_validate($element, &$form_state) {
+  $currcode = empty($element['#value']['currcode']) ? $element['currcode']['#value'] : $element['#value']['currcode'];
+  if (!$currency = entity_load('mcapi_currency', $currcode)) {
+    \Drupal::formBuilder()->setError($element, $form_state, t('%currcode is not a valid currency', array('%currcode' => $currcode)));
+    return;
+  }
+  $plugin = $currency->getWidgetPlugin();
+
+  $value = $element['#value'][$currency->widget];
+  if (method_exists($plugin, 'asInteger')) {
+    $value = $plugin->asInteger($value);
+  }
+
+  $values = array(
+    'currcode' => $currcode,
+    'value' => $value,
+  );
+  \Drupal::formBuilder()->setValue($element, $values, $form_state);
+}
 
 function mcapi_process_states($element) {
   $element['#options'] = mcapi_get_states('#options');
@@ -1019,20 +1036,33 @@ function mcapi_process_types($element) {
 }
 
 function mcapi_process_currcodes($element) {
-  if (empty($element['#options']) || $element['#options'] == 'all') {
-    $account = empty($element['#options']) ?  \Drupal::currentUser() : NULL;
-    $element['#options']= mcapi_currency_list(NULL, $account, TRUE);
+  if (empty($element['#options']) && !empty($element['#currcodes'])) {
+    $element['#options'] = array_intersect_key(mcapi_get_available_currencies(), drupal_map_assoc($element['#currcodes']));
   }
-  if (count($element['#options']) == 1) {
-  	//nothing to choose from
-  	return array(
-  	 	'#type' => 'value',
-  		'#input' => TRUE,
-  		'#value' => reset($element['#options'])
-  	);
+  else if (empty($element['#options'])) {//assume it is a user object
+    //limit the choice to the currencies available to this user
+    $element['#options'] = mcapi_get_available_currencies();
   }
-  $element['#size'] = min(count($element['#options']), 10);
-  return form_process_select($element);
+  else if ($element['#options'] == 'all') {
+    $currencies = entity_load_multiple('mcapi_currency');
+    $element['#options'] = array();
+  }
+
+  if (empty($element['#options'])) {
+    $element['#options'] = array();
+    foreach ($currencies as $currcode => $currency) {
+      $element['#options'][$currcode] = $currency->label();
+    }
+  }
+
+  if (count($element['#options']) == 1 && isset($element['#options'][$element['#default_value']])) {
+    //$element['#type'] = 'value';
+    $element['#theme'] = array();
+    $element['#theme_wrappers'] = array();
+    $element['#value'] = $element['#default_value'];
+  }
+
+  return $element;
 }
 
 

@@ -45,7 +45,7 @@ class CurrencyWidgetManager extends WidgetPluginManager {
 
     $configuration += array(
       'currency' => $currency,
-      'field_definition' => new CurrencyFieldDefinitions(),
+      'field_definition' => new CurrencyFieldDefinitions(array('settings' => $currency->settings)),
     );
     return $this->createInstance($plugin_id, $configuration);
   }

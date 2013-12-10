@@ -47,6 +47,11 @@ use Drupal\Core\Annotation\Translation;
  * )
  */
 class Currency extends ConfigEntityBase implements CurrencyInterface {
+  /**
+   * Holds the plugin object for the Widget when it is loaded
+   */
+  private $widgetPlugin;
+
   public $id;
   public $uuid;
   public $name;
@@ -135,4 +140,19 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     }
     cache_invalidate_tags($cache_tags);
   }
+
+  /**
+   * Get the currencies widget plugin
+   */
+  public function getWidgetPlugin() {
+    if (!$this->widgetPlugin) {
+      $this->widgetPlugin = \Drupal::service('plugin.manager.mcapi.currency_widget')->getInstance(array(
+        'currency' => $this,
+        'configuration' => $this->widget_settings,
+      ));
+    }
+
+    return $this->widgetPlugin;
+  }
+
 }

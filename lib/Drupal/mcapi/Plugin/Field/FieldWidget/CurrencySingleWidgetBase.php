@@ -15,13 +15,51 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  * Plugin implementation of the 'text_textfield' widget.
  *
  */
-class CurrencySingleWidgetBase extends WidgetBase {
+abstract class CurrencySingleWidgetBase extends WidgetBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, array &$form_state) {
+    $element['placeholder'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Placeholder'),
+      '#default_value' => $this->getSetting('placeholder'),
+      '#description' => t('Text that will be shown inside the field until a value is entered. This hint is usually a sample value or a brief description of the expected format.'),
+    );
+    return $element;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsSummary() {
+    $summary = array();
+
+    $placeholder = $this->getSetting('placeholder');
+    if (!empty($placeholder)) {
+      $summary[] = t('Placeholder: @placeholder', array('@placeholder' => $placeholder));
+    }
+    else {
+      $summary[] = t('No placeholder');
+    }
+
+    return $summary;
+  }
 
   /**
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, array &$form_state) {
 
+    $element += array(
+      '#title' => $this->t('Value'),
+      '#default_value' => $this->renderValue($items[$delta]->value),
+      '#placeholder' => $this->getSetting('placeholder'),
+    );
+
+    return $element;
   }
 
+  abstract public function renderValue(int $value);
 }
