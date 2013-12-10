@@ -96,7 +96,6 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $this->database->delete('mcapi_transactions_worths')
       ->condition('xid', $transaction->id())
       ->execute();
-drupal_set_message("failing to saveWorths");
     $query = $this->database->insert('mcapi_transactions_worths')
       ->fields(array('xid', 'currcode', 'value'));
     foreach ($transaction->worths[0] as $currcode => $worth) {
@@ -121,15 +120,15 @@ drupal_set_message("failing to saveWorths");
     $this->database->delete('mcapi_transactions_index')
       ->condition('xid', $transaction->id())
       ->execute();
-    //we only index transactions with positive state values
-    if ($transaction->state->value < 1) return;
-    drupal_set_message('Failing to retrieve worthItems in TransactionStorageController -> addIndex');return;
-    foreach ($transaction->worths[0] as $currcode => $worthitem) {
-      $query = $this->database->insert('mcapi_transactions_index')
-        ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
+    // we only index transactions with positive state values
+    if ($transaction->state->value < 1) {
+      return;
+    };
+    $query = $this->database->insert('mcapi_transactions_index')
+      ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
+    foreach ($transaction->worths[0] as $currcode => $worth) {
       $query->values(array(
         'xid' => $transaction->id(),
-        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
         'currcode' => $currcode,
@@ -139,10 +138,9 @@ drupal_set_message("failing to saveWorths");
         'diff' => -$worth->value+0,
         'type' => $transaction->type->value,
         'created' => $transaction->created->value
-      ),
-      array(
+      ));
+      $query->values(array(
         'xid' => $transaction->id(),
-        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
         'currcode' => $currcode,
@@ -153,8 +151,8 @@ drupal_set_message("failing to saveWorths");
         'type' => $transaction->type->value,
         'created' => $transaction->created->value
       ));
-      $query->execute();
     }
+    $query->execute();
   }
 
   public function indexRebuild() {
