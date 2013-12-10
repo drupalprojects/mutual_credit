@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\CurrencyEnableConfirm.
+ * Contains \Drupal\mcapi\Form\FirstPartyEditFormEnableConfirm.
  */
 
 namespace Drupal\mcapi\Form;
@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityConfirmFormBase;
 /**
  * Builds the form to delete a contact category.
  */
-class CurrencyEnableConfirm extends EntityConfirmFormBase {
+class FirstPartyEditFormEnableConfirm extends EntityConfirmFormBase {
 
   /**
    * {@inheritdoc}
@@ -26,7 +26,7 @@ class CurrencyEnableConfirm extends EntityConfirmFormBase {
    */
   public function getCancelRoute() {
     return array(
-      'route_name' => 'mcapi.admin_currency_list',
+      'route_name' => 'mcapi.admin_1stparty_editform_list',
     );
   }
 
@@ -43,9 +43,8 @@ class CurrencyEnableConfirm extends EntityConfirmFormBase {
   public function submit(array $form, array &$form_state) {
     $this->entity->status = 1;
     $this->entity->save();
-    \Drupal::cache()->deleteTags(array('mcapi.available_currency'));
     drupal_set_message(t('"%label" has been enabled.', array('%label' => $this->entity->label())));
-    $form_state['redirect'] = 'admin/accounting/currencies';
+    $form_state['redirect'] = 'admin/accounting/workflow/forms';
   }
 
 }

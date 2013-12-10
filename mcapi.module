@@ -179,10 +179,10 @@ function mcapi_menu() {
     'weight' => 2,
     'route_name' => 'mcapi.workflow',
   );
-  $items['transact/create'] = array(
+  $items['transact/admin'] = array(
     'title' => 'Record transaction',
     'description' => 'Log a transaction in the database',
-    'route_name' => 'mcapi.transaction_create',
+    'route_name' => 'mcapi.transaction_admin',
   );
   return $items;
 }
@@ -532,15 +532,6 @@ function mcapi_mail($key, &$message, $params) {
   }
 }
 
-/**
- * implements hook_mail_alter().
- * add the cc
- */
-function mcapi_mail_alter(&$message) {
-  if (isset($message['params']['cc'])) {
-    $message['headers']['Cc'] = $message['params']['cc'];
-  }
-}
 
 function template_preprocess_mcapi_transaction(&$vars) {
   $transaction = &$vars['transaction'];
@@ -615,21 +606,14 @@ function mcapi_field_extra_fields() {
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
   $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
   $form = array('payer', 'payee', 'worths', 'description');
-  foreach ($fields as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
-      'label' => $props[$fieldname]['label'],
-      'description' => $props[$fieldname]['description'],
-      'weight' => $weight,
-    );
-  }
-  foreach ($fields as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
-      'label' => $props[$fieldname]['label'],
-      'description' => $props[$fieldname]['description'],
-      'weight' => $weight,
-    );
-  }
-  return $extra;
+	foreach ($fields as $weight => $fieldname) {
+		$extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
+			'label' => $props[$fieldname]['label'],
+			'description' => $props[$fieldname]['description'],
+			'weight' => $weight,
+		);
+	}
+	return $extra;
 }
 
 //return a currency
@@ -676,10 +660,14 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!$cache = \Drupal::cache()->get($cid)) {
     $available = array();
     $cache_tags = array('mcapi.available_currency' => array());
+<<<<<<< HEAD
+    foreach (entity_load_multiple('mcapi_currency') as $currency) {
+=======
     $currencies = entity_load_multiple('mcapi_currency');
     $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
     uasort($currencies, array($info['class'], 'sort'));
     foreach ($currencies as $currency) {
+>>>>>>> d13fe4e2b7bb3120ad20aaf765fd084ef4390b75
       if ($currency->status && $currency->access('membership', $account)) {
         $available[$currency->id()] = $currency->label();
         $cache_tags['mcapi.available_currency'] = $currency->id();
@@ -956,12 +944,33 @@ function mcapi_worth_element_process($element, &$form_state) {
     '#currcodes' => $element['#currcodes'],
     '#default_value' => $element['#default_value']->currcode,
   );
+<<<<<<< HEAD
+  if (count($element['#currcodes']) == '1') {//and the currency chooser will be hidden
+    $currency = entity_load('mcapi_currency', current($element['#currcodes']));
+    $use_div_subelement = in_array($currency->widget, array(CURRENCY_WIDGET_TEXT, CURRENCY_WIDGET_SELECT));
+  }
+  //work out the defaults for each subfield
+  //null is not presumed to be zero, and is preserved
+  if (!empty($use_div_subelement)) {
+    list($main_quant, $div_quant) = currency_explode($quantity);
+  }
+  elseif($currency && $currency->widget == 'currency_select') {
+    $main_quant = $quantity;
+  }
+  else{
+    $main_quant = intval($quantity);
+  }
+  //in normal mode, show a blank field where the default value is 0
+  if (empty($main_quant) && empty($element['#preset'])) {
+    $main_quant = '';
+=======
   $parents =  $element['#parents'];
   $parents[] = 'currcode';
 
   $name = array_shift($parents);
   if (count($parents)) {
     $name .= '[' . implode('][', $parents) . ']';
+>>>>>>> d13fe4e2b7bb3120ad20aaf765fd084ef4390b75
   }
 
   $element['value'] = array(

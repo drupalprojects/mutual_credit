@@ -128,6 +128,10 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     return $this->type;
   }
 
+  public function label($langcode = NULL) {
+  	return $this->name;
+  }
+
   /**
    * {@inheritdoc}
    */
