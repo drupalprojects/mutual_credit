@@ -333,20 +333,21 @@ function theme_worth_element($variables) {
  */
 function mcapi_user_summary($account, $currcodes = array()) {
   if (empty($currcodes)) {
-  	//TODO what's the current way to load all currencies for a user?
+    //TODO what's the current way to load all currencies for a user?
     $currcodes = mcapi_get_available_currencies($account);
   }
+
   $render_array = array();
-  foreach ($currcodes as $currcode) {
-    $currency = entity_load('mcapi_currency', $currcode);
+  foreach (entity_load_multiple('mcapi_currency', array_keys($currcodes)) as $currcode => $currency) {
     if ($currency->access('trader_data')) {
-	    $render_array[$currcode] = array(
-	      '#type' => 'mcapi_summary',
-	      '#currency' => $currency,
-	      '#account' => $account
-	    );
-  	}
+      $render_array[$currcode] = array(
+        '#type' => 'mcapi_summary',
+        '#currency' => $currency,
+        '#account' => $account
+      );
+    }
   }
+
   return $render_array;
 }
 
