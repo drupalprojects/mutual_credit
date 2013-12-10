@@ -40,7 +40,8 @@ use Drupal\mcapi\TransactionInterface;
  *   translatable = FALSE,
  *   route_base_path = "admin/accounting",
  *   links = {
- *     "canonical" = "/transaction/{mcapi_transaction}"
+ *     "canonical" = "/transaction/{mcapi_transaction}",
+ *     "admin-form" = "mcapi.admin"
  *   }
  * )
  */
@@ -65,10 +66,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   public function buildChildren() {
-  	foreach (module_invoke_all('transaction_children', $this) as $transaction) {
+    foreach (module_invoke_all('transaction_children', $this) as $transaction) {
       $transaction->parent = 'temp';//TODO how do we know the parent?
-  		$this->children[] = $transaction;
-  	}
+      $this->children[] = $transaction;
+    }
   }
 
   /**
@@ -88,8 +89,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
     //build children if they haven't been built already
     if ($this->isNew() && !$this->parent && empty($this->children)) {
-    	//note that children do not have a serial number or parent xid until the postSave
-    	$this->buildChildren();
+      //note that children do not have a serial number or parent xid until the postSave
+      $this->buildChildren();
     }
   }
 
@@ -104,12 +105,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $errors = array();
     //check that each trader has permission to use all the currencies
     foreach (array($this->payer, $this->payee) as $account) {
-	    foreach ($this->worths as $worth) {
-	    	drupal_set_message("sort out validation when 'worth' is working");continue;
-	    	if (!$worth->currency->access('membership', $account)) {
-	    		$errors[] = t('!user cannot use !currency', array('!user' => $account->name, '!currency' => $currency->name));
-	    	}
-	    }
+      foreach ($this->worths[0] as $worth) {
+        drupal_set_message("sort out validation when 'worth' is working");continue;
+        if (!$worth->currency->access('membership', $account)) {
+          $errors[] = t('!user cannot use !currency', array('!user' => $account->name, '!currency' => $currency->name));
+        }
+      }
     }
     if (count($errors)) throw new Exception(implode(' ', $errors));
 
@@ -131,8 +132,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $storage_controller->addIndex($this);
     //save the children if there are any
     foreach ($this->children as $transaction) {
-    	$transaction->serial->value = $this->serial->value;
-    	$transaction->parent->value = $this->xid->value;
+      $transaction->serial->value = $this->serial->value;
+      $transaction->parent->value = $this->xid->value;
     }
   }
 
@@ -157,7 +158,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       foreach (mcapi_get_available_currencies() as $currcode => $name) {
         $values['worths'][$currcode] = array(
           'currcode' => $currcode,
-          'quantity' => NULL,
+          'value' => NULL,
         );
       }
     }
@@ -165,7 +166,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       foreach ($values['worth'] as $currcode => $value) {
         $values['worths'] += array(
           'currcode' => $currcode,
-          'quantity' => NULL,
+          'value' => NULL,
         );
       }
     }

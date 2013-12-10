@@ -32,7 +32,7 @@ function bank_slave_mcapiforms_default() {
           'user_chooser_config' => 'user_chooser_segment_roles:2',
         ),
         'payer' => array(
-          'preset' => entity_load('mcapi_currencies', 'escrow')->reservoir,
+          'preset' => entity_load('mcapi_currency', 'escrow')->reservoir,
           'strip' => 1,
           'user_chooser_config' => 'user_chooser_segment_roles:2',
         ),
@@ -48,7 +48,7 @@ function bank_slave_mcapiforms_default() {
         'experience' => array(
           'title' => t(
             'Track !currcode income to !bank',
-            array('!currcode' => entity_load('mcapi_currencies', $currcode)->name , '!bank' => user_load($bank_uid)->name)
+            array('!currcode' => entity_load('mcapi_currency', $currcode)->name , '!bank' => user_load($bank_uid)->name)
           ),
           'template' => '[mcapiform:created]
             [mcapiform:worth]',
@@ -81,7 +81,7 @@ function bank_slave_mcapiforms_default() {
         ),
         'perspective' => '3',
         'payee' => array(
-          'preset' => entity_load('mcapi_currencies', 'escrow')->reservoir,
+          'preset' => entity_load('mcapi_currency', 'escrow')->reservoir,
           'strip' => 1,
           'user_chooser_config' => 'user_chooser_segment_roles:2',
         ),
@@ -102,7 +102,7 @@ function bank_slave_mcapiforms_default() {
         'experience' => array(
           'title' => t(
             'Track !currcode outgoings from !bank',
-            array('!currcode' => entity_load('mcapi_currencies', $currcode)->name , '!bank' => user_load($bank_uid)->name)
+            array('!currcode' => entity_load('mcapi_currency', $currcode)->name , '!bank' => user_load($bank_uid)->name)
           ),
           'template' => '[mcapiform:created]
             [mcapiform:worth]',

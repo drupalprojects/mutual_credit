@@ -123,7 +123,7 @@ function bank_slave_views_templates() {
   foreach (variable_get('mcapi_bank_slave_uids', array()) as $bank_uid) {
     $bankname = user_load($bank_uid)->name;
     foreach (variable_get('mcapi_bank_slave_currcodes') as $currcode) {
-      $currency = entity_load('mcapi_currencies', $currcode);
+      $currency = entity_load('mcapi_currency', $currcode);
       $tabname = t("@name @currency", array('@name' => $bankname, '@currency' => $currency->name));
       $i++;
       $handler = $view->new_display('page', $tabname, 'page_'.$i);

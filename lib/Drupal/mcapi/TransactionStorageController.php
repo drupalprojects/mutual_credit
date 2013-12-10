@@ -21,14 +21,14 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     foreach ($result as $record) {
       $queried_entities[$record->xid]->worths[$record->currcode] = array(
         'currcode' => $record->currcode,
-        'quantity' => $record->quantity,
+        'value' => $record->value,
       );
     }
 
     // Load all the children
     $result = $this->database->query('SELECT xid FROM {mcapi_transactions} WHERE parent IN (:parents)', array(':parents' => array_keys($queried_entities)));
     foreach ($result as $record) {
-      $queried_entities[$record->xid]->children[$record->xid] = $record->xid;
+      $queried_entities[$record->xid]->children[$record->xid] = NULL;
     }
 
     parent::attachLoad($queried_entities, $load_revision);
@@ -40,8 +40,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * so the delete mode is an optional second argument
    */
   public function delete(array $entities) {
-  	$delete_state = func_get_arg(2);
-  	if (is_null($delete_state)) {
+    $delete_state = func_get_arg(2);
+    if (is_null($delete_state)) {
       $delete_state = \Drupal::config(mcapi.misc)->get('delete_mode');
     }
     //TODO
@@ -96,15 +96,16 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $this->database->delete('mcapi_transactions_worths')
       ->condition('xid', $transaction->id())
       ->execute();
-drupal_set_message("failing to saveWorths");
     $query = $this->database->insert('mcapi_transactions_worths')
-      ->fields(array('xid', 'currcode', 'quantity'));
-    foreach ($transaction->worths[0] as $currcode => $worthitem) {
-      if (!$worthitem->quantity) continue;
+      ->fields(array('xid', 'currcode', 'value'));
+    foreach ($transaction->worths[0] as $currcode => $worth) {
+      if (!$worth->value) {
+        continue;
+      };
       $query->values(array(
         'xid' => $transaction->id(),
         'currcode' => $currcode,
-        'quantity' => $worthitem->quantity,
+        'value' => $worth->value,
       ));
     }
     $query->execute();
@@ -119,47 +120,45 @@ drupal_set_message("failing to saveWorths");
     $this->database->delete('mcapi_transactions_index')
       ->condition('xid', $transaction->id())
       ->execute();
-    //we only index transactions with positive state values
-    if ($transaction->state->value < 1) return;
-    drupal_set_message('Failing to retrieve worthItems in TransactionStorageController -> addIndex');return;
-    foreach ($transaction->worths[0] as $currcode => $worthitem) {
-      $query = $this->database->insert('mcapi_transactions_index')
-        ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
+    // we only index transactions with positive state values
+    if ($transaction->state->value < 1) {
+      return;
+    };
+    $query = $this->database->insert('mcapi_transactions_index')
+      ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
+    foreach ($transaction->worths[0] as $currcode => $worth) {
       $query->values(array(
         'xid' => $transaction->id(),
-        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
         'currcode' => $currcode,
-        'volume' => $worthitem->quantity,
+        'volume' => $worth->value+0,
         'incoming' => 0,
-        'outgoing' => $worthitem->quantity,
-        'diff' => -$worthitem->quantity,
-        'type' => $transaction->type->value,
-        'created' => $transaction->created->value
-      ),
-      array(
-        'xid' => $transaction->id(),
-        'serial' => $transaction->serial->value,
-        'uid1' => $transaction->payee->value,
-        'uid2' => $transaction->payer->value,
-        'currcode' => $currcode,
-        'volume' => $worthitem->quantity,
-        'incoming' => $worthitem->quantity,
-        'outgoing' => 0,
-        'diff' => $worthitem->quantity,
+        'outgoing' => $worth->value+0,
+        'diff' => -$worth->value+0,
         'type' => $transaction->type->value,
         'created' => $transaction->created->value
       ));
-      $query->execute();
+      $query->values(array(
+        'xid' => $transaction->id(),
+        'uid1' => $transaction->payee->value,
+        'uid2' => $transaction->payer->value,
+        'currcode' => $currcode,
+        'volume' => $worth->value+0,
+        'incoming' => $worth->value+0,
+        'outgoing' => 0,
+        'diff' => $worth->value+0,
+        'type' => $transaction->type->value,
+        'created' => $transaction->created->value
+      ));
     }
+    $query->execute();
   }
 
   public function indexRebuild() {
     db_truncate('mcapi_transactions_index')->execute();
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
-    		t.serial,
         t.payer AS uid1,
         t.payee AS uid2,
         t.state,
@@ -167,26 +166,25 @@ drupal_set_message("failing to saveWorths");
         t.created,
         w.currcode,
         0 AS incoming,
-        w.quantity AS outgoing,
-        - w.quantity AS diff,
-        w.quantity AS volume
+        w.value AS outgoing,
+        - w.value AS diff,
+        w.value AS volume
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
       WHERE state > 0) "
     );
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
-    		t.serial,
         t.payee AS uid1,
         t.payer AS uid2,
         t.state,
         t.type,
         t.created,
         w.currcode,
-        w.quantity AS incoming,
+        w.value AS incoming,
         0 AS outgoing,
-        w.quantity AS diff,
-        w.quantity AS volume
+        w.value AS diff,
+        w.value AS volume
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
       WHERE state > 0) "
@@ -198,7 +196,7 @@ drupal_set_message("failing to saveWorths");
   public function indexCheck() {
     if (db_query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
       $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
-      $volume = db_query("SELECT sum(quantity) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
+      $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
       if ($volume_index == $volume) return TRUE;
     }
     return FALSE;
@@ -219,54 +217,55 @@ drupal_set_message("failing to saveWorths");
    * this would be more useful when views isn't available
    */
   public function filter(array $conditions, $offset, $limit) {
-  	extract($conditions);
-  	$query = db_select('mcapi_transactions', 'x')
-  	->fields('x', array('xid', 'serial'))
-  	->orderby('created', 'DESC');
-  	if ($limit) {
-  		$query->range($offset, $limit);
-  	}
-  	if (isset($serial)) {
-  		$query->condition('serial', (array)$serial);
-  	}
-  	if (isset($state)) {
-  		$query->condition('state', (array)$state);
-  	}
-  	if (isset($payer)) {
-  		$query->condition('payer', (array)$payer);
-  	}
-  	if (isset($payee)) {
-  		$query->condition('payee', (array)$payee);
-  	}
-  	if (isset($creator)) {
-  		$query->condition('creator', (array)$creator);
-  	}
-  	if (isset($type)) {
-  		$query->condition('type', (array)$type);
-  	}
-  	if (isset($involving)) {
-  		$query->condition(db_or()
-  			->condition('payer', (array)$involving)
-  			->condition('payee', (array)$involving)
-  		);
-  	}
-  	if (isset($from)) {
-  		$query->condition('created', $from, '>');
-  	}
-  	if (isset($to)) {
-  		$query->condition('created', $to,  '<');
-  	}
+    extract($conditions);
+    $query = db_select('mcapi_transactions', 'x')
+      ->fields('x', array('xid', 'serial'))
+      ->orderby('created', 'DESC');
 
-  	if (isset($currcode) || isset($quantity)) {
-  		$query->join('mcapi_transactions_worths', 'w', 'x.xid = w.xid');
-  		if (isset($currcode)) {
-  			$query->condition('currcode', $currcode);
-  		}
-  		if (isset($quantity)) {
-  			$query->condition('quantity', $quantity);
-  		}
-  	}
-  	return $query->execute()->fetchAllKeyed();
+    if ($limit) {
+      $query->range($offset, $limit);
+    }
+    if (isset($serial)) {
+      $query->condition('serial', (array)$serial);
+    }
+    if (isset($state)) {
+      $query->condition('state', (array)$state);
+    }
+    if (isset($payer)) {
+      $query->condition('payer', (array)$payer);
+    }
+    if (isset($payee)) {
+      $query->condition('payee', (array)$payee);
+    }
+    if (isset($creator)) {
+      $query->condition('creator', (array)$creator);
+    }
+    if (isset($type)) {
+      $query->condition('type', (array)$type);
+    }
+    if (isset($involving)) {
+      $query->condition(db_or()
+        ->condition('payer', (array)$involving)
+        ->condition('payee', (array)$involving)
+      );
+    }
+    if (isset($from)) {
+      $query->condition('created', $from, '>');
+    }
+    if (isset($to)) {
+      $query->condition('created', $to,  '<');
+    }
+
+    if (isset($currcode) || isset($quantity)) {
+      $query->join('mcapi_transactions_worths', 'w', 'x.xid = w.xid');
+      if (isset($currcode)) {
+        $query->condition('currcode', $currcode);
+      }
+      if (isset($quantity)) {
+        $query->condition('quantity', $quantity);
+      }
+    }
+    return $query->execute()->fetchAllKeyed();
   }
 
   /*
@@ -276,42 +275,43 @@ drupal_set_message("failing to saveWorths");
   * Because this uses the index table, it knows nothing of transactions with state <  1
   */
   public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters) {
-  	$query = "SELECT
-      COUNT(DISTINCT serial) as trades,
-      SUM(incoming) as gross_in,
-      SUM(outgoing) as gross_out,
-      SUM(diff) as balance,
-      SUM(volume) as volume,
-      COUNT(DISTINCT uid2) as partners
-      FROM {mcapi_transactions_index}
-      WHERE uid1 = :uid1 AND currcode = :currcode " . mcapi_parse_conditions($filters);
-  	$params = array(
-  		':uid1' => $account->id(),
-  		':currcode' => $currency->id()
+    $query = "SELECT
+      COUNT(DISTINCT t.serial) as trades,
+      SUM(i.incoming) as gross_in,
+      SUM(i.outgoing) as gross_out,
+      SUM(i.diff) as balance,
+      SUM(i.volume) as volume,
+      COUNT(DISTINCT i.uid2) as partners
+      FROM {mcapi_transactions_index} i
+      LEFT JOIN {mcapi_transactions} t ON i.xid = t.xid
+      WHERE i.uid1 = :uid1 AND i.currcode = :currcode " . mcapi_parse_conditions($filters);
+    $params = array(
+      ':uid1' => $account->id(),
+      ':currcode' => $currency->id()
     );
-  	if ($result = db_query($query, $params)->fetchAssoc()) {
-  		return $result;
-  	}
+    if ($result = db_query($query, $params)->fetchAssoc()) {
+      return $result;
+    }
     //if there are no transactions for this user
     return array('trades' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0, 'partners' => 0);
   }
 
   public function mergeAccounts($main) {
-  	$uids = func_get_args();
-  	$main = array_shift($uids);
-  	foreach ($uids as $uid) {
-  		db_update('mcapi_transactions')
-  		->fields(array('payer' => $main))
-  		->condition('payer', $uid)->execute();
-  		db_update('mcapi_transactions')
-  		->fields(array('payee' => $main))
-  		->condition('payee', $uid)->execute();
-  		$serials = transaction_filter(array('payer' => $main, 'payee' => $main));
-  		//this is usually a small number, but strictly speaking should be done in a batch.
-  		foreach (array_unique($serials) as $serial) {
-  			transaction_undo($serial, MCAPI_UNDO_STATE_DELETE);
-  		}
-  	}
+    $uids = func_get_args();
+    $main = array_shift($uids);
+    foreach ($uids as $uid) {
+      db_update('mcapi_transactions')
+      ->fields(array('payer' => $main))
+      ->condition('payer', $uid)->execute();
+      db_update('mcapi_transactions')
+      ->fields(array('payee' => $main))
+      ->condition('payee', $uid)->execute();
+      $serials = transaction_filter(array('payer' => $main, 'payee' => $main));
+      //this is usually a small number, but strictly speaking should be done in a batch.
+      foreach (array_unique($serials) as $serial) {
+        transaction_undo($serial, MCAPI_UNDO_STATE_DELETE);
+      }
+    }
   }
 
   /*
@@ -319,17 +319,17 @@ drupal_set_message("failing to saveWorths");
    */
   public function timesBalances(AccountInterface $account, CurrencyInterface $currency, $since = 0) {
     //this is a way to add up the results as we go along
-  	db_query("SET @csum := 0");
+    db_query("SET @csum := 0");
     //I wish there was a better way to do this.
     //It is cheaper to do stuff in mysql
     $all_balances = db_query(
-    	"SELECT created, (@csum := @csum + diff) as balance
-    	  FROM {mcapi_transactions_index}
-    	  WHERE uid1 = :uid1 AND currcode = :currcode
-    	  ORDER BY created",
-    	array(
-    		':uid1' => $account->id(),
-    		':currcode' => $currency->id()
+      "SELECT created, (@csum := @csum + diff) as balance
+        FROM {mcapi_transactions_index}
+        WHERE uid1 = :uid1 AND currcode = :currcode
+        ORDER BY created",
+      array(
+        ':uid1' => $account->id(),
+        ':currcode' => $currency->id()
       )
     )->fetchAll();
     $history = array();
@@ -337,9 +337,9 @@ drupal_set_message("failing to saveWorths");
     //process the points into the right format
     //if two transactions happen on the same second, the latter running balance will be shown only
     foreach ($all_balances as $point) {
-    	if ($point->created > $since) {
+      if ($point->created > $since) {
         $history[$point->created] = $point->balance;
-    	}
+      }
     }
     return $history;
   }
@@ -347,22 +347,22 @@ drupal_set_message("failing to saveWorths");
 
 
 function mcapi_parse_conditions($conditions) {
-	if (empty($conditions)) return '';
-	$where = array();
-	foreach ($conditions as $condition) {
-		if (is_array($condition)) {
-			$condition[] = '=';
-			list($field, $value, $operator) = $condition;
-			if (empty($operator)) $operator = ' = ';
-			if (is_array($value)) {
-				$value = '('.implode(', ', $value) .')';
-				$operator = ' IN ';
-			}
-			$where[] = " ( t.$field $operator $value ) ";
-		}
-		else {//the condition is already provided as a string
-			$where[] = " $condition ";
-		}
-	}
-	return ' AND '. implode(' AND ', $where);
+  if (empty($conditions)) return '';
+  $where = array();
+  foreach ($conditions as $condition) {
+    if (is_array($condition)) {
+      $condition[] = '=';
+      list($field, $value, $operator) = $condition;
+      if (empty($operator)) $operator = ' = ';
+      if (is_array($value)) {
+        $value = '('.implode(', ', $value) .')';
+        $operator = ' IN ';
+      }
+      $where[] = " ( t.$field $operator $value ) ";
+    }
+    else {//the condition is already provided as a string
+      $where[] = " $condition ";
+    }
+  }
+  return ' AND '. implode(' AND ', $where);
 }

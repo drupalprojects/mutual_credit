@@ -51,9 +51,9 @@ class Worth extends ConfigFieldItemBase {
         'type' => 'string',
         'label' => t('Currency ID'),
       );
-      static::$propertyDefinitions['quantity'] = array(
-        'type' => 'float',
-        'label' => t('Price'),
+      static::$propertyDefinitions['value'] = array(
+        'type' => 'integer',
+        'label' => t('Value'),
       );
     }
     return static::$propertyDefinitions;

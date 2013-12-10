@@ -20,19 +20,19 @@ class TransactionForm extends EntityFormController {
   public function form(array $form, array &$form_state) {
     if (empty($form_state['mcapi_submitted'])) {
       $form = parent::form($form, $form_state);
-      $this->form_step_1($form, $form_state);
+      $form = $this->form_step_1($form, $form_state);
       $form['#validate'][] = array($this, 'step_1_validate');
       $form['#submit'][] = array($this, 'step_1_submit');
     }
     else {
-      $this->form_step_2($form, $form_state);
+      $form = $this->form_step_2($form, $form_state);
       $form['#validate'][] = array($this, 'step_2_validate');
       $form['#submit'][] = array($this, 'step_2_submit');
     }
     return $form;
   }
 
-  private function form_step_1(&$form, &$form_state) {
+  private function form_step_1($form, &$form_state) {
     $transaction = $this->entity;
 
     unset($form['langcode']); // No language so we remove it.
@@ -46,7 +46,7 @@ class TransactionForm extends EntityFormController {
       '#type' => 'worths',
       '#title' => t('Worth'),
       '#required' => TRUE,
-      '#default_value' => $transaction->worths,
+      '#default_value' => $transaction->worths[0],
     );
     //the default payer and payee widgets allow anyone with 'transact' permission
     //the transaction entity will check that the users have permission to use the currencies
@@ -57,7 +57,6 @@ class TransactionForm extends EntityFormController {
       '#callback' => 'user_chooser_segment_perms',
       '#args' => array('transact'),
       '#default_value' => $transaction->payer->value,
-      '#weight' => 6,
     );
     $form['payee'] = array(
       '#title' => t('Account to be credited'),
@@ -65,7 +64,6 @@ class TransactionForm extends EntityFormController {
       '#callback' => 'user_chooser_segment_perms',
       '#args' => array('transact'),
       '#default_value' => $transaction->payee->value,
-      '#weight' => 9,
     );
     $form['type'] = array(
       '#title' => t('Transaction type'),
@@ -73,7 +71,6 @@ class TransactionForm extends EntityFormController {
       '#type' => 'mcapi_types',
       '#default_value' => $transaction->type->value,
       '#required' => TRUE,
-      '#weight' => 12,
     );
     $form['creator'] = array(
       '#title' => t('Recorded by'),
@@ -99,12 +96,16 @@ class TransactionForm extends EntityFormController {
       '#default_value' => $transaction->state->value,
       '#weight' => 21
     );
+
+    return $form;
   }
 
-  private function form_step_2(&$form, &$form_state) {
+  private function form_step_2($form, &$form_state) {
     $transactions = array();//need the transactions as if loaded, with children and all
     $form['preview'] = array();//TODO
     $form['#markup'] = 'Are you sure?';
+
+    return $form;
   }
 
   /**
@@ -125,9 +126,9 @@ class TransactionForm extends EntityFormController {
       $this->entity->validate();
     }
     catch (\Exception $e){
-  		$message = t('Transaction not allowed: !message', array('!message' => $e->getMessage()));
-  		//we don't put a form error here because we want to advance to phase 2 any how
-  		drupal_set_message($message, 'error');
+      $message = t('Transaction not allowed: !message', array('!message' => $e->getMessage()));
+      //we don't put a form error here because we want to advance to phase 2 any how
+      drupal_set_message($message, 'error');
     }
   }
 
@@ -157,18 +158,18 @@ class TransactionForm extends EntityFormController {
    * Overrides Drupal\Core\Entity\EntityFormController::save().
    */
   public function save(array $form, array &$form_state) {
-  	$transaction = $this->entity;
+    $transaction = $this->entity;
     try {
-    	$db_t = db_transaction();
-    	//was already validated
-    	$status = $transaction->save($form, $form_state);
+      $db_t = db_transaction();
+      //was already validated
+      $status = $transaction->save($form, $form_state);
     }
     catch (Exception $e) {
       \Drupal::formBuilder()->setErrorByName(
-      	'actions',
-      	t("Failed to save transaction: @message", array('@message' => $e->getMessage))
+        'actions',
+        t("Failed to save transaction: @message", array('@message' => $e->getMessage))
       );
-    	$db_t->rollback();
+      $db_t->rollback();
     }
 
     if ($status == SAVED_UPDATED) {
@@ -193,39 +194,39 @@ class TransactionForm extends EntityFormController {
    * Returns an array of supported actions for the current entity form.
    */
   protected function actions(array $form, array &$form_state) {
-  	//print_r($form_state['errors']);
-  	if (\Drupal::formBuilder()->getErrors($form_state)) return;
-  	$actions = array(
-  		// @todo Rename the action key from submit to save.
-  		'submit' => array(
-  			'#value' => $this->t('Save'),
-  			'#validate' => array(
-  		    array($this, 'validate'),
-  			),
-  			'#submit' => array(
-  				array($this, 'submit'),
-  		  ),
-  		),
-  	);
-  	if (empty($form_state['mcapi_submitted'])) {//step 1
-  		$actions['submit']['#validate'][] = array($this, 'step_1_validate');
-  		$actions['submit']['#submit'][] = array($this, 'step_1_submit');
-  	}
-  	else {//setp 2
-  		$actions['submit']['#validate'][] = array($this, 'step_2_validate');
-  		$actions['submit']['#submit'][] = array($this, 'step_2_submit');
-  		$actions['submit']['#submit'][] = array($this, 'save');
-  		$actions['back'] = array(
-  			'#value' => t('Back'),
-  			'#submit' => array(array($this, 'back'))
-  		);
-  	}
+    //print_r($form_state['errors']);
+    if (\Drupal::formBuilder()->getErrors($form_state)) return;
+    $actions = array(
+      // @todo Rename the action key from submit to save.
+      'submit' => array(
+        '#value' => $this->t('Save'),
+        '#validate' => array(
+          array($this, 'validate'),
+        ),
+        '#submit' => array(
+          array($this, 'submit'),
+        ),
+      ),
+    );
+    if (empty($form_state['mcapi_submitted'])) {//step 1
+      $actions['submit']['#validate'][] = array($this, 'step_1_validate');
+      $actions['submit']['#submit'][] = array($this, 'step_1_submit');
+    }
+    else {//setp 2
+      $actions['submit']['#validate'][] = array($this, 'step_2_validate');
+      $actions['submit']['#submit'][] = array($this, 'step_2_submit');
+      $actions['submit']['#submit'][] = array($this, 'save');
+      $actions['back'] = array(
+        '#value' => t('Back'),
+        '#submit' => array(array($this, 'back'))
+      );
+    }
     return $actions;
   }
 
   public function back(&$form, &$form_state) {
-  	$form_state['rebuild'] = TRUE;
-  	$form_state['mcapi_submitted'] = FALSE;//this means we move to step 2 regardless
+    $form_state['rebuild'] = TRUE;
+    $form_state['mcapi_submitted'] = FALSE; //this means we move to step 2 regardless
   }
 
 }

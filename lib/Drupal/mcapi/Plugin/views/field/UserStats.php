@@ -39,12 +39,12 @@ class UserStats extends FieldPluginBase {
       '#default_value' => $this->options['separator'],
     );
     $form['currencies'] = array(
-    	'#title' => t('Currencies'),
+      '#title' => t('Currencies'),
       '#title_display' => '#before',
-    	'#description' => t('Select none to see all the currencies the user can use'),
-    	'#type' => 'mcapi_currencies',
-    	'#multiple' => TRUE,
-    	'#default_value' => $this->options['currencies'],
+      '#description' => t('Select none to see all the currencies the user can use'),
+      '#type' => 'mcapi_currency',
+      '#multiple' => TRUE,
+      '#default_value' => $this->options['currencies'],
     );
     $form['stat'] = array(
     	'#title' => t('Metric'),

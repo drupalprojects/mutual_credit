@@ -1,0 +1,9 @@
+/**
+ * Styling for the Worth Element
+ */
+
+.form-type-worth > .form-item {
+  display: inline-block;
+  margin-top: 0;
+  margin-bottom: 0;
+}
