@@ -180,7 +180,7 @@ function mcapi_menu() {
   $items['transact/log'] = array(
     'title' => 'Record transaction',
     'description' => 'Log a transaction in the database',
-    'route_name' => 'mcapi.transaction_create',
+    'route_name' => 'mcapi.transaction_log',
   );
   return $items;
 }
