@@ -118,7 +118,7 @@ class Worth extends ConfigFieldItemBase {
         break;
 
       case 'decimal':
-        $value = empty($this->value) ? $this->value : $this->value / pow(10, $this->currency->settings['scale']);
+        $value = empty($this->value) ? $this->value : number_format($this->value / pow(10, $this->currency->settings['scale']), $this->currency->settings['scale']);
         break;
     }
 
