@@ -36,6 +36,7 @@ class CurrencyDecimalSingleWidget extends CurrencySingleWidgetBase {
     $element+= array(
       '#type' => 'number',
       '#min' => 0,
+      '#step' => 'any',
       '#size' => 10,
       '#placeholder' => $this->getSetting('placeholder'),
     );
