@@ -52,11 +52,13 @@ class CurrencyTimeSingleWidget extends CurrencySingleWidgetBase {
   }
 
   public function asInteger($value) {
-    $parts = array_reverse(explode(':', $value));
-    $hours = array_pop($parts);
-    $minutes = array_pop($parts);
-    $seconds = array_pop($parts);
+    if ($value || $value === 0) {
+      $parts = array_reverse(explode(':', $value));
+      $hours = array_pop($parts);
+      $minutes = array_pop($parts);
+      $seconds = array_pop($parts);
 
-    return ($hours * 3600) + ($minutes * 60) + $seconds;
+      return ($hours * 3600) + ($minutes * 60) + $seconds;
+    }
   }
 }

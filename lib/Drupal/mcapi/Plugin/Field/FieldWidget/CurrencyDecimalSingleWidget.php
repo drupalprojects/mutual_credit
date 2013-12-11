@@ -52,6 +52,6 @@ class CurrencyDecimalSingleWidget extends CurrencySingleWidgetBase {
    * {@inheritdoc}
    */
   public function asInteger($value) {
-    return empty($value) ? $value : $value * pow(10, $this->getFieldSetting('scale'));
+    return empty($value) ? NULL : $value * pow(10, $this->getFieldSetting('scale'));
   }
 }
