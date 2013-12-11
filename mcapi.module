@@ -1018,7 +1018,7 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
         );
       }
 
-      $element[$currency->widget] = $plugin->formElement($element['#default_value'], 0, $element[$currency->widget], $form, $form_state);
+      $element[$currency->widget] = $plugin->formElement(array(0 => $element['#default_value']), 0, $element[$currency->widget], $form, $form_state);
     }
     else {
       // add the new additional currency.
