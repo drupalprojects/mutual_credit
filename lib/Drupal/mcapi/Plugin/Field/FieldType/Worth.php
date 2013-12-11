@@ -101,4 +101,29 @@ class Worth extends ConfigFieldItemBase {
     return $element;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function getString() {
+    $value = NULL;
+    switch ($this->currency->type) {
+      case 'time':
+        $hours = ($this->value - ($this->value % 3600)) / 3600;
+        $minutes = ($this->value - ($hours * 3600) - ($this->value % 60)) / 60;
+        $seconds = $this->value % 60;
+
+        $value = $hours . ':' . $minutes . ($seconds ? ':' . $seconds : '');
+        break;
+
+      case 'decimal':
+        $value = empty($this->value) ? $this->value : $this->value / pow(10, $this->currency->settings['scale']);
+        break;
+    }
+
+    return $this->currency->prefix . $value . $this->currency->suffix;
+  }
+
+  public function toString() {
+    return $this->getString();
+  }
 }
