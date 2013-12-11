@@ -827,6 +827,7 @@ function mcapi_element_info() {
           drupal_get_path('module', 'mcapi') . '/css/worths-element.css',
         )
       ),
+      '#mixed_mode' => \Drupal::config('mcapi.misc')->get('mix_mode'),
     ),
     //this one is used internally only,
     //although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
@@ -890,7 +891,7 @@ function mcapi_worths_element_process($element, &$form_state) {
     $element['#default_value'] = isset($element['#default_value']) ? (array)$element['#default_value'] : array();
   }
 
-  if (\Drupal::config('mcapi.misc')->get('mix_mode') || $element['#preset']) {
+  if ($element['#mixed_mode'] || $element['#preset']) {
     //construct one widget for each default, each with its own currcode
     foreach ($currencies as $currcode => $name) {
       $element[$currcode]['#title'] = $name;
