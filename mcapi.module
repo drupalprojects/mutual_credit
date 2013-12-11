@@ -809,43 +809,43 @@ function trigger_transaction_undo($serial) {
  */
 function mcapi_element_info() {
   return array(
-    //this is used by the field API for mixed transaction forms
+    // this is used by the field API for mixed transaction forms
     'worths' => array(
       '#title' => t('Worth'),
       '#input' => TRUE,
       '#title_display' => 'before',
-      //'#element_validate' => array('mcapi_worths_element_validate'),
+      '#element_validate' => array('mcapi_worths_element_validate'),
       '#theme_wrappers' => array('form_element'),
       '#process' => array('mcapi_worths_element_process'),
       '#tree' => TRUE,
-      //'#value_callback' => 'mcapi_form_type_worths_value',
-      //custom properties, used for configuration
-      '#preset' => FALSE,//ensures all currencies are showing
-      '#calc' => FALSE,//allow a formula
       '#attached' => array(
         'css' => array(
           drupal_get_path('module', 'mcapi') . '/css/worths-element.css',
         )
       ),
+      // custom properties, used for configuration
+      '#currcodes' => array_keys(mcapi_get_available_currencies()),
       '#mixed_mode' => \Drupal::config('mcapi.misc')->get('mix_mode'),
+      '#preset' => FALSE, //ensures all currencies are showing
+      '#calc' => FALSE, //allow a formula
     ),
-    //this one is used internally only,
-    //although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
+    // this one is used internally only,
+    // although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
     'worth' => array(
       '#input' => TRUE,
       '#title_display' => 'attribute',
       '#process' => array('mcapi_worth_element_process'),
       '#value_callback' => 'mcapi_form_type_worth_value',
       '#element_validate' => array('mcapi_worth_element_validate'),
-      //'#theme' => 'worth_element',
       '#theme_wrappers' => array('form_element'),
-      //custom properties, used for configuration
-      '#calc' => FALSE,
       '#attached' => array(
         'css' => array(
           drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
         )
       ),
+      // custom properties, used for configuration
+      '#currcodes' => array_keys(mcapi_get_available_currencies()),
+      '#calc' => FALSE,
     ),
     'mcapi_states' => array(
       '#input' => TRUE,
@@ -921,6 +921,43 @@ function mcapi_worths_element_process($element, &$form_state) {
   return $element;
 }
 
+function mcapi_worths_element_validate($element, &$form_state) {
+  if (isset($element['#required']) && $element['#required']) {
+    $value_entered = FALSE;
+
+    $currencies = $element['#currcodes'];
+    if (!isset($element['#mixed_mode']) || !$element['#mixed_mode']) {
+      $currencies = array(reset($currencies));
+    }
+
+    foreach ($currencies as $currcode) {
+      $newcode = empty($element[$currcode]['currcode']['#value']) ? $element[$currcode]['currcode']['#default_value'] : $element[$currcode]['currcode']['#value'];
+      $currency = entity_load('mcapi_currency', $newcode);
+
+      if ($element[$currcode][$currency->widget]['#value'] || $element[$currcode][$currency->widget]['#value'] === 0) {
+        $value_entered = TRUE;
+        break;
+      }
+    }
+
+    if (!$value_entered) {
+      $elements['#required_but_empty'] = TRUE;
+      if (isset($elements['#required_error'])) {
+        \Drupal::formBuilder()->setError($element, $elements['#required_error']);
+      }
+      // A #title is not mandatory for form elements, but without it we cannot
+      // set a form error message. So when a visible title is undesirable,
+      // form constructors are encouraged to set #title anyway, and then set
+      // #title_display to 'invisible'. This improves accessibility.
+      elseif (isset($elements['#title'])) {
+        \Drupal::formBuilder()->setError($element, t('!name field is required.', array('!name' => $elements['#title'])));
+      }
+      else {
+        \Drupal::formBuilder()->setError($element);
+      }
+    }
+  }
+}
 
 function mcapi_worth_element_process($element, &$form_state) {
   $typedDataManager = \Drupal::typedData();
