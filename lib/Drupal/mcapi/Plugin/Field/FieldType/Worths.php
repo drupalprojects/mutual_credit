@@ -52,12 +52,10 @@ class Worths extends ConfigFieldItemBase {
           'type' => 'varchar',
           'length' => 32,
         ),
-        'quantity' => array(
-          'description' => 'Price',
-          'type' => 'numeric',
+        'value' => array(
+          'description' => 'Value',
+          'type' => 'integer',
           'size' => 'normal',
-          'precision' => 8,
-          'scale' => 2,
           'not null' => TRUE,
           'default' => 0
         )
