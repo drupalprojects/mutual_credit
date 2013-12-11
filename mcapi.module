@@ -958,7 +958,7 @@ function mcapi_worths_element_validate($element, &$form_state) {
   }
 }
 
-function mcapi_worth_element_process($element, &$form_state) {
+function mcapi_worth_element_process($element, &$form_state, $form) {
   $typedDataManager = \Drupal::typedData();
   if (!is_object($element['#default_value'])) {
     $element['#default_value'] = $typedDataManager->create(array('type' => 'field_item:worth', 'list' => TRUE), $element['#default_value']);
