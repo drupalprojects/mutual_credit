@@ -26,19 +26,85 @@ use Drupal\Core\Annotation\Translation;
 class Worths extends ConfigFieldItemBase {
 
   /**
+   * Implements \Drupal\Core\TypedData\ComplexDataInterface::get().
+   */
+  public function get($property_name) {
+    if (entity_load('mcapi_currency', $property_name)) {
+      if (!isset($this->properties[$property_name])) {
+        $value = array(
+          'currcode' => $property_name,
+        );
+        if (isset($this->values[$property_name])) {
+          $value = $this->values[$property_name];
+        }
+        // If the property is unknown, this will throw an exception.
+        $this->properties[$property_name] = \Drupal::typedData()->getPropertyInstance($this, $property_name, $value);
+      }
+    }
+    return $this->properties[$property_name];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __get($name) {
+    return $this->get($name);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setValue($values, $notify = TRUE) {
+    if (isset($values) && !is_array($values)) {
+      throw new \InvalidArgumentException("Invalid values given. Values must be represented as an associative array.");
+    }
+    $this->values = $values;
+    $properties = $this->getProperties();
+    // Update any existing property objects.
+    foreach ($properties as $name => $property) {
+      $value = NULL;
+      if (isset($values[$name])) {
+        $value = $values[$name];
+      }
+      $property->setValue($value, FALSE);
+      unset($this->values[$name]);
+    }
+    // Notify the parent of any changes.
+    if ($notify && isset($this->parent)) {
+      $this->parent->onChange($this->name);
+    }
+  }
+
+  /**
    * Overrides \Drupal\Core\TypedData\ComplexDataInterface::getPropertyDefinitions().
    */
   public function getPropertyDefinitions() {
     $definitions = array();
-    foreach ($this->values as $currcode => $value) {
-      if ($currency = entity_load('mcapi_currency', $currcode)) {
+    foreach ($this->properties as $currcode => $property) {
+      if ($property->value !== NULL && $currency = entity_load('mcapi_currency', $currcode)) {
         $definitions[$currcode] = array(
           'type' => 'field_item:worth',
           'label' => $currency->name,
         );
       }
     }
+
     return $definitions;
+  }
+
+  /**
+   * Implements \Drupal\Core\TypedData\ComplexDataInterface::getPropertyDefinition().
+   */
+  public function getPropertyDefinition($name) {
+    if (entity_load('mcapi_currency', $name)) {
+      return array(
+        'type' => 'field_item:worth',
+        'label' => $currency->name,
+      );
+    }
+    else {
+      return FALSE;
+    }
   }
 
   /**
