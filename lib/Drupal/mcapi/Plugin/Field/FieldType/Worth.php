@@ -110,7 +110,7 @@ class Worth extends ConfigFieldItemBase {
         $minutes = ($this->value - ($hours * 3600) - ($this->value % 60)) / 60;
         $seconds = $this->value % 60;
 
-        $value = $hours . ':' . $minutes . ($seconds ? ':' . $seconds : '');
+        $value = $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ($seconds ? ':' . $seconds : '');
         break;
 
       case 'decimal':
