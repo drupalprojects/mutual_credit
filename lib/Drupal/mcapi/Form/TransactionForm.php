@@ -79,14 +79,13 @@ class TransactionForm extends EntityFormController {
     	'#args' => array('transact'),
       '#default_value' => $transaction->creator->value,
       '#args' => array('transact'),
-      '#required' => TRUE,
+      '#required' => FALSE,//because user_chooser assumes TRUE
       '#weight' => 15,
     );
     $form['created'] = array(
       '#title' => t('Recorded on'),
       '#type' => 'date',
       '#default_value' => $transaction->created->value,
-      '#required' => FALSE,
       '#weight' => 18,
     );
     $form['state'] = array(
@@ -194,7 +193,6 @@ class TransactionForm extends EntityFormController {
    * Returns an array of supported actions for the current entity form.
    */
   protected function actions(array $form, array &$form_state) {
-    //print_r($form_state['errors']);
     if (\Drupal::formBuilder()->getErrors($form_state)) return;
     $actions = array(
       // @todo Rename the action key from submit to save.

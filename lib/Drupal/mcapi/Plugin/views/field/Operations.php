@@ -46,6 +46,7 @@ class Operations extends FieldPluginBase {
   }
 
   function render(ResultRow $values) {
+  	//need to work in the options[separater] somehow
     return transaction_get_links($this->getEntity($values), '', TRUE);
   }
 

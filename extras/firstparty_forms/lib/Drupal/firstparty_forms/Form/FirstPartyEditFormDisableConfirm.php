@@ -2,23 +2,23 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\FirstPartyEditFormEnableConfirm.
+ * Contains \Drupal\firstparty_forms\Form\FirstPartyEditFormDisableConfirm.
  */
 
-namespace Drupal\mcapi\Form;
+namespace Drupal\firstparty_forms\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 
 /**
  * Builds the form to delete a contact category.
  */
-class FirstPartyEditFormEnableConfirm extends EntityConfirmFormBase {
+class FirstPartyEditFormDisableConfirm extends EntityConfirmFormBase {
 
   /**
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return t('Are you sure you want to enable %name?', array('%name' => $this->entity->label()));
+    return t('Are you sure you want to disable %name?', array('%name' => $this->entity->label()));
   }
 
   /**
@@ -34,16 +34,16 @@ class FirstPartyEditFormEnableConfirm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getConfirmText() {
-    return t('Enable');
+    return t('Disable');
   }
 
   /**
    * {@inheritdoc}
    */
   public function submit(array $form, array &$form_state) {
-    $this->entity->status = 1;
+    $this->entity->status = 0;
     $this->entity->save();
-    drupal_set_message(t('"%label" has been enabled.', array('%label' => $this->entity->label())));
+    drupal_set_message(t('"%label" has been disabled.', array('%label' => $this->entity->label())));
     $form_state['redirect'] = 'admin/accounting/workflow/forms';
   }
 

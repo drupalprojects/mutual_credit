@@ -98,7 +98,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       ->execute();
     $query = $this->database->insert('mcapi_transactions_worths')
       ->fields(array('xid', 'currcode', 'value'));
-    foreach ($transaction->worths[0] as $currcode => $worth) {
+    foreach ($transaction->worths[0] as $worth) {
       if (!$worth->value) {
         continue;
       };
@@ -125,31 +125,36 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       return;
     };
     $query = $this->database->insert('mcapi_transactions_index')
-      ->fields(array('xid', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created'));
-    foreach ($transaction->worths[0] as $currcode => $worth) {
+      ->fields(array('xid', 'serial', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
+
+    foreach ($transaction->worths[0] as $worth) {
       $query->values(array(
         'xid' => $transaction->id(),
+        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
         'currcode' => $worth->currcode,
-        'volume' => $worth->value+0,
+        'volume' => $worth->value,
         'incoming' => 0,
-        'outgoing' => $worth->value+0,
-        'diff' => -$worth->value+0,
+        'outgoing' => $worth->value,
+        'diff' => -$worth->value,
         'type' => $transaction->type->value,
-        'created' => $transaction->created->value
+        'created' => $transaction->created->value,
+      	'child' => !$transaction->parent->value
       ));
       $query->values(array(
         'xid' => $transaction->id(),
+        'serial' => $transaction->serial->value,
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
         'currcode' => $worth->currcode,
-        'volume' => $worth->value+0,
-        'incoming' => $worth->value+0,
+        'volume' => $worth->value,
+        'incoming' => $worth->value,
         'outgoing' => 0,
-        'diff' => $worth->value+0,
+        'diff' => $worth->value,
         'type' => $transaction->type->value,
-        'created' => $transaction->created->value
+        'created' => $transaction->created->value,
+      	'child' => !$transaction->parent->value
       ));
     }
     $query->execute();
@@ -159,6 +164,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     db_truncate('mcapi_transactions_index')->execute();
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
+    		t.serial,
         t.payer AS uid1,
         t.payee AS uid2,
         t.state,
@@ -168,13 +174,15 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         0 AS incoming,
         w.value AS outgoing,
         - w.value AS diff,
-        w.value AS volume
+        w.value AS volume,
+    		t.parent as child
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
       WHERE state > 0) "
     );
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
+    		t.serial,
         t.payee AS uid1,
         t.payer AS uid2,
         t.state,
@@ -184,7 +192,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         w.value AS incoming,
         0 AS outgoing,
         w.value AS diff,
-        w.value AS volume
+        w.value AS volume,
+    		t.parent as child
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
       WHERE state > 0) "
@@ -197,6 +206,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     if (db_query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
       $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
       $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
+      debug("$volume_index == $volume");
       if ($volume_index == $volume) return TRUE;
     }
     return FALSE;

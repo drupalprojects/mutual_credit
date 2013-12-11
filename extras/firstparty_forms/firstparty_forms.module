@@ -1,0 +1,45 @@
+<?php 
+
+function firstparty_forms_theme() {
+  return array(
+    '1stpartyform'=> array(
+      'function' => 'theme_1stpartyform',//no template is possible here
+      'render element' => 'element',
+      //'file' => 'mcapi.inc'
+    ),
+  );
+
+}
+
+function firstparty_forms_entity_info_alter(&$data) {
+  $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\mcapi\Form\FirstPartyTransactionForm';
+}
+
+
+function theme_1stpartyform($vars) {
+	$form = $vars['element'];
+	$tokens = array();
+	foreach ($form['#twig_tokens'] as $fieldname) {;
+		if ($form[$fieldname]['#type'] != 'value') {
+     	unset($form[$fieldname]['#theme_wrappers']);
+      $tokens[$fieldname] = drupal_render($form[$fieldname]);
+		}
+	}
+  //add the buttons if they weren't added already
+	if (strpos($form['#twig'], '{{ actions }}') === FALSE) $form['#twig'] .= "\n{{ actions }}";
+	//convert linebreaks
+	$template = _filter_autop($form['#twig']);
+
+	//spoofing twig in order to pass in a template string instead of a filename
+	//this was much too hard!
+	//this is a bogus name of the nearest file, to keep twig happy
+  $name = 'modules/mutual_credit/templates/certificate.html.twig';
+	$renderer = drupal_container()->get('twig');
+	$cls = $renderer->getTemplateClass($name, NULL);
+	$compiled_source = $renderer->compileSource($template, $name);
+	eval('?' . '>' . $compiled_source);
+  $twig = new $cls($renderer);
+
+	return $twig->render($tokens);
+
+}

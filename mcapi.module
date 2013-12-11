@@ -561,8 +561,14 @@ function template_preprocess_certificate(&$vars) {
   );
   $vars['payer'] = drupal_render($payer);
   $vars['payee'] = drupal_render($payee);
-  //TODO not sure how to get a render array for worths
-  $vars['worths'] = 'WORTHS NOT RENDERED YET';
+
+  $vars['worths'] = '';
+
+  foreach ($transaction->worths[0] as $worth) {
+    //TODO not sure how to get a render array for worths
+    $vars['worths'] .= $worth->getString();
+  }
+
   $vars['state'] = $transaction->state->value;
   $vars['date'] = format_date($transaction->created->value, 'medium');
   $vars['type'] = $transaction->type->value;
@@ -617,6 +623,8 @@ function mcapi_field_extra_fields() {
 }
 
 //return a currency
+//almost always you would call entity_load directly!
+//used my machine_name_process
 function mcapi_currency_load($currcode) {
   return entity_load('mcapi_currency', $currcode);
 }
@@ -1104,5 +1112,3 @@ function mcapi_toolbar() {
     drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
   }
 }
-
-

@@ -56,16 +56,15 @@ function mcapi_mass_pay($form, &$form_state, $vector) {
         '#weight' => 2
       )+ $$payer;
     }
-    $form['mail'] = mcapi_mail_config_fieldset('mcapi_accounting_masspay', array('transactions'), FALSE, 21);
-    $form['mail']['#title'] = $payer == 'one' ? t('Mail all payees (optional)') : t('Mail all payers (optional)');
-    unset($form['mail']['cc']);
-    $form['mail']['#description'] = t('Do not use payer and payee tokens because all will receive the same mail.');
+    //TODO
+    //Some way to optionally send mail
+/*    $form['mail']['#description'] = t('Do not use payer and payee tokens because all will receive the same mail.');
     $form['mail']['token_tree'] = array(
       '#theme' => 'token_tree',
       '#token_types' => array('transaction'),
       '#global_types' => FALSE,
       '#weight' => 3,
-    );
+    );*/
   }
   else {
     $sentence = str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template')));

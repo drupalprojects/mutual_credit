@@ -36,7 +36,7 @@ class FirstPartyEditFormController extends EntityFormController {
     		'exists' => 'mcapi_currency_load',
     		'source' => array('title'),
     	),
-//    	'#maxlength' => 12,
+    	'#maxlength' => 12,
     	'#disabled' => !$mcapiform->isNew(),
     );
 
@@ -99,6 +99,7 @@ class FirstPartyEditFormController extends EntityFormController {
       '#type' => 'details',
       '#group' => 'steps',
     	'preset' => array(
+
       	'#title' => t('Preset field to '),
 				'#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
   			'#type' => $mcapiform->direction['widget'],
@@ -118,14 +119,15 @@ class FirstPartyEditFormController extends EntityFormController {
 	        'radios' => t('Radio buttons')
 	      ),
 	      '#default_value' => $mcapiform->direction['widget'],
+    		'#required' => TRUE,
 	      '#weight' => 1,
-    		'#required' => TRUE
 	    ),
 	    'incoming' => array(
 	      '#title' => t("@label option label", array('@label' => t('Incoming'))),
 	      '#type' => 'textfield',
 	      '#default_value' => $mcapiform->direction['incoming'],
 	    	'#placeholder' => t('Pay'),
+    		'#required' => TRUE,
 	      '#weight' => 2
 	    ),
 	    'outgoing' => array(
@@ -133,6 +135,7 @@ class FirstPartyEditFormController extends EntityFormController {
 	      '#type' => 'textfield',
 	      '#default_value' => $mcapiform->direction['outgoing'],
 	    	'#placeholder' => t('Request'),
+    		'#required' => TRUE,
 	      '#weight' => 3
 	    ),
     	'#weight' => 3
@@ -167,19 +170,12 @@ class FirstPartyEditFormController extends EntityFormController {
 	      '#default_value' => $mcapiform->description['preset'],
 	      '#required' => FALSE,
       ),
-    	'#weight' => 5
-    );
-    //TODO this might only work if the calendar widget is available
-    $form['created']= array(
-    	'#title' => t('Date field', array('@fieldname' => t('Date'))),
-    	'#description' => t('Backdating transactions'),
-    	'#type' => 'details',
-    	'#group' => 'steps',
-    	'show' => array(
-    		'#title' => t('Show date widget'),
-    		'#type' => 'checkbox',
-	      '#default_value' => $mcapiform->created['show'],
+    	'placeholder' => array(
+    		'#title' => t('Placeholder text'),
+    		'#type' => 'textfield',
+	      '#default_value' => $mcapiform->description['placeholder'],
 	      '#required' => FALSE,
+    		'#attributes' => array('style' => 'color:#999')
       ),
     	'#weight' => 5
     );
@@ -188,12 +184,12 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#title' => t('Step 1'),
     	'#type' => 'details',
     	'#group' => 'steps',
-    	'template1' => array(
+    	'twig1' => array(
     		'#title' => t('Main form'),
     		'#description' => t('Use the tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
     		'#type' => 'textarea',
     		'#rows' => 6,
-    		'#default_value' => $mcapiform->step1['template1'],
+    		'#default_value' => $mcapiform->step1['twig1'],
     		'#weight' => 1,
     		'#required' => TRUE
     	),
@@ -231,12 +227,12 @@ class FirstPartyEditFormController extends EntityFormController {
  				'#default_value' => $mcapiform->step2['format2'],
  				'#weight' => 0,
    		),
-    	'template2' => array(
+    	'twig2' => array(
     		'#title' => t('Main form'),
     		'#description' => t('Use the tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
     		'#type' => 'textarea',
     		'#rows' => 6,
-    		'#default_value' => $mcapiform->step2['template2'],
+    		'#default_value' => $mcapiform->step2['twig2'],
         '#states' => array(
     			'visible' => array(
     				':input[name="format2"]' => array('value' => 'custom'),

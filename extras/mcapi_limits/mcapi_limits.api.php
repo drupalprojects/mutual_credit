@@ -35,7 +35,7 @@ function my_callback_form($currency, array $defaults) {
   $form = array(
     '#title' => 'Age beyond which credit is not granted',
     '#type' => 'textfield',
-    '#element_validate' => array('element_validate_integer_positive')
+    '#element_validate' => array('element_validate_integer_positive'),
     '#default_value' => $defaults
   );
   return $form;

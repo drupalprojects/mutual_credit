@@ -29,14 +29,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
     parent::buildContent($transactions, $displays, $view_mode, $langcode);
 
     foreach ($transactions as $transaction->xid => $transaction) {
-      //TODO move this closer to the worths object
-      foreach ($transaction->worths[0] as $currency => $worth) {
-        $transaction->content['worths'][$currency] = array(
-          '#prefix' => $worth->currency->prefix,
-          '#suffix' => $worth->currency->suffix,
-          '#markup' => $worth->quantity,
-        );
-      }
       $tx = array(
         '#theme' => array('mcapi_transaction'),
         '#object' => $transaction,

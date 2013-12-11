@@ -83,64 +83,37 @@ function mcapi_drush_command() {
 
 
 function drush_mcapi_wipeslate() {
-  if (variable_get('mcapi_controller', 'mcapi') != 'mcapi') {
-    drush_print(dt('Purging only supported with default transaction engine.'));
-    return;
-  }
-  if (module_exists('mcapi_signatures')) {
-    db_truncate("mcapi_signatures")->execute();
-  }
-  //how to do "are you sure?" messages in drush!
-  //this should be protected with the huser 1 password
-  drush_print(dt("@purged transactions purged", array(
-    '@purged' => db_query("SELECT count(serial) FROM {mcapi_transactions}")->fetchField(),
-  )));
+	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+	$serials = $storage->filter(array());
+	foreach ($serials as $serial) {
+		transaction_load($serial)->delete(MCAPI_UNDO_STATE_DELETE);
+	}
 
-  foreach (field_info_instances('transaction','transaction') as $instance) {
-    db_delete('field_data_'.$instance['field_name'])->condition('entity_type', 'transaction')->execute();
-    db_delete('field_revision_'.$instance['field_name'])->condition('entity_type', 'transaction')->execute();
-  }
-  db_truncate('mcapi_transactions')->execute();
+  //how to do "are you sure?" messages in drush!
+  //this should be protected with the user 1 password
+  drush_print(dt("@purged transactions purged", array('@purged' => count($serials))));
+
   field_cache_clear();
   \Drupal::config('mcapi.misc')->set('change_undo_mode', TRUE);
 }
 
 function drush_mcapi_delete() {
-  hard_delete(func_get_args());
+	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+	foreach(func_get_args() as $serial) {
+    transaction_load($serial)->delete();
+	}
   drush_print(dt('Deleted'));
 }
 
 function drush_mcapi_purge() {
-  $serials = db_select('mcapi_transactions', 't')
-    ->fields('t', array('serial'))
-    ->condition(db_or()
-      ->condition('state', TRANSACTION_STATE_UNDONE)
-    )
-  ->execute()->fetchCol();
-  hard_delete($serials);
+	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+	$serials = $storage->filter(array('state' => TRANSACTION_STATE_UNDONE));
+	transaction_load($serial)->delete(MCAPI_UNDO_STATE_DELETE);
   \Drupal::config('mcapi.misc')->set('change_undo_mode', TRUE);
 }
 
-function drush_mcapi_nodedel() {
-  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'exchange'")->fetchCol();
-  $nids = implode(', ', $nodes);
-  db_query("DELETE FROM {node} WHERE nid in ($nids)");
-  db_query("DELETE FROM {node_revision} WHERE nid in ($nids)");
-  db_query("DELETE FROM {node_access} WHERE nid in ($nids)");
-  db_query("DELETE FROM {node_comment_statistics} WHERE nid in ($nids)");
-  drush_print('Deleted all traces of exchange nodes from Drupal 6.');
-}
-
-function hard_delete($serials) {
-  foreach ($serials as $serial) {
-    $transaction = transaction_load($serial);
-    field_attach_delete('transaction', $transaction);
-    module_invoke_all('entity_delete', $transaction, 'transaction');
-  }
-  entity_get_controller('mcapi_transaction')->delete($serials, TRUE);
-}
-
-
+//TODO
+//rewrite this for D8
 function drush_devel_generate_transactions($num_transactions = 10) {
   //get all the possible variables
   $transact_uids = db_query(
@@ -175,5 +148,6 @@ function drush_devel_generate_transactions($num_transactions = 10) {
     $transaction = transaction_load($serial);
     $renderable = transaction_view($transaction, \Drupal::config('mcapi.misc')->get('sentence_template'));
     drush_print(strip_tags(drupal_render($renderable)));
-   }
+  }
 }
+

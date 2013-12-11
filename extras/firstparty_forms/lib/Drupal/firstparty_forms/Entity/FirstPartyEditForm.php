@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Entity\FirstPartyEditForm.
+ * Contains \Drupal\firstparty_forms\Entity\FirstPartyEditForm.
  */
 
 namespace Drupal\mcapi\Entity;
@@ -89,16 +89,16 @@ class FirstPartyEditForm extends ConfigEntityBase {
     	  'show' => FALSE
       ),
     	'step1' => array(
-        'template1' => 'Partner: [mcapiform:secondperson]
+        'twig1' => 'Partner: [mcapiform:secondperson]
 Direction: [mcapiform:direction]
 [mcapiform:worth]',
     	  'next1' => 'page',
         'button1' => t('Preview'), //each transaction type should have an initial state
     	),
     	'step2' => array(
-    		'format2' => 'certificate',
     		'title2' => t('Are you sure?'),
-    	  'template2' => '',
+    		'format2' => 'certificate',
+    	  'twig2' => '',
     	  'next2' => 'page',
         'button2' => t('Confirm'),
     		'redirect' => ''

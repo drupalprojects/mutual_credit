@@ -10,7 +10,7 @@ class OperationSettingsForm extends ConfigFormBase {
 
 
   public function title() {
-    debug(func_get_args());
+    print_r(func_get_args());
   }
   /**
    * {@inheritdoc}

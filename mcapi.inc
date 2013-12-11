@@ -4,7 +4,6 @@ use Drupal\Component\Utility\NestedArray;
 
 
 
-
 /*
  * menu page callback
  * builds 'are you sure' operations form for both ajax and nojs
@@ -263,40 +262,13 @@ function _transactions_diff($transaction) {
 //for this reason, though it seems inelegant, this function should be called from wherever the transaction is rendered
 //I can't remember the difference. this is called from transaction_preprocess and from the views field
 function mcapi_worth_item_zero_adjustment(&$worth_render_array) {
+	skdjfhk();
   $currencies = currencies_load();
   if ($worth_render_array['#quantity'] == 0) {
     $worth_render_array = array('#markup' => $currencies[$worth_render_array['#currcode']]->display['zero']);
   }
 }
 
-/*
- * Default implementation of theme 'worth_field'
- * Converts the quantity into tokens and replaces them into the currency display format
- * $variables should have keys
- * 'quantity'
- * 'currcode'
- */
-function theme_worth_item(&$variables) {
-  $currency = entity_load('mcapi_currency', $variables['currcode']);
-  list($integer, $cents) = currency_explode($variables['quantity']);
-  switch($currency->display['widget']) {
-    case CURRENCY_WIDGET_SELECT :
-      $subdivision = @$currency->display['divisions_allowed'][intval($cents)];
-      break;
-    case CURRENCY_WIDGET_SINGLEFIELD:
-    case CURRENCY_WIDGET_SELECT:
-      $subdivision = str_pad($cents, 2, STR_PAD_LEFT);
-      break;
-  }
-  //I don't know how to account for different languages in number format
-  $quantity = number_format(floatval($integer));
-  if (isset($subdivision)) {
-    $quantity .= $currency->display['delimiter'] . $subdivision;
-  }
-  $minus = $variables['quantity'] < 0 ? '-' : '';
-  //add the extra space to save writing a multiple rendering function
-  return $minus . str_replace('[quantity]', $quantity, $currency->display['format']) .' ';
-}
 
 /*
  * default theme implementation for callback 'worth_element'

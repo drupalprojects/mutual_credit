@@ -26,7 +26,6 @@ use Drupal\mcapi\TransactionInterface;
  *     "access" = "Drupal\mcapi\TransactionAccessController",
  *     "form" = {
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
- *       "1stparty" = "Drupal\mcapi\Form\FirstPartyTransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm"
  *     },
  *   },
@@ -83,9 +82,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     if ($this->isNew() && !$this->serial->value) {
       $storage_controller->nextSerial($this);//this serial number is not final, or at least not nocked
     }
-    if (empty($this->date)) {
-    	$this->date = REQUEST_TIME;
-    	drupal_set_message('populating date field:'.$this->date);
+    if (empty($this->created->value)) {
+    	$this->created->value = REQUEST_TIME;
+    }
+    if (empty($this->creator->value)) {
+    	$this->creator->value = \Drupal::currentUser()->id();
     }
     //build children if they haven't been built already
     if ($this->isNew() && !$this->parent && empty($this->children)) {
@@ -104,14 +105,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     parent::validate();//the TypedData validator is complaining about something
     $errors = array();
     //check that each trader has permission to use all the currencies
-    foreach (array($this->payer, $this->payee) as $account) {
+    foreach (array($this->payer->entity, $this->payee->entity) as $account) {
+    	//TODO why is $this->payer a list???
+    	//TODO we can debug($account) here but not 2 lines down.
       foreach ($this->worths[0] as $worth) {
-        drupal_set_message("sort out validation when 'worth' is working");continue;
         if (!$worth->currency->access('membership', $account)) {
-          $errors[] = t('!user cannot use !currency', array('!user' => $account->name, '!currency' => $currency->name));
+          $errors[] = t('!user cannot use !currency', array('!user' => $account->name->value, '!currency' => $worth->currency->name));
         }
       }
     }
+    //TODO what kind of exception to throw??
+    //debug($errors, 'Transaction entity validation errors');
     if (count($errors)) throw new Exception(implode(' ', $errors));
 
     //validate hooks should know how to read in the children

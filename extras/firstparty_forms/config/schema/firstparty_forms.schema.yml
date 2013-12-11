@@ -1,0 +1,86 @@
+
+mcapi.1stparty.*
+  type: mapping
+  label: 'Mcapi form configuration'
+  mapping:
+    id:
+      type: string
+      label: 'Mcapiform identifier'
+    title:
+      type: label
+      label: 'Form title'
+    status:
+      type: boolean
+      label: Enabled
+    type:
+      type: string
+      label: 'Transaction type'
+    partner:
+      type: mapping
+      label: 'Settings for partner field'
+      mapping:
+        user_chooser_config:
+          type: string
+          label: 'Users to choose from'
+        preset:
+          type: integer
+          label: 'Preset trading partner'
+    direction:
+      type: mapping
+      label: 'Direction of payment'
+      mapping:
+        preset:
+          type: string
+          label: 'Preset direction'
+    description:
+      type: mapping
+      label: 'Reason for payment'
+      mapping:
+        preset:
+          type: string
+          label: 'Preset description'
+        placeholder:
+          type: string
+          label: 'Placeholder'
+    worths:
+      type: mapping
+      label: 'Quantity of payment'
+      mapping:
+        preset:
+          type: array
+          label: 'Preset quantity'
+    step1:
+      type: mapping
+      label: 'Step 1'
+      mapping:
+        twig1:
+          type: text
+          label: Main form
+        button1:
+          type: text
+          label: Button label
+        next1:
+          type: text
+          label: Button label
+    step2:
+      type: mapping
+      label: 'Step 2'
+      mapping:
+        format2:
+          type: text
+          label: Display format
+        twig2:
+          type: text
+          label: Main form
+        button2:
+          type: text
+          label: Button label
+        next2:
+          type: text
+          label: Outcome
+        redirect:
+          type: text
+          label: Redirect path
+    message:
+      type: text
+      label: Confirmation message

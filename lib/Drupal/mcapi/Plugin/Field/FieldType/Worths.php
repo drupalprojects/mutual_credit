@@ -52,7 +52,7 @@ class Worths extends ConfigFieldItemBase {
           'type' => 'varchar',
           'length' => 32,
         ),
-        'quantity' => array(
+        'value' => array(
           'description' => 'Price',
           'type' => 'numeric',
           'size' => 'normal',
@@ -63,6 +63,10 @@ class Worths extends ConfigFieldItemBase {
         )
       ),
     );
+  }
+
+  function ________getString() {
+  	die('Worths getString');
   }
 
 }

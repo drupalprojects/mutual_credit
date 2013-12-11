@@ -105,6 +105,7 @@ class Worth extends ConfigFieldItemBase {
    * {@inheritdoc}
    */
   public function getString() {
+  	die('Worth getString');
     $value = NULL;
     switch ($this->currency->type) {
       case 'time':
@@ -119,11 +120,11 @@ class Worth extends ConfigFieldItemBase {
         $value = empty($this->value) ? $this->value : $this->value / pow(10, $this->currency->settings['scale']);
         break;
     }
-
+    die ('goodbye');
     return $this->currency->prefix . $value . $this->currency->suffix;
   }
 
-  public function toString() {
+  public function __toString() {
     return $this->getString();
   }
 }
