@@ -47,7 +47,7 @@ class CurrencyTimeSingleWidget extends CurrencySingleWidgetBase {
       $minutes = ($value - ($hours * 3600) - ($value % 60)) / 60;
       $seconds = $value % 60;
 
-      return $hours . ':' . $minutes . ($seconds ? ':' . $seconds : '');
+      return $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ($seconds ? ':' . $seconds : '');
     }
   }
 
