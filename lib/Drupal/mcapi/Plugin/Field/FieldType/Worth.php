@@ -103,6 +103,10 @@ class Worth extends ConfigFieldItemBase {
    * {@inheritdoc}
    */
   public function getString() {
+    if ($this->value === NULL) {
+      return;
+    }
+
     $value = NULL;
     switch ($this->currency->type) {
       case 'time':
