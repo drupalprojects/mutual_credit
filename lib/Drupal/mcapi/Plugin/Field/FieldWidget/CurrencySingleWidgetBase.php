@@ -61,5 +61,5 @@ abstract class CurrencySingleWidgetBase extends WidgetBase {
     return $element;
   }
 
-  abstract public function renderValue(int $value);
+  abstract public function renderValue($value);
 }

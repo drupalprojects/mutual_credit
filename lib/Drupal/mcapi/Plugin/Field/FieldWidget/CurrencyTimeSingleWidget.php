@@ -41,7 +41,7 @@ class CurrencyTimeSingleWidget extends CurrencySingleWidgetBase {
     return $element;
   }
 
-  public function renderValue(int $value) {
+  public function renderValue($value) {
     if (!empty($value)) {
       $hours = ($value - ($value % 3600)) / 3600;
       $minutes = ($value - ($hours * 3600) - ($value % 60)) / 60;
