@@ -15,7 +15,7 @@ description:
   placeholder: ''
 worths: {  }
 step1:
-  twig1: "Pay: [mcapiform:secondperson]\r\n[mcapiform:worth]\r\nfor [mcapiform:description]"
+  twig1: "Pay: {{ partner }}\n{{ worth }}\nfor {{ description }}"
   button1: Preview
   next1: page
 step2:

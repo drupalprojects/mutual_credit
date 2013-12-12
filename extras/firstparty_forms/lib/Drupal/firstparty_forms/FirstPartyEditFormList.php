@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Definition of Drupal\mcapi\FirstPartyEditFormList.
+ * Definition of Drupal\firstparty_forms\FirstPartyEditFormList.
  */
 
-namespace Drupal\mcapi;
+namespace Drupal\firstparty_forms;
 
 use Drupal\Core\Config\Entity\ConfigEntityListController;
 use Drupal\Core\Entity\EntityInterface;

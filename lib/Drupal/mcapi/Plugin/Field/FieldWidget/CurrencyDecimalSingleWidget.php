@@ -36,6 +36,7 @@ class CurrencyDecimalSingleWidget extends CurrencySingleWidgetBase {
     $element+= array(
       '#type' => 'number',
       '#min' => 0,
+      '#step' => 'any',
       '#size' => 10,
       '#placeholder' => $this->getSetting('placeholder'),
     );
@@ -43,14 +44,14 @@ class CurrencyDecimalSingleWidget extends CurrencySingleWidgetBase {
     return $element;
   }
 
-  public function renderValue(int $value) {
-    return empty($value) ? $value : $value / pow(10, $this->getFieldSetting('scale'));
+  public function renderValue($value) {
+    return empty($value) ? $value : number_format($value / pow(10, $this->getFieldSetting('scale')), $this->getFieldSetting('scale'));
   }
 
   /**
    * {@inheritdoc}
    */
   public function asInteger($value) {
-    return empty($value) ? $value : $value * pow(10, $this->getFieldSetting('scale'));
+    return empty($value) ? NULL : $value * pow(10, $this->getFieldSetting('scale'));
   }
 }

@@ -41,22 +41,24 @@ class CurrencyTimeSingleWidget extends CurrencySingleWidgetBase {
     return $element;
   }
 
-  public function renderValue(int $value) {
+  public function renderValue($value) {
     if (!empty($value)) {
       $hours = ($value - ($value % 3600)) / 3600;
       $minutes = ($value - ($hours * 3600) - ($value % 60)) / 60;
       $seconds = $value % 60;
 
-      return $hours . ':' . $minutes . ($seconds ? ':' . $seconds : '');
+      return $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ($seconds ? ':' . $seconds : '');
     }
   }
 
   public function asInteger($value) {
-    $parts = array_reverse(explode(':', $value));
-    $hours = array_pop($parts);
-    $minutes = array_pop($parts);
-    $seconds = array_pop($parts);
+    if ($value || $value === 0) {
+      $parts = array_reverse(explode(':', $value));
+      $hours = array_pop($parts);
+      $minutes = array_pop($parts);
+      $seconds = array_pop($parts);
 
-    return ($hours * 3600) + ($minutes * 60) + $seconds;
+      return ($hours * 3600) + ($minutes * 60) + $seconds;
+    }
   }
 }

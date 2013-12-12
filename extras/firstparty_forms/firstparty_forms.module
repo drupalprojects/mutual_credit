@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 function firstparty_forms_theme() {
   return array(
@@ -11,8 +11,10 @@ function firstparty_forms_theme() {
 
 }
 
+//see https://drupal.org/node/1800686 on how to make dynamic routes
+
 function firstparty_forms_entity_info_alter(&$data) {
-  $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\mcapi\Form\FirstPartyTransactionForm';
+  $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\firstparty_forms\Form\FirstPartyTransactionForm';
 }
 
 

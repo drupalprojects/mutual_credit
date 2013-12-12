@@ -70,12 +70,10 @@ class Worth extends ConfigFieldItemBase {
           'type' => 'varchar',
           'length' => 32,
         ),
-        'quantity' => array(
-          'description' => 'Price',
-          'type' => 'numeric',
+        'value' => array(
+          'description' => 'Value',
+          'type' => 'integer',
           'size' => 'normal',
-          'precision' => 8,
-          'scale' => 2,
           'not null' => TRUE,
           'default' => 0
         )
@@ -105,7 +103,10 @@ class Worth extends ConfigFieldItemBase {
    * {@inheritdoc}
    */
   public function getString() {
-  	die('Worth getString');
+    if ($this->value === NULL) {
+      return;
+    }
+
     $value = NULL;
     switch ($this->currency->type) {
       case 'time':
@@ -113,11 +114,11 @@ class Worth extends ConfigFieldItemBase {
         $minutes = ($this->value - ($hours * 3600) - ($this->value % 60)) / 60;
         $seconds = $this->value % 60;
 
-        $value = $hours . ':' . $minutes . ($seconds ? ':' . $seconds : '');
+        $value = $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ($seconds ? ':' . $seconds : '');
         break;
 
       case 'decimal':
-        $value = empty($this->value) ? $this->value : $this->value / pow(10, $this->currency->settings['scale']);
+        $value = empty($this->value) ? $this->value : number_format($this->value / pow(10, $this->currency->settings['scale']), $this->currency->settings['scale']);
         break;
     }
     die ('goodbye');

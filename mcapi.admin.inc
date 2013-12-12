@@ -1,6 +1,6 @@
 <?php
 
-use Drupal\Core\Template\Attribute;
+
 
 /*
  * Settings form callback for action mcapi_transaction_entity_uid
@@ -220,85 +220,6 @@ function validate_mcapi_configure_worth_formula(&$element, $form_state) {
   }
 }
 
-
-//caches and returns and ALL the transaction operations
-function _transaction_operations() {
-  $operations = array();
-  foreach (module_implements('transaction_operations') as $module) {
-    $ops = array();
-    $function = $module .'_transaction_operations';
-    $ops = $function();
-    foreach ($ops as $op => &$info) {
-      $info += array(
-        'access form' => 'operations_config_default_access',
-        'op' => $op,
-        'module' => $module,
-        'mail' => FALSE
-      );
-      mcapi_operation_include($info);
-      $required = array('submit callback', 'access callback', 'form callback');
-      foreach ($required as $propname) {
-        if (array_key_exists($propname, $info) && !is_bool($info[$propname]) && !function_exists($info[$propname])) {
-          throw new Exception("Missing function or failed include in operation $op: '$propname' ".print_r($info, 1));
-        }
-      }
-    }
-    $operations += $ops;
-  }
-  uasort($operations, 'drupal_sort_weight');
-  //now order the ops by weight
-  drupal_alter('transaction_operations', $operations);
-  cache()->set('transaction_operations', $operations);
-  return $operations;
-}
-
-/*
- * implements hook_transaction_operations().
- * returns an array of operation infos keyed by the operation key
- * see transaction.api.php for more info
- *
- * Each op will have a MENU_LOCAL_ACTION at transaction/%serial/$op
- * note that filepath mcapi.inc is not needed because that file is included automatically
- */
-function mcapi_transaction_operations() {
-  $operations['view'] = array(
-    'title' => 'View',
-    'access callback' => 'mcapi_view_access',
-    'weight' => 0
-  );
-  t('View');
-  $operations['register'] = array(
-    'title' => 'Register (internal use only)',
-    'description' => 'A new transaction was registered',
-  );
-  t('Register (internal use only)');
-  t('A new transaction was registered');
-  $operations['update'] = array(
-    'title' => 'Update (internal use only)',
-    'description' => 'A transaction was changed',
-  );
-  t('Update (internal use only)');
-  t('A transaction was changed');
-
-  $operations['undo'] = array(
-    'title' => 'Undo',
-    'description' => 'Undo a finished transaction, and its dependents',
-    'sure' => \Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_UNDO_STATE_DELETE ?
-      'Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)' :
-      'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
-    'access callback' => 'transaction_op_undo_access',
-    'submit callback' => 'transaction_op_undo',
-//    'form callback' => 'transaction_op_undo_form',
-    'mail' => TRUE,
-    'redirect' => 'user',
-    'weight' => 10,
-  );
-  return $operations;
-  t('Undo');
-  t('Undo a finished transaction, and its dependents');
-  t('Are you sure you want to undo? Only the site administrator will be able to restore this transaction.');
-  t('Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)');
-}
 
 /*
  * user cancel method callback

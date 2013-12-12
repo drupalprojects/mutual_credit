@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\FirstPartyEditFormController.
+ * Definition of Drupal\firstparty_forms\FirstPartyEditFormController.
  * This configuration entity is used for generating transaction forms.
  */
 
-namespace Drupal\mcapi;
+namespace Drupal\firstparty_forms;
 
 use Drupal\Core\Entity\EntityFormController;
 

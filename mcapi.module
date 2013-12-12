@@ -2,6 +2,7 @@
 
 
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Template\Attribute;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Field\FieldItemList;
 use Drupal\mcapi\Plugin\Field\FieldType\Worth;
@@ -152,62 +153,35 @@ function mcapi_help($section, $arg) {
 }
 
 
-/**
- * implements hook_menu()
- */
-function mcapi_menu() {
-  $items['admin/accounting'] = array(
-    'title' => 'Accounting',
-    'description' => "Manage all aspects of your community's money system",
-    'route_name' => 'mcapi.admin',
-    'position' => 'right',
-  );
-  $items['admin/accounting/config'] = array(
-    'title' => 'Settings',
-    'description' => 'Miscellaneous settings which effect the system globally.',
-    'route_name' => 'mcapi.admin_misc',
-    'weight' => 20,
-  );
-  $items['admin/accounting/currencies'] = array(
-    'title' => 'Currencies',
-    'description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.',
-    'route_name' => 'mcapi.admin_currency_list',
-  );
-  $items['admin/accounting/workflow'] = array(
-    'title' => 'Workflow',
-    'description' => 'Configuration around transaction states, types and operations',
-    'weight' => 2,
-    'route_name' => 'mcapi.workflow',
-  );
-  $items['transact/admin'] = array(
-    'title' => 'Record transaction',
-    'description' => 'Log a transaction in the database',
-    'route_name' => 'mcapi.transaction_admin',
-  );
-  return $items;
+function transaction_operations() {
+	//TODO when to use drupal_static and when to use drupal_static_fast?
+	$operations = &drupal_static('__FUNCTION__', array());
+	if (empty($operations)) {
+		$operations = \Drupal::service('plugin.manager.mcapi.transaction_operation')
+		->getDefinitions();
+	}
+	return $operations;
 }
-
 
 function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
   static $operations;
-  if (!$operations) {
-    $operations = transaction_operations(TRUE, FALSE);
-  }
+
   if (empty($transaction->serial->value)) {
+  	debug("no serial number in preview");//just checking this runs in d8
     return array();//this happens on the transaction preview page
   }
   $renderable = array(
     '#theme' => 'links',
     //'#heading' => t('Operations'),
-    '#attributes' => array('class' => array('transaction-operations')),
     '#attached' => array('css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')),
     //Attribute class not found
-    //'#attributes' => new Attribute(array('class' => array('transaction-operations'))),
+    '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
     '#links' => array()
   );
   if ($ajax) $renderable['#attached']['js'][] = 'core/misc/ajax.js';
   $base = 'transaction/'. $transaction->serial->value;//must correspond to router
-  foreach ($operations as $op => $info) {
+
+  foreach (transaction_operations() as $op => $info) {
     if (!$view && $op == 'view') continue;
     if ($transaction->access($op)) {
       $renderable['#links']['op-'.$op] = array(
@@ -478,15 +452,36 @@ function mcapi_mcapi_info_drupal_permissions() {
     )
   );
 }
-
-
-/**
- * implements hook mcapi_permissions().
+/*
+ * get all the transaction access callbacks,
+ * might as well be cached, or put in config??
+ * Multiple callbacks can be selected and access will be granted if any returns TRUE
+ *
  * each callback refers to 2 functions - itself and CALLBACK_views
- * Declare the access callbacks for (transactions in) currencies
  * each callback takes the following args
  * $transaction, $account
- * Multiple callbacks can be selected and access will be granted if any returns TRUE
+ */
+function transaction_access_callbacks() {
+	$callbacks = &drupal_static('transaction_access_callbacks');
+	if (empty($callbacks)) {
+		$callbacks = module_invoke_all('transaction_access_callbacks');
+		foreach (array_keys($callbacks) as $callback) {
+			if (!function_exists($callback)) {
+				unset($callbacks[$callback]);
+				//message for developers doesn't need translating
+				drupal_set_message("{$callback} does not exist", 'warning');
+			}
+			if (module_exists('views') && !function_exists($callback.'_views') ) {
+				unset($callbacks[$callback]);
+				drupal_set_message("{$callback}_views does not exist", 'warning');
+			}
+		}
+	}
+	return $callbacks;
+}
+
+/**
+ * implements hook transaction_access_callbacks().
  */
 function mcapi_transaction_access_callbacks() {
   return array(
@@ -499,6 +494,16 @@ function mcapi_transaction_access_callbacks() {
   );
 }
 
+
+/*
+ * helper function to run through all the access callbacks after the operation's own access callback has done its tests
+*/
+function _transaction_check_access_callbacks($callbacks, $transaction) {
+	foreach ($callbacks as $function) {
+		if ($function($transaction)) return TRUE;
+	}
+	return FALSE;
+}
 
 /*
  * implements hook_user_delete().
@@ -686,69 +691,7 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   }
 }
 
-/**
- * returns some or all of the operations, from hook_transaction_operations
- */
-function transaction_operations($localize = '1', $all = '0') {
-  $all_operations = &drupal_static(__FUNCTION__);
-  static $preloaded = array();
-  $key = strval($localize).strval($all);
-  if (empty($all_operations)) {
-    $data = cache()->get('transaction_operations');
-    if (is_object($data)) {
-      $all_operations = $data->data;
-    }
-    else {
-      module_load_include('admin.inc', 'mcapi');
-      $all_operations = _transaction_operations();
-    }
-  }
-  if (!isset($preloaded[$key])) {
-    $t = 't'; //this prevents potx.module from noticing these non-literal strings
-    //we're caching up to 4 versions of this array based on the incoming args
-    $preloaded[$key] = $all_operations;
-    foreach ($preloaded[$key] as $op => $info) {
-      if (array_key_exists('weight', $info)) {
-        //translate the title and description of all (non-internal) operations
-        if ($localize) {
-          foreach (array('title', 'description') as $prop) {
-            if (array_key_exists($prop, $info)) {
-              $preloaded[$key][$op][$prop] = $t($info[$prop]);
-            }
-          }
-        }
-      }
-      elseif (!$all) {
-        //remove internal operations which have no weight
-        unset($preloaded[$key][$op]);
-      }
-    }
-  }
-  return $preloaded[$key];
-}
 
-/**
- * default form for configuring access to operations, per currency
- */
-function operations_config_default_access($op_info, $currency) {
-  static $access_callbacks;
-  if (!$access_callbacks) {
-    $access_callbacks = module_invoke_all('transaction_access_callbacks');
-  }
-  $element = array(
-    '#title' => $op_info['title'],
-    '#description' => array_key_exists('description', $op_info) ? $op_info['description'] : '',
-    '#type' => 'checkboxes',
-    '#options' => $access_callbacks,
-    '#default_value' => array(),//this will be overwritten
-    '#weight' => @$op_info['weight'],
-  );
-  $callback = $op_info['op'];
-  if (property_exists($currency, 'access_operations') && array_key_exists($callback, $currency->access_operations)) {
-    $element['#default_value'] = $currency->access_operations[$callback];
-  }
-  return $element;
-}
 
 /*
  * implements hook_trigger_info().
@@ -781,26 +724,6 @@ function trigger_transaction_children($transaction) {
   return $children;
 }
 
-/*
- * pull trigger transaction_update().
- * if the $old_state is set, that indicates this was a workflow operation
- */
-function trigger_transaction_update($op, $transaction, $old_state = NULL) {
-  foreach (trigger_get_assigned_actions('transaction_update') as $aid => $info) {
-    actions_do($aid, $transaction, $info, $old_state);
-  }
-}
-
-/*
- * pull trigger transaction_undo().
- * if the $old_state is set, that indicates this was a workflow operation
- */
-function trigger_transaction_undo($serial) {
-  foreach (trigger_get_assigned_actions('transaction_undo') as $aid => $info) {
-    actions_do($aid, transaction_load($serial), $info);
-  }
-}
-
 
 /*
  * Everything below here concerns the 'worth' fieldAPI field and the 2 elements which it uses
@@ -817,43 +740,43 @@ function trigger_transaction_undo($serial) {
  */
 function mcapi_element_info() {
   return array(
-    //this is used by the field API for mixed transaction forms
+    // this is used by the field API for mixed transaction forms
     'worths' => array(
       '#title' => t('Worth'),
       '#input' => TRUE,
       '#title_display' => 'before',
-      //'#element_validate' => array('mcapi_worths_element_validate'),
+      '#element_validate' => array('mcapi_worths_element_validate'),
       '#theme_wrappers' => array('form_element'),
       '#process' => array('mcapi_worths_element_process'),
       '#tree' => TRUE,
-      //'#value_callback' => 'mcapi_form_type_worths_value',
-      //custom properties, used for configuration
-      '#preset' => FALSE,//ensures all currencies are showing
-      '#calc' => FALSE,//allow a formula
       '#attached' => array(
         'css' => array(
           drupal_get_path('module', 'mcapi') . '/css/worths-element.css',
         )
       ),
+      // custom properties, used for configuration
+      '#currcodes' => array_keys(mcapi_get_available_currencies()),
       '#mixed_mode' => \Drupal::config('mcapi.misc')->get('mix_mode'),
+      '#preset' => FALSE, //ensures all currencies are showing
+      '#calc' => FALSE, //allow a formula
     ),
-    //this one is used internally only,
-    //although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
+    // this one is used internally only,
+    // although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
     'worth' => array(
       '#input' => TRUE,
       '#title_display' => 'attribute',
       '#process' => array('mcapi_worth_element_process'),
       '#value_callback' => 'mcapi_form_type_worth_value',
       '#element_validate' => array('mcapi_worth_element_validate'),
-      //'#theme' => 'worth_element',
       '#theme_wrappers' => array('form_element'),
-      //custom properties, used for configuration
-      '#calc' => FALSE,
       '#attached' => array(
         'css' => array(
           drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
         )
       ),
+      // custom properties, used for configuration
+      '#currcodes' => array_keys(mcapi_get_available_currencies()),
+      '#calc' => FALSE,
     ),
     'mcapi_states' => array(
       '#input' => TRUE,
@@ -905,7 +828,6 @@ function mcapi_worths_element_process($element, &$form_state) {
       $element[$currcode]['#title'] = $name;
       $element[$currcode]['#currcodes']= array($currcode);
       $element[$currcode]['#default_value'] = $element['#default_value']->{$currcode};
-      $element[$currcode]['#required'] = $element['#required'];
     }
   }
   else {
@@ -929,8 +851,45 @@ function mcapi_worths_element_process($element, &$form_state) {
   return $element;
 }
 
+function mcapi_worths_element_validate($element, &$form_state) {
+  if ($element['#required']) {
+    $value_entered = FALSE;
 
-function mcapi_worth_element_process($element, &$form_state) {
+    $currencies = $element['#currcodes'];
+    if (!isset($element['#mixed_mode']) || !$element['#mixed_mode']) {
+      $currencies = array(reset($currencies));
+    }
+
+    foreach ($currencies as $currcode) {
+      $newcode = empty($element[$currcode]['currcode']['#value']) ? $element[$currcode]['currcode']['#default_value'] : $element[$currcode]['currcode']['#value'];
+      $currency = entity_load('mcapi_currency', $newcode);
+
+      if ($element[$currcode][$currency->widget]['#value'] || $element[$currcode][$currency->widget]['#value'] === 0) {
+        $value_entered = TRUE;
+        break;
+      }
+    }
+
+    if (!$value_entered) {
+      $elements['#required_but_empty'] = TRUE;
+      if (isset($elements['#required_error'])) {
+        \Drupal::formBuilder()->setError($element, $elements['#required_error']);
+      }
+      // A #title is not mandatory for form elements, but without it we cannot
+      // set a form error message. So when a visible title is undesirable,
+      // form constructors are encouraged to set #title anyway, and then set
+      // #title_display to 'invisible'. This improves accessibility.
+      elseif (isset($elements['#title'])) {
+        \Drupal::formBuilder()->setError($element, t('!name field is required.', array('!name' => $elements['#title'])));
+      }
+      else {
+        \Drupal::formBuilder()->setError($element);
+      }
+    }
+  }
+}
+
+function mcapi_worth_element_process($element, &$form_state, $form) {
   $typedDataManager = \Drupal::typedData();
   if (!is_object($element['#default_value'])) {
     $element['#default_value'] = $typedDataManager->create(array('type' => 'field_item:worth', 'list' => TRUE), $element['#default_value']);
@@ -990,7 +949,7 @@ function mcapi_worth_element_process($element, &$form_state) {
         );
       }
 
-      $element[$currency->widget] = $plugin->formElement($element['#default_value'], 0, $element[$currency->widget], $form, $form_state);
+      $element[$currency->widget] = $plugin->formElement(array(0 => $element['#default_value']), 0, $element[$currency->widget], $form, $form_state);
     }
     else {
       // add the new additional currency.
@@ -1014,11 +973,29 @@ function mcapi_worth_element_validate($element, &$form_state) {
     $value = $plugin->asInteger($value);
   }
 
-  $values = array(
-    'currcode' => $currcode,
-    'value' => $value,
-  );
-  \Drupal::formBuilder()->setValue($element, $values, $form_state);
+  if ($element['#required'] && !$value && $value !== 0) {
+    $elements['#required_but_empty'] = TRUE;
+    if (isset($elements['#required_error'])) {
+      \Drupal::formBuilder()->setError($element, $elements['#required_error']);
+    }
+    // A #title is not mandatory for form elements, but without it we cannot
+    // set a form error message. So when a visible title is undesirable,
+    // form constructors are encouraged to set #title anyway, and then set
+    // #title_display to 'invisible'. This improves accessibility.
+    elseif (isset($elements['#title'])) {
+      \Drupal::formBuilder()->setError($element, t('!name field is required.', array('!name' => $elements['#title'])));
+    }
+    else {
+      \Drupal::formBuilder()->setError($element);
+    }
+  }
+  else {
+    $values = array(
+      'currcode' => $currcode,
+      'value' => $value,
+    );
+    \Drupal::formBuilder()->setValue($element, $values, $form_state);
+  }
 }
 
 function mcapi_process_states($element) {
@@ -1089,22 +1066,6 @@ function mcapi_user_cancel_methods_alter(&$methods) {
     'title' => t('Disable the account and delete its content.'),
     'description' => t('Your account will be blocked and you will no longer be able to log in. All of your content will be deleted.'),
   );
-}
-
-function mcapi_operation_include($info) {
-  $included = &drupal_static(__FUNCTION__, array());
-  if (empty($included)) {
-    //the default access control function _transaction_check_access_callbacks is in mcapi.inc
-    module_load_include('inc', 'mcapi');
-    $included['mcapi.inc'] = 1;
-  }
-  //array_key_exists is faster than in_array()
-  if (array_key_exists('filepath', $info)) {
-    if (!array_key_exists($info['filepath'], $included)) {
-      require_once DRUPAL_ROOT . '/' . drupal_get_path('module', $info['module']) ."/". $info['filepath'];
-      $included[$info['filepath']] = 1;
-    }
-  }
 }
 
 function mcapi_toolbar() {
