@@ -96,7 +96,7 @@ class Worths extends ConfigFieldItemBase {
    * Implements \Drupal\Core\TypedData\ComplexDataInterface::getPropertyDefinition().
    */
   public function getPropertyDefinition($name) {
-    if (entity_load('mcapi_currency', $name)) {
+    if ($currency = entity_load('mcapi_currency', $name)) {
       return array(
         'type' => 'field_item:worth',
         'label' => $currency->name,
