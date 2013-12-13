@@ -59,16 +59,16 @@ class Worths extends ConfigFieldItemBase {
       throw new \InvalidArgumentException("Invalid values given. Values must be represented as an associative array.");
     }
     $this->values = $values;
-    $properties = $this->getProperties();
-    // Update any existing property objects.
-    foreach ($properties as $name => $property) {
-      $value = NULL;
-      if (isset($values[$name])) {
-        $value = $values[$name];
+    $this->properties = array();
+
+    // Add any new currencies
+    foreach ($this->values as $currcode => $value) {
+      if (!isset($this->properties[$currcode]) && ($currency = entity_load('mcapi_currency', $currcode))) {
+        $this->get($currcode)->setValue($value, FALSE);
+        unset($this->values[$currcode]);
       }
-      $property->setValue($value, FALSE);
-      unset($this->values[$name]);
     }
+
     // Notify the parent of any changes.
     if ($notify && isset($this->parent)) {
       $this->parent->onChange($this->name);
@@ -96,7 +96,7 @@ class Worths extends ConfigFieldItemBase {
    * Implements \Drupal\Core\TypedData\ComplexDataInterface::getPropertyDefinition().
    */
   public function getPropertyDefinition($name) {
-    if (entity_load('mcapi_currency', $name)) {
+    if ($currency = entity_load('mcapi_currency', $name)) {
       return array(
         'type' => 'field_item:worth',
         'label' => $currency->name,
