@@ -121,7 +121,6 @@ class Worth extends ConfigFieldItemBase {
         $value = empty($this->value) ? $this->value : number_format($this->value / pow(10, $this->currency->settings['scale']), $this->currency->settings['scale']);
         break;
     }
-    die ('goodbye');
     return $this->currency->prefix . $value . $this->currency->suffix;
   }
 

@@ -390,13 +390,12 @@ class CurrencyFormController extends EntityFormController {
       '#group' => 'additional_settings',
       '#tree' => TRUE,
     );
-    foreach (transaction_operations(TRUE, FALSE) as $op => $op_info) {
+    foreach (transaction_operations(TRUE, FALSE) as $op => $definition) {
       if ($op == 'view') {
         continue;
       }
-      if ($op_info['access form']) {
-        $form['access_operations'][$op] = $op_info['access form']($op_info, $currency);
-      }
+      $form['access_operations'][$op] = $definition->access_form($currency, $op);
+
     }
 
     $form['view_transaction_states'] = array(

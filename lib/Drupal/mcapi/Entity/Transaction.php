@@ -154,21 +154,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'created' => '',
       'type' => 'default',
       'extra' => array(),
-      'state' => TRANSACTION_STATE_FINISHED
+      'state' => TRANSACTION_STATE_FINISHED,
+      'worth' => array(),
     );
 
-    if (empty($values['worth'])) {
-      $values['worth'] = array();
-      foreach (mcapi_get_available_currencies() as $currcode => $name) {
-        $values['worths'][$currcode] = array(
-          'currcode' => $currcode,
-          'value' => NULL,
-        );
-      }
-    }
-    else {
+    if (!empty($values['worth'])) {
       foreach ($values['worth'] as $currcode => $value) {
-        $values['worths'] += array(
+        $values['worths'][$currcode] += array(
           'currcode' => $currcode,
           'value' => NULL,
         );

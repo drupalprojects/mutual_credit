@@ -55,6 +55,42 @@ function mcapi_requirements($phase) {
 }
 
 /**
+ * implements hook_menu()
+ */
+function mcapi_menu() {
+  $items['admin/accounting'] = array(
+    'title' => 'Accounting',
+    'description' => "Manage all aspects of your community's money system",
+    'route_name' => 'mcapi.admin',
+    'position' => 'right',
+  );
+  $items['admin/accounting/config'] = array(
+    'title' => 'Settings',
+    'description' => 'Miscellaneous settings which effect the system globally.',
+    'route_name' => 'mcapi.admin_misc',
+    'weight' => 20,
+  );
+  $items['admin/accounting/currencies'] = array(
+    'title' => 'Currencies',
+    'description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.',
+    'route_name' => 'mcapi.admin_currency_list',
+    );
+  $items['admin/accounting/workflow'] = array(
+    'title' => 'Workflow',
+    'description' => 'Configuration around transaction states, types and operations',
+    'weight' => 2,
+    'route_name' => 'mcapi.workflow',
+  );
+  /*
+  $items['transact/admin'] = array(
+    'title' => 'Record transaction',
+    'description' => 'Log a transaction in the database',
+    'route_name' => 'mcapi.transaction_admin',
+  );
+  */
+  return $items;
+}
+/**
  * Community Accounting API wrapper function, see transaction.api.php
  * update the transaction and notify the rest of the system
  * WARNING updating a transaction will NOT update the child transactions
@@ -157,48 +193,14 @@ function transaction_operations() {
 	//TODO when to use drupal_static and when to use drupal_static_fast?
 	$operations = &drupal_static('__FUNCTION__', array());
 	if (empty($operations)) {
-		$operations = \Drupal::service('plugin.manager.mcapi.transaction_operation')
-		->getDefinitions();
+		$manager = \Drupal::service('plugin.manager.mcapi.transaction_operation');
+		foreach ($manager->getDefinitions() as $op => $info) {
+			$operations[$op] = $manager->createInstance($op);
+		}
 	}
 	return $operations;
 }
 
-function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
-  static $operations;
-
-  if (empty($transaction->serial->value)) {
-  	debug("no serial number in preview");//just checking this runs in d8
-    return array();//this happens on the transaction preview page
-  }
-  $renderable = array(
-    '#theme' => 'links',
-    //'#heading' => t('Operations'),
-    '#attached' => array('css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')),
-    //Attribute class not found
-    '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
-    '#links' => array()
-  );
-  if ($ajax) $renderable['#attached']['js'][] = 'core/misc/ajax.js';
-  $base = 'transaction/'. $transaction->serial->value;//must correspond to router
-
-  foreach (transaction_operations() as $op => $info) {
-    if (!$view && $op == 'view') continue;
-    if ($transaction->access($op)) {
-      $renderable['#links']['op-'.$op] = array(
-        'title' => $info['title'],
-        'href' =>  $base,
-        //'route_name' => 'mcapi.transaction_view',
-        //'route_parameters' => array('mcapi_transaction' => $transaction->serial->value),
-        'attributes' => array('class' => array('use-ajax'))
-      );
-      if ($op != 'view') {
-        $renderable['#links']['op-'.$op]['href'] .= '/'. $op;
-        $renderable['#links']['op-'.$op]['attributes'] = array('data-accepts' => 'application/vnd.drupal-modal');
-      }
-    }
-  }
-  return $renderable;
-}
 
 /**
  * implements hook_permission
@@ -216,15 +218,13 @@ function mcapi_theme($existing, $type, $theme, $path) {
   $items = array(
     'mcapi_transaction' => array(
       'render element' => 'transaction',
-      'template' => 'transaction'
+      'template' => 'transaction',
+      'file' => 'mcapi.inc'
     ),
     'certificate' => array(
+      'render element' => 'transaction',
       'template' => 'certificate',
       'pattern' => 'certificate__',
-      'variables' => array(
-        'object' => NULL,
-        'links' => array(),
-      ),
       'file' => 'mcapi.inc'
     ),
     'worth_element'=> array(
@@ -344,14 +344,13 @@ function mcapi_accounting_validate(array $transactions){
 
 /**
  * implements mcapi hook_info_states().
- * DON"T call this hook directly as the keys will be lost. use mcapi_get_states()
+ * DON"T call this implementation directly as the keys will be lost. use mcapi_get_states()
  */
 function mcapi_mcapi_info_states() {
   $states = array(
     TRANSACTION_STATE_FINISHED => array(
       'name' => t('Cleared'),
       'description' => t('the last state of the workflow'),
-      'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
   );
   $deletemode = \Drupal::config('mcapi.misc')->get('delete_mode');
@@ -361,7 +360,6 @@ function mcapi_mcapi_info_states() {
     $states[TRANSACTION_STATE_UNDONE] = array(
       'name' => t('Undone'),
       'description' => $description,
-      'default_access_callbacks' => array()
     );
   }
   return $states;
@@ -462,8 +460,7 @@ function mcapi_mcapi_info_drupal_permissions() {
  * $transaction, $account
  */
 function transaction_access_callbacks() {
-	$callbacks = &drupal_static('transaction_access_callbacks');
-	if (empty($callbacks)) {
+	if (!$cache = \Drupal::cache()->get('transaction_access_callbacks')) {
 		$callbacks = module_invoke_all('transaction_access_callbacks');
 		foreach (array_keys($callbacks) as $callback) {
 			if (!function_exists($callback)) {
@@ -471,13 +468,22 @@ function transaction_access_callbacks() {
 				//message for developers doesn't need translating
 				drupal_set_message("{$callback} does not exist", 'warning');
 			}
-			if (module_exists('views') && !function_exists($callback.'_views') ) {
-				unset($callbacks[$callback]);
-				drupal_set_message("{$callback}_views does not exist", 'warning');
+			//TODO include the file(s) where these callbacks would live
+			if (module_exists('views')) {
+        module_load_include('views.inc', 'mcapi');
+				if (!function_exists($callback.'_views')) {
+			    unset($callbacks[$callback]);
+          drupal_set_message("{$callback}_views does not exist", 'warning');
+				}
 			}
 		}
-	}
-	return $callbacks;
+    //TODO this cache should be cleared whenever a currency is edited and whenever a user's entitlement to use a currency could be affected
+    \Drupal::cache()->set('transaction_access_callbacks', $callbacks, CacheBackendInterface::CACHE_PERMANENT);
+    return $callbacks;
+  }
+  else {
+    return $cache->data;
+  }
 }
 
 /**
@@ -485,15 +491,14 @@ function transaction_access_callbacks() {
  */
 function mcapi_transaction_access_callbacks() {
   return array(
-    'transaction_access_callback_perm_transact' => t("Users with permission to '@perm'", array('@perm' => t('Transact'))),
-    'transaction_access_callback_perm_manage_all' => t("Users with permission to '@perm'", array('@perm' => t('Manage all transactions'))),
-    'transaction_access_callback_payee' => t('The payee in the transaction'),
-    'transaction_access_callback_payer' => t('The payer in the transaction'),
-    'transaction_access_callback_open' => t('Anyone, even anonymous users'),
-    'transaction_access_callback_creator' => t('The creator of the transaction'),
+    'mcapi_transaction_access_callback_perm_transact' => t("Users with permission to '@perm'", array('@perm' => t('Transact'))),
+    'mcapi_transaction_access_callback_perm_manage_all' => t("Users with permission to '@perm'", array('@perm' => t('Manage all transactions'))),
+    'mcapi_transaction_access_callback_payee' => t('The payee in the transaction'),
+    'mcapi_transaction_access_callback_payer' => t('The payer in the transaction'),
+    'mcapi_transaction_access_callback_open' => t('Anyone, even anonymous users'),
+    'mcapi_transaction_access_callback_creator' => t('The creator of the transaction'),
   );
 }
-
 
 /*
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
@@ -538,77 +543,6 @@ function mcapi_mail($key, &$message, $params) {
 }
 
 
-function template_preprocess_mcapi_transaction(&$vars) {
-  $transaction = &$vars['transaction'];
-  //don't know if this is needed in d8
-  element_set_attributes($transaction, array('class', 'id'));
-
-  $vars['attributes']['class'] = array(
-  	'transaction',
- 		'transaction-'. $transaction['#object']->serial->value,
-  	$transaction['#view_mode'] == 'certificate' ? 'certificate' : 'sentence',
-  	$transaction['#object']->type->value,
-  	'state-'.$transaction['#object']->state->value
-  );
-}
-
-function template_preprocess_certificate(&$vars) {
-  $transaction = &$vars['object'];
-  $payer = array(
-    '#theme' => 'username',
-    '#account' => $transaction->payer->entity,
-    '#link_options' => array('attributes' => array('rel' => 'author')),
-  );
-  $payee = array(
-    '#theme' => 'username',
-    '#account' => $transaction->payee->entity,
-    '#link_options' => array('attributes' => array('rel' => 'author')),
-  );
-  $vars['payer'] = drupal_render($payer);
-  $vars['payee'] = drupal_render($payee);
-
-  $vars['worths'] = '';
-
-  foreach ($transaction->worths[0] as $worth) {
-    //TODO not sure how to get a render array for worths
-    $vars['worths'] .= $worth->getString();
-  }
-
-  $vars['state'] = $transaction->state->value;
-  $vars['date'] = format_date($transaction->created->value, 'medium');
-  $vars['type'] = $transaction->type->value;
-  $vars['description'] = $transaction->description->value;
-
-  if (!property_exists($transaction, 'xid') || empty($transaction->xid->value)) {
-    $vars['attributes']['class'][] = 'preview';
-    foreach (array_keys(field_info_instances('transaction', 'transaction')) as $fieldname) {
-      //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
-      //TODO There's no way this will be necessary in drupal8
-      if (property_exists($transaction, $fieldname)) unset($transaction->$fieldname);
-    }
-  }
-  foreach (element_children($transaction->content) as $field_name) {
-  	$vars['additional'][$field_name] = $transaction->content[$field_name];
-
-  }
-
-
-  foreach (element_children($vars['worths']) as $delta) {
-    //TODO this probably isn't needed in d8
-    mcapi_worth_item_zero_adjustment($vars['worth'][$delta]);
-  }
-  //choose the transaction theme template based on the first currency of the transaction
-  //not sure if this is worth the processing power at the moment
-  $vars['theme_hook_suggestions'][] = 'certificate__' . reset(array_keys($transaction->worths));
-  $vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
-  $vars['children'] = array();
-  if (isset($transaction->children) && !empty($transaction->dependents)) {
-    $vars['children'] = transaction_view(
-      $transaction->dependents,
-      str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
-    );
-  }
-}
 
 /*
  * implements hook_field_extra_fields().
@@ -619,6 +553,11 @@ function mcapi_field_extra_fields() {
   $form = array('payer', 'payee', 'worths', 'description');
 	foreach ($fields as $weight => $fieldname) {
 		$extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
+			'label' => $props[$fieldname]['label'],
+			'description' => $props[$fieldname]['description'],
+			'weight' => $weight,
+		);
+		$extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
 			'label' => $props[$fieldname]['label'],
 			'description' => $props[$fieldname]['description'],
 			'weight' => $weight,
@@ -723,17 +662,6 @@ function trigger_transaction_children($transaction) {
   }
   return $children;
 }
-
-
-/*
- * Everything below here concerns the 'worth' fieldAPI field and the 2 elements which it uses
- * A multiple cardinality field modified to store amounts in each currency
- * It's not a perfect solution
- * The field stores a decimal, so for hour currencies, divisble by 60, it only stores with a granularity of quarters
- * According to the currency settings, the widget can show main_quant and a div_quant for the one value
- *
- */
-
 
 /*
  * implements_hook_element_info().
@@ -1072,4 +1000,63 @@ function mcapi_toolbar() {
   if (\Drupal::currentUser()->hasPermission('manage all transactions')) {
     drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
   }
+}
+
+
+/*
+ * transaction_access callbacks
+*/
+function mcapi_transaction_access_callback_perm_transact() {
+	return user_access('transact');
+}
+function mcapi_transaction_access_callback_perm_manage_all() {
+	return user_access('manage all transactions');
+}
+function mcapi_transaction_access_callback_payee($transaction) {
+	return \Drupal::currentUser()->id() == $transaction->payee->value;
+}
+function mcapi_transaction_access_callback_payer($transaction) {
+	return \Drupal::currentUser()->id() == $transaction->payer->value;
+}
+function mcapi_transaction_access_callback_open() {
+	return TRUE;
+}
+function mcapi_transaction_access_callback_creator($transaction) {
+	return \Drupal::currentUser()->id() == $transaction->creator;
+}
+
+
+function mcapi_transaction_access_callback_perm_transact_views($query, $condition, $state) {
+	$condition->condition(1, user_access('transact'));
+}
+function mcapi_transaction_access_callback_perm_manage_all_views($query, $condition, $state) {
+	$condition->condition(1, user_access('manage all transactions'));
+}
+function mcapi_transaction_access_callback_payee_views($query, $condition, $state) {
+	$condition->condition('mcapi_transactions.payee', \Drupal::currentUser()->id());
+}
+function mcapi_transaction_access_callback_payer_views($query, $condition, $state) {
+	$condition->condition('mcapi_transactions.payer', \Drupal::currentUser()->id());
+}
+function mcapi_transaction_access_callback_open_views($query, $condition, $state) {
+	$condition->condition(1, 1);
+}
+function mcapi_transaction_access_callback_creator_views($query, $condition, $state) {
+	$condition->condition('mcapi_transactions.creator', \Drupal::currentUser()->id());
+}
+
+
+/*
+ * implements hook_config_translation_info().
+ * Introduce dynamic translation tabs for translation of configuration.
+ * //TODO
+ */
+function mcapi_config_translation_info() {
+  //dunno what to return here
+}
+/*
+ * implements hook_config_translation_type_info_alter().
+ */
+function mcapi_config_translation_type_info_alter($info) {
+	debug($info);
 }

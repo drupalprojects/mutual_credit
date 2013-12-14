@@ -22,29 +22,29 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * build a render array for any number of transactions
    * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in transaction_load
    * $transactions an array of transactions, keyed by xid, each one having its children already loaded
-   * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
+   * $view mode, defaults to certificate with the saved transaction sentence, but an arbitrary token string can also be used
    */
-  public function buildContent(array $transactions, array $displays, $view_mode = 'certificate', $langcode = NULL, $suppress_ops = FALSE) {
-    //TODO Gordon for some reason the $transactions haven't got the field API fields loaded
+  public function buildContent(array $transactions, array $displays, $view_mode = 'certificate', $langcode = NULL) {
     parent::buildContent($transactions, $displays, $view_mode, $langcode);
-
+    module_load_include('inc', 'mcapi');
     foreach ($transactions as $transaction->xid => $transaction) {
-      $tx = array(
-        '#theme' => array('mcapi_transaction'),
-        '#object' => $transaction,
+      $renderable = array(
+          '#theme_wrappers' => array('mcapi_transaction'),
+          '#transaction' => $transaction,
+          'links' => transaction_get_links($transaction, 'ajax', FALSE),
       );
       if ($view_mode == 'certificate') {
-        //we will reveal the ajax links only on the certificate
-        $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
-        $tx['#attached']['css'] = array(drupal_get_path('module', 'mcapi') .'/mcapi.css');
-        $tx['certificate'] = array(
-        	'#theme' => 'certificate',
-        	'#object' => clone $transaction,
-        );
-        //because we are passing the $transaction->content down we can remove it
-        $transaction->content = array();
+        $renderable['#theme'] = 'certificate';
+        //css helps rendering the default certificate
+        $renderable['#attached'] = array('css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css'));
       }
-      else { //an arbitrary token string, don't forget there is a token for [transaction:links]
+      else {//assume it is twig
+        $renderable['customtwig'] = array(
+          '#markup' => mcapi_render_twig_transaction($view_mode, $transaction)
+        );
+      }
+      /*
+      else {//tokens are deprecated for now
         $token_service = \Drupal::token();
         global $language;
         $tx['inner']['#markup'] = $token_service->replace(
@@ -53,10 +53,9 @@ class TransactionViewBuilder extends EntityViewBuilder {
           array('language' => $language, 'sanitize' => FALSE)
         );
       }
-      $transaction->content = array_merge($transaction->content, $tx);
+      */
+      $transaction->content = $renderable;
     }
-    $type = 'transaction';//must be sent as a reference
-    drupal_alter(array('transaction_view', 'entity_view'), $transaction->content, $type);
   }
 
 }

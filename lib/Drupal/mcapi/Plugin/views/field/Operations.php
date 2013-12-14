@@ -22,7 +22,7 @@ class Operations extends FieldPluginBase {
 
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['separator'] = array('default' => '');
+    $options['mode'] = array('default' => 'page');
     return $options;
   }
 
@@ -30,11 +30,15 @@ class Operations extends FieldPluginBase {
    * Provide link to taxonomy option
    */
   public function buildOptionsForm(&$form, &$form_state) {
-     $form['separator'] = array(
-      '#title' => t('Separator between different currency quantities'),
-      '#type' => 'textfield',
-      '#size' => 10,
-      '#default_value' => !empty($this->options['separator']),
+     $form['mode'] = array(
+      '#title' => t('Link mode'),
+      '#type' => 'radios',
+      '#options' => array(
+     	  'page' => t('New page'),
+        'modal' => t('Modal window'),
+        'ajax' => t('In-place (AJAX)')
+      ),
+      '#default_value' => !empty($this->options['mode']),
     );
     parent::buildOptionsForm($form, $form_state);
   }
@@ -47,7 +51,9 @@ class Operations extends FieldPluginBase {
 
   function render(ResultRow $values) {
   	//need to work in the options[separater] somehow
-    return transaction_get_links($this->getEntity($values), '', TRUE);
+  	$transaction = $this->getEntity($values);
+  	module_load_include('inc', 'mcapi');
+    return transaction_get_links($transaction, $this->options['mode'], TRUE);
   }
 
 }

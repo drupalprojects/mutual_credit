@@ -183,6 +183,16 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
+  $data['mcapi_transactions']['parent'] = array(
+    'title' => t('Parent'),
+    'help' => t('Whether the transactioin has a parent.'),
+    'field' => array(
+      'id' => 'boolean',
+    ),
+    'filter' => array(
+      'id' => 'boolean',
+    ),
+  );
 
   //virtual fields
   $data['mcapi_transactions']['operations'] = array(
@@ -217,12 +227,12 @@ function mcapi_views_data() {
       'id' => 'string',
     )
   );
-  $data['mcapi_transactions_worths']['quantity'] = array(
+  $data['mcapi_transactions_worths']['value'] = array(
     'title' => t('Quantity'),
     'help' => t('The raw numerical value of the transaction'),
     'field' => array(
-      'id' => 'quantity',
-      'additional fields' => array('quantity')
+      'id' => 'numeric',
+      'additional fields' => array('value')
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -373,13 +383,6 @@ function mcapi_views_data() {
   		'additional fields' => array('serial')
   	)
   );
-  $data['mcapi_transactions_index']['worths'] = array(
-  	'title' => t('Amounts'),
-  	'help' => t('Currency flows per transaction'),
-  	'field' => array(
-  		'id' => 'worths',
-  	)
-  );
 
   return $data;
 }
@@ -399,25 +402,6 @@ function mcapi_views_data_alter(&$data) {
   );
 }
 
-
-function transaction_access_callback_perm_transact_views($query, $condition, $state) {
-  $condition->condition(1, user_access('transact'));
-}
-function transaction_access_callback_perm_manage_all_views($query, $condition, $state) {
-  $condition->condition(1, user_access('manage all transactions'));
-}
-function transaction_access_callback_payee_views($query, $condition, $state) {
-  $condition->condition('mcapi_transactions.payee', \Drupal::currentUser()->id());
-}
-function transaction_access_callback_payer_views($query, $condition, $state) {
-  $condition->condition('mcapi_transactions.payer', \Drupal::currentUser()->id());
-}
-function transaction_access_callback_open_views($query, $condition, $state) {
-  $condition->condition(1, 1);
-}
-function transaction_access_callback_creator_views($query, $condition, $state) {
-  $condition->condition('mcapi_transactions.creator', \Drupal::currentUser()->id());
-}
 
 /*
  * implements hook_query_TAG_alter for views on the mcapi_transactions table

@@ -140,7 +140,7 @@ class FirstPartyEditFormController extends EntityFormController {
 	    ),
     	'#weight' => 3
   	);
-    /*
+print_r($this->worths['preset']);
     $form['worths']= array(
    		'#title' => t('@fieldname preset', array('@fieldname' => t('Worths'))),
    		'#type' => 'details',
@@ -149,7 +149,7 @@ class FirstPartyEditFormController extends EntityFormController {
    			'#title' => t('Preset field to'),
    			'#description' => t('Preset'),
    			'#type' => 'worths',
-   			'#default_value' => $this->worths['preset'],
+   			'#default_value' => $this->worths['preset'][0],
    		),
     	'#weight' => 4
     );
@@ -158,7 +158,8 @@ class FirstPartyEditFormController extends EntityFormController {
     		t('Put a number or zero to include a currency as an option on the form.'),
     		t('Leave blank to exclude the currency.'),
     	));
-    }*/
+    }
+
     $form['description']= array(
     	'#title' => t('@fieldname preset', array('@fieldname' => t('Description'))),
     	'#description' => t('Direction relative to the current user'),

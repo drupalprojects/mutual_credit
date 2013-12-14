@@ -4,7 +4,7 @@ mcapi.admin:
     _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'Accounting'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'access administration pages'
 
 mcapi.admin_misc:
   path: '/admin/accounting/config'
@@ -49,6 +49,22 @@ mcapi.admin_currency_enable:
   requirements:
     _permission: 'configure all currencies'
 
+mcapi.workflow:
+  path: '/admin/accounting/workflow'
+  defaults:
+    _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
+    _title: 'Workflow'
+  requirements:
+    _permission: 'configure all currencies'
+
+mcapi.workflow_settings:
+  path: '/admin/accounting/workflow/op/{op}'
+  defaults:
+    _form: 'Drupal\mcapi\Form\OperationSettingsForm'
+    _title: 'Configure transaction operation'
+  requirements:
+    _permission: 'configure all currencies'
+
 mcapi.transaction_admin:
   path: '/transact/admin'
   defaults:
@@ -69,25 +85,10 @@ mcapi.transaction_view:
       mcapi_transaction:
         serial: true
 
-mcapi.workflow:
-  path: '/admin/accounting/workflow'
-  defaults:
-    _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
-    _title: 'Workflow'
-  requirements:
-    _permission: 'configure all currencies'
-
-mcapi.workflow_settings:
-  path: '/admin/accounting/workflow/op/{op}'
-  defaults:
-    _form: 'Drupal\mcapi\Form\OperationSettingsForm'
-    _title: 'Configure transaction operation'
-  requirements:
-    _permission: 'configure all currencies'
-
 mcapi.transaction.op:
-  path: 'transaction/{mcapi_transaction}/{op}'
+  path: '/transaction/{mcapi_transaction}/{op}'
   defaults:
     _form: '\Drupal\mcapi\Form\OperationForm'
   requirements:
-    _entity_access: 'mcapi_transaction'
+    _entity_access: 'mcapi_transaction.op'
+

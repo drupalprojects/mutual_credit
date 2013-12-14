@@ -11,30 +11,34 @@ use Drupal\Core\Entity\EntityAccessController;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\Request;
+
 /**
- * Defines an access controller for the contact category entity.
+ * Defines an access controller for the transaction entity.
  *
  * @see \Drupal\simple_access\Entity\Group.
  */
 class TransactionAccessController extends EntityAccessController {
 
+	function __construct() {
+		/*
+		$this->operation_manager = \Drupal::service('plugin.manager.mcapi.transaction_operation');
+	  foreach ($this->operation_manager->getDefinitions() as $op => $info) {
+	  	$operations[$op] = new $info['class'];
+	  }
+	  */
+	}
+
   /**
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $transaction, $op, $langcode, AccountInterface $account) {
-    if (!$op) {
-      $op = \Drupal::request()->attributes->get('_raw_variables')->get('op');
-    } 
-    //might want to store the operations in the object since this is likely to be called many times
-    $operations = transaction_operations();
-    mcapi_operation_include($operations[$op]);
-
-    foreach ($transaction->worths[0] as $item) {
-      if ($operations[$op]['access callback']($op, $transaction, $item->currency)) {
-        continue;
-      }
-      return FALSE;
+    if ($op == 'op') {
+      //there is probably a better way of writing the router so the op is passed as a variable
+      $op = \Drupal::request()->attributes->get('op');
     }
-    return TRUE;
+    $operations = transaction_operations();
+   	return ($operations[$op]->opAccess($transaction));
   }
+
+
 }

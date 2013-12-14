@@ -22,12 +22,12 @@ access:
   system_data: 'user_chooser_segment_perms:transact'
 view_transaction_states:
   1:
-    transaction_access_callback_perm_transact: transaction_access_callback_perm_transact
-    transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
+    mcapi_transaction_access_callback_perm_transact: mcapi_transaction_access_callback_perm_transact
+    mcapi_transaction_access_callback_perm_manage_all: mcapi_transaction_access_callback_perm_manage_all
   0:
-    transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
+    mcapi_transaction_access_callback_perm_manage_all: mcapi_transaction_access_callback_perm_manage_all
 access_operations:
   undo:
-    transaction_access_callback_perm_manage_all: transaction_access_callback_perm_manage_all
+    mcapi_transaction_access_callback_perm_manage_all: mcapi_transaction_access_callback_perm_manage_all
 weight: '-10'
 langcode: en

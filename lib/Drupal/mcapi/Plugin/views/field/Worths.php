@@ -54,9 +54,14 @@ class Worths extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    $worths = current($this->getEntity($values)->worths->getValue());
+    $worths = $this->getEntity($values)->worths;
+    $val = '';
+    foreach ($worths[0] as $worth) {
+      //TODO not sure how to get a render array for worths
+      $val .= $worth->getString();
+    }
     //TODO there needs to be a system setting for the separator for mixed transactions
-    return 'theme me!';
+    return $val;
   }
 
 }

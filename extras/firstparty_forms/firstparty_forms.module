@@ -29,19 +29,7 @@ function theme_1stpartyform($vars) {
 	}
   //add the buttons if they weren't added already
 	if (strpos($form['#twig'], '{{ actions }}') === FALSE) $form['#twig'] .= "\n{{ actions }}";
-	//convert linebreaks
-	$template = _filter_autop($form['#twig']);
-
-	//spoofing twig in order to pass in a template string instead of a filename
-	//this was much too hard!
-	//this is a bogus name of the nearest file, to keep twig happy
-  $name = 'modules/mutual_credit/templates/certificate.html.twig';
-	$renderer = drupal_container()->get('twig');
-	$cls = $renderer->getTemplateClass($name, NULL);
-	$compiled_source = $renderer->compileSource($template, $name);
-	eval('?' . '>' . $compiled_source);
-  $twig = new $cls($renderer);
-
-	return $twig->render($tokens);
-
+  module_load_include('inc', 'mcapi');
+        return mcapi_render_twig($form['#twig'], $tokens);
 }
+

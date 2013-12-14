@@ -11,7 +11,7 @@
  */
 function mcapi_install() {
 	//TODO looks like this isn't working
-  entity_load('user_role', DRUPAL_AUTHENTICATED_RID)->grantPermission('transact');
+  entity_load('user_role', DRUPAL_AUTHENTICATED_RID)->grantPermission('transact')->save();
   drupal_set_message(t("For ease of setup, authenticated user has been granted 'transact' permission."));
 
   module_set_weight('mcapi', -1);
@@ -19,15 +19,17 @@ function mcapi_install() {
   $users = db_query("SELECT count(uid) FROM {users}")->fetchField();
   //we should have anon and user1
   if ($users < 3) {
-  	//TODO how to programmatically create a user?
-  	/*
-    $account = user_save(NULL, array(
-      'name' => 'demo',
-      'mail' => 'demo@'.$_SERVER['SERVER_NAME'],
-      'pass' => 'demo'
-    ));
-    drupal_set_message("A new user was created for trading. uid: $account->uid, name: demo, pass: demo");
-  */
+    $edit = array(
+      'name' => '2nd trader',
+      'mail' => 'trader@example.com',
+      'pass[pass1]' => 'a',
+      'pass[pass2]' => '',
+      'notify' => 0,
+    );
+    //now what?
+    //TODO create this user
+
+    //drupal_set_message("A new user was created for trading. uid: $account->uid, name: demo, pass: demo");
   }
 }
 

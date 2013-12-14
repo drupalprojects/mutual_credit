@@ -8,10 +8,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class OperationSettingsForm extends ConfigFormBase {
 
-
-  public function title() {
-    print_r(func_get_args());
-  }
   /**
    * {@inheritdoc}
    */
@@ -24,47 +20,19 @@ class OperationSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state, $op = NULL) {
-    //we could get the fuller op name and also set the title using mcapi.routing.yml
-    drupal_set_title(t('Mail settings for operation: @op', array('@op' => $op)));
-    //I've set defaults for mcapi.operation but do they work if $op isn't set?
+  	$operations = transaction_operations();
+  	$plugin = $operations[$op];
+  	$form = parent::buildForm($form, $form_state);
+  	$form['#tree'] = 1;
     $config = $this->configFactory->get('mcapi.operation.'.$op);
-    $token_service = \Drupal::token();
-    $all_tokens = $token_service->getInfo('tokens');
-    foreach(array_keys($all_tokens['tokens']['transaction']) as $token) {
-      $tokens[] = "[transaction:$token]";
-    }
-    $tokens[] = "[operation]";//dunno if this faux token will work. its only needed if the defaults work
-    $email_token_help = $this->t('Available variables are:') .' '. implode(', ', $tokens);
-    $form['help'] = array(
-      '#markup' => $email_token_help
-    );
-    $form['transaction_operation'] = array(
-      '#type' => 'hidden',
-      '#value' => $op
-    );
-    $form['subject'] = array(
-      '#title' => t('Mail subject'),
-      '#description' => '',
-      '#type' => 'textfield',
-      '#default_value' => $config->get('subject'),
-      '#weight' =>  1
-    );
-    $form['body'] = array(
-      '#title' => t('Mail body'),
-      '#description' => '',
-      '#type' => 'textarea',
-      '#default_value' => $config->get('body'),
-      '#weight' => 2
-    );
-    $form['cc'] = array(
-      '#title' => t('Carbon copy to'),
-      '#description' => 'A valid email address',
-      '#type' => 'email',
-      '#default_value' => $config->get('cc'),
-      '#weight' => 3
-    );
+  	$form = $operations[$op]->SettingsForm($form, $config);
 
-    return parent::buildForm($form, $form_state);
+  	$form['transaction_operation'] = array(
+  			'#type' => 'value',
+  			'#value' => $op
+  	);
+    $form['#submit'][] = array($this, 'submitForm');
+    return $form;
   }
 
 
@@ -72,13 +40,16 @@ class OperationSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state, $op = NULL) {
-    $this->configFactory->get('mcapi.operation.'.$form_state['values']['transaction_operation'])
-      ->set('subject', $form_state['values']['subject'])
-      ->set('body', $form_state['values']['body'])
-      ->set('cc', $form_state['values']['cc'])
-      ->save();
+  	form_state_values_clean($form_state);
+  	$config = $this->configFactory->get('mcapi.operation.'.$form_state['values']['transaction_operation']);
+  	unset($form_state['values']['transaction_operation']);
+  	foreach ($form_state['values'] as $key => $val) {
+      $config->set($key, $val);
+  	}
+    $config->save();
 
     parent::submitForm($form, $form_state);
+    $form_state['redirect'] = 'admin/accounting/workflow';
   }
 }
 

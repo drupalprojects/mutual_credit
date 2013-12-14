@@ -497,15 +497,52 @@ display:
           hide_empty: 0
           empty_zero: 0
           hide_alter_empty: 1
-          separator: ''
+          mode: ajax
           plugin_id: transaction_operations
           provider: mcapi
-      filters: {  }
+      filters:
+        parent:
+          id: parent
+          table: mcapi_transactions
+          field: parent
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: '='
+          value: '0'
+          group: '1'
+          exposed: false
+          expose:
+            operator_id: false
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: 0
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          plugin_id: boolean
+          provider: views
       sorts:
-        quantity:
-          id: quantity
-          table: mcapi_transactions_worths
-          field: quantity
+        serial:
+          id: serial
+          table: mcapi_transactions
+          field: serial
           relationship: none
           group_type: group
           admin_label: ''
@@ -585,6 +622,14 @@ display:
       filter_groups:
         operator: AND
         groups: {  }
+      title: 'Finished transactions'
+  page_1:
+    display_plugin: page
+    id: page_1
+    display_title: Page
+    position: 1
+    display_options:
+      path: transactions
 label: 'Member transactions'
 module: views
 id: mcapi_transactions

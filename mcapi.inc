@@ -3,27 +3,6 @@
 //TODO why is NestedArray here? Still needed?
 use Drupal\Component\Utility\NestedArray;
 
-/*
- * transaction_access callbacks
- */
-function transaction_access_callback_perm_transact() {
-  return user_access('transact');
-}
-function transaction_access_callback_perm_manage_all() {
-  return user_access('manage all transactions');
-}
-function transaction_access_callback_payee($transaction) {
-  return \Drupal::currentUser()->id() == $transaction->payee->value;
-}
-function transaction_access_callback_payer($transaction) {
-  return \Drupal::currentUser()->id() == $transaction->payer->value;
-}
-function transaction_access_callback_open() {
-  return TRUE;
-}
-function transaction_access_callback_creator($transaction) {
-  return \Drupal::currentUser()->id() == $transaction->creator;
-}
 
 /*
  * action callback for hook_transaction_children
@@ -121,19 +100,6 @@ function _transactions_diff($transaction) {
   return $diff;
 }
 
-//this will adjust the rendering of zero worth in accordance with the currency display zero property
-//it is not used every time a 'worth' is rendered, but only when transactions are displayed.
-//for this reason, though it seems inelegant, this function should be called from wherever the transaction is rendered
-//I can't remember the difference. this is called from transaction_preprocess and from the views field
-function mcapi_worth_item_zero_adjustment(&$worth_render_array) {
-	skdjfhk();
-  $currencies = currencies_load();
-  if ($worth_render_array['#quantity'] == 0) {
-    $worth_render_array = array('#markup' => $currencies[$worth_render_array['#currcode']]->display['zero']);
-  }
-}
-
-
 /*
  * default theme implementation for callback 'worth_element'
  * called once per $item
@@ -208,6 +174,57 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
     case CURRENCY_WIDGET_TEXT:
       return $quant;
   }
+}
+
+
+function transaction_get_links($transaction, $mode = 'page', $view = FALSE) {
+
+	if (empty($transaction->serial->value)) {
+		die("no serial number in preview");//just checking this runs in d8
+	}
+	$renderable = array(
+		'#theme' => 'links',
+		//'#heading' => t('Operations'),
+		'#attached' => array('css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')),
+		//Attribute class not found
+		'#attributes' => new Attribute(array('class' => array('transaction-operations'))),
+		'#links' => array()
+	);
+
+	foreach (transaction_operations() as $op => $plugin) {
+		if (!$view && $op == 'view') continue;
+		if ($transaction->access($op)) {
+		  if ($op == 'view') {
+  			$renderable['#links'][$op] = array(
+  				'title' => $plugin->label,
+  				'route_name' => 'mcapi.transaction_view',
+  				'route_parameters' => array(
+  				  'mcapi_transaction' => $transaction->serial->value
+  				),
+  			);
+		  }
+		  else {
+		    $renderable['#links'][$op] = array(
+		      'title' => $plugin->label,
+		      'route_name' => 'mcapi.transaction.op',
+		      'route_parameters' => array(
+		        'mcapi_transaction' => $transaction->serial->value,
+		        'op' => $op
+          ),
+		    );
+		  }
+			if ($mode == 'modal') {
+			  $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
+			  $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+			}
+			elseif($mode == 'ajax') {
+			  //I think we need a new router path for this...
+        $renderable['#attached']['js'][] = 'core/misc/ajax.js';
+			  //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+			}
+		}
+	}
+	return $renderable;
 }
 
 /*
@@ -335,4 +352,99 @@ function drawBalanceHistory() {
 //	drupal_add_js('http://www.google.com/jsapi');
 	drupal_add_js("google.load('visualization', '1', {packages: ['corechart']});\ngoogle.setOnLoadCallback(drawBalanceHistory);", 'inline');
 	$vars['javascript'] = $js;
+}
+
+//wrapper which helps with ajax DO NOT CHANGE
+function template_preprocess_mcapi_transaction(&$vars) {
+	$element = &$vars['transaction'];
+	$transaction = $element['#transaction'];
+	//don't know if this is needed in d8
+	element_set_attributes($element, array('class', 'id'));
+	$vars['attributes']['class'] = array(
+		'transaction',
+		'transaction-'. $transaction->serial->value,
+		$element['#view_mode'] == 'certificate' ? 'certificate' : 'customtwig',
+		$transaction->type->value,
+		'state-'.$transaction->state->value
+	);
+}
+
+function template_preprocess_certificate(&$vars) {
+	$element = &$vars['transaction'];
+	$transaction = $element['#transaction'];
+	mcapi_transaction_process_vars($vars, $transaction);
+
+	$vars['links'] = drupal_render($element['links']);
+	foreach (element_children($transaction->content) as $field_name) {
+	  $vars['additional'][$field_name] = $transaction->content[$field_name];
+	}
+	$vars['children'] = array();
+	if (isset($transaction->children) && !empty($transaction->dependents)) {
+	  $vars['children'] = transaction_view(
+	      $transaction->dependents,
+	      str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
+	  );
+	}
+	//choose the transaction theme template based on the first currency of the transaction
+	//not sure if this is worth the processing power at the moment
+	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
+}
+
+//this is abstracted so that the arbitrary twig can access it too
+function mcapi_transaction_process_vars(&$vars, $transaction) {
+  $payer = array(
+      '#theme' => 'username',
+      '#account' => $transaction->payer->entity,
+      '#link_options' => array('attributes' => array('rel' => 'author')),
+  );
+  $payee = array(
+      '#theme' => 'username',
+      '#account' => $transaction->payee->entity,
+      '#link_options' => array('attributes' => array('rel' => 'author')),
+  );
+  $vars['payer'] = drupal_render($payer);
+  $vars['payee'] = drupal_render($payee);
+
+  foreach ($transaction->worths[0] as $worth) {
+    //TODO not sure how to get a render array for worths
+    $vars['worths'] .= $worth->getString();
+  }
+
+  $vars['state'] = $transaction->state->value;
+  $vars['date'] = format_date($transaction->created->value, 'medium');
+  $vars['type'] = $transaction->type->value;
+  $vars['description'] = $transaction->description->value;
+}
+
+function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction) {
+  $vars = array();
+  mcapi_transaction_process_vars($vars, $transaction);
+  return mcapi_render_twig($template, $vars);
+}
+
+/*
+ * special function to compensate for twig only accepting filenames as templates
+ * this was much too hard!
+ */
+function mcapi_render_twig(string $template, array $tokens) {
+  //first validate that everything in the template is available as a key in the $tokens
+  $matches = array();
+  preg_match('/\{\{ (.+) \}\}/', $template,  $matches);
+  array_shift($matches);
+  foreach ($matches as $match) {
+    if (!array_key_exists($match, $tokens)) {
+      drupal_set_message("token '$match' not passed");
+    }
+  }
+  //convert linebreaks
+  $template = _filter_autop($template);
+
+  //this is a bogus name of the nearest file, to keep twig happy
+  $name = 'modules/mutual_credit/templates/certificate.html.twig';
+  $renderer = drupal_container()->get('twig');
+  $cls = $renderer->getTemplateClass($name, NULL);
+  $compiled_source = $renderer->compileSource($template, $name);
+  eval('?' . '>' . $compiled_source);
+  $twig = new $cls($renderer);
+  return $twig->render($tokens);
 }

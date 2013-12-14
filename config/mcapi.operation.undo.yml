@@ -1,0 +1,15 @@
+actions: {  }
+special:
+  subject: 'A transaction was deleted'
+  body: 'no tokens were a available to write this mail'
+  cc: carboncopy@drupal.org
+general:
+  op_title: Undo
+  page_title: 'Are you sure?'
+  format: certificate
+  twig: ''
+  button: 'Yes I''m sure'
+  cancel_button: Cancel
+  format2: certificate
+  twig2: ''
+  message: 'The transaction was undone'

@@ -16,7 +16,6 @@
  * - date: Formatted creation date
  * - attributes
  * -   attributes.class
- * - links: The transaction operations, formatted as a list
  * if the mcapi_limits module is enabled:
  * - pending
  * extra fieldAPI fields
@@ -24,13 +23,14 @@
  * child transactions, rendered as sentences
  * - children
 #}
-
-
-
-On {{ date }}, {{ payer }} paid {{ payee }} the sum of {{ worths }}
-
-<br />links:  {{ links }}
-<br />additional: {{ additional }}
+<center>
+On {{ date }}, <br />
+{{ payer }} paid {{ payee }} <br />
+the sum of <br />
+<font size=6>{{ worths }}</font><br />
+{{ links }}
+</center>
+<br /><br />additional: {{ additional }}
 
 <br />
 <br /><b>Testing variables:</b>

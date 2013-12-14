@@ -167,7 +167,7 @@ function hook_mcapi_info_states(){
     99 => array(//ensure this number doesn't clash with existing states
       'name' => t('Rejected'),
       'description' => t('transaction was terminated by payee'),
-      'default_access_callbacks' => array('mcapi_access_authenticated')//see hook_transaction_access_callbacks
+
     ),
   );
 }
