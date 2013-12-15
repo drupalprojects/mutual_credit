@@ -35,6 +35,8 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
 
   //when users are deleted, their uids should not persist in the transaction table.
   public function mergeAccounts($dest);
-  //there seems to be no delete() in this interface
+  public function count($currcode);
+  public function volume($currcode);
   public function timesBalances(AccountInterface $account, CurrencyInterface $currency, $since);
+
 }

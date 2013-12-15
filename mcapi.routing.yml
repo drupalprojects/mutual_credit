@@ -52,8 +52,16 @@ mcapi.admin_currency_enable:
 mcapi.workflow:
   path: '/admin/accounting/workflow'
   defaults:
+    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Transaction workflow'
+  requirements:
+    _permission: 'access administration pages'
+
+mcapi.workflow.operations:
+  path: '/admin/accounting/workflow/operations'
+  defaults:
     _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
-    _title: 'Workflow'
+    _title: 'Transaction workflow operations'
   requirements:
     _permission: 'configure all currencies'
 

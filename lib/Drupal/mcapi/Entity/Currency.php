@@ -101,13 +101,13 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     $values['settings'] += $currencyTypeManager->getDefaultSettings($values['type']);
 
     $values['widget_settings'] += $widgetManager->getDefaultSettings($values['widget']);
-
+    //TODO this will use a new wallet_chooser plugin
     $values['access'] += array(
       'membership' => 'user_chooser_segment_perms:transact',
       'trader_data' => 'user_chooser_segment_perms:transact',
       'system_data' => 'user_chooser_segment_perms:transact',
     );
-
+    //TODO replace these, and the below, with the TransactionAccess plugins
     $values['access_operations'] += array(
       'undo' => array('transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'),
     );
@@ -158,5 +158,38 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
 
     return $this->widgetPlugin;
   }
+  /*
+   * return the $value formatted with this currency
+   */
+  public function format($value) {
+    //get the formatter...
+    return '#formatted:'.$value;
+  }
+  /*
+   * return the number of transactions, in all states
+   */
+  public function transactions() {
+    //get the transaction storage controller
+    $transactionStorageController = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+    return $transactionStorageController->count($this->id());
+  }
+  /*
+   * return the number of transactions, in all states
+   */
+  public function volume() {
+    //get the transaction storage controller
+    $transactionStorageController = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+    return $this->format($transactionStorageController->volume($this->id()));
+  }
 
+  /*
+   * check that a currency has no transactions before deleting it.
+   */
+  public function delete() {
+    if ($this->transactions()) {
+      drupal_set_message("Transactions must be deleted from the database, before the currency can be deleted. use drush-wipeslate or edit the database manually", 'error');
+      return;
+    }
+    parent::delete();
+  }
 }

@@ -24,8 +24,10 @@ class CurrencyListController extends DraggableListController {
    */
   public function buildHeader() {
     $header['title'] = t('Title');
-    $header['id'] = t('Machine Name');
+    //$header['id'] = t('Machine Name');
     $header['type'] = t('Type');
+    //$header['transactions'] = t('Count');
+    $header['volume'] = t('Volume');
     $header['issuance'] = t('Issuance');
     return $header + parent::buildHeader();
   }
@@ -43,13 +45,23 @@ class CurrencyListController extends DraggableListController {
       CURRENCY_TYPE_COMMODITY => t('Commodity')
     );
     $type = $entity->issuance ? $entity->issuance : CURRENCY_TYPE_ACKNOWLEDGEMENT;
+    /*
     $row['id'] = array(
       '#markup' => $entity->id,
     );
-
+    */
     $definition = \Drupal::service('plugin.manager.mcapi.currency_type')->getDefinition($entity->type);
     $row['type'] = array(
       '#markup' => $definition['label'],
+    );
+    $count = $entity->transactions();
+    /*
+    $row['transactions'] = array(
+      '#markup' => $count
+    );
+    */
+    $row['volume'] = array(
+      '#markup' => $entity->volume()
     );
     $row['issuance'] = array(
       '#markup' => $type_names[$type],
@@ -57,8 +69,14 @@ class CurrencyListController extends DraggableListController {
     //TODO load mcapi.css somehow. Also see the McapiForm list controller.
     $row['#attributes']['style'] = $entity->status ? '' : 'color:#999';
     //$row['#attributes']['class'][] = $entity->status ? 'enabled' : 'disabled';
+    $actions = parent::buildRow($entity);
 
-    return $row + parent::buildRow($entity);
+    //make sure that a currency with transactions in the database can't be deleted.
+    if ($count) {
+      unset($actions['operations']['data']['#links']['delete']);
+    }
+
+    return $row + $actions;
   }
 
 
@@ -95,7 +113,7 @@ class CurrencyListController extends DraggableListController {
       '#type' => 'textfield',
       '#title_display' => 'invisible',
       '#title' => t('Name of currency'),
-      '#size' => 30,
+      '#size' => 15,
       '#prefix' => '<div class="label-input"><div class="add-new-placeholder">' . $this->t('Add new currency') .'</div>',
     );
 
@@ -122,7 +140,7 @@ class CurrencyListController extends DraggableListController {
       '#type' => 'select',
       '#title_display' => 'invisible',
       '#title' => t('Currency type'),
-      '#empty_option' => $this->t('- Select type of Currency -'),
+      '#empty_option' => $this->t('- Currency Type -'),
       '#options' => $options,
       '#prefix' => '<div class="add-new-placeholder">&nbsp;</div>',
     );

@@ -74,12 +74,18 @@ function mcapi_menu() {
     'title' => 'Currencies',
     'description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.',
     'route_name' => 'mcapi.admin_currency_list',
-    );
+  );
   $items['admin/accounting/workflow'] = array(
-    'title' => 'Workflow',
+    'title' => 'Transaction workflow',
     'description' => 'Configuration around transaction states, types and operations',
     'weight' => 2,
     'route_name' => 'mcapi.workflow',
+  );
+  $items['admin/accounting/workflow/operations'] = array(
+    'title' => 'Transaction workflow operations',
+    'description' => 'Configuration around transaction states, types and operations',
+    'weight' => 2,
+    'route_name' => 'mcapi.workflow.operations',
   );
   /*
   $items['transact/admin'] = array(
@@ -244,13 +250,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
     'worth_element'=> array(
       'render element' => 'element',
     ),
-    'worth_item'=> array(
-      'variables' => array(
-        'currency' => NULL,
-        'quantity' => '',
-      ),
-      'file' => 'mcapi.inc'
-    ),
   	'mcapi_summary' => array(
   	  'template' => 'mcapi_summary',
   		//might be appropriate to have a pattern here
@@ -367,10 +366,10 @@ function mcapi_mcapi_info_states() {
       'description' => t('the last state of the workflow'),
     ),
   );
-  $deletemode = \Drupal::config('mcapi.misc')->get('delete_mode');
+  $undomode = \Drupal::config('mcapi.misc')->get('delete_mode');
   //don't attempt to liven the link coz this function can run while bootstrapping and that means trouble
-  $description = t("See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc'));
-  if ($deletemode != MCAPI_UNDO_STATE_DELETE) {
+  $description = t("See !mode settings for more info", array('!mode' => l(t('Undo mode'), 'admin/accounting/misc')));
+  if ($undomode != MCAPI_UNDO_STATE_DELETE) {
     $states[TRANSACTION_STATE_UNDONE] = array(
       'name' => t('Undone'),
       'description' => $description,
@@ -394,7 +393,7 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
  * implements mcapi hook_info_types().
  */
 function mcapi_mcapi_info_types() {
-  $types = array('default', 'dependent');
+  $types = array('default', 'auto');
   if (\Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_UNDO_STATE_REVERSE) {
     $types[] = 'reversal';
   }

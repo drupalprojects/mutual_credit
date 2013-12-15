@@ -353,6 +353,20 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     return $history;
   }
+
+  public function count($currcode) {
+    return db_select('mcapi_transactions_worths', 'w')
+    ->fields('w', array('xid'))
+    ->condition('currcode', $currcode)
+    ->distinct()
+    ->execute()
+    ->fetchfield();
+  }
+  public function volume($currcode) {
+    return db_query("SELECT SUM(value) FROM {mcapi_transactions_worths}
+      WHERE currcode = :currcode", array(':currcode' => $currcode)
+    )->fetchField();
+  }
 }
 
 

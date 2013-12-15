@@ -11,4 +11,5 @@ use Drupal\Core\Entity\EntityInterface;
 
 interface TransactionInterface extends EntityInterface {
 
+  public function buildChildren();
 }

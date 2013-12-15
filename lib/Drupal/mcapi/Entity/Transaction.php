@@ -46,7 +46,6 @@ use Drupal\mcapi\TransactionInterface;
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
-  //var $really;
   /**
    * Implements Drupal\Core\Entity\EntityInterface::id().
    */
@@ -73,7 +72,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * preSave
-   * TODO put this in an interface
    * passes the transaction around allowing modules
    * populates the children property
    */
