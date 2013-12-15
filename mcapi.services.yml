@@ -15,6 +15,10 @@ services:
     class: Drupal\mcapi\Plugin\OperationManager
     arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
 
+  plugin.manager.mcapi.transaction_access:
+    class: Drupal\mcapi\Plugin\TransactionAccessManager
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
+
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
     arguments: ['@entity.manager']

@@ -406,7 +406,6 @@ function mcapi_transaction_process_vars(&$vars, $transaction) {
   $vars['payee'] = drupal_render($payee);
 
   foreach ($transaction->worths[0] as $worth) {
-    //TODO not sure how to get a render array for worths
     $vars['worths'] .= $worth->getString();
   }
 

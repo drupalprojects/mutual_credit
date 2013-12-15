@@ -200,6 +200,20 @@ function transaction_operations() {
 	}
 	return $operations;
 }
+function transaction_access_plugins() {
+	//TODO when to use drupal_static and when to use drupal_static_fast?
+	$plugins = &drupal_static('__FUNCTION__', array());
+	if (empty($plugins)) {
+		$manager = \Drupal::service('plugin.manager.mcapi.transaction_access');
+		foreach ($manager->getDefinitions() as $plugin => $info) {
+			$plugins[$op] = $manager->createInstance($op);
+		}
+	}
+	//TODO Gordon I spent a good hour and I can't see why the the definitions aren't found for this plugin
+	//but are found in for the transaction_operations above. I've tried to mirror everything and can't see the difference.
+	return $plugins;
+
+}
 
 
 /**
