@@ -10,10 +10,10 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
-class OperationManager extends DefaultPluginManager {
+class TransactionAccessManager extends DefaultPluginManager {
 
   /**
-   * Constructs the OperationManager object
+   * Constructs the TransactionAccessManager object
    * really I've got no idea what this function does
    *
    * @param \Traversable $namespaces
@@ -25,15 +25,13 @@ class OperationManager extends DefaultPluginManager {
    *   Dunno
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, LanguageManager $language_manager) {
-    parent::__construct('Plugin/Operation', $namespaces, 'Drupal\mcapi\Annotation\Operation');
-    $this->setCacheBackend($cache_backend, $language_manager, 'transaction_operation');
+    parent::__construct('Plugin/TransactionAccess', $namespaces, 'Drupal\mcapi\Annotation\TransactionAccess');
+    $this->setCacheBackend($cache_backend, $language_manager, 'transaction_access');
   }
 
-  //NOT USED ATM
-  public function getDefinitionsVisible() {
-    $definitions = parent::getDefinitions();
-    //we might want to filter these
-    return $definitions;
-  }
+  //public function getDefinitions();
 
+  function viewsAccess(TransactionInterface $transaction) {
+
+  }
 }

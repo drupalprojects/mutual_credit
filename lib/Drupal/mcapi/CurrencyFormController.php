@@ -33,7 +33,7 @@ class CurrencyFormController extends EntityFormController {
    * @param \Drupal\Component\Plugin\PluginManagerBase $plugin_manager
    *   The widget or formatter plugin manager.
    */
-  public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager) {
+  public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager, PluginManagerBase $transactionAccessManager) {
     $this->pluginCurrencyManager = $currency_manager;
     $this->pluginWidgetManager = $widget_manager;
   }
@@ -379,8 +379,10 @@ class CurrencyFormController extends EntityFormController {
       '#config' => TRUE,
       '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
     );
+
     $i = 0;
-    $access_callbacks = module_invoke_all('transaction_access_callbacks');
+    $access_callbacks = transaction_access_plugins();
+//////////
     //These two fieldsets should REALLY use a grid of checkboxes, like on admin/people/permissions,
     //but I couldn't work out how to do it, and it might require an hook_update to convert the saved $currency objects
     $form['access_operations'] = array(
@@ -395,7 +397,6 @@ class CurrencyFormController extends EntityFormController {
         continue;
       }
       $form['access_operations'][$op] = $definition->access_form($currency, $op);
-
     }
 
     $form['view_transaction_states'] = array(

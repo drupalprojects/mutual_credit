@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Annotation\Operation.
+ * Contains \Drupal\mcapi\Annotation\TransactionAccess.
  */
 
 namespace Drupal\mcapi\Annotation;
@@ -10,11 +10,11 @@ namespace Drupal\mcapi\Annotation;
 use Drupal\Core\TypedData\Annotation\DataType;
 
 /**
- * Defines a Operation annotation object.
+ * Defines a TransactionAccess annotation object.
  *
  * @Annotation
  */
-class Operation extends DataType {
+class TransactionAccess extends DataType {
 
   /**
    * The plugin ID.
@@ -31,14 +31,5 @@ class Operation extends DataType {
    * @var \Drupal\Core\Annotation\Translation
    */
   public $label;
-
-  /**
-   * A short human readable description for the field type.
-   *
-   * @ingroup plugin_translatable
-   *
-   * @var \Drupal\Core\Annotation\Translation
-   */
-  public $description;
 
 }
