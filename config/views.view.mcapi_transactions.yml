@@ -630,7 +630,7 @@ display:
     position: 1
     display_options:
       path: transactions
-label: 'Member transactions'
+label: 'Transactions'
 module: views
 id: mcapi_transactions
 tag: 'Community Accounting'

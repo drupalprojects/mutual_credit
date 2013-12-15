@@ -42,6 +42,7 @@ class Operations extends FieldPluginBase {
     );
     parent::buildOptionsForm($form, $form_state);
   }
+
   /**
    * {@inheritdoc}
    */

@@ -86,7 +86,7 @@ function mcapi_views_data() {
       'id' => 'numeric',
     ),
     'field' => array(
-      'id' => 'trader',
+      'id' => 'standard',
     ),
   );
   $data['mcapi_transactions']['payee'] = array(
@@ -106,7 +106,7 @@ function mcapi_views_data() {
       'id' => 'numeric',
     ),
     'field' => array(
-      'id' => 'trader',
+      'id' => 'standard',
     ),
   );
   $data['mcapi_transactions']['description'] = array(
@@ -167,7 +167,7 @@ function mcapi_views_data() {
       'id' => 'numeric',
     ),
     'field' => array(
-      'id' => 'trader',
+      'id' => 'standard',
     ),
   );
   $data['mcapi_transactions']['created'] = array(
@@ -200,7 +200,6 @@ function mcapi_views_data() {
     'help' => t('What the user can do to the transaction'),
     'field' => array(
       'id' => 'transaction_operations',
-      'additional fields' => array('serial')
     )
   );
   $data['mcapi_transactions']['worths'] = array(
@@ -216,7 +215,6 @@ function mcapi_views_data() {
     'field' => array(
       'help' => t('Show the currency only'),
       'id' => 'currcode',
-      'additional fields' => array('currcode')
     ),
     'filter' => array(
       'help' => t('Transactions using specific currencies'),
@@ -232,7 +230,6 @@ function mcapi_views_data() {
     'help' => t('The raw numerical value of the transaction'),
     'field' => array(
       'id' => 'numeric',
-      'additional fields' => array('value')
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -286,7 +283,7 @@ function mcapi_views_data() {
   		'id' => 'standard',
   		'base' => 'users',
   		'field' => 'uid',
-  		'label' => t('1st trader'),
+  		'label' => t('1st standard'),
   		'relationship field' => 'uid1'
   	),
   	'filter' => array(
@@ -296,7 +293,7 @@ function mcapi_views_data() {
   		'id' => 'numeric',
   	),
   	'field' => array(
-  		'id' => 'trader',
+  		'id' => 'standard',
   	),
   );
   $data['mcapi_transactions_index']['uid2'] = array(
@@ -306,7 +303,7 @@ function mcapi_views_data() {
   		'id' => 'standard',
   		'base' => 'users',
   		'field' => 'uid',
-  		'label' => t('2nd trader'),
+  		'label' => t('2nd standard'),
   		'relationship field' => 'uid2'
   	),
   	'filter' => array(
@@ -316,7 +313,7 @@ function mcapi_views_data() {
   		'id' => 'numeric',
   	),
   	'field' => array(
-  		'id' => 'trader',
+  		'id' => 'standard',
   	),
   );
   $data['mcapi_transactions_index']['description'] = array(
@@ -373,6 +370,16 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
+  $data['mcapi_transactions_index']['balance'] = array(
+    'title' => t('Running balance'),
+    'help' => t("The sum of all the user's previous transactions."),
+    'field' => array(
+      'id' => 'balance',
+  		'additional fields' => array(
+  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		)
+    ),
+  );
 
   //virtual fields
   $data['mcapi_transactions_index']['operations'] = array(
@@ -380,7 +387,6 @@ function mcapi_views_data() {
   	'help' => t('What the user can do to the transaction'),
   	'field' => array(
   		'id' => 'transaction_operations',
-  		'additional fields' => array('serial')
   	)
   );
 
