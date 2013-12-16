@@ -12,12 +12,12 @@ use Drupal\mcapi\TransactionInterface;
 /**
  * Criteria for access to a transaction
  *
- * @Operation(
- *   id = "IsPayee",
+ * @TransactionAccess(
+ *   id = "is_payee",
  *   label = @Translation("The payee")
  * )
  */
-class IsPayee  extends ConfigEntityBase {
+class IsPayee {
 
   function label() {
     //can we pull out the $definition label, above?
@@ -25,10 +25,10 @@ class IsPayee  extends ConfigEntityBase {
   }
 
   function checkAccess(TransactionInterface $transaction) {
-    return $GLOBALS['user']->id() == $tansaction->payee->value;
+    return \Drupal::currentUser()->id() == $transaction->payee->value;
   }
 
-  function viewsAccess(TransactionInterface $transaction) {
-
+  function viewsAccess($query, $condition, $state) {
+    $condition->condition('mcapi_transactions.payee', \Drupal::currentUser()->id());
   }
 }

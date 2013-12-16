@@ -22,12 +22,12 @@ access:
   system_data: 'user_chooser_segment_perms:transact'
 view_transaction_states:
   1:
-    mcapi_transaction_access_callback_perm_transact: mcapi_transaction_access_callback_perm_transact
-    mcapi_transaction_access_callback_perm_manage_all: mcapi_transaction_access_callback_perm_manage_all
+    IsPayee: IsPayee
+    IsPayer: IsPayer
   0:
-    mcapi_transaction_access_callback_perm_manage_all: mcapi_transaction_access_callback_perm_manage_all
+    permTransact: permTransact
 access_operations:
   undo:
-    mcapi_transaction_access_callback_perm_manage_all: mcapi_transaction_access_callback_perm_manage_all
+    permTransact: permTransact
 weight: '-10'
 langcode: en

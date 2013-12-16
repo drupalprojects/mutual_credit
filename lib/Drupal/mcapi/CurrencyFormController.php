@@ -381,8 +381,6 @@ class CurrencyFormController extends EntityFormController {
     );
 
     $i = 0;
-    $access_callbacks = transaction_access_plugins();
-//////////
     //These two fieldsets should REALLY use a grid of checkboxes, like on admin/people/permissions,
     //but I couldn't work out how to do it, and it might require an hook_update to convert the saved $currency objects
     $form['access_operations'] = array(
@@ -406,13 +404,14 @@ class CurrencyFormController extends EntityFormController {
       '#group' => 'additional_settings',
       '#tree' => TRUE,
     );
+
     foreach (mcapi_get_states('#full') as $constant => $state) {
       $states = isset($currency->view) ? $currency->view : array();
       $form['view_transaction_states'][$constant] = array(
         '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
         '#description' => $state['description'],
         '#type' => 'checkboxes',
-        '#options' => $access_callbacks,
+        '#options' => transaction_access_plugins(FALSE),
         '#default_value' => property_exists($currency, 'view_transaction_states') && isset($currency->view_transaction_states[$constant]) ?
            $currency->view_transaction_states[$constant] : array(current($access_callbacks)),
       );

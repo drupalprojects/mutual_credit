@@ -188,37 +188,47 @@ function mcapi_help($section, $arg) {
         t("This software has been five years in the conceiving and making and has been supported only by informal donations.")
       ));
     case 'admin/accounting/workflow':
-      module_load_include('admin.inc', 'mcapi');
+      module_load_include('inc', 'mcapi');
       //TODO put this somewhere more suitable
       return mcapi_workflow_help();
   }
 }
 
 
-function transaction_operations() {
+function transaction_operations($full = TRUE) {
 	//TODO when to use drupal_static and when to use drupal_static_fast?
-	$operations = &drupal_static('__FUNCTION__', array());
+	$operations = &drupal_static(__FUNCTION__, array());
 	if (empty($operations)) {
 		$manager = \Drupal::service('plugin.manager.mcapi.transaction_operation');
 		foreach ($manager->getDefinitions() as $op => $info) {
-			$operations[$op] = $manager->createInstance($op);
-		}
-	}
-	return $operations;
-}
-function transaction_access_plugins() {
-	//TODO when to use drupal_static and when to use drupal_static_fast?
-	$plugins = &drupal_static('__FUNCTION__', array());
-	if (empty($plugins)) {
-		$manager = \Drupal::service('plugin.manager.mcapi.transaction_access');
-		foreach ($manager->getDefinitions() as $plugin => $info) {
 			$plugins[$op] = $manager->createInstance($op);
 		}
 	}
-	//TODO Gordon I spent a good hour and I can't see why the the definitions aren't found for this plugin
-	//but are found in for the transaction_operations above. I've tried to mirror everything and can't see the difference.
-	return $plugins;
+	if (!$full) {
+	  foreach ($plugins as $key => $info) {
+	    $options[$key] = $info->label();
+	  }
+	  return $options;
+	}
+	else return $plugins;
+}
 
+function transaction_access_plugins($full = TRUE) {
+	//TODO when to use drupal_static and when to use drupal_static_fast?
+	$plugins = &drupal_static(__FUNCTION__, array());
+	if (empty($plugins)) {
+		$manager = \Drupal::service('plugin.manager.mcapi.transaction_access');
+		foreach ($manager->getDefinitions() as $plugin => $info) {
+			$plugins[$plugin] = $manager->createInstance($plugin);
+		}
+	}
+	if (!$full) {
+	  foreach ($plugins as $key => $info) {
+	    $options[$key] = $info->label();
+	  }
+	  return $options;
+	}
+	else return $plugins;
 }
 
 
@@ -605,24 +615,22 @@ function mcapi_currency_list(array $currencies = NULL, AccountInterface $account
       $currencies = entity_load_multiple('mcapi_currency');
     }
   }
-
-  if ($check_access) {
-    $currencies = array_intersect_key($currencies, mcapi_get_available_currencies($account));
+  foreach ($currencies as $currcode => $currency) {
+    $list[$currcode] = $currency->label();
   }
 
-  foreach ($currencies as $currency) {
-    $list[$currency->id()] = $currency->label();
+  if ($check_access) {
+    $list = array_intersect_key($list, mcapi_get_available_currencies($account));
   }
   return $list;
 }
 
-//get all the currencies a user can access, ready for an #options array
 function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!isset($account)) {
     $account = \Drupal::currentUser();
   }
   $cid = 'currencies:' . $account->id();
-  if (!$cache = \Drupal::cache()->get($cid)) {
+  if (!$cache = \Drupal::cache()->get($cid.'k')) {
     $available = array();
     $cache_tags = array('mcapi.available_currency' => array());
     $currencies = entity_load_multiple('mcapi_currency');
@@ -630,7 +638,7 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
     uasort($currencies, array($info['class'], 'sort'));
     foreach ($currencies as $currency) {
       if ($currency->status && $currency->access('membership', $account)) {
-        $available[$currency->id()] = $currency->label();
+        $available[$currency->id()] = $currency;
         $cache_tags['mcapi.available_currency'] = $currency->id();
       }
     }
@@ -667,7 +675,7 @@ function __mcapi_trigger_info() {
 function trigger_transaction_children($transaction) {
 	$children = array();
   foreach (trigger_get_assigned_actions('transaction_children') as $aid => $info) {
-    module_load_include('admin.inc', 'mcapi');
+    module_load_include('inc', 'mcapi');
     $result = actions_do($aid, $transaction, $info);
     if (is_object($result[$aid])) {
       $children[] = $result[$aid];
@@ -986,7 +994,7 @@ function mcapi_process_currcodes($element) {
  * if they have already traded, they can only be blocked, not deleted
  */
 function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
-  form_load_include($form_state, 'admin.inc', 'mcapi');
+  form_load_include($form_state, 'inc', 'mcapi');
   $traded = db_query(
     "SELECT xid FROM {mcapi_transactions} WHERE (payer = :uid OR payee = :uid) AND state > 0",
     array(':uid' => $form['uid']['#value'])
@@ -1002,7 +1010,7 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
  * creates a new method
  */
 function mcapi_user_cancel_methods_alter(&$methods) {
-  module_load_include('admin.inc', 'mcapi');
+  module_load_include('inc', 'mcapi');
   $methods['user_cancel_mcapi'] = array(
     'title' => t('Disable the account and delete its content.'),
     'description' => t('Your account will be blocked and you will no longer be able to log in. All of your content will be deleted.'),
@@ -1017,47 +1025,49 @@ function mcapi_toolbar() {
 
 
 /*
- * transaction_access callbacks
-*/
-function mcapi_transaction_access_callback_perm_transact() {
-	return user_access('transact');
-}
-function mcapi_transaction_access_callback_perm_manage_all() {
-	return user_access('manage all transactions');
-}
-function mcapi_transaction_access_callback_payee($transaction) {
-	return \Drupal::currentUser()->id() == $transaction->payee->value;
-}
-function mcapi_transaction_access_callback_payer($transaction) {
-	return \Drupal::currentUser()->id() == $transaction->payer->value;
-}
-function mcapi_transaction_access_callback_open() {
-	return TRUE;
-}
-function mcapi_transaction_access_callback_creator($transaction) {
-	return \Drupal::currentUser()->id() == $transaction->creator;
-}
+ * what file should this be in? mcapi.views.inc doesn't seem to be included
+ *
+ * implements hook_views_pre_execute for views on the transactions or transaction_index tables
+ * this modifies the query only to show the transactions visible to the user
+ * according to currency view access settings per transaction state
+ * this is pretty elaborate, but the access control can only be done in the query
+ * or views pager won't know how many results there were
+ */
+//Would be more appropriate to use a views hook,
+//but the addWhere syntax isn't as robust as the dbapi
+//We can't use hook_query_TAG_alter: we can't guarantee the tag will be on all the transaction views
+//So we have to alter Every query, for now.
+//function mcapi_views_pre_execute(QueryAlterableInterface $query) {
+function mcapi_query_alter(QueryAlterableInterface $query) {
+  if (!array_intersect(array('mcapi_transactions', 'mcapi_transactions_index'), array_keys($query->getTables()))) return;
+  $currencies = mcapi_get_available_currencies();
 
-
-function mcapi_transaction_access_callback_perm_transact_views($query, $condition, $state) {
-	$condition->condition(1, user_access('transact'));
+  $states = array_keys(mcapi_get_states());
+  $transactionAccessPlugins = transaction_access_plugins(TRUE);
+  //get all the currencies a user can access INTERSECTED with all the currencies in this view
+  //then we iterate through the currencies, saying for each state whether it is visible.
+  //first check the argument and the filters, otherwise get a full list of currencies.
+  $or_currcodes = db_or();//where ((currcode = A and (blah)) OR ((currcode = B and (blah))
+  foreach ($currencies as $currcode => $currency) {
+    $currency = mcapi_currency_load($currcode);
+    //where (currcode = A and (state = x) OR (state = Y) )
+    $state_or_state = db_or();//where state = A OR B
+    foreach ($states as $state) {
+      $plugins = array_filter($currency->view_transaction_states[$state]);
+      foreach ($plugins as $plugin_name) {
+        $plugin = $transactionAccessPlugins[$plugin_name];
+        $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);
+        $plugin->ViewsAccess($query, $state_and_callback, $state);
+        $state_or_state->condition($state_and_callback);
+      }
+    }
+    //TODO can we get the table alias for mcapi_transactions_worths
+    $currcode_and_states = db_and()->condition('mcapi_transactions_worths.currcode', $currcode)->condition($state_or_state);
+    $or_currcodes->condition($currcode_and_states);
+  }
+  //to see this working, enable the sql preview in the views interface.
+  $query->condition($or_currcodes);
 }
-function mcapi_transaction_access_callback_perm_manage_all_views($query, $condition, $state) {
-	$condition->condition(1, user_access('manage all transactions'));
-}
-function mcapi_transaction_access_callback_payee_views($query, $condition, $state) {
-	$condition->condition('mcapi_transactions.payee', \Drupal::currentUser()->id());
-}
-function mcapi_transaction_access_callback_payer_views($query, $condition, $state) {
-	$condition->condition('mcapi_transactions.payer', \Drupal::currentUser()->id());
-}
-function mcapi_transaction_access_callback_open_views($query, $condition, $state) {
-	$condition->condition(1, 1);
-}
-function mcapi_transaction_access_callback_creator_views($query, $condition, $state) {
-	$condition->condition('mcapi_transactions.creator', \Drupal::currentUser()->id());
-}
-
 
 /*
  * implements hook_config_translation_info().

@@ -63,7 +63,7 @@ mcapi.workflow.operations:
     _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
     _title: 'Transaction workflow operations'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'access administration pages'
 
 mcapi.workflow_settings:
   path: '/admin/accounting/workflow/op/{op}'

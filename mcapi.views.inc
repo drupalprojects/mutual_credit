@@ -409,38 +409,6 @@ function mcapi_views_data_alter(&$data) {
 }
 
 
-/*
- * implements hook_query_TAG_alter for views on the mcapi_transactions table
- * this modifies the query only to show the transactions visible to the user
- * according to currency view access settings per transaction state
- * this is pretty elaborate, but the access control has to be done in the query
- * or views pager won't know how many results there were
- */
-function __mcapi_query_transaction_views_access_alter(QueryAlterableInterface $query) {
-  $query->addJoin('LEFT', 'field_data_worth', 'w', 'w.entity_id = mcapi_transactions.xid');return;
-  $states = array_keys(mcapi_get_states());
-  //what currencies can the current user see?
-  $currencies = currencies_load(\Drupal::currentUser());
-  $or_currcodes = db_or();//where ((currcode = A and (blah)) OR ((currcode = B and (blah))
-  foreach ($currencies as $currcode => $currency) {
-    //where (currcode = A and (state = x) OR (state = Y) )
-    $state_or_state = db_or();//where state = A OR B
-    foreach ($states as $state) {
-      $callbacks = array_filter($currency->view_transaction_states[$state]);
-      foreach ($callbacks as $callback) {
-        $callback .= '_views';
-        $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);
-        $callback($query, $state_and_callback, $state);
-        $state_or_state->condition($state_and_callback);
-      }
-    }
-    $currcode_and_states = db_and()->condition('w.worth_currcode', $currcode)->condition($state_or_state);
-    $or_currcodes->condition($currcode_and_states);
-  }
-  //to see this working, show the sql query on admin/structure/views/settings/basic
-  $query->condition($or_currcodes);
-}
-
 
 /*
  * implements hook_form_FORM_ID_alter

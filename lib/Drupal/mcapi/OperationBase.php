@@ -39,10 +39,18 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
    * this rather assumes that the above function is used
   */
   public function opAccess(TransactionInterface $transaction) {
-  	foreach ($transaction->worths[0] as $item) {
-  		$settings = $item->currency->access_operations[$this->id()];
-  		if  (!_transaction_check_access_callbacks($settings, $transaction)) return FALSE;
-  	}
+    $access_plugins = transaction_access_plugins(TRUE);
+    //the default behaviour is to iterate through the TransactionAccess plugins
+		foreach ($transaction->worths[0] as $worth) {
+		  foreach ($worth->currency->access_operations[$this->id()] as $plugin_id) {
+		    //Any of the TransactionAccess plugins must return TRUE for BOTH currencies
+		    //so if any plugin returns TRUE it continues 2 the next currency
+		    if ($access_plugins[$plugin_id]->checkAccess($transaction)) continue 2;
+		  }
+		  //if none of this currency's plugins returns true then deny access
+		  return FALSE;
+		  //right?
+		}
 		return TRUE;
   }
 
@@ -59,11 +67,12 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
 	 * offers a checkbox list of the transaction_operation_access callbacks
 	 */
 	public function access_form(CurrencyInterface $currency) {
+
 		$element = array(
 			'#title' => $this->label,
 			'#description' => $this->description,
 			'#type' => 'checkboxes',
-			'#options' => transaction_access_callbacks(),
+			'#options' => transaction_access_plugins(FALSE),
 			'#default_value' => array(),//this will be overwritten
 			'#weight' => $this->weight,
 		);

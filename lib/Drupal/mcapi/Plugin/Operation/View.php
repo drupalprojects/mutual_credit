@@ -44,15 +44,20 @@ class View extends OperationBase {//does it go without saying that this implemen
 	 *  access callback for transaction operation 'view'
 	*/
 	public function opAccess(TransactionInterface $transaction) {
-    //if any is false, access is denied
-    //assumes that worths is well formulated.
-		foreach ($transaction->worths[0] as $item) {
-		  $settings = $item->currency->view_transaction_states[$transaction->state->value];
-		  if  (!_transaction_check_access_callbacks($settings, $transaction)) return FALSE;
+	  $access_plugins = transaction_access_plugins(TRUE);
+	  //see the comments in OperationBase
+		foreach ($transaction->worths[0] as $worth) {
+		  foreach ($worth->currency->view_transaction_states[$transaction->state->value] as $plugin) {
+		    if ($access_plugins[$plugin]->checkAccess($transaction)) continue 2;
+		  }
+		  return FALSE;
 		}
 		return TRUE;
 	}
 
+	/*
+	 * this is not used in View which is a special case.
+	 */
 	public function execute(TransactionInterface $transaction, array $values) {
 
 	}

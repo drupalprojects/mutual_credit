@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\TransactionAccess\IsPayer
+ *  Contains Drupal\mcapi\Plugin\TransactionAccess\Anyone
  */
 
 namespace Drupal\mcapi\Plugin\TransactionAccess;
@@ -13,22 +13,22 @@ use Drupal\mcapi\TransactionInterface;
  * Criteria for access to a transaction
  *
  * @TransactionAccess(
- *   id = "is_payer",
- *   label = @Translation("The payer")
+ *   id = "anyone",
+ *   label = @Translation("Anyone")
  * )
  */
-class IsPayer {
+class Anyone {
 
   function label() {
     //can we pull out the $definition label, above?
-    return t("The payer");
+    return t("Anyone");
   }
 
   function checkAccess(TransactionInterface $transaction) {
-    return \Drupal::currentUser()->id() == $transaction->payer->value;
+    return TRUE;
   }
 
   function viewsAccess($query, $condition, $state) {
-    $condition->condition('mcapi_transactions.payer', \Drupal::currentUser()->id());
+    $condition->condition('1', 1);
   }
 }
