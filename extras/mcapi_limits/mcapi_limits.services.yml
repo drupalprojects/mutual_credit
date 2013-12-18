@@ -1,0 +1,5 @@
+services:
+  plugin.manager.mcapi_limits:
+    class: Drupal\mcapi_limits\Plugin\LimitsPluginManager
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
+

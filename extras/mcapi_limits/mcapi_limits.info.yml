@@ -1,7 +1,7 @@
 name: Balance limits
-description: Keep your exchange currency on the rails by limiting the amount of credit / users can issue and hold.
+description: Reject transactions that would take users beyond specified credit / debit limits
 package: Community Accounting
-core: 7.x
+core: 8.x
 type: module
 
 dependencies:

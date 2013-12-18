@@ -13,6 +13,13 @@ use Drupal\mcapi\Plugin\field\field_type\Worth;
 
 class TransactionStorageController extends FieldableDatabaseStorageController implements TransactionStorageControllerInterface {
 
+/*
+ *  TODO GORDON where are the transaction->children saved?
+ * each transaction should be simply skipped if $this->entity->errors
+ * this is how invalid child transactions don't break everything
+ */
+
+
   /**
    * Overrides Drupal\Core\Entity\DatabaseStorageController::attachLoad().
    */
@@ -227,54 +234,49 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * this would be more useful when views isn't available
    */
   public function filter(array $conditions, $offset, $limit) {
-    extract($conditions);
     $query = db_select('mcapi_transactions', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
 
+    foreach(array('state', 'serial', 'payer', 'payee', 'creator', 'type') as $field) {
+      if (array_key_exists($field, $conditions)) {
+        $query->condition($field, (array)$conditions[$field]);
+        unset($conditions[$field]);
+      }
+    }
+
+    if (array_key_exists('involving', $conditions)) {
+      $query->condition(db_or()
+        ->condition('payer', (array)$conditions['involving'])
+        ->condition('payee', (array)$conditions['involving'])
+      );
+      unset($conditions['involving']);
+    }
+    if (array_key_exists('from', $conditions)) {
+      $query->condition('created', $conditions['from'], '>');
+      unset($conditions['from']);
+    }
+    if (array_key_exists('to', $conditions)) {
+      $query->condition('created', $conditions['to'], '<');
+      unset($conditions['to']);
+    }
+
+    if (array_key_exists('currcode', $conditions) || array_key_exists('value', $conditions)) {
+      $query->join('mcapi_transactions_worths', 'w', 'x.xid = w.xid');
+      if (array_key_exists('currcode', $conditions)) {
+        $query->condition('currcode', $conditions['currcode']);
+      }
+      if (array_key_exists('quantity', $conditions)) {
+        $query->condition('quantity', $conditions['quantity']);
+      }
+    }
+
     if ($limit) {
       $query->range($offset, $limit);
     }
-    if (isset($serial)) {
-      $query->condition('serial', (array)$serial);
-    }
-    if (isset($state)) {
-      $query->condition('state', (array)$state);
-    }
-    if (isset($payer)) {
-      $query->condition('payer', (array)$payer);
-    }
-    if (isset($payee)) {
-      $query->condition('payee', (array)$payee);
-    }
-    if (isset($creator)) {
-      $query->condition('creator', (array)$creator);
-    }
-    if (isset($type)) {
-      $query->condition('type', (array)$type);
-    }
-    if (isset($involving)) {
-      $query->condition(db_or()
-        ->condition('payer', (array)$involving)
-        ->condition('payee', (array)$involving)
-      );
-    }
-    if (isset($from)) {
-      $query->condition('created', $from, '>');
-    }
-    if (isset($to)) {
-      $query->condition('created', $to,  '<');
-    }
-
-    if (isset($currcode) || isset($quantity)) {
-      $query->join('mcapi_transactions_worths', 'w', 'x.xid = w.xid');
-      if (isset($currcode)) {
-        $query->condition('currcode', $currcode);
-      }
-      if (isset($quantity)) {
-        $query->condition('quantity', $quantity);
-      }
-    }
+    //TODO
+    //If there is anything left in $conditions, it must be a fieldAPI field.
+    //How to handle that?
     return $query->execute()->fetchAllKeyed();
   }
 

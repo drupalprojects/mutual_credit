@@ -7,13 +7,11 @@
 
 namespace Drupal\mcapi;
 
-//use Drupal\Core\Entity\EntityInterface;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Config\ConfigFactory;
 
-
-//interface OperationInterface extends EntityInterface {//TODO do we need to extend EntityInterface?
+//TODO should we extend EntityInterface or ConfigEntityInterface?
 interface OperationInterface {
 
 	public function operation_form(TransactionInterface $transaction);

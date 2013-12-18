@@ -30,7 +30,7 @@ mcapi_ <?php
  * $transaction->dependents where the theme layer expects to find them
  * $serial can be varchar or an array of varchars
  */
-stdClass transaction_load($serial);
+transaction_load($serial);
 
 
 /*
@@ -45,9 +45,7 @@ function hook_transaction_presave(TransactionInterface $transaction){
  * create child transactions
  * return an array of transaction objects
  */
-function hook_transaction_children(TransactionInterface $transaction) {
-
-}
+function hook_transaction_children(TransactionInterface $transaction);
 
 /*
  * The default entity controller supports 3 undo modes
@@ -134,16 +132,9 @@ array transaction_totals($uid, $currcode, $filters);
  * no need to put hook_info coz that's just for lazy loading
  */
 
-//declare new transaction controllers - only the function name is needed.
-function hook_transaction_controller(){}
-
 //check the transactions and the system integrity after the transactions would go through
 //do NOT change the transaction
-function hook_accounting_validate(array $transactions){}
-
-//do your own writing for the transaction cluster
-function hook_transaction_cluster_write(array $transactions){}
-
+function hook_mcapi_transaction_validate(array $transactions);
 
 //respond to the creation of a transaction
 function hook_transaction_post_insert($transaction){}

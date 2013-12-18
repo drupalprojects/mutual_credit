@@ -1,4 +1,4 @@
-<?php
+  <?php
 
 //TODO why is NestedArray here? Still needed?
 use Drupal\Component\Utility\NestedArray;
@@ -153,28 +153,6 @@ function mcapi_user_summary($account, $currcodes = array()) {
   return $render_array;
 }
 
-/*
- * rounds a transaction quantity up or down, according to currency settings
- */
-function mcapi_round($quant, $currcode, $up = FALSE) {
-  $currency = entity_load('mcapi_currency', $currcode);
-  switch ($currency->display['widget']) {
-    case CURRENCY_WIDGET_SELECT:
-      //calculate the number of hundredths from each division to the fraction, and choose the smallest
-      list($int, $fraction) = array_pad(explode('.', $quant), 2, 0);
-      //divisions allowed exists in loaded currencies only
-      foreach ($currency->display['divisions_allowed'] as $division) {
-        $diffs[$division] = abs($fraction - $division);
-      }
-      asort($diffs);
-      return "$int.". key($diffs);
-      break;
-    case CURRENCY_WIDGET_SINGLEFIELD:
-      $quant = round($quant, 2);
-    case CURRENCY_WIDGET_TEXT:
-      return $quant;
-  }
-}
 
 
 function transaction_get_links($transaction, $mode = 'page', $view = FALSE) {
@@ -390,7 +368,10 @@ function template_preprocess_certificate(&$vars) {
 	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
 }
 
-//this is abstracted so that the arbitrary twig can access it too
+/*
+ * helper for theming transactions
+ * this is abstracted so that the arbitrary twig can access it too
+ */
 function mcapi_transaction_process_vars(&$vars, $transaction) {
   $payer = array(
       '#theme' => 'username',
@@ -632,18 +613,18 @@ function mcapi_dependent_transaction_action_submit($form, $form_state) {
 function mcapi_workflow_help() {
   drupal_add_css('table.help{float:left;margin-right:1em; width:50%;} ul.admin-list{clear:both;}', array('type' => 'inline'));
   $renderable = array(
-      'states' => array(
-          '#theme' => 'table',
-          '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
-          '#header' => array(t('Name'), t('Description')),
-          '#attributes' => array('class' => array('help'))
-      ),
-      'types' => array(
-          '#theme' => 'table',
-          '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
-          '#header' => array(t('machine name')),
-          '#attributes' => array('class' => array('help'))
-      ),
+    'states' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
+      '#header' => array(t('Name'), t('Description')),
+      '#attributes' => array('class' => array('help'))
+    ),
+    'types' => array(
+      '#theme' => 'table',
+      '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
+      '#header' => array(t('machine name')),
+      '#attributes' => array('class' => array('help'))
+    ),
   );
   foreach (mcapi_get_states('#full') as $name => $info) {
     $renderable['states']['#rows'][$name]['name'] = $info['name'];
@@ -667,17 +648,6 @@ function validate_mcapi_configure_worth_formula(&$element, $form_state) {
 }
 
 
-/*
- * user cancel method callback
-* see mcapi_form_user_cancel_confirm_form_alter
-*/
-function mcapi_user_cancel($edit, $account, $method) {
-  if ($method == 'user_cancel_mcapi') {
-    foreach(node_load_multiple(NULL, array('uid' => $account->uid)) as $node) {
-      node_delete($node);
-    }
-  }
-}
 
 function _transaction_type_selector($default, $multiple = TRUE, $exclude = NULL) {
   if (!is_array($exclude)) {

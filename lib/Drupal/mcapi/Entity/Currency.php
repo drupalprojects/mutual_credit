@@ -73,6 +73,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $view_transaction_states;
   public $access_operations;
   public $weight;
+  public $limits_plugin;
+  public $limits_settings;
 
   /**
    * {@inheritdoc}

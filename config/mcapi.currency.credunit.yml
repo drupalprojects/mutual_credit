@@ -31,3 +31,5 @@ access_operations:
     permTransact: permTransact
 weight: '-10'
 langcode: en
+limits_plugin: none
+limits_settings: 

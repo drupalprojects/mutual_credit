@@ -317,6 +317,10 @@ function mcapi_update_8000() {
 function mcapi_update_8001() {
   //put the transaction description data into the entity table
   mcapi_index_rebuild();
+
+  update_variables_to_config('node.misc', array(
+    // 'old_variable' => 'new_config.sub_key'
+  ));
 }
 
 

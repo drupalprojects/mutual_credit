@@ -534,53 +534,6 @@ class CurrencyFormController extends EntityFormController {
   }
 
   /**
-   * currency form validate callback
-   * deconstruct, validate, reconstruct and set_value
-   * this sorts out any leading zeros on the centiles
-   */
-  public function validate_divisions(array &$element, array &$form_state) {
-    if ($form_state['values']['display']['divisions'] != CURRENCY_WIDGET_SELECT) {
-      return;
-    }
-    $validated = array();
-    $lines = explode("\n", $element['#value']);
-    foreach (explode("\n", $element['#value']) as $line) {
-      if (strpos($line, '|') === FALSE) {
-        form_error($element, t('line "@val" should contain a pipe character, |', array('@val' => $line)));
-      }
-      list($cents, $display) = explode('|', $line);
-      if (!is_numeric($cents) || !strlen($display)) {
-        form_error($element,
-          t("'@val' should be an integer from  0 to 99, followed directly by a pipe, |, followed directly by a word or phrase with no unusual characters",
-            array('@val' => $line)
-          )
-        );
-      }
-      $validated[intval($cents)] = check_plain($display);
-    }
-    if (count($lines) <> count($validated)) {
-      form_error($element, t('Keys must be unique in field @fieldname', array('@fieldname' => $element['#title'])));
-    }
-    if (count($validated) < 2) {
-      form_error($element, t("There should be at least two lines in field '@fieldname'", array('@fieldname' => $element['#title'])));
-    }
-    $element_value = '';
-    foreach ($validated as $cents => $display) {
-      $element_value .= "$cents|$display\n";
-    }
-    form_set_value($element, trim($element_value), $form_state);
-  }
-
-  /**
-   * currency form validate callback
-   */
-  public function validate_format(array &$element, array &$form_state) {
-    if (strpos($element['#value'], '[quantity]') === FALSE) {
-      form_error($element, t("Currency format must contain token '[quantity]'"));
-    }
-  }
-
-  /**
    * Overrides Drupal\Core\Entity\EntityFormController::delete().
    */
   public function delete(array $form, array &$form_state) {

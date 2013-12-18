@@ -72,7 +72,7 @@ function mcapi_menu() {
   );
   $items['admin/accounting/currencies'] = array(
     'title' => 'Currencies',
-    'description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined. Most communities will want only one currency, but if you are hosting many communities in one drupal instance, or if there is an appetite for experimentation, different currencies can be provided. User can access many potentially very different currencies. Mixed payments are also possible, but this is pushing the boundaries of the software.',
+    'description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined.',
     'route_name' => 'mcapi.admin_currency_list',
   );
   $items['admin/accounting/workflow'] = array(
@@ -96,62 +96,10 @@ function mcapi_menu() {
   */
   return $items;
 }
-/**
- * Community Accounting API wrapper function, see transaction.api.php
- * update the transaction and notify the rest of the system
- * WARNING updating a transaction will NOT update the child transactions
- */
-function transaction_update($op, $transaction, $old_state = NULL) {
-  //entity_metadata_wrapper('transaction', $transaction)->update();
-  entity_get_controller('mcapi_transaction')->update($transaction);
-  //this will have fired
-  //hook_entity_presave
-  //hook_entity_insert OR hook_entity_update
-  module_invoke_all('transaction_update', $op, $transaction, $old_state);
-
-  //TODO
-  //invoke rules
-}
-
-/*
- * Community Accounting API function, see transaction.api.php
- * Undo according to the appropriate delete mode.
- * NB No accounting checks take place before deletings.
- */
-function transaction_undo($serial) {
-  //load all the transactions sharing this serial as equals in an array, not as parent/children
-
-}
 
 /**
- * element pre_render callback
- */
-function mcapi_pre_render_summary($element) {
-  static $results = array();//TODO should this be drupal_static?
-	$uid = $element['#account']->uid->value;
-  //occasionally we'll appreciate a static result
-  $result = &$results[$uid][$element['#currency']->id()];
-  if (empty($result)) {
-    $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-    $data = $storage->summaryData($element['#account'], $element['#currency'], $element['#filters']);
-    foreach ($data as $key => $val) {
-      $result['#'.$key] = $val;
-    }
-  }
-  return $element + $result;
-}
-
-/*
- * Community Accounting API wrapper function, to load a transaction by serial number
- * see transaction.api.php
- */
-function transaction_load($serial = NULL) {
-  return entity_load('mcapi_transaction', array('serial' => $serial));
-}
-
-
-/**
- * Community Accounting API wrapper function, see transaction.api.php
+ * Retrive a filtered list of transactions
+ * This could be an alternative to views.
  */
 function transaction_filter(array $conditions, $offset = 0, $limit = 25, $fieldapi = array()) {
   if ($fieldapi) {
@@ -173,12 +121,9 @@ function transaction_filter(array $conditions, $offset = 0, $limit = 25, $fielda
   return $serials;
 }
 
-/*
- * DRUPAL & CONTRIB HOOK IMPLEMENTATIONS
- */
-
 /**
  * implements hook_help()
+ * TODO isn't there something in the page controller for this?
  */
 function mcapi_help($section, $arg) {
   switch ($section) {
@@ -187,10 +132,20 @@ function mcapi_help($section, $arg) {
         t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital."),
         t("This software has been five years in the conceiving and making and has been supported only by informal donations.")
       ));
+    case 'admin/accounting/currencies':
+      return implode(' ', array(
+      	t('Most community projects now have only one currency.'),
+      	t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.')
+      ));
     case 'admin/accounting/workflow':
-      module_load_include('inc', 'mcapi');
-      //TODO put this somewhere more suitable
-      return mcapi_workflow_help();
+      return implode(' ', array(
+        t('Different transaction user stories can be configured here, although the actual structure has to be defined in code.')
+      ));
+    case 'admin/accounting/workflow/operations':
+      return implode(' ', array(
+        t("The workflow is about moving transactions between states. This is always done with a 'confirm' form."),
+        t("The confirm forms are configured on this page.")
+      ));
   }
 }
 
@@ -296,15 +251,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
   return $items;
 }
 
-/**
- * Implements hook_search_info().
- */
-function mcapi_search_info() {
-  return array(
-    'title' => 'Transactions',
-    'path' => 'transaction',
-  );
-}
 
 /*
  * implement hook_user_view().
@@ -327,41 +273,14 @@ function mcapi_uid_renum($old, $new) {
   }
 }
 
-/**
- * implements hook_accounting_validate
- * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
- */
-function mcapi_accounting_validate(array $transactions){
-  $errors = array();
-  foreach ($transactions as $key => $transaction) {
-
-  	//TODO How to get the uids????
-  	continue;
-
-    //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
-    if ($transaction->payer > 0) {
-      if ($transaction->payer->value == $transaction->payee->value) {
-        if ($key == 0) {
-          $errors[] = t('A transaction must involve two different users');
-        }
-        else {
-          unset($transactions[$key]);
-        }
-      }
-    }
-    //a transaction can only be finished if all these fields are filled in.
-    if ($transaction->state >= TRANSACTION_STATE_FINISHED) {
-      $required = array('payer', 'payee',  'type');
-      foreach ($required as $fieldname) {
-        if (!$transaction->$fieldname->value) {
-          $errors[] = t("@fieldname required for completed transaction", array('@fieldname' => $fieldname));
-        }
-      }
-    }
+//just gets the children and puts them side by side
+//with the main transaction for easier handling
+function mcapi_transaction_flatten($transaction) {
+  $cluster = array($transaction);
+  foreach ($transaction->children as $child) {
+    $cluster[] = $child;
   }
-  if ($errors) {
-    throw new Exception(implode("<br />", $errors));
-  }
+  return $cluster;
 }
 
 
@@ -386,16 +305,6 @@ function mcapi_mcapi_info_states() {
     );
   }
   return $states;
-}
-
-/**
- * Implements hook_field_display_ENTITY_TYPE_alter().
- */
-function mcapi_field_display_transaction_alter(&$display, $context) {
-  // Hide field labels in search index.
-  if ($context['view_mode'] == 'search_index') {
-    $display['label'] = 'hidden';
-  }
 }
 
 
@@ -509,43 +418,10 @@ function transaction_access_callbacks() {
   }
 }
 
-/**
- * implements hook transaction_access_callbacks().
- */
-function mcapi_transaction_access_callbacks() {
-  return array(
-    'mcapi_transaction_access_callback_perm_transact' => t("Users with permission to '@perm'", array('@perm' => t('Transact'))),
-    'mcapi_transaction_access_callback_perm_manage_all' => t("Users with permission to '@perm'", array('@perm' => t('Manage all transactions'))),
-    'mcapi_transaction_access_callback_payee' => t('The payee in the transaction'),
-    'mcapi_transaction_access_callback_payer' => t('The payer in the transaction'),
-    'mcapi_transaction_access_callback_open' => t('Anyone, even anonymous users'),
-    'mcapi_transaction_access_callback_creator' => t('The creator of the transaction'),
-  );
-}
-
-/*
- * helper function to run through all the access callbacks after the operation's own access callback has done its tests
-*/
-function _transaction_check_access_callbacks($callbacks, $transaction) {
-	foreach ($callbacks as $function) {
-		if ($function($transaction)) return TRUE;
-	}
-	return FALSE;
-}
-
-/*
- * implements hook_user_delete().
- * all transactions revert to the reservoir
- * Of course normally you wouldn't delete a user in a mutual credit system
- */
-function mcapi_user_delete($account) {
-  foreach (mcapi_currency_list(NULL, $account, TRUE) as $currcode => $currname) {
-    entity_get_controller('transaction')->mergeAccounts(mcapi_currency_load($currcode)->reservoir, $account->uid);
-  }
-}
 
 /**
  * implements hook_mail().
+ * TODO move this into another module, to be fired by triggers
  */
 function mcapi_mail($key, &$message, $params) {
   if ($key == 'transaction_mail_action') {
@@ -602,7 +478,7 @@ function mcapi_currency_load($currcode) {
 function mcapi_currency_list(array $currencies = NULL, AccountInterface $account = NULL, $check_access = TRUE) {
   $list = array();
 
-  if (!$account) {
+  if (!$account || $check_access) {
     $account = \Drupal::currentUser();
   }
 
@@ -649,39 +525,6 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   else {
     return $cache->data;
   }
-}
-
-
-
-/*
- * implements hook_trigger_info().
- * we need a trigger for each transaction_operation
- * TODO convert these into rules, or something
- */
-function __mcapi_trigger_info() {
-  $triggers['mcapi']['transaction_children']['label'] = t('Create dependent transactions before inserting.');
-  $triggers['mcapi']['transaction_undo']['label'] = t('Respond to transaction deletion.');
-  $triggers['mcapi']['transaction_update']['label'] = t('Respond to transaction changing.');
-  $triggers['mcapi']['transaction_post_insert']['label'] = t('Respond to a new transaction.');
-  return $triggers;
-}
-
-/*
- * pull trigger transaction_children().
- * will only fire if the trigger module is enabled
- * sends the volitional transaction to the action callbacks where it can be changed.
- * Action callbacks may return a new transaction to be added to the $transactions
- */
-function trigger_transaction_children($transaction) {
-	$children = array();
-  foreach (trigger_get_assigned_actions('transaction_children') as $aid => $info) {
-    module_load_include('inc', 'mcapi');
-    $result = actions_do($aid, $transaction, $info);
-    if (is_object($result[$aid])) {
-      $children[] = $result[$aid];
-    }
-  }
-  return $children;
 }
 
 /*
@@ -791,6 +634,7 @@ function mcapi_worths_element_process($element, &$form_state) {
       $element['#description'] = $element['#description'] . t('Max: !num', array('!num' => $element['#max']));
     }
   }
+
   //now populate all the subwidgets with defaults
   foreach (element_children($element) as $delta) {
     $element[$delta]['#type'] = 'worth';
@@ -843,7 +687,7 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
   if (!is_object($element['#default_value'])) {
     $element['#default_value'] = $typedDataManager->create(array('type' => 'field_item:worth', 'list' => TRUE), $element['#default_value']);
   }
-
+  debug($element['#currcodes']);
   $element['#title_display'] = 'attribute';
   //the element is aware of a set of currcodes
   if (empty($element['#currcodes'])) {
@@ -851,12 +695,15 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
     //this defaults to all
     $element['#currcodes'] = array_keys(mcapi_get_available_currencies());
   }
+debug($element['#currcodes']);
   $element['currcode'] = array(
     '#title' => t('Currency'),
     '#type' => 'mcapi_currcodes',
     '#currcodes' => $element['#currcodes'],
     '#default_value' => $element['#default_value']->currcode,
   );
+  $element['currcode'] = mcapi_process_currcodes($element['currcode']);
+
   $parents =  $element['#parents'];
   $parents[] = 'currcode';
 
@@ -905,7 +752,6 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
       $element[$currency->widget]['#states']['visible'][':input[name="' . $name . '"]'][] = array('value' => $currency->id());
     }
   }
-
   return $element;
 }
 
@@ -959,35 +805,45 @@ function mcapi_process_types($element) {
 }
 
 function mcapi_process_currcodes($element) {
+  debug($element['#currcodes']);
   if (empty($element['#options']) && !empty($element['#currcodes'])) {
-    $element['#options'] = array_intersect_key(mcapi_get_available_currencies(), drupal_map_assoc($element['#currcodes']));
+    $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL), drupal_map_assoc($element['#currcodes']));
   }
-  else if (empty($element['#options'])) {//assume it is a user object
+  else if (empty($element['#options'])) {
     //limit the choice to the currencies available to this user
-    $element['#options'] = mcapi_get_available_currencies();
+    $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL, TRUE), drupal_map_assoc($element['#currcodes']));
   }
   else if ($element['#options'] == 'all') {
-    $currencies = entity_load_multiple('mcapi_currency');
-    $element['#options'] = array();
+    $element['#options'] = mcapi_currency_list(NULL, NULL);
   }
 
-  if (empty($element['#options'])) {
-    $element['#options'] = array();
-    foreach ($currencies as $currcode => $currency) {
-      $element['#options'][$currcode] = $currency->label();
-    }
-  }
-
-  if (count($element['#options']) == 1 && isset($element['#options'][$element['#default_value']])) {
+  if (count($element['#options']) == 1) {
     //$element['#type'] = 'value';
-    $element['#theme'] = array();
+    $element['#type'] = 'value';
     $element['#theme_wrappers'] = array();
-    $element['#value'] = $element['#default_value'];
+    $element['#value'] = current($element['#options']);
   }
-
   return $element;
 }
 
+
+/**
+ * element pre_render callback
+ */
+function mcapi_pre_render_summary($element) {
+  static $results = array();//TODO should this be drupal_static?
+  $uid = $element['#account']->uid->value;
+  //occasionally we'll appreciate a static result
+  $result = &$results[$uid][$element['#currency']->id()];
+  if (empty($result)) {
+    $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+    $data = $storage->summaryData($element['#account'], $element['#currency'], $element['#filters']);
+    foreach ($data as $key => $val) {
+      $result['#'.$key] = $val;
+    }
+  }
+  return $element + $result;
+}
 
 /*
  * implements alter hook_form_user_cancel_confirm_form().
@@ -1006,6 +862,18 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
 }
 
 /*
+ * user cancel method callback
+* see mcapi_form_user_cancel_confirm_form_alter
+*/
+function mcapi_user_cancel($edit, $account, $method) {
+  if ($method == 'user_cancel_mcapi') {
+    foreach(node_load_multiple(NULL, array('uid' => $account->uid)) as $node) {
+      node_delete($node);
+    }
+  }
+}
+
+/*
  * implements alter hook_user_cancel_methods().
  * creates a new method
  */
@@ -1017,6 +885,21 @@ function mcapi_user_cancel_methods_alter(&$methods) {
   );
 }
 
+/*
+ * implements hook_user_delete().
+* all transactions revert to the reservoir
+* Of course normally you wouldn't delete a user in a mutual credit system
+*/
+function mcapi_user_delete($account) {
+  foreach (mcapi_currency_list(NULL, $account, TRUE) as $currcode => $currname) {
+    entity_get_controller('transaction')->mergeAccounts(mcapi_currency_load($currcode)->reservoir, $account->uid);
+  }
+}
+
+/*
+ * implements hook_toolbar
+ * adds the 'balances' icon
+ */
 function mcapi_toolbar() {
   if (\Drupal::currentUser()->hasPermission('manage all transactions')) {
     drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
@@ -1061,7 +944,7 @@ function mcapi_query_alter(QueryAlterableInterface $query) {
         $state_or_state->condition($state_and_callback);
       }
     }
-    //TODO can we get the table alias for mcapi_transactions_worths
+    //TODO do we need to get the table alias for mcapi_transactions_worths?
     $currcode_and_states = db_and()->condition('mcapi_transactions_worths.currcode', $currcode)->condition($state_or_state);
     $or_currcodes->condition($currcode_and_states);
   }
@@ -1076,10 +959,12 @@ function mcapi_query_alter(QueryAlterableInterface $query) {
  */
 function mcapi_config_translation_info() {
   //dunno what to return here
+  return array();
 }
 /*
  * implements hook_config_translation_type_info_alter().
+ * //TODO
  */
 function mcapi_config_translation_type_info_alter($info) {
-	debug($info);
+	print_r($info);
 }

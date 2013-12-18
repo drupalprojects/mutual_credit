@@ -46,6 +46,7 @@ use Drupal\mcapi\TransactionInterface;
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
+  var $errors = array();
   /**
    * Implements Drupal\Core\Entity\EntityInterface::id().
    */
@@ -74,6 +75,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * preSave
    * passes the transaction around allowing modules
    * populates the children property
+   * handles errors with child transactions
    */
   public function preSave(EntityStorageControllerInterface $storage_controller) {
     //TODO: Change this so that you only create new serial numbers on the parent transaction.
@@ -91,10 +93,24 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       //note that children do not have a serial number or parent xid until the postSave
       $this->buildChildren();
     }
+    foreach ($this->children as $key => $transaction) {
+      if (!empty($transaction->errors)) {
+        watchdog(
+          'Community Accounting',
+          'A child transaction "!description" failed validation and was not saved.',
+          array('!transaction' => print_r($transaction, 1)),
+          WATCHDOG_ERROR
+        );
+        drupal_set_message(
+          t('A child transaction "!description" failed validation and was not saved.', array('!description' => $transaction->description->value)),
+          'warning'
+        );
+      }
+    }
   }
 
   /**
-   * Validate a cluster of transactions
+   * Validate a transaction, with its children
    * TODO put this in an interface
    * This should ALWAYS be run inside a try{}
     * Should there be a transaction Exception class?
@@ -104,25 +120,32 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $errors = array();
     //check that each trader has permission to use all the currencies
     foreach (array($this->payer->entity, $this->payee->entity) as $account) {
-    	//TODO why is $this->payer a list???
-    	//TODO we can debug($account) here but not 2 lines down.
       foreach ($this->worths[0] as $worth) {
         if (!$worth->currency->access('membership', $account)) {
           $errors[] = t('!user cannot use !currency', array('!user' => $account->name->value, '!currency' => $worth->currency->name));
         }
       }
     }
-    //TODO what kind of exception to throw??
-    //debug($errors, 'Transaction entity validation errors');
-    if (count($errors)) throw new Exception(implode(' ', $errors));
-
-    //validate hooks should know how to read in the children
-    //or perhaps they could be sent a flat array like this
-    $cluster = array($this);
-    foreach ($this->children as $child) {
-      $cluster[] = $child;
+    $cluster = mcapi_transaction_flatten($this);
+    //child transactions which fail validation do so quietly, leaving a message in the log.
+    foreach ($cluster as $transaction) {
+      $transaction->errors = array();
+      if ($transaction->payer->value == $transaction->payee->value) {
+        $transaction->errors[] = t('A wallet cannot pay itself.');
+      }
+      foreach ($transaction->worths[0] as $worth) {
+        if ($worth->value <= 0) {
+          $transaction->errors[] = t('A transaction must be worth more than 0;');
+        }
+      }
     }
-    module_invoke_all('accounting_validate', $cluster);
+
+    module_invoke_all('mcapi_transaction_validate', $cluster);
+
+    if (!empty($this->errors)) {
+      //errors in the top level transaction mean that the saving can't go ahead and validation fails
+      throw new Exception(implode(' ', $errors));
+    }
   }
 
   /**
