@@ -35,9 +35,7 @@ class LimitsPluginManager extends DefaultPluginManager {
    * {@inheritdoc}
    */
   public function setup(CurrencyInterface $currency) {
-    return $this->factory->createInstance(
-      empty($currency->limits_plugin) ? 'none' : $currency->limits_plugin,
-      empty($currency->limits_settings) ? array() : $currency->limits_settings
-    );
+    $plugin = empty($currency->limits_plugin) ? 'none' : $currency->limits_plugin;
+    return $this->factory->createInstance($plugin, $currency);
   }
 }

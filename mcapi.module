@@ -817,7 +817,14 @@ function mcapi_process_currcodes($element) {
   else if ($element['#options'] == 'all') {
     $element['#options'] = mcapi_currency_list(NULL, NULL);
   }
-  if ($element['#multiple']) {
+
+  if (count($element['#options']) == 1) {
+    //$element['#type'] = 'value';
+    $element['#type'] = 'value';
+    $element['#theme_wrappers'] = array();
+    $element['#default_value'] = key($element['#options']);
+  }
+  elseif ($element['#multiple']) {
     //have to do some of the checkbox processing manually coz we missed it
     $element['#type'] = 'checkboxes';
     $element['#value'] = array_filter($element['#default_value']);
@@ -825,13 +832,6 @@ function mcapi_process_currcodes($element) {
   }
   else {
     $element['#theme'] = 'select';
-  }
-
-  if (count($element['#options']) == 1) {
-    //$element['#type'] = 'value';
-    $element['#type'] = 'value';
-    $element['#theme_wrappers'] = array();
-    $element['#default_value'] = key($element['#options']);
   }
   return $element;
 }

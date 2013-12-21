@@ -82,7 +82,7 @@ function _mcapi_calc($formula, $base_value) {
  */
 
 use Drupal\Core\Template\Attribute;
-function theme_worth_element($variables) {
+function theme_worth_element($variables) {die('are we using this?');
   $element = &$variables['element'];
   $element['#attributes']['class'][] = "worth-widget";
   $element['#attributes'] = new Attribute($element['#attributes']);
@@ -303,7 +303,7 @@ function drawBalanceHistory() {
   new google.visualization.LineChart(document.getElementById('$id')).draw(data, options);
 }";
 	//
-//	drupal_add_js('http://www.google.com/jsapi');
+	drupal_add_js('http://www.google.com/jsapi');
 	drupal_add_js("google.load('visualization', '1', {packages: ['corechart']});\ngoogle.setOnLoadCallback(drawBalanceHistory);", 'inline');
 	$vars['javascript'] = $js;
 }
@@ -350,14 +350,14 @@ function template_preprocess_certificate(&$vars) {
  */
 function mcapi_transaction_process_vars(&$vars, $transaction) {
   $payer = array(
-      '#theme' => 'username',
-      '#account' => $transaction->payer->entity,
-      '#link_options' => array('attributes' => array('rel' => 'author')),
+    '#theme' => 'username',
+    '#account' => $transaction->payer->entity,
+    '#link_options' => array('attributes' => array('rel' => 'author')),
   );
   $payee = array(
-      '#theme' => 'username',
-      '#account' => $transaction->payee->entity,
-      '#link_options' => array('attributes' => array('rel' => 'author')),
+    '#theme' => 'username',
+    '#account' => $transaction->payee->entity,
+    '#link_options' => array('attributes' => array('rel' => 'author')),
   );
   $vars['payer'] = drupal_render($payer);
   $vars['payee'] = drupal_render($payee);

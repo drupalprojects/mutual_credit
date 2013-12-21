@@ -21,11 +21,7 @@ use \Drupal\Core\Session\AccountInterface;
  * @Limits(
  *   id = "none",
  *   label = @Translation("None"),
- *   description = @Translation("No limits"),
- *   settings = {
- *     "min" = "0",
- *     "max" = "0"
- *   }
+ *   description = @Translation("No limits")
  * )
  */
 class None extends McapiLimitsBase implements McapiLimitsInterface {
@@ -43,5 +39,9 @@ class None extends McapiLimitsBase implements McapiLimitsInterface {
 
   public function getLimits(AccountInterface $account = NULL){
   	return array('min' => NULL, 'max' => NULL);
+  }
+
+  public function view(AccountInterface $account) {
+    return array();
   }
 }

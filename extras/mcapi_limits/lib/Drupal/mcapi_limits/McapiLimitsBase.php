@@ -9,18 +9,18 @@ namespace Drupal\mcapi_limits;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Config\ConfigFactory;
-use \Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Session\CurrencyInterface;
 
 /**
  * Base class for Operations for default methods.
  */
 abstract class McapiLimitsBase extends ConfigEntityBase implements McapiLimitsInterface {
 
-	//these are the settings
-	public $settings;
+	public $currency;
 
-  public function __construct(array $settings) {
-    $this->settings = $settings;
+  public function __construct(CurrencyInterface $currency) {
+    $this->currency = $currency;
   }
 
 	/*
@@ -33,7 +33,7 @@ abstract class McapiLimitsBase extends ConfigEntityBase implements McapiLimitsIn
 	    '#title' => t('Personal limits'),
 	    '#description' => t('Settings on the user profiles override these general limits.'),
 	    '#type' => 'checkbox',
-	    '#default_value' => $this->settings['personal'],
+	    '#default_value' => $this->currency->limits_settings['personal'],
 	    '#weight' => 5,
 	    '#states' => array(
 	      'invisible' => array(
@@ -45,7 +45,8 @@ abstract class McapiLimitsBase extends ConfigEntityBase implements McapiLimitsIn
 	    '#title' => t('Skip balance limit check'),
 	    '#description' => t('Especially useful for mass transactions and automated transactions'),
 	    '#type' => 'checkboxes',
-	    '#default_value' => $this->settings['skip'],
+	    //casting it here saves us worrying about the default, which is awkward
+	    '#default_value' => (array)$this->currency->limits_settings['skip'],
 	    //would be nice if this was pluggable, but not needed for the foreseeable
 	    '#options' => array(
 	      'auto' => t("for transactions of type 'auto'"),
@@ -63,8 +64,9 @@ abstract class McapiLimitsBase extends ConfigEntityBase implements McapiLimitsIn
 	  );
     return $form;
 	}
-  function getPersonal($account) {
+  function getPersonal(AccountInterface $account) {
     print_r($account);die('getpersonal');
   }
+  abstract function getLimits(AccountInterface $account = NULL);
 }
 

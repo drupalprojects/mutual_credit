@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi_limits\Plugin\Limits\Explicit
+ *  Contains Drupal\mcapi_limits\Plugin\Limits\Balanced
  *
  */
 
@@ -19,18 +19,15 @@ use \Drupal\Core\Session\AccountInterface;
  * No balance limits
  *
  * @Limits(
- *   id = "explicit",
- *   label = @Translation("Explicit"),
- *   description = @Translation("Explicit limits")
+ *   id = "balanced",
+ *   label = @Translation("Balanced"),
+ *   description = @Translation("Limits are the same distance from zero")
  * )
  */
-class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
+class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
 
   public function settingsForm() {
-    $form['minmax'] =  array(
-    	'#type' => 'minmax',
-      '#default_value' => $this->currency->limits_settings['minmax']
-    );
+    $form['liquidity'] =  $this->widget($this->currency->limits_settings['liquidity']);
     $form += parent::settingsForm();
     return $form;
   }
@@ -44,10 +41,11 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
     return TRUE;
   }
 
-  public function getLimits(AccountInterface $account = NULL) {
+  public function getLimits(AccountInterface $account = NULL){
+    $val = $this->currency->limits_settings['liquidity']['value'];
     $limits = array(
-      'min' => $this->currency->limits_settings['minmax']['min']['value'],
-      'max' => $this->currency->limits_settings['minmax']['max']['value']
+      'min' => -$val,
+      'max' => $val
     );
     if ($account) {
       //TODO save the personal settings in the $account object
@@ -58,9 +56,20 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
 
   public function view(AccountInterface $account) {
     return array(
-      '#theme' => 'mcapi_limits_absolute',
+      '#theme' => 'mcapi_limits_balanced',
       '#account' => $account,
       '#currency' => $this->currency,
+    );
+  }
+
+  public function widget($default) {
+    return array(
+      '#title' => t('Liquidity per user'),
+      '#description' => t('The distance from zero a user can trade'),
+      '#type' => 'worth',
+      '#currcodes' => array($this->currency->id()),
+      '#default_value' => $default,
+      '#min' => 0,
     );
   }
 

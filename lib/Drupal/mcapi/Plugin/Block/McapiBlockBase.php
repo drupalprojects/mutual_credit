@@ -19,8 +19,7 @@ class McapiBlockBase extends BlockBase {
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    $conf = parent::defaultConfiguration();
-    return $conf += array(
+    return array(
       'currcodes' => array(),
       'user_source' => 0,
     );
@@ -49,10 +48,11 @@ class McapiBlockBase extends BlockBase {
     parent::blockForm($form, $form_state);
     $form['currcodes'] = array(
       '#title' => t('Currencies'),
+      '#description' => t('Select none to select all'),//there must be a string in Drupal that says that already?
       '#title_display' => 'before',
       '#type' => 'mcapi_currcodes',
       '#default_value' => $this->configuration['currcodes'],
-      '#options' => 'all',
+      '#options' => mcapi_currency_list(NULL, NULL, FALSE),//ALL the currencies are listed
       '#multiple' => TRUE
     );
     $form['user_source'] = array(
@@ -72,8 +72,10 @@ class McapiBlockBase extends BlockBase {
    */
   public function blockSubmit($form, &$form_state) {
     parent::blockSubmit($form, $form_state);
-    $this->configuration['currcodes'] = $form_state['values']['currcodes'];
-    $this->configuration['user_source'] = $form_state['values']['user_source'];
+    form_state_values_clean($form_state);
+    foreach ($form_state['values'] as $key => $val) {
+      $this->configuration[$key] = $val;
+    }
   }
 
   public function build() {
