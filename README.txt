@@ -5,8 +5,6 @@ This document contains the following
 ** Advanced usage **
 
 This document is a work in progress and may not be entirely up-to-date!
-For a high level account of the architecture and intention of this module,
-please see http://matslats.net/mutual-credit-architecture-3
 
 WARNING!
 The intention behind this module is to foster a culter of experimentation, not to impose ideological constraints about how a money system should work.

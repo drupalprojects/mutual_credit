@@ -23,7 +23,9 @@ class AbsoluteLimits extends McapiBlockBase {
 
   public function access() {
     drupal_set_message('checking access for absolute limits block');
-    return TRUE;
+    if (parent::access()) {
+      return TRUE;
+    }
   }
 
   /**

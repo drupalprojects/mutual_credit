@@ -77,30 +77,6 @@ function _mcapi_calc($formula, $base_value) {
 
 
 /*
- * Calculate the balance changes that this transaction proposes
- * by convention, if the transaction state < 0 it is NOT COUNTED
- * this is only used in tokens, so far, and in mcapi_limits module
- * incoming transaction can be a transaction object with children or an array
- */
-function _transactions_diff($transaction) {
-  $diff = array();
-  //because this can be called before or after the transaction,
-  //it might come in as a cluster, or as an object with dependents
-  //we need a cluster so we can iterate though
-  $cluster = is_array($transaction) ? $transaction :  array_merge(array($transaction) + (array)$transaction->dependents);
-  foreach ($cluster as $transfer) {
-    foreach ($transfer->worth[LANGUAGE_NONE] as $item) {
-      $quant = $transfer->state < -1 ? 0 : $item['quantity'];//i is signature module is enabled, pending transactions count here
-      //we can't prepare the array in advance with zeros so += and -= throws notices
-      //instead we just build up an array and add them up when we need them
-      $diff[$transfer->payer][$item['currcode']][] = -$quant;
-      $diff[$transfer->payee][$item['currcode']][] = $quant;
-    }
-  }
-  return $diff;
-}
-
-/*
  * default theme implementation for callback 'worth_element'
  * called once per $item
  */
@@ -133,14 +109,14 @@ function theme_worth_element($variables) {
 /*
  * a nice display of user balances in a currency
  */
-function mcapi_user_summary($account, $currcodes = array()) {
+function mcapi_view_user_summary($account, $currencies = array()) {
   if (empty($currcodes)) {
     //TODO what's the current way to load all currencies for a user?
-    $currcodes = mcapi_get_available_currencies($account);
+    $currencies = mcapi_get_available_currencies($account);
   }
 
   $render_array = array();
-  foreach (entity_load_multiple('mcapi_currency', array_keys($currcodes)) as $currcode => $currency) {
+  foreach ($currencies as $currcode => $currency) {
     if ($currency->access('trader_data')) {
       $render_array[$currcode] = array(
         '#type' => 'mcapi_summary',

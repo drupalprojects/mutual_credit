@@ -12,6 +12,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\McapiException;
 
 /**
  * Defines the Transaction entity.
@@ -46,7 +47,7 @@ use Drupal\mcapi\TransactionInterface;
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
-  var $errors = array();
+  public $errors = array();
   /**
    * Implements Drupal\Core\Entity\EntityInterface::id().
    */
@@ -112,39 +113,47 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * Validate a transaction, with its children
    * TODO put this in an interface
-   * This should ALWAYS be run inside a try{}
-    * Should there be a transaction Exception class?
    */
   public function validate() {
-    parent::validate();//the TypedData validator is complaining about something
-    $errors = array();
+    parent::validate();
+    $this->exceptions = array();
     //check that each trader has permission to use all the currencies
     foreach (array($this->payer->entity, $this->payee->entity) as $account) {
       foreach ($this->worths[0] as $worth) {
         if (!$worth->currency->access('membership', $account)) {
-          $errors[] = t('!user cannot use !currency', array('!user' => $account->name->value, '!currency' => $worth->currency->name));
+          $this->exceptions[] = t('!user cannot use !currency', array('!user' => $account->name->value, '!currency' => $worth->currency->name));
         }
       }
     }
-    $cluster = mcapi_transaction_flatten($this);
+    if ($this->payer == $this->payee) {
+      $transaction->exceptions[] = t('A wallet cannot pay itself.');
+    }
+    foreach ($this->worths[0] as $worth) {
+      if ($worth->value <= 0) {
+        echo get_class($worth->currency);
+        $this->exceptions[] = new McapiTransactionWorthException($worth->currency, t('A transaction must be worth more than 0'));
+      }
+    }
+
     //child transactions which fail validation do so quietly, leaving a message in the log.
-    foreach ($cluster as $transaction) {
-      $transaction->errors = array();
-      if ($transaction->payer->value == $transaction->payee->value) {
-        $transaction->errors[] = t('A wallet cannot pay itself.');
-      }
-      foreach ($transaction->worths[0] as $worth) {
-        if ($worth->value <= 0) {
-          $transaction->errors[] = t('A transaction must be worth more than 0;');
-        }
-      }
+    //TODO this isn't working. $this->children is an entity reference object.
+    //so how to we get the actual child transactions?
+    foreach ($this->children as $key => $child) {
+      //$child->validate();
     }
 
-    module_invoke_all('mcapi_transaction_validate', $cluster);
+    if ($this->parent->value == 0) {
+      //pass the transaction and its children around to other modules.
+      //flatten in first to make it a bit easier to handle
+      module_invoke_all('mcapi_transaction_validate', mcapi_transaction_flatten($this));
+    }
 
-    if (!empty($this->errors)) {
+    if (!empty($this->exceptions)) {
       //errors in the top level transaction mean that the saving can't go ahead and validation fails
-      throw new Exception(implode(' ', $errors));
+      //TODO can I throw an array of exceptions?
+      //do I need to throw them at all if the form validation is checking for $this->exceptions ?
+      //throw $this->exceptions;
+      //errors in the other transactions should show up as warnings on the 'are you sure' page.
     }
   }
 

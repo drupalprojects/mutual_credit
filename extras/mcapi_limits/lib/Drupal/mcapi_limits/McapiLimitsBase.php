@@ -64,7 +64,7 @@ abstract class McapiLimitsBase extends ConfigEntityBase implements McapiLimitsIn
     return $form;
 	}
   function getPersonal($account) {
-    print_r($account);die();
+    print_r($account);die('getpersonal');
   }
 }
 

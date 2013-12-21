@@ -9,6 +9,7 @@ namespace Drupal\mcapi_limits\Plugin;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Plugin\DefaultPluginManager;
+use Drupal\mcapi\CurrencyInterface;
 
 class LimitsPluginManager extends DefaultPluginManager {
 
@@ -29,4 +30,14 @@ class LimitsPluginManager extends DefaultPluginManager {
     $this->setCacheBackend($cache_backend, $language_manager, 'mcapi_limits');
   }
 
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setup(CurrencyInterface $currency) {
+    return $this->factory->createInstance(
+      empty($currency->limits_plugin) ? 'none' : $currency->limits_plugin,
+      empty($currency->limits_settings) ? array() : $currency->limits_settings
+    );
+  }
 }

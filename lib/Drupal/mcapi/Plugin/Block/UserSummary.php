@@ -26,9 +26,7 @@ class UserSummary extends McapiBlockBase {
    */
   public function build() {
     parent::build();
-    return mcapi_user_summary(
-      $this->account, 
-      $this->configuration['currcodes']
-    );
+    module_load_include('inc', 'mcapi');
+    return mcapi_view_user_summary($this->account, $this->currencies);
   }
 }

@@ -12,7 +12,9 @@ define('MCAPIBLOCK_USER_MODE_PROFILE', 0);
 
 class McapiBlockBase extends BlockBase {
 
-  var $account;
+  protected $account;
+  protected $currencies;
+
   /**
    * {@inheritdoc}
    */
@@ -28,8 +30,13 @@ class McapiBlockBase extends BlockBase {
    * in profile mode, hide the block if we are not on a profile page
    */
   public function access(AccountInterface $account) {
+    $request = \Drupal::request();;
     if($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) {
-      return arg(0) == 'user';
+      if ($account = $request->attributes->get('user')) {
+        $this->account = $account;
+        return TRUE;
+      }
+      return FALSE;
     }
     return TRUE;
   }
@@ -45,7 +52,8 @@ class McapiBlockBase extends BlockBase {
       '#title_display' => 'before',
       '#type' => 'mcapi_currcodes',
       '#default_value' => $this->configuration['currcodes'],
-      '#options' => 'all'
+      '#options' => 'all',
+      '#multiple' => TRUE
     );
     $form['user_source'] = array(
       '#title' => t('User'),
@@ -69,11 +77,14 @@ class McapiBlockBase extends BlockBase {
   }
 
   public function build() {
-    if ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_CURRENT )
-      $this->account = \Drupal::currentUser();
-    else {
-      //TODO how do we get the second argument
-      $this->account = user_load(arg(1));
+    $currencies = array_filter($this->configuration['currcodes']);
+    if (empty($currencies)) {
+      $this->currencies = mcapi_get_available_currencies();
+    }
+    else{
+      foreach ($currencies as $currcode) {
+        $this->currencies[$currcode] = mcapi_currency_load($currcode);
+      }
     }
   }
 

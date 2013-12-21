@@ -2,6 +2,7 @@
 
 use Drupal\Core\Template\Attribute;
 use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi_limits\McapiLimitsException;
 
 /*
  * returns an array of min and max, if the keys are unset that means there is no limit.
@@ -47,32 +48,22 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
  * runs only on transaction insertion
  * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
  * against the balance limits for each affected account,
- * NB. the accounting_validate hook is only run when a transaction cluster is inserted:
- * This hook does no checking when transactions are undone nor when they change state.
- *
- * I didn't want to output only readable messages by this module,
- * but throw data and messages to be handled later
- * Because i don't know how to pass args into an exception,
- * the limit checker catches its own Exceptions, parses them,
- * and throws a new Exception with the previous one as a descendent
- * the coded form is:
- * i.e. "$difference>$limit" for transactions that would exceed the max
- * i.e. "$difference>$limit" for transactions that would exceed the min
+ * NB. the accounting_validate hook is only run when a transaction is inserted:
+ * It only checks against transactions in a POSITIVE state i.e. counted transactions.
  */
-function mcapi_limits_mcapi_transaction_validate(TransactionInterface $transaction) {
+function mcapi_limits_mcapi_transaction_validate(array $cluster) {
   //first add up all the transactions
-
   $errors = array();
   module_load_include('inc', 'mcapi');
   $messages = array();
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each user with their limits
   foreach (_transactions_diff($cluster) as $uid => $percurrency) {
+    $account = user_load($uid);
     foreach ($percurrency as $currcode => $diffs) {
       //check to see if any of the skip settings apply.
       //these check, or at least these reports should possiblly be done after the check, and only if the check failed
       $currency = entity_load('mcapi_currency', $currcode);
-      if ($currency->issuance == 'acknowledgement') continue;
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
       if ($skips['user1'] && \Drupal::currentUser()->id() == 1) {
@@ -87,81 +78,46 @@ function mcapi_limits_mcapi_transaction_validate(TransactionInterface $transacti
       elseif ($skips['reservoir'] && $uid == $currency->reservoir )  {
         $messages[$currcode] = t("Skipped balance limit checks for @currency transactions involving the reservoir account.", array('@currency' => $currency->name));
       }
-      $balance = transaction_totals($uid, $currcode)->balance;
-      $projected = $balance + array_sum($diffs);
-      $limits = limits_get($currcode, $uid);
-      if (!empty($limits['max']) && is_numeric($limits['max']) && $projected > $limits['max'] && $projected > $balance) {
-        $errors[$uid][$currcode] = array(
-          '@name' => user_load($uid)->name,
-          '@projected' => $projected,
-          '@max' => $limits['max'],
-          '@excess' => $projected - $limits['max'],
+      $summary = mcapi_account_summary($account, $currency);
+      $projected = $summary['balance'] + array_sum($diffs);
+      $limits = \Drupal::service('plugin.manager.mcapi_limits')
+        ->setup($currency)
+        ->getLimits($account);
+      //we could send 'worth' values to the exception, but that seems like a hassle.
+      //instead we'll send the currency and the quantities
+      if ($projected > 0 && $limits['max'] && $projected > $limits['max']) {
+        $errors[$uid][] = array(
+          'currency' => $currency,
+          'projected' => $projected,
+          'limit' => $limits['max'],
+          'excess' => $projected - $limits['max'],
         );
       }
-      elseif (!empty($limits['min']) && is_numeric($limits['min']) && $projected < $limits['min'] && $projected < $balance) {
-        $errors[$uid][$currcode] = array(
-          '@name' => user_load($uid)->name,
-          '@projected' => $projected,
-          '@min' => $limits['min'],
-          '@excess' => $limits['min'] - $projected,
-        );
-      }
-    }
-  }
-  //the only way I can think of to pass both messages and codes back,
-  //short of defining my own exception is to nest exceptions
-  try {
-    if (count($errors)) {
-      if (count($messages)) {
-        foreach ($messages as $currcode => $message) {
-          if (user_access('manage all transactions')) drupal_set_message($message, 'warning', FALSE);
-        }
-        return;
-      }
-      throw new Exception(serialize($errors));
-    }
-  }
-  catch (exception $e) {
-    $message = mcapi_limits_exception_parse(unserialize($e->getMessage()));
-    if (phpversion() >= 5.3) {
-      throw new Exception($message, 0, $e);
-    }
-    else {
-      throw new Exception($message);
-    }
-  }
-}
-
-
-/*
- * utility parse the error messages which hitherto, were coded.
- */
-function mcapi_limits_exception_parse($errors) {
-  $messages = array();
-  foreach ($errors as $uid => $percurrency) {
-    foreach ($percurrency as $currcode => $info) {
-      //parse balance limits error
-      if (isset($info['@max'])) {
-        $messages[] = t('Transaction would take @name !quant above the maximum balance of !max',
-          array(
-            '@name' => $info['@name'],
-            '!quant' => theme('worth_item', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
-            '!max' => theme('worth_item', array('quantity' => $info['@max'], 'currcode' => $currcode))
-          )
-        );
-      }
-      if (isset($info['@min'])) {
-        $messages[] = t('Transaction would take @name !quant below the minimum balance of !min',
-          array(
-            '@name' => $info['@name'],
-            '!quant' => theme('worth_item', array('quantity' => $info['@excess'], 'currcode' => $currcode)),
-            '!min' => theme('worth_item', array('quantity' => $info['@min'], 'currcode' => $currcode)),
-          )
+      elseif ($projected < 0 && $limits['min'] != NULL && $projected < $limits['min']) {
+        $errors[$uid][] = array(
+          'currency' => $currency,
+          'projected' => $projected,
+          'limit' => $limits['min'],
+          'excess' => $limits['min'] - $projected,
         );
       }
     }
   }
-  return implode('; ', $messages);
+  //all balance errors are on the main transaction and can stop.
+  $main_transaction = reset($cluster);
+  if (count($errors)) {
+    foreach ($errors as $uid => $info) {
+      foreach ($info as $delta => $vars) {
+        //actually the mcapi_transaction_validate hook doesn't require that errors be thrown
+        $main_transaction->exceptions[] = new McapiLimitsException($vars['currency'], $uid, $vars['projected'], $vars['limit'], $vars['excess']);
+      }
+    }
+  }
+  if (count($messages) && \Drupal::currentUser()->hasPermission('manage all transactions')) {
+    foreach ($messages as $currcode => $message) {
+      drupal_set_message($message, 'warning', FALSE);
+    }
+  }
 }
 
 function mcapi_limits_plugin($currency) {
@@ -171,7 +127,7 @@ function mcapi_limits_plugin($currency) {
   //it should come from the $config file unless this is an ajax build in which case from $form_State[values]
   $manager = \Drupal::service('plugin.manager.mcapi_limits');
 
-  return $manager->createInstance($currency->limits_plugin, $currency->limits_settings);
+  return $manager->setup($currency);
 }
 
 /*
@@ -245,7 +201,7 @@ function mcapi_limits_form_user_form_alter(&$form, &$form_state) {
      $inherit = $currency->limits_settings['personal'];
     }
     else continue;
-    if (user_access('configure all currencies') || \Drupal::currentUser()->id() == $currency->uid->value) {
+    if (\Drupal::currentUser()->hasPermission('configure all currencies') || \Drupal::currentUser()->id() == $currency->uid->value) {
       $access = TRUE;
     }
     //fire up the plugin
@@ -265,7 +221,8 @@ function mcapi_limits_form_user_form_alter(&$form, &$form_state) {
         '#default_value' => $plugin->getLimits($form_state['controller']->getEntity()),
         '#currcode' => $currency->id()
       ),
-      '#disabled' => !(user_access('configure all currencies') || \Drupal::currentUser()->id() == $currency->uid->value)
+      //only the currency owner and permission 'configure all currencies' can edit this field
+      '#disabled' => !(\Drupal::currentUser()->hasPermission('configure all currencies') || \Drupal::currentUser()->id() == $currency->uid->value)
     );
   }
   //add a containing fieldset if needed
@@ -391,9 +348,7 @@ function mcapi_limits_element_info() {
   	  '#input' => TRUE,
       '#tree' => TRUE,
       '#process' => array('mcapi_limits_process_minmax'),
-      '#default_value' => array('min' => 0, 'max' => 100),
       '#currcode' => 'credunit'
-
     )
   );
 }
@@ -403,11 +358,7 @@ function mcapi_limits_process_minmax(&$element) {
     '#title' => t('Minimum balance'),
     '#description' => t('Must be less than or equal to zero'),
     '#type' => 'worth',
-    '#default_value' => array(
-       '#currcode' => $element['#currcode'],
-       '#value' => $element['#default_value']['min'],
-    ),
-    '#placeholder' => "-".t('h:m:s'),
+    '#default_value' => $element['#default_value']['min'],
     '#currcodes' => array($element['#currcode']),
     '#size' => 7,
     '#maxlength' => 7,
@@ -418,18 +369,15 @@ function mcapi_limits_process_minmax(&$element) {
     '#title' => t('Maximum balance'),
     '#description' => t('Must be greater than 1.'),
     '#type' => 'worth',
-    '#default_value' => array(
-       '#currcode' => $element['#currcode'],
-       '#value' => $element['#default_value']['max'],
-    ),
+    '#default_value' => $element['#default_value']['max'],
     '#currcodes' =>array($element['#currcode']),
-    //'#placeholder' => $element['#placeholder']['max'],
     '#size' => 6,
     '#maxlength' => 6,
     '#weight' => 1,
     '#attributes' => array('style' => 'width:inherit;'),
     '#min' => 1,
   );
+  print_r($element);
   return $element;
 }
 
@@ -447,4 +395,23 @@ function mcapi_limits_validate_max(&$element, $form_state) {
   if (!empty($element['#value']) && $element['#value'] <= 0) {
     form_error($element, t('Maximum balance must be larger than 0'));
   }
+}
+
+/*
+ * Calculate the balance changes that this transaction proposes
+* by convention, if the transaction state < 0 it is NOT COUNTED
+* this is only used in tokens, so far, and in mcapi_limits module
+* incoming transaction can be a transaction object with children or an array
+*/
+function _transactions_diff(array $cluster) {
+  $diff = array();
+  foreach ($cluster as $transaction) {
+    foreach ($transaction->worths[0] as $currcode => $worth) {
+      //we can't prepare the array in advance with zeros so += and -= throws notices
+      //instead we just build up an array and add them up when we need them
+      $diff[$transaction->payer->value][$currcode][] = -$worth->value;
+      $diff[$transaction->payee->value][$currcode][] = $worth->value;
+    }
+  }
+  return $diff;
 }

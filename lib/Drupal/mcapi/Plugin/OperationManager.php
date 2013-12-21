@@ -29,11 +29,4 @@ class OperationManager extends DefaultPluginManager {
     $this->setCacheBackend($cache_backend, $language_manager, 'transaction_operation');
   }
 
-  //NOT USED ATM
-  public function getDefinitionsVisible() {
-    $definitions = parent::getDefinitions();
-    //we might want to filter these
-    return $definitions;
-  }
-
 }

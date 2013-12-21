@@ -258,7 +258,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
 function mcapi_user_view($account, $mode, $language) {
   if (\Drupal::config('mcapi.misc')->get('profile_summary')) {
     module_load_include('inc', 'mcapi');
-    $account->content['mcapi_summary'] = mcapi_user_summary($account);
+    $account->content['mcapi_summary'] = mcapi_view_user_summary($account);
     $account->content['mcapi_summary']['#weight'] = 5;
   }
 }
@@ -589,7 +589,6 @@ function mcapi_element_info() {
       '#title_display' => 'invisible',
       '#process' => array('mcapi_process_currcodes','ajax_process_form'),
       '#theme_wrappers' => array('form_element'),
-      '#theme' => 'select',
       '#multiple' => TRUE,
       '#options' => array(),//array of currcodes and currency names
     ),
@@ -654,10 +653,11 @@ function mcapi_worths_element_validate($element, &$form_state) {
     }
 
     foreach ($currencies as $currcode) {
-      $newcode = empty($element[$currcode]['currcode']['#value']) ? $element[$currcode]['currcode']['#default_value'] : $element[$currcode]['currcode']['#value'];
+      $curr_element = $element[$currcode];
+      $newcode = $curr_element['currcode']['#default_value'];
+if (!$newcode) drupal_set_message('problem validating worths element', 'error');
       $currency = entity_load('mcapi_currency', $newcode);
-
-      if ($element[$currcode][$currency->widget]['#value'] || $element[$currcode][$currency->widget]['#value'] === 0) {
+      if ($curr_element[$currency->widget]['#value'] || $curr_element[$currency->widget]['#value'] === 0) {
         $value_entered = TRUE;
         break;
       }
@@ -687,7 +687,6 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
   if (!is_object($element['#default_value'])) {
     $element['#default_value'] = $typedDataManager->create(array('type' => 'field_item:worth', 'list' => TRUE), $element['#default_value']);
   }
-  debug($element['#currcodes']);
   $element['#title_display'] = 'attribute';
   //the element is aware of a set of currcodes
   if (empty($element['#currcodes'])) {
@@ -695,13 +694,13 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
     //this defaults to all
     $element['#currcodes'] = array_keys(mcapi_get_available_currencies());
   }
-debug($element['#currcodes']);
   $element['currcode'] = array(
     '#title' => t('Currency'),
     '#type' => 'mcapi_currcodes',
     '#currcodes' => $element['#currcodes'],
     '#default_value' => $element['#default_value']->currcode,
   );
+
   $element['currcode'] = mcapi_process_currcodes($element['currcode']);
 
   $parents =  $element['#parents'];
@@ -714,7 +713,7 @@ debug($element['#currcodes']);
 
   $element['value'] = array(
     '#type' => 'value',
-    '#value' => $element['#default_value']->value,
+    '#default_value' => $element['#default_value']->value,
   );
 
   $currencies = entity_load_multiple('mcapi_currency', $element['#currcodes']);
@@ -756,7 +755,10 @@ debug($element['#currcodes']);
 }
 
 function mcapi_worth_element_validate($element, &$form_state) {
+//I don't like this...
   $currcode = empty($element['#value']['currcode']) ? $element['currcode']['#value'] : $element['#value']['currcode'];
+if (!$currcode)drupal_set_message('problem validating worth element', 'error');
+
   if (!$currency = entity_load('mcapi_currency', $currcode)) {
     \Drupal::formBuilder()->setError($element, $form_state, t('%currcode is not a valid currency', array('%currcode' => $currcode)));
     return;
@@ -805,7 +807,6 @@ function mcapi_process_types($element) {
 }
 
 function mcapi_process_currcodes($element) {
-  debug($element['#currcodes']);
   if (empty($element['#options']) && !empty($element['#currcodes'])) {
     $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL), drupal_map_assoc($element['#currcodes']));
   }
@@ -816,12 +817,21 @@ function mcapi_process_currcodes($element) {
   else if ($element['#options'] == 'all') {
     $element['#options'] = mcapi_currency_list(NULL, NULL);
   }
+  if ($element['#multiple']) {
+    //have to do some of the checkbox processing manually coz we missed it
+    $element['#type'] = 'checkboxes';
+    $element['#value'] = array_filter($element['#default_value']);
+    $element = form_process_checkboxes($element);
+  }
+  else {
+    $element['#theme'] = 'select';
+  }
 
   if (count($element['#options']) == 1) {
     //$element['#type'] = 'value';
     $element['#type'] = 'value';
     $element['#theme_wrappers'] = array();
-    $element['#value'] = current($element['#options']);
+    $element['#default_value'] = key($element['#options']);
   }
   return $element;
 }
@@ -836,13 +846,20 @@ function mcapi_pre_render_summary($element) {
   //occasionally we'll appreciate a static result
   $result = &$results[$uid][$element['#currency']->id()];
   if (empty($result)) {
-    $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-    $data = $storage->summaryData($element['#account'], $element['#currency'], $element['#filters']);
-    foreach ($data as $key => $val) {
+    foreach (mcapi_account_summary($element['#account'], $element['#currency'], $element['#filters']) as $key => $val) {
       $result['#'.$key] = $val;
     }
   }
   return $element + $result;
+}
+
+function mcapi_account_summary($account, $currency, $filters) {
+  //TODO should this be a drupal_static, shared with other functions?
+  static $transaction_storage;
+  if (!$transaction_storage) {
+    $transaction_storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+  }
+  return $transaction_storage->summaryData($account, $currency, $filters);
 }
 
 /*
@@ -922,8 +939,10 @@ function mcapi_toolbar() {
 //So we have to alter Every query, for now.
 //function mcapi_views_pre_execute(QueryAlterableInterface $query) {
 function mcapi_query_alter(QueryAlterableInterface $query) {
+  //note that this lets through queries simply loading the entity, not just views queries
   if (!array_intersect(array('mcapi_transactions', 'mcapi_transactions_index'), array_keys($query->getTables()))) return;
   $currencies = mcapi_get_available_currencies();
+  $query->addJoin('RIGHT', 'mcapi_transactions_worths', 'mcapi_transactions_worths', 'mcapi_transactions_worths.xid = mcapi_transactions.xid');
 
   $states = array_keys(mcapi_get_states());
   $transactionAccessPlugins = transaction_access_plugins(TRUE);
@@ -936,15 +955,14 @@ function mcapi_query_alter(QueryAlterableInterface $query) {
     //where (currcode = A and (state = x) OR (state = Y) )
     $state_or_state = db_or();//where state = A OR B
     foreach ($states as $state) {
-      $plugins = array_filter($currency->view_transaction_states[$state]);
-      foreach ($plugins as $plugin_name) {
+      $plugin_names = array_filter($currency->view_transaction_states[$state]);
+      foreach ($plugin_names as $plugin_name) {
         $plugin = $transactionAccessPlugins[$plugin_name];
         $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);
         $plugin->ViewsAccess($query, $state_and_callback, $state);
         $state_or_state->condition($state_and_callback);
       }
     }
-    //TODO do we need to get the table alias for mcapi_transactions_worths?
     $currcode_and_states = db_and()->condition('mcapi_transactions_worths.currcode', $currcode)->condition($state_or_state);
     $or_currcodes->condition($currcode_and_states);
   }

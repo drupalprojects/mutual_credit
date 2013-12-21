@@ -117,7 +117,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     $query->execute();
 
-    //fire hooks -
+    //TODO fire hooks -
     //transaction_update($op, $transaction, $values);
   }
   /*
@@ -285,6 +285,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   * this is currently used for the limits module and for the views handler per-row
   * caching running balances is innappropriate because they would all need recalculating any time a transaction changed state
   * Because this uses the index table, it knows nothing of transactions with state <  1
+  * //TODO this CurrencyInterface isn't being enforced
   */
   public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters) {
     $query = "SELECT

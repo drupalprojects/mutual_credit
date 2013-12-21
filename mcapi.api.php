@@ -24,16 +24,6 @@ mcapi_ <?php
 
 
 /*
- * wrapper around entity_load
- * load a cluster of transactions sharing a serial number
- * The first transaction will be the 'volitional' transaction and the rest are loaded into
- * $transaction->dependents where the theme layer expects to find them
- * $serial can be varchar or an array of varchars
- */
-transaction_load($serial);
-
-
-/*
  * create child transactions and return an array of them
  * then will then be added to the transaction->children
  */
@@ -45,7 +35,7 @@ function hook_transaction_presave(TransactionInterface $transaction){
  * create child transactions
  * return an array of transaction objects
  */
-function hook_transaction_children(TransactionInterface $transaction);
+function hook_transaction_children(TransactionInterface $transaction){}
 
 /*
  * The default entity controller supports 3 undo modes
@@ -55,18 +45,7 @@ function hook_transaction_children(TransactionInterface $transaction);
  * NB this function goes on to call hook_transaction_undo()
  */
 try {
-  transaction_undo(serial);
-}
-catch(exception $e){}
-
-/*
- * All changes to transactions should be passed through this
- * it saves the new state and field API and fires hooks and triggers wotnot
- * if the $old_state is set, that indicates this was a workflow operation
- * Calls hook_transaction_update
- */
-try {
-  transaction_update($newly_saved_transaction, $old_state);
+  $transaction->undo();
 }
 catch(exception $e){}
 
@@ -104,7 +83,7 @@ $conditions = array('involving' => array(234, 567));
  *   NB paging is ignored
  *   NB in multiple cardinality fields, only the first value is filtered for
  */
-array transaction_filter((array)$conditions, $offset, $limit);
+$array  = transaction_filter($conditions, $offset, $limit);
 
 
 
@@ -119,12 +98,14 @@ array transaction_filter((array)$conditions, $offset, $limit);
  * If there are no conditions passed then only transactions in a positive STATE are counted.
  *
  * Returns an array with the following keys
- * - balance
- * - gross_in
- * - gross_out
- * - count
+ * - balance, sum of all transactions with state > 0
+ * - gross_in, sum of all incoming transactions with state > 0
+ * - gross_out, sum of all outgoing transactions with state >0
+ * - count, number of transactions with state > 0
+ * - partners, number of distinct trading partners using transactions with state > 0
  */
-array transaction_totals($uid, $currcode, $filters);
+//not implemented yet
+$account->getTradeSummary();
 
 
 /*
@@ -134,7 +115,7 @@ array transaction_totals($uid, $currcode, $filters);
 
 //check the transactions and the system integrity after the transactions would go through
 //do NOT change the transaction
-function hook_mcapi_transaction_validate(array $transactions);
+function hook_mcapi_transaction_validate($transactions){}
 
 //respond to the creation of a transaction
 function hook_transaction_post_insert($transaction){}
@@ -148,9 +129,11 @@ function hook_transaction_update($serial){}
 //respond to the removal, or undoing of a transaction
 function hook_transaction_undo($serial){}
 
-//declare permissions for transaction access control, per currency per operation. See mcapi_transaction_access_callbacks
-function hook_transaction_access_callbacks(){}
-
+/*
+ * Transaction access plugins: See lib/Drupal/mcapi/Plugin/TransactionAccess
+ * One plugin is a rule for granting access to a transaction.
+ * All the rules appear together as checkboxes and and access is granted if ANY of them returns TRUE
+ */
 
 //declare transaction states
 function hook_mcapi_info_states(){
@@ -173,62 +156,52 @@ function hook_mcapi_info_drupal_permissions(){}
 
 
 /**
- * Transaction operations
+ * Transaction operations: See lib/Drupal/mcapi/Plugin/Operation
  * User stories are built up using transaction operations to make a workflow.
- * Operations allow transactions to be edited in a very controlled way.
- * They are declared in a hook, and shown to the user as a virtual transaction property, depending on access control
- * The following operations provided in mcapi.module are for internal use only (they have no access callback):
- * -transaction_register -> create
- * -transaction_field_update -> update
- * -transaction_deleted -> delete
- *
- * Each operation issues has a 'trigger' for user 1 or other modules to react.
- * See transaction_operation_form_submit for some insight.
+ * Operations allow transactions to be modified in a very controlled way, such as changing the state, or adding a comment
+ * The experience of each operation can be configured precisely
+ * Each operation triggers a transaction update event
  */
 
-//things that can be done to transactions, typically changing state but also maybe editing fields.
-function hook_transaction_operations(){
-  return array(
-    //the array key is a hook, so be careful with the namespace
-    'undo' => array(
-      //this is used for the MENU_LOCAL_ACTION
-      //operations without a title are for internal use only
-      'title' => "Undo",
-      //a tooltop over the MENU_LOCAL_ACTION
-      'description' => "Undo a finished transaction, and its dependents",
-      //a message asking if the user is sure they want to do the operation
-      'sure' => "Are you sure you want to undo? Only the site administrator will be able to restore this transaction.",
-      //(optional) affects the order the operations are shown in.
-      'weight' => 3,
-      //function taking args $op and $transaction to see if the current user can do the op.
-      'access callback' => 'mcapi_undo_access',
-      //optional key to provide config form widget in currency
-      'access form' => 'operations_config_default_access',//this is the default, can also be left blank
-      //(optional), path to file, relative to the module root, containing form and submit callbacks
-      'filepath' => 'mcapi.inc',
-      //callback where the operation actually happens
-      //it takes the ($operation, $transaction, $values) and returns a render array to replace the transaction
-      'submit callback' => 'mcapi_undo',
-      //(optional) inject any fields into the 'are you sure' page.
-      //if it is empty or absent there will be NO CONFIRMATION STEP
-      //if the callback name doesn't exist it won't break.
-      //also a chance to drupal_set_title of that page (nojs mode only)
-      'form callback' => 'TRUE',
-      //this applies for the form, not for ajax. default will redirect to the transaction/$serial
-      'redirect' => 'user',
-      //whether or not the operation should send a mail
-      'mail' => TRUE
-    )
-  );
-  //Dont' forget to include these t()s
-  t("Undo");
-  t("Undo a finished transaction, and its dependents");
-  t("Are you sure you want to undo? Only the site administrator will be able to restore this transaction.");
+/*
+ * Worths & Worth field
+ * A new field type is created to store the quantity of the transaction and the currency together
+ * It is commonly used as an array so that the application natively handles transactions with multiple currencies (mixed transactions)
+ * EVERY transaction has a property called 'worths'
+ * One 'worths' instance cannot store more than one flow in one currency
+ * Worth values are not themed, but taken from the object
+ * NB for now the worths array is found INSIDE $worths[0] Hopefully this will change in d8 Core.
+ */
+$worths[0]->__toString();//give something like "1H 00mins; $4.22"
+foreach ($worths[0] as $worth) {
+  $string = $worth->__toString();
+  $currencyObject = $worth->currency;
+  $numeric = $worth->value;//this is the stored integer value
 }
+//when building a form:
+$element['worth'] = array(
+  '#type' => 'worth',
+  '$default_value' => array(
+    'currcode' => 'credunit',
+    'value' => 3600
+  )
+);
+//or
+$element['worths'] = array(
+  '#type' => 'worths',
+  '$default_value' => array(
+    'credunit' => 3600,
+    'escro' => 4.22
+  ),
+);
 
-//alter hooks, more could be added, if necessary!
-function hook_transaction_operations_alter(){}
-
-/**
- * Note that more hooks are provided by entity API module for any transaction entity.
+/*
+ * Currency Types
+ * All worth values are stored as integers,
+ * The currency type plugin controls how the user interacts with those numbers
+ * both for entering values with widgets and rendering values.
+ * Are they seconds while the user can only trade hours?
+ * Or are they cents?
  */
+ $currency->render(3600);//might return "1h" or $36.00
+ $transaction->worths[0]->__to_string();

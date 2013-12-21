@@ -21,7 +21,7 @@ class PermissionTransact {
 
   //TODO how do we access the $definitions from the Annotation?
   function label() {
-    return t("Users with '@perm' permission", array('@perm' => 'Transactions'));
+    return t("Users with '@perm' permission", array('@perm' => 'Transact'));
   }
 
   function checkAccess(TransactionInterface $transaction) {

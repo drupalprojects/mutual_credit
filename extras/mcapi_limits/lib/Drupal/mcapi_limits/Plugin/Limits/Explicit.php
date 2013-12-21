@@ -50,8 +50,8 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
 
   public function getLimits(AccountInterface $account = NULL){
     $limits = array(
-      'min' => $this->settings['minmax']['min'],
-      'max' => $this->settings['minmax']['max']
+      'min' => $this->settings['minmax']['min']['value'],
+      'max' => $this->settings['minmax']['max']['value']
     );
     if ($account) {
       //$limits = $this->getPersonal($account) + $limits;

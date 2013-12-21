@@ -111,24 +111,28 @@ class TransactionForm extends EntityFormController {
    * form validation callback
    */
   public function step_1_validate(array $form, array &$form_state) {
-    //Check that worths is not empty unless one of the currencies accepts 0
+
+    $this->entity->buildChildren();
+    $this->entity->validate();
+    if (empty($this->entity->exceptions)) {
+      $form_state['mcapi_submitted'] = TRUE;//this means we move to step 2
+    }
+    else {//handle the errors
+      foreach ($this->entity->exceptions as $exception) {
+        //TODO looks like form_set_error is already deprecated coz the message isn't showing.
+        //however in alpha 4 the node module is using this
+        //\Drupal::formBuilder()->setErrorByName($exception, $form_state, $exception->getMessage());
+        drupal_set_message($exception->getMessage(), 'error');
+        form_set_error($exception->field, $exception->getMessage());
+      }
+    }
   }
 
   public function step_1_submit(array $form, array &$form_state) {
     //enables the entity to be rebuilt from the same data in step 2
     $form_state['storage'] = $form_state['values'];
     $form_state['rebuild'] = TRUE;
-    $form_state['mcapi_submitted'] = TRUE;//this means we move to step 2 regardless
 
-    try{
-      $this->entity->buildChildren();
-      $this->entity->validate();
-    }
-    catch (\Exception $e){
-      $message = t('Transaction not allowed: !message', array('!message' => $e->getMessage()));
-      //we don't put a form error here because we want to advance to phase 2 any how
-      drupal_set_message($message, 'error');
-    }
   }
 
   public function step_2_validate(array $form, array &$form_state) {
