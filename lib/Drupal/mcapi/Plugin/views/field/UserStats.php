@@ -29,7 +29,7 @@ class UserStats extends FieldPluginBase {
   }
 
   /**
-   * Provide link to taxonomy option
+   * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, &$form_state) {
     $form['separator'] = array(
@@ -47,17 +47,17 @@ class UserStats extends FieldPluginBase {
       '#default_value' => $this->options['currencies'],
     );
     $form['stat'] = array(
-    	'#title' => t('Metric'),
-    	'#type' => 'radios',
-    	'#options' => array(
-    	  'balance' => t('Balance'),
-    	  'gross_in' => t('Gross income'),
-    	  'gross_out' => t('Gross expenditure'),
-    	  'volume' => t('Volume (Gross in + gross out)'),
-    	  'trades' => t('Balance'),
-    	  'partners' => t('Number of trading partners'),
+      '#title' => t('Metric'),
+      '#type' => 'radios',
+      '#options' => array(
+        'balance' => t('Balance'),
+        'gross_in' => t('Gross income'),
+        'gross_out' => t('Gross expenditure'),
+        'volume' => t('Volume (Gross in + gross out)'),
+        'trades' => t('Balance'),
+        'partners' => t('Number of trading partners'),
       ),
-    	'#default_value' => $this->options['stat'],
+      '#default_value' => $this->options['stat'],
     );
     parent::buildOptionsForm($form, $form_state);
   }
@@ -69,20 +69,20 @@ class UserStats extends FieldPluginBase {
   }
 
   function render(ResultRow $values) {
-  	$account = $this->getEntity($values);
-  	if (empty($this->options['currencies'])) {
-  		$this->options['currencies'] = mcapi_get_available_currencies($account);
-  	}
-  	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+    $account = $this->getEntity($values);
+    if (empty($this->options['currencies'])) {
+      $this->options['currencies'] = mcapi_get_available_currencies($account);
+    }
+    $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
 
-  	foreach ($this->options['currencies'] as $currcode) {
-  		$currency = currency_load($currcode);
-    	$result = $storage->summaryData($account, $currency, array());
-  		if (in_array($this->options['stat'], array('trades', 'partners'))) {
-  			return $result[$this->options['stat']];
-  		}
-  		else return 'theme this: ' .$result[$this->options['stat']];
-  	}
+    foreach ($this->options['currencies'] as $currcode) {
+      $currency = currency_load($currcode);
+      $result = $storage->summaryData($account, $currency, array());
+      if (in_array($this->options['stat'], array('trades', 'partners'))) {
+        return $result[$this->options['stat']];
+      }
+      else return $currency->format($result[$this->options['stat']]);
+    }
   }
 
 }

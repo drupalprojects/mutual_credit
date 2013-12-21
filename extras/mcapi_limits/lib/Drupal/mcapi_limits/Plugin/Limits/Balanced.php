@@ -41,16 +41,12 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
     return TRUE;
   }
 
-  public function getLimits(AccountInterface $account = NULL){
+  public function getBaseLimits(AccountInterface $account){
     $val = $this->currency->limits_settings['liquidity']['value'];
     $limits = array(
       'min' => -$val,
       'max' => $val
     );
-    if ($account) {
-      //TODO save the personal settings in the $account object
-      //$limits = $this->getPersonal($account) + $limits;
-    }
     return $limits;
   }
 
@@ -59,6 +55,7 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
       '#theme' => 'mcapi_limits_balanced',
       '#account' => $account,
       '#currency' => $this->currency,
+      '#size' => '100%'
     );
   }
 

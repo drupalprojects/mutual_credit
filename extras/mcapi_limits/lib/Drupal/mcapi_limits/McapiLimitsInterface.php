@@ -29,9 +29,14 @@ interface McapiLimitsInterface {
   public function checkPayee(AccountInterface $account, $diff);
 
   /*
-   * returns an array with keys min & max
-   */
-  public function getLimits(AccountInterface $account = NULL);
+   * get the limits, overridden if necessary by the personal limits
+  */
+  public function getLimits(AccountInterface $account);
+
+  /*
+   * get the limits as defined by any given plugin
+  */
+  public function getBaseLimits(AccountInterface $account);
 
   /*
    * returns a render array

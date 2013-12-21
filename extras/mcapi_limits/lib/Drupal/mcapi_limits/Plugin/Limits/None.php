@@ -37,7 +37,7 @@ class None extends McapiLimitsBase implements McapiLimitsInterface {
   public function checkPayer(AccountInterface $account, $diff){}
   public function checkPayee(AccountInterface $account, $diff){}
 
-  public function getLimits(AccountInterface $account = NULL){
+  public function getBaseLimits(AccountInterface $account){
   	return array('min' => NULL, 'max' => NULL);
   }
 

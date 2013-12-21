@@ -370,6 +370,8 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
+
+  //virtual fields
   $data['mcapi_transactions_index']['balance'] = array(
     'title' => t('Running balance'),
     'help' => t("The sum of all the user's previous transactions."),
@@ -380,8 +382,6 @@ function mcapi_views_data() {
   		)
     ),
   );
-
-  //virtual fields
   $data['mcapi_transactions_index']['operations'] = array(
   	'title' => t('Operations'),
   	'help' => t('What the user can do to the transaction'),

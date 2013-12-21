@@ -64,9 +64,20 @@ abstract class McapiLimitsBase extends ConfigEntityBase implements McapiLimitsIn
 	  );
     return $form;
 	}
-  function getPersonal(AccountInterface $account) {
-    print_r($account);die('getpersonal');
-  }
-  abstract function getLimits(AccountInterface $account = NULL);
+
+	public function getLimits(AccountInterface $account) {
+	  //check for overrides
+	  if ($this->currency->limits_settings['personal']) {
+	    //and if the $account has any overrides
+	    if (FALSE) {
+	      //send back the limits from the user object
+	      return array('min' => -100, 'max' => 100);
+	    }
+	  }
+	  return $this->getBaseLimits($account);
+	}
+
+  //get the personal overrides
+  abstract function getBaseLimits(AccountInterface $account);
 }
 

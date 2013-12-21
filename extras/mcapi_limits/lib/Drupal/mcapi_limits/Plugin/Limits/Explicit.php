@@ -44,21 +44,17 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
     return TRUE;
   }
 
-  public function getLimits(AccountInterface $account = NULL) {
+  public function getBaseLimits(AccountInterface $account) {
     $limits = array(
       'min' => $this->currency->limits_settings['minmax']['min']['value'],
       'max' => $this->currency->limits_settings['minmax']['max']['value']
     );
-    if ($account) {
-      //TODO save the personal settings in the $account object
-      //$limits = $this->getPersonal($account) + $limits;
-    }
     return $limits;
   }
 
   public function view(AccountInterface $account) {
     return array(
-      '#theme' => 'mcapi_limits_absolute',
+      '#theme' => 'mcapi_limits',
       '#account' => $account,
       '#currency' => $this->currency,
     );
