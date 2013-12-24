@@ -70,7 +70,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $formatter;
   public $formatter_settings;
   public $access;
-  public $view_transaction_states;
+  public $access_view;
+  public $access_undo;
   public $access_operations;
   public $weight;
   public $limits_plugin;
@@ -95,7 +96,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'color' => '',
       'access' => array(),
       'access_operations' => array(),
-      'view_transaction_states' => array(),
+      'access_view' => array(),
+      'access_undo' => array(),
       'widget' => $defintions['default_widget'],
       'widget_settings' => array(),
     );
@@ -109,14 +111,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'trader_data' => 'user_chooser_segment_perms:transact',
       'system_data' => 'user_chooser_segment_perms:transact',
     );
-    //TODO replace these, and the below, with the TransactionAccess plugins
-    $values['access_operations'] += array(
-      'undo' => array('transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'),
+    $values['access_view'] += array(
+      1 => array('perm_transact' => 'perm_transact'),
+      0 => array('perm_manage' => 'perm_manage', 'is_signatory' => 'is_signatory'),
+      -1 => array('is_signatory' => 'is_signatory'),
     );
-
-    $values['view_transaction_states'] += array(
-      0 => array('transaction_access_callback_perm_manage_all' => 'transaction_access_callback_perm_manage_all'),
-      1 => array('transaction_access_callback_perm_transact' => 'transaction_access_callback_perm_transact')
+    $values['access_undo'] += array(
+      1 => array('perm_manage' => 'perm_manage'),
+      -1 => array('perm_manage' => 'perm_manage', 'is_signatory' => 'is_signatory')
     );
   }
 

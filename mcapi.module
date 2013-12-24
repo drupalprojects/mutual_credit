@@ -251,16 +251,13 @@ function mcapi_theme($existing, $type, $theme, $path) {
   return $items;
 }
 
-
 /*
  * implement hook_user_view().
  */
 function mcapi_user_view($account, $mode, $language) {
-  if (\Drupal::config('mcapi.misc')->get('profile_summary')) {
-    module_load_include('inc', 'mcapi');
-    $account->content['mcapi_summary'] = mcapi_view_user_summary($account);
-    $account->content['mcapi_summary']['#weight'] = 5;
-  }
+  module_load_include('inc', 'mcapi');
+  $account->content['mcapi_summary'] = mcapi_view_user_summary($account);
+  $account->content['mcapi_summary']['#weight'] = 3;
 }
 
 
@@ -309,12 +306,25 @@ function mcapi_mcapi_info_states() {
 
 
 /**
- * implements mcapi hook_info_types().
+ * implements hook_mcapi_info_types().
  */
 function mcapi_mcapi_info_types() {
-  $types = array('default', 'auto');
+  $types['default'] = array(
+	  'label' => t('Default'),
+    'description' => t('Simplest transaction type'),
+    'start state' => TRANSACTION_STATE_FINISHED
+  );
+  $types['auto'] = array(
+	  'label' => t('Auto'),
+    'description' => t('Created automatically'),
+    'start state' => TRANSACTION_STATE_FINISHED
+  );
   if (\Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_UNDO_STATE_REVERSE) {
-    $types[] = 'reversal';
+    $types['reverse'] = array(
+  	  'label' => t('Reversal'),
+      'description' => t('This transaction negates another transaction'),
+      'start state' => TRANSACTION_STATE_UNDONE
+    );
   }
   return $types;
 }
@@ -349,10 +359,14 @@ function mcapi_get_states($return_mode = '#options') {
   }
   return $states;
 }
+
 //returns the available transaction types in an associative array
-function mcapi_get_types() {
-  foreach (module_invoke_all('mcapi_info_types') as $type) {
-    $types[$type] = $type;
+function mcapi_get_types($options = TRUE) {
+  $types = module_invoke_all('mcapi_info_types');
+  if ($options) {
+    foreach ($types as $type => $info) {
+      $types[$type] = $info['label'];
+    }
   }
   return $types;
 }
@@ -442,11 +456,23 @@ function mcapi_mail($key, &$message, $params) {
 }
 
 
-
 /*
  * implements hook_field_extra_fields().
  */
 function mcapi_field_extra_fields() {
+  $extra = array(
+    'user' => array(
+      'user' => array(
+        'display' => array(
+          'mcapi_summary' => array(
+            'label' => t('Trading summary'),
+            'description' => t("Statistics from the user's transaction history"),
+            'weight' => 0,
+          )
+        )
+      )
+    )
+  );
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
   $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
   $form = array('payer', 'payee', 'worths', 'description');
@@ -955,7 +981,7 @@ function mcapi_query_alter(QueryAlterableInterface $query) {
     //where (currcode = A and (state = x) OR (state = Y) )
     $state_or_state = db_or();//where state = A OR B
     foreach ($states as $state) {
-      $plugin_names = array_filter($currency->view_transaction_states[$state]);
+      $plugin_names = array_filter($currency->access_view[$state]);
       foreach ($plugin_names as $plugin_name) {
         $plugin = $transactionAccessPlugins[$plugin_name];
         $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);

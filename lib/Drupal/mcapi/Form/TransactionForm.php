@@ -26,7 +26,7 @@ class TransactionForm extends EntityFormController {
     }
     else {
       $form = $this->form_step_2($form, $form_state);
-      $form['#validate'][] = array($this, 'step_2_validate');
+      //$form['#validate'][] = array($this, 'step_2_validate');
       $form['#submit'][] = array($this, 'step_2_submit');
     }
     return $form;
@@ -72,6 +72,10 @@ class TransactionForm extends EntityFormController {
       '#default_value' => $transaction->type->value,
       '#required' => TRUE,
     );
+    $form['state'] = array(
+    	'#type' => 'value',
+      '#value' => $transaction->state->value
+    );
     $form['creator'] = array(
       '#title' => t('Recorded by'),
       '#type' => 'user_chooser_few',
@@ -88,13 +92,6 @@ class TransactionForm extends EntityFormController {
       '#default_value' => $transaction->created->value,
       '#weight' => 18,
     );
-    $form['state'] = array(
-      '#title' => t('State'),
-      '#description' => mcapi_get_states('#description'),
-      '#type' => 'mcapi_states',
-      '#default_value' => $transaction->state->value,
-      '#weight' => 21
-    );
 
     return $form;
   }
@@ -109,16 +106,32 @@ class TransactionForm extends EntityFormController {
 
   /**
    * form validation callback
+   * I can't imagine why, but this is called twice when the form is submitted
+   * since validation is an intensive process, perhaps we need a #mcapi_validated flag?
+   *
+   * this is unusual because normally build a temp object
    */
   public function step_1_validate(array $form, array &$form_state) {
+//    parent::validate($form, $form_state);//this makes an infinite loop here but not in nodeFormController
+    form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
 
-    $this->entity->buildChildren();
-    $this->entity->validate();
-    if (empty($this->entity->exceptions)) {
+    //on the admin form it is possible to change the transaction type
+    //so here we're going to ensure the state is correct, even through it was set in preCreate
+    $types = mcapi_get_types(FALSE);
+    $form_state['values']['state'] = $types[$form_state['values']['type']]['start state'];
+
+    $transaction = $this->buildEntity($form, $form_state);
+
+    if (array_key_exists('mcapi_validated', $form_state))return;
+    else $form_state['mcapi_validated'] = TRUE;
+
+    $transaction->buildChildren();
+    $transaction->validate();
+    if (empty($transaction->exceptions)) {
       $form_state['mcapi_submitted'] = TRUE;//this means we move to step 2
     }
     else {//handle the errors
-      foreach ($this->entity->exceptions as $exception) {
+      foreach ($transaction->exceptions as $exception) {
         //TODO looks like form_set_error is already deprecated coz the message isn't showing.
         //however in alpha 4 the node module is using this
         //\Drupal::formBuilder()->setErrorByName($exception, $form_state, $exception->getMessage());
@@ -126,17 +139,16 @@ class TransactionForm extends EntityFormController {
         form_set_error($exception->field, $exception->getMessage());
       }
     }
+    $this->entity = $transaction;
   }
 
   public function step_1_submit(array $form, array &$form_state) {
-    //enables the entity to be rebuilt from the same data in step 2
-    $form_state['storage'] = $form_state['values'];
     $form_state['rebuild'] = TRUE;
-
   }
 
   public function step_2_validate(array $form, array &$form_state) {
-    //$form_state['values'] = $form_state['storage'];//this is needed to validate
+    //the only reason we might need this function is if there should be
+    //an extra input field for transaction ratings
   }
   /**
    * form submit callback

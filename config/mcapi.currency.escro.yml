@@ -21,14 +21,19 @@ access:
   membership: 'user_chooser_segment_perms:transact'
   trader_data: 'user_chooser_segment_perms:transact'
   system_data: 'user_chooser_segment_perms:transact'
-view_transaction_states:
+access_view:
   1:
-    IsPayee: IsPayee
-    IsPayer: IsPayer
+    perm_transact: perm_transact
   0:
-    permTransact: permTransact
-access_operations:
-  undo:
-    permTransact: permTransact
+    perm_manage: perm_manage
+    is_signatory: is_signatory
+  -1:
+    is_signatory: is_signatory
+access_undo:
+  1:
+    perm_manage: perm_manage
+  -1:
+    perm_manage: perm_manage
+    is_signatory: is_signatory
 weight: '-9'
 langcode: en

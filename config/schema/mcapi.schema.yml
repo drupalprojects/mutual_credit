@@ -111,21 +111,30 @@ mcapi.currency.*:
         system_data:
           type: string
           label: 'View aggregated system data'
-    view_transaction_states:
+    access_view:
       type: sequence
-      label: 'Privacy'
+      label: 'View access'
       sequence:
         - type: sequence
           label: 'Transaction in state'
           sequence:
             - type: boolean
               label: 'Enabled'
-    access_operations:
+    access_undo:
       type: sequence
-      label: 'Transaction operations'
+      label: 'Undo access'
       sequence:
         - type: sequence
-          label: 'Operation'
+          label: 'Transaction in state'
+          sequence:
+            - type: boolean
+              label: 'Enabled'
+    access_sign_off:
+      type: sequence
+      label: 'Sign off access'
+      sequence:
+        - type: sequence
+          label: 'Access plugins'
           sequence:
             - type: boolean
               label: 'Enabled'

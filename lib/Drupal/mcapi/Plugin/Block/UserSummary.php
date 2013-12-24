@@ -15,7 +15,7 @@ use Drupal\mcapi\Plugin\Block\McapiBlockBase;
  *
  * @Block(
  *   id = "mcapi_user_summary",
- *   admin_label = @Translation("Balances"),
+ *   admin_label = @Translation("User trading summary"),
  *   category = @Translation("Community Accounting")
  * )
  */
@@ -27,6 +27,9 @@ class UserSummary extends McapiBlockBase {
   public function build() {
     parent::build();
     module_load_include('inc', 'mcapi');
-    return mcapi_view_user_summary($this->account, $this->currencies);
+    $build = mcapi_view_user_summary($this->account, $this->currencies);
+    //this is helpful for when the signatures module wants to alter the block.
+    $build['#account'] = $this->account;
+    return $build;
   }
 }

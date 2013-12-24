@@ -380,41 +380,59 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
     );
 
-    $i = 0;
-    //These two fieldsets should REALLY use a grid of checkboxes, like on admin/people/permissions,
-    //but I couldn't work out how to do it, and it might require an hook_update to convert the saved $currency objects
-    $form['access_operations'] = array(
-      '#title' => t('Transaction operations'),
-      '#description' => t('Determine who can do what to transactions') .'. '. t('Any of the checked conditions must return TRUE'),
-      '#type' => 'details',
-      '#group' => 'additional_settings',
-      '#tree' => TRUE,
-    );
-    foreach (transaction_operations() as $op => $definition) {
-      if ($op == 'view') {
-        continue;
-      }
-      $form['access_operations'][$op] = $definition->access_form($currency, $op);
-    }
-    $form['view_transaction_states'] = array(
-      '#title' => t('Privacy'),
+    $full_states = mcapi_get_states('#full');
+    $access_plugins = transaction_access_plugins(FALSE);
+    $form['access_view'] = array(
+      '#title' => t('View access'),
       '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
       '#type' => 'details',
       '#group' => 'additional_settings',
       '#tree' => TRUE,
     );
-
-    foreach (mcapi_get_states('#full') as $constant => $state) {
-      $states = isset($currency->view) ? $currency->view : array();
-      $form['view_transaction_states'][$constant] = array(
+    foreach ($full_states as $constant => $state) {
+      $form['access_view'][$constant] = array(
         '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
         '#description' => $state['description'],
         '#type' => 'checkboxes',
-        '#options' => transaction_access_plugins(FALSE),
-        '#default_value' => property_exists($currency, 'view_transaction_states') && isset($currency->view_transaction_states[$constant]) ?
-           $currency->view_transaction_states[$constant] : array(current($access_callbacks)),
+        '#options' => $access_plugins,
+        '#default_value' => property_exists($currency, 'access_view') && isset($currency->access_view[$constant]) ?
+          $currency->access_view[$constant] : array_values($access_plugins),
       );
     }
+    $form['access_undo'] = array(
+      '#title' => t('Undo access'),
+      '#description' => t('Determine who can undo transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
+      '#type' => 'details',
+      '#group' => 'additional_settings',
+      '#tree' => TRUE,
+    );
+    foreach ($full_states as $constant => $state) {
+      if ($constant == TRANSACTION_STATE_UNDONE) continue;
+      $form['access_undo'][$constant] = array(
+        '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
+        '#description' => $state['description'],
+        '#type' => 'checkboxes',
+        '#options' => $access_plugins,
+        '#default_value' => property_exists($currency, 'access_undo') && isset($currency->access_undo[$constant]) ?
+          $currency->access_undo[$constant] : array_values($access_plugins),
+      );
+    }
+    //any operations declared not by mcapi.module
+    foreach (transaction_operations() as $op => $definition) {
+//      mdump($definition);echo "in CurrencyFormController";
+      if (in_array($op, array('view', 'undo'))) {
+        continue;
+      }
+      if ($settings = $definition->access_form($currency, $op)) {
+        $form['access_'.$op] = array(
+          '#title' => t("@operation access", array('@operation' => $definition->label)),
+          '#type' => 'details',
+          '#group' => 'additional_settings',
+          'settings' => $settings
+        );
+      }
+    }
+//    print_r($form);
 
     $form['refresh'] = array(
       '#type' => 'submit',
@@ -503,7 +521,7 @@ class CurrencyFormController extends EntityFormController {
    */
   public function save(array $form, array &$form_state) {
     $currency = $this->entity;
-    foreach (array('access_operations', 'view_transaction_states') as $property) {
+    foreach (array('access_operations', 'access_view', 'access_undo') as $property) {
       foreach ($currency->{$property} as $key => $values) {
         $currency->{$property}[$key] = array_filter($values);
       }

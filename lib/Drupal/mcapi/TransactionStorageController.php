@@ -288,6 +288,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   * //TODO this CurrencyInterface isn't being enforced
   */
   public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters) {
+    //TODO We need to return 0 instead of null for empty columns
+    //then get rid of the last line of this function
     $query = "SELECT
       COUNT(DISTINCT t.serial) as trades,
       SUM(i.incoming) as gross_in,

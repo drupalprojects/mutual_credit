@@ -205,6 +205,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
   */
   public function confirm_form(array $form, array &$form_state, $op) {
     //TODO ENSURE THE FORM ID IS SET TO TRANSACTION_OPERATION_FORM
+    //TODO make this work
     $operations = transaction_operations(TRUE, FALSE);
     $form['serial'] = array(
       '#type' => 'value',

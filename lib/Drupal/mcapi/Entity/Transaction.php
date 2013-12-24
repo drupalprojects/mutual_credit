@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\TransactionInterface;
-use Drupal\mcapi\McapiException;
+use Drupal\mcapi\McapiTransactionException;
 
 /**
  * Defines the Transaction entity.
@@ -125,7 +125,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         }
       }
     }
-    if ($this->payer == $this->payee) {
+    if ($this->payer->value == $this->payee->value) {
       $transaction->exceptions[] = t('A wallet cannot pay itself.');
     }
     foreach ($this->worths[0] as $worth) {
@@ -134,6 +134,30 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         $this->exceptions[] = new McapiTransactionWorthException($worth->currency, t('A transaction must be worth more than 0'));
       }
     }
+    //it appears that $this->entity is the object created in the TransactionForm->preCreate, unmodified by the form submission
+    //the entity is only rebuilt when submit handler runs
+    //so what are we supposed to be validating?
+    echo $this->type->value;
+    //check that the state and type are congruent
+    $types = mcapi_get_types(FALSE);
+    if (array_key_exists($this->type->value, $types)) {
+      if ($this->state->value != $types[$this->type->value]['start state']) {
+        $this->exceptions[] = new McapiTransactionException(
+          'state',
+          t(
+            'Wrong initial state for @type transaction: @state',
+            array('@type' => $this->type->value, '@state' => $this->state->value)
+          )
+        );
+      }
+    }
+    else {
+      $this->exceptions[] = new McapiTransactionException(
+        'type',
+        t('Invalid transaction type: @type', array('@type' => $this->type->value))
+      );
+    }
+
 
     //child transactions which fail validation do so quietly, leaving a message in the log.
     //TODO this isn't working. $this->children is an entity reference object.
@@ -173,6 +197,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * {@inheritdoc}
+   * the only way to pass values into this is with the router system, but how?
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
     $values += array(
@@ -184,9 +209,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'created' => '',
       'type' => 'default',
       'extra' => array(),
-      'state' => TRANSACTION_STATE_FINISHED,
       'worth' => array(),
     );
+    $types = mcapi_get_types(FALSE);
+    $values['state'] = $types[$values['type']]['start state'];
 
     if (!empty($values['worth'])) {
       foreach ($values['worth'] as $currcode => $value) {
@@ -279,7 +305,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'description' => t('completed, pending, disputed, etc'),
       'type' => 'integer_field',
       'settings' => array(
-        'default_value' => 0,
+        'default_value' => 1,
       )
     );
     $properties['creator'] = array(
