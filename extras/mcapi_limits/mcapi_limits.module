@@ -13,7 +13,7 @@ use Drupal\mcapi_limits\McapiLimitsException;
  * It only checks against transactions in a POSITIVE state i.e. counted transactions.
  */
 function mcapi_limits_mcapi_transaction_validate(array $cluster) {
-  module_load_include('inc', 'mcapi');
+  module_load_include('inc', 'mcapi_limits');
   _mcapi_limits_mcapi_transaction_validate($cluster);
 }
 
@@ -23,8 +23,8 @@ function mcapi_limits_plugin($currency) {
   //if the file doesn't exist then a valid config object is still returned.
   //TODO is there a more elegant way of retrieving plugin name?
   //it should come from the $config file unless this is an ajax build in which case from $form_State[values]
-  $manager = \Drupal::service('plugin.manager.mcapi_limits');
-  return $manager->setup($currency);
+  //might be a good idea to keep the $manager in static
+  return \Drupal::service('plugin.manager.mcapi_limits')->setup($currency);
 }
 
 /*
@@ -32,12 +32,14 @@ function mcapi_limits_plugin($currency) {
  * Add the limits section to the currency form
  */
 function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
-  module_load_include('inc', 'mcapi');
+  module_load_include('inc', 'mcapi_limits');
   _mcapi_limits_form_mcapi_currency_edit_form_alter($form, $form_state);
 }
 
 
-
+/*
+ * ajax callback
+ */
 function limits_settings_subform($form, $form_state) {
   return $form['limits']['limits_settings'];
 }
@@ -49,9 +51,8 @@ function limits_settings_subform($form, $form_state) {
  */
 function mcapi_limits_form_user_form_alter(&$form, &$form_state) {
   module_load_include('inc', 'mcapi_limits');
-  _mcapi_limits_form_user_form_alter(&$form, &$form_state);
+  _mcapi_limits_form_user_form_alter($form, $form_state);
 }
-
 
 /*
  * implements hook_user_presave
@@ -106,7 +107,6 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
   );
 }
 
-
 /*
  * implements hook_field_extra_fields
 */
@@ -115,14 +115,14 @@ function mcapi_limits_field_extra_fields() {
 		'user' => array(
 			'user' => array(
 				'form' => array(
-					'limits_personal' => array(
+					'mcapi_limits' => array(
 						'label' => t('Balance limits'),
 						'description' => t('Trading limits per currency'),
 						'weight' => 0,
 					),
 				),
 				'display' => array(
-					'limits_personal' => array(
+					'mcapi_limits' => array(
 						'label' => t('Balance limits'),
 						'description' => t('Trading limits per currency'),
 						'weight' => 0,
@@ -133,6 +133,41 @@ function mcapi_limits_field_extra_fields() {
 	);
 }
 
+/*
+ * implement hook_user_view().
+*/
+function mcapi_limits_user_view($account, $mode, $language) {
+  module_load_include('inc', 'mcapi');
+  $account->content['mcapi_limits'] = mcapi_view_limits(
+    $account,
+    mcapi_get_available_currencies($account),
+    TRUE
+	);
+}
+
+/*
+ * callback to build a render array
+ * used in user_view, block and the view field
+ */
+function mcapi_view_limits($account, $currencies, $absolute) {
+  $renderable = array();
+  $manager = \Drupal::service('plugin.manager.mcapi_limits');
+  //get a render array for each applicable currency
+  foreach ($currencies as $currency) {
+    if ($currency->limits_plugin == 'none') continue;
+    if ($absolute) {
+      $renderable[] = $manager->setup($currency)->view($account);
+    }
+    else {
+      $renderable[] = array(
+        '#theme' => 'mcapi_limits_relative',
+        '#account' => $account,
+        '#currency' => $currency,
+      );
+    }
+  }
+  return $renderable;
+}
 
 /*
  * implements hook_element_info().
@@ -176,23 +211,4 @@ function mcapi_limits_process_minmax(&$element) {
     '#min' => 1,
   );
   return $element;
-}
-
-/*
- * Calculate the balance changes that this transaction proposes
-* by convention, if the transaction state < 0 it is NOT COUNTED
-* this is only used in tokens, so far, and in mcapi_limits module
-* incoming transaction can be a transaction object with children or an array
-*/
-function _transactions_diff(array $cluster) {
-  $diff = array();
-  foreach ($cluster as $transaction) {
-    foreach ($transaction->worths[0] as $currcode => $worth) {
-      //we can't prepare the array in advance with zeros so += and -= throws notices
-      //instead we just build up an array and add them up when we need them
-      $diff[$transaction->payer->value][$currcode][] = -$worth->value;
-      $diff[$transaction->payee->value][$currcode][] = $worth->value;
-    }
-  }
-  return $diff;
 }

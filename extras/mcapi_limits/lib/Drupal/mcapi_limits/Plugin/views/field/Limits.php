@@ -69,18 +69,11 @@ class Limits extends FieldPluginBase {
     if (empty($this->options['currencies'])) {
       $this->options['currencies'] = mcapi_get_available_currencies($account);
     }
-    foreach ($this->options['currencies'] as $currency) {
-      $renderable[] = array(
-      	'#theme' => $this->options['absolute'] == 'absolute' ? 'mcapi_limits' : 'mcapi_limits_relative',
-        '#account' => $account,
-        '#currency' => $currency
-        //be aware that the 'balanced' plugin can take another variable, size
-      );
-      return $renderable;
-    }
-
-
-
+    return mcapi_view_limits(
+      $account,
+      $this->options['currencies'],
+      $this->options['absolute'] == 'absolute'
+    );
   }
 
 }

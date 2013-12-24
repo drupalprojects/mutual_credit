@@ -1,6 +1,5 @@
 <?php
 
-
 function _mcapi_limits_mcapi_transaction_validate($cluster) {
   //first add up all the transactions
   $errors = $messages = array();
@@ -253,4 +252,24 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
   $form['limits']['limits_settings']['#prefix'] = '<div id="limits-settings">';
   $form['limits']['limits_settings']['#suffix'] = '</div>';
   $form['limits']['limits_settings']['#tree'] = TRUE;
+}
+
+/*
+ * Calculate the balance changes that this transaction proposes
+* by convention, if the transaction state < 0 it is NOT COUNTED
+* this is only used in tokens, so far, and in mcapi_limits module
+* incoming transaction can be a transaction object with children or an array
+*/
+function _transactions_diff(array $cluster) {
+  $diff = array();
+  drupal_set_message('limits validation skipped until worths field is working'); return array();
+  foreach ($cluster as $transaction) {
+    foreach ($transaction->worths[0] as $currcode => $worth) {
+      //we can't prepare the array in advance with zeros so += and -= throws notices
+      //instead we just build up an array and add them up when we need them
+      $diff[$transaction->payer->value][$currcode][] = -$worth->value;
+      $diff[$transaction->payee->value][$currcode][] = $worth->value;
+    }
+  }
+  return $diff;
 }

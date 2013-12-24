@@ -15,7 +15,7 @@ use Drupal\Core\Session\AccountInterface;
  * Provides a user balances block.
  *
  * @Block(
- *   id = "mcapi_absolute_limits",
+ *   id = "mcapi_limits",
  *   admin_label = @Translation("Balance limits"),
  *   category = @Translation("Community Accounting")
  * )
@@ -62,22 +62,18 @@ class BalanceLimits extends McapiBlockBase {
    */
   public function build() {
     parent::build();
-    //get a render array for each applicable currency
-    $manager = \Drupal::service('plugin.manager.mcapi_limits');
-    $renderable = array();
-    foreach ($this->currencies as $currency) {
-      if ($currency->limits_plugin == 'none') continue;
-      if ($this->configuration['absolute'] == 'absolute') {
-        $renderable[$currency->id()] = $manager->setup($currency)->view($this->account);
-      }
-      else {
-        $renderable[$currency->id()] = array(
-          '#theme' => 'mcapi_limits_relative',
-          '#account' => $this->account,
-          '#currency' => $currency,
-        );
-      }
-    }
-    return $renderable;
+    return mcapi_view_limits(
+      $this->account,
+      $this->currencies,
+      $this->configuration['absolute'] == 'absolute'
+    );
+
   }
 }
+
+
+return mcapi_view_limits(
+    $account,
+    $this->options['currencies'],
+    $this->options['absolute'] == 'absolute'
+);
