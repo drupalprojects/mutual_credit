@@ -1,4 +1,2 @@
-delete_mode: '0'
-change_undo_mode: true
 sentence_template: '[transaction:payer] paid [transaction:payee] [transaction:worth]. [transaction:links]'
 mix_mode: true
