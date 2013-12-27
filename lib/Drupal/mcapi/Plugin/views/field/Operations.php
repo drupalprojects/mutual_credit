@@ -52,9 +52,7 @@ class Operations extends FieldPluginBase {
 
   function render(ResultRow $values) {
   	//need to work in the options[separater] somehow
-  	$transaction = $this->getEntity($values);
-  	module_load_include('inc', 'mcapi');
-    return transaction_get_links($transaction, $this->options['mode'], TRUE);
+  	return $this->getEntity($values)->links($this->options['mode'], TRUE);
   }
 
 }

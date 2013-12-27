@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageControllerInterface;
+use Drupal\Core\Template\Attribute;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\TransactionInterface;
@@ -72,6 +73,60 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
   }
 
+  /*
+   * return a render array of 'operations' links for the current user on $this transaction
+   * $mode can be 'page', 'ajax, or 'modal'
+   * $view is whether or not to include the 'view' link
+   */
+  function links($mode = 'page', $view = FALSE) {
+    $renderable = array();
+    foreach (transaction_operations() as $op => $plugin) {
+      if (!$view && $op == 'view') continue;
+      if ($this->access($op)) {
+        if ($op == 'view') {//maybe this isn't necessary at all
+          $renderable['#links'][$op] = array(
+            'title' => $plugin->label,
+            'route_name' => 'mcapi.transaction_view',
+            'route_parameters' => array(
+              'mcapi_transaction' => $this->serial->value
+            ),
+          );
+        }
+        else {
+          $renderable['#links'][$op] = array(
+            'title' => $plugin->label,
+            'route_name' => 'mcapi.transaction.op',
+            'route_parameters' => array(
+              'mcapi_transaction' => $this->serial->value,
+              'op' => $op
+            ),
+          );
+        }
+        if ($mode == 'modal') {
+          $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
+          $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+        }
+        elseif($mode == 'ajax') {
+          //I think we need a new router path for this...
+          $renderable['#attached']['js'][] = 'core/misc/ajax.js';
+          //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+        }
+      }
+    }
+    if (array_key_exists('#links', $renderable)) {
+      $renderable += array(
+        '#theme' => 'links',
+        //'#heading' => t('Operations'),
+        '#attached' => array(
+          'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
+        ),
+        //Attribute class not found
+        '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
+      );
+    }
+    return $renderable;
+  }
+
   /**
    * preSave
    * passes the transaction around allowing modules
@@ -105,7 +160,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         drupal_set_message(
           t('A child transaction "!description" failed validation and was not saved.', array('!description' => $transaction->description->value)),
           'warning'
-        );
+       );
       }
     }
   }
@@ -121,7 +176,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     foreach (array($this->payer->entity, $this->payee->entity) as $account) {
       foreach ($this->worths[0] as $worth) {
         if (!$worth->currency->access('membership', $account)) {
-          $this->exceptions[] = t('!user cannot use !currency', array('!user' => $account->name->value, '!currency' => $worth->currency->name));
+          $this->exceptions[] = t('!user cannot use !currency', array('!user' => $account->getUsername(), '!currency' => $worth->currency->name));
         }
       }
     }
@@ -187,6 +242,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   public function postSave(EntityStorageControllerInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
     $storage_controller->saveWorths($this);
+    echo 'adding lines to index table';
     $storage_controller->addIndex($this);
     //save the children if there are any
     foreach ($this->children as $transaction) {
@@ -221,10 +277,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
           'value' => NULL,
         );
       }
-    }
-    //ask the system if any children are needed
-    if ($values['parent'] == 0) {
-
     }
   }
 

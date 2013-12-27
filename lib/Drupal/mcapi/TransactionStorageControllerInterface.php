@@ -11,9 +11,6 @@ use Drupal\Core\Entity\FieldableEntityStorageControllerInterface;
 
 interface TransactionStorageControllerInterface extends FieldableEntityStorageControllerInterface {
 
-  //this doesn't override...
-	//public function delete($delete_state);
-
   /**
    * Save Transaction Worth.
    *
@@ -26,6 +23,7 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
   public function addIndex(TransactionInterface $transaction);
   public function indexRebuild();
   public function indexCheck();
+  public function indexDrop($serial);
 
   //filter by any field in the table; returns an array of serials keyed by xid
   public function filter(array $conditions, $offset, $limit);

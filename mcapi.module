@@ -7,11 +7,6 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Field\FieldItemList;
 use Drupal\mcapi\Plugin\Field\FieldType\Worth;
 
-//delete modes
-define('MCAPI_UNDO_STATE_DELETE', NULL);
-define('MCAPI_UNDO_STATE_ERASE', 0);
-define('MCAPI_UNDO_STATE_REVERSE', 2);
-
 define('CURRENCY_WIDGET_SINGLEFIELD', 1);
 define('CURRENCY_WIDGET_TEXT', 2);
 define('CURRENCY_WIDGET_SELECT', 3);
@@ -28,7 +23,7 @@ define('TRANSACTION_STATE_FINISHED', 1);
 //we don't actually want to discount the deleted transaction
 //so its state constant will be > 0
 //
-//depending on the delete mode, erased transactions may or may not be counted
+
 define('TRANSACTION_STATE_UNDONE', 0);
 
 //the transaction form expects args in $form_state[build_info]
@@ -150,10 +145,10 @@ function mcapi_help($section, $arg) {
 }
 
 
-function transaction_operations($full = TRUE) {
+function transaction_operations($op_name = NULL, $full = TRUE) {
 	//TODO when to use drupal_static and when to use drupal_static_fast?
-	$operations = &drupal_static(__FUNCTION__, array());
-	if (empty($operations)) {
+	$plugins = &drupal_static(__FUNCTION__, array());
+	if (empty($plugins)) {
 		$manager = \Drupal::service('plugin.manager.mcapi.transaction_operation');
 		foreach ($manager->getDefinitions() as $op => $info) {
 			$plugins[$op] = $manager->createInstance($op);
@@ -165,6 +160,7 @@ function transaction_operations($full = TRUE) {
 	  }
 	  return $options;
 	}
+	if ($op_name) return $plugins[$op_name];
 	else return $plugins;
 }
 
@@ -292,15 +288,10 @@ function mcapi_mcapi_info_states() {
       'description' => t('the last state of the workflow'),
     ),
   );
-  $undomode = \Drupal::config('mcapi.misc')->get('delete_mode');
-  //don't attempt to liven the link coz this function can run while bootstrapping and that means trouble
-  $description = t("See !mode settings for more info", array('!mode' => l(t('Undo mode'), 'admin/accounting/misc')));
-  if ($undomode != MCAPI_UNDO_STATE_DELETE) {
-    $states[TRANSACTION_STATE_UNDONE] = array(
-      'name' => t('Undone'),
-      'description' => $description,
-    );
-  }
+  $states[TRANSACTION_STATE_UNDONE] = array(
+    'name' => t('Deleted'),
+    'description' => t("with a 'state' value of 0"),
+  );
   return $states;
 }
 
@@ -319,13 +310,6 @@ function mcapi_mcapi_info_types() {
     'description' => t('Created automatically'),
     'start state' => TRANSACTION_STATE_FINISHED
   );
-  if (\Drupal::config('mcapi.misc')->get('delete_mode') == MCAPI_UNDO_STATE_REVERSE) {
-    $types['reverse'] = array(
-  	  'label' => t('Reversal'),
-      'description' => t('This transaction negates another transaction'),
-      'start state' => TRANSACTION_STATE_UNDONE
-    );
-  }
   return $types;
 }
 
@@ -551,6 +535,14 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   else {
     return $cache->data;
   }
+}
+/*
+ * this function might be best put inside the OperationForm:: submit
+ * or it could be replaced with hook_mcapi_transaction_update
+ */
+function mcapi_transaction_operated($plugin, $transaction, $old_state) {
+  drupal_set_message('running hook_mcapi_transaction_operated');
+  module_invoke('mcapi_transaction_operated', $plugin, $transaction, $old_state);
 }
 
 /*
@@ -964,7 +956,7 @@ function mcapi_toolbar() {
 //We can't use hook_query_TAG_alter: we can't guarantee the tag will be on all the transaction views
 //So we have to alter Every query, for now.
 //function mcapi_views_pre_execute(QueryAlterableInterface $query) {
-function mcapi_query_alter(QueryAlterableInterface $query) {
+function mcapi_views_query_alter(AlterableInterface $query) {
   //note that this lets through queries simply loading the entity, not just views queries
   if (!array_intersect(array('mcapi_transactions', 'mcapi_transactions_index'), array_keys($query->getTables()))) return;
   $currencies = mcapi_get_available_currencies();
@@ -981,7 +973,7 @@ function mcapi_query_alter(QueryAlterableInterface $query) {
     //where (currcode = A and (state = x) OR (state = Y) )
     $state_or_state = db_or();//where state = A OR B
     foreach ($states as $state) {
-      $plugin_names = array_filter($currency->access_view[$state]);
+      $plugin_names = (array)$currency->access_view[$state];
       foreach ($plugin_names as $plugin_name) {
         $plugin = $transactionAccessPlugins[$plugin_name];
         $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);
@@ -989,11 +981,19 @@ function mcapi_query_alter(QueryAlterableInterface $query) {
         $state_or_state->condition($state_and_callback);
       }
     }
-    $currcode_and_states = db_and()->condition('mcapi_transactions_worths.currcode', $currcode)->condition($state_or_state);
-    $or_currcodes->condition($currcode_and_states);
+    if ($plugin_names) {
+      $or_currcodes->condition(db_and()
+        ->condition('mcapi_transactions_worths.currcode', $currcode)
+        ->condition($state_or_state)
+      );
+    }
   }
   //to see this working, enable the sql preview in the views interface.
   $query->condition($or_currcodes);
+}
+
+function mcapi_entity_query_alter() {
+  drupal_set_message('hook_entity_query_alter');
 }
 
 /*

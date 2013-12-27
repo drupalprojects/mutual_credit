@@ -65,16 +65,16 @@ class Workflow extends ControllerBase {//what is the ControllerBase for? are we 
       '#attributes' => array('style' => 'clear:both;width:100%;padding-top:2em;'),
       '#rows' => array()
     );
-    foreach (transaction_operations('1', '0') as $op => $plugin) {
+    foreach (transaction_operations(NULL, TRUE) as $op => $plugin) {
       $renderable['ops']['#rows'][$op] = array(
-          'name' => $plugin->label,
-          'description' => $plugin->description
+        'name' => $plugin->label,
+        'description' => $plugin->description
       );
       if ($op == 'view') continue;
       $renderable['ops']['#rows'][$op]['settings'] = $this->l(
-          $this->t('Settings'),
-          'mcapi.workflow_settings',
-          array('op' => $op)
+        $this->t('Settings'),
+        'mcapi.workflow_settings',
+        array('op' => $op)
       );
     }
 

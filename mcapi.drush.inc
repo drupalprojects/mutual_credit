@@ -40,6 +40,9 @@ function mcapi_drush_help($section) {
  *   An associative array describing your command(s).
  */
 function mcapi_drush_command() {
+  print_r(\Drupal\Core\Entity\EntityManagerInterface::getDefinitions('mcapi_transactions'));
+  //drush isn't working yet, but when it is, we only show wipeslate if the transaction controller is Drupal\mcapi\TransactionStorageController
+
   $items['mcapi-wipeslate'] = array(
     //'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Trucate the transactions table and fieldAPI fields. USE WITH CARE.'),
@@ -55,18 +58,6 @@ function mcapi_drush_command() {
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
-  $items['mcapi-purge'] = array(
-    //'callback' => 'drush_mcapi_purge',
-    'description' => dt('Remove all erased and reversed transactions and unfreeze the deletemode'),
-    'drupal dependencies' => array('mcapi'),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
-  );
-  $items['mcapi-nodedel'] = array(
-    //'callback' => 'drush_mcapi_nodedel',
-    'description' => dt('remove the exchange nodes following the d6 upgrade'),
-    'drupal dependencies' => array('mcapi'),
-    'bootstrap' => DRUPAL_BOOTSTRAP_DATABASE,
-  );
   if (function_exists('devel_generate_drush_command')) {
     $items['generate-transactions'] = array(
       //'callback' => 'drush_mcapi_purge',
@@ -81,22 +72,20 @@ function mcapi_drush_command() {
   return $items;
 }
 
-
+//trncate transactions
 function drush_mcapi_wipeslate() {
-	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-	$serials = $storage->filter(array());
-	foreach ($serials as $serial) {
-		transaction_load($serial)->delete(MCAPI_UNDO_STATE_DELETE);
-	}
-
+  db_truncate('mcapi_transactions')->execute();
+  db_truncate('mcapi_transactions_worths')->execute();
+  db_truncate('mcapi_transactions_index')->execute();
+  foreach (field_info_instances('mcapi_transaction', 'mcapi_transaction') as $fieldname => $info) {
+    print_r($info);//find out what table to truncate.
+  }
   //how to do "are you sure?" messages in drush!
   //this should be protected with the user 1 password
   drush_print(dt("@purged transactions purged", array('@purged' => count($serials))));
-
   field_cache_clear();
-  \Drupal::config('mcapi.misc')->set('change_undo_mode', TRUE);
 }
-
+//delete transactions by serials
 function drush_mcapi_delete() {
 	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
 	foreach(func_get_args() as $serial) {
@@ -105,15 +94,8 @@ function drush_mcapi_delete() {
   drush_print(dt('Deleted'));
 }
 
-function drush_mcapi_purge() {
-	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-	$serials = $storage->filter(array('state' => TRANSACTION_STATE_UNDONE));
-	transaction_load($serial)->delete(MCAPI_UNDO_STATE_DELETE);
-  \Drupal::config('mcapi.misc')->set('change_undo_mode', TRUE);
-}
 
-//TODO
-//rewrite this for D8
+//TODO rewrite this for D8
 function drush_devel_generate_transactions($num_transactions = 10) {
   //get all the possible variables
   $transact_uids = db_query(

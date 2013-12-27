@@ -42,58 +42,54 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   }
 
   /*
-   * overrides of this delete function may choose to ignore the delete mode
-   * override the entity delete controller interface
-   * so the delete mode is an optional second argument
+   * in THIS storage controller, 'delete' is more like 'erase', merely changing the transaction state.
+   * Would be very easy to make another storage controller where delete either deletes the entity
+   * Or even creates another transaction going in the opposite direction
    */
-  public function delete(array $entities) {
-    $delete_state = func_get_arg(2);
-    if (is_null($delete_state)) {
-      $delete_state = \Drupal::config(mcapi.misc)->get('delete_mode');
+  public function delete(array $transactions) {
+    foreach ($transactions as $transaction) {
+      $transaction->state = TRANSACTION_STATE_UNDONE;
+      try{
+        $transaction->save($transaction);
+        $this->indexDrop($transaction->serial->value);
+        drupal_set_message('update hook needed in TransactionStorageController->delete()?');
+      }
+      catch (Exception $e){
+        drupal_set_message(t('Failed to undo transaction: @message', array('@message' => $e->getMessage())));
+      }
     }
-    //TODO
-    //how do we handle the attached fields?
-    switch($delete_state) {
-      case MCAPI_UNDO_STATE_REVERSE:
-        //add reverse transactions to the children and change the state.
-        foreach (array_merge(array($this), $this->children) as $transaction) {
-          $reversed = clone $this;
-          $reversed->payer = $this->payee;
-          $reversed->payee = $this->payer;
-          $reversed->type = 'reversal';
-          unset($reversed->created, $reversed->xid);
-          $reversed->description = t('Reversal of: @label', array('@label' => $entity['label callback']($transaction)));
-          $reverseds[] = $reversed;
-        }
-        $this->children = array_merge($this->children, $reversed);
-        //running on..
-      case MCAPI_UNDO_STATE_ERASE:
-        $old_state = $this->state;
-        $this->state = $delete_state;
-        try{
-          //notice we don't validate here
-          $this->save();
-          drupal_set_message('update hook needed in TransactionStorageController->delete()');
-        }
-        catch (Exception $e){
-          drupal_set_message(t('Failed to undo transaction: @message', array('@message' => $e->getMessage())));
-        }
-        break;
-      case MCAPI_UNDO_STATE_DELETE:
-        $this->database->delete('mcapi_transactions_worths')
-          ->condition('xid', $transaction->id())
-          ->execute();
-          //and the index table
-        $this->database->delete('mcapi_transactions_index')
-          ->condition('xid', $transaction->id())
-          ->execute();
-    }
-    //TODO
-    //does this belong in the entitystorage controller?
-    module_invoke_all('transaction_undo', $this->serial->value);
-    //once even one transaction has been deleted, the undo_mode cannot be changed
-    \Drupal::config('mcapi.misc')->set('change_undo_mode', FALSE);
   }
+  /*
+   * How to delete the whole entity.
+      $this->database->delete('mcapi_transactions_worths')
+      ->condition('xid', $transaction->id())
+      ->execute();
+      //and the index table
+      $this->database->delete('mcapi_transactions_index')
+      ->condition('xid', $transaction->id())
+      ->execute();
+    }
+    *
+    *How to create another transaction going in the opposite direction
+      $parent_xid = $transaction->xid;
+  	  $cluster = mcapi_transaction_flatten($this);
+  	  //add reverse transactions to the children and change the state.
+  	  //TODO how do we handle the attached fields? for cloned transactions? do they matter?
+  	  //TODO what about undoing pending transactions? Does reverse mode make sense
+  	  foreach ($cluster as $transaction) {
+  	    $reversed = clone $this;
+  	    $reversed_parent = $parent_xid;
+  	    $reversed->payer = $this->payee;
+  	    $reversed->payee = $this->payer;
+  	    $reversed->type = 'reversal';
+  	    unset($reversed->created, $reversed->xid);
+  	    $reversed->description = t('Reversal of: @label', array('@label' => $entity['label callback']($transaction)));
+  	    $this->children[] = $reversed;
+  	  }
+   * in both cases don't forget to remove it from the index table
+   * $this->indexDrop($transaction->serial->value);
+   * and don't forget that transactions in different states may be undone differently
+   */
 
 
   /**
@@ -120,6 +116,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     //TODO fire hooks -
     //transaction_update($op, $transaction, $values);
   }
+
   /*
    *  write 2 rows to the transaction index table
    */
@@ -132,7 +129,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       return;
     };
     $query = $this->database->insert('mcapi_transactions_index')
-      ->fields(array('xid', 'serial', 'uid1', 'uid2', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
+      ->fields(array('xid', 'serial', 'uid1', 'uid2', 'state', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
 
     foreach ($transaction->worths[0] as $worth) {
       $query->values(array(
@@ -140,6 +137,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'serial' => $transaction->serial->value,
         'uid1' => $transaction->payer->value,
         'uid2' => $transaction->payee->value,
+        'state' => $transaction->state->value,
         'currcode' => $worth->currcode,
         'volume' => $worth->value,
         'incoming' => 0,
@@ -154,6 +152,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'serial' => $transaction->serial->value,
         'uid1' => $transaction->payee->value,
         'uid2' => $transaction->payer->value,
+        'state' => $transaction->state->value,
         'currcode' => $worth->currcode,
         'volume' => $worth->value,
         'incoming' => $worth->value,
@@ -165,6 +164,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       ));
     }
     $query->execute();
+    die('inserted into index table');
   }
 
   public function indexRebuild() {
@@ -217,6 +217,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       if ($volume_index == $volume) return TRUE;
     }
     return FALSE;
+  }
+
+  public function indexDrop($serial) {
+    db_delete('mcapi_transactions_index')->condition('serial', $serial)->execute();
   }
 
   /**
@@ -311,6 +315,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     return array('trades' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0, 'partners' => 0);
   }
 
+  //merge the uids in all the subsequent args into the first arg
   public function mergeAccounts($main) {
     $uids = func_get_args();
     $main = array_shift($uids);
@@ -321,10 +326,11 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       db_update('mcapi_transactions')
       ->fields(array('payee' => $main))
       ->condition('payee', $uid)->execute();
+      //now undo any transactions the account has with itself
       $serials = transaction_filter(array('payer' => $main, 'payee' => $main));
       //this is usually a small number, but strictly speaking should be done in a batch.
       foreach (array_unique($serials) as $serial) {
-        transaction_undo($serial, MCAPI_UNDO_STATE_DELETE);
+        transaction_load($serial)->delete();
       }
     }
   }

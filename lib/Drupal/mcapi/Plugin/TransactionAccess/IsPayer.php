@@ -28,6 +28,7 @@ class IsPayer {
     return \Drupal::currentUser()->id() == $transaction->payer->value;
   }
 
+  //SELECT transactions WHERE (currency = whatever) AND (state = $state AND ($condition))
   function viewsAccess($query, $condition, $state) {
     $condition->condition('mcapi_transactions.payer', \Drupal::currentUser()->id());
   }

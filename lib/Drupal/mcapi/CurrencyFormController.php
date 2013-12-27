@@ -380,59 +380,52 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
     );
 
-    $full_states = mcapi_get_states('#full');
-    $access_plugins = transaction_access_plugins(FALSE);
     $form['access_view'] = array(
       '#title' => t('View access'),
-      '#description' => t('Determine who can view transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
+      '#description' => t('Determine who can view transactions in each state.') .' '. t('Any of the checked conditions must return TRUE'),
       '#type' => 'details',
       '#group' => 'additional_settings',
       '#tree' => TRUE,
     );
-    foreach ($full_states as $constant => $state) {
-      $form['access_view'][$constant] = array(
-        '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
-        '#description' => $state['description'],
-        '#type' => 'checkboxes',
-        '#options' => $access_plugins,
-        '#default_value' => property_exists($currency, 'access_view') && isset($currency->access_view[$constant]) ?
-          $currency->access_view[$constant] : array_values($access_plugins),
-      );
-    }
     $form['access_undo'] = array(
       '#title' => t('Undo access'),
-      '#description' => t('Determine who can undo transactions in each state.') .' '. t('Any the checked conditions must return TRUE'),
+      '#description' => t('Determine who can undo transactions in each state.') .' '. t('Any of the checked conditions must return TRUE'),
       '#type' => 'details',
       '#group' => 'additional_settings',
       '#tree' => TRUE,
     );
-    foreach ($full_states as $constant => $state) {
-      if ($constant == TRANSACTION_STATE_UNDONE) continue;
-      $form['access_undo'][$constant] = array(
-        '#title' => t("Transactions in state '@state'", array('@state' => $state['name'])),
-        '#description' => $state['description'],
-        '#type' => 'checkboxes',
-        '#options' => $access_plugins,
-        '#default_value' => property_exists($currency, 'access_undo') && isset($currency->access_undo[$constant]) ?
-          $currency->access_undo[$constant] : array_values($access_plugins),
-      );
-    }
-    //any operations declared not by mcapi.module
-    foreach (transaction_operations() as $op => $definition) {
-//      mdump($definition);echo "in CurrencyFormController";
-      if (in_array($op, array('view', 'undo'))) {
-        continue;
-      }
-      if ($settings = $definition->access_form($currency, $op)) {
-        $form['access_'.$op] = array(
-          '#title' => t("@operation access", array('@operation' => $definition->label)),
-          '#type' => 'details',
-          '#group' => 'additional_settings',
-          'settings' => $settings
+    foreach (array('access_view', 'access_undo') as $prop) {
+      foreach (mcapi_get_states('#full') as $constant => $state) {
+        $form[$prop][$constant] = array(
+          '#title' => t(
+            "Transactions in state '@state': !description",
+            array('@state' => $state['name'], '!description' => $state['description'])
+          ),
+          '#type' => 'checkboxes',
+          '#options' => transaction_access_plugins(FALSE),
+          '#default_value' => $currency->{$prop}[$constant]
         );
       }
     }
-//    print_r($form);
+    unset($form['access_undo'][TRANSACTION_STATE_UNDONE]);//non-sequiteur
+
+    //any operations declared not by mcapi.module
+    foreach (transaction_operations() as $op => $plugin) {
+      if (in_array($op, array('view', 'undo'))) {
+        continue;
+      }
+      if ($settings = $plugin->access_form($currency, $op)) {
+        $other_ops[$op] = $settings;
+      }
+    }
+    if (count($other_ops)) {//show them all in one tab
+      $form['access_operations'] = array(
+        '#title' => t("Other operations"),
+        '#type' => 'details',
+        '#group' => 'additional_settings',
+        '#tree' => TRUE,
+      ) + $other_ops;
+    }
 
     $form['refresh'] = array(
       '#type' => 'submit',

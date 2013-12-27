@@ -44,10 +44,11 @@ class Undo extends OperationBase {
    *  access callback for transaction operation 'view'
   */
   public function opAccess(TransactionInterface $transaction) {
+    if ($transaction->state->value == TRANSACTION_STATE_UNDONE) RETURN FALSE;
     $access_plugins = transaction_access_plugins(TRUE);
     //see the comments in OperationBase
     foreach ($transaction->worths[0] as $worth) {
-      foreach ($worth->currency->access_undo[$transaction->state->value] as $plugin) {
+      foreach (@$worth->currency->access_undo[$transaction->state->value] as $plugin) {
         if ($access_plugins[$plugin]->checkAccess($transaction)) continue 2;
       }
       return FALSE;
@@ -56,6 +57,8 @@ class Undo extends OperationBase {
   }
 
   public function execute(TransactionInterface $transaction, array $values) {
+    $transaction->delete();
+/*
     $mail_settings = $this->config->get('special');
     //TODO make the temp notifications work
     if ($mail_settings['send'] && $mail_settings['subject'] && $mail_settings['body']) {
@@ -66,9 +69,7 @@ class Undo extends OperationBase {
       $params['config'] = $this->configFactory->get('mcapi.operation.undo');
       drupal_mail('mcapi', 'operation', $to, $language->language, $params);
     }
-
-    $transaction->undo();
-
+*/
     $message = t('The transaction is undone.') .' ';
     return array('#markup' => $message);
   }

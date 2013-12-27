@@ -19,21 +19,21 @@
  * if the mcapi_limits module is enabled:
  * - pending
  * extra fieldAPI fields
- * - additional
+ * - content
  * child transactions, rendered as sentences
  * - children
 #}
+{{ content.pending_signatures }}
 <center>
 On {{ date }}, <br />
 {{ payer }} paid {{ payee }} <br />
 the sum of <br />
 <font size=6>{{ worths }}</font><br />
-{{ links }}
+{{ content.links }}
 </center>
-<br /><br />additional: {{ additional }}
+<br /><br />content: {{ content }}
 
 <br />
-<br /><b>Testing variables:</b>
-<br />pending: {{ pending }}
-<br />children: {{ children }}
+<br /><b>Child transactions:</b>
+<br />{{ children }}
 <br />

@@ -67,7 +67,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
    * offers a checkbox list of the transaction_operation_access callbacks
    */
   public function access_form(CurrencyInterface $currency) {
-
+    //the operation label and description are already used in the settings group
     $element = array(
       '#title' => $this->label,
       '#description' => $this->description,
@@ -206,7 +206,6 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
   public function confirm_form(array $form, array &$form_state, $op) {
     //TODO ENSURE THE FORM ID IS SET TO TRANSACTION_OPERATION_FORM
     //TODO make this work
-    $operations = transaction_operations(TRUE, FALSE);
     $form['serial'] = array(
       '#type' => 'value',
       '#value' => $transaction->serial

@@ -72,10 +72,6 @@ class TransactionForm extends EntityFormController {
       '#default_value' => $transaction->type->value,
       '#required' => TRUE,
     );
-    $form['state'] = array(
-    	'#type' => 'value',
-      '#value' => $transaction->state->value
-    );
     $form['creator'] = array(
       '#title' => t('Recorded by'),
       '#type' => 'user_chooser_few',
@@ -86,13 +82,13 @@ class TransactionForm extends EntityFormController {
       '#required' => FALSE,//because user_chooser assumes TRUE
       '#weight' => 15,
     );
+    //TODO how is this field validated? Is it just a positive integer?
     $form['created'] = array(
       '#title' => t('Recorded on'),
       '#type' => 'date',
       '#default_value' => $transaction->created->value,
       '#weight' => 18,
     );
-
     return $form;
   }
 
@@ -121,6 +117,7 @@ class TransactionForm extends EntityFormController {
     $form_state['values']['state'] = $types[$form_state['values']['type']]['start state'];
 
     $transaction = $this->buildEntity($form, $form_state);
+
 
     if (array_key_exists('mcapi_validated', $form_state))return;
     else $form_state['mcapi_validated'] = TRUE;
@@ -163,6 +160,7 @@ class TransactionForm extends EntityFormController {
       drupal_set_message(t('Transaction was already submitted'), 'error');
       return;
     }
+
     //ensure that the form won't be submitted again
     db_insert('mcapi_submitted')
       ->fields(array('form_build_id' => $form_build_id, 'time' => REQUEST_TIME))
@@ -175,6 +173,7 @@ class TransactionForm extends EntityFormController {
   public function save(array $form, array &$form_state) {
     $transaction = $this->entity;
     try {
+      drupal_set_message('saving transaction: '.$transaction->uuid->value);
       $db_t = db_transaction();
       //was already validated
       $status = $transaction->save($form, $form_state);
@@ -222,11 +221,11 @@ class TransactionForm extends EntityFormController {
         ),
       ),
     );
-    if (empty($form_state['mcapi_submitted'])) {//step 1
+    if (empty($form_state['mcapi_submitted'])) {
       $actions['submit']['#validate'][] = array($this, 'step_1_validate');
       $actions['submit']['#submit'][] = array($this, 'step_1_submit');
     }
-    else {//setp 2
+    else {
       $actions['submit']['#validate'][] = array($this, 'step_2_validate');
       $actions['submit']['#submit'][] = array($this, 'step_2_submit');
       $actions['submit']['#submit'][] = array($this, 'save');

@@ -120,6 +120,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       1 => array('perm_manage' => 'perm_manage'),
       -1 => array('perm_manage' => 'perm_manage', 'is_signatory' => 'is_signatory')
     );
+    $values['access_operations'] = array();//depends on what other operations are available.
   }
 
   /**
@@ -159,7 +160,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
         'configuration' => $this->widget_settings,
       ));
     }
-
     return $this->widgetPlugin;
   }
   /*
@@ -169,6 +169,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     //get the formatter...
     return '#formatted:'.$value;
   }
+
   /*
    * return the number of transactions, in all states
    */
@@ -177,6 +178,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     $transactionStorageController = \Drupal::entityManager()->getStorageController('mcapi_transaction');
     return $transactionStorageController->count($this->id());
   }
+
   /*
    * return the number of transactions, in all states
    */

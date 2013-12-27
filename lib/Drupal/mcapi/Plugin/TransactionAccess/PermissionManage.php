@@ -28,6 +28,7 @@ class PermissionManage {
     return user_access('manage all transactions');
   }
 
+  //SELECT transactions WHERE (currency = whatever) AND (state = $state AND ($condition))
   function viewsAccess($query, $condition, $state) {
     $condition->condition(1, user_access('manage all transactions'));
   }

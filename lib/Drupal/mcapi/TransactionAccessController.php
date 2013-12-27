@@ -27,8 +27,7 @@ class TransactionAccessController extends EntityAccessController {
       //there is probably a better way of writing the router so the op is passed as a variable
       $op = \Drupal::request()->attributes->get('op');
     }
-    $operations = transaction_operations(TRUE);
-    return $operations[$op]->opAccess($transaction);
+    return transaction_operations($op)->opAccess($transaction);
   }
 
 

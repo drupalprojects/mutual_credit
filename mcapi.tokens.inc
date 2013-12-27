@@ -25,15 +25,15 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
         break;
       case 'payer':
         $account = user_load($transaction->payer);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->getUsername()) : format_username($account);
         break;
       case 'payee':
         $account = user_load($transaction->payee);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->getUsername()) : format_username($account);
         break;
       case 'creator':
         $account = user_load($transaction->creator);
-        $replacements[$original] = $sanitize ? filter_xss($account->name) : format_username($account);
+        $replacements[$original] = $sanitize ? filter_xss($account->getUsername()) : format_username($account);
         break;
       case 'created':
         $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $language_code);

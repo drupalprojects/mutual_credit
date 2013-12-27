@@ -35,5 +35,5 @@ interface OperationInterface {
 
   public function ajax_submit(array $form_state_values);
 
-  public function confirm_form(array $form, array &$form_state, $op);
+  //public function confirm_form(array $form, array &$form_state, $op);
 }

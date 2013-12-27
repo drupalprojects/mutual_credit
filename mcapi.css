@@ -8,7 +8,7 @@ div.transaction.certificate span.quantity {
   line-height: 1.1em;
 }
 div.transaction.state-0{
-  opacity: 0.5;
+  opacity: 0.3;
 }
 div.transaction.certificate ul.transaction-operations{
   display: block;

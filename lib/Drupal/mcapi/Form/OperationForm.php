@@ -98,8 +98,7 @@ class OperationForm extends ConfirmFormBase {
    */
   public function submitForm(array &$form, array &$form_state, $op = NULL) {
 
-    $operations = transaction_operations();
-    $plugin = $operations[$this->op];
+    $plugin = transaction_operations($this->op);
 
     $old_state = $this->transaction->state;
 
@@ -109,7 +108,9 @@ class OperationForm extends ConfirmFormBase {
       or $result = 'operation returned nothing renderable';
 
   	//and invoke trigger and rules using the changed transaction
-  	transaction_update($operation['op'], $transaction, $old_state);
+  	mcapi_transaction_operated($this->op, $this->transaction, $old_state);
+  	$uri = $this->transaction->uri();
+  	$form_state['redirect'] = $uri['path'];//might not be a good idea for undone transactions
   	return $result;
   }
 }

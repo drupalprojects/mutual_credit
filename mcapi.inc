@@ -129,58 +129,6 @@ function mcapi_view_user_summary($account, $currencies = array()) {
   return $render_array;
 }
 
-
-
-function transaction_get_links($transaction, $mode = 'page', $view = FALSE) {
-
-	if (empty($transaction->serial->value)) {
-		die("no serial number in preview");//just checking this runs in d8
-	}
-	$renderable = array(
-		'#theme' => 'links',
-		//'#heading' => t('Operations'),
-		'#attached' => array('css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')),
-		//Attribute class not found
-		'#attributes' => new Attribute(array('class' => array('transaction-operations'))),
-		'#links' => array()
-	);
-
-	foreach (transaction_operations() as $op => $plugin) {
-		if (!$view && $op == 'view') continue;
-		if ($transaction->access($op)) {
-		  if ($op == 'view') {
-  			$renderable['#links'][$op] = array(
-  				'title' => $plugin->label,
-  				'route_name' => 'mcapi.transaction_view',
-  				'route_parameters' => array(
-  				  'mcapi_transaction' => $transaction->serial->value
-  				),
-  			);
-		  }
-		  else {
-		    $renderable['#links'][$op] = array(
-		      'title' => $plugin->label,
-		      'route_name' => 'mcapi.transaction.op',
-		      'route_parameters' => array(
-		        'mcapi_transaction' => $transaction->serial->value,
-		        'op' => $op
-          ),
-		    );
-		  }
-			if ($mode == 'modal') {
-			  $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
-			  $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
-			}
-			elseif($mode == 'ajax') {
-			  //I think we need a new router path for this...
-        $renderable['#attached']['js'][] = 'core/misc/ajax.js';
-			  //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
-			}
-		}
-	}
-	return $renderable;
-}
-
 /*
  * callback to give times and balances
 * $mode can be either
@@ -310,8 +258,8 @@ function drawBalanceHistory() {
 
 //wrapper which helps with ajax DO NOT CHANGE
 function template_preprocess_mcapi_transaction(&$vars) {
-	$element = &$vars['transaction'];
-	$transaction = $element['#transaction'];
+  $element = $vars['transaction'];
+	$transaction = $element['#mcapi_transaction'];
 	//don't know if this is needed in d8
 	element_set_attributes($element, array('class', 'id'));
 	$vars['attributes']['class'] = array(
@@ -324,24 +272,27 @@ function template_preprocess_mcapi_transaction(&$vars) {
 }
 
 function template_preprocess_certificate(&$vars) {
-	$element = &$vars['transaction'];
-	$transaction = $element['#transaction'];
+  $element = $vars['transaction'];
+  $transaction = $element['#mcapi_transaction'];
+
 	mcapi_transaction_process_vars($vars, $transaction);
 
-	$vars['links'] = drupal_render($element['links']);
-	foreach (element_children($transaction->content) as $field_name) {
-	  $vars['additional'][$field_name] = $transaction->content[$field_name];
+  $vars['content'] = array();
+	foreach(element_children($element) as $sub) {
+	  $vars['content'][$sub] = $element[$sub];
 	}
+
 	$vars['children'] = array();
-	if (isset($transaction->children) && !empty($transaction->dependents)) {
-	  $vars['children'] = transaction_view(
-	      $transaction->dependents,
-	      str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
-	  );
+	if (isset($transaction->children) && !empty($transaction->children)) {
+	  //how to we call transaction view now?
+	  //$vars['children'] = transaction_view(
+	    //$transaction->children,
+	    //str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
+	  //);
 	}
 	//choose the transaction theme template based on the first currency of the transaction
 	//not sure if this is worth the processing power at the moment
-	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type;
+	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type->value;
 }
 
 /*
@@ -363,8 +314,9 @@ function mcapi_transaction_process_vars(&$vars, $transaction) {
   $vars['payee'] = drupal_render($payee);
 
   foreach ($transaction->worths[0] as $worth) {
-    $vars['worths'] .= $worth->getString();
+    $worths[] = $worth->getString();
   }
+  $vars['worths'] = implode('|', $worths);
 
   $vars['state'] = $transaction->state->value;
   $vars['date'] = format_date($transaction->created->value, 'medium');
@@ -404,6 +356,8 @@ function mcapi_render_twig(string $template, array $tokens) {
   $twig = new $cls($renderer);
   return $twig->render($tokens);
 }
+
+
 
 /*
  * Settings form callback for action mcapi_transaction_entity_uid
