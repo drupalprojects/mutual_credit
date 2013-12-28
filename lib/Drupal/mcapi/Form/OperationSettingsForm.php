@@ -27,8 +27,8 @@ class OperationSettingsForm extends ConfigFormBase {
   	$form = $plugin->SettingsForm($form, $config);
 
   	$form['transaction_operation'] = array(
-  			'#type' => 'value',
-  			'#value' => $op
+      '#type' => 'value',
+      '#value' => $op
   	);
     $form['#submit'][] = array($this, 'submitForm');
     return $form;
@@ -48,7 +48,7 @@ class OperationSettingsForm extends ConfigFormBase {
     $config->save();
 
     parent::submitForm($form, $form_state);
-    $form_state['redirect'] = 'admin/accounting/workflow';
+    $form_state['redirect'] = 'admin/accounting/workflow/operations';
   }
 }
 

@@ -11,6 +11,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Entity\EntityFormController;
 use Drupal\mcapi\TransactionViewBuilder;
+use Drupal\mcapi\McapiTransactionException;
 
 class TransactionForm extends EntityFormController {
 
@@ -157,8 +158,7 @@ class TransactionForm extends EntityFormController {
       'SELECT count(form_build_id) FROM {mcapi_submitted} where form_build_id = :id',
         array(':id' => $form_build_id)
       )->fetchField()) {
-      drupal_set_message(t('Transaction was already submitted'), 'error');
-      return;
+      throw new McapiTransactionException('', t('Transaction was already submitted'), 'error');
     }
 
     //ensure that the form won't be submitted again

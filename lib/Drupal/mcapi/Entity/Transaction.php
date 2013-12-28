@@ -134,8 +134,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * handles errors with child transactions
    */
   public function preSave(EntityStorageControllerInterface $storage_controller) {
+    if (!$this->isNew()) return;
     //TODO: Change this so that you only create new serial numbers on the parent transaction.
-    if ($this->isNew() && !$this->serial->value) {
+    if (!$this->serial->value) {
       $storage_controller->nextSerial($this);//this serial number is not final, or at least not nocked
     }
     if (empty($this->created->value)) {
@@ -145,7 +146,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     	$this->creator->value = \Drupal::currentUser()->id();
     }
     //build children if they haven't been built already
-    if ($this->isNew() && !$this->parent && empty($this->children)) {
+    if (!$this->parent && empty($this->children)) {
       //note that children do not have a serial number or parent xid until the postSave
       $this->buildChildren();
     }
@@ -185,14 +186,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
     foreach ($this->worths[0] as $worth) {
       if ($worth->value <= 0) {
-        echo get_class($worth->currency);
         $this->exceptions[] = new McapiTransactionWorthException($worth->currency, t('A transaction must be worth more than 0'));
       }
     }
-    //it appears that $this->entity is the object created in the TransactionForm->preCreate, unmodified by the form submission
-    //the entity is only rebuilt when submit handler runs
-    //so what are we supposed to be validating?
-    echo $this->type->value;
     //check that the state and type are congruent
     $types = mcapi_get_types(FALSE);
     if (array_key_exists($this->type->value, $types)) {
@@ -242,7 +238,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   public function postSave(EntityStorageControllerInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
     $storage_controller->saveWorths($this);
-    echo 'adding lines to index table';
     $storage_controller->addIndex($this);
     //save the children if there are any
     foreach ($this->children as $transaction) {

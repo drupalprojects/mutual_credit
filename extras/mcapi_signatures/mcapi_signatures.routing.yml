@@ -1,0 +1,8 @@
+mcapi.signall:
+  path: '/user/{user}/signall'
+  defaults:
+    _form: 'Drupal\mcapi\Form\AccountingAdminMiscForm'
+    _title: 'Sign all'
+  requirements:
+    _permission: 'access administration pages'
+

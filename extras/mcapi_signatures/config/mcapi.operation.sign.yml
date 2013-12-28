@@ -1,0 +1,14 @@
+actions: {  }
+special:
+  countersignatories:
+    - '2'
+general:
+  op_title: Sign
+  page_title: 'Are you sure?'
+  format: certificate
+  twig: ''
+  button: 'I''m sure'
+  cancel_button: Cancel
+  format2: certificate
+  twig2: ''
+  message: 'You have signed the transaction'

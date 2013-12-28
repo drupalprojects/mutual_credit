@@ -58,6 +58,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         drupal_set_message(t('Failed to undo transaction: @message', array('@message' => $e->getMessage())));
       }
     }
+    //TODO need to run a hook here
   }
   /*
    * How to delete the whole entity.
@@ -121,6 +122,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    *  write 2 rows to the transaction index table
    */
   public function addIndex(TransactionInterface $transaction) {
+
     $this->database->delete('mcapi_transactions_index')
       ->condition('xid', $transaction->id())
       ->execute();
@@ -164,7 +166,6 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       ));
     }
     $query->execute();
-    die('inserted into index table');
   }
 
   public function indexRebuild() {

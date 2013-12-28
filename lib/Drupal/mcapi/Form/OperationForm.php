@@ -58,7 +58,10 @@ class OperationForm extends ConfirmFormBase {
     else {//this is a transaction entity display mode, like 'certificate'
       $renderable = \Drupal::entityManager()
         ->getViewBuilder('mcapi_transaction')
-        ->view($this->transaction, $this->settings['format'] == 'certificate' ? 'certificate' : $this->settings['twig']);
+        ->view(
+          $this->transaction,
+          $this->settings['format'] == 'certificate' ? 'certificate' : $this->settings['twig']
+      );
       unset($renderable['links']);
       return drupal_render($renderable);
     }

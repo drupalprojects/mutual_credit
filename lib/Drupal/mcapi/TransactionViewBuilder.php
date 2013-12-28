@@ -46,18 +46,17 @@ class TransactionViewBuilder extends EntityViewBuilder {
         '#markup' => mcapi_render_twig_transaction($view_mode, $transaction)
       );
     }
-/* view modes aren't listing yet
     if ($this->viewModesInfo[$view_mode]['cache'] && !$entity->isNew() && !isset($entity->in_preview) && $this->entityInfo['render_cache']) {
       $return['#cache'] = array(
-          'keys' => array('entity_view', $this->entityType, $entity->id(), $view_mode),
-          'granularity' => DRUPAL_CACHE_PER_ROLE,
-          'bin' => $this->cacheBin,
-          'tags' => array(
-              $this->entityType . '_view' => TRUE,
-              $this->entityType => array($entity->id()),
-          ),
+        'keys' => array('entity_view', $this->entityType, $entity->id(), $view_mode),
+        'granularity' => DRUPAL_CACHE_PER_ROLE,
+        'bin' => $this->cacheBin,
+        'tags' => array(
+          $this->entityType . '_view' => TRUE,
+          $this->entityType => array($entity->id()),
+        ),
       );
-    }*/
+    }
     return $build;
   }
 
@@ -70,7 +69,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * $view mode, defaults to certificate with the saved transaction sentence, but an arbitrary token string can also be used
    */
   public function buildContent(array $transactions, array $displays, $view_mode = 'certificate', $langcode = NULL) {
-
     parent::buildContent($transactions, $displays, $view_mode, $langcode);
     foreach ($transactions as $transaction->xid => $transaction) {
       $transaction->content['links'] = $transaction->links('ajax', FALSE);

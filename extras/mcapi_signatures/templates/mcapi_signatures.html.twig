@@ -1,0 +1,18 @@
+{#
+variables:
+signatures is an array, each item has
+ {{ item.name }} //username
+ {{ item.class }} //pending or signed
+#}
+
+{% if signatures|length > 0 %}
+<div class ="pending-bgstamp">Pending</div>
+<div id ="pending-signatures">
+  <h2>Signatures</h2>
+  <table><tbody>
+  {% for line in signatures %}
+  <tr><td class="{{ line.class }}"></td><td>{{ line.name }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
