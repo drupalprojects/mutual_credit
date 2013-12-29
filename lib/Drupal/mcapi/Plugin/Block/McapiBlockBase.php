@@ -37,6 +37,7 @@ class McapiBlockBase extends BlockBase {
       }
       return FALSE;
     }
+    $this->account = \Drupal::currentUser();
     return TRUE;
   }
 
@@ -72,7 +73,6 @@ class McapiBlockBase extends BlockBase {
    */
   public function blockSubmit($form, &$form_state) {
     parent::blockSubmit($form, $form_state);
-    form_state_values_clean($form_state);
     foreach ($form_state['values'] as $key => $val) {
       $this->configuration[$key] = $val;
     }

@@ -1,0 +1,6 @@
+id: mcapi_transaction.custom
+uuid: faa8c4b0-64a5-458e-8e03-3ae4b4daee5w
+label: Transaction custom
+status: '0'
+cache: '1'
+targetEntityType: mcapi_transaction

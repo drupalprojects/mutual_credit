@@ -1,4 +1,4 @@
-id: mcapi_transaction.mcapi_transaction.default
+id: mcapi_transaction.custom
 uuid: a83acc9b-3edc-4e31-885e-947007349e42
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction

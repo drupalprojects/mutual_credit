@@ -35,8 +35,9 @@ access_undo:
   -1:
     perm_manage: perm_manage
     is_signatory: is_signatory 
-access_sign:
-  perm_manage: perm_manage
+access_operations:
+  sign_off:
+    perm_manage: perm_manage
 weight: '-10'
 langcode: en
 limits_plugin: none

@@ -32,11 +32,11 @@ access_view:
 access_undo:
   1:
     perm_manage: perm_manage
-  0:
   -1:
     perm_manage: perm_manage
     is_signatory: is_signatory
-access_sign:
-  perm_manage: perm_manage
+access_operations:
+  sign_off:
+    perm_manage: perm_manage
 weight: '-9'
 langcode: en

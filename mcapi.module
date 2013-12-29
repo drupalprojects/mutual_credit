@@ -92,6 +92,11 @@ function mcapi_menu() {
   return $items;
 }
 
+function mcapi_transaction_load($serial) {
+
+  return current(entity_load_multiple('mcapi_transaction', array('serial' => $serial)));
+}
+
 /**
  * Retrive a filtered list of transactions
  * This could be an alternative to views.

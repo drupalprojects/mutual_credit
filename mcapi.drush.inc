@@ -89,7 +89,7 @@ function drush_mcapi_wipeslate() {
 function drush_mcapi_delete() {
 	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
 	foreach(func_get_args() as $serial) {
-    transaction_load($serial)->delete();
+    mcapi_transaction_load($serial)->delete();
 	}
   drush_print(dt('Deleted'));
 }
@@ -127,7 +127,7 @@ function drush_devel_generate_transactions($num_transactions = 10) {
     );
     $cluster = array(entity_create('transaction', $props));
     $serial = transaction_cluster_write($cluster, TRUE);
-    $transaction = transaction_load($serial);
+    $transaction = mcapi_transaction_load($serial);
     $renderable = transaction_view($transaction, \Drupal::config('mcapi.misc')->get('sentence_template'));
     drush_print(strip_tags(drupal_render($renderable)));
   }

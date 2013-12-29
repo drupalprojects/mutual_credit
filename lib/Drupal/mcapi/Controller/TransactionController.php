@@ -29,7 +29,7 @@ class TransactionController extends ControllerBase {
   }
 
   /**
-   * The _title_callback for the node.view route.
+   * The _title_callback for the transaction.view route.
    *
    * @param NodeInterface $transaction
    *   The current transaction.
@@ -52,7 +52,9 @@ class TransactionController extends ControllerBase {
    */
   protected function buildPage(TransactionInterface $transaction) {
     return array(
-      'transaction' => $this->entityManager()->getViewBuilder('mcapi_transaction')->view($transaction, 'certificate')
+      'transaction' => $this->entityManager()
+        ->getViewBuilder('mcapi_transaction')
+        ->view($transaction, 'certificate')
     );
   }
 }

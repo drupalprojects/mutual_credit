@@ -42,10 +42,12 @@ class TransactionViewBuilder extends EntityViewBuilder {
       );
     }
     else {//assume it is twig
+      module_load_include('inc', 'mcapi');
       $build['customtwig'] = array(
-        '#markup' => mcapi_render_twig_transaction($view_mode, $transaction)
+        '#markup' => mcapi_render_twig_transaction($view_mode, $entity)
       );
     }
+    if ($view_mode != 'certificate')$view_mode = 'custom';
     if ($this->viewModesInfo[$view_mode]['cache'] && !$entity->isNew() && !isset($entity->in_preview) && $this->entityInfo['render_cache']) {
       $return['#cache'] = array(
         'keys' => array('entity_view', $this->entityType, $entity->id(), $view_mode),
@@ -64,7 +66,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * Overrides Drupal\Core\Entity\EntityRenderController::buildContent().
    *
    * build a render array for any number of transactions
-   * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in transaction_load
+   * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in mcapi_transaction_load
    * $transactions an array of transactions, keyed by xid, each one having its children already loaded
    * $view mode, defaults to certificate with the saved transaction sentence, but an arbitrary token string can also be used
    */

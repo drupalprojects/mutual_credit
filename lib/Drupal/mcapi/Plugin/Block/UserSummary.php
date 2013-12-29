@@ -4,7 +4,7 @@ namespace Drupal\mcapi\Plugin\Block;
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\Block\Balances
+ * Contains \Drupal\mcapi\Plugin\Block\UserSummary
  */
 
 use Drupal\mcapi\Plugin\Block\McapiBlockBase;

@@ -240,7 +240,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
 
   //this is only called from the are you sure form, and always from ajax
   function ajax_submit(array $form_state_values) {
-    $transaction = transaction_load($form_state['values']['serial']);
+    $transaction = mcapi_transaction_load($form_state['values']['serial']);
     $renderable = $this->execute(
       $form_state['transaction_operation'],
       $transaction,

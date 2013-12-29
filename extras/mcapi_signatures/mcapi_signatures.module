@@ -70,10 +70,11 @@ function mcapi_signatures_mcapi_transaction_delete(TransactionInterface $transac
 function mcapi_signatures_mcapi_transaction_presave($transaction){
   if ($transaction->isNew() && $transaction->type->value == 'signed') {
     $config = transaction_operations('sign')->config->get('special');
-    $signatories = $config['countersignatories'] + array(
+    print_r($config['countersignatories']);
+    $signatories = array_merge($config['countersignatories'], array(
       $transaction->payee->value,
       $transaction->payer->value
-    );
+    ));
     foreach ($signatories as $uid) {
       //assume the current user has already signed
       $transaction->signatures[$uid] = \Drupal::currentUser()->id() == $uid ? REQUEST_TIME : 0;
@@ -200,7 +201,7 @@ function mcapi_signatures_theme() {
  * implements hook_THEMEHOOK_view_alter
  */
 function mcapi_signatures_mcapi_transaction_view_alter(&$build) {
-  if ($build['#theme'] == 'certificate' && isset($build['#mcapi_transaction']->signatures)) {
+  if (@$build['#theme'] == 'certificate' && isset($build['#mcapi_transaction']->signatures)) {
     $build['mcapi_signatures'] = array(
       '#theme' => 'mcapi_signatures',
       '#transaction' => $build['#mcapi_transaction'],

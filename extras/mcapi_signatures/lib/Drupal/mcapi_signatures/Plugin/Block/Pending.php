@@ -9,7 +9,6 @@ namespace Drupal\mcapi_signatures\Plugin\Block;
 
 use Drupal\mcapi\Plugin\Block\McapiBlockBase;
 
-
 /**
  * Provides a user balances block.
  *
@@ -19,7 +18,7 @@ use Drupal\mcapi\Plugin\Block\McapiBlockBase;
  *   category = @Translation("Community Accounting")
  * )
  */
-class UserSummary extends McapiBlockBase {
+class Pending extends McapiBlockBase {
 
   public function defaultConfiguration() {
     $conf = parent::defaultConfiguration();
@@ -32,7 +31,8 @@ class UserSummary extends McapiBlockBase {
       '#title' => t('Transactions to show'),
       '#type' => 'radios',
       '#options' => array(//these array keys relate to d7 blocks
-        'user_pending' => t('All pending transactions (per user)'),
+        'pending_bydate' => t('pending transactions (by date)'),
+        'pending_byuser' => t('All pending transactions (by signatory)'),
         'waiting_on_uid' => t('Signatures for user to sign'),
         'uid_waiting_on' => t('User is waiting for these signatures')
       ),
@@ -48,22 +48,17 @@ class UserSummary extends McapiBlockBase {
   public function build() {
     parent::build();//this gets the config ready
     module_load_include('inc', 'mcapi_signatures');
-    //the block title is 'Pending', but we'll clarify in a subheading
     switch ($this->configuration['mode']) {
-    	case 'pending_sorted':
-    	  $renderable[] = list_pending_for_uid($this->account->id(), $this->currencies, TRUE);
-    	  break;
-    	case 'pending_unsorted':
-    	  $renderable[] = list_pending_for_uid($this->account->id(), $this->currencies, FALSE);
-    	  break;
+    	case 'pending_bydate':
+    	  return list_pending_for_uid($this->account->id(), $this->currencies, TRUE);
+    	case 'pending_byuser':
+    	  return list_pending_for_uid($this->account->id(), $this->currencies, FALSE);
     	case 'waiting_on_uid':
-    	  $renderable[] = array('#markup' => t('Awaiting my signature'));
-    	  $renderable[] = list_waiting_on_uid($this->account->id(), $this->currencies);
-    	  break;
+    	  //$renderable[] = array('#markup' => t('Awaiting my signature'));
+    	  return list_waiting_on_uid($this->account->id(), $this->currencies);
     	case 'uid_waiting_on':
-    	  $renderable[] = array('#markup' => t('Awaiting another signature'));
-    	  $renderable[] = list_waiting_not_on_uid($this->account->id(), $this->currencies);
-    	  break;
+    	  //$renderable[] = array('#markup' => t('Awaiting another signature'));
+    	  return list_waiting_not_on_uid($this->account->id(), $this->currencies);
     }
     return $renderable;
   }

@@ -331,7 +331,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       $serials = transaction_filter(array('payer' => $main, 'payee' => $main));
       //this is usually a small number, but strictly speaking should be done in a batch.
       foreach (array_unique($serials) as $serial) {
-        transaction_load($serial)->delete();
+        mcapi_transaction_load($serial)->delete();
       }
     }
   }

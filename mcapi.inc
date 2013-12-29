@@ -324,6 +324,9 @@ function mcapi_transaction_process_vars(&$vars, $transaction) {
   $vars['description'] = $transaction->description->value;
 }
 
+/*
+ * does this more naturally belong in the TransactionViewBuilder?
+ */
 function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction) {
   $vars = array();
   mcapi_transaction_process_vars($vars, $transaction);
