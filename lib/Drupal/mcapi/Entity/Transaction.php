@@ -80,49 +80,51 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   function links($mode = 'page', $view = FALSE) {
     $renderable = array();
-    foreach (transaction_operations() as $op => $plugin) {
-      if (!$view && $op == 'view') continue;
-      if ($this->access($op)) {
-        if ($op == 'view') {//maybe this isn't necessary at all
-          $renderable['#links'][$op] = array(
-            'title' => $plugin->label,
-            'route_name' => 'mcapi.transaction_view',
-            'route_parameters' => array(
-              'mcapi_transaction' => $this->serial->value
-            ),
-          );
-        }
-        else {
-          $renderable['#links'][$op] = array(
-            'title' => $plugin->label,
-            'route_name' => 'mcapi.transaction.op',
-            'route_parameters' => array(
-              'mcapi_transaction' => $this->serial->value,
-              'op' => $op
-            ),
-          );
-        }
-        if ($mode == 'modal') {
-          $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
-          $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
-        }
-        elseif($mode == 'ajax') {
-          //I think we need a new router path for this...
-          $renderable['#attached']['js'][] = 'core/misc/ajax.js';
-          //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+    if ($serial = $this->serial->value) {
+      foreach (transaction_operations() as $op => $plugin) {
+        if (!$view && $op == 'view') continue;
+        if ($this->access($op)) {
+          if ($op == 'view') {//maybe this isn't necessary at all
+            $renderable['#links'][$op] = array(
+              'title' => $plugin->label,
+              'route_name' => 'mcapi.transaction_view',
+              'route_parameters' => array(
+                'mcapi_transaction' => $this->serial->value
+              ),
+            );
+          }
+          else {
+            $renderable['#links'][$op] = array(
+              'title' => $plugin->label,
+              'route_name' => 'mcapi.transaction.op',
+              'route_parameters' => array(
+                'mcapi_transaction' => $this->serial->value,
+                'op' => $op
+              ),
+            );
+          }
+          if ($mode == 'modal') {
+            $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
+            $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+          }
+          elseif($mode == 'ajax') {
+            //I think we need a new router path for this...
+            $renderable['#attached']['js'][] = 'core/misc/ajax.js';
+            //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+          }
         }
       }
-    }
-    if (array_key_exists('#links', $renderable)) {
-      $renderable += array(
-        '#theme' => 'links',
-        //'#heading' => t('Operations'),
-        '#attached' => array(
-          'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
-        ),
-        //Attribute class not found
-        '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
-      );
+      if (array_key_exists('#links', $renderable)) {
+        $renderable += array(
+          '#theme' => 'links',
+          //'#heading' => t('Operations'),
+          '#attached' => array(
+            'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
+          ),
+          //Attribute class not found
+          '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
+        );
+      }
     }
     return $renderable;
   }
@@ -248,7 +250,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * {@inheritdoc}
-   * the only way to pass values into this is with the router system, but how?
+   * why isn't array $values enforced?
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
     $values += array(
@@ -273,6 +275,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         );
       }
     }
+  }
+
+  public function tokenised($token_string = '') {
+    if (empty($token_string)) {
+      $token_string = \Drupal::config('mcapi.misc')->get('sentence_template');
+    }
+    return \Drupal::token()->replace($token_string, array('mcapi' => $this));
   }
 
   /**

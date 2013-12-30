@@ -1,8 +1,0 @@
-name: 'Interface for accountants'
-description: 'Navigate transactions and create new ones'
-package: 'Community Accounting'
-core: 7.x
-type: module
-dependencies:
-  - mcapi
-#  - user_chooser

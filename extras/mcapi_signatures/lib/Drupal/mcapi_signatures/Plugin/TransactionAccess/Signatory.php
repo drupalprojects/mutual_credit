@@ -33,10 +33,13 @@ class Signatory {
   //SELECT transactions WHERE (currency = whatever) AND (state = $state AND ($condition))
   function viewsAccess($query, $condition, $state) {
     //The join may have been created already by the views schema
-    if (!array_key_exists('mcapi_signatures', $query->gettables())) {
-      $query->addJoin('LEFT', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+    if (!array_key_exists('mcapi_signatures', $query->tables)) {
+//    $query->addJoin('LEFT', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+      //this adds the table but doesn't affect th query
+      $query->ensureTable('mcapi_signatures');
     }
-    $query->distinct();
+    //if distinct won't work it could make a nasty mess
+    //$query->distinct();
     $condition->condition('mcapi_signatures.uid', \Drupal::currentUser()->id());
   }
 }

@@ -15,3 +15,15 @@ mcapi.transaction_view_tab:
   title: View
   tab_root_id: mcapi.transaction_view_tab
   weight: 0
+
+mcapi.admin_mass.many2one_tab:
+  route_name: mcapi.admin_mass
+  title: Many to one
+  tab_root_id: mcapi.admin_mass.many2one_tab
+  weight: 0
+
+mcapi.admin_mass.one2many_tab:
+  route_name: mcapi.admin_mass.one2many
+  title: One to many
+  tab_root_id: mcapi.admin_mass.one2many_tab
+  weight: 0

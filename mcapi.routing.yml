@@ -21,6 +21,30 @@ mcapi.admin_currency_list:
   requirements:
     _permission: 'configure all currencies'
 
+mcapi.admin_mass:
+  path: '/admin/accounting/mass'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage all transactions'
+
+mcapi.admin_mass.many2one:
+  path: '/admin/accounting/mass/many2one'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage all transactions'
+
+mcapi.admin_mass.one2many:
+  path: '/admin/accounting/mass/one2many'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage all transactions'
+
 mcapi.admin_currency_edit:
   path: '/admin/accounting/currencies/{mcapi_currency}'
   defaults:

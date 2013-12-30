@@ -137,27 +137,6 @@ function mcapi_signatures_mcapi_info_types() {
   );
 }
 
-//returns a list of the user objects who are yet to sign
-//will take EITHER a serial OR a uid, returns a list of the other
-function mcapi_get_signatories($serial = NULL, $uid = NULL) {
-  if ($serial && $uid) {
-    drupal_set_message('Bad arguments to mcapi_get_signatories', 'error');
-    return;
-  }
-  $query = db_select('mcapi_signatures', 's');
-  if ($serial) {
-    $result = $query->fields('s', array('uid', 'signed'))
-    ->condition('serial', $serial)
-    ->execute()->fetchAllKeyed(0);
-  }
-  else {
-    $result = $query->fields('s', array('serial'))
-    ->condition('signed', '')
-    ->condition('uid', $uid)
-    ->execute()->fetchCol();
-  }
-  return $result;
-}
 
 /**
  * implements hook_block_view_mcapi_user_summary_alter
@@ -172,17 +151,6 @@ function mcapi_signatures_block_view_mcapi_user_summary_alter(array &$build, \Dr
   }
 }
 
-/**
- * implements hook_cron
- * checks integrity of signatures and transactions
- */
-function mcapi_signatures_cron() {
-  //call me paranoid, but I'd like to just check data integrity
-  $serials = db_query("SELECT t.serial FROM {mcapi_transactions} t LEFT JOIN {mcapi_signatures} s ON t.serial = s.serial WHERE s.pending = 1 AND t.state = :state", array(':state' => TRANSACTION_STATE_FINISHED))->fetchCol();
-  if (count($serials)){
-    watchdog('mcapi_signatures', 'Some completed transactions still have signatures pending, please report to matslats: @serials', array('@serials' => implode(', ', $serials)), WATCHDOG_ERROR);
-  }
-}
 
 /**
  * implements hook_theme

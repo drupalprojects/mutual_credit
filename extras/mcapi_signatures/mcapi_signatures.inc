@@ -31,12 +31,10 @@ function mcapi_signall_submit($form, &$form_state) {
 function list_pending_for_uid($uid, $currcodes = array(), $mixed = FALSE) {
   $output = array();
   if ($mixed) {
-    debug($uid);
     $serials = transaction_filter(array('state' => TRANSACTION_STATE_PENDING, 'involving' => $uid));
     return mcapi_view_sentences($serials);
   }
   else {
-    debug($uid);
     //couldn't be bothered with a theme callback for this
     $waiting_on = list_waiting_on_uid($uid, $currcodes);
     if ($waiting_on) {
@@ -74,7 +72,10 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
         )
       );
     }
-    return $output += mcapi_view_sentences($serials);
+    foreach ($waiting_on as $serial) {
+      $output[]['#markup'] = mcapi_transaction_load($serial)->tokenised();
+    }
+    return $output;
   }
 }
 //returns a render array
@@ -88,23 +89,12 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
       $waiting_on[] = $serial;
     }
   }
-  return mcapi_view_sentences($waiting_on);
-}
-
-function mcapi_view_sentences($serials) {
-  //$viewbuilder = \Drupal::entityManager()->getViewBuilder('mcapi_transaction');
-  $template = \Drupal::config('mcapi.misc')->get('sentence_template');
-  $output = array();
-  $token_service = \Drupal::token();
-  foreach ($serials as $serial) {
-    //$output[] = $viewbuilder->view(mcapi_transaction_load($serial), $template);
-    $output[]['#markup'] = $token_service->replace(
-      $template,
-      array('mcapi' => mcapi_transaction_load($serial))
-    );
+  foreach ($waiting_on as $serial) {
+    $output[]['#markup'] = mcapi_transaction_load($serial)->tokenised();
   }
   return $output;
 }
+
 
 function transactions_needing_sig_of_user($uid) {
   //assumes data integrity that all transactions referenced are in pending state
