@@ -36,7 +36,8 @@ stdClass transaction_load($serial);
 /*
  * Entity API callback and wrapper around Community Accounting API function transaction_cluster_write
  * take one volitional transaction and allow the system to add dependents before sending the cluster to be written
- * returns them as an array
+ * Insert a single transaction entity, running the accounting_validate hook on it first
+ * note that this includes a call to hook_transaction_post_insert
  */
 try {
   array transaction_cluster_create($transaction, $really = TRUE);
@@ -54,16 +55,6 @@ catch(exception $e){}
  */
 try {
   transaction_cluster_write($transactions, $really);
-}
-catch(exception $e){}
-
-
-/*
- * Insert a single transaction entity, running the accounting_validate hook on it first
- * note that this includes a call to hook_transaction_post_insert
- */
-try {
-  transaction_cluster_create($transaction, $really);
 }
 catch(exception $e){}
 

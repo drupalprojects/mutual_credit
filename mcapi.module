@@ -107,15 +107,15 @@ function transaction_cluster_write(array $cluster, $really = TRUE) {
  * $transaction is the main, or volitional transaction. $children are ignored
  * $op is the machine name of the operation
  */
-function transaction_update($op, $transaction, $old_state = NULL) {
+function transaction_update($transaction, $old_state = NULL) {
   //entity_metadata_wrapper('transaction', $transaction)->update();
-  entity_get_controller('transaction')->update($transaction);
+  entity_get_controller('transaction')->update($transaction, $transaction->state);
   //this will have fired
   //hook_entity_presave
   //hook_entity_insert OR hook_entity_update
   //it is rare that field API fields will have changed, but we'll just save them here to be sure.
   field_attach_update('transaction', $transaction);
-  module_invoke_all('transaction_update', $op, $transaction, $old_state);
+  module_invoke_all('transaction_update', $transaction, $old_state);
 
 /*
   //this is a bit of a shortcut past normal rules invocation - possibly bad practice
@@ -155,11 +155,11 @@ function transaction_undo($serial, $mode = NULL) {
     case MCAPI_CURRENCY_UNDO_REVERSE:
       foreach($transactions as $transaction) {
         $reversed = clone $transaction;
+        unset($reversed->created, $reversed->xid);
         $reversed->xid = NULL;
         $reversed->payer = $transaction->payee;
         $reversed->payee = $transaction->payer;
         $reversed->type = 'reversal';
-        unset($reversed->created);
         if ($field = variable_get('transaction_description_field', '')) {
           $entity = entity_get_info('transaction');
           $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => entity_label('transaction', $transaction)));
@@ -880,7 +880,6 @@ function currency_access($op, $currcode, $account = NULL) {
  */
 function transaction_view($transactions, $view_mode = 'certificate', $suppress_ops = FALSE) {
   if (!is_array($transactions))$transactions = array($transactions->xid => $transactions);
-
   global $language;
   //special case for the 'are you sure' form where the transaction was test written and deleted
   //that means the fieldAPI data cannot be retrieved the normal way
@@ -1079,7 +1078,7 @@ function trigger_transaction_cluster_alter(&$cluster) {
  * pull trigger transaction_update().
  * if the $old_state is set, that indicates this was a workflow operation
  */
-function trigger_transaction_update($op, $transaction, $old_state = NULL) {
+function trigger_transaction_update($transaction, $old_state = NULL) {
   foreach (trigger_get_assigned_actions('transaction_update') as $aid => $info) {
     actions_do($aid, $transaction, $info, $old_state);
   }
@@ -1099,7 +1098,7 @@ function trigger_transaction_undo($serial) {
  * pull trigger transaction_post_insert().
  */
 function trigger_transaction_post_insert($serial) {
-  foreach (trigger_get_assigned_actions('transaction_undo') as $aid => $info) {
+  foreach (trigger_get_assigned_actions('transaction_post_insert') as $aid => $info) {
     actions_do($aid, transaction_load($serial), $info);
   }
 }
@@ -1379,8 +1378,8 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
     if ($entity_type == 'transaction' && $entity) {
       $currency = $currencies[$item['currcode']];
       //check that each user has permission to use the currency in each item
-      foreach (array('payer', 'payee') as $uid) {
-        if (currency_access('membership', $item['currcode'])) continue;
+      foreach (user_load_multiple(array($entity->payer, $entity->payee)) as $account) {
+        if (currency_access('membership', $item['currcode'], $account)) continue;
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'currency_access_membership',
           'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->$uid)->name, '@currency' => $currency->human_name))

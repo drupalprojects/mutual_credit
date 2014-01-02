@@ -68,6 +68,17 @@ function mcapi_signatures_entity_load($entities, $type) {
 }
 
 /*
+ * implements mcapi hook_mcapi_create
+ * saves the new signatures with the new transaction
+ */
+function mcapi_signatures_transaction_cluster_write($cluster, $really) {
+  module_load_include('inc', 'mcapi_signatures');
+  $transaction = reset($cluster);
+  //any test writes will be rolled back
+  mcapi_sig_transaction_create($transaction, $really);
+}
+
+/*
  * Implements hook_entity_delete()
  * remove the signatories from the database
  */
@@ -78,21 +89,11 @@ function mcapi_signatures_entity_delete($transaction, $type) {
     ->execute();
   }
 }
-
-/*
- * implements mcapi hook_mcapi_create
- * saves the new signatures with the new transaction
- */
-function mcapi_signatures_transaction_cluster_write($cluster, $really) {
-  module_load_include('inc', 'mcapi_signatures');
-  //we only need to put the signatures on the volitional transaction
-  $transaction = reset($cluster);
-  //any test writes will be rolled back
-  mcapi_sig_transaction_create($transaction, $really);
-}
+//TWO DIFFERENT WAYS OF DOING THE SAME THING...
+//MAY BE FIRED DIFFERENTLY IN DIFFERENT DELETE MODES
 
 /**
- * implement mcapi hook_transaction_update
+ * implement mcapi hook_transaction_undo
  * ensures that signatures for undone transactions are not left pending.
  */
  //could equally use hook_undo pending if it exists....
@@ -225,8 +226,8 @@ function mcapi_signatures_block_info_alter(&$blocks) {
  * implements hook_block_view_alter
  * appends the 'signatures needed' view to the mcapi-balance block
  */
-function mcapi_signatures_block_view_alter(&$data, $block) {
-  if ($block->delta == 'balances' && $block->module == 'mcapi' && isset($data['#settings']['account'])) {
+function mcapi_signatures_block_view_balances_alter(&$data, $block) {
+  if (isset($data['#settings']['account'])) {
     module_load_include('inc', 'mcapi_signatures');
     $render = list_waiting_on_uid($data['#settings']['account']->uid);
     if (empty($render)) return;
@@ -287,7 +288,7 @@ function mcapi_signatures_init() {
  */
 function mcapi_signatures_preprocess_certificate(&$variables) {
   $transaction = &$variables['object'];
-  if ($transaction->state == TRANSACTION_STATE_PENDING && isset($transaction->pending_signatures)) {
+  if (!empty($transaction->pending_signatures)) {
     $variables['pending'] = array(
       '#theme' => 'pending_signatures',
       '#transaction' => $transaction

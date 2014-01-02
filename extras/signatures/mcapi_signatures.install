@@ -3,14 +3,15 @@
 drupal_load('module', 'mcapi_signatures');
 
 function mcapi_signatures_install() {
+  $t = get_t();
   $mcapi_signed_off_notify_template = array(
-    'subject' =>  t('Transaction signed off'),
-    'body' => t('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
+    'subject' =>  $t('Transaction signed off'),
+    'body' => $t('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
   );
   variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
   $mcapi_sign_notify_template = array(
-    'subject' =>  t('Your signature is required'),
-    'body' => t('Your signature is required on @token', array('@token' => '[transaction:url]'))
+    'subject' =>  $t('Your signature is required'),
+    'body' => $t('Your signature is required on @token', array('@token' => '[transaction:url]'))
   );
   variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
   //signatures
@@ -25,7 +26,7 @@ function _make_signable($type) {
   variable_set('mcapi_signatures_'.$type, array (
     'participants' => 1,
     'countersignatories' => array (),
-    'notify' => 0,
+    'notify' => 1,
   ));
 }
 

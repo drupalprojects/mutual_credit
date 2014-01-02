@@ -125,3 +125,18 @@ function mcapi_index_views_cron() {
     if ($data) variable_set('mcapi_greco_system_health', $data);
   }
 }
+
+function mcapi_views_ensure_currcode($field_query_handler, &$alias_name) {
+  if (strlen($alias_name)) return;
+  //check for the presence of a currcode field.
+  //we can't add it using additional_fields, because it gets wasted by the groupby
+  if (is_object($field_query_handler) && property_exists($field_query_handler, 'fields')) {
+    foreach ($field_query_handler->fields as $alias => $field) {
+      if ($field['field'] == 'currcode') {
+        $alias_name = $alias;
+        return;
+      }
+    }
+  }
+  $alias_name = $field_query_handler->add_field('mcapi_index', 'currcode', 'currcode_alias');
+}

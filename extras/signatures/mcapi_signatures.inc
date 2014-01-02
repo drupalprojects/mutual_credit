@@ -10,6 +10,7 @@ function _mcapi_signatures_transaction_operations() {
       'sure' => 'Are you sure you want to sign?',
       'submit callback' => 'transaction_op_sign',
       'access callback' => 'transaction_op_sign_access',
+      'form callback' => TRUE,
       'access form' => '',//this has no configuration, not even the default callback
       'weight' => 2,
       'filepath' => 'mcapi_signatures.inc'
@@ -159,6 +160,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
       if (!transaction_operation_access('view', $transaction)) continue;
       $transactions[$transaction->xid] = $transaction;
     }
+    if (empty($transactions)) return array();
     $output[] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()), TRUE);
   }
   if (count($output) > 1) {
@@ -257,7 +259,7 @@ function mcapi_signatures_write($transaction) {
     //change the state of the loaded object, then change the state in the db
     $transaction->state = TRANSACTION_STATE_FINISHED;
     //save and act on the state change
-    transaction_update($transaction);
+    transaction_update($transaction, TRANSACTION_STATE_PENDING);
   }
   return array_filter($transaction->pending_signatures);
 }
@@ -322,7 +324,7 @@ function mcapi_signatures_config($form, $form_state) {
     'subject' => array(
       '#title' => t('Subject'),
       '#type' => 'textfield',
-      '#default_value' => isset($mail_def['subject']) ? $mail_def['subject'] : t('Your signature required'),
+      '#default_value' => isset($mail_def['subject']) ? $mail_def['subject'] : t('Your signature is required'),
       '#required' => TRUE,
     ),
     'body' => array(
@@ -371,7 +373,7 @@ function mcapi_sig_transaction_create($transaction, $really = 0) {
 
 //send the mail notifying users they have a mail to sign
 function signature_send_initial_notification($transaction, $config) {
-  if (!$config['notify']) return;
+  if (empty($config['notify'])) return;
   $params = array(
     'transaction' => $transaction,
     'mail_template' => variable_get('mcapi_sign_notify_template', array()),

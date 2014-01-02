@@ -4,10 +4,8 @@
 $controller_mod = variable_get('mcapi_controller', 'mcapi');
 require_once(drupal_get_path('module', $controller_mod) .'/'. $controller_mod).'.controller';
 
-/*
- * I don't really know how to use this
- * copied from http://www.trellon.com/content/blog/creating-own-entities-entity-api
- */
+//since the entity module was integrated after this module was deployed
+//I can't seem to remove this if statement making upgrades extremely difficult
 if (class_exists('Entity')) {
 class transaction extends Entity {
   protected function defaultLabel() {
@@ -111,6 +109,9 @@ function transaction_form_validate($form, &$form_state) {
 
   //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
   $transaction = entity_create('transaction', $props);
+  if ($transaction->payer == 0 || $transaction->payee == 0) {
+    form_set_error('Cannote trade with user 0. This is a known error! please mail matslats@gmail.com and say what exactly you tried to do! ');
+  }
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   //finish building the transaction entity from form_state and validate that
@@ -185,7 +186,6 @@ function mcapi_validate_state(&$element, &$form_state) {
 function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
   drupal_add_js('misc/ajax.js', array('type' => 'file'));
   $operations = transaction_operations();
-
   if (array_key_exists('form callback', $operations[$op])) {
     $form = drupal_get_form('transaction_operation_form', $op, $transaction);
     //this form will sumit and expect ajax
@@ -266,17 +266,19 @@ function mcapi_submit_op_form($operation, $transaction, $values = array()) {
     $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
   //}
   //and invoke trigger and rules using the changed transaction
-  transaction_update($operation['op'], $transaction, $old_state);
+  transaction_update($transaction, $old_state);
   return $result;
 }
 
-
+/*
+ *  access callback for transaction operation 'view'
+ */
 function mcapi_view_access($op, $transaction, $currency) {
   return _transaction_check_access_callbacks($currency->view_transaction_states[$transaction->state], $transaction);
 }
 
 /*
- * These two callbacks from transaction_operation 'undo'
+ *  access callback for transaction operation 'undo'
  * Undo is the only 'exposed' operation in this module
  */
 function transaction_op_undo_access($op, $transaction, $currency) {
@@ -285,11 +287,14 @@ function transaction_op_undo_access($op, $transaction, $currency) {
   return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 function transaction_op_undo_form($op, $transaction) {
-  return array('notify' => array(
-    '#title' => t('Notify participants'),
-    '#type' => 'checkbox',
-    '#weight' => 3
-  ));
+  if (variable_get('mcapi_undo_notification', array())) {
+    return array('notify' => array(
+      '#title' => t('Notify participants'),
+      '#type' => 'checkbox',
+      '#weight' => 3
+    ));
+  }
+  return array();
 }
 function transaction_op_undo($operation, $transaction, $values) {
   transaction_undo($transaction->serial);
@@ -311,7 +316,7 @@ function transaction_op_undo($operation, $transaction, $values) {
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
  */
 function _transaction_check_access_callbacks($callbacks, $transaction) {
-  foreach ($callbacks as $function) {
+  foreach (array_filter($callbacks) as $function) {
     if ($function($transaction)) return TRUE;
   }
   return FALSE;

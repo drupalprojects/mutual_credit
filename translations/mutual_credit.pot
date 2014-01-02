@@ -3002,11 +3002,6 @@ msgstr ""
 msgid "To notify users when a transaction is completed, use the action and triggers: !link"
 msgstr ""
 
-#: extras/signatures/mcapi_signatures.inc:260
-msgid "Your signature required"
-msgstr ""
-
-
 #: mcapi_signatures.inc:358 views/mcapi_signatures.views_default.inc:123
 msgid "Sign"
 msgstr ""

@@ -106,7 +106,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
           'outgoing' => $settings['direction']['outgoing']
         ),
         //if we are loading the page from blank, or rebuilding the form, we set the default values here,
-        '#default_value' =>  strval($transaction->direction),
+        '#default_value' =>  property_exists($transaction, 'direction') ? strval($transaction->direction) : '',
         '#required' => TRUE
       );
       unset($form['payer'], $form['payee']);
@@ -159,6 +159,15 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     //the transaction properties were validated in step 1
     //bypass the default transaction validate function, transaction_form_validate which expects stuff in form_state['values]
     unset($form['#validate']);
+    //save button
+    $form['buttons']['#type'] = 'actions';
+    if (strpos($settings['submission']['button'], '/')) {
+      $form['buttons']['submit']['#type'] = 'image_button';
+      $form['buttons']['submit']['#src'] = $settings['submission']['button'];
+    }
+    else {
+      $form['buttons']['submit']['#value'] = $settings['submission']['button'];
+    }
   }
   //if we just put the strip at the top level of each element,
   //then it will get lost as the element-language-items go to theming
@@ -173,17 +182,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
         //all fieldAPI fields on them are LANGUAGE_NONE
         $form[$fieldname][LANGUAGE_NONE]['#strip'] = $settings[$fieldname]['strip'];
       }
-    }
-  }
-  //save button
-  $form['buttons']['#type'] = 'actions';
-  if (empty($form['buttons']['submit']['#value'])) {
-    if (strpos($settings['submission']['button'], '/')) {
-      $form['buttons']['submit']['#type'] = 'image_button';
-      $form['buttons']['submit']['#src'] = $settings['submission']['button'];
-    }
-    else {
-      $form['buttons']['submit']['#value'] = $settings['submission']['button'];
     }
   }
   array_push($form['#submit'], 'mcapi_forms_form_postsubmit');//can't remember why use array_push and not just [] operator
@@ -308,7 +306,7 @@ function mcapi_forms_form_postsubmit($form, &$form_state) {
     //this could be more sophisticated by using tokens and transaction_load_last()
     drupal_set_message($submission['feedback']);
   }
-  $serial = $form_state['values']['serial'];
+  $serial = &$form_state['values']['serial'];
   //$form_state['redirect'] doesn't work here
   if (empty($submission['redirect'])) {
     drupal_goto('transaction/' . $serial);

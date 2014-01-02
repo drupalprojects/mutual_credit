@@ -275,15 +275,3 @@ function mcapi_index_views_views_plugins() {
 }
 
 
-function mcapi_views_ensure_currcode($field_query_handler, &$alias_name) {
-  if (strlen($alias_name)) return;
-  //check for the presence of a currcode field.
-  //we can't add it using additional_fields, because it gets wasted by the groupby
-  foreach ($field_query_handler->fields as $alias => $field) {
-    if ($field['field'] == 'currcode') {
-      $alias_name = $alias;
-      return;
-    }
-  }
-  $alias_name = $field_query_handler->add_field('mcapi_index', 'currcode', 'currcode_alias');
-}

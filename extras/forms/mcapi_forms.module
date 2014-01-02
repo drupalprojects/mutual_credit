@@ -307,7 +307,7 @@ function mcapi_forms_load($name = '', $all = FALSE) {
       $items = ctools_export_crud_load_all('mcapi_forms');
       drupal_alter('mcapi_forms', $items);
       foreach ($items as $key => $item) {
-      	if (empty($item->status) && !$all) unset($items[$key]);
+      	if (!empty($item->disabled) && !$all) unset($items[$key]);
       }
       cache_set('mcapi_forms', $items);
     }

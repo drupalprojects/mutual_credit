@@ -187,8 +187,6 @@ class mcapiEntityController extends EntityAPIController {
     }
     else{
       drupal_set_message('Problem with entity_save', 'error');
-      continue;
-      transaction_update($op, $transaction, $values);
     }
   }
 
@@ -209,7 +207,6 @@ class mcapiEntityController extends EntityAPIController {
 
   /*
    * change the state of a transaction and its dependents
-   * This does not count as updating it, which is subject to different permissions
    */
   public function update($transaction, $new_state) {
     $t = db_transaction();
@@ -218,7 +215,7 @@ class mcapiEntityController extends EntityAPIController {
       //drupal_write_record($this->entityInfo['base table'], $this->raw(), 'xid');
       drupal_write_record($this->entityInfo['base table'], $transaction, 'xid');
       $this->resetCache(array($transaction->xid));
-      $this->invoke('update', $entity);
+      $this->invoke('update', $transaction);
     }
     catch (Exception $e) {
       $t->rollback();
@@ -261,7 +258,7 @@ class mcapiEntityController extends EntityAPIController {
 
   public function delete($xids) {
     if (count($xids)) {
-      db_delete('mcapi_transactions')->condition('serial', $xids)->execute();
+      db_delete('mcapi_transactions')->condition('xid', $xids)->execute();
     }
   }
 

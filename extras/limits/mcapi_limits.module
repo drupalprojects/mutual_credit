@@ -67,7 +67,7 @@ function mcapi_limits_field_extra_fields() {
 }
 
 /*
- * implements mcapi hook_transactions_validate
+ * implements mcapi hook_accounting_validate
  * runs only on transaction insertion
  * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
  * against the balance limits for each affected account,
@@ -216,7 +216,7 @@ function mcapi_limits_mcapi_limits_info() {
 /*
  * implements hook_form_user_profile_form_alter
  * if the current user has permission for each currency that requires it
- * put the limits field on the user proifile form
+ * put the limits field on the user profile form
  */
 function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
   if ($form['#user_category'] != 'account') return;

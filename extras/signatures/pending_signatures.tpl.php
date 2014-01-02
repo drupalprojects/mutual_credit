@@ -12,8 +12,9 @@
 //inject a bit of css to change the background picture of the transaction certificate
 $background =  "background-repeat: no-repeat; background-position: center; background-size: 32px";
 $rows = array();
+global $base_url;
+$path = $base_url .'/'. drupal_get_path('module', 'mcapi_signatures');
 foreach ($transaction->pending_signatures as $uid => $status) {
-  $path = url(drupal_get_path('module', 'mcapi_signatures'));
   if ($status == 1)  {
     $row = array(
       'title' => t('Awaiting signature'),
