@@ -1,7 +1,8 @@
   <?php
 
 //TODO why is NestedArray here? Still needed?
-use Drupal\Component\Utility\NestedArray;
+use \Drupal\Component\Utility\NestedArray;
+use \Drupal\Core\Language\Language;
 
 
 /*
@@ -198,11 +199,12 @@ function template_preprocess_balance_histories_gchart(&$vars) {
 	}
 }
 
-
-//produce and include the actual javascript
-//TODO cache this and clear the cache
-//theme preprocessor
-function mcapi_preprocess_balance_histories_gchart(&$vars) {
+/*
+ * implements hook_process_THEMEHOOK for balance_histories_gchart
+ * generates the javascript for the gchart from the user's history of each currency
+ * TODO cache this and clear the cache
+ */
+function mcapi_process_balance_histories_gchart(&$vars) {
 	$histories = &$vars['histories'];
 	$id = 'uid-'.$vars['account']->id().'-'.implode('-',array_keys($histories));
 	$vars['id'] = $id;
@@ -256,7 +258,11 @@ function drawBalanceHistory() {
 	$vars['javascript'] = $js;
 }
 
-//wrapper which helps with ajax DO NOT CHANGE
+/*
+ * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction'
+ * DO NOT OVERRIDE, override certificate or change the mcapi_sentence variable instead
+ * javascript operations depend on the classes defined here
+ */
 function template_preprocess_mcapi_transaction(&$vars) {
   $element = $vars['transaction'];
 	$transaction = $element['#mcapi_transaction'];
@@ -271,16 +277,14 @@ function template_preprocess_mcapi_transaction(&$vars) {
 	);
 }
 
+/*
+ * implements template_preprocess_THEMEHOOK for theme callback 'certificate'
+ */
 function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
-  $transaction = $element['#mcapi_transaction'];
+	$transaction = $element['#mcapi_transaction'];
 
-	mcapi_transaction_process_vars($vars, $transaction);
-
-  $vars['content'] = array();
-	foreach(element_children($element) as $sub) {
-	  $vars['content'][$sub] = $element[$sub];
-	}
+	mcapi_transaction_process_vars($vars, $transaction, $element);
 
 	$vars['children'] = array();
 	if (isset($transaction->children) && !empty($transaction->children)) {
@@ -298,38 +302,58 @@ function template_preprocess_certificate(&$vars) {
 /*
  * helper for theming transactions
  * this is abstracted so that the arbitrary twig can access it too
+ * $vars, an array to be added to
  */
-function mcapi_transaction_process_vars(&$vars, $transaction) {
-  $payer = array(
-    '#theme' => 'username',
-    '#account' => $transaction->payer->entity,
-    '#link_options' => array('attributes' => array('rel' => 'author')),
-  );
-  $payee = array(
-    '#theme' => 'username',
-    '#account' => $transaction->payee->entity,
-    '#link_options' => array('attributes' => array('rel' => 'author')),
-  );
-  $vars['payer'] = drupal_render($payer);
-  $vars['payee'] = drupal_render($payee);
+
+function mcapi_transaction_process_vars(&$vars, TransactionInterface $transaction, array $content) {
+  $vars['serial'] = $transaction->serial->value;
+  $vars['payer'] = $transaction->payer->entity->label();
+  $vars['payee'] = $transaction->payer->entity->label();
+  $vars['creator'] = $transaction->payer->entity->label();
 
   foreach ($transaction->worths[0] as $worth) {
     $worths[] = $worth->getString();
   }
   $vars['worths'] = implode('|', $worths);
 
-  $vars['state'] = $transaction->state->value;
-  $vars['date'] = format_date($transaction->created->value, 'medium');
-  $vars['type'] = $transaction->type->value;
+  $states = mcapi_get_states();
+  $vars['state'] = $states[$transaction->state->value];
+
+  $types = mcapi_get_types();
+  $vars['type'] = $types[$transaction->type->value];
+
+  $vars['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
+
   $vars['description'] = $transaction->description->value;
+  //the token service lets you pass url options, but we'll simply here and just make all links absolute
+  $uri = $transaction->uri();
+  $vars['url'] = url($uri['path'], array('absolute' => TRUE));
+
+  $vars['links'] = $content['#showlinks'] ? $transaction->links() : array();
+
+  //$vars['content'] = array();
+  foreach(element_children($content) as $sub) {
+    if ($content[$sub]['#theme'] == 'field') $content[$sub]['#label_display'] = 'hidden';
+    $vars[$sub] = $content[$sub];
+  }
 }
+
 
 /*
  * does this more naturally belong in the TransactionViewBuilder?
  */
-function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction) {
+function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction, $showlinks = TRUE) {
   $vars = array();
-  mcapi_transaction_process_vars($vars, $transaction);
+  $xid = $transaction->id();
+
+  //Here we have to get all the fieldAPI fields rendered and in $vars
+  $entities = array($xid => $transaction);
+  $build = \Drupal::entityManager()
+    ->getViewBuilder('mcapi_transaction')
+    ->viewMultiple($entities, 'certificate');
+  $build[$xid]['#showlinks'] = $showlinks;
+  mcapi_transaction_process_vars($vars, $transaction, $build[$xid]);
+  $vars['links'] = $showlinks ? $transaction->links() : array();
   return mcapi_render_twig($template, $vars);
 }
 

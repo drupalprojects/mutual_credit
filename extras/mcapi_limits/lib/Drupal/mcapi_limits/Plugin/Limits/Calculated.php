@@ -27,7 +27,7 @@ use \Drupal\Core\Session\AccountInterface;
 class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
 
   public function settingsForm() {
-    $preset = $this->currency->limits_settings;
+    $preset = (array)$this->currency->limits_settings;
 
     $form['max_formula'] =  array(
       '#title' => t('Formula to calculate minimum limit'),

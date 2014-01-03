@@ -35,6 +35,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $build['#theme'] = 'certificate';
       $build['#theme_wrappers'] = array('mcapi_transaction');
       $build['#mcapi_transaction'] = $entity;
+      $build['#showlinks'] = TRUE;
       $build['#langcode'] = $langcode;
       //css helps rendering the default certificate
       $build['#attached'] = array(
@@ -64,18 +65,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
   /**
    * Overrides Drupal\Core\Entity\EntityRenderController::buildContent().
+   * TODO is this needed at all any more?
    *
    * build a render array for any number of transactions
-   * first arg can be one or an array of transactions, WITH CHILDREN LOADED as in mcapi_transaction_load
-   * $transactions an array of transactions, keyed by xid, each one having its children already loaded
-   * $view mode, defaults to certificate with the saved transaction sentence, but an arbitrary token string can also be used
+   * first arg can be one or an array of transactions, keyed by xid, WITH CHILDREN LOADED as in mcapi_transaction_load
+   * $view mode, defaults to certificate, but an arbitrary token string can also be used
    */
-  public function buildContent(array $transactions, array $displays, $view_mode = 'certificate', $langcode = NULL) {
+  public function __buildContent(array $transactions, array $displays, $view_mode = 'certificate', $langcode = NULL) {
     parent::buildContent($transactions, $displays, $view_mode, $langcode);
-    foreach ($transactions as $transaction->xid => $transaction) {
-      $transaction->content['links'] = $transaction->links('ajax', FALSE);
-    }
-
   }
 
 }

@@ -89,6 +89,14 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
  */
   public function settingsForm(array &$form, ConfigFactory $config) {
     $conf = $config->get('general');
+    module_load_include('tokens.inc', 'mcapi');
+    $tokens = implode(', ', mcapi_transaction_list_tokens(FALSE));
+    $help = t('Use the following twig tokens: @tokens.', array('@tokens' => $tokens)) .' '.
+      l(
+        t('What is twig?'),
+        'http://twig.sensiolabs.org/doc/templates.html',
+        array('external' => TRUE)
+      );
 
     $form['#prefix'] = $this->description;
     $form['general'] = array(
@@ -124,7 +132,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
       //TODO get a list of the transaction display formats from the entity type
       '#options' => array(
         'certificate' => t('Certificate'),
-        'twig' => t('Twig template'),
+        'twig' => t('Custom twig template'),
         //'tokens' => t('Drupal token system'),
       ),
       '#default_value' => $conf['format'],
@@ -133,7 +141,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
     );
     $form['general']['twig'] = array(
       '#title' => t('Template'),
-      '#description' => '//TODO list the twig variables here',
+      '#description' => $help,
       '#type' => 'textarea',
       '#default_value' => $conf['twig'],
       '#states' =>array(
@@ -180,7 +188,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
     );
     $form['general']['twig2'] = array(
       '#title' => t('Template'),
-      '#description' => '//TODO list the twig variables here',
+      '#description' => $help,
       '#type' => 'textarea',
       '#default_value' => $conf['twig2'],
       '#states' =>array(

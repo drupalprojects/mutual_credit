@@ -57,9 +57,10 @@ function mcapi_limits_form_user_form_alter(&$form, &$form_state) {
 /*
  * implements hook_user_presave
  * save the personal override currency limits into the $account object
- * //TODO how best to do this in d8
+ * //TODO how best to do this in d8??
  */
-function mcapi_limits_user_presave(&$edit, $account, $category) {
+function mcapi_limits_user_presave(UserInterface $account) {
+  return;
   if ((property_exists($account, 'is_new') && $account->is_new) || empty($account->uid)) return;
   foreach(currencies_load($account) as $currcode => $currency) {
     if (isset($currency->limits['personal'])) {

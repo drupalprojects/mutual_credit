@@ -31,11 +31,16 @@ class OperationForm extends ConfirmFormBase {
     return 'transaction_operation_form_id';
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getQuestion() {
     return $this->settings['page_title'];
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   public function getCancelRoute() {
     return array(
     	'route_name' => 'mcapi.transaction_view',
@@ -43,29 +48,34 @@ class OperationForm extends ConfirmFormBase {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getCancelText() {
     return $this->settings['cancel_button'];
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   public function getDescription() {
     if ($this->settings['format'] == 'twig') {
       //ah but where to get the $tokens from
       //maybe this should just be a feature of the template_preprocess_mcapi_transaction()
       module_load_include('inc', 'mcapi');
-      return mcapi_render_twig_transaction($this->settings['twig'], $this->transaction);
+      return mcapi_render_twig_transaction($this->settings['twig'], $this->transaction, FALSE);
     }
     else {//this is a transaction entity display mode, like 'certificate'
-      $renderable = \Drupal::entityManager()
-        ->getViewBuilder('mcapi_transaction')
-        ->view(
-          $this->transaction,
-          $this->settings['format'] == 'certificate' ? 'certificate' : $this->settings['twig']
+      $renderable = \Drupal::entityManager()->getViewBuilder('mcapi_transaction')
+      ->view(
+        $this->transaction,
+        $this->settings['format'] == 'certificate' ? 'certificate' : $this->settings['twig']
       );
-      unset($renderable['links']);
+      $renderable['#showlinks'] = FALSE;
       return drupal_render($renderable);
     }
   }
+
   /**
    * {@inheritdoc}
    */
@@ -94,7 +104,6 @@ class OperationForm extends ConfirmFormBase {
 
     return $form;
   }
-
 
   /**
    * {@inheritdoc}

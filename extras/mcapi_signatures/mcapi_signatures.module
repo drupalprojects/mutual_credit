@@ -257,6 +257,6 @@ function mcapi_signatures_field_extra_fields() {
  * implement hook_user_view().
  */
 function mcapi_signatures_user_view($account, $mode, $language) {
-  echo '//TODO mcapi_limits_user_view()';
-  $account->content['mcapi_signatures'] = array();
+  module_load_include('inc', 'mcapi_signatures');
+  $account->content['mcapi_signatures'] = list_pending_for_uid(\Drupal::currentUser()->id());
 }

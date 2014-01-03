@@ -81,7 +81,7 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
 }
 
 function _mcapi_limits_form_user_form_alter(&$form, &$form_state) {
-  $account = $form_state['controller']->entity;
+  $account = $form_state['controller']->getEntity();
   foreach (mcapi_get_available_currencies() as $currcode => $currency) {
     if ($currency->limits_plugin == 'none') continue;
     if (property_exists($currency, 'limits_settings') && is_array($currency->limits_settings) && array_key_exists('personal', $currency->limits_settings)) {

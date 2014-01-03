@@ -139,8 +139,8 @@ function mcapi_help($section, $arg) {
       ));
     case 'admin/accounting/currencies':
       return implode(' ', array(
-      	t('Most community projects now have only one currency.'),
-      	t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.')
+        t('Most community projects now have only one currency.'),
+        t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.')
       ));
     case 'admin/accounting/workflow':
       return implode(' ', array(
@@ -156,40 +156,40 @@ function mcapi_help($section, $arg) {
 
 
 function transaction_operations($op_name = NULL, $full = TRUE) {
-	//TODO when to use drupal_static and when to use drupal_static_fast?
-	$plugins = &drupal_static(__FUNCTION__, array());
-	if (empty($plugins)) {
-		$manager = \Drupal::service('plugin.manager.mcapi.transaction_operation');
-		foreach ($manager->getDefinitions() as $op => $info) {
-			$plugins[$op] = $manager->createInstance($op);
-		}
-	}
-	if (!$full) {
-	  foreach ($plugins as $key => $info) {
-	    $options[$key] = $info->label();
-	  }
-	  return $options;
-	}
-	if ($op_name) return $plugins[$op_name];
-	else return $plugins;
+  //TODO when to use drupal_static and when to use drupal_static_fast?
+  $plugins = &drupal_static(__FUNCTION__, array());
+  if (empty($plugins)) {
+    $manager = \Drupal::service('plugin.manager.mcapi.transaction_operation');
+    foreach ($manager->getDefinitions() as $op => $info) {
+      $plugins[$op] = $manager->createInstance($op);
+    }
+  }
+  if (!$full) {
+    foreach ($plugins as $key => $info) {
+      $options[$key] = $info->label();
+    }
+    return $options;
+  }
+  if ($op_name) return $plugins[$op_name];
+  else return $plugins;
 }
 
 function transaction_access_plugins($full = TRUE) {
-	//TODO when to use drupal_static and when to use drupal_static_fast?
-	$plugins = &drupal_static(__FUNCTION__, array());
-	if (empty($plugins)) {
-		$manager = \Drupal::service('plugin.manager.mcapi.transaction_access');
-		foreach ($manager->getDefinitions() as $plugin => $info) {
-			$plugins[$plugin] = $manager->createInstance($plugin);
-		}
-	}
-	if (!$full) {
-	  foreach ($plugins as $key => $info) {
-	    $options[$key] = $info->label();
-	  }
-	  return $options;
-	}
-	else return $plugins;
+  //TODO when to use drupal_static and when to use drupal_static_fast?
+  $plugins = &drupal_static(__FUNCTION__, array());
+  if (empty($plugins)) {
+    $manager = \Drupal::service('plugin.manager.mcapi.transaction_access');
+    foreach ($manager->getDefinitions() as $plugin => $info) {
+      $plugins[$plugin] = $manager->createInstance($plugin);
+    }
+  }
+  if (!$full) {
+    foreach ($plugins as $key => $info) {
+      $options[$key] = $info->label();
+    }
+    return $options;
+  }
+  else return $plugins;
 }
 
 
@@ -212,6 +212,8 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'template' => 'transaction',
       'file' => 'mcapi.inc'
     ),
+    //the above is the theme wrapper for the below
+    //so they both take the same render_element
     'certificate' => array(
       'render element' => 'transaction',
       'template' => 'certificate',
@@ -221,20 +223,21 @@ function mcapi_theme($existing, $type, $theme, $path) {
     'worth_element'=> array(
       'render element' => 'element',
     ),
-  	'mcapi_summary' => array(
-  	  'template' => 'mcapi_summary',
-  		//might be appropriate to have a pattern here
-  		'variables' => array(
-  			'account' => NULL,
-  			'currency' => NULL,
-  			'balance' => 0,
-  			'gross_in' => 0,
-  			'gross_out' => 0,
-  			'volume' => 0,
-  			'count' => 0,
-  			'partners' => 0,
-  	  ),
+    'mcapi_summary' => array(
+      'template' => 'mcapi_summary',
+      //might be appropriate to have a per-currency pattern here
+      'variables' => array(
+        'account' => NULL,
+        'currency' => NULL,
+        'balance' => 0,
+        'gross_in' => 0,
+        'gross_out' => 0,
+        'volume' => 0,
+        'count' => 0,
+        'partners' => 0,
+      ),
     ),
+    //TODO
     'balance_bars' => array(
       'template' => 'balance_bars',
       'variables' => array(
@@ -247,7 +250,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'template' => 'balance_histories_gchart',
       'variables' => array(
         'account' => NULL,
-      	'currcodes' =>array(),
+        'currcodes' =>array(),
         'width' => 250,
         'resample' => 'simple'
       ),
@@ -311,17 +314,17 @@ function mcapi_mcapi_info_states() {
  */
 function mcapi_mcapi_info_types() {
   $types['default'] = array(
-	  'label' => t('Default'),
+    'label' => t('Default'),
     'description' => t('Simplest transaction type'),
     'start state' => TRANSACTION_STATE_FINISHED
   );
   $types['auto'] = array(
-	  'label' => t('Auto'),
+    'label' => t('Auto'),
     'description' => t('Created automatically'),
     'start state' => TRANSACTION_STATE_FINISHED
   );
   $types['mass'] = array(
-	  'label' => t('Mass'),
+    'label' => t('Mass'),
     'description' => t('Between one account and many accounts'),
     'start state' => TRANSACTION_STATE_FINISHED
   );
@@ -405,23 +408,23 @@ function mcapi_mcapi_info_drupal_permissions() {
  * $transaction, $account
  */
 function transaction_access_callbacks() {
-	if (!$cache = \Drupal::cache()->get('transaction_access_callbacks')) {
-		$callbacks = module_invoke_all('transaction_access_callbacks');
-		foreach (array_keys($callbacks) as $callback) {
-			if (!function_exists($callback)) {
-				unset($callbacks[$callback]);
-				//message for developers doesn't need translating
-				drupal_set_message("{$callback} does not exist", 'warning');
-			}
-			//TODO include the file(s) where these callbacks would live
-			if (module_exists('views')) {
+  if (!$cache = \Drupal::cache()->get('transaction_access_callbacks')) {
+    $callbacks = module_invoke_all('transaction_access_callbacks');
+    foreach (array_keys($callbacks) as $callback) {
+      if (!function_exists($callback)) {
+        unset($callbacks[$callback]);
+        //message for developers doesn't need translating
+        drupal_set_message("{$callback} does not exist", 'warning');
+      }
+      //TODO include the file(s) where these callbacks would live
+      if (module_exists('views')) {
         module_load_include('views.inc', 'mcapi');
-				if (!function_exists($callback.'_views')) {
-			    unset($callbacks[$callback]);
+        if (!function_exists($callback.'_views')) {
+          unset($callbacks[$callback]);
           drupal_set_message("{$callback}_views does not exist", 'warning');
-				}
-			}
-		}
+        }
+      }
+    }
     //TODO this cache should be cleared whenever a currency is edited and whenever a user's entitlement to use a currency could be affected
     \Drupal::cache()->set('transaction_access_callbacks', $callbacks, CacheBackendInterface::CACHE_PERMANENT);
     return $callbacks;
@@ -475,19 +478,19 @@ function mcapi_field_extra_fields() {
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
   $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
   $form = array('payer', 'payee', 'worths', 'description');
-	foreach ($fields as $weight => $fieldname) {
-		$extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
-			'label' => $props[$fieldname]['label'],
-			'description' => $props[$fieldname]['description'],
-			'weight' => $weight,
-		);
-		$extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
-			'label' => $props[$fieldname]['label'],
-			'description' => $props[$fieldname]['description'],
-			'weight' => $weight,
-		);
-	}
-	return $extra;
+  foreach ($fields as $weight => $fieldname) {
+    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
+      'label' => $props[$fieldname]['label'],
+      'description' => $props[$fieldname]['description'],
+      'weight' => $weight,
+    );
+    $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
+      'label' => $props[$fieldname]['label'],
+      'description' => $props[$fieldname]['description'],
+      'weight' => $weight,
+    );
+  }
+  return $extra;
 }
 
 //return a currency
@@ -1026,5 +1029,5 @@ function mcapi_config_translation_info() {
  * //TODO
  */
 function mcapi_config_translation_type_info_alter($info) {
-	print_r($info);
+  print_r($info);
 }

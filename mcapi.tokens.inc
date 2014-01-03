@@ -1,6 +1,6 @@
 <?php
 
-use Drupal\Core\Language\Language;
+use \Drupal\field\Field;
 
 /*
  * implements hook_tokens for a transaction cluster
@@ -10,46 +10,17 @@ use Drupal\Core\Language\Language;
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) return array();
 
-  $token_service = \Drupal::token();
-
-  $url_options = array('absolute' => TRUE);
-  if (isset($options['langcode'])) {
-    $url_options['language'] = language_load($options['langcode']);
-    $langcode = $options['langcode'];
-  }
-  else {
-    $langcode = Language::LANGCODE_DEFAULT;
-  }
-  $sanitize = !empty($options['sanitize']);
-  $replacements = array();
   $transaction = &$data[$type];
 
+  $replaced = array();
+  mcapi_transaction_process_vars($replaced, $transaction, array('#showlinks' => in_array('links', $tokens)));
+
+  $replacements = array();
   foreach ($tokens as $name => $original) {
-    switch ($name) {
-      case 'serial':
-        $replacements[$original] = $transaction->serial->value;
-        break;
-      case 'worths':
-        $replacements[$original] = $transaction->worths->value;
-        break;
-      case 'payer':
-      case 'payee':
-      case 'creator':
-        $account = user_load($transaction->{$name}->value);
-        $replacements[$original] = $sanitize ? check_plain($account->label()) : $account->label();
-        break;
-      case 'created':
-        $replacements[$original] = format_date($transaction->created, 'medium', '', NULL, $langcode);
-        break;
-      case 'links':
-        $ops = $transaction->links($transaction);
-        $replacements[$original] = drupal_render($ops);
-        break;
-      case 'url':
-        $replacements[$original] = url($transaction->uri(), $url_options);
-    }
+    $replacements[$original] = $replaced[$original];
   }
 
+  $token_service = \Drupal::token();
   if ($payer_tokens = $token_service->findWithPrefix($tokens, 'payer')) {
     $replacements += $token_service->generate(
       'user',
@@ -76,9 +47,9 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
   }
   if ($created_tokens = $token_service->findWithPrefix($tokens, 'created')) {
     $replacements += $token_service->generate(
-      'date',
+      'created',
       $created_tokens,
-      array('date' => $transaction->created->value),
+      array('created' => $transaction->created->value),
       $options
     );
   }
@@ -112,6 +83,14 @@ function mcapi_token_info() {
           'name' => t('Payee name'),
           'description' => t("The user whose account is debited"),
         ),
+        'type' => array(
+          'name' => t('Type'),
+          'description' => t("The type, or workflow channel"),
+        ),
+        'state' => array(
+          'name' => t('State'),
+          'description' => t("The state of the transaction"),
+        ),
         'creator' => array(
           'name' => t('Creator'),
           'description' => t("The user who registered the transaction"),
@@ -133,12 +112,22 @@ function mcapi_token_info() {
   );
   return $info;
 }
+
+
 /*
- * implements hook_token_info_alter
- * remove the 'original' set of tokens, which is added to all entities,
- * but is not necessary, because transactions are not edited
- */
-function mcapi_token_info_alter(&$items) {
-  print_r($items['tokens']['mcapi']);
-  unset($items['tokens']['mcapi']);
+ * helper function to get the token names for helptext token service and twig
+* get the entity properties from mcapi_token_info, then the fieldapi fields
+* returns an array
+* this function would be handy for any entity_type
+*/
+function mcapi_transaction_list_tokens($showlinks = TRUE) {
+  //no need to boot the whole token service, but maybe should get this from cache somehow?
+  $data = mcapi_token_info();
+  $allfields = Field::FieldInfo()->getFieldMap();
+  $tokens = array_merge(
+    array_keys($data['tokens']['mcapi']),
+    array_keys($allfields['mcapi_transaction'])
+  );
+  if (!$showlinks) unset($tokens[array_search('links', $tokens)]);
+  return $tokens;
 }

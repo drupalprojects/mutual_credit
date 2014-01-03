@@ -72,7 +72,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
         )
       );
     }
-    foreach ($waiting_on as $serial) {
+    foreach ($serials as $serial) {
       $output[]['#markup'] = mcapi_transaction_load($serial)->tokenised();
     }
     return $output;
@@ -80,7 +80,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
 }
 //returns a render array
 function list_waiting_not_on_uid($uid, $currcodes = array()) {
-  $waiting_on = array();
+  $waiting_on = $output = array();
   $serials = transaction_filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
   foreach ($serials as $serial) {
     foreach (mcapi_transaction_load($serial)->signatures as $uid => $signed) {
