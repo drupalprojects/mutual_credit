@@ -1,2 +1,3 @@
 sentence_template: '[mcapi:payer] paid [mcapi:payee] [mcapi:worth] for [mcapi:description]. [transaction:links]'
 mix_mode: true
+worths_delimiter: '|'

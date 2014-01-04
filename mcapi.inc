@@ -314,7 +314,7 @@ function mcapi_transaction_process_vars(&$vars, TransactionInterface $transactio
   foreach ($transaction->worths[0] as $worth) {
     $worths[] = $worth->getString();
   }
-  $vars['worths'] = implode('|', $worths);
+  $vars['worths'] = $transaction->worths[0]->getString();
 
   $states = mcapi_get_states();
   $vars['state'] = $states[$transaction->state->value];

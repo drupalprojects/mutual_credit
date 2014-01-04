@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\ConfigFieldItemBase;
 use Drupal\field\FieldInterface;
+use Drupal\mcapi\Plugin\CurrencyTypePluginManager;
 
 /**
  * Plugin implementation of the 'text' field type.
@@ -106,22 +107,9 @@ class Worth extends ConfigFieldItemBase {
     if ($this->value === NULL) {
       return;
     }
-
-    $value = NULL;
-    switch ($this->currency->type) {
-      case 'time':
-        $hours = ($this->value - ($this->value % 3600)) / 3600;
-        $minutes = ($this->value - ($hours * 3600) - ($this->value % 60)) / 60;
-        $seconds = $this->value % 60;
-
-        $value = $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ($seconds ? ':' . $seconds : '');
-        break;
-
-      case 'decimal':
-        $value = empty($this->value) ? $this->value : number_format($this->value / pow(10, $this->currency->settings['scale']), $this->currency->settings['scale']);
-        break;
-    }
-    return $this->currency->prefix . $value . $this->currency->suffix;
+    $currencyTypeManager = \Drupal::service('plugin.manager.mcapi.currency_type');
+    $typePlugin = $currencyTypeManager->createInstance($this->currency->type);
+    return $this->currency->prefix . $typePlugin->format($this->value, $this->currency->settings) . $this->currency->suffix;
   }
 
   public function __toString() {

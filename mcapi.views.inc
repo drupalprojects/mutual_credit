@@ -119,7 +119,7 @@ function mcapi_views_data() {
       'id' => 'string',
     ),
     'field' => array(
-      'id' => 'standard',
+      'id' => 'mcapi_description',
     ),
   );
 

@@ -43,6 +43,21 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       '#description' => t('Applies only when more than one currency is available'),
       '#type' => 'checkbox',
       '#default_value' => !$config->get('mix_mode'),
+      '#weight' => 7
+    );
+    $form['worths_delimiter'] = array(
+      '#title' => t('Delimiter'),
+      '#description' => t('What characters should be used to separate values when a transaction has multiple currencies?'),
+      '#type' => 'textfield',
+      '#default_value' => $config->get('worths_delimiter'),
+      '#weight' => 8,
+      '#size' => 10,
+      '#maxlength' => 10,
+      '#states' => array(
+    	  'visible' => array(
+    	    ':input[name="mix_mode"]' => array('checked' => FALSE)
+        )
+      )
     );
     $form['rebuild_mcapi_index'] = array(
       '#title' => t('Rebuild index'),
@@ -58,13 +73,24 @@ class AccountingAdminMiscForm extends ConfigFormBase {
     return parent::buildForm($form, $form_state);
   }
 
+  public function validateForm(array &$form, array &$form_state) {
+    drupal_set_message('check setErrorByName of this form after D8 alpha5', 'warning');return;
+    //documentation differs from code in alpha5
+    //https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Form!FormBuilder.php/function/FormBuilder%3A%3AsetErrorByName/8
+    if (!$form_state['values']['mix_mode'] && empty($form_state['values']['worths_delimiter'])) {
+      \Drupal::formBuilder()->setErrorByName('worths_delimiter', $form_state, $this->t('Delimiter is required'));
+    }
+  }
+
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
     $this->configFactory->get('mcapi.misc')
       ->set('sentence_template', $form_state['values']['sentence_template'])
+      //careful the mix_mode flag is inverted!!
       ->set('mix_mode', !$form_state['values']['mix_mode'])
+      ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->save();
 
     parent::submitForm($form, $form_state);

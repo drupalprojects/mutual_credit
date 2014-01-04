@@ -193,11 +193,9 @@ class CurrencyFormController extends EntityFormController {
       '#markup' => $this->t('@label - @description', array('@label' => $type_definition['label'], '@description' => $type_definition['description'])),
     );
 
-    if (method_exists($currency_type, 'settingsForm')) {
-      $form['display']['settings'] = array(
-        '#tree' => TRUE,
-      );
-      $form['display']['settings'] = $currency_type->settingsForm($form['display']['settings'], $form_state, $currency);
+    $form['display']['settings'] = $currency_type->settingsForm($form['display']['settings'], $form_state, $currency);
+    if ($form['display']['settings']) {
+      $form['display']['settings']['#tree'] = TRUE;
     }
 
     $form['display']['widget'] = array(
@@ -560,7 +558,7 @@ class CurrencyFormController extends EntityFormController {
       'form_mode' => 'full',
       'form' => $form,
     );
-    drupal_alter('field_widget_settings_form', $settings_form, $form_state, $context);
+    \Drupal::moduleHandler()->alter('field_widget_settings_form', $settings_form, $form_state, $context);
   }
 
   /**
@@ -572,6 +570,6 @@ class CurrencyFormController extends EntityFormController {
       'field' => 'currency_type_' . $this->entity->type,
       'entity' => $this->entity,
     );
-    drupal_alter('field_widget_settings_summary', $summary, $context);
+    \Drupal::moduleHandler()->alter('field_widget_settings_summary', $summary, $context);
   }
 }

@@ -12,6 +12,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Entity\Annotation\EntityType;
 use Drupal\Core\Annotation\Translation;
+use Drupal\mcapi\Plugin\Field\FieldType\Worth;
 
 /**
  * Defines the Currency entity.
@@ -50,7 +51,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   /**
    * Holds the plugin object for the Widget when it is loaded
    */
-  private $widgetPlugin;
+  private $currencyTypeManager;
+  private $typePlugin;
+  private $widgetManager;
 
   public $id;
   public $uuid;
@@ -77,15 +80,18 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $limits_plugin;
   public $limits_settings;
 
+  public function __construct(array $values, $entity_type) {
+    parent::__construct($values, $entity_type);
+    $this->currencyTypeManager = \Drupal::service('plugin.manager.mcapi.currency_type');
+    $this->widgetManager = \Drupal::service('plugin.manager.mcapi.currency_widget');
+  }
+
   /**
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
-    $currencyTypeManager = \Drupal::service('plugin.manager.mcapi.currency_type');
-    $widgetManager = \Drupal::service('plugin.manager.mcapi.currency_widget');
-    $widgets = array_keys($widgetManager->getOptions($values['type']));
 
-    $defintions = $currencyTypeManager->getDefinition($values['type']);
+    $widgets = array_keys($widgetManager->getOptions($values['type']));
 
     $values += array(
       'settings' => array(),
@@ -102,9 +108,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'widget_settings' => array(),
     );
 
-    $values['settings'] += $currencyTypeManager->getDefaultSettings($values['type']);
+    $values['settings'] += $this->currencyTypeManager->getDefaultSettings($values['type']);
 
-    $values['widget_settings'] += $widgetManager->getDefaultSettings($values['widget']);
+    $values['widget_settings'] += $this->widgetManager->getDefaultSettings($values['widget']);
     //TODO this will use a new wallet_chooser plugin
     $values['access'] += array(
       'membership' => 'user_chooser_segment_perms:transact',
@@ -164,10 +170,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   }
   /*
    * return the $value formatted with this currency
+   * so make a worth object and return the string of it.
+   * alternatively we could abstract the Worth->getString into a worth_stringify($currency, Quant)
    */
   public function format($value) {
-    //get the formatter...
-    return '#formatted:'.$value;
+    if (!$this->typePlugin) {
+      $this->typePlugin = $this->currencyTypeManager->createInstance($this->type);
+    }
+    return $this->prefix . $this->typePlugin->format($value, $this->settings) . $this->suffix;
   }
 
   /*

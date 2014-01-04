@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\Field\FieldType\Worth.
+ * Contains \Drupal\mcapi\Plugin\Field\FieldType\Worths.
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldType;
@@ -24,6 +24,8 @@ use Drupal\Core\Annotation\Translation;
  * )
  */
 class Worths extends ConfigFieldItemBase {
+
+  public $delimiter;
 
   /**
    * Implements \Drupal\Core\TypedData\ComplexDataInterface::get().
@@ -127,6 +129,23 @@ class Worths extends ConfigFieldItemBase {
         )
       ),
     );
+  }
+
+  public function __toString() {
+    return $this->getString();
+  }
+
+  public function getString($delimiter = '') {
+    foreach ($this->properties as $worth) {
+      $output[] = $worth->getString();
+    }
+    if (count($output) > 1) {
+      if (empty($delimiter)) {
+        $delimiter = \Drupal::config('mcapi.misc')->get('worths_delimiter');
+      }
+      return implode($delimiter, $output);
+    }
+    return $output[0];
   }
 
 }

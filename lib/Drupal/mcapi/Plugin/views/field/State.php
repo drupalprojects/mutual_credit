@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\Link.
+ * Definition of Drupal\mcapi\Plugin\views\field\State.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
@@ -13,7 +13,7 @@ use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
 
 /**
- * Field handler to present a link to the node.
+ * Field handler to the name of the transaction state
  *
  * @ingroup views_field_handlers
  *

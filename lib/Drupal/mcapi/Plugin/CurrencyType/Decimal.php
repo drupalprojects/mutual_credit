@@ -40,4 +40,8 @@ class Decimal extends CurrencyTypeBase implements CurrencyTypeInterface {
 
     return $form;
   }
+
+  function format($quant, array $settings) {
+    return empty($quant) ? $quant : number_format($quant / pow(10, $settings['scale']), $settings['scale']);
+  }
 }

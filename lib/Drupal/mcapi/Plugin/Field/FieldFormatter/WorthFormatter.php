@@ -26,6 +26,8 @@ class WorthFormatter extends FormatterBase {
 
   /**
    * {@inheritdoc}
+   * TODO this is not called from anywhere in this module
+   * note that toString is in Worth.php are we getting mixed up?
    */
   public function viewElements(FieldItemListInterface $items) {
     $elements = array();
