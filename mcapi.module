@@ -878,7 +878,7 @@ function mcapi_process_currcodes($element) {
  */
 function mcapi_pre_render_summary($element) {
   static $results = array();//TODO should this be drupal_static?
-  $uid = $element['#account']->uid->value;
+  $uid = $element['#account']->id();
   //occasionally we'll appreciate a static result
   $result = &$results[$uid][$element['#currency']->id()];
   if (empty($result)) {
