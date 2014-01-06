@@ -91,7 +91,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
 
-    $widgets = array_keys($widgetManager->getOptions($values['type']));
+    $widgets = array_keys($this->widgetManager->getOptions($values['type']));
 
     $values += array(
       'settings' => array(),
@@ -174,10 +174,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * alternatively we could abstract the Worth->getString into a worth_stringify($currency, Quant)
    */
   public function format($value) {
+    return $this->prefix . $this->format_raw($value) . $this->suffix;
+  }
+
+  public function format_raw($value) {
     if (!$this->typePlugin) {
       $this->typePlugin = $this->currencyTypeManager->createInstance($this->type);
     }
-    return $this->prefix . $this->typePlugin->format($value, $this->settings) . $this->suffix;
+    return $this->typePlugin->format($value, $this->settings);
   }
 
   /*

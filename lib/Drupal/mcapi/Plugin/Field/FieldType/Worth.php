@@ -107,9 +107,7 @@ class Worth extends ConfigFieldItemBase {
     if ($this->value === NULL) {
       return;
     }
-    $currencyTypeManager = \Drupal::service('plugin.manager.mcapi.currency_type');
-    $typePlugin = $currencyTypeManager->createInstance($this->currency->type);
-    return $this->currency->prefix . $typePlugin->format($this->value, $this->currency->settings) . $this->currency->suffix;
+    return $this->currency->format($this->value);
   }
 
   public function __toString() {
