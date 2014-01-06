@@ -96,9 +96,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
-
-    $widgets = array_keys(\Drupal::service('plugin.manager.mcapi.currency_widget')->getOptions($values['type']));
-
     $values += array(
       'settings' => array(),
     	'issuance' => 'acknowledgement',
