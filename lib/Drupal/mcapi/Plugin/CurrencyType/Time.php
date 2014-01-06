@@ -30,10 +30,14 @@ class Time extends CurrencyTypeBase implements CurrencyTypeInterface {
     return array();
   }
 
-  function format($quant, array $settings) {
-    $hours = ($quant - ($quant % 3600)) / 3600;
-    $minutes = ($quant - ($hours * 3600) - ($quant % 60)) / 60;
-    $seconds = $quant % 60;
+  /*
+   * Format the currency.
+   */
+  public function format($value) {
+    $hours = ($value - ($value % 3600)) / 3600;
+    $minutes = ($value - ($hours * 3600) - ($value % 60)) / 60;
+    $seconds = $value % 60;
+
     return $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ($seconds ? ':' . $seconds : '');
   }
 }

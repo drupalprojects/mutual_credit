@@ -40,4 +40,22 @@ class CurrencyTypePluginManager extends DefaultPluginManager {
     return isset($info['settings']) ? $info['settings'] : array();
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function getInstance(array $options) {
+    $options += array(
+      'configuration' => array(),
+    );
+
+    $plugin_id = $options['currency']->type;
+
+    $configuration = $options['configuration'];
+
+    $configuration+= array(
+      'currency' => $options['currency'],
+    );
+
+    return $this->createInstance($plugin_id, $configuration);
+  }
 }

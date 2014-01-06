@@ -48,6 +48,12 @@ use Drupal\mcapi\Plugin\Field\FieldType\Worth;
  * )
  */
 class Currency extends ConfigEntityBase implements CurrencyInterface {
+
+  /**
+   * Holds the transaction type plugin
+   */
+  private $plugin;
+
   /**
    * Holds the plugin object for the Widget when it is loaded
    */
@@ -139,6 +145,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     return $this->type;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function label($langcode = NULL) {
   	return $this->name;
   }
@@ -157,6 +166,20 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   }
 
   /**
+   * Get the Currency Type Plugin
+   */
+  public function getPlugin() {
+    if (!$this->plugin) {
+      $this->plugin = \Drupal::service('plugin.manager.mcapi.currency_type')->getInstance(array(
+        'currency' => $this,
+        'configuration' => $this->settings,
+      ));
+    }
+
+    return $this->plugin;
+  }
+
+  /**
    * Get the currencies widget plugin
    */
   public function getWidgetPlugin() {
@@ -168,23 +191,28 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     }
     return $this->widgetPlugin;
   }
-  /*
+
+  /**
    * return the $value formatted with this currency
    * so make a worth object and return the string of it.
    * alternatively we could abstract the Worth->getString into a worth_stringify($currency, Quant)
+   *
+   * @var integer
    */
   public function format($value) {
     return $this->prefix . $this->format_raw($value) . $this->suffix;
   }
 
+  /**
+   * Format the value with no suffix or prefix
+   *
+   * @var integer
+   */
   public function format_raw($value) {
-    if (!$this->typePlugin) {
-      $this->typePlugin = $this->currencyTypeManager->createInstance($this->type);
-    }
-    return $this->typePlugin->format($value, $this->settings);
+    return $this->getPlugin()->format($value);
   }
 
-  /*
+  /**
    * return the number of transactions, in all states
    */
   public function transactions() {
@@ -193,7 +221,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     return $transactionStorageController->count($this->id());
   }
 
-  /*
+  /**
    * return the number of transactions, in all states
    */
   public function volume() {
@@ -202,7 +230,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     return $this->format($transactionStorageController->volume($this->id()));
   }
 
-  /*
+  /**
    * check that a currency has no transactions before deleting it.
    */
   public function delete() {
