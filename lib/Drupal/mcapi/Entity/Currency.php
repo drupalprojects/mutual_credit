@@ -97,7 +97,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
 
-    $widgets = array_keys($this->widgetManager->getOptions($values['type']));
+    $widgets = array_keys(\Drupal::service('plugin.manager.mcapi.currency_widget')->getOptions($values['type']));
 
     $values += array(
       'settings' => array(),
@@ -114,9 +114,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'widget_settings' => array(),
     );
 
-    $values['settings'] += $this->currencyTypeManager->getDefaultSettings($values['type']);
+    $values['settings'] += \Drupal::service('plugin.manager.mcapi.currency_type')->getDefaultSettings($values['type']);
 
-    $values['widget_settings'] += $this->widgetManager->getDefaultSettings($values['widget']);
+    $values['widget_settings'] += \Drupal::service('plugin.manager.mcapi.currency_widget')->getDefaultSettings($values['widget']);
     //TODO this will use a new wallet_chooser plugin
     $values['access'] += array(
       'membership' => 'user_chooser_segment_perms:transact',
