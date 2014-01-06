@@ -12,6 +12,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Field\FieldDefinition;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\McapiTransactionException;
 
@@ -288,104 +289,76 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions($entity_type) {
-    $properties['xid'] = array(
-      'label' => t('Transaction ID'),
-      'description' => 'the unique transaction ID',
-      'type' => 'integer_field',
-      'read-only' => TRUE,
-    );
-    $properties['uuid'] = array(
-      'label' => t('UUID'),
-      'description' => t('The transaction UUID.'),
-      'type' => 'uuid_field',
-      'read-only' => TRUE,
-    );
-    $properties['description'] = array(
-      'label' => t('Description'),
-      'description' => t('A one line description of what was exchanged.'),
-      'type' => 'string_field',
-      'property_constraints' => array(
-        'value' => array('Length' => array('max' => 128)),
-      ),
-    );
-    $properties['serial'] = array(
-      'label' => t('Serial Number'),
-      'description' => t('Grouping of related transactions'),
-      'type' => 'integer_field',
-      'read-only' => TRUE,
-    );
-    $properties['parent'] = array(
-      'label' => t('Parent'),
-      'description' => t('Parent transaction that created this transaction'),
-      'type' => 'entity_reference_field',
-      'settings' => array(
-        'target_type' => 'mcapi_transaction',
-      ),
-    );
-    $properties['worths'] = array(
-      'label' => t('Worth'),
-      'description' => t('Value of this transaction'),
-      'type' => 'worths_field',
-      'required' => TRUE,
-      'list' => FALSE,
-    );
-    $properties['payer'] = array(
-      'label' => t('Payer'),
-      'description' => t('the user id of the payer'),
-      'type' => 'entity_reference_field',
-      'settings' => array(
-        'target_type' => 'user',
-      ),
-      'required' => TRUE,
-    );
-    $properties['payee'] = array(
-      'label' => t('Payee'),
-      'description' => t('the user id of the payee'),
-      'type' => 'entity_reference_field',
-      'settings' => array(
-        'target_type' => 'user',
-      ),
-      'required' => TRUE,
-    );
+    $properties['xid'] = FieldDefinition::create('integer')
+      ->setLabel('Transaction ID')
+      ->setDescription('the unique transaction ID')
+      ->setReadOnly(TRUE);
+    $properties['uuid'] = FieldDefinition::create('uuid')
+      ->setLabel('UUID')
+      ->setDescription('The transaction UUID.')
+      ->setReadOnly(TRUE);
+    $properties['description'] = FieldDefinition::create('string')
+      ->setLabel('Description')
+      ->setDescription('A one line description of what was exchanged.')
+      ->setPropertyConstraints('value', array('Length' => array('max' => 128)));
+    $properties['serial'] = FieldDefinition::create('integer')
+      ->setLabel('Serial Number')
+      ->setDescription('Grouping of related transactions')
+      ->setReadOnly(TRUE);
+    $properties['parent'] = FieldDefinition::create('entity_reference')
+      ->setLabel('Parent')
+      ->setDescription('Parent transaction that created this transaction')
+      ->setSettings(array(
+          'target_type' => 'mcapi_transaction',
+        ));
+    $properties['worths'] = FieldDefinition::create('worths')
+      ->setLabel('Worth')
+      ->setDescription('Value of this transaction')
+      ->setRequired(TRUE);
+    $properties['payer'] = FieldDefinition::create('entity_reference')
+      ->setLabel('Payer')
+      ->setDescription('the user id of the payer')
+      ->setSettings(array(
+          'target_type' => 'user',
+        ))
+      ->setRequired(TRUE);
+    $properties['payee'] = FieldDefinition::create('entity_reference')
+      ->setLabel('Payee')
+      ->setDescription('the user id of the payee')
+      ->setSettings(array(
+          'target_type' => 'user',
+        ))
+      ->setRequired(TRUE);
     //quantity is done, perhaps controversially, but the field API
-    $properties['type'] = array(
-      'label' => t('Type'),
-      'description' => t('The type of transaction, types are provided by modules'),
-      'type' => 'string_field',
-      'property_constraints' => array(
-        'value' => array('Length' => array('max' => 32)),
-      ),
-    );
-    $properties['state'] = array(
-      'label' => t('State'),
-      'description' => t('completed, pending, disputed, etc'),
-      'type' => 'integer_field',
-      'settings' => array(
-        'default_value' => 1,
-      )
-    );
-    $properties['creator'] = array(
-      'label' => t('Creator'),
-      'description' => t('the user id of the creator'),
-      'type' => 'entity_reference_field',
-      'settings' => array(
-        'target_type' => 'user',
-      ),
-      'required' => TRUE,
-    );
-    $properties['created'] = array(
-      'label' => t('Created'),
-      'description' => t('The time that the transaction was created.'),
-      'type' => 'integer_field',
-    );
-    $properties['children'] = array(
-      'label' => t('Children'),
-      'description' => t('List of all child transactions.'),
-      'type' => 'entity_reference_field',
-      'settings' => array(
-        'target_type' => 'mcapi_transaction',
-      ),
-    );
+    $properties['type'] = FieldDefinition::create('string')
+      ->setLabel('Type')
+      ->setDescription('The type of transaction, types are provided by modules')
+      ->setPropertyConstraints('value', array('Length' => array('max' => 32)))
+      ->setRequired(TRUE);
+    $properties['state'] = FieldDefinition::create('integer')
+      ->setLabel('State')
+      ->setDescription('completed, pending, disputed, etc')
+      ->setSettings(array(
+          'default_value' => 1,
+        ));
+    $properties['creator'] = FieldDefinition::create('entity_reference')
+      ->setLabel('Creator')
+      ->setDescription('the user id of the creator')
+      ->setSettings(array(
+          'target_type' => 'user',
+        ))
+      ->setRequired(TRUE);
+    $properties['created'] = FieldDefinition::create('integer')
+      ->setLabel('Created')
+      ->setDescription('The time that the transaction was created.')
+      ->setReadOnly(TRUE);
+    $properties['children'] = FieldDefinition::create('entity_reference')
+      ->setLabel('Children')
+      ->setDescription('List of all child transactions.')
+      ->setSettings(array(
+          'target_type' => 'mcapi_transaction',
+        ));
+
     return $properties;
   }
 }
