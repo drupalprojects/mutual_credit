@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\Field\FieldType;
 use Drupal\Core\Field\ConfigFieldItemBase;
 use Drupal\field\FieldInterface;
 use Drupal\Core\TypedData\Annotation\DataType;
+use Drupal\Core\Field\FieldDefinition;
 use Drupal\Core\Annotation\Translation;
 
 /**
@@ -84,10 +85,8 @@ class Worths extends ConfigFieldItemBase {
     $definitions = array();
     foreach ($this->properties as $currcode => $property) {
       if ($property->value !== NULL && $currency = entity_load('mcapi_currency', $currcode)) {
-        $definitions[$currcode] = array(
-          'type' => 'field_item:worth',
-          'label' => $currency->name,
-        );
+        $definitions[$currcode] = FieldDefinition::create('worth')
+          ->setLabel($currency->name);
       }
     }
 
@@ -99,10 +98,7 @@ class Worths extends ConfigFieldItemBase {
    */
   public function getPropertyDefinition($name) {
     if ($currency = entity_load('mcapi_currency', $name)) {
-      return array(
-        'type' => 'field_item:worth',
-        'label' => $currency->name,
-      );
+      return FieldDefinition::create('worth')->setLabel($currency->name);
     }
     else {
       return FALSE;

@@ -8,6 +8,7 @@
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\ConfigFieldItemBase;
+use Drupal\Core\TypedData\DataDefinition;
 use Drupal\field\FieldInterface;
 use Drupal\mcapi\Plugin\CurrencyTypePluginManager;
 
@@ -48,14 +49,10 @@ class Worth extends ConfigFieldItemBase {
     if (!isset(static::$propertyDefinitions)) {
       static::$propertyDefinitions = parent::getPropertyDefinitions();
 
-      static::$propertyDefinitions['currcode'] = array(
-        'type' => 'string',
-        'label' => t('Currency ID'),
-      );
-      static::$propertyDefinitions['value'] = array(
-        'type' => 'integer',
-        'label' => t('Value'),
-      );
+      static::$propertyDefinitions['currcode'] = DataDefinition::create('string')
+        ->setLabel('Currency Id');
+      static::$propertyDefinitions['value'] = DataDefinition::create('integer')
+        ->setLabel('Value');
     }
     return static::$propertyDefinitions;
   }
