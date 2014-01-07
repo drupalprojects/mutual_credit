@@ -26,10 +26,9 @@ use Drupal\Core\Annotation\Translation;
  */
 class Worths extends ConfigFieldItemBase {
 
-  public $delimiter;
-
   /**
    * Implements \Drupal\Core\TypedData\ComplexDataInterface::get().
+   * what does this return;
    */
   public function get($property_name) {
     if (entity_load('mcapi_currency', $property_name)) {
@@ -71,7 +70,6 @@ class Worths extends ConfigFieldItemBase {
         unset($this->values[$currcode]);
       }
     }
-
     // Notify the parent of any changes.
     if ($notify && isset($this->parent)) {
       $this->parent->onChange($this->name);
@@ -89,7 +87,6 @@ class Worths extends ConfigFieldItemBase {
           ->setLabel($currency->name);
       }
     }
-
     return $definitions;
   }
 
@@ -131,6 +128,9 @@ class Worths extends ConfigFieldItemBase {
     return $this->getString();
   }
 
+  /**
+   * return a string like "CC3:59:00|$2.22"
+   */
   public function getString($delimiter = '') {
     foreach ($this->properties as $worth) {
       $output[] = $worth->getString();

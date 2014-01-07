@@ -44,7 +44,7 @@ function mcapi_signall_access($account) {
 function mcapi_signatures_mcapi_transaction_load($entities) {
   //as we put the signatures into the transaction objects, we check that each transaction is pending
   foreach ($entities as $key => $transaction) {
-    if ($transaction->type->value != 'signed') continue;
+    if ($transaction->type->value != 'signatures') continue;
     $transaction->signatures = db_select('mcapi_signatures', 's')
       ->fields('s', array('uid', 'signed'))
       ->condition('serial', $transaction->serial->value)//or $transaction->serial??
@@ -68,7 +68,7 @@ function mcapi_signatures_mcapi_transaction_delete(TransactionInterface $transac
  * saves the NEW signatures with the NEW transaction
  */
 function mcapi_signatures_mcapi_transaction_presave($transaction){
-  if ($transaction->isNew() && $transaction->type->value == 'signed') {
+  if ($transaction->isNew() && $transaction->type->value == 'signatures') {
     $config = transaction_operations('sign')->config->get('special');
     print_r($config['countersignatories']);
     $signatories = array_merge($config['countersignatories'], array(
@@ -111,39 +111,17 @@ function mcapi_signatures_mcapi_transaction_update($transaction) {
   }
 }
 
-/**
- * Implements hook_mcapi_info_states
- * declare the pending transaction state.
- */
-function mcapi_signatures_mcapi_info_states() {
-  return array(
-    TRANSACTION_STATE_PENDING => array(
-      'name' => t("Pending"),
-      'description' => t("awaiting signatures before becoming 'finished'."),//note lowercase
-    )
-  );
-}
 
 /**
- * implements hook_mcapi_info_types().
- */
-function mcapi_signatures_mcapi_info_types() {
-  return array(
-    'signed' => array(
-      'label' => t('With signature'),
-      'description' => t('The other trader must add a signature.'),
-      'start state' => TRANSACTION_STATE_PENDING
-    )
-  );
-}
-
-
-/**
- * implements hook_block_view_mcapi_user_summary_alter
+ * implements hook_block_view_BASE_BLOCK_ID_alter()
  * appends the 'signatures needed' view to the mcapi-balance block
+ * //TODO actually this doesn't 'work if the user summaries are not showing in a block, but in the user profile
+ * we'll need to drupal_alter the user summaries and perhaps other things
+ * GORDON is this a good idea? Or we could allow developers to theme_alter instead?
  */
 function mcapi_signatures_block_view_mcapi_user_summary_alter(array &$build, \Drupal\block\BlockPluginInterface $block) {
   module_load_include('inc', 'mcapi_signatures');
+  die('testing this block works');
   //TODO test this with a pending transaction
   if ($content = list_waiting_on_uid($build['content']['#account'])) {
     $build['content'][] = array('#markup' => '<strong>'.t('Awaiting my signature...').'</strong>');

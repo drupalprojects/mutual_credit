@@ -13,14 +13,6 @@ function mcapi_command_mcapi_info_drupal_permissions() {
 }
 
 /*
- * implements hook_perm
- */
-function mcapi_command_mcapi_info_types() {
-  return array('command');
-}
-
-
-/*
  * returns a message
  */
 function process_mcapi_command($message, $sender_account = NULL, $really = FALSE) {
@@ -182,7 +174,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     );
   }
   else {
-    $states = mcapi_get_states();
+    $states = mcapi_get_states(TRUE);
     $response = t(
       "Transaction created into state '@state'",
       array('@state' => $states[$transaction->state]),

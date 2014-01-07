@@ -107,10 +107,10 @@ function drush_devel_generate_transactions($num_transactions = 10) {
   $transact_uids = array_flip($transact_uids);
 
   drush_print('Available users are: '.implode($transact_uids));
-  $states = array_keys(mcapi_get_states());
-  $types = mcapi_get_types();
+  $states = array_keys(mcapi_get_states(TRUE));
+  $types = array('default');
   $currencies = currencies_load();
-  unset($types['remote'], $types['mass'], $types['dependent']);
+  unset($types['mass'], $types['dependent']);
 
   for ($i = 0; $i < $num_transactions; $i++) {
     $uids = $transact_uids;//make sure we don't pick the same uid for payer and payee

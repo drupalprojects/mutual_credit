@@ -1,0 +1,4 @@
+id: mass
+label: Mass
+description: Between one account and many accounts
+start state: 1

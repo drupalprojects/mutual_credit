@@ -1,0 +1,12 @@
+mcapi.admin.command.test:
+  route_name: mcapi.admin.command
+  title: Test
+  tab_root_id: mcapi.admin.command
+  weight: 0
+
+mcapi.admin.command.settings:
+  route_name: mcapi.admin.command.settings
+  title: Settings
+  tab_root_id: mcapi.admin.command
+  weight: 1
+

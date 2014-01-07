@@ -1,0 +1,5 @@
+id: command
+label: SMS / Twitter
+description: 'Triggered by a short SMS or Twitter statement.
+start state: 1
+

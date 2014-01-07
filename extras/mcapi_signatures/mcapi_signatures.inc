@@ -73,7 +73,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
       );
     }
     foreach ($serials as $serial) {
-      $output[]['#markup'] = mcapi_transaction_load($serial)->tokenised();
+      $output[] = entity_view(mcapi_transaction_load($serial), 'sentence');
     }
     return $output;
   }
@@ -90,7 +90,7 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
     }
   }
   foreach ($waiting_on as $serial) {
-    $output[]['#markup'] = mcapi_transaction_load($serial)->tokenised();
+    $output[] = entity_view(mcapi_transaction_load($serial), 'sentence');
   }
   return $output;
 }

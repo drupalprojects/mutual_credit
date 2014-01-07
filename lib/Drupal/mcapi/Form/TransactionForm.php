@@ -113,7 +113,7 @@ class TransactionForm extends EntityFormController {
 
     //on the admin form it is possible to change the transaction type
     //so here we're going to ensure the state is correct, even through it was set in preCreate
-    $types = mcapi_get_types(FALSE);
+    $types = mcapi_get_types();
     $form_state['values']['state'] = $types[$form_state['values']['type']]['start state'];
 
     $transaction = $this->buildEntity($form, $form_state);

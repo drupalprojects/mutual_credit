@@ -72,18 +72,18 @@ function mcapi_menu() {
   );
   $items['admin/accounting/mass'] = array(
     'title' => 'Mass payments',
-    'description' => 'Pay between one account and many',
+    'description' => 'Pay between one account and many.',
     'route_name' => 'mcapi.admin_mass',
   );
   $items['admin/accounting/workflow'] = array(
     'title' => 'Transaction workflow',
-    'description' => 'Configuration around transaction states, types and operations',
+    'description' => 'Configuration around transaction states, types and operations.',
     'weight' => 2,
     'route_name' => 'mcapi.workflow',
   );
   $items['admin/accounting/workflow/operations'] = array(
     'title' => 'Transaction workflow operations',
-    'description' => 'Configuration around transaction states, types and operations',
+    'description' => 'Configure the user experience for transaction operations.',
     'weight' => 2,
     'route_name' => 'mcapi.workflow.operations',
   );
@@ -130,8 +130,8 @@ function transaction_filter(array $conditions, $offset = 0, $limit = 25, $fielda
  * implements hook_help()
  * TODO isn't there something in the page controller for this?
  */
-function mcapi_help($section, $arg) {
-  switch ($section) {
+function mcapi_help($path, $arg) {
+  switch ($path) {
     case 'admin/accounting':
       return implode(' ', array(
         t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital."),
@@ -143,6 +143,10 @@ function mcapi_help($section, $arg) {
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.')
       ));
     case 'admin/accounting/workflow':
+      //TODO how do we make this show at the top of a menu page without help module?
+      module_load_include('inc', 'mcapi');
+      $renderable = _workflow_help();
+      return drupal_render($renderable);
       return implode(' ', array(
         t('Different transaction user stories can be configured here, although the actual structure has to be defined in code.')
       ));
@@ -220,6 +224,14 @@ function mcapi_theme($existing, $type, $theme, $path) {
       'pattern' => 'certificate__',
       'file' => 'mcapi.inc'
     ),
+    'mcapi_twig' => array(
+      'variables' => array(
+    	  'mcapi_transaction' => NULL,
+        'twig' => '',
+        'showlinks' => FALSE
+      ),
+      'file' => 'mcapi.inc'
+    ),
     'worth_element'=> array(
       'render element' => 'element',
     ),
@@ -291,86 +303,54 @@ function mcapi_transaction_flatten($transaction) {
 
 
 /**
- * implements mcapi hook_info_states().
- * DON"T call this implementation directly as the keys will be lost. use mcapi_get_states()
+ * get all the transaction state entities
+ *
+ * @param boolean $options
+ *   whether to return an array suitable for populating a formAPI select widget
+ *
+ * @return array
+ *   The states, either full config entity objects, or just keys and names
  */
-function mcapi_mcapi_info_states() {
-  $states = array(
-    TRANSACTION_STATE_FINISHED => array(
-      'name' => t('Cleared'),
-      'description' => t('the last state of the workflow'),
-    ),
-  );
-  $states[TRANSACTION_STATE_UNDONE] = array(
-    'name' => t('Deleted'),
-    'description' => t("with a 'state' value of 0"),
-  );
-  return $states;
-}
-
-
-/**
- * implements hook_mcapi_info_types().
- */
-function mcapi_mcapi_info_types() {
-  $types['default'] = array(
-    'label' => t('Default'),
-    'description' => t('Simplest transaction type'),
-    'start state' => TRANSACTION_STATE_FINISHED
-  );
-  $types['auto'] = array(
-    'label' => t('Auto'),
-    'description' => t('Created automatically'),
-    'start state' => TRANSACTION_STATE_FINISHED
-  );
-  $types['mass'] = array(
-    'label' => t('Mass'),
-    'description' => t('Between one account and many accounts'),
-    'start state' => TRANSACTION_STATE_FINISHED
-  );
-  return $types;
-}
-
-/**
- * gather up all the transaction states from the hooks and present them in a given format
- * #options is suitable for choosing in a form element
- * #description is suitable for a chunk of description text explaining what the states mean
- * #full is the full array returned from the callback, keyed by constant value
- */
-function mcapi_get_states($return_mode = '#options') {
-  static $states;
-  if (empty($states)) {
-    $states = array();
-    foreach(module_implements('mcapi_info_states') as $module) {
-      $function = $module . '_mcapi_info_states';
-      $states += $function('states');
-    }
-  }
-  if ($return_mode == '#full') return $states;
-  elseif ($return_mode == '#description') {
-    foreach ($states as $key => $state) {
-      $desc[] = $state['name'] .' - '. $state['description'] .'.';
-    }
-    return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
-  }
-  else {//suitable for a dropdown
-    foreach ($states as $key => $state) {
-      $options[$key] = $state['name'];
-    }
-    return $options;
-  }
-  return $states;
-}
-
-//returns the available transaction types in an associative array
-function mcapi_get_types($options = TRUE) {
-  $types = module_invoke_all('mcapi_info_types');
+function mcapi_get_states($options = FALSE) {
+  $states = entity_load_multiple('mcapi_state');
+  //each state is an object with id, label, description & value
   if ($options) {
-    foreach ($types as $type => $info) {
-      $types[$type] = $info['label'];
+    foreach ($states as $key => $state) {
+      $pairs[$state->value] = $state->label;
+    }
+    return $pairs;
+  }
+  return $states;
+}
+
+/**
+ * get all the transaction type entities
+ *
+ * @param boolean $options
+ *   whether to return an array suitable for populating a formAPI select widget
+ *
+ * @return array
+ *   The types, either full config entity objects, or just keys and names
+ */
+function mcapi_get_types($options = FALSE) {
+  $types = entity_load_multiple('mcapi_type');
+  //each state is an object with id, label, description & value
+  if ($options) {
+    foreach ($types as $key => $type) {
+      $types[$key] = $type->label;
     }
   }
   return $types;
+}
+/*
+ * get a string suitable for a form_element description, describing the states
+ */
+function mcapi_get_state_descriptions() {
+  foreach (mcapi_get_states() as $state) {
+    //we'll save the translators the effort...
+    $desc[] = $state->label .' - '. $state->description .'.';
+  }
+  return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
 }
 
 
@@ -565,6 +545,7 @@ function mcapi_transaction_operated($plugin, $transaction, $old_state) {
 
 /*
  * implements_hook_element_info().
+ * unlike in d6 this is cached
  */
 function mcapi_element_info() {
   return array(
@@ -648,12 +629,15 @@ function mcapi_worths_element_process($element, &$form_state) {
   if (!isset($element['#default_value']) || empty($element['#default_value']) || $element['#preset']) {
     $element['#default_value'] = isset($element['#default_value']) ? (array)$element['#default_value'] : array();
   }
-
   if ($element['#mixed_mode'] || $element['#preset']) {
     //construct one widget for each default, each with its own currcode
     foreach ($currencies as $currcode => $name) {
       $element[$currcode]['#title'] = $name;
       $element[$currcode]['#currcodes']= array($currcode);
+      //some dispute about whether default_value should be a worths object or an array
+      if (!is_object($element['#default_value'])){
+        $element['#default_value'] = (object)$element['#default_value'];
+      }
       $element[$currcode]['#default_value'] = $element['#default_value']->{$currcode};
     }
   }
@@ -832,13 +816,13 @@ if (!$currcode)drupal_set_message('problem validating worth element', 'error');
 }
 
 function mcapi_process_states($element) {
-  $element['#options'] = mcapi_get_states('#options');
+  $element['#options'] = mcapi_get_states(TRUE);
   $element = form_process_radios($element);
   return $element;
 }
 
 function mcapi_process_types($element) {
-  $element['#options'] = mcapi_get_types();
+  $element['#options'] = mcapi_get_types(TRUE);
   return $element;
 }
 
@@ -847,6 +831,7 @@ function mcapi_process_currcodes($element) {
     $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL), drupal_map_assoc($element['#currcodes']));
   }
   else if (empty($element['#options'])) {
+//TODO    Warning: array_intersect_key(): Argument #2 is not an array on admin/structure/block/add/mcapi_limits
     //limit the choice to the currencies available to this user
     $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL, TRUE), drupal_map_assoc($element['#currcodes']));
   }
@@ -981,7 +966,7 @@ function ________mcapi_views_pre_execute(ViewExecutable $view) {
   //$view->query->addTable('mcapi_transactions_worths', 'mcapi_transactions_worths.xid = mcapi_transactions.xid');
 
   $currencies = mcapi_get_available_currencies();
-  $states = array_keys(mcapi_get_states());
+  $states = array_keys(mcapi_get_states(TRUE));
   $transactionAccessPlugins = transaction_access_plugins(TRUE);
   //get all the currencies a user can access INTERSECTED with all the currencies in this view
   //then we iterate through the currencies, saying for each state whether it is visible.

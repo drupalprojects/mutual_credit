@@ -147,13 +147,24 @@ function hook_mcapi_info_states(){
 }
 //declare transaction types, perhaps one for each workflow process
 function hook_mcapi_info_types(){
-  return array('donate', 'charge', 'rebate');
+  return array(
+    'donate' => t('Donate'),
+    'charge' => t('Charge'),
+    'rebate' => t('Rebate'),
+  );
 }
 
 //declare permissions to go into the community accounting section of the drupal permissions page
 function hook_mcapi_info_drupal_permissions(){}
 
 
+/**
+ * Viewing a transaction
+ * pass the transaction entity, then the view_mode
+ */
+entity_view($transaction, 'certificate');
+entity_view($transaction, 'sentence');//defaults to the saved variable mcapi.misc.sentence
+entity_view($transaction, 'some arbitrary twig {{ payee }}');
 
 /**
  * Transaction operations: See lib/Drupal/mcapi/Plugin/Operation

@@ -1,0 +1,15 @@
+mcapi.admin.command:
+  path: '/admin/accounting/command'
+  defaults:
+    _form: 'Drupal\mcapi_command\Form\CommandTest'
+    _title: 'Test commands'
+  requirements:
+    _permission: 'manage all transactions'
+
+mcapi.admin.command.settings:
+  path: '/admin/accounting/command/settings'
+  defaults:
+    _form: 'Drupal\mcapi_command\Form\CommandSettings'
+    _title: 'Configure commands'
+  requirements:
+    _permission: 'manage all transactions'

@@ -196,3 +196,32 @@ mcapi.operation.*:
       type: string
       label: Copy to
 
+mcapi.state.*:
+  type:mapping
+  label: Transaction workflow state
+  mapping:
+    label:
+      type: string
+      label: Label
+    description:
+      type: string
+      label: Description
+    value:
+      type: string
+      label: enumerated value
+
+mcapi.type.*:
+  type:mapping
+  label: Transaction workflow
+  mapping:
+    label:
+      type: string
+      label: Label
+    description:
+      type: string
+      label: Description
+    start state:
+      type: string
+      label: Initial workflow state
+
+

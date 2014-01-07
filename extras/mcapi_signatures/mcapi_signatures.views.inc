@@ -26,37 +26,39 @@ function mcapi_signatures_views_data() {
   //some of these are a bit confused - need more time!
   $data['mcapi_signatures']['uid'] = array(
     'title' => t('Signatory'),
-    'description' => t("The user's signature on a transaction"),
+    'help' => t("The user whose signature is required"),
     'field' => array(
-      'help' => t('Signatory to a transaction'),
-      'handler' => 'views_handler_field_user'
+      'id' => 'standard'
     ),
     'filter' => array(
-      'title' => t('Current user is a signatory'),
-      'help' => t('Show only transactions on which the current user is a signatory'),
-      'handler' => 'views_handler_filter_user_current'
+      'title' => t('User is /is not a signatory'),
+      'help' => t('transactions on which the current user is / is not a signatory'),
+      'id' => 'user_current'
     ),
     'argument' => array(
-      'title' => t('Passed user is a signatory'),
-      'handler' => 'views_handler_argument_user_uid',
+      'title' => t('User is /is not a signatory'),
+      'id' => 'user_uid',
     ),
-    //for some reason this isn't showing a widget so that fields can connect to it
     'relationship' => array(
-      'label' => t('Signatory user'),
-      'handler' => 'views_handler_relationship',
+      'id' => 'standard',
       'base' => 'users',
       'field' => 'uid',
+      'label' => t('Signatory'),
+      'relationship field' => 'uid'
     ),
   );
-  $data['mcapi_signatures']['pending'] = array(
-    'title' => t('Signature needed'),
-    'help' => t('Whether the signature is still needed'),
-    'filter' => array(
-      'handler' => 'views_handler_filter_boolean_operator',
+  $data['mcapi_signatures']['signed'] = array(
+    'title' => t('Date of signature'),
+    'help' => t('The date the transaction was signed'),
+    'field' => array(
+      'id' => 'date',
     ),
     'sort' => array(
-      'handler' => 'views_handler_filter_sort',
-    )
+      'id' => 'date'
+    ),
+    'filter' => array(
+      'id' => 'date',
+    ),
   );
   return $data;
 }

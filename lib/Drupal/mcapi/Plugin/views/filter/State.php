@@ -20,7 +20,7 @@ use Drupal\Component\Annotation\PluginID;
 class State extends InOperator {
 
   public function getValueOptions() {
-    $this->value_options = mcapi_get_states('#options');
+    $this->value_options = mcapi_get_states(TRUE);
   }
 
 }

@@ -1,9 +1,35 @@
   <?php
 
-//TODO why is NestedArray here? Still needed?
-use \Drupal\Component\Utility\NestedArray;
-use \Drupal\Core\Language\Language;
+use Drupal\Core\Language\Language;
+use Drupal\Core\Template\Attribute;
 
+function _workflow_help() {
+  //TODO lay this page out more attractively
+  //TODO include operations
+  $renderable['states'] = array(
+    '#theme' => 'table',
+    '#attributes' => array('class' => array('help')),
+    '#caption' => t('States'),
+    '#header' => array(t('Label'), t('Description')),
+  );
+  foreach (mcapi_get_states() as $id => $info) {print_r($info);
+    $renderable['states']['#rows'][$id] = array($info->label, $info->description);
+  }
+  $renderable['types'] = array(
+    '#theme' => 'table',
+    '#attributes' => array('class' => array('help')),
+    '#caption' => t('Types'),
+    '#header' => array(t('Label'), t('Description')),
+  );
+
+  foreach (mcapi_get_types() as $type => $info) {
+    $renderable['types']['#rows'][$type] = array($info->label, $info->description);
+  }
+  //TODO Tidy up the preceding tables
+  //I can't see how to inject a bit of css into the top of the page since drupal_add_css is deprecated
+  $renderable['#prefix'] = "<style>table.help{margin-bottom:2em;}.help td{background-color:#efefef;}</style>";
+  return $renderable;
+}
 
 /*
  * action callback for hook_transaction_children
@@ -81,8 +107,6 @@ function _mcapi_calc($formula, $base_value) {
  * default theme implementation for callback 'worth_element'
  * called once per $item
  */
-
-use Drupal\Core\Template\Attribute;
 function theme_worth_element($variables) {die('are we using this?');
   $element = &$variables['element'];
   $element['#attributes']['class'][] = "worth-widget";
@@ -111,11 +135,9 @@ function theme_worth_element($variables) {die('are we using this?');
  * a nice display of user balances in a currency
  */
 function mcapi_view_user_summary($account, $currencies = array()) {
-  if (empty($currcodes)) {
-    //TODO what's the current way to load all currencies for a user?
+  if (empty($currencies)) {
     $currencies = mcapi_get_available_currencies($account);
   }
-
   $render_array = array();
   foreach ($currencies as $currcode => $currency) {
     if ($currency->access('trader_data')) {
@@ -126,7 +148,6 @@ function mcapi_view_user_summary($account, $currencies = array()) {
       );
     }
   }
-
   return $render_array;
 }
 
@@ -299,6 +320,14 @@ function template_preprocess_certificate(&$vars) {
 	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type->value;
 }
 
+function theme_mcapi_twig($vars) {
+	return mcapi_render_twig_transaction(
+	  $vars['twig'],
+	  $vars['mcapi_transaction'],
+	  $vars['showlinks']
+	);
+}
+
 /*
  * helper for theming transactions
  * this is abstracted so that the arbitrary twig can access it too
@@ -308,19 +337,19 @@ function template_preprocess_certificate(&$vars) {
 function mcapi_transaction_process_vars(&$vars, TransactionInterface $transaction, array $content) {
   $vars['serial'] = $transaction->serial->value;
   $vars['payer'] = $transaction->payer->entity->label();
-  $vars['payee'] = $transaction->payer->entity->label();
-  $vars['creator'] = $transaction->payer->entity->label();
+  $vars['payee'] = $transaction->payee->entity->label();
+  $vars['creator'] = $transaction->creator->entity->label();
 
   foreach ($transaction->worths[0] as $worth) {
     $worths[] = $worth->getString();
   }
   $vars['worths'] = $transaction->worths[0]->getString();
 
-  $states = mcapi_get_states();
+  $states = mcapi_get_states(TRUE);
   $vars['state'] = $states[$transaction->state->value];
 
   $types = mcapi_get_types();
-  $vars['type'] = $types[$transaction->type->value];
+  $vars['type'] = $types[$transaction->type->value]->label;
 
   $vars['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
 
@@ -329,7 +358,8 @@ function mcapi_transaction_process_vars(&$vars, TransactionInterface $transactio
   $uri = $transaction->uri();
   $vars['url'] = url($uri['path'], array('absolute' => TRUE));
 
-  $vars['links'] = $content['#showlinks'] ? $transaction->links() : array();
+  $links = $content['#showlinks'] ? $transaction->links() : array();
+  $vars['links'] = drupal_render($links);
 
   //$vars['content'] = array();
   foreach(element_children($content) as $sub) {
@@ -378,8 +408,9 @@ function mcapi_render_twig(string $template, array $tokens) {
   $name = 'modules/mutual_credit/templates/certificate.html.twig';
   $renderer = drupal_container()->get('twig');
   $cls = $renderer->getTemplateClass($name, NULL);
-  $compiled_source = $renderer->compileSource($template, $name);
-  eval('?' . '>' . $compiled_source);
+  if (!class_exists($cls)) {
+    eval('?' . '>' . $renderer->compileSource($template, $name));
+  }
   $twig = new $cls($renderer);
   return $twig->render($tokens);
 }
@@ -583,12 +614,13 @@ function mcapi_workflow_help() {
       '#attributes' => array('class' => array('help'))
     ),
   );
-  foreach (mcapi_get_states('#full') as $name => $info) {
-    $renderable['states']['#rows'][$name]['name'] = $info['name'];
-    $renderable['states']['#rows'][$name]['dscription'] = $info['description'];
+  foreach (mcapi_get_states() as $info) {
+    $renderable['states']['#rows'][$info->value]['name'] = $info->label;
+    $renderable['states']['#rows'][$info->value]['description'] = $info->description;
   }
   foreach (mcapi_get_types() as $type) {
-    $renderable['types']['#rows'][$type]['name'] = $type;
+    $renderable['types']['#rows'][$type->id]['name'] = $type->label;
+    $renderable['types']['#rows'][$type->id]['description'] = $type->description;
   }
   return $renderable;
 }
@@ -606,11 +638,9 @@ function validate_mcapi_configure_worth_formula(&$element, $form_state) {
 
 
 
-function _transaction_type_selector($default, $multiple = TRUE, $exclude = NULL) {
-  if (!is_array($exclude)) {
-    $exclude = array('child');
-  }
-  $types = array_diff(mcapi_get_types(), $exclude);
+function _transaction_type_selector($default, $multiple = TRUE, $exclude = array()) {
+  die('_transaction_type_selector deprected?');
+  $types = array_diff(array_keys(mcapi_get_types()), $exclude);
   return array(
       '#title' => $multiple ? t('Transaction types') : t('Transaction type'),
       '#type' => $multiple ? 'checkboxes' : 'select',

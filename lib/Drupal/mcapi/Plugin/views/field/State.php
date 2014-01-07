@@ -23,7 +23,7 @@ class State extends FieldPluginBase {
 
   function render(ResultRow $values) {
 
-    $this->states = mcapi_get_states('#options');
+    $this->states = mcapi_get_states(TRUE);
     return $this->states[$values->{$this->field_alias}];
   }
 

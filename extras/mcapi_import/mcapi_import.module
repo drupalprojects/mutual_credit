@@ -100,7 +100,7 @@ function import_transactions_form($form, $form_state) {
     '#title' => t('Fallback transaction type'),
     '#description' => t('If no valid transaction type is provided, use this.'),
     '#type' => 'select',
-    '#options' => mcapi_get_types(),
+    '#options' => mcapi_get_types(TRUE),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['transaction_type'] : 'default',
     '#required' => TRUE,
     '#weight' => 1
@@ -109,7 +109,7 @@ function import_transactions_form($form, $form_state) {
     '#title' => t('Fallback transaction state'),
     '#description' => t('If no valid transaction state is provided, use this.'),
     '#type' => 'radios',
-    '#options' => mcapi_get_states(),
+    '#options' => mcapi_get_states(TRUE),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['state'] : 1,
     '#required' => TRUE,
     '#weight' => 1
@@ -191,7 +191,7 @@ function import_transactions_form_validate(&$form, &$form_state) {
       foreach ($csv as $row) {
         $givenstates[$row['state']] = 1;
       }
-      if ($diff = array_diff_key($givenstates, mcapi_get_states())) {
+      if ($diff = array_diff_key($givenstates, mcapi_get_states(TRUE))) {
         drupal_set_message(t("The following states are invalid and would be replaced by @state: @state",
           array('@state' => $form_state['values']['transaction_type'], '@states' => implode(', ', $givenstates))
         ));
@@ -340,7 +340,7 @@ function import_balances_form($form, &$form_state) {
   $form['transaction_type'] = array(
     '#title' => t('Transaction type for imported transactions'),
     '#type' => 'select',
-    '#options' => mcapi_get_types(),
+    '#options' => mcapi_get_types(TRUE),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['transaction_type'] : 'default',
     '#required' => TRUE
   );

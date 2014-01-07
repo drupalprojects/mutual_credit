@@ -1,0 +1,4 @@
+id: default
+label: Default
+description: Simplest transaction type
+start state: 1

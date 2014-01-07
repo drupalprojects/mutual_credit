@@ -9,17 +9,15 @@ use \Drupal\field\Field;
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) return array();
-
+  $replacements = $replaced = array();
   $transaction = &$data[$type];
-
-  $replaced = array();
+  module_load_include('inc', 'mcapi');
   mcapi_transaction_process_vars($replaced, $transaction, array('#showlinks' => in_array('links', $tokens)));
 
-  $replacements = array();
   foreach ($tokens as $name => $original) {
-    $replacements[$original] = $replaced[$original];
+    $replacements[$original] = $replaced[$name];
   }
-
+  //handle any entity references - tokens within tokens
   $token_service = \Drupal::token();
   if ($payer_tokens = $token_service->findWithPrefix($tokens, 'payer')) {
     $replacements += $token_service->generate(

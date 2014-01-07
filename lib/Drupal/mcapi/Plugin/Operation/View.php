@@ -32,11 +32,11 @@ class View extends OperationBase {//does it go without saying that this implemen
   public function access_form(CurrencyInterface $currency) {
     //return the access functions for each transaction state
     $element = parent::access_form($currency);
-    foreach (mcapi_get_states() as $constantVal => $state) {
+    foreach (mcapi_get_states() as $state) {
       $elements[$constantVal] = $element;
-      $elements[$constantVal]['#title'] = $state['name'];
-      $elements[$constantVal]['#description'] = $state['description'];
-      $elements[$constantVal]['#default_value'] = $currency->access_view[$constantVal];
+      $elements[$constantVal]['#title'] = $state->label;
+      $elements[$constantVal]['#description'] = $state->description;
+      $elements[$constantVal]['#default_value'] = $currency->access_view[$state->value];
     }
   }
 

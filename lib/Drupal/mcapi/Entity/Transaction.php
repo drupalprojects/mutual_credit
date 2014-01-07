@@ -49,7 +49,7 @@ use Drupal\mcapi\McapiTransactionException;
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
-  public $errors = array();
+  public $exceptions = array();
   /**
    * Implements Drupal\Core\Entity\EntityInterface::id().
    */
@@ -193,7 +193,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       }
     }
     //check that the state and type are congruent
-    $types = mcapi_get_types(FALSE);
+    $types = mcapi_get_types();
     if (array_key_exists($this->type->value, $types)) {
       if ($this->state->value != $types[$this->type->value]['start state']) {
         $this->exceptions[] = new McapiTransactionException(
@@ -251,9 +251,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * {@inheritdoc}
-   * why isn't array $values enforced?
+   * this is called from the FieldableDatabaseStorage
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
+    echo 'preCreate values: ';print_r($values);
+    //mtrace();
     $values += array(
       'description' => '',
       'parent' => 0,
@@ -263,26 +265,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'created' => '',
       'type' => 'default',
       'extra' => array(),
-      'worth' => array(),
+      'worths' => array(),
     );
     $types = mcapi_get_types(FALSE);
-    $values['state'] = $types[$values['type']]['start state'];
-
-    if (!empty($values['worth'])) {
-      foreach ($values['worth'] as $currcode => $value) {
-        $values['worths'][$currcode] += array(
-          'currcode' => $currcode,
-          'value' => NULL,
-        );
-      }
-    }
-  }
-
-  public function tokenised($token_string = '') {
-    if (empty($token_string)) {
-      $token_string = \Drupal::config('mcapi.misc')->get('sentence_template');
-    }
-    return \Drupal::token()->replace($token_string, array('mcapi' => $this));
+    //$values['state'] = $types[$values['type']]['start state'];
   }
 
   /**

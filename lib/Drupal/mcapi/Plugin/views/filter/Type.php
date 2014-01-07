@@ -21,7 +21,7 @@ class Type extends InOperator {
 
 
   public function getValueOptions() {
-    $this->value_options = mcapi_get_types();
+    $this->value_options = mcapi_get_types(TRUE);
   }
 
 }

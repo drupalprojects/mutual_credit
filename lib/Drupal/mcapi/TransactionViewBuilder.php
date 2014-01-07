@@ -33,22 +33,26 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
     if ($view_mode == 'certificate') {
       $build['#theme'] = 'certificate';
-      $build['#theme_wrappers'] = array('mcapi_transaction');
-      $build['#mcapi_transaction'] = $entity;
-      $build['#showlinks'] = TRUE;
-      $build['#langcode'] = $langcode;
       //css helps rendering the default certificate
       $build['#attached'] = array(
         'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
       );
     }
-    else {//assume it is twig
-      module_load_include('inc', 'mcapi');
-      $build['customtwig'] = array(
-        '#markup' => mcapi_render_twig_transaction($view_mode, $entity)
-      );
+    else {
+      $build['#theme'] = 'mcapi_twig';
+      if ($view_mode == 'sentence') {
+        $build['#twig'] = \Drupal::config('mcapi.misc')->get('sentence_template');
+      }
+      else {
+        $build['#twig'] = $view_mode;
+        $view_mode = 'twig';
+      }
     }
-    if ($view_mode != 'certificate')$view_mode = 'custom';
+
+    $build['#theme_wrappers'] = array('mcapi_transaction');
+    $build['#mcapi_transaction'] = $entity;
+    $build['#showlinks'] = TRUE;
+    $build['#langcode'] = $langcode;
     if ($this->viewModesInfo[$view_mode]['cache'] && !$entity->isNew() && !isset($entity->in_preview) && $this->entityInfo['render_cache']) {
       $return['#cache'] = array(
         'keys' => array('entity_view', $this->entityType, $entity->id(), $view_mode),
@@ -61,18 +65,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
       );
     }
     return $build;
-  }
-
-  /**
-   * Overrides Drupal\Core\Entity\EntityRenderController::buildContent().
-   * TODO is this needed at all any more?
-   *
-   * build a render array for any number of transactions
-   * first arg can be one or an array of transactions, keyed by xid, WITH CHILDREN LOADED as in mcapi_transaction_load
-   * $view mode, defaults to certificate, but an arbitrary token string can also be used
-   */
-  public function __buildContent(array $transactions, array $displays, $view_mode = 'certificate', $langcode = NULL) {
-    parent::buildContent($transactions, $displays, $view_mode, $langcode);
   }
 
 }

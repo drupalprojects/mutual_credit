@@ -19,21 +19,18 @@ A badly managed money system can cause people to lose out and create bad feeling
 Where defaults have been appropriate, the timebanking model has been preferred.
 
 ENABLE MODULES
-Enable User Chooser, Entity API, Community Accounting API, Forms and form builder UI, and Views for transactions
+Enable User Chooser, Community Accounting API, Firstparty forms, Views, and possibly rules
 Optionally enable the other modules in the Complementary Currencies Section.
-The present author has also written, based on the needs of many groups
-uid_login - for LETS groups who commonly use their User ID
-autocategorise - a way of bringing consistency to items provided by many users in a closed vocabulary
-offers_wants - a simple-to-setup directory of categorised offers (and wants)
 
 Visit admin/accounting/currencies
-Each currency has its own config, theming and users
-The accounting is all done to 2 decimal places, so any fractions of a unit are counted in hundredths.
-Rather than writing hundreds on the transaction form, it can be configured to accept just certain fractions, like quarters (of an hour)
-Note how the default settings are the strictest accounting standards possible, with no editing and no deleting of transactions
+Configure your first currency. 
+Understand that the operations are part of the workflow
+Note that you can't change the currency type after the currency is created.
+
 
 Visit admin/accounting/fields
-Notice that transaction entity is fieldable. Fields added in this way will automatically be available to the form template and in views
+Notice that transaction entity is fieldable, currencies are not
+Fields added in this way will automatically be available to the form template and in views
 Its possible to add a description, or a date, or an image or categories to your transaction object
 Ensure the modules which declare those fields are installed and add and configure those fields here.
 Note the 'cardinality' field in the field_worth settings. This allows you to have one or more currencies per transaction.
@@ -99,7 +96,7 @@ Intended for webshops and skilled Drupal developers
 
 1. Transaction Worflow
 2. Currency design
-3. Actions and Rules
+3. Forms
 4. Internal API
 5. Limits system
 6. Views integration
@@ -127,18 +124,6 @@ The HTML template contains tokens for each transaction property / field, element
 The date field is available (as a token only) to allow transactions to be backdated.
 The form has an optional confirmation page, the format of which can also be determined.
 
-
-3. Actions and rules.
-Three actions are provided by the core module,
-- to send an email when a transaction enters 'completed' state
-- to supplement a transaction cluster with another transaction - useful for taxation.
-- to create a transaction based on the passed $entity->uid
-
-Plus there are triggers for all transaction workflow operations.
-Rules attempts to re-deply the them, but I got stuck describing the worth field to entity_token.
-So for now, rules integration only works for events and conditions not involving field 'worth', but not transaction actions.
-
-
 4. Internal API
 
 The transaction entity has 3 forms
@@ -151,7 +136,6 @@ Standard accounting database operations are conducted through an API described i
 There is full integration with the entity module.
 All transaction state changes, including creation must be done with a call to transactions_state()
 The transaction_totals() function is mostly duplicated by the mcapi_index_views module, but external entity controllers will have difficulty integrating with views I should think.
-
 
 5. Limits system
 
@@ -167,30 +151,6 @@ The limits module provides blocks to show
 6. Views integration
 Much work has been done on views to give the site builder maximum flexibility.
 First of all the transaction properties are exposed, and most of them as filters, arguments, sorts.
-All the transaction_view_access callbacks have versions for modifying transaction views.
-The mcapi_index_views module does what the transaction table cannot do, by installing a mysql VIEW and providing views integration with that. This allows a whole new perspective on the transactions, and allows new forms of statistics also.
+The transactionAccess plugins have 2 functions, one for normal access checks and one for views
+The mcapi_index_views table does what the transaction table allows a whole new perspective on the transactions, and allows new forms of statistics also.
 
-7. Migration from Drupal 6
-If a site is not being upgraded, but migrated from Drupal 6 to Drupal 7, the following query, run on the d6 data base can be used to pull the transaction data into csv format ready to import into Drupal 7 with the mcapi_import module.
-All non-deleted transactions are assumed to be in 'finished' state.
-If tweaking this query remember that the transaction states in d6 and d7 are different.
-SELECT n.nid as xid, u1.mail as payer, u2.mail as payee, e.quantity, n.created, '1stparty' as type, 1 as state, n.title as description
-FROM node n
-LEFT JOIN mc_exchanges e ON n.nid = e.nid
-LEFT JOIN users u1 on e.payer_uid = u1.uid
-LEFT JOIN users u2 on e.payee_uid = u2.uid
-WHERE e.state <> -1
-
-8. use with restws module
-Install RestWS and try the following
-mysite.com/transaction/1.xml //show a single transaction based on its xid
-mysite.com/transaction.xml?serial=1 //show a list with one transaction cluster
-mysite.com/transaction.xml?payer=3 //show all user 3 debits
-mysite.com/transaction.xml?payer=3&sort=created&direction=ASC&limit=10&page=0 //self explantory
-to POST a new transaction:
-mysite.com/transaction.xml
-Content type: application/xml
-Header: X-CSRF-Token: (retrieved from http://mysite.com/transaction.xml/restws/session/token)
-Data must be either json encoded:{"payer":3,"payee":1,"transaction_type":"1stparty","worth":{"quantity":1,"currcode":"credunit"}}
-
-or xml encoded

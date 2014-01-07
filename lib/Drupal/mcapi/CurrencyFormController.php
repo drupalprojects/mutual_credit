@@ -393,23 +393,24 @@ class CurrencyFormController extends EntityFormController {
       '#tree' => TRUE,
     );
     foreach (array('access_view', 'access_undo') as $prop) {
-      foreach (mcapi_get_states('#full') as $constant => $state) {
-        $form[$prop][$constant] = array(
+      foreach (mcapi_get_states() as $state) {
+        $form[$prop][$state->value] = array(
           '#title' => t(
             "Transactions in state '@state': !description",
-            array('@state' => $state['name'], '!description' => $state['description'])
+            array('@state' => $state->label, '!description' => $state->description)
           ),
           '#type' => 'checkboxes',
           '#options' => transaction_access_plugins(FALSE),
-          '#default_value' => $currency->{$prop}[$constant]
+          '#default_value' => $currency->{$prop}[$state->value]
         );
       }
     }
     unset($form['access_undo'][TRANSACTION_STATE_UNDONE]);//non-sequiteur
 
     //any operations declared not by mcapi.module
+    $other_ops = array();
     foreach (transaction_operations() as $op => $plugin) {
-      if (in_array($op, array('view', 'undo'))) {
+      if (in_array($op, array('confirm', 'view', 'undo'))) {
         continue;
       }
       if ($settings = $plugin->access_form($currency, $op)) {

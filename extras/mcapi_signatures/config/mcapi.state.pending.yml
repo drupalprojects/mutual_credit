@@ -1,0 +1,4 @@
+id: pending
+label: Pending
+description: Awaiting signatures
+value: -1

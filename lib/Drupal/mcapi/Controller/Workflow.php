@@ -20,34 +20,6 @@ class Workflow extends ControllerBase {//what is the ControllerBase for? are we 
   function summaryPage() {
   	$renderable = array();
 
-  	drupal_set_message('States & types SHOULD go in a yml file', 'warning');
-  	//TODO lay this page out more attractively
-    $renderable['states'] = array(
-    	'#theme' => 'table',
-    	'#attributes' => array('class' => array('help')),
-    	'#caption' => t('States'),
-      '#header' => array(t('Name'), t('Description')),
-      '#rows' => array()
-    );
-    foreach(mcapi_get_states('#full') as $constant => $info) {
-    	$renderable['states']['#rows'][$constant] = $info;
-    }
-
-    $renderable['types'] = array(
-    	'#theme' => 'table',
-    	'#attributes' => array('class' => array('help')),
-    	'#caption' => t('Types'),
-      '#header' => array(t('Name')),
-      '#rows' => array()
-    );
-    foreach(mcapi_get_types() as $type) {
-    	//these have no real metadata for now
-    	$renderable['types']['#rows'][$type] = array($type);
-    }
-    //TODO Tidy up the preceding tables
-    //I can't see how to inject a bit of css into the top of the page since drupal_add_css is deprecated
-    $renderable['#prefix'] = "<style>table.help{margin-bottom:2em;}.help td{background-color:#efefef;}</style>";
-
     //TODO check this works when the menu system settles down
     $renderable[] = array(
     	'#theme' => 'admin_block_content',
