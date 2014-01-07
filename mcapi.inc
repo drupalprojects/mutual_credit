@@ -12,7 +12,7 @@ function _workflow_help() {
     '#caption' => t('States'),
     '#header' => array(t('Label'), t('Description')),
   );
-  foreach (mcapi_get_states() as $id => $info) {print_r($info);
+  foreach (mcapi_get_states() as $id => $info) {
     $renderable['states']['#rows'][$id] = array($info->label, $info->description);
   }
   $renderable['types'] = array(
@@ -603,13 +603,13 @@ function mcapi_workflow_help() {
   $renderable = array(
     'states' => array(
       '#theme' => 'table',
-      '#caption' => t('Transaction states, from !hook', array('!hook' => "\n<br />hook_mcapi_info_states()")),
+      '#caption' => t('Transaction states'),
       '#header' => array(t('Name'), t('Description')),
       '#attributes' => array('class' => array('help'))
     ),
     'types' => array(
       '#theme' => 'table',
-      '#caption' => t('Transaction types, from !hook.', array('!hook' => "\n<br />hook_mcapi_info_types()")),
+      '#caption' => t('Transaction types'),
       '#header' => array(t('machine name')),
       '#attributes' => array('class' => array('help'))
     ),

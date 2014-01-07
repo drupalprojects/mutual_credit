@@ -8,6 +8,25 @@ mcapi.misc:
     mix_mode:
       type: boolean
       label: Allow more than one currency in transactions
+    worths_delimiter:
+      type: string
+      label: Delimiter
+    child_errors:
+      type: mapping
+      label: Invalid child transactions
+      mapping:
+        mail_user1:
+          type: string
+          label: Send diagnostics to user 1 by mail
+        allow:
+          type: string
+          label: Allow the parent transaction
+        watchdog:
+          type: string
+          label: Log a warning
+        show_messages:
+          type: string
+          label: Show warning messages to user
 
 mcapi.currency.settings.decimal:
   type: mapping
@@ -220,7 +239,7 @@ mcapi.type.*:
     description:
       type: string
       label: Description
-    start state:
+    start_state:
       type: string
       label: Initial workflow state
 

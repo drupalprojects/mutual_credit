@@ -142,9 +142,13 @@ function mcapi_schema() {
       ),
     ),
     'primary key' => array('xid'),
+    'unique keys' => array(
+      'uuid' => array('uuid')
+    ),
     'indexes' => array(
       'parent' => array('parent'),
     ),
+    //drupal doesn't actually do anything with these
     'foreign keys' => array(
       'payer' => array(
         'table' => 'users',
@@ -279,25 +283,6 @@ function mcapi_schema() {
       'uid1' => array('uid1'),
       'uid2' => array('uid2'),
     ),
-  );
-
-  $schema['mcapi_submitted'] = array(
-    'description' => 'submitted form_build_ids, cleared periodically',
-    'fields' => array(
-      'form_build_id' => array(
-        'description' => 'the unique form build ID',
-        'type' => 'varchar',
-        'length' => '49',
-        'not null' => TRUE,
-      ),
-      'time' => array(
-        'description' => 'Unixtime that the form was submitted',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      )
-    ),
-    'primary key' => array('form_build_id'),
   );
   return $schema;
 }

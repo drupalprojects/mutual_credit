@@ -129,30 +129,6 @@ function hook_transaction_update($serial){}
 //respond to the removal, or undoing of a transaction
 function hook_transaction_undo($serial){}
 
-/*
- * Transaction access plugins: See lib/Drupal/mcapi/Plugin/TransactionAccess
- * One plugin is a rule for granting access to a transaction.
- * All the rules appear together as checkboxes and and access is granted if ANY of them returns TRUE
- */
-
-//declare transaction states
-function hook_mcapi_info_states(){
-  return array(
-    99 => array(//ensure this number doesn't clash with existing states
-      'name' => t('Rejected'),
-      'description' => t('transaction was terminated by payee'),
-
-    ),
-  );
-}
-//declare transaction types, perhaps one for each workflow process
-function hook_mcapi_info_types(){
-  return array(
-    'donate' => t('Donate'),
-    'charge' => t('Charge'),
-    'rebate' => t('Rebate'),
-  );
-}
 
 //declare permissions to go into the community accounting section of the drupal permissions page
 function hook_mcapi_info_drupal_permissions(){}

@@ -39,12 +39,26 @@ class AccountingAdminMiscForm extends ConfigFormBase {
     );
 
     $form['mix_mode'] = array(
-      '#title' => t('Restrict transactions to one currency'),
-      '#description' => t('Applies only when more than one currency is available'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('mix_mode'),
+        '#title' => t('Restrict transactions to one currency'),
+        '#description' => t('Applies only when more than one currency is available'),
+        '#type' => 'checkbox',
+        '#default_value' => !$config->get('mix_mode'),
+        '#weight' => 7
+    );
+    $form['child_errors'] = array(
+      '#title' => t('Invalid child transactions'),
+      '#description' => t('What to do if a child transaction fails validation'),
+      '#type' => 'checkboxes',
+      '#options' => array(
+    	  'mail_user1' => t('Send diagnostics to user 1 by mail'),
+        'allow' => t('Allow the parent transaction'),
+        'watchdog' => t('Log a warning'),
+        'show_messages' => t('Show warning messages to user')
+      ),
+      '#default_value' => $config->get('child_errors'),
       '#weight' => 7
     );
+    debug($form['child_errors']);
     $form['worths_delimiter'] = array(
       '#title' => t('Delimiter'),
       '#description' => t('What characters should be used to separate values when a transaction has multiple currencies?'),
@@ -86,11 +100,13 @@ class AccountingAdminMiscForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
+
     $this->configFactory->get('mcapi.misc')
       ->set('sentence_template', $form_state['values']['sentence_template'])
       //careful the mix_mode flag is inverted!!
       ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
+      ->set('child_errors', $form_state['values']['child_errors'])
       ->save();
 
     parent::submitForm($form, $form_state);

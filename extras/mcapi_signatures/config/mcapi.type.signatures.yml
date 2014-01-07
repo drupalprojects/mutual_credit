@@ -1,4 +1,4 @@
 id: signatures
 label: Needs signatures
 description: Transaction must be signed by other user(s)
-start state: -1
+start_state: -1

@@ -167,7 +167,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   /**
    * Get the Currency Type Plugin
    */
-  public function getPlugin() {
+  public function getPlugin() {echo 'getting currency plugin for '.$this->id();
     if (!$this->plugin) {
       $this->plugin = \Drupal::service('plugin.manager.mcapi.currency_type')->getInstance(array(
         'currency' => $this,
@@ -180,15 +180,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
 
   /**
    * Get the currencies widget plugin
+   * Likely to be just once per page, so no need for saving the manager or the plugin
    */
   public function getWidgetPlugin() {
-    if (!$this->widgetPlugin) {
-      $this->widgetPlugin = \Drupal::service('plugin.manager.mcapi.currency_widget')->getInstance(array(
-        'currency' => $this,
-        'configuration' => $this->widget_settings,
-      ));
-    }
-    return $this->widgetPlugin;
+    $settings = array(
+      'currency' => $this,
+      'configuration' => $this->widget_settings,
+    );
+    return \Drupal::service('plugin.manager.mcapi.currency_widget')->getInstance($settings);
   }
 
   /**

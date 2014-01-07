@@ -15,6 +15,7 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinition;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\McapiTransactionException;
+use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 
 /**
  * Defines the Transaction entity.
@@ -170,17 +171,21 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * Validate a transaction, with its children
-   * TODO put this in an interface
+   * Validate a transaction, with its children.
+   * Adds exceptions to each transaction's exception array
+   * @return array $messages
+   *   a flat list of messages from all transactions in the cluster
    */
   public function validate() {
-    parent::validate();
     $this->exceptions = array();
     //check that each trader has permission to use all the currencies
     foreach (array($this->payer->entity, $this->payee->entity) as $account) {
-      foreach ($this->worths[0] as $worth) {
+      foreach ($this->worths[0] as $currcode => $worth) {
         if (!$worth->currency->access('membership', $account)) {
-          $this->exceptions[] = t('!user cannot use !currency', array('!user' => $account->getUsername(), '!currency' => $worth->currency->name));
+          $this->exceptions[] = new McapiTransactionWorthException(
+            $worth->currency,
+            t('!user cannot use !currency', array('!user' => $account->getUsername(), '!currency' => $worth->currency->name))
+          );
         }
       }
     }
@@ -189,13 +194,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
     foreach ($this->worths[0] as $worth) {
       if ($worth->value <= 0) {
-        $this->exceptions[] = new McapiTransactionWorthException($worth->currency, t('A transaction must be worth more than 0'));
+        $this->exceptions[] = new McapiTransactionWorthException(
+          $worth->currency,
+          t('A transaction must be worth more than 0')
+        );
       }
     }
     //check that the state and type are congruent
     $types = mcapi_get_types();
     if (array_key_exists($this->type->value, $types)) {
-      if ($this->state->value != $types[$this->type->value]['start state']) {
+      if ($this->state->value != $types[$this->type->value]->start_state) {
         $this->exceptions[] = new McapiTransactionException(
           'state',
           t(
@@ -211,27 +219,59 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         t('Invalid transaction type: @type', array('@type' => $this->type->value))
       );
     }
-
-
-    //child transactions which fail validation do so quietly, leaving a message in the log.
-    //TODO this isn't working. $this->children is an entity reference object.
-    //so how to we get the actual child transactions?
-    foreach ($this->children as $key => $child) {
-      //$child->validate();
+    //check that the uuid doesn't already exist.
+    $properties = array('uuid' => $this->uuid->value);
+    if (entity_load_multiple_by_properties('mcapi_transaction', $properties)) {
+      $this->exceptions[] = new McapiTransactionException('',
+        t('Transaction has already been inserted: @uuid', array('@uuid' => $transaction->uuid->value))
+      );
     }
 
+
+    //While we're validating the parent ONLY, pass the transaction cluster around
     if ($this->parent->value == 0) {
-      //pass the transaction and its children around to other modules.
-      //flatten in first to make it a bit easier to handle
-      module_invoke_all('mcapi_transaction_validate', mcapi_transaction_flatten($this));
-    }
-
-    if (!empty($this->exceptions)) {
-      //errors in the top level transaction mean that the saving can't go ahead and validation fails
-      //TODO can I throw an array of exceptions?
-      //do I need to throw them at all if the form validation is checking for $this->exceptions ?
-      //throw $this->exceptions;
-      //errors in the other transactions should show up as warnings on the 'are you sure' page.
+      $messages = array();
+      $children = $this->children[0];
+      //mdump($children->getEntity());die();
+/* how to iterate though an entity reference field?
+      foreach ($children as $child) {
+        echo $key; mdump($child);die('entity validating child');
+        $child->validate();
+      }
+*/
+      $cluster = mcapi_transaction_flatten($this);
+      \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', $cluster);
+      $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
+      foreach ($this->children as $key => $child) {
+        if ($child->exceptions) {
+          foreach ($child->exceptions as $exception) {
+            $messages[] = $exception->getmessage();
+          }
+          $replacements = array(
+            '!messages' => implode(' ', $messages),
+            '!dump' => print_r($transaction, 1)
+          );
+          if ($child_errors['watchdog']){
+          	watchdog(
+          	  'mcapi_children',
+          	  "transaction failed validation with the following messages: !messages<pre>\n!dump</pre>",
+          	  $replacements,
+          	  WATCHDOG_ERROR
+            );
+          }
+          if ($child_errors['mail_user1']){
+            //should this be done using the drupal mail system?
+            //my life is too short for that rigmarole
+          	mail(
+          	  entity_load('user', 1)->mail,
+          	  t('Child transaction error on !site', array('!site' => me\Drupal::config('system.site')->get('name'))),
+          	  $replacements['!messages'] ."\n\n". $replacements['!dump']
+            );
+          }
+        }
+      }
+      //pass the non-fatal messages back
+      return $messages;
     }
   }
 
@@ -268,7 +308,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'worths' => array(),
     );
     $types = mcapi_get_types(FALSE);
-    //$values['state'] = $types[$values['type']]['start state'];
+    //$values['state'] = $types[$values['type']]->start_state;
   }
 
   /**

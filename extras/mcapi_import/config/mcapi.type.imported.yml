@@ -1,4 +1,4 @@
 id: imported
 label: Imported
 description: Imported or migrated from outside Drupal
-start state: 1
+start_state: 1

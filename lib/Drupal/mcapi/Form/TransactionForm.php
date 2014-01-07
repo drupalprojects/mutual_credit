@@ -114,7 +114,8 @@ class TransactionForm extends EntityFormController {
     //on the admin form it is possible to change the transaction type
     //so here we're going to ensure the state is correct, even through it was set in preCreate
     $types = mcapi_get_types();
-    $form_state['values']['state'] = $types[$form_state['values']['type']]['start state'];
+    $type = $form_state['values']['type'];
+    $form_state['values']['state'] = $types[$type]->start_state;
 
     $transaction = $this->buildEntity($form, $form_state);
 
@@ -123,19 +124,25 @@ class TransactionForm extends EntityFormController {
     else $form_state['mcapi_validated'] = TRUE;
 
     $transaction->buildChildren();
-    $transaction->validate();
-    if (empty($transaction->exceptions)) {
-      $form_state['mcapi_submitted'] = TRUE;//this means we move to step 2
+    //this might throw errors
+    $messages = $transaction->validate();
+    $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
+    foreach ($transaction->exceptions as $e) {
+      \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, $e->getMessage());
     }
-    else {//handle the errors
-      foreach ($transaction->exceptions as $exception) {
-        //TODO looks like form_set_error is already deprecated coz the message isn't showing.
-        //however in alpha 4 the node module is using this
-        //\Drupal::formBuilder()->setErrorByName($exception, $form_state, $exception->getMessage());
-        drupal_set_message($exception->getMessage(), 'error');
-        form_set_error($exception->field, $exception->getMessage());
+    //TODO sort out entity reference field iteration
+    /*
+    foreach ($transaction->children as $child) {
+      foreach ($child->exceptions as $e) {
+        if (!$child_errors['allow']) {
+          \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, $e->getMessage());
+        }
+        elseif ($child_errors['show_messages']) {
+          drupal_set_message($e->getMessage, 'warning');
+        }
       }
-    }
+    }*/
+    $form_state['mcapi_submitted'] = TRUE;//this means we move to step 2
     $this->entity = $transaction;
   }
 
@@ -151,19 +158,7 @@ class TransactionForm extends EntityFormController {
    * form submit callback
    */
   public function step_2_submit($form, &$form_state) {
-    //check the form hasn't been submitted already
-    $form_build_id = &$form_state['input']['form_build_id'];
-    if(db_query(
-      'SELECT count(form_build_id) FROM {mcapi_submitted} where form_build_id = :id',
-        array(':id' => $form_build_id)
-      )->fetchField()) {
-      throw new McapiTransactionException('', t('Transaction was already submitted'), 'error');
-    }
 
-    //ensure that the form won't be submitted again
-    db_insert('mcapi_submitted')
-      ->fields(array('form_build_id' => $form_build_id, 'time' => REQUEST_TIME))
-      ->execute();
   }
 
   /**
@@ -172,7 +167,6 @@ class TransactionForm extends EntityFormController {
   public function save(array $form, array &$form_state) {
     $transaction = $this->entity;
     try {
-      drupal_set_message('saving transaction: '.$transaction->uuid->value);
       $db_t = db_transaction();
       //was already validated
       $status = $transaction->save($form, $form_state);
