@@ -10,12 +10,16 @@ direction:
   widget: radios
   incoming: 'Incoming'
   outgoing: 'Outgoing'
+worths:
+  preset:
+    credunit:
+      currcode: credunit
+      value: 0
 description:
   preset: ''
   placeholder: ''
-worths: {  }
 step1:
-  twig1: "Pay: {{ partner }}\n{{ worth }}\nfor {{ description }}"
+  twig1: "Pay: {{ partner }}\n{{ worths }}\nfor {{ description }}"
   button1: Preview
   next1: page
 step2:

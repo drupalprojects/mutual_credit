@@ -35,7 +35,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   }
 
   /*
-   * in THIS storage controller, 'delete' is more like 'erase', merely changing the transaction state.
+   * In the default storage controller, 'delete' is more like 'erase', merely changing the transaction state.
    * Would be very easy to make another storage controller where delete either deletes the entity
    * Or even creates another transaction going in the opposite direction
    */
@@ -65,6 +65,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     *
     *How to create another transaction going in the opposite direction
+    *This gets messy... and the below is incomplete
       $parent_xid = $transaction->xid;
   	  $cluster = mcapi_transaction_flatten($this);
   	  //add reverse transactions to the children and change the state.
@@ -86,8 +87,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    */
 
 
+
   /**
-   * {@inheritdoc}
+   * Save the Transaction Worth values, one per currency, to the worths table.
+   *
+   * @param Drupal\mcapi\TransactionInterface $transaction
+   *  Transaction currently being saved.
    */
   public function saveWorths(TransactionInterface $transaction) {
     $this->database->delete('mcapi_transactions_worths')
@@ -107,12 +112,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     $query->execute();
 
-    //TODO fire hooks -
+    //TODO fire hooks?
     //transaction_update($op, $transaction, $values);
   }
 
-  /*
-   *  write 2 rows to the transaction index table
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::addIndex()
    */
   public function addIndex(TransactionInterface $transaction) {
 
@@ -160,7 +165,9 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     $query->execute();
   }
-
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::indexRebuild()
+   */
   public function indexRebuild() {
     db_truncate('mcapi_transactions_index')->execute();
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
@@ -200,8 +207,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       WHERE state > 0) "
     );
   }
-  /*
-   * return 1 if the table is integral
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::indexCheck()
    */
   public function indexCheck() {
     if (db_query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
@@ -212,13 +219,15 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     return FALSE;
   }
-
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::indexDrop()
+   */
   public function indexDrop($serial) {
     db_delete('mcapi_transactions_index')->condition('serial', $serial)->execute();
   }
 
   /**
-   * {@inheritdoc}
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::nextSerial()
    */
   public function nextSerial(TransactionInterface $transaction) {
     //TODO: I think this needs some form of locking so that we can't get duplicate transactions.
@@ -226,12 +235,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   }
 
 
-  /*
-   * Get a list of xids and serial numbers
-   * see transaction.api.php for arguments
-   * this would be more useful when views isn't available
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::filter()
    */
-  public function filter(array $conditions, $offset, $limit) {
+  public function filter(array $conditions, $offset = 0, $limit = 0) {
     $query = db_select('mcapi_transactions', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
@@ -270,69 +277,42 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
 
     if ($limit) {
+      //assume that nobody would ask for unlimited offset results
       $query->range($offset, $limit);
     }
-    //TODO
-    //If there is anything left in $conditions, it must be a fieldAPI field.
-    //How to handle that?
     return $query->execute()->fetchAllKeyed();
   }
 
-  /*
-   * get some stats by adding up the transactions for a given user
-  * this is currently used for the limits module and for the views handler per-row
-  * caching running balances is innappropriate because they would all need recalculating any time a transaction changed state
-  * Because this uses the index table, it knows nothing of transactions with state <  1
-  * //TODO this CurrencyInterface isn't being enforced
-  */
-  public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters) {
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::summaryData()
+   */
+  public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $conditions) {
     //TODO We need to return 0 instead of null for empty columns
     //then get rid of the last line of this function
-    $query = "SELECT
-      COUNT(DISTINCT t.serial) as trades,
-      SUM(i.incoming) as gross_in,
-      SUM(i.outgoing) as gross_out,
-      SUM(i.diff) as balance,
-      SUM(i.volume) as volume,
-      COUNT(DISTINCT i.uid2) as partners
-      FROM {mcapi_transactions_index} i
-      LEFT JOIN {mcapi_transactions} t ON i.xid = t.xid
-      WHERE i.uid1 = :uid1 AND i.currcode = :currcode " . mcapi_parse_conditions($filters);
-    $params = array(
-      ':uid1' => $account->id(),
-      ':currcode' => $currency->id()
-    );
-    if ($result = db_query($query, $params)->fetchAssoc()) {
+    $query = db_select('mcapi_transactions_index');
+    $query->join('mcapi_transactions', 'mcapi_transactions', 'i.xid = t.xid');
+    $query->addExpression('COUNT(DISTINCT t.serial)', 'trades')
+      ->addExpression('SUM(i.incoming))', 'gross_in')
+      ->addExpression('SUM(i.outgoing))', 'gross_out')
+      ->addExpression('SUM(i.diff))', 'balance')
+      ->addExpression('SUM(i.volume))', 'volume')
+      ->addExpression('COUNT(DISTINCT i.uid2)', 'partners')
+      ->condition('currcode', $currency->id())
+      ->condition('i.uid1', $account->id());
+    $this->parseConditions($query, $conditions);
+    $result = $query->execute()->fetchAssoc();
+    if (array_filter($result)) {
       return $result;
     }
     //if there are no transactions for this user
     return array('trades' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0, 'partners' => 0);
   }
 
-  //merge the uids in all the subsequent args into the first arg
-  public function mergeAccounts($main) {
-    $uids = func_get_args();
-    $main = array_shift($uids);
-    foreach ($uids as $uid) {
-      db_update('mcapi_transactions')
-      ->fields(array('payer' => $main))
-      ->condition('payer', $uid)->execute();
-      db_update('mcapi_transactions')
-      ->fields(array('payee' => $main))
-      ->condition('payee', $uid)->execute();
-      //now undo any transactions the account has with itself
-      $serials = transaction_filter(array('payer' => $main, 'payee' => $main));
-      //this is usually a small number, but strictly speaking should be done in a batch.
-      foreach (array_unique($serials) as $serial) {
-        mcapi_transaction_load($serial)->delete();
-      }
-    }
-  }
-
-  /*
-   * return an array of unixtimes and balances.
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::timesBalances()
    */
   public function timesBalances(AccountInterface $account, CurrencyInterface $currency, $since = 0) {
+    //TODO cache this, and clear the cache whenever a transaction changes state or is deleted
     //this is a way to add up the results as we go along
     db_query("SET @csum := 0");
     //I wish there was a better way to do this.
@@ -358,19 +338,42 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     return $history;
   }
-
-  public function count($currcode) {
-    return db_select('mcapi_transactions_worths', 'w')
-    ->fields('w', array('xid'))
-    ->condition('currcode', $currcode)
-    ->distinct()
-    ->execute()
-    ->fetchfield();
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::count()
+   */
+  public function count($currcode = '', $conditions = array(), $serial = FALSE) {
+    $query = db_select('mcapi_transactions_worths', 'w');
+    $query->join('mcapi_transactions', 't', 't.xid = w.xid');
+    $query->addExpression('count(w.xid)');
+    if ($currcode) {
+      $query->condition('currcode', $currcode);
+    }
+    $this->parseConditions($query, $conditions);
+    return $query->execute()->fetchField();
   }
-  public function volume($currcode) {
-    return db_query("SELECT SUM(value) FROM {mcapi_transactions_worths}
-      WHERE currcode = :currcode", array(':currcode' => $currcode)
-    )->fetchField();
+
+  /**
+   * @see \Drupal\mcapi\TransactionStorageControllerInterface::volume()
+   */
+  public function volume($currcode, $conditions = array()) {
+    $query = db_select('mcapi_transactions_worths', 'w');
+    $query->join('mcapi_transactions', 't', 't.xid = w.xid');
+    $query->addExpression('SUM(value)');
+    $query->condition('w.currcode', $currcode);
+    $this->parseConditions($query, $conditions);
+    return $query->execute()->fetchField();
+  }
+  /**
+   *
+   * @param AlterableInterface $query
+   */
+  private function parseConditions(AlterableInterface $query, array $conditions) {
+    foreach ($conditions as $fieldname => $value) {
+      $query->conditions($fieldname, $value);
+    }
+    if (!in_array('state', $conditions) || !is_null($conditions['state'])) {
+      $query->conditions('state', '0', '>');
+    }
   }
 }
 

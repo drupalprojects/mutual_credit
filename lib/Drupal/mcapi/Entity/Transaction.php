@@ -51,34 +51,32 @@ use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
   public $exceptions = array();
+
   /**
-   * Implements Drupal\Core\Entity\EntityInterface::id().
+   * {@inheritdoc}
    */
   public function id() {
     return $this->get('xid')->value;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function label($langcode = NULL) {
     return t("Transaction #@serial", array('@serial' => $this->serial->value));
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function uri($rel = 'canonical') {
     $renderable = parent::uri($rel);
     $renderable['path'] = 'transaction/'. $this->get('serial')->value;
     return $renderable;
   }
 
-  public function buildChildren() {
-    foreach (module_invoke_all('transaction_children', $this) as $transaction) {
-      $transaction->parent = 'temp';//TODO how do we know the parent?
-      $this->children[] = $transaction;
-    }
-  }
-
-  /*
-   * return a render array of 'operations' links for the current user on $this transaction
-   * $mode can be 'page', 'ajax, or 'modal'
-   * $view is whether or not to include the 'view' link
+  /**
+   * @see \Drupal\mcapi\TransactionInterface::links()
    */
   function links($mode = 'page', $view = FALSE) {
     $renderable = array();
@@ -132,53 +130,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * transaction entity presave
-   * passes the transaction around allowing modules
-   * populates the children property
-   * handles errors with child transactions
-   *
-   * @param EntityStorageControllerInterface $storage_controller
-   *   The transaction entity storage controller
-   */
-  public function preSave(EntityStorageControllerInterface $storage_controller) {
-    if (!$this->isNew()) return;
-    //TODO: Change this so that you only create new serial numbers on the parent transaction.
-    if (!$this->serial->value) {
-      $storage_controller->nextSerial($this);//this serial number is not final, or at least not nocked
-    }
-    if (empty($this->created->value)) {
-    	$this->created->value = REQUEST_TIME;
-    }
-    if (empty($this->creator->value)) {
-    	$this->creator->value = \Drupal::currentUser()->id();
-    }
-    //build children if they haven't been built already
-    if (!$this->parent && empty($this->children)) {
-      //note that children do not have a serial number or parent xid until the postSave
-      $this->buildChildren();
-    }
-    foreach ($this->children as $key => $transaction) {
-      if (!empty($transaction->errors)) {
-        watchdog(
-          'Community Accounting',
-          'A child transaction "!description" failed validation and was not saved.',
-          array('!transaction' => print_r($transaction, 1)),
-          WATCHDOG_ERROR
-        );
-        drupal_set_message(
-          t('A child transaction "!description" failed validation and was not saved.', array('!description' => $transaction->description->value)),
-          'warning'
-       );
-      }
-    }
-  }
-
-  /**
-   * Validate a transaction, with its children.
-   * Adds exceptions to each transaction's exception array
-   *
-   * @return array $messages
-   *   a flat list of messages from all transactions in the cluster
+   * @see \Drupal\mcapi\TransactionInterface::validate()
    */
   public function validate() {
     $this->exceptions = array();
@@ -230,13 +182,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         t('Transaction has already been inserted: @uuid', array('@uuid' => $transaction->uuid->value))
       );
     }
-
+    //there might be a use-case when things are done out of order, so this is intended as a temp flag
+    $transaction->validated = TRUE;
 
     //While we're validating the parent ONLY, pass the transaction cluster around
     if ($this->parent->value == 0) {
+      //this is done a bit surrupticiously in the middle of the validate function.
+      //previous the children's parent was set to temp, but is that necessary?
+      $this->children = \Drupal::moduleHandler()->invokeAll('transaction_children', $cluster);
+
       $messages = array();
       $children = $this->children[0];
-      //mdump($children->getEntity());die();
 /* how to iterate though an entity reference field?
       foreach ($children as $child) {
         echo $key; mdump($child);die('entity validating child');
@@ -279,8 +235,32 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
   }
 
+
   /**
-   * {@inheritdoc}
+   * @see \Drupal\mcapi\TransactionInterface::preSave($storage_controller)
+   */
+  public function preSave(EntityStorageControllerInterface $storage_controller) {
+    if ($this->isNew()) {
+      //TODO: Change this so that you only create new serial numbers on the parent transaction.
+      if (!$this->serial->value) {
+        $storage_controller->nextSerial($this);//this serial number is not final, or at least not nocked
+        //TODO Gordon when does the serial number become final?
+        //this is the only time we actually call nextSerial
+        //That's when we need to propagate it to the children.
+        //Why do we need a serial number which isn't final
+      }
+      if (empty($this->created->value)) {
+        $this->created->value = REQUEST_TIME;
+      }
+      if (empty($this->creator->value)) {
+        $this->creator->value = \Drupal::currentUser()->id();
+      }
+    }
+  }
+
+
+  /**
+   * @see \Drupal\mcapi\TransactionInterface::postSave()
    */
   public function postSave(EntityStorageControllerInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
@@ -290,12 +270,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     foreach ($this->children as $transaction) {
       $transaction->serial->value = $this->serial->value;
       $transaction->parent->value = $this->xid->value;
+      //TODO Gordon how is this gonna work saving the children in the post-save?
+      $transaction->save();
     }
   }
 
   /**
-   * {@inheritdoc}
-   * this is called from the FieldableDatabaseStorage
+   * @see \Drupal\mcapi\TransactionInterface::preCreate()
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
     $values += array(

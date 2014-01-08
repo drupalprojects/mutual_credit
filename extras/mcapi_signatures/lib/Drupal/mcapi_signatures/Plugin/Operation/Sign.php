@@ -28,7 +28,9 @@ use \Drupal\Core\Config\ConfigFactory;
  */
 class Sign extends OperationBase {
 
-
+  /*
+   * {@inheritdoc}
+  */
   public function execute(TransactionInterface $transaction, array $values) {
     $mail_settings = $this->config->get('special');
 
@@ -50,17 +52,21 @@ class Sign extends OperationBase {
       $message = \Drupal::TranslationManager()->format_plural($num, '1 signature remaining', '@count signatures remaining');
     }
 
+    parent::execute($transaction, $values);
+
     return array('#markup' => $message);
   }
 
-
-  //no configuration for this - only the designated signatories can sign
-  //however see the other operation 'sign_off'
+  /*
+   * {@inheritdoc}
+  */
   public function access_form(CurrencyInterface $currency) {
     return array();
   }
 
-
+  /*
+   * {@inheritdoc}
+  */
   public function opAccess(TransactionInterface $transaction) {
     if ($transaction->state->value == TRANSACTION_STATE_PENDING
       && array_key_exists('signatures', $transaction)
@@ -70,6 +76,9 @@ class Sign extends OperationBase {
     ) return TRUE;
   }
 
+  /*
+   * {@inheritdoc}
+  */
   public function settingsForm(array &$form, ConfigFactory $config) {
     //TODO mail notifications should probably be abstracted to the operation base
     $conf = $config->get('special');

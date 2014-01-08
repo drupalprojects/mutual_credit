@@ -119,8 +119,15 @@ class OperationForm extends ConfirmFormBase {
     $result = $plugin->execute($this->transaction, $form_state['values'])
       or $result = 'operation returned nothing renderable';
 
-  	//and invoke trigger and rules using the changed transaction
-  	mcapi_transaction_operated($this->op, $this->transaction, $old_state);
+    $context = array(
+    	'op' => $this->op,
+      'old_state' => $old_state,
+      'config' => $this->configuration,//not sure if there is a use-case for passing this
+    );
+    echo 'is there a moduleHandler in this object?';
+    mdump($this);
+    //this is especially for invoking rules
+  	\Drupal::moduleHandler()->invokeAll('mcapi_transaction_operated', $transaction, $context);
 
   	//where to go now?
   	$path = $this->configuration->get('path');

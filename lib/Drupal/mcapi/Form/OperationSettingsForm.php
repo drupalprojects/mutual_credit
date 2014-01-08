@@ -15,14 +15,13 @@ class OperationSettingsForm extends ConfigFormBase {
     return 'mcapi_operation_settings_form';
   }
 
-
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state, $op = NULL) {
   	$plugin = transaction_operations($op);
   	$form = parent::buildForm($form, $form_state);
-  	$form = $plugin->SettingsForm($form, $this->configFactory->get('mcapi.operation.'.$op));
+  	$plugin->SettingsForm($form, $this->configFactory->get('mcapi.operation.'.$op));
     $form['submit']['#weight'] = 20;
   	$form['transaction_operation'] = array(
       '#type' => 'value',

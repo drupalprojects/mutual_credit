@@ -68,6 +68,6 @@ class View extends OperationBase {//does it go without saying that this implemen
     $newform['sure']['#type'] = 'container';
     $newform['op_title'] = $form['op_title'];
     $newform += $form['actions'];
-    return $newform;
+    $form = $newform;
   }
 }

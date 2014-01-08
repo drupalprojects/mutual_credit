@@ -26,7 +26,7 @@ class CurrencyListController extends DraggableListController {
     $header['title'] = t('Title');
     //$header['id'] = t('Machine Name');
     $header['type'] = t('Type');
-    //$header['transactions'] = t('Count');
+    $header['transactions'] = t('Transactions');
     $header['volume'] = t('Volume');
     $header['issuance'] = t('Issuance');
     return $header + parent::buildHeader();
@@ -55,13 +55,14 @@ class CurrencyListController extends DraggableListController {
       '#markup' => $definition['label'],
     );
     $count = $entity->transactions();
-    /*
+    //this includes deleted transactions
     $row['transactions'] = array(
       '#markup' => $count
     );
-    */
+
+    //this includes deleted transactions
     $row['volume'] = array(
-      '#markup' => $entity->volume()
+      '#markup' => $entity->format($entity->volume(array('state' => NULL)))
     );
     $row['issuance'] = array(
       '#markup' => $type_names[$type],

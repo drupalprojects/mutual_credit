@@ -28,7 +28,9 @@ use \Drupal\Core\Config\ConfigFactory;
  */
 class SignOff extends OperationBase {
 
-
+  /*
+   * {@inheritdoc}
+  */
   public function execute(TransactionInterface $transaction, array $values) {
     //TODO make the temp notifications work
     /*
@@ -54,7 +56,7 @@ class SignOff extends OperationBase {
   }
 
   /*
-   *  access callback for transaction operation 'view'
+   * {@inheritdoc}
    */
   public function opAccess(TransactionInterface $transaction) {
     if ($transaction->state->value == TRANSACTION_STATE_PENDING) {
@@ -62,6 +64,9 @@ class SignOff extends OperationBase {
     }
   }
 
+  /*
+   * {@inheritdoc}
+  */
   public function settingsForm(array &$form, ConfigFactory $config) {
     //TODO mail notifications should probably be abstracted to the operation base
     $conf = $config->get('special');

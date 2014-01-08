@@ -142,6 +142,8 @@ class CurrencyFormController extends EntityFormController {
         )
       )
     );
+
+
     $form['issuance'] = array(
       '#title' => t('Basis of issuance'),
       '#description' => t('Currently only affects visualisation.'),
@@ -154,9 +156,7 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
-      '#disabled' => property_exists($currency, 'info') ?
-        transaction_filter(array('currcode' => $currency->info['currcode'])) :
-        FALSE
+      '#disabled' => (bool)$this->entity->transactions()
     );
     $form['uid'] = array(
       '#title' => t('Declared by'),
@@ -324,13 +324,14 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => $currency->suffix,
     );
 
-    $zeros = property_exists($currency, 'info') && transaction_filter(array('quantity' => 0, 'currcode' => $currency->info['currcode']));
+    $serials = $this->entity->transactions(array('currcode' => $currency->id(), 'value' => 0));
     $form['display']['zero'] = array(
       '#title' => t('Zero value display'),
       '#description' => t('Use html.') .' ',
       '#type' => 'textfield',
       '#default_value' => $currency->zero,
-      //'#required' => property_exists($currency, 'display') ? $zeros : FALSE,
+      //this is required if any existing transactions have zero value
+      '#required' => count($serials)
     );
     if ($zeros) {
       $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");

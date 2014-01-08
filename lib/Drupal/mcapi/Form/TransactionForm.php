@@ -123,15 +123,14 @@ class TransactionForm extends EntityFormController {
     if (array_key_exists('mcapi_validated', $form_state))return;
     else $form_state['mcapi_validated'] = TRUE;
 
-    $transaction->buildChildren();
     //this might throw errors
     $messages = $transaction->validate();
-    $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
     foreach ($transaction->exceptions as $e) {
       \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, $e->getMessage());
     }
     //TODO sort out entity reference field iteration
     /*
+    $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
     foreach ($transaction->children as $child) {
       foreach ($child->exceptions as $e) {
         if (!$child_errors['allow']) {

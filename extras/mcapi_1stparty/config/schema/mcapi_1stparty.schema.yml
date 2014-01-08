@@ -1,5 +1,5 @@
 
-mcapi.1stparty.*
+mcapi.1stparty.*:
   type: mapping
   label: 'Mcapi form configuration'
   mapping:

@@ -5,8 +5,4 @@ child_errors:
   mail_user1: mail_user1
   allow: 0
   watchdog: watchdog
-<<<<<<< Updated upstream
   show_messages: show_messages
-=======
-  show_messages: show_messages
->>>>>>> Stashed changes

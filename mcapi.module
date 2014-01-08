@@ -102,32 +102,8 @@ function mcapi_transaction_load($serial) {
 }
 
 /**
- * Retrive a filtered list of transactions
- * This could be an alternative to views.
- */
-function transaction_filter(array $conditions, $offset = 0, $limit = 25, $fieldapi = array()) {
-  if ($fieldapi) {
-    $offset = 0; $limit = 0;
-  }
-  $serials = entity_get_controller('mcapi_transaction')->filter($conditions, $offset, $limit);
-  if ($serials && $fieldapi) {
-    $filtered = array();
-    //we just need to load one transaction for each serial number
-    $serials = array_unique($serials);//TODO ONLINE ENSURE THAT KEYS ARE PRESERVED
-    foreach (entity_load('mcapi_transaction', array_keys($serials)) as $transaction) {
-      foreach ($fieldapi as $fieldname => $value) {
-        $items = field_get_items('transaction', $transaction, $fieldname);
-        if (current($items[0]) == $value) $filtered[$transaction->xid] = $transaction->serial;
-      }
-    }
-    $serials = $filtered;
-  }
-  return $serials;
-}
-
-/**
  * implements hook_help()
- * TODO isn't there something in the page controller for this?
+ * TODO shouldn't there be some in each page controller to inject help?
  */
 function mcapi_help($path, $arg) {
   switch ($path) {
@@ -207,16 +183,15 @@ function transaction_access_plugins($options = FALSE) {
 
 
 /**
- * implements hook_permission
- * This hook can supply permissions that the module defines.
- * doing it with another hook allows us to collect all the mutual credit permissions in one section of the permissions page
+ * implements hook_permission().
+ * we use another hook here to collect all the permissions together rather than spread all over the permission page
  */
 function mcapi_permission() {
-  return module_invoke_all('mcapi_info_drupal_permissions');
+  return \Drupal::moduleHandler()->invokeAll('mcapi_info_drupal_permissions');
 }
 
 /**
- * implements hook_theme
+ * implements hook_theme().
  */
 function mcapi_theme($existing, $type, $theme, $path) {
   $items = array(
@@ -281,8 +256,8 @@ function mcapi_theme($existing, $type, $theme, $path) {
   return $items;
 }
 
-/*
- * implement hook_user_view().
+/**
+ * implements hook_user_view().
  */
 function mcapi_user_view($account, $mode, $language) {
   module_load_include('inc', 'mcapi');
@@ -290,18 +265,9 @@ function mcapi_user_view($account, $mode, $language) {
   $account->content['mcapi_summary']['#weight'] = 3;
 }
 
-
 /**
- * implements hook_uid_renum() from uid_login module
+ * just gets the children and puts them side by side with the parent so they are easier to iterate through
  */
-function mcapi_uid_renum($old, $new) {
-  foreach(array('payer', 'payee') as $participant) {
-    db_update('mcapi_transactions')->fields(array($participant => $new))->condition($participant, $old)->execute();
-  }
-}
-
-//just gets the children and puts them side by side
-//with the main transaction for easier handling
 function mcapi_transaction_flatten($transaction) {
   $cluster = array($transaction);
   foreach ($transaction->children as $child) {
@@ -351,8 +317,10 @@ function mcapi_get_types($options = FALSE) {
   }
   return $types;
 }
-/*
- * get a string suitable for a form_element description, describing the states
+/**
+ * get a string suitable describing the states
+ * @return string
+ *   the label and description of every state.
  */
 function mcapi_get_state_descriptions() {
   foreach (mcapi_get_states() as $state) {
@@ -365,7 +333,6 @@ function mcapi_get_state_descriptions() {
 
 /**
  * implements mcapi hook_mcapi_info_drupal_permissions().
- * make permissions appear altogether on the permissions page
  */
 function mcapi_mcapi_info_drupal_permissions() {
   return array(
@@ -387,49 +354,12 @@ function mcapi_mcapi_info_drupal_permissions() {
     )
   );
 }
-/*
- * get all the transaction access callbacks,
- * might as well be cached, or put in config??
- * Multiple callbacks can be selected and access will be granted if any returns TRUE
- *
- * each callback refers to 2 functions - itself and CALLBACK_views
- * each callback takes the following args
- * $transaction, $account
- */
-function transaction_access_callbacks() {
-  if (!$cache = \Drupal::cache()->get('transaction_access_callbacks')) {
-    $callbacks = module_invoke_all('transaction_access_callbacks');
-    foreach (array_keys($callbacks) as $callback) {
-      if (!function_exists($callback)) {
-        unset($callbacks[$callback]);
-        //message for developers doesn't need translating
-        drupal_set_message("{$callback} does not exist", 'warning');
-      }
-      //TODO include the file(s) where these callbacks would live
-      if (module_exists('views')) {
-        module_load_include('views.inc', 'mcapi');
-        if (!function_exists($callback.'_views')) {
-          unset($callbacks[$callback]);
-          drupal_set_message("{$callback}_views does not exist", 'warning');
-        }
-      }
-    }
-    //TODO this cache should be cleared whenever a currency is edited and whenever a user's entitlement to use a currency could be affected
-    \Drupal::cache()->set('transaction_access_callbacks', $callbacks, CacheBackendInterface::CACHE_PERMANENT);
-    return $callbacks;
-  }
-  else {
-    return $cache->data;
-  }
-}
-
 
 /**
  * implements hook_mail().
- * TODO move this into another module, to be fired by triggers
  */
 function mcapi_mail($key, &$message, $params) {
-  if ($key == 'transaction_mail_action') {
+  if ($key == 'transaction_mail_action') {//deprecated, probably
     // We do not sanitize the token replacement, since the output of this
     // replacement is intended for an e-mail message, not a web browser.
     $options = array('language' => $message['language'], 'sanitize' => FALSE);
@@ -440,9 +370,7 @@ function mcapi_mail($key, &$message, $params) {
     $options = array('language' => $message['language'], 'sanitize' => FALSE);
     $message['subject'] =  token_replace($params['config']['subject'], $params, $options);
     $message['body'][] =  token_replace($params['config']['body'], $params, $options);
-    $message['body'][] =  token_replace($params['config']['body'], $params, $options);
     $message['headers']['cc'] = $params['config']['cc'];
-    $message['headers']['bcc'] = $params['config']['bcc'];
   }
 }
 
@@ -482,15 +410,26 @@ function mcapi_field_extra_fields() {
   return $extra;
 }
 
-//return a currency
-//almost always you would call entity_load directly!
-//used my machine_name_process
-function mcapi_currency_load($currcode) {
-  return entity_load('mcapi_currency', $currcode);
+/**
+ * Load a currency, from its id
+ *
+ * @param string $id
+ *
+ * @returns CurrencyInterface
+ */
+function mcapi_currency_load($id) {
+  return entity_load('mcapi_currency', $id);
 }
 
-/*
+/**
  * get an #options list of all the currencies (for one account)
+ *
+ * @param array $currencies
+ * @param AccountInterface $account
+ * @param boolean $check_access
+ *   TRUE to return only the currencies the $account can access
+ * @return array
+ *   of currencies
  */
 function mcapi_currency_list(array $currencies = NULL, AccountInterface $account = NULL, $check_access = TRUE) {
   $list = array();
@@ -517,7 +456,13 @@ function mcapi_currency_list(array $currencies = NULL, AccountInterface $account
   }
   return $list;
 }
-
+/**
+ * Load currencies for a given user
+ *
+ * @param AccountInterface $account
+ * @return array
+ *   of currencies
+ */
 function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!isset($account)) {
     $account = \Drupal::currentUser();
@@ -543,18 +488,22 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
     return $cache->data;
   }
 }
-/*
- * this function might be best put inside the OperationForm:: submit
- * or it could be replaced with hook_mcapi_transaction_update
+/**
+ * implements hook_mcapi_transaction_operated().
+ * This invokes rules, if installed, but can be used by any module
+ *
+ * @param object $plugin
+ * @param TransactionInterface $transaction
+ * @param array $context
+ *   consists of id, the operation plugin id; config, the operation plugin configuration; old_state: the state of the transaction before the operation
  */
-function mcapi_transaction_operated($plugin, $transaction, $old_state) {
-  drupal_set_message('running hook_mcapi_transaction_operated');
-  module_invoke('mcapi_transaction_operated', $plugin, $transaction, $old_state);
+function mcapi_mcapi_transaction_operated($plugin, $transaction, $context) {
+  //TODO invoke rules hook
+  //make a note that the proper way to trigger mails is via each operations' settings
 }
 
-/*
+/**
  * implements_hook_element_info().
- * unlike in d6 this is cached
  */
 function mcapi_element_info() {
   return array(
@@ -629,7 +578,14 @@ function mcapi_element_info() {
   );
 }
 
-
+/**
+ * process callback for worths form element
+ *
+ * @param array $element
+ * @param array $form_state
+ * @return array
+ *   the processed $element
+ */
 function mcapi_worths_element_process($element, &$form_state) {
   $currencies = mcapi_get_available_currencies();
 
@@ -672,6 +628,11 @@ function mcapi_worths_element_process($element, &$form_state) {
   return $element;
 }
 
+/**
+ * element_validate callback for worths field
+ * @param array $element
+ * @param array $form_state
+ */
 function mcapi_worths_element_validate($element, &$form_state) {
   if ($element['#required']) {
     $value_entered = FALSE;
@@ -711,6 +672,14 @@ if (!$newcode) drupal_set_message('problem validating worths element', 'error');
   }
 }
 
+/**
+ * process callback for worth form element
+ *
+ * @param array $element
+ * @param array $form_state
+ * @return array
+ *   the processed $element
+ */
 function mcapi_worth_element_process($element, &$form_state, $form) {
   $typedDataManager = \Drupal::typedData();
   if (!is_object($element['#default_value'])) {
@@ -783,6 +752,11 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
   return $element;
 }
 
+/**
+ * element_validate callback for worth field
+ * @param array $element
+ * @param array $form_state
+ */
 function mcapi_worth_element_validate($element, &$form_state) {
 //I don't like this...
   $currcode = empty($element['#value']['currcode']) ? $element['currcode']['#value'] : $element['#value']['currcode'];
@@ -824,17 +798,41 @@ if (!$currcode)drupal_set_message('problem validating worth element', 'error');
   }
 }
 
+/**
+ * process callback for mcapi_state form element
+ *
+ * @param array $element
+ * @param array $form_state
+ * @return array
+ *   the processed $element
+ */
 function mcapi_process_states($element) {
   $element['#options'] = mcapi_get_states(TRUE);
   $element = form_process_radios($element);
   return $element;
 }
 
+/**
+ * process callback for mcapi_types form element
+ *
+ * @param array $element
+ * @param array $form_state
+ * @return array
+ *   the processed $element
+ */
 function mcapi_process_types($element) {
   $element['#options'] = mcapi_get_types(TRUE);
   return $element;
 }
 
+/**
+ * process callback for mcapi_currcodes form element
+ *
+ * @param array $element
+ * @param array $form_state
+ * @return array
+ *   the processed $element
+ */
 function mcapi_process_currcodes($element) {
   if (empty($element['#options']) && !empty($element['#currcodes'])) {
     $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL), drupal_map_assoc($element['#currcodes']));
@@ -869,6 +867,12 @@ function mcapi_process_currcodes($element) {
 
 /**
  * element pre_render callback
+ * adds the user account transaction summary to the render array
+ *
+ * @param array $element
+ *   a renderable array
+ * @return
+ *   a more populated renderable array, ready for theming
  */
 function mcapi_pre_render_summary($element) {
   static $results = array();//TODO should this be drupal_static?
@@ -876,28 +880,25 @@ function mcapi_pre_render_summary($element) {
   //occasionally we'll appreciate a static result
   $result = &$results[$uid][$element['#currency']->id()];
   if (empty($result)) {
-    foreach (mcapi_account_summary($element['#account'], $element['#currency'], $element['#filters']) as $key => $val) {
+    $stats = \Drupal::entityManager()
+    ->getStorageController('mcapi_transaction')
+    ->summaryData($element['#account'], $element['#currency'], $element['#filters']);
+    foreach ($stats as $key => $val) {
       $result['#'.$key] = $val;
     }
   }
   return $element + $result;
 }
 
-function mcapi_account_summary($account, $currency, $filters) {
-  //TODO should this be a drupal_static, shared with other functions?
-  static $transaction_storage;
-  if (!$transaction_storage) {
-    $transaction_storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-  }
-  return $transaction_storage->summaryData($account, $currency, $filters);
-}
-
-/*
+/**
  * implements alter hook_form_user_cancel_confirm_form().
- * if they have already traded, they can only be blocked, not deleted
+ * if they have already traded, users can only be blocked, not deleted
+ * TODO test this
+ *
+ * @param array $form
+ * @param array $form_state
  */
 function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
-  form_load_include($form_state, 'inc', 'mcapi');
   $traded = db_query(
     "SELECT xid FROM {mcapi_transactions} WHERE (payer = :uid OR payee = :uid) AND state > 0",
     array(':uid' => $form['uid']['#value'])
@@ -905,41 +906,6 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
   if ($traded) {
     unset($form['user_cancel_method']['user_cancel_reassign']);
     unset($form['user_cancel_method']['user_cancel_delete']);
-  }
-}
-
-/*
- * user cancel method callback
-* see mcapi_form_user_cancel_confirm_form_alter
-*/
-function mcapi_user_cancel($edit, $account, $method) {
-  if ($method == 'user_cancel_mcapi') {
-    foreach(node_load_multiple(NULL, array('uid' => $account->uid)) as $node) {
-      node_delete($node);
-    }
-  }
-}
-
-/*
- * implements alter hook_user_cancel_methods().
- * creates a new method
- */
-function mcapi_user_cancel_methods_alter(&$methods) {
-  module_load_include('inc', 'mcapi');
-  $methods['user_cancel_mcapi'] = array(
-    'title' => t('Disable the account and delete its content.'),
-    'description' => t('Your account will be blocked and you will no longer be able to log in. All of your content will be deleted.'),
-  );
-}
-
-/*
- * implements hook_user_delete().
-* all transactions revert to the reservoir
-* Of course normally you wouldn't delete a user in a mutual credit system
-*/
-function mcapi_user_delete($account) {
-  foreach (mcapi_currency_list(NULL, $account, TRUE) as $currcode => $currname) {
-    entity_get_controller('transaction')->mergeAccounts(mcapi_currency_load($currcode)->reservoir, $account->uid);
   }
 }
 

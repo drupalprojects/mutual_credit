@@ -38,6 +38,7 @@ class Confirm extends OperationBase {
    * {@inheritdoc}
    */
   public function opAccess(TransactionInterface $transaction) {
+    //this affects the link visibility and the page access
     return empty($transaction->serial->value);
   }
 
@@ -53,20 +54,7 @@ class Confirm extends OperationBase {
   *   an html snippet for the new page, or which in ajax mode replaces the form
   */
   public function execute(TransactionInterface $transaction, array $values) {
-
-/*
-    $mail_settings = $this->config->get('special');
-    //TODO make the temp notifications work
-    if ($mail_settings['send'] && $mail_settings['subject'] && $mail_settings['body']) {
-      //here we are just sending one mail, in one language
-      global $language;
-      $to = implode(user_load($transaction->payer)->mail, user_load($transaction->payee)->mail);
-      $params['transaction'] = $transaction;
-      $params['config'] = $this->configFactory->get('mcapi.operation.undo');
-      drupal_mail('mcapi', 'operation', $to, $language->language, $params);
-    }
-*/
-    $message = t('The transaction is undone.') .' ';
+    $message = t('//TODO: save the transaction!');
     return array('#markup' => $message);
   }
 
@@ -75,10 +63,12 @@ class Confirm extends OperationBase {
   */
   public function settingsForm(array &$form, ConfigFactory $config) {
     parent::settingsForm($form, $config);
-
-    unset($form['sure']['button'], $form['sure']['cancel_button'], $form['notify'], $form['op_title']);
-    print_r(element_children($form));
-    return $form;
+    unset(
+      $form['sure']['button'],
+      $form['sure']['cancel_button'],
+      $form['notify'],
+      $form['op_title']
+    );
   }
 
 }

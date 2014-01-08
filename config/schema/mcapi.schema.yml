@@ -172,17 +172,18 @@ mcapi.currency.limits.explicit:
     max: 
       'type': float
       'label': Maximum
-    mcapi.currency.limits.base
 
-mcapi.currency.limits.base
+mcapi.currency.limits.base:
   type: mapping
   label: Shared settings
   mapping:
-    'personal': 
+    personal: 
       type: boolean
       label: Allow per-person overrides
-    'ignore': 
+    ignore: 
       type: mapping
+      label: When to ignore the balance limits
+      mapping:
         auto: 
           type: boolean
           label: Automated transactions
@@ -199,8 +200,6 @@ mcapi.currency.limits.base
           type: boolean
           label: Reservoir account
 
-
-
 mcapi.operation.*:
   type: mapping
   label: 'Currency configuration'
@@ -216,7 +215,7 @@ mcapi.operation.*:
       label: Copy to
 
 mcapi.state.*:
-  type:mapping
+  type: mapping
   label: Transaction workflow state
   mapping:
     label:
@@ -230,7 +229,7 @@ mcapi.state.*:
       label: enumerated value
 
 mcapi.type.*:
-  type:mapping
+  type: mapping
   label: Transaction workflow
   mapping:
     label:
@@ -242,5 +241,4 @@ mcapi.type.*:
     start_state:
       type: string
       label: Initial workflow state
-
 

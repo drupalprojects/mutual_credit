@@ -391,18 +391,25 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
    */
   public function execute(TransactionInterface $transaction, array $values) {
 
-    /*
-     $mail_settings = $this->config->get('special');
-    //TODO make the temp notifications work
-    if ($mail_settings['send'] && $mail_settings['subject'] && $mail_settings['body']) {
-    //here we are just sending one mail, in one language
-    global $language;
-    $to = implode(user_load($transaction->payer)->mail, user_load($transaction->payee)->mail);
-    $params['transaction'] = $transaction;
-    $params['config'] = $this->configFactory->get('mcapi.operation.undo');
-    drupal_mail('mcapi', 'operation', $to, $language->language, $params);
+    drupal_set_message('TODO: finish making the mail work in Operationbase::execute - it might work already!');
+
+    if ($this->config->get('send')) {
+      $subject = $this->config->get('subject');
+      $body = $this->config->get('body');
+      if (!$subject || !$body) continue;
+
+      //here we are just sending one mail at a time, in the recipient's language
+      global $language;
+      $to = implode(user_load($transaction->payer)->mail, user_load($transaction->payee)->mail);
+      $params['transaction'] = $transaction;
+      $params['config'] = array(
+      	'subject' => $subject,
+        'body' => $body,
+        'cc' => $this->config->get('cc')
+        //bcc is not supported! This is not some cloak and dagger thing!
+      );
+      drupal_mail('mcapi', 'operation', $to, $language->language, $params);
     }
-    */
   }
 }
 

@@ -87,6 +87,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $limits_plugin;
   public $limits_settings;
 
+  /**
+   * {@inheritdoc}
+   */
   public function __construct(array $values, $entity_type) {
     parent::__construct($values, $entity_type);
     $this->currencyTypeManager = \Drupal::service('plugin.manager.mcapi.currency_type');
@@ -136,19 +139,17 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   }
 
   /**
-   * Fetch the Currency Type.
-   *
-   * @return string
-   *  The plugin Id for the Currency Type.
+   * @see \Drupal\mcapi\CurrencyInterface::getCurrencyType()
    */
   public function getCurrencyType() {
     return $this->type;
   }
 
   /**
-   * {@inheritdoc}
+   * @see \Drupal\mcapi\CurrencyInterface::label()
    */
   public function label($langcode = NULL) {
+    //TODO how to we translate this?
   	return $this->name;
   }
 
@@ -157,7 +158,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    */
   public static function postDelete(EntityStorageControllerInterface $storage_controller, array $entities) {
     parent::postDelete($storage_controller, $entities);
-
     $cache_tags = array();
     foreach ($entities as $currency) {
       $cache_tags['mcapi.available_currency'] = $currency->id();
@@ -166,7 +166,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   }
 
   /**
-   * Get the Currency Type Plugin
+   * @see \Drupal\mcapi\CurrencyInterface::getPlugin()
    */
   public function getPlugin() {
     if (!$this->plugin) {
@@ -175,13 +175,11 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
         'configuration' => $this->settings,
       ));
     }
-
     return $this->plugin;
   }
 
   /**
-   * Get the currencies widget plugin
-   * Likely to be just once per page, so no need for saving the manager or the plugin
+   * @see \Drupal\mcapi\CurrencyInterface::getWidgetPlugin()
    */
   public function getWidgetPlugin() {
     $settings = array(
@@ -192,49 +190,49 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   }
 
   /**
-   * return the $value formatted with this currency
-   * so make a worth object and return the string of it.
-   * alternatively we could abstract the Worth->getString into a worth_stringify($currency, Quant)
-   *
-   * @var integer
+   * @see \Drupal\mcapi\CurrencyInterface::format()
    */
   public function format($value) {
     return $this->prefix . $this->format_raw($value) . $this->suffix;
   }
 
   /**
-   * Format the value with no suffix or prefix
-   *
-   * @var integer
+   * @see \Drupal\mcapi\CurrencyInterface::format_raw()
    */
   public function format_raw($value) {
     return $this->getPlugin()->format($value);
   }
 
   /**
-   * return the number of transactions, in all states
+   * @see \Drupal\mcapi\CurrencyInterface::transactions()
    */
-  public function transactions() {
-    //get the transaction storage controller
-    $transactionStorageController = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-    return $transactionStorageController->count($this->id());
+  public function transactions(array $conditions, $serial = FALSE) {
+    $serials = \Drupal::entityManager()
+      ->getStorageController('mcapi_transaction')
+      ->filter(array('currcode' => $this->id()));
+    if ($serial) {
+      return count(array_unique($serials));
+    }
+    return count($serials);
   }
 
   /**
-   * return the number of transactions, in all states
+   * @see \Drupal\mcapi\CurrencyInterface::volume()
    */
-  public function volume() {
+  public function volume(array $conditions) {
     //get the transaction storage controller
-    $transactionStorageController = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-    return $this->format($transactionStorageController->volume($this->id()));
+    return \Drupal::entityManager()
+      ->getStorageController('mcapi_transaction')
+      ->volume($this->id());
   }
 
   /**
-   * check that a currency has no transactions before deleting it.
+   * @see \Drupal\mcapi\CurrencyInterface::delete()
    */
   public function delete() {
-    if ($this->transactions()) {
-      drupal_set_message("Transactions must be deleted from the database, before the currency can be deleted. use drush-wipeslate or edit the database manually", 'error');
+    if ($num = $this->transactions(FALSE)) {
+      drupal_set_message(t('Before the currency can be deleted, @num transactions must be deleted from the database.', array('@num' => $num)) .' '.
+        t('Use drush-wipeslate or edit the database manually'), 'error');
       return;
     }
     parent::delete();
