@@ -193,6 +193,7 @@ class CurrencyFormController extends EntityFormController {
       '#markup' => $this->t('@label - @description', array('@label' => $type_definition['label'], '@description' => $type_definition['description'])),
     );
 
+    $form['display']['settings'] = array();
     $form['display']['settings'] = $currency_type->settingsForm($form['display']['settings'], $form_state, $currency);
     if ($form['display']['settings']) {
       $form['display']['settings']['#tree'] = TRUE;
