@@ -60,6 +60,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   private $currencyTypeManager;
   private $typePlugin;
   private $widgetManager;
+  private $widgetPlugin;
 
   public $id;
   public $uuid;
