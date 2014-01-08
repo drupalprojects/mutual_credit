@@ -21,9 +21,9 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
 
 
   /**
-   * Overrides Drupal\Core\Entity\DatabaseStorageController::attachLoad().
+   * {@inheritdoc}
    */
-  function attachLoad(&$queried_entities, $load_revision = FALSE) {
+  function postLoad(array &$queried_entities) {
     $result = $this->database->query('SELECT * FROM {mcapi_transactions_worths} WHERE xid IN (:xids)', array(':xids' => array_keys($queried_entities)));
     foreach ($result as $record) {
       $queried_entities[$record->xid]->worths[$record->currcode] = array(
@@ -38,7 +38,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       $queried_entities[$record->xid]->children[$record->xid] = NULL;
     }
 
-    parent::attachLoad($queried_entities, $load_revision);
+    parent::postLoad($queried_entities);
   }
 
   /*
