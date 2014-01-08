@@ -33,7 +33,7 @@ class CurrencyFormController extends EntityFormController {
    * @param \Drupal\Component\Plugin\PluginManagerBase $plugin_manager
    *   The widget or formatter plugin manager.
    */
-  public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager, PluginManagerBase $transactionAccessManager) {
+  public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager) {
     $this->pluginCurrencyManager = $currency_manager;
     $this->pluginWidgetManager = $widget_manager;
   }
