@@ -131,6 +131,7 @@ class Worths extends ConfigFieldItemBase {
    * return a string like "CC3:59:00|$2.22"
    */
   public function getString($delimiter = '') {
+    $output = array();
     foreach ($this->properties as $worth) {
       $output[] = $worth->getString();
     }
