@@ -401,7 +401,7 @@ class CurrencyFormController extends EntityFormController {
             array('@state' => $state->label, '!description' => $state->description)
           ),
           '#type' => 'checkboxes',
-          '#options' => transaction_access_plugins(FALSE),
+          '#options' => transaction_access_plugins(TRUE),
           '#default_value' => $currency->{$prop}[$state->value]
         );
       }

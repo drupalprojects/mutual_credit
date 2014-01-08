@@ -1,0 +1,7 @@
+page_title: 'Confirm this transaction'
+format: certificate
+twig: ''
+format2: certificate
+redirect: ''
+twig2: ''
+message: The transaction has been saved.

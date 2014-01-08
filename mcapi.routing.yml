@@ -108,8 +108,7 @@ mcapi.transaction_admin:
 mcapi.transaction_view:
   path: '/transaction/{mcapi_transaction}'
   defaults:
-    _entity_view: 'mcapi_transaction.certificate'
-    _title_callback: '\Drupal\mcapi\Controller\TransactionController::pageTitle'
+    _form: '\Drupal\mcapi\Form\OperationForm'
   requirements:
     _entity_access: 'mcapi_transaction.view'
   options:

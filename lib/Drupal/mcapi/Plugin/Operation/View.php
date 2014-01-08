@@ -28,7 +28,9 @@ use \Drupal\Core\Config\ConfigFactory;
  */
 class View extends OperationBase {//does it go without saying that this implements OperationInterface
 
-  //Declaration of Drupal\mcapi\Plugin\Operation\View::access_form() must be compatible with that of Drupal\mcapi\OperationInterface::access_form() in /var/www/drupal8/modules/mutual_credit/lib/Drupal/mcapi/Plugin/Operation/View.php on line 27
+  /*
+   * {@inheritdoc}
+  */
   public function access_form(CurrencyInterface $currency) {
     //return the access functions for each transaction state
     $element = parent::access_form($currency);
@@ -41,10 +43,10 @@ class View extends OperationBase {//does it go without saying that this implemen
   }
 
   /*
-   *  access callback for transaction operation 'view'
-  */
+   * {@inheritdoc}
+   */
   public function opAccess(TransactionInterface $transaction) {
-    $access_plugins = transaction_access_plugins(TRUE);
+    $access_plugins = transaction_access_plugins();
     //see the comments in OperationBase
     foreach ($transaction->worths[0] as $worth) {
       foreach ($worth->currency->access_view[$transaction->state->value] as $plugin) {
@@ -56,13 +58,16 @@ class View extends OperationBase {//does it go without saying that this implemen
   }
 
   /*
-   * this is not used in View which is a special case.
-   */
-  public function execute(TransactionInterface $transaction, array $values) {
-
-  }
-
+   * {@inheritdoc}
+  */
   public function settingsForm(array &$form, ConfigFactory $config) {
-    return array();
+    parent::settingsForm($form, $config);
+    unset($form['sure']['button'], $form['sure']['cancel_button'], $form['notify']);
+    $newform = array('#tree' => 1);
+    $newform['sure'] = $form['sure'];
+    $newform['sure']['#type'] = 'container';
+    $newform['op_title'] = $form['op_title'];
+    $newform += $form['actions'];
+    return $newform;
   }
 }

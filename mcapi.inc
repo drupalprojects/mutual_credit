@@ -309,6 +309,7 @@ function template_preprocess_certificate(&$vars) {
 
 	$vars['children'] = array();
 	if (isset($transaction->children) && !empty($transaction->children)) {
+	  //TODO we don't have the syntax to iterate through the children;
 	  //how to we call transaction view now?
 	  //$vars['children'] = transaction_view(
 	    //$transaction->children,
@@ -340,10 +341,7 @@ function mcapi_transaction_process_vars(&$vars, TransactionInterface $transactio
   $vars['payee'] = $transaction->payee->entity->label();
   $vars['creator'] = $transaction->creator->entity->label();
 
-  foreach ($transaction->worths[0] as $worth) {
-    $worths[] = $worth->getString();
-  }
-  $vars['worths'] = $transaction->worths[0]->getString();
+  $vars['worths'] = $transaction->worths->getString();
 
   $states = mcapi_get_states(TRUE);
   $vars['state'] = $states[$transaction->state->value];

@@ -67,7 +67,7 @@ class TransactionForm extends EntityFormController {
     );
     $form['type'] = array(
       '#title' => t('Transaction type'),
-      '#options' => drupal_map_assoc(module_invoke_all('mcapi_info_types')),
+      '#options' => mcapi_info_types(TRUE),
       '#type' => 'mcapi_types',
       '#default_value' => $transaction->type->value,
       '#required' => TRUE,

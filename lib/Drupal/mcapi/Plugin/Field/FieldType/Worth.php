@@ -13,7 +13,7 @@ use Drupal\field\FieldInterface;
 use Drupal\mcapi\Plugin\CurrencyTypePluginManager;
 
 /**
- * Plugin implementation of the 'text' field type.
+ * Plugin implementation of the 'worth' field type.
  *
  * @FieldType(
  *   id = "worth",

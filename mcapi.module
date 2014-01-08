@@ -98,7 +98,6 @@ function mcapi_menu() {
 }
 
 function mcapi_transaction_load($serial) {
-
   return current(entity_load_multiple('mcapi_transaction', array('serial' => $serial)));
 }
 
@@ -158,8 +157,15 @@ function mcapi_help($path, $arg) {
   }
 }
 
-
-function transaction_operations($op_name = NULL, $full = TRUE) {
+/**
+ * get a transaction operation plugin or array of all plugins
+ *
+ * @param string $op_name
+ *   the plugin id of the operation
+ * @return $plugin or array of plugins
+ *   depending on whether an op_name was passed
+ */
+function transaction_operations($op_name = NULL) {
   //TODO when to use drupal_static and when to use drupal_static_fast?
   $plugins = &drupal_static(__FUNCTION__, array());
   if (empty($plugins)) {
@@ -168,17 +174,19 @@ function transaction_operations($op_name = NULL, $full = TRUE) {
       $plugins[$op] = $manager->createInstance($op);
     }
   }
-  if (!$full) {
-    foreach ($plugins as $key => $info) {
-      $options[$key] = $info->label();
-    }
-    return $options;
-  }
   if ($op_name) return $plugins[$op_name];
   else return $plugins;
 }
 
-function transaction_access_plugins($full = TRUE) {
+/**
+ * get a transaction access plugin or array of all plugins
+ *
+ * @param string $options
+ *   return just the plugin names, suitable for a formAPI select widget #options
+ * @return $plugin or array of plugins
+ *   depending on whether an op_name was passed
+ */
+function transaction_access_plugins($options = FALSE) {
   //TODO when to use drupal_static and when to use drupal_static_fast?
   $plugins = &drupal_static(__FUNCTION__, array());
   if (empty($plugins)) {
@@ -187,11 +195,12 @@ function transaction_access_plugins($full = TRUE) {
       $plugins[$plugin] = $manager->createInstance($plugin);
     }
   }
-  if (!$full) {
+  if ($options) {
+    $names = array();
     foreach ($plugins as $key => $info) {
-      $options[$key] = $info->label();
+      $names[$key] = $info->label();
     }
-    return $options;
+    return $names;
   }
   else return $plugins;
 }
@@ -718,7 +727,7 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
     '#title' => t('Currency'),
     '#type' => 'mcapi_currcodes',
     '#currcodes' => $element['#currcodes'],
-    '#default_value' => $element['#default_value']->currcode,
+    '#default_value' => array($element['#default_value']->currcode),
   );
 
   $element['currcode'] = mcapi_process_currcodes($element['currcode']);
@@ -967,7 +976,7 @@ function ________mcapi_views_pre_execute(ViewExecutable $view) {
 
   $currencies = mcapi_get_available_currencies();
   $states = array_keys(mcapi_get_states(TRUE));
-  $transactionAccessPlugins = transaction_access_plugins(TRUE);
+  $transactionAccessPlugins = transaction_access_plugins();
   //get all the currencies a user can access INTERSECTED with all the currencies in this view
   //then we iterate through the currencies, saying for each state whether it is visible.
   //first check the argument and the filters, otherwise get a full list of currencies.

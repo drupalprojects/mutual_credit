@@ -122,10 +122,10 @@ function mcapi_transaction_list_tokens($showlinks = TRUE) {
   //no need to boot the whole token service, but maybe should get this from cache somehow?
   $data = mcapi_token_info();
   $allfields = Field::FieldInfo()->getFieldMap();
-  $tokens = array_merge(
-    array_keys($data['tokens']['mcapi']),
-    array_keys($allfields['mcapi_transaction'])
-  );
+  $tokens = array_keys($data['tokens']['mcapi']);
+  if (array_key_exists('mcapi_transaction', $allfields)) {
+    $tokens = array_merge($tokens, array_keys($allfields['mcapi_transaction']));
+  }
   if (!$showlinks) unset($tokens[array_search('links', $tokens)]);
   return $tokens;
 }

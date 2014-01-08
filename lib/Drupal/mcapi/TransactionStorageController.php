@@ -13,13 +13,6 @@ use Drupal\mcapi\Plugin\field\field_type\Worth;
 
 class TransactionStorageController extends FieldableDatabaseStorageController implements TransactionStorageControllerInterface {
 
-/*
- *  TODO GORDON where are the transaction->children saved?
- * each transaction should be simply skipped if $this->entity->errors
- * this is how invalid child transactions don't break everything
- */
-
-
   /**
    * {@inheritdoc}
    */

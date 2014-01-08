@@ -11,18 +11,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class OperationForm extends ConfirmFormBase {
 
   private $op;
-  private $settings;
-  private $specific_settings;
+  private $configuration;
   private $transaction;
 
   function __construct() {
     //yuk getting the parameters this way
     $parameters = \Drupal::request()->attributes;
     $this->transaction = $parameters->get('mcapi_transaction');
-    $this->op = $parameters->get('op');
-    $config = $this->config('mcapi.operation.'.$this->op);
-    $this->settings = $config->get('general');
-    $this->specific_settings = $config->get('specific');
+    $this->op = $parameters->get('op') ? : 'view';
+    $this->configuration = $this->config('mcapi.operation.'.$this->op);
   }
   /**
    * {@inheritdoc}
@@ -35,7 +32,7 @@ class OperationForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return $this->settings['page_title'];
+    return $this->configuration->get('page_title');
   }
 
   /**
@@ -52,24 +49,25 @@ class OperationForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelText() {
-    return $this->settings['cancel_button'];
+    return $this->configuration->get('cancel_button') ? : '';
   }
 
   /**
    * {@inheritdoc}
    */
   public function getDescription() {
-    if ($this->settings['format'] == 'twig') {
+    //this provides the transaction_view part of the form as defined in the operation settings
+    if ($this->configuration->get('format') == 'twig') {
       //ah but where to get the $tokens from
       //maybe this should just be a feature of the template_preprocess_mcapi_transaction()
       module_load_include('inc', 'mcapi');
-      return mcapi_render_twig_transaction($this->settings['twig'], $this->transaction, FALSE);
+      return mcapi_render_twig_transaction($this->configuration->get('twig'), $this->transaction, FALSE);
     }
     else {//this is a transaction entity display mode, like 'certificate'
       $renderable = \Drupal::entityManager()->getViewBuilder('mcapi_transaction')
       ->view(
         $this->transaction,
-        $this->settings['format'] == 'certificate' ? 'certificate' : $this->settings['twig']
+        $this->configuration->get('format') == 'certificate' ? 'certificate' : $this->configuration->get('twig')
       );
       $renderable['#showlinks'] = FALSE;
       return drupal_render($renderable);
@@ -81,9 +79,11 @@ class OperationForm extends ConfirmFormBase {
    */
   public function buildForm(array $form, array &$form_state) {
     $form = parent::buildForm($form, $form_state);
-    //this might work just inheriting from the confirmFormBase,
-    //except perhaps for all the dialoge boxes and ajax
-
+    //add any extra form elements as defined in the operation plugin.
+    $form += transaction_operations($this->op)->form($this->transaction);
+    if ($this->op == 'view') {
+      unset($form['actions']);
+    }
     return $form;
 
     //this form will submit and expect ajax
@@ -121,8 +121,14 @@ class OperationForm extends ConfirmFormBase {
 
   	//and invoke trigger and rules using the changed transaction
   	mcapi_transaction_operated($this->op, $this->transaction, $old_state);
-  	$uri = $this->transaction->uri();
-  	$form_state['redirect'] = $uri['path'];//might not be a good idea for undone transactions
+
+  	//where to go now?
+  	$path = $this->configuration->get('path');
+  	if (!$path) {//default is to redirect to the transaction itself
+    	$uri = $this->transaction->uri();
+    	$path = $uri['path'];
+  	}
+    $form_state['redirect'] = $path;//might not be a good idea for undone transactions
   	return $result;
   }
 }

@@ -132,10 +132,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * preSave
+   * transaction entity presave
    * passes the transaction around allowing modules
    * populates the children property
    * handles errors with child transactions
+   *
+   * @param EntityStorageControllerInterface $storage_controller
+   *   The transaction entity storage controller
    */
   public function preSave(EntityStorageControllerInterface $storage_controller) {
     if (!$this->isNew()) return;
@@ -173,6 +176,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * Validate a transaction, with its children.
    * Adds exceptions to each transaction's exception array
+   *
    * @return array $messages
    *   a flat list of messages from all transactions in the cluster
    */
@@ -294,8 +298,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * this is called from the FieldableDatabaseStorage
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
-    echo 'preCreate values: ';print_r($values);
-    //mtrace();
     $values += array(
       'description' => '',
       'parent' => 0,
@@ -308,7 +310,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'worths' => array(),
     );
     $types = mcapi_get_types(FALSE);
-    //$values['state'] = $types[$values['type']]->start_state;
   }
 
   /**
@@ -334,9 +335,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $properties['parent'] = FieldDefinition::create('entity_reference')
       ->setLabel('Parent')
       ->setDescription('Parent transaction that created this transaction')
-      ->setSettings(array(
-          'target_type' => 'mcapi_transaction',
-        ));
+      ->setSettings(array('target_type' => 'mcapi_transaction'));
     $properties['worths'] = FieldDefinition::create('worths')
       ->setLabel('Worth')
       ->setDescription('Value of this transaction')
@@ -344,16 +343,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $properties['payer'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payer')
       ->setDescription('the user id of the payer')
-      ->setSettings(array(
-          'target_type' => 'user',
-        ))
+      ->setSettings(array('target_type' => 'user'))
       ->setRequired(TRUE);
     $properties['payee'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payee')
       ->setDescription('the user id of the payee')
-      ->setSettings(array(
-          'target_type' => 'user',
-        ))
+      ->setSettings(array('target_type' => 'user'))
       ->setRequired(TRUE);
     //quantity is done, perhaps controversially, but the field API
     $properties['type'] = FieldDefinition::create('string')
@@ -364,15 +359,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $properties['state'] = FieldDefinition::create('integer')
       ->setLabel('State')
       ->setDescription('completed, pending, disputed, etc')
-      ->setSettings(array(
-          'default_value' => 1,
-        ));
+      ->setSettings(array('default_value' => 1));
     $properties['creator'] = FieldDefinition::create('entity_reference')
       ->setLabel('Creator')
       ->setDescription('the user id of the creator')
-      ->setSettings(array(
-          'target_type' => 'user',
-        ))
+      ->setSettings(array('target_type' => 'user'))
       ->setRequired(TRUE);
     $properties['created'] = FieldDefinition::create('integer')
       ->setLabel('Created')
@@ -381,9 +372,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $properties['children'] = FieldDefinition::create('entity_reference')
       ->setLabel('Children')
       ->setDescription('List of all child transactions.')
-      ->setSettings(array(
-          'target_type' => 'mcapi_transaction',
-        ));
+      ->setSettings(array('target_type' => 'mcapi_transaction'));
 
     return $properties;
   }

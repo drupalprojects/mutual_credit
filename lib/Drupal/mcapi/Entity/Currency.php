@@ -168,7 +168,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   /**
    * Get the Currency Type Plugin
    */
-  public function getPlugin() {echo 'getting currency plugin for '.$this->id();
+  public function getPlugin() {
     if (!$this->plugin) {
       $this->plugin = \Drupal::service('plugin.manager.mcapi.currency_type')->getInstance(array(
         'currency' => $this,

@@ -11,10 +11,10 @@ use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Config\ConfigFactory;
 
-//TODO should we extend EntityInterface or ConfigEntityInterface?
+//TODO Gordon should we extend EntityInterface or ConfigEntityInterface?
 interface OperationInterface {
 
-	public function operation_form(TransactionInterface $transaction);
+	public function form(TransactionInterface $transaction);
 
 	/*
 	 * produces a form element for conifiguring access to this operation
@@ -35,5 +35,4 @@ interface OperationInterface {
 
   public function ajax_submit(array $form_state_values);
 
-  //public function confirm_form(array $form, array &$form_state, $op);
 }

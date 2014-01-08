@@ -28,7 +28,7 @@ class Worths extends ConfigFieldItemBase {
 
   /**
    * Implements \Drupal\Core\TypedData\ComplexDataInterface::get().
-   * what does this return;
+   * TODO Gordon what does this return?
    */
   public function get($property_name) {
     if (entity_load('mcapi_currency', $property_name)) {
@@ -62,7 +62,6 @@ class Worths extends ConfigFieldItemBase {
     }
     $this->values = $values;
     $this->properties = array();
-
     // Add any new currencies
     foreach ($this->values as $currcode => $value) {
       if (!isset($this->properties[$currcode]) && ($currency = entity_load('mcapi_currency', $currcode))) {
