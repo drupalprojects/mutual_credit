@@ -23,12 +23,37 @@ use Drupal\user\RoleInterface;
  *   config_prefix = "mcapi.type",
  *   entity_keys = {
  *     "id" = "id",
+ *     "label" = "label",
  *   }
  * )
  */
 class Type extends ConfigEntityBase {
 
+  /**
+   * Identifier for the current Type
+   *
+   * @var string
+   */
+  public $id;
+
+  /**
+   * Label of the current Type
+   *
+   * @var string
+   */
   public $label;
+
+  /**
+   * Description of the current State
+   *
+   * @var string
+   */
   public $description;
 
+  /**
+   * start of which to start with.
+   *
+   * @var integer
+   */
+  public $start_state;
 }
