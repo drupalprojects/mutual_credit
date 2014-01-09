@@ -291,13 +291,13 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     //then get rid of the last line of this function
     $query = db_select('mcapi_transactions_index');
     $query->join('mcapi_transactions', 'mcapi_transactions', 'i.xid = t.xid');
-    $query->addExpression('COUNT(DISTINCT t.serial)', 'trades')
-      ->addExpression('SUM(i.incoming))', 'gross_in')
-      ->addExpression('SUM(i.outgoing))', 'gross_out')
-      ->addExpression('SUM(i.diff))', 'balance')
-      ->addExpression('SUM(i.volume))', 'volume')
-      ->addExpression('COUNT(DISTINCT i.uid2)', 'partners')
-      ->condition('currcode', $currency->id())
+    $query->addExpression('COUNT(DISTINCT t.serial)', 'trades');
+    $query->addExpression('SUM(i.incoming))', 'gross_in');
+    $query->addExpression('SUM(i.outgoing))', 'gross_out');
+    $query->addExpression('SUM(i.diff))', 'balance');
+    $query->addExpression('SUM(i.volume))', 'volume');
+    $query->addExpression('COUNT(DISTINCT i.uid2)', 'partners');
+    $query->condition('currcode', $currency->id())
       ->condition('i.uid1', $account->id());
     $this->parseConditions($query, $conditions);
     $result = $query->execute()->fetchAssoc();
