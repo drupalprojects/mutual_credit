@@ -3,7 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\TransactionStorageController.
- * this uses sql for speed rather than the Drupal DbAPI
+ * this sometimes uses sql for speed rather than the Drupal DbAPI
  */
 
 namespace Drupal\mcapi;
@@ -375,26 +375,4 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       $query->conditions('state', '0', '>');
     }
   }
-}
-
-
-function mcapi_parse_conditions($conditions) {
-  if (empty($conditions)) return '';
-  $where = array();
-  foreach ($conditions as $condition) {
-    if (is_array($condition)) {
-      $condition[] = '=';
-      list($field, $value, $operator) = $condition;
-      if (empty($operator)) $operator = ' = ';
-      if (is_array($value)) {
-        $value = '('.implode(', ', $value) .')';
-        $operator = ' IN ';
-      }
-      $where[] = " ( t.$field $operator $value ) ";
-    }
-    else {//the condition is already provided as a string
-      $where[] = " $condition ";
-    }
-  }
-  return ' AND '. implode(' AND ', $where);
 }

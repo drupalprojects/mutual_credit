@@ -17,8 +17,15 @@ class OperationForm extends ConfirmFormBase {
   function __construct() {
     //yuk getting the parameters this way
     $parameters = \Drupal::request()->attributes;
-    $this->transaction = $parameters->get('mcapi_transaction');
     $this->op = $parameters->get('op') ? : 'view';
+    if ($this->op == 'confirm') {
+      $this->transaction = \Drupal::service('user.tempstore')
+      ->get('TransactionForm')
+      ->set('entity', $this->entity);
+    }
+    else {
+      $this->transaction = $parameters->get('mcapi_transaction');
+    }
     $this->configuration = $this->config('mcapi.operation.'.$this->op);
   }
   /**

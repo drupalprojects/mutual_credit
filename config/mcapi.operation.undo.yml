@@ -8,7 +8,7 @@ feedback:
 format2: certificate
 twig2: ''
 redirect: ''
-message: hoorah
+message: The transaction has been deleted
 send: 0
 subject: 'A transaction was deleted'
 body: 'no tokens were a available to write this mail'

@@ -133,6 +133,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @see \Drupal\mcapi\TransactionInterface::validate()
    */
   public function validate() {
+
+    \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $transaction);
+
     $this->exceptions = array();
     //check that each trader has permission to use all the currencies
     foreach (array($this->payer->entity, $this->payee->entity) as $account) {
@@ -183,13 +186,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       );
     }
     //there might be a use-case when things are done out of order, so this is intended as a temp flag
-    $transaction->validated = TRUE;
+    $this->validated = TRUE;
 
     //While we're validating the parent ONLY, pass the transaction cluster around
     if ($this->parent->value == 0) {
-      //this is done a bit surrupticiously in the middle of the validate function.
+
+      //prevent the main transaction being altered as we pass it round
+      //the main transaction was already altered in the preValidate hook.
+      $clone = clone($this);
       //previous the children's parent was set to temp, but is that necessary?
-      $this->children = \Drupal::moduleHandler()->invokeAll('transaction_children', $cluster);
+      $this->children = \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', $clone);
+      \Drupal::moduleHandler()->alter('mcapi_transaction_children', $this->children, $clone);
 
       $messages = array();
       $children = $this->children[0];
@@ -240,6 +247,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @see \Drupal\mcapi\TransactionInterface::preSave($storage_controller)
    */
   public function preSave(EntityStorageControllerInterface $storage_controller) {
+
     if ($this->isNew()) {
       //TODO: Change this so that you only create new serial numbers on the parent transaction.
       if (!$this->serial->value) {

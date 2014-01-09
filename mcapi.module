@@ -991,3 +991,16 @@ function mcapi_config_translation_info() {
 function mcapi_config_translation_type_info_alter($info) {
   print_r($info);
 }
+
+/**
+ * implements hook_mcapi_transaction_children().
+ * temp just to test children
+ * Altering the $transaction will have no effect
+ * @param TransactionInterface $transaction
+ * @return array
+ */
+function mcapi_mcapi_transaction_children($transaction) {
+  $values = array('payer' => 1,'payee' => 2, 'worths' => array('credunit' => 1));
+  $transaction = entity_create('mcapi_transaction', $values);
+  return array($transaction);
+}

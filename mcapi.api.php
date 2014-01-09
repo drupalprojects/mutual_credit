@@ -1,53 +1,65 @@
-mcapi_ <?php
+<?php
 /**
  * @file
  * Formal description of transaction handling function and Entity controller functions
  *
- * N.B. transaction' can have 3 different meanings
- *  a database transaction (not relevant to this document)
- *  Fieldable entity with one or more '$items' each a in different currency. This is what views works with
- *  A transaction cluster is an array of the previous 'transactions',
- *  usually before they are written to the db, where they will have the same serial number and state
- *    The first transaction in a cluster 'volitional' and the rest, 'dependent',
- *   which means they were created automatically, from the volitional
- *   the dependent transactions share a serial number and state, but probably have a different 'type'
- *  When a transaction is loaded from the db, the dependents are put into (array)$transaction->dependents.
+ * N.B
+ * The mcapi_transaction entity has an entity_reference field, children, which contains similar entities
+ * The parent and the children are saved side by side in the database, with a 'parent xid' property
+ * Of entities with the same serial number, one should have a 'parent' property of 0, and all the others should have that entities xid as their parent.
+ * The functions here all assume the transaction is fully loaded, with children, unless otherwise stated
  */
 
 /*
- * Community Accounting API FOR MODULE DEVELOPERS
- * WRAPPER FUNCTIONS
- * These 3 wrapper functions around the following transaction controller API
- * are mostly concerned with managing transactions as clusters sharing the same serial number
- * Module developers should use these functions wherever possible.
+ * HOOKS
  */
 
-
-/*
- * create child transactions and return an array of them
- * then will then be added to the transaction->children
+/**
+ * @return array
+ *   permission array as in hook_permission
  */
-function hook_transaction_presave(TransactionInterface $transaction){
-  return array();
+function hook_mcapi_info_drupal_permissions(){}
+
+/**
+ * Let your module validate the transaction. Don't throw errors, but add TransactionException objects to $transaction->exceptions
+ *
+ * $param TransactionInterface $transaction
+ *   this CAN be edited
+ */
+function hook_mapi_transaction_validate($transaction){}
+
+/**
+ * generate the $transaction->children
+ *
+ * $param TransactionInterface $transaction
+ *
+ * @return array
+ *   an array of transactions to be put in the $children property
+ */
+function hook_mapi_transaction_children($transaction){}
+
+/**
+ * alter the $transaction->children
+ *
+ * $param array $children
+ * $param TransactionInterface $transaction
+ *   Editing this will have no effect
+ */
+function hook_mapi_transaction_children_alter($children, $cloned_transaction){}
+
+/**
+ * Let other modules respond to a transaction operation
+ *
+ * @param $transaction
+ * @param $context
+ *   an array consisting of op: the operation plugin name; old_state: the state before the operation happened; config: the plugin configuration;
+ * @return array
+ *   permission array as in hook_permission
+ */
+function hook_mapi_transaction_operated($transaction, $context){
+
 }
 
-/*
- * create child transactions
- * return an array of transaction objects
- */
-function hook_transaction_children(TransactionInterface $transaction){}
-
-/*
- * The default entity controller supports 3 undo modes
- * Utter delete
- * Change state to erased
- * Create counter-transaction and set state of both to TRANSACTION_STATE_UNDONE
- * NB this function goes on to call hook_transaction_undo()
- */
-try {
-  $transaction->undo();
-}
-catch(exception $e){}
 
 /*
  * filter transactions
@@ -107,32 +119,9 @@ $array  = transaction_filter($conditions, $offset, $limit);
 //not implemented yet
 $account->getTradeSummary();
 
-
 /*
- * list of hooks called in this module
- * no need to put hook_info coz that's just for lazy loading
+ *
  */
-
-//check the transactions and the system integrity after the transactions would go through
-//do NOT change the transaction
-function hook_mcapi_transaction_validate($transactions){}
-
-//respond to the creation of a transaction
-function hook_transaction_post_insert($transaction){}
-
-//preparing a transaction for rendering
-function hook_transactions_view($transactions, $view_mode, $suppress_ops){}
-
-//respond to the changing of a transaction
-function hook_transaction_update($serial){}
-
-//respond to the removal, or undoing of a transaction
-function hook_transaction_undo($serial){}
-
-
-//declare permissions to go into the community accounting section of the drupal permissions page
-function hook_mcapi_info_drupal_permissions(){}
-
 
 /**
  * Viewing a transaction

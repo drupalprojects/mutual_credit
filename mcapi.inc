@@ -1,8 +1,11 @@
-  <?php
+<?php
 
 use Drupal\Core\Language\Language;
 use Drupal\Core\Template\Attribute;
 
+/*
+ * implements hook_help().
+ */
 function _workflow_help() {
   //TODO lay this page out more attractively
   //TODO include operations
@@ -103,33 +106,6 @@ function _mcapi_calc($formula, $base_value) {
 }
 
 
-/*
- * default theme implementation for callback 'worth_element'
- * called once per $item
- */
-function theme_worth_element($variables) {die('are we using this?');
-  $element = &$variables['element'];
-  $element['#attributes']['class'][] = "worth-widget";
-  $element['#attributes'] = new Attribute($element['#attributes']);
-  $curr_select = drupal_render($element['currcode']);
-  $quant_field = drupal_render($element['main_quant']);
-  if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
-    $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
-    $currency_display = entity_load('mcapi_currency', $currcode)->display;
-    if (isset($element['div_quant'])) {
-      $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
-    }
-    $output = $curr_select . $quant_field;
-  }
-  else {//if there is no known currcode, the
-    if (!empty($element['div_quant'])) {
-      $quant_field .= drupal_render($element['div_quant']);
-    }
-    $output = $curr_select . $quant_field;
-  }
-  return '<div ' . $element['#attributes'] . '>'. $output .'</div>';
-}
-
 
 /*
  * a nice display of user balances in a currency
@@ -151,11 +127,16 @@ function mcapi_view_user_summary($account, $currencies = array()) {
   return $render_array;
 }
 
-/*
- * callback to give times and balances
-* $mode can be either
-*   diagonal, square, or the number of points required after sampling
-*/
+/**
+ * generate balance histories for one user and many currencies
+ *
+ * @param AccountInterface $account
+ * @param array $currcodes
+ * @param integer $since
+ *   unixtime before which to truncate
+ * @return array
+ *   an array of histories keyed by currcode
+ */
 function get_balance_history($account, $currcodes = array(), $since = NULL) {
 	if (empty($currcodes)) {
 		$currencies = mcapi_get_available_currencies($account);
@@ -184,7 +165,13 @@ function get_balance_history($account, $currcodes = array(), $since = NULL) {
 	return $histories;
 }
 
-//modify the history points for aesthetic reasons, or to save resources
+//
+/**
+ * implements template_preprocess_THEME
+ * modify the history points for aesthetic reasons, or to save resources
+ *
+ * @param array $vars
+ */
 function template_preprocess_balance_histories_gchart(&$vars) {
 	$histories = get_balance_history($vars['account'], $vars['currcodes']);
 	foreach ($histories as $currcode => &$history) {
@@ -220,10 +207,12 @@ function template_preprocess_balance_histories_gchart(&$vars) {
 	}
 }
 
-/*
+/**
  * implements hook_process_THEMEHOOK for balance_histories_gchart
  * generates the javascript for the gchart from the user's history of each currency
  * TODO cache this and clear the cache
+ *
+ * @param array $vars
  */
 function mcapi_process_balance_histories_gchart(&$vars) {
 	$histories = &$vars['histories'];
@@ -279,10 +268,12 @@ function drawBalanceHistory() {
 	$vars['javascript'] = $js;
 }
 
-/*
+/**
  * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction'
- * DO NOT OVERRIDE, override certificate or change the mcapi_sentence variable instead
- * javascript operations depend on the classes defined here
+ * DO NOT OVERRIDE, javascript operations depend on the classes defined here
+ * override certificate or change the mcapi_sentence variable instead
+ *
+ * @param array $vars
  */
 function template_preprocess_mcapi_transaction(&$vars) {
   $element = $vars['transaction'];
@@ -298,8 +289,10 @@ function template_preprocess_mcapi_transaction(&$vars) {
 	);
 }
 
-/*
+/**
  * implements template_preprocess_THEMEHOOK for theme callback 'certificate'
+ *
+ * @param array $vars
  */
 function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
@@ -320,7 +313,10 @@ function template_preprocess_certificate(&$vars) {
 	//not sure if this is worth the processing power at the moment
 	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type->value;
 }
-
+/**
+ * theme implementation for callback twig
+ * @param array $vars
+ */
 function theme_mcapi_twig($vars) {
 	return mcapi_render_twig_transaction(
 	  $vars['twig'],
@@ -329,12 +325,13 @@ function theme_mcapi_twig($vars) {
 	);
 }
 
-/*
- * helper for theming transactions
- * this is abstracted so that the arbitrary twig can access it too
- * $vars, an array to be added to
+/**
+ * Helper for theming transactions
+ *
+ * @param array $vars
+ * @param TransactionInterface $transaction
+ * @param array $content
  */
-
 function mcapi_transaction_process_vars(&$vars, TransactionInterface $transaction, array $content) {
   $vars['serial'] = $transaction->serial->value;
   $vars['payer'] = $transaction->payer->entity->label();
@@ -367,8 +364,12 @@ function mcapi_transaction_process_vars(&$vars, TransactionInterface $transactio
 }
 
 
-/*
- * does this more naturally belong in the TransactionViewBuilder?
+/**
+ * Prepares a transaction, and renders it using a passed twig template
+ *
+ * @param string $template
+ * @param TransactionInterface $transaction
+ * @param string $showlinks
  */
 function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction, $showlinks = TRUE) {
   $vars = array();
@@ -385,9 +386,17 @@ function mcapi_render_twig_transaction(string $template, TransactionInterface $t
   return mcapi_render_twig($template, $vars);
 }
 
-/*
+/**
  * special function to compensate for twig only accepting filenames as templates
- * this was much too hard!
+ * this should have already existed in twig itself, but twig insists on reading the template from a filepath
+ *
+ * @param string $template
+ *   a twig-compatible template
+ * @param array $tokens
+ *   the replacements
+ *
+ * @return string
+ *   HTML
  */
 function mcapi_render_twig(string $template, array $tokens) {
   //first validate that everything in the template is available as a key in the $tokens
@@ -413,26 +422,24 @@ function mcapi_render_twig(string $template, array $tokens) {
   return $twig->render($tokens);
 }
 
-
-
 /*
  * Settings form callback for action mcapi_transaction_entity_uid
 */
 function mcapi_transaction_entity_uid_form($context) {
   $context += array(
-      'mapping' => 'uidpays',
-      'transaction_types' => array(),
-      'otheruser' => 1,
-      'worth_items' => array('worths' => array(), 'round' => 'down')
+    'mapping' => 'uidpays',
+    'transaction_types' => array(),
+    'otheruser' => 1,
+    'worth_items' => array('worths' => array(), 'round' => 'down')
   );
   $form['direction'] = array(
-      '#title' => t('Direction'),
-      '#type' => 'radios',
-      '#options' => array(
-          'uidpays' => t('User pays reservoir account'),
-          'paysuid' => t('Reservoir account pays user')
-      ),
-      '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
+    '#title' => t('Direction'),
+    '#type' => 'radios',
+    '#options' => array(
+      'uidpays' => t('User pays reservoir account'),
+      'paysuid' => t('Reservoir account pays user')
+    ),
+    '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
   );
 
   $currencies = currencies_load();
@@ -441,37 +448,36 @@ function mcapi_transaction_entity_uid_form($context) {
     $defaults[$item['currcode']] = $item['quantity'];
   }
   $form['worth_items'] = array(
-      '#title' => t('Worth'),
-      '#type' => 'fieldset',
-      '#name' => 'worth_items',//this helps in the fieldset validation
-      '#description' => t('What is the fixed value of this transaction?') .' '. t("This value will be overwritten if the passed entity has the 'worth' field"),
-      '#tree' => TRUE,
-      'worths' => array(
-          //'#title' => t('Worths'),
-          '#type' => 'worths',
-          '#default_value' => $defaults,
-          '#preset' => TRUE,//ensures that all currencies are rendered
-      )
+    '#title' => t('Worth'),
+    '#type' => 'fieldset',
+    '#name' => 'worth_items',//this helps in the fieldset validation
+    '#description' => t('What is the fixed value of this transaction?') .' '. t("This value will be overwritten if the passed entity has the 'worth' field"),
+    '#tree' => TRUE,
+    'worths' => array(
+      //'#title' => t('Worths'),
+      '#type' => 'worths',
+      '#default_value' => $defaults,
+      '#preset' => TRUE,//ensures that all currencies are rendered
+    )
   );
   $form['round'] = array(
-      '#title' => t('Rounding'),
-      '#description' => t('Used if this transaction depends on another transaction'),
-      '#type' => 'radios',
-      '#options' => array('up' => t('Up'), 'down' => t('Down')),
-      '#default_value' => isset($context['worth_items']['round']) ? $context['worth_items']['round'] : 'down',
-      '#weight' => 1
+    '#title' => t('Rounding'),
+    '#description' => t('Used if this transaction depends on another transaction'),
+    '#type' => 'radios',
+    '#options' => array('up' => t('Up'), 'down' => t('Down')),
+    '#default_value' => isset($context['worth_items']['round']) ? $context['worth_items']['round'] : 'down',
+    '#weight' => 1
   );
-
   $form['description'] = array(
-      '#title' => t('Transaction description text'),
-      '#type' => 'textfield',
-      '#default_value' => @$context['worth_items']['description'],
+    '#title' => t('Transaction description text'),
+    '#type' => 'textfield',
+    '#default_value' => @$context['worth_items']['description'],
   );
-
   return $form;
 }
 /*
  * configuration action submit callback
+ * almost certainly deprecated
 */
 function mcapi_transaction_entity_uid_submit($form, $form_state) {
   form_state_values_clean($form_state);
@@ -481,97 +487,95 @@ function mcapi_transaction_entity_uid_submit($form, $form_state) {
 
 /*
  * Settings form callback for mcapi_pay_someone_action
-* odd that form_state isn't passed
-* this means we can't do form_load_include
-*/
+ */
 function mcapi_dependent_transaction_action_form($context) {
   drupal_set_message('This tool is a bit crude but it will have to do until someone can figure out how to do it with rules');
   drupal_set_message('This action ONLY goes on one the hook, and adds a dependent transaction to the cluster. with the same serial number');
   drupal_set_message('It will be easy to make this action more sophisticated');
   //set the defaults
   $context += array(
-      'conditions' => array(
-          'transaction_types' => array('default')
+    'conditions' => array(
+      'transaction_types' => array('default')
+    ),
+    'presets' => array(
+      'participants' => array(
+        'mapping' => 'payerpays',
+        'otheruser' => 1
       ),
-      'presets' => array(
-          'participants' => array(
-              'mapping' => 'payerpays',
-              'otheruser' => 1
-          ),
-          'worth_items' => array(
-              'worths' => array(),
-              'round' => 'down'
-          )
-      ),
+      'worth_items' => array(
+        'worths' => array(),
+        'round' => 'down'
+      )
+    ),
   );
   $form['#tree'] = TRUE;
   $form['conditions'] = array(
-      '#title' => t('Conditions'),
-      '#description' => t('A dependent transaction will only be created when the main transaction meets these conditions'),
-      '#type' => 'fieldset',
-      '#weight' => -1,
-      'transaction_types' => _transaction_type_selector(@$context['conditions']['transaction_types'], TRUE)
-      //more could be added, including stuff unconnected to the transaction, like whether there is an r in the month
+    '#title' => t('Conditions'),
+    '#description' => t('A dependent transaction will only be created when the main transaction meets these conditions'),
+    '#type' => 'fieldset',
+    '#weight' => -1,
+    'transaction_types' => _transaction_type_selector(@$context['conditions']['transaction_types'], TRUE)
+    //more could be added, including stuff unconnected to the transaction, like whether there is an r in the month
   );
 
   $form['presets'] = array(
-      '#title' => t('Presets'),
-      '#description' => t('Specify the properties of the dependent transaction') .' '.t("It will have the type 'dependent'."),
+    '#title' => t('Presets'),
+    '#description' => t('Specify the properties of the dependent transaction') .' '.t("It will have the type 'dependent'."),
+    '#type' => 'fieldset',
+    '#weight' => 0,
+    'participants' => array(
+      '#title' => t('Participants'),
+      '#description' => t('Determine who will pay whom'),
       '#type' => 'fieldset',
-      '#weight' => 0,
-      'participants' => array(
-          '#title' => t('Participants'),
-          '#description' => t('Determine who will pay whom'),
-          '#type' => 'fieldset',
-          'mapping' => array(
-              '#title' => t('Mapping'),
-              '#description' => t('On a node trigger, the payer and payee will both evaluate to the node author'),
-              '#type' => 'radios',
-              '#options' => array(
-                  'payerpays' => t('Payer pays other'),
-                  'payeepays' => t('Payee pays other'),
-                  'payspayer' => t('Other pays payer'),
-                  'payspayee' => t('Other pays payee'),
-              ),
-              '#default_value' => isset($context['presets']['participants']['mapping']) ? $context['presets']['participants']['mapping'] : array('payerpays'),
-          ),
-          'otheruser' => array(
-              '#title' => t('Other account'),
-              '#type' => 'user_chooser_segment_perms',
-              '#args' => array('transact'),
-              '#default_value' => isset($context['presets']['participants']['otheruser']) ? $context['presets']['participants']['otheruser'] : 1,
-              '#weight' => 1,
-          )
+      'mapping' => array(
+        '#title' => t('Mapping'),
+        '#description' => t('On a node trigger, the payer and payee will both evaluate to the node author'),
+        '#type' => 'radios',
+        '#options' => array(
+          'payerpays' => t('Payer pays other'),
+          'payeepays' => t('Payee pays other'),
+          'payspayer' => t('Other pays payer'),
+          'payspayee' => t('Other pays payee'),
+        ),
+        '#default_value' => isset($context['presets']['participants']['mapping']) ? $context['presets']['participants']['mapping'] : array('payerpays'),
       ),
-      'worth_items' => array(
-          '#title' => t('Worth'),
-          '#description' => t('The value of the transction may depend on the value of the main transaction.'),
-          '#type' => 'fieldset',
-          '#name' => 'worth_items',//this helps in the fieldset validation
-          '#tree' => TRUE,
-          'worths' => array(
-              //'#title' => t('Worths'),
-              '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity.'),
-              '#type' => 'worths',
-              '#default_value' => isset($context['presets']['worth_items']['worths']) ? _worthitems_to_worths($context['presets']['worth_items']['worths']) : array(),
-              '#calc' => TRUE,//allow a formula
-              '#preset' => TRUE, //show all currencies
-              //it affects what happens to the zero and null values
-              '#after_build' => array('mcapi_configure_worth_accept_formula')
-          ),
-          'round' => array(
-              '#title' => t('Rounding'),
-              '#type' => 'radios',
-              '#options' => array('up' => t('Up'), 'down' => t('Down')),
-              '#default_value' => isset($context['presets']['worth_items']['round']) ? $context['presets']['worth_items']['round'] : 'down',
-              '#weight' => 1
-          )
+      'otheruser' => array(
+        '#title' => t('Other account'),
+        '#type' => 'user_chooser_segment_perms',
+        '#args' => array('transact'),
+        '#default_value' => isset($context['presets']['participants']['otheruser']) ? $context['presets']['participants']['otheruser'] : 1,
+        '#weight' => 1,
       )
+    ),
+    'worth_items' => array(
+      '#title' => t('Worth'),
+      '#description' => t('The value of the transction may depend on the value of the main transaction.'),
+      '#type' => 'fieldset',
+      '#name' => 'worth_items',//this helps in the fieldset validation
+      '#tree' => TRUE,
+      'worths' => array(
+        //'#title' => t('Worths'),
+        '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity.'),
+        '#type' => 'worths',
+        '#default_value' => isset($context['presets']['worth_items']['worths']) ? _worthitems_to_worths($context['presets']['worth_items']['worths']) : array(),
+        '#calc' => TRUE,//allow a formula
+        '#preset' => TRUE, //show all currencies
+        //it affects what happens to the zero and null values
+        '#after_build' => array('mcapi_configure_worth_accept_formula')
+      ),
+      'round' => array(
+        '#title' => t('Rounding'),
+        '#type' => 'radios',
+        '#options' => array('up' => t('Up'), 'down' => t('Down')),
+        '#default_value' => isset($context['presets']['worth_items']['round']) ? $context['presets']['worth_items']['round'] : 'down',
+        '#weight' => 1
+      )
+    )
   );
   $form['presets']['description'] = array(
-      '#title' => t('Transaction description text'),
-      '#type' => 'textfield',
-      '#default_value' => @$context['presets']['description'],
+    '#title' => t('Transaction description text'),
+    '#type' => 'textfield',
+    '#default_value' => @$context['presets']['description'],
   );
 
   return $form;
@@ -595,8 +599,14 @@ function mcapi_dependent_transaction_action_submit($form, $form_state) {
   return $form_state['values'];
 }
 
-
+/**
+ * helper function to generate the workflow display on admin/accounting/workflow
+ *
+ * @return array
+ *   a renderable array
+ */
 function mcapi_workflow_help() {
+  //TODO this needs prettifying
   drupal_add_css('table.help{float:left;margin-right:1em; width:50%;} ul.admin-list{clear:both;}', array('type' => 'inline'));
   $renderable = array(
     'states' => array(
@@ -625,26 +635,11 @@ function mcapi_workflow_help() {
 
 /*
  * element validate callback
-* ensures that the formula for calculating a quantity works
-*/
+ * ensures that the formula for calculating a quantity works
+ */
 function validate_mcapi_configure_worth_formula(&$element, $form_state) {
   if (empty($element['#value'])) return;
   if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
     form_error($element, t('Invalid formula'));
   }
-}
-
-
-
-function _transaction_type_selector($default, $multiple = TRUE, $exclude = array()) {
-  die('_transaction_type_selector deprected?');
-  $types = array_diff(array_keys(mcapi_get_types()), $exclude);
-  return array(
-      '#title' => $multiple ? t('Transaction types') : t('Transaction type'),
-      '#type' => $multiple ? 'checkboxes' : 'select',
-      '#options' => drupal_map_assoc($types),
-      '#default_value' => $default,
-      '#required' => TRUE,
-      '#element_validate' => array('mcapi_validate_ttype')
-  );
 }

@@ -3,9 +3,7 @@
 use \Drupal\field\Field;
 
 /*
- * implements hook_tokens for a transaction cluster
- * process one transaction at a time, containing dependents
- * also see entity_tokens and field_tokens
+ * implements hook_tokens().
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) return array();
@@ -54,6 +52,9 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
   return $replacements;
 }
 
+/**
+ * implements hook_token_info().
+ */
 function mcapi_token_info() {
   $info = array(
     'types' => array(
@@ -114,10 +115,13 @@ function mcapi_token_info() {
 
 /*
  * helper function to get the token names for helptext token service and twig
-* get the entity properties from mcapi_token_info, then the fieldapi fields
-* returns an array
-* this function would be handy for any entity_type
-*/
+ * get the entity properties from mcapi_token_info, then the fieldapi fields
+ * this function would be handy for any entity_type
+ * @param boolean
+ *   if TRUE the result will include the operation links
+ * @return array
+ *   names of replacable elements in the transaction
+ */
 function mcapi_transaction_list_tokens($showlinks = TRUE) {
   //no need to boot the whole token service, but maybe should get this from cache somehow?
   $data = mcapi_token_info();

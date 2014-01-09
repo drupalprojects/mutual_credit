@@ -1,6 +1,8 @@
 page_title: 'Confirm this transaction'
 format: certificate
 twig: ''
+button: 'Yes I''m sure'
+cancel_button: Cancel
 format2: certificate
 redirect: ''
 twig2: ''

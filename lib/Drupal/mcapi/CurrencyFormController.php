@@ -34,6 +34,7 @@ class CurrencyFormController extends EntityFormController {
    *   The widget or formatter plugin manager.
    */
   public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager) {
+    die('kkkkkkkkkkk');
     $this->pluginCurrencyManager = $currency_manager;
     $this->pluginWidgetManager = $widget_manager;
   }

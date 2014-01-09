@@ -63,12 +63,12 @@ class Confirm extends OperationBase {
   */
   public function settingsForm(array &$form, ConfigFactory $config) {
     parent::settingsForm($form, $config);
-    unset(
-      $form['sure']['button'],
-      $form['sure']['cancel_button'],
-      $form['notify'],
-      $form['op_title']
-    );
+    //unset(
+      //$form['sure']['button'],
+      //$form['sure']['cancel_button'],
+      //$form['notify'],
+      //$form['op_title']
+    //);
   }
 
 }

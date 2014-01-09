@@ -11,6 +11,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\EntityFormController;
 use Drupal\mcapi\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
+use Drupal\action\Plugin\Action;
 
 class TransactionForm extends EntityFormController {
 
@@ -18,13 +19,17 @@ class TransactionForm extends EntityFormController {
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
   public function form(array $form, array &$form_state) {
+
+    $form = parent::form($form, $form_state);
+    $form = $this->form_step_1($form, $form_state);
+    $form['#validate'][] = array($this, 'step_1_validate');
+    $form['#submit'][] = array($this, 'step_1_submit');
+    return $form;
+
     if (empty($form_state['mcapi_submitted'])) {
-      $form = parent::form($form, $form_state);
-      $form = $this->form_step_1($form, $form_state);
-      $form['#validate'][] = array($this, 'step_1_validate');
-      $form['#submit'][] = array($this, 'step_1_submit');
     }
     else {
+
       $form = $this->form_step_2($form, $form_state);
       //$form['#validate'][] = array($this, 'step_2_validate');
       $form['#submit'][] = array($this, 'step_2_submit');
@@ -67,7 +72,7 @@ class TransactionForm extends EntityFormController {
     );
     $form['type'] = array(
       '#title' => t('Transaction type'),
-      '#options' => mcapi_info_types(TRUE),
+      '#options' => mcapi_get_types(TRUE),
       '#type' => 'mcapi_types',
       '#default_value' => $transaction->type->value,
       '#required' => TRUE,
@@ -113,6 +118,7 @@ class TransactionForm extends EntityFormController {
 
     //on the admin form it is possible to change the transaction type
     //so here we're going to ensure the state is correct, even through it was set in preCreate
+    //actually this should probably happen in Entity prevalidate, not in the form
     $types = mcapi_get_types();
     $type = $form_state['values']['type'];
     $form_state['values']['state'] = $types[$type]->start_state;
@@ -141,18 +147,28 @@ class TransactionForm extends EntityFormController {
         }
       }
     }*/
-    $form_state['mcapi_submitted'] = TRUE;//this means we move to step 2
+    //form_state['mcapi_submitted'] = TRUE;//this means we move to step 2
     $this->entity = $transaction;
   }
 
   public function step_1_submit(array $form, array &$form_state) {
-    $form_state['rebuild'] = TRUE;
+    $tempStore = \Drupal::service('user.tempstore')
+    ->get('TransactionForm')
+    ->set('entity', $this->entity);
+
+    //now we divert to the operation confirm form
+    $form_state['redirect'] = 'transaction/0/confirm';
+    //the transaction is confirmed using the operation plugin, Confirm, see
+    //Drupal\mcapi\ParamConverter\TransactionSerialConverter
+    //then
+    //Drupal\mcapi\Plugin\Operation\Confirm
   }
 
   public function step_2_validate(array $form, array &$form_state) {
     //the only reason we might need this function is if there should be
     //an extra input field for transaction ratings
   }
+
   /**
    * form submit callback
    */

@@ -111,7 +111,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
     $form['#prefix']= $this->description;
     //careful changing this form because the view operation alters it significantly
     if ($op_title = $config->get('op_title')) {
-      $form['op_title']= array (
+      $form['op_title'] = array (
         '#title' => t ('Link text'),
         '#description' => t ('A one word title for this operation'),
         '#type' => 'textfield',
@@ -129,7 +129,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
       '#weight' => 8
     );
 
-    $form['sure']['page_title']= array (
+    $form['sure']['page_title'] = array (
       '#title' => t ('Page title'),
       '#description' => t ("Page title for the operation's page") . ' TODO, make this use the serial number and description tokens or twig. Twig would make more sense, in this context.',
       '#type' => 'textfield',
@@ -138,27 +138,26 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
       '#weight' => 4,
       '#required' => TRUE
     );
-    $form['sure']['format']= array (
+    $form['sure']['format'] = array (
       '#title' => t ('Transaction display'),
       '#type' => 'radios',
-      // TODO get a list of the transaction display formats from the entity type
+      //TODO might want to get the full list of the transaction entity display modes
       '#options' => array (
         'certificate' => t ('Certificate'),
         'twig' => t ('Custom twig template')
-      // 'tokens' => t('Drupal token system'),
       ),
       '#default_value' => $config->get('format'),
       '#required' => TRUE,
       '#weight' => 6
    );
-    $form['sure']['twig']= array (
+    $form['sure']['twig'] = array (
       '#title' => t ('Template'),
       '#description' => $help,
       '#type' => 'textarea',
       '#default_value' => $config->get('twig'),
       '#states' => array (
         'visible' => array (
-          ':input[name="sure[format]"]' => array (
+          ':input[name="format"]' => array (
             'value' => 'twig'
           )
         )
@@ -218,7 +217,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#default_value' => $config->get('redirect'),
         '#states' => array (
           'visible' => array (
-            ':input[name="feedback[format2]"]' => array (
+            ':input[name="format2"]' => array (
               'value' => 'redirect'
             )
           )
@@ -232,7 +231,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#default_value' => $config->get('twig2'),
         '#states' => array (
           'visible' => array (
-            ':input[name="feedback[format2]"]' => array (
+            ':input[name="format2"]' => array (
               'value' => 'twig'
             )
           )
@@ -302,60 +301,18 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
 
   /*
    * inject something into the operation form
-  * the values will be passed into the operation execute function
-  *
-  * @param TransactionInterface $transaction
-  *   A transaction entity
-  *
-  * @return array
-  *   FormAPI $elements
-  */
+   * the values will be passed into the operation execute function
+   *
+   * @param TransactionInterface $transaction
+   *   A transaction entity
+   *
+   * @return array
+   *   FormAPI $elements
+   */
   public function form(TransactionInterface $transaction) {
     return array();
   }
 
-  /*
-   * Generate the actual operation form for the user to perform
-   *
-   * @param array $form
-   * @param array $form_state
-   * @param string $op
-   *
-   * @return array
-   *   FormAPI $elements
-   *
-   * {deprecated}
-   */
-/*
-  public function confirm_form(array $form, array &$form_state, $op) {
-    //TODO ENSURE THE FORM ID IS SET TO TRANSACTION_OPERATION_FORM
-    //TODO make this work
-    $form['serial']= array (
-      '#type' => 'value',
-      '#value' => $transaction->serial
-   );
-    $form_state['transaction_operation']= $this->id();
-
-    // TODO later
-    if (array_key_exists('form callback', $info) && function_exists($info['form callback'])) {
-      $form += $info['form callback']($op, $transaction);
-    }
-
-    if ($this->twig) {
-    }
-    else {
-      $form['certificate']= transaction_view ($transaction, 'certificate', TRUE);
-    }
-
-    // extend ConfirmFormBase instead of this
-    $form = confirm_form($form, $transaction->label(), empty ($this->redirect) ? $transaction->uri() : $this->redirect, $this->sure_message, $this->label(), t ('Back'), $this->id());
-    $form['#submit'][]= array (
-      $this,
-      'execute'
-   );
-    return $form;
-  }
-*/
   /*
    * execute ajax submission of the operation form, delivering ajax commands to the browser.
    * then the function exits;

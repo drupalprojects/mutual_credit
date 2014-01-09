@@ -122,4 +122,7 @@ mcapi.transaction.op:
     _form: '\Drupal\mcapi\Form\OperationForm'
   requirements:
     _entity_access: 'mcapi_transaction.op'
-
+  options:
+    parameters:
+      mcapi_transaction:
+        serial: true
