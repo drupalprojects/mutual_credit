@@ -23,12 +23,33 @@ use Drupal\user\RoleInterface;
  *   config_prefix = "mcapi.state",
  *   entity_keys = {
  *     "id" = "id",
+ *     "label" = "label",
  *   }
  * )
  */
 class State extends ConfigEntityBase {
 
+  /**
+   * Identifier for the current State
+   *
+   * @var string
+   */
+  public $id;
+
+  /**
+   * Label of the current state
+   *
+   * @var string
+   */
+  public $label;
+
+  /**
+   * Description of the current State
+   *
+   * @var string
+   */
   public $description;
+
   /**
    * The constant value which is stored in the database.
    * Positive values count towards the user balance
@@ -37,6 +58,5 @@ class State extends ConfigEntityBase {
    * @var string
    */
   public $value;
-
 
 }
