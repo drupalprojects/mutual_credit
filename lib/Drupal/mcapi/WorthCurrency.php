@@ -7,8 +7,6 @@
 
 namespace Drupal\mcapi;
 
-use Drupal\Core\TypedData\DataDefinitionInterface;
-use Drupal\Core\TypedData\TypedDataInterface;
 use Drupal\Core\TypedData\TypedData;
 
 class WorthCurrency extends TypedData {
