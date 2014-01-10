@@ -35,16 +35,6 @@ class Worth extends ConfigFieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function __get($name) {
-    if ($name == 'currency') { //FIXME: This is a giant hack!
-      return entity_load('mcapi_currency', $this->currcode);
-    }
-    return parent::__get($name);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getPropertyDefinitions() {
     if (!isset(static::$propertyDefinitions)) {
       static::$propertyDefinitions = parent::getPropertyDefinitions();
@@ -53,6 +43,10 @@ class Worth extends ConfigFieldItemBase {
         ->setLabel('Currency Id');
       static::$propertyDefinitions['value'] = DataDefinition::create('integer')
         ->setLabel('Value');
+      static::$propertyDefinitions['currency'] = DataDefinition::create('entity:currency')
+        ->setComputed(TRUE)
+        ->setReadOnly(TRUE)
+        ->setClass('\Drupal\mcapi\WorthCurrency');
     }
     return static::$propertyDefinitions;
   }
