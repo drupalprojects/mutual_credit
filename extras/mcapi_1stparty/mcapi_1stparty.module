@@ -1,35 +1,65 @@
 <?php
 
-function firstparty_forms_theme() {
+function mcapi_1stparty_help($path, $args) {
+  if ($path == 'admin/help/#mcapi_1stparty' || $path == 'admin/accounting/workflow/forms') {
+    $help[] = t('Design your own forms for users to start transactions on their workflow paths.');
+    $help[] = t('Each form has access control and can be presented as a block, page or panel.');
+    $help[] = t('Each form can have presets and hidden fields.');
+    //TODO might want to put some more detail here or at the top of the form editor page
+    return implode(' ', $help);
+  }
+
+}
+
+function mcapi_1stparty_theme() {
   return array(
     '1stpartyform'=> array(
       'function' => 'theme_1stpartyform',//no template is possible here
       'render element' => 'element',
-      //'file' => 'mcapi.inc'
+      //'file' => 'mcapi_1stparty.inc'
     ),
   );
 
 }
 
 //see https://drupal.org/node/1800686 on how to make dynamic routes
-
-function firstparty_forms_entity_info_alter(&$data) {
-  $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\firstparty_forms\Form\FirstPartyTransactionForm';
+/**
+ * implements hook_entity_info_alter
+ * adds a form controller to the transaction entity
+ */
+function mcapi_1stparty_entity_info_alter(&$data) {
+  $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm';
 }
 
 
 function theme_1stpartyform($vars) {
 	$form = $vars['element'];
+
 	$tokens = array();
-	foreach ($form['#twig_tokens'] as $fieldname) {;
+
+
+	foreach ($form['#twig_tokens'] as $fieldname) {
 		if ($form[$fieldname]['#type'] != 'value') {
      	unset($form[$fieldname]['#theme_wrappers']);
       $tokens[$fieldname] = drupal_render($form[$fieldname]);
 		}
 	}
-  //add the buttons if they weren't added already
+
+  //add the buttons if they weren't  in the twig template already
 	if (strpos($form['#twig'], '{{ actions }}') === FALSE) $form['#twig'] .= "\n{{ actions }}";
+
+
   module_load_include('inc', 'mcapi');
-        return mcapi_render_twig($form['#twig'], $tokens);
+  return mcapi_render_twig($form['#twig'], $tokens);
 }
 
+function mcapi_1stparty_menu() {
+  return array(
+   'admin/accounting/workflow/forms' => array(
+      'title' => 'Transaction form designer',
+      'description' => "Design your own transaction forms from the logged in user's perspective.",
+      'weight' => 4,
+      'route_name' => 'mcapi.admin_1stparty_editform_list',
+    )
+  );
+}

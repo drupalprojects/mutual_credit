@@ -2,13 +2,14 @@
 
 /**
  * @file
- * Definition of Drupal\firstparty_forms\FirstPartyEditFormController.
+ * Definition of Drupal\mcapi_1stparty\FirstPartyEditFormController.
  * This configuration entity is used for generating transaction forms.
  */
 
-namespace Drupal\firstparty_forms;
+namespace Drupal\mcapi_1stparty;
 
 use Drupal\Core\Entity\EntityFormController;
+use Drupal\Core\Entity\EntityManager;
 
 class FirstPartyEditFormController extends EntityFormController {
 
@@ -17,12 +18,12 @@ class FirstPartyEditFormController extends EntityFormController {
    */
   public function form(array $form, array &$form_state) {
     $form = parent::form($form, $form_state);
-    $mcapiform = $this->entity;
+    $configEntity = $this->entity;
     $form['#tree'] = TRUE;
     $form['title'] = array(
       '#type' => 'textfield',
       '#title' => t('Title of the form'),
-      '#default_value' => $mcapiform->title,
+      '#default_value' => $configEntity->title,
       '#size' => 40,
       '#maxlength' => 80,
       '#required' => TRUE,
@@ -31,13 +32,13 @@ class FirstPartyEditFormController extends EntityFormController {
 
     $form['id'] = array(
     	'#type' => 'machine_name',
-    	'#default_value' => $mcapiform->id(),
+    	'#default_value' => $configEntity->id(),
     	'#machine_name' => array(
     		'exists' => 'mcapi_currency_load',
     		'source' => array('title'),
     	),
     	'#maxlength' => 12,
-    	'#disabled' => !$mcapiform->isNew(),
+    	'#disabled' => !$configEntity->isNew(),
     );
 
     $form['access'] = array(
@@ -52,7 +53,7 @@ class FirstPartyEditFormController extends EntityFormController {
     $form['type'] =  array(
       '#title' => t('Transaction type'),
     	'#type' => 'mcapi_types',
-    	'#default_value' => $mcapiform->type,
+    	'#default_value' => $configEntity->type,
     	'#weight' => 5,
     );
 
@@ -63,7 +64,7 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#type' => 'vertical_tabs',
     	'#weight' => 6,
     );
-    $params = explode(':', $mcapiform->partner['user_chooser_config']);
+    $params = explode(':', $configEntity->partner['user_chooser_config']);
     if (!(array_filter($params))) $params = array('user_chooser_segment_perms', 'transact');
 
     $form['partner'] = array(
@@ -75,7 +76,7 @@ class FirstPartyEditFormController extends EntityFormController {
     		'#title' => t('Users to choose from'),
     		'#type' => 'select',
     		'#options' => module_invoke_all('uchoo_segments'),
-    		'#default_value' => $mcapiform->partner['user_chooser_config'],
+    		'#default_value' => $configEntity->partner['user_chooser_config'],
     		'#required' => TRUE,
       ),
     	//this really needs to be ajax...
@@ -87,7 +88,7 @@ class FirstPartyEditFormController extends EntityFormController {
     		'#type' => 'user_chooser_few',
     		'#callback' => array_shift($params),
     		'#args' => $params,
-    		'#default_value' => $mcapiform->partner['preset'],
+    		'#default_value' => $configEntity->partner['preset'],
     		'#multiple' => FALSE,
     		'#required' => FALSE
     	),
@@ -102,13 +103,13 @@ class FirstPartyEditFormController extends EntityFormController {
 
       	'#title' => t('Preset field to '),
 				'#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
-  			'#type' => $mcapiform->direction['widget'],
+  			'#type' => $configEntity->direction['widget'],
   			'#options' => array(
   				'none' => t('Neither'),
-  				'incoming' => empty($mcapiform->direction['incoming']) ? t('Incoming') : $mcapiform->direction['incoming'],
-  				'outgoing' => empty($mcapiform->direction['outgoing']) ? t('Outgoing') : $mcapiform->direction['outgoing'],
+  				'incoming' => empty($configEntity->direction['incoming']) ? t('Incoming') : $configEntity->direction['incoming'],
+  				'outgoing' => empty($configEntity->direction['outgoing']) ? t('Outgoing') : $configEntity->direction['outgoing'],
   			),
-  			'#default_value' => $mcapiform->direction['preset'],
+  			'#default_value' => $configEntity->direction['preset'],
   			'#required' => TRUE
     	),
 	    'widget' => array(
@@ -118,14 +119,14 @@ class FirstPartyEditFormController extends EntityFormController {
 	        'select' => t('Dropdown select box'),
 	        'radios' => t('Radio buttons')
 	      ),
-	      '#default_value' => $mcapiform->direction['widget'],
+	      '#default_value' => $configEntity->direction['widget'],
     		'#required' => TRUE,
 	      '#weight' => 1,
 	    ),
 	    'incoming' => array(
 	      '#title' => t("@label option label", array('@label' => t('Incoming'))),
 	      '#type' => 'textfield',
-	      '#default_value' => $mcapiform->direction['incoming'],
+	      '#default_value' => $configEntity->direction['incoming'],
 	    	'#placeholder' => t('Pay'),
     		'#required' => TRUE,
 	      '#weight' => 2
@@ -133,23 +134,21 @@ class FirstPartyEditFormController extends EntityFormController {
 	    'outgoing' => array(
 	      '#title' => t("@label option label",  array('@label' => t('Outgoing'))),
 	      '#type' => 'textfield',
-	      '#default_value' => $mcapiform->direction['outgoing'],
+	      '#default_value' => $configEntity->direction['outgoing'],
 	    	'#placeholder' => t('Request'),
     		'#required' => TRUE,
 	      '#weight' => 3
 	    ),
     	'#weight' => 3
   	);
-print_r($this->worths['preset']);
     $form['worths']= array(
    		'#title' => t('@fieldname preset', array('@fieldname' => t('Worths'))),
    		'#type' => 'details',
    		'#group' => 'steps',
    		'preset' => array(
    			'#title' => t('Preset field to'),
-   			'#description' => t('Preset'),
    			'#type' => 'worths',
-   			'#default_value' => $this->worths['preset'][0],
+   			'#default_value' => $configEntity->worths['preset'],
    		),
     	'#weight' => 4
     );
@@ -159,7 +158,6 @@ print_r($this->worths['preset']);
     		t('Leave blank to exclude the currency.'),
     	));
     }
-
     $form['description']= array(
     	'#title' => t('@fieldname preset', array('@fieldname' => t('Description'))),
     	'#description' => t('Direction relative to the current user'),
@@ -168,125 +166,70 @@ print_r($this->worths['preset']);
     	'preset' => array(
     		'#title' => t('Preset field to'),
     		'#type' => 'textfield',
-	      '#default_value' => $mcapiform->description['preset'],
+	      '#default_value' => $configEntity->description['preset'],
 	      '#required' => FALSE,
       ),
     	'placeholder' => array(
     		'#title' => t('Placeholder text'),
     		'#type' => 'textfield',
-	      '#default_value' => $mcapiform->description['placeholder'],
+	      '#default_value' => $configEntity->description['placeholder'],
 	      '#required' => FALSE,
     		'#attributes' => array('style' => 'color:#999')
       ),
     	'#weight' => 5
     );
+
+    $fields = $this->moduleHandler->invokeAll('entity_field_info', array('mcapi_transaction'));
+    foreach($fields['definitions'] as $def) {
+      //get the form widget
+      //print_r($def);
+    }
+    echo "TODO add the extra fields when field_attach_form is deprecated in EntityFormController";
+
+    module_load_include ('tokens.inc', 'mcapi');
+    $tokens = mcapi_transaction_list_tokens (FALSE);
+    //remove payer and payee and replace with partner and direction
+    $tokens[array_search('payer', $tokens)] = 'partner';
+    $tokens[array_search('payee', $tokens)] = 'direction';
+    $help = l(t('What is twig?'), 'http://twig.sensiolabs.org/doc/templates.html', array('external' => TRUE));
+
     //TODO workout what the tokens are and write them in template1['#description']
-    $form['step1'] = array(
-    	'#title' => t('Step 1'),
+    $form['experience'] = array(
+    	'#title' => t('User experience'),
     	'#type' => 'details',
     	'#group' => 'steps',
-    	'twig1' => array(
+    	'twig' => array(
     		'#title' => t('Main form'),
-    		'#description' => t('Use the tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
+    		'#description' => t(
+    		  'Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically. @tokens',
+    		  array('@tokens' => implode(', ', $tokens))
+    	  ) .' '. $help,
     		'#type' => 'textarea',
     		'#rows' => 6,
-    		'#default_value' => $mcapiform->step1['twig1'],
+    		'#default_value' => $configEntity->experience['twig'],
     		'#weight' => 1,
     		'#required' => TRUE
     	),
-    	'button1' => array(
+    	'button' => array(
     		'#title' => t('Button label'),
     		'#description' => t("The text to appear on the 'save' button, or the absolute url of an image."),
     		'#type' => 'textfield',
-    		'#default_value' => $mcapiform->step1['button1'],
+    		'#default_value' => $configEntity->experience['button'],
     		'#required' => TRUE,
     		'#weight' => 2,
     	),
-    	'next1' => array(
-    		'#title' => t('Submission'),
+    	'preview' => array(
+    		'#title' => t('Preview mode'),
     		'#type' => 'radios',
     		'#options' => array(
     		  'ajax' => t('replace just the form'),
     			'page' => t('replace whole page')
     	  ),
-    		'#default_value' => $mcapiform->step1['next1'],
+    		'#default_value' => $configEntity->experience['preview'],
     		'#weight' => 3,
     		'#required' => TRUE
     	),
     	'#weight' => 20
-    );
-    //get the display modes
-    $modes = array('certificate');
-    $form['step2'] = array(
-    	'#title' => t('Step 2'),
-    	'#type' => 'details',
-    	'#group' => 'steps',
-   		'format2' => array(
- 				'#title' => t('Display format'),
- 				'#type' => 'radios',
- 				'#options' => $modes + array('custom' => t('Custom')),
- 				'#default_value' => $mcapiform->step2['format2'],
- 				'#weight' => 0,
-   		),
-    	'twig2' => array(
-    		'#title' => t('Main form'),
-    		'#description' => t('Use the tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
-    		'#type' => 'textarea',
-    		'#rows' => 6,
-    		'#default_value' => $mcapiform->step2['twig2'],
-        '#states' => array(
-    			'visible' => array(
-    				':input[name="format2"]' => array('value' => 'custom'),
-    			)
-    		),
-    		'#weight' => 1,
-    	),
-    	'button2' => array(
-    		'#title' => t('Button label'),
-    		'#description' => t("The text to appear on the 'save' button, or the absolute url of an image."),
-    		'#type' => 'textfield',
-    		'#default_value' => $mcapiform->step2['button2'],
-    		'#required' => TRUE,
-    		'#weight' => 2,
-    	),
-    	'next2' => array(
-    		'#title' => t('Outcome'),
-    		'#type' => 'radios',
-    		'#options' => array(
-    		  'modal' => t('transaction in modal window'),
-    			'ajax' => t('transaction in place'),
-    			'page' => t('redirect to path'),
-    	  ),
-    		'#default_value' => $mcapiform->step2['next2'],
-    		'#required' => TRUE,
-    		'#weight' => 3,
-    	),
-    	'redirect' => array(
-    		'#title' => t('Redirect path'),
-    		'#type' => 'textfield',
-    		'#default_value' => $mcapiform->step2['redirect'],
-    		'#weight' => 5,
-    		'#placeholder' => 'transaction/%serial',
-    		'#states' => array(
-    			'visible' => array(
-    				':input[name="next2"]' => array('value' => 'page'),
-    			)
-    		)
-    	),
-   	  '#weight' => 21
-    );
-
-    $form['message'] = array(
-    	'#title' => t('Confirmation message'),
-    	'#description' => t('Contents of the message box.'),
-    	'#type' => 'textfield',
-    	'#default_value' => $mcapiform->message,
-    	'#weight' => 6,
-    	'#states' => array(
-    		'visible' => array(
-    			':input[name="next2"]' => array('value' => 'page'),
-    		)
-    	)
     );
     return $form;
   }
@@ -335,14 +278,14 @@ print_r($this->worths['preset']);
    * Overrides Drupal\Core\Entity\EntityFormController::save().
    */
   public function save(array $form, array &$form_state) {
-  	$mcapiform = $this->entity;
-    $status = $mcapiform->save();
+  	$configEntity = $this->entity;
+    $status = $configEntity->save();
 
     if ($status == SAVED_UPDATED) {
-      drupal_set_message(t("Form '%label' has been updated.", array('%label' => $mcapiform->label())));
+      drupal_set_message(t("Form '%label' has been updated.", array('%label' => $configEntity->label())));
     }
     else {
-      drupal_set_message(t("Form '%label' has been added.", array('%label' => $mcapiform->label())));
+      drupal_set_message(t("Form '%label' has been added.", array('%label' => $configEntity->label())));
     }
 
     $form_state['redirect'] = 'admin/accounting/workflow/forms';

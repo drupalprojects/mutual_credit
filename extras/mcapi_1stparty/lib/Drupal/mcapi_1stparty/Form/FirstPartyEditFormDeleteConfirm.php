@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\FirstPartyEditFormDeleteConfirm.
+ * Contains \Drupal\mcapi_1stparty\Form\FirstPartyEditFormDeleteConfirm.
  */
 
-namespace Drupal\firstparty_forms\Form;
+namespace Drupal\mcapi_1stparty\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 

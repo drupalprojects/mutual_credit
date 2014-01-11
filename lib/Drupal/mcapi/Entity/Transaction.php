@@ -287,18 +287,18 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @see \Drupal\mcapi\TransactionInterface::preCreate()
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
+    parent::preCreate($storage_controller, $values);
     $values += array(
       'description' => '',
       'parent' => 0,
       'payer' => NULL,
       'payee' => NULL,
       'creator' => \Drupal::currentUser()->id(),
-      'created' => '',
       'type' => 'default',
       'extra' => array(),
       'worths' => array(),
     );
-    $types = mcapi_get_types(FALSE);
+
   }
 
   /**
@@ -365,4 +365,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
     return $properties;
   }
+
+  function setPropertyValues($values) {
+    print_r($values);die('setPropertyValues');
+  }
+
 }

@@ -1,0 +1,13 @@
+services:
+  firstparty_forms.subscriber:
+    class: Drupal\mcapi_1stparty\Routing\RouteSubscriber
+    arguments: []
+    tags:
+     - { name: event_subscriber }
+
+
+  paramconverter.mcapi_editform:
+    class: Drupal\mcapi_1stparty\ParamConverter\TransactionPreloader
+    arguments: ['@entity.manager']
+    tags:
+      - { name: paramconverter, priority: 11 }

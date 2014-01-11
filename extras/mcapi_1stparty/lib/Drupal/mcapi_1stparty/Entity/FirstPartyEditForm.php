@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\firstparty_forms\Entity\FirstPartyEditForm.
+ * Contains \Drupal\mcapi_1stparty\Entity\FirstPartyEditForm.
  */
 
-namespace Drupal\firstparty_forms\Entity;
+namespace Drupal\mcapi_1stparty\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageControllerInterface;
@@ -23,13 +23,13 @@ use Drupal\Core\Annotation\Translation;
  *   controllers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigStorageController",
  *     "form" = {
- *       "add" = "Drupal\firstparty_forms\FirstPartyEditFormController",
- *       "edit" = "Drupal\firstparty_forms\FirstPartyEditFormController",
- *       "delete" = "Drupal\firstparty_forms\Form\FirstPartyEditFormDeleteConfirm",
- *       "enable" = "Drupal\firstparty_forms\Form\FirstPartyEditFormEnableConfirm",
- *       "disable" = "Drupal\firstparty_forms\Form\FirstPartyEditFormDisableConfirm"
+ *       "add" = "Drupal\mcapi_1stparty\FirstPartyEditFormController",
+ *       "edit" = "Drupal\mcapi_1stparty\FirstPartyEditFormController",
+ *       "delete" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDeleteConfirm",
+ *       "enable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormEnableConfirm",
+ *       "disable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDisableConfirm"
  *     },
- *     "list" = "Drupal\firstparty_forms\FirstPartyEditFormList",
+ *     "list" = "Drupal\mcapi_1stparty\FirstPartyEditFormList",
  *   },
  *   admin_permission = "configure all currencies",
  *   config_prefix = "mcapi.1stparty",
@@ -65,7 +65,6 @@ class FirstPartyEditForm extends ConfigEntityBase {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
-
     $values += array(
     	'id' => '',
       'title' => '',

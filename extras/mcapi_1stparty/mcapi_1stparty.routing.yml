@@ -1,5 +1,5 @@
 mcapi.1stparty:
-  path: '/transact/{form_id}'
+  path: '/transact/{1stparty_editform}'
   defaults:
     _entity_form: 'mcapi_transaction.1stparty'
   requirements:

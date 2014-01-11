@@ -1,4 +1,3 @@
-
 mcapi.1stparty.*:
   type: mapping
   label: 'Mcapi form configuration'
@@ -49,38 +48,16 @@ mcapi.1stparty.*:
         preset:
           type: array
           label: 'Preset quantity'
-    step1:
+    experience:
       type: mapping
-      label: 'Step 1'
+      label: 'Experience'
       mapping:
-        twig1:
+        twig:
           type: text
           label: Main form
-        button1:
+        button:
           type: text
           label: Button label
-        next1:
+        preview:
           type: text
-          label: Button label
-    step2:
-      type: mapping
-      label: 'Step 2'
-      mapping:
-        format2:
-          type: text
-          label: Display format
-        twig2:
-          type: text
-          label: Main form
-        button2:
-          type: text
-          label: Button label
-        next2:
-          type: text
-          label: Outcome
-        redirect:
-          type: text
-          label: Redirect path
-    message:
-      type: text
-      label: Confirmation message
+          label: Preview mode

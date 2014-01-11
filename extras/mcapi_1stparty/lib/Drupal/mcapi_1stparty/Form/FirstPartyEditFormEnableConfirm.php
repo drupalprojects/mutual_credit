@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\FirstPartyEditFormEnableConfirm.
+ * Contains \Drupal\mcapi_1stparty\Form\FirstPartyEditFormEnableConfirm.
  */
 
-namespace Drupal\firstparty_forms\Form;
+namespace Drupal\mcapi_1stparty\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 

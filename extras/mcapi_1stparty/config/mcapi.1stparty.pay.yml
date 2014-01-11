@@ -18,21 +18,7 @@ worths:
 description:
   preset: ''
   placeholder: ''
-step1:
-  twig1: "Pay: {{ partner }}\n{{ worths }}\nfor {{ description }}"
-  button1: Preview
-  next1: page
-step2:
-  format2: '0'
-  twig2: ''
-  button2: Confirm
-  next2: page
-  redirect: ''
-redirect: null
-langcode: en
-direction:
-  preset: outgoing
-  widget: radios
-  incoming: ''
-  outgoing: ''
-message: 'The transaction has been logged'
+experience:
+  twig: "Pay: {{ partner }}\n{{ worths }}\nfor {{ description }}"
+  button: Preview
+  preview: page

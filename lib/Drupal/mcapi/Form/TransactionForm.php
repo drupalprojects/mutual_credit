@@ -21,23 +21,6 @@ class TransactionForm extends EntityFormController {
   public function form(array $form, array &$form_state) {
 
     $form = parent::form($form, $form_state);
-    $form = $this->form_step_1($form, $form_state);
-    $form['#validate'][] = array($this, 'step_1_validate');
-    $form['#submit'][] = array($this, 'step_1_submit');
-    return $form;
-
-    if (empty($form_state['mcapi_submitted'])) {
-    }
-    else {
-
-      $form = $this->form_step_2($form, $form_state);
-      //$form['#validate'][] = array($this, 'step_2_validate');
-      $form['#submit'][] = array($this, 'step_2_submit');
-    }
-    return $form;
-  }
-
-  private function form_step_1($form, &$form_state) {
     $transaction = $this->entity;
 
     unset($form['langcode']); // No language so we remove it.
@@ -96,7 +79,7 @@ class TransactionForm extends EntityFormController {
     );
     return $form;
   }
-
+/*
   private function form_step_2($form, &$form_state) {
     $transactions = array();//need the transactions as if loaded, with children and all
     $form['preview'] = array();//TODO
@@ -104,7 +87,7 @@ class TransactionForm extends EntityFormController {
 
     return $form;
   }
-
+*/
   /**
    * form validation callback
    * I can't imagine why, but this is called twice when the form is submitted
@@ -112,7 +95,7 @@ class TransactionForm extends EntityFormController {
    *
    * this is unusual because normally build a temp object
    */
-  public function step_1_validate(array $form, array &$form_state) {
+  public function validate(array $form, array &$form_state) {
 //    parent::validate($form, $form_state);//this makes an infinite loop here but not in nodeFormController
     form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
 
@@ -151,7 +134,7 @@ class TransactionForm extends EntityFormController {
     $this->entity = $transaction;
   }
 
-  public function step_1_submit(array $form, array &$form_state) {
+  public function submit(array $form, array &$form_state) {
     $tempStore = \Drupal::service('user.tempstore')
     ->get('TransactionForm')
     ->set('entity', $this->entity);
@@ -164,53 +147,6 @@ class TransactionForm extends EntityFormController {
     //Drupal\mcapi\Plugin\Operation\Confirm
   }
 
-  public function step_2_validate(array $form, array &$form_state) {
-    //the only reason we might need this function is if there should be
-    //an extra input field for transaction ratings
-  }
-
-  /**
-   * form submit callback
-   */
-  public function step_2_submit($form, &$form_state) {
-
-  }
-
-  /**
-   * Overrides Drupal\Core\Entity\EntityFormController::save().
-   */
-  public function save(array $form, array &$form_state) {
-    $transaction = $this->entity;
-    try {
-      $db_t = db_transaction();
-      //was already validated
-      $status = $transaction->save($form, $form_state);
-    }
-    catch (Exception $e) {
-      \Drupal::formBuilder()->setErrorByName(
-        'actions',
-        t("Failed to save transaction: @message", array('@message' => $e->getMessage))
-      );
-      $db_t->rollback();
-    }
-
-    if ($status == SAVED_UPDATED) {
-      drupal_set_message(t('Transaction %label has been updated.', array('%label' => $transaction->label())));
-    }
-    else {
-      drupal_set_message(t('Transaction %label has been added.', array('%label' => $transaction->label())));
-    }
-    $link = $transaction->uri();
-    $form_state['redirect'] = $link['path'];
-  }
-
-  /**
-   * Overrides Drupal\Core\Entity\EntityFormController::delete().
-   * Currently there is no transaction delete form
-   */
-  public function delete(array $form, array &$form_state) {
-    //$form_state['redirect'] = 'admin/accounting/currencies/' . $this->entity->id() . '/delete';
-  }
 
   /**
    * Returns an array of supported actions for the current entity form.
@@ -218,8 +154,7 @@ class TransactionForm extends EntityFormController {
   protected function actions(array $form, array &$form_state) {
     if (\Drupal::formBuilder()->getErrors($form_state)) return;
     $actions = array(
-      // @todo Rename the action key from submit to save.
-      'submit' => array(
+      'save' => array(
         '#value' => $this->t('Save'),
         '#validate' => array(
           array($this, 'validate'),
@@ -229,25 +164,7 @@ class TransactionForm extends EntityFormController {
         ),
       ),
     );
-    if (empty($form_state['mcapi_submitted'])) {
-      $actions['submit']['#validate'][] = array($this, 'step_1_validate');
-      $actions['submit']['#submit'][] = array($this, 'step_1_submit');
-    }
-    else {
-      $actions['submit']['#validate'][] = array($this, 'step_2_validate');
-      $actions['submit']['#submit'][] = array($this, 'step_2_submit');
-      $actions['submit']['#submit'][] = array($this, 'save');
-      $actions['back'] = array(
-        '#value' => t('Back'),
-        '#submit' => array(array($this, 'back'))
-      );
-    }
     return $actions;
-  }
-
-  public function back(&$form, &$form_state) {
-    $form_state['rebuild'] = TRUE;
-    $form_state['mcapi_submitted'] = FALSE; //this means we move to step 2 regardless
   }
 
 }
