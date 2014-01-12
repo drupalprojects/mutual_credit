@@ -184,7 +184,7 @@ class FirstPartyEditFormController extends EntityFormController {
       //get the form widget
       //print_r($def);
     }
-    echo "TODO add the extra fields when field_attach_form is deprecated in EntityFormController";
+    echo("TODO add the extra fields when field_attach_form is deprecated in EntityFormController::init");//dsm doesnt work here
 
     module_load_include ('tokens.inc', 'mcapi');
     $tokens = mcapi_transaction_list_tokens (FALSE);

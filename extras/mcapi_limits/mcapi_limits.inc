@@ -40,25 +40,27 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
         );
         continue;
       }
-      $summary = mcapi_account_summary($account, $currency);
+      $summary = \Drupal::entityManager()
+        ->getStorageController('mcapi_transaction')
+        ->summaryData($account, $currency, array());
       $projected = $summary['balance'] + array_sum($diffs);
       $limits = mcapi_limits_plugin($currency)->getLimits($account);
       //we could send 'worth' values to the exception, but that seems like a hassle.
       //instead we'll send the currency and the quantities
       if ($projected > 0 && $limits['max'] && $projected > $limits['max']) {
         $errors[$uid][] = array(
-            'currency' => $currency,
-            'projected' => $projected,
-            'limit' => $limits['max'],
-            'excess' => $projected - $limits['max'],
+          'currency' => $currency,
+          'projected' => $projected,
+          'limit' => $limits['max'],
+          'excess' => $projected - $limits['max'],
         );
       }
       elseif ($projected < 0 && $limits['min'] != NULL && $projected < $limits['min']) {
         $errors[$uid][] = array(
-            'currency' => $currency,
-            'projected' => $projected,
-            'limit' => $limits['min'],
-            'excess' => $limits['min'] - $projected,
+          'currency' => $currency,
+          'projected' => $projected,
+          'limit' => $limits['min'],
+          'excess' => $limits['min'] - $projected,
         );
       }
     }
@@ -136,7 +138,9 @@ function _mcapi_limits_form_user_form_alter(&$form, &$form_state) {
  */
 function template_preprocess_mcapi_limits(&$vars) {
   $currency = $vars['currency'];
-  $summary = mcapi_account_summary($vars['account'], $currency);
+  $summary = \Drupal::entityManager()
+    ->getStorageController('mcapi_transaction')
+    ->summaryData($vars['account'], $currency, array());
   $vars['data'] = mcapi_limits_plugin($currency)->getLimits($vars['account']);
   $vars['data']['balance'] = $summary['balance'];
   $vars['balance'] = $currency->format($vars['data']['balance']);
@@ -194,7 +198,9 @@ google.setOnLoadCallback(drawGauge);
 //this shows the amount available to spend or earn, by factoring in the user's balance
 //rather than just showing the fixed limits
 function limits_get_adjusted($currency, $account) {
-  $summary = mcapi_account_summary($account, $currency);
+  $summary = \Drupal::entityManager()
+    ->getStorageController('mcapi_transaction')
+    ->summaryData($account, $currency, array());
   $limits = mcapi_limits_plugin($currency)->getLimits($account);
   $adjusted = array();
   if (isset($limits['min'])) $adjusted['spend_limit'] = $summary['balance'] - $limits['min'];

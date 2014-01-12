@@ -10,7 +10,7 @@
 */
 function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $query) {
   $query->addJoin('LEFT', 'field_data_worth', 'w', 'w.entity_id = mcapi_transactions.xid');return;
-  $states = array_keys(mcapi_get_states());
+  $states = array_keys(mcapi_get_states(TRUE));
   //what currencies can the current user see?
   $currencies = currencies_load($GLOBALS['user']);
   $or_currcodes = db_or();//where ((currcode = A and (blah)) OR ((currcode = B and (blah))
@@ -18,7 +18,7 @@ function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $quer
     //where (currcode = A and (state = x) OR (state = Y) )
     $state_or_state = db_or();//where state = A OR B
     foreach ($states as $state) {
-      $callbacks = array_filter($currency->view_transaction_states[$state]);
+      $callbacks = array_filter($currency->access_view[$state]);
       foreach ($callbacks as $callback) {
         $callback .= '_views';
         $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);

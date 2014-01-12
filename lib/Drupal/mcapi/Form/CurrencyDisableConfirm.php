@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\EntityConfirmFormBase;
 
 /**
- * Builds the form to delete a contact category.
+ * Builds the form to delete a currency.
  */
 class CurrencyDisableConfirm extends EntityConfirmFormBase {
 

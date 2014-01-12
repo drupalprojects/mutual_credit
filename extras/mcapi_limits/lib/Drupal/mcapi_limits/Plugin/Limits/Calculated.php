@@ -58,7 +58,9 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
 
 
   public function getBaseLimits(AccountInterface $account) {
-    $stats = mcapi_account_summary($account, $this->currency);
+    $stats = \Drupal::entityManager()
+    ->getStorageController('mcapi_transaction')
+    ->summaryData($account, $this->currency, array());
     return array(
       'max' => $this->parse($this->currency->limits_settings['max_formula'], $stats),
       'min' => $this->parse($this->currency->limits_settings['min_formula'], $stats)

@@ -289,13 +289,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $conditions) {
     //TODO We need to return 0 instead of null for empty columns
     //then get rid of the last line of this function
-    $query = db_select('mcapi_transactions_index');
-    $query->join('mcapi_transactions', 'mcapi_transactions', 'i.xid = t.xid');
-    $query->addExpression('COUNT(DISTINCT t.serial)', 'trades');
-    $query->addExpression('SUM(i.incoming))', 'gross_in');
-    $query->addExpression('SUM(i.outgoing))', 'gross_out');
-    $query->addExpression('SUM(i.diff))', 'balance');
-    $query->addExpression('SUM(i.volume))', 'volume');
+    $query = db_select('mcapi_transactions_index', 'i');
+    $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
+    $query->addExpression('SUM(i.incoming)', 'gross_in');
+    $query->addExpression('SUM(i.outgoing)', 'gross_out');
+    $query->addExpression('SUM(i.diff)', 'balance');
+    $query->addExpression('SUM(i.volume)', 'volume');
     $query->addExpression('COUNT(DISTINCT i.uid2)', 'partners');
     $query->condition('currcode', $currency->id())
       ->condition('i.uid1', $account->id());

@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 
 /**
- * Defines an access controller for the contact category entity.
+ * Defines an access controller for the Currency entity
  *
  * @see \Drupal\mcapi\Entity\Currency.
  */

@@ -461,8 +461,6 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
   }
 }
 
-
-
 //check that the user ids or names actually correspond to a user on the system
 //coming from the csv all keys and values will be strings, surrounded by quotes
 function check_users($user_ids) {
@@ -569,7 +567,9 @@ function mcapi_import_check_terms($rows, $create) {
   $terms = $imported_terms = $needed = array();
 
   list($field_info, $vocab) =  mcapi_import_detect_categories();
-  if (!$field_info) return array();
+  if (!$field_info) {
+    return array();
+  }
   foreach ($rows as $row) {
     if (empty($row[$field_info['field_name']])) continue;
     foreach (explode(',', $row[$field_info['field_name']]) as $name) {

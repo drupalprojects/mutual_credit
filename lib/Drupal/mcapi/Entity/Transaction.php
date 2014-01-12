@@ -366,8 +366,4 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $properties;
   }
 
-  function setPropertyValues($values) {
-    print_r($values);die('setPropertyValues');
-  }
-
 }

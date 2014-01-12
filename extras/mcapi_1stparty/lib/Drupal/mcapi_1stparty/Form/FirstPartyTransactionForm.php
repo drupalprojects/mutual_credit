@@ -24,41 +24,46 @@ class FirstPartyTransactionForm extends TransactionForm {
 		$this->config = \Drupal::entityManager()->getStorageController('1stparty_editform')->load($form_id);
 	}
 
+
+	function prepareEntity() {
+	  //because the entity returned by the param converter is not the entity provided to the form...
+	  global $temp_mcapi_transaction;
+	  //using a global isn't criminal, but a more drupalish way might be to call up the same paramconverter
+	  //or find out what happened to the entity it returned.
+    $this->entity = $temp_mcapi_transaction;
+	}
+
   /**
    * Get the original transaction form and alter it according to
    * the 1stparty form saved in $this->config.
    */
   public function form(array $form, array &$form_state) {
-    //neet to get the variable from the param converter, which for some reason wasn't put into $form->entity
-    global $temp_mcapi_transaction;
-    $this->entity = $temp_mcapi_transaction;
-    $configuration = $this->config;
+    $config = $this->config;
 
     $form = parent::form($form, $form_state);
 
-  	drupal_set_title($this->config->get('title'));
+  	drupal_set_title($config->title);
 
   	//sort out the payer and payee, for the secondparty and direction
   	//the #title and #description will get stripped later
   	$form['partner'] = $form['payer'];
   	unset($form['payer'], $form['payee']);
-  	$partner = $this->config->get('partner');
     //this bit could be abstracted somewhere, it is also done in FirstPartyEditFormController
-  	$params = explode(':', $partner['user_chooser_config']);
+  	$params = explode(':', $config->partner['user_chooser_config']);
   	$form['partner']['#callback'] = array_shift($params);
   	$form['partner']['#args'] = $params;
   	$form['partner']['#exclude'] = array(\Drupal::currentUser()->id());
 
-  	if ($partner['preset']) {
-    	$form['partner']['#default_value'] = array(\Drupal::currentUser()->id());
+  	if ($config->partner['preset']) {
+    	$form['partner']['#default_value'] = $config->partner['preset'];
   	}
-  	$direction = $this->config->get('direction');
+
   	$form['direction'] = array(
-  		'#type' => $direction['widget'],
-  		'#default_value' => $direction['preset'],
+  		'#type' => $config->direction['widget'],
+  		'#default_value' => $config->direction['preset'],
   		'#options' => array(
-  		  'incoming' => $direction['incoming'],
-  		  'outgoing' => $direction['outgoing'],
+  		  'incoming' => $config->direction['incoming'],
+  		  'outgoing' => $config->direction['outgoing'],
   	  )
   	);
 
@@ -66,8 +71,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   	//unset($form['worths']); //because it is wrong in the TransactionForm.php
 
   	//handle the description
-  	$description = $this->config->get('description');
-  	$form['description']['#placeholder'] = $description['placeholder'];
+  	$form['description']['#placeholder'] = $config->description['placeholder'];
 
   	//hide the state, type
   	$form['state']['#type'] = 'value';
@@ -76,13 +80,12 @@ class FirstPartyTransactionForm extends TransactionForm {
   	$form['type']['#type'] = 'value';
 
   	//handle the field API
-    $experience = $this->config->get('experience');
-  	$form['#twig'] = $experience['twig'];
+  	$form['#twig'] = $config->experience['twig'];
 
     //make hidden any fields that do not occur in the template
     $form['#twig_tokens'] = array('partner', 'direction', 'description', 'worths');
     foreach ($form['#twig_tokens'] as $token) {
-     	if (strpos($experience['twig'], $token) === FALSE) {
+     	if (strpos($config->experience['twig'], $token) === FALSE) {
   	    $form[$token]['#type'] = 'value';
      	}
   	}
@@ -100,13 +103,12 @@ class FirstPartyTransactionForm extends TransactionForm {
   protected function actions(array $form, array &$form_state) {
   	$actions = parent::actions($form, $form_state);
 
-  	$experience = $this->config->get('experience');
-		if ($experience['preview'] == 'ajax') {
+		if ($this->config['experience']['preview'] == 'ajax') {
 			//this isn't working at all...
 			$actions['submit']['#attributes']['class'][] = 'use-ajax';
 			$actions['submit']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
 		}
-		$actions['save']['#value'] = $experience['button'];
+		$actions['save']['#value'] = $this->config['experience']['button'];
 
   	return $actions;
   }

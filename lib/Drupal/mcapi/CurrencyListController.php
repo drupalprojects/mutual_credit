@@ -10,7 +10,7 @@ use Drupal\Core\Config\Entity\DraggableListController;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Provides a listing of contact categories.
+ * Provides a listing of currencies
  */
 class CurrencyListController extends DraggableListController {
   /**

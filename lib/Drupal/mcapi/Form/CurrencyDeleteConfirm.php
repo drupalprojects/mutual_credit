@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\contact\Form\CategoryDeleteForm.
+ * Contains \Drupal\mcapi\Form\CurrencyDeleteForm.
  */
 
 namespace Drupal\mcapi\Form;
@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\EntityConfirmFormBase;
 
 /**
- * Builds the form to delete a contact category.
+ * Builds the form to delete a currency
  */
 class CurrencyDeleteConfirm extends EntityConfirmFormBase {
 

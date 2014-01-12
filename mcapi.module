@@ -683,7 +683,10 @@ if (!$newcode) drupal_set_message('problem validating worths element', 'error');
 function mcapi_worth_element_process($element, &$form_state, $form) {
   $typedDataManager = \Drupal::typedData();
   if (!is_object($element['#default_value'])) {
-    $element['#default_value'] = $typedDataManager->create(array('type' => 'field_item:worth', 'list' => TRUE), $element['#default_value']);
+  	$defaults = array('type' => 'field_item:worth', 'list' => TRUE);
+    //TODO Gordon this isn't working.
+    //$defaults need to be a \Drupal\Core\TypedData\DataDefinition\DataDefinitionInterface object
+    //$element['#default_value'] = $typedDataManager->create($defaults, $element['#default_value']);
   }
   $element['#title_display'] = 'attribute';
   //the element is aware of a set of currcodes

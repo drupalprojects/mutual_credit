@@ -30,7 +30,6 @@ class LimitsPluginManager extends DefaultPluginManager {
     $this->setCacheBackend($cache_backend, $language_manager, 'mcapi_limits');
   }
 
-
   /**
    * {@inheritdoc}
    */
