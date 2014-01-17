@@ -20,7 +20,7 @@ use Drupal\Core\Field\FieldDefinition;
  *   module = "mcapi",
  *   controllers = {
  *     "storage" = "Drupal\mcapi\WalletStorageController",
- *     "view_builder" = "\Drupal\Core\Entity\EntityViewBuilder",
+ *     "view_builder" = "\Drupal\mcapi\Entity\WalletViewBuilder",
  *     "access" = "Drupal\mcapi\WalletAccessController",
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",

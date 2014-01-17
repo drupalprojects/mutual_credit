@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\entity\Entity\EntityDisplay;
 
 /**
- * Render controller for nodes.
+ * Render controller for transactions.
  */
 class TransactionViewBuilder extends EntityViewBuilder {
 

@@ -72,6 +72,7 @@ function mcapi_views_data() {
   $data['mcapi_transactions']['payer'] = array(
     'title' => t('Payer'),
     'help' => t('The user who gave currency in the transaction.'),
+    //the relationship is now to the wallet table, not the user table
     'relationship' => array(
       'id' => 'standard',
       'base' => 'users',
@@ -86,12 +87,13 @@ function mcapi_views_data() {
       'id' => 'user_uid',
     ),
     'field' => array(
-      'id' => 'standard',
+      'id' => 'wallet',
     ),
   );
   $data['mcapi_transactions']['payee'] = array(
     'title' => t('Payee'),
     'help' => t('The user who received currency in the transaction.'),
+    //the relationship is now to the wallet table, not the user table
     'relationship' => array(
       'id' => 'standard',
       'base' => 'users',
@@ -106,7 +108,7 @@ function mcapi_views_data() {
       'id' => 'user_uid',
     ),
     'field' => array(
-      'id' => 'standard',
+      'id' => 'wallet',
     ),
   );
   $data['mcapi_transactions']['description'] = array(
@@ -388,6 +390,34 @@ function mcapi_views_data() {
   	'field' => array(
   		'id' => 'transaction_operations',
   	)
+  );
+
+  //TODO Gordon this is gonna be horrible
+  //we need to manage the access control, and then to load the parent entity, not the wallet entity.
+  $data['mcapi_wallets']['table'] = array(
+    'group'  => t('Transaction'),
+    'entity type' => 'mcapi_wallets',
+    'base' => array(
+      'field' => 'wid',
+      'title' => t('Wallets'),
+      'help' => t("Don't forget to add the parent relationship."),
+      'access query tag' => 'transaction_views_access',
+      'weight' => 5,
+      'defaults' => array(
+        'field' => 'wid',
+      )
+    )
+  );
+
+  $data['mcapi_wallets']['xid'] = array(
+    'title' => t('Wallet id'), // The item it appears as on the UI,
+    'help' => t('The unique database key of the transaction'),
+    'field' => array(
+      'id' => 'numeric',//this might be 'transaction' if it exists
+    ),
+    'sort' => array(
+      'id' => 'standard',
+    ),
   );
 
   return $data;

@@ -28,7 +28,8 @@ class TransactionAccessController extends EntityAccessController {
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $wallet, $op, $langcode, AccountInterface $account) {
-    die('ddd');
+    //remember we're only interested in view access but not for router callbacks because the wallet has no uri
+    //although perhaps it should - like bitcoin!
     return $this->pluginManager
       ->getInstance($wallet->access, $wallet->settings)
       ->check($op, $account);

@@ -288,6 +288,12 @@ function mcapi_schema() {
         'type' => 'varchar',
         'length' => '32',
       ),
+      'pid' => array(
+        'description' => 'The parent entity_id',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
       'name' => array(
         'description' => "The owner's name for this wallet",
         'type' => 'varchar',
@@ -298,12 +304,14 @@ function mcapi_schema() {
         'type' => 'varchar',
         'length' => '32',
       ),
+        /*
       'settings' => array(
         'description' => 'any config needed for the access controller',
         'type' => 'text',
         'size' => 'small',
         'serialize' => TRUE,
       ),
+      */
     ),
     'primary key' => array('wid'),
     //TODO Gordon is this about right?
