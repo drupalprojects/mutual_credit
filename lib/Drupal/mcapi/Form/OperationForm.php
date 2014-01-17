@@ -87,7 +87,7 @@ class OperationForm extends ConfirmFormBase {
   public function buildForm(array $form, array &$form_state) {
     $form = parent::buildForm($form, $form_state);
     //add any extra form elements as defined in the operation plugin.
-    $form += transaction_operations($this->op)->form($this->transaction);
+    $form += transaction_operations($this->op)->form($this->transaction, $this->configuration);
     if ($this->op == 'view') {
       unset($form['actions']);
     }

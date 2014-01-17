@@ -38,7 +38,7 @@ class TransactionPreloader extends EntityConverter implements ParamConverterInte
     $editform = \Drupal::entityManager()->getStorageController('1stparty_editform')->load($value);
     //prepare a transaction using the defaults here
 
-    module_load_include ('tokens.inc', 'mcapi');
+    module_load_include ('inc', 'mcapi');
     $tokens = drupal_map_assoc(mcapi_transaction_list_tokens(FALSE));
     //remove all the fields which can't be preset
     unset(
@@ -54,10 +54,33 @@ class TransactionPreloader extends EntityConverter implements ParamConverterInte
 
     $vars['type'] = $editform->type;
     foreach ($tokens as $prop) {
-      //if (is_null($editform->{$prop}['preset']));{echo "$prop ";continue;}
-      $vars[$prop] = $editform->{$prop}['preset'];
+      if (property_exists($editform, $prop)) {
+        if (is_null($editform->{$prop}['preset'])){
+          $vars[$prop] = $editform->{$prop}['preset'];
+        }
+      }
     }
+    if ($editform->direction['preset']) {
+      $partner = $editform->direction['preset'];
+    }
+    elseif(0) {
+      //$this preloaded will never be able to get a user from the url
+      //so we'll meet this contingency elsewhere.
+    }
+    //now handle the payer and payee, based on partner and direction
+    if ($editform->direction['preset'] = 'incoming') {
+      //TODO convert this to a wallet
+      $vars['payee'] = \Drupal::currentUser()->id();
+      $vars['payer'] = $partner;
+    }
+    elseif($editform->direction['preset'] = 'outgoing') {
+      //TODO convert this to a wallet
+      $vars['payer'] = \Drupal::currentUser()->uid;
+      $vars['payee'] = $partner;
+    }
+
     //temp test data
+    //need to test worths as well
     $vars = array('partner' => 2, 'direction' => 'outgoing', 'serial' => 111, 'description' => 'testdescription', 'blah' => 'blabla');
 
     $vars[] = 'direction';

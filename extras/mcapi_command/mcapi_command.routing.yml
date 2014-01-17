@@ -4,7 +4,7 @@ mcapi.admin.command:
     _form: 'Drupal\mcapi_command\Form\CommandTest'
     _title: 'Test commands'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'configure mcapi'
 
 mcapi.admin.command.settings:
   path: '/admin/accounting/command/settings'
@@ -12,4 +12,4 @@ mcapi.admin.command.settings:
     _form: 'Drupal\mcapi_command\Form\CommandSettings'
     _title: 'Configure commands'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'configure mcapi'

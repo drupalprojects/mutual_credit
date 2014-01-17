@@ -33,7 +33,7 @@ use Drupal\mcapi\Plugin\Field\FieldType\Worth;
  *     },
  *     "list" = "Drupal\mcapi\CurrencyListController",
  *   },
- *   admin_permission = "configure all currencies",
+ *   admin_permission = "configure mcapi",
  *   config_prefix = "mcapi.currency",
  *   entity_keys = {
  *     "id" = "id",
@@ -67,7 +67,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $name;
   public $status;
   public $issuance;
-  public $uid;
   public $reservoir;
   public $type;
   public $settings;

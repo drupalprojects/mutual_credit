@@ -31,7 +31,7 @@ use Drupal\Core\Annotation\Translation;
  *     },
  *     "list" = "Drupal\mcapi_1stparty\FirstPartyEditFormList",
  *   },
- *   admin_permission = "configure all currencies",
+ *   admin_permission = "configure mcapi",
  *   config_prefix = "mcapi.1stparty",
  *   entity_keys = {
  *     "id" = "id",
@@ -57,8 +57,7 @@ class FirstPartyEditForm extends ConfigEntityBase {
   public $worths;
   public $created;
 
-  public $step1;
-  public $step2;
+  public $experience;
   public $message;
 
   /**

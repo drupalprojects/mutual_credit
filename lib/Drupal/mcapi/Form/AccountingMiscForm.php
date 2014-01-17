@@ -5,8 +5,10 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Field\FieldDefinition;
 
-class AccountingAdminMiscForm extends ConfigFormBase {
+class AccountingMiscForm extends ConfigFormBase {
+
   /**
    * {@inheritdoc}
    */
@@ -58,7 +60,6 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       '#default_value' => $config->get('child_errors'),
       '#weight' => 7
     );
-    debug($form['child_errors']);
     $form['worths_delimiter'] = array(
       '#title' => t('Delimiter'),
       '#description' => t('What characters should be used to separate values when a transaction has multiple currencies?'),
@@ -82,6 +83,17 @@ class AccountingAdminMiscForm extends ConfigFormBase {
         '#type' => 'submit',
         '#value' => 'rebuild_mcapi_index',
       )
+    );
+    foreach ($this->pluginManager = \Drupal::service('mcapi.wallet.manager')->getDefinitions() as $def) {
+      $wallet_access_plugins[$def['id']] = $def['label'];
+    }
+    $form['default_wallet_access'] = array(
+      '#title' => t('Default wallet access setting'),
+      //we could use entity_chooser here...
+      '#type' => 'select',
+      '#options' => $wallet_access_plugins,
+      '#default_value' => $config->get('default_wallet_access'),
+      '#weight' => 12,
     );
 
     return parent::buildForm($form, $form_state);
@@ -107,6 +119,7 @@ class AccountingAdminMiscForm extends ConfigFormBase {
       ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
+      ->set('default_wallet_access', $form_state['values']['default_wallet_access'])
       ->save();
 
     parent::submitForm($form, $form_state);

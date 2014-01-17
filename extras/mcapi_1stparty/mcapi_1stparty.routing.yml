@@ -11,7 +11,7 @@ mcapi.admin.1stparty_editform.add:
     _entity_form: '1stparty_editform.add'
     _title: 'Transaction form designer'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_list:
   path: '/admin/accounting/workflow/forms'
@@ -19,7 +19,7 @@ mcapi.admin_1stparty_editform_list:
     _entity_list: '1stparty_editform'
     _title: 'Transaction forms'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_edit:
   path: '/admin/accounting/workflow/forms/{1stparty_editform}'
@@ -27,26 +27,26 @@ mcapi.admin_1stparty_editform_edit:
     _entity_form: '1stparty_editform.edit'
     _title: 'Transaction form designer'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_delete:
   path: '/admin/accounting/workflow/forms/{1stparty_editform}/delete'
   defaults:
     _entity_form: '1stparty_editform.delete'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_disable:
   path: '/admin/accounting/workflow/forms/{1stparty_editform}/disable'
   defaults:
     _entity_form: '1stparty_editform.disable'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_enable:
   path: '/admin/accounting/workflow/forms/{1stparty_editform}/enable'
   defaults:
     _entity_form: '1stparty_editform.enable'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 

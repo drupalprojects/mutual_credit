@@ -2,6 +2,7 @@
 
 use Drupal\Core\Language\Language;
 use Drupal\Core\Template\Attribute;
+use Drupal\field\Field;
 
 /*
  * implements hook_help().
@@ -642,4 +643,30 @@ function validate_mcapi_configure_worth_formula(&$element, $form_state) {
   if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
     form_error($element, t('Invalid formula'));
   }
+}
+
+/*
+ * helper function to get the token names for helptext token service and twig
+ * get the entity properties from mcapi_token_info, then the fieldapi fields
+ * this function would be handy for any entity_type, so something equivalent may exist already
+ * @param boolean
+ *   if TRUE the result will include the operation links
+ * @return array
+ *   names of replacable elements in the transaction
+ */
+function mcapi_transaction_list_tokens($include_virtual = FALSE) {
+  $definitions = array_keys(\Drupal::entityManager()->getFieldDefinitions('mcapi_transaction'));
+  $fieldmap = Field::FieldInfo()->getFieldMap();
+  if (array_key_exists('mcapi_transaction', $fieldmap)) {
+    $transaction_fields = array_keys($fieldmap['mcapi_transaction']);
+  }
+  else $transaction_fields = array();
+
+  $tokens = array_merge($definitions, $transaction_fields);
+
+  if ($include_virtual){
+    $tokens[] = 'links';
+    $tokens[] = 'url';
+  }
+  return $tokens;
 }

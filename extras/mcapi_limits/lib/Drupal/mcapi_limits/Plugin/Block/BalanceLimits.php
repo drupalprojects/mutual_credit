@@ -70,10 +70,3 @@ class BalanceLimits extends McapiBlockBase {
 
   }
 }
-
-
-return mcapi_view_limits(
-    $account,
-    $this->options['currencies'],
-    $this->options['absolute'] == 'absolute'
-);

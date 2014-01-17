@@ -33,7 +33,7 @@ function mcapi_signatures_menu() {
 
 function mcapi_signall_access($account) {
   if (db_query("SELECT TRUE FROM {mcapi_signatures} WHERE uid = $account->uid AND pending = 1")->fetchField()) {
-    return $account->uid == \Drupal::currentUser()->id() || user_access('manage all transactions');
+    return $account->uid == \Drupal::currentUser()->id() || user_access('configure mcapi');
   }
 }
 

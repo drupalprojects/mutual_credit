@@ -98,8 +98,8 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
    *   FormAPI $elements
    */
   public function settingsForm(array &$form, ConfigFactory $config) {
-    //gives array keyed page_title, twi g, format, button, cancel_button
-    module_load_include ('tokens.inc', 'mcapi');
+    //gives array keyed page_title, twig, format, button, cancel_button
+    module_load_include ('inc', 'mcapi');
     $tokens = implode(', ', mcapi_transaction_list_tokens (FALSE));
     $help = t('Use the following twig tokens: @tokens.', array('@tokens' => $tokens)) .' '.
       l(
@@ -309,7 +309,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
    * @return array
    *   FormAPI $elements
    */
-  public function form(TransactionInterface $transaction) {
+  public function form(TransactionInterface $transaction, ConfigFactory $config) {
     return array();
   }
 

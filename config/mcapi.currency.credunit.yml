@@ -3,7 +3,6 @@ uuid: 4450dc37-0564-480e-8800-a3d78c18f12d
 name: 'Community Coins'
 status: true
 issuance: acknowledgement
-uid: '1'
 reservoir: '1'
 type: time
 settings: { }

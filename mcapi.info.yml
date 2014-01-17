@@ -7,3 +7,5 @@ type: module
 dependencies:
   - field
   - user_chooser
+  - entity_chooser
+  - entity_reference

@@ -103,12 +103,12 @@ class FirstPartyTransactionForm extends TransactionForm {
   protected function actions(array $form, array &$form_state) {
   	$actions = parent::actions($form, $form_state);
 
-		if ($this->config['experience']['preview'] == 'ajax') {
+		if ($this->config->experience['preview'] == 'ajax') {
 			//this isn't working at all...
 			$actions['submit']['#attributes']['class'][] = 'use-ajax';
 			$actions['submit']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
 		}
-		$actions['save']['#value'] = $this->config['experience']['button'];
+		$actions['save']['#value'] = $this->config->experience['button'];
 
   	return $actions;
   }

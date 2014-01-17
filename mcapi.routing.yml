@@ -9,17 +9,17 @@ mcapi.admin:
 mcapi.admin_misc:
   path: '/admin/accounting/config'
   defaults:
-    _form: 'Drupal\mcapi\Form\AccountingAdminMiscForm'
+    _form: 'Drupal\mcapi\Form\AccountingMiscForm'
     _title: 'Settings'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'configure mcapi'
 
 mcapi.admin_currency_list:
   path: '/admin/accounting/currencies'
   defaults:
     _entity_list: 'mcapi_currency'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'manage mcapi'
 
 mcapi.admin_mass:
   path: '/admin/accounting/mass'
@@ -27,7 +27,7 @@ mcapi.admin_mass:
     _form: 'Drupal\mcapi\Form\MassPay'
     _title: 'Mass payments'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'manage mcapi'
 
 mcapi.admin_mass.many2one:
   path: '/admin/accounting/mass/many2one'
@@ -35,7 +35,7 @@ mcapi.admin_mass.many2one:
     _form: 'Drupal\mcapi\Form\MassPay'
     _title: 'Mass payments'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'manage mcapi'
 
 mcapi.admin_mass.one2many:
   path: '/admin/accounting/mass/one2many'
@@ -43,35 +43,35 @@ mcapi.admin_mass.one2many:
     _form: 'Drupal\mcapi\Form\MassPay'
     _title: 'Mass payments'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'manage mcapi'
 
 mcapi.admin_currency_edit:
   path: '/admin/accounting/currencies/{mcapi_currency}'
   defaults:
     _entity_form: 'mcapi_currency.edit'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_currency_delete:
   path: '/admin/accounting/currencies/{mcapi_currency}/delete'
   defaults:
     _entity_form: 'mcapi_currency.delete'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_currency_disable:
   path: '/admin/accounting/currencies/{mcapi_currency}/disable'
   defaults:
     _entity_form: 'mcapi_currency.disable'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.admin_currency_enable:
   path: '/admin/accounting/currencies/{mcapi_currency}/enable'
   defaults:
     _entity_form: 'mcapi_currency.enable'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.workflow:
   path: '/admin/accounting/workflow'
@@ -95,7 +95,7 @@ mcapi.workflow_settings:
     _form: 'Drupal\mcapi\Form\OperationSettingsForm'
     _title: 'Configure transaction operation'
   requirements:
-    _permission: 'configure all currencies'
+    _permission: 'configure mcapi'
 
 mcapi.transaction_admin:
   path: '/transact/admin'
@@ -103,7 +103,7 @@ mcapi.transaction_admin:
     _entity_form: 'mcapi_transaction.admin'
     _title: 'Record transaction'
   requirements:
-    _permission: 'manage all transactions'
+    _permission: 'manage mcapi'
 
 mcapi.transaction_view:
   path: '/transaction/{mcapi_transaction}'
@@ -126,3 +126,17 @@ mcapi.transaction.op:
     parameters:
       mcapi_transaction:
         serial: true
+
+mcapi.wallet_add:
+  path: '/wallet/add/{entity_type}/{entity_id}'
+  defaults:
+    _entity_form: 'mcapi_wallet.edit'
+  requirements:
+    _permission: 'manage mcapi'
+
+mcapi.wallet_edit:
+  path: '/wallet/{mcapi_wallet}/edit'
+  defaults:
+    _entity_form: 'mcapi_wallet.edit'
+  requirements:
+    _entity_access: 'mcapi_wallet.edit'

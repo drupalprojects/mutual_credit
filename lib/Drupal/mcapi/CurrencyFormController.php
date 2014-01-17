@@ -34,7 +34,6 @@ class CurrencyFormController extends EntityFormController {
    *   The widget or formatter plugin manager.
    */
   public function __construct(PluginManagerBase $currency_manager, PluginManagerBase $widget_manager) {
-    die('kkkkkkkkkkk');
     $this->pluginCurrencyManager = $currency_manager;
     $this->pluginWidgetManager = $widget_manager;
   }
@@ -158,16 +157,6 @@ class CurrencyFormController extends EntityFormController {
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
       '#disabled' => (bool)$this->entity->transactions()
-    );
-    $form['uid'] = array(
-      '#title' => t('Declared by'),
-      '#description' => t("Choose from users with permission '@permission'", array('@permission' => t('Declare currency'))),
-      '#type' => 'user_chooser_few',
-      '#callback' => 'user_chooser_segment_perms',
-      '#args' => array('declare currency'),
-      '#default_value' => property_exists($currency, 'uid') ? $currency->uid : \Drupal::currentUser()->name,
-      '#multiple' => FALSE,
-      '#required' => TRUE,
     );
     $form['reservoir'] = array(
       '#title' => t('Reservoir account'),

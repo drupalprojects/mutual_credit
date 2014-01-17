@@ -19,6 +19,10 @@ services:
     class: Drupal\mcapi\Plugin\TransactionAccessManager
     arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
 
+  plugin.manager.mcapi.wallet_access:
+    class: Drupal\mcapi\Plugin\WalletAccessPluginManager
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
+
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
     arguments: ['@entity.manager']

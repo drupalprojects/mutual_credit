@@ -27,6 +27,9 @@ mcapi.misc:
         show_messages:
           type: string
           label: Show warning messages to user
+    default_wallet_access:
+      type: string
+      label: Default wallet access setting
 
 mcapi.currency.settings.decimal:
   type: mapping
@@ -192,7 +195,7 @@ mcapi.currency.limits.base:
           label: Mass transactions
         user1: 
           type: boolean
-          label: User has permission to 'Manage all transactions'
+          label: User has permission to 'Configure community accounting'
         owner: 
           type: boolean
           label: User is currency owner

@@ -48,7 +48,7 @@ function mcapi_import_menu() {
     'title' => 'Import',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_balances_form'),
-    'access arguments' => array('configure all currencies'),
+    'access arguments' => array('manage mcapi'),
     'weight' => 0
   );
   $items['admin/accounting/import/balances'] = array(
@@ -61,7 +61,7 @@ function mcapi_import_menu() {
     'description' => 'Import transactions for users already on the system.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('import_transactions_form'),
-    'access arguments' => array('configure all currencies'),
+    'access arguments' => array('manage mcapi'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 6
   );

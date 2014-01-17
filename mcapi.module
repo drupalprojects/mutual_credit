@@ -338,20 +338,20 @@ function mcapi_mcapi_info_drupal_permissions() {
   return array(
     'transact' => array(
       'title' => t('Transact'),
-      'description' => t("Register exchanges with other members, subject each currency's permissions"),
+      'description' => t("Register exchanges with other members, subject each currency's permissions")
     ),
-    'manage all transactions' => array(
-      'title' => t('Manage all transactions'),
-      'description' => t('Retrospectively manage transactions'),
+    'set own wallet privacy' => array(
+      'title' => t('Determine own wallet privacy'),
+      'description' => t('The user can determine privacy settings for wallets belonging to that entity.')
     ),
-    'configure all currencies' => array(
-      'title' => t('Configure all currencies'),
-      'description' => t('Edit the properties of any currency')
+    'configure mcapi' => array(
+      'title' => t('Configure community accounting'),
+      'description' => t('Design and setup the accounting system')
     ),
-    'declare currency' => array(
-      'title' => t('Declare currency'),
-      'description' => t('Create a new currency'),
-    )
+    'manage mcapi' => array(
+      'title' => t('Manage community accounting'),
+      'description' => t('Suitable for accountants')
+    ),
   );
 }
 
@@ -411,6 +411,7 @@ function mcapi_field_extra_fields() {
 }
 
 /**
+ * Machine name callback
  * Load a currency, from its id
  *
  * @param string $id
@@ -565,6 +566,7 @@ function mcapi_element_info() {
       '#process' => array('mcapi_process_currcodes','ajax_process_form'),
       '#theme_wrappers' => array('form_element'),
       '#multiple' => TRUE,
+      '#currcodes' => array(),//this limits the list
       '#options' => array(),//array of currcodes and currency names
     ),
     'mcapi_summary' => array(
@@ -658,10 +660,6 @@ if (!$newcode) drupal_set_message('problem validating worths element', 'error');
       if (isset($elements['#required_error'])) {
         \Drupal::formBuilder()->setError($element, $elements['#required_error']);
       }
-      // A #title is not mandatory for form elements, but without it we cannot
-      // set a form error message. So when a visible title is undesirable,
-      // form constructors are encouraged to set #title anyway, and then set
-      // #title_display to 'invisible'. This improves accessibility.
       elseif (isset($elements['#title'])) {
         \Drupal::formBuilder()->setError($element, t('!name field is required.', array('!name' => $elements['#title'])));
       }
@@ -688,7 +686,6 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
     //$defaults need to be a \Drupal\Core\TypedData\DataDefinition\DataDefinitionInterface object
     //$element['#default_value'] = $typedDataManager->create($defaults, $element['#default_value']);
   }
-  $element['#title_display'] = 'attribute';
   //the element is aware of a set of currcodes
   if (empty($element['#currcodes'])) {
     //best not rely on this, supply your own currencies that the user is permitted to use.
@@ -840,12 +837,16 @@ function mcapi_process_currcodes($element) {
   if (empty($element['#options']) && !empty($element['#currcodes'])) {
     $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL), drupal_map_assoc($element['#currcodes']));
   }
-  else if (empty($element['#options'])) {
-//TODO    Warning: array_intersect_key(): Argument #2 is not an array on admin/structure/block/add/mcapi_limits
-    //limit the choice to the currencies available to this user
-    $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL, TRUE), drupal_map_assoc($element['#currcodes']));
+  elseif (empty($element['#options'])) {
+    $allowed = $element['#options'] = mcapi_currency_list(NULL, NULL, TRUE);
+    if ($element['#currcodes']) {
+      $element['#options'] = array_intersect_key($allowed, drupal_map_assoc($element['#currcodes']));
+    }
+    else {
+      $element['#options'] = $allowed;
+    }
   }
-  else if ($element['#options'] == 'all') {
+  elseif ($element['#options'] == 'all') {
     $element['#options'] = mcapi_currency_list(NULL, NULL);
   }
 
@@ -917,7 +918,7 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
  * adds the 'balances' icon
  */
 function mcapi_toolbar() {
-  if (\Drupal::currentUser()->hasPermission('manage all transactions')) {
+  if (\Drupal::currentUser()->hasPermission('configure mcapi')) {
     drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
   }
 }
@@ -982,17 +983,28 @@ function mcapi_entity_query_alter() {
  * implements hook_config_translation_info().
  * Introduce dynamic translation tabs for translation of configuration.
  * //TODO
+ * all config entities and field api fields have been added already
  */
-function mcapi_config_translation_info() {
-  //dunno what to return here
-  return array();
+function mcapi_config_translation_info(&$info) {
+  //not sure how this works owing to lack of documentation but
+  //I think rather than use this hook, we should use mcapi.config_translation.info
+  //Here we might need to add states, types, operations
+}
+
+function mcapi_config_translation_info_alter(&$info) {
+  echo 'mcapi_config_translation_info_alter';
+  //print_r($info);
+  //die();
 }
 /*
  * implements hook_config_translation_type_info_alter().
- * //TODO
+ * Associative array of configuration type definitions keyed by schema type names. The elements are themselves array with information about the type.
+ * @param array $definitions
+ *
  */
-function mcapi_config_translation_type_info_alter($info) {
-  print_r($info);
+function mcapi_config_translation_type_info_alter(&$definitions) {
+  //This has never been called as far as I can tell...
+  echo 'mcapi_config_translation_type_info_alter'; print_r($definitions);die();
 }
 
 /**

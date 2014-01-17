@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simple_access\GroupAccessController.
+ * Contains \Drupal\simple_access\TransactionAccessController.
  */
 
 namespace Drupal\mcapi;
@@ -14,8 +14,6 @@ use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Defines an access controller option for the mcapi_transaction entity.
- *
- * @see \Drupal\simple_access\Entity\Group.
  */
 class TransactionAccessController extends EntityAccessController {
 

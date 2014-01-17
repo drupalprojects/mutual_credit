@@ -10,27 +10,11 @@
  * Implements hook_install().
  */
 function mcapi_install() {
-	//TODO looks like this isn't working
-  entity_load('user_role', DRUPAL_AUTHENTICATED_RID)->grantPermission('transact')->save();
-  drupal_set_message(t("For ease of setup, authenticated user has been granted 'transact' permission."));
-
+  //this helps ensure this module runs before all the stuff that might depend on it
   module_set_weight('mcapi', -1);
+  //create 2 wallets, one for the system, and one for user 1.
 
-  $users = db_query("SELECT count(uid) FROM {users}")->fetchField();
-  //we should have anon and user1
-  if ($users < 3) {
-    $edit = array(
-      'name' => '2nd trader',
-      'mail' => 'trader@example.com',
-      'pass[pass1]' => 'a',
-      'pass[pass2]' => '',
-      'notify' => 0,
-    );
-    //now what?
-    //TODO create this user
 
-    //drupal_set_message("A new user was created for trading. uid: $account->uid, name: demo, pass: demo");
-  }
 }
 
 /**
@@ -282,6 +266,56 @@ function mcapi_schema() {
     'indexes' => array(
       'uid1' => array('uid1'),
       'uid2' => array('uid2'),
+    ),
+  );
+  $schema['mcapi_wallets'] = array(
+    'description' => 'Wallets',
+    'fields' => array(
+      'wid' => array(
+        'description' => 'the unique wallet ID',
+        'type' => 'serial',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'uuid' => array(
+        'description' => 'Unique Key: Universally unique identifier for this entity.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+      ),
+      'entity_type' => array(
+        'description' => 'The parent entity_type',
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'name' => array(
+        'description' => "The owner's name for this wallet",
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'access' => array(
+        'description' => "The wallet's access controller",
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'settings' => array(
+        'description' => 'any config needed for the access controller',
+        'type' => 'text',
+        'size' => 'small',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('wid'),
+    //TODO Gordon is this about right?
+    'foreign keys' => array(
+      'mcapi_transactions_payee' => array(
+        'table' => 'mcapi_transactions',
+        'columns' => array('wid' => 'payee'),
+      ),
+      'mcapi_transactions_payer' => array(
+        'table' => 'mcapi_transactions',
+        'columns' => array('wid' => 'payer'),
+      ),
     ),
   );
   return $schema;

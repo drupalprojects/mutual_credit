@@ -83,7 +83,7 @@ function mcapi_views_data() {
       'id' => 'user_name',
     ),
     'argument' => array(
-      'id' => 'numeric',
+      'id' => 'user_uid',
     ),
     'field' => array(
       'id' => 'standard',
@@ -103,7 +103,7 @@ function mcapi_views_data() {
       'id' => 'user_name',
     ),
     'argument' => array(
-      'id' => 'numeric',
+      'id' => 'user_uid',
     ),
     'field' => array(
       'id' => 'standard',
@@ -164,7 +164,7 @@ function mcapi_views_data() {
       'id' => 'user_name',
     ),
     'argument' => array(
-      'id' => 'numeric',
+      'id' => 'user_uid',
     ),
     'field' => array(
       'id' => 'standard',
@@ -283,14 +283,14 @@ function mcapi_views_data() {
   		'id' => 'standard',
   		'base' => 'users',
   		'field' => 'uid',
-  		'label' => t('1st standard'),
+  		'label' => t('1st party'),
   		'relationship field' => 'uid1'
   	),
   	'filter' => array(
   		'id' => 'user_name',
   	),
   	'argument' => array(
-  		'id' => 'numeric',
+  		'id' => 'user_uid',
   	),
   	'field' => array(
   		'id' => 'standard',
@@ -303,14 +303,14 @@ function mcapi_views_data() {
   		'id' => 'standard',
   		'base' => 'users',
   		'field' => 'uid',
-  		'label' => t('2nd standard'),
+  		'label' => t('2nd party'),
   		'relationship field' => 'uid2'
   	),
   	'filter' => array(
   		'id' => 'user_name',
   	),
   	'argument' => array(
-  		'id' => 'numeric',
+  		'id' => 'user_uid',
   	),
   	'field' => array(
   		'id' => 'standard',

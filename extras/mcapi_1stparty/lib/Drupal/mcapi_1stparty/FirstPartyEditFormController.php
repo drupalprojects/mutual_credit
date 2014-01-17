@@ -186,7 +186,7 @@ class FirstPartyEditFormController extends EntityFormController {
     }
     echo("TODO add the extra fields when field_attach_form is deprecated in EntityFormController::init");//dsm doesnt work here
 
-    module_load_include ('tokens.inc', 'mcapi');
+    module_load_include ('inc', 'mcapi');
     $tokens = mcapi_transaction_list_tokens (FALSE);
     //remove payer and payee and replace with partner and direction
     $tokens[array_search('payer', $tokens)] = 'partner';

@@ -62,74 +62,28 @@ function mcapi_token_info() {
         'name' => t('Transactions'),
         'description' => t('Tokens related to a community accounting transactions.'),
         'needs-data' => 'mcapi_transaction',
-      ),
-    ),
-    'tokens' => array(
-      'mcapi' => array(
-        'serial' => array(
-          'name' => t('Unique serial number'),
-          'description' => t("The unique serial number of the transaction cluster."),
-        ),
-        'worths' => array(
-          'name' => t('Worths'),
-          'description' => t("The quantites of the transactions"),
-        ),
-        'payer' => array(
-          'name' => t('Payer name'),
-          'description' => t("The user whose account is credited"),
-        ),
-        'payee' => array(
-          'name' => t('Payee name'),
-          'description' => t("The user whose account is debited"),
-        ),
-        'type' => array(
-          'name' => t('Type'),
-          'description' => t("The type, or workflow channel"),
-        ),
-        'state' => array(
-          'name' => t('State'),
-          'description' => t("The state of the transaction"),
-        ),
-        'creator' => array(
-          'name' => t('Creator'),
-          'description' => t("The user who registered the transaction"),
-        ),
-        'created' => array(
-          'name' => t('Date created'),
-          'description' => t("The date the transaction was registered"),
-        ),
-        'links' => array(
-          'name' => t('Links'),
-          'description' => t("Links to transaction operations"),
-        ),
-        'url' => array(
-          'name' => t('URL'),
-          'description' => t("The url of the transaction"),
-        )
       )
     )
   );
-  return $info;
-}
+  $definitions = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
+  //chance to remove some tokens here using unset($definitions['uuid']).
 
-
-/*
- * helper function to get the token names for helptext token service and twig
- * get the entity properties from mcapi_token_info, then the fieldapi fields
- * this function would be handy for any entity_type
- * @param boolean
- *   if TRUE the result will include the operation links
- * @return array
- *   names of replacable elements in the transaction
- */
-function mcapi_transaction_list_tokens($showlinks = TRUE) {
-  //no need to boot the whole token service, but maybe should get this from cache somehow?
-  $data = mcapi_token_info();
-  $allfields = Field::FieldInfo()->getFieldMap();
-  $tokens = array_keys($data['tokens']['mcapi']);
-  if (array_key_exists('mcapi_transaction', $allfields)) {
-    $tokens = array_merge($tokens, array_keys($allfields['mcapi_transaction']));
+  //this really should be more automated in core
+  foreach ($definitions as $key => $def) {
+    $info['tokens']['mcapi'][$key] = array(
+      'name' => $def->getLabel(),
+      'description' => $def->getDescription()
+    );
   }
-  if (!$showlinks) unset($tokens[array_search('links', $tokens)]);
-  return $tokens;
+  //add a couple more tokens for virtual fields
+  $info['tokens']['mcapi']['links'] =  array(
+    'name' => t('Links'),
+    'description' => t("Links to transaction operations"),
+  );
+  $info['tokens']['mcapi']['url'] =  array(
+    'name' => t('URL'),
+    'description' => t("The url of the transaction"),
+  );
+
+  return $info;
 }

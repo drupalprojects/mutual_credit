@@ -1,8 +1,8 @@
 base_field: xid
 base_table: mcapi_transactions_index
 core: 8.x
-description: ''
-status: true
+description: '//TODO router cannot find path argument - core bug?'
+status: false
 display:
   default:
     display_plugin: default

@@ -33,7 +33,7 @@ use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm"
  *     },
  *   },
- *   admin_permission = "manage all transactions",
+ *   admin_permission = "configure mcapi",
  *   base_table = "mcapi_transactions",
  *   entity_keys = {
  *     "id" = "xid",
@@ -354,6 +354,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setDescription('the user id of the creator')
       ->setSettings(array('target_type' => 'user'))
       ->setRequired(TRUE);
+    // @todo Convert to a "timestamp" field in https://drupal.org/node/2145103.
     $properties['created'] = FieldDefinition::create('integer')
       ->setLabel('Created')
       ->setDescription('The time that the transaction was created.')

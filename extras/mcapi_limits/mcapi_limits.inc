@@ -75,7 +75,7 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
       }
     }
   }
-  if (count($messages) && \Drupal::currentUser()->hasPermission('manage all transactions')) {
+  if (count($messages) && \Drupal::currentUser()->hasPermission('configure mcapi')) {
     foreach ($messages as $currcode => $message) {
       drupal_set_message($message, 'warning', FALSE);
     }
@@ -90,7 +90,7 @@ function _mcapi_limits_form_user_form_alter(&$form, &$form_state) {
       $inherit = $currency->limits_settings['personal'];
     }
     else continue;
-    if (\Drupal::currentUser()->hasPermission('configure all currencies') || \Drupal::currentUser()->id() == $currency->uid->value) {
+    if (\Drupal::currentUser()->hasPermission('manage mcapi') || \Drupal::currentUser()->id() == $currency->uid->value) {
       $access = TRUE;
     }
     //fire up the plugin
@@ -106,7 +106,7 @@ function _mcapi_limits_form_user_form_alter(&$form, &$form_state) {
             '!max' => $currency->format($base_limits['max'])
         )),
         '#attributes' =>  new Attribute(array('style' => 'float:left;')),
-        '#disabled' => !(\Drupal::currentUser()->hasPermission('configure all currencies') || \Drupal::currentUser()->id() == $currency->uid->value)
+        '#disabled' => !(\Drupal::currentUser()->hasPermission('manage mcapi') || \Drupal::currentUser()->id() == $currency->uid->value)
     );
     $defaults = $plugin->getLimits($account);
     if ($plugin->id == 'balanced') {

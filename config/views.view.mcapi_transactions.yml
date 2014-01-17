@@ -21,7 +21,7 @@ display:
       access:
         type: perm
         options:
-          perm: 'manage all transactions'
+          perm: 'configure mcapi'
       cache:
         type: none
         options: {  }

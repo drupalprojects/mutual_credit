@@ -3,7 +3,6 @@ uuid: 1b93baa9-95b9-4f05-8900-b13ccc9657cc
 name: Euro
 status: true
 issuance: commodity
-uid: '1'
 reservoir: '1'
 type: decimal
 settings:

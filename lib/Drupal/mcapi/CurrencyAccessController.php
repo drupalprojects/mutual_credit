@@ -29,7 +29,7 @@ class CurrencyAccessController extends EntityAccessController {
     }
     else {
       //TODO: If the currency has non-deleted transaction then stop the currency from being deleted.
-      return $account->hasPermission('configure all currencies') || (isset($entity->uid) && $entity->uid == $account->id());
+      return $account->hasPermission('configure mcapi') || (isset($entity->uid) && $entity->uid == $account->id());
     }
   }
 
