@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\taxonomy\Plugin\views\field\Taxonomy.
+ * Definition of Drupal\mcapi\Plugin\views\field\Worths
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
@@ -16,8 +16,8 @@ use Drupal\views\ViewExecutable;
 use Drupal\Component\Annotation\PluginID;
 
 /**
- * Field handler to provide simple renderer that allows linking to a taxonomy
- * term.
+ * When we look at transactions, we need to view the worths field 
+ * which contains all the currency flows
  *
  * @todo This handler should use entities directly.
  *

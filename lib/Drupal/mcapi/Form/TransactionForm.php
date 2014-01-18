@@ -40,17 +40,17 @@ class TransactionForm extends EntityFormController {
     //the transaction entity will check that the users have permission to use the currencies
     //if we know the currency of the transaction, we can form_alter these
     $form['payer'] = array(
-      '#title' => t('Account to be debited'),
-      '#type' => 'user_chooser_few',
-      '#callback' => 'user_chooser_segment_perms',
-      '#args' => array('transact'),
+      '#title' => t('Wallet to be debited'),
+      '#type' => 'entity_chooser',
+      '#plugin' => 'wallet',
+      '#args' => array(),
       '#default_value' => $transaction->payer->value,
     );
     $form['payee'] = array(
-      '#title' => t('Account to be credited'),
-      '#type' => 'user_chooser_few',
-      '#callback' => 'user_chooser_segment_perms',
-      '#args' => array('transact'),
+      '#title' => t('Wallet to be credited'),
+      '#type' => 'entity_chooser',
+      '#plugin' => 'wallet',
+      '#args' => array(),
       '#default_value' => $transaction->payee->value,
     );
     $form['type'] = array(

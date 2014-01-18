@@ -6,4 +6,7 @@ child_errors:
   allow: 0
   watchdog: watchdog
   show_messages: show_messages
-default_wallet_access: inherit
+wallet_default_view: inherit
+wallet_default_payees: inherit
+wallet_default_payers: inherit
+short_wallet_names: true

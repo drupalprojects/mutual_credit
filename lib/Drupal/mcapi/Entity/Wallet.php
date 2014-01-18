@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Entity;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinition;
+use Drupal\Core\Entity\EntityStorageControllerInterface;
 
 /**
  * Defines the wallet entity.
@@ -20,7 +21,6 @@ use Drupal\Core\Field\FieldDefinition;
  *   module = "mcapi",
  *   controllers = {
  *     "storage" = "Drupal\mcapi\WalletStorageController",
- *     "view_builder" = "\Drupal\mcapi\Entity\WalletViewBuilder",
  *     "access" = "Drupal\mcapi\WalletAccessController",
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",
@@ -36,6 +36,7 @@ use Drupal\Core\Field\FieldDefinition;
  *   translatable = FALSE,
  *   route_base_path = "admin/accounting/wallets",
  *   links = {
+ *     "canonical" = "wallet.view",
  *     "admin-form" = "mcapi.wallets"
  *   }
  * )
@@ -49,13 +50,24 @@ class Wallet extends ContentEntityBase {
    * $data['user']['wallet'] = TRUE
    * maybe this variable isn't needed at all, or it could be a cached object or even a config setting
    * since wallets can never be deleted what we need to now is to which entities we can now add wallets.
+   * I have a feeling that wallets can only belong to content entities.
    */
   var $entity_types;
+  var $parent;
 
   public function __construct($params, $entity_type, $definition) {
     parent::__construct($params, $entity_type, $definition);
     //for now...
     $this->entity_types = array('user', 'node');
+  }
+
+  public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
+    foreach ($entities as $wallet) {
+      if ($wallet->entity_type->value == 'system') {
+        $wallet->parent = new \Drupal\mcapi\Entity\Bank;
+      }
+      else $wallet->parent = entity_load($wallet->entity_type->value, $wallet->pid->value);
+    }
   }
 
   /**
@@ -70,22 +82,22 @@ class Wallet extends ContentEntityBase {
    */
   public function label($langcode = NULL) {
     //get the parent entity's name and associate it with the wallet.
-    $parent = $this->parent()->label();
-    if (count($this->parent()->wallets) < 2) {
-      return $parent;
+    if (\Drupal::config('mcapi.misc')->get('short_wallet_names')) {
+      return $this->parent->label();
     }
     else {
-      return t('!parent: !wallet_name', array('!parent' => $parent, '!wallet_name' => $this->name->value));
+      return t('!parent: !wallet_name', array('!parent' => $this->parent->label(), '!wallet_name' => $this->name->value));
     }
   }
-
 
   /**
    * {@inheritdoc}
    */
   public static function ______preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
-
-    $values['access'] = 'inherit';//seems to make no difference
+    //trying to set this as a default but not working
+    $values['access_view'] = 'inherit';
+    $values['access_payer'] = 'autheticated';
+    $values['access_payer'] = 'current';
     parent::preCreate($storage_controller, $values);
   }
 
@@ -119,15 +131,18 @@ class Wallet extends ContentEntityBase {
       ->setLabel('Name')
       ->setDescription("The owner's name for this wallet")
       ->setRequired(TRUE);
-    $properties['access'] = FieldDefinition::create('string')
+    $properties['access_view'] = FieldDefinition::create('string')
       ->setLabel('Access controller')
-      ->setDescription("The class which controls access to this wallet")
+      ->setDescription("The class which controls view access to this wallet")
       ->setRequired(TRUE);
-    //similar to above this is an entity reference multiple field, so it can't be stored in an integer field in the wallet table...
-    $properties['access'] = FieldDefinition::create('entity_reference')
-      ->setLabel('Trusted proxies')
-      ->setDescription("Other users who can trade from this wallet")
-      ->setSettings(array('target_type' => 'user'));
+    $properties['access_payer'] = FieldDefinition::create('string')
+      ->setLabel('Access controller')
+      ->setDescription("The class which controls payer access to this wallet")
+      ->setRequired(TRUE);
+    $properties['access_payee'] = FieldDefinition::create('string')
+      ->setLabel('Access controller')
+      ->setDescription("The class which controls payee access to this wallet")
+      ->setRequired(TRUE);
 
     //+ a field to store the access control settings may be needed.
     return $properties;

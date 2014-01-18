@@ -84,18 +84,46 @@ class AccountingMiscForm extends ConfigFormBase {
         '#value' => 'rebuild_mcapi_index',
       )
     );
-    foreach ($this->pluginManager = \Drupal::service('mcapi.wallet.manager')->getDefinitions() as $def) {
+    foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
       $wallet_access_plugins[$def['id']] = $def['label'];
     }
-    $form['default_wallet_access'] = array(
-      '#title' => t('Default wallet access setting'),
-      //we could use entity_chooser here...
-      '#type' => 'select',
-      '#options' => $wallet_access_plugins,
-      '#default_value' => $config->get('default_wallet_access'),
-      '#weight' => 12,
+    $form['wallet_access'] = array(
+    	'#title' => t('Default access of users to wallets'),
+      '#description' => t('Determine which users can see, pay and pay from wallets by default, and which users can override their own wallets'),
+      '#type' => 'details'
     );
-
+    $form['wallet_access']['wallet_default_viewers'] = array(
+      '#title' => t('Default viewers'),
+      '#description' => t('Who can see the balance and history of this wallet?'),
+      '#type' => 'entity_chooser_selection',
+      '#args' => array('user'),
+      '#default_value' => $config->get('wallet_default_viewers'),
+      '#weight' => 1,
+    );
+    $form['wallet_access']['wallet_default_payees'] = array(
+      '#title' => t('Default payees'),
+      '#description' => t('Who can create transactions out of this wallet?'),
+      '#type' => 'entity_chooser_selection',
+      '#args' => array('user'),
+      '#default_value' => $config->get('wallet_default_payees'),
+      '#weight' => 2,
+    );
+    $form['wallet_access']['wallet_default_payers'] = array(
+      '#title' => t('Default payers'),
+      '#description' => t('Who can create transactions into this wallet?'),
+      '#type' => 'entity_chooser_selection',
+      '#args' => array('user'),
+      '#default_value' => $config->get('wallet_default_payers'),
+      '#weight' => 3,
+    );
+    entity_create('mcapi_wallet', array(
+    'name' => 'system1',
+    'entity_id' => 'system',
+    'pid' => 0,
+    'access_view' => 'dunno',
+    'access_payee' => 'dunno',
+    'access_payer' => 'dunno',
+    ))->save();
     return parent::buildForm($form, $form_state);
   }
 

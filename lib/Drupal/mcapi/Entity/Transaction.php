@@ -134,7 +134,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public function validate() {
 
-    \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $transaction);
+    \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $this);
 
     $this->exceptions = array();
     //check that each trader has permission to use all the currencies
