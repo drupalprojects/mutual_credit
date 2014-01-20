@@ -20,7 +20,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
  *   label = @Translation("Wallet"),
  *   module = "mcapi",
  *   controllers = {
- *     "storage" = "Drupal\mcapi\WalletStorageController",
+ *     "storage" = "Drupal\Core\Entity\FieldableDatabaseStorageController",
  *     "access" = "Drupal\mcapi\WalletAccessController",
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",
@@ -32,7 +32,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
  *     "id" = "wid",
  *     "uuid" = "uuid"
  *   },
- *   fieldable = TRUE,
+ *   fieldable = FALSE,
  *   translatable = FALSE,
  *   route_base_path = "admin/accounting/wallets",
  *   links = {
@@ -63,10 +63,15 @@ class Wallet extends ContentEntityBase {
 
   public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
     foreach ($entities as $wallet) {
-      if ($wallet->entity_type->value == 'system') {
+      $parent_type = $wallet->get('entity_type')->value;
+      //they could all have different parent entity types, so we have to load them separately
+      if ($parent_type == 'system') {
         $wallet->parent = new \Drupal\mcapi\Entity\Bank;
       }
-      else $wallet->parent = entity_load($wallet->entity_type->value, $wallet->pid->value);
+      else {
+        //@todo remove this array syntax
+        $wallet->parent = entity_load('user', $wallet->get('pid')->value);
+      }
     }
   }
 
@@ -83,7 +88,7 @@ class Wallet extends ContentEntityBase {
   public function label($langcode = NULL) {
     //get the parent entity's name and associate it with the wallet.
     if (\Drupal::config('mcapi.misc')->get('short_wallet_names')) {
-      return $this->parent->label();
+      return $this->get('parent')->label();
     }
     else {
       return t('!parent: !wallet_name', array('!parent' => $this->parent->label(), '!wallet_name' => $this->name->value));
@@ -119,11 +124,7 @@ class Wallet extends ContentEntityBase {
       ->setLabel('Parent entity type')
       ->setDescription("The parent entity's type")
       ->setRequired(TRUE);
-    //an entity reference field requires that the entity type be put in its settings.
-    //but this entity reference field could reference any of several types
-    //so I've created field here for entity_type and pid and we're not using the entity reference fieldtype at all.
-    //Do we need to define a new entity reference field type which reads two properties of this entity?
-    //or perhaps an alternative storage controller for the entity reference field?
+    //as I understand, we can only use the entity reference field for a known entity type.
     $properties['pid'] = FieldDefinition::create('integer')
       ->setLabel('Parent entity ID')
       ->setRequired(TRUE);

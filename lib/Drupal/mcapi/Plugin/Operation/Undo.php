@@ -27,7 +27,7 @@ use Drupal\mcapi\CurrencyInterface;
  */
 class Undo extends OperationBase {
 
-  /*
+  /**
    * {@inheritdoc}
   */
   public function access_form(CurrencyInterface $currency) {
@@ -41,7 +41,7 @@ class Undo extends OperationBase {
     }
   }
 
-  /*
+  /**
    *  access callback for transaction operation 'view'
   */
   public function opAccess(TransactionInterface $transaction) {
@@ -57,7 +57,7 @@ class Undo extends OperationBase {
     return TRUE;
   }
 
-  /*
+  /**
    * {@inheritdoc}
   */
   public function execute(TransactionInterface $transaction, array $values) {

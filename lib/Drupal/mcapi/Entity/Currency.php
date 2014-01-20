@@ -17,12 +17,14 @@ use Drupal\mcapi\Plugin\Field\FieldType\Worth;
 /**
  * Defines the Currency entity.
  *
+ * "storage" = "Drupal\mcapi\CurrencyStorageController",
+ *
  * @EntityType(
  *   id = "mcapi_currency",
  *   label = @Translation("Currency"),
  *   module = "mcapi",
  *   controllers = {
- *     "storage" = "Drupal\mcapi\CurrencyStorageController",
+ *     "storage" = "Drupal\Core\Config\Entity\ConfigStorageController",
  *     "access" = "Drupal\mcapi\CurrencyAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi\CurrencyFormController",
@@ -66,6 +68,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $uuid;
   public $name;
   public $status;
+  public $uid;
+  public $membership;
   public $issuance;
   public $reservoir;
   public $type;
@@ -78,8 +82,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $widget_settings;
   public $formatter;
   public $formatter_settings;
-  public $access;
-  public $access_view;
   public $access_undo;
   public $access_operations;
   public $weight;
@@ -99,6 +101,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
+    $definitions = \Drupal::service('plugin.manager.mcapi.currency_type')->getDefinition($values['type']);
 
     $values += array(
       'settings' => array(),
@@ -109,7 +112,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'color' => '',
       'access' => array(),
       'access_operations' => array(),
-      'access_view' => array(),
       'access_undo' => array(),
       'widget' => $definitions['default_widget'],
       'widget_settings' => array(),
@@ -120,16 +122,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
     $values['widget_settings'] += \Drupal::service('plugin.manager.mcapi.currency_widget')->getDefaultSettings($values['widget']);
 
     //TODO this will use a new wallet_chooser plugin
-    $values['access'] += array(
-      'membership' => 'user_chooser_segment_perms:transact',
-      'trader_data' => 'user_chooser_segment_perms:transact',
-      'system_data' => 'user_chooser_segment_perms:transact',
-    );
-    $values['access_view'] += array(
-      1 => array('perm_transact' => 'perm_transact'),
-      0 => array('perm_manage' => 'perm_manage', 'is_signatory' => 'is_signatory'),
-      -1 => array('is_signatory' => 'is_signatory'),
-    );
+    $values['membership'] = 'permission:transact';
+
     $values['access_undo'] += array(
       1 => array('perm_manage' => 'perm_manage'),
       -1 => array('perm_manage' => 'perm_manage', 'is_signatory' => 'is_signatory')

@@ -12,9 +12,36 @@
 function mcapi_install() {
   //this helps ensure this module runs before all the stuff that might depend on it
   module_set_weight('mcapi', -1);
-  //create 2 wallets, one for the system, and one for user 1.
+  //create default content entities.
+  //2 wallets, one for the system, and one for user 1.
+  entity_create('mcapi_wallet', array(
+  	'name' => 'default',
+  	'entity_type' => 'user',
+    'pid' => 1,
+    'access_view' => 'dunno',
+    'access_payee' => 'dunno',
+    'access_payer' => 'dunno',
+  ))->save();
 
+  entity_create('mcapi_wallet', array(
+    'name' => 'default',
+    'entity_type' => 'system',//dunno how to deal with this yet
+    'pid' => 1,
+    'access_view' => 'dunno',
+    'access_payee' => 'dunno',
+    'access_payer' => 'dunno',
+  ))->save();
 
+  //default exchange
+  /*
+  entity_create('mcapi_exchange', array(
+    'name' => t(
+      '!sitename default exchange',
+      array('!sitename' => \Drupal::config('system.site')->get('name'))
+    ),
+    'uid' => '1',
+  ))->save();
+  */
 }
 
 /**
@@ -81,26 +108,31 @@ function mcapi_schema() {
         'default' => 0,
       ),
       'payer' => array(
-        'description' => 'the user id of the payer',
+        'description' => 'Wallet id id of the payer',
         'type' => 'int',
         'size' => 'small',
         'not null' => TRUE,
       ),
       'payee' => array(
-        'description' => 'the user id of the payee',
+        'description' => 'Wallet id id of the payee',
         'type' => 'int',
         'size' => 'small',
         'not null' => TRUE,
       ),
-      //quantity is done, perhaps controversially, but the field API
       'type' => array(
         'description' => 'The type of transaction, types are provided by modules',
         'type' => 'varchar',
         'length' => '32',
         'not null' => TRUE,
       ),
+      'exchange' => array(
+        'description' => 'The exchange in which this transaction happened',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+      ),
       'state' => array(
-        'description' => 'completed, pending, disputed, etc',
+        'description' => 'Completed, pending, disputed, etc',
         'type' => 'int',
         'size' => 'normal',
         'not null' => TRUE,
@@ -191,14 +223,14 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
-      'uid1' => array(
-        'description' => 'the user id of the 1st trader',
+      'wallet_id' => array(
+        'description' => 'the id of the wallet we are viewing',
         'type' => 'int',
         'size' => 'small',
         'not null' => TRUE,
       ),
-      'uid2' => array(
-        'description' => 'the user id of the 2nd trader',
+      'partner_id' => array(
+        'description' => 'the id of the 2nd wallet in the transaction',
         'type' => 'int',
         'size' => 'small',
         'not null' => TRUE,
@@ -262,10 +294,10 @@ function mcapi_schema() {
         'not null' => TRUE,
       ),
     ),
-    'primary key' => array('xid', 'uid1', 'uid2', 'currcode'),
+    'primary key' => array('xid', 'wallet_id', 'partner_id', 'currcode'),
     'indexes' => array(
-      'uid1' => array('uid1'),
-      'uid2' => array('uid2'),
+      'wallet_id' => array('wallet_id'),
+      'partner_id' => array('partner_id'),
     ),
   );
   $schema['mcapi_wallets'] = array(
@@ -299,8 +331,18 @@ function mcapi_schema() {
         'type' => 'varchar',
         'length' => '32',
       ),
-      'access' => array(
-        'description' => "The wallet's access controller",
+      'access_view' => array(
+        'description' => "The wallet's view access controller",
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'access_payee' => array(
+        'description' => "The wallet's payee access controller",
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'access_payer' => array(
+        'description' => "The wallet's payer access controller",
         'type' => 'varchar',
         'length' => '32',
       ),
@@ -315,6 +357,9 @@ function mcapi_schema() {
     ),
     'primary key' => array('wid'),
     //TODO Gordon is this about right?
+    'unique keys' => array(
+  	  'unique' => array('name', 'entity_type', 'pid')
+    ),
     'foreign keys' => array(
       'mcapi_transactions_payee' => array(
         'table' => 'mcapi_transactions',
@@ -326,8 +371,45 @@ function mcapi_schema() {
       ),
     ),
   );
+  $schema['mcapi_exchanges'] = array(
+    'description' => 'Exchanges, or marketplaces',
+    'fields' => array(
+      'id' => array(
+        'description' => 'the unique exchange ID',
+        'type' => 'serial',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'uuid' => array(
+        'description' => 'Unique Key: Universally unique identifier for this entity.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+      ),
+      'name' => array(
+        'description' => "The full name of the exchange",
+        'type' => 'varchar',
+        'length' => '32',
+      ),
+      'uid' => array(
+        'description' => 'The one user responsible for administration',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
+      'langcode' => array(
+        'description' => 'The {language}.langcode of this version.',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      )
+    ),
+    'primary key' => array('id'),
+  );
   return $schema;
 }
+
 /*
  * change the database tabless
  */

@@ -278,15 +278,16 @@ function mcapi_views_data() {
   		'id' => 'standard',
   	),
   );
-  $data['mcapi_transactions_index']['uid1'] = array(
-  	'title' => t('1st trader'),
-  	'help' => t('The user we are concerned about'),
+  $data['mcapi_transactions_index']['wallet_id'] = array(
+  	'title' => t('Wallet ID'),
+  	'help' => t('The wallet we are looking at'),
+    //do we need this relationship???
   	'relationship' => array(
   		'id' => 'standard',
   		'base' => 'users',
   		'field' => 'uid',
   		'label' => t('1st party'),
-  		'relationship field' => 'uid1'
+  		'relationship field' => 'wallet_id'
   	),
   	'filter' => array(
   		'id' => 'user_name',
@@ -294,19 +295,16 @@ function mcapi_views_data() {
   	'argument' => array(
   		'id' => 'user_uid',
   	),
-  	'field' => array(
-  		'id' => 'standard',
-  	),
   );
-  $data['mcapi_transactions_index']['uid2'] = array(
-  	'title' => t('2nd trader'),
+  $data['mcapi_transactions_index']['partner_id'] = array(
+  	'title' => t('Partner wallet ID'),
   	'help' => t('The user the 1st user traded with'),
   	'relationship' => array(
   		'id' => 'standard',
   		'base' => 'users',
   		'field' => 'uid',
   		'label' => t('2nd party'),
-  		'relationship field' => 'uid2'
+  		'relationship field' => 'partner_id'
   	),
   	'filter' => array(
   		'id' => 'user_name',
@@ -317,19 +315,6 @@ function mcapi_views_data() {
   	'field' => array(
   		'id' => 'standard',
   	),
-  );
-  $data['mcapi_transactions_index']['description'] = array(
-    'title' => t('Description'),
-    'help' =>  t('A one line description of what was exchanged.'),
-    'filter' => array(
-      'id' => 'string',
-    ),
-    'argument' => array(
-      'id' => 'string',
-    ),
-    'field' => array(
-      'id' => 'standard',
-    ),
   );
 
   $data['mcapi_transactions_index']['state'] = array(
@@ -370,6 +355,46 @@ function mcapi_views_data() {
     ),
     'filter' => array(
       'id' => 'date',
+    ),
+  );
+  $data['mcapi_transactions_index']['incoming'] = array(
+    'title' => t('Income'),
+    'help' => t('The income from the transaction; positive or zero'),
+    'field' => array(
+      'id' => 'worth',
+    ),
+    'filter' => array(
+      'id' => 'numeric',
+    ),
+  );
+  $data['mcapi_transactions_index']['outgoing'] = array(
+    'title' => t('Expenditure'),
+    'help' => t('The outgoing quantity of the transaction; positive or zero'),
+    'field' => array(
+      'id' => 'worth',
+    ),
+    'filter' => array(
+      'id' => 'numeric',
+    ),
+  );
+  $data['mcapi_transactions_index']['diff'] = array(
+    'title' => t('Change in balance'),
+    'help' => t('The difference to the balance; positive or negative'),
+    'field' => array(
+      'id' => 'worth',
+    ),
+    'filter' => array(
+      'id' => 'numeric',
+    ),
+  );
+  $data['mcapi_transactions_index']['volume'] = array(
+    'title' => t('Transaction volume'),
+    'help' => t('The quantity of the transaction; always positive'),
+    'field' => array(
+      'id' => 'worth',
+    ),
+    'filter' => array(
+      'id' => 'numeric',
     ),
   );
 

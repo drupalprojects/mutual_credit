@@ -1,0 +1,13 @@
+id: mcapi_exchange.mcapi_exchange.default
+uuid: a0a4680f-e7a8-4be8-8e00-f927e4797960
+targetEntityType: mcapi_exchange
+bundle: mcapi_exchange
+mode: default
+content:
+  field_currencies:
+    type: entity_reference_label
+    weight: '0'
+    settings:
+      link: 0
+    label: above
+status: true

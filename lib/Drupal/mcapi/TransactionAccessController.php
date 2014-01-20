@@ -3,6 +3,20 @@
 /**
  * @file
  * Contains \Drupal\simple_access\TransactionAccessController.
+ * there is an access checking hierarchy:
+ * $entity->access can be called from anywhere. it checks the cache and prepares for
+ * $entity->createAccess, which checks cache and prepares context before invoking hooks
+ * $entity->checkCreateAccess
+ *
+ * then there is
+ * $entity->checkAccess, which seems concerned only with entity admin permission
+ *
+ * so with all that I'm guessing a bit how to build this.
+ * we probably don't want to mess too much with transaction access since wallets is where it is at, now.
+ * the transaction operations are all handled by plugins we just need to invoke them
+ * except for the create operation.
+ *
+ *
  */
 
 namespace Drupal\mcapi;
@@ -20,13 +34,32 @@ class TransactionAccessController extends EntityAccessController {
   /**
    * {@inheritdoc}
    */
-  public function checkAccess(EntityInterface $transaction, $op, $langcode, AccountInterface $account) {
+  public function access(EntityInterface $transaction, $op, $langcode = Language::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
     if ($op == 'op') {
       //there is probably a better way of writing the router so the op is passed as a variable
       $op = \Drupal::request()->attributes->get('op');
     }
-    return transaction_operations($op)->opAccess($transaction);
+    if (empty($account)) {
+      $account = \Drupal::currentUser();
+    }
+    return transaction_operations($op)->opAccess($transaction, $account);
+  }
+  /*
+  protected function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+    if ($admin_permission = $this->entityInfo->getAdminPermission()) {
+      return $account->hasPermission($admin_permission);
+    }
+    else {
+      return NULL;
+    }
   }
 
+  public function access(EntityInterface $entity, $operation, $langcode = Language::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
 
+  }
+
+  public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = array()) {
+
+  }
+  */
 }

@@ -3,12 +3,12 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Controller\Workflow.
+ * @TODO this would like to be a draggable list,
+ * but the DraggableListController is designed for entities, not plugins
  */
 
 namespace Drupal\mcapi\Controller;
 
-//no idea about these
-//use Drupal\Component\Utility\Xss;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\system\SystemManager;
 

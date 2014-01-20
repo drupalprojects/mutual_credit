@@ -70,6 +70,11 @@ function mcapi_menu() {
     'description' => 'Each currency implies a set of values and a community of users who economic fortunes are intertwined.',
     'route_name' => 'mcapi.admin_currency_list',
   );
+  $items['admin/accounting/exchanges'] = array(
+    'title' => 'Exchanges',
+    'description' => 'The groups, communities or marketplaces where transactions happen',
+    'route_name' => 'mcapi.admin_exchange_list',
+  );
   $items['admin/accounting/mass'] = array(
     'title' => 'Mass payments',
     'description' => 'Pay between one account and many.',
@@ -127,7 +132,7 @@ function mcapi_help($path, $arg) {
       ));
     case 'admin/accounting/workflow/operations':
       return implode(' ', array(
-        t("The workflow is about moving transactions between states. This is always done with a 'confirm' form."),
+        t("The workflow is about moving transactions between states. This is always done through a form."),
         t("The confirm forms are configured on this page.")
       ));
   }
@@ -258,10 +263,13 @@ function mcapi_theme($existing, $type, $theme, $path) {
 
 /**
  * implements hook_user_view().
+ * add a wallet summary view to the user profile
  */
 function mcapi_user_view($account, $mode, $language) {
   module_load_include('inc', 'mcapi');
-  $account->content['mcapi_summary'] = mcapi_view_user_summary($account);
+  //@todo perhaps move this. in any case get hold of the $wallets var
+  //remember the diff between one and many wallets
+  //$account->content['mcapi_summary'] = mcapi_view_wallet_summary($wallet);//takes one wallet
   $account->content['mcapi_summary']['#weight'] = 3;
 }
 
@@ -340,9 +348,9 @@ function mcapi_mcapi_info_drupal_permissions() {
       'title' => t('Transact'),
       'description' => t("Register exchanges with other members, subject each currency's permissions")
     ),
-    'set own wallet privacy' => array(
-      'title' => t('Determine own wallet privacy'),
-      'description' => t('The user can determine privacy settings for wallets belonging to that entity.')
+    'create own wallets' => array(
+      'title' => t('Creat own wallets'),
+      'description' => t('Users can have as many wallets as they like.')
     ),
     'configure mcapi' => array(
       'title' => t('Configure community accounting'),
@@ -459,6 +467,7 @@ function mcapi_currency_list(array $currencies = NULL, AccountInterface $account
 }
 /**
  * Load currencies for a given user
+ * A list of all the currencies in the marketplaces of which the user is a member.
  *
  * @param AccountInterface $account
  * @return array
@@ -468,21 +477,28 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL) {
   if (!isset($account)) {
     $account = \Drupal::currentUser();
   }
+  $account = user_load($account->id());
   $cid = 'currencies:' . $account->id();
-  if (!$cache = \Drupal::cache()->get($cid.'k')) {
-    $available = array();
+  if (!$cache = \Drupal::cache()->get($cid)) {
+    $available = $currencies = array();
     $cache_tags = array('mcapi.available_currency' => array());
-    $currencies = entity_load_multiple('mcapi_currency');
+    //@todo Gordon can you review this.
+    //I'm not even sure this function applies to members any more...
+    //plus if there are no exchanges then we don't even need this function
+    foreach ($account->get('field_exchanges') as $exchange) {
+//      mdump($exchange);
+//      foreach ($exchange->get('field_currencies') as $currency) {print_r($currency);
+//        if ($currency->status) $currencies[] = $currency;
+//      }
+    }
     $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
     uasort($currencies, array($info['class'], 'sort'));
     foreach ($currencies as $currency) {
-      if ($currency->status && $currency->access('membership', $account)) {
-        $available[$currency->id()] = $currency;
-        $cache_tags['mcapi.available_currency'] = $currency->id();
-      }
+      $available[$currency->id()] = $currency;
+      $cache_tags['mcapi.available_currency'] = $currency->id();
     }
-    //TODO this cache should be cleared whenever a currency is edited and whenever a user's entitlement to use a currency could be affected
-    \Drupal::cache()->set($cid, $available, CacheBackendInterface::CACHE_PERMANENT, $cache_tags);
+    //@todo this cache should be cleared whenever a currency is edited and whenever a user's entitlement to use a currency could be affected
+    ///////////////\Drupal::cache()->set($cid, $available, CacheBackendInterface::CACHE_PERMANENT, $cache_tags);
     return $available;
   }
   else {
@@ -1018,4 +1034,34 @@ function mcapi_mcapi_transaction_children($transaction) {
   $values = array('payer' => 1,'payee' => 2, 'worths' => array('credunit' => 1));
   $transaction = entity_create('mcapi_transaction', $values);
   return array($transaction);
+}
+
+/**
+ * field api callback
+ * for new users, populates the default exchange with that of the creator
+ */
+function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
+  //$exid = current(\Drupal::currentUser()->exchanges());
+  return array();
+  $uuid = db_select("mcapi_exchanges", 'me')
+    ->fields('me', array('uuid'))
+    ->condition('id', 1)
+    ->execute()->fetchField();
+
+  drupal_set_message('test callback mcapi_default_exchange_id: '.$uuid);
+  return array('target_uuid' => '1e503f14-58d3-4f69-8f00-e8d0ca78c8da');
+}
+
+/**
+ * Helper function to get the 'current' exchange. That means the exchange
+ * the current user is in, if any.
+ * @return array
+ *   the exchange entities of which the current user is a member.
+ */
+function current_exchanges() {
+  foreach(\Drupal::currentUser()->field_exchanges() as $id => $exchange) {
+    //@todo one day we'll be able to just pull this array out rather than iterating through it.
+    $return[$id] = $exchange;
+  }
+  return exchanges;
 }

@@ -21,30 +21,6 @@ mcapi.admin_currency_list:
   requirements:
     _permission: 'manage mcapi'
 
-mcapi.admin_mass:
-  path: '/admin/accounting/mass'
-  defaults:
-    _form: 'Drupal\mcapi\Form\MassPay'
-    _title: 'Mass payments'
-  requirements:
-    _permission: 'manage mcapi'
-
-mcapi.admin_mass.many2one:
-  path: '/admin/accounting/mass/many2one'
-  defaults:
-    _form: 'Drupal\mcapi\Form\MassPay'
-    _title: 'Mass payments'
-  requirements:
-    _permission: 'manage mcapi'
-
-mcapi.admin_mass.one2many:
-  path: '/admin/accounting/mass/one2many'
-  defaults:
-    _form: 'Drupal\mcapi\Form\MassPay'
-    _title: 'Mass payments'
-  requirements:
-    _permission: 'manage mcapi'
-
 mcapi.admin_currency_edit:
   path: '/admin/accounting/currencies/{mcapi_currency}'
   defaults:
@@ -72,6 +48,30 @@ mcapi.admin_currency_enable:
     _entity_form: 'mcapi_currency.enable'
   requirements:
     _permission: 'configure mcapi'
+
+mcapi.admin_mass:
+  path: '/admin/accounting/mass'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage mcapi'
+
+mcapi.admin_mass.many2one:
+  path: '/admin/accounting/mass/many2one'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage mcapi'
+
+mcapi.admin_mass.one2many:
+  path: '/admin/accounting/mass/one2many'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage mcapi'
 
 mcapi.workflow:
   path: '/admin/accounting/workflow'
@@ -113,7 +113,7 @@ mcapi.transaction_admin:
 mcapi.transaction_view:
   path: '/transaction/{mcapi_transaction}'
   defaults:
-    _form: '\Drupal\mcapi\Form\OperationForm'
+    _entity_view: 'transaction.certificate'
   requirements:
     _entity_access: 'mcapi_transaction.view'
   options:
@@ -132,6 +132,14 @@ mcapi.transaction.op:
       mcapi_transaction:
         serial: true
 
+#this will be replaced by a view
+#mcapi.wallet.view:
+#  path: '/exchange/{mcapi_wallet}'
+#  defaults:
+ #   _entity_view: 'mcapi_wallet.full'
+#  requirements:
+#    _entity_access: 'mcapi_wallet.view'
+
 mcapi.wallet_add:
   path: '/wallet/add/{entity_type}/{entity_id}'
   defaults:
@@ -146,11 +154,41 @@ mcapi.wallet_edit:
   requirements:
     _entity_access: 'mcapi_wallet.edit'
 
-mcapi.wallet_view:
-  path: '/wallet/{mcapi_wallet}'
+mcapi.admin_exchange_list:
+  path: '/admin/accounting/exchanges'
   defaults:
-    _content: '\Drupal\mcapi\Controller\WalletController::page'
-    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
+    _entity_list: 'mcapi_exchange'
   requirements:
-    _entity_access: 'mcapi_wallet.view'
+    _permission: 'manage mcapi'
 
+mcapi.exchange.view:
+  path: '/exchange/{mcapi_exchange}'
+  defaults:
+    _entity_view: 'mcapi_exchange.full'
+#these, copied from node and user entities, don't work, saying Controller "Drupal\mcapi\Controller\ExchangeController::page()" requires that you provide a value for the "$exchange" argument (because there is no default value or because there is a non optional argument after this one. 
+#so instead I'm doing drupal_set_title. this new menu system is utterly obtuse
+# _content: '\Drupal\mcapi\Controller\ExchangeController::page'
+#_title_callback: '\Drupal\mcapi\Controller\ExchangeController::pageTitle'
+  requirements:
+    _entity_access: 'mcapi_exchange.view'
+
+mcapi.exchange.add:
+  path: '/exchange/add'
+  defaults:
+    _entity_form: 'mcapi_exchange.edit'
+  requirements:
+    _permission: 'manage mcapi'
+
+mcapi.exchange.edit:
+  path: '/exchange/{mcapi_exchange}/edit'
+  defaults:
+    _entity_form: 'mcapi_exchange.edit'
+  requirements:
+    _entity_access: 'mcapi_exchange.edit'
+
+mcapi.exchange.delete:
+  path: '/exchange/{mcapi_exchange}/delete'
+  defaults:
+    _entity_form: 'mcapi_exchange.delete'
+  requirements:
+    _entity_access: 'mcapi_exchange.delete'

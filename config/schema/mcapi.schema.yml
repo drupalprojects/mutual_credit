@@ -27,9 +27,26 @@ mcapi.misc:
         show_messages:
           type: string
           label: Show warning messages to user
-    default_wallet_access:
-      type: string
+    wallet_access:
+      type: mapping
       label: Default wallet access setting
+      mapping: 
+        wallet_default_viewers:
+          type: string
+          label: 'Visible to'
+        wallet_default_payees:
+          type: string
+          label: 'Default payees'
+        wallet_default_payers:
+          type: string
+          label: 'Default payers'
+    wallet_short_names:
+      type: boolean
+      label: 'Wallet short names'
+    wallet_access_personalised:
+      type: boolean
+      label: 'Personalised wallet access'
+
 
 mcapi.currency.settings.decimal:
   type: mapping
@@ -75,6 +92,9 @@ mcapi.currency.*:
     status:
       type: boolean
       label: Enabled
+    uid:
+      type: integer
+      label: Comptroller
     isuance:
       type: string
       label: 'Basis of issuance'
@@ -118,21 +138,6 @@ mcapi.currency.*:
         membership:
           type: string
           label: 'Use the currency'
-        trader_data:
-          type: string
-          label: 'View aggregated user transaction data'
-        system_data:
-          type: string
-          label: 'View aggregated system data'
-    access_view:
-      type: sequence
-      label: 'View access'
-      sequence:
-        - type: sequence
-          label: 'Transaction in state'
-          sequence:
-            - type: boolean
-              label: 'Enabled'
     access_undo:
       type: sequence
       label: 'Undo access'

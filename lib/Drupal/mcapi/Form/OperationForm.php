@@ -18,7 +18,7 @@ class OperationForm extends ConfirmFormBase {
     //yuk getting the parameters this way
     $parameters = \Drupal::request()->attributes;
     $this->op = $parameters->get('op') ? : 'view';
-    if ($this->op == 'confirm') {
+    if ($this->op == 'create') {
       $this->transaction = \Drupal::service('user.tempstore')
       ->get('TransactionForm')
       ->set('entity', $this->entity);

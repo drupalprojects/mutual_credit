@@ -25,7 +25,7 @@ class OperationManager extends DefaultPluginManager {
    *   Dunno
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, LanguageManager $language_manager) {
-    parent::__construct('Plugin/Operation', $namespaces, '\Drupal\Core\TypedData\Annotation\DataType');
+    parent::__construct('Plugin/Operation', $namespaces, '\Drupal\mcapi\Annotation\Operation');
     $this->setCacheBackend($cache_backend, $language_manager, 'transaction_operation');
   }
 

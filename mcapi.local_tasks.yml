@@ -1,13 +1,14 @@
+#sits next to the transaction field ui tabs
 mcapi.admin_tab:
   route_name: mcapi.admin
   title: Configure
   tab_root_id: mcapi.admin_tab
   weight: 0
 
-mcapi.admin_misc_tab:
-  route_name: mcapi.admin_misc
-  title: Misc
-  tab_root_id: mcapi.admin_misc_tab
+mcapi.admin_exchanges_tab:
+  route_name: mcapi.admin_exchange_list
+  title: List
+  tab_root_id: mcapi.admin_exchanges_tab
   weight: 0
 
 mcapi.admin_mass.many2one_tab:
@@ -21,3 +22,14 @@ mcapi.admin_mass.one2many_tab:
   title: One to many
   tab_root_id: mcapi.admin_mass.one2many_tab
   weight: 0
+
+mcapi.exchange.view.tab:
+  route_name: mcapi.exchange.view
+  title: View
+  tab_root_id: mcapi.exchange.view
+  weight: 0
+mcapi.exchange.edit.tab:
+  route_name: mcapi.exchange.edit
+  title: Edit
+  tab_root_id: mcapi.exchange.view
+  weight: 1

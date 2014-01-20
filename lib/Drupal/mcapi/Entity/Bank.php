@@ -10,12 +10,15 @@ namespace Drupal\mcapi\Entity;
 use Drupal\Core\Entity\Entity;
 
 /**
- * This is the smallest possible entity, serving only to act as a Parent for system wallets, instantiated on the fly
+ * This is the smallest possible entity,
+ * serving only to act as a Parent for system wallets, instantiated on the fly
  *
  * @EntityType(
  *   id = "bank",
  *   label = @Translation("Bank"),
- *   controllers = {},
+ *   controllers = {
+ *     "storage" = "Drupal\mcapi\BankStorageController"
+ *   },
  *   entity_keys = {
  *     "id" = "id",
  *   }
@@ -34,3 +37,4 @@ class Bank extends Entity {
     return t('Bank', array(), array('langcode' => $langcode));
   }
 }
+

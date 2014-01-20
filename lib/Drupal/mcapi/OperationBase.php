@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\CurrencyTypeBase.
+ *  Contains Drupal\mcapi\OperationBase.
  */
 namespace Drupal\mcapi;
 
@@ -11,7 +11,6 @@ use Drupal\Core\Config\ConfigFactory;
 use Drupal\mcapi\OperationInterface;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
-use Drupal\mcapi\OperationBase;
 
 /**
  * Base class for Operations for default methods.
@@ -34,14 +33,8 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
     $this->description = $definition['description'];
   }
 
-  /*
-   * access control function for this operation on a given transaction
-   *
-   * @param TransactionInterface $transaction
-   *   A transaction entity
-   *
-   * @return Boolean
-   *   TRUE if access is granted
+  /**
+   * @see \Drupal\mcapi\OperationInterface::opAccess($transaction)
    */
   public function opAccess(TransactionInterface $transaction) {
     $access_plugins = transaction_access_plugins ();
@@ -59,16 +52,8 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
     return TRUE;
   }
 
-
   /**
-   * default form for configuring access to an operations for a currency
-   * offers a checkbox list of the transaction_operation_access callbacks
-   *
-   * @param CurrencyInterface $currency
-   *   a currency configuration entity
-   *
-   * @return array $element
-   *   FormAPI $elements
+   * @see \Drupal\mcapi\OperationInterface::access_form($currency)
    */
   public function access_form(CurrencyInterface $currency) {
     // the operation label and description are already used in the settings group
@@ -88,16 +73,9 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
   }
 
   /**
-   * operation settings form which individual operations can alter
-   * as distinct from the OperationBase::access_form()
-   *
-   * @param CurrencyInterface $currency
-   *   a currency configuration entity
-   *
-   * @return array $element
-   *   FormAPI $elements
+   * @see \Drupal\mcapi\OperationInterface::settingsForm($form)
    */
-  public function settingsForm(array &$form, ConfigFactory $config) {
+  public function settingsForm(array &$form) {
     //gives array keyed page_title, twig, format, button, cancel_button
     module_load_include ('inc', 'mcapi');
     $tokens = implode(', ', mcapi_transaction_list_tokens (FALSE));
@@ -110,7 +88,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
 
     $form['#prefix']= $this->description;
     //careful changing this form because the view operation alters it significantly
-    if ($op_title = $config->get('op_title')) {
+    if ($op_title = $this->config->get('op_title')) {
       $form['op_title'] = array (
         '#title' => t ('Link text'),
         '#description' => t ('A one word title for this operation'),
@@ -133,7 +111,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
       '#title' => t ('Page title'),
       '#description' => t ("Page title for the operation's page") . ' TODO, make this use the serial number and description tokens or twig. Twig would make more sense, in this context.',
       '#type' => 'textfield',
-      '#default_value' => $config->get('page_title'),
+      '#default_value' => $this->config->get('page_title'),
       '#placeholder' => t ('Are you sure?'),
       '#weight' => 4,
       '#required' => TRUE
@@ -146,7 +124,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         'certificate' => t ('Certificate'),
         'twig' => t ('Custom twig template')
       ),
-      '#default_value' => $config->get('format'),
+      '#default_value' => $this->config->get('format'),
       '#required' => TRUE,
       '#weight' => 6
    );
@@ -154,7 +132,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
       '#title' => t ('Template'),
       '#description' => $help,
       '#type' => 'textarea',
-      '#default_value' => $config->get('twig'),
+      '#default_value' => $this->config->get('twig'),
       '#states' => array (
         'visible' => array (
           ':input[name="format"]' => array (
@@ -164,7 +142,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
       ),
       '#weight' => 8
    );
-    if ($val = $config->get('button')) {//because the view operation hasn't saved a value
+    if ($val = $this->config->get('button')) {//because the view operation hasn't saved a value
       $form['sure']['button']= array (
         '#title' => t ('Button text'),
         '#description' => t ('The text that appears on the button'),
@@ -177,7 +155,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#required' => TRUE
       );
     }
-    if ($val = $config->get('cancel_button')) {
+    if ($val = $this->config->get('cancel_button')) {
       $form['sure']['cancel_button']= array (
         '#title' => t ('Cancel button text'),
         '#description' => t ('The text that appears on the cancel button'),
@@ -196,7 +174,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
       '#type' => 'fieldset',
       '#weight' => 10
     );
-    if ($val = $config->get('format2')) {
+    if ($val = $this->config->get('format2')) {
       $form['feedback']['format2']= array (
         '#title' => t ('Confirm form transaction display'),
         '#type' => 'radios',
@@ -214,7 +192,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#title' => t('Redirect path'),
         '#description' => t('Enter a path from the Drupal root, without leading slash.'),
         '#type' => 'textfield',
-        '#default_value' => $config->get('redirect'),
+        '#default_value' => $this->config->get('redirect'),
         '#states' => array (
           'visible' => array (
             ':input[name="format2"]' => array (
@@ -228,7 +206,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#title' => t('Template'),
         '#description' => $help,
         '#type' => 'textarea',
-        '#default_value' => $config->get('twig2'),
+        '#default_value' => $this->config->get('twig2'),
         '#states' => array (
           'visible' => array (
             ':input[name="format2"]' => array (
@@ -242,13 +220,13 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#title' => t('Success message'),
         '#description' => t('Appears in the message box along with the reloaded transaction certificate'),
         '#type' => 'textfield',
-        '#default_value' => $config->get('message'),
+        '#default_value' => $this->config->get('message'),
         '#weight' => 18,
         '#placeholder' => t('The operation was successful')
       );
     }
 
-    if ($val = $config->get('send')) {
+    if ($val = $this->config->get('send')) {
       $form['notify'] = array(
         '#type' => 'fieldset',
         '#title' => t('Mail the transactees, (but not the current user)'),
@@ -264,7 +242,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#title' => t('Mail subject'),
         '#description' => '',
         '#type' => 'textfield',
-        '#default_value' => $config->get('subject'),
+        '#default_value' => $this->config->get('subject'),
         '#weight' =>  1,
         '#states' => array(
           'visible' => array(
@@ -276,7 +254,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#title' => t('Mail body'),
         '#description' => '',
         '#type' => 'textarea',
-        '#default_value' => $config->get('body'),
+        '#default_value' => $this->config->get('body'),
         '#weight' => 2,
         '#states' => array(
           'visible' => array(
@@ -288,7 +266,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#title' => t('Carbon copy to'),
         '#description' => 'A valid email address',
         '#type' => 'email',
-        '#default_value' => $config->get('cc'),
+        '#default_value' => $this->config->get('cc'),
         '#weight' => 3,
         '#states' => array(
           'visible' => array(
@@ -299,28 +277,15 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
     }
   }
 
-  /*
-   * inject something into the operation form
-   * the values will be passed into the operation execute function
-   *
-   * @param TransactionInterface $transaction
-   *   A transaction entity
-   *
-   * @return array
-   *   FormAPI $elements
+  /**
+   * @see \Drupal\mcapi\OperationInterface::form($transaction)
    */
-  public function form(TransactionInterface $transaction, ConfigFactory $config) {
+  public function form(TransactionInterface $transaction) {
     return array();
   }
 
-  /*
-   * execute ajax submission of the operation form, delivering ajax commands to the browser.
-   * then the function exits;
-   *
-   * @param array $form_state_values
-   *   the contents of $form_state['values']
-   *
-   * @return NULL
+  /**
+   * @see \Drupal\mcapi\OperationInterface::ajax_submit($form_state_values)
    */
   function ajax_submit(array $form_state_values) {
     $transaction = mcapi_transaction_load ($form_state['values']['serial']);
@@ -334,17 +299,8 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
     exit();
   }
 
-  /*
-   * Do the actual operation on the passed transaction, and return some html
-   * The method in the base class handles the mail notifications
-   *
-   * @param TransactionInterface $transaction
-   *   A transaction entity object
-   * @param array $values
-   *   the contents of $form_state['values']
-   *
-   * @return string
-   *   an html snippet for the new page, or which in ajax mode replaces the form
+  /**
+   * @see \Drupal\mcapi\OperationInterface::execute($transaction, $values)
    */
   public function execute(TransactionInterface $transaction, array $values) {
 

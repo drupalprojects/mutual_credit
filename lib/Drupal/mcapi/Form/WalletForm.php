@@ -52,7 +52,8 @@ class WalletForm extends EntityFormController {
     foreach ($pluginManager->getDefinitions() as $def) {
       $plugins[$def['id']] = $def['label'];
     }
-    if (\Drupal::currentUser()->hasPermission('set own wallet privacy') && 1) {
+    //obselete permission
+    //if (\Drupal::config()->hasPermission('set own wallet privacy') && 1) {
       $form['access'] = array(
         '#title' => t('Acccess settings'),
         '#type' => 'details',
@@ -63,7 +64,7 @@ class WalletForm extends EntityFormController {
           '#options' => $plugins
         )
       );
-    }
+    //}
     $form['proxies'] = array(
     	'#title' => t('Any other users who can trade from this wallet?'),
       '#type' => 'entity_chooser',

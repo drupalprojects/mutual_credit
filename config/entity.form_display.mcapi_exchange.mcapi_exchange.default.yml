@@ -1,0 +1,15 @@
+id: mcapi_exchange.mcapi_exchange.default
+uuid: c4c27cf7-31af-496a-ac0a-10ea115cb833
+targetEntityType: mcapi_exchange
+bundle: mcapi_exchange
+mode: default
+content:
+  field_currencies:
+    type: entity_reference_autocomplete
+    weight: '0'
+    settings:
+      match_operator: CONTAINS
+      size: '60'
+      placeholder: 'Currency name'
+      autocomplete_type: single
+status: true

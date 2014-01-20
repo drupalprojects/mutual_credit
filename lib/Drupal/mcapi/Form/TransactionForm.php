@@ -4,16 +4,20 @@
  * @file
  * Definition of Drupal\mcapi\Form\TransactionForm.
  * Edit all the fields on a transaction
+ *
+ * We have to start by working out the what exchange this transaction
+ * is happening in. This helps us to work out what currencies to show
+ * and what users to make available in the user selection widgets
  */
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\EntityFormController;
+use Drupal\Core\Entity\ContentEntityFormController;
 use Drupal\mcapi\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\action\Plugin\Action;
 
-class TransactionForm extends EntityFormController {
+class TransactionForm extends ContentEntityFormController {
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
@@ -22,6 +26,8 @@ class TransactionForm extends EntityFormController {
 
     $form = parent::form($form, $form_state);
     $transaction = $this->entity;
+
+    $exchange = current_exchanges();
 
     unset($form['langcode']); // No language so we remove it.
 
@@ -36,9 +42,9 @@ class TransactionForm extends EntityFormController {
       '#required' => TRUE,
       '#default_value' => $transaction->worths[0],
     );
-    //the default payer and payee widgets allow anyone with 'transact' permission
-    //the transaction entity will check that the users have permission to use the currencies
-    //if we know the currency of the transaction, we can form_alter these
+    //@todo GORDON what's the best way to list the wallets of the members of the current exchange
+    //including any wallets whose parent is the exchange itself?
+    //I think what we need is a wallet_chooser element!
     $form['payer'] = array(
       '#title' => t('Wallet to be debited'),
       '#type' => 'entity_chooser',
@@ -62,12 +68,10 @@ class TransactionForm extends EntityFormController {
     );
     $form['creator'] = array(
       '#title' => t('Recorded by'),
-      '#type' => 'user_chooser_few',
-    	'#callback' => 'user_chooser_segment_perms',
-    	'#args' => array('transact'),
+      '#type' => 'entity_chooser',
+    	'#plugin' => 'user',
+    	'#args' => array(),
       '#default_value' => $transaction->creator->value,
-      '#args' => array('transact'),
-      '#required' => FALSE,//because user_chooser assumes TRUE
       '#weight' => 15,
     );
     //TODO how is this field validated? Is it just a positive integer?
@@ -140,11 +144,11 @@ class TransactionForm extends EntityFormController {
     ->set('entity', $this->entity);
 
     //now we divert to the operation confirm form
-    $form_state['redirect'] = 'transaction/0/confirm';
+    $form_state['redirect'] = 'transaction/0/create';
     //the transaction is confirmed using the operation plugin, Confirm, see
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
     //then
-    //Drupal\mcapi\Plugin\Operation\Confirm
+    //Drupal\mcapi\Plugin\Operation\Create
   }
 
 

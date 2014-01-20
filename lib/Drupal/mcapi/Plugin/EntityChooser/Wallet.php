@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\EntityChooser;
 
-use Drupal\entity_chooser\Plugin\EntityChooserInterface;
+use Drupal\entity_chooser\Plugin\EntityChooserBase;
 
 /**
  * Helps to choose wallets based on properties of their parents
@@ -18,7 +18,7 @@ use Drupal\entity_chooser\Plugin\EntityChooserInterface;
  *   label = @Translation("Select all wallets"),
  * )
  */
-class Wallet implements EntityChooserInterface {
+class Wallet Extends EntityChooserBase {
 
   // an array of all the walletable entities
   protected $entities;
@@ -34,40 +34,15 @@ class Wallet implements EntityChooserInterface {
   protected $include;
 
   /**
-   * Set any properties of this plugin from the given $element
-   *
-   * @param array $element
-   *   may be empty
-   * @param string $id
-   *   the plugin id
-   * @param array $definition
-   *   the plugin definition
+   * {@inheritdoc}
    */
   function __construct($element, $id, $definition) {
-    if ($element) {
-      $this->exclude = $element['#exclude'];
-      $this->include = $element['#include'];
-      //$this->setArgs($element['#args']);
-    }
+    $this->entity_type = 'mcapi_wallet';
+    parent::__construct($element, $id, $definition);
   }
 
   /**
-   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::getKeys()
-   */
-  public function getElementKeys() {
-    //can't think of any for now
-    return array();
-  }
-
-  /**
-   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::getAllValidIds()
-   */
-  public function validArgs() {
-    return array();
-  }
-
-  /**
-   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::validString()
+   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::getIdsFromString()
    */
   public function getIdsFromString($string) {
     $query = $this->query(array());
@@ -87,22 +62,40 @@ class Wallet implements EntityChooserInterface {
     return $this->includeExclude($query->execute()->fetchCol());
   }
 
+  /**
+   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::getAllValidIds()
+   */
   public function getAllValidIds() {
     return db_select('mcapi_wallets', 'w')->fields('w', array('wid'))->execute()->fetchCol();
   }
+
+  /**
+   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::isValid()
+   */
   public function isValid($id) {
-    return db_select('mcapi_wallets', w)->fields('w', array('wid'))->condition('wid', $id)->execute()->fetchField();
+    return db_select('mcapi_wallets', 'w')->fields('w', array('wid'))->condition('wid', $id)->execute()->fetchField();
   }
 
+
+  /**
+   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::match_against()
+   */
   public function matchAgainst() {
     return array('name');
   }
+
+  /**
+   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::getEntityType()
+   */
   public function getEntityType() {
     return 'mcapi_wallet';
   }
 
-  function setArgs(array $args) {
-    debug($args, 'What args to set?');
+  /**
+   * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::validArgs()
+   */
+  function validArgs() {
+    return array(t('All wallets'));
   }
 
 }

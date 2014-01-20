@@ -6,7 +6,9 @@ child_errors:
   allow: 0
   watchdog: watchdog
   show_messages: show_messages
-wallet_default_view: inherit
-wallet_default_payees: inherit
-wallet_default_payers: inherit
-short_wallet_names: true
+wallet_access:
+  wallet_default_viewers: role:authenticated
+  wallet_default_payees: role:authenticated
+  wallet_default_payers: role:authenticated
+wallet_short_names: true
+wallet_access_personalised: true

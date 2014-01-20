@@ -129,14 +129,14 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       return;
     };
     $query = $this->database->insert('mcapi_transactions_index')
-      ->fields(array('xid', 'serial', 'uid1', 'uid2', 'state', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
+      ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'currcode', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
 
     foreach ($transaction->worths[0] as $worth) {
       $query->values(array(
         'xid' => $transaction->id(),
         'serial' => $transaction->serial->value,
-        'uid1' => $transaction->payer->value,
-        'uid2' => $transaction->payee->value,
+        'wallet_id' => $transaction->payer->value,
+        'partner_id' => $transaction->payee->value,
         'state' => $transaction->state->value,
         'currcode' => $worth->currcode,
         'volume' => $worth->value,
@@ -150,8 +150,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       $query->values(array(
         'xid' => $transaction->id(),
         'serial' => $transaction->serial->value,
-        'uid1' => $transaction->payee->value,
-        'uid2' => $transaction->payer->value,
+        'wallet_id' => $transaction->payee->value,
+        'partner_id' => $transaction->payer->value,
         'state' => $transaction->state->value,
         'currcode' => $worth->currcode,
         'volume' => $worth->value,
@@ -173,8 +173,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
     		t.serial,
-        t.payer AS uid1,
-        t.payee AS uid2,
+        t.payer AS wallet_id,
+        t.payee AS partner_id,
         t.state,
         t.type,
         t.created,
@@ -191,8 +191,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     db_query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
     		t.serial,
-        t.payee AS uid1,
-        t.payer AS uid2,
+        t.payee AS wallet_id,
+        t.payer AS partner_id,
         t.state,
         t.type,
         t.created,
@@ -295,9 +295,9 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $query->addExpression('SUM(i.outgoing)', 'gross_out');
     $query->addExpression('SUM(i.diff)', 'balance');
     $query->addExpression('SUM(i.volume)', 'volume');
-    $query->addExpression('COUNT(DISTINCT i.uid2)', 'partners');
+    $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
     $query->condition('currcode', $currency->id())
-      ->condition('i.uid1', $account->id());
+      ->condition('i.wallet_id', $account->id());
     $this->parseConditions($query, $conditions);
     $result = $query->execute()->fetchAssoc();
     if (array_filter($result)) {
@@ -319,10 +319,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $all_balances = db_query(
       "SELECT created, (@csum := @csum + diff) as balance
         FROM {mcapi_transactions_index}
-        WHERE uid1 = :uid1 AND currcode = :currcode
+        WHERE wallet_id = :wallet_id AND currcode = :currcode
         ORDER BY created",
       array(
-        ':uid1' => $account->id(),
+        ':wallet_id' => $account->id(),
         ':currcode' => $currency->id()
       )
     )->fetchAll();

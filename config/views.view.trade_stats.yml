@@ -1,3 +1,4 @@
+#@todo this probably needs removing, but might form the basis of wallet based equivalent view
 base_field: xid
 base_table: mcapi_transactions_index
 core: 8.x
@@ -69,8 +70,8 @@ display:
           description: ''
           columns:
             xid: xid
-            uid1: uid1
-            uid2: uid2
+            wallet_id: wallet_id
+            partner_id: partner_id
             worths: worths
             operations: operations
             state: state
@@ -83,14 +84,14 @@ display:
               separator: ''
               empty_column: 0
               responsive: ''
-            uid1:
+            wallet_id:
               sortable: 0
               default_sort_order: asc
               align: ''
               separator: ''
               empty_column: 0
               responsive: ''
-            uid2:
+            partner_id:
               sortable: 0
               default_sort_order: asc
               align: ''
@@ -237,7 +238,7 @@ display:
           id: name
           table: users
           field: name
-          relationship: uid2
+          relationship: partner_id
           group_type: group
           admin_label: ''
           label: Name
@@ -445,10 +446,10 @@ display:
       footer: {  }
       empty: {  }
       relationships:
-        uid2:
-          id: uid2
+        partner_id:
+          id: partner_id
           table: mcapi_transactions_index
-          field: uid2
+          field: partner_id
           relationship: none
           group_type: group
           admin_label: '2nd trader'
@@ -456,10 +457,10 @@ display:
           plugin_id: standard
           provider: views
       arguments:
-        uid1:
-          id: uid1
+        wallet_id:
+          id: wallet_id
           table: mcapi_transactions_index
-          field: uid1
+          field: wallet_id
           relationship: none
           group_type: group
           admin_label: ''

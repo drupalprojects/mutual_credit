@@ -44,7 +44,7 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
         $entity->created = REQUEST_TIME;//because a value is expected
         return $entity;
       }
-      throw new McapiTransactionException('serial', 'Failed to retrieve mcapi_transaction entity from step 1');
+      throw new McapiTransactionException('serial', 'Failed to retrieve mcapi_transaction entity from step 1 tempstore');
     }
     if ($storage = $this->entityManager->getStorageController($entity_type)) {
       $entity = $storage->loadByProperties(array('serial' => $value, 'parent' => '0'));

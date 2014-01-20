@@ -1,0 +1,21 @@
+id: user.user.field_exchanges
+uuid: d16709fa-5c32-4125-9600-fc4666ae45ac
+status: true
+langcode: en
+field_uuid: a02e4720-f5d8-44b3-8f00-d2d6151518d6
+field_name: field_exchanges
+entity_type: user
+bundle: user
+label: 'Member of exchange(s)'
+description: ''
+required: 0
+default_value: {  }
+default_value_function: ''
+settings:
+  handler: default
+  handler_settings:
+    target_bundles: {  }
+    sort:
+      field: name
+      direction: ASC
+field_type: entity_reference

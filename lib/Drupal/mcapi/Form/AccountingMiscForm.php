@@ -41,11 +41,11 @@ class AccountingMiscForm extends ConfigFormBase {
     );
 
     $form['mix_mode'] = array(
-        '#title' => t('Restrict transactions to one currency'),
-        '#description' => t('Applies only when more than one currency is available'),
-        '#type' => 'checkbox',
-        '#default_value' => !$config->get('mix_mode'),
-        '#weight' => 7
+      '#title' => t('Restrict transactions to one currency'),
+      '#description' => t('Applies only when more than one currency is available'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('mix_mode'),
+      '#weight' => 7
     );
     $form['child_errors'] = array(
       '#title' => t('Invalid child transactions'),
@@ -90,10 +90,12 @@ class AccountingMiscForm extends ConfigFormBase {
     $form['wallet_access'] = array(
     	'#title' => t('Default access of users to wallets'),
       '#description' => t('Determine which users can see, pay and pay from wallets by default, and which users can override their own wallets'),
-      '#type' => 'details'
+      '#type' => 'details',
+      '#tree' => TRUE
     );
+    //TODO the following elements might need to be moved to somewhere where they can be re-used by the wallet's own config form.
     $form['wallet_access']['wallet_default_viewers'] = array(
-      '#title' => t('Default viewers'),
+      '#title' => t('Visible to'),
       '#description' => t('Who can see the balance and history of this wallet?'),
       '#type' => 'entity_chooser_selection',
       '#args' => array('user'),
@@ -116,14 +118,20 @@ class AccountingMiscForm extends ConfigFormBase {
       '#default_value' => $config->get('wallet_default_payers'),
       '#weight' => 3,
     );
-    entity_create('mcapi_wallet', array(
-    'name' => 'system1',
-    'entity_id' => 'system',
-    'pid' => 0,
-    'access_view' => 'dunno',
-    'access_payee' => 'dunno',
-    'access_payer' => 'dunno',
-    ))->save();
+    $form['wallet_short_names'] = array(
+      '#title' => t('Wallet short names'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('wallet_short_names'),
+      '#weight' => 7
+    );
+    $form['wallet_access_personalised'] = array(
+      '#title' => t('Personalised wallet access'),
+      '#description' => t('Users can adjust these settings, for every wallet'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('wallet_access_personalised'),
+      '#weight' => 7
+    );
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -147,7 +155,9 @@ class AccountingMiscForm extends ConfigFormBase {
       ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
-      ->set('default_wallet_access', $form_state['values']['default_wallet_access'])
+      ->set('wallet_access', $form_state['values']['default_wallet_access'])
+      ->set('wallet_short_names', $form_state['values']['wallet_short_names'])
+      ->set('wallet_access_personalised', $form_state['values']['wallet_access_personalised'])
       ->save();
 
     parent::submitForm($form, $form_state);

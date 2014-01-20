@@ -1,4 +1,4 @@
-kkll;;;ddd<?php
+<?php
 
 /**
  * @file
@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Defines an access controller option for the mcapi_wallet entity.
  */
-class TransactionAccessController extends EntityAccessController {
+class WalletAccessController extends EntityAccessController {
 
   private $pluginManager;
 
@@ -28,6 +28,7 @@ class TransactionAccessController extends EntityAccessController {
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $wallet, $op, $langcode, AccountInterface $account) {
+    return TRUE;
     //remember we're only interested in view access but not for router callbacks because the wallet has no uri
     //although perhaps it should - like bitcoin!
     return $this->pluginManager

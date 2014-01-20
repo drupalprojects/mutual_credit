@@ -11,7 +11,6 @@ namespace Drupal\mcapi\Plugin\Operation;
 use Drupal\mcapi\OperationBase;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
-use \Drupal\Core\Config\ConfigFactory;
 
 /**
  * Links to the transaction certificate
@@ -60,8 +59,8 @@ class View extends OperationBase {//does it go without saying that this implemen
   /*
    * {@inheritdoc}
   */
-  public function settingsForm(array &$form, ConfigFactory $config) {
-    parent::settingsForm($form, $config);
+  public function settingsForm(array &$form) {
+    parent::settingsForm($form);
     unset($form['sure']['button'], $form['sure']['cancel_button'], $form['notify']);
     $newform = array('#tree' => 1);
     $newform['sure'] = $form['sure'];

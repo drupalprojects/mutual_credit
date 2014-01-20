@@ -2,6 +2,7 @@ id: credunit
 uuid: 4450dc37-0564-480e-8800-a3d78c18f12d
 name: 'Community Coins'
 status: true
+uid: 1
 issuance: acknowledgement
 reservoir: '1'
 type: time
@@ -17,16 +18,6 @@ formatter: null
 formatter_settings: null
 access:
   membership: 'user_chooser_segment_perms:transact'
-  trader_data: 'user_chooser_segment_perms:transact'
-  system_data: 'user_chooser_segment_perms:transact'
-access_view:
-  1:
-    perm_transact: perm_transact
-  0:
-    perm_manage: perm_manage
-    is_signatory: is_signatory
-  -1:
-    is_signatory: is_signatory
 access_undo:
   1:
     perm_manage: perm_manage

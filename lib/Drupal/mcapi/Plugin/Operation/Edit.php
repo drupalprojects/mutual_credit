@@ -11,10 +11,9 @@ namespace Drupal\mcapi\Plugin\Operation;
 use Drupal\mcapi\OperationBase;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
-use \Drupal\Core\Config\ConfigFactory;
 
 /**
- * Undo operation
+ * Edit operation
  *
  * @Operation(
  *   id = "edit",
@@ -26,7 +25,7 @@ use \Drupal\Core\Config\ConfigFactory;
  *   }
  * )
  */
-class Undo extends OperationBase {
+class Edit extends OperationBase {
 
   /*
    * {@inheritdoc}
@@ -35,18 +34,19 @@ class Undo extends OperationBase {
     //return the access functions for each transaction state
     $element = parent::access_form($currency);
     foreach (mcapi_get_states() as $state) {
-      $elements[$constantVal] = $element;
-      $elements[$constantVal]['#title'] = $state->label;
-      $elements[$constantVal]['#description'] = $state->description;
-      $elements[$constantVal]['#default_value'] = $currency->access_undo[$state->value];
+      $elements[$state->value] = $element;
+      $elements[$state->value]['#title'] = $state->label;
+      $elements[$state->value]['#description'] = $state->description;
+      $elements[$state->value]['#default_value'] = $currency->access_undo[$state->value];
     }
   }
 
   /*
-   *  access callback for transaction operation 'view'
+   *  access callback for transaction operation 'edit'
   */
   public function opAccess(TransactionInterface $transaction) {
-    if ($transaction->state->value == TRANSACTION_STATE_UNDONE) RETURN FALSE;
+    if ($transaction->state->value == TRANSACTION_STATE_UNDONE) return FALSE;
+    if ($transaction->created->value + 86400*$this->config->get('window') < REQUEST_TIME) return FALSE;
     $access_plugins = transaction_access_plugins();
     //see the comments in OperationBase
     foreach ($transaction->worths[0] as $worth) {
@@ -61,8 +61,8 @@ class Undo extends OperationBase {
   /*
    * {inheritdoc}
    */
-  public function form() {
-    foreach ($config->get('fields') as $fieldname) {
+  public function form(TransactionInterface $transaction) {
+    foreach (array_filter($this->config->get('fields')) as $fieldname) {
       //TODO retrieve the field instances from the transaction entity
       //allow the user to fill them in.
     }
@@ -71,18 +71,24 @@ class Undo extends OperationBase {
   /*
    * {inheritdoc}
    */
-  public function settingsForm(array &$form, ConfigFactory $config) {
-    parent::settingsForm($form, $config);
+  public function settingsForm(array &$form) {
+    parent::settingsForm($form);
     module_load_include('inc', 'mcapi');
     $form['fields'] = array(
   	  '#title' => t('Editable fields'),
   	  '#description' => t('select the fields which can be edited'),
   	  '#type' => 'checkboxes',
       '#options' => mcapi_transaction_list_tokens(),
-  	  '#default_values' => $config->get('fields')
+  	  '#default_values' => $this->config->get('fields')
+    );
+    $form['window'] = array(
+    	'#title' => t('Editable window'),
+      '#description' => t('Number of days after creation that the transaction can be edited'),
+      '#type' => 'number',
+  	  '#default_values' => $this->config->get('window'),
+      '#min' => 0
     );
   }
-
   /*
    * {@inheritdoc}
   */

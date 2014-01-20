@@ -2,6 +2,7 @@ id: escro
 uuid: 1b93baa9-95b9-4f05-8900-b13ccc9657cc
 name: Euro
 status: true
+uid: 1
 issuance: commodity
 reservoir: '1'
 type: decimal
@@ -18,16 +19,6 @@ formatter: null
 formatter_settings: null
 access:
   membership: 'user_chooser_segment_perms:transact'
-  trader_data: 'user_chooser_segment_perms:transact'
-  system_data: 'user_chooser_segment_perms:transact'
-access_view:
-  1:
-    perm_transact: perm_transact
-  0:
-    perm_manage: perm_manage
-    is_signatory: is_signatory
-  -1:
-    is_signatory: is_signatory
 access_undo:
   1:
     perm_manage: perm_manage

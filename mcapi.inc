@@ -111,7 +111,7 @@ function _mcapi_calc($formula, $base_value) {
 /*
  * a nice display of user balances in a currency
  */
-function mcapi_view_user_summary($account, $currencies = array()) {
+function mcapi_view_wallet_summary($wallet, $currencies = array()) {
   if (empty($currencies)) {
     $currencies = mcapi_get_available_currencies($account);
   }

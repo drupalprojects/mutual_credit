@@ -27,7 +27,7 @@ use Drupal\Component\Annotation\PluginID;
  */
 class Balance extends FieldPluginBase {
 
-  var $uid1;
+  var $wallet_id;
 
   /**
    * {@inheritdoc}
@@ -35,15 +35,15 @@ class Balance extends FieldPluginBase {
   public function query() {
     $this->addAdditionalFields();
     //we can't do this much earlier because the view->argument isn't there yet
-    $arg = array_search('uid1', array_keys($this->view->argument));
+    $arg = array_search('wallet_id', array_keys($this->view->argument));
     if (is_numeric($arg)) {
-      $this->uid1 = $this->view->args[$arg];
+      $this->wallet_id = $this->view->args[$arg];
     }
-    elseif (isset($this->view->filter['uid1'])) {
-      $this->uid1 = $this->view->filter['uid1']->value['value'];
+    elseif (isset($this->view->filter['wallet_id'])) {
+      $this->wallet_id = $this->view->filter['wallet_id']->value['value'];
     }
     else {
-      drupal_set_message("Running balance requires filter or contextual filter 'Transaction index: 1st user'", 'error');
+      drupal_set_message("Running balance requires filter or contextual filter 'Transaction index: wallet_id'", 'error');
     }
   }
 
@@ -60,13 +60,13 @@ class Balance extends FieldPluginBase {
     //created date is not necessarily unique per transaction, so needs a secondary sort.
     $quantity = db_query(
       "SELECT SUM(diff) FROM {mcapi_transactions_index}
-        WHERE uid1 = :uid1
+        WHERE wallet_id = :wallet_id
         AND created <= :created
         AND xid <= :xid
         AND currcode = :currcode",
       array(
         ':created' => $transaction->created->value,
-        ':uid1' => $this->uid1,
+        ':wallet_id' => $this->wallet_id,
         ':xid' => $transaction->xid->value,
         ':currcode' => $currcode
       )

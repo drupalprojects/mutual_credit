@@ -90,6 +90,7 @@ class CurrencyFormController extends EntityFormController {
       '#size' => 40,
       '#maxlength' => 80,
       '#required' => TRUE,
+      '#weight' => 0,
     );
 
     $form['id'] = array(
@@ -100,7 +101,28 @@ class CurrencyFormController extends EntityFormController {
     		'source' => array('name'),
     	),
     	'#disabled' => !$currency->isNew(),
+      '#weight' => 1,
     );
+
+    $form['membership'] = array(
+      '#title' => t('Membership'),
+      '#description' => t('Determine which selection of users are permitted to have this '),
+      '#type' => 'entity_chooser_selection',
+      '#plugin' => 'user',
+      '#config' => TRUE,
+      '#default_value' => $currency->access['membership'],
+      '#weight' => 2,
+    );
+
+    $form['uid'] = array(
+    	'#title' => t('Comptroller'),
+      '#description' => t('The one user who can edit this currency'),
+      '#type' => 'entity_chooser',
+      '#plugin' => 'permission',
+      '#args' => array(),//TODO restrict this to users in the exchanges that the currency is in.
+      '#default_value' => $currency->get('uid')->value
+    );
+
     $form['acknowledgement'] = array(
       '#type' => 'container',
       '#children' => implode("\n<br /><br />\n", array(
@@ -113,6 +135,7 @@ class CurrencyFormController extends EntityFormController {
           ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_ACKNOWLEDGEMENT)
         )
       ),
+      '#weight' => 3,
     );
     $form['exchange'] = array(
       '#type' => 'container',
@@ -126,7 +149,8 @@ class CurrencyFormController extends EntityFormController {
         'visible' => array(
           ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_EXCHANGE)
         )
-      )
+      ),
+      '#weight' => 3,
     );
     $form['commodity'] = array(
       '#type' => 'container',
@@ -140,7 +164,8 @@ class CurrencyFormController extends EntityFormController {
         'visible' => array(
           ':input[name="issuance"]' => array('value' => CURRENCY_TYPE_COMMODITY)
         )
-      )
+      ),
+      '#weight' => 3,
     );
 
 
@@ -156,16 +181,8 @@ class CurrencyFormController extends EntityFormController {
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
-      '#disabled' => (bool)$this->entity->transactions()
-    );
-    $form['reservoir'] = array(
-      '#title' => t('Reservoir account'),
-      '#description' => t('Account used for issuing and taxing'),
-      '#type' => 'user_chooser_few',
-      '#callback' => 'user_chooser_segment_perms',
-      '#args' => array('transact'),
-      '#default_value' => property_exists($currency, 'reservoir') ? $currency->reservoir : 1,
-      '#multiple' => FALSE,
+      '#disabled' => (bool)$this->entity->transactions(),
+      '#weight' => 4,
     );
     $form['display'] = array(
       '#title' => t('Appearance'),
@@ -173,6 +190,7 @@ class CurrencyFormController extends EntityFormController {
       '#collapsible' => TRUE,
       '#prefix' => '<div id="currency-display-wrapper">',
       '#suffix' => '</div>',
+      '#weight' => 8,
     );
 
     $currency_type = $this->pluginCurrencyManager->createInstance($currency->type);
@@ -323,7 +341,8 @@ class CurrencyFormController extends EntityFormController {
       //this is required if any existing transactions have zero value
       '#required' => count($serials)
     );
-    if ($zeros) {
+    //
+    if (count($serials)) {
       $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");
     }
     else {
@@ -339,44 +358,10 @@ class CurrencyFormController extends EntityFormController {
 
     $form['additional_settings'] = array(
       '#type' => 'vertical_tabs',
-    );
-    $form['access'] = array(
-      '#title' => t('Currency access'),
-      '#type' => 'details',
-      '#group' => 'additional_settings',
-      '#tree' => TRUE,
+      '#weight' => 15
     );
     $weight = 0;
 
-    $form['access']['membership'] = array(
-      '#title' => t('Use the currency'),
-      '#description' => t('Determine which users are permitted to use this currency'),
-      '#type' => 'user_chooser_many',
-      '#config' => TRUE,
-      '#default_value' => property_exists($currency, 'access') ? $currency->access['membership'] : 'user_chooser_segment_perms:transact',
-    );
-    $form['access']['trader_data'] = array(
-      '#title' => t('View aggregated user transaction data'),
-      '#description' => t("Such as users' balances, gross income, number of transactions"),
-      '#type' => 'user_chooser_many',
-      '#config' => TRUE,
-      '#default_value' => property_exists($currency, 'access') ? $currency->access['trader_data'] : 'user_chooser_segment_perms:transact',
-    );
-    $form['access']['system_data'] = array(
-      '#title' => t('View aggregated system data'),
-      '#description' => t('Look at currency usage stats stripped of personal information'),
-      '#type' => 'user_chooser_many',
-      '#config' => TRUE,
-      '#default_value' => property_exists($currency, 'access') ? $currency->access['system_data'] : 'user_chooser_segment_perms:transact',
-    );
-
-    $form['access_view'] = array(
-      '#title' => t('View access'),
-      '#description' => t('Determine who can view transactions in each state.') .' '. t('Any of the checked conditions must return TRUE'),
-      '#type' => 'details',
-      '#group' => 'additional_settings',
-      '#tree' => TRUE,
-    );
     $form['access_undo'] = array(
       '#title' => t('Undo access'),
       '#description' => t('Determine who can undo transactions in each state.') .' '. t('Any of the checked conditions must return TRUE'),
@@ -384,25 +369,24 @@ class CurrencyFormController extends EntityFormController {
       '#group' => 'additional_settings',
       '#tree' => TRUE,
     );
-    foreach (array('access_view', 'access_undo') as $prop) {
-      foreach (mcapi_get_states() as $state) {
-        $form[$prop][$state->value] = array(
-          '#title' => t(
-            "Transactions in state '@state': !description",
-            array('@state' => $state->label, '!description' => $state->description)
-          ),
-          '#type' => 'checkboxes',
-          '#options' => transaction_access_plugins(TRUE),
-          '#default_value' => $currency->{$prop}[$state->value]
-        );
-      }
+    foreach (mcapi_get_states() as $state) {
+      if ($state->value == TRANSACTION_STATE_UNDONE) continue;
+      $form['access_undo'][$state->value] = array(
+        '#title' => t(
+          "Transactions in state '@state': !description",
+          array('@state' => $state->label, '!description' => $state->description)
+        ),
+        '#type' => 'checkboxes',
+        '#options' => transaction_access_plugins(TRUE),
+        '#default_value' => $currency->access_undo[$state->value]
+      );
     }
-    unset($form['access_undo'][TRANSACTION_STATE_UNDONE]);//non-sequiteur
 
     //any operations declared not by mcapi.module
     $other_ops = array();
     foreach (transaction_operations() as $op => $plugin) {
-      if (in_array($op, array('confirm', 'view', 'undo'))) {
+      if (in_array($op, array('create', 'view', 'undo'))) {
+        //these special operations have their own settings
         continue;
       }
       if ($settings = $plugin->access_form($currency, $op)) {

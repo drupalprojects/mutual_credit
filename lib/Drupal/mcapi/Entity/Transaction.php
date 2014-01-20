@@ -331,12 +331,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE);
     $properties['payer'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payer')
-      ->setDescription('the user id of the payer')
+      ->setDescription('Wallet id id of the payer')
       ->setSettings(array('target_type' => 'user'))
       ->setRequired(TRUE);
     $properties['payee'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payee')
-      ->setDescription('the user id of the payee')
+      ->setDescription('Wallet id id of the payee')
       ->setSettings(array('target_type' => 'user'))
       ->setRequired(TRUE);
     //quantity is done, perhaps controversially, but the field API
@@ -347,12 +347,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE);
     $properties['state'] = FieldDefinition::create('integer')
       ->setLabel('State')
-      ->setDescription('completed, pending, disputed, etc')
+      ->setDescription('Completed, pending, disputed, etc')
       ->setSettings(array('default_value' => 1));
     $properties['creator'] = FieldDefinition::create('entity_reference')
       ->setLabel('Creator')
       ->setDescription('the user id of the creator')
       ->setSettings(array('target_type' => 'user'))
+      ->setRequired(TRUE);
+    $properties['exchange'] = FieldDefinition::create('entity_reference')
+      ->setLabel('Exchange')
+      ->setDescription('The exchange in which this transaction happened')
+      ->setSettings(array('target_type' => 'mcapi_exchange'))
       ->setRequired(TRUE);
     // @todo Convert to a "timestamp" field in https://drupal.org/node/2145103.
     $properties['created'] = FieldDefinition::create('integer')
