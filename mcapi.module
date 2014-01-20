@@ -431,80 +431,87 @@ function mcapi_currency_load($id) {
 }
 
 /**
- * get an #options list of all the currencies (for one account)
+ * get a context sensitive #options list of all the currencies (for one account)
  *
- * @param array $currencies
- * @param AccountInterface $account
- * @param boolean $check_access
- *   TRUE to return only the currencies the $account can access
+ * @param boolean $all
+ *   FALSE to return only the currencies currentUser can access
  * @return array
  *   of currencies
  */
-function mcapi_currency_list(array $currencies = NULL, AccountInterface $account = NULL, $check_access = TRUE) {
-  $list = array();
-
-  if (!$account || $check_access) {
-    $account = \Drupal::currentUser();
+function mcapi_currency_list($all = TRUE) {
+  if (!$all) {
+    $currencies = exchange_currencies(user_exchanges());
   }
-
   if (empty($currencies)) {
-    if ($check_access) {
-      $currencies = mcapi_get_available_currencies($account);
-      $check_access = FALSE; // No need to check the access again, so set it to false;
-    }
-    else {
-      $currencies = entity_load_multiple('mcapi_currency');
-    }
+    $currencies = entity_load_multiple('mcapi_currency');
   }
-  foreach ($currencies as $currcode => $currency) {
-    $list[$currcode] = $currency->label();
-  }
-
-  if ($check_access) {
-    $list = array_intersect_key($list, mcapi_get_available_currencies($account));
+  $list = array();
+  foreach ($currencies as $id => $currencies) {
+    $list[$id] = $currency->label();
   }
   return $list;
 }
+
 /**
- * Load currencies for a given user
+ * Helper function to get the 'current' exchange(s). That means the exchange
+ * the current user is in, if any. This function might reduce down to one line,
+ * and be unnecessary
+ * @param AccountInterface $account
+ * @return array
+ *   the exchange entities of which the current user is a member.
+ */
+function user_exchanges(AccountInterface $account = NULL) {
+  $exchanges = array();
+  if (!isset($account)) {
+    $account = \Drupal::currentUser();//this doesn't have the fields loaded
+  }
+  //have to be sure that the fields are properly loaded
+  $account = user_load($account->id());
+
+  foreach($account->get('field_exchanges') as $id => $exchange) {
+    //@todo one day we'll be able to just pull this array out rather than iterating through it.
+    $return[$id] = $exchange;
+  }
+  return exchanges;
+}
+/**
+ * get all the currencies from (common to) the given exchanges, sorted
+ * @param array $exchanges
+ */
+function exchange_currencies(array $exchanges) {
+  foreach ($exchanges as $exchange) {
+    foreach ($exchange->get('field_currencies') as $currency) {
+      if ($currency->status) $currencies[] = $currency;
+    }
+  }
+  $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
+  uasort($currencies, array($info['class'], 'sort'));
+  return $currencies;
+}
+
+/**
+ * Load currencies for a given user, or common to 2 given users
  * A list of all the currencies in the marketplaces of which the user is a member.
  *
  * @param AccountInterface $account
+ * @param AccountInterface $account2
  * @return array
  *   of currencies
  */
-function mcapi_get_available_currencies(AccountInterface $account = NULL) {
+function mcapi_get_available_currencies(AccountInterface $account = NULL, AccountInterface $account2 = NULL) {
   if (!isset($account)) {
     $account = \Drupal::currentUser();
   }
-  $account = user_load($account->id());
-  $cid = 'currencies:' . $account->id();
-  if (!$cache = \Drupal::cache()->get($cid)) {
-    $available = $currencies = array();
-    $cache_tags = array('mcapi.available_currency' => array());
-    //@todo Gordon can you review this.
-    //I'm not even sure this function applies to members any more...
-    //plus if there are no exchanges then we don't even need this function
-    foreach ($account->get('field_exchanges') as $exchange) {
-//      mdump($exchange);
-//      foreach ($exchange->get('field_currencies') as $currency) {print_r($currency);
-//        if ($currency->status) $currencies[] = $currency;
-//      }
-    }
-    $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
-    uasort($currencies, array($info['class'], 'sort'));
-    foreach ($currencies as $currency) {
-      $available[$currency->id()] = $currency;
-      $cache_tags['mcapi.available_currency'] = $currency->id();
-    }
-    //@todo this cache should be cleared whenever a currency is edited and whenever a user's entitlement to use a currency could be affected
-    ///////////////\Drupal::cache()->set($cid, $available, CacheBackendInterface::CACHE_PERMANENT, $cache_tags);
-    return $available;
-  }
   else {
-    return $cache->data;
+    $account = user_load($account->id());
   }
+  $exchanges = user_exchanges($account);
+  if ($account2) {
+    $exchanges = array_intersect($exchanges, user_exchanges($account2));
+  }
+  return exchange_currencies($exchanges);
 }
+
 /**
  * implements hook_mcapi_transaction_operated().
  * This invokes rules, if installed, but can be used by any module
@@ -539,7 +546,6 @@ function mcapi_element_info() {
         )
       ),
       // custom properties, used for configuration
-      '#currcodes' => array_keys(mcapi_get_available_currencies()),
       '#mixed_mode' => \Drupal::config('mcapi.misc')->get('mix_mode'),
       '#preset' => FALSE, //ensures all currencies are showing
       '#calc' => FALSE, //allow a formula
@@ -559,7 +565,6 @@ function mcapi_element_info() {
         )
       ),
       // custom properties, used for configuration
-      '#currcodes' => array_keys(mcapi_get_available_currencies()),
       '#calc' => FALSE,
     ),
     'mcapi_states' => array(
@@ -582,7 +587,6 @@ function mcapi_element_info() {
       '#process' => array('mcapi_process_currcodes','ajax_process_form'),
       '#theme_wrappers' => array('form_element'),
       '#multiple' => TRUE,
-      '#currcodes' => array(),//this limits the list
       '#options' => array(),//array of currcodes and currency names
     ),
     'mcapi_summary' => array(
@@ -605,7 +609,8 @@ function mcapi_element_info() {
  *   the processed $element
  */
 function mcapi_worths_element_process($element, &$form_state) {
-  $currencies = mcapi_get_available_currencies();
+  //@todo remove this when it is tested enough
+  if (!isset($element['#currencies'])) {echo 'worths element MUST have #currencies key'; mtrace();}
 
   //the default value also tells us which currencies are available
   //if no defaults are set then all currencies should be present
@@ -614,7 +619,7 @@ function mcapi_worths_element_process($element, &$form_state) {
   }
   if ($element['#mixed_mode'] || $element['#preset']) {
     //construct one widget for each default, each with its own currcode
-    foreach ($currencies as $currcode => $name) {
+    foreach ($element['#currencies'] as $currcode => $name) {
       $element[$currcode]['#title'] = $name;
       $element[$currcode]['#currcodes']= array($currcode);
       //some dispute about whether default_value should be a worths object or an array
@@ -625,7 +630,7 @@ function mcapi_worths_element_process($element, &$form_state) {
     }
   }
   else {
-    $keys = array_keys($currencies);
+    $keys = array_keys($element['#currencies']);
     $key = reset($keys);
     $element[$key] = array(
       '#title' => t('Worth'),
@@ -851,19 +856,13 @@ function mcapi_process_types($element) {
  */
 function mcapi_process_currcodes($element) {
   if (empty($element['#options']) && !empty($element['#currcodes'])) {
-    $element['#options'] = array_intersect_key(mcapi_currency_list(NULL, NULL), drupal_map_assoc($element['#currcodes']));
+    $element['#options'] = array_intersect_key(mcapi_currency_list(), drupal_map_assoc($element['#currcodes']));
   }
   elseif (empty($element['#options'])) {
-    $allowed = $element['#options'] = mcapi_currency_list(NULL, NULL, TRUE);
-    if ($element['#currcodes']) {
-      $element['#options'] = array_intersect_key($allowed, drupal_map_assoc($element['#currcodes']));
-    }
-    else {
-      $element['#options'] = $allowed;
-    }
+    $element['#options'] = $element['#options'] = mcapi_currency_list();
   }
   elseif ($element['#options'] == 'all') {
-    $element['#options'] = mcapi_currency_list(NULL, NULL);
+    $element['#options'] = mcapi_currency_list(TRUE);
   }
 
   if (count($element['#options']) == 1) {
@@ -940,57 +939,6 @@ function mcapi_toolbar() {
 }
 
 
-/*
- * what file should this be in? mcapi.views.inc doesn't seem to be included
- *
- * this modifies the query only to show the transactions visible to the user
- * according to currency view access settings per transaction state
- *
- * It seems that all the D7 views query building functions are still in use,
- * duplicating functions now in drupal core. Maybe this will improve before release
- *
- * For now though its not clear whether it is best to use hook_views_pre_execute
- * or hook_query_alter or hook_query_TAG_alter to catch all the queries on either transaction table.
- */
-function ________mcapi_views_pre_execute(ViewExecutable $view) {
-  if (!array_intersect(
-    array('mcapi_transactions', 'mcapi_transactions_index'),
-    array_keys($view->query->tables)
-  )) return;
-  //https://api.drupal.org/api/drupal/core!modules!views!lib!Drupal!views!Plugin!views!query!Sql.php/function/Sql%3A%3AaddTable/8
-  //$view->query->addTable('mcapi_transactions_worths', 'mcapi_transactions_worths.xid = mcapi_transactions.xid');
-
-  $currencies = mcapi_get_available_currencies();
-  $states = array_keys(mcapi_get_states(TRUE));
-  $transactionAccessPlugins = transaction_access_plugins();
-  //get all the currencies a user can access INTERSECTED with all the currencies in this view
-  //then we iterate through the currencies, saying for each state whether it is visible.
-  //first check the argument and the filters, otherwise get a full list of currencies.
-  $or_currcodes = db_or();//where ((currcode = A and (blah)) OR ((currcode = B and (blah))
-  foreach ($currencies as $currcode => $currency) {
-    $currency = mcapi_currency_load($currcode);
-    //where (currcode = A and (state = x) OR (state = Y) )
-    $state_or_state = db_or();//where state = A OR B
-    foreach ($states as $state) {
-      $plugin_names = (array)$currency->access_view[$state];
-      foreach ($plugin_names as $plugin_name) {
-        $plugin = $transactionAccessPlugins[$plugin_name];
-        $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);
-        $plugin->ViewsAccess($view->query, $state_and_callback, $state);
-        $state_or_state->condition($state_and_callback);
-      }
-    }
-    if ($plugin_names) {
-      $or_currcodes->condition(db_and()
-        ->condition('mcapi_transactions_worths.currcode', $currcode)
-        ->condition($state_or_state)
-      );
-    }
-  }
-  //to see this working, enable the sql preview in the views interface.
-  $view->query->addWhere('', $or_currcodes);
-}
-
 function mcapi_entity_query_alter() {
   drupal_set_message('hook_entity_query_alter');
 }
@@ -1050,18 +998,4 @@ function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
 
   drupal_set_message('test callback mcapi_default_exchange_id: '.$uuid);
   return array('target_uuid' => '1e503f14-58d3-4f69-8f00-e8d0ca78c8da');
-}
-
-/**
- * Helper function to get the 'current' exchange. That means the exchange
- * the current user is in, if any.
- * @return array
- *   the exchange entities of which the current user is a member.
- */
-function current_exchanges() {
-  foreach(\Drupal::currentUser()->field_exchanges() as $id => $exchange) {
-    //@todo one day we'll be able to just pull this array out rather than iterating through it.
-    $return[$id] = $exchange;
-  }
-  return exchanges;
 }

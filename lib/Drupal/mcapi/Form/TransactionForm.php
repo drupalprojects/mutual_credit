@@ -27,7 +27,7 @@ class TransactionForm extends ContentEntityFormController {
     $form = parent::form($form, $form_state);
     $transaction = $this->entity;
 
-    $exchange = current_exchanges();
+    $exchange = user_exchanges();
 
     unset($form['langcode']); // No language so we remove it.
 

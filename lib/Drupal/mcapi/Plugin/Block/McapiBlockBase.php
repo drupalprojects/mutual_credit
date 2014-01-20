@@ -33,11 +33,11 @@ class McapiBlockBase extends BlockBase {
     if($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) {
       if ($account = $request->attributes->get('user')) {
         $this->account = $account;
-        return TRUE;
       }
-      return FALSE;
+      else return FALSE;
     }
-    $this->account = \Drupal::currentUser();
+    else $this->account = \Drupal::currentUser();
+
     return TRUE;
   }
 
@@ -53,7 +53,7 @@ class McapiBlockBase extends BlockBase {
       '#title_display' => 'before',
       '#type' => 'mcapi_currcodes',
       '#default_value' => $this->configuration['currcodes'],
-      '#options' => mcapi_currency_list(NULL, NULL, FALSE),//ALL the currencies are listed
+      '#options' => mcapi_currency_list(TRUE),//ALL the currencies are listed
       '#multiple' => TRUE
     );
     $form['user_source'] = array(
@@ -80,8 +80,13 @@ class McapiBlockBase extends BlockBase {
 
   public function build() {
     $currencies = array_filter($this->configuration['currcodes']);
+    //current user can only see the currencies which are in the same exchanges as him
     if (empty($currencies)) {
-      $this->currencies = mcapi_get_available_currencies();
+      //show only the currency which can be seen by the current user AND the profiled user
+      $this->currencies = mcapi_get_available_currencies(
+      	\Drupal::currentUser(),
+        ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account
+      );
     }
     else{
       foreach ($currencies as $currcode) {
