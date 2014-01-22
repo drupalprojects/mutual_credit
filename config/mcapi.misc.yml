@@ -12,3 +12,4 @@ wallet_access:
   wallet_default_payers: role:authenticated
 wallet_short_names: true
 wallet_access_personalised: true
+wallet_autoadd: true

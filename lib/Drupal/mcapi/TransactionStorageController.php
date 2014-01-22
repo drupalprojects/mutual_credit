@@ -145,6 +145,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'diff' => -$worth->value,
         'type' => $transaction->type->value,
         'created' => $transaction->created->value,
+        'exchange' => $transaction->get('exchange'),
       	'child' => !$transaction->parent->value
       ));
       $query->values(array(
@@ -160,6 +161,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'diff' => $worth->value,
         'type' => $transaction->type->value,
         'created' => $transaction->created->value,
+        'exchange' => $transaction->get('exchange'),
       	'child' => !$transaction->parent->value
       ));
     }
@@ -183,6 +185,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         w.value AS outgoing,
         - w.value AS diff,
         w.value AS volume,
+    		t.exchange,
     		t.parent as child
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
@@ -201,6 +204,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         0 AS outgoing,
         w.value AS diff,
         w.value AS volume,
+    		t.exchange,
     		t.parent as child
       FROM {mcapi_transactions} t
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
@@ -286,20 +290,20 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   /**
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::summaryData()
    */
-  public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $conditions) {
+  public function summaryData($wallet, array $conditions) {
     //TODO We need to return 0 instead of null for empty columns
     //then get rid of the last line of this function
-    $query = db_select('mcapi_transactions_index', 'i');
+    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('currcode'));
     $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
     $query->addExpression('SUM(i.incoming)', 'gross_in');
     $query->addExpression('SUM(i.outgoing)', 'gross_out');
     $query->addExpression('SUM(i.diff)', 'balance');
     $query->addExpression('SUM(i.volume)', 'volume');
     $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
-    $query->condition('currcode', $currency->id())
-      ->condition('i.wallet_id', $account->id());
+    $query->condition('i.wallet_id', $wallet->id())
+      ->groupby('currcode');
     $this->parseConditions($query, $conditions);
-    $result = $query->execute()->fetchAssoc();
+    $result = $query->execute()->fetchAllAssoc('currcode', \PDO::FETCH_ASSOC);
     if (array_filter($result)) {
       return $result;
     }

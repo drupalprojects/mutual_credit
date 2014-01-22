@@ -10,7 +10,7 @@ label: Currency(s)
 description: 'Which currencies can be used in this exchange?'
 required: 1
 default_value: {  }
-default_value_function: 'mcapi_default_exchange_id'
+default_value_function: ''
 settings:
   handler: default
   handler_settings:

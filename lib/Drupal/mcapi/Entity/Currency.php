@@ -186,7 +186,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * @see \Drupal\mcapi\CurrencyInterface::format()
    */
   public function format($value) {
-    return $this->prefix . $this->format_raw($value) . $this->suffix;
+    //if there is a minus sign this needs to go before everything
+    $minus_sign = $value < 0 ? '-' : '';
+    return $minus_sign . $this->prefix . $this->format_raw(abs($value)) . $this->suffix;
   }
 
   /**

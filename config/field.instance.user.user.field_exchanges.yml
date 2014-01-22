@@ -10,7 +10,7 @@ label: 'Member of exchange(s)'
 description: ''
 required: 0
 default_value: {  }
-default_value_function: ''
+default_value_function: 'mcapi_default_exchange_id'
 settings:
   handler: default
   handler_settings:

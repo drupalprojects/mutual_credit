@@ -131,6 +131,13 @@ class AccountingMiscForm extends ConfigFormBase {
       '#default_value' => !$config->get('wallet_access_personalised'),
       '#weight' => 7
     );
+    $form['wallet_autoadd'] = array(
+      '#title' => t('Auto-add wallets'),
+      '#description' => t('Create a new wallet automatically for each new user'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('wallet_autoadd'),
+      '#weight' => 9
+    );
 
     return parent::buildForm($form, $form_state);
   }
@@ -155,9 +162,10 @@ class AccountingMiscForm extends ConfigFormBase {
       ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
-      ->set('wallet_access', $form_state['values']['default_wallet_access'])
+      ->set('wallet_access', $form_state['values']['wallet_access'])
       ->set('wallet_short_names', $form_state['values']['wallet_short_names'])
       ->set('wallet_access_personalised', $form_state['values']['wallet_access_personalised'])
+      ->set('wallet_autoadd', $form_state['values']['wallet_autoadd'])
       ->save();
 
     parent::submitForm($form, $form_state);

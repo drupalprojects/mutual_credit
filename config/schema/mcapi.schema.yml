@@ -46,7 +46,9 @@ mcapi.misc:
     wallet_access_personalised:
       type: boolean
       label: 'Personalised wallet access'
-
+    wallet_autoadd:
+      type: boolean
+      label: 'Auto-add wallets'
 
 mcapi.currency.settings.decimal:
   type: mapping

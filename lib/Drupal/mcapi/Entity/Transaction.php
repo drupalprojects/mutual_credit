@@ -288,6 +288,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
     parent::preCreate($storage_controller, $values);
+    //@todo this is where we ensure that $values['currcode'] and $values['value'] are in a proper worth field
     $values += array(
       'description' => '',
       'parent' => 0,
@@ -296,9 +297,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'creator' => \Drupal::currentUser()->id(),
       'type' => 'default',
       'extra' => array(),
-      'worths' => array(),
+      'worths' => array(),//how do we make a worths field?
+      'exchange' => 0
     );
-
   }
 
   /**
@@ -357,8 +358,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $properties['exchange'] = FieldDefinition::create('entity_reference')
       ->setLabel('Exchange')
       ->setDescription('The exchange in which this transaction happened')
-      ->setSettings(array('target_type' => 'mcapi_exchange'))
-      ->setRequired(TRUE);
+      ->setSettings(array('target_type' => 'mcapi_exchange'));
     // @todo Convert to a "timestamp" field in https://drupal.org/node/2145103.
     $properties['created'] = FieldDefinition::create('integer')
       ->setLabel('Created')

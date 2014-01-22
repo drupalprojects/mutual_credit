@@ -50,7 +50,7 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
   public function nextSerial(TransactionInterface $transaction);
 
   /**
-   * filter by any field in the table; returns an array of serials keyed by xid
+   * Filter by any field in the table; returns an array of serials keyed by xid
    * this is especially needed should views not be available, but is used in any case.
    *
    * @param array $conditions
@@ -66,15 +66,16 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
   public function filter(array $conditions, $offset = 0, $limit = 25);
 
   /**
-   * get some stats by adding up the transactions for a given user
+   * Get some gerneral purpose stats by adding up the transactions for a given wallet
    * This could be cached but remember it is possible to generate all kinds of stats, between any dates
    * Because this uses the index table, it knows nothing of transactions with state <  1
    *
-   * @param AccountInterface $account
+   * @param $wallet
    * @param CurrencyInterface $currency
    * @param array $filters
    */
-  public function summaryData(AccountInterface $account, CurrencyInterface $currency, array $filters);
+  public function summaryData($wallet, array $filters);
+
   /**
    * count the number of transactions that meet the given conditions
    *
