@@ -43,6 +43,23 @@ class CommandSettings extends ConfigFormBase {
 			'#element_validate' => array(array($this, 'validate_commands_syntax')),
 			'#default_value' => $config->get('command_strings', ''),
 		);
+		//@todo multiple options would be possible.
+		$form['requests']['match_fields'] = array(
+			'#title' => t('Match wallets to'),
+			'#description' => 'How will wallets be identified in command strings?',
+			'#type' => 'radios',
+			'#options' => array(
+			  'w.wid' => t('Wallet ID number'),
+		  ),
+			'#default_value' => $config->get('match_fields', ''),
+		  '#required' => TRUE
+		);
+		if (\Drupal::config()->get('mcapi.misc')->get('wallet_unique_name')) {
+		  $form['requests']['match_fields']['#options']['w.name'] = t('Unique wallet name');
+		}
+		if (\Drupal::config()->get('mcapi.misc')->get('wallet_one')) {
+		  $form['requests']['match_fields']['#options']['owner'] = t("Wallet owner's name");
+		}
 
 		$form['currcode'] = array(
 			'#title' => t('Currency'),

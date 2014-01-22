@@ -69,6 +69,8 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
    * Get some gerneral purpose stats by adding up the transactions for a given wallet
    * This could be cached but remember it is possible to generate all kinds of stats, between any dates
    * Because this uses the index table, it knows nothing of transactions with state <  1
+   * It might be a good idea to make a method specialised for retrieving balances only.
+   * It would be an interesting SQL query which could get balances for multiple users.
    *
    * @param $wallet
    * @param CurrencyInterface $currency

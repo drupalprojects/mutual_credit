@@ -311,6 +311,19 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     return array('trades' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0, 'partners' => 0);
   }
 
+  //experimental
+  public function balances ($currcode, $wids = array(), array $conditions) {
+    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
+    $query->addExpression('SUM(i.diff)', 'balance');
+    if ($wids) {
+      $query->condition('i.wallet_id', $wids);
+    }
+    $query->condition('i.currcode', $currcode)
+    ->groupby('currcode');
+    $this->parseConditions($query, $conditions);
+    return $query->execute()->fetchAllKeyed();
+  }
+
   /**
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::timesBalances()
    */

@@ -10,6 +10,7 @@ wallet_access:
   wallet_default_viewers: role:authenticated
   wallet_default_payees: role:authenticated
   wallet_default_payers: role:authenticated
-wallet_short_names: true
+wallet_unique_names: false
 wallet_access_personalised: true
 wallet_autoadd: true
+wallet_one: false

@@ -118,10 +118,10 @@ class AccountingMiscForm extends ConfigFormBase {
       '#default_value' => $config->get('wallet_default_payers'),
       '#weight' => 3,
     );
-    $form['wallet_short_names'] = array(
-      '#title' => t('Wallet short names'),
+    $form['wallet_unique_names'] = array(
+      '#title' => t('Unique wallet names'),
       '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_short_names'),
+      '#default_value' => !$config->get('wallet_unique_names'),
       '#weight' => 7
     );
     $form['wallet_access_personalised'] = array(
@@ -136,6 +136,13 @@ class AccountingMiscForm extends ConfigFormBase {
       '#description' => t('Create a new wallet automatically for each new user'),
       '#type' => 'checkbox',
       '#default_value' => !$config->get('wallet_autoadd'),
+      '#weight' => 9
+    );
+    $form['wallet_one'] = array(
+      '#title' => t('One wallet'),
+      '#description' => t('One wallet only per parent entity - makes choosing easier.'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('wallet_one'),
       '#weight' => 9
     );
 
@@ -163,9 +170,10 @@ class AccountingMiscForm extends ConfigFormBase {
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
       ->set('wallet_access', $form_state['values']['wallet_access'])
-      ->set('wallet_short_names', $form_state['values']['wallet_short_names'])
+      ->set('wallet_unique_names', $form_state['values']['wallet_unique_names'])
       ->set('wallet_access_personalised', $form_state['values']['wallet_access_personalised'])
       ->set('wallet_autoadd', $form_state['values']['wallet_autoadd'])
+      ->set('wallet_one', $form_state['values']['wallet_one'])
       ->save();
 
     parent::submitForm($form, $form_state);

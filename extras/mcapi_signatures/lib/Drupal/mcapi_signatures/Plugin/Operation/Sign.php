@@ -11,7 +11,6 @@ namespace Drupal\mcapi_signatures\Plugin\Operation;
 use Drupal\mcapi\OperationBase;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
-use \Drupal\Core\Config\ConfigFactory;
 
 /**
  * Sign operation
@@ -32,17 +31,7 @@ class Sign extends OperationBase {
    * {@inheritdoc}
   */
   public function execute(TransactionInterface $transaction, array $values) {
-    $mail_settings = $this->config->get('special');
 
-    //TODO make the temp notifications work
-    if ($mail_settings['send'] && $mail_settings['subject'] && $mail_settings['body']) {
-      //here we are just sending one mail, in one language
-      global $language;
-      $to = implode(user_load($transaction->payer)->mail, user_load($transaction->payee)->mail);
-      $params['transaction'] = $transaction;
-      $params['config'] = $this->configFactory->get('mcapi.operation.sign');
-      drupal_mail('mcapi', 'operation', $to, $language->language, $params);
-    }
     transaction_sign($serial, $uid);
 
     if ($transaction->state->value == TRANSACTION_STATE_FINISHED) {
@@ -79,17 +68,17 @@ class Sign extends OperationBase {
   /*
    * {@inheritdoc}
   */
-  public function settingsForm(array &$form, ConfigFactory $config) {
-    //TODO mail notifications should probably be abstracted to the operation base
-    $conf = $config->get('special');
+  public function settingsForm(array &$form) {
 
-    $form['special']['countersignatories'] = array(
+    $form['countersignatories'] = array(
       '#title' => t('Counter-signatories'),
       '#description' => 'Other users required to sign the transaction',
-      '#type' => 'user_chooser_few',
-      '#callback' => 'user_chooser_segment_perms',
-      '#args' => array('transact'),
-      '#default_value' => $conf['countersignatories'],
+      '#type' => 'entity_reference',
+      //@todo this is really hard to do per-exchange.
+      //would be nice to be able to save operation settings per-exchange...
+      //in the mean time countersignatories should be chosen from all people with 'manage mcapi' permission
+      '#options' => array(),
+      '#default_value' => $this->config['countersignatories'],
       '#weight' => 3,
       '#multiple' => TRUE,
       '#required' => FALSE,
@@ -99,7 +88,7 @@ class Sign extends OperationBase {
         )
       )
     );
-    parent::settingsForm($form, $config);
+    parent::settingsForm($form);
     return $form;
   }
 }

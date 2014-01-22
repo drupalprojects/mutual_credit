@@ -1,0 +1,68 @@
+<?php
+
+//TODO...
+
+
+define('GRECO_SAMPLE_PERIOD_DAYS', '90');
+
+function mcapi_greco_gchart() {
+  return array(
+    '#theme' => 'greco_gchart',
+    '#attached' =>array('library' => array('http://www.google.com/jsapi')),//how to put this in the theme layer
+  );
+}
+
+//pull all the data out and produce a gchart
+//see the balance_history_gchart...
+function template_preprocess_greco_gchart() {
+
+
+}
+
+function mcapi_greco_theme() {
+  return array(
+    'greco_gchart' => array(
+      'render_element' => 'element'
+    )
+  );
+}
+
+/*
+ * implements hook_cron
+ * Greco says:
+ * Dividing the sum of all the debit balances by the average daily sales gives us the sales performance ratio for the system.
+ */
+function mcapi_index_views_cron() {
+  $manager = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+  foreach (entity_load_multiple('mcai_currencies') as $currcode => $currency) {
+    if ($currency->issuance != CURRENCY_TYPE_EXCHANGE) continue;
+    $sum_of_all_debit_balances = 0;
+    //get the sum of all debit balances (in this currency) of all wallets
+
+    foreach ($manager->balances($currcode) as $wid => $balance) {
+      if ($balance > 0) {
+        $sum_of_all_debit_balances += $balance;
+      }
+    }
+    //now get the average daily sales
+    $since = strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days');
+    //@todo this should be a general purpose method in the transaction controller
+    $total_daily_sales = db_query(
+      "SELECT SUM(income) FROM {mcapi_transactions_index} WHERE created > :time AND currcode = :currcode",
+      array(
+        ':time' => $since,
+        ':currcode' => $currcode
+      )
+    )->fetchfield();
+    $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
+
+    if ($average_daily_sales) {
+      $indicator = round($sum_of_all_debit_balances / $average_daily_sales, 1);
+    }
+    else {
+      $indicator = NULL;
+    }
+    drupal_write_record('mcapi_greco', array('currcode' => $currcode, 'timestamp' => REQUEST_TIME, 'value' => $indicator));
+  }
+}
+

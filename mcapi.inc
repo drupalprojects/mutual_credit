@@ -602,8 +602,8 @@ function mcapi_dependent_transaction_action_form($context) {
       ),
       'otheruser' => array(
         '#title' => t('Other account'),
-        '#type' => 'user_chooser_segment_perms',
-        '#args' => array('transact'),
+        '#type' => 'entity_reference',
+        //@todo
         '#default_value' => isset($context['presets']['participants']['otheruser']) ? $context['presets']['participants']['otheruser'] : 1,
         '#weight' => 1,
       )

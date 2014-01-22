@@ -1,4 +1,6 @@
 command_strings: "pay [transaction:quantity] to [transaction:payee] for [transaction:description]\r\nrequest [transaction:quantity] from [transaction:payer] for [transaction:description]"
+match_fields: w.wid
+currcode: credunit
 response_success: 'Success. Your balance is @balance'
 syntax_error: 'Syntax error'
 twitter_response: 'Success. Your balance is @balance'

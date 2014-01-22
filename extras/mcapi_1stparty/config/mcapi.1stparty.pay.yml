@@ -3,7 +3,8 @@ title: 'Pay someone'
 status: 1
 type: default
 partner:
-  user_chooser_config: 'user_chooser_segment_perms:transact'
+  #@todo user chooser is deprecated
+  selection: 'user_chooser_segment_perms:transact'
   preset: ''
 direction:
   preset: outgoing

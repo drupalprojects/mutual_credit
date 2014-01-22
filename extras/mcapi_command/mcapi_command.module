@@ -105,32 +105,34 @@ function mcapi_parse_command($message) {
 
 /*
  * check that the parsed trader is actually a user who is permitted to trade
- * this is similar to a function in user_chooser
  * $string should be a uid, username or email
  */
 function mcapi_command_get_uid($string) {
-  $query = db_select('users', 'u')->fields('u', array('uid'))->condition('status', 1);
+  $config = \Drupal::config('mcapi.command');
+  $query = db_select('wallets', 'w')->fields('w', array('wid'));
   $or = db_or();
-  //this references the settings in the user_chooser module
-  //TODO sort out this dependency on user_chooser
-  foreach (variable_get('user_chooser_matching', array('u.uid', 'u.name', 'u.mail')) as $field) {
-    $or->condition($field, $string);
+
+  //@todo we need some settings to determine how wallets will be identified from command strings.
+  //if mcapi.misc.one_wallet we can use the parent entity label, or email.
+  //otherwise might have to insist on the wallet wid only.
+  $match_field = $config->get('match_field');
+  if ($match_field == 'parent') {
+    //assume the parent is a user
+    $query->join('users', 'u', 'u.uid = w.pid');
+    $or->condition('name', $string);
+  }
+  else {
+    $or->condition($match_field, $string);
   }
   $query->condition($or);
-  $uid = $query->execute()->fetchField();
+  $wid = $query->execute()->fetchField();
 
-  $currcode = \Drupal::config('mcapi.command')->get('commands_currcode');
+  $currcode = $config->get('commands_currcode');
   $currency = mcapi_currency_load($currcode);
-  if (!$uid) {
-    throw new Exception(t('Unknown user: @string', array('@string' => $string)));
+  if (!$wid) {
+    throw new Exception(t('Unknown wallet: @string', array('@string' => $string)));
   }
-  elseif (!$currency->access('membership', $currcode, user_load($uid))) {
-    throw new Exception(t('@user may not use %currency', array(
-      '@user' => $string,
-      '%currency' => mcapi_currency_load($currcode)->name
-    )));
-  }
-  else return $uid;
+  return $uid;
 }
 
 

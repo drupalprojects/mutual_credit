@@ -1,0 +1,4 @@
+services:
+  plugin.manager.mcapi.greco:
+    class: Drupal\mcapi\Plugin\Greco
+    arguments: []

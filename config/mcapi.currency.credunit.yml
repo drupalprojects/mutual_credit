@@ -4,7 +4,6 @@ name: 'Community Coins'
 status: true
 uid: 1
 issuance: acknowledgement
-reservoir: '1'
 type: time
 settings: { }
 prefix: CC
@@ -16,8 +15,6 @@ widget_settings:
   placeholder: 'h:m:s'
 formatter: null
 formatter_settings: null
-access:
-  membership: 'user_chooser_segment_perms:transact'
 access_undo:
   1:
     perm_manage: perm_manage

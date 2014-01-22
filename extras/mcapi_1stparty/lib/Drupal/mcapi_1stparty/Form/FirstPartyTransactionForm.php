@@ -16,7 +16,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 	var $config;//the settings as a configuration object
 
 	function __construct() {//no args passed
-		//TODO
+		//@todo tidy this up
 		//this is the only way I know how to get the args. Could it be more elegant?
 		$form_id = \Drupal::request()->attributes->get('_raw_variables')->get('1stparty_editform');
 //		$this->config = \Drupal::config('mcapi.1stparty.'.$form_id);
@@ -48,10 +48,9 @@ class FirstPartyTransactionForm extends TransactionForm {
   	//the #title and #description will get stripped later
   	$form['partner'] = $form['payer'];
   	unset($form['payer'], $form['payee']);
-    //this bit could be abstracted somewhere, it is also done in FirstPartyEditFormController
-  	$params = explode(':', $config->partner['user_chooser_config']);
-  	$form['partner']['#callback'] = array_shift($params);
-  	$form['partner']['#args'] = $params;
+    //@todo implement the new entity_reference widget here
+    //choose from a selection of users determined in the FirstPartyEditFormController.
+  	$form['partner']['#options'] = array();
   	$form['partner']['#exclude'] = array(\Drupal::currentUser()->id());
 
   	if ($config->partner['preset']) {

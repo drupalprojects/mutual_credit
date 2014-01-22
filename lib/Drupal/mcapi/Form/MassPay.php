@@ -2,18 +2,19 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Entity\EntityManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 
 class MassPay extends FormBase {
 
-  private $vector;
+  private $payers;
+  private $payees;
 
   function __construct() {
-    $this->vector = 'many2one';
+    list($this->payers, $this->payees) = explode('2', \Drupal::request()->attributes->get('vector'));
   }
 
   public function getFormId() {
@@ -24,7 +25,6 @@ class MassPay extends FormBase {
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
   public function buildForm(array $form, array &$form_state) {
-    echo 'Gordon - having real problems with the routing. We need 4 tabs here, passing different args to this form.';
     if (empty($form_state['validated_transactions'])) {
       $form = $this->step_1($form, $form_state);
       $form['#validate'][] = array($this, 'step_1_validate');
@@ -32,37 +32,53 @@ class MassPay extends FormBase {
     }
     else {
       $this->step_2($form, $form_state);
-      //$form['#validate'][] = array($this, 'step_2_validate');
-      //$form['#submit'][] = array($this, 'step_2_submit');
+      $form['#validate'][] = array($this, 'step_2_validate');
+      $form['#submit'][] = array($this, 'step_2_submit');
     }
     return $form;
   }
 
   public function step_1(array $form, array &$form_state) {
 
-    list($payer, $payee) = explode('2', $this->vector);
     if (empty($form_state['confirmed'])) {
+
+      $exchanges = user_exchanges();
+      if ($exchanges < 2) {
+        $form['exchange'] = array(
+          '#type' => 'value',
+          '#value' => key($exchanges)
+        );
+      }
+      else {
+        $form['exchange'] = array(
+          '#title' => t('Exchange'),
+          '#description' => t('Which of these exchanges is this transaction for?'),
+        	'#type' => 'select',
+          '#options' => $exchanges,
+          '#weight' => -1
+        );
+      }
 
       $one = array(
         '#description' => t('A username, email, or user ID'),
-        '#type' => 'user_chooser_few',
-        '#callback' => 'user_chooser_segment_perms',
-        '#args' => array('transact'),
-        '#weight' => 9,
+        '#type' => 'entity_chooser',
+        '#plugin' => 'wallet',
+        '#args' => array(),
         '#multiple' => FALSE,
       );
       $few = array(
-        '#type' => 'user_chooser_few',
-        '#callback' => 'user_chooser_segment_perms',
-        '#args' => array('transact'),
+        '#type' => 'entity_chooser',
+        '#plugin' => 'wallet',
+        '#args' => array(),
         '#multiple' => TRUE,
-        '#multiple_fail_quietly' => TRUE
       );
       $many = array(
-        '#type' => 'user_chooser_many',
+        '#type' => 'entity_chooser_selection',
+        '#plugin' => 'wallet',
+        '#args' => array()
       );
 
-      if ($payer == 'one') {
+      if ($this->payers == 'one') {
         $form['payers'] = array(
           '#title' => t('Payer'),
           '#weight' => 1
@@ -70,9 +86,9 @@ class MassPay extends FormBase {
         $form['payees'] = array(
           '#title' => t('Payees'),
           '#weight' => 2
-        )+ $$payee;
+        )+ $$this->payees;
       }
-      elseif ($payee == 'one') {
+      elseif ($this->payees == 'one') {
         $form['payees'] = array(
           '#title' => t('Payee'),
           '#weight' => 1
@@ -80,7 +96,7 @@ class MassPay extends FormBase {
         $form['payers'] = array(
           '#title' => t('Payers'),
           '#weight' => 2
-        )+ $$payer;
+        )+ ${$this->payers};
       }
 
       //all these fields like on a normal transaction form
@@ -89,11 +105,16 @@ class MassPay extends FormBase {
         '#type' => 'textfield',
         '#default_value' => ''
       );
+      //
       $form['worths'] = array(
         '#type' => 'worths',
         '#title' => t('Worth'),
         '#required' => TRUE,
+        //all the currencies this user has access to
+        //unless we do some ajax here, its possible to select a currency incompatible with the exchange
+        '#currencies' => mcapi_currency_list()
       );
+
       $form['type'] = array(
         '#type'=> 'value',
         '#value' => 'mass'

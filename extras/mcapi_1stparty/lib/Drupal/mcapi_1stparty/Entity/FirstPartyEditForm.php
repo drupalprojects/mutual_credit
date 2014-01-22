@@ -70,7 +70,8 @@ class FirstPartyEditForm extends ConfigEntityBase {
     	'status' => 1,
       'type' => 'default',
       'partner' => array(
-    	  'user_chooser_config' => 'user_chooser_segment_perms:transact',
+        //@todo fill in the selection with something the entity_reference widget would understand
+    	  'selection' => '',
       	'preset' => ''
       ),
     	'direction' => array(

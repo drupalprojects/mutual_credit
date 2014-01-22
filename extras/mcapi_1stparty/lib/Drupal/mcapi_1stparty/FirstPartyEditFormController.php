@@ -41,15 +41,6 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#disabled' => !$configEntity->isNew(),
     );
 
-    $form['access'] = array(
-    	'#title' => t('Access control'),
-      '#description' => t("In addition to currency access control, and block access control, access to this form can be restricted."),
-    	'#type' => 'select',
-    	'#default_value' => isset($settings['architecture']['access']) ? $settings['architecture']['access'] : 'user_chooser_segment_perms:transact',
-    	'#options' => module_invoke_all('uchoo_segments'),
-    	'#element_validate' => array(),
-    	'#weight' => 3
-    );
     $form['type'] =  array(
       '#title' => t('Transaction type'),
     	'#type' => 'mcapi_types',
@@ -64,30 +55,30 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#type' => 'vertical_tabs',
     	'#weight' => 6,
     );
-    $params = explode(':', $configEntity->partner['user_chooser_config']);
-    if (!(array_filter($params))) $params = array('user_chooser_segment_perms', 'transact');
 
     $form['partner'] = array(
     	'#title' => t('@fieldname preset', array('@fieldname' => t('Partner'))),
     	'#descriptions' => t('In complex sites, it may be possible to choose a user who cannot use the currency'),
     	'#type' => 'details',
     	'#group' => 'steps',
-    	'user_chooser_config' => array(
+
+      //THIS WIDGET IS WAITING FOR ENTITY_REFERENCE PLUGIN FROM GORDON
+
+    	'selection' => array(
     		'#title' => t('Users to choose from'),
     		'#type' => 'select',
-    		'#options' => module_invoke_all('uchoo_segments'),
-    		'#default_value' => $configEntity->partner['user_chooser_config'],
+    	    //choose from the wallet chooser plugins
+    		'#options' => array(),
+    		'#default_value' => $configEntity->partner['selection'],
     		'#required' => TRUE,
       ),
-    	//this really needs to be ajax...
+    	//@todo ideally this would be ajax, taking the above into account.
     	'preset' => array(
     		'#title' => t('Preset field to'),
-    		'#description' => t('Submit the form to respond to changes above.') .' '. t('Configure this widget more at !link',
-    			array('!link' => l('admin/config/people/user_chooser', 'admin/config/people/user_chooser', array('attributes'=>array('target'=> '_blank')))
-    		)),
-    		'#type' => 'user_chooser_few',
-    		'#callback' => array_shift($params),
-    		'#args' => $params,
+    		'#description' => t('Submit the form to respond to changes above.'),
+  	    //@todo gordon
+    		'#type' => 'entity_reference',
+    		'#options' => array(),//would depend on the above
     		'#default_value' => $configEntity->partner['preset'],
     		'#multiple' => FALSE,
     		'#required' => FALSE

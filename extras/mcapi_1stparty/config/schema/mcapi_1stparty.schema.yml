@@ -18,7 +18,7 @@ mcapi.1stparty.*:
       type: mapping
       label: 'Settings for partner field'
       mapping:
-        user_chooser_config:
+        selection:
           type: string
           label: 'Users to choose from'
         preset:

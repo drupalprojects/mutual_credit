@@ -4,7 +4,6 @@ name: Euro
 status: true
 uid: 1
 issuance: commodity
-reservoir: '1'
 type: decimal
 settings:
   scale: '2'
@@ -17,8 +16,6 @@ widget_settings:
   placeholder: ''
 formatter: null
 formatter_settings: null
-access:
-  membership: 'user_chooser_segment_perms:transact'
 access_undo:
   1:
     perm_manage: perm_manage

@@ -40,15 +40,18 @@ mcapi.misc:
         wallet_default_payers:
           type: string
           label: 'Default payers'
-    wallet_short_names:
+    wallet_unique_names:
       type: boolean
-      label: 'Wallet short names'
+      label: 'Unique wallet names'
     wallet_access_personalised:
       type: boolean
       label: 'Personalised wallet access'
     wallet_autoadd:
       type: boolean
       label: 'Auto-add wallets'
+    wallet_one:
+      type: boolean
+      label: 'One wallet'
 
 mcapi.currency.settings.decimal:
   type: mapping
@@ -100,12 +103,6 @@ mcapi.currency.*:
     isuance:
       type: string
       label: 'Basis of issuance'
-    uid:
-      type: integer
-      label: 'Declared by'
-    reservoir:
-      type: integer
-      label: 'Reservoir account'
     type:
       type: string
       label: 'Type'
@@ -133,13 +130,6 @@ mcapi.currency.*:
     color:
       type: string
       label: 'Colour'
-    access:
-      type: mapping
-      label: 'Currency access'
-      mapping:
-        membership:
-          type: string
-          label: 'Use the currency'
     access_undo:
       type: sequence
       label: 'Undo access'

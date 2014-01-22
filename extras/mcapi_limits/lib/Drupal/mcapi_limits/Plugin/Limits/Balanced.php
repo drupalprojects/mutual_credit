@@ -60,11 +60,12 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
   }
 
   public function widget($default) {
+    //@todo need to know how to populate a worth field
     return array(
       '#title' => t('Liquidity per user'),
       '#description' => t('The distance from zero a user can trade'),
       '#type' => 'worth',
-      '#currcodes' => array($this->currency->id()),
+      //'#currcodes' => array($this->currency->id()),
       '#default_value' => $default,
       '#min' => 0,
     );

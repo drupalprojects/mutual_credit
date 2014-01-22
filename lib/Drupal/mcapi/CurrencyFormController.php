@@ -104,16 +104,6 @@ class CurrencyFormController extends EntityFormController {
       '#weight' => 1,
     );
 
-    $form['membership'] = array(
-      '#title' => t('Membership'),
-      '#description' => t('Determine which selection of users are permitted to have this '),
-      '#type' => 'entity_chooser_selection',
-      '#plugin' => 'user',
-      '#config' => TRUE,
-      '#default_value' => $currency->access['membership'],
-      '#weight' => 2,
-    );
-
     $form['uid'] = array(
     	'#title' => t('Comptroller'),
       '#description' => t('The one user who can edit this currency'),

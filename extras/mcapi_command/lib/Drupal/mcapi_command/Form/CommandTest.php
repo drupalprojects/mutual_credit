@@ -27,9 +27,9 @@ class CommandTest extends ConfigFormBase {
 	  $form['command']['sender'] = array(
 	    '#title' => t('Sender'),
 	    '#description' => t('Any user of currency @currname', array('@currname' => variable_get('mcapi_commands_currcode', 'credunit'))),
-	    '#type' => 'user_chooser_few',
-	    '#callback' => 'user_chooser_segment_perms',//because I haven't built a per-currency callback yet
-	    '#args' => array('transact'),
+	    '#type' => 'entity_chooser',
+	    '#plugin' => 'role',//because I haven't built a per-currency callback yet
+	    '#args' => array('authenticated'),
 	    '#required' => FALSE,
 	    '#default_value' => \Drupal::currentUser()->id()
 	  );

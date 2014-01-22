@@ -1,0 +1,8 @@
+name: Greco Indicator
+description: Thomas Greco's mutual credit exchange health indicator
+package: Community Accounting
+core: 8.x
+type: module
+
+dependencies:
+  - mcapi

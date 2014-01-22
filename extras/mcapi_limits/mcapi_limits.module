@@ -188,12 +188,13 @@ function mcapi_limits_element_info() {
  * processor for minmax element
  */
 function mcapi_limits_process_minmax(&$element) {
+  //@todo need to know how to make a worth field properly
   $element['min'] = array(
     '#title' => t('Minimum balance'),
     '#description' => t('Must be less than or equal to zero'),
     '#type' => 'worth',
     '#default_value' => $element['#default_value']['min'],
-    '#currcodes' => array($element['#currcode']),
+    //'#currcodes' => array($element['#currcode']),
     '#size' => 7,
     '#maxlength' => 7,
     '#attributes' => array('style' => 'width:inherit;'),
@@ -204,7 +205,7 @@ function mcapi_limits_process_minmax(&$element) {
     '#description' => t('Must be greater than 1.'),
     '#type' => 'worth',
     '#default_value' => $element['#default_value']['max'],
-    '#currcodes' =>array($element['#currcode']),
+    //'#currcodes' =>array($element['#currcode']),
     '#size' => 6,
     '#maxlength' => 6,
     '#weight' => 1,

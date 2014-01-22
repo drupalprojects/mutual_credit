@@ -444,7 +444,7 @@ function mcapi_currency_list($all = TRUE) {
     $currencies = entity_load_multiple('mcapi_currency');
   }
   $list = array();
-  foreach ($currencies as $id => $currencies) {
+  foreach ($currencies as $id => $currency) {
     $list[$id] = $currency->label();
   }
   return $list;
