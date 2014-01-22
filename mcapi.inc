@@ -106,27 +106,87 @@ function _mcapi_calc($formula, $base_value) {
   drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
 }
 
+function user_wallets($account) {
+  return entity_load_multiple_by_properties(
+    'mcapi_wallet',
+    array('entity_type' => 'user', 'pid' => $account->id())
+  );
+}
 
+function mcapi_view_wallet_summaries($account) {
+  $renderable = array(
+  	'#type' => 'item',
+    '#title' => t('Wallets'),
+  );
+  foreach (user_wallets($account) as $wallet) {
+    $renderable[] = mcapi_view_wallet($wallet);
+  }
+  return $renderable;
+}
 
 /*
  * a nice display of user balances in a currency
  */
-function mcapi_view_wallet_summary($wallet, $currencies = array()) {
-  if (empty($currencies)) {
-    $currencies = mcapi_get_available_currencies($account);
-  }
+function mcapi_view_wallet($wallet) {
   $render_array = array();
-  foreach ($currencies as $currcode => $currency) {
-    if ($currency->access('trader_data')) {
-      $render_array[$currcode] = array(
-        '#type' => 'mcapi_summary',
-        '#currency' => $currency,
-        '#account' => $account
-      );
-    }
+  if ($wallet->access('view')) {
+    $render_array = array(
+      '#theme' => 'wallet',
+      '#wallet' => $wallet
+    );
   }
   return $render_array;
 }
+
+/**
+ * theme preprocessor for 'wallet'
+ * @param array $vars
+ */
+function template_preprocess_wallet(&$vars) {
+  $currdata = \Drupal::entityManager()
+    ->getStorageController('mcapi_transaction')
+    ->summaryData($vars['wallet'], array());
+
+  foreach ($currdata as $currcode => $data) {
+    $currency = mcapi_currency_load($currcode);
+    $vars['currdata'][$currcode]['label'] = $currency->label();
+    $vars['currdata'][$currcode]['gross_in'] = $currency->format($data['gross_in']);
+    $vars['currdata'][$currcode]['gross_out'] = $currency->format($data['gross_out']);
+    $vars['currdata'][$currcode]['volume'] = $currency->format($data['volume']);
+    $vars['currdata'][$currcode]['balance'] = $currency->format($data['balance']);
+    $vars['currdata'][$currcode]['partners'] = $data['partners'];
+    $vars['currdata'][$currcode]['trades'] = $data['trades'];
+  }
+  $vars['url'] = 'wallet/'.$vars['wallet']->id();
+}
+
+/**
+ * element pre_render callback
+ * adds the user account transaction summary to the render array
+ *
+ * @param array $element
+ *   a renderable array
+ * @return
+ *   a more populated renderable array, ready for theming
+ */
+function mcapi_pre_render_summary($element) {
+  static $results = array();//TODO should this be drupal_static?
+  $uid = $element['#account']->id();
+  //occasionally we'll appreciate a static result
+  $result = &$results[$uid][$element['#currency']->id()];
+  if (empty($result)) {
+    $stats = \Drupal::entityManager()
+    ->getStorageController('mcapi_transaction')
+    ->summaryData($element['#account'], $element['#currency'], $element['#filters']);
+    foreach ($stats as $key => $val) {
+      $result['#'.$key] = $val;
+    }
+  }
+  return $element + $result;
+}
+
+
+
 
 /**
  * generate balance histories for one user and many currencies

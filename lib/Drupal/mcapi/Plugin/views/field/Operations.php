@@ -23,6 +23,7 @@ class Operations extends FieldPluginBase {
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['mode'] = array('default' => 'page');
+    $options['view'] = array('default' => TRUE);
     return $options;
   }
 
@@ -40,6 +41,11 @@ class Operations extends FieldPluginBase {
       ),
       '#default_value' => !empty($this->options['mode']),
     );
+     $form['view'] = array(
+      '#title' => t("'view' link"),
+      '#type' => 'checkbox',
+      '#default_value' => !empty($this->options['view']),
+    );
     parent::buildOptionsForm($form, $form_state);
   }
 
@@ -52,7 +58,7 @@ class Operations extends FieldPluginBase {
 
   function render(ResultRow $values) {
   	//need to work in the options[separater] somehow
-  	return $this->getEntity($values)->links($this->options['mode'], TRUE);
+  	return $this->getEntity($values)->links($this->options['mode'], $this->options['view'], TRUE);
   }
 
 }

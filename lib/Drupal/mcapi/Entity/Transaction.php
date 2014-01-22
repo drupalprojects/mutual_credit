@@ -81,28 +81,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   function links($mode = 'page', $view = FALSE) {
     $renderable = array();
     if ($serial = $this->serial->value) {
-      foreach (transaction_operations() as $op => $plugin) {
-        if (!$view && $op == 'view') continue;
+      foreach (show_transaction_operations($view) as $op => $plugin) {
         if ($this->access($op)) {
-          if ($op == 'view') {//maybe this isn't necessary at all
-            $renderable['#links'][$op] = array(
-              'title' => $plugin->label,
-              'route_name' => 'mcapi.transaction_view',
-              'route_parameters' => array(
-                'mcapi_transaction' => $this->serial->value
-              ),
-            );
-          }
-          else {
-            $renderable['#links'][$op] = array(
-              'title' => $plugin->label,
-              'route_name' => 'mcapi.transaction.op',
-              'route_parameters' => array(
-                'mcapi_transaction' => $this->serial->value,
-                'op' => $op
-              ),
-            );
-          }
+          $renderable['#links'][$op] = array(
+            'title' => $plugin->label,
+            'route_name' => $op == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op',
+            'route_parameters' => array(
+              'mcapi_transaction' => $this->serial->value,
+              'op' => $op
+            ),
+          );
           if ($mode == 'modal') {
             $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
             $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
@@ -333,12 +321,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $properties['payer'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payer')
       ->setDescription('Wallet id id of the payer')
-      ->setSettings(array('target_type' => 'user'))
+      ->setSettings(array('target_type' => 'mcapi_wallet'))
       ->setRequired(TRUE);
     $properties['payee'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payee')
       ->setDescription('Wallet id id of the payee')
-      ->setSettings(array('target_type' => 'user'))
+      ->setSettings(array('target_type' => 'mcapi_wallet'))
       ->setRequired(TRUE);
     //quantity is done, perhaps controversially, but the field API
     $properties['type'] = FieldDefinition::create('string')

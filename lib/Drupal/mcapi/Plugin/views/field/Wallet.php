@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\Description.
+ * Definition of Drupal\mcapi\Plugin\views\field\Wallet.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
@@ -18,9 +18,9 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("mcapi_description")
+ * @PluginID("wallet")
  */
-class Description extends Standard {
+class Wallet extends Standard {
 
   /**
    * {@inheritdoc}
@@ -54,17 +54,11 @@ class Description extends Standard {
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
-
-    if ($this->options['parent']) {
-      $wallet = $this->getEntity($values)->{$this->field_alias}->getEntity();
-      //get the parent node of this wallet
-      $text = $wallet->getParent()->label();
-    }
-    else $text = $values->{$this->field_alias};
-
+    //$fieldname = substr($this->getField(), strpos($this->getField(), '.')+1);
+    $wallet = entity_load('mcapi_wallet', $this->getValue($values));
+    $text = $wallet->label();
     if ($this->options['link']) {
-      return (l($text, $wallet ? $wallet->uri : $wallet->getParent()->uri()));
+      return l($text, $this->options['parent'] ? $wallet->getOwner()->uri() : $wallet->uri);
     }
   }
-
 }

@@ -52,8 +52,8 @@ class Wallet extends ContentEntityBase {
    * since wallets can never be deleted what we need to now is to which entities we can now add wallets.
    * I have a feeling that wallets can only belong to content entities.
    */
-  var $entity_types;
-  var $parent;
+
+  private $owner;
 
   public function __construct($params, $entity_type, $definition) {
     parent::__construct($params, $entity_type, $definition);
@@ -66,13 +66,17 @@ class Wallet extends ContentEntityBase {
       $parent_type = $wallet->get('entity_type')->value;
       //they could all have different parent entity types, so we have to load them separately
       if ($parent_type == 'system') {
-        $wallet->parent = new \Drupal\mcapi\Entity\Bank;
+        $wallet->owner = NULL;// new \Drupal\mcapi\Entity\Bank;
       }
       else {
         //@todo remove this array syntax
-        $wallet->parent = entity_load('user', $wallet->get('pid')->value);
+        $wallet->owner = entity_load('user', $wallet->get('pid')->value);
       }
     }
+  }
+
+  public function uri() {
+    return 'wallet/'.$this->id();
   }
 
   /**
@@ -83,15 +87,30 @@ class Wallet extends ContentEntityBase {
   }
 
   /**
+   * return the parent entity if there is one, otherwise return the wallet itself
+   * the only reason there might not be an owner is if this is a system wallet
+   */
+  public function getOwner() {
+    if ($this->owner) return $this->owner;
+    return $this;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function label($langcode = NULL) {
-    //get the parent entity's name and associate it with the wallet.
-    if (\Drupal::config('mcapi.misc')->get('short_wallet_names')) {
-      return $this->get('parent')->label();
+    //to prevent recursion we don't call getOwner.
+    //if there is only one wallet per parent, we use the parent's name instead of the wallet
+    if ($this->owner) {
+      if (\Drupal::config('mcapi.misc')->get('one_wallet')) {
+        return $this->owner->label();
+      }
+      else {
+        return t('!parent: !wallet_name', array('!parent' => $this->getOwner()->label(), '!wallet_name' => $this->get('name')));
+      }
     }
     else {
-      return t('!parent: !wallet_name', array('!parent' => $this->parent->label(), '!wallet_name' => $this->name->value));
+      return $this->get('name')->value;
     }
   }
 

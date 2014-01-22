@@ -158,6 +158,12 @@ function transaction_operations($op_name = NULL) {
   if ($op_name) return $plugins[$op_name];
   else return $plugins;
 }
+function show_transaction_operations($view = TRUE) {
+  $ops = transaction_operations();
+  unset($ops['create']);
+  if (!$view) unset($ops['view']);
+  return $ops;
+}
 
 /**
  * get a transaction access plugin or array of all plugins
@@ -224,19 +230,12 @@ function mcapi_theme($existing, $type, $theme, $path) {
     'worth_element'=> array(
       'render element' => 'element',
     ),
-    'mcapi_summary' => array(
-      'template' => 'mcapi_summary',
-      //might be appropriate to have a per-currency pattern here
+    'wallet' => array(
+      'template' => 'wallet',
       'variables' => array(
-        'account' => NULL,
-        'currency' => NULL,
-        'balance' => 0,
-        'gross_in' => 0,
-        'gross_out' => 0,
-        'volume' => 0,
-        'count' => 0,
-        'partners' => 0,
+    	  'wallet' => NULL
       ),
+      'file' => 'mcapi.inc'
     ),
     //TODO
     'balance_bars' => array(
@@ -267,10 +266,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
  */
 function mcapi_user_view($account, $mode, $language) {
   module_load_include('inc', 'mcapi');
-  //@todo perhaps move this. in any case get hold of the $wallets var
-  //remember the diff between one and many wallets
-  //$account->content['mcapi_summary'] = mcapi_view_wallet_summary($wallet);//takes one wallet
-  $account->content['mcapi_summary']['#weight'] = 3;
+  $account->content['mcapi_summary'] = mcapi_view_wallet_summaries($account);
 }
 
 /**
@@ -393,22 +389,24 @@ function mcapi_field_extra_fields() {
         'display' => array(
           'mcapi_summary' => array(
             'label' => t('Trading summary'),
-            'description' => t("Statistics from the user's transaction history"),
-            'weight' => 0,
-          )
+            'description' => t("Statistics from the user's wallets"),
+            'weight' => 5,
+          ),
         )
       )
     )
   );
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
   $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
-  $form = array('payer', 'payee', 'worths', 'description');
   foreach ($fields as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
       'label' => $props[$fieldname]['label'],
       'description' => $props[$fieldname]['description'],
       'weight' => $weight,
     );
+  }
+  $form = array('payer', 'payee', 'worths', 'description');
+  foreach ($form as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
       'label' => $props[$fieldname]['label'],
       'description' => $props[$fieldname]['description'],
@@ -588,14 +586,6 @@ function mcapi_element_info() {
       '#theme_wrappers' => array('form_element'),
       '#multiple' => TRUE,
       '#options' => array(),//array of currcodes and currency names
-    ),
-    'mcapi_summary' => array(
-      '#pre_render' => array('mcapi_pre_render_summary'),
-      //other themes are possible, like and balance_bars and google-ometer
-      '#theme' => 'mcapi_summary',
-      '#currcode' => 'credunit',
-      '#account' => NULL,//needed
-      '#filters' => array()
     )
   );
 }
@@ -883,32 +873,6 @@ function mcapi_process_currcodes($element) {
   return $element;
 }
 
-
-/**
- * element pre_render callback
- * adds the user account transaction summary to the render array
- *
- * @param array $element
- *   a renderable array
- * @return
- *   a more populated renderable array, ready for theming
- */
-function mcapi_pre_render_summary($element) {
-  static $results = array();//TODO should this be drupal_static?
-  $uid = $element['#account']->id();
-  //occasionally we'll appreciate a static result
-  $result = &$results[$uid][$element['#currency']->id()];
-  if (empty($result)) {
-    $stats = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($element['#account'], $element['#currency'], $element['#filters']);
-    foreach ($stats as $key => $val) {
-      $result['#'.$key] = $val;
-    }
-  }
-  return $element + $result;
-}
-
 /**
  * implements alter hook_form_user_cancel_confirm_form().
  * if they have already traded, users can only be blocked, not deleted
@@ -985,17 +949,34 @@ function mcapi_mcapi_transaction_children($transaction) {
 }
 
 /**
- * field api callback
- * for new users, populates the default exchange with that of the creator
+ * field api default value callback
+ * when editing or creating a new user, populate the exchanges field
+ * with the currentuser's values
+ * @return
+ *   an array of uuids whose keys I haven't understood yet
  */
 function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
-  //$exid = current(\Drupal::currentUser()->exchanges());
-  return array();
-  $uuid = db_select("mcapi_exchanges", 'me')
-    ->fields('me', array('uuid'))
-    ->condition('id', 1)
-    ->execute()->fetchField();
-
-  drupal_set_message('test callback mcapi_default_exchange_id: '.$uuid);
-  return array('target_uuid' => '1e503f14-58d3-4f69-8f00-e8d0ca78c8da');
+  foreach (user_exchanges() as $exchange) {
+    $output['target_uuid'] = $exchange->get('uuid')->value;
+  }
+  //@todo this only works for one exchange, but what if there is more than one?
+  //see config/field.instance.user.user.field_exchanges.yml
+  //I think its broken in alpha7core because it only remembers 1
+  return $output;
 }
+
+/*
+ * implements hook_user_create()
+ * give a new wallet to every user
+ */
+function mcapi_user_create($account) {
+  entity_create('mcapi_wallet', array(
+    'name' => 'default',
+    'entity_type' => 'user',
+    'pid' => $account->id(),
+    'access_view' => 'dunno',
+    'access_payee' => 'dunno',
+    'access_payer' => 'dunno',
+  ))->save();
+}
+

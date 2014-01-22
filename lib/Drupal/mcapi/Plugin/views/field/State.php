@@ -13,7 +13,7 @@ use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
 
 /**
- * Field handler to the name of the transaction state
+ * Field handler for the name of the transaction state
  *
  * @ingroup views_field_handlers
  *
@@ -24,7 +24,7 @@ class State extends FieldPluginBase {
   function render(ResultRow $values) {
 
     $this->states = mcapi_get_states(TRUE);
-    return $this->states[$values->{$this->field_alias}];
+    return $this->states[$this->getValue($values)];
   }
 
 }

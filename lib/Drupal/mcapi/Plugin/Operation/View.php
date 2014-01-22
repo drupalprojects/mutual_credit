@@ -45,15 +45,7 @@ class View extends OperationBase {//does it go without saying that this implemen
    * {@inheritdoc}
    */
   public function opAccess(TransactionInterface $transaction) {
-    $access_plugins = transaction_access_plugins();
-    //see the comments in OperationBase
-    foreach ($transaction->worths[0] as $worth) {
-      foreach ($worth->currency->access_view[$transaction->state->value] as $plugin) {
-        if ($access_plugins[$plugin]->checkAccess($transaction)) continue 2;
-      }
-      return FALSE;
-    }
-    return TRUE;
+    return $transaction->access('view');
   }
 
   /*

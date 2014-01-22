@@ -25,7 +25,7 @@ function mcapi_install() {
 
   entity_create('mcapi_wallet', array(
     'name' => 'default',
-    'entity_type' => 'system',//dunno how to deal with this yet
+    'entity_type' => 'system',
     'pid' => 1,
     'access_view' => 'dunno',
     'access_payee' => 'dunno',
@@ -42,6 +42,18 @@ function mcapi_install() {
     'uid' => '1',
   ))->save();
   */
+   entity_create('mcapi_transaction', array(
+  	'payer' => 1,
+  	'payee' => 2,
+  	'state' => 1,
+  	'description' => 'created on installation',
+  	'type' => 'default',
+  	'worths' => array(
+      array('currcode' => 'credunit', 'value' => 1),
+      array('currcode' => 'escrow', 'value' => 2)
+    ),
+  	'exchange' => 0
+  ))->save();
 }
 
 /**
@@ -130,6 +142,7 @@ function mcapi_schema() {
         'type' => 'int',
         'size' => 'small',
         'not null' => TRUE,
+        'default' => 0,
       ),
       'state' => array(
         'description' => 'Completed, pending, disputed, etc',
@@ -286,6 +299,13 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => TRUE,
         'default' => 0
+      ),
+      'exchange' => array(
+        'description' => 'The exchange in which this transaction happened',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'child' => array(
         'description' => 'whether this transaction is a child',

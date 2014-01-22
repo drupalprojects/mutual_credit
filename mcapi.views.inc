@@ -313,7 +313,7 @@ function mcapi_views_data() {
   		'id' => 'user_uid',
   	),
   	'field' => array(
-  		'id' => 'standard',
+  		'id' => 'wallet',
   	),
   );
 
@@ -362,6 +362,9 @@ function mcapi_views_data() {
     'help' => t('The income from the transaction; positive or zero'),
     'field' => array(
       'id' => 'worth',
+  		'additional fields' => array(
+  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		)
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -372,6 +375,9 @@ function mcapi_views_data() {
     'help' => t('The outgoing quantity of the transaction; positive or zero'),
     'field' => array(
       'id' => 'worth',
+  		'additional fields' => array(
+  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		)
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -382,6 +388,9 @@ function mcapi_views_data() {
     'help' => t('The difference to the balance; positive or negative'),
     'field' => array(
       'id' => 'worth',
+  		'additional fields' => array(
+  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		)
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -392,10 +401,30 @@ function mcapi_views_data() {
     'help' => t('The quantity of the transaction; always positive'),
     'field' => array(
       'id' => 'worth',
+  		'additional fields' => array(
+  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		)
     ),
     'filter' => array(
       'id' => 'numeric',
     ),
+  );
+  $data['mcapi_transactions_index']['currcode'] = array(
+    'title' => t('Currency'),
+    'help' => t('The currency'),
+    'field' => array(
+      'id' => 'standard',
+    ),
+      /* this won't work because currencies are config entities
+       * if we can get it to work somehow, we won't have to do mcapi_currency load in the worth field plugin
+  	'relationship' => array(
+  		'id' => 'standard',
+  		'base' => 'mcapi_currencies',
+  		'field' => 'uid',
+  		'label' => t('2nd party'),
+  		'relationship field' => 'partner_id'
+  	),
+  	*/
   );
 
   //virtual fields
@@ -463,8 +492,6 @@ function mcapi_views_data_alter(&$data) {
   );
 }
 
-
-
 /*
  * implements hook_form_FORM_ID_alter
  * renames the exposed filters on views forms
@@ -473,21 +500,4 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $description = t('Comma separated usernames');
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
-}
-
-
-/*
- * implements hook_views_pre_render
- * converts zero values display in transaction views
- */
-function mcapi_views_pre_render(&$view) {
-  if (in_array($view->base_table, array('mcapi_transactions', 'mcapi_index_views')))  {
-    module_load_include('inc', 'mcapi');
-    foreach($view->result as $rowid => $row) {
-      if (!property_exists($row, 'field_worth')) return;
-      foreach ($row->field_worth as $delta => $item) {
-        mcapi_worth_item_zero_adjustment($view->result[$rowid]->field_worth[$delta]['rendered']);
-      }
-    }
-  }
 }

@@ -134,7 +134,7 @@ mcapi.transaction.op:
 
 #this will be replaced by a view
 #mcapi.wallet.view:
-#  path: '/exchange/{mcapi_wallet}'
+#  path: '/wallet/{mcapi_wallet}'
 #  defaults:
  #   _entity_view: 'mcapi_wallet.full'
 #  requirements:
