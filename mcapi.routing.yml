@@ -10,7 +10,15 @@ mcapi.admin_misc:
   path: '/admin/accounting/config'
   defaults:
     _form: 'Drupal\mcapi\Form\AccountingMiscForm'
-    _title: 'Settings'
+    _title: 'Other configuration'
+  requirements:
+    _permission: 'configure mcapi'
+
+mcapi.admin_wallets:
+  path: '/admin/accounting/wallets'
+  defaults:
+    _form: 'Drupal\mcapi\Form\WalletSettings'
+    _title: 'Wallet Settings'
   requirements:
     _permission: 'configure mcapi'
 

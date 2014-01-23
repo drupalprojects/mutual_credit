@@ -1,6 +1,6 @@
 mcapi.misc:
   type: mapping
-  label: 'Mutual Credit Misc settings'
+  label: 'Other configuration'
   mapping:
     sentence_template:
       type: text
@@ -27,6 +27,10 @@ mcapi.misc:
         show_messages:
           type: string
           label: Show warning messages to user
+
+mcapi.wallets:
+  type: mapping
+  label: Wallet settings
     wallet_access:
       type: mapping
       label: Default wallet access setting

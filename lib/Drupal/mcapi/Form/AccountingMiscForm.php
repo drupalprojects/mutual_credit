@@ -84,67 +84,6 @@ class AccountingMiscForm extends ConfigFormBase {
         '#value' => 'rebuild_mcapi_index',
       )
     );
-    foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
-      $wallet_access_plugins[$def['id']] = $def['label'];
-    }
-    $form['wallet_access'] = array(
-    	'#title' => t('Default access of users to wallets'),
-      '#description' => t('Determine which users can see, pay and pay from wallets by default, and which users can override their own wallets'),
-      '#type' => 'details',
-      '#tree' => TRUE
-    );
-    //TODO the following elements might need to be moved to somewhere where they can be re-used by the wallet's own config form.
-    $form['wallet_access']['wallet_default_viewers'] = array(
-      '#title' => t('Visible to'),
-      '#description' => t('Who can see the balance and history of this wallet?'),
-      '#type' => 'entity_chooser_selection',
-      '#args' => array('user'),
-      '#default_value' => $config->get('wallet_default_viewers'),
-      '#weight' => 1,
-    );
-    $form['wallet_access']['wallet_default_payees'] = array(
-      '#title' => t('Default payees'),
-      '#description' => t('Who can create transactions out of this wallet?'),
-      '#type' => 'entity_chooser_selection',
-      '#args' => array('user'),
-      '#default_value' => $config->get('wallet_default_payees'),
-      '#weight' => 2,
-    );
-    $form['wallet_access']['wallet_default_payers'] = array(
-      '#title' => t('Default payers'),
-      '#description' => t('Who can create transactions into this wallet?'),
-      '#type' => 'entity_chooser_selection',
-      '#args' => array('user'),
-      '#default_value' => $config->get('wallet_default_payers'),
-      '#weight' => 3,
-    );
-    $form['wallet_unique_names'] = array(
-      '#title' => t('Unique wallet names'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_unique_names'),
-      '#weight' => 7
-    );
-    $form['wallet_access_personalised'] = array(
-      '#title' => t('Personalised wallet access'),
-      '#description' => t('Users can adjust these settings, for every wallet'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_access_personalised'),
-      '#weight' => 7
-    );
-    $form['wallet_autoadd'] = array(
-      '#title' => t('Auto-add wallets'),
-      '#description' => t('Create a new wallet automatically for each new user'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_autoadd'),
-      '#weight' => 9
-    );
-    $form['wallet_one'] = array(
-      '#title' => t('One wallet'),
-      '#description' => t('One wallet only per parent entity - makes choosing easier.'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_one'),
-      '#weight' => 9
-    );
 
     return parent::buildForm($form, $form_state);
   }
@@ -169,11 +108,6 @@ class AccountingMiscForm extends ConfigFormBase {
       ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
-      ->set('wallet_access', $form_state['values']['wallet_access'])
-      ->set('wallet_unique_names', $form_state['values']['wallet_unique_names'])
-      ->set('wallet_access_personalised', $form_state['values']['wallet_access_personalised'])
-      ->set('wallet_autoadd', $form_state['values']['wallet_autoadd'])
-      ->set('wallet_one', $form_state['values']['wallet_one'])
       ->save();
 
     parent::submitForm($form, $form_state);

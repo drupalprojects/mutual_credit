@@ -60,10 +60,16 @@ function mcapi_menu() {
     'position' => 'right',
   );
   $items['admin/accounting/config'] = array(
-    'title' => 'Settings',
+    'title' => 'Other configuration',
     'description' => 'Miscellaneous settings which effect the system globally.',
     'route_name' => 'mcapi.admin_misc',
     'weight' => 20,
+  );
+  $items['admin/accounting/wallets'] = array(
+    'title' => 'Wallet Settings',
+    'description' => 'Ownership, access control and auto-creation.',
+    'route_name' => 'mcapi.admin_wallets',
+    'weight' => 10,
   );
   $items['admin/accounting/currencies'] = array(
     'title' => 'Currencies',

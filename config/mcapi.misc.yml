@@ -7,10 +7,15 @@ child_errors:
   watchdog: watchdog
   show_messages: show_messages
 wallet_access:
-  wallet_default_viewers: role:authenticated
-  wallet_default_payees: role:authenticated
-  wallet_default_payers: role:authenticated
-wallet_unique_names: false
-wallet_access_personalised: true
-wallet_autoadd: true
-wallet_one: false
+  wallet_default_viewers: {  }
+  wallet_default_payees: {  }
+  wallet_default_payers: {  }
+wallet_unique_names: 1
+wallet_access_personalised: 0
+wallet_autoadd: 0
+wallet_one: 1
+type: null
+types:
+  mcapi_exchange: mcapi_exchange
+  node: node
+  user: user
