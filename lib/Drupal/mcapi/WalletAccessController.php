@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simple_access\WalletAccessController.
+ * Contains \Drupal\mcapi\WalletAccessController.
  */
 
 namespace Drupal\mcapi;
@@ -10,7 +10,8 @@ namespace Drupal\mcapi;
 use Drupal\Core\Entity\EntityAccessController;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
-use Symfony\Component\HttpFoundation\Request;
+//use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Language\Language;
 
 
 /**

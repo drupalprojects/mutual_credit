@@ -18,18 +18,18 @@ function mcapi_install() {
   	'name' => 'default',
   	'entity_type' => 'user',
     'pid' => 1,
-    'access_view' => 'dunno',
-    'access_payee' => 'dunno',
-    'access_payer' => 'dunno',
+    'viewers' => 'dunno',
+    'payees' => 'dunno',
+    'payers' => 'dunno',
   ))->save();
 
   entity_create('mcapi_wallet', array(
     'name' => 'default',
     'entity_type' => 'system',
     'pid' => 1,
-    'access_view' => 'dunno',
-    'access_payee' => 'dunno',
-    'access_payer' => 'dunno',
+    'viewers' => 'dunno',
+    'payees' => 'dunno',
+    'payers' => 'dunno',
   ))->save();
 
   //default exchange
@@ -351,17 +351,17 @@ function mcapi_schema() {
         'type' => 'varchar',
         'length' => '32',
       ),
-      'access_view' => array(
+      'viewers' => array(
         'description' => "The wallet's view access controller",
         'type' => 'varchar',
         'length' => '32',
       ),
-      'access_payee' => array(
+      'payers' => array(
         'description' => "The wallet's payee access controller",
         'type' => 'varchar',
         'length' => '32',
       ),
-      'access_payer' => array(
+      'payees' => array(
         'description' => "The wallet's payer access controller",
         'type' => 'varchar',
         'length' => '32',

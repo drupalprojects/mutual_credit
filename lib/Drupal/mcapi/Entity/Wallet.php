@@ -14,6 +14,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 
 /**
  * Defines the wallet entity.
+ * NB the canonical link is actually a 'views' page
  *
  * @EntityType(
  *   id = "mcapi_wallet",
@@ -36,7 +37,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
  *   translatable = FALSE,
  *   route_base_path = "admin/accounting/wallets",
  *   links = {
- *     "canonical" = "wallet.view",
+ *     "canonical" = "view.wallet_statement.page_1",
  *     "admin-form" = "mcapi.wallets"
  *   }
  * )
@@ -44,22 +45,10 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 class Wallet extends ContentEntityBase {
 
   /**
-   * the entity types which can receive wallets.
-   * perhaps this should be added via hook_entity_info_alter to the entity definitions
-   * $data['node']['wallet'] = TRUE
-   * $data['user']['wallet'] = TRUE
-   * maybe this variable isn't needed at all, or it could be a cached object or even a config setting
-   * since wallets can never be deleted what we need to now is to which entities we can now add wallets.
-   * I have a feeling that wallets can only belong to content entities.
+   * I have a feeling that wallets should only belong to content entities.
    */
 
   private $owner;
-
-  public function __construct($params, $entity_type, $definition) {
-    parent::__construct($params, $entity_type, $definition);
-    //for now...
-    $this->entity_types = array('user', 'node');
-  }
 
   public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
     foreach ($entities as $wallet) {
@@ -75,6 +64,9 @@ class Wallet extends ContentEntityBase {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function uri() {
     return 'wallet/'.$this->id();
   }
@@ -117,7 +109,7 @@ class Wallet extends ContentEntityBase {
   /**
    * {@inheritdoc}
    */
-  public static function ______preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
+  public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
     //trying to set this as a default but not working
     $values['access_view'] = 'inherit';
     $values['access_payer'] = 'autheticated';
@@ -151,15 +143,15 @@ class Wallet extends ContentEntityBase {
       ->setLabel('Name')
       ->setDescription("The owner's name for this wallet")
       ->setRequired(TRUE);
-    $properties['access_view'] = FieldDefinition::create('string')
+    $properties['viewers'] = FieldDefinition::create('string')
       ->setLabel('Access controller')
       ->setDescription("The class which controls view access to this wallet")
       ->setRequired(TRUE);
-    $properties['access_payer'] = FieldDefinition::create('string')
+    $properties['payers'] = FieldDefinition::create('string')
       ->setLabel('Access controller')
       ->setDescription("The class which controls payer access to this wallet")
       ->setRequired(TRUE);
-    $properties['access_payee'] = FieldDefinition::create('string')
+    $properties['payees'] = FieldDefinition::create('string')
       ->setLabel('Access controller')
       ->setDescription("The class which controls payee access to this wallet")
       ->setRequired(TRUE);

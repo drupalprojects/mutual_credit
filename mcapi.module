@@ -66,7 +66,7 @@ function mcapi_menu() {
     'weight' => 20,
   );
   $items['admin/accounting/wallets'] = array(
-    'title' => 'Wallet Settings',
+    'title' => 'Wallets',
     'description' => 'Ownership, access control and auto-creation.',
     'route_name' => 'mcapi.admin_wallets',
     'weight' => 10,
@@ -81,30 +81,29 @@ function mcapi_menu() {
     'description' => 'The groups, communities or marketplaces where transactions happen',
     'route_name' => 'mcapi.admin_exchange_list',
   );
-  $items['admin/accounting/mass'] = array(
+  $items['admin/accounting/transactions'] = array(
+    'title' => 'Transactions',
+    'description' => 'Configuration around transaction states, types and operations.',
+    'weight' => 2,
+    'route_name' => 'mcapi.admin.transactions',
+  );
+  $items['admin/accounting/transactions/mass'] = array(
     'title' => 'Mass payments',
     'description' => 'Pay between one account and many.',
     'route_name' => 'mcapi.admin_mass',
   );
-  $items['admin/accounting/workflow'] = array(
-    'title' => 'Transaction workflow',
-    'description' => 'Configuration around transaction states, types and operations.',
+  $items['admin/accounting/transactions/operations'] = array(
+    'title' => 'Configure workflow',
+    'description' => 'Configure workflow and user experience for each transaction operation.',
     'weight' => 2,
-    'route_name' => 'mcapi.workflow',
+    'route_name' => 'mcapi.admin.transactions.operations',
   );
-  $items['admin/accounting/workflow/operations'] = array(
-    'title' => 'Transaction workflow operations',
-    'description' => 'Configure the user experience for transaction operations.',
-    'weight' => 2,
-    'route_name' => 'mcapi.workflow.operations',
-  );
-  /*
-  $items['transact/admin'] = array(
+  $items['admin/accounting/transactions/add'] = array(
     'title' => 'Record transaction',
     'description' => 'Log a transaction in the database',
     'route_name' => 'mcapi.transaction_admin',
   );
-  */
+
   return $items;
 }
 
@@ -119,16 +118,14 @@ function mcapi_transaction_load($serial) {
 function mcapi_help($path, $arg) {
   switch ($path) {
     case 'admin/accounting':
-      return implode(' ', array(
-        t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital."),
-        t("This software has been five years in the conceiving and making and has been supported only by informal donations.")
-      ));
+      return t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.");
     case 'admin/accounting/currencies':
       return implode(' ', array(
         t('Most community projects now have only one currency.'),
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.')
       ));
-    case 'admin/accounting/workflow':
+      //@todo matslats rewrite this
+    case 'admin/accounting/transactions/workflow':
       //TODO how do we make this show at the top of a menu page without help module?
       module_load_include('inc', 'mcapi');
       $renderable = _workflow_help();
@@ -351,8 +348,12 @@ function mcapi_mcapi_info_drupal_permissions() {
       'description' => t("Register exchanges with other members, subject each currency's permissions")
     ),
     'create own wallets' => array(
-      'title' => t('Creat own wallets'),
+      'title' => t('Create own wallets'),
       'description' => t('Users can have as many wallets as they like.')
+    ),
+    'manage own exchanges' => array(
+      'title' => t('Manage exchanges'),
+      'description' => t('Accounting permissions in all exchanges of which the user is a member')
     ),
     'configure mcapi' => array(
       'title' => t('Configure community accounting'),
@@ -457,9 +458,10 @@ function mcapi_currency_list($all = TRUE) {
 }
 
 /**
- * Helper function to get the 'current' exchange(s). That means the exchange
- * the current user is in, if any. This function might reduce down to one line,
- * and be unnecessary
+ * Helper function to get the 'current' exchange(s) from a user entity
+ * That means the exchange the current user is in, if any.
+ * This function might be unnecessary if it reduces down to one line
+ *
  * @param AccountInterface $account
  * @return array
  *   the exchange entities of which the current user is a member.
@@ -471,13 +473,14 @@ function user_exchanges(AccountInterface $account = NULL) {
   }
   //have to be sure that the fields are properly loaded
   $account = user_load($account->id());
-
-  foreach($account->get('field_exchanges') as $id => $exchange) {
+  //field_exchanges is hard-coded, so we know the name
+  foreach($account->get('field_exchanges')->getValue() as $id => $item) {
     //@todo one day we'll be able to just pull this array out rather than iterating through it.
-    $return[$id] = $exchange;
+    $exchanges[$id] =  $item['entity'];
   }
-  return exchanges;
+  return $exchanges;
 }
+
 /**
  * get all the currencies from (common to) the given exchanges, sorted
  * @param array $exchanges
@@ -962,6 +965,7 @@ function mcapi_mcapi_transaction_children($transaction) {
  *   an array of uuids whose keys I haven't understood yet
  */
 function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
+  $output = array();
   foreach (user_exchanges() as $exchange) {
     $output['target_uuid'] = $exchange->get('uuid')->value;
   }
@@ -975,7 +979,7 @@ function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
  * implements hook_user_create()
  * give a new wallet to every user
  */
-function mcapi_user_create($account) {
+function mcapi_user_insert($account) {
   entity_create('mcapi_wallet', array(
     'name' => 'default',
     'entity_type' => 'user',
@@ -985,4 +989,3 @@ function mcapi_user_create($account) {
     'access_payer' => 'dunno',
   ))->save();
 }
-

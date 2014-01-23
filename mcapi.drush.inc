@@ -125,7 +125,7 @@ function drush_devel_generate_transactions($num_transactions = 10) {
       'created' => rand(strtotime('-1 month'), REQUEST_TIME),
       'description' => 'randomly generated transaction'
     );
-    $cluster = array(entity_create('transaction', $props));
+    $cluster = array(entity_create('mcapi_transaction', $props));
     $serial = transaction_cluster_write($cluster, TRUE);
     $transaction = mcapi_transaction_load($serial);
     $renderable = transaction_view($transaction, \Drupal::config('mcapi.misc')->get('sentence_template'));

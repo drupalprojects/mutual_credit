@@ -3,7 +3,7 @@
 /**
  * @file
  * Definition of Drupal\mcapi\Form\WalletForm.
- * Edit all the fields on a transaction
+ * Edit all the fields on a wallet
  */
 
 namespace Drupal\mcapi\Form;
@@ -15,15 +15,17 @@ use Drupal\action\Plugin\Action;
 
 class WalletForm extends EntityFormController {
 
+  public function getFormId() {
+    return 'wallet_form';
+  }
+
+
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
   public function form(array $form, array &$form_state) {
 
     $raw = \Drupal::request()->attributes->get('_raw_variables');
-
-
-    drupal_set_title('wallet');
 
     $form = parent::form($form, $form_state);
     $wallet = $this->entity;
@@ -43,34 +45,35 @@ class WalletForm extends EntityFormController {
     	'#type' => 'value',
       '#value' => $raw->get('entity_type')
     );
-    $form['entity_id'] = array(
+    $form['pid'] = array(
     	'#type' => 'value',
-      '#value' => $raw->get('entity_id')
+      '#value' => $raw->get('pid')
     );
     $pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access');
 
     foreach ($pluginManager->getDefinitions() as $def) {
       $plugins[$def['id']] = $def['label'];
     }
-    //obselete permission
-    //if (\Drupal::config()->hasPermission('set own wallet privacy') && 1) {
-      $form['access'] = array(
-        '#title' => t('Acccess settings'),
-        '#type' => 'details',
-        '#collapsible' => TRUE,
-        'view' => array(
-      	  '#title' => t('Who can view?'),
-          '#type' => 'select',
-          '#options' => $plugins
-        )
-      );
-    //}
-    $form['proxies'] = array(
-    	'#title' => t('Any other users who can trade from this wallet?'),
-      '#type' => 'entity_chooser',
-      '#plugin' => 'role',
-      '#args' => array('authenticated'),//might want to form_alter this...
-      '#default_value' => $wallet->proxies
+
+    $form['access'] = array(
+      '#title' => t('Acccess settings'),
+      '#type' => 'details',
+      '#collapsible' => TRUE,
+      'viewers' => array(
+    	  '#title' => t('Who can view?'),
+        '#type' => 'select',
+        '#options' => $plugins
+      ),
+      'payees' => array(
+    	  '#title' => t('Who can request from this wallet?'),
+        '#type' => 'select',
+        '#options' => $plugins
+      ),
+      'payers' => array(
+    	  '#title' => t('Who can contribute to this wallet?'),
+        '#type' => 'select',
+        '#options' => $plugins
+      )
     );
     return $form;
   }

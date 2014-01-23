@@ -28,3 +28,14 @@ services:
     arguments: ['@entity.manager']
     tags:
       - { name: paramconverter, priority: 10 }
+
+  mcapi.subscriber:
+    class: Drupal\mcapi\Routing\RouteSubscriber
+    arguments: ['@entity.manager']
+    tags:
+     - { name: event_subscriber }
+
+  access_check.add_wallet:
+    class: Drupal\mcapi\WalletAddAccessController
+    tags:
+      - { name: access_check }

@@ -44,7 +44,7 @@ use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
  *   route_base_path = "admin/accounting",
  *   links = {
  *     "canonical" = "/transaction/{mcapi_transaction}",
- *     "admin-form" = "mcapi.admin"
+ *     "admin-form" = "mcapi.admin.transactions"
  *   }
  * )
  */
@@ -288,6 +288,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'worths' => array(),//how do we make a worths field?
       'exchange' => 0
     );
+    mtrace();
   }
 
   /**

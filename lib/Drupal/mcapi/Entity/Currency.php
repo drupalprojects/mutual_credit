@@ -109,7 +109,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
       'suffix' => '',
       'zero' => '',
       'color' => '',
-      'access' => array(),
       'access_operations' => array(),
       'access_undo' => array(),
       'widget' => $definitions['default_widget'],

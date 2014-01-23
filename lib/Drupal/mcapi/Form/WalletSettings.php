@@ -31,21 +31,41 @@ class WalletSettings extends ConfigFormBase {
    */
   public function buildForm(array $form, array &$form_state) {
     $config = $this->configFactory->get('mcapi.wallets');
-
-    foreach (entity_get_info() as $name => $definition) {
-      if (array_key_exists('config_prefix', $definition)) continue;
-      if (in_array($name, array('menu_link', 'mcapi_wallet', 'mcapi_transaction'))) continue;
-      $types[$name] = $definition['label'];
-    }
-    //@todo GORDON how about simply limiting the entity types to node, exchange and user?
-    $form['types'] = array(
+    //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
+    //OR to an exchange entity itself
+    //@todo this could work for bundles or different user types or roles - many richer ways to do it
+    $form['entity_types'] = array(
     	'#title' => t('Entity types'),
-      '#description' => t('Which content entity types can own wallets?'),
-      '#type' => 'select',
-      '#options' => $types,
-      '#default_value' => $config->get('types'),
-      '#multiple' => TRUE,
-      '#weight' => -5
+    	'#description' => t('Put the maximum number of wallets that entities of each type can hold.') .' '.
+        t('Only bundles with entity reference fields to Exchanges are shown.'),
+      '#type' => 'details',
+      '#tree' => TRUE
+    );
+    module_load_include('inc', 'mcapi');
+    foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
+      $definition = entity_get_info($entity_type);
+      $form['entity_types'][$definition['id']] = array(
+      	'#title' => $definition['label'],//don't know if this is translated or translatable!
+        '#type' => 'number',
+        '#min' => 0,
+        '#default_value' => $config->get('entity_types.'.$definition['id']),
+        '#size' => 2,
+        '#max_length' => 2
+      );
+    }
+    $form['unique_names'] = array(
+      '#title' => t('Unique wallet names'),
+      '#description' => t('Every wallet name on the system must be unique.'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('unique_names'),
+      '#weight' => 2
+    );
+    $form['autoadd'] = array(
+      '#title' => t('Auto-add wallets'),
+      '#description' => t('Create a new wallet automatically for each new user'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('autoadd'),
+      '#weight' => 3
     );
 
     foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
@@ -55,59 +75,39 @@ class WalletSettings extends ConfigFormBase {
     	'#title' => t('Default access of users to wallets'),
       '#description' => t('Determine which users can see, pay and pay from wallets by default, and which users can override their own wallets'),
       '#type' => 'details',
-      '#tree' => TRUE
+      '#weight' => 5
     );
     //TODO the following elements might need to be moved to somewhere where they can be re-used by the wallet's own config form.
-    $form['wallet_access']['wallet_default_viewers'] = array(
+    $form['wallet_access']['viewers'] = array(
       '#title' => t('Visible to'),
       '#description' => t('Who can see the balance and history of this wallet?'),
       '#type' => 'entity_chooser_selection',
       '#args' => array('user'),
-      '#default_value' => $config->get('wallet_default_viewers'),
+      '#default_value' => $config->get('viewers'),
       '#weight' => 1,
     );
-    $form['wallet_access']['wallet_default_payees'] = array(
+    $form['wallet_access']['payees'] = array(
       '#title' => t('Default payees'),
       '#description' => t('Who can create transactions out of this wallet?'),
       '#type' => 'entity_chooser_selection',
       '#args' => array('user'),
-      '#default_value' => $config->get('wallet_default_payees'),
+      '#default_value' => $config->get('payees'),
       '#weight' => 2,
     );
-    $form['wallet_access']['wallet_default_payers'] = array(
+    $form['wallet_access']['payers'] = array(
       '#title' => t('Default payers'),
       '#description' => t('Who can create transactions into this wallet?'),
       '#type' => 'entity_chooser_selection',
       '#args' => array('user'),
-      '#default_value' => $config->get('wallet_default_payers'),
+      '#default_value' => $config->get('payers'),
       '#weight' => 3,
     );
-    $form['wallet_unique_names'] = array(
-      '#title' => t('Unique wallet names'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_unique_names'),
-      '#weight' => 7
-    );
-    $form['wallet_access_personalised'] = array(
+    $form['wallet_access']['access_personalised'] = array(
       '#title' => t('Personalised wallet access'),
       '#description' => t('Users can adjust these settings, for every wallet'),
       '#type' => 'checkbox',
       '#default_value' => !$config->get('wallet_access_personalised'),
-      '#weight' => 7
-    );
-    $form['wallet_autoadd'] = array(
-      '#title' => t('Auto-add wallets'),
-      '#description' => t('Create a new wallet automatically for each new user'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_autoadd'),
-      '#weight' => 9
-    );
-    $form['wallet_one'] = array(
-      '#title' => t('One wallet'),
-      '#description' => t('One wallet only per parent entity - makes choosing easier.'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_one'),
-      '#weight' => 9
+      '#weight' => 5
     );
 
     return parent::buildForm($form, $form_state);
@@ -128,15 +128,22 @@ class WalletSettings extends ConfigFormBase {
   public function submitForm(array &$form, array &$form_state) {
 
     $this->configFactory->get('mcapi.wallets')
-      ->set('types', $form_state['values']['types'])
-      ->set('wallet_access', $form_state['values']['wallet_access'])
-      ->set('wallet_unique_names', $form_state['values']['wallet_unique_names'])
-      ->set('wallet_access_personalised', $form_state['values']['wallet_access_personalised'])
-      ->set('wallet_autoadd', $form_state['values']['wallet_autoadd'])
-      ->set('wallet_one', $form_state['values']['wallet_one'])
+      ->set('entity_types', $form_state['values']['entity_types'])
+      ->set('viewers', $form_state['values']['viewers'])
+      ->set('payers', $form_state['values']['payees'])
+      ->set('payees', $form_state['values']['viewers'])
+      ->set('unique_names', $form_state['values']['unique_names'])
+      ->set('access_personalised', $form_state['values']['access_personalised'])
+      ->set('autoadd', $form_state['values']['autoadd'])
       ->save();
 
     parent::submitForm($form, $form_state);
+    //@todo why doesn't this show?
+    drupal_set_message(t('Wallet settings are saved.'));
+
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin'
+    );
   }
 }
 

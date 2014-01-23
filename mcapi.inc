@@ -81,7 +81,7 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
       break;
   }
   $child['description'] = @$settings['presets']['description'];
-  return entity_create('transaction', $child);
+  return entity_create('mcapi_transaction', $child);
 }
 
 
@@ -729,4 +729,29 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
     $tokens[] = 'url';
   }
   return $tokens;
+}
+
+/**
+ * get a list of all the entity types which have an entity reference field pointing to mcapi_exchange
+ * @return array
+ *   a list of entity types
+ */
+//@todo cache this
+function get_exchange_entity_fieldnames($type) {
+  $types = array('mcapi_exchange');
+  foreach (Field::FieldInfo()->getInstances() as $entity_type => $data1) {
+    if (in_array('entity_type', array('mcapi_exchange', 'transaction', 'wallet'))) continue;
+    foreach ($data1 as $bundle => $fields) {
+      foreach ($fields as $fieldname => $fieldInfo) {
+        if ($fieldInfo->getType() == 'entity_reference') {
+          if ($fieldInfo->getSetting('target_type') == 'mcapi_exchange') {
+            $types[$entity_type] = $fieldname;
+            continue 3;
+          }
+        }
+      }
+    }
+  }
+  if ($type) return $types[$type];
+  return $types;
 }

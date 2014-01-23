@@ -3,3 +3,7 @@ mcapi_add_exchange_laction:
   title: 'Create exchange'
   appears_on:
     - mcapi.admin_exchange_list
+
+mcapi.addWallet.action :
+  class: \Drupal\Core\Menu\LocalActionDefault
+  derivative: \Drupal\mcapi\Plugin\Derivative\WalletLocalAction

@@ -422,9 +422,9 @@ display:
           not: 0
           plugin_id: user_uid
           provider: user
-label: 'wallet history'
+label: 'wallet statement'
 module: views
-id: wallet_history
+id: wallet_statement
 tag: ''
 uuid: 3ffde51e-024a-4781-9500-d0c8cf484f1e
 langcode: en
