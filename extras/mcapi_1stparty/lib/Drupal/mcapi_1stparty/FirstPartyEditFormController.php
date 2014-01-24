@@ -279,14 +279,20 @@ class FirstPartyEditFormController extends EntityFormController {
       drupal_set_message(t("Form '%label' has been added.", array('%label' => $configEntity->label())));
     }
 
-    $form_state['redirect'] = 'admin/accounting/workflow/forms';
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin_1stparty_editform_list'
+    );
   }
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::delete().
    */
   public function delete(array $form, array &$form_state) {
-    $form_state['redirect'] = 'admin/accounting/workflow/forms/' . $this->entity->id() . '/delete';
+
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin_1stparty_editform_list',
+      'route_parameters' => array('1stparty_editform' => $this->entity->id())
+    );
   }
 
 }

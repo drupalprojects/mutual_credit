@@ -3,7 +3,7 @@
  * @file
  * Default theme implementation to display a (summary of a) wallet.
  * Variables:
- *   wallet
+ *   name //of the wallet
  *   url #to the wallet transaction listing
  *   currdata is an array, keyed by currency code. each value is a set of results
  *   The results are
@@ -15,15 +15,15 @@
  *   - partners
  */
 #}
-
-<table border = "1">
-<tr><th></th>
+<style>table.display-wallet td, table.display-wallet th{font-size:70%;}</style>
+<table border = "1" class = "display-wallet">
+<tr><th><a href="{{ url }}" title = "Show transactions">{{ name }}</a></th>
 {% for curr in currdata %}
-<th>{{ curr.label }}</th>
+<th >{{ curr.label }}</th>
 {% endfor %}
-</tr><tr><th>Balance</th>
+</tr><tr><th style="font-size: 150%">Balance</th>
 {% for curr in currdata %}
-<td>{{ curr.balance }}</td>
+<td style="font-size: 150%">{{ curr.balance }}</td>
 {% endfor %}
 </tr><tr><th>Gross income</th>
 {% for curr in currdata %}
@@ -47,4 +47,3 @@
 {% endfor %}
 </tr></table>
 
-<a href="{{ url }}">Show transactions</a>

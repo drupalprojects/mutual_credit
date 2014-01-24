@@ -116,7 +116,10 @@ class AccountingMiscForm extends ConfigFormBase {
       //not sure where to put this function
        \Drupal::entityManager()->getStorageController('mcapi_transaction')->indexRebuild();
        drupal_set_message("Index table is rebuilt");
-       $form_state['redirect'] = 'admin/reports/status';
+
+       $form_state['redirect_route'] = array(
+       	 'route_name' => 'system.status'
+       );
     }
   }
 }

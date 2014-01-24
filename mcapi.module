@@ -124,8 +124,8 @@ function mcapi_help($path, $arg) {
         t('Most community projects now have only one currency.'),
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.')
       ));
-      //@todo matslats rewrite this
-    case 'admin/accounting/transactions/workflow':
+      //@todo when hook_menu is removed take this out of help and put it on the page somehow
+    case 'admin/accounting/transactions':
       //TODO how do we make this show at the top of a menu page without help module?
       module_load_include('inc', 'mcapi');
       $renderable = _workflow_help();
@@ -133,7 +133,7 @@ function mcapi_help($path, $arg) {
       return implode(' ', array(
         t('Different transaction user stories can be configured here, although the actual structure has to be defined in code.')
       ));
-    case 'admin/accounting/workflow/operations':
+    case 'admin/accounting/transactions/workflow':
       return implode(' ', array(
         t("The workflow is about moving transactions between states. This is always done through a form."),
         t("The confirm forms are configured on this page.")
@@ -473,10 +473,10 @@ function user_exchanges(AccountInterface $account = NULL) {
   }
   //have to be sure that the fields are properly loaded
   $account = user_load($account->id());
-  //field_exchanges is hard-coded, so we know the name
-  foreach($account->get('field_exchanges')->getValue() as $id => $item) {
-    //@todo one day we'll be able to just pull this array out rather than iterating through it.
-    $exchanges[$id] =  $item['entity'];
+  //now...
+  foreach($account->get('field_exchanges')->getValue() as $item) {
+    //@todo one day we'll be able to just pull this array out rather than loading the entities ourselves
+    $exchanges[$item['target_id']] =  entity_load('mcapi_exchange', $item['target_id']);
   }
   return $exchanges;
 }
@@ -487,8 +487,9 @@ function user_exchanges(AccountInterface $account = NULL) {
  */
 function exchange_currencies(array $exchanges) {
   foreach ($exchanges as $exchange) {
-    foreach ($exchange->get('field_currencies') as $currency) {
-      if ($currency->status) $currencies[] = $currency;
+    foreach ($exchange->get('field_currencies')->getValue() as $item) {
+      $currency = mcapi_currency_load($item['target_id']);
+      if ($currency->status) $currencies[$item['target_id']] = $currency;
     }
   }
   $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
@@ -618,8 +619,8 @@ function mcapi_worths_element_process($element, &$form_state) {
   }
   if ($element['#mixed_mode'] || $element['#preset']) {
     //construct one widget for each default, each with its own currcode
-    foreach ($element['#currencies'] as $currcode => $name) {
-      $element[$currcode]['#title'] = $name;
+    foreach ($element['#currencies'] as $currcode => $currency) {
+      $element[$currcode]['#title'] = $currency->human_name;
       $element[$currcode]['#currcodes']= array($currcode);
       //some dispute about whether default_value should be a worths object or an array
       if (!is_object($element['#default_value'])){
@@ -631,14 +632,13 @@ function mcapi_worths_element_process($element, &$form_state) {
   else {
     $keys = array_keys($element['#currencies']);
     $key = reset($keys);
-    $element[$key] = array(
+    //need to better understand what is being passed as the top level element default value
+    //in order populate the default properly
+    $element[0] = array(
       '#title' => t('Worth'),
-      '#currcodes' => $element['#currcodes'],
+      '#currcodes' => $keys,
       '#default_value' => $element['#default_value']->$key,
     );
-    if (array_key_exists('#max', $element) && $element['#max']) {
-      $element['#description'] = $element['#description'] . t('Max: !num', array('!num' => $element['#max']));
-    }
   }
 
   //now populate all the subwidgets with defaults
@@ -988,4 +988,18 @@ function mcapi_user_insert($account) {
     'access_payee' => 'dunno',
     'access_payer' => 'dunno',
   ))->save();
+}
+
+/**
+ * get the entity from a Request object, whatever the entitytype
+ * this is quite hacky
+ *
+ * @param Request $request
+ * @return EntityInterface object
+ */
+function wallet_get_params($request) {
+  foreach ($request->attributes->get('_route_params') as $key => $value) {
+    if (substr($key, 0, 1) == '_')continue;
+    return $value;
+  }
 }

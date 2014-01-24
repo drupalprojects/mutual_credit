@@ -24,7 +24,9 @@ function mcapi_signall_submit($form, &$form_state) {
     $message = transaction_sign(mcapi_transaction_load($serial), $account);
   }
   drupal_set_message($message);
-  $form_state['redirect'] = 'user';
+  $form_state['redirect_route'] = array(
+  	'route_name' => 'user.page'
+  );
 }
 
 

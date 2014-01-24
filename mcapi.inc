@@ -158,6 +158,7 @@ function template_preprocess_wallet(&$vars) {
     $vars['currdata'][$currcode]['trades'] = $data['trades'];
   }
   $vars['url'] = 'wallet/'.$vars['wallet']->id();
+  $vars['name'] = $vars['wallet']->get('name')->value;
 }
 
 /**

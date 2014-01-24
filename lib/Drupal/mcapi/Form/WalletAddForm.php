@@ -17,15 +17,11 @@ class WalletAddForm extends Formbase {
   }
 
 
-  /**
-   * Overrides Drupal\Core\Entity\EntityFormController::form().
-   */
   public function buildForm(array $form, array &$form_state) {
     //its a bloody hassle to get the params out when it is all protected variables and no methods to access them
-    list($entity_type, $pid) = $this->get_params(\Drupal::request());
+    $owner = wallet_get_params(\Drupal::request());
 
-    $title = entity_load($entity_type, $pid)->label();
-    drupal_set_title(t("New wallet for '!title'", array('!title' => $title)));
+    drupal_set_title(t("New wallet for '!title'", array('!title' => $owner->label())));
 
     $form['wid'] = array(
       '#type' => 'value',
@@ -38,11 +34,11 @@ class WalletAddForm extends Formbase {
     );
     $form['entity_type'] = array(
     	'#type' => 'value',
-      '#value' => $entity_type
+      '#value' => $owner->entityType()
     );
     $form['pid'] = array(
     	'#type' => 'value',
-      '#value' => $pid
+      '#value' => $owner->id()
     );
     $pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access');
 
@@ -100,15 +96,13 @@ class WalletAddForm extends Formbase {
     form_state_values_clean($form_state);
     $wallet = entity_create('mcapi_wallet', $form_state['values']);
     $wallet->save();
-    $form_state['redirect'] = 'wallet/'.$wallet->id();
+    $pid = $wallet->get('pid')->value;
+    $info = entity_load($wallet->get('entity_type')->value, $pid)->entityInfo();
+    $form_state['redirect_route'] = array(
+        'route_name' => $info['links']['canonical'],
+        'route_parameters' => array($info['id'] => $pid)
+    );
   }
 
-  function get_params($request) {
-    //@todo there is probably a better way to get the url parameters
-    foreach ($request->attributes->get('_route_params') as $key => $value) {
-      if (substr($key, 0, 1) == '_')continue;
-      return array($key, $value->id());
-    }
-  }
 }
 

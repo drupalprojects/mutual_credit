@@ -285,10 +285,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'creator' => \Drupal::currentUser()->id(),
       'type' => 'default',
       'extra' => array(),
-      'worths' => array(),//how do we make a worths field?
+      'worths' => array(),
       'exchange' => 0
     );
-    mtrace();
   }
 
   /**

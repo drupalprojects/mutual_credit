@@ -42,9 +42,10 @@ class ExchangeDeleteConfirm extends EntityConfirmFormBase {
    */
   public function submit(array $form, array &$form_state) {
     $this->entity->delete();
-    drupal_set_message(t('Exchange %label has been deleted.', array('%label' => $this->entity->label())));
-
-    $form_state['redirect'] = 'admin/accounting/exchanges';
+    drupal_set_message(t("Exchange '%label' has been deleted.", array('%label' => $this->entity->label())));
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin_exchange_list'
+    );
   }
 
 }

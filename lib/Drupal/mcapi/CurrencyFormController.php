@@ -505,7 +505,9 @@ class CurrencyFormController extends EntityFormController {
       drupal_set_message(t('Currency %label has been added.', array('%label' => $currency->label())));
     }
 
-    $form_state['redirect'] = 'admin/accounting/currencies';
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin_currency_list'
+    );
   }
 
   /**
@@ -513,7 +515,10 @@ class CurrencyFormController extends EntityFormController {
    */
   public function delete(array $form, array &$form_state) {
   	\Drupal::cache()->deleteTags(array('mcapi.available_currency'));
-    $form_state['redirect'] = 'admin/accounting/currencies/' . $this->entity->id() . '/delete';
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin_currency_delete',
+      'route_parameters' => array('mcapi_currency' => $this->entity->id())
+    );
   }
 
   /**

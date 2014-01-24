@@ -6,7 +6,7 @@ mcapi.1stparty:
     _permission: 'transact'
 
 mcapi.admin.1stparty_editform.add:
-  path: '/admin/accounting/workflow/forms/add'
+  path: '/admin/accounting/transactions/forms/add'
   defaults:
     _entity_form: '1stparty_editform.add'
     _title: 'Transaction form designer'
@@ -14,7 +14,7 @@ mcapi.admin.1stparty_editform.add:
     _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_list:
-  path: '/admin/accounting/workflow/forms'
+  path: '/admin/accounting/transactions/forms'
   defaults:
     _entity_list: '1stparty_editform'
     _title: 'Transaction forms'
@@ -22,7 +22,7 @@ mcapi.admin_1stparty_editform_list:
     _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_edit:
-  path: '/admin/accounting/workflow/forms/{1stparty_editform}'
+  path: '/admin/accounting/transactions/forms/{1stparty_editform}'
   defaults:
     _entity_form: '1stparty_editform.edit'
     _title: 'Transaction form designer'
@@ -30,21 +30,21 @@ mcapi.admin_1stparty_editform_edit:
     _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_delete:
-  path: '/admin/accounting/workflow/forms/{1stparty_editform}/delete'
+  path: '/admin/accounting/transactions/forms/{1stparty_editform}/delete'
   defaults:
     _entity_form: '1stparty_editform.delete'
   requirements:
     _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_disable:
-  path: '/admin/accounting/workflow/forms/{1stparty_editform}/disable'
+  path: '/admin/accounting/transactions/forms/{1stparty_editform}/disable'
   defaults:
     _entity_form: '1stparty_editform.disable'
   requirements:
     _permission: 'configure mcapi'
 
 mcapi.admin_1stparty_editform_enable:
-  path: '/admin/accounting/workflow/forms/{1stparty_editform}/enable'
+  path: '/admin/accounting/transactions/forms/{1stparty_editform}/enable'
   defaults:
     _entity_form: '1stparty_editform.enable'
   requirements:

@@ -41,7 +41,10 @@ class TransactionForm extends ContentEntityFormController {
       '#title' => t('Worth'),
       '#required' => TRUE,
       '#default_value' => $transaction->worths[0],
+      //by default, which this is, all the currencies of the currency exchanges should be included
+      '#currencies' => exchange_currencies(user_exchanges())
     );
+
     //@todo GORDON what's the best way to list the wallets of the members of the current exchange
     //including any wallets whose parent is the exchange itself?
     //I think what we need is a wallet_chooser element!

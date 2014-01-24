@@ -211,7 +211,12 @@ class MassPay extends FormBase {
 
     //redirect to the single user's page.
     $uri = $main_transaction->uri();
-    $form_state['redirect'] = $uri['path'];//might not be a good idea for undone transactions
+    $form_state['redirect_route'] = array(
+      //might not be a good idea for undone transactions
+    	'route_name' => 'mcapi.transaction_view',
+      'route_parameters' => array('mcapi_transaction' => $main_transaction->get('serial')->value)
+    );
+
 
     //store the mail so we can bring it up as a default next time
     //if there was an $op called 'create' we could store this mail in the op settings.

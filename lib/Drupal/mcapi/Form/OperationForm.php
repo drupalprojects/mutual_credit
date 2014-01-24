@@ -137,12 +137,15 @@ class OperationForm extends ConfirmFormBase {
   	\Drupal::moduleHandler()->invokeAll('mcapi_transaction_operated', $transaction, $context);
 
   	//where to go now?
-  	$path = $this->configuration->get('path');
-  	if (!$path) {//default is to redirect to the transaction itself
-    	$uri = $this->transaction->uri();
-    	$path = $uri['path'];
+  	if ($path = $this->configuration->get('path')) {
+  	  $form_state['redirect'] = $path;
   	}
-    $form_state['redirect'] = $path;//might not be a good idea for undone transactions
+  	else {//default is to redirect to the transaction itself
+    	$form_state['redirect_route'] = array(
+  	    'route_name' => 'mcapi.transaction_view',
+  	    'route_parameters' => array('mcapi_transaction' => $this->transaction->id())
+    	);//might not be a good idea for undone transactions
+  	}
   	return $result;
   }
 }

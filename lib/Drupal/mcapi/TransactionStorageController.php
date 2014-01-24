@@ -303,13 +303,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $query->condition('i.wallet_id', $wallet->id())
       ->groupby('currcode');
     $this->parseConditions($query, $conditions);
-    $result = $query->execute()->fetchAllAssoc('currcode', \PDO::FETCH_ASSOC);
-    if (array_filter($result)) {
-      return $result;
+    return $query->execute()->fetchAllAssoc('currcode', \PDO::FETCH_ASSOC);
     }
-    //if there are no transactions for this user
-    return array('trades' => 0, 'gross_in' => 0, 'gross_out' => 0, 'balance' => 0, 'volume' => 0, 'partners' => 0);
-  }
 
   //experimental
   public function balances ($currcode, $wids = array(), array $conditions) {

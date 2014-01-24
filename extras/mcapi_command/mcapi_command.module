@@ -54,7 +54,7 @@ function mcapi_command_execute($message, $sender_account, $really = FALSE) {
     $props['payee'] = mcapi_command_get_uid($props['payee']);
   }
 
-  $transaction = entity_create('transaction', $props);
+  $transaction = entity_create('mcapi_transaction', $props);
   transaction_cluster_create($transaction, $really);//thrown errors will be caught elsewhere
   //if we are still here, that means the transaction was created
   return $transaction;

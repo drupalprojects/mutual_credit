@@ -43,30 +43,34 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
   public function access(Route $route, Request $request, AccountInterface $account) {
     $config = \Drupal::config('mcapi.wallets');
     module_load_include('inc', 'mcapi');
-    $entity = $request->attributes->get('_entity');
-    $type = $entity->entityType();
+    //mdump($request->attributes->all());
+    $owner = wallet_get_params($request);
+    $type = $owner->entityType();
+
     //quick check first for this common scenario
     if ($type == 'user' && $config->get('entity_types.user') == 1 && $config->get('autoadd')) {
       return AccessInterface::DENY;
     }
 
-    if ($account->hasPermission('create own wallets') && $type == 'user' && $account->id() == $entity->id) {
+    if ($account->hasPermission('create own wallets') && $type == 'user' && $account->id() == $owner->id) {
       $access = TRUE;
     }
     elseif ($account->hasPermission('manage own exchanges')) {
       $my_exchanges = user_exchanges($account);
       if ($type == 'exchange') {
-        $exchanges = array($entity);
+        $exchanges = array($owner);
       }
       else {
         //what exchanges is this entity in?
         $fieldname = get_exchange_entity_fieldnames($type);
         //isn't there a proper way to get a nice array of entities out of an entityreference field?
-        foreach ($entity->get($fieldname)->getValue() as $item) $exchanges[] = $item['entity'];
+        foreach ($owner->get($fieldname)->getValue() as $item) {
+          $exchanges[] = entity_load('mcapi_exchange', $item['target_id']);
+        }
       }
       foreach($exchanges as $exchange) {
         foreach ($my_exchanges as $my_exchange) {
-          if ($exchange->id() == $my_exchange->id()) {
+          if ($owner->id() == $my_exchange->id()) {
             //the current user is in the same exchange as the current entity
             $access = TRUE;
             continue 2;
@@ -78,7 +82,7 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
       //finally we check the number of wallets already owned against the max for this entity type
       $already = db_select('mcapi_wallets');
       $already->addExpression('COUNT(wid)');
-      $already->condition('pid', $entity->id())->condition('entity_type', $type)
+      $already->condition('pid', $owner->id())->condition('entity_type', $type)
       ->execute()->fetchField();
       if ($already < $config->get('types.'.$type)) return AccessInterface::ALLOW;
     }

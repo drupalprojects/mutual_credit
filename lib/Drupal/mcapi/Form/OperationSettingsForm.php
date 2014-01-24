@@ -45,7 +45,9 @@ class OperationSettingsForm extends ConfigFormBase {
     $config->save();
 
     parent::submitForm($form, $form_state);
-    $form_state['redirect'] = 'admin/accounting/workflow/operations';
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin.transactions.operations'
+    );
   }
 }
 

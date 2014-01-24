@@ -44,7 +44,9 @@ class FirstPartyEditFormEnableConfirm extends EntityConfirmFormBase {
     $this->entity->status = 1;
     $this->entity->save();
     drupal_set_message(t('"%label" has been enabled.', array('%label' => $this->entity->label())));
-    $form_state['redirect'] = 'admin/accounting/workflow/forms';
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.admin_1stparty_editform_list'
+    );
   }
 
 }

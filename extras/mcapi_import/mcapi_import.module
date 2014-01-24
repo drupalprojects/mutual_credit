@@ -329,7 +329,7 @@ function _mcapi_import_generate_transactions($rows, &$settings) {
       $props[$field_name] = $row[$field_name];
     }
 
-    $transactions[] = entity_create('transaction', $props);
+    $transactions[] = entity_create('mcapi_transaction', $props);
   }
   return $transactions;
 }
@@ -427,12 +427,12 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     $in['payer'] = $currency->reservoir;
     $in['payee'] = $uid;
     $in['description'] = t("Gross income");
-    $transactions[] =  entity_create('transaction', $in);
+    $transactions[] =  entity_create('mcapi_transaction', $in);
     $out['quantity'] = $gross_income;
     $out['payer'] = $uid;
     $out['payee'] = $currency->reservoir;
     $out['description'] = t("Gross expenditure");
-    $transactions[] =  entity_create('transaction', $out);
+    $transactions[] =  entity_create('mcapi_transaction', $out);
   }
   elseif ($balance != 0) {
     //if there is only balance, we do one exchange,
@@ -449,7 +449,7 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     }
     $values['worth'] = $balance;
     $values['description'] = t("Carried Forward");
-    $cluster[] = entity_create('transaction', $values);
+    $cluster[] = entity_create('mcapi_transaction', $values);
   }
   if ($cluster) {
     try{
