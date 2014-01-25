@@ -36,18 +36,44 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
   /**
    * {@inheritdoc}
    */
+  //args might look like this:
+  /*
+  array(
+      [0] => 1
+      [1] => Array
+      (
+          [serial] => 1
+          [type] => entity:mcapi_transaction
+          [converter] => paramconverter.mcapi_transaction_serial
+      )
+
+      [2] => mcapi_transaction
+      [3] => Array
+      (
+          [mcapi_transaction] => 1
+          [_route] => mcapi.transaction_view
+          [_route_object] => (object)
+          [_controller] => controller.page:content
+          [_content] => \Drupal\Core\Entity\Controller\EntityViewController::view
+          [view_mode] => certificate
+          [_raw_variables] => (object)
+      )
+
+      [4] => (object)
+  )*/
   public function convert($value, $definition, $name, array $defaults, Request $request) {
-    $entity_type = substr($definition['type'], strlen('entity:'));
     if ($value == '0') {
-      $entity = \Drupal::service('user.tempstore')->get('TransactionForm')->get('entity');
-      if ($entity) {
-        $entity->created = REQUEST_TIME;//because a value is expected
-        return $entity;
-      }
+      //transaction hasn't been created yet,
+      //we're loading the create operation, and the transaction from the tempstore
+
       throw new McapiTransactionException('serial', 'Failed to retrieve mcapi_transaction entity from step 1 tempstore');
+
+      return \Drupal::service('user.tempstore')->get('TransactionForm')->get('entity');
     }
-    if ($storage = $this->entityManager->getStorageController($entity_type)) {
-      $entity = $storage->loadByProperties(array('serial' => $value, 'parent' => '0'));
+    else {
+      $entity = $this->entityManager
+        ->getStorageController('mcapi_transaction')
+        ->loadByProperties(array('serial' => $value, 'parent' => '0'));
       if (!empty($entity)) {
         return reset($entity);
       }

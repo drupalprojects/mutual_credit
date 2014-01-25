@@ -125,7 +125,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $this);
 
     $this->exceptions = array();
-    //check that each trader has permission to use all the currencies
+    //check that the payer and payee are not the same wallet
+    if ($this->get('payer')->value == $this->get('payee')->value) {
+      $transaction->exceptions[] = new McapiTransactionWorthException(
+          '',
+          t('A wallet cannot pay itself.')
+      );
+    }
+    //determine which exchange to use, based on the payer, the payee and the currency(s).
+    $exchange = $this->set('exchange', derive_exchange());
+
     foreach (array($this->payer->entity, $this->payee->entity) as $account) {
       foreach ($this->worths[0] as $currcode => $worth) {
         if (!$worth->currency->access('membership', $account)) {
@@ -136,9 +145,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         }
       }
     }
-    if ($this->payer->value == $this->payee->value) {
-      $transaction->exceptions[] = t('A wallet cannot pay itself.');
-    }
+
     foreach ($this->worths[0] as $worth) {
       if ($worth->value <= 0) {
         $this->exceptions[] = new McapiTransactionWorthException(
@@ -358,6 +365,36 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setSettings(array('target_type' => 'mcapi_transaction'));
 
     return $properties;
+  }
+
+  /**
+   * From some transaction parameters
+   * @return integer
+   *   the exchange entity
+   */
+  private function derive_exchange() {
+    $exchanges = array_intersect_key(
+      referenced_exchanges($this->payer->owner()),
+      referenced_exchanges($this->payee->owner())
+    );
+    if (empty($exchanges)) {
+      throw new TransactionException ('', t('The payer and payee do not have an exchange in common.'));
+    }
+    $transaction_worths = $this->get('worths')->getvalue();
+    //check that
+
+    $allowed_currcodes = exchange_currencies($exchange);
+    foreach ($exchanges as $id => $exchange) {
+      $access = TRUE;
+      $allowed_currencies = exchange_currencies(array($exchange));
+      $leftover = array_diff_key($transaction_worths, $allowed_currencies);
+      if ($leftover) continue; //try another exchange
+      return $exchange;//the first exchange which has all the needed currencies available
+    }
+    throw new TransactionException ('', t(
+      "Currency '!name' is not available to both wallets",
+      array('!name' => entity_load('mcapi_currency', key($leftover))->label())
+    ));
   }
 
 }

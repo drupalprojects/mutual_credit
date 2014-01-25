@@ -19,7 +19,6 @@ class TransactionController extends ControllerBase {
 
   /**
    * @param Drupal\mcapi\TransactionInterface $transaction
-   *  The Transaction that we are displaying.
    *
    * @return array
    *  An array suitable for drupal_render().
@@ -31,8 +30,7 @@ class TransactionController extends ControllerBase {
   /**
    * The _title_callback for the transaction.view route.
    *
-   * @param NodeInterface $transaction
-   *   The current transaction.
+   * @param TransactionInterface $transaction
    *
    * @return string
    *   The page title.
@@ -44,8 +42,7 @@ class TransactionController extends ControllerBase {
   /**
    * Builds a transaction page render array.
    *
-   * @param \Drupal\mcapi\TransactionInterface $transaction
-   *   The transaction we are displaying.
+   * @param TransactionInterface $transaction
    *
    * @return array
    *   An array suitable for drupal_render().

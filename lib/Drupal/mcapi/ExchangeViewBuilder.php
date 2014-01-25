@@ -24,7 +24,6 @@ class ExchangeViewBuilder extends EntityViewBuilder {
       	'#markup' => 'This page needs to show some basic info about the exchange. Its members, its currencies, its admin and managers. Number of transactions ever and transaction volume per currency.'
       );
     }
-    drupal_set_title($exchange->label());
   }
 
 }

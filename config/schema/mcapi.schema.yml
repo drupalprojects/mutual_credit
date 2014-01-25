@@ -50,9 +50,9 @@ mcapi.wallets:
     wallet_access_personalised:
       type: boolean
       label: 'Personalised wallet access'
-    wallet_autoadd:
-      type: boolean
-      label: 'Auto-add wallets'
+    wallet_autoadd_name:
+      type: string
+      label: 'Name of auto-added wallet'
     wallet_one:
       type: boolean
       label: 'One wallet'

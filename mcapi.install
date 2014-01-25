@@ -33,7 +33,7 @@ function mcapi_install() {
   ))->save();
 
   //default exchange
-  /*
+
   entity_create('mcapi_exchange', array(
     'name' => t(
       '!sitename default exchange',
@@ -41,7 +41,7 @@ function mcapi_install() {
     ),
     'uid' => '1',
   ))->save();
-  */
+
    entity_create('mcapi_transaction', array(
   	'payer' => 1,
   	'payee' => 2,

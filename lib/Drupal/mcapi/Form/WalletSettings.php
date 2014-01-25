@@ -60,11 +60,12 @@ class WalletSettings extends ConfigFormBase {
       '#default_value' => !$config->get('unique_names'),
       '#weight' => 2
     );
-    $form['autoadd'] = array(
-      '#title' => t('Auto-add wallets'),
-      '#description' => t('Create a new wallet automatically for each new user'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('autoadd'),
+    $form['autoadd_name'] = array(
+      '#title' => t('Name of auto-added wallet'),
+      '#description' => t('Name of new wallet created automatically for each new user, or leave blank not to create.'),
+      '#type' => 'textfield',
+      '#placeholder' => t('My wallet'),
+      '#default_value' => !$config->get('autoadd_name'),
       '#weight' => 3
     );
 
@@ -134,7 +135,7 @@ class WalletSettings extends ConfigFormBase {
       ->set('payees', $form_state['values']['viewers'])
       ->set('unique_names', $form_state['values']['unique_names'])
       ->set('access_personalised', $form_state['values']['access_personalised'])
-      ->set('autoadd', $form_state['values']['autoadd'])
+      ->set('autoadd_name', $form_state['values']['autoadd_name'])
       ->save();
 
     parent::submitForm($form, $form_state);

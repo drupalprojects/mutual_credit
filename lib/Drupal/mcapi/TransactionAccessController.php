@@ -47,29 +47,7 @@ class TransactionAccessController extends EntityAccessController {
     if ($op == 'view') {
       return $transaction->payer->entity->access('view', $account) || $transaction->payee->entity->access('view', $account);
     }
-    else {
-      //die("$op is going through transaction access controller");
-
-    }
 
     return transaction_operations($op)->opAccess($transaction, $account);
   }
-  /*
-  protected function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
-    if ($admin_permission = $this->entityInfo->getAdminPermission()) {
-      return $account->hasPermission($admin_permission);
-    }
-    else {
-      return NULL;
-    }
-  }
-
-  public function access(EntityInterface $entity, $operation, $langcode = Language::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
-
-  }
-
-  public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = array()) {
-
-  }
-  */
 }

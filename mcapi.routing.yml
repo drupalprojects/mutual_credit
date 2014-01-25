@@ -82,7 +82,7 @@ mcapi.admin.transactions:
     _permission: 'access administration pages'
 
 mcapi.admin.transactions.operations:
-  path: '/admin/accounting/transactions/operations'
+  path: '/admin/accounting/transactions/workflow'
   defaults:
     _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
     _title: 'Configure workflow'
@@ -108,7 +108,8 @@ mcapi.transaction_admin:
 mcapi.transaction_view:
   path: '/transaction/{mcapi_transaction}'
   defaults:
-    _entity_view: 'transaction.certificate'
+    _entity_view: 'mcapi_transaction.certificate'
+    _title_callback: 'Drupal\mcapi\Controller\TransactionController::pageTitle'
   requirements:
     _entity_access: 'mcapi_transaction.view'
   options:
@@ -146,10 +147,7 @@ mcapi.exchange.view:
   path: '/exchange/{mcapi_exchange}'
   defaults:
     _entity_view: 'mcapi_exchange.full'
-#these, copied from node and user entities, don't work, saying Controller "Drupal\mcapi\Controller\ExchangeController::page()" requires that you provide a value for the "$exchange" argument (because there is no default value or because there is a non optional argument after this one. 
-#so instead I'm doing drupal_set_title. this new menu system is utterly obtuse
-# _content: '\Drupal\mcapi\Controller\ExchangeController::page'
-#_title_callback: '\Drupal\mcapi\Controller\ExchangeController::pageTitle'
+    _title_callback: '\Drupal\mcapi\Controller\ExchangeController::pageTitle'
   requirements:
     _entity_access: 'mcapi_exchange.view'
 

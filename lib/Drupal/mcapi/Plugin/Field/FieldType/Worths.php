@@ -143,5 +143,8 @@ class Worths extends ConfigFieldItemBase {
     return $output[0];
   }
 
+  public function getValue() {
+    return $this->values;
+  }
 }
 

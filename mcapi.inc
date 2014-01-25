@@ -140,6 +140,7 @@ function mcapi_view_wallet($wallet) {
 
 /**
  * theme preprocessor for 'wallet'
+ * @todo this theme callback is cached - when to clear the cache and what cache is it?
  * @param array $vars
  */
 function template_preprocess_wallet(&$vars) {
@@ -157,7 +158,7 @@ function template_preprocess_wallet(&$vars) {
     $vars['currdata'][$currcode]['partners'] = $data['partners'];
     $vars['currdata'][$currcode]['trades'] = $data['trades'];
   }
-  $vars['url'] = 'wallet/'.$vars['wallet']->id();
+  $vars['url'] = url('wallet/'.$vars['wallet']->id());
   $vars['name'] = $vars['wallet']->get('name')->value;
 }
 
@@ -739,7 +740,7 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
  */
 //@todo cache this
 function get_exchange_entity_fieldnames($type) {
-  $types = array('mcapi_exchange');
+  $types = array('mcapi_exchange' => array());
   foreach (Field::FieldInfo()->getInstances() as $entity_type => $data1) {
     if (in_array('entity_type', array('mcapi_exchange', 'transaction', 'wallet'))) continue;
     foreach ($data1 as $bundle => $fields) {

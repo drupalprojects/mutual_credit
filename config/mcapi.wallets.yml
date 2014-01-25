@@ -1,8 +1,9 @@
-wallet_access:
-  wallet_default_viewers: role:authenticated
-  wallet_default_payees: role:authenticated
-  wallet_default_payers: role:authenticated
-wallet_unique_names: false
-wallet_access_personalised: true
-wallet_autoadd: true
-wallet_one: false
+entity_types:
+  user: 1
+  exchange: 10
+viewers: role:authenticated
+payees: role:authenticated
+payers: role:authenticated
+unique_names: false
+access_personalised: true
+autoadd_name: My wallet

@@ -445,7 +445,7 @@ function mcapi_currency_load($id) {
  */
 function mcapi_currency_list($all = TRUE) {
   if (!$all) {
-    $currencies = exchange_currencies(user_exchanges());
+    $currencies = exchange_currencies(referenced_exchanges(\Drupal::currentUser(), 'field_exchanges'));
   }
   if (empty($currencies)) {
     $currencies = entity_load_multiple('mcapi_currency');
@@ -458,23 +458,24 @@ function mcapi_currency_list($all = TRUE) {
 }
 
 /**
- * Helper function to get the 'current' exchange(s) from a user entity
- * That means the exchange the current user is in, if any.
- * This function might be unnecessary if it reduces down to one line
+ * return a list of exchanges from an entity_reference field in an entity
  *
- * @param AccountInterface $account
+ * @param EntityInterface $entity
+ * @param string $fieldname
+ *   the name of the field containing the exchanges, if known
  * @return array
- *   the exchange entities of which the current user is a member.
+ *   of entities, keyed by exchange id
  */
-function user_exchanges(AccountInterface $account = NULL) {
-  $exchanges = array();
-  if (!isset($account)) {
-    $account = \Drupal::currentUser();//this doesn't have the fields loaded
+function referenced_exchanges(EntityInterface $entity, $fieldname = NULL) {
+  if (!$fieldname) {
+    module_load_include('inc', 'mcapi');
+    get_exchange_entity_fieldnames($entity->type());
   }
-  //have to be sure that the fields are properly loaded
-  $account = user_load($account->id());
-  //now...
-  foreach($account->get('field_exchanges')->getValue() as $item) {
+  if(is_a($entity, 'Drupal\Core\Session\UserSession')) {
+    $entity = entity_load('user', $entity->id());
+  }
+  $exchanges = array();
+  foreach($entity->get($fieldname)->getValue() as $item) {
     //@todo one day we'll be able to just pull this array out rather than loading the entities ourselves
     $exchanges[$item['target_id']] =  entity_load('mcapi_exchange', $item['target_id']);
   }
@@ -513,9 +514,9 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL, Accoun
   else {
     $account = user_load($account->id());
   }
-  $exchanges = user_exchanges($account);
+  $exchanges = referenced_exchanges($account, 'field_exchanges');
   if ($account2) {
-    $exchanges = array_intersect($exchanges, user_exchanges($account2));
+    $exchanges = array_intersect($exchanges, referenced_exchanges($account2, 'field_exchanges'));
   }
   return exchange_currencies($exchanges);
 }
@@ -960,18 +961,17 @@ function mcapi_mcapi_transaction_children($transaction) {
 /**
  * field api default value callback
  * when editing or creating a new user, populate the exchanges field
- * with the currentuser's values
+ * with the currentuser's values.
+ * N.B. in FieldItemList::setValue
  * @return
  *   an array of uuids whose keys I haven't understood yet
  */
 function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
   $output = array();
-  foreach (user_exchanges() as $exchange) {
-    $output['target_uuid'] = $exchange->get('uuid')->value;
+  foreach (referenced_exchanges(\Drupal::currentUser(), 'field_exchanges') as $exchange) {
+    $output[]['target_uuid'] = $exchange->get('uuid')->value;
   }
-  //@todo this only works for one exchange, but what if there is more than one?
-  //see config/field.instance.user.user.field_exchanges.yml
-  //I think its broken in alpha7core because it only remembers 1
+  drupal_set_message('a bug in alpha8 prevents more than one default entityreference field widget value from showing.');
   return $output;
 }
 

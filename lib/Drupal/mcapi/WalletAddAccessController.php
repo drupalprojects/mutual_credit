@@ -48,16 +48,18 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
     $type = $owner->entityType();
 
     //quick check first for this common scenario
-    if ($type == 'user' && $config->get('entity_types.user') == 1 && $config->get('autoadd')) {
+    if ($type == 'user' && $config->get('entity_types.user') == 1 && $config->get('autoadd_name')) {
       return AccessInterface::DENY;
     }
-
+    //for users to add their own wallets
     if ($account->hasPermission('create own wallets') && $type == 'user' && $account->id() == $owner->id) {
       $access = TRUE;
     }
+    //for exchange managers to add wallets to any entity of that exchange
     elseif ($account->hasPermission('manage own exchanges')) {
-      $my_exchanges = user_exchanges($account);
-      if ($type == 'exchange') {
+      //account might need reloading here
+      $my_exchanges = referenced_exchanges($account, 'field_exchanges');
+      if ($type == 'mcapi_exchange') {
         $exchanges = array($owner);
       }
       else {
@@ -80,11 +82,11 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
     }
     if ($access) {
       //finally we check the number of wallets already owned against the max for this entity type
-      $already = db_select('mcapi_wallets');
-      $already->addExpression('COUNT(wid)');
-      $already->condition('pid', $owner->id())->condition('entity_type', $type)
-      ->execute()->fetchField();
-      if ($already < $config->get('types.'.$type)) return AccessInterface::ALLOW;
+      $query = db_select('mcapi_wallets');
+      $query->addExpression('COUNT(wid)');
+      $query->condition('pid', $owner->id())->condition('entity_type', $type);
+      $already = $query->execute()->fetchField();
+      if ($already < $config->get('entity_types.'.$type)) return AccessInterface::ALLOW;
     }
     return  AccessInterface::DENY;
   }

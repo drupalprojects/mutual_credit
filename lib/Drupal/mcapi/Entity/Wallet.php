@@ -92,16 +92,18 @@ class Wallet extends ContentEntityBase {
    */
   public function label($langcode = NULL) {
     //to prevent recursion we don't call getOwner.
-    //if there is only one wallet per parent, we use the parent's name instead of the wallet
     if ($this->owner) {
-      if (\Drupal::config('mcapi.misc')->get('one_wallet')) {
+      //if there is only one wallet per parent, we use the parent's name instead of the wallet
+      if (max(\Drupal::config('mcapi.wallets')->get('entity_types')) < 2) {
         return $this->owner->label();
       }
       else {
-        return t('!parent: !wallet_name', array('!parent' => $this->getOwner()->label(), '!wallet_name' => $this->get('name')));
+        //Conjunction of parent entity label and the wallet name
+        return t('!parent: !wallet_name', array('!parent' => $this->getOwner()->label(), '!wallet_name' => $this->get('name')->value));
       }
     }
     else {
+      //if the wallet has no owner (the system is the owner), return just the wallet's name
       return $this->get('name')->value;
     }
   }

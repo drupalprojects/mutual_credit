@@ -27,9 +27,15 @@ class TransactionForm extends ContentEntityFormController {
     $form = parent::form($form, $form_state);
     $transaction = $this->entity;
 
-    $exchange = user_exchanges();
+    $exchanges = referenced_exchanges(\Drupal::currentUser(), 'field_exchanges');
+    $currencies = exchange_currencies($exchanges);
+    //the actual exchange that the transaction takes place in
+    //will be determined automatically, once we know who is involved and what currencies.
+    //in most use cases only one will be possible or likely
+    echo 'This transaction will be in exchange '.implode(' or ', array_keys($exchanges)).'.';
+    echo '<br />And in currencies '.implode(' or ', array_keys($currencies)).'.';
 
-    unset($form['langcode']); // No language so we remove it.
+    unset($form['langcode']); //No language so we remove it.
 
     $form['description'] = array(
       '#type' => 'textfield',
@@ -42,7 +48,7 @@ class TransactionForm extends ContentEntityFormController {
       '#required' => TRUE,
       '#default_value' => $transaction->worths[0],
       //by default, which this is, all the currencies of the currency exchanges should be included
-      '#currencies' => exchange_currencies(user_exchanges())
+      '#currencies' => $currencies
     );
 
     //@todo GORDON what's the best way to list the wallets of the members of the current exchange
@@ -114,6 +120,7 @@ class TransactionForm extends ContentEntityFormController {
     $form_state['values']['state'] = $types[$type]->start_state;
 
     $transaction = $this->buildEntity($form, $form_state);
+    $transaction->set('created', REQUEST_TIME);
 
 
     if (array_key_exists('mcapi_validated', $form_state))return;
@@ -125,6 +132,7 @@ class TransactionForm extends ContentEntityFormController {
       \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, $e->getMessage());
     }
     //TODO sort out entity reference field iteration
+    //except that children is not an entity reference field, is it?
     /*
     $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
     foreach ($transaction->children as $child) {
