@@ -66,5 +66,29 @@ class ExchangeForm extends ContentEntityFormController {
       'route_parameters' => array('mcapi_exchange' => $entity->id())
     );
   }
+
+  /**
+   * Overrides Drupal\Core\Entity\EntityFormController::delete().
+   * Borrowed from NodeFormController
+   */
+  public function delete(array $form, array &$form_state) {
+    $destination = array();
+    $query = \Drupal::request()->query;
+    if ($query->has('destination')) {
+      $destination = drupal_get_destination();
+      $query->remove('destination');
+    }
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.exchange.delete_confirm',
+      'route_parameters' => array(
+        'mcapi_exchange' => $this->entity->id(),
+      ),
+      'options' => array(
+         'query' => $destination,
+      ),
+    );
+  }
+
+
 }
 

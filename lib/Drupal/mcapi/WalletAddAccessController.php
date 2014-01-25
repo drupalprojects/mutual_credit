@@ -43,8 +43,8 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
   public function access(Route $route, Request $request, AccountInterface $account) {
     $config = \Drupal::config('mcapi.wallets');
     module_load_include('inc', 'mcapi');
-    //mdump($request->attributes->all());
-    $owner = wallet_get_params($request);
+    //this fetches the entity we are viewing - the would-be owner of the wallet we would add
+    $owner = mcapi_request_get_entity($request);
     $type = $owner->entityType();
 
     //quick check first for this common scenario
@@ -80,15 +80,31 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
         }
       }
     }
+    //now check if the max wallets for this bundle has been reached
     if ($access) {
-      //finally we check the number of wallets already owned against the max for this entity type
-      $query = db_select('mcapi_wallets');
-      $query->addExpression('COUNT(wid)');
-      $query->condition('pid', $owner->id())->condition('entity_type', $type);
-      $already = $query->execute()->fetchField();
-      if ($already < $config->get('entity_types.'.$type)) return AccessInterface::ALLOW;
+      if (\Drupal::entityManager('mcapi_wallets')->getAccessController()->unused($type, $owner)) {
+        return AccessInterface::ALLOW;
+      }
     }
     return  AccessInterface::DENY;
   }
 
+}
+
+/**
+ *
+ * @param string $entity_type
+ * @param EntityInterface $owner
+ * @return integer
+ *   The number of wallets that can be added
+ *
+ */
+function unused_wallets($entity_type, EntityInterface $owner) {
+  //finally we check the number of wallets already owned against the max for this entity type
+  $query = db_select('mcapi_wallets');
+  $query->addExpression('COUNT(wid)');
+  $query->condition('pid', $owner->id())->condition('entity_type', $entity_type);
+  $already = $query->execute()->fetchField();
+  $config_key = $entity_type.':'.$owner->bundle();
+  return $config->get('entity_types.'.$config_key) - $already;
 }

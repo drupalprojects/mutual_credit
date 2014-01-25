@@ -45,11 +45,16 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 class Wallet extends ContentEntityBase {
 
   /**
-   * I have a feeling that wallets should only belong to content entities.
+   * Wallets can only belong to content entities.
    */
 
   private $owner;
-
+  /**
+   * Whenever a wallet is loaded, prepare the owner entity
+   *
+   * @param EntityStorageControllerInterface $storage_controller
+   * @param array $entities
+   */
   public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
     foreach ($entities as $wallet) {
       $parent_type = $wallet->get('entity_type')->value;

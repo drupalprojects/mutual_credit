@@ -165,7 +165,7 @@ mcapi.exchange.edit:
   requirements:
     _entity_access: 'mcapi_exchange.edit'
 
-mcapi.exchange.delete:
+mcapi.exchange.delete_confirm:
   path: '/exchange/{mcapi_exchange}/delete'
   defaults:
     _entity_form: 'mcapi_exchange.delete'

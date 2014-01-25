@@ -739,8 +739,8 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
  *   a list of entity types
  */
 //@todo cache this
-function get_exchange_entity_fieldnames($type) {
-  $types = array('mcapi_exchange' => array());
+function get_exchange_entity_fieldnames($type = '') {
+  $types = array('mcapi_exchange' => NULL);
   foreach (Field::FieldInfo()->getInstances() as $entity_type => $data1) {
     if (in_array('entity_type', array('mcapi_exchange', 'transaction', 'wallet'))) continue;
     foreach ($data1 as $bundle => $fields) {

@@ -66,14 +66,15 @@ class WalletLocalAction  implements ContainerDerivativeInterface {
   /**
    * {@inheritdoc}
    */
-  //this appears to run every page
   public function getDerivativeDefinitions(array $base_plugin_definition) {
     $this->derivatives = array();
-    foreach (\Drupal::config('mcapi.wallets')->get('types') as $entity_type) {
+    foreach (\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_bundle => $max) {
+      list($entity_type, $bundle) = explode(':', $entity_bundle);
       $entity_info = entity_get_info($entity_type);
-      $this->derivatives["mcapi.wallet.add.".$entity_type.'.action'] = array(
-        'id' => "mcapi.wallet.add.".$entity_type.'.action',
-        'route_name' => "mcapi.wallet.add.$entity_type",//taken from the routesubscriber
+      //assumes that bundle names are unique
+      $this->derivatives["mcapi.wallet.add.".$bundle.'.action'] = array(
+        'id' => "mcapi.wallet.add.".$bundle.'.action',
+        'route_name' => "mcapi.wallet.add.$bundle",//taken from the routesubscriber
         'title' => t('Add Wallet'),
         'appears_on' => array($entity_info['links']['canonical']),
       );

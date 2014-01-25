@@ -1,6 +1,6 @@
 entity_types:
-  user: 1
-  exchange: 10
+  'user:user': 1
+  'mcapi_exchange:mcapi_exchange': 10
 viewers: role:authenticated
 payees: role:authenticated
 payers: role:authenticated

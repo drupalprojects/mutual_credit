@@ -19,7 +19,7 @@ class WalletAddForm extends Formbase {
 
   public function buildForm(array $form, array &$form_state) {
     //its a bloody hassle to get the params out when it is all protected variables and no methods to access them
-    $owner = wallet_get_params(\Drupal::request());
+    $owner = mcapi_request_get_entity(\Drupal::request());
 
     drupal_set_title(t("New wallet for '!title'", array('!title' => $owner->label())));
 
@@ -99,8 +99,8 @@ class WalletAddForm extends Formbase {
     $pid = $wallet->get('pid')->value;
     $info = entity_load($wallet->get('entity_type')->value, $pid)->entityInfo();
     $form_state['redirect_route'] = array(
-        'route_name' => $info['links']['canonical'],
-        'route_parameters' => array($info['id'] => $pid)
+      'route_name' => $info['links']['canonical'],
+      'route_parameters' => array($info['id'] => $pid)
     );
   }
 

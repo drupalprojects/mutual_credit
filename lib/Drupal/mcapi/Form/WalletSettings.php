@@ -33,7 +33,6 @@ class WalletSettings extends ConfigFormBase {
     $config = $this->configFactory->get('mcapi.wallets');
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
     //OR to an exchange entity itself
-    //@todo this could work for bundles or different user types or roles - many richer ways to do it
     $form['entity_types'] = array(
     	'#title' => t('Entity types'),
     	'#description' => t('Put the maximum number of wallets that entities of each type can hold.') .' '.
@@ -43,19 +42,25 @@ class WalletSettings extends ConfigFormBase {
     );
     module_load_include('inc', 'mcapi');
     foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
-      $definition = entity_get_info($entity_type);
-      $form['entity_types'][$definition['id']] = array(
-      	'#title' => $definition['label'],//don't know if this is translated or translatable!
-        '#type' => 'number',
-        '#min' => 0,
-        '#default_value' => $config->get('entity_types.'.$definition['id']),
-        '#size' => 2,
-        '#max_length' => 2
-      );
+      $entity_definition = entity_get_info($entity_type);
+      foreach (entity_get_bundles($entity_type) as $bundle => $bundle_info) {
+        $title = $entity_definition['label'] == $bundle_info['label'] ?
+          $entity_definition['label'] : //don't know if this is translated or translatable!
+          $entity_definition['label'] .':'. $bundle_info['label'];
+
+        $form['entity_types']["$entity_type:$bundle"] = array(
+        	'#title' => $title,
+          '#type' => 'number',
+          '#min' => 0,
+          '#default_value' => $config->get("entity_types.$entity_type:$bundle"),
+          '#size' => 2,
+          '#max_length' => 2
+        );
+      }
     }
     $form['unique_names'] = array(
       '#title' => t('Unique wallet names'),
-      '#description' => t('Every wallet name on the system must be unique.'),
+      '#description' => t('New user wallets must be added manually and every wallet must have a unique name.'),
       '#type' => 'checkbox',
       '#default_value' => !$config->get('unique_names'),
       '#weight' => 2
@@ -66,7 +71,12 @@ class WalletSettings extends ConfigFormBase {
       '#type' => 'textfield',
       '#placeholder' => t('My wallet'),
       '#default_value' => !$config->get('autoadd_name'),
-      '#weight' => 3
+      '#weight' => 3,
+      '#states' => array(
+    	  'visible' => array(
+      	  ':input[name=unique_names]' => array('checked' => FALSE)
+        )
+      )
     );
 
     foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {

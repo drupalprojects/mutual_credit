@@ -269,7 +269,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
  */
 function mcapi_user_view($account, $mode, $language) {
   module_load_include('inc', 'mcapi');
-  $account->content['mcapi_summary'] = mcapi_view_wallet_summaries($account);
+  $account->content['wallets_summary'] = mcapi_view_wallet_summaries($account);
 }
 
 /**
@@ -388,21 +388,26 @@ function mcapi_mail($key, &$message, $params) {
 
 /*
  * implements hook_field_extra_fields().
+ * Add wallets to entities and transaction fields to the transaction
  */
 function mcapi_field_extra_fields() {
-  $extra = array(
-    'user' => array(
-      'user' => array(
+  //go through all the bundles which are configured to hold wallets
+  foreach (\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_bundle => $max) {
+    //if (!$max) continue; //don't show wallets on bundles with maximum of 0 wallets
+    list($entity_type, $bundle) = explode(':', $entity_bundle);
+    $extra[$entity_type] = array(
+      $bundle => array(
         'display' => array(
-          'mcapi_summary' => array(
+          'wallets_summary' => array(
             'label' => t('Trading summary'),
             'description' => t("Statistics from the user's wallets"),
             'weight' => 5,
           ),
         )
       )
-    )
-  );
+    );
+  }
+  debug($extra);
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
   $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
   foreach ($fields as $weight => $fieldname) {
@@ -945,18 +950,6 @@ function mcapi_config_translation_type_info_alter(&$definitions) {
   echo 'mcapi_config_translation_type_info_alter'; print_r($definitions);die();
 }
 
-/**
- * implements hook_mcapi_transaction_children().
- * temp just to test children
- * Altering the $transaction will have no effect
- * @param TransactionInterface $transaction
- * @return array
- */
-function mcapi_mcapi_transaction_children($transaction) {
-  $values = array('payer' => 1,'payee' => 2, 'worths' => array('credunit' => 1));
-  $transaction = entity_create('mcapi_transaction', $values);
-  return array($transaction);
-}
 
 /**
  * field api default value callback
@@ -980,14 +973,17 @@ function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
  * give a new wallet to every user
  */
 function mcapi_user_insert($account) {
-  entity_create('mcapi_wallet', array(
-    'name' => 'default',
-    'entity_type' => 'user',
-    'pid' => $account->id(),
-    'access_view' => 'dunno',
-    'access_payee' => 'dunno',
-    'access_payer' => 'dunno',
-  ))->save();
+  $config = \Drupal::config('mcapi.wallets');
+  if (!$config->get('unique_names') && $name = $config->get('autoadd_name')) {
+    entity_create('mcapi_wallet', array(
+      'name' => $name,
+      'entity_type' => 'user',
+      'pid' => $account->id(),
+      'access_view' => 'dunno',
+      'access_payee' => 'dunno',
+      'access_payer' => 'dunno',
+    ))->save();
+  }
 }
 
 /**
@@ -997,9 +993,27 @@ function mcapi_user_insert($account) {
  * @param Request $request
  * @return EntityInterface object
  */
-function wallet_get_params($request) {
+function mcapi_request_get_entity($request) {
   foreach ($request->attributes->get('_route_params') as $key => $value) {
     if (substr($key, 0, 1) == '_')continue;
     return $value;
   }
+}
+/**
+ *
+ * implements hook_mcapi_transaction_pre_validate().
+ * Add transactions to the children property
+ * DEV PURPOSES ONLY
+ *
+ * @param TransactionInterface $transaction
+ */
+function mcapi_mcapi_transaction_pre_validate(TransactionInterface $transaction) {
+  drupal_set_message('Time to test hook_mcapi_transaction_pre_validate');
+  $extra = entity_create(array(
+    'payer' => $transaction->get('payer')->value,
+    'payee' => 1,//wallet number 1
+    'worths' => array('credunit' => 600),
+    'type' => 'auto'
+  ));
+  $transaction->children[] = $extra;
 }
