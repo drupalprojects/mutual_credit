@@ -104,12 +104,33 @@ class CurrencyFormController extends EntityFormController {
       '#weight' => 1,
     );
 
+    //get all users in the exchanges that this currency is in.
+    //which exchanges reference this currency?
+    $exchange_ids = db_select('mcapi_exchange__field_currencies', 'c')
+      ->fields('c', array('entity_id'))
+      ->condition('field_currencies_target_id', $this->entity->id())
+      ->execute()->fetchCol();
+    //now get all the members of those exchanges who have manage permission
+    //would be great if we could somehow just feed into a entity_reference widget here
+    $roles = user_roles(TRUE, 'manage own exchanges');
+    $options = array(1 => user_load(1)->label());
+    if ($roles) {
+      $query = db_select('users', 'u')->fields('u', array('uid'));
+      $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+      $query->join('user__field_exchanges', 'e', 'e.entity_id = u.uid');
+      $uids = $query->condition('ur.rid', array_keys($roles))
+        ->execute()->fetchCol();
+      //wow this is getting long-winded
+      foreach (entity_load_multiple('user', $uids) as $account) {
+        $options[$account->id()] = $account->label();
+      }
+    }
+
     $form['uid'] = array(
     	'#title' => t('Comptroller'),
       '#description' => t('The one user who can edit this currency'),
-      '#type' => 'entity_chooser',
-      '#plugin' => 'permission',
-      '#args' => array(),//TODO restrict this to users in the exchanges that the currency is in.
+      '#type' => 'select',
+      '#options' => $options,
       '#default_value' => $currency->get('uid')->value
     );
 
@@ -420,7 +441,10 @@ class CurrencyFormController extends EntityFormController {
     return $form;
   }
 
-  protected function actions() {
+  /**
+   * {@inherit}
+   */
+  protected function actions(array $form, array &$form_state) {
     $actions = parent::actions();
     $storage = \Drupal::EntityManager()->getStorageController('mcapi_currency');
     if (!$storage->deletable($this->entity)) {

@@ -61,23 +61,19 @@ class MassPay extends FormBase {
 
       $one = array(
         '#description' => t('A username, email, or user ID'),
-        '#type' => 'entity_chooser',
-        '#plugin' => 'wallet',
-        '#args' => array(),
+        '#type' => 'mcapi_wallets',
         '#multiple' => FALSE,
       );
       $few = array(
-        '#type' => 'entity_chooser',
-        '#plugin' => 'wallet',
-        '#args' => array(),
+        '#type' => 'mcapi_wallets',
         '#multiple' => TRUE,
       );
       $many = array(
-        '#type' => 'entity_chooser_selection',
-        '#plugin' => 'wallet',
+        '#type' => 'mcapi_wallets',
         '#args' => array()
       );
-
+drupal_set_message("This form isn't working yet. there is currently no way to multiselect wallets");
+/*
       if ($this->payers == 'one') {
         $form['payers'] = array(
           '#title' => t('Payer'),
@@ -98,7 +94,7 @@ class MassPay extends FormBase {
           '#weight' => 2
         )+ ${$this->payers};
       }
-
+*/
       //all these fields like on a normal transaction form
       $form['description'] = array(
         '#title' => t('Description'),

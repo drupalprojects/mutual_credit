@@ -103,24 +103,18 @@ class WalletSettings extends ConfigFormBase {
 /*    $form['wallet_access']['viewers'] = array(
       '#title' => t('Visible to'),
       '#description' => t('Who can see the balance and history of this wallet?'),
-      '#type' => 'entity_chooser_selection',
-      '#args' => array('user'),
       '#default_value' => $config->get('viewers'),
       '#weight' => 1,
     );
     $form['wallet_access']['payees'] = array(
       '#title' => t('Default payees'),
       '#description' => t('Who can create transactions out of this wallet?'),
-      '#type' => 'entity_chooser_selection',
-      '#args' => array('user'),
       '#default_value' => $config->get('payees'),
       '#weight' => 2,
     );
     $form['wallet_access']['payers'] = array(
       '#title' => t('Default payers'),
       '#description' => t('Who can create transactions into this wallet?'),
-      '#type' => 'entity_chooser_selection',
-      '#args' => array('user'),
       '#default_value' => $config->get('payers'),
       '#weight' => 3,
     );

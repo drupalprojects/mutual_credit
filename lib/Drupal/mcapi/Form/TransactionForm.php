@@ -76,14 +76,6 @@ class TransactionForm extends ContentEntityFormController {
       '#default_value' => $transaction->get('payee')->value,
       '#weight' => 9,
     );
-    $form['creator'] = array(
-      '#title' => t('Recorded by'),
-      '#type' => 'entity_chooser',
-    	'#plugin' => 'user',
-    	'#args' => array(),
-      '#default_value' => $transaction->get('creator')->value,
-      '#weight' => 12,
-    );
     //TODO how is this field validated? Is it just a positive integer?
     $form['created'] = array(
       '#title' => t('Recorded on'),
@@ -130,6 +122,7 @@ class TransactionForm extends ContentEntityFormController {
 
     $transaction = $this->buildEntity($form, $form_state);
     $transaction->set('created', REQUEST_TIME);
+    $transaction->set('creator', \Drupal::currentUser->id());
 
 
     if (array_key_exists('mcapi_validated', $form_state))return;

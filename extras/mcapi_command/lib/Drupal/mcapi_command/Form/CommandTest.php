@@ -26,10 +26,9 @@ class CommandTest extends ConfigFormBase {
 	  );
 	  $form['command']['sender'] = array(
 	    '#title' => t('Sender'),
-	    '#description' => t('Any user of currency @currname', array('@currname' => variable_get('mcapi_commands_currcode', 'credunit'))),
-	    '#type' => 'entity_chooser',
-	    '#plugin' => 'role',//because I haven't built a per-currency callback yet
-	    '#args' => array('authenticated'),
+	    '#description' => t('Ensure this user is able to use the currency'),
+	    '#type' => 'textfield',
+	    '#autocomplete_route_name' => 'user.autocomplete',
 	    '#required' => FALSE,
 	    '#default_value' => \Drupal::currentUser()->id()
 	  );

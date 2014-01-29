@@ -27,6 +27,7 @@ mcapi.admin_currency_edit:
   path: '/admin/accounting/currencies/{mcapi_currency}'
   defaults:
     _entity_form: 'mcapi_currency.edit'
+    _title: 'Editing currency'
   requirements:
     _permission: 'configure mcapi'
 
