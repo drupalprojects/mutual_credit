@@ -3,6 +3,7 @@
 use Drupal\Core\Language\Language;
 use Drupal\Core\Template\Attribute;
 use Drupal\field\Field;
+use Drupal\mcapi\TransactionInterface;
 
 /*
  * implements hook_help().
@@ -35,93 +36,62 @@ function _workflow_help() {
   return $renderable;
 }
 
-/*
- * action callback for hook_transaction_children
- * //TODO This goes with RULES
- */
-function mcapi_dependent_transaction_action($transaction, $settings) {
-  if (!in_array($transaction->type, $settings['conditions']['transaction_types'])) return;
-  $child = array(
-    'type' => 'dependent',
-    'state' => $transaction->state
-  );
 
-  foreach ($settings['presets']['worth_items']['worths'] as $delta => $item) {
-    //if this currency was in the prime transaction, pass it to the calculator
-    $calculated = _mcapi_calc($item['quantity'], @$transaction->worth[LANGUAGE_NONE][$delta]['quantity']);
-    if (!$calculated) continue;
-    $rounded = mcapi_round($calculated, $item['currcode'], $settings['presets']['worth_items']['round'] == 'up');
-    //don't save zero value auto transactions, even if the currency settings permit
-    if ($rounded == 0) continue;
-    //if a quant was returned (and there really should be, from at least one currency), add it to the $dependent
-    $child['worth'][$delta] = array(
-      'quantity' => $rounded,
-      'currcode' => $item['currcode']
+function _mcapi_field_extra_fields() {
+  //go through all the bundles which are configured to hold wallets
+  foreach (\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_bundle => $max) {
+    //if (!$max) continue; //don't show wallets on bundles with maximum of 0 wallets
+    list($entity_type, $bundle) = explode(':', $entity_bundle);
+    $extra[$entity_type] = array(
+      $bundle => array(
+        'display' => array(
+          'wallets_summary' => array(
+            'label' => t('Trading summary'),
+            'description' => t("Statistics from the user's wallets"),
+            'weight' => 5,
+          ),
+        )
+      )
     );
   }
-  if (!isset($child['worth'])) return;
-
-  $otheruser = &$settings['presets']['participants']['otheruser'];
-  switch ($settings['presets']['participants']['mapping']) {
-    case 'payerpays':
-      $child['payee'] = $otheruser;
-      $child['payer'] = $transaction->payer;
-      break;
-    case 'payeepays':
-      $child['payee'] = $otheruser;
-      $child['payer'] = $transaction->payee;
-      break;
-    case 'payspayer':
-      $child['payee'] = $transaction->payer;
-      $child['payer'] = $otheruser;
-      break;
-    case 'payspayee':
-      $child['payee'] = $transaction->payee;
-      $child['payer'] = $otheruser;
-      break;
+  $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
+  $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
+  foreach ($fields as $weight => $fieldname) {
+    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
+      'label' => $props[$fieldname]['label'],
+      'description' => $props[$fieldname]['description'],
+      'weight' => $weight,
+    );
   }
-  $child['description'] = @$settings['presets']['description'];
-  return entity_create('mcapi_transaction', $child);
-}
-
-
-/*
- * calculate a transaction quantity based on a provided formala and input quantity
- * $formula can be
- * number => returns the number as a quantity, regardless of $base_quant
- * percentage of the $base_quant
- * formula using [q] for base_quant
- */
-function _mcapi_calc($formula, $base_value) {
-  if (is_numeric($formula)) return $formula;
-  $proportion = str_replace('%', '', $formula);
-  if (empty($base_value)) $base_quant = 0;
-  if (is_numeric($proportion)) {
-    return $base_value * $proportion/100;
+  $form = array('payer', 'payee', 'worths', 'description');
+  foreach ($form as $weight => $fieldname) {
+    $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
+      'label' => $props[$fieldname]['label'],
+      'description' => $props[$fieldname]['description'],
+      'weight' => $weight,
+    );
   }
-  //$formula = str_replace('/', '//', $formula);
-  $equation = str_replace('[q]', $base_value, $formula) .';';
-  $val = eval('return '. $equation);
-  if (is_numeric($val)) return $val;
-  drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
-}
-
-function user_wallets($account) {
-  return entity_load_multiple_by_properties(
-    'mcapi_wallet',
-    array('entity_type' => 'user', 'pid' => $account->id())
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['uid'] = array(
+    'label' => t('Manager of the exchange'),
+    'description' => t('The one user responsible for administration'),
+    'weight' => 1,
   );
+  return $extra;
 }
 
-function mcapi_view_wallet_summaries($account) {
-  $renderable = array(
-  	'#type' => 'item',
-    '#title' => t('Wallets'),
-  );
-  foreach (user_wallets($account) as $wallet) {
-    $renderable[] = mcapi_view_wallet($wallet);
+
+function mcapi_view_wallet_summaries($wids) {
+  if ($wallets = entity_load_multiple('mcapi_wallet', $wids)) {
+    $renderable = array(
+    	'#type' => 'item',
+      '#title' => t('Wallets'),
+    );
+    foreach ($wallets as $wallet) {
+      $renderable[] = mcapi_view_wallet($wallet);
+    }
+    return $renderable;
   }
-  return $renderable;
+  return array();
 }
 
 /*
@@ -345,10 +315,10 @@ function template_preprocess_mcapi_transaction(&$vars) {
 	element_set_attributes($element, array('class', 'id'));
 	$vars['attributes']['class'] = array(
 		'transaction',
-		'transaction-'. $transaction->serial->value,
+		'transaction-'. $transaction->get('serial')->value,
 		$element['#view_mode'] == 'certificate' ? 'certificate' : 'customtwig',
 		$transaction->type->value,
-		'state-'.$transaction->state->value
+		'state-'.$transaction->get('state')->value
 	);
 }
 
@@ -363,19 +333,22 @@ function template_preprocess_certificate(&$vars) {
 
 	mcapi_transaction_process_vars($vars, $transaction, $element);
 
+	/* @todo need to work out how to get entities out of an entity_reference field
 	$vars['children'] = array();
-	if (isset($transaction->children) && !empty($transaction->children)) {
-	  //TODO we don't have the syntax to iterate through the children;
+	if (isset($transaction->children)) {
+	  foreach ($transaction->get('children') as $child) {....?
 	  //how to we call transaction view now?
-	  //$vars['children'] = transaction_view(
-	    //$transaction->children,
-	    //str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
-	  //);
+	  $vars['children'] = transaction_view(
+	    $transaction->children,
+	    str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
+	  );
 	}
+	*/
 	//choose the transaction theme template based on the first currency of the transaction
 	//not sure if this is worth the processing power at the moment
-	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->type->value;
+	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
 }
+
 /**
  * theme implementation for callback twig
  * @param array $vars
@@ -437,7 +410,6 @@ function mcapi_transaction_process_vars(&$vars, TransactionInterface $transactio
 function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction, $showlinks = TRUE) {
   $vars = array();
   $xid = $transaction->id();
-
   //Here we have to get all the fieldAPI fields rendered and in $vars
   $entities = array($xid => $transaction);
   $build = \Drupal::entityManager()
@@ -485,183 +457,6 @@ function mcapi_render_twig(string $template, array $tokens) {
   return $twig->render($tokens);
 }
 
-/*
- * Settings form callback for action mcapi_transaction_entity_uid
-*/
-function mcapi_transaction_entity_uid_form($context) {
-  $context += array(
-    'mapping' => 'uidpays',
-    'transaction_types' => array(),
-    'otheruser' => 1,
-    'worth_items' => array('worths' => array(), 'round' => 'down')
-  );
-  $form['direction'] = array(
-    '#title' => t('Direction'),
-    '#type' => 'radios',
-    '#options' => array(
-      'uidpays' => t('User pays reservoir account'),
-      'paysuid' => t('Reservoir account pays user')
-    ),
-    '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
-  );
-
-  $currencies = currencies_load();
-  $defaults = array();
-  foreach (@$context['worth_items']['worths'] as $item) {
-    $defaults[$item['currcode']] = $item['quantity'];
-  }
-  $form['worth_items'] = array(
-    '#title' => t('Worth'),
-    '#type' => 'fieldset',
-    '#name' => 'worth_items',//this helps in the fieldset validation
-    '#description' => t('What is the fixed value of this transaction?') .' '. t("This value will be overwritten if the passed entity has the 'worth' field"),
-    '#tree' => TRUE,
-    'worths' => array(
-      //'#title' => t('Worths'),
-      '#type' => 'worths',
-      '#default_value' => $defaults,
-      '#preset' => TRUE,//ensures that all currencies are rendered
-    )
-  );
-  $form['round'] = array(
-    '#title' => t('Rounding'),
-    '#description' => t('Used if this transaction depends on another transaction'),
-    '#type' => 'radios',
-    '#options' => array('up' => t('Up'), 'down' => t('Down')),
-    '#default_value' => isset($context['worth_items']['round']) ? $context['worth_items']['round'] : 'down',
-    '#weight' => 1
-  );
-  $form['description'] = array(
-    '#title' => t('Transaction description text'),
-    '#type' => 'textfield',
-    '#default_value' => @$context['worth_items']['description'],
-  );
-  return $form;
-}
-/*
- * configuration action submit callback
- * almost certainly deprecated
-*/
-function mcapi_transaction_entity_uid_submit($form, $form_state) {
-  form_state_values_clean($form_state);
-  return $form_state['values'];
-}
-
-
-/*
- * Settings form callback for mcapi_pay_someone_action
- */
-function mcapi_dependent_transaction_action_form($context) {
-  drupal_set_message('This tool is a bit crude but it will have to do until someone can figure out how to do it with rules');
-  drupal_set_message('This action ONLY goes on one the hook, and adds a dependent transaction to the cluster. with the same serial number');
-  drupal_set_message('It will be easy to make this action more sophisticated');
-  //set the defaults
-  $context += array(
-    'conditions' => array(
-      'transaction_types' => array('default')
-    ),
-    'presets' => array(
-      'participants' => array(
-        'mapping' => 'payerpays',
-        'otheruser' => 1
-      ),
-      'worth_items' => array(
-        'worths' => array(),
-        'round' => 'down'
-      )
-    ),
-  );
-  $form['#tree'] = TRUE;
-  $form['conditions'] = array(
-    '#title' => t('Conditions'),
-    '#description' => t('A dependent transaction will only be created when the main transaction meets these conditions'),
-    '#type' => 'fieldset',
-    '#weight' => -1,
-    'transaction_types' => _transaction_type_selector(@$context['conditions']['transaction_types'], TRUE)
-    //more could be added, including stuff unconnected to the transaction, like whether there is an r in the month
-  );
-
-  $form['presets'] = array(
-    '#title' => t('Presets'),
-    '#description' => t('Specify the properties of the dependent transaction') .' '.t("It will have the type 'dependent'."),
-    '#type' => 'fieldset',
-    '#weight' => 0,
-    'participants' => array(
-      '#title' => t('Participants'),
-      '#description' => t('Determine who will pay whom'),
-      '#type' => 'fieldset',
-      'mapping' => array(
-        '#title' => t('Mapping'),
-        '#description' => t('On a node trigger, the payer and payee will both evaluate to the node author'),
-        '#type' => 'radios',
-        '#options' => array(
-          'payerpays' => t('Payer pays other'),
-          'payeepays' => t('Payee pays other'),
-          'payspayer' => t('Other pays payer'),
-          'payspayee' => t('Other pays payee'),
-        ),
-        '#default_value' => isset($context['presets']['participants']['mapping']) ? $context['presets']['participants']['mapping'] : array('payerpays'),
-      ),
-      'otheruser' => array(
-        '#title' => t('Other account'),
-        '#type' => 'entity_reference',
-        //@todo
-        '#default_value' => isset($context['presets']['participants']['otheruser']) ? $context['presets']['participants']['otheruser'] : 1,
-        '#weight' => 1,
-      )
-    ),
-    'worth_items' => array(
-      '#title' => t('Worth'),
-      '#description' => t('The value of the transction may depend on the value of the main transaction.'),
-      '#type' => 'fieldset',
-      '#name' => 'worth_items',//this helps in the fieldset validation
-      '#tree' => TRUE,
-      'worths' => array(
-        //'#title' => t('Worths'),
-        '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity.'),
-        '#type' => 'worths',
-        '#default_value' => isset($context['presets']['worth_items']['worths']) ? _worthitems_to_worths($context['presets']['worth_items']['worths']) : array(),
-        '#calc' => TRUE,//allow a formula
-        '#preset' => TRUE, //show all currencies
-        //it affects what happens to the zero and null values
-        '#after_build' => array('mcapi_configure_worth_accept_formula')
-      ),
-      'round' => array(
-        '#title' => t('Rounding'),
-        '#type' => 'radios',
-        '#options' => array('up' => t('Up'), 'down' => t('Down')),
-        '#default_value' => isset($context['presets']['worth_items']['round']) ? $context['presets']['worth_items']['round'] : 'down',
-        '#weight' => 1
-      )
-    )
-  );
-  $form['presets']['description'] = array(
-    '#title' => t('Transaction description text'),
-    '#type' => 'textfield',
-    '#default_value' => @$context['presets']['description'],
-  );
-
-  return $form;
-}
-
-function mcapi_configure_worth_accept_formula($element) {
-  foreach (element_children($element) as $delta) {
-    //this field will accept a formula, not just a number
-    $element[$delta]['main_quant']['#size'] = 10;
-    $element[$delta]['main_quant']['#maxlength'] = 10;
-    $element[$delta]['main_quant']['#element_validate'] = array('validate_mcapi_configure_worth_formula');
-  }
-  return $element;
-}
-
-/*
- * configuration action submit callback
-*/
-function mcapi_dependent_transaction_action_submit($form, $form_state) {
-  form_state_values_clean($form_state);
-  return $form_state['values'];
-}
-
 /**
  * helper function to generate the workflow display on admin/accounting/workflow
  *
@@ -696,16 +491,6 @@ function mcapi_workflow_help() {
   return $renderable;
 }
 
-/*
- * element validate callback
- * ensures that the formula for calculating a quantity works
- */
-function validate_mcapi_configure_worth_formula(&$element, $form_state) {
-  if (empty($element['#value'])) return;
-  if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
-    form_error($element, t('Invalid formula'));
-  }
-}
 
 /*
  * helper function to get the token names for helptext token service and twig
@@ -719,6 +504,7 @@ function validate_mcapi_configure_worth_formula(&$element, $form_state) {
 function mcapi_transaction_list_tokens($include_virtual = FALSE) {
   $definitions = array_keys(\Drupal::entityManager()->getFieldDefinitions('mcapi_transaction'));
   $fieldmap = Field::FieldInfo()->getFieldMap();
+  unset($fieldmap['uuid'], $fieldmap['xid'], $fieldmap['parent'], $fieldmap['type'], $fieldmap['children']);
   if (array_key_exists('mcapi_transaction', $fieldmap)) {
     $transaction_fields = array_keys($fieldmap['mcapi_transaction']);
   }
@@ -736,7 +522,7 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
 /**
  * get a list of all the entity types which have an entity reference field pointing to mcapi_exchange
  * @return array
- *   a list of entity types
+ *   a list of fieldnames, keyed by entity_type
  */
 //@todo cache this
 function get_exchange_entity_fieldnames($type = '') {
@@ -754,6 +540,7 @@ function get_exchange_entity_fieldnames($type = '') {
       }
     }
   }
-  if ($type) return $types[$type];
+//  if ($type == 'mcapi_wallet')mtrace();
+  if ($type) return @$types[$type];
   return $types;
 }

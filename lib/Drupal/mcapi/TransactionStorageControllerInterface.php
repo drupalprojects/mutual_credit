@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\ExtensibleEntityStorageControllerInterface.
+ * Contains \Drupal\mcapi\TransactionStorageControllerInterface.
  */
 
 namespace Drupal\mcapi;

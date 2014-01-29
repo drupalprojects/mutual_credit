@@ -121,8 +121,8 @@ function mcapi_help($path, $arg) {
       return t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.");
     case 'admin/accounting/currencies':
       return implode(' ', array(
-        t('Most community projects now have only one currency.'),
-        t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.')
+        t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
+        t('Retired currencies can no longer be used, but transactions are still visible.'),
       ));
       //@todo when hook_menu is removed take this out of help and put it on the page somehow
     case 'admin/accounting/transactions':
@@ -264,12 +264,15 @@ function mcapi_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * implements hook_user_view().
- * add a wallet summary view to the user profile
+ * implements hook_entity_view().
+ * add a wallet summary view to the entity
  */
-function mcapi_user_view($account, $mode, $language) {
-  module_load_include('inc', 'mcapi');
-  $account->content['wallets_summary'] = mcapi_view_wallet_summaries($account);
+function mcapi_entity_view($entity, $mode, $language) {
+  if ($wids = \Drupal::Entitymanager()->getStorageController('mcapi_wallet')->getWalletIds($entity)) {
+    //@todo make this work on all entities
+    module_load_include('inc', 'mcapi');
+    $entity->content['wallets_summary'] = mcapi_view_wallet_summaries($wids);
+  }
 }
 
 /**
@@ -355,6 +358,10 @@ function mcapi_mcapi_info_drupal_permissions() {
       'title' => t('Manage exchanges'),
       'description' => t('Accounting permissions in all exchanges of which the user is a member')
     ),
+    'exchange helper' => array(
+      'title' => t('Helper within an exchange'),
+      'description' => t("Enhanced access within one's own exchanges")
+    ),
     'configure mcapi' => array(
       'title' => t('Configure community accounting'),
       'description' => t('Design and setup the accounting system')
@@ -362,7 +369,7 @@ function mcapi_mcapi_info_drupal_permissions() {
     'manage mcapi' => array(
       'title' => t('Manage community accounting'),
       'description' => t('Suitable for accountants')
-    ),
+    )
   );
 }
 
@@ -391,41 +398,8 @@ function mcapi_mail($key, &$message, $params) {
  * Add wallets to entities and transaction fields to the transaction
  */
 function mcapi_field_extra_fields() {
-  //go through all the bundles which are configured to hold wallets
-  foreach (\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_bundle => $max) {
-    //if (!$max) continue; //don't show wallets on bundles with maximum of 0 wallets
-    list($entity_type, $bundle) = explode(':', $entity_bundle);
-    $extra[$entity_type] = array(
-      $bundle => array(
-        'display' => array(
-          'wallets_summary' => array(
-            'label' => t('Trading summary'),
-            'description' => t("Statistics from the user's wallets"),
-            'weight' => 5,
-          ),
-        )
-      )
-    );
-  }
-  debug($extra);
-  $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
-  $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
-  foreach ($fields as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
-      'label' => $props[$fieldname]['label'],
-      'description' => $props[$fieldname]['description'],
-      'weight' => $weight,
-    );
-  }
-  $form = array('payer', 'payee', 'worths', 'description');
-  foreach ($form as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
-      'label' => $props[$fieldname]['label'],
-      'description' => $props[$fieldname]['description'],
-      'weight' => $weight,
-    );
-  }
-  return $extra;
+  module_load_include('inc', 'mcapi');
+  return _mcapi_field_extra_fields();
 }
 
 /**
@@ -450,14 +424,14 @@ function mcapi_currency_load($id) {
  */
 function mcapi_currency_list($all = TRUE) {
   if (!$all) {
-    $currencies = exchange_currencies(referenced_exchanges(\Drupal::currentUser(), 'field_exchanges'));
+    $currencies = exchange_currencies(referenced_exchanges());
   }
   if (empty($currencies)) {
     $currencies = entity_load_multiple('mcapi_currency');
   }
   $list = array();
   foreach ($currencies as $id => $currency) {
-    $list[$id] = $currency->label();
+    if ($currency->status)$list[$id] = $currency->label();
   }
   return $list;
 }
@@ -466,23 +440,31 @@ function mcapi_currency_list($all = TRUE) {
  * return a list of exchanges from an entity_reference field in an entity
  *
  * @param EntityInterface $entity
+ *
  * @param string $fieldname
  *   the name of the field containing the exchanges, if known
  * @return array
  *   of entities, keyed by exchange id
  */
-function referenced_exchanges(EntityInterface $entity, $fieldname = NULL) {
-  if (!$fieldname) {
-    module_load_include('inc', 'mcapi');
-    get_exchange_entity_fieldnames($entity->type());
+function referenced_exchanges(ContentEntityInterface $entity = NULL) {
+  if (is_null($entity)) {
+    $entity = user_load(\Drupal::currentUser()->id());
   }
-  if(is_a($entity, 'Drupal\Core\Session\UserSession')) {
-    $entity = entity_load('user', $entity->id());
+  //@todo remove this
+  if(is_a($entity, 'Drupal\Core\Session\UserSession'))mtrace();
+  if ($entity->entityType() == 'user') {
+    $fieldname = 'field_exchanges';
+  }
+  else {
+    module_load_include('inc', 'mcapi');
+    $fieldname = get_exchange_entity_fieldnames($entity->entityType());
   }
   $exchanges = array();
-  foreach($entity->get($fieldname)->getValue() as $item) {
-    //@todo one day we'll be able to just pull this array out rather than loading the entities ourselves
-    $exchanges[$item['target_id']] =  entity_load('mcapi_exchange', $item['target_id']);
+  if ($fieldname) {
+    foreach($entity->get($fieldname)->getValue() as $item) {
+      //@todo one day we'll be able to just pull this array out rather than loading the entities ourselves
+      $exchanges[$item['target_id']] =  entity_load('mcapi_exchange', $item['target_id']);
+    }
   }
   return $exchanges;
 }
@@ -513,15 +495,9 @@ function exchange_currencies(array $exchanges) {
  *   of currencies
  */
 function mcapi_get_available_currencies(AccountInterface $account = NULL, AccountInterface $account2 = NULL) {
-  if (!isset($account)) {
-    $account = \Drupal::currentUser();
-  }
-  else {
-    $account = user_load($account->id());
-  }
-  $exchanges = referenced_exchanges($account, 'field_exchanges');
+  $exchanges = referenced_exchanges($account);
   if ($account2) {
-    $exchanges = array_intersect($exchanges, referenced_exchanges($account2, 'field_exchanges'));
+    $exchanges = array_intersect($exchanges, referenced_exchanges($account2));
   }
   return exchange_currencies($exchanges);
 }
@@ -530,12 +506,11 @@ function mcapi_get_available_currencies(AccountInterface $account = NULL, Accoun
  * implements hook_mcapi_transaction_operated().
  * This invokes rules, if installed, but can be used by any module
  *
- * @param object $plugin
  * @param TransactionInterface $transaction
  * @param array $context
- *   consists of id, the operation plugin id; config, the operation plugin configuration; old_state: the state of the transaction before the operation
+ *   consists of op_plugin_id; config, the operation plugin configuration; old_state: the state of the transaction before the operation
  */
-function mcapi_mcapi_transaction_operated($plugin, $transaction, $context) {
+function mcapi_mcapi_transaction_operated($transaction, $context) {
   //TODO invoke rules hook
   //make a note that the proper way to trigger mails is via each operations' settings
 }
@@ -602,9 +577,24 @@ function mcapi_element_info() {
       '#theme_wrappers' => array('form_element'),
       '#multiple' => TRUE,
       '#options' => array(),//array of currcodes and currency names
+    ),
+    //local means 'in the same exchanges as the current user'
+    'local_wallets' => array(
+      //much of this is borrowed from 'textfield'
+      '#input' => TRUE,
+      '#size' => 60,
+      '#maxlength' => 128,
+      '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
+      '#process' => array('form_process_autocomplete', 'ajax_process_form'),
+      '#pre_render' => array('form_pre_render_textfield'),
+      '#theme' => 'input__textfield',
+      '#theme_wrappers' => array('form_element'),
+      '#value_callback' => 'form_type_local_wallets_value',
+      '#element_validate' => 'local_wallet_validate_id',
     )
   );
 }
+
 
 /**
  * process callback for worths form element
@@ -658,40 +648,26 @@ function mcapi_worths_element_process($element, &$form_state) {
 
 /**
  * element_validate callback for worths field
+ * just check that at least one value was submitted
  * @param array $element
  * @param array $form_state
  */
 function mcapi_worths_element_validate($element, &$form_state) {
   if ($element['#required']) {
     $value_entered = FALSE;
-
-    $currencies = $element['#currcodes'];
-    if (!isset($element['#mixed_mode']) || !$element['#mixed_mode']) {
-      $currencies = array(reset($currencies));
-    }
-
-    foreach ($currencies as $currcode) {
-      $curr_element = $element[$currcode];
-      $newcode = $curr_element['currcode']['#default_value'];
-if (!$newcode) drupal_set_message('problem validating worths element', 'error');
-      $currency = entity_load('mcapi_currency', $newcode);
-      if ($curr_element[$currency->widget]['#value'] || $curr_element[$currency->widget]['#value'] === 0) {
+    foreach (element_children($element) as $key) {
+      $currency = entity_load('mcapi_currency', $element[$key]['currcode']['#value']);
+      if ($element[$key][$currency->widget]['#value'] || $element[$key][$currency->widget]['#value'] === 0) {
         $value_entered = TRUE;
         break;
       }
     }
 
     if (!$value_entered) {
-      $elements['#required_but_empty'] = TRUE;
-      if (isset($elements['#required_error'])) {
-        \Drupal::formBuilder()->setError($element, $elements['#required_error']);
-      }
-      elseif (isset($elements['#title'])) {
-        \Drupal::formBuilder()->setError($element, t('!name field is required.', array('!name' => $elements['#title'])));
-      }
-      else {
-        \Drupal::formBuilder()->setError($element);
-      }
+      $message = array_key_exists('#title', $element) ?
+        t('!name field is required.', array('!name' => $elements['#title'])) :
+        NULL;
+      \Drupal::formBuilder()->setError($element, $form_state, $message);
     }
   }
 }
@@ -888,6 +864,65 @@ function mcapi_process_currcodes($element) {
   return $element;
 }
 
+
+function form_type_local_wallets_value(&$element, $input, &$form_state) {
+  if (empty($input)) return;
+  //get the number from between the brackets
+  preg_match('/.*\(([0-9]+)\)/', $input, $matches);
+  return intval(array_pop($matches));
+}
+function local_wallet_validate_id(&$element, &$form_state) {
+  $wallet = entity_load('mcapi_wallet', $id);
+  foreach (referenced_exchanges() as $exchange) {
+    if ($exchange->member($wallet)) return TRUE;
+  }
+}
+
+/**
+ * hide the exchange entity_reference selector if there is only one exchange
+ * @todo convert these to hook_form_BASE_FORM_alter when the user entity settles down
+ * @todo better still if there was a way of altering field instances we could ensure the cardinality was not greater than the number of entities to choose from, here and for mcapi_exchange->field_currencies
+ */
+function mcapi_form_user_register_form_alter(&$form, $form_state) {
+  _mcapi_conceal_user_exchanges($form, $form_state);
+}
+function mcapi_form_user_form_alter(&$form, $form_state) {
+  _mcapi_conceal_user_exchanges($form, $form_state);
+}
+function _mcapi_conceal_user_exchanges(&$form, $form_state) {
+  if (count(referenced_exchanges()) < 2) {
+    //setting #access to FALSE means the value is not submitted
+    //$form['field_exchanges']['#access'] = FALSE;
+    $form['field_exchanges']['#attributes']['style'] = 'display:none;';
+  }
+}
+
+/**
+ * implements hook_entity_delete()
+ * ensure any wallets belonging to the entity are moved to their parent's exchange
+ */
+function mcapi_entity_delete(EntityInterface $entity) {
+  if ($exchanges = referenced_exchanges($entity)) {
+    $exchange = current($exchanges);//if the parent was in more than one exchange, this will effectively pick a random one.
+    $wids = \Drupal::Entitymanager()->getStorageController('mcapi_wallet')->getWalletIds($entity);
+    foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+      //change the wallet names and change the parent to this entity's exchange
+      $new_name = t(
+        "Formerly !name's wallet: !label",
+        array('!name' => $entity->label(), '!label' => $wallet->label())
+      );
+      $wallet->set('name', $new_name);
+      $wallet->set('entity_type', 'mcapi_exchange');
+      $wallet->set('pid', $exchange->id());
+      $wallet->save();
+    }
+    drupal_set_message(t(
+      "!name's wallets have been orphaned to exchange !exchange",
+      array('!name' => $entity->label(), '!exchange' => l($exchange->label(), $exchange->uri()))
+    ));
+  }
+}
+
 /**
  * implements alter hook_form_user_cancel_confirm_form().
  * if they have already traded, users can only be blocked, not deleted
@@ -917,11 +952,6 @@ function mcapi_toolbar() {
   }
 }
 
-
-function mcapi_entity_query_alter() {
-  drupal_set_message('hook_entity_query_alter');
-}
-
 /*
  * implements hook_config_translation_info().
  * Introduce dynamic translation tabs for translation of configuration.
@@ -933,12 +963,12 @@ function mcapi_config_translation_info(&$info) {
   //I think rather than use this hook, we should use mcapi.config_translation.info
   //Here we might need to add states, types, operations
 }
-
 function mcapi_config_translation_info_alter(&$info) {
   echo 'mcapi_config_translation_info_alter';
   //print_r($info);
   //die();
 }
+
 /*
  * implements hook_config_translation_type_info_alter().
  * Associative array of configuration type definitions keyed by schema type names. The elements are themselves array with information about the type.
@@ -953,7 +983,7 @@ function mcapi_config_translation_type_info_alter(&$definitions) {
 
 /**
  * field api default value callback
- * when editing or creating a new user, populate the exchanges field
+ * when creating a new user, populate the exchanges field
  * with the currentuser's values.
  * N.B. in FieldItemList::setValue
  * @return
@@ -961,9 +991,26 @@ function mcapi_config_translation_type_info_alter(&$definitions) {
  */
 function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
   $output = array();
-  foreach (referenced_exchanges(\Drupal::currentUser(), 'field_exchanges') as $exchange) {
+  foreach (referenced_exchanges() as $exchange) {
     $output[]['target_uuid'] = $exchange->get('uuid')->value;
   }
+  drupal_set_message('a bug in alpha8 prevents more than one default entityreference field widget value from showing.');
+  return $output;
+}
+
+/**
+ * field api default value callback
+ * when creating a new exchange, populate the currencies field
+ * with the currentuser's values.
+ * N.B. in FieldItemList::setValue
+ * @return
+ *   an array of uuids whose keys I haven't understood yet
+ */
+function mcapi_default_currency_id($entity, $field_definition, $langcode) {
+  $output = array();
+  //temporary until we work out what the default should be.
+  $output[]['target_uuid'] = entity_load('mcapi_currency', 'credunit')->get('uuid');
+
   drupal_set_message('a bug in alpha8 prevents more than one default entityreference field widget value from showing.');
   return $output;
 }
@@ -1007,13 +1054,49 @@ function mcapi_request_get_entity($request) {
  *
  * @param TransactionInterface $transaction
  */
-function mcapi_mcapi_transaction_pre_validate(TransactionInterface $transaction) {
+function mcapi_mcapi_transaction_children(TransactionInterface $transaction) {
+  //get a wallet belonging to the current exchange
+  $wids = mcapi_get_wallet_ids(entity_load('mcapi_exchange', $transaction->get('exchange')->value));
+  if (!$wids) return;
   drupal_set_message('Time to test hook_mcapi_transaction_pre_validate');
-  $extra = entity_create(array(
+  //but we can't do it until we know how to populate a worths field
+  //get the first 2 wallets
+
+  $extra = entity_create('mcapi_transaction', array(
     'payer' => $transaction->get('payer')->value,
-    'payee' => 1,//wallet number 1
-    'worths' => array('credunit' => 600),
+    'payee' => current($wids),
+    'worths' => array('credunit' => array('currcode' => 'credunit', 'value' => 60)),
     'type' => 'auto'
   ));
-  $transaction->children[] = $extra;
+  return array($extra);
 }
+
+
+function mcapi_get_wallet_ids(EntityInterface $entity) {
+  return \Drupal::EntityManager()->getStorageController('mcapi_wallet')->getWalletIds($entity);
+}
+
+/**
+ * ensure that users without configure mcapi permission cannot
+ * see transactions or users in exchanges to which they do not belong,
+ */
+function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
+  $account = \Drupal::currentUser();
+  if ($account->hasPermission('configure mcapi')) return;
+  //@todo finish this views modification
+  drupal_set_message('views modification to limit transactions by exchange NOT TESTED.');
+  if (array_key_exists('mcapi_transaction', $query->getEntityTableinfo())) {
+    $query->where[] = array(
+    	'conditions' => array(
+    	  0 => array(
+    		  'field' => 'exchange',
+    	    'value' => array_keys(referenced_exchanges()),
+    	    'operator' => 'IN'
+    	  )
+      ),
+      'args' => array(),
+      'type' => 'AND'
+    );
+  }
+}
+

@@ -66,7 +66,8 @@ class Worths extends ConfigFieldItemBase {
     foreach ($this->values as $currcode => $value) {
       if (!isset($this->properties[$currcode]) && ($currency = entity_load('mcapi_currency', $currcode))) {
         $this->get($currcode)->setValue($value, FALSE);
-        unset($this->values[$currcode]);
+        //matslats commented this out because $this->values is needed in $this->getValue
+        //unset($this->values[$currcode]);
       }
     }
     // Notify the parent of any changes.
@@ -144,7 +145,11 @@ class Worths extends ConfigFieldItemBase {
   }
 
   public function getValue() {
-    return $this->values;
+    foreach ($this->values as $value) {
+      $return[$value['currcode']] = $value['value'];
+    }
+    return $return;
   }
+
 }
 

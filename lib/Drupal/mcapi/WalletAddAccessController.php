@@ -57,8 +57,13 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
     }
     //for exchange managers to add wallets to any entity of that exchange
     elseif ($account->hasPermission('manage own exchanges')) {
-      //account might need reloading here
-      $my_exchanges = referenced_exchanges($account, 'field_exchanges');
+      //is there a better way to
+      if(!is_a($account, 'Drupal\user\Entity\User')) {
+        //that means we've been passed a userSession object, which has no field API
+        $user = user_load($account->id());
+      }
+      else ($user == $account);
+      $my_exchanges = referenced_exchanges($user);
       if ($type == 'mcapi_exchange') {
         $exchanges = array($owner);
       }
@@ -81,8 +86,8 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
       }
     }
     //now check if the max wallets for this bundle has been reached
-    if ($access) {
-      if (\Drupal::entityManager('mcapi_wallets')->getAccessController()->unused($type, $owner)) {
+    if (isset($access)) {
+      if (\Drupal::entityManager()->getStorageController('mcapi_wallet')->spare($owner)) {
         return AccessInterface::ALLOW;
       }
     }
@@ -91,20 +96,3 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
 
 }
 
-/**
- *
- * @param string $entity_type
- * @param EntityInterface $owner
- * @return integer
- *   The number of wallets that can be added
- *
- */
-function unused_wallets($entity_type, EntityInterface $owner) {
-  //finally we check the number of wallets already owned against the max for this entity type
-  $query = db_select('mcapi_wallets');
-  $query->addExpression('COUNT(wid)');
-  $query->condition('pid', $owner->id())->condition('entity_type', $entity_type);
-  $already = $query->execute()->fetchField();
-  $config_key = $entity_type.':'.$owner->bundle();
-  return $config->get('entity_types.'.$config_key) - $already;
-}

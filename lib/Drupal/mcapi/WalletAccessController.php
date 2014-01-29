@@ -37,22 +37,5 @@ class WalletAccessController extends EntityAccessController {
       ->check($op, $account);
   }
 
-  /**
-   *
-   * @param string $entity_type
-   * @param EntityInterface $owner
-   * @return integer
-   *   The number of wallets that can be added
-   *
-   */
-  function unused($entity_type, EntityInterface $owner) {
-    //finally we check the number of wallets already owned against the max for this entity type
-    $query = db_select('mcapi_wallets');
-    $query->addExpression('COUNT(wid)');
-    $query->condition('pid', $owner->id())->condition('entity_type', $entity_type);
-    $already = $query->execute()->fetchField();
-    $config_key = $entity_type.':'.$owner->bundle();
-    return $config->get('entity_types.'.$config_key) - $already;
-  }
 
 }

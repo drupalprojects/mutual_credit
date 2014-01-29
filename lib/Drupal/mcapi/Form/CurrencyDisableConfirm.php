@@ -41,7 +41,7 @@ class CurrencyDisableConfirm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submit(array $form, array &$form_state) {
-    $this->entity->status = 0;
+    $this->entity->set('status', TRUE);
     $this->entity->save();
     \Drupal::cache()->deleteTags(array('mcapi.available_currency'));
     drupal_set_message(t('Currency %label has been disabled.', array('%label' => $this->entity->label())));

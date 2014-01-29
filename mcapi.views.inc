@@ -1,4 +1,4 @@
-<?php
+mcapi.views.inc<?php
 
 /**
  * @file
@@ -15,11 +15,11 @@ function mcapi_views_data() {
   $data['mcapi_transactions']['table'] = array(
     'group'  => t('Transaction'),
     'entity type' => 'mcapi_transaction',
+    'access query tag' => 'mcapi_views_access',
     'base' => array(
       'field' => 'xid',
       'title' => t('Transactions'),
-      'help' => t('Records of transactions between users'),
-      'access query tag' => 'transaction_views_access',
+      'help' => t('Records of transactions between wallets'),
       'weight' => 5,
       'defaults' => array(
         //'field' => 'serial',//only base field itself works at the moment
@@ -84,7 +84,7 @@ function mcapi_views_data() {
       'id' => 'user_name',
     ),
     'argument' => array(
-      'id' => 'user_uid',
+      'id' => 'standard',
     ),
     'field' => array(
       'id' => 'wallet',
@@ -105,7 +105,7 @@ function mcapi_views_data() {
       'id' => 'user_name',
     ),
     'argument' => array(
-      'id' => 'user_uid',
+      'id' => 'standard',
     ),
     'field' => array(
       'id' => 'wallet',
@@ -172,6 +172,16 @@ function mcapi_views_data() {
       'id' => 'standard',
     ),
   );
+  $data['mcapi_transactions']['parent'] = array(
+    'title' => t('Parent'),
+    'help' => t('Whether the transactioin has a parent.'),
+    'field' => array(
+      'id' => 'boolean',
+    ),
+    'filter' => array(
+      'id' => 'boolean',
+    ),
+  );
   $data['mcapi_transactions']['created'] = array(
     'title' => t('Created'),
     'help' => t('The second the transaction was created.'),
@@ -185,14 +195,21 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
-  $data['mcapi_transactions']['parent'] = array(
-    'title' => t('Parent'),
-    'help' => t('Whether the transactioin has a parent.'),
-    'field' => array(
-      'id' => 'boolean',
+  $data['mcapi_transactions']['created_year_month'] = array(
+    'title' => t('Created year + month'),
+    'help' => t('Date in the form of YYYYMM.'),
+    'argument' => array(
+      'field' => 'created',
+      'id' => 'date_year_month',
     ),
-    'filter' => array(
-      'id' => 'boolean',
+  );
+
+  $data['mcapi_transactions']['created_year'] = array(
+    'title' => t('Created year'),
+    'help' => t('Date in the form of YYYY.'),
+    'argument' => array(
+      'field' => 'created',
+      'id' => 'date_year',
     ),
   );
 
@@ -248,7 +265,7 @@ function mcapi_views_data() {
   		'field' => 'xid',
   	  'title' => t('Transaction index'),
   		'help' => t('Transaction index table'),
-  		'access query tag' => 'transaction_views_access',
+  		'access query tag' => 'mcapi_views_access',
   		'weight' => 5,
   		'defaults' => array(
     		//'field' => 'serial',//only base field itself works at the moment
@@ -281,7 +298,7 @@ function mcapi_views_data() {
   $data['mcapi_transactions_index']['wallet_id'] = array(
   	'title' => t('Wallet ID'),
   	'help' => t('The wallet we are looking at'),
-    //do we need this relationship???
+    //is there a use-case for this relationship?
   	'relationship' => array(
   		'id' => 'standard',
   		'base' => 'users',
@@ -293,7 +310,7 @@ function mcapi_views_data() {
   		'id' => 'user_name',
   	),
   	'argument' => array(
-  		'id' => 'user_uid',
+      'id' => 'standard',
   	),
   );
   $data['mcapi_transactions_index']['partner_id'] = array(
@@ -310,7 +327,7 @@ function mcapi_views_data() {
   		'id' => 'user_name',
   	),
   	'argument' => array(
-  		'id' => 'user_uid',
+      'id' => 'standard',
   	),
   	'field' => array(
   		'id' => 'wallet',
@@ -355,6 +372,23 @@ function mcapi_views_data() {
     ),
     'filter' => array(
       'id' => 'date',
+    ),
+  );
+  $data['mcapi_transactions_index']['created_year_month'] = array(
+    'title' => t('Created year + month'),
+    'help' => t('Date in the form of YYYYMM.'),
+    'argument' => array(
+      'field' => 'created',
+      'id' => 'date_year_month',
+    ),
+  );
+
+  $data['mcapi_transactions_index']['created_year'] = array(
+    'title' => t('Created year'),
+    'help' => t('Date in the form of YYYY.'),
+    'argument' => array(
+      'field' => 'created',
+      'id' => 'date_year',
     ),
   );
   $data['mcapi_transactions_index']['incoming'] = array(
@@ -430,7 +464,7 @@ function mcapi_views_data() {
   //virtual fields
   $data['mcapi_transactions_index']['balance'] = array(
     'title' => t('Running balance'),
-    'help' => t("The sum of all the user's previous transactions."),
+    'help' => t("The sum of the wallet's previous transactions."),
     'field' => array(
       'id' => 'balance',
   		'additional fields' => array(
@@ -446,32 +480,50 @@ function mcapi_views_data() {
   	)
   );
 
-  //TODO Gordon this is gonna be horrible
-  //we need to manage the access control, and then to load the parent entity, not the wallet entity.
   $data['mcapi_wallets']['table'] = array(
-    'group'  => t('Transaction'),
-    'entity type' => 'mcapi_wallets',
+    'group'  => t('Wallets'),
+    'entity type' => 'mcapi_wallet',
     'base' => array(
       'field' => 'wid',
       'title' => t('Wallets'),
-      'help' => t("Don't forget to add the parent relationship."),
-      'access query tag' => 'transaction_views_access',
+      'help' => t('List of wallets'),
       'weight' => 5,
       'defaults' => array(
-        'field' => 'wid',
+        'field' => 'wallet_label',
       )
-    )
+    ),
   );
-
-  $data['mcapi_wallets']['xid'] = array(
-    'title' => t('Wallet id'), // The item it appears as on the UI,
-    'help' => t('The unique database key of the transaction'),
-    'field' => array(
-      'id' => 'numeric',//this might be 'transaction' if it exists
-    ),
-    'sort' => array(
-      'id' => 'standard',
-    ),
+  $data['mcapi_wallets']['wallet_label'] = array(
+  	'title' => t('Label'),
+  	'help' => t('the name of the wallet'),
+  	'field' => array(
+  		'id' => 'mcapi_wallet_label',
+  	)
+  );
+  $data['mcapi_wallets']['owner'] = array(
+  	'title' => t('Owner'),
+  	'help' => t('The owner of the wallet'),
+  	'field' => array(
+  		'id' => 'mcapi_wallet_owner',
+  	)
+  );
+  $data['mcapi_wallets']['entity_type'] = array(
+  	'title' => t('Owner type'),
+  	'help' => t('The entity type of the wallet owner. good for grouping by'),
+  	'field' => array(
+//  		'id' => 'mcapi_owner_type',
+  		'id' => 'standard',
+  	),
+  	'filter' => array(
+  		'id' => 'standard',
+  	)
+  );
+  $data['mcapi_wallets']['entity_type'] = array(
+  	'title' => t('Owner type'),
+  	'help' => t('The entity type of the wallet owner'),
+  	'field' => array(
+  		'id' => 'mcapi_owner_type',
+  	)
   );
 
   return $data;

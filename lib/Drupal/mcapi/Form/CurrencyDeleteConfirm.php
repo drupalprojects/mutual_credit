@@ -18,7 +18,7 @@ class CurrencyDeleteConfirm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return t('Are you sure you want to delete %name?', array('%name' => $this->entity->label()));
+    return t('Are you sure you want to delete %name? ALL transactions in that currency will be deleted!', array('%name' => $this->entity->label()));
   }
 
   /**
@@ -41,6 +41,8 @@ class CurrencyDeleteConfirm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submit(array $form, array &$form_state) {
+    //delete all the transactions in this currency.
+    \Drupal::EntityController('mcapi_transaction')->getStorageController()->currencyDelete($this->entity->id());
     $this->entity->delete();
     drupal_set_message(t('Currency %label has been deleted.', array('%label' => $this->entity->label())));
     \Drupal::cache()->deleteTags(array('mcapi.available_currency'));

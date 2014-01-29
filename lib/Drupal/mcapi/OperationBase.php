@@ -188,7 +188,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
         '#required' => TRUE,
         '#weight' => 14
      );
-      $form['feedback']['redirect']= array (
+      $form['feedback']['redirect'] = array (
         '#title' => t('Redirect path'),
         '#description' => t('Enter a path from the Drupal root, without leading slash.'),
         '#type' => 'textfield',

@@ -24,7 +24,8 @@ class ExchangeController extends ControllerBase {
    *  An array suitable for drupal_render().
    */
   public function page(EntityInterface $mcapi_exchange) {
-    return $this->buildPage($mcapi_transaction);
+
+    return $this->buildPage($mcapi_exchange);
   }
 
   /**
@@ -49,7 +50,9 @@ class ExchangeController extends ControllerBase {
    */
   protected function buildPage(EntityInterface $mcapi_exchange) {
     return array(
-      'exchange' => array()
+      'exchange' => $this->entityManager()
+        ->getViewBuilder('mcapi_exchange')
+        ->view($mcapi_exchange, 'full')
     );
   }
 }

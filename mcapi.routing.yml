@@ -14,18 +14,12 @@ mcapi.admin_misc:
   requirements:
     _permission: 'configure mcapi'
 
-mcapi.admin_wallets:
-  path: '/admin/accounting/wallets'
-  defaults:
-    _form: 'Drupal\mcapi\Form\WalletSettings'
-    _title: 'Wallet Settings'
-  requirements:
-    _permission: 'configure mcapi'
-
+#currencies
 mcapi.admin_currency_list:
   path: '/admin/accounting/currencies'
   defaults:
     _entity_list: 'mcapi_currency'
+    _title: Currencies
   requirements:
     _permission: 'manage mcapi'
 
@@ -57,22 +51,7 @@ mcapi.admin_currency_enable:
   requirements:
     _permission: 'configure mcapi'
 
-mcapi.admin_mass:
-  path: '/admin/accounting/transactions/mass'
-  defaults:
-    _form: 'Drupal\mcapi\Form\MassPay'
-    _title: 'Mass payments'
-  requirements:
-    _permission: 'manage mcapi'
-
-mcapi.admin_mass.many2one:
-  path: 'transact/mass/{vector}'
-  defaults:
-    _form: 'Drupal\mcapi\Form\MassPay'
-    _title: 'Mass payments'
-  requirements:
-    _permission: 'manage mcapi'
-
+#transactions
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'
   defaults:
@@ -81,24 +60,8 @@ mcapi.admin.transactions:
   requirements:
     _permission: 'access administration pages'
 
-mcapi.admin.transactions.operations:
-  path: '/admin/accounting/transactions/workflow'
-  defaults:
-    _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
-    _title: 'Configure workflow'
-  requirements:
-    _permission: 'access administration pages'
-
-mcapi.workflow_settings:
-  path: '/admin/accounting/workflow/op/{op}'
-  defaults:
-    _form: 'Drupal\mcapi\Form\OperationSettingsForm'
-    _title: 'Configure transaction operation'
-  requirements:
-    _permission: 'configure mcapi'
-
 mcapi.transaction_admin:
-  path: '/admin/accounting/transactions/add'
+  path: '/admin/accounting/transact'
   defaults:
     _entity_form: 'mcapi_transaction.admin'
     _title: 'Record transaction'
@@ -117,16 +80,59 @@ mcapi.transaction_view:
       mcapi_transaction:
         serial: true
 
+mcapi.admin_mass:
+  path: '/admin/accounting/transactions/mass'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage mcapi'
+
+mcapi.admin_mass.many2one:
+  path: 'transact/mass/{vector}'
+  defaults:
+    _form: 'Drupal\mcapi\Form\MassPay'
+    _title: 'Mass payments'
+  requirements:
+    _permission: 'manage mcapi'
+
+#operations
 mcapi.transaction.op:
   path: '/transaction/{mcapi_transaction}/{op}'
   defaults:
-    _form: '\Drupal\mcapi\Form\OperationForm'
+    _entity_form: 'mcapi_transaction.operation'
   requirements:
     _entity_access: 'mcapi_transaction.op'
   options:
     parameters:
       mcapi_transaction:
         serial: true
+
+mcapi.admin.transactions.operations:
+  path: '/admin/accounting/transactions/workflow'
+  defaults:
+    _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
+    _title: 'Configure workflow'
+  requirements:
+    _permission: 'access administration pages'
+
+mcapi.workflow_settings:
+  path: '/admin/accounting/workflow/op/{op}'
+  defaults:
+    _form: 'Drupal\mcapi\Form\OperationSettingsForm'
+    _title: 'Configure transaction operation'
+  requirements:
+    _permission: 'configure mcapi'
+
+#wallets\
+
+mcapi.wallet_view:
+  path: '/wallet/{mcapi_wallet}'
+  defaults:
+    _content: '\Drupal\mcapi\Controller\WalletController::page'
+    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
+  requirements:
+    _entity_access: 'mcapi_wallet.view'
 
 mcapi.wallet_edit:
   path: '/wallet/{mcapi_wallet}/edit'
@@ -136,17 +142,34 @@ mcapi.wallet_edit:
   requirements:
     _entity_access: 'mcapi_wallet.edit'
 
+mcapi.admin_wallets:
+  path: '/admin/accounting/wallets'
+  defaults:
+    _form: 'Drupal\mcapi\Form\WalletSettings'
+    _title: 'Wallet Settings'
+  requirements:
+    _permission: 'configure mcapi'
+
+mcapi.wallets.autocomplete:
+  path: '/mcapi/walletcomplete'
+  defaults:
+    _controller: '\Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
+  requirements:
+    _permission: 'access content'
+
+#exchanges
 mcapi.admin_exchange_list:
   path: '/admin/accounting/exchanges'
   defaults:
     _entity_list: 'mcapi_exchange'
+    _title: Exchanges
   requirements:
     _permission: 'manage mcapi'
 
 mcapi.exchange.view:
   path: '/exchange/{mcapi_exchange}'
   defaults:
-    _entity_view: 'mcapi_exchange.full'
+    _content: '\Drupal\mcapi\Controller\ExchangeController::page'
     _title_callback: '\Drupal\mcapi\Controller\ExchangeController::pageTitle'
   requirements:
     _entity_access: 'mcapi_exchange.view'
@@ -170,4 +193,18 @@ mcapi.exchange.delete_confirm:
   defaults:
     _entity_form: 'mcapi_exchange.delete'
   requirements:
-    _entity_access: 'mcapi_exchange.delete'
+    _permission: 'manage mcapi'
+
+mcapi.exchange.open_confirm:
+  path: '/exchange/{mcapi_exchange}/open'
+  defaults:
+    _entity_form: 'mcapi_exchange.open'
+  requirements:
+    _permission: 'manage mcapi'
+
+mcapi.exchange.close_confirm:
+  path: '/exchange/{mcapi_exchange}/close'
+  defaults:
+    _entity_form: 'mcapi_exchange.close'
+  requirements:
+    _permission: 'manage mcapi'

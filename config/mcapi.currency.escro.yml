@@ -1,7 +1,7 @@
 id: escro
 uuid: 1b93baa9-95b9-4f05-8900-b13ccc9657cc
 name: Euro
-status: true
+status: false
 uid: 1
 issuance: commodity
 type: decimal

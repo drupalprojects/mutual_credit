@@ -24,13 +24,13 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'value' => $record->value,
       );
     }
-
+    /*
     // Load all the children
     $result = $this->database->query('SELECT xid FROM {mcapi_transactions} WHERE parent IN (:parents)', array(':parents' => array_keys($queried_entities)));
     foreach ($result as $record) {
       $queried_entities[$record->xid]->children[$record->xid] = NULL;
     }
-
+    */
     parent::postLoad($queried_entities);
   }
 
@@ -171,8 +171,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::indexRebuild()
    */
   public function indexRebuild() {
-    db_truncate('mcapi_transactions_index')->execute();
-    db_query("INSERT INTO {mcapi_transactions_index} (SELECT
+    $this->database->truncate('mcapi_transactions_index')->execute();
+    $this->database->query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
     		t.serial,
         t.payer AS wallet_id,
@@ -191,7 +191,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       RIGHT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid
       WHERE state > 0) "
     );
-    db_query("INSERT INTO {mcapi_transactions_index} (SELECT
+    $this->database->query("INSERT INTO {mcapi_transactions_index} (SELECT
         t.xid,
     		t.serial,
         t.payee AS wallet_id,
@@ -215,7 +215,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::indexCheck()
    */
   public function indexCheck() {
-    if (db_query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
+    if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
       $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
       $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
       debug("$volume_index == $volume");
@@ -227,7 +227,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::indexDrop()
    */
   public function indexDrop($serial) {
-    db_delete('mcapi_transactions_index')->condition('serial', $serial)->execute();
+    $this->database->delete('mcapi_transactions_index')->condition('serial', $serial)->execute();
   }
 
   /**
@@ -243,7 +243,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::filter()
    */
   public function filter(array $conditions, $offset = 0, $limit = 0) {
-    $query = db_select('mcapi_transactions', 'x')
+    $query = $this->database->select('mcapi_transactions', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
 
@@ -293,7 +293,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   public function summaryData($wallet, array $conditions) {
     //TODO We need to return 0 instead of null for empty columns
     //then get rid of the last line of this function
-    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('currcode'));
+    $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('currcode'));
     $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
     $query->addExpression('SUM(i.incoming)', 'gross_in');
     $query->addExpression('SUM(i.outgoing)', 'gross_out');
@@ -308,7 +308,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
 
   //experimental
   public function balances ($currcode, $wids = array(), array $conditions) {
-    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
+    $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
     $query->addExpression('SUM(i.diff)', 'balance');
     if ($wids) {
       $query->condition('i.wallet_id', $wids);
@@ -325,10 +325,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   public function timesBalances(AccountInterface $account, CurrencyInterface $currency, $since = 0) {
     //TODO cache this, and clear the cache whenever a transaction changes state or is deleted
     //this is a way to add up the results as we go along
-    db_query("SET @csum := 0");
+    $this->database->query("SET @csum := 0");
     //I wish there was a better way to do this.
     //It is cheaper to do stuff in mysql
-    $all_balances = db_query(
+    $all_balances = $this->database->query(
       "SELECT created, (@csum := @csum + diff) as balance
         FROM {mcapi_transactions_index}
         WHERE wallet_id = :wallet_id AND currcode = :currcode
@@ -353,7 +353,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::count()
    */
   public function count($currcode = '', $conditions = array(), $serial = FALSE) {
-    $query = db_select('mcapi_transactions_worths', 'w');
+    $query = $this->database->select('mcapi_transactions_worths', 'w');
     $query->join('mcapi_transactions', 't', 't.xid = w.xid');
     $query->addExpression('count(w.xid)');
     if ($currcode) {
@@ -367,7 +367,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::volume()
    */
   public function volume($currcode, $conditions = array()) {
-    $query = db_select('mcapi_transactions_worths', 'w');
+    $query = $this->database->select('mcapi_transactions_worths', 'w');
     $query->join('mcapi_transactions', 't', 't.xid = w.xid');
     $query->addExpression('SUM(value)');
     $query->condition('w.currcode', $currcode);
@@ -375,8 +375,28 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     return $query->execute()->fetchField();
   }
   /**
+   * Delete all transactions of a certain currency.
+   * @todo inspect and test this!
+   *
+   * @param string $currcode
+   */
+  public function currencyDelete($currcode) {
+    //remove everything from the worths table, check for orphans and remove the orphans.
+    $this->database->delete('mcapi_transaction_worths')->condition('currcode', $currcode)->execute();
+    $this->database->query("SELECT xid
+        FROM {mcapi_transactions} t
+        LEFT JOIN {mcapi_transaction_worths} w ON t.xid = w.xid
+        WHERE w.xid IS NULL")->fetchCol();
+    $this->database->delete('mcapi_transactions')->condition('xid', $currcode)->execute();
+    $this->database->delete('mcapi_transactions_index')->condition('currcode', $currcode)->execute();
+    drupal_set_message('currencyDelete has never been tested!', 'warning');
+  }
+
+  /**
+   * Add an array of conditions to the select query
    *
    * @param AlterableInterface $query
+   * @param array $conditions
    */
   private function parseConditions(AlterableInterface $query, array $conditions) {
     foreach ($conditions as $fieldname => $value) {

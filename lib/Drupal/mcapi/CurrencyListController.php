@@ -87,19 +87,24 @@ class CurrencyListController extends DraggableListController {
    */
   public function getOperations(EntityInterface $entity) {
   	$operations = parent::getOperations($entity);
-  	static $done = 0;
-  	//we only need to run this on the first currency
-  	if (!$done) {
-	  	$count = 0;
-	  	foreach ($this->storage->loadMultiple() as $entity) {
-	  		if ($entity->status)$count++;
-	  	}
-	  	if ($count < 2) {
-	  		unset($operations['delete'], $operations['disable']);
-	  	}
+    //rename the links
+    if (array_key_exists('disable', $operations)) {
+  	  $operations['disable']['title'] = t('Retire');
+    }
+  	else {
+      $operations['enable']['title'] = t('Restore');
   	}
+  	if (!$this->storage->deletable($entity)) {
+  	  unset($operations['delete']);
+  	}
+  	if (!$this->storage->disablable($entity)) {
+  	  unset($operations['disable']);
+  	}
+
   	return $operations;
+
   }
+
 
   /**
    * {@inheritdoc}

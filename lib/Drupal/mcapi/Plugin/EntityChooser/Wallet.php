@@ -59,14 +59,16 @@ class Wallet Extends EntityChooserBase {
     }
     $query->condition($condition);
     $result = $query->execute()->fetchCol();
-    return $this->includeExclude($query->execute()->fetchCol());
+    return entity_chooser_include_exclude($query->execute()->fetchCol(), $this->include, $this->exclude);
   }
 
   /**
    * @see \Drupal\entity_chooser\Plugin\EntityChooserInterface::getAllValidIds()
    */
   public function getAllValidIds() {
-    return db_select('mcapi_wallets', 'w')->fields('w', array('wid'))->execute()->fetchCol();
+    return entity_chooser_include_exclude(
+      db_select('mcapi_wallets', 'w')->fields('w', array('wid'))->execute()->fetchCol(), $this->include, $this->exclude
+    );
   }
 
   /**

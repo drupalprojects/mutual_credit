@@ -55,23 +55,21 @@ class Create extends OperationBase {
   */
   public function execute(TransactionInterface $transaction, array $values) {
     try {
-      $db_t = db_transaction();
       //was already validated
-      $status = $transaction->save($form, $form_state);
+      $status = $transaction->save();
     }
     catch (Exception $e) {
       \Drupal::formBuilder()->setErrorByName(
         'actions',
         t("Failed to save transaction: @message", array('@message' => $e->getMessage))
       );
-      $db_t->rollback();
     }
 
     if ($status == SAVED_UPDATED) {
-      $message = t('Transaction %label has been updated.', array('%label' => $transaction->label()));
+      $message = t("'%label' has been updated.", array('%label' => $transaction->label()));
     }
     else {
-      $message = t('Transaction %label has been added.', array('%label' => $transaction->label()));
+      $message = t("'%label' has been added.", array('%label' => $transaction->label()));
     }
 
     return array('#markup' => $message);

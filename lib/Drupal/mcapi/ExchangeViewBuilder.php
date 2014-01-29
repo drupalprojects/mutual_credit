@@ -20,7 +20,38 @@ class ExchangeViewBuilder extends EntityViewBuilder {
   public function buildContent(array $entities, array $displays, $view_mode, $langcode = NULL) {
     parent::buildContent($entities, $displays, $view_mode, $langcode);
     foreach ($entities as $exchange) {
-      $exchange->content += array(
+      $exchange->content['manager'] = array(
+        '#type' => 'item',
+        '#title' => t('Administrator'),
+        '#weight' => 3,
+        'content' => array(
+          '#theme' => 'username',
+          '#account' =>  entity_load('user', $exchange->get('uid')->value)
+        )
+      );
+      if ($roles = user_role_names(TRUE, 'exchange helper')) {
+        //get all the helper users in this exchange
+        $query = db_select('users_roles', 'ur')->fields('u', array('uid'))->countQuery();
+        $query->join('user__field_exchanges', 'ufe', 'ufe.entity_id = ur.uid');
+        $query->condition('rid', array_keys());
+
+        $helpers = $query->condition('ufe.field_exchanges_target_id', $exchange->id())
+          ->execute()->fetchField();
+        foreach (entity_load_multiple('user', $helpers) as $account) {
+          $helpernames[] = theme('username', array('account' => $account));
+        }
+      }
+
+      $exchange->content['helpers'] = array(
+        '#type' => 'item',
+        '#title' => t('@count helpers', array('@count' => intval($helpers))),
+        '#weight' => 4,
+        'content' => array(
+          '#markup' => implode(', ', $helpernames)
+        )
+      );
+      $exchange->content['placeholder_text'] = array(
+        '#weight' => -1,
       	'#markup' => 'This page needs to show some basic info about the exchange. Its members, its currencies, its admin and managers. Number of transactions ever and transaction volume per currency.'
       );
     }

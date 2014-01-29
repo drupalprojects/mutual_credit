@@ -10,7 +10,6 @@ namespace Drupal\mcapi\Entity;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageControllerInterface;
 use Drupal\Core\Template\Attribute;
-use Drupal\Core\Language\Language;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinition;
 use Drupal\mcapi\TransactionInterface;
@@ -29,6 +28,7 @@ use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
  *     "view_builder" = "Drupal\mcapi\TransactionViewBuilder",
  *     "access" = "Drupal\mcapi\TransactionAccessController",
  *     "form" = {
+ *       "operation" = "Drupal\mcapi\Form\OperationForm",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm"
  *     },
@@ -51,6 +51,7 @@ use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
   public $exceptions = array();
+  public $child_candidates = array();
 
   /**
    * {@inheritdoc}
@@ -100,6 +101,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
             $renderable['#attached']['js'][] = 'core/misc/ajax.js';
             //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
           }
+          else{
+            $renderable['#links'][$op]['query'] = drupal_get_destination();
+          }
         }
       }
       if (array_key_exists('#links', $renderable)) {
@@ -117,35 +121,34 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $renderable;
   }
 
+
   /**
    * @see \Drupal\mcapi\TransactionInterface::validate()
    */
   public function validate() {
 
+
     \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $this);
 
     $this->exceptions = array();
+    list($payer, $payee) = mcapi_get_endpoints($this, TRUE);
     //check that the payer and payee are not the same wallet
-    if ($this->get('payer')->value == $this->get('payee')->value) {
-      $transaction->exceptions[] = new McapiTransactionWorthException(
+    if ($payer->id() == $payee->id()) {
+      $this->exceptions[] = new McapiTransactionException(
           '',
           t('A wallet cannot pay itself.')
       );
     }
+
     //determine which exchange to use, based on the payer, the payee and the currency(s).
-    $exchange = $this->set('exchange', derive_exchange());
+    $exchange = $this->set('exchange', $this->derive_exchange());
 
-    foreach (array($this->payer->entity, $this->payee->entity) as $account) {
-      foreach ($this->worths[0] as $currcode => $worth) {
-        if (!$worth->currency->access('membership', $account)) {
-          $this->exceptions[] = new McapiTransactionWorthException(
-            $worth->currency,
-            t('!user cannot use !currency', array('!user' => $account->getUsername(), '!currency' => $worth->currency->name))
-          );
-        }
-      }
-    }
-
+    /*
+     * @TODO GORDON I can't spend any more time trying to figure out the worths object.
+     * foreach ($this->get('worths') gives us an array of worths it makes no sense.
+     * I don't want to interrogate each $worth object, I just want an array of values keyed by currcode.
+     * what about $this->get('worths') ?
+     */
     foreach ($this->worths[0] as $worth) {
       if ($worth->value <= 0) {
         $this->exceptions[] = new McapiTransactionWorthException(
@@ -173,45 +176,47 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         t('Invalid transaction type: @type', array('@type' => $this->type->value))
       );
     }
-    //check that the uuid doesn't already exist.
+    //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
     $properties = array('uuid' => $this->uuid->value);
     if (entity_load_multiple_by_properties('mcapi_transaction', $properties)) {
       $this->exceptions[] = new McapiTransactionException('',
-        t('Transaction has already been inserted: @uuid', array('@uuid' => $transaction->uuid->value))
+        t('Transaction has already been inserted: @uuid', array('@uuid' => $this->uuid->value))
       );
     }
     //there might be a use-case when things are done out of order, so this is intended as a temp flag
     $this->validated = TRUE;
 
     //While we're validating the parent ONLY, pass the transaction cluster around
-    if ($this->parent->value == 0) {
+    if ($this->get('parent')->value == 0) {
 
       //prevent the main transaction being altered as we pass it round
       //the main transaction was already altered in the preValidate hook.
       $clone = clone($this);
+      //we don't use $this->children at all - damned entity reference field isn't needed at this stage
+      $this->child_candidates = array();//ONLY parent transactions have this property
       //previous the children's parent was set to temp, but is that necessary?
-      $this->children = \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', $clone);
-      \Drupal::moduleHandler()->alter('mcapi_transaction_children', $this->children, $clone);
+      $this->child_candidates = \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', array($clone));
+      \Drupal::moduleHandler()->alter('mcapi_transaction_children', $this->child_candidates, $clone);
 
       $messages = array();
-      $children = $this->children[0];
-/* how to iterate though an entity reference field?
-      foreach ($children as $child) {
-        echo $key; mdump($child);die('entity validating child');
+      //validate the child candidates
+      foreach ($this->child_candidates as $child) {
+        $child->set('parent', -1);//temp value. prevents recursion here but for some reason isn't there in presave
         $child->validate();
       }
-*/
       $cluster = mcapi_transaction_flatten($this);
       \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', $cluster);
+
+      //process the errors in the children.
       $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-      foreach ($this->children as $key => $child) {
+      foreach ($this->child_candidates as $key => $child) {
         if ($child->exceptions) {
           foreach ($child->exceptions as $exception) {
             $messages[] = $exception->getmessage();
           }
           $replacements = array(
             '!messages' => implode(' ', $messages),
-            '!dump' => print_r($transaction, 1)
+            '!dump' => print_r($this, 1)
           );
           if ($child_errors['watchdog']){
           	watchdog(
@@ -242,23 +247,32 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @see \Drupal\mcapi\TransactionInterface::preSave($storage_controller)
    */
   public function preSave(EntityStorageControllerInterface $storage_controller) {
-
     if ($this->isNew()) {
       //TODO: Change this so that you only create new serial numbers on the parent transaction.
-      if (!$this->serial->value) {
+      if (!$this->get('serial')->value) {
         $storage_controller->nextSerial($this);//this serial number is not final, or at least not nocked
         //TODO Gordon when does the serial number become final?
         //this is the only time we actually call nextSerial
         //That's when we need to propagate it to the children.
         //Why do we need a serial number which isn't final
       }
-      if (empty($this->created->value)) {
+      if (empty($this->get('created')->value)) {
         $this->created->value = REQUEST_TIME;
       }
-      if (empty($this->creator->value)) {
-        $this->creator->value = \Drupal::currentUser()->id();
+      if (empty($this->get('creator')->value)) {
+        $this->set('creator', \Drupal::currentUser()->id());
+      }
+      if (property_exists($this, 'child_candidates')) {//that means $this is the original transaction
+        foreach ($this->child_candidates as $transaction) {
+          $transaction->set('serial', $this->get('serial')->value);
+          $transaction->set('parent', $this->get('xid')->value);
+          $transaction->set('exchange', $this->get('exchange')->value);
+          $transaction->save();
+          //$this->children[] = $transaction;
+        }
       }
     }
+
   }
 
 
@@ -269,13 +283,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     parent::postSave($storage_controller, $update);
     $storage_controller->saveWorths($this);
     $storage_controller->addIndex($this);
-    //save the children if there are any
-    foreach ($this->children as $transaction) {
-      $transaction->serial->value = $this->serial->value;
-      $transaction->parent->value = $this->xid->value;
-      //TODO Gordon how is this gonna work saving the children in the post-save?
-      $transaction->save();
-    }
+
   }
 
   /**
@@ -320,19 +328,19 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $properties['parent'] = FieldDefinition::create('entity_reference')
       ->setLabel('Parent')
       ->setDescription('Parent transaction that created this transaction')
-      ->setSettings(array('target_type' => 'mcapi_transaction'));
+      ->setSettings(array('target_type' => 'mcapi_transaction', 'default_value' => 0));
     $properties['worths'] = FieldDefinition::create('worths')
       ->setLabel('Worth')
       ->setDescription('Value of this transaction')
       ->setRequired(TRUE);
     $properties['payer'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payer')
-      ->setDescription('Wallet id id of the payer')
+      ->setDescription('Wallet id of the payer')
       ->setSettings(array('target_type' => 'mcapi_wallet'))
       ->setRequired(TRUE);
     $properties['payee'] = FieldDefinition::create('entity_reference')
       ->setLabel('Payee')
-      ->setDescription('Wallet id id of the payee')
+      ->setDescription('Wallet id of the payee')
       ->setSettings(array('target_type' => 'mcapi_wallet'))
       ->setRequired(TRUE);
     //quantity is done, perhaps controversially, but the field API
@@ -340,6 +348,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel('Type')
       ->setDescription('The type of transaction, types are provided by modules')
       ->setPropertyConstraints('value', array('Length' => array('max' => 32)))
+      ->setSettings(array('default_value' => 'default'))
       ->setRequired(TRUE);
     $properties['state'] = FieldDefinition::create('integer')
       ->setLabel('State')
@@ -373,17 +382,26 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    *   the exchange entity
    */
   private function derive_exchange() {
-    $exchanges = array_intersect_key(
-      referenced_exchanges($this->payer->owner()),
-      referenced_exchanges($this->payee->owner())
-    );
-    if (empty($exchanges)) {
-      throw new TransactionException ('', t('The payer and payee do not have an exchange in common.'));
-    }
-    $transaction_worths = $this->get('worths')->getvalue();
-    //check that
 
-    $allowed_currcodes = exchange_currencies($exchange);
+
+    $exchanges = array_intersect_key(
+      referenced_exchanges($this->get('payer')->entity->getOwner()),
+      referenced_exchanges($this->get('payee')->entity->getOwner())
+    );
+
+    if (empty($exchanges)) {
+      //we can't choose a fieldname here because we know the 1stparty module doesn't display payer and payee fields
+      throw new McapiTransactionException (
+        '',
+        t(
+          'Wallets @num1 & @num2 do not have an exchange in common.',
+          array('@num1' => $this->get('payer')->value, '@num2' => $this->get('payee')->value)
+        )
+      );
+    }
+    $transaction_worths = current($this->get('worths')->getValue());
+
+    $allowed_currcodes = exchange_currencies($exchanges);
     foreach ($exchanges as $id => $exchange) {
       $access = TRUE;
       $allowed_currencies = exchange_currencies(array($exchange));
@@ -391,10 +409,20 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       if ($leftover) continue; //try another exchange
       return $exchange;//the first exchange which has all the needed currencies available
     }
-    throw new TransactionException ('', t(
+    throw new McapiTransactionException ('', t(
       "Currency '!name' is not available to both wallets",
       array('!name' => entity_load('mcapi_currency', key($leftover))->label())
     ));
   }
+
+}
+
+//@todo Gordon I can't believe this is the simplest way
+//to retrieve a value from an entity single reference field.
+//hideous!
+function mcapi_get_endpoints($transaction) {
+  $payer = $transaction->get('payer')->getValue(true);
+  $payee = $transaction->get('payee')->getValue(true);
+  return array($payer[0]['entity'], $payee[0]['entity']);
 
 }

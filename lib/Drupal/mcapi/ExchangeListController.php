@@ -15,6 +15,8 @@ use Drupal\Core\Utility\LinkGenerator;
  */
 class ExchangeListController extends EntityListController {
 
+  private $storageController;
+
   /**
    * Overrides Drupal\Core\Entity\EntityListController::buildHeader().
    */
@@ -50,13 +52,39 @@ class ExchangeListController extends EntityListController {
   }
 
   /**
-   * Remove the link for deleting the default exchange
+   * {@inheritdoc}
    */
   public function getOperations(EntityInterface $entity) {
     $operations = parent::getOperations($entity);
-    if ($entity->id() == 1) {
+    $uri = $entity->uri();
+
+    // Ensure the edit operation exists since it is access controlled.
+    if (isset($operations['edit'])) {
+      // For configuration entities edit path is the MENU_DEFAULT_LOCAL_TASK and
+      // therefore should be accessed by the short route.
+      $operations['edit']['href'] = $uri['path'];
+    }
+
+    if ($this->storage->closable($entity)) {
+      $operations['close'] = array(
+        'title' => t('Close'),
+        'href' => $uri['path'] . '/close',
+        'options' => $uri['options'],
+        'weight' => 40,
+      );
+    }
+    elseif (!$entity->get('open')->value) {
+      $operations['open'] = array(
+        'title' => t('Open'),
+        'href' => $uri['path'] . '/open',
+        'options' => $uri['options'],
+        'weight' => -10,
+      );
+    }
+    if (!$this->storage->deletable($entity)) {
       unset($operations['delete']);
     }
+
     return $operations;
   }
 }

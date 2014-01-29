@@ -27,13 +27,21 @@ class TransactionForm extends ContentEntityFormController {
     $form = parent::form($form, $form_state);
     $transaction = $this->entity;
 
-    $exchanges = referenced_exchanges(\Drupal::currentUser(), 'field_exchanges');
+    $exchanges = referenced_exchanges();
+    if (count($exchanges) < 1) {
+      drupal_set_message(t('You are not a member of any exchanges, so you cannot trade with anyone'));
+      $form['#disabled'] = TRUE;
+    }
+
     $currencies = exchange_currencies($exchanges);
+    $exchanges = array_pad($exchanges, 2, 0);
     //the actual exchange that the transaction takes place in
     //will be determined automatically, once we know who is involved and what currencies.
     //in most use cases only one will be possible or likely
-    echo 'This transaction will be in exchange '.implode(' or ', array_keys($exchanges)).'.';
-    echo '<br />And in currencies '.implode(' or ', array_keys($currencies)).'.';
+    //echo 'This transaction will be in exchange '.implode(' or ', array_keys($exchanges)).'.';
+    //echo '<br />And in currencies '.implode(' or ', array_keys($currencies)).'.';
+    //until then we offer a choice of users and currencies
+    //from all the exchanges the current user is a member of
 
     unset($form['langcode']); //No language so we remove it.
 
@@ -41,6 +49,7 @@ class TransactionForm extends ContentEntityFormController {
       '#type' => 'textfield',
       '#title' => t('Description'),
       '#default_value' => $transaction->description->value,
+      '#weight' => 3,
     );
     $form['worths'] = array(
       '#type' => 'worths',
@@ -48,7 +57,8 @@ class TransactionForm extends ContentEntityFormController {
       '#required' => TRUE,
       '#default_value' => $transaction->worths[0],
       //by default, which this is, all the currencies of the currency exchanges should be included
-      '#currencies' => $currencies
+      '#currencies' => $currencies,
+      '#weight' => 5,
     );
 
     //@todo GORDON what's the best way to list the wallets of the members of the current exchange
@@ -56,38 +66,37 @@ class TransactionForm extends ContentEntityFormController {
     //I think what we need is a wallet_chooser element!
     $form['payer'] = array(
       '#title' => t('Wallet to be debited'),
-      '#type' => 'entity_chooser',
-      '#plugin' => 'wallet',
-      '#args' => array(),
-      '#default_value' => $transaction->payer->value,
+      '#type' => 'local_wallets',
+      '#default_value' => $transaction->get('payer')->value,
+      '#weight' => 9,
     );
     $form['payee'] = array(
       '#title' => t('Wallet to be credited'),
-      '#type' => 'entity_chooser',
-      '#plugin' => 'wallet',
-      '#args' => array(),
-      '#default_value' => $transaction->payee->value,
-    );
-    $form['type'] = array(
-      '#title' => t('Transaction type'),
-      '#options' => mcapi_get_types(TRUE),
-      '#type' => 'mcapi_types',
-      '#default_value' => $transaction->type->value,
-      '#required' => TRUE,
+      '#type' => 'local_wallets',
+      '#default_value' => $transaction->get('payee')->value,
+      '#weight' => 9,
     );
     $form['creator'] = array(
       '#title' => t('Recorded by'),
       '#type' => 'entity_chooser',
     	'#plugin' => 'user',
     	'#args' => array(),
-      '#default_value' => $transaction->creator->value,
-      '#weight' => 15,
+      '#default_value' => $transaction->get('creator')->value,
+      '#weight' => 12,
     );
     //TODO how is this field validated? Is it just a positive integer?
     $form['created'] = array(
       '#title' => t('Recorded on'),
       '#type' => 'date',
-      '#default_value' => $transaction->created->value,
+      '#default_value' => $transaction->get('created')->value,
+      '#weight' => 15
+    );
+    $form['type'] = array(
+      '#title' => t('Transaction type'),
+      '#options' => mcapi_get_types(TRUE),
+      '#type' => 'mcapi_types',
+      '#default_value' => $transaction->get('type')->value,
+      '#required' => TRUE,
       '#weight' => 18,
     );
     return $form;
@@ -131,6 +140,7 @@ class TransactionForm extends ContentEntityFormController {
     foreach ($transaction->exceptions as $e) {
       \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, $e->getMessage());
     }
+
     //TODO sort out entity reference field iteration
     //except that children is not an entity reference field, is it?
     /*
@@ -150,16 +160,14 @@ class TransactionForm extends ContentEntityFormController {
   }
 
   public function submit(array $form, array &$form_state) {
-    $tempStore = \Drupal::service('user.tempstore')
-    ->get('TransactionForm')
-    ->set('entity', $this->entity);
-
-    //now we divert to the operation confirm form
-    $form_state['redirect'] = 'transaction/0/create';
-    //the transaction is confirmed using the operation plugin, Confirm, see
+    $tempStore = \Drupal::service('user.tempstore');
+    $tempStore->get('TransactionForm')->set('entity', $this->entity);
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
     //then
     //Drupal\mcapi\Plugin\Operation\Create
+
+    //now we divert to the operation confirm form
+    $form_state['redirect'] = 'transaction/0/create';
   }
 
 

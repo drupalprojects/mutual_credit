@@ -62,7 +62,7 @@ class WalletSettings extends ConfigFormBase {
       '#title' => t('Unique wallet names'),
       '#description' => t('New user wallets must be added manually and every wallet must have a unique name.'),
       '#type' => 'checkbox',
-      '#default_value' => !$config->get('unique_names'),
+      '#default_value' => $config->get('unique_names'),
       '#weight' => 2
     );
     $form['autoadd_name'] = array(
@@ -70,7 +70,7 @@ class WalletSettings extends ConfigFormBase {
       '#description' => t('Name of new wallet created automatically for each new user, or leave blank not to create.'),
       '#type' => 'textfield',
       '#placeholder' => t('My wallet'),
-      '#default_value' => !$config->get('autoadd_name'),
+      '#default_value' => $config->get('autoadd_name'),
       '#weight' => 3,
       '#states' => array(
     	  'visible' => array(
@@ -79,17 +79,28 @@ class WalletSettings extends ConfigFormBase {
       )
     );
 
+    $form['display_format'] = array(
+      '#title' => t('Display format'),
+      '#description' => t('Use tokens !o for the wallet owner and !w for the wallet name.') .' '.
+        t("If wallet names are not unique, the owner's name should be included"),
+      '#type' => 'textfield',
+      '#placeholder' => '!o: !w',
+      '#default_value' => $config->get('display_format'),
+      '#weight' => 4,
+    );
+
     foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
       $wallet_access_plugins[$def['id']] = $def['label'];
     }
     $form['wallet_access'] = array(
     	'#title' => t('Default access of users to wallets'),
-      '#description' => t('Determine which users can see, pay and pay from wallets by default, and which users can override their own wallets'),
+      '#description' => t('Determine which users can see, pay and pay from wallets by default, and which users can override their own wallets.') .
+        ' ACCESS CONTROL HAS NOT BEEN IMPLEMENTED YET - ALL WALLETS ARE TOTALLY VISIBLE',
       '#type' => 'details',
       '#weight' => 5
     );
     //TODO the following elements might need to be moved to somewhere where they can be re-used by the wallet's own config form.
-    $form['wallet_access']['viewers'] = array(
+/*    $form['wallet_access']['viewers'] = array(
       '#title' => t('Visible to'),
       '#description' => t('Who can see the balance and history of this wallet?'),
       '#type' => 'entity_chooser_selection',
@@ -119,7 +130,7 @@ class WalletSettings extends ConfigFormBase {
       '#type' => 'checkbox',
       '#default_value' => !$config->get('wallet_access_personalised'),
       '#weight' => 5
-    );
+    );*/
 
     return parent::buildForm($form, $form_state);
   }
@@ -144,13 +155,12 @@ class WalletSettings extends ConfigFormBase {
       ->set('payers', $form_state['values']['payees'])
       ->set('payees', $form_state['values']['viewers'])
       ->set('unique_names', $form_state['values']['unique_names'])
+      ->set('display_format', $form_state['values']['display_format'])
       ->set('access_personalised', $form_state['values']['access_personalised'])
       ->set('autoadd_name', $form_state['values']['autoadd_name'])
       ->save();
 
     parent::submitForm($form, $form_state);
-    //@todo why doesn't this show?
-    drupal_set_message(t('Wallet settings are saved.'));
 
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin'

@@ -24,7 +24,7 @@ use Drupal\mcapi\Plugin\Field\FieldType\Worth;
  *   label = @Translation("Currency"),
  *   module = "mcapi",
  *   controllers = {
- *     "storage" = "Drupal\Core\Config\Entity\ConfigStorageController",
+ *     "storage" = "Drupal\mcapi\CurrencyStorageController",
  *     "access" = "Drupal\mcapi\CurrencyAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi\CurrencyFormController",

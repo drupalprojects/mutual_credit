@@ -30,28 +30,52 @@ class ExchangeForm extends ContentEntityFormController {
     $form['name'] = array(
       '#type' => 'textfield',
       '#title' => t('Full name'),
-      '#default_value' => $exchange->name->value,
+      '#default_value' => $exchange->get('name')->value,
     );
     //@todo how to decide who to select exchange managers from?
     //really it could be any user IN that exchange, although the exchange has no members right now....
+    foreach (entity_load_multiple('user') as $account) $managers[$account->id()] = $account->label();
+    unset($managers[0]);
     $form['uid'] = array(
       '#title' => t('Manager of the exchange'),
-      '#type' => 'entity_chooser',
-      '#plugin' => 'role',
-      '#args' => array('authenticated'),
-      '#default_value' => $exchange->uid->value,
+      '#description' => t('The one user responsible for administration'),
+      '#type' => 'select',
+      '#options' => $managers,
+      '#default_value' => $exchange->get('uid')->value,
     );
     $form['langcode'] = array(
       '#type' => 'language_select',
       '#title' => $this->t('Site language'),
       '#languages' => Language::STATE_CONFIGURABLE,
-      '#default_value' => $exchange->langcode,
+      '#default_value' => $exchange->get('langcode')->value,
       '#description' => t('The first language of the exchange'),
     );
+    //hide the currencies field if only one currency is available
+    if (count(entity_load_multiple_by_properties('mcapi_currency', array('status' => TRUE))) < 2) {
+      $form['field_currencies']['#attributes']['style'] = 'display:none;';
+    }
 
     return $form;
   }
 
+  public function validate(array $form, array &$form_state) {
+    $samename = entity_load_multiple_by_properties('mcapi_exchange', array('name' => $form_state['values']['name']));
+    foreach ($samename as $exchange) {
+      if ($exchange->id() != $form_state['values']['id']) {
+        $this->errorHandler()->setErrorByName('name', $form_state, t('Another exchange already has that name'));
+      }
+    }
+  }
+
+
+  protected function actions(array $form, array &$form_state) {
+    $actions = parent::actions();
+    $storage = \Drupal::EntityManager()->getStorageController('mcapi_exchange');
+    if (!$storage->deletable($this->entity)) {
+      unset($actions['delete']);
+    }
+    return $actions;
+  }
 
   /**
    * {@inheritdoc}

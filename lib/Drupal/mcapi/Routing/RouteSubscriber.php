@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Routing\RouteSubscriber.
+ * Creates walletAdd routes for specified entities
  */
 
 namespace Drupal\mcapi\Routing;
@@ -39,24 +40,23 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection, $provider) {
-    foreach (\Drupal::config('mcapi.wallets')->get('types') as $entity_type) {
+    foreach (\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_type_bundle => $max) {
+      list($entity_type, $bundle) = explode(':', $entity_type_bundle);
       $entity_info = $this->manager->getDefinition($entity_type);
       if (!$entity_route = $collection->get($entity_info['links']['canonical'])) {
         continue;
       }
       $path = $entity_route->getPath();
-      //make a local action under the canonical link
       $route = new Route(
         "$path/addwallet",
-        //"wallet/add/$entity_type",
         array(
           '_form' => '\Drupal\mcapi\Form\WalletAddForm',
         ),
         array(
-          //'_entity_access' => 'mcapi_wallet.create'
           '_wallet_add_access' => 'TRUE'
         )
       );
+      //see Plugin/Derivative/WalletLocalAction...
       $collection->add("mcapi.wallet.add.$entity_type", $route);
     }
   }

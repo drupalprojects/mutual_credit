@@ -27,6 +27,9 @@ mcapi.misc:
         show_messages:
           type: string
           label: Show warning messages to user
+    indelible:
+      type: string
+      label: Indelible accounting
 
 mcapi.wallets:
   type: mapping
@@ -44,18 +47,21 @@ mcapi.wallets:
         wallet_default_payers:
           type: string
           label: 'Default payers'
-    wallet_unique_names:
+    unique_names:
       type: boolean
       label: 'Unique wallet names'
-    wallet_access_personalised:
+    display_format:
+      type: boolean
+      label: 'Display format'
+    unique_names:
+      type: boolean
+      label: 'Unique wallet names'
+    access_personalised:
       type: boolean
       label: 'Personalised wallet access'
-    wallet_autoadd_name:
+    autoadd_name:
       type: string
       label: 'Name of auto-added wallet'
-    wallet_one:
-      type: boolean
-      label: 'One wallet'
 
 mcapi.currency.settings.decimal:
   type: mapping

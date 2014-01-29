@@ -40,7 +40,19 @@ class Undo extends OperationBase {
       $elements[$constantVal]['#default_value'] = $currency->access_undo[$state->value];
     }
   }
-
+  /**
+   * @see \Drupal\mcapi\OperationBase::settingsForm()
+   */
+  public function settingsForm(array &$form) {
+    parent::settingsForm($form);
+    //@todo check the form hasn't changed in Drupal\mcapi\OperationBase::settingsForm()
+    undo(
+      $form['feedback']['format2'],
+      $form['feedback']['redirect']['#states']
+    );
+    //because after a transaction is deleted, you can't very well go and visit it.
+    $form['feedback']['redirect']['#required'] = TRUE;
+  }
   /**
    *  access callback for transaction operation 'view'
   */

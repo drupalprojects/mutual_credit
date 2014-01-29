@@ -329,10 +329,9 @@ class CurrencyFormController extends EntityFormController {
       '#type' => 'textfield',
       '#default_value' => $currency->zero,
       //this is required if any existing transactions have zero value
-      '#required' => count($serials)
+      '#required' => $serials
     );
-    //
-    if (count($serials)) {
+    if ($form['display']['zero']['#required']) {
       $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");
     }
     else {
@@ -421,6 +420,15 @@ class CurrencyFormController extends EntityFormController {
     return $form;
   }
 
+  protected function actions() {
+    $actions = parent::actions();
+    $storage = \Drupal::EntityManager()->getStorageController('mcapi_currency');
+    if (!$storage->deletable($this->entity)) {
+      unset($actions['delete']);
+    }
+    return $actions;
+  }
+
   public function multistepSubmit($form, &$form_state) {
     $trigger = $form_state['triggering_element'];
     $op = $trigger['#op'];
@@ -479,10 +487,8 @@ class CurrencyFormController extends EntityFormController {
    */
   public function save(array $form, array &$form_state) {
     $currency = $this->entity;
-    foreach (array('access_operations', 'access_view', 'access_undo') as $property) {
-      foreach ($currency->{$property} as $key => $values) {
-        $currency->{$property}[$key] = array_filter($values);
-      }
+    foreach ($currency->access_undo as $key => $values) {
+      $currency->access_undo[$key] = array_filter($values);
     }
 
     if ($currency->widget == CURRENCY_WIDGET_SELECT) {
@@ -507,17 +513,6 @@ class CurrencyFormController extends EntityFormController {
 
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin_currency_list'
-    );
-  }
-
-  /**
-   * Overrides Drupal\Core\Entity\EntityFormController::delete().
-   */
-  public function delete(array $form, array &$form_state) {
-  	\Drupal::cache()->deleteTags(array('mcapi.available_currency'));
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_currency_delete',
-      'route_parameters' => array('mcapi_currency' => $this->entity->id())
     );
   }
 

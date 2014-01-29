@@ -31,20 +31,30 @@ class AccountingMiscForm extends ConfigFormBase {
    */
   public function buildForm(array $form, array &$form_state) {
     $config = $this->configFactory->get('mcapi.misc');
-
+    module_load_include('inc', 'mcapi');
+    foreach (mcapi_transaction_list_tokens(TRUE) as $token) {
+      $tokens[] = "[mcapi:$token]";
+    }
     $form['sentence_template'] = array(
       '#title' => t('Default transaction sentence'),
-      '#description' => t('Use the tokens to define how the transaction will read when displayed in sentence mode'),
+      '#description' => t('Use the following tokens to define how the transaction will read when displayed in sentence mode: @tokens', array('@tokens' => implode(', ', $tokens))),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 5
     );
 
     $form['mix_mode'] = array(
-      '#title' => t('Restrict transactions to one currency'),
-      '#description' => t('Applies only when more than one currency is available'),
+        '#title' => t('Restrict transactions to one currency'),
+        '#description' => t('Applies only when more than one currency is available'),
+        '#type' => 'checkbox',
+        '#default_value' => !$config->get('mix_mode'),
+        '#weight' => 7
+    );
+    $form['indelible'] = array(
+      '#title' => t('Indelible accounting'),
+      '#description' => t('Ensure that transactions, exchanges and currencies are not deleted.'),
       '#type' => 'checkbox',
-      '#default_value' => !$config->get('mix_mode'),
+      '#default_value' => $config->get('indelible'),
       '#weight' => 7
     );
     $form['child_errors'] = array(
@@ -89,9 +99,6 @@ class AccountingMiscForm extends ConfigFormBase {
   }
 
   public function validateForm(array &$form, array &$form_state) {
-    drupal_set_message('check setErrorByName of this form after D8 alpha5', 'warning');return;
-    //documentation differs from code in alpha5
-    //https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Form!FormBuilder.php/function/FormBuilder%3A%3AsetErrorByName/8
     if (!$form_state['values']['mix_mode'] && empty($form_state['values']['worths_delimiter'])) {
       \Drupal::formBuilder()->setErrorByName('worths_delimiter', $form_state, $this->t('Delimiter is required'));
     }
@@ -108,6 +115,7 @@ class AccountingMiscForm extends ConfigFormBase {
       ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
+      ->set('indelible', $form_state['values']['indelible'])
       ->save();
 
     parent::submitForm($form, $form_state);

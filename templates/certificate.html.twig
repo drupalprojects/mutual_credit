@@ -35,7 +35,7 @@ for: "<em>{{ description }}</em>"
 {{ links }}
 </center>
 
-<br />
-<br /><b>Child transactions:</b>
+<br />{% if children %}
+<br /><b>Child transactions: </b>
 <br />{{ children }}
-<br />
+<br />{% endif %}

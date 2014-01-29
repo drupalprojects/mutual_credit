@@ -7,3 +7,9 @@ mcapi_add_exchange_laction:
 mcapi.addWallet.action :
   class: \Drupal\Core\Menu\LocalActionDefault
   derivative: \Drupal\mcapi\Plugin\Derivative\WalletLocalAction
+
+mcapi.admin.transact.action:
+  route_name: mcapi.transaction_admin
+  title: 'Log Transaction'
+  appears_on:
+    - mcapi.admin

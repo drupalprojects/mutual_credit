@@ -6,3 +6,4 @@ child_errors:
   allow: 0
   watchdog: watchdog
   show_messages: show_messages
+indelible: true

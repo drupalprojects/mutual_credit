@@ -14,6 +14,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 
 /**
  * Defines the wallet entity.
+ * Wallets can only belong to content entities.
  * NB the canonical link is actually a 'views' page
  *
  * @EntityType(
@@ -21,7 +22,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
  *   label = @Translation("Wallet"),
  *   module = "mcapi",
  *   controllers = {
- *     "storage" = "Drupal\Core\Entity\FieldableDatabaseStorageController",
+ *     "storage" = "Drupal\mcapi\WalletStorageController",
  *     "access" = "Drupal\mcapi\WalletAccessController",
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",
@@ -37,43 +38,22 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
  *   translatable = FALSE,
  *   route_base_path = "admin/accounting/wallets",
  *   links = {
- *     "canonical" = "view.wallet_statement.page_1",
+ *     "canonical" = "mcapi.wallet_view",
  *     "admin-form" = "mcapi.wallets"
  *   }
  * )
  */
 class Wallet extends ContentEntityBase {
 
-  /**
-   * Wallets can only belong to content entities.
-   */
-
   private $owner;
-  /**
-   * Whenever a wallet is loaded, prepare the owner entity
-   *
-   * @param EntityStorageControllerInterface $storage_controller
-   * @param array $entities
-   */
-  public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
-    foreach ($entities as $wallet) {
-      $parent_type = $wallet->get('entity_type')->value;
-      //they could all have different parent entity types, so we have to load them separately
-      if ($parent_type == 'system') {
-        $wallet->owner = NULL;// new \Drupal\mcapi\Entity\Bank;
-      }
-      else {
-        //@todo remove this array syntax
-        $wallet->owner = entity_load('user', $wallet->get('pid')->value);
-      }
-    }
-  }
 
   /**
    * {@inheritdoc}
    */
   public function uri() {
-    return 'wallet/'.$this->id();
+    return array(
+      'path'=> 'wallet/'.$this->id()
+    );
   }
 
   /**
@@ -89,27 +69,85 @@ class Wallet extends ContentEntityBase {
    */
   public function getOwner() {
     if ($this->owner) return $this->owner;
-    return $this;
+    else return $this;
   }
 
   /**
-   * {@inheritdoc}
+   *
+   * @param string $langcode
    */
   public function label($langcode = NULL) {
-    //to prevent recursion we don't call getOwner.
-    if ($this->owner) {
-      //if there is only one wallet per parent, we use the parent's name instead of the wallet
-      if (max(\Drupal::config('mcapi.wallets')->get('entity_types')) < 2) {
-        return $this->owner->label();
+    $display_format = \Drupal::config('mcapi.wallets')->get('display_format');
+    $replacements = array('!o' => '', '!w'=> '');
+    if (is_numeric(strpos($display_format, '!o'))) {
+      $replacements['!o'] =  $this->getOwnerLabel();
+    }
+    if (is_numeric(strpos($display_format, '!w'))) {
+      $replacements['!w'] = $this->get('name')->value;
+    }
+    return strtr($display_format, $replacements);
+  }
+
+  function linkedname($linked = TRUE) {
+    $display_format = \Drupal::config('mcapi.wallets')->get('display_format');
+
+    $replacements = array('!o' => '', '!w'=> '');
+    if (is_numeric(strpos($display_format, '!o'))) {
+      $label = $this->getOwnerLabel();
+      $replacements['!o'] = ($linked && $this->getOwner()->access('view')) ?
+        l($label, $this->getOwnerPath()) :
+        $label;
+    }
+
+    if (is_numeric(strpos($display_format, '!w'))) {
+      $label = $this->get('name')->value;
+      if ($linked && $this->access('view')) {
+        $uri = $this->uri();
+        $replacements['!w'] = l($label, $uri['path']);
       }
       else {
-        //Conjunction of parent entity label and the wallet name
-        return t('!parent: !wallet_name', array('!parent' => $this->getOwner()->label(), '!wallet_name' => $this->get('name')->value));
+        $replacements['!w'] = ($label);
       }
     }
+    return strtr($display_format, $replacements);
+
+  }
+
+  private function getOwnerLabel() {
+    if ($this->owner) {
+      return $this->owner->label();
+    }
     else {
-      //if the wallet has no owner (the system is the owner), return just the wallet's name
-      return $this->get('name')->value;
+      return t('System');
+    }
+  }
+  private function getOwnerPath() {
+    if ($this->owner) {
+      $uri = $this->owner->uri();
+    }
+    else {
+      $uri = $this->uri();
+    }
+    return $uri['path'];
+  }
+
+  /**
+   * Whenever a wallet is loaded, prepare the owner entity
+   *
+   * @param EntityStorageControllerInterface $storage_controller
+   * @param array $entities
+   */
+  public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
+    foreach ($entities as $wallet) {
+      $parent_type = $wallet->get('entity_type')->value;
+      //they could all have different parent entity types, so we have to load them separately
+      if ($parent_type == '') {
+        $wallet->owner = NULL;// new \Drupal\mcapi\Entity\Bank;
+      }
+      else {
+        //@todo remove this array syntax
+        $wallet->owner = entity_load('user', $wallet->get('pid')->value);
+      }
     }
   }
 
@@ -117,11 +155,17 @@ class Wallet extends ContentEntityBase {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageControllerInterface $storage_controller, array &$values) {
-    //trying to set this as a default but not working
-    $values['access_view'] = 'inherit';
-    $values['access_payer'] = 'autheticated';
-    $values['access_payer'] = 'current';
+
     parent::preCreate($storage_controller, $values);
+    $values += array(
+      'viewers' => 'inherit',
+      'payers' => 'autheticated',
+      'payees' => 'current'
+    );
+  }
+
+  function create($entity){
+    debug($entity, 'creating wallet');
   }
 
   /**
@@ -166,4 +210,5 @@ class Wallet extends ContentEntityBase {
     //+ a field to store the access control settings may be needed.
     return $properties;
   }
+
 }

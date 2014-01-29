@@ -25,8 +25,8 @@ function mcapi_install() {
 
   entity_create('mcapi_wallet', array(
     'name' => 'default',
-    'entity_type' => 'system',
-    'pid' => 1,
+    'entity_type' => '',
+    'pid' => 0,
     'viewers' => 'dunno',
     'payees' => 'dunno',
     'payers' => 'dunno',
@@ -40,8 +40,14 @@ function mcapi_install() {
       array('!sitename' => \Drupal::config('system.site')->get('name'))
     ),
     'uid' => '1',
+    'field_currencies' => array('credunit')
   ))->save();
+  //put user 1 in the default exchange
+  $account = user_load(1);
+  $account->set('field_exchanges', array(1));
+  $account->save();
 
+   /* test data
    entity_create('mcapi_transaction', array(
   	'payer' => 1,
   	'payee' => 2,
@@ -53,7 +59,10 @@ function mcapi_install() {
       array('currcode' => 'escrow', 'value' => 2)
     ),
   	'exchange' => 0
-  ))->save();
+  ));
+   //@todo the worths field doesn't save.
+    *
+    */
 }
 
 /**
@@ -116,7 +125,7 @@ function mcapi_schema() {
         'description' => 'Xid of the parent transaction',
         'type' => 'int',
         'size' => 'normal',
-        'not null' => FALSE,
+        'not null' => TRUE,
         'default' => 0,
       ),
       'payer' => array(
@@ -417,6 +426,12 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
+      'open' => array(
+        'description' => 'TRUE if the exchange is open for trading',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
       'langcode' => array(
         'description' => 'The {language}.langcode of this version.',
         'type' => 'varchar',
@@ -426,6 +441,9 @@ function mcapi_schema() {
       )
     ),
     'primary key' => array('id'),
+    'unique keys' => array(
+      'name' => array('name'),
+    )
   );
   return $schema;
 }

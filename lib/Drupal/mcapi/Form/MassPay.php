@@ -42,7 +42,7 @@ class MassPay extends FormBase {
 
     if (empty($form_state['confirmed'])) {
 
-      $exchanges = referenced_exchanges(\Drupal::currentUser(), 'field_exchanges');
+      $exchanges = referenced_exchanges();
       if ($exchanges < 2) {
         $form['exchange'] = array(
           '#type' => 'value',

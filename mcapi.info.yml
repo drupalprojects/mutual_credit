@@ -1,5 +1,5 @@
 name: 'Community Accounting API'
-description: "Build a complete exchange network with the provided transaction entity, currencies, 'worth' field, workflow, views and theme callbacks."
+description: "Build a complete exchange network with the echanges, currencies, and wallets"
 package: "Community Accounting"
 configure: mcapi.admin
 core: 8.x
@@ -7,4 +7,4 @@ type: module
 dependencies:
   - field
   - entity_chooser
-  - entity_reference
+#  - entity_reference

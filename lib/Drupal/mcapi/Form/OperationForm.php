@@ -3,31 +3,35 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\Core\Form\ConfirmFormBase;
+use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Entity\EntityManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
-class OperationForm extends ConfirmFormBase {
+class OperationForm extends EntityConfirmFormBase {
 
   private $op;
   private $configuration;
   private $transaction;
+  private $destination;
 
   function __construct() {
-    //yuk getting the parameters this way
     $parameters = \Drupal::request()->attributes;
     $this->op = $parameters->get('op') ? : 'view';
-    if ($this->op == 'create') {
-      $this->transaction = \Drupal::service('user.tempstore')
-      ->get('TransactionForm')
-      ->set('entity', $this->entity);
+    $this->configuration = $this->config('mcapi.operation.'.$this->op);
+
+    if ($path = $this->configuration->get('redirect')) {
+      $this->destination = $path;
     }
     else {
-      $this->transaction = $parameters->get('mcapi_transaction');
+      $request = \Drupal::request();
+      if ($request->query->has('destination')) {
+        $this->destination = $request->query->get('destination');
+        $request->query->remove('destination');
+      }
     }
-    $this->configuration = $this->config('mcapi.operation.'.$this->op);
   }
+
   /**
    * {@inheritdoc}
    */
@@ -43,13 +47,25 @@ class OperationForm extends ConfirmFormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * we could add this to the plugin options.
+   * although of course users don't know route names so there would be some complexity
+   * How do we go back
    */
   public function getCancelRoute() {
-    return array(
-    	'route_name' => 'mcapi.transaction_view',
-      'route_parameters' => array('mcapi_transaction' => $this->transaction->serial->value)
-    );
+    //@todo GORDON
+    //on the 'create' operation we can't very well go 'back' to step 1 can we?
+    //we don't even know the previous page.
+    if ($serial = $this->entity->get('serial')->value) {
+      return array(
+      	'route_name' => 'mcapi.transaction_view',
+        'route_parameters' => array('mcapi_transaction' => $serial)
+      );
+    }
+    else {
+      return array(
+      	'route_name' => 'user.page',
+      );
+    }
   }
 
   /**
@@ -68,14 +84,12 @@ class OperationForm extends ConfirmFormBase {
       //ah but where to get the $tokens from
       //maybe this should just be a feature of the template_preprocess_mcapi_transaction()
       module_load_include('inc', 'mcapi');
-      return mcapi_render_twig_transaction($this->configuration->get('twig'), $this->transaction, FALSE);
+      return mcapi_render_twig_transaction($this->configuration->get('twig'), $this->entity, FALSE);
     }
     else {//this is a transaction entity display mode, like 'certificate'
+      $mode = $this->configuration->get('format') == 'certificate' ? 'certificate' : $this->configuration->get('twig');
       $renderable = \Drupal::entityManager()->getViewBuilder('mcapi_transaction')
-      ->view(
-        $this->transaction,
-        $this->configuration->get('format') == 'certificate' ? 'certificate' : $this->configuration->get('twig')
-      );
+      ->view($this->entity, $mode);
       $renderable['#showlinks'] = FALSE;
       return drupal_render($renderable);
     }
@@ -85,9 +99,10 @@ class OperationForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state) {
+    //if (!$this->entity)  die('Entity not passed to OperationForm');
     $form = parent::buildForm($form, $form_state);
     //add any extra form elements as defined in the operation plugin.
-    $form += transaction_operations($this->op)->form($this->transaction, $this->configuration);
+    $form += transaction_operations($this->op)->form($this->entity, $this->configuration);
     if ($this->op == 'view') {
       unset($form['actions']);
     }
@@ -115,38 +130,47 @@ class OperationForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state, $op = NULL) {
+  public function submit(array $form, array &$form_state) {
 
     $plugin = transaction_operations($this->op);
+    $transaction = $this->entity;
 
-    $old_state = $this->transaction->state;
+    $old_state = $transaction->get('state')->value;
 
     //the op might have injected values into the form, so it needs to be able to access them
     form_state_values_clean($form_state);
-    $result = $plugin->execute($this->transaction, $form_state['values'])
+    $result = $plugin->execute($transaction, $form_state['values'])
       or $result = 'operation returned nothing renderable';
 
     $context = array(
-    	'op' => $this->op,
+    	'op_plugin_id' => $this->op,
       'old_state' => $old_state,
       'config' => $this->configuration,//not sure if there is a use-case for passing this
     );
-    echo 'is there a moduleHandler in this object?';
-    mdump($this);
     //this is especially for invoking rules
-  	\Drupal::moduleHandler()->invokeAll('mcapi_transaction_operated', $transaction, $context);
+  	$this->moduleHandler->invokeAll('mcapi_transaction_operated', array($transaction, $context));
 
-  	//where to go now?
-  	if ($path = $this->configuration->get('path')) {
-  	  $form_state['redirect'] = $path;
+  	if ($message = $this->configuration->get('message')) {
+  	  //@todo does dsm even show up here?
+  	  drupal_set_message($message);
   	}
-  	else {//default is to redirect to the transaction itself
-    	$form_state['redirect_route'] = array(
-  	    'route_name' => 'mcapi.transaction_view',
-  	    'route_parameters' => array('mcapi_transaction' => $this->transaction->id())
-    	);//might not be a good idea for undone transactions
-  	}
+    //@todo all the three ways of showing the form, and how each one moves to the next.
+
+  	//if ($this->configuration->get('format2') == 'redirect') {
+    	if ($path = $this->destination) {
+    	  $form_state['redirect'] = $path;
+    	}
+    	else {//default is to redirect to the transaction itself
+    	  //might not be a good idea for undone transactions
+      	$form_state['redirect_route'] = array(
+    	    'route_name' => 'mcapi.transaction_view',
+    	    'route_parameters' => array('mcapi_transaction' => $transaction->get('serial')->value)
+      	);
+    	}
+  	//}
+
   	return $result;
   }
+
 }
 

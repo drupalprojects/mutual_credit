@@ -5,12 +5,12 @@ mcapi.admin_tab:
   tab_root_id: mcapi.admin_tab
   weight: 0
 
+#4 types of mass transaction
 mcapi.admin_exchanges_tab:
   route_name: mcapi.admin_exchange_list
   title: List
   tab_root_id: mcapi.admin_exchanges_tab
   weight: 0
-
 mcapi.admin_mass.many2one_tab:
   route_name: mcapi.admin_mass
   title: Many to one
@@ -23,6 +23,7 @@ mcapi.admin_mass.one2many_tab:
   tab_root_id: mcapi.admin_mass.one2many_tab
   weight: 0
 
+#view/edit tabs on exchange entity
 mcapi.exchange.view.tab:
   route_name: mcapi.exchange.view
   title: View
@@ -33,3 +34,16 @@ mcapi.exchange.edit.tab:
   title: Edit
   tab_root_id: mcapi.exchange.view
   weight: 1
+
+#list/edit tabs on wallet entity.
+mcapi.wallet.view.tab:
+  route_name: mcapi.wallet_view
+  title: Transactions
+  tab_root_id: mcapi.wallet_view
+  weight: 0
+mcapi.wallet.edit.tab:
+  route_name: mcapi.wallet_edit
+  title: Edit
+  tab_root_id: mcapi.wallet_view
+  weight: 1
+
