@@ -8,7 +8,30 @@ function mcapi_1stparty_help($path, $args) {
     //TODO might want to put some more detail here or at the top of the form editor page
     return implode(' ', $help);
   }
+}
 
+/**
+ * implements hook menu
+ * makes menu links for all the transaction forms
+ */
+function mcapi_1stparty_menu() {
+  foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
+    if ($editform->path) {//it is a required field right now
+      $items[$editform->path] = array(
+        'title' => $editform->title,
+        'description' => 'Custom transaction form',
+        'route_name' => "mcapi.1stparty.$id",
+        'weight' => 5,
+      );
+    }
+  }
+  $items['admin/accounting/workflow/forms'] = array(
+    'title' => 'Transaction form designer',
+    'description' => "Design your own transaction forms from the logged in user's perspective.",
+    'weight' => 4,
+    'route_name' => 'mcapi.admin_1stparty_editform_list',
+  );
+  return $items;
 }
 
 function mcapi_1stparty_theme() {
@@ -16,10 +39,8 @@ function mcapi_1stparty_theme() {
     '1stpartyform'=> array(
       'function' => 'theme_1stpartyform',//no template is possible here
       'render element' => 'element',
-      //'file' => 'mcapi_1stparty.inc'
     ),
   );
-
 }
 
 //see https://drupal.org/node/1800686 on how to make dynamic routes
@@ -34,32 +55,55 @@ function mcapi_1stparty_entity_info_alter(&$data) {
 
 function theme_1stpartyform($vars) {
 	$form = $vars['element'];
-
 	$tokens = array();
 
+	//add the buttons if they weren't  in the twig template already
+	if (strpos($form['#twig'], '{{ actions }}') === FALSE) $form['#twig'] .= "\n{{ actions }}";
 
 	foreach ($form['#twig_tokens'] as $fieldname) {
 		if ($form[$fieldname]['#type'] != 'value') {
      	unset($form[$fieldname]['#theme_wrappers']);
       $tokens[$fieldname] = drupal_render($form[$fieldname]);
 		}
+		elseif (empty($form[$fieldname['#required']]) && $form[$fieldname['#default_value']] == '') {
+		  unset($form[$fieldname]);
+		}
+		else {
+		  if (\Drupal::currentUser()->hasPermission('design 1stparty forms')) {
+		    drupal_set_message("Warning! Software limitation means there may be a problem hiding field '$fieldname', which has a preset value and is hidden.");
+		  }
+		}
 	}
 
-  //add the buttons if they weren't  in the twig template already
-	if (strpos($form['#twig'], '{{ actions }}') === FALSE) $form['#twig'] .= "\n{{ actions }}";
-
+  //add everything not rendered onto the last rendered thing.
+  $tokens[$fieldname] .= drupal_render($form);
 
   module_load_include('inc', 'mcapi');
   return mcapi_render_twig($form['#twig'], $tokens);
 }
 
-function mcapi_1stparty_menu() {
-  return array(
-   'admin/accounting/workflow/forms' => array(
-      'title' => 'Transaction form designer',
-      'description' => "Design your own transaction forms from the logged in user's perspective.",
-      'weight' => 4,
-      'route_name' => 'mcapi.admin_1stparty_editform_list',
-    )
-  );
+
+function mcapi_editform_load($id) {
+  return entity_load('1stparty_editform', $id);
+}
+
+/**
+ * get all the tokens which apply in the transaction form
+ * @return array
+ */
+function mcapi_1stparty_transaction_tokens() {
+  module_load_include ('inc', 'mcapi');
+  $tokens = array();
+  if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {
+    $tokens[-1] = 'mywallet';
+  }
+  $tokens += mcapi_transaction_list_tokens(FALSE);
+  unset($tokens[array_search('state', $tokens)]);
+  unset($tokens[array_search('serial', $tokens)]);
+  unset($tokens[array_search('exchange', $tokens)]);
+  unset($tokens[array_search('creator', $tokens)]);
+  //replace payer and payee with partner and direction
+  $tokens[array_search('payer', $tokens)] = 'partner';
+  $tokens[array_search('payee', $tokens)] = 'direction';
+  return $tokens;
 }

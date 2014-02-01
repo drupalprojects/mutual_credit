@@ -1,0 +1,26 @@
+id: second
+uuid: 580b2087-0322-4e77-9900-a8c56b272596
+name: Seconds
+status: true
+uid: '1'
+issuance: acknowledgement
+reservoir: null
+type: time
+settings: {  }
+prefix: $S
+suffix: s
+zero: ''
+color: '#000000'
+widget: currency_time_single
+widget_settings:
+  placeholder: 'h:m:s'
+formatter: null
+formatter_settings: null
+access_undo:
+  1:
+    perm_manage: perm_manage
+access_operations: {  }
+weight: '-10'
+limits_plugin: null
+limits_settings: null
+langcode: en

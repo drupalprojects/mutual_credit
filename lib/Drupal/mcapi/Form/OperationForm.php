@@ -99,8 +99,15 @@ class OperationForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state) {
-    //if (!$this->entity)  die('Entity not passed to OperationForm');
     $form = parent::buildForm($form, $form_state);
+    //this may be an entity form but we don't want the FieldAPI fields showing up.
+    foreach (element_children($form) as $fieldname) {
+      if (array_key_exists('#type', $form[$fieldname]) && $form[$fieldname]['#type'] == 'container') {
+        unset($form[$fieldname]); //should do it;
+      }
+    }
+
+
     //add any extra form elements as defined in the operation plugin.
     $form += transaction_operations($this->op)->form($this->entity, $this->configuration);
     if ($this->op == 'view') {

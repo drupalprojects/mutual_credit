@@ -59,8 +59,19 @@ class Exchange extends ContentEntityBase {
 
   //@todo
   function members() {
-    return 100;
+    //@todo
+    //entity_load_by_properties is expensive and I don't know how to make it work
+    //return entity_load_multiple_by_properties('user', array('field_exchanges' => $this->id()));
+
+    //this more direct solution belongs really in the storage controller
+    //@todo how the hell does countQuery work?
+    return count(db_select("user__field_exchanges", 'e')
+      ->fields('e', array('entity_id'))
+      ->condition('field_exchanges_target_id', $this->id())
+      ->execute()->fetchField());
   }
+
+  //better load the transaction storage controller for this.
   function transactions() {
     return 100;
   }
@@ -123,6 +134,7 @@ class Exchange extends ContentEntityBase {
       }
       else return FALSE;
     }
+    module_load_include('inc', 'mcapi');
     $fieldname = get_exchange_entity_fieldnames($entity->entityType());
     //@todo I can't work out how to do this with the entity_reference property api
     //so just using the database for now.

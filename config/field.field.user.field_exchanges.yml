@@ -8,7 +8,7 @@ type: entity_reference
 settings:
   target_type: mcapi_exchange
 module: entity_reference
-locked: false
+locked: true
 cardinality: '-1'
 translatable: false
 indexes: {  }

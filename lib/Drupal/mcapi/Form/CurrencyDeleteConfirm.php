@@ -45,7 +45,6 @@ class CurrencyDeleteConfirm extends EntityConfirmFormBase {
     \Drupal::EntityController('mcapi_transaction')->getStorageController()->currencyDelete($this->entity->id());
     $this->entity->delete();
     drupal_set_message(t('Currency %label has been deleted.', array('%label' => $this->entity->label())));
-    \Drupal::cache()->deleteTags(array('mcapi.available_currency'));
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin_currency_list'
     );

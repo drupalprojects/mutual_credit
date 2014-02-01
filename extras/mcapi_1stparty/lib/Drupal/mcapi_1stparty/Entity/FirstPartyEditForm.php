@@ -22,6 +22,7 @@ use Drupal\Core\Annotation\Translation;
  *   module = "mcapi",
  *   controllers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigStorageController",
+ *     "access" = "Drupal\mcapi_1stparty\FirstPartyEditFormAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi_1stparty\FirstPartyEditFormController",
  *       "edit" = "Drupal\mcapi_1stparty\FirstPartyEditFormController",
@@ -46,6 +47,8 @@ use Drupal\Core\Annotation\Translation;
 class FirstPartyEditForm extends ConfigEntityBase {
 
   public $id;
+  public $exchange;
+  public $path;
   public $title;
   public $status;
   public $type;
@@ -67,6 +70,7 @@ class FirstPartyEditForm extends ConfigEntityBase {
     $values += array(
     	'id' => '',
       'title' => '',
+      'path' => '',
     	'status' => 1,
       'type' => 'default',
       'partner' => array(
@@ -77,13 +81,17 @@ class FirstPartyEditForm extends ConfigEntityBase {
     	'direction' => array(
     	  'preset' => 'outgoing',
     		'widget' => 'radios',
-    		'incoming' => '',
-    		'outgoing' => ''
+    		'incoming' => 'I request',
+    		'outgoing' => 'I am paying'
       ),
       'description' => array(
-    	  'preset' => ''
+    	  'preset' => '',
+    	  'placeholder' => ''
       ),
-      'worths' => array(),
+        //this needs to be a worths field, but I don't know how to make such an object
+      'worths' => array(
+    	  'preset' => array('credunit' => array('currcode' => 'credunit', 'value' => 0))
+      ),
       'created' => array(
     	  'show' => FALSE
       ),

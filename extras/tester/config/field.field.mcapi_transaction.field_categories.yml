@@ -1,0 +1,18 @@
+id: mcapi_transaction.field_categories
+uuid: d9c2e85c-4479-4ba3-9c00-ad7ea2f0b246
+status: true
+langcode: en
+name: field_categories
+entity_type: mcapi_transaction
+type: taxonomy_term_reference
+settings:
+  allowed_values:
+    -
+      vocabulary: categories
+      parent: '0'
+  options_list_callback: null
+module: taxonomy
+locked: false
+cardinality: '1'
+translatable: false
+indexes: {  }

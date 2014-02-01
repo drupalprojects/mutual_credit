@@ -1,0 +1,14 @@
+name: 'INSTALL TAXONOMY MODULE FIRST Tester data & config'
+description: 'Prebuilt user testing environment. With exchanges, users, currencies, and basic blocks and views'
+core: 8.x
+package: Community Accounting
+type: module
+version: VERSION
+
+dependencies:
+  - views_ui
+  - field_ui
+  - contextual
+  - mcapi_1stparty
+  - dblog
+  - taxonomy

@@ -1,0 +1,24 @@
+id: user.user.default
+uuid: 86998418-f95e-4763-b500-b0ea5d546639
+targetEntityType: user
+bundle: user
+mode: default
+content:
+  field_exchanges:
+    type: entity_reference_autocomplete
+    weight: '0'
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      autocomplete_type: single
+      placeholder: ''
+  account:
+    weight: '-10'
+    visible: true
+  language:
+    weight: '0'
+    visible: true
+  timezone:
+    weight: '6'
+    visible: true
+status: true

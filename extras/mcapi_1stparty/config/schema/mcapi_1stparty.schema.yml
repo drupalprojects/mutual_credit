@@ -5,6 +5,9 @@ mcapi.1stparty.*:
     id:
       type: string
       label: 'Mcapiform identifier'
+    exchange:
+      type: string
+      label: 'Exchange'
     title:
       type: label
       label: 'Form title'

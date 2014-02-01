@@ -1,10 +1,9 @@
 id: pay
+exchange: 
 title: 'Pay someone'
 status: 1
 type: default
 partner:
-  #@todo user chooser is deprecated
-  selection: 'user_chooser_segment_perms:transact'
   preset: ''
 direction:
   preset: outgoing

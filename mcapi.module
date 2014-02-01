@@ -346,10 +346,6 @@ function mcapi_get_state_descriptions() {
  */
 function mcapi_mcapi_info_drupal_permissions() {
   return array(
-    'transact' => array(
-      'title' => t('Transact'),
-      'description' => t("Register exchanges with other members, subject each currency's permissions")
-    ),
     'create own wallets' => array(
       'title' => t('Create own wallets'),
       'description' => t('Users can have as many wallets as they like.')
@@ -450,8 +446,6 @@ function referenced_exchanges(ContentEntityInterface $entity = NULL) {
   if (is_null($entity)) {
     $entity = user_load(\Drupal::currentUser()->id());
   }
-  //@todo remove this
-  if(is_a($entity, 'Drupal\Core\Session\UserSession'))mtrace();
   if ($entity->entityType() == 'user') {
     $fieldname = 'field_exchanges';
   }
@@ -606,7 +600,7 @@ function mcapi_element_info() {
  */
 function mcapi_worths_element_process($element, &$form_state) {
   //@todo remove this when it is tested enough
-  if (!isset($element['#currencies'])) {echo 'worths element MUST have #currencies key'; mtrace();}
+  //if (!isset($element['#currencies'])) {echo 'worths element MUST have #currencies key'; mtrace();}
 
   //the default value also tells us which currencies are available
   //if no defaults are set then all currencies should be present
@@ -890,10 +884,11 @@ function mcapi_form_user_form_alter(&$form, $form_state) {
   _mcapi_conceal_user_exchanges($form, $form_state);
 }
 function _mcapi_conceal_user_exchanges(&$form, $form_state) {
+
   if (count(referenced_exchanges()) < 2) {
     //setting #access to FALSE means the value is not submitted
     //$form['field_exchanges']['#access'] = FALSE;
-    $form['field_exchanges']['#attributes']['style'] = 'display:none;';
+    //$form['field_exchanges']['#attributes']['style'] = 'display:none;';
   }
 }
 
@@ -1000,6 +995,7 @@ function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
 
 /**
  * field api default value callback
+ * TEMP...
  * when creating a new exchange, populate the currencies field
  * with the currentuser's values.
  * N.B. in FieldItemList::setValue
@@ -1046,6 +1042,7 @@ function mcapi_request_get_entity($request) {
     return $value;
   }
 }
+
 /**
  *
  * implements hook_mcapi_transaction_pre_validate().
@@ -1071,32 +1068,39 @@ function mcapi_mcapi_transaction_children(TransactionInterface $transaction) {
   return array($extra);
 }
 
-
+/**
+ * developer-friendly wrapper around the wallet storage controller function, getWalletIds().
+ * @param EntityInterface $entity
+ * @return array
+ *   wallet ids belonging the to the passed entity
+ */
 function mcapi_get_wallet_ids(EntityInterface $entity) {
   return \Drupal::EntityManager()->getStorageController('mcapi_wallet')->getWalletIds($entity);
 }
-
-/**
- * ensure that users without configure mcapi permission cannot
- * see transactions or users in exchanges to which they do not belong,
+/*
+ * implements hook_block_view_BLOCK_BASE_ID_alter
+ * Add a links to the menu block, one for each exchange the current user is in.
+ * The alternative, to create many links and give them all access control would be
+ * rather expensive, I think
+ * @todo second opinion, GORDON?
  */
-function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
-  $account = \Drupal::currentUser();
-  if ($account->hasPermission('configure mcapi')) return;
-  //@todo finish this views modification
-  drupal_set_message('views modification to limit transactions by exchange NOT TESTED.');
-  if (array_key_exists('mcapi_transaction', $query->getEntityTableinfo())) {
-    $query->where[] = array(
-    	'conditions' => array(
-    	  0 => array(
-    		  'field' => 'exchange',
-    	    'value' => array_keys(referenced_exchanges()),
-    	    'operator' => 'IN'
-    	  )
-      ),
-      'args' => array(),
-      'type' => 'AND'
-    );
+function mcapi_block_view_system_menu_block_alter(&$build, $block) {
+  if($block->getPluginId() == 'system_menu_block:tools') {
+    foreach (referenced_exchanges() as $exchange) {
+      //does a menu link really require all of these properties
+      $uri = $exchange->uri();
+      $renderable = array(
+      	'#theme' => 'menu_link',
+        '#title' => $exchange->label(),
+        '#href' => $uri['path'],
+        '#weight' => -100,
+        '#localized_options' => array(),
+        '#below' => array(),
+        '#attributes' => array(),
+        '#original_link' => array('menu_name' => 'tools'),//required by menu_block_view_system_menu_block_alter
+      );
+      array_unshift($build['content'], $renderable);
+    }
   }
 }
 

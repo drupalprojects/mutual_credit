@@ -1,0 +1,7 @@
+mcapi.switch.user:
+  path: '/switch/{name}'
+  defaults:
+    _content: '\Drupal\mcapi_tester\Controller\McapiTesterSwitchUser::switchUser'
+    _title: 'Switch user'
+  requirements:
+    _permission: 'access content'

@@ -43,7 +43,6 @@ class CurrencyEnableConfirm extends EntityConfirmFormBase {
   public function submit(array $form, array &$form_state) {
     $this->entity->set('status', TRUE);
     $this->entity->save();
-    \Drupal::cache()->deleteTags(array('mcapi.available_currency'));
     drupal_set_message(t('"%label" has been enabled.', array('%label' => $this->entity->label())));
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin_currency_list'

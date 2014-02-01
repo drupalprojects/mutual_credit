@@ -41,11 +41,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    */
   public function delete(array $transactions) {
     foreach ($transactions as $transaction) {
-      $transaction->state = TRANSACTION_STATE_UNDONE;
+      $transaction->set('state', TRANSACTION_STATE_UNDONE);
       try{
         $transaction->save($transaction);
         $this->indexDrop($transaction->serial->value);
-        drupal_set_message('update hook needed in TransactionStorageController->delete()?');
       }
       catch (Exception $e){
         drupal_set_message(t('Failed to undo transaction: @message', array('@message' => $e->getMessage())));

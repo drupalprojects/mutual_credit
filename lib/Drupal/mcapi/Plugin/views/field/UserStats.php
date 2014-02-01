@@ -23,7 +23,6 @@ class UserStats extends FieldPluginBase {
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['separator'] = array('default' => '');
-    $options['currencies'] = array('default' => array());
     $options['stat'] = array('default' => 'balance');
     return $options;
   }
@@ -37,14 +36,6 @@ class UserStats extends FieldPluginBase {
       '#type' => 'textfield',
       '#size' => 10,
       '#default_value' => $this->options['separator'],
-    );
-    $form['currencies'] = array(
-      '#title' => t('Currencies'),
-      '#title_display' => '#before',
-      '#description' => t('Select none to see all the currencies the user can use'),
-      '#type' => 'mcapi_currency',
-      '#multiple' => TRUE,
-      '#default_value' => $this->options['currencies'],
     );
     $form['stat'] = array(
       '#title' => t('Metric'),
@@ -70,19 +61,22 @@ class UserStats extends FieldPluginBase {
 
   function render(ResultRow $values) {
     $account = $this->getEntity($values);
-    if (empty($this->options['currencies'])) {
-      $this->options['currencies'] = mcapi_get_available_currencies($account);
-    }
-    $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+    $wid = reset(mcapi_get_wallet_ids($account));
+    $exchanges = referenced_exchanges($account);
+    //this isn't going to work...
+    //@todo make this work with the right entity_reference syntax
+    $currency = reset($exchanges)->field_currencies->getvalue(TRUE)->entity;
 
-    foreach ($this->options['currencies'] as $currcode) {
-      $currency = currency_load($currcode);
-      $result = $storage->summaryData($account, $currency, array());
-      if (in_array($this->options['stat'], array('trades', 'partners'))) {
-        return $result[$this->options['stat']];
-      }
-      else return $currency->format($result[$this->options['stat']]);
+    $result = \Drupal::entityManager()->getStorageController('mcapi_transaction')->summaryData(
+      entity_load('mcapi_wallet', $wid),
+      $currency
+    );
+
+    if (in_array($this->options['stat'], array('trades', 'partners'))) {
+      return $result[$this->options['stat']];
     }
+    else return $currency->format($result[$this->options['stat']]);
+
   }
 
 }

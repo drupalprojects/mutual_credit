@@ -1,0 +1,8 @@
+vid: categories
+uuid: 3fd062fc-969b-4514-9d00-aa63e8aac821
+name: Categories
+description: 'Test vocabulary'
+hierarchy: '0'
+weight: 0
+status: true
+langcode: en

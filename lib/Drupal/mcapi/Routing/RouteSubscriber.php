@@ -40,6 +40,7 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection, $provider) {
+//    mtrace();
     foreach (\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_type_bundle => $max) {
       list($entity_type, $bundle) = explode(':', $entity_type_bundle);
       $entity_info = $this->manager->getDefinition($entity_type);

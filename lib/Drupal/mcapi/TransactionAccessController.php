@@ -45,9 +45,9 @@ class TransactionAccessController extends EntityAccessController {
     }
     //you can view a transaction if you can view either the payer or payee wallets
     if ($op == 'view') {
-      return $transaction->payer->entity->access('view', $account) || $transaction->payee->entity->access('view', $account);
+      return $transaction->get('payer')->entity->access('view', $account)
+       || $transaction->get('payee')->entity->access('view', $account);
     }
-
     return transaction_operations($op)->opAccess($transaction, $account);
   }
 }

@@ -119,9 +119,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
 
     $values['widget_settings'] += \Drupal::service('plugin.manager.mcapi.currency_widget')->getDefaultSettings($values['widget']);
 
-    //TODO this will use a new wallet_chooser plugin
-    $values['membership'] = 'permission:transact';
-
     $values['access_undo'] += array(
       1 => array('perm_manage' => 'perm_manage'),
       -1 => array('perm_manage' => 'perm_manage', 'is_signatory' => 'is_signatory')
@@ -142,18 +139,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public function label($langcode = NULL) {
     //TODO how to we translate this?
   	return $this->name;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function postDelete(EntityStorageControllerInterface $storage_controller, array $entities) {
-    parent::postDelete($storage_controller, $entities);
-    $cache_tags = array();
-    foreach ($entities as $currency) {
-      $cache_tags['mcapi.available_currency'] = $currency->id();
-    }
-    cache_invalidate_tags($cache_tags);
   }
 
   /**

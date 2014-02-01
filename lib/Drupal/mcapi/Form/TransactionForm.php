@@ -61,9 +61,7 @@ class TransactionForm extends ContentEntityFormController {
       '#weight' => 5,
     );
 
-    //@todo GORDON what's the best way to list the wallets of the members of the current exchange
-    //including any wallets whose parent is the exchange itself?
-    //I think what we need is a wallet_chooser element!
+    //lists all the wallets in the exchange
     $form['payer'] = array(
       '#title' => t('Wallet to be debited'),
       '#type' => 'local_wallets',
@@ -113,6 +111,7 @@ class TransactionForm extends ContentEntityFormController {
 //    parent::validate($form, $form_state);//this makes an infinite loop here but not in nodeFormController
     form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
 
+
     //on the admin form it is possible to change the transaction type
     //so here we're going to ensure the state is correct, even through it was set in preCreate
     //actually this should probably happen in Entity prevalidate, not in the form
@@ -122,7 +121,7 @@ class TransactionForm extends ContentEntityFormController {
 
     $transaction = $this->buildEntity($form, $form_state);
     $transaction->set('created', REQUEST_TIME);
-    $transaction->set('creator', \Drupal::currentUser->id());
+    $transaction->set('creator', \Drupal::currentUser()->id());
 
 
     if (array_key_exists('mcapi_validated', $form_state))return;

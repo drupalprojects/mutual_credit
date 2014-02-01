@@ -134,6 +134,7 @@ class CurrencyListController extends DraggableListController {
         'standalone' => TRUE,
       ),
       '#prefix' => '<div class="add-new-placeholder">&nbsp;</div>',
+      '#required' => TRUE
     );
 
     $currency_type_manager = \Drupal::service('plugin.manager.mcapi.currency_type');
@@ -149,6 +150,7 @@ class CurrencyListController extends DraggableListController {
       '#empty_option' => $this->t('- Currency Type -'),
       '#options' => $options,
       '#prefix' => '<div class="add-new-placeholder">&nbsp;</div>',
+      '#required' => TRUE
     );
 
     $form['entities']['new']['issuance'] = array(

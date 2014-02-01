@@ -65,7 +65,7 @@ mcapi.transaction_admin:
   path: '/admin/accounting/transact'
   defaults:
     _entity_form: 'mcapi_transaction.admin'
-    _title: 'Record transaction'
+    _title: 'Log transaction'
   requirements:
     _permission: 'manage mcapi'
 
@@ -118,15 +118,14 @@ mcapi.admin.transactions.operations:
     _permission: 'access administration pages'
 
 mcapi.workflow_settings:
-  path: '/admin/accounting/workflow/op/{op}'
+  path: '/admin/accounting/transactions/workflow/{op}'
   defaults:
     _form: 'Drupal\mcapi\Form\OperationSettingsForm'
     _title: 'Configure transaction operation'
   requirements:
     _permission: 'configure mcapi'
 
-#wallets\
-
+#wallets
 mcapi.wallet_view:
   path: '/wallet/{mcapi_wallet}'
   defaults:
@@ -179,6 +178,7 @@ mcapi.exchange.add:
   path: '/exchange/add'
   defaults:
     _entity_form: 'mcapi_exchange.edit'
+    _title: Create exchange
   requirements:
     _permission: 'manage mcapi'
 
@@ -186,6 +186,7 @@ mcapi.exchange.edit:
   path: '/exchange/{mcapi_exchange}/edit'
   defaults:
     _entity_form: 'mcapi_exchange.edit'
+    _title: 'Edit exchange'
   requirements:
     _entity_access: 'mcapi_exchange.edit'
 

@@ -1,0 +1,22 @@
+id: switchuser
+uuid: 4a65f937-b5e0-4a13-9500-b9a0611fea91
+weight: null
+status: true
+langcode: en
+theme: stark
+region: sidebar_second
+plugin: mcapi_tester_switch_user
+settings:
+  label: 'Switch user'
+  module: mcapi_tester
+  label_display: visible
+  cache: -1
+visibility:
+  path:
+    visibility: '0'
+    pages: ''
+  role:
+    roles: {  }
+  node_type:
+    types: {  }
+  visibility__active_tab: edit-visibility-path

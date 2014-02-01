@@ -1,0 +1,17 @@
+id: manager
+uuid: f36149d3-20b1-4e06-9b00-d4bb9f01abc4
+label: 'General Manager'
+weight: 5
+permissions:
+  - 'manage mcapi'
+  - 'bypass node access'
+  - 'administer nodes'
+  - 'access content overview'
+  - 'access administration pages'
+  - 'access site in maintenance mode'
+  - 'view the administration theme'
+  - 'administer account settings'
+  - 'administer users'
+  - 'select account cancellation method'
+status: true
+langcode: en

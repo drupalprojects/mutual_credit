@@ -257,7 +257,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         //Why do we need a serial number which isn't final
       }
       if (empty($this->get('created')->value)) {
-        $this->created->value = REQUEST_TIME;
+        $this->get('created')->value = REQUEST_TIME;
       }
       if (empty($this->get('creator')->value)) {
         $this->set('creator', \Drupal::currentUser()->id());
@@ -283,7 +283,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     parent::postSave($storage_controller, $update);
     $storage_controller->saveWorths($this);
     $storage_controller->addIndex($this);
-
   }
 
   /**
@@ -377,13 +376,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * From some transaction parameters
+   * work out an exchange that this transaction can be in, based on the participants and the currency
    * @return integer
    *   the exchange entity
    */
   private function derive_exchange() {
-
-
     $exchanges = array_intersect_key(
       referenced_exchanges($this->get('payer')->entity->getOwner()),
       referenced_exchanges($this->get('payee')->entity->getOwner())
@@ -399,8 +396,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         )
       );
     }
-    $transaction_worths = current($this->get('worths')->getValue());
 
+    foreach($this->get('worths')->getValue() as $delta => $worth) {
+      //Should be able to just pull them out of the worths field as this array
+      $worth = current($worth);
+      $transaction_worths[$worth['currcode']] = $worth['value'];
+    }
     $allowed_currcodes = exchange_currencies($exchanges);
     foreach ($exchanges as $id => $exchange) {
       $access = TRUE;

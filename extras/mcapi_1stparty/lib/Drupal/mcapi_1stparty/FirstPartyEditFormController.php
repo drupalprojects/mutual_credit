@@ -10,6 +10,7 @@ namespace Drupal\mcapi_1stparty;
 
 use Drupal\Core\Entity\EntityFormController;
 use Drupal\Core\Entity\EntityManager;
+use Drupal\field\Field;
 
 class FirstPartyEditFormController extends EntityFormController {
 
@@ -30,15 +31,43 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#weight' => 0,
     );
 
+
     $form['id'] = array(
     	'#type' => 'machine_name',
     	'#default_value' => $configEntity->id(),
     	'#machine_name' => array(
-    		'exists' => 'mcapi_currency_load',
+    		'exists' => 'mcapi_editform_load',
     		'source' => array('title'),
     	),
     	'#maxlength' => 12,
     	'#disabled' => !$configEntity->isNew(),
+    );
+
+    $exchange = $configEntity->exchange ?
+    entity_load('mcapi_exchange', $configEntity->exchange) :
+    NULL;
+    /* this could be enabled, but then the rest of the form would have to be ajax-reloaded */
+    foreach (entity_load_multiple('mcapi_exchange') as $id => $entity) {
+      $options[$id] = $entity->label();
+    }
+    $form['exchange'] = array(
+      '#title' => t('Restricted to exchange:'),
+      '#type' => 'select',
+      '#empty_option' => t('- All -'),
+      '#empty_value' => '',
+      '#options' => $options,
+      '#default_value' => $exchange ? $exchange->id() : '',
+      '#disabled' => TRUE,
+      '#weight' => 1,
+    );
+    $form['path'] = array(
+    	'#title' => t('Path'),
+      '#description' => t('The url path at which this form will appear. Must be unique. E.g. myexchange/payme'),
+      '#type' => 'textfield',
+      '#weight' => 3,
+      '#element_validate' => array(array($this, 'unique_path')),
+      '#default_value' => $configEntity->path,
+      '#required' => TRUE
     );
 
     $form['type'] =  array(
@@ -56,35 +85,44 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#weight' => 6,
     );
 
+    //get all the wallets, determined by context
     $form['partner'] = array(
     	'#title' => t('@fieldname preset', array('@fieldname' => t('Partner'))),
     	'#descriptions' => t('In complex sites, it may be possible to choose a user who cannot use the currency'),
     	'#type' => 'details',
     	'#group' => 'steps',
-
-      //THIS WIDGET IS WAITING FOR ENTITY_REFERENCE PLUGIN FROM GORDON
-
-    	'selection' => array(
-    		'#title' => t('Users to choose from'),
-    		'#type' => 'select',
-    	    //choose from the wallet chooser plugins
-    		'#options' => array(),
-    		'#default_value' => $configEntity->partner['selection'],
-    		'#required' => TRUE,
-      ),
-    	//@todo ideally this would be ajax, taking the above into account.
-    	'preset' => array(
+   		'#weight' => 1
+    );
+    //if this form is being edited by a member of the exchange, we can use the local_wallets autocomplete widget
+    //otherwise the preset is just a wallet id.
+    $user = user_load(\Drupal::currentUser()->id());
+    if ($exchange && $exchange->member($user)) {
+    	$form['partner']['preset'] = array(
     		'#title' => t('Preset field to'),
     		'#description' => t('Submit the form to respond to changes above.'),
-  	    //@todo gordon
-    		'#type' => 'entity_reference',
+        '#type' => 'local_wallets',
     		'#options' => array(),//would depend on the above
     		'#default_value' => $configEntity->partner['preset'],
     		'#multiple' => FALSE,
     		'#required' => FALSE
-    	),
-   		'#weight' => 1
-    );
+    	);
+    }
+    elseif ($exchange) {
+      $form['partner']['preset'] = array(
+      	'#title' => t('Wallet number'),
+      	'#title' => t("Wallet owner must be, or be in, exchange '!name'.", array('!name' => $exchange->label())),
+        '#type' => 'number',
+        '#min' => 1,
+    		'#default_value' => $configEntity->partner['preset'],
+      );
+    }
+    else {
+      $form['partner']['preset'] = array(
+      	'#markup' => t('This field can only be preset in forms with a designated exchange.')
+      );
+    }
+
+
     $form['direction']= array(
     	'#title' => t('@fieldname preset', array('@fieldname' => t('Direction'))),
     	'#description' => t('Direction relative to the current user'),
@@ -132,23 +170,35 @@ class FirstPartyEditFormController extends EntityFormController {
 	    ),
     	'#weight' => 3
   	);
-    $form['worths']= array(
-   		'#title' => t('@fieldname preset', array('@fieldname' => t('Worths'))),
-   		'#type' => 'details',
-   		'#group' => 'steps',
-   		'preset' => array(
-   			'#title' => t('Preset field to'),
-   			'#type' => 'worths',
-   			'#default_value' => $configEntity->worths['preset'],
-   		),
-    	'#weight' => 4
+    $form['worths'] = array(
+      '#title' => t('@fieldname preset', array('@fieldname' => t('Worths'))),
+      '#type' => 'details',
+      '#group' => 'steps',
+      '#weight' => 4
     );
-    if (count($currencies) > 1) {
-    	$form['worths']['#description'] = implode(' ', array(
-    		t('Put a number or zero to include a currency as an option on the form.'),
-    		t('Leave blank to exclude the currency.'),
-    	));
+    /*
+     * This won't work until I know how to prepopulate a worths field using form API
+    //worths can be preset for any or all of the currencies available in this exchange
+    //@todo = get the currencies elegantly out of entity_reference $exchange->field_currencies
+    if ($exchange) {
+      $currcodes = db_select('mcapi_exchange__field_currencies', 'c')
+        ->fields('c', array('field_currencies_target_id'))
+        ->condition('entity_id', $exchange->id())
+        ->execute()->fetchCol();
+      $form['worths']['preset'] = array(
+   			'#title' => t('Preset field to'),
+   			'#description' => t('Choose one currency and optionally a value'),
+   			'#type' => 'worths',
+   		  '#currencies' => $currcodes,
+   			'#default_value' => $configEntity->worths['preset'],
+     );
     }
+    else {
+      $form['worths']['preset'] = array(
+        '#markup' => t('This field can only be preset in forms with a designated exchange.')
+      );
+    }
+    */
     $form['description']= array(
     	'#title' => t('@fieldname preset', array('@fieldname' => t('Description'))),
     	'#description' => t('Direction relative to the current user'),
@@ -170,30 +220,63 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#weight' => 5
     );
 
-    $fields = $this->moduleHandler->invokeAll('entity_field_info', array('mcapi_transaction'));
-    foreach($fields['definitions'] as $def) {
-      //get the form widget
-      //print_r($def);
-    }
-    echo("TODO add the extra fields when field_attach_form is deprecated in EntityFormController::init");//dsm doesnt work here
+    //@todo GORDON allow the defaults to be set for each field API instance
 
-    module_load_include ('inc', 'mcapi');
-    $tokens = mcapi_transaction_list_tokens (FALSE);
-    //remove payer and payee and replace with partner and direction
-    $tokens[array_search('payer', $tokens)] = 'partner';
-    $tokens[array_search('payee', $tokens)] = 'direction';
+    //this gets all the fields for this entity, not sure if it is relevant
+    $form_display = entity_get_form_display('mcapi_transaction', 'mcapi_transaction', 'default');
+    //the default_value for each widget is $configEntity->{$fieldname}['preset'];
+    /*
+    foreach(Field::FieldInfo()->getInstances('mcapi_transaction') as $instances) {
+      foreach($instances as $fieldname => $instance) {//I'm not sure what happened to bundles
+        foreach ($configEntity->{$fieldname}['preset'] as $val) {
+          $instance[] = $val;
+        }
+        $element = array();
+        $delta = 0;//@todo iterate through these
+        $items = (array)$configEntity->{$fieldname}['preset'];
+        //this should produce the right widget for defaults, if only we knew how to populate it
+        $form_display->getRenderer($instance->getName())->formElement(
+          $instance->getValue(),
+          $delta,
+          $element,
+          $form,
+          $form_state
+        );
+      }
+    }*/
+
+    $form['fieldapi_1']= array(
+      '#title' => 'FieldAPI 1 preset',
+      '#type' => 'details',
+      '#group' => 'steps',
+      'preset' => array(
+        'container' => array(
+          '#markup' => 'There should be one configurable field for each FieldAPI field on the transaction. This is tricky'
+        )
+      ),
+      /*
+       *
+      'preset' => array(
+        '#title' => t('Preset field to'),
+        '#description' => t('Choose one currency and optionally a value'),
+        '#type' => 'worths',
+        '#default_value' => $configEntity->worths['preset'],
+       ),
+       */
+      '#weight' => 10
+    );
+
     $help = l(t('What is twig?'), 'http://twig.sensiolabs.org/doc/templates.html', array('external' => TRUE));
 
     //TODO workout what the tokens are and write them in template1['#description']
     $form['experience'] = array(
     	'#title' => t('User experience'),
     	'#type' => 'details',
-    	'#group' => 'steps',
     	'twig' => array(
     		'#title' => t('Main form'),
     		'#description' => t(
     		  'Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically. @tokens',
-    		  array('@tokens' => implode(', ', $tokens))
+    		  array('@tokens' => '{{ '.implode(' }}, {{ ',  mcapi_1stparty_transaction_tokens()) .' }}')
     	  ) .' '. $help,
     		'#type' => 'textarea',
     		'#rows' => 6,
@@ -213,14 +296,19 @@ class FirstPartyEditFormController extends EntityFormController {
     		'#title' => t('Preview mode'),
     		'#type' => 'radios',
     		'#options' => array(
-    		  'ajax' => t('replace just the form'),
-    			'page' => t('replace whole page')
+    			'page' => t('Basic - Go to a fresh page'),
+    		  'ajax' => t('Ajax - Replace the transaction form'),
+    			'modal' => t('Modal - Confirm in a dialogue box')
     	  ),
     		'#default_value' => $configEntity->experience['preview'],
     		'#weight' => 3,
     		'#required' => TRUE
     	),
-    	'#weight' => 20
+    	'#weight' => 20,
+    );
+    $form['#suffix'] = t(
+  	  "The user will then proceed to the 'create' operation page to confirm the transaction, which is configured at !link",
+      array('!link' => l('admin/accounting/transactions/workflow/create', 'admin/accounting/transactions/workflow/create'))
     );
     return $form;
   }
@@ -271,6 +359,9 @@ class FirstPartyEditFormController extends EntityFormController {
   public function save(array $form, array &$form_state) {
   	$configEntity = $this->entity;
     $status = $configEntity->save();
+    //rebuild the menu
+    //@todo, this is only necessary if the path has changed
+    \Drupal::service('router.builder')->rebuild();
 
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t("Form '%label' has been updated.", array('%label' => $configEntity->label())));
@@ -284,16 +375,35 @@ class FirstPartyEditFormController extends EntityFormController {
     );
   }
 
+
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::delete().
+   * Borrowed from NodeFormController
    */
   public function delete(array $form, array &$form_state) {
-
+    $destination = array();
+    $query = \Drupal::request()->query;
+    if ($query->has('destination')) {
+      $destination = drupal_get_destination();
+      $query->remove('destination');
+    }
     $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_1stparty_editform_list',
-      'route_parameters' => array('1stparty_editform' => $this->entity->id())
+      'route_name' => 'mcapi.admin.1stparty_editform.delete_confirm',
+      'route_parameters' => array(
+          '1stparty_editform' => $this->entity->id(),
+      ),
+      'options' => array(
+          'query' => $destination,
+      ),
     );
   }
 
+  public function unique_path(&$element, &$form_state) {
+    $dupe = db_select('router', 'r')
+      ->fields('r', array('name'))
+      ->condition('name', 'mcapi.1stparty.'.$this->entity->id(), '<>')
+      ->condition('path', $form_state['values']['path'])
+      ->execute()->fetchField();
+    if ($dupe) \Drupal::formBuilder()->setError('path', $form_state, t('Path is already used.'));
+  }
 }
-

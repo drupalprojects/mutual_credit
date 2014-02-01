@@ -1,0 +1,162 @@
+<?php
+
+function mcapi_tester_install() {
+  //We have 3 example exchanges and 4 users in each exchange
+  //each exchange has its own currency, one ladmin, one helper and 2 members
+  $exchanges = array(
+  	array(
+  	  'name' => 'second exchange',
+  	  'uid' => 1,
+  	  'open' => 1,
+  	  'langcode' => 'und',
+  	  'field_currencies' => array(
+         array('target_id' => 'second')
+      )
+    ),
+  	array(
+  	  'name' => 'third exchange',
+  	  'uid' => 1,
+  	  'open' => 1,
+  	  'langcode' => 'und',
+  	  'field_currencies' => array(
+  		  array('target_id' => 'third')
+      )
+    )
+  );
+  foreach($exchanges as $exchange) {
+    entity_create('mcapi_exchange', $exchange)->save();
+  }
+
+  $users = array(
+    array(
+      'name' => 'Ben Diego',
+      'mail' => 'ben@matslats.net',
+      'exchange' => 1,
+      'roles' => array('ladmin'),
+    ),
+    array(
+      'name' => 'Cath Arctic',
+      'mail' => 'carrie@matslats.net',
+      'exchange' => 1,
+      'roles' => array('helper'),
+    ),
+    array(
+      'name' => 'Don Eagle',
+      'mail' => 'dan@matslats.net',
+      'exchange' => 1,
+      'roles' => array(),
+    ),
+    array(
+      'name' => 'Esther Minate',
+      'mail' => 'ed@matslats.net',
+      'exchange' => 1,
+      'roles' => array(),
+    ),
+    array(
+      'name' => 'Fran Tastic',
+      'mail' => 'fran@matslats.net',
+      'exchange' => 2,
+      'roles' => array('ladmin'),
+    ),
+    array(
+      'name' => 'Gary Somatic',
+      'mail' => 'gary@matslats.net',
+      'exchange' => 2,
+      'roles' => array('helper'),
+    ),
+    array(
+      'name' => 'Harry Stockrat',
+      'mail' => 'harry@matslats.net',
+      'exchange' => 2,
+      'roles' => array(),
+    ),
+    array(
+      'name' => 'Ian Effible',
+      'mail' => 'ian@matslats.net',
+      'exchange' => 2,
+      'roles' => array(),
+    ),
+    array(
+      'name' => 'Jock Carter',
+      'mail' => 'jock@matslats.net',
+      'exchange' => 3,
+      'roles' => array('ladmin'),
+    ),
+    array(
+      'name' => 'Kerry Scene',
+      'mail' => 'kerry@matslats.net',
+      'exchange' => 3,
+      'roles' => array('helper'),
+    ),
+    array(
+      'name' => 'Larry Sistance',
+      'mail' => 'larry@matslats.net',
+      'exchange' => 3,
+      'roles' => array(),
+    ),
+    array(
+      'name' => 'Mel Bourne',
+      'mail' => 'mel@matslats.net',
+      'exchange' => 3,
+      'roles' => array(),
+    )
+  );
+  $d = 1;
+  foreach ($users as $user) {
+    $d++;
+    $account = array(
+      'name' => $user['name'],
+      'mail' => $user['mail'],
+      'roles' => array_merge(array('member'), $user['roles']),
+      'created' => strtotime("-$d days"),
+      'field_exchanges' => array(array('target_id' => $user['exchange']))
+    );
+    entity_create('user', $account)->save();
+  }
+
+  //each of these users will already have a wallet, according to the default settings,
+  //so we can make some transactions
+  $exchanges = db_select('mcapi_exchanges', 'e')->fields('e', array('id'))->execute()->fetchcol();
+  foreach($exchanges as $exchange_id) {
+    $wallets = db_query("SELECT wid FROM {mcapi_wallets} w
+        LEFT JOIN {users} u ON w.pid = u.uid AND w.entity_type = 'user'
+        LEFT JOIN {user__field_exchanges} e ON u.uid = e.entity_id AND e.field_exchanges_target_id"
+    )->fetchCol();
+    //get 2 random different wallet ids
+    for ($i = 0; $i < 12; $i++) {
+      shuffle($wallets);
+      $t = array(
+        'payer' => next($wallets),
+        'payee' => next($wallets),
+        'worths' => array(
+          'credunit' => array(
+            'currcode' => 'credunit',
+            'value' => rand(100, 5000)
+          )
+        ),
+        'exchange' => $exchange_id
+      );
+      entity_create('mcapi_transaction', $t)->save();
+    }
+
+    $terms = array('Transport', 'Food', 'Care', 'Learning', 'Home', 'Leisure');
+    foreach ($terms as $term) {
+      entity_create('taxonomy_term', array(
+        'vid' => 'categories',
+        'name' => $term,
+      ))->save();
+    }
+  }
+
+function mcapi_tester_uninstall() {
+  foreach (entity_load_multiple('user') as $uid => $account) {
+    if ($account->id() == 1)continue;
+    db_query("DELETE FROM {mcapi_wallets} WHERE pid = $uid AND entity_id =  'user'");
+    $account->delete();
+  }
+  db_truncate('mcapi_transactions')->execute();
+  db_truncate('mcapi_transactions_worths')->execute();
+  db_truncate('mcapi_transactions_index')->execute();
+}
+
+}

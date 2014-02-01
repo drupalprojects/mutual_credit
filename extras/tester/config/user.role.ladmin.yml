@@ -1,0 +1,8 @@
+id: ladmin
+uuid: 42ed9398-0705-4471-a003-3dfb2c619f7d
+label: 'Local admin'
+weight: 4
+permissions:
+  - 'manage own exchanges'
+status: true
+langcode: en

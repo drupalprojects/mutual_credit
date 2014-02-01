@@ -1,0 +1,9 @@
+id: helper
+uuid: 87f4e375-63a6-4d43-b803-03a354f1069a
+label: Helper
+weight: 3
+permissions:
+  - 'create own wallets'
+  - 'exchange helper'
+status: true
+langcode: en

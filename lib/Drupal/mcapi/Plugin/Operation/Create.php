@@ -39,7 +39,7 @@ class Create extends OperationBase {
    */
   public function opAccess(TransactionInterface $transaction) {
     //this affects the link visibility and the page access
-    return empty($transaction->serial->value);
+    return empty($transaction->get('xid')->value);
   }
 
   /*

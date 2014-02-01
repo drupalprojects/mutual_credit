@@ -1,5 +1,6 @@
 sentence_template: '[mcapi:payer] paid [mcapi:payee] [mcapi:worth] for [mcapi:description]. [transaction:links]'
 mix_mode: true
+exchange_menu: 'tools'
 worths_delimiter: '|'
 child_errors:
   mail_user1: mail_user1

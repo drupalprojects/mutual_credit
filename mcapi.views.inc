@@ -1,4 +1,4 @@
-mcapi.views.inc<?php
+<?php
 
 /**
  * @file
@@ -205,11 +205,18 @@ function mcapi_views_data() {
   );
 
   $data['mcapi_transactions']['created_year'] = array(
-    'title' => t('Created year'),
-    'help' => t('Date in the form of YYYY.'),
-    'argument' => array(
-      'field' => 'created',
-      'id' => 'date_year',
+      'title' => t('Created year'),
+      'help' => t('Date in the form of YYYY.'),
+      'argument' => array(
+          'field' => 'created',
+          'id' => 'date_year',
+      ),
+  );
+  $data['mcapi_transactions']['exchange'] = array(
+    'title' => t('Current Exchange'),
+    'help' => t('Any of the exchanges the current user is a member of'),
+    'filter' => array(
+      'id' => 'mcapi_current_exchange',
     ),
   );
 
@@ -374,6 +381,13 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
+  $data['mcapi_transactions_index']['exchange'] = array(
+    'title' => t('Current Exchange'),
+    'help' => t('Any of the exchanges the current user is a member of'),
+    'filter' => array(
+      'id' => 'mcapi_current_exchange',
+    ),
+  );
   $data['mcapi_transactions_index']['created_year_month'] = array(
     'title' => t('Created year + month'),
     'help' => t('Date in the form of YYYYMM.'),
@@ -511,18 +525,10 @@ function mcapi_views_data() {
   	'title' => t('Owner type'),
   	'help' => t('The entity type of the wallet owner. good for grouping by'),
   	'field' => array(
-//  		'id' => 'mcapi_owner_type',
-  		'id' => 'standard',
+		  'id' => 'mcapi_owner_type',
   	),
   	'filter' => array(
   		'id' => 'standard',
-  	)
-  );
-  $data['mcapi_wallets']['entity_type'] = array(
-  	'title' => t('Owner type'),
-  	'help' => t('The entity type of the wallet owner'),
-  	'field' => array(
-  		'id' => 'mcapi_owner_type',
   	)
   );
 
@@ -542,6 +548,16 @@ function mcapi_views_data_alter(&$data) {
       'id' => 'mcapi_userstat',
     )
   );
+  module_load_include('inc', 'mcapi');
+  //now make a filter for every entity that uses the field_exchanges
+  foreach (get_exchange_entity_fieldnames($type = '') as $entity_type => $fieldname) {
+    $filter = &$data[$entity_type .'__'. $fieldname][$fieldname .'_target_id']['filter'];
+    $filter['help'] = t("Show only what is in exchanges of the current user");
+    $filter['id'] = 'mcapi_current_exchange';
+    $filter['additional fields'] = array();//no idea how these were helping
+    unset($data[$entity_type .'__'. $fieldname]['delta']);
+    unset($data[$entity_type .'__'. $fieldname][$fieldname .'_revision_id']);
+  }
 }
 
 /*

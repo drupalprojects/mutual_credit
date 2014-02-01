@@ -16,7 +16,6 @@ use Drupal\Core\Entity\EntityInterface;
  * instead of the FieldableDatabaseStorageController then the $values passed to the create
  * method work very differently, putting NULL in all database fields
  */
-
 class WalletStorageController extends FieldableDatabaseStorageController implements WalletStorageControllerInterface {
 
   /**

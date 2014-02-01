@@ -36,55 +36,37 @@ class TransactionPreloader extends EntityConverter implements ParamConverterInte
   public function convert($value, $definition, $name, array $defaults, Request $request) {
     //get the settings from the transaction form
     $editform = \Drupal::entityManager()->getStorageController('1stparty_editform')->load($value);
-    //prepare a transaction using the defaults here
 
-    module_load_include ('inc', 'mcapi');
-    $tokens = drupal_map_assoc(mcapi_transaction_list_tokens(FALSE));
-    //remove all the fields which can't be preset
-    unset(
-      $tokens['payee'],
-      $tokens['payer'],
-      $tokens['serial'],
-      $tokens['state'],
-      $tokens['url'],
-      $tokens['creator'],
-      $tokens['created'],
-      $tokens['type']
-    );
-
-    $vars['type'] = $editform->type;
-    foreach ($tokens as $prop) {
-      if (property_exists($editform, $prop)) {
-        if (is_null($editform->{$prop}['preset'])){
-          $vars[$prop] = $editform->{$prop}['preset'];
+    //check if there is an entity in the url, from which we should get the defaults.
+    //@todo how do we even get the querystring from the request?
+    //print_r($request->attributes->all());
+    if (0) {
+      $vars = array();
+    }
+    //set the defaults from the form configuration
+    else{
+      //prepare a transaction using the defaults here
+      $vars = array('type' => $editform->type);
+      foreach (mcapi_1stparty_transaction_tokens() as $prop) {
+        if (property_exists($editform, $prop)) {
+          if (is_null($editform->{$prop}['preset'])){
+            $vars[$prop] = $editform->{$prop}['preset'];
+          }
         }
       }
-    }
-    if ($editform->direction['preset']) {
-      $partner = $editform->direction['preset'];
-    }
-    elseif(0) {
-      //$this preloaded will never be able to get a user from the url
-      //so we'll meet this contingency elsewhere.
-    }
-    //now handle the payer and payee, based on partner and direction
-    if ($editform->direction['preset'] = 'incoming') {
-      //TODO convert this to a wallet
-      $vars['payee'] = \Drupal::currentUser()->id();
-      $vars['payer'] = $partner;
-    }
-    elseif($editform->direction['preset'] = 'outgoing') {
-      //TODO convert this to a wallet
-      $vars['payer'] = \Drupal::currentUser()->uid;
-      $vars['payee'] = $partner;
-    }
 
-    //temp test data
-    //need to test worths as well
-    $vars = array('partner' => 2, 'direction' => 'outgoing', 'serial' => 111, 'description' => 'testdescription', 'blah' => 'blabla');
-
-    $vars[] = 'direction';
-    $vars[] = 'partner';
+      //now handle the payer and payee, based on partner and direction
+      if ($editform->direction['preset'] = 'incoming') {
+        //TODO convert this to a wallet
+        $vars['payee'] = \Drupal::currentUser()->id();
+        $vars['payer'] = $partner;
+      }
+      elseif($editform->direction['preset'] = 'outgoing') {
+        //TODO convert this to a wallet
+        $vars['payer'] = \Drupal::currentUser()->uid;
+        $vars['payee'] = $partner;
+      }
+    }
 
     $entity = \Drupal::entityManager()->getStorageController('mcapi_transaction')->create($vars);
     //which called preCreate which merged the vars with the default vars

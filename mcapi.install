@@ -15,15 +15,6 @@ function mcapi_install() {
   //create default content entities.
   //2 wallets, one for the system, and one for user 1.
   entity_create('mcapi_wallet', array(
-  	'name' => 'default',
-  	'entity_type' => 'user',
-    'pid' => 1,
-    'viewers' => 'dunno',
-    'payees' => 'dunno',
-    'payers' => 'dunno',
-  ))->save();
-
-  entity_create('mcapi_wallet', array(
     'name' => 'default',
     'entity_type' => '',
     'pid' => 0,
@@ -32,11 +23,20 @@ function mcapi_install() {
     'payers' => 'dunno',
   ))->save();
 
+  entity_create('mcapi_wallet', array(
+  'name' => 'default',
+  'entity_type' => 'user',
+  'pid' => 1,
+  'viewers' => 'dunno',
+  'payees' => 'dunno',
+  'payers' => 'dunno',
+  ))->save();
+
   //default exchange
 
   entity_create('mcapi_exchange', array(
     'name' => t(
-      '!sitename default exchange',
+      '!sitename exchange 1',
       array('!sitename' => \Drupal::config('system.site')->get('name'))
     ),
     'uid' => '1',
@@ -77,7 +77,6 @@ function mcapi_uninstall() {
  * Implements hook_enable
  */
 function mcapi_enable() {
-
 }
 
 function mcapi_disable() {

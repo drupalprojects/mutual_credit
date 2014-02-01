@@ -31,12 +31,13 @@ class ExchangeViewBuilder extends EntityViewBuilder {
       );
       if ($roles = user_role_names(TRUE, 'exchange helper')) {
         //get all the helper users in this exchange
-        $query = db_select('users_roles', 'ur')->fields('u', array('uid'))->countQuery();
-        $query->join('user__field_exchanges', 'ufe', 'ufe.entity_id = ur.uid');
-        $query->condition('rid', array_keys());
+        $query = db_select('users_roles', 'ur')->fields('ur', array('uid'));
+        $query->join('user__field_exchanges', 'f', 'f.entity_id = ur.uid');
+        $query->condition('ur.rid', array_keys($roles));
 
-        $helpers = $query->condition('ufe.field_exchanges_target_id', $exchange->id())
-          ->execute()->fetchField();
+        $helpers = $query->condition('f.field_exchanges_target_id', $exchange->id())
+          ->execute()->fetchCol();
+
         foreach (entity_load_multiple('user', $helpers) as $account) {
           $helpernames[] = theme('username', array('account' => $account));
         }

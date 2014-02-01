@@ -130,6 +130,7 @@ class Worths extends ConfigFieldItemBase {
   /**
    * return a string like "CC3:59:00|$2.22"
    */
+  //shouldn't we be using the worthformatter here?
   public function getString($delimiter = '') {
     $output = array();
     foreach ($this->properties as $worth) {
@@ -146,7 +147,10 @@ class Worths extends ConfigFieldItemBase {
 
   public function getValue() {
     foreach ($this->values as $value) {
-      $return[$value['currcode']] = $value['value'];
+      $return[$value['currcode']] = array(
+        'currcode' => $value['currcode'],
+        'value' =>  $value['value']
+      );
     }
     return $return;
   }

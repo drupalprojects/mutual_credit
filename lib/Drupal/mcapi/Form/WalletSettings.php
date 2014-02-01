@@ -78,7 +78,7 @@ class WalletSettings extends ConfigFormBase {
         )
       )
     );
-
+    /* actually this is set automatically
     $form['display_format'] = array(
       '#title' => t('Display format'),
       '#description' => t('Use tokens !o for the wallet owner and !w for the wallet name.') .' '.
@@ -88,6 +88,7 @@ class WalletSettings extends ConfigFormBase {
       '#default_value' => $config->get('display_format'),
       '#weight' => 4,
     );
+    */
 
     foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
       $wallet_access_plugins[$def['id']] = $def['label'];
@@ -142,16 +143,20 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
+    $vals = &$form_state['values'];
+    if ($vals['unique_names']) $display_format = '!w';
+    elseif($vals['autoadd_name']) $display_format = '!o';
+    else $display_format = '!o: !w';
 
     $this->configFactory->get('mcapi.wallets')
-      ->set('entity_types', $form_state['values']['entity_types'])
-      ->set('viewers', $form_state['values']['viewers'])
-      ->set('payers', $form_state['values']['payees'])
-      ->set('payees', $form_state['values']['viewers'])
-      ->set('unique_names', $form_state['values']['unique_names'])
-      ->set('display_format', $form_state['values']['display_format'])
-      ->set('access_personalised', $form_state['values']['access_personalised'])
-      ->set('autoadd_name', $form_state['values']['autoadd_name'])
+      ->set('entity_types', $vals['entity_types'])
+      //->set('viewers', $vals['viewers'])
+      //->set('payers', $vals['payees'])
+      //->set('payees', $vals['viewers'])
+      //->set('access_personalised', $vals['access_personalised'])
+      ->set('unique_names', $vals['unique_names'])
+      ->set('display_format', $display_format)
+      ->set('autoadd_name', $vals['autoadd_name'])
       ->save();
 
     parent::submitForm($form, $form_state);

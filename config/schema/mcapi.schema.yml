@@ -8,6 +8,9 @@ mcapi.misc:
     mix_mode:
       type: boolean
       label: Allow more than one currency in transactions
+    exchange_menu:
+      type: string
+      label: Menu
     worths_delimiter:
       type: string
       label: Delimiter

@@ -48,7 +48,7 @@ class WalletLocalAction  implements ContainerDerivativeInterface {
    * @param \Drupal\Core\StringTranslation\TranslationInterface $translation_manager
    *   The translation manager.
    */
-  public function __construct(RouteProviderInterface $route_provider, EntityManagerInterface $entity_manager, TranslationInterface $translation_manager) {
+  public function __construct(RouteProviderInterface $route_provider, EntityManagerInterface $entity_manager) {
     $this->routeProvider = $route_provider;
     $this->entityManager = $entity_manager;
   }

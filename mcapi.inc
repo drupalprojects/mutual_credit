@@ -346,6 +346,7 @@ function template_preprocess_certificate(&$vars) {
 	*/
 	//choose the transaction theme template based on the first currency of the transaction
 	//not sure if this is worth the processing power at the moment
+
 	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
 }
 
@@ -502,15 +503,10 @@ function mcapi_workflow_help() {
  *   names of replacable elements in the transaction
  */
 function mcapi_transaction_list_tokens($include_virtual = FALSE) {
-  $definitions = array_keys(\Drupal::entityManager()->getFieldDefinitions('mcapi_transaction'));
-  $fieldmap = Field::FieldInfo()->getFieldMap();
-  unset($fieldmap['uuid'], $fieldmap['xid'], $fieldmap['parent'], $fieldmap['type'], $fieldmap['children']);
-  if (array_key_exists('mcapi_transaction', $fieldmap)) {
-    $transaction_fields = array_keys($fieldmap['mcapi_transaction']);
-  }
-  else $transaction_fields = array();
-
-  $tokens = array_merge($definitions, $transaction_fields);
+  $tokens = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
+  //looks like fieldmap isn't needed at all, which will simplify this function
+  unset($tokens['uuid'], $tokens['xid'], $tokens['parent'], $tokens['type'], $tokens['children']);
+  $tokens = array_keys($tokens);
 
   if ($include_virtual){
     $tokens[] = 'links';

@@ -1,0 +1,29 @@
+id: test2
+exchange: '2'
+title: Add transaction in exchange 2
+status: 1
+type: default
+partner:
+  preset: ''
+direction:
+  preset: outgoing
+  widget: radios
+  incoming: 'I request'
+  outgoing: 'I am paying'
+description:
+  preset: ''
+  placeholder: ''
+worths:
+  preset:
+    credunit:
+      currcode: credunit
+      value: 0
+created:
+  show: false
+experience:
+  twig: "my wallet {{ mywallet }}\r\ndescription {{ description }}\r\nworths {{ worths }}\r\npartner {{ partner }}\r\ndirection {{ direction }}\r\ncreated {{ created }}\r\ncategories {{ field_categories }}"
+  button: 'do it now!'
+  preview: modal
+message: 'You did it!'
+langcode: en
+path: transact/testexchange2

@@ -1,0 +1,29 @@
+id: test1
+exchange: '1'
+title: Add transaction in exchange 1
+status: 1
+type: default
+partner:
+  preset: '3'
+direction:
+  preset: none
+  widget: radios
+  incoming: Request
+  outgoing: Pay
+description:
+  preset: 'Something that happened in exchange 1!'
+  placeholder: 'What was this payment for?'
+worths:
+  preset:
+    credunit:
+      currcode: credunit
+      value: 0
+created:
+  show: false
+experience:
+  twig: "Description {{ description }}\r\nValue {{ worths }}\r\n{{ direction }} \r\nPartner {{ partner }}\r\n{{ field_categories }}"
+  button: 'Log transaction'
+  preview: ajax
+message: 'Transaction Logged'
+langcode: en
+path: transact/test1

@@ -1,0 +1,52 @@
+<?php
+
+
+function mcapi_tester_exchange_field_extra_fields() {
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['members_link'] = array(
+    'label' => t('List of members'),
+    'weight' => 10,
+  );
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions_link'] = array(
+    'label' => t('List of transactions'),
+    'weight' => 11,
+  );
+  return $extra;
+}
+
+/**
+ * implements hook_mcapi_exchange_view()
+ */
+function mcapi_tester_exchange_mcapi_exchange_view($entity, $mode, $language) {
+
+  $count = db_select("user__field_exchanges", 'e')->fields('e', array('entity_id'))
+  ->condition('field_exchanges_target_id', $entity->id())
+  ->countQuery()->execute()->fetchField();
+  $renderable['members_link'] = array(
+    '#type' => 'item',
+    '#title' => t('@count members', array('@count'=> $count)),
+    'link' => array(
+      '#type' => 'link',
+      '#title' => t('Show members'),
+      '#href' => 'members',
+      //maybe instead put a view with the last five members here
+      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+    )
+  );
+
+  $count = db_select("mcapi_transactions", 't')->fields('t', array('xid'))->distinct()
+  ->condition('exchange', $entity->id())
+  ->countQuery()->execute()->fetchField();
+  $renderable['transactions_link'] = array(
+    '#type' => 'item',
+    '#title' => t('@count members', array('@count'=> $count)),
+    'link' => array(
+      '#type' => 'link',
+      '#title' => t('Show transactions'),
+      '#href' => 'exchange/'.$entity->id().'/transactions',
+      //maybe instead put a view with the last five members here
+      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+    )
+  );
+}
+
+

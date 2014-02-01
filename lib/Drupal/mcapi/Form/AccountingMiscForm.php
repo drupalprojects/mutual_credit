@@ -40,22 +40,30 @@ class AccountingMiscForm extends ConfigFormBase {
       '#description' => t('Use the following tokens to define how the transaction will read when displayed in sentence mode: @tokens', array('@tokens' => implode(', ', $tokens))),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
-      '#weight' => 5
+      '#weight' => 2
     );
 
     $form['mix_mode'] = array(
-        '#title' => t('Restrict transactions to one currency'),
-        '#description' => t('Applies only when more than one currency is available'),
-        '#type' => 'checkbox',
-        '#default_value' => !$config->get('mix_mode'),
-        '#weight' => 7
+      '#title' => t('Restrict transactions to one currency'),
+      '#description' => t('Applies only when more than one currency is available'),
+      '#type' => 'checkbox',
+      '#default_value' => !$config->get('mix_mode'),
+      '#weight' => 4
     );
     $form['indelible'] = array(
       '#title' => t('Indelible accounting'),
       '#description' => t('Ensure that transactions, exchanges and currencies are not deleted.'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('indelible'),
-      '#weight' => 7
+      '#weight' => 6
+    );
+    $form['exchange_menu'] = array(
+      '#title' => t('Menu'),
+      '#description' => t("Menu containing dynamic menu links to user's exchange(s)"),
+      '#type' => 'select',
+      '#options' => menu_get_menus(),
+      '#default_value' => $config->get('exchange_menu'),
+      '#weight' => 8
     );
     $form['child_errors'] = array(
       '#title' => t('Invalid child transactions'),
@@ -68,14 +76,14 @@ class AccountingMiscForm extends ConfigFormBase {
         'show_messages' => t('Show warning messages to user')
       ),
       '#default_value' => $config->get('child_errors'),
-      '#weight' => 7
+      '#weight' => 10
     );
     $form['worths_delimiter'] = array(
       '#title' => t('Delimiter'),
       '#description' => t('What characters should be used to separate values when a transaction has multiple currencies?'),
       '#type' => 'textfield',
       '#default_value' => $config->get('worths_delimiter'),
-      '#weight' => 8,
+      '#weight' => 12,
       '#size' => 10,
       '#maxlength' => 10,
       '#states' => array(
@@ -88,7 +96,7 @@ class AccountingMiscForm extends ConfigFormBase {
       '#title' => t('Rebuild index'),
       '#description' => t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
       '#type' => 'fieldset',
-      '#weight' => 10,
+      '#weight' => 15,
       'button' => array(
         '#type' => 'submit',
         '#value' => 'rebuild_mcapi_index',
@@ -113,6 +121,7 @@ class AccountingMiscForm extends ConfigFormBase {
       ->set('sentence_template', $form_state['values']['sentence_template'])
       //careful the mix_mode flag is inverted!!
       ->set('mix_mode', !$form_state['values']['mix_mode'])
+      ->set('exchange_menu', !$form_state['values']['exchange_menu'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
       ->set('indelible', $form_state['values']['indelible'])

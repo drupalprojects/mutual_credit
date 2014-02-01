@@ -94,6 +94,7 @@ class Worth extends ConfigFieldItemBase {
   /**
    * {@inheritdoc}
    */
+  //shouldn't we be using the worthformatter here?
   public function getString() {
     if ($this->value === NULL) {
       return;

@@ -1,0 +1,29 @@
+id: test3
+exchange: '3'
+title: Add transaction in exchange 3
+status: 1
+type: default
+partner:
+  preset: ''
+direction:
+  preset: outgoing
+  widget: radios
+  incoming: 'I request'
+  outgoing: 'I am paying'
+description:
+  preset: ''
+  placeholder: ''
+worths:
+  preset:
+    credunit:
+      currcode: credunit
+      value: 0
+created:
+  show: false
+experience:
+  twig: "{{ mywallet }}\r\n{{ description }}\r\n{{ worths }}\r\n{{ partner }}\r\n{{ direction }}\r\n{{ created }}\r\n{{ field_categories }}\r\n"
+  button: 'Create'
+  preview: modal
+message: 'Your transaction was created'
+langcode: en
+path: transact/testexchange3
