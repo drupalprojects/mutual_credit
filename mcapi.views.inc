@@ -548,13 +548,25 @@ function mcapi_views_data_alter(&$data) {
       'id' => 'mcapi_userstat',
     )
   );
-  module_load_include('inc', 'mcapi');
+  $data['users']['exchanges'] = array(
+    'title' => t('Exchange'),
+    'help' => t('Filter users by the exchange they are in.'),
+    'argument' => array(
+      'id' => 'user_exchanges',
+    )
+  );
+
+  //return;
   //now make a filter for every entity that uses the field_exchanges
-  foreach (get_exchange_entity_fieldnames($type = '') as $entity_type => $fieldname) {
-    $filter = &$data[$entity_type .'__'. $fieldname][$fieldname .'_target_id']['filter'];
-    $filter['help'] = t("Show only what is in exchanges of the current user");
-    $filter['id'] = 'mcapi_current_exchange';
-    $filter['additional fields'] = array();//no idea how these were helping
+  //EG for when a node is 'in' an exchange
+  module_load_include('inc', 'mcapi');
+  //print_r(get_exchange_entity_fieldnames());
+  foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
+    if (!$fieldname) continue;
+    $argument = &$data[$entity_type .'__'. $fieldname][$fieldname .'_target_id']['argument'];
+    $argument['help'] = t("Show only what is in exchanges of the current user");
+    $argument['id'] = 'entity_exchanges';
+    $argument['additional fields'] = array();//no idea how these were helping
     unset($data[$entity_type .'__'. $fieldname]['delta']);
     unset($data[$entity_type .'__'. $fieldname][$fieldname .'_revision_id']);
   }
