@@ -22,22 +22,22 @@ class UserActive extends FilterPluginBase {
     foreach (\Drupal::moduleHandler()->getImplementations('permission') as $module) {
       $permissions = module_invoke($module, 'permission');
       foreach ($permissions as $name => $perm) {
-        $perms[$module_info[$module]['name']][$name] = strip_tags($perm['title']);
+        $perms[$module][$name] = strip_tags($perm['title']);
       }
     }  
     $form['permission'] = array(
       '#type' => 'select',
       '#title' => t('Permission'),
-      '#description' => t('Users with which permission can see blocked users?')
+      '#description' => t('Users with which permission can see blocked users?'),
       '#options' => $perms,
-      '#default_value' => $this->value['permission']),
+      '#default_value' => $this->options['permission'],
     );
     parent::valueForm($form, $form_state);
   }
 
 
   protected function defineOptions() {
-    $options['permission']['default'] = 'administer users';
+    $options['permission']['default'] = 'manage own exchanges';
     return $options;
   }
 

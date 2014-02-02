@@ -31,6 +31,7 @@ class ExchangeForm extends ContentEntityFormController {
       '#type' => 'textfield',
       '#title' => t('Full name'),
       '#default_value' => $exchange->get('name')->value,
+      '#weight' => 1
     );
     //@todo how to decide who to select exchange managers from?
     //really it could be any user IN that exchange, although the exchange has no members right now....
@@ -42,6 +43,15 @@ class ExchangeForm extends ContentEntityFormController {
       '#type' => 'select',
       '#options' => $managers,
       '#default_value' => $exchange->get('uid')->value,
+      '#weight' => 3
+    );
+    $form['visibility'] = array(
+      '#title' => t('Visibility'),
+      '#description' => t('Is this exchange hidden from members of other exchanges?'),
+    	'#type' => 'radios',
+      '#options' => $this->entity->privacy_options(),
+      '#default_value' => $exchange->get('private')->value,
+      '#weight' => 5
     );
     $form['langcode'] = array(
       '#type' => 'language_select',
@@ -49,6 +59,7 @@ class ExchangeForm extends ContentEntityFormController {
       '#languages' => Language::STATE_CONFIGURABLE,
       '#default_value' => $exchange->get('langcode')->value,
       '#description' => t('The first language of the exchange'),
+      '#weight' => 8
     );
     //hide the currencies field if only one currency is available
     if (count(entity_load_multiple_by_properties('mcapi_currency', array('status' => TRUE))) < 2) {

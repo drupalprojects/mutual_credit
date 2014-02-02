@@ -8,6 +8,7 @@ function mcapi_tester_install() {
   	  'name' => 'second exchange',
   	  'uid' => 1,
   	  'open' => 1,
+  	  'visibility' => 'restricted',
   	  'langcode' => 'und',
   	  'field_currencies' => array(
          array('target_id' => 'second')
@@ -17,6 +18,7 @@ function mcapi_tester_install() {
   	  'name' => 'third exchange',
   	  'uid' => 1,
   	  'open' => 1,
+  	  'visibility' => 'private',
   	  'langcode' => 'und',
   	  'field_currencies' => array(
   		  array('target_id' => 'third')

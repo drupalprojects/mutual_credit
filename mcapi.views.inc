@@ -532,6 +532,66 @@ function mcapi_views_data() {
   	)
   );
 
+  $data['mcapi_exchanges']['table'] = array(
+    'group'  => t('Exchanges'),
+    'entity type' => 'mcapi_exchange',
+    'base' => array(
+      'field' => 'id',
+      'title' => t('Exchanges'),
+      'help' => t('List of Exchanges'),
+      'weight' => 5,
+      'defaults' => array(
+        'field' => 'entity_label',
+      )
+    ),
+  );
+  $data['mcapi_exchanges']['id'] = array(
+    'title' => t('Unique id'), // The item it appears as on the UI,
+    'help' => t('The unique database key of the exchange'),
+    'field' => array(
+      'id' => 'standard',
+    ),
+  );
+  $data['mcapi_exchanges']['name'] = array(
+  	'title' => t('Name'),
+  	'help' => t('The name of the exchange'),
+  	'field' => array(
+  	  //for now we'll make a link by rewriting the field.
+  	  //But surely I don't have to create a field handler just to link to the entity
+  	  //EntityLabel is so useless - its designed only for the file entity.
+  		'id' => 'standard',
+  	)
+  );
+  $data['mcapi_exchanges']['visibility'] = array(
+  	'title' => t('Visibility'),
+  	'help' => t("See, private, restricted and public exchanges, according to current user's access"),
+  	'field' => array(
+  		'id' => 'exchange_visibility',
+  	),
+  	'filter' => array(
+  		'id' => 'exchange_visibility',
+  	)
+  );
+  $data['mcapi_exchanges']['membership'] = array(
+  	'title' => t('Member count'),
+  	'help' => t("The number of 'active' users in the exchange"),
+  	'field' => array(
+  		'id' => 'exchange_members',
+  	  'additional fields' => array(
+  	    'id' => array('table' => 'mcapi_exchanges', 'field' => 'id')
+  	  )
+  	)
+  );
+  $data['mcapi_exchanges']['transactions'] = array(
+  	'title' => t('Transaction count'),
+  	'help' => t('The number of transactions in a given period'),
+  	'field' => array(
+  		'id' => 'exchange_transactions',
+  	  'additional fields' => array(
+  	    'id' => array('table' => 'mcapi_exchanges', 'field' => 'id')
+  	  )
+  	)
+  );
   return $data;
 }
 

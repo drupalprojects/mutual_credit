@@ -41,7 +41,6 @@ class McapiTesterSwitchUser extends BlockBase {
       $build = array(
         'help' => array('#markup' => 'Username (exchange id)'),
         'devel_links' => array('#theme' => 'links', '#links' => $links),
-        'warning' => array('#markup' => "sometimes doesn't work"),
       );
       return $build;
     }

@@ -40,6 +40,7 @@ function mcapi_install() {
       array('!sitename' => \Drupal::config('system.site')->get('name'))
     ),
     'uid' => '1',
+    'visibility' => 'public',
     'field_currencies' => array('credunit')
   ))->save();
   //put user 1 in the default exchange
@@ -430,6 +431,13 @@ function mcapi_schema() {
         'type' => 'int',
         'size' => 'normal',
         'not null' => FALSE,
+      ),
+      'visibility' => array(
+        'description' => 'Visibility of impersonal data in the exchange',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => 'restricted'
       ),
       'langcode' => array(
         'description' => 'The {language}.langcode of this version.',

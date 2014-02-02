@@ -26,7 +26,7 @@ use Drupal\Core\Field\FieldDefinition;
  *   controllers = {
  *     "storage" = "Drupal\mcapi\ExchangeStorageController",
  *     "view_builder" = "Drupal\mcapi\ExchangeViewBuilder",
- *     "access" = "Drupal\Core\Entity\EntityAccessController",
+ *     "access" = "Drupal\mcapi\ExchangeAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi\Form\ExchangeForm",
  *       "edit" = "Drupal\mcapi\Form\ExchangeForm",
@@ -60,7 +60,7 @@ class Exchange extends ContentEntityBase {
   //@todo
   function members() {
     //@todo
-    //entity_load_by_properties is expensive and I don't know how to make it work
+    //entity_load_by_properties seems expensive and I don't know how to make it work
     //return entity_load_multiple_by_properties('user', array('field_exchanges' => $this->id()));
 
     //this more direct solution belongs really in the storage controller
@@ -68,12 +68,15 @@ class Exchange extends ContentEntityBase {
     return count(db_select("user__field_exchanges", 'e')
       ->fields('e', array('entity_id'))
       ->condition('field_exchanges_target_id', $this->id())
-      ->execute()->fetchField());
+      ->execute()->fetchCol());
   }
 
   //better load the transaction storage controller for this.
-  function transactions() {
-    return 100;
+  function transactions($period) {
+    //@todo is it worth making a new more efficient function in the storage controller for this?
+    $conditions = array('exchange' => $this->get('id')->value, $since = strtotime($period));
+    $serials = \Drupal::EntityManager()->getStorageController('mcapi_transaction')->filter($conditions);
+    return count(array_unique($serials));
   }
 
   //ensure the manager of the exchange is actually a member.
@@ -114,6 +117,10 @@ class Exchange extends ContentEntityBase {
     ->setLabel('Open')
     ->setDescription('TRUE if the exchange is open for trading')
     ->setSetting('default_value', TRUE);
+    $properties['visibility'] = FieldDefinition::create('boolean')
+    ->setLabel('Visibility')
+    ->setDescription('Visibility of impersonal data in the exchange')
+    ->setSetting('default_value', 'restricted');
     $properties['langcode'] = FieldDefinition::create('language')
     ->setLabel(t('Language code'))
     ->setDescription(t('The first language of the exchange'));
@@ -143,6 +150,16 @@ class Exchange extends ContentEntityBase {
       ->condition($fieldname.'_target_id', $this->id())
       ->condition('entity_id', $entity->id())
       ->execute()->fetchField();
+  }
+
+  public function visibility_options($val = NULL) {
+    $options = array(
+    	'private' => t('Private'),
+      'restricted' => t('Restricted'),
+      'public' => t('Public')
+    );
+    if ($val) return $options[$val];
+    return $options;
   }
 
 }

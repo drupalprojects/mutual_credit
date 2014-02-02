@@ -246,11 +246,14 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
 
-    foreach(array('state', 'serial', 'payer', 'payee', 'creator', 'type') as $field) {
+    foreach(array('state', 'serial', 'payer', 'payee', 'creator', 'type', 'exchange') as $field) {
       if (array_key_exists($field, $conditions)) {
         $query->condition($field, (array)$conditions[$field]);
         unset($conditions[$field]);
       }
+    }
+    if (!array_key_exists('state', $conditions)) {
+      $query->condition('state', 0, '>');
     }
 
     if (array_key_exists('involving', $conditions)) {

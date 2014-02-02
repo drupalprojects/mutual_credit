@@ -31,7 +31,7 @@ class AdminLinkEdit extends LinkEdit {
     foreach (\Drupal::moduleHandler()->getImplementations('permission') as $module) {
       $permissions = module_invoke($module, 'permission');
       foreach ($permissions as $name => $perm) {
-        $perms[$module_info[$module]['name']][$name] = strip_tags($perm['title']);
+        $perms[$module][$name] = strip_tags($perm['title']);
       }
     }  
     $form['permission'] = array(
@@ -39,45 +39,20 @@ class AdminLinkEdit extends LinkEdit {
       '#title' => t('Permission'),
       '#description' => t('Users with which permission can see blocked users?'),
       '#options' => $perms,
-      '#default_value' => $this->value['permission']
+      '#default_value' => $this->options['permission']
     );
-    parent::buildOptionsForm($form, $form_state);
+    unset($form['exclude']);
   }
   protected function defineOptions() {
     $options = parent::defineOptions();
 
-    $options['permission'] = array('default' => '');
+    $options['permission'] = array('default' => 'manage own exchanges');
 
     return $options;
   }
-  /**
-   * {@inheritdoc}
-   */
-  public function query() {
-    $this->ensureMyTable();
-    $field = "$this->tableAlias.$this->realField";
 
-    $permission = $this->options['permission'];
-    if (!\Drupal::currentUser()->hasPermission($this->options['permission'])) {
-      $this->query->addWhere($this->options['group'], $field, 1, '=');
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function renderLink(EntityInterface $entity, ResultRow $values) {
-    if ($entity && $entity->access('update')) {
-      $this->options['alter']['make_link'] = TRUE;
-
-      $text = !empty($this->options['text']) ? $this->options['text'] : t('Edit');
-
-      $uri = $entity->uri();
-      $this->options['alter']['path'] = $uri['path'] . '/edit';
-      $this->options['alter']['query'] = drupal_get_destination();
-
-      return $text;
-    }
+  public function access() {
+    return user_access($this->options['permission']);
   }
 
 }
