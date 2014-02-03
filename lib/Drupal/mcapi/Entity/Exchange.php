@@ -151,6 +151,18 @@ class Exchange extends ContentEntityBase {
       ->condition('entity_id', $entity->id())
       ->execute()->fetchField();
   }
+  /**
+   * Check whether the passed user is the exchange manager
+   * @param AccountInterface $account
+   * @return boolean
+   */
+  public function isManager(AccountInterface $account = NULL) {
+    if (is_null($account)) {
+      $account = \Drupal::currentUser();
+    }
+    return $account->id() == $this->get('uid')->value;
+  }
+
 
   public function visibility_options($val = NULL) {
     $options = array(

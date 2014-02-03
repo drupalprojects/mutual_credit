@@ -436,9 +436,7 @@ function mcapi_currency_list($all = TRUE) {
  * return a list of exchanges from an entity_reference field in an entity
  *
  * @param EntityInterface $entity
- *
- * @param string $fieldname
- *   the name of the field containing the exchanges, if known
+ *   any entity which has a reference field pointing towards mcapi_exchange entities
  * @return array
  *   of entities, keyed by exchange id
  */
@@ -1101,6 +1099,7 @@ function mcapi_block_view_system_menu_block_alter(&$build, $block) {
       );
       array_unshift($build['content'], $renderable);
     }
+    //@todo exchange admins links to their currency(s) OR a link to admin/accounting/currencies
   }
 }
 

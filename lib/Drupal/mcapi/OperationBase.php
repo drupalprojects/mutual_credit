@@ -36,41 +36,7 @@ abstract class OperationBase extends ConfigEntityBase implements OperationInterf
   /**
    * @see \Drupal\mcapi\OperationInterface::opAccess($transaction)
    */
-  public function opAccess(TransactionInterface $transaction) {
-    $access_plugins = transaction_access_plugins ();
-    // the default behaviour is to iterate through the TransactionAccess plugins
-    foreach ($transaction->worths[0]as $worth) {
-      foreach ($worth->currency->access_operations[$this->id()]as $plugin_id) {
-        // Any of the TransactionAccess plugins must return TRUE for BOTH currencies
-        // so if any plugin returns TRUE it continues 2 the next currency
-        if ($access_plugins[$plugin_id]->checkAccess ($transaction)) continue 2;
-      }
-      // if none of this currency's plugins returns true then deny access
-      return FALSE;
-      // right?
-    }
-    return TRUE;
-  }
-
-  /**
-   * @see \Drupal\mcapi\OperationInterface::access_form($currency)
-   */
-  public function access_form(CurrencyInterface $currency) {
-    // the operation label and description are already used in the settings group
-    $element = array (
-      '#title' => $this->label,
-      '#description' => $this->description,
-      '#type' => 'checkboxes',
-      '#options' => transaction_access_plugins(TRUE),
-      '#default_value' => array(), // this will be overwritten
-      '#weight' => $this->weight
-   );
-    $op = $this->id();
-    if (property_exists ($currency, 'access_operations') && array_key_exists ($op, $currency->access_operations)) {
-      $element['#default_value']= $currency->access_operations[$op];
-    }
-    return $element;
-  }
+  abstract public function opAccess(TransactionInterface $transaction);
 
   /**
    * @see \Drupal\mcapi\OperationInterface::settingsForm($form)

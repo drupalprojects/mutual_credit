@@ -28,45 +28,70 @@ use Drupal\mcapi\CurrencyInterface;
 class Undo extends OperationBase {
 
   /**
-   * {@inheritdoc}
-  */
-  public function access_form(CurrencyInterface $currency) {
-    //return the access functions for each transaction state
-    $element = parent::access_form($currency);
-    foreach (mcapi_get_states() as $state) {
-      $elements[$constantVal] = $element;
-      $elements[$constantVal]['#title'] = $state->label;
-      $elements[$constantVal]['#description'] = $state->description;
-      $elements[$constantVal]['#default_value'] = $currency->access_undo[$state->value];
-    }
-  }
-  /**
    * @see \Drupal\mcapi\OperationBase::settingsForm()
    */
   public function settingsForm(array &$form) {
     parent::settingsForm($form);
     //@todo check the form hasn't changed in Drupal\mcapi\OperationBase::settingsForm()
-    undo(
+    unset(
       $form['feedback']['format2'],
       $form['feedback']['redirect']['#states']
     );
     //because after a transaction is deleted, you can't very well go and visit it.
     $form['feedback']['redirect']['#required'] = TRUE;
+
+    $form['access'] = array(
+      '#title' => t('Access control'),
+      '#description' => t('Who can undo transactions in each state?'),
+      '#type' => 'details',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 5,
+    );
+    foreach (mcapi_get_states() as $state_id => $state) {
+      $form['access'][$state_id] = array (
+        '#title' => $state->label,
+        '#description' => $state->description,
+        '#type' => 'checkboxes',
+        '#options' => array(
+      	  'payer' => t('Owner of payer wallet'),
+          'payee' => t('Owner of payee wallet'),
+          'manager' => t('The exchange manager'),
+          'manager' => t('An exchange helper'),
+          'admin' => t('The super admin')
+        ),
+        '#default_value' => $this->config->get('access.'.$state_id),
+        '#weight' => $this->weight
+      );
+    }
   }
   /**
    *  access callback for transaction operation 'view'
   */
   public function opAccess(TransactionInterface $transaction) {
-    if ($transaction->state->value == TRANSACTION_STATE_UNDONE) RETURN FALSE;
-    $access_plugins = transaction_access_plugins();
-    //see the comments in OperationBase
-    foreach ($transaction->worths[0] as $worth) {
-      foreach (@$worth->currency->access_undo[$transaction->state->value] as $plugin) {
-        if ($access_plugins[$plugin]->checkAccess($transaction)) continue 2;
+    if ($transaction->get('state')->value == TRANSACTION_STATE_UNDONE) RETURN FALSE;
+    $uid = \Drupal::currentUser()->uid;
+    $exchange = entity_load('mcapi_exchange', $transaction->get('exchange')->value);
+    $options = array_filter($this->config->get('access.'.$state_id));
+    foreach ($options as $option) {
+      switch ($option) {
+      	case 'manager':
+      	  if ($exchange->isManager()) return TRUE;
+      	  continue;
+      	case 'helper':
+      	  if ($account->hasPermission('exchange helper')) return TRUE;
+      	  continue;
+      	case 'admin':
+      	  if ($account->hasPermission('manage mcapi')) return TRUE;
+      	  continue;
+      	case 'payer':
+      	case 'payee':
+      	  $parent = $transaction->get($option)->getValue(TRUE)->getparent();
+      	  if ($parent && $parent->get('pid')->value == $account->id && $parent->entityType() == 'user') return TRUE;
+      	  continue;
       }
-      return FALSE;
     }
-    return TRUE;
+    return FALSE;
   }
 
   /**

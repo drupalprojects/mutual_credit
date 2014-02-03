@@ -30,15 +30,9 @@ class Edit extends OperationBase {
   /*
    * {@inheritdoc}
   */
-  public function access_form(CurrencyInterface $currency) {
-    //return the access functions for each transaction state
-    $element = parent::access_form($currency);
-    foreach (mcapi_get_states() as $state) {
-      $elements[$state->value] = $element;
-      $elements[$state->value]['#title'] = $state->label;
-      $elements[$state->value]['#description'] = $state->description;
-      $elements[$state->value]['#default_value'] = $currency->access_undo[$state->value];
-    }
+  public function access_form(array $defaults) {
+
+    return $elements;
   }
 
   /*

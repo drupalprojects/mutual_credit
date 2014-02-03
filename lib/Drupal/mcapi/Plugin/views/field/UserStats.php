@@ -12,7 +12,7 @@ use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
 
 /**
- * Field handler to present a link to the node.
+ * Field handler to present trading stats for the user
  *
  * @ingroup views_field_handlers
  *
@@ -61,7 +61,7 @@ class UserStats extends FieldPluginBase {
 
   function render(ResultRow $values) {
     $account = $this->getEntity($values);
-    $wid = reset(mcapi_get_wallet_ids($account));
+    $wid = reset(mcapi_get_wallet_ids($account));//shows only the first wallet
     $exchanges = referenced_exchanges($account);
     //this isn't going to work...
     //@todo make this work with the right entity_reference syntax

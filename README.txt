@@ -108,6 +108,5 @@ The limits module provides blocks to show
 5. Views integration
 Much work has been done on views to give the site builder maximum flexibility.
 First of all the transaction properties are exposed, and most of them as filters, arguments, sorts.
-The transactionAccess plugins have 2 functions, one for normal access checks and one for views
 The mcapi_index_views table does what the transaction table allows a whole new perspective on the transactions, and allows new forms of statistics also.
 

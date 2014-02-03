@@ -392,26 +392,6 @@ class CurrencyFormController extends EntityFormController {
       );
     }
 
-    //any operations declared not by mcapi.module
-    $other_ops = array();
-    foreach (transaction_operations() as $op => $plugin) {
-      if (in_array($op, array('create', 'view', 'undo'))) {
-        //these special operations have their own settings
-        continue;
-      }
-      if ($settings = $plugin->access_form($currency, $op)) {
-        $other_ops[$op] = $settings;
-      }
-    }
-    if (count($other_ops)) {//show them all in one tab
-      $form['access_operations'] = array(
-        '#title' => t("Other operations"),
-        '#type' => 'details',
-        '#group' => 'additional_settings',
-        '#tree' => TRUE,
-      ) + $other_ops;
-    }
-
     $form['refresh'] = array(
       '#type' => 'submit',
       '#value' => $this->t('Refresh'),

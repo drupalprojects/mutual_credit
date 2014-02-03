@@ -15,10 +15,6 @@ services:
     class: Drupal\mcapi\Plugin\OperationManager
     arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
 
-  plugin.manager.mcapi.transaction_access:
-    class: Drupal\mcapi\Plugin\TransactionAccessManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
-
   plugin.manager.mcapi.wallet_access:
     class: Drupal\mcapi\Plugin\WalletAccessPluginManager
     arguments: ['@container.namespaces', '@cache.entity', '@language_manager']

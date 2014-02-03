@@ -28,8 +28,11 @@ class WalletAccessController extends EntityAccessController {
   /**
    * {@inheritdoc}
    */
+  //@todo define which $ops are possible. I think they will be view, pay & demand
   public function checkAccess(EntityInterface $wallet, $op, $langcode, AccountInterface $account) {
-    return TRUE;
+    //TEMP FIX. This means any user can view, pay or request from any wallet they share an exchange with
+    return array_intersect_key($wallet->in_exchanges(), referenced_exchanges());
+
     //remember we're only interested in view access but not for router callbacks because the wallet has no uri
     //although perhaps it should - like bitcoin!
     return $this->pluginManager

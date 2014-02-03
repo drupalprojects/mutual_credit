@@ -211,4 +211,16 @@ class Wallet extends ContentEntityBase {
     return $properties;
   }
 
+  /**
+   * get the exchanges which this wallet can be used in.
+   * @return array
+   *   exchange entities, keyed by id
+   */
+  function in_exchanges() {
+    if (!$this->owner) return array();
+    if ($this->owner->entityType() == 'mcapi_exchange') {
+      return array($this->owner->id() => $this->owner);
+    }
+    return referenced_exchanges($this->owner);
+  }
 }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\node\Plugins\views\filter\Exchange.
+ * Definition of Drupal\mcapi\Plugins\views\filter\Exchange.
  */
 
 namespace Drupal\mcapi\Plugin\views\filter;

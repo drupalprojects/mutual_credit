@@ -30,19 +30,22 @@ function mcapi_signall_submit($form, &$form_state) {
 }
 
 
-function list_pending_for_uid($uid, $currcodes = array(), $mixed = FALSE) {
+function list_pending($account = NULL) {
+  if (is_null($account)) {
+    $account = \Drupal::currentUser();
+  }
   $output = array();
   if ($mixed) {
-    $serials = transaction_filter(array('state' => TRANSACTION_STATE_PENDING, 'involving' => $uid));
+    $serials = transaction_filter(array('state' => TRANSACTION_STATE_PENDING, 'involving' => $account->id()));
     return mcapi_view_sentences($serials);
   }
   else {
     //couldn't be bothered with a theme callback for this
-    $waiting_on = list_waiting_on_uid($uid, $currcodes);
+    $waiting_on = list_waiting_on_uid($account->id());
     if ($waiting_on) {
       $waiting_on['#prefix'] = '<strong>'.t('Waiting on you:').'</strong><br />';
     }
-    $waiting_not_on = list_waiting_not_on_uid($uid, $currcodes);
+    $waiting_not_on = list_waiting_not_on_uid($account->id());
     if ($waiting_not_on) {
       $waiting_not_on['#prefix'] = '<br /><strong>'.t('Waiting on partner:').'</strong><br />';
     }
@@ -57,7 +60,7 @@ function list_pending_for_uid($uid, $currcodes = array(), $mixed = FALSE) {
   }
 }
 
-function list_waiting_on_uid($uid, $currcodes = array()) {
+function list_waiting_on_uid($uid) {
   $output = array();
   $serials = transactions_needing_sig_of_user($uid);
   if ($serials) {
@@ -81,7 +84,7 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
   }
 }
 //returns a render array
-function list_waiting_not_on_uid($uid, $currcodes = array()) {
+function list_waiting_not_on_uid($uid) {
   $waiting_on = $output = array();
   $serials = \Drupal::entityManager()
   ->getStorageController('mcapi_transaction')

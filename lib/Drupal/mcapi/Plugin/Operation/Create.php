@@ -30,15 +30,9 @@ class Create extends OperationBase {
   /*
    * {@inheritdoc}
    */
-  public function access_form(CurrencyInterface $currency) {
-    return array();
-  }
-
-  /*
-   * {@inheritdoc}
-   */
   public function opAccess(TransactionInterface $transaction) {
     //this affects the link visibility and the page access
+    //transaction can be created by anyone as long as it hasn't yet been saved
     return empty($transaction->get('xid')->value);
   }
 

@@ -2,10 +2,6 @@
 
 
 function mcapi_tester_exchange_field_extra_fields() {
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['members_link'] = array(
-    'label' => t('List of members'),
-    'weight' => 10,
-  );
   $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions_link'] = array(
     'label' => t('List of transactions'),
     'weight' => 11,

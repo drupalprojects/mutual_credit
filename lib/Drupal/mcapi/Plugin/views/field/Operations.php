@@ -12,7 +12,7 @@ use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
 
 /**
- * Field handler to present a link to the node.
+ * Field handler to show transaction operations according to context
  *
  * @ingroup views_field_handlers
  *

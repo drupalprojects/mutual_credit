@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Annotation;
 use Drupal\Core\TypedData\Annotation\DataType;
 
 /**
- * Defines a TransactionAccess annotation object.
+ * Defines a Transaction Operation annotation object.
  *
  * @Annotation
  */

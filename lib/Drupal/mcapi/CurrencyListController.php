@@ -26,7 +26,7 @@ class CurrencyListController extends DraggableListController {
     $header['title'] = t('Title');
     //$header['id'] = t('Machine Name');
     $header['type'] = t('Type');
-    $header['transactions'] = t('Transactions');
+    $header['transactions'] = t('Uses');
     $header['volume'] = t('Volume');
     $header['issuance'] = t('Issuance');
     return $header + parent::buildHeader();
@@ -34,8 +34,10 @@ class CurrencyListController extends DraggableListController {
 
   /**
    * Overrides Drupal\Core\Entity\EntityListController::buildRow().
+   * @todo Check access on all currencies
    */
   public function buildRow(EntityInterface $entity) {
+    if (!$entity->access('update')) continue;//check that exchange administrator can see only the right currency
     $row['title'] = array(
       '#markup' => $this->getLabel($entity),
     );

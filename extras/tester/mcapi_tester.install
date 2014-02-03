@@ -6,7 +6,7 @@ function mcapi_tester_install() {
   $exchanges = array(
   	array(
   	  'name' => 'second exchange',
-  	  'uid' => 1,
+  	  'uid' => 6,
   	  'open' => 1,
   	  'visibility' => 'restricted',
   	  'langcode' => 'und',
@@ -106,24 +106,30 @@ function mcapi_tester_install() {
   $d = 1;
   foreach ($users as $user) {
     $d++;
-    $account = array(
+    $values = array(
       'name' => $user['name'],
       'mail' => $user['mail'],
       'roles' => array_merge(array('member'), $user['roles']),
       'created' => strtotime("-$d days"),
       'field_exchanges' => array(array('target_id' => $user['exchange']))
     );
-    entity_create('user', $account)->save();
+    $account = entity_create('user', $values)->save();
+    //if the user has ladmin role, make them owner of their exchange
+    if (array_search($values->roles, 'ladmin')) {
+       db_query("UPDATE {mcapi_exchanges} SET uid = $account->uid WHERE id = ".$values['exchange']);
+    }
   }
 
   //each of these users will already have a wallet, according to the default settings,
   //so we can make some transactions
-  $exchanges = db_select('mcapi_exchanges', 'e')->fields('e', array('id'))->execute()->fetchcol();
-  foreach($exchanges as $exchange_id) {
+  $exchanges = ;
+  foreach(entity_load_multiple('mcapi_exchange') as $exchange) {
     $wallets = db_query("SELECT wid FROM {mcapi_wallets} w
         LEFT JOIN {users} u ON w.pid = u.uid AND w.entity_type = 'user'
-        LEFT JOIN {user__field_exchanges} e ON u.uid = e.entity_id AND e.field_exchanges_target_id"
+        LEFT JOIN {user__field_exchanges} e ON u.uid = e.entity_id AND e.field_exchanges_target_id = ".$exchange->id();
     )->fetchCol();
+    //identify the currency of the exchange
+    $ref = $exchange->get('field_currencies')->getValue();
     //get 2 random different wallet ids
     for ($i = 0; $i < 12; $i++) {
       shuffle($wallets);
@@ -132,7 +138,7 @@ function mcapi_tester_install() {
         'payee' => next($wallets),
         'worths' => array(
           'credunit' => array(
-            'currcode' => 'credunit',
+            'currcode' => $ref[0]['target_id'],
             'value' => rand(100, 5000)
           )
         ),

@@ -64,42 +64,32 @@ function mcapi_signatures_mcapi_transaction_delete(TransactionInterface $transac
 }
 
 /**
- * implements hook_ENTITY_presave();
- * saves the NEW signatures with the NEW transaction
- */
-function mcapi_signatures_mcapi_transaction_presave($transaction){
-  if ($transaction->isNew() && $transaction->type->value == 'signatures') {
-    $config = transaction_operations('sign')->config->get('special');
-    print_r($config['countersignatories']);
-    $signatories = array_merge($config['countersignatories'], array(
-      $transaction->payee->value,
-      $transaction->payer->value
-    ));
-    foreach ($signatories as $uid) {
-      //assume the current user has already signed
-      $transaction->signatures[$uid] = \Drupal::currentUser()->id() == $uid ? REQUEST_TIME : 0;
-    }
-  }
-}
-
-/**
  * implements hook_ENTITY_insert
  * saves the signatures after the entity has been written
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
   if (isset($transaction->signatures)) {
+    $config = transaction_operations('sign')->config->get('special');
+    print_r($config['countersignatories']);
+    $signatories = array_merge($config['countersignatories'], array(
+        $transaction->payee->value,
+        $transaction->payer->value
+    ));
+    foreach ($signatories as $uid) {
+      //assume the current user has already signed
+      $transaction->signatures[$uid] = \Drupal::currentUser()->id() == $uid ? REQUEST_TIME : 0;
+    }
     $q = db_insert('mcapi_signatures')->fields(array('serial', 'uid', 'signed'));
     foreach ($transaction->signatures as $uid => $signed) {
       $q->values(array($transaction->serial->value, $uid, $signed));
     }
     $q->execute();
   }
-
 }
 
 /**
  * implements hook_ENTITY_update
- * saves the signatures after the entity has been written
+ * resaves the signatures
  */
 function mcapi_signatures_mcapi_transaction_update($transaction) {
   if (isset($transaction->signatures)) {
@@ -113,6 +103,8 @@ function mcapi_signatures_mcapi_transaction_update($transaction) {
 
 
 /**
+ * OBSOLETE
+ *
  * implements hook_block_view_BASE_BLOCK_ID_alter()
  * appends the 'signatures needed' view to the mcapi-balance block
  * //TODO actually this doesn't 'work if the user summaries are not showing in a block, but in the user profile
@@ -221,8 +213,8 @@ function mcapi_signatures_field_extra_fields() {
       'user' => array(
         'display' => array(
           'mcapi_signatures' => array(
-            'label' => t('Balance limits'),
-            'description' => t('Trading limits per currency'),
+            'label' => t('Pending transactions'),
+            'description' => t('Transactions yet to be signed'),
             'weight' => 0,
           ),
         )
@@ -236,5 +228,5 @@ function mcapi_signatures_field_extra_fields() {
  */
 function mcapi_signatures_user_view($account, $mode, $language) {
   module_load_include('inc', 'mcapi_signatures');
-  $account->content['mcapi_signatures'] = list_pending_for_uid(\Drupal::currentUser()->id());
+  $account->content['mcapi_signatures'] = list_pending();
 }

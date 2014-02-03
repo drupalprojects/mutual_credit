@@ -49,9 +49,16 @@ class SignOff extends OperationBase {
    * {@inheritdoc}
    */
   public function opAccess(TransactionInterface $transaction) {
-    if ($transaction->state->value == TRANSACTION_STATE_PENDING) {
-      return parent::opAccess($transaction);
+    //@todo this operation needs some settings...
+    return FALSE;
+    if ($transaction->get('state')->value == TRANSACTION_STATE_PENDING) {
+
     }
+  }
+
+  public function settingsForm(array &$form) {
+    parent::settingsForm($form);
+
   }
 
 }

@@ -23,6 +23,7 @@ class ExchangeAccessController extends EntityAccessController {
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $exchange, $op, $langcode, AccountInterface $account) {
+    //this should be congruent with Drupal\mcapi\Plugins\views\filter\ExchangeVisibility
     $visib = $exchange->get('visibility')->value;
     if (
       $account->hasPermission('configure mcapi') ||

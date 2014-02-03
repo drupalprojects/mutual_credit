@@ -20,8 +20,6 @@ function mcapi_drush_help($section) {
       return dt('Completely remove all references to transactions with given serial number');
     case 'drush:mcapi-purge':
       return dt('Remove all erased and reversed transactions and unfreeze the deletemode');
-    case 'drush:mcapi-nodedel':
-      return dt('remove the exchange nodes following the d6 upgrade');
   }
 }
 

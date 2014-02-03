@@ -31,7 +31,7 @@ class Currency extends FieldPluginBase {
   }
 
   /**
-   * Provide machine_name option for to node type display.
+   * Provide machine_name option for currency display.
    */
   public function buildOptionsForm(&$form, &$form_state) {
     parent::buildOptionsForm($form, $form_state);

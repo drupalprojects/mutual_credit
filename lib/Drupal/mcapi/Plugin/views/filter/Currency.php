@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\node\Plugins\views\filter\Currency.
+ * Definition of Drupal\mcapi\Plugins\views\filter\Currency.
  */
 
 namespace Drupal\mcapi\Plugin\views\filter;

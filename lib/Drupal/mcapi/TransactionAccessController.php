@@ -43,11 +43,6 @@ class TransactionAccessController extends EntityAccessController {
     if (empty($account)) {
       $account = \Drupal::currentUser();
     }
-    //you can view a transaction if you can view either the payer or payee wallets
-    if ($op == 'view') {
-      return $transaction->get('payer')->entity->access('view', $account)
-       || $transaction->get('payee')->entity->access('view', $account);
-    }
     return transaction_operations($op)->opAccess($transaction, $account);
   }
 }

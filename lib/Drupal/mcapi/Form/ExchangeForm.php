@@ -49,8 +49,8 @@ class ExchangeForm extends ContentEntityFormController {
       '#title' => t('Visibility'),
       '#description' => t('Is this exchange hidden from members of other exchanges?'),
     	'#type' => 'radios',
-      '#options' => $this->entity->privacy_options(),
-      '#default_value' => $exchange->get('private')->value,
+      '#options' => $this->entity->visibility_options(),
+      '#default_value' => $exchange->get('visibility')->value,
       '#weight' => 5
     );
     $form['langcode'] = array(

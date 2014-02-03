@@ -10,7 +10,7 @@ namespace Drupal\mcapi;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 
 /**
- * Provides an interface defining a node type entity.
+ * Provides an interface defining a currency configuration entity.
  */
 interface CurrencyInterface extends ConfigEntityInterface {
 

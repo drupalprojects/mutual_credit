@@ -26,17 +26,6 @@ interface OperationInterface {
    */
 	public function form(TransactionInterface $transaction);
 
- /**
-	* default form for configuring access to an operations for a currency
-	* offers a checkbox list of the transaction_operation_access callbacks
-	*
-	* @param CurrencyInterface $currency
-	*
-	* @return array $element
-	*   FormAPI $elements
-	*/
-	public function access_form(CurrencyInterface $currency);
-
 	/**
 	 * Access control function to determine whether this
 	 * operation can be performed on a given transaction

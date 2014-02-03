@@ -49,13 +49,6 @@ class Sign extends OperationBase {
   /*
    * {@inheritdoc}
   */
-  public function access_form(CurrencyInterface $currency) {
-    return array();
-  }
-
-  /*
-   * {@inheritdoc}
-  */
   public function opAccess(TransactionInterface $transaction) {
     if ($transaction->state->value == TRANSACTION_STATE_PENDING
       && array_key_exists('signatures', $transaction)
@@ -63,6 +56,7 @@ class Sign extends OperationBase {
       && array_key_exists(\Drupal::currentUser()->id(), $transaction->signatures)
       && $transaction->signatures[\Drupal::currentUser()->id()] == ''
     ) return TRUE;
+    return FALSE;
   }
 
   /*

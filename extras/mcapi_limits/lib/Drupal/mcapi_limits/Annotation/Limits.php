@@ -10,7 +10,7 @@ namespace Drupal\mcapi_limits\Annotation;
 use Drupal\Core\TypedData\Annotation\DataType;
 
 /**
- * Defines a TransactionAccess annotation object.
+ * Defines a 'limits' plugin annotation object.
  *
  * @Annotation
  */

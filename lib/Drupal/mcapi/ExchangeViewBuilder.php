@@ -20,15 +20,6 @@ class ExchangeViewBuilder extends EntityViewBuilder {
   public function buildContent(array $entities, array $displays, $view_mode, $langcode = NULL) {
     parent::buildContent($entities, $displays, $view_mode, $langcode);
     foreach ($entities as $exchange) {
-      $exchange->content['manager'] = array(
-        '#type' => 'item',
-        '#title' => t('Administrator'),
-        '#weight' => 3,
-        'content' => array(
-          '#theme' => 'username',
-          '#account' =>  entity_load('user', $exchange->get('uid')->value)
-        )
-      );
       if ($roles = user_role_names(TRUE, 'exchange helper')) {
         //get all the helper users in this exchange
         $query = db_select('users_roles', 'ur')->fields('ur', array('uid'));
@@ -42,13 +33,22 @@ class ExchangeViewBuilder extends EntityViewBuilder {
           $helpernames[] = theme('username', array('account' => $account));
         }
       }
-
-      $exchange->content['helpers'] = array(
+      //instead of using <br> here, isn't there a nicer way to make each render array into a div or something like that
+      $exchange->content['people'] = array(
         '#type' => 'item',
-        '#title' => t('@count helpers', array('@count' => intval($helpers))),
+        '#title' => t('People'),
         '#weight' => 4,
-        'content' => array(
-          '#markup' => implode(', ', $helpernames)
+        'members' => array(
+          '#prefix' => '<br />',
+          '#markup' =>  l(t('@count members', array('@count' => $exchange->members())), 'members/'.$exchange->id())
+        ),
+        'admin' => array(
+          '#prefix' => '<br />',
+          //@todo what's the best way to show this username linked?
+          '#markup' => t('Administrator: !name', array('!name' => entity_load('user', $exchange->get('uid')->value)->getUsername()))
+        ),
+        'helpers' => array(
+          '#markup' => '<br />'.t('Helpers: !names', array('!names' => implode(', ', $helpernames)))
         )
       );
       $exchange->content['placeholder_text'] = array(

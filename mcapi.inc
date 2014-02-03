@@ -55,14 +55,6 @@ function _mcapi_field_extra_fields() {
     );
   }
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
-  $fields = array('payer', 'payee', 'worths', 'description', 'state', 'type');
-  foreach ($fields as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
-      'label' => $props[$fieldname]['label'],
-      'description' => $props[$fieldname]['description'],
-      'weight' => $weight,
-    );
-  }
   $form = array('payer', 'payee', 'worths', 'description');
   foreach ($form as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
@@ -71,9 +63,18 @@ function _mcapi_field_extra_fields() {
       'weight' => $weight,
     );
   }
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['uid'] = array(
-    'label' => t('Manager of the exchange'),
-    'description' => t('The one user responsible for administration'),
+  $fields = array_merge($fields, array('state', 'type'));
+  foreach ($fields as $weight => $fieldname) {
+    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
+      'label' => $props[$fieldname]['label'],
+      'description' => $props[$fieldname]['description'],
+      'weight' => $weight,
+    );
+  }
+  //exchanges
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['people'] = array(
+    'label' => t('Admin, helpers and user list'),
+    'description' => t('3 pieces of data clumped together'),
     'weight' => 1,
   );
   return $extra;

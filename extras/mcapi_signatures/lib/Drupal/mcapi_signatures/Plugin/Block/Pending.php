@@ -50,9 +50,9 @@ class Pending extends McapiBlockBase {
     module_load_include('inc', 'mcapi_signatures');
     switch ($this->configuration['mode']) {
     	case 'pending_bydate':
-    	  return list_pending_for_uid($this->account->id(), $this->currencies, TRUE);
+    	  return list_pending($this->account);
     	case 'pending_byuser':
-    	  return list_pending_for_uid($this->account->id(), $this->currencies, FALSE);
+    	  return list_pending($this->account);
     	case 'waiting_on_uid':
     	  //$renderable[] = array('#markup' => t('Awaiting my signature'));
     	  return list_waiting_on_uid($this->account->id(), $this->currencies);
