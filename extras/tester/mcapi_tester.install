@@ -25,8 +25,9 @@ function mcapi_tester_install() {
       )
     )
   );
-  foreach($exchanges as $exchange) {
-    entity_create('mcapi_exchange', $exchange)->save();
+  foreach($exchanges as $values) {
+    $exchange = entity_create('mcapi_exchange', $values)->save();
+    entity_create('mcapi_wallet', array('name' => 'Kitty', 'entity_type' => 'mcapi_exchange', 'pid' => $exchange->id()));
   }
 
   $users = array(
@@ -122,11 +123,10 @@ function mcapi_tester_install() {
 
   //each of these users will already have a wallet, according to the default settings,
   //so we can make some transactions
-  $exchanges = ;
   foreach(entity_load_multiple('mcapi_exchange') as $exchange) {
     $wallets = db_query("SELECT wid FROM {mcapi_wallets} w
         LEFT JOIN {users} u ON w.pid = u.uid AND w.entity_type = 'user'
-        LEFT JOIN {user__field_exchanges} e ON u.uid = e.entity_id AND e.field_exchanges_target_id = ".$exchange->id();
+        LEFT JOIN {user__field_exchanges} e ON u.uid = e.entity_id AND e.field_exchanges_target_id = ".$exchange->id()
     )->fetchCol();
     //identify the currency of the exchange
     $ref = $exchange->get('field_currencies')->getValue();
@@ -146,15 +146,16 @@ function mcapi_tester_install() {
       );
       entity_create('mcapi_transaction', $t)->save();
     }
-
-    $terms = array('Transport', 'Food', 'Care', 'Learning', 'Home', 'Leisure');
-    foreach ($terms as $term) {
-      entity_create('taxonomy_term', array(
-        'vid' => 'categories',
-        'name' => $term,
-      ))->save();
-    }
   }
+
+  $terms = array('Transport', 'Food', 'Care', 'Learning', 'Home', 'Leisure');
+  foreach ($terms as $term) {
+    entity_create('taxonomy_term', array(
+      'vid' => 'categories',
+      'name' => $term,
+    ))->save();
+  }
+}
 
 function mcapi_tester_uninstall() {
   foreach (entity_load_multiple('user') as $uid => $account) {
@@ -167,4 +168,4 @@ function mcapi_tester_uninstall() {
   db_truncate('mcapi_transactions_index')->execute();
 }
 
-}
+

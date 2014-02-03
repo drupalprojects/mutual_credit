@@ -12,3 +12,17 @@ general:
   format2: certificate
   twig2: ''
   message: 'You have signed the transaction'
+op_title: Sign
+page_title: 'Are you sure you want to sign?'
+format: certificate
+twig: ''
+button: 'I''m sure!'
+cancel_button: Oops
+format2: certificate
+redirect: ''
+twig2: ''
+message: 'Transaction was signed'
+send: 1
+subject: 'A transaction was signed'
+body: 'Tokens needed for this mail'
+cc: ''

@@ -74,12 +74,11 @@ class Create extends OperationBase {
   */
   public function settingsForm(array &$form) {
     parent::settingsForm($form);
-    //unset(
-      //$form['sure']['button'],
-      //$form['sure']['cancel_button'],
-      //$form['notify'],
-      //$form['op_title']
-    //);
+    unset(
+      $form['sure']['button'],
+      $form['sure']['cancel_button'],
+      $form['op_title']
+    );
   }
 
 }

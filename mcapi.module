@@ -6,6 +6,7 @@ use Drupal\Core\Template\Attribute;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Field\FieldItemList;
 use Drupal\mcapi\Plugin\Field\FieldType\Worth;
+use Drupal\Core\Utility\Token;
 
 define('CURRENCY_WIDGET_SINGLEFIELD', 1);
 define('CURRENCY_WIDGET_TEXT', 2);
@@ -373,25 +374,17 @@ function mcapi_mcapi_info_drupal_permissions() {
  * implements hook_mail().
  */
 function mcapi_mail($key, &$message, $params) {
-  if ($key == 'transaction_mail_action') {//deprecated, probably
-    // We do not sanitize the token replacement, since the output of this
-    // replacement is intended for an e-mail message, not a web browser.
+  if ($key == 'operation') {
     $options = array('language' => $message['language'], 'sanitize' => FALSE);
-    $message['subject'] =  token_replace($params['subject'], $params, $options);
-    $message['body'][] =  token_replace($params['body'], $params, $options);
-  }
-  elseif ($key == 'operation') {
-    $options = array('language' => $message['language'], 'sanitize' => FALSE);
-    $message['subject'] =  token_replace($params['config']['subject'], $params, $options);
-    $message['body'][] =  token_replace($params['config']['body'], $params, $options);
-    $message['headers']['cc'] = $params['config']['cc'];
+    $message['subject'] =  \Drupal::Token()->replace($params['subject'], $params, $options);
+    $message['body'][] =  \Drupal::Token()->replace($params['body'], $params, $options);
+    $message['headers']['cc'] = $params['cc'];
   }
 }
 
 
 /*
  * implements hook_field_extra_fields().
- * Add wallets to entities and transaction fields to the transaction
  */
 function mcapi_field_extra_fields() {
   module_load_include('inc', 'mcapi');

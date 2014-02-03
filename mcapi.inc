@@ -312,6 +312,7 @@ function drawBalanceHistory() {
 function template_preprocess_mcapi_transaction(&$vars) {
   $element = $vars['transaction'];
 	$transaction = $element['#mcapi_transaction'];
+
 	//don't know if this is needed in d8
 	element_set_attributes($element, array('class', 'id'));
 	$vars['attributes']['class'] = array(
@@ -332,7 +333,14 @@ function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
 	$transaction = $element['#mcapi_transaction'];
 
-	mcapi_transaction_process_vars($vars, $transaction, $element);
+	mcapi_transaction_process_vars($vars, $transaction, !empty($element['#showlinks']));
+  //hide the field api labels
+	foreach(element_children($element) as $sub) {
+	  if ($element[$sub]['#theme'] == 'field') {
+	    $element[$sub]['#label_display'] = 'hidden';
+	  }
+	  $v[$sub] = $element[$sub];
+	}
 
 	/* @todo need to work out how to get entities out of an entity_reference field
 	$vars['children'] = array();
@@ -368,37 +376,36 @@ function theme_mcapi_twig($vars) {
  *
  * @param array $vars
  * @param TransactionInterface $transaction
- * @param array $content
+ * @param boolean $showlinks
+ *   TRUE if the 'links' variable is required
  */
-function mcapi_transaction_process_vars(&$vars, TransactionInterface $transaction, array $content) {
-  $vars['serial'] = $transaction->serial->value;
-  $vars['payer'] = $transaction->payer->entity->label();
-  $vars['payee'] = $transaction->payee->entity->label();
-  $vars['creator'] = $transaction->creator->entity->label();
+function mcapi_transaction_process_vars(array &$vars, TransactionInterface $transaction, $showlinks = TRUE) {
+  $static = drupal_static(__FUNCTION__, array());
+  $xid = $transaction->get('xid')->value;
+  if (!array_key_exists($xid, $static)) {
+    $states = mcapi_get_states(TRUE);
+    $types = mcapi_get_types();
+    $v['state'] = $states[$transaction->state->value];
+    $v['type'] = $types[$transaction->type->value]->label;
+    $v['serial'] = $transaction->serial->value;
+    $v['payer'] = $transaction->payer->entity->label();
+    $v['payee'] = $transaction->payee->entity->label();
+    $v['creator'] = $transaction->creator->entity->label();
+    $v['description'] = $transaction->description->value;
+    $v['worths'] = $transaction->worths->getString();
+    $v['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
 
-  $vars['worths'] = $transaction->worths->getString();
+    //@todo more ugliness retrieving from entity_reference field
+    $exchange_field = ($transaction->get('exchange')->getValue(TRUE));
+    $v['exchange'] = $exchange_field[0]['entity']->label();
+    //the token service lets you pass url options,
+    //but we'll simply do it here and just make all links absolute
+    $uri = $transaction->uri();
+    $v['url'] = url($uri['path'], array('absolute' => TRUE));
 
-  $states = mcapi_get_states(TRUE);
-  $vars['state'] = $states[$transaction->state->value];
-
-  $types = mcapi_get_types();
-  $vars['type'] = $types[$transaction->type->value]->label;
-
-  $vars['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
-
-  $vars['description'] = $transaction->description->value;
-  //the token service lets you pass url options, but we'll simply here and just make all links absolute
-  $uri = $transaction->uri();
-  $vars['url'] = url($uri['path'], array('absolute' => TRUE));
-
-  $links = $content['#showlinks'] ? $transaction->links() : array();
-  $vars['links'] = drupal_render($links);
-
-  //$vars['content'] = array();
-  foreach(element_children($content) as $sub) {
-    if ($content[$sub]['#theme'] == 'field') $content[$sub]['#label_display'] = 'hidden';
-    $vars[$sub] = $content[$sub];
+    $static[$xid] = $v;
   }
+  $vars += $static[$xid];
 }
 
 
@@ -417,9 +424,14 @@ function mcapi_render_twig_transaction(string $template, TransactionInterface $t
   $build = \Drupal::entityManager()
     ->getViewBuilder('mcapi_transaction')
     ->viewMultiple($entities, 'certificate');
-  $build[$xid]['#showlinks'] = $showlinks;
-  mcapi_transaction_process_vars($vars, $transaction, $build[$xid]);
-  $vars['links'] = $showlinks ? $transaction->links() : array();
+  mcapi_transaction_process_vars($vars, $transaction, $showlinks);
+  //hide the fieldAPi labels
+  foreach(element_children($build[$xid]) as $sub) {
+    if ($build[$xid][$sub]['#theme'] == 'field') {
+      $build[$xid][$sub]['#label_display'] = 'hidden';
+    }
+    $v[$sub] = $build[$xid][$sub];
+  }
   return mcapi_render_twig($template, $vars);
 }
 
@@ -512,6 +524,7 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
   if ($include_virtual){
     $tokens[] = 'links';
     $tokens[] = 'url';
+    $tokens[] = 'sentence';
   }
   return $tokens;
 }
@@ -521,7 +534,7 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
  * @return array
  *   a list of fieldnames, keyed by entity_type
  */
-//@todo cache this
+//@todo cache this. cache should be cleared whenever fieldInfo changes
 function get_exchange_entity_fieldnames($type = '') {
   $types = array('mcapi_exchange' => NULL);
   foreach (Field::FieldInfo()->getInstances() as $entity_type => $data1) {

@@ -6,4 +6,4 @@ cancel_button: Cancel
 format2: certificate
 redirect: ''
 twig2: ''
-message: The transaction has been saved.
+message: 'The transaction has been saved.'

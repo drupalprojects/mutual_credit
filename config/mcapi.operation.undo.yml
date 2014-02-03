@@ -4,12 +4,22 @@ format: certificate
 twig: ''
 button: 'Yes I''m sure'
 cancel_button: Cancel
-feedback:
+feedback: null
 format2: certificate
 twig2: ''
-redirect: ''
-message: The transaction has been deleted
-send: 0
+redirect: user
+message: 'The transaction has been deleted'
+send: 1
 subject: 'A transaction was deleted'
-body: 'no tokens were a available to write this mail'
+body: 'no tokens were available to write this mail'
 cc: carboncopy@drupal.org
+done:
+  admin: admin
+  payer: 0
+  payee: 0
+  manager: 0
+pending:
+  manager: manager
+  admin: admin
+  payer: 0
+  payee: 0

@@ -131,7 +131,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $this);
 
     $this->exceptions = array();
-    list($payer, $payee) = mcapi_get_endpoints($this, TRUE);
+    list($payer, $payee) = $this->endpoints();
     //check that the payer and payee are not the same wallet
     if ($payer->id() == $payee->id()) {
       $this->exceptions[] = new McapiTransactionException(
@@ -416,14 +416,15 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     ));
   }
 
-}
+  //@todo Gordon I can't believe this is the simplest way
+  //to retrieve a value from an entity single reference field.
+  //hideous!
+  //get the fully loaded wallets
+  function endpoints() {
+    $payer = $this->get('payer')->getValue(true);
+    $payee = $this->get('payee')->getValue(true);
+    return array($payer[0]['entity'], $payee[0]['entity']);
 
-//@todo Gordon I can't believe this is the simplest way
-//to retrieve a value from an entity single reference field.
-//hideous!
-function mcapi_get_endpoints($transaction) {
-  $payer = $transaction->get('payer')->getValue(true);
-  $payee = $transaction->get('payee')->getValue(true);
-  return array($payer[0]['entity'], $payee[0]['entity']);
+  }
 
 }

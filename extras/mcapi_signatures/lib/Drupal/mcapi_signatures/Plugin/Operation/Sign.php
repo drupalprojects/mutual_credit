@@ -72,7 +72,7 @@ class Sign extends OperationBase {
       //would be nice to be able to save operation settings per-exchange...
       //in the mean time countersignatories should be chosen from all people with 'manage mcapi' permission
       '#options' => array(),
-      '#default_value' => $this->config['countersignatories'],
+      '#default_value' => $this->config->get('countersignatories'),
       '#weight' => 3,
       '#multiple' => TRUE,
       '#required' => FALSE,

@@ -31,6 +31,16 @@ class OperationSettingsForm extends ConfigFormBase {
     return $form;
   }
 
+  public function validateForm(array &$form, array &$form_state) {
+    if ($form_state['values']['send']) {
+      if (!$form_state['values']['subject']) {
+        $this->setFormError('subject', $form_state, t("You can't send a mail without a subject"));
+      }
+      if (!$form_state['values']['body']) {
+        $this->setFormError('subject', $form_state, t("You can't send a mail without a body"));
+      }
+    }
+  }
 
   /**
    * {@inheritdoc}

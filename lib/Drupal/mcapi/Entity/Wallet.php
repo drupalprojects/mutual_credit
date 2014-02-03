@@ -65,16 +65,14 @@ class Wallet extends ContentEntityBase {
 
   /**
    * return the parent entity if there is one, otherwise return the wallet itself
-   * the only reason there might not be an owner is if this is a system wallet
    */
   public function getOwner() {
     if ($this->owner) return $this->owner;
-    else return $this;
+    else return $this;//wallets owned by the system own themselves
   }
 
   /**
-   *
-   * @param string $langcode
+   * {@inheritdoc}
    */
   public function label($langcode = NULL) {
     $display_format = \Drupal::config('mcapi.wallets')->get('display_format');
@@ -88,6 +86,13 @@ class Wallet extends ContentEntityBase {
     return strtr($display_format, $replacements);
   }
 
+  /*
+   * get the wallet name, linked to its transaction view, if permissions allow
+   * @param boolean $linked
+   *   TRUE if a link is required
+   * @return string
+   *   the name or linked name of the wallet
+   */
   function linkedname($linked = TRUE) {
     $display_format = \Drupal::config('mcapi.wallets')->get('display_format');
 

@@ -3,6 +3,7 @@
 /**
  * @file
  *  Contains Drupal\mcapi\Plugin\Operations\SignOff
+ *  @todo This needs to be finished. Might want to inherit some things from the Sign operation
  *
  */
 

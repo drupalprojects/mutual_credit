@@ -43,12 +43,13 @@ class Undo extends OperationBase {
     $form['access'] = array(
       '#title' => t('Access control'),
       '#description' => t('Who can undo transactions in each state?'),
-      '#type' => 'details',
+      '#type' => 'fieldset',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#weight' => 5,
+      '#weight' => 8,
     );
     foreach (mcapi_get_states() as $state_id => $state) {
+      if ($state_id == 'undone') continue;
       $form['access'][$state_id] = array (
         '#title' => $state->label,
         '#description' => $state->description,
@@ -70,7 +71,7 @@ class Undo extends OperationBase {
   */
   public function opAccess(TransactionInterface $transaction) {
     if ($transaction->get('state')->value == TRANSACTION_STATE_UNDONE) RETURN FALSE;
-    $uid = \Drupal::currentUser()->uid;
+    $uid = \Drupal::currentUser()->id();
     $exchange = entity_load('mcapi_exchange', $transaction->get('exchange')->value);
     $options = array_filter($this->config->get('access.'.$state_id));
     foreach ($options as $option) {

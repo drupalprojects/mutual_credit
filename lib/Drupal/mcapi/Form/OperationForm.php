@@ -57,13 +57,13 @@ class OperationForm extends EntityConfirmFormBase {
     //we don't even know the previous page.
     if ($serial = $this->entity->get('serial')->value) {
       return array(
-      	'route_name' => 'mcapi.transaction_view',
+        'route_name' => 'mcapi.transaction_view',
         'route_parameters' => array('mcapi_transaction' => $serial)
       );
     }
     else {
       return array(
-      	'route_name' => 'user.page',
+        'route_name' => 'user.page',
       );
     }
   }
@@ -107,7 +107,6 @@ class OperationForm extends EntityConfirmFormBase {
       }
     }
 
-
     //add any extra form elements as defined in the operation plugin.
     $form += transaction_operations($this->op)->form($this->entity, $this->configuration);
     if ($this->op == 'view') {
@@ -123,13 +122,13 @@ class OperationForm extends EntityConfirmFormBase {
     $form['#attached']['js'][] = 'core/misc/ajax.js';
 
 
-		//Left over from d7
- 		//when the button is clicked replace the whole transaction div with the results.
- 		$commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($form));
- 		return array(
-			'#type' => 'ajax',
-			'#commands' => $commands
- 		);
+    //Left over from d7
+     //when the button is clicked replace the whole transaction div with the results.
+     $commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($form));
+     return array(
+      '#type' => 'ajax',
+      '#commands' => $commands
+     );
 
     return $form;
   }
@@ -150,33 +149,70 @@ class OperationForm extends EntityConfirmFormBase {
       or $result = 'operation returned nothing renderable';
 
     $context = array(
-    	'op_plugin_id' => $this->op,
+      'op_plugin_id' => $this->op,
       'old_state' => $old_state,
       'config' => $this->configuration,//not sure if there is a use-case for passing this
     );
     //this is especially for invoking rules
-  	$this->moduleHandler->invokeAll('mcapi_transaction_operated', array($transaction, $context));
+    $this->moduleHandler->invokeAll('mcapi_transaction_operated', array($transaction, $context));
 
-  	if ($message = $this->configuration->get('message')) {
-  	  //@todo does dsm even show up here?
-  	  drupal_set_message($message);
-  	}
+    //but since rules isn't written yet, we're going to use the operation settings to send a notification.
+    if ($this->configuration->get('send')) {
+      $recipients = array();
+      //mail is sent to the user owners of wallets, and to cc'd people
+      foreach ($transaction->endpoints() as $wallet) {
+        $entity = $wallet->getOwner();
+        if (!$entity) continue; //in case of system wallets
+        switch($entity->entityType()) {
+          //we may need to handle more entityTypes here
+          case 'mcapi_wallet':
+            $recipients[] = \Drupal::config('system.site')->get('mail');
+            continue;
+          case 'user':
+            $recipients[] = $entity->get('mail')->value;
+            continue;
+          default://exchanges and nodes
+            if (property_exists($entity, 'uid')) {
+              $recipients[] = user_load($entity->get('uid')->value)->get('mail')->value;
+            }
+        }
+      }
+    }
+    if (empty($recipients)) return;
+
+    drupal_mail(
+      'mcapi',
+      'operation',
+      implode(',', $recipients),
+      entity_load('mcapi_exchange', $transaction->get('exchange')->value)->getlangcode,
+      array(
+      	'mcapi' => $transaction,
+      	'cc' => $this->configuration->get('cc'),
+      	'subject' => $this->configuration->get('subject'),
+      	'body' => $this->configuration->get('body')
+      )
+    );
+
+    if ($message = $this->configuration->get('message')) {
+      //@todo does dsm even show up here?
+      drupal_set_message($message);
+    }
     //@todo all the three ways of showing the form, and how each one moves to the next.
 
-  	//if ($this->configuration->get('format2') == 'redirect') {
-    	if ($path = $this->destination) {
-    	  $form_state['redirect'] = $path;
-    	}
-    	else {//default is to redirect to the transaction itself
-    	  //might not be a good idea for undone transactions
-      	$form_state['redirect_route'] = array(
-    	    'route_name' => 'mcapi.transaction_view',
-    	    'route_parameters' => array('mcapi_transaction' => $transaction->get('serial')->value)
-      	);
-    	}
-  	//}
+    //if ($this->configuration->get('format2') == 'redirect') {
+      if ($path = $this->destination) {
+        $form_state['redirect'] = $path;
+      }
+      else {//default is to redirect to the transaction itself
+        //might not be a good idea for undone transactions
+        $form_state['redirect_route'] = array(
+          'route_name' => 'mcapi.transaction_view',
+          'route_parameters' => array('mcapi_transaction' => $transaction->get('serial')->value)
+        );
+      }
+    //}
 
-  	return $result;
+    return $result;
   }
 
 }

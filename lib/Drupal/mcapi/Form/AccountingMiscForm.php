@@ -57,11 +57,12 @@ class AccountingMiscForm extends ConfigFormBase {
       '#default_value' => $config->get('indelible'),
       '#weight' => 6
     );
+    $menu_options = module_exists('menu') ? menu_get_menus() : menu_list_system_menus();
     $form['exchange_menu'] = array(
       '#title' => t('Menu'),
       '#description' => t("Menu containing dynamic menu links to user's exchange(s)"),
       '#type' => 'select',
-      '#options' => menu_get_menus(),
+      '#options' => $menu_options,
       '#default_value' => $config->get('exchange_menu'),
       '#weight' => 8
     );

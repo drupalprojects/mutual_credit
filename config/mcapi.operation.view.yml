@@ -1,4 +1,8 @@
-op_title: Viewby
-page_title: ''
+op_title: View
+page_title: 'Transaction certificate'
 format: certificate
 twig: ''
+sure:
+  page_title: 'Transaction certificate'
+  format: certificate
+  twig: ''

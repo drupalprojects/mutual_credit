@@ -8,10 +8,16 @@ use \Drupal\field\Field;
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
   if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) return array();
   $replacements = $replaced = array();
-  $transaction = &$data[$type];
-  module_load_include('inc', 'mcapi');
-  mcapi_transaction_process_vars($replaced, $transaction, array('#showlinks' => in_array('links', $tokens)));
+  $transaction = &$data['mcapi'];
 
+  if (array_key_exists('sentence', $tokens)) {
+    $template = \Drupal::config('mcapi.misc')->get('sentence_template');
+    $replacements[$tokens['sentence']] = \Drupal::Token()->replace($template, $data, $options);
+    unset($tokens['sentence']);//otherwise it is replaced by nothing a few lines below
+  }
+
+  module_load_include('inc', 'mcapi');
+  mcapi_transaction_process_vars($replaced, $transaction, in_array('links', $tokens));
   foreach ($tokens as $name => $original) {
     $replacements[$original] = $replaced[$name];
   }
