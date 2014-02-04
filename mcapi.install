@@ -1,5 +1,9 @@
 <?php
 
+//TEMP until drupal works out installation dependencies
+if (!module_exists('entity_reference')){
+  \Drupal::moduleHandler()->install(array('entity_reference'));
+}
 
 /**
  * @file
@@ -33,7 +37,6 @@ function mcapi_install() {
   ))->save();
 
   //default exchange
-
   entity_create('mcapi_exchange', array(
     'name' => t(
       '!sitename exchange 1',
@@ -47,23 +50,6 @@ function mcapi_install() {
   $account = user_load(1);
   $account->set('field_exchanges', array(1));
   $account->save();
-
-   /* test data
-   entity_create('mcapi_transaction', array(
-  	'payer' => 1,
-  	'payee' => 2,
-  	'state' => 1,
-  	'description' => 'created on installation',
-  	'type' => 'default',
-  	'worths' => array(
-      array('currcode' => 'credunit', 'value' => 1),
-      array('currcode' => 'escrow', 'value' => 2)
-    ),
-  	'exchange' => 0
-  ));
-   //@todo the worths field doesn't save.
-    *
-    */
 }
 
 /**

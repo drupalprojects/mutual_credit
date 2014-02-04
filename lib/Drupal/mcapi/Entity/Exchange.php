@@ -135,9 +135,9 @@ class Exchange extends ContentEntityBase {
    *   TRUE if the entity is a member
    */
   public function member(ContentEntityInterface $entity) {
-    if ($entity->entityType() == 'wallet') {
-      if ($wallet->owner) {
-        $entity = $wallet->owner;
+    if ($entity->entityType() == 'mcapi_wallet') {
+      if ($entity->owner) {
+        $entity = $entity->owner;
       }
       else return FALSE;
     }

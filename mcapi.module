@@ -428,12 +428,14 @@ function mcapi_currency_list($all = TRUE) {
 /**
  * return a list of exchanges from an entity_reference field in an entity
  *
- * @param EntityInterface $entity
+ * @param ContentEntityInterface $entity
  *   any entity which has a reference field pointing towards mcapi_exchange entities
  * @return array
  *   of entities, keyed by exchange id
+ *
+ * @todo this should accept only ContentEntityInterface objects, but it fails when Drupal\user\Entity\User is passed
  */
-function referenced_exchanges(ContentEntityInterface $entity = NULL) {
+function referenced_exchanges($entity = NULL) {
   if (is_null($entity)) {
     $entity = user_load(\Drupal::currentUser()->id());
   }
@@ -451,6 +453,8 @@ function referenced_exchanges(ContentEntityInterface $entity = NULL) {
       $exchanges[$item['target_id']] =  entity_load('mcapi_exchange', $item['target_id']);
     }
   }
+  //TEMP until entity_reference works
+  return array_filter($exchanges);
   return $exchanges;
 }
 
@@ -575,7 +579,7 @@ function mcapi_element_info() {
       '#theme' => 'input__textfield',
       '#theme_wrappers' => array('form_element'),
       '#value_callback' => 'form_type_local_wallets_value',
-      '#element_validate' => 'local_wallet_validate_id',
+      '#element_validate' => array('local_wallet_validate_id'),
     )
   );
 }
@@ -590,9 +594,6 @@ function mcapi_element_info() {
  *   the processed $element
  */
 function mcapi_worths_element_process($element, &$form_state) {
-  //@todo remove this when it is tested enough
-  //if (!isset($element['#currencies'])) {echo 'worths element MUST have #currencies key'; mtrace();}
-
   //the default value also tells us which currencies are available
   //if no defaults are set then all currencies should be present
   if (!isset($element['#default_value']) || empty($element['#default_value']) || $element['#preset']) {
@@ -857,7 +858,7 @@ function form_type_local_wallets_value(&$element, $input, &$form_state) {
   return intval(array_pop($matches));
 }
 function local_wallet_validate_id(&$element, &$form_state) {
-  $wallet = entity_load('mcapi_wallet', $id);
+  $wallet = entity_load('mcapi_wallet', $element['#value']);
   foreach (referenced_exchanges() as $exchange) {
     if ($exchange->member($wallet)) return TRUE;
   }
@@ -886,8 +887,11 @@ function _mcapi_conceal_user_exchanges(&$form, $form_state) {
 /**
  * implements hook_entity_delete()
  * ensure any wallets belonging to the entity are moved to their parent's exchange
+ * //@todo. in d8-alpha7 this fails with
+ * Argument 1 passed to mcapi_entity_delete() must be an instance of EntityInterface, instance of Drupal\user\Entity\User given
  */
-function mcapi_entity_delete(EntityInterface $entity) {
+//function mcapi_entity_delete(EntityInterface $entity) {
+function mcapi_entity_delete($entity) {
   if ($exchanges = referenced_exchanges($entity)) {
     $exchange = current($exchanges);//if the parent was in more than one exchange, this will effectively pick a random one.
     $wids = \Drupal::Entitymanager()->getStorageController('mcapi_wallet')->getWalletIds($entity);

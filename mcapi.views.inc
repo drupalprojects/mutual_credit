@@ -337,7 +337,7 @@ function mcapi_views_data() {
       'id' => 'standard',
   	),
   	'field' => array(
-  		'id' => 'wallet',
+  		'id' => 'mcapi_wallet_label',
   	),
   );
 

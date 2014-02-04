@@ -32,7 +32,7 @@ On {{ created }}, <br />
 the sum of <br />
 <font size=6>{{ worths }}</font><br />
 for: "<em>{{ description }}</em>"
-{{ links }}
+{% if links %}{{ links }}{% endif %}
 </center>
 
 <br />{% if children %}

@@ -96,12 +96,13 @@ class FirstPartyEditFormController extends EntityFormController {
     //if this form is being edited by a member of the exchange, we can use the local_wallets autocomplete widget
     //otherwise the preset is just a wallet id.
     $user = user_load(\Drupal::currentUser()->id());
+      $form['partner']['preset'] = array('#markup' => 'Partner preset not available yet');
+      //@todo when entity reference widget is behaving
+      /*
     if ($exchange && $exchange->member($user)) {
     	$form['partner']['preset'] = array(
     		'#title' => t('Preset field to'),
-    		'#description' => t('Submit the form to respond to changes above.'),
         '#type' => 'local_wallets',
-    		'#options' => array(),//would depend on the above
     		'#default_value' => $configEntity->partner['preset'],
     		'#multiple' => FALSE,
     		'#required' => FALSE
@@ -110,7 +111,7 @@ class FirstPartyEditFormController extends EntityFormController {
     elseif ($exchange) {
       $form['partner']['preset'] = array(
       	'#title' => t('Wallet number'),
-      	'#title' => t("Wallet owner must be, or be in, exchange '!name'.", array('!name' => $exchange->label())),
+      	'#description' => t("Wallet owner must be, or be in, exchange '!name'.", array('!name' => $exchange->label())),
         '#type' => 'number',
         '#min' => 1,
     		'#default_value' => $configEntity->partner['preset'],
@@ -122,6 +123,7 @@ class FirstPartyEditFormController extends EntityFormController {
       );
     }
 
+    	*/
 
     $form['direction']= array(
     	'#title' => t('@fieldname preset', array('@fieldname' => t('Direction'))),

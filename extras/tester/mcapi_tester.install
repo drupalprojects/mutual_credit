@@ -1,5 +1,11 @@
 <?php
 
+
+//TEMP until drupal works out installation dependencies
+if (!module_exists('taxonomy')){
+  \Drupal::moduleHandler()->install(array('taxonomy', 'help'));
+}
+
 function mcapi_tester_install() {
   //We have 3 example exchanges and 4 users in each exchange
   //each exchange has its own currency, one ladmin, one helper and 2 members
@@ -25,9 +31,12 @@ function mcapi_tester_install() {
       )
     )
   );
+  $wallet = array('name' => 'Shared wallet', 'entity_type' => 'mcapi_exchange');
   foreach($exchanges as $values) {
-    $exchange = entity_create('mcapi_exchange', $values)->save();
-    entity_create('mcapi_wallet', array('name' => 'Kitty', 'entity_type' => 'mcapi_exchange', 'pid' => $exchange->id()));
+    $exchange = entity_create('mcapi_exchange', $values);
+    $exchange->save();
+    $wallet['pid'] = $exchange->id();
+    entity_create('mcapi_wallet', $wallet)->save();
   }
 
   $users = array(
@@ -114,10 +123,11 @@ function mcapi_tester_install() {
       'created' => strtotime("-$d days"),
       'field_exchanges' => array(array('target_id' => $user['exchange']))
     );
-    $account = entity_create('user', $values)->save();
+    $account = entity_create('user', $values);
+    $account->save();
     //if the user has ladmin role, make them owner of their exchange
-    if (array_search($values->roles, 'ladmin')) {
-       db_query("UPDATE {mcapi_exchanges} SET uid = $account->uid WHERE id = ".$values['exchange']);
+    if (array_search('ladmin', $values['roles'])) {
+       db_query("UPDATE {mcapi_exchanges} SET uid = :uid WHERE id = ".$values['field_exchanges'][0]['target_id'], array(':uid' => $account->id()));
     }
   }
 
@@ -125,8 +135,8 @@ function mcapi_tester_install() {
   //so we can make some transactions
   foreach(entity_load_multiple('mcapi_exchange') as $exchange) {
     $wallets = db_query("SELECT wid FROM {mcapi_wallets} w
-        LEFT JOIN {users} u ON w.pid = u.uid AND w.entity_type = 'user'
-        LEFT JOIN {user__field_exchanges} e ON u.uid = e.entity_id AND e.field_exchanges_target_id = ".$exchange->id()
+        JOIN {users} u ON w.pid = u.uid AND w.entity_type = 'user'
+        JOIN {user__field_exchanges} e ON u.uid = e.entity_id AND e.field_exchanges_target_id = ".$exchange->id()
     )->fetchCol();
     //identify the currency of the exchange
     $ref = $exchange->get('field_currencies')->getValue();
@@ -142,7 +152,8 @@ function mcapi_tester_install() {
             'value' => rand(100, 5000)
           )
         ),
-        'exchange' => $exchange_id
+        'description' => 'test transaction',
+        'exchange' => $exchange->id()
       );
       entity_create('mcapi_transaction', $t)->save();
     }
@@ -160,7 +171,7 @@ function mcapi_tester_install() {
 function mcapi_tester_uninstall() {
   foreach (entity_load_multiple('user') as $uid => $account) {
     if ($account->id() == 1)continue;
-    db_query("DELETE FROM {mcapi_wallets} WHERE pid = $uid AND entity_id =  'user'");
+    db_query("DELETE FROM {mcapi_wallets} WHERE pid = $uid AND entity_type =  'user'");
     $account->delete();
   }
   db_truncate('mcapi_transactions')->execute();

@@ -1,10 +1,11 @@
 id: test1
 exchange: '1'
-title: Add transaction in exchange 1
+path: transact/test1
+title: 'Add transaction in exchange 1'
 status: 1
 type: default
 partner:
-  preset: '3'
+  preset: 5
 direction:
   preset: none
   widget: radios
@@ -23,7 +24,6 @@ created:
 experience:
   twig: "Description {{ description }}\r\nValue {{ worths }}\r\n{{ direction }} \r\nPartner {{ partner }}\r\n{{ field_categories }}"
   button: 'Log transaction'
-  preview: ajax
+  preview: page
 message: 'Transaction Logged'
 langcode: en
-path: transact/test1

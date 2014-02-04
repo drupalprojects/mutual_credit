@@ -39,7 +39,8 @@ class TransactionFormAccessController implements StaticAccessCheckInterface {
     $editform = \Drupal::config($request->attributes->get('_route'));
 
     if ($exchange_id = $editform->get('exchange')) {
-      if (entity_load('mcapi_exchange', $exchange_id)->member(user_load($account->id()))) {
+      $exchange = entity_load('mcapi_exchange', $exchange_id);
+      if (is_object($exchange) && $exchange->member(user_load($account->id()))) {
         return AccessInterface::ALLOW;
       }
     }

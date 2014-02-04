@@ -1,5 +1,5 @@
 name: 'Community Accounting API'
-description: "NB INSTALL ENTITY_REFERENCE FIRST! Build a complete exchange network with the echanges, currencies, and wallets"
+description: "Build a complete exchange network with the echanges, currencies, and wallets"
 package: "Community Accounting"
 configure: mcapi.admin
 core: 8.x

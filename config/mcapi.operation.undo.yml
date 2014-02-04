@@ -23,3 +23,10 @@ pending:
   admin: admin
   payer: 0
   payee: 0
+access:
+  1:
+    admin: admin
+    payer: 0
+    payee: 0
+    manager: 0
+    helper: 0

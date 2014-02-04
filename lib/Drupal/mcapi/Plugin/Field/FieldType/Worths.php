@@ -146,13 +146,7 @@ class Worths extends ConfigFieldItemBase {
   }
 
   public function getValue() {
-    foreach ($this->values as $value) {
-      $return[$value['currcode']] = array(
-        'currcode' => $value['currcode'],
-        'value' =>  $value['value']
-      );
-    }
-    return $return;
+    return $this->values;
   }
 
 }

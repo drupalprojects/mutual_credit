@@ -55,8 +55,8 @@ function _mcapi_field_extra_fields() {
     );
   }
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
-  $form = array('payer', 'payee', 'worths', 'description');
-  foreach ($form as $weight => $fieldname) {
+  $fields = array('payer', 'payee', 'worths', 'description');
+  foreach ($fields as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
       'label' => $props[$fieldname]['label'],
       'description' => $props[$fieldname]['description'],
@@ -398,6 +398,7 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
     //@todo more ugliness retrieving from entity_reference field
     $exchange_field = ($transaction->get('exchange')->getValue(TRUE));
     $v['exchange'] = $exchange_field[0]['entity']->label();
+    $v['links'] = $showlinks ? $transaction->links() : '';
     //the token service lets you pass url options,
     //but we'll simply do it here and just make all links absolute
     $uri = $transaction->uri();
@@ -550,7 +551,6 @@ function get_exchange_entity_fieldnames($type = '') {
       }
     }
   }
-//  if ($type == 'mcapi_wallet')mtrace();
   if ($type) return @$types[$type];
   return $types;
 }
