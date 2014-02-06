@@ -365,33 +365,13 @@ class CurrencyFormController extends EntityFormController {
     	'#default_value' => $currency->color,
 //    	'#weight' =>
     );
-
+/*
     $form['additional_settings'] = array(
       '#type' => 'vertical_tabs',
       '#weight' => 15
     );
     $weight = 0;
-
-    $form['access_undo'] = array(
-      '#title' => t('Undo access'),
-      '#description' => t('Determine who can undo transactions in each state.') .' '. t('Any of the checked conditions must return TRUE'),
-      '#type' => 'details',
-      '#group' => 'additional_settings',
-      '#tree' => TRUE,
-    );
-    foreach (mcapi_get_states() as $state) {
-      if ($state->value == TRANSACTION_STATE_UNDONE) continue;
-      $form['access_undo'][$state->value] = array(
-        '#title' => t(
-          "Transactions in state '@state': !description",
-          array('@state' => $state->label, '!description' => $state->description)
-        ),
-        '#type' => 'checkboxes',
-        '#options' => transaction_access_plugins(TRUE),
-        '#default_value' => $currency->access_undo[$state->value]
-      );
-    }
-
+*/
     $form['refresh'] = array(
       '#type' => 'submit',
       '#value' => $this->t('Refresh'),

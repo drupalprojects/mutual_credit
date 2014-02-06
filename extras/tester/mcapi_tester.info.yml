@@ -12,3 +12,4 @@ dependencies:
   - mcapi_1stparty
   - dblog
   - taxonomy
+  - help

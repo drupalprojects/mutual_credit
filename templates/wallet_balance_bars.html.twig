@@ -1,0 +1,46 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a wallet's balance history.
+ * some javascript has been added in the header already
+ *
+ * id           #the unique id of the chart
+ * functionname #the unique function name
+ * width        #in pixels
+ * height       #in pixels
+ * incoming     #raw incoming value
+ * outgoing     #raw outgoing value
+ * show_in      #formatted incoming value
+ * show_out     #formatted outgoing value
+ * currency     #configEntity object
+ * max
+ * vaxislabels
+ */
+#}
+
+<script type="text/javascript">
+google.setOnLoadCallback({{ functionname }});
+function {{ functionname }}() {
+  var data = google.visualization.arrayToDataTable([
+    ['', 'Given', 'Gotten'],
+    ['', {{ incoming }}, {{ outgoing }}]
+  ]);
+  var options = {
+    title:"{{ currency.label }} Given / Gotten",
+    width:{{ 120 }},
+    height:{{ 240 }},
+    enableInteractivity: false,
+    vAxis: {viewWindowMode: 'explicit'},
+    vAxis: {viewWindow: {min: 0, max: {{ max  }}}},
+    hAxis: {title: "{{ show_in }}, {{ show_out }}"},
+    legend: {position: 'none'},
+    colors: ['#2aab49', '#21a0db'],
+    vAxis: { ticks: [{% for tick in vaxislabels %}
+      {v:{{ tick.value }}, f:"{{ tick.label }}"},
+      {% endfor %}
+    ]}
+  }
+  new google.visualization.ColumnChart(document.getElementById('{{ id }}')).draw(data, options);
+}
+</script>
+<span id="{{ id }}" style="width:{{ width }}px; height:{{ height }}px;"></span>

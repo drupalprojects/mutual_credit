@@ -22,6 +22,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
  *   label = @Translation("Wallet"),
  *   module = "mcapi",
  *   controllers = {
+ *     "view_builder" = "Drupal\mcapi\WalletViewBuilder",
  *     "storage" = "Drupal\mcapi\WalletStorageController",
  *     "access" = "Drupal\mcapi\WalletAccessController",
  *     "form" = {
@@ -34,12 +35,12 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
  *     "id" = "wid",
  *     "uuid" = "uuid"
  *   },
- *   fieldable = FALSE,
+ *   fieldable = TRUE,
  *   translatable = FALSE,
  *   route_base_path = "admin/accounting/wallets",
  *   links = {
  *     "canonical" = "mcapi.wallet_view",
- *     "admin-form" = "mcapi.wallets"
+ *     "admin-form" = "mcapi.admin_wallets"
  *   }
  * )
  */
@@ -227,5 +228,16 @@ class Wallet extends ContentEntityBase {
       return array($this->owner->id() => $this->owner);
     }
     return referenced_exchanges($this->owner);
+  }
+  /**
+   * get a list of the currencies held in the wallet
+   */
+  function currencies() {
+    if (!$this->currencies) {
+      $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+      $currcodes = array_keys($storage->summaryData($this->id()));
+      $this->currencies = entity_load_multiple('mcapi_currency', $currcodes);
+    }
+    return $this->currencies;
   }
 }

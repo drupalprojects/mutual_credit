@@ -12,12 +12,12 @@ use Drupal\mcapi\CurrencyTypeBase;
 use Drupal\mcapi\CurrencyTypeInterface;
 
 /**
- * Creates a currency based upon time.
+ * Creates a currency based upon time, multiplying seconds into minutes and hours.
  *
  * @CurrencyType(
  *   id = "time",
- *   label = @Translation("Time"),
- *   description = @Translation("Currency based upon time"),
+ *   label = @Translation("Time in seconds"),
+ *   description = @Translation("Time shown as hours, minutes and seconds"),
  *   default_widget = "currency_time_single"
  * )
  */

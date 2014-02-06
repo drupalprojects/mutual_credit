@@ -27,7 +27,6 @@ abstract class CurrencySingleWidgetBase extends WidgetBase {
       '#default_value' => $this->getSetting('placeholder'),
       '#description' => t('Text that will be shown inside the field until a value is entered. This hint is usually a sample value or a brief description of the expected format.'),
     );
-    //@todo Gordon should this element check the resulting numeric value > 0?
     return $element;
   }
 
@@ -57,6 +56,7 @@ abstract class CurrencySingleWidgetBase extends WidgetBase {
       '#default_value' => $this->renderValue($items[$delta]->value),
       '#placeholder' => $this->getSetting('placeholder'),
     );
+    //@todo Gordon should this element check the resulting numeric value > 0?
 
     return $element;
   }

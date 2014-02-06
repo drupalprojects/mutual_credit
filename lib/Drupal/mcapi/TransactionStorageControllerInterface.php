@@ -8,6 +8,7 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\FieldableEntityStorageControllerInterface;
+use Drupal\Core\Entity\EntityInterface;
 
 interface TransactionStorageControllerInterface extends FieldableEntityStorageControllerInterface {
 
@@ -72,11 +73,11 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
    * It might be a good idea to make a method specialised for retrieving balances only.
    * It would be an interesting SQL query which could get balances for multiple users.
    *
-   * @param $wallet
+   * @param integer $wallet_id
    * @param CurrencyInterface $currency
    * @param array $filters
    */
-  public function summaryData($wallet, array $filters);
+  public function summaryData($wallet_id, array $filters);
 
   /**
    * count the number of transactions that meet the given conditions
@@ -110,8 +111,8 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
    * Retrieve the full balance history
    * N.B if caching running balances remember to clear the cache whenever a transaction changes state or is deleted.
    *
-   * @param AccountInterface $account
-   * @param CurrencyInterface $currency
+   * @param integer $wallet_id
+   * @param string $currcode
    * @param integer $since
    *   A unixtime before which to exclude the transactions.
    *   Note that all transactions will have to be loaded in order to calculate the first shown balance
@@ -119,7 +120,7 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
    * @return array
    *   keyed by timestamp and balance from that moment
    */
-  public function timesBalances(AccountInterface $account, CurrencyInterface $currency, $since);
+  public function timesBalances($wallet_id, $currcode, $since);
 
 
   //public function saveWorths(TransactionInterface $transaction);

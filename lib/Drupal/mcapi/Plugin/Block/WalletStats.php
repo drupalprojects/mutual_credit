@@ -11,7 +11,7 @@ use Drupal\mcapi\Plugin\Block\McapiBlockBase;
 
 
 /**
- * Displays some stats for a wallet.
+ * Displays balances for all the wallets belonging to an entity
  *
  * @Block(
  *   id = "mcapi_wallet_stats",
@@ -28,7 +28,7 @@ class WalletStats extends McapiBlockBase {
     parent::build();
     module_load_include('inc', 'mcapi');
     //@todo make this work
-    $build = mcapi_view_wallet_summary($this->account->wallets, $this->currencies);
+    $build = mcapi_view_wallets_balances($this->account->wallets, $this->currencies);
     //this is helpful for when the signatures module wants to alter the block.
     $build['#account'] = $this->account;
     return $build;

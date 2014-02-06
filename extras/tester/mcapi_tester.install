@@ -141,7 +141,9 @@ function mcapi_tester_install() {
     //identify the currency of the exchange
     $ref = $exchange->get('field_currencies')->getValue();
     //get 2 random different wallet ids
+   $secondsago = rand(1, 25*3600);
     for ($i = 0; $i < 12; $i++) {
+      $secondsago = rand(1, 25*3600);
       shuffle($wallets);
       $t = array(
         'payer' => next($wallets),
@@ -153,7 +155,8 @@ function mcapi_tester_install() {
           )
         ),
         'description' => 'test transaction',
-        'exchange' => $exchange->id()
+        'exchange' => $exchange->id(),
+        'created' => REQUEST_TIME - $secondsago
       );
       entity_create('mcapi_transaction', $t)->save();
     }

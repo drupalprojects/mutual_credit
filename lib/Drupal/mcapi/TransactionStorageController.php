@@ -9,6 +9,7 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\FieldableDatabaseStorageController;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\mcapi\Plugin\field\field_type\Worth;
 
 class TransactionStorageController extends FieldableDatabaseStorageController implements TransactionStorageControllerInterface {
@@ -292,7 +293,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   /**
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::summaryData()
    */
-  public function summaryData($wallet, array $conditions) {
+  public function summaryData($wallet_id, array $conditions = array()) {
     //TODO We need to return 0 instead of null for empty columns
     //then get rid of the last line of this function
     $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('currcode'));
@@ -302,14 +303,14 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $query->addExpression('SUM(i.diff)', 'balance');
     $query->addExpression('SUM(i.volume)', 'volume');
     $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
-    $query->condition('i.wallet_id', $wallet->id())
+    $query->condition('i.wallet_id', $wallet_id)
       ->groupby('currcode');
     $this->parseConditions($query, $conditions);
     return $query->execute()->fetchAllAssoc('currcode', \PDO::FETCH_ASSOC);
     }
 
   //experimental
-  public function balances ($currcode, $wids = array(), array $conditions) {
+  public function balances ($currcode, $wids = array(), array $conditions = array()) {
     $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
     $query->addExpression('SUM(i.diff)', 'balance');
     if ($wids) {
@@ -324,7 +325,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   /**
    * @see \Drupal\mcapi\TransactionStorageControllerInterface::timesBalances()
    */
-  public function timesBalances(AccountInterface $account, CurrencyInterface $currency, $since = 0) {
+  public function timesBalances($wallet_id, $currcode, $since = 0) {
     //TODO cache this, and clear the cache whenever a transaction changes state or is deleted
     //this is a way to add up the results as we go along
     $this->database->query("SET @csum := 0");
@@ -333,21 +334,18 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $all_balances = $this->database->query(
       "SELECT created, (@csum := @csum + diff) as balance
         FROM {mcapi_transactions_index}
-        WHERE wallet_id = :wallet_id AND currcode = :currcode
-        ORDER BY created",
-      array(
-        ':wallet_id' => $account->id(),
-        ':currcode' => $currency->id()
-      )
+        WHERE wallet_id = $wallet_id AND currcode = '$currcode'
+        ORDER BY created"
     )->fetchAll();
     $history = array();
     //having done the addition, we can chop the beginning off the array
-    //process the points into the right format
     //if two transactions happen on the same second, the latter running balance will be shown only
     foreach ($all_balances as $point) {
-      if ($point->created > $since) {
-        $history[$point->created] = $point->balance;
-      }
+      //@todo this could be optimised since we could be running through a lot of points in chronological order
+      //we just need to remove all array values with keys smaller than $since.
+      //I think it can't be done in the SQL coz we need them for adding up.
+      if ($point->created < $since) continue;
+      $history[$point->created] = $point->balance;
     }
     return $history;
   }

@@ -45,13 +45,11 @@ class CurrencyTypePluginManager extends DefaultPluginManager {
     );
 
     $plugin_id = $options['currency']->type;
-
     $configuration = $options['configuration'];
 
     $configuration+= array(
       'currency' => $options['currency'],
     );
-
     return $this->createInstance($plugin_id, $configuration);
   }
 }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\mcapi\Plugin\Field\FieldWidget\CurrencySingleWidget.
+ * Contains Drupal\mcapi\Plugin\Field\FieldWidget\CurrencyTimeSplitWidget.
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;

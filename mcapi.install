@@ -425,13 +425,6 @@ function mcapi_schema() {
         'not null' => TRUE,
         'default' => 'restricted'
       ),
-      'langcode' => array(
-        'description' => 'The {language}.langcode of this version.',
-        'type' => 'varchar',
-        'length' => 12,
-        'not null' => TRUE,
-        'default' => '',
-      )
     ),
     'primary key' => array('id'),
     'unique keys' => array(

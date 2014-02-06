@@ -582,6 +582,9 @@ function mcapi_views_data() {
   	  )
   	)
   );
+  // this might not be worth it, especially since we can't sort with it
+  //if we wanted to sort we would
+  //make a GROUP view on transaction_index and make a relationship to exchanges
   $data['mcapi_exchanges']['transactions'] = array(
   	'title' => t('Transaction count'),
   	'help' => t('The number of transactions in a given period'),

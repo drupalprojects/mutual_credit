@@ -119,7 +119,7 @@ function mcapi_transaction_load($serial) {
 function mcapi_help($path, $arg) {
   switch ($path) {
     case 'admin/accounting':
-      return t("The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.");
+      return t('The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.');
     case 'admin/accounting/currencies':
       return implode(' ', array(
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
@@ -136,8 +136,8 @@ function mcapi_help($path, $arg) {
       ));
     case 'admin/accounting/transactions/workflow':
       return implode(' ', array(
-        t("The workflow is about moving transactions between states. This is always done through a form."),
-        t("The confirm forms are configured on this page.")
+        t('The workflow is about moving transactions between states. This is always done through a form.'),
+        t('The confirm forms are configured on this page.')
       ));
   }
 }
@@ -162,38 +162,12 @@ function transaction_operations($op_name = NULL) {
   if ($op_name) return $plugins[$op_name];
   else return $plugins;
 }
+//shows the most common operations
 function show_transaction_operations($view = TRUE) {
   $ops = transaction_operations();
   unset($ops['create']);
   if (!$view) unset($ops['view']);
   return $ops;
-}
-
-/**
- * get a transaction access plugin or array of all plugins
- *
- * @param string $options
- *   return just the plugin names, suitable for a formAPI select widget #options
- * @return $plugin or array of plugins
- *   depending on whether an op_name was passed
- */
-function transaction_access_plugins($options = FALSE) {
-  //TODO when to use drupal_static and when to use drupal_static_fast?
-  $plugins = &drupal_static(__FUNCTION__, array());
-  if (empty($plugins)) {
-    $manager = \Drupal::service('plugin.manager.mcapi.transaction_access');
-    foreach ($manager->getDefinitions() as $plugin => $info) {
-      $plugins[$plugin] = $manager->createInstance($plugin);
-    }
-  }
-  if ($options) {
-    $names = array();
-    foreach ($plugins as $key => $info) {
-      $names[$key] = $info->label();
-    }
-    return $names;
-  }
-  else return $plugins;
 }
 
 
@@ -209,59 +183,8 @@ function mcapi_permission() {
  * implements hook_theme().
  */
 function mcapi_theme($existing, $type, $theme, $path) {
-  $items = array(
-    'mcapi_transaction' => array(
-      'render element' => 'transaction',
-      'template' => 'transaction',
-      'file' => 'mcapi.inc'
-    ),
-    //the above is the theme wrapper for the below
-    //so they both take the same render_element
-    'certificate' => array(
-      'render element' => 'transaction',
-      'template' => 'certificate',
-      'pattern' => 'certificate__',
-      'file' => 'mcapi.inc'
-    ),
-    'mcapi_twig' => array(
-      'variables' => array(
-    	  'mcapi_transaction' => NULL,
-        'twig' => '',
-        'showlinks' => FALSE
-      ),
-      'file' => 'mcapi.inc'
-    ),
-    'worth_element'=> array(
-      'render element' => 'element',
-    ),
-    'wallet' => array(
-      'template' => 'wallet',
-      'variables' => array(
-    	  'wallet' => NULL
-      ),
-      'file' => 'mcapi.inc'
-    ),
-    //TODO
-    'balance_bars' => array(
-      'template' => 'balance_bars',
-      'variables' => array(
-        'account' => '',
-        'currency' => '',
-      ),
-      'file' => 'mcapi.inc'
-    ),
-    'balance_histories_gchart' => array(
-      'template' => 'balance_histories_gchart',
-      'variables' => array(
-        'account' => NULL,
-        'currcodes' =>array(),
-        'width' => 250,
-        'resample' => 'simple'
-      ),
-      'file' => 'mcapi.inc'
-    )
-  );
-  return $items;
+  module_load_include('inc', 'mcapi');
+  return _mcapi_theme();
 }
 
 /**
@@ -272,7 +195,7 @@ function mcapi_entity_view($entity, $mode, $language) {
   if ($wids = \Drupal::Entitymanager()->getStorageController('mcapi_wallet')->getWalletIds($entity)) {
     //@todo make this work on all entities
     module_load_include('inc', 'mcapi');
-    $entity->content['wallets_summary'] = mcapi_view_wallet_summaries($wids);
+    $entity->content['wallet_balances'] = mcapi_view_wallets_balances($wids);
   }
 }
 
@@ -508,80 +431,8 @@ function mcapi_mcapi_transaction_operated($transaction, $context) {
  * implements_hook_element_info().
  */
 function mcapi_element_info() {
-  return array(
-    // this is used by the field API for mixed transaction forms
-    'worths' => array(
-      '#title' => t('Worth'),
-      '#input' => TRUE,
-      '#title_display' => 'before',
-      '#element_validate' => array('mcapi_worths_element_validate'),
-      '#theme_wrappers' => array('form_element'),
-      '#process' => array('mcapi_worths_element_process'),
-      '#tree' => TRUE,
-      '#attached' => array(
-        'css' => array(
-          drupal_get_path('module', 'mcapi') . '/css/worths-element.css',
-        )
-      ),
-      // custom properties, used for configuration
-      '#mixed_mode' => \Drupal::config('mcapi.misc')->get('mix_mode'),
-      '#preset' => FALSE, //ensures all currencies are showing
-      '#calc' => FALSE, //allow a formula
-    ),
-    // this one is used internally only,
-    // although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
-    'worth' => array(
-      '#input' => TRUE,
-      '#title_display' => 'attribute',
-      '#process' => array('mcapi_worth_element_process'),
-      '#value_callback' => 'mcapi_form_type_worth_value',
-      '#element_validate' => array('mcapi_worth_element_validate'),
-      '#theme_wrappers' => array('form_element'),
-      '#attached' => array(
-        'css' => array(
-          drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
-        )
-      ),
-      // custom properties, used for configuration
-      '#calc' => FALSE,
-    ),
-    'mcapi_states' => array(
-      '#input' => TRUE,
-      '#title_display' => 'before',
-      '#process' => array('mcapi_process_states', 'ajax_process_form'),
-      '#theme_wrappers' => array('radios'),
-      '#pre_render' => array('form_pre_render_conditional_form_element'),
-    ),
-    'mcapi_types' => array(
-      '#input' => TRUE,
-      '#title_display' => 'before',
-      '#process' => array('mcapi_process_types', 'ajax_process_form'),
-      '#theme_wrappers' => array('form_element'),
-      '#theme' => 'select'
-    ),
-    'mcapi_currcodes' => array(
-      '#input' => TRUE,
-      '#title_display' => 'invisible',
-      '#process' => array('mcapi_process_currcodes','ajax_process_form'),
-      '#theme_wrappers' => array('form_element'),
-      '#multiple' => TRUE,
-      '#options' => array(),//array of currcodes and currency names
-    ),
-    //local means 'in the same exchanges as the current user'
-    'local_wallets' => array(
-      //much of this is borrowed from 'textfield'
-      '#input' => TRUE,
-      '#size' => 60,
-      '#maxlength' => 128,
-      '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
-      '#process' => array('form_process_autocomplete', 'ajax_process_form'),
-      '#pre_render' => array('form_pre_render_textfield'),
-      '#theme' => 'input__textfield',
-      '#theme_wrappers' => array('form_element'),
-      '#value_callback' => 'form_type_local_wallets_value',
-      '#element_validate' => array('local_wallet_validate_id'),
-    )
-  );
+  module_load_include('inc', 'mcapi');
+  return _mcapi_element_info();
 }
 
 
@@ -1079,8 +930,11 @@ function mcapi_get_wallet_ids(EntityInterface $entity) {
  * rather expensive, I think
  * @todo second opinion, GORDON?
  */
-function mcapi_block_view_system_menu_block_alter(&$build, $block) {
+function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
   if($block->getPluginId() == 'system_menu_block:tools') {
+    if (!array_key_exists('content', $build)) {
+      $build['content'] = array();
+    }
     foreach (referenced_exchanges() as $exchange) {
       //does a menu link really require all of these properties
       $uri = $exchange->uri();

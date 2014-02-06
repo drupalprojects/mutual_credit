@@ -3,7 +3,8 @@
 /**
  * @file
  * Definition of Drupal\mcapi\Plugin\views\access\Wallet.
- * COULDN'T GET THIS TO WORK!!!
+ * @todo COULDN'T GET THIS TO WORK!!! denies access without even opening this file
+ * think it is a d8 alpha 7 bug
  */
 
 namespace Drupal\mcapi\Plugin\views\access;
@@ -27,11 +28,10 @@ use Symfony\Component\Routing\Route;
  */
 class Wallet extends AccessPluginBase {
 
-
   /**
    * {@inheritdoc}
    */
-  public function access(AccountInterface $account) {
+  public function access(AccountInterface $account) {die('Wallet::access');
     //NOT TRIED
     return TRUE;
     //return user_access($this->options['perm'], $account) || user_access('access all views', $account);

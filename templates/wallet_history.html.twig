@@ -1,0 +1,34 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a wallet's balance history.
+ * some javascript has been added in the header already
+ *
+ * data #the data for generating the chart
+ * functionname
+ * id #the unique id of the chart
+ * currency #the currency object
+ * width #in pixels
+ * height #in pixels
+ * vaxislabels # array of labels keyed by value
+ */
+#}
+<script>
+google.setOnLoadCallback({{ functionname }});
+function {{ functionname }}() {
+  {{ data }}
+  var options = {
+    width: {{ width }},
+    height: {{ height }},
+    colors: ['{{ currency.color }}'],
+    legend: {position: 'none'},
+    vAxis: { ticks: [{% for tick in vaxislabels %}
+      {v:{{ tick.value }}, f:"{{ tick.label }}"},
+      {% endfor %}
+    ]}
+  }
+  new google.visualization.LineChart(document.getElementById('{{ id }}')).draw(data, options);
+}
+</script>
+<span id="{{ id }}" style="width:{{ width }}px; height:{{ height }}px;"></span>
+

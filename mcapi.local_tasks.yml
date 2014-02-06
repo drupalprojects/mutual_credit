@@ -5,6 +5,13 @@ mcapi.admin_tab:
   tab_root_id: mcapi.admin_tab
   weight: 0
 
+#sits next to the wallet field ui tabs
+mcapi.admin_wallet_tab:
+  route_name: mcapi.admin_wallets
+  title: Settings
+  tab_root_id: mcapi.admin_wallet_tab
+  weight: 0
+
 #4 types of mass transaction
 mcapi.admin_exchanges_tab:
   route_name: mcapi.admin_exchange_list

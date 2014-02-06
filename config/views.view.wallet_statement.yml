@@ -11,7 +11,7 @@ display:
     position: 1
     display_options:
       access:
-        type: wallet
+        type: none
       cache:
         type: none
         options: {  }
@@ -356,6 +356,7 @@ display:
           empty_zero: 0
           hide_alter_empty: 1
           mode: ajax
+          view: 1
           plugin_id: transaction_operations
           provider: mcapi
       filters: {  }
@@ -373,7 +374,33 @@ display:
             label: ''
           granularity: second
       title: Statement
-      header: {  }
+      header:
+        entity_mcapi_wallet:
+          id: entity_mcapi_wallet
+          table: views
+          field: entity_mcapi_wallet
+          relationship: none
+          group_type: group
+          admin_label: ''
+          empty: 0
+          tokenize: 1
+          entity_id: '!1 '
+          view_mode: full
+          bypass_access: 1
+          plugin_id: entity
+          provider: views
+        area_text_custom:
+          id: area_text_custom
+          table: views
+          field: area_text_custom
+          relationship: none
+          group_type: group
+          admin_label: ''
+          empty: 0
+          tokenize: 0
+          content: "In D8 alpha7 this view header fails to retrieve an entity when the integer id is given as a string.\n  //to get around it, go to Drupal\views\Plugin\views\area\Entity::render and intval($entity_id)"
+          plugin_id: text_custom
+          provider: views
       footer: {  }
       empty:
         area:
@@ -433,13 +460,12 @@ display:
           field: created_year
           plugin_id: date_year
           provider: views
-  page_1:
-    display_plugin: page
-    id: page_1
-    display_title: Page
+  embed_1:
+    display_plugin: embed
+    id: embed_1
+    display_title: Embed
     position: 1
-    display_options:
-      path: wallet/%
+    display_options: {  }
 label: 'wallet statement'
 module: views
 id: wallet_statement

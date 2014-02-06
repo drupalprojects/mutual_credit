@@ -94,36 +94,33 @@ class Exchange extends ContentEntityBase {
   public static function baseFieldDefinitions($entity_type) {
 
     $properties['id'] = FieldDefinition::create('integer')
-    ->setLabel('Exchange ID')
-    ->setDescription('the unique exchange ID')
-    ->setReadOnly(TRUE)
-    ->setRequired(TRUE);
+      ->setLabel('Exchange ID')
+      ->setDescription('the unique exchange ID')
+      ->setReadOnly(TRUE)
+      ->setRequired(TRUE);
     $properties['uuid'] = FieldDefinition::create('uuid')
-    ->setLabel('UUID')
-    ->setDescription('The transaction UUID.')
-    ->setReadOnly(TRUE)
-    ->setRequired(TRUE);
+      ->setLabel('UUID')
+      ->setDescription('The transaction UUID.')
+      ->setReadOnly(TRUE)
+      ->setRequired(TRUE);
     $properties['name'] = FieldDefinition::create('string')
-    ->setLabel('Full name')
-    ->setDescription('The full name of the exchange')
-    ->setPropertyConstraints('value', array('Length' => array('max' => 64)))
-    ->setRequired(TRUE);
+      ->setLabel('Full name')
+      ->setDescription('The full name of the exchange')
+      ->setPropertyConstraints('value', array('Length' => array('max' => 64)))
+      ->setRequired(TRUE);
     $properties['uid'] = FieldDefinition::create('entity_reference')
-    ->setLabel('Manager of the exchange')
-    ->setDescription('The one user responsible for administration')
-    ->setSettings(array('target_type' => 'user'))
-    ->setRequired(TRUE);
+      ->setLabel('Manager of the exchange')
+      ->setDescription('The one user responsible for administration')
+      ->setSettings(array('target_type' => 'user'))
+      ->setRequired(TRUE);
     $properties['open'] = FieldDefinition::create('boolean')
-    ->setLabel('Open')
-    ->setDescription('TRUE if the exchange is open for trading')
-    ->setSetting('default_value', TRUE);
+      ->setLabel('Open')
+      ->setDescription('TRUE if the exchange is open for trading')
+      ->setSetting('default_value', TRUE);
     $properties['visibility'] = FieldDefinition::create('boolean')
-    ->setLabel('Visibility')
-    ->setDescription('Visibility of impersonal data in the exchange')
-    ->setSetting('default_value', 'restricted');
-    $properties['langcode'] = FieldDefinition::create('language')
-    ->setLabel(t('Language code'))
-    ->setDescription(t('The first language of the exchange'));
+      ->setLabel('Visibility')
+      ->setDescription('Visibility of impersonal data in the exchange')
+      ->setSetting('default_value', 'restricted');
     //plus don't forget there is an entityreference field api field and instance called exchange_currencies
 
     return $properties;

@@ -45,8 +45,8 @@ function _mcapi_field_extra_fields() {
     $extra[$entity_type] = array(
       $bundle => array(
         'display' => array(
-          'wallets_summary' => array(
-            'label' => t('Trading summary'),
+          'wallets_summaries' => array(
+            'label' => t('Wallets summaries'),
             'description' => t("Statistics from the user's wallets"),
             'weight' => 5,
           ),
@@ -77,229 +77,246 @@ function _mcapi_field_extra_fields() {
     'description' => t('3 pieces of data clumped together'),
     'weight' => 1,
   );
+
+  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_balance_bars'] = array(
+    'label' => t('Balance bar charts'),
+    'description' => t('One barchart per currency showing incoming and outgoing volumes'),
+    'weight' => 1,
+  );
+  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_histories'] = array(
+    'label' => t('History chart(s)'),
+  	'description' => t('One line chart per currency showing balance over time.'),
+    'weight' => 2
+  );
+  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_summaries'] = array(
+    'label' => t('Balance(s)'),
+  	'description' => t('Small thingy showing balances of all currencies'),
+    'weight' => 3
+  );
+  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_stats'] = array(
+    'label' => t('Trading stats'),
+  	'description' => t('Grid showing trading stats for all currencies'),
+    'weight' => 4
+  );
+  /* we have a page for this - it's not really part of entity_display
+  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_transactions'] = array(
+    'label' => t('Transaction Log'),
+  	'description' => t('A view showing all the transactions')
+  );
+  */
   return $extra;
 }
 
+function _mcapi_theme() {
+  $items['mcapi_transaction'] = array(
+    'render element' => 'transaction',
+    'template' => 'transaction',
+    'file' => 'mcapi.inc'
+  );
+    //the above is the theme wrapper for the below
+    //so they both take the same render_element
+  $items['certificate'] = array(
+    'render element' => 'transaction',
+    'template' => 'certificate',
+    'pattern' => 'certificate__',
+    'file' => 'mcapi.inc'
+  );
+  $items['mcapi_twig'] = array(
+    'variables' => array(
+      'mcapi_transaction' => NULL,
+      'twig' => '',
+      'showlinks' => FALSE
+    ),
+    'file' => 'mcapi.inc'
+  );
+  $items['worth_element'] = array(
+    'render element' => 'element',
+  );
+  //TODO
+  $items['wallet_balance_bars'] = array(
+    'template' => 'wallet_balance_bars',
+    'variables' => array(
+      'wallet' => '',
+      'currency' => NULL,
+      'data' => array()
+    ),
+    'file' => 'extras/wallet_preprocess.inc'
+  );
+  $items['wallet_history'] = array(
+    'template' => 'wallet_history',
+    'variables' => array(
+      'wallet' => NULL,
+      'currency' => NULL,
+      'width' => 250,
+    ),
+    'file' => 'extras/wallet_preprocess.inc'
+  );
+  $items['wallet_summary'] = array(
+    'template' => 'wallet_summary',
+    'variables' => array(
+      'wallet' => NULL,
+      'currency' => NULL,
+      'data' => array(),
+    ),
+    'file' => 'extras/wallet_preprocess.inc'
+  );
+  $items['wallets_summaries'] = array(
+    'variables' => array(
+      'wallets' => array()
+    ),
+    'file' => 'extras/wallet_preprocess.inc'
+  );
+  $items['wallet_stats'] = array(
+    'template' => 'wallet_stats',
+    'variables' => array(
+      'wallet' => NULL,
+      'currency' => NULL
+    ),
+    'file' => 'extras/wallet_preprocess.inc'
+  );
+  return $items;
+}
 
-function mcapi_view_wallet_summaries($wids) {
-  if ($wallets = entity_load_multiple('mcapi_wallet', $wids)) {
-    $renderable = array(
-    	'#type' => 'item',
-      '#title' => t('Wallets'),
-    );
-    foreach ($wallets as $wallet) {
-      $renderable[] = mcapi_view_wallet($wallet);
+function _mcapi_element_info() {
+  return array(
+    // this is used by the field API for mixed transaction forms
+    'worths' => array(
+      '#title' => t('Worth'),
+      '#input' => TRUE,
+      '#title_display' => 'before',
+      '#element_validate' => array('mcapi_worths_element_validate'),
+      '#theme_wrappers' => array('form_element'),
+      '#process' => array('mcapi_worths_element_process'),
+      '#tree' => TRUE,
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'mcapi') . '/css/worths-element.css',
+        )
+      ),
+      // custom properties, used for configuration
+      '#mixed_mode' => \Drupal::config('mcapi.misc')->get('mix_mode'),
+      '#preset' => FALSE, //ensures all currencies are showing
+      '#calc' => FALSE, //allow a formula
+    ),
+    // this one is used internally only,
+    // although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
+    'worth' => array(
+      '#input' => TRUE,
+      '#title_display' => 'attribute',
+      '#process' => array('mcapi_worth_element_process'),
+      '#value_callback' => 'mcapi_form_type_worth_value',
+      '#element_validate' => array('mcapi_worth_element_validate'),
+      '#theme_wrappers' => array('form_element'),
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
+        )
+      ),
+      // custom properties, used for configuration
+      '#calc' => FALSE,
+    ),
+    'mcapi_states' => array(
+      '#input' => TRUE,
+      '#title_display' => 'before',
+      '#process' => array('mcapi_process_states', 'ajax_process_form'),
+      '#theme_wrappers' => array('radios'),
+      '#pre_render' => array('form_pre_render_conditional_form_element'),
+    ),
+    'mcapi_types' => array(
+      '#input' => TRUE,
+      '#title_display' => 'before',
+      '#process' => array('mcapi_process_types', 'ajax_process_form'),
+      '#theme_wrappers' => array('form_element'),
+      '#theme' => 'select'
+    ),
+    'mcapi_currcodes' => array(
+      '#input' => TRUE,
+      '#title_display' => 'invisible',
+      '#process' => array('mcapi_process_currcodes','ajax_process_form'),
+      '#theme_wrappers' => array('form_element'),
+      '#multiple' => TRUE,
+      '#options' => array(),//array of currcodes and currency names
+    ),
+    //local means 'in the same exchanges as the current user'
+    'local_wallets' => array(
+      //much of this is borrowed from 'textfield'
+      '#input' => TRUE,
+      '#size' => 60,
+      '#maxlength' => 128,
+      '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
+      '#process' => array('form_process_autocomplete', 'ajax_process_form'),
+      '#pre_render' => array('form_pre_render_textfield'),
+      '#theme' => 'input__textfield',
+      '#theme_wrappers' => array('form_element'),
+      '#value_callback' => 'form_type_local_wallets_value',
+      '#element_validate' => array('local_wallet_validate_id'),
+    )
+  );
+}
+
+function mcapi_view_wallets_summaries($wids) {
+  $renderable = array();
+  foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+    if ($wallet->access('view')) {
+      $renderable['#wallets'] = show_wallet_summaries($wallet);
     }
-    return $renderable;
   }
-  return array();
+  if (count($renderable)) {
+    $renderable['#theme'] = 'wallets_summaries';
+  }
+  return $renderable;
+}
+/*
+ * get a renderable array of all the currency balances in one wallet
+ */
+function show_wallet_summaries($wallet) {
+  $renderable = array();
+  $currdata = \Drupal::entityManager()
+    ->getStorageController('mcapi_transaction')
+    ->summaryData($wallet->id());
+  foreach ($wallet->currencies() as $currcode => $currency) {
+    $renderable[$currcode] = array(
+      '#theme' => 'wallet_summary',
+      '#wallet' => $wallet,
+      '#currency' => $currency,
+      '#data' => $currdata[$currcode]
+    );
+  }
+  return $renderable;
+}
+/*
+ * get a renderable array of all the trading histories in one wallet
+ */
+function show_wallet_histories($wallet) {
+  $renderable = array();
+  foreach ($wallet->currencies() as $currcode => $currency) {
+    $renderable[$currcode] = array(
+      '#theme' => 'wallet_history',
+      '#wallet' => $wallet,
+      '#currency' => $currency,
+      '#width' => 250
+    );
+  }
+  return $renderable;
 }
 
 /*
- * a nice display of user balances in a currency
- */
-function mcapi_view_wallet($wallet) {
-  $render_array = array();
-  if ($wallet->access('view')) {
-    $render_array = array(
-      '#theme' => 'wallet',
-      '#wallet' => $wallet
-    );
-  }
-  return $render_array;
-}
-
-/**
- * theme preprocessor for 'wallet'
- * @todo this theme callback is cached - when to clear the cache and what cache is it?
- * @param array $vars
- */
-function template_preprocess_wallet(&$vars) {
+ * get a renderable array of all the balance bar charts in one wallet
+*/
+function show_wallet_balance_bars($wallet) {
+  $renderable = array();
   $currdata = \Drupal::entityManager()
     ->getStorageController('mcapi_transaction')
-    ->summaryData($vars['wallet'], array());
-
-  foreach ($currdata as $currcode => $data) {
-    $currency = mcapi_currency_load($currcode);
-    $vars['currdata'][$currcode]['label'] = $currency->label();
-    $vars['currdata'][$currcode]['gross_in'] = $currency->format($data['gross_in']);
-    $vars['currdata'][$currcode]['gross_out'] = $currency->format($data['gross_out']);
-    $vars['currdata'][$currcode]['volume'] = $currency->format($data['volume']);
-    $vars['currdata'][$currcode]['balance'] = $currency->format($data['balance']);
-    $vars['currdata'][$currcode]['partners'] = $data['partners'];
-    $vars['currdata'][$currcode]['trades'] = $data['trades'];
+    ->summaryData($wallet->id());
+  foreach ($wallet->currencies() as $currcode => $currency) {
+    $renderable[$currcode] = array(
+      '#theme' => 'wallet_balance_bars',
+      '#wallet' => $wallet,
+      '#currency' => $currency,
+      '#data' => $currdata[$currcode],
+    );
   }
-  $vars['url'] = url('wallet/'.$vars['wallet']->id());
-  $vars['name'] = $vars['wallet']->get('name')->value;
-}
-
-/**
- * element pre_render callback
- * adds the user account transaction summary to the render array
- *
- * @param array $element
- *   a renderable array
- * @return
- *   a more populated renderable array, ready for theming
- */
-function mcapi_pre_render_summary($element) {
-  static $results = array();//TODO should this be drupal_static?
-  $uid = $element['#account']->id();
-  //occasionally we'll appreciate a static result
-  $result = &$results[$uid][$element['#currency']->id()];
-  if (empty($result)) {
-    $stats = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($element['#account'], $element['#currency'], $element['#filters']);
-    foreach ($stats as $key => $val) {
-      $result['#'.$key] = $val;
-    }
-  }
-  return $element + $result;
-}
-
-
-
-
-/**
- * generate balance histories for one user and many currencies
- *
- * @param AccountInterface $account
- * @param array $currcodes
- * @param integer $since
- *   unixtime before which to truncate
- * @return array
- *   an array of histories keyed by currcode
- */
-function get_balance_history($account, $currcodes = array(), $since = NULL) {
-	if (empty($currcodes)) {
-		$currencies = mcapi_get_available_currencies($account);
-	}
-	else {
-		foreach ($currcodes as $currcode) {
-			$currency = mcapi_currency_load($currcode);
-			if ($currency->access('trader data', \Drupal::currentUser()) || $account->id() == \Drupal::currentUser()->id()) {
-  		  $currencies[$currcode] = $currency;
-		  }
-		}
-	}
-	if (empty($currencies)) return;
-	$histories = array();
-	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-	foreach ($currencies as $currcode => $currency) {
-		$history = array($account->created->value => 0);
-		$history += $storage->timesBalances($account, $currency);
-		if (count($history) > 1) {
-			//make a straight line until now
-			$history[REQUEST_TIME] = end($history);
-			$histories[$currcode] = $history;
-		}
-		//ignore histories with no transactions
-	}
-	return $histories;
-}
-
-//
-/**
- * implements template_preprocess_THEME
- * modify the history points for aesthetic reasons, or to save resources
- *
- * @param array $vars
- */
-function template_preprocess_balance_histories_gchart(&$vars) {
-	$histories = get_balance_history($vars['account'], $vars['currcodes']);
-	foreach ($histories as $currcode => &$history) {
-		$point_count = count($history);
-		if ($point_count < $vars['width'] / 3) {//step method, for a small number of points
-			$times = $values = array();
-			//make two values for each one in the keys and values
-			foreach ($history as $time => $bal) {
-				$times[] = $time;
-				$times[] = $time+1;
-				$values[] = $bal;
-				$values[] = $bal;
-			}
-			//now slide the arrays against each other
-			array_pop($values);
-			array_shift($times);
-			$history = array_combine($times, $values);
-		}
-		elseif ($point_count > $vars['width']) {//decimate the array, for a large number of points
-			//we can assume that $max_size(1 point per pixes) is smaller than $count
-			$ratio = $vars['width'] / $point_count;
-			//how to turn this into a fraction involving 1?
-			$reciprocal = 1/$ratio;
-			$factor = intval($reciprocal + 1);
-			//now iterate through the array taking 1 out of every $factor values
-			$i = 0;
-			foreach($history as $key => $value) {
-				if ($i % $factor != 0) unset($history[$key]);
-				$i++;
-			}
-		}
-		$vars['histories'][$currcode] = $history;
-	}
-}
-
-/**
- * implements hook_process_THEMEHOOK for balance_histories_gchart
- * generates the javascript for the gchart from the user's history of each currency
- * TODO cache this and clear the cache
- *
- * @param array $vars
- */
-function mcapi_process_balance_histories_gchart(&$vars) {
-	$histories = &$vars['histories'];
-	$id = 'uid-'.$vars['account']->id().'-'.implode('-',array_keys($histories));
-	$vars['id'] = $id;
-	foreach ($histories as $currcode => $history) {
-		$colors[] = "'".mcapi_currency_load($currcode)->color ."'";
-		foreach ($history as $timestamp => $balance) {
-			$timeline[$timestamp][$currcode] = $balance;
-		}
-	}
-	if (empty($timeline))return '';
-	//$timeline is now a list of times and changes of balance in currencies
-	ksort($timeline);
-	//what we need is a list of times with both balances per moment
-	//starting with a default 'prev value
-	foreach (array_keys($histories) as $currcode) {
-		$prev[$currcode] = 0;
-	}
-	foreach ($timeline as $timestamp => $balances) {
-		$vals = array_merge($prev, $balances);
-		$timeline[$timestamp] = $vals;
-		$prev = $timeline[$timestamp];
-	}
-	$vars['height'] = 3* $vars['width']/4;
-	$js = "
-function drawBalanceHistory() {
-  data.addColumn('date', 'Date');";
-	foreach (array_keys(current($timeline)) as $currcode) {
-		$currname = entity_load('mcapi_currency', $currcode)->name;
-	  $js .= "\n  data.addColumn('number', '$currname')";
-	}
-	foreach ($timeline as $timestamp => $balances) {
-		//this has a resolution of one day, not very satisfying perhaps
-	  $date = "new Date('".date('m/d/Y', $timestamp)."')";
-	  $balances = implode(', ', $balances);
-	  $js .= "\n  data.addRow([$date, $balances]);";
-	}
-	$colors = implode(', ', $colors);
-	$js .= "
-  var options = {
-    curveType: 'function',
-    width: ".$vars['width'].",
-    height: ".$vars['height'].",
-    colors: [$colors],
-    legend: {position: 'none'}
-  }
-  new google.visualization.LineChart(document.getElementById('$id')).draw(data, options);
-}";
-	//
-	drupal_add_js('http://www.google.com/jsapi');
-	drupal_add_js("google.load('visualization', '1', {packages: ['corechart']});\ngoogle.setOnLoadCallback(drawBalanceHistory);", 'inline');
-	$vars['javascript'] = $js;
+  return $renderable;
 }
 
 /**
@@ -323,6 +340,7 @@ function template_preprocess_mcapi_transaction(&$vars) {
 		'state-'.$transaction->get('state')->value
 	);
 }
+
 
 /**
  * implements template_preprocess_THEMEHOOK for theme callback 'certificate'
@@ -357,18 +375,6 @@ function template_preprocess_certificate(&$vars) {
 	//not sure if this is worth the processing power at the moment
 
 	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
-}
-
-/**
- * theme implementation for callback twig
- * @param array $vars
- */
-function theme_mcapi_twig($vars) {
-	return mcapi_render_twig_transaction(
-	  $vars['twig'],
-	  $vars['mcapi_transaction'],
-	  $vars['showlinks']
-	);
 }
 
 /**
@@ -410,12 +416,30 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
 }
 
 
+
+/**
+ * theme implementation for callback twig
+ * @todo convert this theme function to use
+ * http://twig.sensiolabs.org/doc/functions/template_from_string.html
+ */
+function theme_mcapi_twig($vars) {
+  return mcapi_render_twig_transaction(
+    $vars['twig'],
+    $vars['mcapi_transaction'],
+    $vars['showlinks']
+  );
+}
+
 /**
  * Prepares a transaction, and renders it using a passed twig template
  *
  * @param string $template
  * @param TransactionInterface $transaction
  * @param string $showlinks
+ *
+ * @todo convert this theme function to use
+ * http://twig.sensiolabs.org/doc/functions/template_from_string.html
+ * New in Twig version 1.11
  */
 function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction, $showlinks = TRUE) {
   $vars = array();

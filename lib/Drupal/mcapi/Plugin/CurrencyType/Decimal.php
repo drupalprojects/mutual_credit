@@ -12,7 +12,7 @@ use Drupal\mcapi\CurrencyTypeBase;
 use Drupal\mcapi\CurrencyTypeInterface;
 
 /**
- * Creates a currency based upon time.
+ * Creates a currency based upon cents.
  *
  * @CurrencyType(
  *   id = "decimal",
