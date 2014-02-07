@@ -15,15 +15,15 @@ use Drupal\Core\Utility\LinkGenerator;
  */
 class ExchangeListController extends EntityListController {
 
-  private $storageController;
-
   /**
    * Overrides Drupal\Core\Entity\EntityListController::buildHeader().
    */
   public function buildHeader() {
     $header['name'] = t('Name');
+    $header['access'] = t('Access');
     $header['members'] = t('Members');
     $header['transactions'] = t('Transactions');
+    $header['admin'] = t('Administrator');
     return $header + parent::buildHeader();
   }
 
@@ -41,11 +41,17 @@ class ExchangeListController extends EntityListController {
     );*/
 
     $row['title'] = l($entity->label(), 'exchange/'.$entity->id());
+    $row['access'] = $entity->get('open')-value ? t('Open') : t('Closed');
 
     //this includes deleted transactions
     $row['members'] = $entity->members();
     //this includes deleted transactions
     $row['transactions'] = $entity->transactions();
+
+    $row['administrator']['data'] = array(
+      '#theme' => username,
+      '#account' => user_load($entity->get('uid')->value)
+    );
 
     $row += parent::buildRow($entity);
     return $row;
@@ -62,10 +68,10 @@ class ExchangeListController extends EntityListController {
     if (isset($operations['edit'])) {
       // For configuration entities edit path is the MENU_DEFAULT_LOCAL_TASK and
       // therefore should be accessed by the short route.
-      $operations['edit']['href'] = $uri['path'];
+      $operations['edit']['href'] = $uri['path'].'/edit';
     }
 
-    if ($this->storage->closable($entity)) {
+    if ($entity->closable($entity)) {
       $operations['close'] = array(
         'title' => t('Close'),
         'href' => $uri['path'] . '/close',
@@ -81,7 +87,7 @@ class ExchangeListController extends EntityListController {
         'weight' => -10,
       );
     }
-    if (!$this->storage->deletable($entity)) {
+    if (!$entity->deletable($entity)) {
       unset($operations['delete']);
     }
 

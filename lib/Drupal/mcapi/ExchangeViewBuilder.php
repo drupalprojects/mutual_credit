@@ -20,6 +20,7 @@ class ExchangeViewBuilder extends EntityViewBuilder {
   public function buildContent(array $entities, array $displays, $view_mode, $langcode = NULL) {
     parent::buildContent($entities, $displays, $view_mode, $langcode);
     foreach ($entities as $exchange) {
+
       if ($roles = user_role_names(TRUE, 'exchange helper')) {
         //get all the helper users in this exchange
         $query = db_select('users_roles', 'ur')->fields('ur', array('uid'));
@@ -33,6 +34,8 @@ class ExchangeViewBuilder extends EntityViewBuilder {
           $helpernames[] = theme('username', array('account' => $account));
         }
       }
+      if (empty($helpernames)) $helpernames = array(t('None'));
+
       //instead of using <br> here, isn't there a nicer way to make each render array into a div or something like that
       $exchange->content['people'] = array(
         '#type' => 'item',
@@ -48,7 +51,8 @@ class ExchangeViewBuilder extends EntityViewBuilder {
           '#markup' => t('Administrator: !name', array('!name' => entity_load('user', $exchange->get('uid')->value)->getUsername()))
         ),
         'helpers' => array(
-          '#markup' => '<br />'.t('Helpers: !names', array('!names' => implode(', ', $helpernames)))
+          '#prefix' => '<br />',
+          '#markup' => t('Helpers: !names', array('!names' => implode(', ', $helpernames)))
         )
       );
       $exchange->content['placeholder_text'] = array(

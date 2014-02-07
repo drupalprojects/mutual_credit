@@ -10,7 +10,6 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityFormController;
-use Drupal\Core\Language\Language;
 
 class ExchangeForm extends ContentEntityFormController {
 
@@ -45,6 +44,7 @@ class ExchangeForm extends ContentEntityFormController {
       '#default_value' => $exchange->get('uid')->value,
       '#weight' => 3
     );
+
     $form['visibility'] = array(
       '#title' => t('Visibility'),
       '#description' => t('Is this exchange hidden from members of other exchanges?'),
@@ -52,14 +52,6 @@ class ExchangeForm extends ContentEntityFormController {
       '#options' => $this->entity->visibility_options(),
       '#default_value' => $exchange->get('visibility')->value,
       '#weight' => 5
-    );
-    $form['langcode'] = array(
-      '#type' => 'language_select',
-      '#title' => $this->t('Site language'),
-      '#languages' => Language::STATE_CONFIGURABLE,
-      '#default_value' => $exchange->get('langcode')->value,
-      '#description' => t('The first language of the exchange'),
-      '#weight' => 8
     );
     //hide the currencies field if only one currency is available
     if (count(entity_load_multiple_by_properties('mcapi_currency', array('status' => TRUE))) < 2) {
@@ -81,8 +73,7 @@ class ExchangeForm extends ContentEntityFormController {
 
   protected function actions(array $form, array &$form_state) {
     $actions = parent::actions();
-    $storage = \Drupal::EntityManager()->getStorageController('mcapi_exchange');
-    if (!$storage->deletable($this->entity)) {
+    if (!$this->entity->deletable($this->entity)) {
       unset($actions['delete']);
     }
     return $actions;
