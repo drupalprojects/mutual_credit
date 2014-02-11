@@ -1,16 +1,16 @@
-<?php
-/*
- * preprocessor should do the theming here
- * balance_limits.tpl.php
- * $currency
- * $spend_limit
- * $earn_limit
- * $account
- * $currencyname
- */
- ?>
-<strong>{{ currencyname }}</strong><br />
-Credit available {{ spend_limit }}
+{#
+ 
+ * currency
+ * spend_limit
+ * spendlimitformatted
+ * earn_limit
+ * earnlimitformatted
+ * account
+ * currency
+ *
+#}
+<strong>{{ currency.label }}</strong><br />
+Credit available {{ spendlimitformatted }}
 <br />
-Headroom available {{ earn_limit }}
+Headroom available {{ earnlimitformatted }}
 <br />

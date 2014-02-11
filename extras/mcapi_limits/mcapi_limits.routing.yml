@@ -1,0 +1,10 @@
+mcapi.wallet.admin_limits:
+  path: '/wallet/{mcapi_wallet}/limits'
+  defaults:
+    _form: 'Drupal\mcapi_limits\Form\WalletLimitOverride'
+    _title: 'Override limits'
+  requirements:
+#this will have to be its own callback once the wallet access is sorted
+ #   _entity_access: 'mcapi_wallet.edit'
+    _permission: 'manage own exchanges'
+

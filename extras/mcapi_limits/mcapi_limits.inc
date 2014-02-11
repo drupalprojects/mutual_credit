@@ -1,12 +1,23 @@
 <?php
 
+
+use Drupal\mcapi_limits\McapiLimitsException;
+
+/**
+ * transferred implementation of hook_mcapi_transaction_validate().
+ * check that none of the wallets involved goes over its limits,
+ * and add excecptions to the main transaction object when they do
+ * @param array $cluster
+ *   transaction and its children side by side
+ */
 function _mcapi_limits_mcapi_transaction_validate($cluster) {
   //first add up all the transactions
   $errors = $messages = array();
   //to exclude the current transactions from the sum of saved transactions
-  //compare the resulting balances for each user with their limits
-  foreach (_transactions_diff($cluster) as $uid => $percurrency) {
-    $account = user_load($uid);
+  //compare the resulting balances for each wallet with its limits
+
+  foreach (_transactions_diff($cluster) as $wid => $percurrency) {
+    $wallet = entity_load('mcapi_wallet', $wid);
     foreach ($percurrency as $currcode => $diffs) {
       //check to see if any of the skips apply.
       $currency = entity_load('mcapi_currency', $currcode);
@@ -33,34 +44,27 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
         );
         continue;
       }
-      elseif ($skips['reservoir'] && $uid == $currency->reservoir )  {
-        $messages[$currcode] = t(
-            "Skipped balance limit checks for @currency transactions involving the reservoir account.",
-            array('@currency' => $currency->name)
-        );
-        continue;
-      }
-      $summary = \Drupal::entityManager()
-        ->getStorageController('mcapi_transaction')
-        ->summaryData($account, $currency, array());
-      $projected = $summary['balance'] + array_sum($diffs);
-      $limits = mcapi_limits_plugin($currency)->getLimits($account);
-      //we could send 'worth' values to the exception, but that seems like a hassle.
+      $summary = $wallet->getStats($currency->id());
+      $projected = @$summary['balance'] + array_sum($diffs);
+      $limits = wallet_get_limit($wallet, $currency);
+      //we could send 'worth' values to the exception, but they are hard to work with
       //instead we'll send the currency and the quantities
       if ($projected > 0 && $limits['max'] && $projected > $limits['max']) {
-        $errors[$uid][] = array(
+        $errors[$wid][] = array(
           'currency' => $currency,
-          'projected' => $projected,
           'limit' => $limits['max'],
+          'projected' => $projected,
           'excess' => $projected - $limits['max'],
+          'wallet' => $wallet
         );
       }
-      elseif ($projected < 0 && $limits['min'] != NULL && $projected < $limits['min']) {
-        $errors[$uid][] = array(
+      elseif ($projected < 0 && $limits['min'] !== NULL && $projected < $limits['min']) {
+        $errors[$wid][] = array(
           'currency' => $currency,
-          'projected' => $projected,
           'limit' => $limits['min'],
+          'projected' => $projected,
           'excess' => $limits['min'] - $projected,
+          'wallet' => $wallet
         );
       }
     }
@@ -68,10 +72,10 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
   //all balance errors are on the main transaction and can stop.
   $main_transaction = reset($cluster);
   if (count($errors)) {
-    foreach ($errors as $uid => $info) {
+    foreach ($errors as $wid => $info) {
       foreach ($info as $delta => $vars) {
         //actually the mcapi_transaction_validate hook doesn't require that errors be thrown
-        $main_transaction->exceptions[] = new McapiLimitsException($vars['currency'], $uid, $vars['projected'], $vars['limit'], $vars['excess']);
+        $main_transaction->exceptions[] = new McapiLimitsException($vars['currency'], $vars['limit'], $vars['projected'], $vars['excess'], $vars['wallet']);
       }
     }
   }
@@ -82,133 +86,79 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
   }
 }
 
-function _mcapi_limits_form_user_form_alter(&$form, &$form_state) {
-  $account = $form_state['controller']->getEntity();
-  foreach (mcapi_get_available_currencies() as $currcode => $currency) {
-    if ($currency->limits_plugin == 'none') continue;
-    if (property_exists($currency, 'limits_settings') && is_array($currency->limits_settings) && array_key_exists('personal', $currency->limits_settings)) {
-      $inherit = $currency->limits_settings['personal'];
-    }
-    else continue;
-    if (\Drupal::currentUser()->hasPermission('manage mcapi') || \Drupal::currentUser()->id() == $currency->uid->value) {
-      $access = TRUE;
-    }
-    //fire up the plugin
-    $plugin = mcapi_limits_plugin($currency);
-    $base_limits = $plugin->getBaseLimits($account);
-    //for now the personal override allows admin to declare absolute min and max per user.
-    //the next thing would be for the override to support different plugins and settings per user.
-    $form['limits_personal'][$currcode] = array(
-        '#type' => 'fieldset',
-        '#title' => $currency->label(),
-        '#description' => t('Basic min: !min, max: !max', array(
-            '!min' => $currency->format($base_limits['min']),
-            '!max' => $currency->format($base_limits['max'])
-        )),
-        '#attributes' =>  new Attribute(array('style' => 'float:left;')),
-        '#disabled' => !(\Drupal::currentUser()->hasPermission('manage mcapi') || \Drupal::currentUser()->id() == $currency->uid->value)
-    );
-    $defaults = $plugin->getLimits($account);
-    if ($plugin->id == 'balanced') {
-      //would be a real hasle to get this inside the plugin and do this.
-      $form['limits_personal'][$currcode]['minmax'] = $plugin->widget($defaults);
-    }
-    else {
-      $form['limits_personal'][$currcode]['minmax'] = array(
-          '#type' => 'minmax',
-          '#default_value' => $defaults,
-          '#currcode' => $currency->id()
-      );
-    }
-  }
-  //add a containing fieldset if needed
-  if (isset($form['limits_personal'])) {
-    $form['limits_personal'] += array(
-        '#title' => t('Personal balance limits, set manually'),
-        '#description' => t('These override any limits defined in the currency.') .' '.
-        t("Leave blank to inherit the values from the currency's settings"),
-        '#type' => 'fieldset',
-        '#weight' => 2
-    );
-  }
-}
-
 /*
  * preprocessor function for theme callback mcapi_limits_absolute
  */
-function template_preprocess_mcapi_limits(&$vars) {
+function template_preprocess_mcapi_limits_absolute(&$vars) {
   $currency = $vars['currency'];
-  $summary = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($vars['account'], $currency, array());
-  $vars['data'] = mcapi_limits_plugin($currency)->getLimits($vars['account']);
-  $vars['data']['balance'] = $summary['balance'];
-  $vars['balance'] = $currency->format($vars['data']['balance']);
-  $vars['max'] = $currency->format($vars['data']['max']);
-  $vars['min'] = $currency->format($vars['data']['min']);
-  $vars['currencyname'] = $currency->label();
+  $summary = $vars['wallet']->getStats($currency->id());
+  $vars['balance'] = $summary['balance'];
+  $vars['balanceformatted'] = $currency->format_decimal($vars['balance']);
+  $vars += wallet_get_limit($vars['wallet'], $currency);
+  $vars['minformatted'] = $currency->format_decimal($vars['min']);
+  $vars['maxformatted'] = $currency->format_decimal($vars['max']);
 }
 /*
  * preprocessor function for theme callback mcapi_limits_relative
  */
 function template_preprocess_mcapi_limits_relative(&$vars) {
-  $currency = $vars['currency'];
-  $adjustments = limits_get_adjusted($currency, $vars['account']);
-  $vars['spend_limit'] = $currency->format($adjustments['spend_limit']);
-  $vars['earn_limit'] = $currency->format($adjustments['earn_limit']);
-  $vars['currencyname'] = $currency->label();
+  $vars += limits_get_adjusted($vars['currency'], $vars['wallet']);//gives the native values or NULL
+  if (!is_null($vars['spend_limit'])) {
+    $vars['spendlimitformatted'] = $vars['currency']->format($vars['spend_limit']);
+  }
+  if (!is_null($vars['earn_limit'])) {
+    $vars['earnlimitformatted'] = $vars['currency']->format($vars['earn_limit']);
+  }
 }
 /*
  * preprocessor function for theme callback mcapi_limits_balanced
+ * By design this can only be used if the max and min are equidistant from zero
+ * Because of limitations of the google gauge,
+ * this can only be used if the formatted value is numeric
  */
 function template_preprocess_mcapi_limits_balanced(&$vars) {
   $currency = $vars['currency'];
-  template_preprocess_mcapi_limits_absolute($vars);
-  extract($vars['data']);
-  $danger_zone_percent = 25;
-  $balance_gauge_pixels = 120;
-  $range = $max-$min;
-  $zone_size = $range * $danger_zone_percent / 200;
+  $stats = $vars['wallet']->getStats($currency->id());
+  $vars['id'] = $vars['id'] = $currency->id().'-ometer-'.$vars['wallet']->id();
+  $vars['functionname'] = str_replace('-', '_', $vars['id']);
+  $vars += wallet_get_limit($vars['wallet'], $currency);
+  //the google gauge cannot mask the real number with a formatted value
+  //so instead of these native numbers we need to present it with a number which resembles the presentation number
+  $vars['balance'] = $currency->format_decimal($stats['balance']);
+  $vars['min'] = $currency->format_decimal($vars['min']);
+  $vars['max'] = $currency->format_decimal($vars['max']);
 
-  $min_safe = $min + $zone_size;
-  $max_safe = $max - $zone_size;
-  $id = $vars['id'] = $currency->id().'-ometer-'.$vars['account']->id();
-
-  $vars['javascript'] = "
-function drawGauge() {
-  var data = google.visualization.arrayToDataTable([
-    ['Label', 'Value'],
-    ['". $currency->label() ."', $balance]
-    ]);
-    var options = {
-    min: ". $min .",max: ". $max .",
-    greenColor: '". $currency->color ."', greenFrom: ". $min .", greenTo: ". $min_safe .",
-    yellowColor: '#ffffff', yellowFrom:". $min_safe .", yellowTo: ". $max_safe .",
-    redColor: '". $currency->color ."', redFrom: ". $max_safe .", redTo: ". $max ."
-};
-new google.visualization.Gauge(document.getElementById('$id')).draw(data, options);
-}
-google.setOnLoadCallback(drawGauge);
-";
-  drupal_add_js('http://www.google.com/jsapi');
-  drupal_add_js("google.load('visualization', '1', {packages: ['gauge']});", 'inline');
+  //$vars['maxformatted'] = $currency->format($vars['max']);
+  //$vars['minformatted'] = $currency->format($vars['min']);
+  //$vars['balanceformatted'] = $currency->format_decimal($vars['balance']);
+  module_load_include('inc', 'mcapi', 'extras/wallet_preprocess');
+  mcapi_add_gchart_js('gauge');
 }
 
-
-//this shows the amount available to spend or earn, by factoring in the user's balance
-//rather than just showing the fixed limits
-function limits_get_adjusted($currency, $account) {
-  $summary = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($account, $currency, array());
-  $limits = mcapi_limits_plugin($currency)->getLimits($account);
-  $adjusted = array();
-  if (isset($limits['min'])) $adjusted['spend_limit'] = $summary['balance'] - $limits['min'];
-  if (isset($limits['max'])) $adjusted['earn_limit'] = $limits['max'] - $summary['balance'];
+/*
+ * shows the amount available to spend or earn, by factoring in the user's balance
+ * @param CurrencyInterface $mcapicurrency
+ * @param EntityInterface $wallet
+ * @return array
+ *   contain native values or NULLs keyed by 'spend_limit' and 'earn_limit'
+ */
+function limits_get_adjusted(CurrencyInterface $currency, EntityInterface $wallet) {
+  $summary = $wallet->getStats($currency->id());
+  $minmax = wallet_get_limit($wallet, $currency);
+  $adjusted = array('spend_limit' => NULL, 'earn_limit' => NULL);
+  if (isset($minmax['min'])) {
+    $adjusted['spend_limit'] = $summary['balance'] - $minmax['min'];
+  }
+  if (isset($minmax['max'])) {
+    $adjusted['earn_limit'] = $minmax['max'] - $summary['balance'];
+  }
   return $adjusted;
 }
 
-
+/**
+ * implement hook_form_MCAPI_CURRENCY_EDIT_FORM_alter
+ * add the limits settings to the currency form
+ */
 function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
   foreach(\Drupal::service('plugin.manager.mcapi_limits')->getDefinitions() as $name => $plugin) {
     $options[$name] = $plugin['label'];
@@ -220,7 +170,6 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
   if (isset($form_state['values'])) {
     $currency->limits_plugin = $form_state['values']['limits_plugin'];
   }
-
   $selected_plugin = mcapi_limits_plugin($currency);
 
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
@@ -231,27 +180,28 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
   $warning[] = t("Transactions will be rejected which take accounts beyond these limits.");
   $warning[] = t("Choose which method to use, and configure it.");
   $form['limits'] = array(
-      '#title' => t('Balance limits'),
-      '#description' => implode(' ', $warning),
-      '#type' => 'fieldset',
-      '#weight' => 20,
-      '#collapsible' => FALSE,
-      '#collapsed' => FALSE,
-      'limits_plugin' => array(
-          '#title' => t('Plugin'),
-          '#description' => t('How will the limits be determined?'),
-          '#type' => 'select',
-          '#options' => $options,
-          //'none' is the default plugin name
-          '#default_value' => $currency->limits_plugin ? $currency->limits_plugin : '',
-          '#weight' => -1,
-          '#ajax' => array(
-              'callback' => 'limits_settings_subform',
-              'wrapper' => 'limits-settings',
-              'effect' => 'fade'
-          ),
+    '#title' => t('Balance limits'),
+    '#description' => implode(' ', $warning),
+    '#type' => 'fieldset',
+    '#weight' => 20,
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    'limits_plugin' => array(
+      '#title' => t('Plugin'),
+      '#description' => t('How will the limits be determined?'),
+      '#type' => 'select',
+      '#options' => $options,
+      //'none' is the default plugin name
+      '#default_value' => $currency->limits_plugin ? $currency->limits_plugin : '',
+      '#weight' => -1,
+      '#ajax' => array(
+        'callback' => 'limits_settings_subform',
+        'wrapper' => 'limits-settings',
+        'effect' => 'fade'
       ),
+    ),
   );
+
   //depending on which plugin is selected, show the options form
   $form['limits']['limits_settings'] = $selected_plugin->settingsForm();
 
@@ -268,8 +218,8 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
 */
 function _transactions_diff(array $cluster) {
   $diff = array();
-  drupal_set_message('limits validation skipped until worths field is working'); return array();
   foreach ($cluster as $transaction) {
+    //this throws an error sometimes
     foreach ($transaction->worths[0] as $currcode => $worth) {
       //we can't prepare the array in advance with zeros so += and -= throws notices
       //instead we just build up an array and add them up when we need them

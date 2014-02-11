@@ -174,7 +174,7 @@ function mcapi_views_data() {
   );
   $data['mcapi_transactions']['parent'] = array(
     'title' => t('Parent'),
-    'help' => t('Whether the transactioin has a parent.'),
+    'help' => t('Whether the transaction has a parent.'),
     'field' => array(
       'id' => 'boolean',
     ),
@@ -302,6 +302,8 @@ function mcapi_views_data() {
   		'id' => 'standard',
   	),
   );
+  //the wallet_id and partner_id are being used in a limited way here.
+  //with new handlers, would allow some interesting possibilities
   $data['mcapi_transactions_index']['wallet_id'] = array(
   	'title' => t('Wallet ID'),
   	'help' => t('The wallet we are looking at'),
@@ -312,9 +314,6 @@ function mcapi_views_data() {
   		'field' => 'uid',
   		'label' => t('1st party'),
   		'relationship field' => 'wallet_id'
-  	),
-  	'filter' => array(
-  		'id' => 'user_name',
   	),
   	'argument' => array(
       'id' => 'standard',
@@ -329,12 +328,6 @@ function mcapi_views_data() {
   		'field' => 'uid',
   		'label' => t('2nd party'),
   		'relationship field' => 'partner_id'
-  	),
-  	'filter' => array(
-  		'id' => 'user_name',
-  	),
-  	'argument' => array(
-      'id' => 'standard',
   	),
   	'field' => array(
   		'id' => 'mcapi_wallet_label',
@@ -474,6 +467,16 @@ function mcapi_views_data() {
   	),
   	*/
   );
+  $data['mcapi_transactions_index']['child'] = array(
+    'title' => t('Is a child'),
+    'help' => t('FALSE if the transaction is the main one with that serial number'),
+    'field' => array(
+      'id' => 'boolean',
+    ),
+    'filter' => array(
+      'id' => 'boolean',
+    ),
+  );
 
   //virtual fields
   $data['mcapi_transactions_index']['balance'] = array(
@@ -602,11 +605,10 @@ function mcapi_views_data() {
 * implements hook_views_data_alter
 */
 function mcapi_views_data_alter(&$data) {
-  //this is a powerful way for virtual field balances to be accessible to views based on the user table
-  //however it does require a query for each row which calls on a special API function
-  $data['users']['current_balance'] = array(
+  //todo only show this if max wallets per user = 1;
+  $data['users']['trade_stats'] = array(
     'title' => t('Transaction statistic'),
-    'help' => t('The balance, trading volume, or transaction count for each user'),
+    'help' => t('The balance, trading volume, or transaction count for each user. NB Assumes 1 wallet per user.'),
     'field' => array(
       'id' => 'mcapi_userstat',
     )

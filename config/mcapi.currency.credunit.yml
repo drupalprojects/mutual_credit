@@ -15,16 +15,6 @@ widget_settings:
   placeholder: 'h:m:s'
 formatter: null
 formatter_settings: null
-access_undo:
-  1:
-    perm_manage: perm_manage
-  0:
-  -1:
-    perm_manage: perm_manage
-    is_signatory: is_signatory 
-access_operations:
-  sign_off:
-    perm_manage: perm_manage
 weight: '-10'
 langcode: en
 limits_plugin: none

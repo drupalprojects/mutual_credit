@@ -10,7 +10,7 @@ namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\FieldableDatabaseStorageController;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\mcapi\Plugin\field\field_type\Worth;
+use Drupal\Core\Database\Query\SelectInterface;
 
 class TransactionStorageController extends FieldableDatabaseStorageController implements TransactionStorageControllerInterface {
 
@@ -146,7 +146,8 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'type' => $transaction->type->value,
         'created' => $transaction->created->value,
         'exchange' => $transaction->get('exchange'),
-      	'child' => !$transaction->parent->value
+        //could this be more elegant?
+      	'child' => intval((bool)$transaction->parent->value)
       ));
       $query->values(array(
         'xid' => $transaction->id(),
@@ -162,7 +163,7 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         'type' => $transaction->type->value,
         'created' => $transaction->created->value,
         'exchange' => $transaction->get('exchange'),
-      	'child' => !$transaction->parent->value
+      	'child' => intval((bool)$transaction->parent->value)
       ));
     }
     $query->execute();
@@ -275,11 +276,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
 
     if (array_key_exists('currcode', $conditions) || array_key_exists('value', $conditions)) {
       $query->join('mcapi_transactions_worths', 'w', 'x.xid = w.xid');
-      if (array_key_exists('currcode', $conditions)) {
-        $query->condition('currcode', $conditions['currcode']);
-      }
-      if (array_key_exists('quantity', $conditions)) {
-        $query->condition('quantity', $conditions['quantity']);
+      foreach (array('currcode', 'value') as $field) {
+        if (array_key_exists($field, $conditions)) {
+          $query->condition($field, $conditions[$field]);
+        }
       }
     }
 
@@ -395,10 +395,10 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
   /**
    * Add an array of conditions to the select query
    *
-   * @param AlterableInterface $query
+   * @param SelectInterface $query
    * @param array $conditions
    */
-  private function parseConditions(AlterableInterface $query, array $conditions) {
+  private function parseConditions(SelectInterface $query, array $conditions) {
     foreach ($conditions as $fieldname => $value) {
       $query->conditions($fieldname, $value);
     }

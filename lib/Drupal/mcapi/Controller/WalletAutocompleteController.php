@@ -35,13 +35,14 @@ class WalletAutocompleteController {
    * Would have been more elegant in Drupal 7 where all instances of a field used the same table for data
    */
   function autocomplete(Request $request) {
-    //there are three different ways offered here, which will hopefully do...
+    //there are three different ways offered here, none of which is perfect
+    //because of the different ways that wallet names can be construed
     $results = array();
-
-    $string = '%'.db_like($request->query->get('q')).'%';
+    $q = $request->query->get('q');
+    $string = '%'.db_like($q).'%';
     //so now we have the wallet ids in one array
-    if (is_numeric($string)) {//this is easy
-      $results = array($string => entity_load('mcapi_wallet', $string));
+    if (is_numeric($q)) {
+      $wids = array($q);
     }
     elseif(\Drupal::Config('mcapi.wallets')->get('unique_names')) {
       $query = db_select('mcapi_wallets', 'w')
@@ -49,7 +50,7 @@ class WalletAutocompleteController {
         ->condition('name', $string, 'LIKE')
         ->condition('entity_type', '', '<>');//so we don't get the system wallets
         $rows = $query->execute();
-      $results = $this->walletFilter($rows);
+      $wids = $this->walletFilter($rows);
     }
     //finally we can do a search on usernames & walletnames only
     else {
@@ -65,16 +66,16 @@ class WalletAutocompleteController {
         )
         ->range(0, 10)
         ->execute()->fetchcol();
-      $results = entity_load_multiple('mcapi_wallet', $wids);
     }
-
-    foreach ($results as $wallet) {
-      $label = $wallet->label();
-      //the brackets are used to identify the wallet id at the other end
-      $json[] = array('value' => $label .'('.$wallet->id().')', 'label' => $label);
+    foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+      $json[] = array(
+        'value' => _mcapi_wallet_autocomplete_value($wallet),
+        'label' => $wallet->label()
+      );
     }
     return new JsonResponse($json);
   }
+
 
   /**
    * filter the result rows from the wallets table according to the exchanges of the parent entities
@@ -98,9 +99,7 @@ class WalletAutocompleteController {
         ->range(0, 10)
         ->execute()->fetchCol();
     }
-    $wids = array_diff_key($wids, array_keys($hits));
-    return entity_load_multiple('mcapi_wallet', $wids);
-
+    return array_diff_key($wids, array_keys($hits));
   }
 
   //this is arguably expensive, and is not currently used

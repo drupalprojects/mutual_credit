@@ -7,40 +7,49 @@
 
 namespace Drupal\mcapi_limits;
 
-use Drupal\mcapi\TransactionInterface;
-use Drupal\Core\Config\ConfigFactory;
-use \Drupal\Core\Session\AccountInterface;
+//note there is no walletInterface, though perhaps there should be
+use \Drupal\Core\Entity\EntityInterface;
 
 interface McapiLimitsInterface {
 
   /*
-   * return a form render array
+   * Settings to appear on the currency edit form
+   * @return array
+   *   form elements
    */
   public function settingsForm();
 
   /*
-   * return TRUE or FALSE
+   * check whether the wallet can have the transaction diff subtracted
+   * @param EntityInterface $wallet
+   *
+   * @param array diff
+   *   an array of integer differences keyed by currency
+   *
+   * @return boolean
+   *   TRUE if the wallet can be adjusted without transgression of the limits
    */
-  public function checkPayer(AccountInterface $account, $diff);
+  public function checkPayer(EntityInterface $wallet, $diff);
 
   /*
-   * return TRUE or FALSE
-  */
-  public function checkPayee(AccountInterface $account, $diff);
-
-  /*
-   * get the limits, overridden if necessary by the personal limits
-  */
-  public function getLimits(AccountInterface $account);
-
-  /*
-   * get the limits as defined by any given plugin
-  */
-  public function getBaseLimits(AccountInterface $account);
-
-  /*
-   * returns a render array
+   * check whether the wallet can have the transaction diff subtracted
+   * @param EntityInterface $wallet
+   *
+   * @param array diff
+   *   an array of integer differences keyed by currency
+   *
+   * @return boolean
+   *   TRUE if the wallet can be adjusted without transgression of the limits
    */
-  public function view(AccountInterface $account);
+  public function checkPayee(EntityInterface $wallet, $diff);
+
+  /*
+   * get the limits according to the plugin settings
+   * @param EntityInterface $wallet
+   *
+   * @return array
+   *   native currency amounts keyed with 'min' and 'max'
+   */
+  public function getLimits(EntityInterface $wallet);
 
 }

@@ -143,24 +143,6 @@ mcapi.currency.*:
     color:
       type: string
       label: 'Colour'
-    access_undo:
-      type: sequence
-      label: 'Undo access'
-      sequence:
-        - type: sequence
-          label: 'Transaction in state'
-          sequence:
-            - type: boolean
-              label: 'Enabled'
-    access_sign_off:
-      type: sequence
-      label: 'Sign off access'
-      sequence:
-        - type: sequence
-          label: 'Access plugins'
-          sequence:
-            - type: boolean
-              label: 'Enabled'
     weight:
       type: integer
       label: 'Weight'
@@ -171,47 +153,30 @@ mcapi.currency.*:
       type: type: mcapi.currency.limits.[%parent.formatter]
       label: Settings
 
-mcapi.currency.limits.none:
-  type: string
-  label: Settings for none
-
-mcapi.currency.limits.explicit:
-  type: mapping
-  label: Settings for explicit limits
-  mapping:
-    min: 
-      'type': float
-      'label': Minimum
-    max: 
-      'type': float
-      'label': Maximum
-
-mcapi.currency.limits.base:
-  type: mapping
-  label: Shared settings
-  mapping:
-    personal: 
-      type: boolean
-      label: Allow per-person overrides
-    ignore: 
-      type: mapping
-      label: When to ignore the balance limits
-      mapping:
-        auto: 
-          type: boolean
-          label: Automated transactions
-        mass: 
-          type: boolean
-          label: Mass transactions
-        user1: 
-          type: boolean
-          label: User has permission to 'Configure community accounting'
-        owner: 
-          type: boolean
-          label: User is currency owner
-        reservoir: 
-          type: boolean
-          label: Reservoir account
+#this doesn't include per-plugin settings
+mcapi.currency.limits.*:
+  personal:
+    type: boolean
+    label: Personal
+  skip:
+    type: mapping
+    label: When to skip balance checks
+    mapping:
+      auto: 
+        type: boolean
+        label: Automated transactions
+      mass: 
+        type: boolean
+        label: Mass transactions
+      user1: 
+        type: boolean
+        label: User has permission to 'Configure community accounting'
+      owner: 
+        type: boolean
+        label: User is currency owner
+      reservoir: 
+        type: boolean
+        label: Reservoir account
 
 mcapi.operation.*:
   type: mapping

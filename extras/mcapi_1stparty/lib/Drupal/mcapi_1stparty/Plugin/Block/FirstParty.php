@@ -26,25 +26,15 @@ use Drupal\Core\Session\AccountInterface;
  */
 class FirstParty extends BlockBase {
 
-  private $editform;
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-  }
-
   /**
    * {@inheritdoc}
    */
   public function build() {
-
-    ////this bit isn't working...
-
     return \Drupal::formBuilder()->getForm(
-      new \Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm(\Drupal::EntityManager(), $this->editform)
-      //$this->editform
+      new \Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm(
+        \Drupal::EntityManager(),
+        $this->configuration['editform_id']
+      )
     );
   }
 
@@ -52,15 +42,26 @@ class FirstParty extends BlockBase {
    * {@inheritdoc}
    */
   public function access(AccountInterface $account) {
+    $this->editform = entity_load('1stparty_editform', $this->configuration['editform_id']);
 
-    return FALSE;
+    $route_name = \Drupal::request()->attributes->get('_route');
+    //the block is available if the main page is not already a transaction form
+    if (substr($route_name, 0, 6) == 'mcapi.') {
+      if (substr($route_name, 6, 8) == '1stparty') {
+        return FALSE;
+      }
+      elseif($route_name == 'mcapi.transaction.op') {
+        return FALSE;
+      }
+    }
 
-    //the block is available if the current user is in the exchange of the block
-    $this->editform = entity_load('1stparty_editform', $this->configuration['1stparty_form_id']);
-
+    //and if the current user is in the exchange of the block
     if ($exchange_id = $this->editform->get('exchange')) {
+      //in fact such forms do not appear as blocks because we would have to to a whole lot
+      //more work for exchange managers to then manage blocks
       return entity_load('mcapi_exchange', $exchange_id)->member();
     }
+    //or if the the form has no exchange set.
     return TRUE;
   }
 
@@ -73,18 +74,26 @@ class FirstParty extends BlockBase {
    */
   function blockForm($form, &$form_state) {
     $options = array();
-    foreach (entity_load_multiple_by_properties('1stparty_editform', array('exchange' => '')) as $id => $editform) {
+    //entity_load_multiple_by_properties doesn't seem to work on empty values
+    //do we'll have to iterate though
+    foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
+      if ($editform->exchange) continue;
       $options[$id] = $editform->label();
     }
+    //die($this->configuration['editform_id']);
     $form = array(
-      '1stparty_form_id' => array(
+      'editform_id' => array(
        	'#title' => t('Form to use'),
         '#description' => t('Choose from all the firstparty forms which are not specific to one exchange'),
         '#type' => 'select',
         '#options' => $options,
-        '#default' => $this->configuration['1stparty_form_id']
+        //@ prevents warning coz I can't see how to prepopulate this value before the block is ever saved
+        '#default' => @$this->configuration['editform_id']
       )
     );
+    if (!$options) {
+      $this->errorHandler()->setErrorByName('editform_id', $form_state, t('No 1st party forms are available for all exchanges'));
+    }
     return $form;
   }
 
@@ -93,7 +102,7 @@ class FirstParty extends BlockBase {
    */
   public function blockSubmit($form, &$form_state) {
     parent::blockSubmit($form, $form_state);
-    $this->configuration['1stparty_form_id'] = $form_state['values']['1stparty_form_id'];
+    $this->configuration['editform_id'] = $form_state['values']['editform_id'];
   }
 
 }

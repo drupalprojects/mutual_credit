@@ -91,11 +91,7 @@ function mcapi_preprocess_wallet_history(&$vars) {
  * @param array $vars
  */
 function template_preprocess_wallet_stats(&$vars) {
-  $currdata = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($vars['wallet']->id(), array());
-
-  foreach ($currdata as $currcode => $data) {
+  foreach ($vars['wallet']->getStats() as $currcode => $data) {
     $currency = mcapi_currency_load($currcode);
     $vars['currdata'][$currcode]['label'] = $currency->label();
     $vars['currdata'][$currcode]['gross_in'] = $currency->format($data['gross_in']);
@@ -112,26 +108,31 @@ function template_preprocess_wallet_stats(&$vars) {
 
 /**
  * theme preprocessor for 'wallet_summary'
+ * show the most basic stats for one currency
  * @todo this theme callback is cached - when to clear the cache and what cache is it?
  * @param array $vars
  */
 function template_preprocess_wallet_summary(&$vars) {
-  $vars['balance'] = $vars['currency']->format($vars['data']['balance']);
-  $vars['trades'] = $vars['data']['trades'];
+  $data = $vars['wallet']->getStats($vars['currency']->id());
+  $vars['balance'] = $vars['currency']->format($data['balance']);
+  $vars['trades'] = $data['trades'];
   $vars['url'] = url('wallet/'.$vars['wallet']->id());
   $vars['name'] = $vars['wallet']->get('name')->value;
-
 }
 
-function theme_wallets_summaries(&$vars) {
+/*
+ * theme implementation function for wallet_summaries
+ */
+function template_preprocess_wallets(&$vars) {
   //are the wallets aready themed?
-  foreach ($vars['wallets'] as $wallet) {
-    $output = drupal_render($wallet);
+  foreach ($vars['wallets'] as $wid =>  $wallet) {
+    $vars['wallets'][$wid] = drupal_render($wallet);
   }
-  return '<div class = "all-wallets">'.$output.'</div><!/--all-wallets-->';
 }
 
-
+/**
+ * theme preprocessor for wallet_balance_bars
+ */
 function template_preprocess_wallet_balance_bars(&$vars) {
   $data = $vars['data'];
   //if ($vars['data']['gross_in'] == 0 && $vars['data']['gross_out']) return;
@@ -151,13 +152,24 @@ function template_preprocess_wallet_balance_bars(&$vars) {
   mcapi_add_gchart_js('corechart');
 }
 
+/**
+ * theme preprocessor for wallet_virgin
+ */
+function template_preprocess_wallet_virgin(&$vars) {
+  $vars['name'] = $vars['wallet']->label();
+  if ($vars['wallet']->access('edit')) {
+    $uri = $vars['wallet']->uri();
+    $vars['edit'] = url($uri['path'] . '/edit');
+  }
+}
+
 function mcapi_add_gchart_js($lib) {
   static $done = array();
   if (!count($done)) {
     drupal_add_js('http://www.google.com/jsapi');
   }
   if (!array_search($lib, $done)) {
-    drupal_add_js("google.load('visualization', '1', {packages: ['corechart']});", 'inline');
+    drupal_add_js("google.load('visualization', '1', {packages: ['$lib']});", 'inline');
     $done[] = $lib;
   }
 }

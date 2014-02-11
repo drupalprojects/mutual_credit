@@ -10,19 +10,9 @@ twig2: ''
 redirect: user
 message: 'The transaction has been deleted'
 send: 1
-subject: 'A transaction was deleted'
-body: 'no tokens were available to write this mail'
+subject: 'Transaction [mcapi:serial] was deleted'
+body: "Dear [user:name],\r\n"
 cc: carboncopy@drupal.org
-done:
-  admin: admin
-  payer: 0
-  payee: 0
-  manager: 0
-pending:
-  manager: manager
-  admin: admin
-  payer: 0
-  payee: 0
 access:
   1:
     admin: admin

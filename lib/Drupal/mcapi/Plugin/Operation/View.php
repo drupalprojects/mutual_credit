@@ -41,7 +41,6 @@ class View extends OperationBase {//does it go without saying that this implemen
   */
   public function settingsForm(array &$form) {
     parent::settingsForm($form);
-    print_r(element_children($form));
     unset($form['sure']['button'], $form['sure']['cancel_button'], $form['notify'], $form['feedback']);
     $form['sure']['#title'] = t('Display page');
   }

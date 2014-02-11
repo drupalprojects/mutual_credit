@@ -16,15 +16,14 @@ class OperationForm extends EntityConfirmFormBase {
   private $destination;
 
   function __construct() {
-    $parameters = \Drupal::request()->attributes;
-    $this->op = $parameters->get('op') ? : 'view';
+    $request = \Drupal::request();
+    $this->op = $request->attributes->get('op') ? : 'view';
     $this->configuration = $this->config('mcapi.operation.'.$this->op);
 
     if ($path = $this->configuration->get('redirect')) {
       $this->destination = $path;
     }
     else {
-      $request = \Drupal::request();
       if ($request->query->has('destination')) {
         $this->destination = $request->query->get('destination');
         $request->query->remove('destination');

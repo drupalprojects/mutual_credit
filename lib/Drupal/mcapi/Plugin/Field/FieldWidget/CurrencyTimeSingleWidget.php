@@ -32,7 +32,6 @@ class CurrencyTimeSingleWidget extends CurrencySingleWidgetBase {
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, array &$form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
-
     $element+= array(
       '#type' => 'textfield',
       '#size' => 6,

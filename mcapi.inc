@@ -156,11 +156,11 @@ function _mcapi_theme() {
     'variables' => array(
       'wallet' => NULL,
       'currency' => NULL,
-      'data' => array(),
     ),
     'file' => 'extras/wallet_preprocess.inc'
   );
-  $items['wallets_summaries'] = array(
+  $items['wallets'] = array(
+    'template' => 'wallets',
     'variables' => array(
       'wallets' => array()
     ),
@@ -171,6 +171,13 @@ function _mcapi_theme() {
     'variables' => array(
       'wallet' => NULL,
       'currency' => NULL
+    ),
+    'file' => 'extras/wallet_preprocess.inc'
+  );
+  $items['wallet_virgin'] = array(
+    'template' => 'wallet_virgin',
+    'variables' => array(
+      'wallet' => NULL,
     ),
     'file' => 'extras/wallet_preprocess.inc'
   );
@@ -245,45 +252,53 @@ function _mcapi_element_info() {
       '#maxlength' => 128,
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
       '#process' => array('form_process_autocomplete', 'ajax_process_form'),
-      '#pre_render' => array('form_pre_render_textfield'),
+      '#pre_render' => array('form_pre_render_textfield', 'mcapi_prerender_wallet_field'),
       '#theme' => 'input__textfield',
       '#theme_wrappers' => array('form_element'),
       '#value_callback' => 'form_type_local_wallets_value',
       '#element_validate' => array('local_wallet_validate_id'),
+      //TODO I'm not sure how best to put in default css
+      //the empty class is required to prevent an overload error in alpha7
+      //TODO enable this when _form_set_attributes no longer attempts to merge this attribute object with an actual array
+      //'#attributes' => new Attribute(array('style' => "width:100%", 'class' => array()))
+      '#attributes' => array('style' => 'width:100%')
     )
   );
 }
 
-function mcapi_view_wallets_summaries($wids) {
+function mcapi_view_wallets_summaries($entity) {
   $renderable = array();
-  foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+  foreach (entity_load_multiple_by_properties('mcapi_wallet', array('pid' => $entity->id(), 'entity_type' => $entity->entityType())) as $wallet) {
     if ($wallet->access('view')) {
       $renderable['#wallets'] = show_wallet_summaries($wallet);
     }
   }
   if (count($renderable)) {
-    $renderable['#theme'] = 'wallets_summaries';
+    $renderable['#theme'] = 'wallets';
   }
   return $renderable;
 }
+
 /*
  * get a renderable array of all the currency balances in one wallet
  */
 function show_wallet_summaries($wallet) {
-  $renderable = array();
-  $currdata = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($wallet->id());
   foreach ($wallet->currencies() as $currcode => $currency) {
     $renderable[$currcode] = array(
       '#theme' => 'wallet_summary',
       '#wallet' => $wallet,
       '#currency' => $currency,
-      '#data' => $currdata[$currcode]
+    );
+  }
+  if (!isset($renderable)) {
+    $renderable['wallet_virgin'] = array(
+    	'#theme' => 'wallet_virgin',
+      '#wallet' => $wallet
     );
   }
   return $renderable;
 }
+
 /*
  * get a renderable array of all the trading histories in one wallet
  */
@@ -305,15 +320,12 @@ function show_wallet_histories($wallet) {
 */
 function show_wallet_balance_bars($wallet) {
   $renderable = array();
-  $currdata = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($wallet->id());
   foreach ($wallet->currencies() as $currcode => $currency) {
     $renderable[$currcode] = array(
       '#theme' => 'wallet_balance_bars',
       '#wallet' => $wallet,
       '#currency' => $currency,
-      '#data' => $currdata[$currcode],
+      '#data' => $wallet->getStats($currcode),
     );
   }
   return $renderable;
@@ -354,6 +366,7 @@ function template_preprocess_certificate(&$vars) {
 	mcapi_transaction_process_vars($vars, $transaction, !empty($element['#showlinks']));
   //hide the field api labels
 	foreach(element_children($element) as $sub) {
+	  if (!$element[$sub]['#theme']) print_r($sub);
 	  if ($element[$sub]['#theme'] == 'field') {
 	    $element[$sub]['#label_display'] = 'hidden';
 	  }
@@ -486,7 +499,7 @@ function mcapi_render_twig(string $template, array $tokens) {
   $template = _filter_autop($template);
 
   //this is a bogus name of the nearest file, to keep twig happy
-  $name = 'modules/mutual_credit/templates/certificate.html.twig';
+  $name = 'README.txt';
   $renderer = drupal_container()->get('twig');
   $cls = $renderer->getTemplateClass($name, NULL);
   if (!class_exists($cls)) {

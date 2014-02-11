@@ -29,12 +29,4 @@ class LimitsPluginManager extends DefaultPluginManager {
     parent::__construct('Plugin/Limits', $namespaces, 'Drupal\mcapi_limits\Annotation\Limits');
     $this->setCacheBackend($cache_backend, $language_manager, 'mcapi_limits');
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setup(CurrencyInterface $currency) {
-    $plugin = empty($currency->limits_plugin) ? 'none' : $currency->limits_plugin;
-    return $this->factory->createInstance($plugin, $currency);
-  }
 }

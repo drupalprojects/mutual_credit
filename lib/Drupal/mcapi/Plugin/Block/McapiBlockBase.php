@@ -79,13 +79,14 @@ class McapiBlockBase extends BlockBase {
   }
 
   public function build() {
-    $currencies = array_filter($this->configuration['currcodes']);
+    $currcodes = array_filter($this->configuration['currcodes']);
     //current user can only see the currencies which are in the same exchanges as him
-    if (empty($currencies)) {
+    if (empty($currcodes)) {
+      $otheruser = ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account;
       //show only the currency which can be seen by the current user AND the profiled user
-      $this->currencies = mcapi_get_available_currencies(
-      	\Drupal::currentUser(),
-        ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account
+      $this->currencies = array_intersect_key(
+      	mcapi_currencies_for_user(\Drupal::currentUser()),
+        mcapi_currencies_for_user($otheruser)
       );
     }
     else{

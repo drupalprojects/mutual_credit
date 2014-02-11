@@ -61,15 +61,6 @@ function mcapi_uninstall() {
 }
 
 /**
- * Implements hook_enable
- */
-function mcapi_enable() {
-}
-
-function mcapi_disable() {
-}
-
-/**
  * Implements of hook_schema)()
  */
 function mcapi_schema() {

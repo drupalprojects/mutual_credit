@@ -16,6 +16,7 @@ use Drupal\Core\Entity\ContentEntityFormController;
 use Drupal\mcapi\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\action\Plugin\Action;
+use Drupal\Core\Template\Attribute;
 
 class TransactionForm extends ContentEntityFormController {
 
@@ -50,6 +51,8 @@ class TransactionForm extends ContentEntityFormController {
       '#title' => t('Description'),
       '#default_value' => $transaction->description->value,
       '#weight' => 3,
+      //the empty class is required to prevent an overload error in alpha7
+      '#attributes' => new Attribute(array('style' => "width:100%", 'class' => array()))
     );
     $form['worths'] = array(
       '#type' => 'worths',
@@ -91,15 +94,7 @@ class TransactionForm extends ContentEntityFormController {
     );
     return $form;
   }
-/*
-  private function form_step_2($form, &$form_state) {
-    $transactions = array();//need the transactions as if loaded, with children and all
-    $form['preview'] = array();//TODO
-    $form['#markup'] = 'Are you sure?';
 
-    return $form;
-  }
-*/
   /**
    * form validation callback
    * I can't imagine why, but this is called twice when the form is submitted
@@ -108,7 +103,6 @@ class TransactionForm extends ContentEntityFormController {
    * this is unusual because normally build a temp object
    */
   public function validate(array $form, array &$form_state) {
-//    parent::validate($form, $form_state);//this makes an infinite loop here but not in nodeFormController
     form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
 
 
@@ -129,8 +123,14 @@ class TransactionForm extends ContentEntityFormController {
 
     //this might throw errors
     $messages = $transaction->validate();
+    //this is how we show all the messages.
+    //setErrorByName can only be set once per form
     foreach ($transaction->exceptions as $e) {
-      \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, $e->getMessage());
+      $exceptions[] = $e->getMessage();
+    }
+    if (@$exceptions) {
+      //TODO why doesn't the error message show?
+      \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, implode(' ', $exceptions));
     }
 
     //TODO sort out entity reference field iteration

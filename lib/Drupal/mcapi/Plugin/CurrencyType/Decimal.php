@@ -45,6 +45,10 @@ class Decimal extends CurrencyTypeBase implements CurrencyTypeInterface {
    * Format the currency.
    */
   public function format($value) {
+    return $this->decimal($value);
+  }
+
+  public function decimal($value) {
     return number_format($value / pow(10, $this->getSetting('scale')), $this->getSetting('scale'));
   }
 }

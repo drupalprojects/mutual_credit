@@ -36,6 +36,9 @@ class Worth extends ConfigFieldItemBase {
    * {@inheritdoc}
    */
   public function getPropertyDefinitions() {
+    //why is it that no fields in FieldModule implement this?
+    //they must all rely on the generic function Drupal\Core\TypedData\Plugin\DataType
+    //why is it that elsewhere,  this->properties shows only Drupal\mcapi\WorthCurrency object?
     if (!isset(static::$propertyDefinitions)) {
       static::$propertyDefinitions = parent::getPropertyDefinitions();
 
@@ -77,18 +80,14 @@ class Worth extends ConfigFieldItemBase {
    * {@inheritdoc}
    */
   public function settingsForm(array $form, array &$form_state, $has_data) {
-    $element = array();
-
-    return $element;
+    return array();
   }
 
   /**
    * {@inheritdoc}
    */
   public function instanceSettingsForm(array $form, array &$form_state) {
-    $element = array();
-
-    return $element;
+    return array();
   }
 
   /**
@@ -105,4 +104,5 @@ class Worth extends ConfigFieldItemBase {
   public function __toString() {
     return $this->getString();
   }
+
 }

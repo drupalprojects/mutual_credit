@@ -51,15 +51,12 @@ abstract class CurrencySingleWidgetBase extends WidgetBase {
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, array &$form_state) {
-
     $element += array(
       '#title' => $this->t('Value'),
       '#default_value' => $this->renderValue($items[$delta]->value),
       '#placeholder' => $this->getSetting('placeholder'),
     );
-
     //@todo Gordon should this element check the resulting numeric value > 0?
-
     return $element;
   }
 

@@ -8,12 +8,9 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use Drupal\mcapi\TransactionInterface;
-//use Drupal\mcapi\CurrencyInterface;
-use \Drupal\Core\Config\ConfigFactory;
 use \Drupal\mcapi_limits\McapiLimitsBase;
 use \Drupal\mcapi_limits\McapiLimitsInterface;
-use \Drupal\Core\Session\AccountInterface;
+use \Drupal\Core\Entity\EntityInterface;
 
 /**
  * No balance limits
@@ -34,14 +31,17 @@ class None extends McapiLimitsBase implements McapiLimitsInterface {
     ));
   }
 
-  public function checkPayer(AccountInterface $account, $diff){}
-  public function checkPayee(AccountInterface $account, $diff){}
+  public function checkPayer(EntityInterface $wallet, $diff){}
+  public function checkPayee(EntityInterface $wallet, $diff){}
 
-  public function getBaseLimits(AccountInterface $account){
+  public function getBaseLimits(EntityInterface $wallet){
   	return array('min' => NULL, 'max' => NULL);
   }
 
-  public function view(AccountInterface $account) {
-    return array();
+  public function getLimits(EntityInterface $wallet){
+    return array(
+    	'min' => NULL,
+      'max' => NULL
+    );
   }
 }

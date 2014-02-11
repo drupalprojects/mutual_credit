@@ -14,16 +14,7 @@ color: '#00ff00'
 widget: currency_decimal_single
 widget_settings:
   placeholder: ''
-formatter: null
+formatter: nulls
 formatter_settings: null
-access_undo:
-  1:
-    perm_manage: perm_manage
-  -1:
-    perm_manage: perm_manage
-    is_signatory: is_signatory
-access_operations:
-  sign_off:
-    perm_manage: perm_manage
 weight: '-9'
 langcode: en

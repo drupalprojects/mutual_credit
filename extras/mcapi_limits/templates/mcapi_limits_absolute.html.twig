@@ -1,20 +1,17 @@
-<?php
-/*
- * preprocessor should do the theming here
- * balance_limits.tpl.php
- * $account
- * $currency
- * $max
- * $min
- * $account
- * $balance
- * $currencyname
- */
- ?>
-<strong>{{ currencyname }}</strong><br />
-Balance: {{ balance }}
+{#
+ wallet
+ currency
+ max
+ maxformatted
+ min
+ minformatted
+ balance
+ balanceformatted
+#}
+<strong>{{ currency.human_name }}</strong><br />
+Balance: {{ balanceformatted }}
 <br />
-Min {{ min }}
+Min {{ minformatted }}
 <br />
-Max {{ max }}
+Max {{ maxformatted }}
 <br />

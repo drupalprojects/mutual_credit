@@ -17,13 +17,14 @@ class FirstPartyTransactionForm extends TransactionForm {
 
 	function __construct(EntityManagerInterface $entity_manager, $form_name = NULL) {
 	  parent::__construct($entity_manager);
+	  //in alpha7 this prop is declared in Drupal\Core\Form\FormBuilder but never populated
+	  $this->moduleHandler = \Drupal::moduleHandler();
 
 		if (!$form_name) {
       $options = \Drupal::request()->attributes->get('_route_object')->getOptions();
     	//this is the only way I know how to get the args. Could it be more elegant?
       $form_name = $options['parameters']['editform_id'];
 		}
-
 		//Not sure when it is appropriate to use entity_load and when to use config
 		//I guess it depends on whether you need all the methods
 		//don't know which uses least resources.
@@ -46,7 +47,6 @@ class FirstPartyTransactionForm extends TransactionForm {
    * the 1stparty form saved in $this->config.
    */
   public function form(array $form, array &$form_state) {
-
     //@todo we need to be able to pass in an entity here from the context
     //and generate $this->entity from it before building the base transaction form.
     //have to wait and see how panels works in d8
@@ -65,6 +65,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       $form['mywallet'] = $form['payer'];
     }
   	unset($form['payer'], $form['payee']);
+
 
   	$account = user_load(\Drupal::currentuser()->id());
   	//use this method because i still don't know how to iterate
@@ -95,12 +96,10 @@ class FirstPartyTransactionForm extends TransactionForm {
 
   	$form['partner']['#element_validate'] = (array)$form['partner']['#element_validate'];
   	array_unshift($form['partner']['#element_validate'], array($this, 'firstparty_convert_direction'));
-//  	print_r(array_keys($form['partner']['#element_validate']));
 
   	if ($config->partner['preset']) {
     	$form['partner']['#default_value'] = $config->partner['preset'];
   	}
-
   	$form['direction'] = array(
   		'#type' => $config->direction['widget'],
   		'#default_value' => $config->direction['preset'],
@@ -109,9 +108,6 @@ class FirstPartyTransactionForm extends TransactionForm {
   		  'outgoing' => $config->direction['outgoing'],
   	  ),
   	);
-
-  	//handle the worths field
-  	//unset($form['worths']); //because it is wrong in the TransactionForm.php
 
   	//handle the description
   	$form['description']['#placeholder'] = $config->description['placeholder'];
@@ -136,7 +132,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   	$form['#twig_tokens'][] = 'actions';
     $form['#theme'] = '1stpartyform';
 
-
+/*
     $form['#attributes']['class'][] = 'contextual-region';
     //@todo contextual links
     //pretty hard because it is designed to work only with templated themes, not theme functions
@@ -153,9 +149,10 @@ class FirstPartyTransactionForm extends TransactionForm {
       '#type' => 'contextual_links_placeholder',
       '#id' => array('firstparty:1stpartyform='.$config->id().': ')
     );
+    */
 
-    $form['prefix'] = array(
-        '#markup' => '<br />'.l('edit', 'admin/accounting/transactions/forms/'.$config->id),
+    $form['suffix'] = array(
+      '#markup' => '<br />'.l('edit', 'admin/accounting/transactions/forms/'.$config->id),
     );
     return $form;
   }
@@ -209,7 +206,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     elseif($this->config->partner['preset']) {
       $partner = $this->config->partner['preset'];
     }
-    else $partner = 0;
+    else $partner = '';
 
     //prepare a transaction using the defaults here
     $vars = array('type' => $this->config->type);
@@ -220,18 +217,16 @@ class FirstPartyTransactionForm extends TransactionForm {
         }
       }
     }
-
     //now handle the payer and payee, based on partner and direction
-    if ($this->config->direction['preset'] = 'incoming') {
-      //TODO convert this to a wallet
+    if ($this->config->direction['preset'] == 'incoming') {
       $vars['payee'] = \Drupal::currentUser()->id();
       $vars['payer'] = $partner;
     }
-    elseif($this->config->direction['preset'] = 'outgoing') {
-      //TODO convert this to a wallet
-      $vars['payer'] = \Drupal::currentUser()->uid;
+    elseif($this->config->direction['preset'] == 'outgoing') {
+      $vars['payer'] = \Drupal::currentUser()->id();
       $vars['payee'] = $partner;
     }
+
     //at this point we might want to override some values based on input from the url
     //this means the form can be populated using fields shared with another entity.
 

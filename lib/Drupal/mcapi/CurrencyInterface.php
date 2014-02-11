@@ -53,11 +53,11 @@ interface CurrencyInterface extends ConfigEntityInterface {
 
 
   /**
-   * Format the value with no suffix or prefix
+   * Format the value as a decimal which resembles the formatted value
    *
    * @var integer
    */
-  public function format_raw($value);
+  public function format_decimal($value);
 
 
   /**

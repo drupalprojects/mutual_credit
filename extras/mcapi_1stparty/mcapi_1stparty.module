@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * implements hook_help().
+ */
 function mcapi_1stparty_help($path, $args) {
   if ($path == 'admin/help/#mcapi_1stparty' || $path == 'admin/accounting/workflow/forms') {
     $help[] = t('Design your own forms for users to start transactions on their workflow paths.');
@@ -11,7 +14,7 @@ function mcapi_1stparty_help($path, $args) {
 }
 
 /**
- * implements hook menu
+ * implements hook_menu().
  * makes menu links for all the transaction forms
  */
 function mcapi_1stparty_menu() {
@@ -34,6 +37,9 @@ function mcapi_1stparty_menu() {
   return $items;
 }
 
+/**
+ * implements hook_theme().
+ */
 function mcapi_1stparty_theme() {
   return array(
     '1stpartyform'=> array(
@@ -45,18 +51,19 @@ function mcapi_1stparty_theme() {
 
 //see https://drupal.org/node/1800686 on how to make dynamic routes
 /**
- * implements hook_entity_info_alter
+ * implements hook_entity_info_alter().
  * adds a form controller to the transaction entity
  */
 function mcapi_1stparty_entity_info_alter(&$data) {
   $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm';
 }
 
-
+/**
+ * theme implementation of callback 1stpartyform
+ */
 function theme_1stpartyform($vars) {
 	$form = $vars['element'];
 	$tokens = array();
-
 	//add the buttons if they weren't  in the twig template already
 	if (strpos($form['#twig'], '{{ actions }}') === FALSE) $form['#twig'] .= "\n{{ actions }}";
 
@@ -64,6 +71,7 @@ function theme_1stpartyform($vars) {
 		if ($form[$fieldname]['#type'] != 'value') {
      	unset($form[$fieldname]['#theme_wrappers']);
       $tokens[$fieldname] = drupal_render($form[$fieldname]);
+
 		}
 		elseif (empty($form[$fieldname['#required']]) && $form[$fieldname['#default_value']] == '') {
 		  unset($form[$fieldname]);
@@ -77,7 +85,6 @@ function theme_1stpartyform($vars) {
 
   //add everything not rendered onto the last rendered thing.
   $tokens[$fieldname] .= drupal_render($form);
-
   module_load_include('inc', 'mcapi');
   return mcapi_render_twig($form['#twig'], $tokens);
 }

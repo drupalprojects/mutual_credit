@@ -3,12 +3,45 @@
  * @file
  * Default theme implementation to display a balances when the limits are the same, top and bottom.
  * the google chart will expand to fill the container specified here
- *
- * javascript
+ * currency
+ * balance
+ * balanceformatted //google gauge cannot use this
+ * min
+ * minformatted
+ * max
+ * maxformatted
  * id
- * size
+ * functionname
  */
+ 
+ 
 #}
-<script>{{ javascript }}</script>
-<div id="{{ id }}" style="width:{{ size }}; height:{{ size }};"></div>
+{% set dangerzone = 0.25 %}{% set range = max - min %}{% set zonesize =  range * dangerzone /2 %}
+{% set minsafe = min + zonesize %}{% set maxsafe = max - zonesize %}
 
+<script>
+google.setOnLoadCallback({{ functionname }});
+function {{ functionname }}() {
+  var data = google.visualization.arrayToDataTable([
+    ['Label', 'Value'],
+    ['{{ currency.label }}', {{ balance }}]
+  ]);
+  var options = {
+    min: {{ min }},
+    max: {{ max }},
+    greenColor: '{{ currency.color }}', 
+    greenFrom: {{ min }}, 
+    greenTo: {{ minsafe }},
+    yellowColor: '#ffffff', 
+    yellowFrom: {{ minsafe }}, 
+    yellowTo: {{ maxsafe }},
+    redColor: '{{ currency.color }}', 
+    redFrom: {{ maxsafe }}, 
+    redTo: {{ max }},
+    width: 150,
+    height: 150
+  }
+  new google.visualization.Gauge(document.getElementById('{{ id }}')).draw(data, options);
+}
+</script>
+<span id="{{ id }}" style="width:150px; height:150px;"></span>

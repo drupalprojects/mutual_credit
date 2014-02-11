@@ -47,6 +47,7 @@ use Drupal\Core\Entity\EntityStorageControllerInterface;
 class Wallet extends ContentEntityBase {
 
   private $owner;
+  private $stats;
 
   /**
    * {@inheritdoc}
@@ -138,12 +139,13 @@ class Wallet extends ContentEntityBase {
   }
 
   /**
-   * Whenever a wallet is loaded, prepare the owner entity
+   * Whenever a wallet is loaded, prepare the owner entity, and the trading statistics
    *
    * @param EntityStorageControllerInterface $storage_controller
    * @param array $entities
    */
   public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
+    $transaction_storage = \Drupal::EntityManager()->getStorageController('mcapi_transaction');
     foreach ($entities as $wallet) {
       $parent_type = $wallet->get('entity_type')->value;
       //they could all have different parent entity types, so we have to load them separately
@@ -154,6 +156,7 @@ class Wallet extends ContentEntityBase {
         //@todo remove this array syntax
         $wallet->owner = entity_load('user', $wallet->get('pid')->value);
       }
+      $wallet->stats = $transaction_storage->summaryData($wallet->id());
     }
   }
 
@@ -168,10 +171,6 @@ class Wallet extends ContentEntityBase {
       'payers' => 'autheticated',
       'payees' => 'current'
     );
-  }
-
-  function create($entity){
-    debug($entity, 'creating wallet');
   }
 
   /**
@@ -229,15 +228,31 @@ class Wallet extends ContentEntityBase {
     }
     return referenced_exchanges($this->owner);
   }
+
   /**
    * get a list of the currencies held in the wallet
    */
   function currencies() {
     if (!$this->currencies) {
-      $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-      $currcodes = array_keys($storage->summaryData($this->id()));
-      $this->currencies = entity_load_multiple('mcapi_currency', $currcodes);
+      $this->currencies = entity_load_multiple('mcapi_currency', array_keys($this->getStats()));
     }
     return $this->currencies;
+  }
+  /**
+   * get a list of all the currencies in this wallet's scope
+   */
+  function currencies_available() {
+    return exchange_currencies($this->in_exchanges());
+  }
+
+  /*
+   *
+   */
+  function getStats($currcode = NULL) {
+    if ($currcode) {
+      if (array_key_exists($currcode, $this->stats)) return $this->stats[$currcode];
+      else return array();
+    }
+    return $this->stats;
   }
 }

@@ -8,12 +8,10 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use Drupal\mcapi\TransactionInterface;
-//use Drupal\mcapi\CurrencyInterface;
-use \Drupal\Core\Config\ConfigFactory;
 use \Drupal\mcapi_limits\McapiLimitsBase;
 use \Drupal\mcapi_limits\McapiLimitsInterface;
-use \Drupal\Core\Session\AccountInterface;
+use \Drupal\Core\Entity\EntityInterface;
+
 
 /**
  * No balance limits
@@ -26,23 +24,40 @@ use \Drupal\Core\Session\AccountInterface;
  */
 class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
 
+  /**
+   * @see \Drupal\mcapi_limits\McapiLimitsBase::settingsForm()
+   */
   public function settingsForm() {
-    $form['liquidity'] =  $this->widget($this->currency->limits_settings['liquidity']);
+    $form['liquidity'] =  $this->widget($this->limits_settings['liquidity']);
+    print_r($form['liquidity']);
     $form += parent::settingsForm();
     return $form;
   }
 
-  public function checkPayer(AccountInterface $account, $diff) {
-    $limits = $this->getLimits($account);
-    return TRUE;
-  }
-  public function checkPayee(AccountInterface $account, $diff) {
+  /**
+   * (non-PHPdoc)
+   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayer()
+   */
+  public function checkPayer(EntityInterface $wallet, $diff) {
     $limits = $this->getLimits($account);
     return TRUE;
   }
 
-  public function getBaseLimits(AccountInterface $account){
-    $val = $this->currency->limits_settings['liquidity']['value'];
+  /**
+   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayee()
+   */
+  public function checkPayee(EntityInterface $wallet, $diff) {
+    $limits = $this->getLimits($account);
+    return TRUE;
+  }
+
+  /**
+   * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits($wallet)
+   * @return array
+   *   'min' and 'max' native values
+   */
+  public function getLimits(EntityInterface $wallet){
+    $val = $this->limits_settings['liquidity']['value'];
     $limits = array(
       'min' => -$val,
       'max' => $val
@@ -50,17 +65,12 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
     return $limits;
   }
 
-  public function view(AccountInterface $account) {
-    return array(
-      '#theme' => 'mcapi_limits_balanced',
-      '#account' => $account,
-      '#currency' => $this->currency,
-      '#size' => '100%'
-    );
-  }
-
+  /**
+   *
+   * @param unknown $default
+   * @return multitype:string number unknown NULL
+   */
   public function widget($default) {
-    //@todo need to know how to populate a worth field
     return array(
       '#title' => t('Liquidity per user'),
       '#description' => t('The distance from zero a user can trade'),

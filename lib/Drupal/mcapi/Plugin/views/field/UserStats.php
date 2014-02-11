@@ -67,15 +67,13 @@ class UserStats extends FieldPluginBase {
     //@todo make this work with the right entity_reference syntax
     $currency = reset($exchanges)->field_currencies->getvalue(TRUE)->entity;
 
-    $result = \Drupal::entityManager()->getStorageController('mcapi_transaction')->summaryData(
-      entity_load('mcapi_wallet', $wid),
-      $currency
-    );
+    $stats = entity_load('mcapi_wallet', $wid)->getStats($currency->id());
+
 
     if (in_array($this->options['stat'], array('trades', 'partners'))) {
-      return $result[$this->options['stat']];
+      return $stats[$this->options['stat']];
     }
-    else return $currency->format($result[$this->options['stat']]);
+    else return $currency->format($stats[$this->options['stat']]);
 
   }
 

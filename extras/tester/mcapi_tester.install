@@ -177,6 +177,13 @@ function mcapi_tester_uninstall() {
     db_query("DELETE FROM {mcapi_wallets} WHERE pid = $uid AND entity_type =  'user'");
     $account->delete();
   }
+
+  foreach (entity_load_multiple('mcapi_exchange') as $id => $ex) {
+     if ($ex->id() > 1)$ex->delete();
+  }
+  foreach (entity_load_multiple('mcapi_currency') as $id => $curr) {
+     if ($curr->id() != 'credunit' && $curr->id() != 'escro')$curr->delete();
+  }
   db_truncate('mcapi_transactions')->execute();
   db_truncate('mcapi_transactions_worths')->execute();
   db_truncate('mcapi_transactions_index')->execute();

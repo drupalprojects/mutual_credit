@@ -126,8 +126,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @see \Drupal\mcapi\TransactionInterface::validate()
    */
   public function validate() {
-
-
     \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $this);
 
     $this->exceptions = array();
@@ -205,7 +203,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         $child->validate();
       }
       $cluster = mcapi_transaction_flatten($this);
-      \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', $cluster);
+      \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', array($cluster));
 
       //process the errors in the children.
       $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
@@ -262,15 +260,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       if (empty($this->get('creator')->value)) {
         $this->set('creator', \Drupal::currentUser()->id());
       }
-      if (property_exists($this, 'child_candidates')) {//that means $this is the original transaction
-        foreach ($this->child_candidates as $transaction) {
-          $transaction->set('serial', $this->get('serial')->value);
-          $transaction->set('parent', $this->get('xid')->value);
-          $transaction->set('exchange', $this->get('exchange')->value);
-          $transaction->save();
-          //$this->children[] = $transaction;
-        }
-      }
     }
 
   }
@@ -280,9 +269,22 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @see \Drupal\mcapi\TransactionInterface::postSave()
    */
   public function postSave(EntityStorageControllerInterface $storage_controller, $update = TRUE) {
+    if (property_exists($this, 'child_candidates')) {//'$this' is the original transaction
+      foreach ($this->child_candidates as $transaction) {
+        $transaction->set('serial', $this->get('serial')->value);
+        $transaction->set('exchange', $this->get('exchange')->value);
+        $transaction->set('parent', $this->get('xid')->value);
+        $transaction->save();
+      }
+    }
+
     parent::postSave($storage_controller, $update);
     $storage_controller->saveWorths($this);
     $storage_controller->addIndex($this);
+
+    //TODO clear the entity cache of all wallets involved in this transaction and its children
+    //because the wallet entity cache contains the balance limits and the summary stats
+    drupal_set_message ('todo: clear wallet cache');
   }
 
   /**

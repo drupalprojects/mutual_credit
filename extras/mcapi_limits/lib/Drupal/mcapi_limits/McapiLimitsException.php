@@ -19,8 +19,8 @@ class McapiLimitsException extends McapiTransactionWorthException {
   private $projected;
   private $excess;
 
-  function __construct($currency, $uid, $limit, $projected, $excess) {
-    $this->uid = $uid;
+  function __construct($currency, $limit, $projected, $excess, $wallet) {
+    $this->wallet = $wallet;
     $this->limit = $limit;
     $this->projected = $projected;
     $this->excess = $excess;
@@ -32,17 +32,17 @@ class McapiLimitsException extends McapiTransactionWorthException {
   function __toString() {
 
     $replacements = array(
-      '!user' => user_load($this->uid)->getUsername(),
-      '!amount' => $this->currency->format($this->excess),
+      '!wallet' => $this->wallet->label(),
+      '!excess' => $this->currency->format($this->excess),
       '!limit' => $this->currency->format($this->limit),
       '!projected' => $this->currency->format($this->projected),
     );
     //this may need replacing if it transgresses privacy concerns, perhaps in intertrading.
-    if ($this->excess > 0) {
-      return t('The transaction would take !user !amount above the maximum limit of !limit', $replacements);
+    if ($this->projected > 0) {
+      return t("The transaction would take wallet '!wallet' !excess above the maximum limit of !limit.", $replacements);
     }
     else {
-      return t('The transaction would take !user !amount below the minimum limit of !limit', $replacements);
+      return t("The transaction would take wallet '!wallet' !excess below the minimum limit of !limit.", $replacements);
     }
   }
 

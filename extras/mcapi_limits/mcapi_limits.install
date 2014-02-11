@@ -6,3 +6,54 @@
 function mcapi_limits_install() {
   module_set_weight('mcapi_limits', 1);
 }
+
+function mcapi_limits_schema() {
+  return array(
+  	'mcapi_wallets_limits' => array(
+  	  'description' => 'Per-wallet limit settings',
+  	  'fields' => array(
+  		  'wid' => array(
+		      'description' => 'the unique wallet ID',
+		      'type' => 'int',
+		      'size' => 'normal',
+		      'not null' => TRUE,
+  	    ),
+  		  'currcode' => array(
+          'description' => 'The currency ID',
+          'type' => 'varchar',
+          'length' => '32',
+        ),
+  	    'min' => array(
+  		  	'description' => 'The minimum, in native units',
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+          'default' => 0
+  		  ),
+  	    'max' => array(
+  		  	'description' => 'The maximum, in native units',
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+          'default' => 0
+  		  ),
+        'editor' => array(
+          'description' => 'the id of the user who saved this',
+          'type' => 'int',
+          'size' => 'small',
+          'not null' => TRUE,
+        ),
+        'date' => array(
+          'description' => 'Unixtime that this was recorded',
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+        )
+  	  ),
+  	  'unique_keys' => array(
+        'wid_cur' => array('wid', 'currcode')
+      )
+    )
+  );
+
+}

@@ -26,15 +26,16 @@ class WalletLabel extends Standard {
   /**
    * {@inheritdoc}
    */
-  public function query() {
-    $this->addAdditionalFields();
+  public function __query() {
+    //$this->addAdditionalFields();
   }
 
   /**
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
-    return $this->getEntity($values)->label();
+    $wid = $this->getValue($values);
+    return entity_load('mcapi_wallet', $wid)->label();
   }
 
 }

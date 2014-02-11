@@ -169,19 +169,19 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
    * @see \Drupal\mcapi\CurrencyInterface::format()
    */
   public function format($value) {
-    if ($value === 0) {
+    if ($value === 0 && $this->zero) {
       return $this->zero;
     }
     //if there is a minus sign this needs to go before everything
     $minus_sign = $value < 0 ? '-' : '';
-    return $minus_sign . $this->prefix . $this->format_raw(abs($value)) . $this->suffix;
+    return $minus_sign . $this->prefix . $this->getPlugin()->format(abs($value)) . $this->suffix;
   }
 
   /**
    * @see \Drupal\mcapi\CurrencyInterface::format_raw()
    */
-  public function format_raw($value) {
-    return $this->getPlugin()->format($value);
+  public function format_decimal($value) {
+    return $this->getPlugin()->decimal($value);
   }
 
   /**
@@ -190,7 +190,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public function transactions(array $conditions, $serial = FALSE) {
     $serials = \Drupal::entityManager()
       ->getStorageController('mcapi_transaction')
-      ->filter(array('currcode' => $this->id()));
+      ->filter($conditions);
     if ($serial) {
       return count(array_unique($serials));
     }

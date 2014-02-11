@@ -21,12 +21,10 @@ function process_mcapi_command($message, $sender_account = NULL, $really = FALSE
   //this has no idea whether the transaction is pending.
   if ($really) {
   	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
-  	$balance = $storage->summaryData(
-  		$sender_account,
-  		mcapi_currency_load(\Drupal::config('mcapi.command')->get('currcode'))
-    );
+  	$stats = $wallet->getStats(\Drupal::config('mcapi.command')->get('currcode'));
+
     return t('Transaction created.').' '.
-      t('Your current balance is @num', array('@num' => $balance));//no need the format this
+      t('Your current balance is @num', array('@num' => $stats['balance']));//no need the format this
   }
   else {
     return t('Transaction passed validation.');
@@ -165,13 +163,12 @@ function mcapi_command_sms_incoming($op, $number, $message) {
   	$message = \Drupal::config('mcapi.command')->get('syntax_error');
   	$currcode = \Drupal::config('mcapi.command')->get('commands_currcode ');
 
-  	$balance = \Drupal::entityManager()
-	  	->getStorageController('mcapi_transaction')
-	  	->summaryData($sender_account, mcapi_currency_load($currcode));
+  	$stats = $wallet->getStats($currcode);
+  	$currency = mcapi_currency_load($currcode);
 
     $response = t(
       "Transaction created. Your new balance is @num",
-      array('@num' => $balance),
+      array('@num' => $currency->format($stats['balance'])),
       array('langcode' => $langcode)
     );
   }

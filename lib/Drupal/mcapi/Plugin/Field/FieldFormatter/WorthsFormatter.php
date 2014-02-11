@@ -30,6 +30,7 @@ class WorthsFormatter extends FormatterBase {
   public function viewElements(FieldItemListInterface $items) {
     $elements = array();
 
+    die('WorthsFormatter::viewElements');
     foreach($items as $delta => $item) {
       $element[$delta] = array(
         '#theme' => 'worth_item',

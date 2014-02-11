@@ -56,7 +56,7 @@ class CurrencyListController extends DraggableListController {
     $row['type'] = array(
       '#markup' => $definition['label'],
     );
-    $count = $entity->transactions();
+    $count = $entity->transactions(array('currcode' => $entity->id()));
     //this includes deleted transactions
     $row['transactions'] = array(
       '#markup' => $count

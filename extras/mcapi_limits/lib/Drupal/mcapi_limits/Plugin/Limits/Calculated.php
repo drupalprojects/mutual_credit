@@ -8,12 +8,10 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use Drupal\mcapi\TransactionInterface;
-//use Drupal\mcapi\CurrencyInterface;
-use \Drupal\Core\Config\ConfigFactory;
+
 use \Drupal\mcapi_limits\McapiLimitsBase;
 use \Drupal\mcapi_limits\McapiLimitsInterface;
-use \Drupal\Core\Session\AccountInterface;
+use \Drupal\Core\Entity\EntityInterface;
 
 /**
  * Calculate the balance limits
@@ -26,10 +24,13 @@ use \Drupal\Core\Session\AccountInterface;
  */
 class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
 
+  /**
+   * @see \Drupal\mcapi_limits\McapiLimitsBase::settingsForm()
+   */
   public function settingsForm() {
-    $preset = (array)$this->currency->limits_settings;
-
+    $preset = (array)$this->limits_settings;
     $form['max_formula'] =  array(
+      '#prefix' => t('N.B Result values are measured in native units, which might be cents, or seconds'),
       '#title' => t('Formula to calculate minimum limit'),
       '#description' => t('Make a formula from the following variables: @vars', array('@vars' => $this->help())),
     	'#type' => 'textfield',
@@ -46,35 +47,37 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
     $form += parent::settingsForm();
     return $form;
   }
-
-  public function checkPayer(AccountInterface $account, $diff) {
+  /**
+   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayer()
+   */
+  public function checkPayer(EntityInterface $wallet, $diff) {
     $limits = $this->getLimits($account);
     return TRUE;
   }
-  public function checkPayee(AccountInterface $account, $diff) {
+
+  /**
+   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayee()
+   */
+  public function checkPayee(EntityInterface $wallet, $diff) {
     $limits = $this->getLimits($account);
     return TRUE;
   }
 
-
-  public function getBaseLimits(AccountInterface $account) {
-    $stats = \Drupal::entityManager()
-    ->getStorageController('mcapi_transaction')
-    ->summaryData($account, $this->currency, array());
+  /**
+   * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits($wallet)
+   */
+  public function getLimits(EntityInterface $wallet) {
+    $stats = $wallet->getStats($this->currency->id());
     return array(
-      'max' => $this->parse($this->currency->limits_settings['max_formula'], $stats),
-      'min' => $this->parse($this->currency->limits_settings['min_formula'], $stats)
+      'max' => $this->parse($this->limits_settings['max_formula'], $stats),
+      'min' => $this->parse($this->limits_settings['min_formula'], $stats)
     );
   }
 
-  public function view(AccountInterface $account) {
-    return array(
-      '#theme' => 'mcapi_limits',
-      '#account' => $account,
-      '#currency' => $this->currency,
-    );
-  }
-
+  /**
+   *
+   * @return string
+   */
   private function help() {
     $help[] = t('@in: the total ever income of the user');
     $help[] = t('@out: the total ever expenditure of the user.');
@@ -83,6 +86,11 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
     return implode('; ', $help);
   }
 
+  /**
+   *
+   * @param unknown $element
+   * @param unknown $form_state
+   */
   public function validate_formula($element, &$form_state) {
     if (!strlen($element['#value'])) return;
     $test_values = array('gross_in' => 110, 'gross_out' => 90, 'trades' => 10, 'partners' => 5);
@@ -94,7 +102,11 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
     }
   }
 
-
+  /**
+   *
+   * @param unknown $string
+   * @param unknown $values
+   */
   private function parse($string, $values) {
     $tokens = array('@in', '@out', '@num', '@ptn');
     $replacements = array(

@@ -30,11 +30,17 @@ class WalletAccessController extends EntityAccessController {
    */
   //@todo define which $ops are possible. I think they will be view, pay & demand
   public function checkAccess(EntityInterface $wallet, $op, $langcode, AccountInterface $account) {
-    //TEMP FIX. This means any user can view, pay or request from any wallet they share an exchange with
+    if ($op == 'edit') {
+      //the wallet owner or site manager
+      if (($owner = $wallet->getOwner()) && $owner->entityType() == 'user' && $account->id() == $owner->id()) {
+        return TRUE;
+      }
+      else return $account->hasPermission('manage mcapi');
+    }
+    //TEMP FIX. This means any user can view, edit pay or request from any wallet they share an exchange with
     return array_intersect_key($wallet->in_exchanges(), referenced_exchanges());
 
-    //remember we're only interested in view access but not for router callbacks because the wallet has no uri
-    //although perhaps it should - like bitcoin!
+    //something like this will be needed
     return $this->pluginManager
       ->getInstance($wallet->access, $wallet->settings)
       ->check($op, $account);

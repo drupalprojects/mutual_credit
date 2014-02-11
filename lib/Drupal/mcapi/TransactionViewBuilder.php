@@ -30,7 +30,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * @return array
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
-
     if ($view_mode == 'certificate') {
       $build['#theme'] = 'certificate';
       //css helps rendering the default certificate
