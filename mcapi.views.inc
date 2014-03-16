@@ -575,6 +575,16 @@ function mcapi_views_data() {
   		'id' => 'exchange_visibility',
   	)
   );
+  $data['mcapi_exchanges']['open'] = array(
+  	'title' => t('Open'),
+  	'help' => t("Whether the exchange is open to outside trade"),
+  	'field' => array(
+  		'id' => 'boolean',
+  	),
+  	'filter' => array(
+  		'id' => 'boolean_operator',
+  	)
+  );
   $data['mcapi_exchanges']['membership'] = array(
   	'title' => t('Member count'),
   	'help' => t("The number of 'active' users in the exchange"),
@@ -625,7 +635,6 @@ function mcapi_views_data_alter(&$data) {
   //now make a filter for every entity that uses the field_exchanges
   //EG for when a node is 'in' an exchange
   module_load_include('inc', 'mcapi');
-  //print_r(get_exchange_entity_fieldnames());
   foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
     if (!$fieldname) continue;
     $argument = &$data[$entity_type .'__'. $fieldname][$fieldname .'_target_id']['argument'];

@@ -28,12 +28,12 @@ function mcapi_install() {
   ))->save();
 
   entity_create('mcapi_wallet', array(
-  'name' => 'default',
-  'entity_type' => 'user',
-  'pid' => 1,
-  'viewers' => 'dunno',
-  'payees' => 'dunno',
-  'payers' => 'dunno',
+    'name' => 'default',
+    'entity_type' => 'user',
+    'pid' => 1,
+    'viewers' => 'dunno',
+    'payees' => 'dunno',
+    'payers' => 'dunno',
   ))->save();
 
   //default exchange
@@ -44,6 +44,8 @@ function mcapi_install() {
     ),
     'uid' => '1',
     'visibility' => 'public',
+    'open' => TRUE,
+    'active' => TRUE,
     'field_currencies' => array('credunit')
   ))->save();
   //put user 1 in the default exchange
@@ -403,8 +405,14 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
+      'active' => array(
+        'description' => 'TRUE if the exchange is current and working',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
       'open' => array(
-        'description' => 'TRUE if the exchange is open for trading',
+        'description' => 'TRUE if the exchange is open to outside trade',
         'type' => 'int',
         'size' => 'normal',
         'not null' => FALSE,

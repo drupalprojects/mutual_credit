@@ -54,4 +54,9 @@ mcapi.wallet.edit.tab:
   tab_root_id: mcapi.wallet_view
   weight: 1
 
-
+#a default tab for editing a currency, lest more should be needed
+mcapi.currency.edit.tab:
+  route_name: mcapi.admin_currency_edit
+  title: Properties
+  tab_root_id: mcapi.admin_currency_edit
+  weight: 0

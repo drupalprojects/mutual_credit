@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\ExchangeOpenConfirm.
+ * Contains \Drupal\mcapi\Form\ExchangeActivateConfirm.
  */
 
 namespace Drupal\mcapi\Form;
@@ -12,7 +12,7 @@ use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 /**
  * Builds the form to delete a currency
  */
-class ExchangeOpenConfirm extends ContentEntityConfirmFormBase {
+class ExchangeActivateConfirm extends ContentEntityConfirmFormBase {
 
   /**
    * {@inheritdoc}
@@ -34,7 +34,7 @@ class ExchangeOpenConfirm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getConfirmText() {
-    return t('Open');
+    return t('Active');
   }
 
   /**
@@ -49,10 +49,10 @@ class ExchangeOpenConfirm extends ContentEntityConfirmFormBase {
       drupal_set_message('Any references to this exchange have not been changed.', 'warning');
     }
 
-    $this->entity->set('open', TRUE);
+    $this->entity->set('active', TRUE);
     $this->entity->save();
 
-    drupal_set_message(t("Exchange '%label' is now open for trading.", array('%label' => $this->entity->label())));
+    drupal_set_message(t("Exchange '%label' is now active.", array('%label' => $this->entity->label())));
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin_exchange_list'
     );

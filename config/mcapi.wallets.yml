@@ -4,7 +4,6 @@ entity_types:
 viewers: role:authenticated
 payees: role:authenticated
 payers: role:authenticated
-unique_names: 0
 display_format: '!o'
 access_personalised: 0
-autoadd_name: My wallet
+autoadd: 1

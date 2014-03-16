@@ -36,18 +36,9 @@ class TransactionFormAccessController implements StaticAccessCheckInterface {
    */
   public function access(Route $route, Request $request, AccountInterface $account) {
     //the route name is also the name of the config item!
-    $editform = \Drupal::config($request->attributes->get('_route'));
-
-    if ($exchange_id = $editform->get('exchange')) {
-      $exchange = entity_load('mcapi_exchange', $exchange_id);
-      if (is_object($exchange) && $exchange->member(user_load($account->id()))) {
-        return AccessInterface::ALLOW;
-      }
-    }
-    //this assumes that the current user is in at least one exchange
-    else return AccessInterface::ALLOW;
-
-    return  AccessInterface::DENY;
+    return mcapi_1stparty_access(\Drupal::config($request->attributes->get('_route')))
+      ? AccessInterface::ALLOW
+      : AccessInterface::DENY;
   }
 
 }

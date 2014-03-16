@@ -265,11 +265,19 @@ class FirstPartyEditFormController extends EntityFormController {
         '#default_value' => $configEntity->worths['preset'],
        ),
        */
-      '#weight' => 10
+      '#weight' => 7
     );
 
-    $help = l(t('What is twig?'), 'http://twig.sensiolabs.org/doc/templates.html', array('external' => TRUE));
+/*
+    $form['other']= array(
+      '#title' => 'Other fields',
+      '#type' => 'details',
+      '#group' => 'steps',
+      '#weight' => 10,
+    );
+*/
 
+    $help = l(t('What is twig?'), 'http://twig.sensiolabs.org/doc/templates.html', array('external' => TRUE));
     //TODO workout what the tokens are and write them in template1['#description']
     $form['experience'] = array(
     	'#title' => t('User experience'),

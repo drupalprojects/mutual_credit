@@ -40,10 +40,12 @@ class WalletForm extends EntityFormController {
       '#type' => 'textfield',
       '#title' => t('Name or purpose of wallet'),
       '#default_value' => $wallet->name->value,
+      '#placeholder' => t('Auto-name'),
+      '#required' => FALSE
     );
     $form['entity_type'] = array(
     	'#type' => 'value',
-      '#value' => $raw->get('entity_type')
+      '#value' => $raw->get('entity_type'),
     );
     $form['pid'] = array(
     	'#type' => 'value',
@@ -84,7 +86,6 @@ class WalletForm extends EntityFormController {
   //@todo see what parent::save is doing, It is empty right now.
   function save(array $form, array &$form_state) {
     form_state_values_clean($form_state);
-    debug($form_state['values']);
     foreach ($form_state['values'] as $key => $val) {
       $this->entity->{$key} = $val;
     }

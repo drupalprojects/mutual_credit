@@ -71,18 +71,18 @@ class ExchangeListController extends EntityListController {
       $operations['edit']['href'] = $uri['path'].'/edit';
     }
 
-    if ($entity->closable($entity)) {
-      $operations['close'] = array(
-        'title' => t('Close'),
-        'href' => $uri['path'] . '/close',
+    if ($entity->deactivatable($entity)) {
+      $operations['deactivate'] = array(
+        'title' => t('Deactivate'),
+        'href' => $uri['path'] . '/deactivate',
         'options' => $uri['options'],
         'weight' => 40,
       );
     }
     elseif (!$entity->get('open')->value) {
-      $operations['open'] = array(
-        'title' => t('Open'),
-        'href' => $uri['path'] . '/open',
+      $operations['activate'] = array(
+        'title' => t('Activate'),
+        'href' => $uri['path'] . '/activate',
         'options' => $uri['options'],
         'weight' => -10,
       );

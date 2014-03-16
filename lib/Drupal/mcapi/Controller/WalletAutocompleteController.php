@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Controller\ExceptionController;
 
 /**
  * Returns responses for Transaction routes.
@@ -26,7 +27,10 @@ class WalletAutocompleteController {
     module_load_include('inc', 'mcapi');
     $this->fieldnames = array_filter(get_exchange_entity_fieldnames());
     //the keys of the exchanges of which the current user is a member
-    $this->exchanges = array_keys(referenced_exchanges());
+    $this->exchanges = array();
+    if (\Drupal::request()->attributes->get('_route') != 'mcapi.wallets.autocomplete_all') {
+      $this->exchanges = array_keys(referenced_exchanges());
+    }
   }
 
   /*
@@ -41,32 +45,44 @@ class WalletAutocompleteController {
     $q = $request->query->get('q');
     $string = '%'.db_like($q).'%';
     //so now we have the wallet ids in one array
+
     if (is_numeric($q)) {
       $wids = array($q);
     }
-    elseif(\Drupal::Config('mcapi.wallets')->get('unique_names')) {
-      $query = db_select('mcapi_wallets', 'w')
-        ->fields('w', array('wid', 'pid', 'entity_type'))
-        ->condition('name', $string, 'LIKE')
-        ->condition('entity_type', '', '<>');//so we don't get the system wallets
-        $rows = $query->execute();
-      $wids = $this->walletFilter($rows);
-    }
-    //finally we can do a search on usernames & walletnames only
     else {
-      $query = db_select('mcapi_wallets', 'w');
-      $query->join('users', 'u', 'w.pid = u.uid');
-      $query->leftjoin('user__field_exchanges', 'x', "x.entity_id = u.uid AND w.entity_type = 'user'");
-      $wids = $query->fields('w', array('wid'))
-        ->condition('field_exchanges_target_id', $this->exchanges)
-        ->condition('status', 1)
-        ->condition(db_or()
-          ->condition('u.name', $string, 'LIKE')
-          ->condition('w.name', $string, 'LIKE')
-        )
-        ->range(0, 10)
-        ->execute()->fetchcol();
+      $query = db_select('mcapi_wallets', 'w')->fields('w', array('wid'));
+      $namelike = db_or()->condition('w.name', $string, 'LIKE');
+      //join the query directly to the exchange entity table, to get the names of exchanges
+      $query->leftjoin('mcapi_exchanges', 'ex', "w.pid = ex.id AND ex.open = 1 AND w.entity_type = 'mcapi_exchange'");
+      if ($this->exchanges) {
+        $query->condition("ex.id", $this->exchanges);
+      }
+      $namelike->condition('ex.id', $string, 'LIKE');
+
+      //join the query to any other entity tables, via those entities entity reference fields
+      //actually you can't join more than one table in different directions
+      foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
+        //if fieldname is blank that means the entity_type is mcapi_exchange, which can't reference itself
+        if ($entity_type != 'mcapi_exchange') {
+          $entity_info = entity_get_info($entity_type);
+          $alias = $entity_type;
+          $key = $entity_info['entity_keys']['id'];
+          $query->leftjoin($entity_info['base_table'], $alias, "w.pid = $alias.uid");
+          $query->leftjoin($entity_type.'__'.$fieldname, "x{$alias}", "x{$alias}.entity_id = {$alias}.{$key}  AND w.entity_type = '$entity_type'");
+          //limit the results to open exchanges only
+          $query->leftjoin('mcapi_exchanges', "mcapi_exchanges", "x{$alias}.{$fieldname}_target_id = mcapi_exchanges.id AND mcapi_exchanges.open = 1");
+          if ($this->exchanges) {
+            $query->condition("x{$alias}.{$fieldname}_target_id", $this->exchanges);
+          }
+          $namelike->condition($alias.'.'.entitynamefield($entity_type), $string, 'LIKE');
+        }
+      }
+      //we know that user is is one of the entities in this query
+      $query->condition('user.status', 1)
+      ->condition($namelike);
+      $wids = $query->range(0, 10)->execute()->fetchcol();
     }
+
     foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
       $json[] = array(
         'value' => _mcapi_wallet_autocomplete_value($wallet),
@@ -89,7 +105,7 @@ class WalletAutocompleteController {
       $by_exchange[$result->entity_type][$result->pid] = $result->wid;
     }
     $hits = array();
-    //search each field's table to see if the enties are in the right exchanges
+    //search each field's table to see if the entities are in the right exchanges
     foreach ($by_exchange as $entity_type => $wids) {
       $field_name = $this->fieldnames[$entity_type];
       $table = $entity_type .'__'.$field_name;
@@ -118,4 +134,17 @@ class WalletAutocompleteController {
     return $wids;
   }
   */
+}
+
+//hacky solution to help build a db query which checks the name / title of various entities
+function entitynamefield($entity_type) {
+  switch($entity_type) {
+  	case 'user':
+  	  return 'name';
+  	case 'node':
+  	  return 'title';
+  	default :
+  	  throw new \RuntimeException('Entity type unknown to WalletAutocompleteController: '. $entity_type);
+  }
+
 }

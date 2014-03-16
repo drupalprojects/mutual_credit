@@ -79,18 +79,13 @@ class OperationForm extends EntityConfirmFormBase {
    */
   public function getDescription() {
     //this provides the transaction_view part of the form as defined in the operation settings
-    if ($this->configuration->get('format') == 'twig') {
-      //ah but where to get the $tokens from
-      //maybe this should just be a feature of the template_preprocess_mcapi_transaction()
-      module_load_include('inc', 'mcapi');
-      return mcapi_render_twig_transaction($this->configuration->get('twig'), $this->entity, FALSE);
-    }
-    else {//this is a transaction entity display mode, like 'certificate'
-      $mode = $this->configuration->get('format') == 'certificate' ? 'certificate' : $this->configuration->get('twig');
-      $renderable = \Drupal::entityManager()->getViewBuilder('mcapi_transaction')
-      ->view($this->entity, $mode);
-      $renderable['#showlinks'] = FALSE;
-      return drupal_render($renderable);
+    switch($this->configuration->get('format')) {
+    	case 'twig':
+    	  module_load_include('inc', 'mcapi');
+    	  return mcapi_render_twig_transaction($this->configuration->get('twig'), $this->entity);
+    	default://certificate or even sentence, but without the links
+    	  $renderable = entity_view($this->entity, $this->configuration->get('format'));
+    	  return drupal_render($renderable);
     }
   }
 

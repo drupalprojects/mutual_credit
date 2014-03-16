@@ -208,7 +208,6 @@ function import_transactions_form_validate(&$form, &$form_state) {
     foreach (array_chunk($csv, MCAPI_IMPORT_TRANSACTION_BATCH_SIZE) as $chunk) {
       $batch['operations'][] = array('mcapi_import_batch_create_transaction', array($chunk, $form_state['values']));
     }
-    //echo print_r($batch['operations'], 1);    die();
     $batch['title'] = t('Importing transactions');
     $batch['finished'] = 'mcapi_import_review_transaction_data';
     batch_set($batch);

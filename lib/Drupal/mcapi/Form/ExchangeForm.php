@@ -48,9 +48,16 @@ class ExchangeForm extends ContentEntityFormController {
     $form['visibility'] = array(
       '#title' => t('Visibility'),
       '#description' => t('Is this exchange hidden from members of other exchanges?'),
-    	'#type' => 'radios',
+      '#type' => 'radios',
       '#options' => $this->entity->visibility_options(),
       '#default_value' => $exchange->get('visibility')->value,
+      '#weight' => 4
+    );
+    $form['open'] = array(
+      '#title' => t('Open'),
+      '#description' => t('Is this exchange open to trade with other exchanges?'),
+      '#type' => 'checkbox',
+      '#default_value' => $exchange->get('open')->value,
       '#weight' => 5
     );
     //hide the currencies field if only one currency is available

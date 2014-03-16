@@ -31,8 +31,8 @@ use Drupal\Core\Field\FieldDefinition;
  *       "add" = "Drupal\mcapi\Form\ExchangeForm",
  *       "edit" = "Drupal\mcapi\Form\ExchangeForm",
  *       "delete" = "Drupal\mcapi\Form\ExchangeDeleteConfirm",
- *       "open" = "Drupal\mcapi\Form\ExchangeOpenConfirm",
- *       "close" = "Drupal\mcapi\Form\ExchangeCloseConfirm",
+ *       "activate" = "Drupal\mcapi\Form\ExchangeOpenConfirm",
+ *       "deactivate" = "Drupal\mcapi\Form\ExchangeCloseConfirm",
  *     },
  *     "list" = "Drupal\mcapi\ExchangeListController",
  *   },
@@ -57,7 +57,9 @@ use Drupal\Core\Field\FieldDefinition;
  */
 class Exchange extends ContentEntityBase {
 
-  //@todo
+  /*
+   * get the number of users in this exchange
+   */
   function members() {
     //@todo
     //entity_load_by_properties seems expensive and I don't know how to make it work
@@ -71,7 +73,10 @@ class Exchange extends ContentEntityBase {
       ->execute()->fetchCol());
   }
 
-  //better load the transaction storage controller for this.
+  /*
+   * get the number of transactions in this exchange's history
+   */
+   //better load the transaction storage controller for this.
   function transactions($period) {
     //@todo is it worth making a new more efficient function in the storage controller for this?
     $conditions = array('exchange' => $this->get('id')->value, $since = strtotime($period));
@@ -113,14 +118,18 @@ class Exchange extends ContentEntityBase {
       ->setDescription('The one user responsible for administration')
       ->setSettings(array('target_type' => 'user'))
       ->setRequired(TRUE);
-    $properties['open'] = FieldDefinition::create('boolean')
-      ->setLabel('Open')
-      ->setDescription('TRUE if the exchange is open for trading')
+    $properties['active'] = FieldDefinition::create('boolean')
+      ->setLabel('Active')
+      ->setDescription('TRUE if the exchange is current and working')
       ->setSetting('default_value', TRUE);
-    $properties['visibility'] = FieldDefinition::create('boolean')
+    $properties['visibility'] = FieldDefinition::create('string')
       ->setLabel('Visibility')
       ->setDescription('Visibility of impersonal data in the exchange')
       ->setSetting('default_value', 'restricted');
+    $properties['open'] = FieldDefinition::create('boolean')
+      ->setLabel('Open')
+      ->setDescription('Open to trade with other exchanges')
+      ->setSetting('default_value', 1);
     //plus don't forget there is an entityreference field api field and instance called exchange_currencies
 
     return $properties;
@@ -180,30 +189,36 @@ class Exchange extends ContentEntityBase {
    * @return Boolean
    */
   function deletable(EntityInterface $exchange) {
-    if ($exchange->get('open')->value) return FALSE;
+    if ($exchange->get('active')->value) return FALSE;
     if (\Drupal::config('mcapi.misc')->get('indelible'))return FALSE;
     return TRUE;
   }
 
   /**
-   * check if an exchange can be closed, which means
-   * it is not the only open exchange
+   * check if an exchange can be deactivated, which means
+   * it is not the only active exchange
    *
    * @param EntityInterface $exchange
    * @return Boolean
    */
-  function closable($exchange) {
-    static $open_exchange_ids = array();
-    if (!$open_exchange_ids) {
+  function deactivatable($exchange) {
+    static $active_exchange_ids = array();
+    if (!$active_exchange_ids) {
       //get the names of all the open exchanges
       foreach (entity_load_multiple('mcapi_exchange') as $entity) {
         if ($exchange->get('open')->value) {
-          $open_exchange_ids[] = $entity->id();
+          $active_exchange_ids[] = $entity->id();
         }
       }
     }
-    if (count($open_exchange_ids) > 1)return TRUE;
+    if (count($active_exchange_ids) > 1)return TRUE;
     return FALSE;
+  }
+
+  function intertrading_wallet() {
+    $wallets = entity_load_multiple_by_properties('mcapi_wallet', array('name' => '_intertrade', 'pid' => $this->id()));
+    if (wallets)return current($wallets);
+    throw new Exception('no _intertrade wallet for Exchange '.$this->id());
   }
 }
 

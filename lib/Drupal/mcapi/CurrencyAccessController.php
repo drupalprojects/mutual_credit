@@ -32,7 +32,7 @@ class CurrencyAccessController extends EntityAccessController {
     	  return $account->hasPermission('configure mcapi') || $account->id() == $entity->get('uid');
 
     	default:
-        drupal_set_message('unknown operation: '.$operation, 'error');
+        drupal_set_message('unknown currency operation: '.$operation, 'error');
     };
   }
 

@@ -113,8 +113,8 @@ function _mcapi_theme() {
     'template' => 'transaction',
     'file' => 'mcapi.inc'
   );
-    //the above is the theme wrapper for the below
-    //so they both take the same render_element
+  //the above is the theme wrapper for the below
+  //so they both take the same render_element
   $items['certificate'] = array(
     'render element' => 'transaction',
     'template' => 'certificate',
@@ -125,7 +125,6 @@ function _mcapi_theme() {
     'variables' => array(
       'mcapi_transaction' => NULL,
       'twig' => '',
-      'showlinks' => FALSE
     ),
     'file' => 'mcapi.inc'
   );
@@ -245,17 +244,18 @@ function _mcapi_element_info() {
       '#options' => array(),//array of currcodes and currency names
     ),
     //local means 'in the same exchanges as the current user'
-    'local_wallets' => array(
+    'select_wallet' => array(
       //much of this is borrowed from 'textfield'
       '#input' => TRUE,
+      '#local' => TRUE,
       '#size' => 60,
       '#maxlength' => 128,
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
-      '#process' => array('form_process_autocomplete', 'ajax_process_form'),
+      '#process' => array('mcapi_process_wallet_select', 'form_process_autocomplete', 'ajax_process_form'),
       '#pre_render' => array('form_pre_render_textfield', 'mcapi_prerender_wallet_field'),
       '#theme' => 'input__textfield',
       '#theme_wrappers' => array('form_element'),
-      '#value_callback' => 'form_type_local_wallets_value',
+      '#value_callback' => 'form_type_select_wallet_value',
       '#element_validate' => array('local_wallet_validate_id'),
       //TODO I'm not sure how best to put in default css
       //the empty class is required to prevent an overload error in alpha7
@@ -268,7 +268,14 @@ function _mcapi_element_info() {
 
 function mcapi_view_wallets_summaries($entity) {
   $renderable = array();
-  foreach (entity_load_multiple_by_properties('mcapi_wallet', array('pid' => $entity->id(), 'entity_type' => $entity->entityType())) as $wallet) {
+  $wallets = entity_load_multiple_by_properties(
+    'mcapi_wallet',
+    array(
+      'pid' => $entity->id(),
+      'entity_type' => $entity->entityType()
+    )
+  );
+  foreach ($wallets as $wallet) {
     if ($wallet->access('view')) {
       $renderable['#wallets'] = show_wallet_summaries($wallet);
     }
@@ -341,16 +348,16 @@ function show_wallet_balance_bars($wallet) {
 function template_preprocess_mcapi_transaction(&$vars) {
   $element = $vars['transaction'];
 	$transaction = $element['#mcapi_transaction'];
-
 	//don't know if this is needed in d8
 	element_set_attributes($element, array('class', 'id'));
 	$vars['attributes']['class'] = array(
 		'transaction',
-		'transaction-'. $transaction->get('serial')->value,
-		$element['#view_mode'] == 'certificate' ? 'certificate' : 'customtwig',
-		$transaction->type->value,
+		$transaction->get('type')->value,
 		'state-'.$transaction->get('state')->value
 	);
+	if (!strpos($element['#view_mode'], ' ')) {
+	  $vars['attributes']['class'][] = $element['#view_mode'];
+  }
 }
 
 
@@ -363,27 +370,22 @@ function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
 	$transaction = $element['#mcapi_transaction'];
 
-	mcapi_transaction_process_vars($vars, $transaction, !empty($element['#showlinks']));
+	mcapi_transaction_process_vars($vars, $transaction);
   //hide the field api labels
 	foreach(element_children($element) as $sub) {
-	  if (!$element[$sub]['#theme']) print_r($sub);
 	  if ($element[$sub]['#theme'] == 'field') {
 	    $element[$sub]['#label_display'] = 'hidden';
 	  }
 	  $v[$sub] = $element[$sub];
 	}
 
-	/* @todo need to work out how to get entities out of an entity_reference field
+	//TODO need to work out how to get entities out of an entity_reference field
 	$vars['children'] = array();
 	if (isset($transaction->children)) {
-	  foreach ($transaction->get('children') as $child) {....?
-	  //how to we call transaction view now?
-	  $vars['children'] = transaction_view(
-	    $transaction->children,
-	    str_replace('[transaction:links]', '', \Drupal::config('mcapi.misc')->get('sentence_template'))
-	  );
+	  foreach($transaction->children as $child) {
+  	  $vars['children'][] = entity_view($child, 'sentence');
+	  }
 	}
-	*/
 	//choose the transaction theme template based on the first currency of the transaction
 	//not sure if this is worth the processing power at the moment
 
@@ -395,37 +397,35 @@ function template_preprocess_certificate(&$vars) {
  *
  * @param array $vars
  * @param TransactionInterface $transaction
- * @param boolean $showlinks
  *   TRUE if the 'links' variable is required
  */
-function mcapi_transaction_process_vars(array &$vars, TransactionInterface $transaction, $showlinks = TRUE) {
+function mcapi_transaction_process_vars(array &$vars, TransactionInterface $transaction) {
   $static = drupal_static(__FUNCTION__, array());
   $xid = $transaction->get('xid')->value;
-  if (!array_key_exists($xid, $static)) {
-    $states = mcapi_get_states(TRUE);
-    $types = mcapi_get_types();
-    $v['state'] = $states[$transaction->state->value];
-    $v['type'] = $types[$transaction->type->value]->label;
-    $v['serial'] = $transaction->serial->value;
-    $v['payer'] = $transaction->payer->entity->label();
-    $v['payee'] = $transaction->payee->entity->label();
-    $v['creator'] = $transaction->creator->entity->label();
-    $v['description'] = $transaction->description->value;
-    $v['worths'] = $transaction->worths->getString();
-    $v['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
 
-    //@todo more ugliness retrieving from entity_reference field
-    $exchange_field = ($transaction->get('exchange')->getValue(TRUE));
-    $v['exchange'] = $exchange_field[0]['entity']->label();
-    $v['links'] = $showlinks ? $transaction->links() : '';
-    //the token service lets you pass url options,
-    //but we'll simply do it here and just make all links absolute
-    $uri = $transaction->uri();
-    $v['url'] = url($uri['path'], array('absolute' => TRUE));
+  $states = mcapi_get_states(TRUE);
+  $types = mcapi_get_types();
+  $v['state'] = $states[$transaction->state->value];
+  $v['type'] = $types[$transaction->type->value]->label;
+  $v['serial'] = $transaction->serial->value;
+  $uri = $transaction->payer->entity->uri();
+  $v['payer'] = l($transaction->payer->entity->label(), $uri['path']);
+  $uri = $transaction->payee->entity->uri();
+  $v['payee'] = l($transaction->payee->entity->label(), $uri['path']);
+  $v['creator'] = $transaction->creator->entity->label();
+  $v['description'] = $transaction->description->value;
+  $v['worth'] = $transaction->get('worths')->getString();
+  $v['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
 
-    $static[$xid] = $v;
-  }
-  $vars += $static[$xid];
+  //@todo more ugliness retrieving from entity_reference field
+  $exchange_field = ($transaction->get('exchange')->getValue(TRUE));
+  $v['exchange'] = $exchange_field[0]['entity']->label();
+  //the token service lets you pass url options, but this function doesn't
+  $uri = $transaction->uri();
+  $v['url'] = url($uri['path'], array('absolute' => TRUE));
+  //only store it if the transaction has a database key
+
+  $vars += $v;
 }
 
 
@@ -438,8 +438,7 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
 function theme_mcapi_twig($vars) {
   return mcapi_render_twig_transaction(
     $vars['twig'],
-    $vars['mcapi_transaction'],
-    $vars['showlinks']
+    $vars['mcapi_transaction']
   );
 }
 
@@ -448,13 +447,12 @@ function theme_mcapi_twig($vars) {
  *
  * @param string $template
  * @param TransactionInterface $transaction
- * @param string $showlinks
  *
- * @todo convert this theme function to use
+ * @todo perhaps convert this theme function to use
  * http://twig.sensiolabs.org/doc/functions/template_from_string.html
  * New in Twig version 1.11
  */
-function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction, $showlinks = TRUE) {
+function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction) {
   $vars = array();
   $xid = $transaction->id();
   //Here we have to get all the fieldAPI fields rendered and in $vars
@@ -462,13 +460,13 @@ function mcapi_render_twig_transaction(string $template, TransactionInterface $t
   $build = \Drupal::entityManager()
     ->getViewBuilder('mcapi_transaction')
     ->viewMultiple($entities, 'certificate');
-  mcapi_transaction_process_vars($vars, $transaction, $showlinks);
+  mcapi_transaction_process_vars($vars, $transaction);
   //hide the fieldAPi labels
   foreach(element_children($build[$xid]) as $sub) {
     if ($build[$xid][$sub]['#theme'] == 'field') {
       $build[$xid][$sub]['#label_display'] = 'hidden';
     }
-    $v[$sub] = $build[$xid][$sub];
+    $vars[$sub] = $build[$xid][$sub];
   }
   return mcapi_render_twig($template, $vars);
 }
@@ -549,7 +547,7 @@ function mcapi_workflow_help() {
  * get the entity properties from mcapi_token_info, then the fieldapi fields
  * this function would be handy for any entity_type, so something equivalent may exist already
  * @param boolean
- *   if TRUE the result will include the operation links
+ *   if TRUE the result will include tokens to non-fields, such as the operation links
  * @return array
  *   names of replacable elements in the transaction
  */
@@ -560,7 +558,6 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
   $tokens = array_keys($tokens);
 
   if ($include_virtual){
-    $tokens[] = 'links';
     $tokens[] = 'url';
     $tokens[] = 'sentence';
   }
@@ -576,7 +573,7 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
 function get_exchange_entity_fieldnames($type = '') {
   $types = array('mcapi_exchange' => NULL);
   foreach (Field::FieldInfo()->getInstances() as $entity_type => $data1) {
-    if (in_array('entity_type', array('mcapi_exchange', 'transaction', 'wallet'))) continue;
+    if (in_array('entity_type', array('mcapi_exchange', 'mcapi_transaction', 'mcapi_wallet'))) continue;
     foreach ($data1 as $bundle => $fields) {
       foreach ($fields as $fieldname => $fieldInfo) {
         if ($fieldInfo->getType() == 'entity_reference') {

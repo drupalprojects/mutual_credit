@@ -37,7 +37,7 @@ class CurrencyListController extends DraggableListController {
    * @todo Check access on all currencies
    */
   public function buildRow(EntityInterface $entity) {
-    if (!$entity->access('update')) continue;//check that exchange administrator can see only the right currency
+    if (!$entity->access('update')) return;//check that exchange administrator can see only the right currency
     $row['title'] = array(
       '#markup' => $this->getLabel($entity),
     );

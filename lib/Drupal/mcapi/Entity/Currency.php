@@ -81,11 +81,10 @@ class Currency extends ConfigEntityBase implements CurrencyInterface {
   public $widget_settings;
   public $formatter;
   public $formatter_settings;
-  public $access_undo;
-  public $access_operations;
   public $weight;
   public $limits_plugin;
   public $limits_settings;
+  public $ticks; //exchange rate, expressed in ticks.
 
   /**
    * {@inheritdoc}

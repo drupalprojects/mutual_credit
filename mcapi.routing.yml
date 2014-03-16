@@ -50,7 +50,7 @@ mcapi.admin_currency_enable:
   defaults:
     _entity_form: 'mcapi_currency.enable'
   requirements:
-    _permission: 'configure mcapi'
+    _entity_access: 'mcapi_currency.edit'
 
 #transactions
 mcapi.admin.transactions:
@@ -156,6 +156,13 @@ mcapi.wallets.autocomplete:
     _controller: '\Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:
     _permission: 'access content'
+mcapi.wallets.autocomplete_all:
+  #the same controller as above but a different path, to select outside the exchange.
+  path: '/mcapi/walletcompleteall'
+  defaults:
+    _controller: '\Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
+  requirements:
+    _permission: 'access content'
 
 #exchanges
 mcapi.admin_exchange_list:
@@ -188,7 +195,7 @@ mcapi.exchange.edit:
     _entity_form: 'mcapi_exchange.edit'
     _title: 'Edit exchange'
   requirements:
-    _entity_access: 'mcapi_exchange.edit'
+    _entity_access: 'mcapi_exchange.update'
 
 mcapi.exchange.delete_confirm:
   path: '/exchange/{mcapi_exchange}/delete'
@@ -197,16 +204,16 @@ mcapi.exchange.delete_confirm:
   requirements:
     _permission: 'manage mcapi'
 
-mcapi.exchange.open_confirm:
-  path: '/exchange/{mcapi_exchange}/open'
+mcapi.exchange.activate_confirm:
+  path: '/exchange/{mcapi_exchange}/activate'
   defaults:
-    _entity_form: 'mcapi_exchange.open'
+    _entity_form: 'mcapi_exchange.activate'
   requirements:
     _permission: 'manage mcapi'
 
-mcapi.exchange.close_confirm:
-  path: '/exchange/{mcapi_exchange}/close'
+mcapi.exchange.deactivate_confirm:
+  path: '/exchange/{mcapi_exchange}/deactivate'
   defaults:
-    _entity_form: 'mcapi_exchange.close'
+    _entity_form: 'mcapi_exchange.deactivate'
   requirements:
     _permission: 'manage mcapi'

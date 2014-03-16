@@ -31,7 +31,7 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
    *  or
    *  the current user is on their own page and have permission to create own wallets
    * and
-   * the max wallets threshhold is not reached for that entity
+   *  the max wallets threshhold is not reached for that entity
    *
    *
    * @param Route $route
@@ -68,12 +68,7 @@ class WalletAddAccessController implements StaticAccessCheckInterface {
         $exchanges = array($owner);
       }
       else {
-        //what exchanges is this entity in?
-        $fieldname = get_exchange_entity_fieldnames($type);
-        //isn't there a proper way to get a nice array of entities out of an entityreference field?
-        foreach ($owner->get($fieldname)->getValue() as $item) {
-          $exchanges[] = entity_load('mcapi_exchange', $item['target_id']);
-        }
+        $exchanges = referenced_exchanges($owner);
       }
       foreach($exchanges as $exchange) {
         foreach ($my_exchanges as $my_exchange) {

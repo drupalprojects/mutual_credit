@@ -37,7 +37,10 @@ class WalletAccessController extends EntityAccessController {
       }
       else return $account->hasPermission('manage mcapi');
     }
+
+
     //TEMP FIX. This means any user can view, edit pay or request from any wallet they share an exchange with
+    if ($account->id() == 1) return TRUE;
     return array_intersect_key($wallet->in_exchanges(), referenced_exchanges());
 
     //something like this will be needed

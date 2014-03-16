@@ -194,12 +194,12 @@ function mcapi_theme($existing, $type, $theme, $path) {
 
 /**
  * implements hook_entity_view().
- * add a wallet summary view to the entity
+ * add a wallet summary view to wallet-enabled entities
  */
 function mcapi_entity_view($entity, $mode, $language) {
   //check the entity is of a type which can own a wallet.
   $quants = \Drupal::config('mcapi.wallets')->get('entity_types');
-  $key = $entity->entityType() .'.'. $entity->bundle();
+  $key = $entity->entityType() .':'. $entity->bundle();
   if (array_key_exists($key, $quants) && $quants[$key]) {
     module_load_include('inc', 'mcapi');
     $entity->content['wallet_balances'] = mcapi_view_wallets_summaries($entity);
@@ -366,21 +366,23 @@ function mcapi_currency_list($all = TRUE) {
  * @todo this should accept only ContentEntityInterface objects, but it fails when Drupal\user\Entity\User is passed
  */
 function referenced_exchanges($entity = NULL) {
-  if (is_null($entity)) {
-    $entity = user_load(\Drupal::currentUser()->id());
-  }
-  if ($entity->entityType() == 'user') {
-    $fieldname = 'field_exchanges';
-  }
-  else {
-    module_load_include('inc', 'mcapi');
-    $fieldname = get_exchange_entity_fieldnames($entity->entityType());
-  }
   $exchanges = array();
-  if ($fieldname) {
-    foreach($entity->get($fieldname)->getValue() as $item) {
-      //@todo one day we'll be able to just pull this array out rather than loading the entities ourselves
-      $exchanges[$item['target_id']] =  entity_load('mcapi_exchange', $item['target_id']);
+  if (is_null($entity)) {
+    $entity = entity_load('user', \Drupal::currentUser()->id());
+  }
+  if ($entity) {
+    if ($entity->entityType() == 'user') {
+      $fieldname = 'field_exchanges';
+    }
+    else {
+      module_load_include('inc', 'mcapi');
+      $fieldname = get_exchange_entity_fieldnames($entity->entityType());
+    }
+    if ($fieldname) {
+      foreach($entity->get($fieldname)->getValue() as $item) {
+        //@todo one day we'll be able to just pull this array out rather than loading the entities ourselves
+        $exchanges[$item['target_id']] =  entity_load('mcapi_exchange', $item['target_id']);
+      }
     }
   }
   //TEMP until entity_reference works
@@ -467,7 +469,6 @@ function mcapi_worths_element_process($element, &$form_state) {
           DataDefinition::create('field_item:worths'),
           $element['#default_value']
         );
-        echo 'testing setting worths value in mcapi_worths_element_process()'; print_r($element['#default_value']);die();
       }
       $element[$currcode]['#default_value'] = $element['#default_value']->{$currcode};
     }
@@ -719,14 +720,25 @@ function mcapi_process_currcodes($element) {
 }
 
 /*
- * LOCAL_WALLETS element callbacks
- *
- * value callback
- * takes from the autocomplete local_wallets field and returns an integer candidtate wallet id.
- * //these could all go in a different file
+ * select_wallet element callbacks
+ * these could all go in a different file
  */
-function form_type_local_wallets_value(&$element, $input, &$form_state) {
+/**
+ * process callback for wallet_select element
+ */
+function mcapi_process_wallet_select($element, &$form_state) {
+  $element['#autocomplete_route_name'] = $element['#local']
+    ? 'mcapi.wallets.autocomplete'
+    : 'mcapi.wallets.autocomplete_all';
+  return $element;
+}
+/**
+ * value callback
+ * takes from the autocomplete select_wallet field and returns an integer candidtate wallet id.
+ */
+function form_type_select_wallet_value(&$element, $input, &$form_state) {
   if (empty($input)) return;
+  //unset($element['#validate']);unset($element['#submit']);mdump($element);die();//why 'me'?
   if (is_numeric($input) && is_integer($input + 0)) {
     return $input;
   }
@@ -735,17 +747,18 @@ function form_type_local_wallets_value(&$element, $input, &$form_state) {
   return intval(array_pop($matches));
 }
 /**
- * element_validate callback for local_wallets
+ * element_validate callback for select_wallet
+ * ensure the passed value is a wallet id
  */
 function local_wallet_validate_id(&$element, &$form_state) {
-  $wallet = entity_load('mcapi_wallet', $element['#value']);
-  foreach (referenced_exchanges() as $exchange) {
-    if ($exchange->member($wallet)) return TRUE;
+  if (!entity_load('mcapi_wallet', $element['#value'])) {
+   \Drupal::formBuilder()->setError($element, $form_state, t('Invalid wallet id: @value', array('@value' => $element['#value'])));
   }
 }
 /**
- * element_prerender callback for local_wallets
+ * element_prerender callback for select_wallet
  * convert the #default value from a wallet id to the autocomplete format
+ * ensure the autocomplete address is going to the right place
  */
 function mcapi_prerender_wallet_field($element) {
   if (is_numeric($element['#default_value'])) {
@@ -857,8 +870,6 @@ function mcapi_config_translation_info(&$info) {
 }
 function mcapi_config_translation_info_alter(&$info) {
   echo 'mcapi_config_translation_info_alter';
-  //print_r($info);
-  //die();
 }
 
 /*
@@ -909,21 +920,37 @@ function mcapi_default_currency_id($entity, $field_definition, $langcode) {
 }
 
 /*
- * implements hook_user_create()
- * give a new wallet to every user
+ * implements hook_entity_insert()
+ * give a new wallet to every user, and every new exchange
  */
-function mcapi_user_insert($account) {
-  $config = \Drupal::config('mcapi.wallets');
-  if (!$config->get('unique_names') && $name = $config->get('autoadd_name')) {
-    entity_create('mcapi_wallet', array(
-      'name' => $name,
-      'entity_type' => 'user',
-      'pid' => $account->id(),
-      'access_view' => 'dunno',
-      'access_payee' => 'dunno',
-      'access_payer' => 'dunno',
-    ))->save();
+function mcapi_entity_insert($entity) {
+  $type = $entity->entityType();
+  if (!in_array($type, array('mcapi_wallet', 'user'))) return;
+  $name = '';
+  if ($type == 'user'){
+    if (!\Drupal::config('mcapi.wallets')->get('autoadd')) return;
   }
+  elseif ($type == 'mcapi_exchange') {
+    //wallet name could be a mcapi.wallets variable...
+    $name = '_intertrading';
+  }
+  $wallet = array(
+    'name' => $name,
+    'entity_type' => $entity->entityType(),
+    'pid' => $entity->id(),
+    'access_view' => 'dunno',
+    'access_payee' => 'dunno',
+    'access_payer' => 'dunno',
+  );
+  entity_create('mcapi_wallet', $wallet)->save();
+}
+
+//find out if a user is a member of an 'open' exchange
+function can_intertrade(EntityInterface $entity) {
+  foreach (referenced_exchanges($entity) as $exchange) {
+    if ($exchange->get('open')->value) return TRUE;
+  }
+  return FALSE;
 }
 
 /**
@@ -938,31 +965,6 @@ function mcapi_request_get_entity($request) {
     if (substr($key, 0, 1) == '_')continue;
     return $value;
   }
-}
-
-/**
- *
- * implements hook_mcapi_transaction_pre_validate().
- * Add transactions to the children property
- * DEV PURPOSES ONLY
- *
- * @param TransactionInterface $transaction
- */
-function mcapi_mcapi_transaction_children(TransactionInterface $transaction) {
-  //get a wallet belonging to the current exchange
-  $wids = mcapi_get_wallet_ids(entity_load('mcapi_exchange', $transaction->get('exchange')->value));
-  if (!$wids) return;
-  drupal_set_message('Time to test hook_mcapi_transaction_pre_validate');
-  //but we can't do it until we know how to populate a worths field
-  //get the first 2 wallets
-
-  $extra = entity_create('mcapi_transaction', array(
-    'payer' => $transaction->get('payer')->value,
-    'payee' => current($wids),
-    'worths' => array('credunit' => array('currcode' => 'credunit', 'value' => 60)),
-    'type' => 'auto'
-  ));
-  return array($extra);
 }
 
 /**
@@ -1005,3 +1007,11 @@ function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
   }
 }
 
+function mcapi_get_links($transaction, $view_link = FALSE) {
+  static $transactionViewBuilder;
+  if (!$transactionViewBuilder) {
+    $transactionViewBuilder = \Drupal::EntityManager('mcapi_transaction')->getViewBuilder();
+  }
+  return $this->transactionViewBuilder->renderLinks($transaction, 'sentence');
+
+}

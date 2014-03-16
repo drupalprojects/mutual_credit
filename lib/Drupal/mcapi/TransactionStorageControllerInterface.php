@@ -76,6 +76,9 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
    * @param integer $wallet_id
    * @param CurrencyInterface $currency
    * @param array $filters
+   *
+   * @return array
+   *   keyed by property or empty if there were no transactions
    */
   public function summaryData($wallet_id, array $filters);
 

@@ -58,8 +58,7 @@ class FirstPartyEditForm extends ConfigEntityBase {
   public $direction;
   public $description;
   public $worths;
-  public $created;
-
+  public $other;
   public $experience;
   public $message;
 
@@ -92,8 +91,8 @@ class FirstPartyEditForm extends ConfigEntityBase {
       'worths' => array(
     	  'preset' => array('credunit' => array('currcode' => 'credunit', 'value' => 0))
       ),
-      'created' => array(
-    	  'show' => FALSE
+      'other' => array(
+        'intertrade' => FALSE
       ),
     	'step1' => array(
         'twig1' => 'Partner: [mcapiform:secondperson]

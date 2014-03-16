@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\ExchangeCloseConfirm.
+ * Contains \Drupal\mcapi\Form\ExchangeDeactivateConfirm.
  */
 
 namespace Drupal\mcapi\Form;
@@ -12,13 +12,13 @@ use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 /**
  * Builds the form to delete a currency
  */
-class ExchangeCloseConfirm extends ContentEntityConfirmFormBase {
+class ExchangeDeactivateConfirm extends ContentEntityConfirmFormBase {
 
   /**
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return t('Are you sure you want to close %name?', array('%name' => $this->entity->label()));
+    return t('Are you sure you want to deactivate %name?', array('%name' => $this->entity->label()));
   }
 
   /**
@@ -34,7 +34,7 @@ class ExchangeCloseConfirm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getConfirmText() {
-    return t('Close');
+    return t('Deactivate');
   }
 
   /**
@@ -49,10 +49,10 @@ class ExchangeCloseConfirm extends ContentEntityConfirmFormBase {
       drupal_set_message('Any references to this exchange have not been changed. This may produce warning messages', 'warning');
     }
 
-    $this->entity->set('open', FALSE);
+    $this->entity->set('active', FALSE);
     $this->entity->save();
 
-    drupal_set_message(t("Exchange '%label' is now closed.", array('%label' => $this->entity->label())));
+    drupal_set_message(t("Exchange '%label' is deactivated.", array('%label' => $this->entity->label())));
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin_exchange_list'
     );

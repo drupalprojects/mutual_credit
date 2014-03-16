@@ -49,7 +49,6 @@ function mcapi_1stparty_theme() {
   );
 }
 
-//see https://drupal.org/node/1800686 on how to make dynamic routes
 /**
  * implements hook_entity_info_alter().
  * adds a form controller to the transaction entity
@@ -58,35 +57,57 @@ function mcapi_1stparty_entity_info_alter(&$data) {
   $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm';
 }
 
+function template_preprocess_1stpartyform(&$vars) {
+  $form = &$vars['element'];
+	//add the buttons if they weren't  in the twig template already
+  if (strpos($form['#twig'], '{{ actions }}') === FALSE) {
+    $form['#twig'] .= "{{ actions }}";
+  }
+}
+
 /**
  * theme implementation of callback 1stpartyform
+ * this must be a function, because we are taking a twig string instead of using a template file
  */
 function theme_1stpartyform($vars) {
 	$form = $vars['element'];
 	$tokens = array();
-	//add the buttons if they weren't  in the twig template already
-	if (strpos($form['#twig'], '{{ actions }}') === FALSE) $form['#twig'] .= "\n{{ actions }}";
-
 	foreach ($form['#twig_tokens'] as $fieldname) {
-		if ($form[$fieldname]['#type'] != 'value') {
-     	unset($form[$fieldname]['#theme_wrappers']);
-      $tokens[$fieldname] = drupal_render($form[$fieldname]);
+	  //transaction property or field API field
+	  //stripping the theme_wrappers is cleaner but prevents the #states from working.
+    $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
 
-		}
-		elseif (empty($form[$fieldname['#required']]) && $form[$fieldname['#default_value']] == '') {
-		  unset($form[$fieldname]);
+		if (empty($form[$fieldname['#required']]) && $form[$fieldname['#default_value']] == '') {
+		  //field does not occur in the form
+		  //unset($form[$fieldname]);this doesn't seem right
 		}
 		else {
 		  if (\Drupal::currentUser()->hasPermission('design 1stparty forms')) {
-		    drupal_set_message("Warning! Software limitation means there may be a problem hiding field '$fieldname', which has a preset value and is hidden.");
+		    //drupal_set_message("Warning! Software limitation means there may be a problem hiding field '$fieldname', which has a preset value and is hidden.");
 		  }
 		}
 	}
+	//adjustments for intertrade mode
+	if ($tokens['intertrade']) {
+	  $tokens['partner'] .= mcapi_render_stripped($form['partner_all']);
+	}
+
+	$last = drupal_render($form);
 
   //add everything not rendered onto the last rendered thing.
-  $tokens[$fieldname] .= drupal_render($form);
+  $tokens[$fieldname] .= $last;
   module_load_include('inc', 'mcapi');
   return mcapi_render_twig($form['#twig'], $tokens);
+}
+
+function mcapi_render_stripped(&$element) {
+  if (in_array($element['#type'], array('checkbox', 'checkboxes', 'radios', 'actions'))) {
+    return drupal_render($element);
+  }
+  elseif ($element['#type'] != array('value')) {
+    unset($element['#theme_wrappers']);
+    return '<span class = "form-item">'.drupal_render($element).'</span>';
+  }
 }
 
 
@@ -97,6 +118,7 @@ function mcapi_editform_load($id) {
 /**
  * get all the tokens which apply in the transaction form
  * @return array
+ *   the token names, without the 'type:'
  */
 function mcapi_1stparty_transaction_tokens() {
   module_load_include ('inc', 'mcapi');
@@ -112,5 +134,27 @@ function mcapi_1stparty_transaction_tokens() {
   //replace payer and payee with partner and direction
   $tokens[array_search('payer', $tokens)] = 'partner';
   $tokens[array_search('payee', $tokens)] = 'direction';
+  $tokens[] = 'intertrade';
   return $tokens;
+}
+
+/**
+ * check whether the current user can access a given 1stparty form
+ * used by the router and by the block controller
+ *
+ * @param unknown $editform
+ *   the configuration object
+ * @return boolean
+ *   TRUE if the current user can access the given form
+ */
+function mcapi_1stparty_access($editform) {
+  $account = entity_load('user', \Drupal::currentUser()->id());
+  if ($exchange_id = $editform->get('exchange')) {
+    $exchange = entity_load('mcapi_exchange', $exchange_id);
+    if (is_object($exchange) && $exchange->member($account)) {
+      return TRUE;
+    }
+  }
+  //user can access the form if they are in at least one exchange
+  else return count(referenced_exchanges($account)) != 0;
 }

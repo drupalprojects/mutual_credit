@@ -83,6 +83,7 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
     $help[] = t('@out: the total ever expenditure of the user.');
     $help[] = t('@num: the number of trades.');
     $help[] = t('@ptn: the number of trading partners.');
+    $help[] = t('@beware division by zero!');
     return implode('; ', $help);
   }
 
@@ -110,10 +111,10 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
   private function parse($string, $values) {
     $tokens = array('@in', '@out', '@num', '@ptn');
     $replacements = array(
-      $values['gross_in'],
-      $values['gross_out'],
-      $values['trades'],
-      $values['partners']
+      $values['gross_in'] ? : 0,
+      $values['gross_out'] ? : 0,
+      $values['trades'] ? : 0,
+      $values['partners'] ? : 0
     );
     $pattern = str_replace($tokens, $replacements, $string);
     return eval('return '. $pattern.';');

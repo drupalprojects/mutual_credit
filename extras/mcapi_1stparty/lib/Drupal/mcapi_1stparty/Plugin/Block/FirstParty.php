@@ -54,15 +54,7 @@ class FirstParty extends BlockBase {
         return FALSE;
       }
     }
-
-    //and if the current user is in the exchange of the block
-    if ($exchange_id = $this->editform->get('exchange')) {
-      //in fact such forms do not appear as blocks because we would have to to a whole lot
-      //more work for exchange managers to then manage blocks
-      return entity_load('mcapi_exchange', $exchange_id)->member();
-    }
-    //or if the the form has no exchange set.
-    return TRUE;
+    return mcapi_1stparty_access($this->editform);
   }
 
   /**

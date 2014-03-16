@@ -11,6 +11,9 @@ mcapi.misc:
     exchange_menu:
       type: string
       label: Menu
+    ticks_name:
+      type: String
+      label: Base unit
     worths_delimiter:
       type: string
       label: Delimiter
@@ -50,21 +53,15 @@ mcapi.wallets:
         wallet_default_payers:
           type: string
           label: 'Default payers'
-    unique_names:
-      type: boolean
-      label: 'Unique wallet names'
     display_format:
       type: boolean
       label: 'Display format'
-    unique_names:
-      type: boolean
-      label: 'Unique wallet names'
     access_personalised:
       type: boolean
       label: 'Personalised wallet access'
-    autoadd_name:
-      type: string
-      label: 'Name of auto-added wallet'
+    autoadd:
+      type: boolean
+      label: 'Auto-create a wallet for every new user'
 
 mcapi.currency.settings.decimal:
   type: mapping
@@ -152,31 +149,9 @@ mcapi.currency.*:
     limits_settings:
       type: type: mcapi.currency.limits.[%parent.formatter]
       label: Settings
-
-#this doesn't include per-plugin settings
-mcapi.currency.limits.*:
-  personal:
-    type: boolean
-    label: Personal
-  skip:
-    type: mapping
-    label: When to skip balance checks
-    mapping:
-      auto: 
-        type: boolean
-        label: Automated transactions
-      mass: 
-        type: boolean
-        label: Mass transactions
-      user1: 
-        type: boolean
-        label: User has permission to 'Configure community accounting'
-      owner: 
-        type: boolean
-        label: User is currency owner
-      reservoir: 
-        type: boolean
-        label: Reservoir account
+    ticks:
+      type: float
+      label: Ticks
 
 mcapi.operation.*:
   type: mapping

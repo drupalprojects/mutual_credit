@@ -9,7 +9,6 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageControllerInterface;
-use Drupal\Core\Template\Attribute;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinition;
 use Drupal\mcapi\TransactionInterface;
@@ -51,7 +50,7 @@ use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
   public $exceptions = array();
-  public $child_candidates = array();
+  public $child = array();
 
   /**
    * {@inheritdoc}
@@ -77,70 +76,21 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * @see \Drupal\mcapi\TransactionInterface::links()
-   */
-  function links($mode = 'page', $view = FALSE) {
-    $renderable = array();
-    if ($serial = $this->serial->value) {
-      foreach (show_transaction_operations($view) as $op => $plugin) {
-        if ($this->access($op)) {
-          $renderable['#links'][$op] = array(
-            'title' => $plugin->label,
-            'route_name' => $op == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op',
-            'route_parameters' => array(
-              'mcapi_transaction' => $this->serial->value,
-              'op' => $op
-            ),
-          );
-          if ($mode == 'modal') {
-            $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
-            $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
-          }
-          elseif($mode == 'ajax') {
-            //I think we need a new router path for this...
-            $renderable['#attached']['js'][] = 'core/misc/ajax.js';
-            //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
-          }
-          else{
-            $renderable['#links'][$op]['query'] = drupal_get_destination();
-          }
-        }
-      }
-      if (array_key_exists('#links', $renderable)) {
-        $renderable += array(
-          '#theme' => 'links',
-          //'#heading' => t('Operations'),
-          '#attached' => array(
-            'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
-          ),
-          //Attribute class not found
-          '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
-        );
-      }
-    }
-    return $renderable;
-  }
-
-
-  /**
    * @see \Drupal\mcapi\TransactionInterface::validate()
    */
-  public function validate() {
+  public function validate($intertrade = 0) {
+    //currently this isn't being used
     \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $this);
-
     $this->exceptions = array();
     list($payer, $payee) = $this->endpoints();
     //check that the payer and payee are not the same wallet
-    if ($payer->id() == $payee->id()) {
+    if ($payer->id() ==
+    $payee->id()) {
       $this->exceptions[] = new McapiTransactionException(
           '',
           t('A wallet cannot pay itself.')
       );
     }
-
-    //determine which exchange to use, based on the payer, the payee and the currency(s).
-    $exchange = $this->set('exchange', $this->derive_exchange());
-
     /*
      * @TODO GORDON I can't spend any more time trying to figure out the worths object.
      * foreach ($this->get('worths') gives us an array of worths it makes no sense.
@@ -184,21 +134,29 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //there might be a use-case when things are done out of order, so this is intended as a temp flag
     $this->validated = TRUE;
 
-    //While we're validating the parent ONLY, pass the transaction cluster around
+    //on the parent transaction only, validate it and then pass it round to get child candidates
     if ($this->get('parent')->value == 0) {
 
       //prevent the main transaction being altered as we pass it round
       //the main transaction was already altered in the preValidate hook.
       $clone = clone($this);
-      //we don't use $this->children at all - damned entity reference field isn't needed at this stage
-      $this->child_candidates = array();//ONLY parent transactions have this property
+      $this->children = array();//ONLY parent transactions have this property
       //previous the children's parent was set to temp, but is that necessary?
-      $this->child_candidates = \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', array($clone));
-      \Drupal::moduleHandler()->alter('mcapi_transaction_children', $this->child_candidates, $clone);
+      $this->children = \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', array($clone));
+      \Drupal::moduleHandler()->alter('mcapi_transaction_children', $this->children, $clone);
+      //how the children have been created but before they are validated, we to the intertrading split
+
+      if ($intertrade) {
+        $this->split();
+      }
+      else {
+        //determine which exchange to use, based on the payer, the payee and the currency(s).
+        $this->set('exchange', $this->derive_exchange());
+      }
 
       $messages = array();
       //validate the child candidates
-      foreach ($this->child_candidates as $child) {
+      foreach ($this->children as $child) {
         $child->set('parent', -1);//temp value. prevents recursion here but for some reason isn't there in presave
         $child->validate();
       }
@@ -207,7 +165,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
       //process the errors in the children.
       $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-      foreach ($this->child_candidates as $key => $child) {
+      foreach ($this->children as $key => $child) {
         if ($child->exceptions) {
           foreach ($child->exceptions as $exception) {
             $messages[] = $exception->getmessage();
@@ -252,7 +210,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         //TODO Gordon when does the serial number become final?
         //this is the only time we actually call nextSerial
         //That's when we need to propagate it to the children.
-        //Why do we need a serial number which isn't final
+        //Why do we need a serial number which isn't final?
       }
       if (empty($this->get('created')->value)) {
         $this->get('created')->value = REQUEST_TIME;
@@ -261,22 +219,19 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         $this->set('creator', \Drupal::currentUser()->id());
       }
     }
-
   }
-
 
   /**
    * @see \Drupal\mcapi\TransactionInterface::postSave()
+   * save the child transactions, which refer to the saved parent
    */
   public function postSave(EntityStorageControllerInterface $storage_controller, $update = TRUE) {
-    if (property_exists($this, 'child_candidates')) {//'$this' is the original transaction
-      foreach ($this->child_candidates as $transaction) {
-        $transaction->set('serial', $this->get('serial')->value);
-        $transaction->set('exchange', $this->get('exchange')->value);
-        $transaction->set('parent', $this->get('xid')->value);
-        $transaction->save();
-      }
+    foreach ($this->children as $transaction) {
+      $transaction->set('serial', $this->get('serial')->value);
+      $transaction->set('parent', $this->get('xid')->value);
+      $transaction->save();
     }
+
 
     parent::postSave($storage_controller, $update);
     $storage_controller->saveWorths($this);
@@ -369,10 +324,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel('Created')
       ->setDescription('The time that the transaction was created.')
       ->setReadOnly(TRUE);
-    $properties['children'] = FieldDefinition::create('entity_reference')
-      ->setLabel('Children')
-      ->setDescription('List of all child transactions.')
-      ->setSettings(array('target_type' => 'mcapi_transaction'));
 
     return $properties;
   }
@@ -428,5 +379,28 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return array($payer[0]['entity'], $payee[0]['entity']);
 
   }
+  /*
+   * Split one transaction into 2, going between exchanges and currencies
+   * does this belong in this object?
+   */
+  function split() {
+    //for intertrading set the exchange of the main transaction to the payer's (first) exchange
+    //<<groan>> there has to be a better way to get the entities out of the entity_reference field
+    $payer_exchange = current(referenced_exchanges($this->get('payer')->getIterator()->current()->entity->getOwner()));
+    $this->set('exchange', $payer_exchange);
+    //ensure we're not splitting a transaction into 2 which have the same exchange.
+    $payee_exchange = current(referenced_exchanges($this->get('payee')->getIterator()->current()->entity->getOwner()));
+    if ($payer_exchange == $payee_exchange) return;
 
+    $child = clone($this);
+    $child->set('uuid', \Drupal::service('uuid')->generate());
+    $child->set('exchange', $payee_exchange);
+    //its not obvious how to update an entity_reference field and reload the referenced entity, but this works for now
+    unset($this->payee, $child->payer);
+    $this->payee->setValue($payer_exchange->intertrading_wallet(), TRUE);
+    $child->payer->setValue($payee_exchange->intertrading_wallet(), TRUE);
+    //TODO the exchange rate!!!
+
+    $this->children[] = $child;
+  }
 }

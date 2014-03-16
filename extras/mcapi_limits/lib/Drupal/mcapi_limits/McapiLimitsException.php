@@ -30,7 +30,6 @@ class McapiLimitsException extends McapiTransactionWorthException {
   }
 
   function __toString() {
-
     $replacements = array(
       '!wallet' => $this->wallet->label(),
       '!excess' => $this->currency->format($this->excess),

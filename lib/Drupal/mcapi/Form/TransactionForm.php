@@ -39,8 +39,6 @@ class TransactionForm extends ContentEntityFormController {
     //the actual exchange that the transaction takes place in
     //will be determined automatically, once we know who is involved and what currencies.
     //in most use cases only one will be possible or likely
-    //echo 'This transaction will be in exchange '.implode(' or ', array_keys($exchanges)).'.';
-    //echo '<br />And in currencies '.implode(' or ', array_keys($currencies)).'.';
     //until then we offer a choice of users and currencies
     //from all the exchanges the current user is a member of
 
@@ -67,13 +65,15 @@ class TransactionForm extends ContentEntityFormController {
     //lists all the wallets in the exchange
     $form['payer'] = array(
       '#title' => t('Wallet to be debited'),
-      '#type' => 'local_wallets',
+      '#type' => 'select_wallet',
+      '#local' => TRUE,
       '#default_value' => $transaction->get('payer')->value,
       '#weight' => 9,
     );
     $form['payee'] = array(
       '#title' => t('Wallet to be credited'),
-      '#type' => 'local_wallets',
+      '#type' => 'select_wallet',
+      '#local' => TRUE,
       '#default_value' => $transaction->get('payee')->value,
       '#weight' => 9,
     );
@@ -105,9 +105,8 @@ class TransactionForm extends ContentEntityFormController {
   public function validate(array $form, array &$form_state) {
     form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
 
-
     //on the admin form it is possible to change the transaction type
-    //so here we're going to ensure the state is correct, even through it was set in preCreate
+    //so here we're going to ensure the state is correct, even if it was set in preCreate
     //actually this should probably happen in Entity prevalidate, not in the form
     $types = mcapi_get_types();
     $type = $form_state['values']['type'];
@@ -117,12 +116,11 @@ class TransactionForm extends ContentEntityFormController {
     $transaction->set('created', REQUEST_TIME);
     $transaction->set('creator', \Drupal::currentUser()->id());
 
-
     if (array_key_exists('mcapi_validated', $form_state))return;
     else $form_state['mcapi_validated'] = TRUE;
 
     //this might throw errors
-    $messages = $transaction->validate();
+    $messages = $transaction->validate($form_state['values']['intertrade']);
     //this is how we show all the messages.
     //setErrorByName can only be set once per form
     foreach ($transaction->exceptions as $e) {
@@ -133,9 +131,6 @@ class TransactionForm extends ContentEntityFormController {
       \Drupal::formBuilder()->setErrorByName($e->getField(), $form_state, implode(' ', $exceptions));
     }
 
-    //TODO sort out entity reference field iteration
-    //except that children is not an entity reference field, is it?
-    /*
     $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
     foreach ($transaction->children as $child) {
       foreach ($child->exceptions as $e) {
@@ -146,8 +141,7 @@ class TransactionForm extends ContentEntityFormController {
           drupal_set_message($e->getMessage, 'warning');
         }
       }
-    }*/
-    //form_state['mcapi_submitted'] = TRUE;//this means we move to step 2
+    }
     $this->entity = $transaction;
   }
 

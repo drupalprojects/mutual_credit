@@ -203,7 +203,6 @@ drupal_set_message("This form isn't working yet. there is currently no way to mu
       $main_transaction->children[] = $transaction;
     }
     $main_transaction->save();
-    //print_r($parent);die();
 
     //redirect to the single user's page.
     $uri = $main_transaction->uri();

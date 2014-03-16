@@ -179,7 +179,6 @@ class CurrencyFormController extends EntityFormController {
       '#weight' => 3,
     );
 
-
     $form['issuance'] = array(
       '#title' => t('Basis of issuance'),
       '#description' => t('Currently only affects visualisation.'),
@@ -194,6 +193,20 @@ class CurrencyFormController extends EntityFormController {
       //disable this if transactions have already happened
       '#disabled' => (bool)$this->entity->transactions(),
       '#weight' => 4,
+    );
+
+
+    $unit_name = \Drupal::config('mcapi.misc')->get('ticks_name');
+    $form['ticks'] = array(
+    	'#title' => t('Currency value, expressed in @units', array('@units' => $unit_name)),
+      '#description' => implode(' ',
+          t('Exchange rates are not determined by a free market, but negotiated and fixed.'),
+          t('@units are the base units used to convert between currencies.', array('@units' => $unit_name)),
+          t('Leave blank if this currency cannot be intertraded.')),
+      '#type' => 'number',
+      '#min' => 0,
+      '#default_value' => $currency->ticks,
+      '#weight' => 6
     );
     $form['display'] = array(
       '#title' => t('Appearance'),
@@ -232,11 +245,11 @@ class CurrencyFormController extends EntityFormController {
 
     $form['display']['widget_summary'] = array();
 
-    $widget_type = isset($form_state['input']['widget']) ? $form_state['input']['widget'] : $currency->widget;
+    $widget_type = @$form_state['input']['widget'] ? : $currency->widget;
 
     $options = array(
       'type' => $widget_type,
-      'settings' => isset($form_state['widget_settings'][$widget_type]) ? $form_state['widget_settings'][$widget_type] : array(),
+      'settings' => @$form_state['widget_settings'][$widget_type] ?  : array()
     );
     $widgetPlugin = $this->getWidgetPlugin($options);
 
@@ -446,23 +459,17 @@ class CurrencyFormController extends EntityFormController {
    * Overrides Drupal\Core\Entity\EntityFormController::validate().
    */
   public function validate(array $form, array &$form_state) {
-    //check that the reservoir account is allowed to use the currency
-    $callback = 'in_'. strtok($form_state['values']['access']['membership'], ':');
-    $arg = strtok(':');
-    if (!function_exists($callback)) {
-      form_set_error('reservoir', t('Invalid callback @callback.', array('@callback' => $callback)));
-    }
-    elseif (!$callback(array($arg), $form_state['values']['reservoir'])) {
-      form_set_error('reservoir', t('Reservoir account does not have access to the currency!'));
-    }
+
   }
 
   /**
    * {@inheritdoc}
    */
   public function submit(array $form, array &$form_state) {
-    $form_state['values']['widget_settings'] = isset($form_state['widget_settings'][$form_state['values']['widget']]) ? $form_state['widget_settings'][$form_state['values']['widget']] : array();
-
+    $widget = $form_state['values']['widget'];
+    $form_state['values']['widget_settings'] = isset($form_state['widget_settings'][$widget])
+      ? $form_state['widget_settings'][$widget]
+      : array();
     parent::submit($form, $form_state);
   }
 
@@ -471,10 +478,6 @@ class CurrencyFormController extends EntityFormController {
    */
   public function save(array $form, array &$form_state) {
     $currency = $this->entity;
-    foreach ($currency->access_undo as $key => $values) {
-      $currency->access_undo[$key] = array_filter($values);
-    }
-
     if ($currency->widget == CURRENCY_WIDGET_SELECT) {
       foreach(explode("\n", $currency->select) as $line) {
         list($cent, $display) = explode('|', $line);

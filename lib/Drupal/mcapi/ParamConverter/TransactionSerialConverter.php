@@ -41,13 +41,12 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
       //transaction hasn't been created yet,
       //we're loading the create operation, and the transaction from the tempstore
       $entity = \Drupal::service('user.tempstore')->get('TransactionForm')->get('entity');
-      if (!$entity) die('user.tempstore not working');
       return $entity;
     }
     else {
       $entity = $this->entityManager
         ->getStorageController('mcapi_transaction')
-        ->loadByProperties(array('serial' => $value, 'parent' => '0'));
+        ->loadByProperties(array('serial' => $value));
       if (!empty($entity)) {
         return reset($entity);
       }

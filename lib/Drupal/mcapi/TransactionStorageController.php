@@ -18,21 +18,27 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * {@inheritdoc}
    */
   function postLoad(array &$queried_entities) {
+    parent::postLoad($queried_entities);
+    //add the worths to every transaction
     $result = $this->database->query('SELECT * FROM {mcapi_transactions_worths} WHERE xid IN (:xids)', array(':xids' => array_keys($queried_entities)));
     foreach ($result as $record) {
-      $queried_entities[$record->xid]->worths[$record->currcode] = array(
-        'currcode' => $record->currcode,
-        'value' => $record->value,
+      //TODO is this the right way to add a value to a listitem field?
+      $queried_entities[$record->xid]->worths[] = array(
+        $record->currcode => array(
+          'currcode' => $record->currcode,
+          'value' => $record->value,
+        )
       );
     }
-    /*
-    // Load all the children
-    $result = $this->database->query('SELECT xid FROM {mcapi_transactions} WHERE parent IN (:parents)', array(':parents' => array_keys($queried_entities)));
-    foreach ($result as $record) {
-      $queried_entities[$record->xid]->children[$record->xid] = NULL;
+    //the transactionSerialConverter provided the parent and children
+    //now they are all fully loaded, we put the children under the parents
+    foreach ($queried_entities as $xid => $transaction) {
+      if ($parent_xid = $transaction->get('parent')->value) {
+        //the serial numbers of parent and child should be the same, so we needn't check
+        $queried_entities[$parent_xid]->children[$xid] = $transaction;
+        unset($queried_entities[$xid]);
+      }
     }
-    */
-    parent::postLoad($queried_entities);
   }
 
   /*
@@ -219,7 +225,6 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
       $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
       $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
-      debug("$volume_index == $volume");
       if ($volume_index == $volume) return TRUE;
     }
     return FALSE;
@@ -306,8 +311,11 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     $query->condition('i.wallet_id', $wallet_id)
       ->groupby('currcode');
     $this->parseConditions($query, $conditions);
-    return $query->execute()->fetchAllAssoc('currcode', \PDO::FETCH_ASSOC);
-    }
+    $result = $query->execute()->fetchAllAssoc('currcode', \PDO::FETCH_ASSOC);
+    //if ($result)
+      return $result;
+    //return array('currcode' =>);
+  }
 
   //experimental
   public function balances ($currcode, $wids = array(), array $conditions = array()) {

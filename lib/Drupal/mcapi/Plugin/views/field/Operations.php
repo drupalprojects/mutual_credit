@@ -57,8 +57,8 @@ class Operations extends FieldPluginBase {
   }
 
   function render(ResultRow $values) {
-    //need to work in the options[separater] somehow
-    return $this->getEntity($values)->links($this->options['mode'], $this->options['view'], TRUE);
+    //need to work in the options[separator] somehow
+    return mcapi_get_links($this->getEntity($values), $this->options['view']);
   }
 
 }

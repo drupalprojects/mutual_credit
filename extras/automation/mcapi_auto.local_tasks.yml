@@ -1,0 +1,12 @@
+#tab next to to the currency 'Properties' default tab
+mcapi.currency.auto_periodic.tab:
+  route_name: mcapi.admin_currency.auto_periodic
+  title: Periodic payments
+  tab_root_id: mcapi.admin_currency_edit
+  weight: 0
+
+mcapi.currency.auto_spot.tab:
+  route_name: mcapi.admin_currency.auto_spot
+  title: Spot payments
+  tab_root_id: mcapi.admin_currency_edit
+  weight: 0

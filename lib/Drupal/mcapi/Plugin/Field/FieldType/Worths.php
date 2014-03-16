@@ -133,6 +133,7 @@ class Worths extends ConfigFieldItemBase {
   //shouldn't we be using the worthformatter here?
   public function getString($delimiter = '') {
     $output = array();
+
     foreach ($this->properties as $worth) {
       $output[] = $worth->getString();
     }

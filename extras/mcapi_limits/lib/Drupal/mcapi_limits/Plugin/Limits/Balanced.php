@@ -29,7 +29,6 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
    */
   public function settingsForm() {
     $form['liquidity'] =  $this->widget($this->limits_settings['liquidity']);
-    print_r($form['liquidity']);
     $form += parent::settingsForm();
     return $form;
   }

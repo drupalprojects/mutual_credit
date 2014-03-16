@@ -15,7 +15,6 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
   $errors = $messages = array();
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each wallet with its limits
-
   foreach (_transactions_diff($cluster) as $wid => $percurrency) {
     $wallet = entity_load('mcapi_wallet', $wid);
     foreach ($percurrency as $currcode => $diffs) {
@@ -25,8 +24,8 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
       if ($skips['user1'] && \Drupal::currentUser()->id() == 1) {
         $messages[$currcode] = t(
-            "Skipped @currency balance limit check because you are user 1.",
-            array('@currency' => $currency->name)
+          "Skipped @currency balance limit check because you are user 1.",
+          array('@currency' => $currency->name)
         );
         continue;
       }
@@ -58,7 +57,7 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
           'wallet' => $wallet
         );
       }
-      elseif ($projected < 0 && $limits['min'] !== NULL && $projected < $limits['min']) {
+      elseif ($projected < 0 && is_numeric($limits['min']) && $projected < $limits['min']) {
         $errors[$wid][] = array(
           'currency' => $currency,
           'limit' => $limits['min'],
@@ -229,3 +228,4 @@ function _transactions_diff(array $cluster) {
   }
   return $diff;
 }
+

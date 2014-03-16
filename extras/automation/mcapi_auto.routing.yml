@@ -1,0 +1,27 @@
+#settings page
+mcapi.currency.automation_settings:
+  path: '/admin/accounting/automation'
+  defaults:
+    _form: 'Drupal\mcapi\Form\AutomationSettings'
+    _title: 'Automation'
+  requirements:
+    _permission: 'configure mcapi'
+
+#currency per-transaction payments
+mcapi.admin_currency.auto_spot:
+  path: '/admin/accounting/currencies/{mcapi_currency}/spot'
+  defaults: 
+    _form: 'Drupal\mcapi_levy\Form\AutoSpotSettings'
+    _title: Spot Payments
+  requirements:
+    _entity_access: 'mcapi_currency.update'
+
+#currency periodic payments
+mcapi.admin_currency.auto_periodic:
+  path: '/admin/accounting/currencies/{mcapi_currency}/spot'
+  defaults: 
+    _form: 'Drupal\mcapi_levy\Form\AutoSpotSettings'
+    _title: Spot Payments
+  requirements:
+    _entity_access: 'mcapi_currency.update'
+

@@ -70,7 +70,6 @@ function mcapi_signatures_mcapi_transaction_delete(TransactionInterface $transac
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
   if (isset($transaction->signatures)) {
     $config = transaction_operations('sign')->config->get('special');
-    print_r($config['countersignatories']);
     $signatories = array_merge($config['countersignatories'], array(
         $transaction->payee->value,
         $transaction->payer->value

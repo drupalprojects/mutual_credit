@@ -57,6 +57,13 @@ class AccountingMiscForm extends ConfigFormBase {
       '#default_value' => $config->get('indelible'),
       '#weight' => 6
     );
+    $form['ticks_name'] = array(
+      '#title' => t('Base Unit'),
+      '#description' => t('Plural name of the base unit, used for intertrading.'),
+      '#type' => 'textfield',
+      '#default_value' => $config->get('ticks_name'),
+      '#weight' => 7
+    );
     $menu_options = module_exists('menu') ? menu_get_menus() : menu_list_system_menus();
     $form['exchange_menu'] = array(
       '#title' => t('Menu'),
@@ -103,7 +110,6 @@ class AccountingMiscForm extends ConfigFormBase {
         '#value' => 'rebuild_mcapi_index',
       )
     );
-
     return parent::buildForm($form, $form_state);
   }
 
@@ -123,6 +129,7 @@ class AccountingMiscForm extends ConfigFormBase {
       //careful the mix_mode flag is inverted!!
       ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('exchange_menu', !$form_state['values']['exchange_menu'])
+      ->set('ticks_name', $form_state['values']['ticks_name'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
       ->set('indelible', $form_state['values']['indelible'])

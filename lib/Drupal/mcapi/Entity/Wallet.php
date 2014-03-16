@@ -76,58 +76,32 @@ class Wallet extends ContentEntityBase {
   /**
    * {@inheritdoc}
    */
-  public function label($langcode = NULL) {
-    $display_format = \Drupal::config('mcapi.wallets')->get('display_format');
-    $replacements = array('!o' => '', '!w'=> '');
-    if (is_numeric(strpos($display_format, '!o'))) {
-      $replacements['!o'] =  $this->getOwnerLabel();
-    }
-    if (is_numeric(strpos($display_format, '!w'))) {
-      $replacements['!w'] = $this->get('name')->value;
-    }
-    return strtr($display_format, $replacements);
-  }
-
-  /*
-   * get the wallet name, linked to its transaction view, if permissions allow
-   * @param boolean $linked
-   *   TRUE if a link is required
-   * @return string
-   *   the name or linked name of the wallet
-   */
-  function linkedname($linked = TRUE) {
-    $display_format = \Drupal::config('mcapi.wallets')->get('display_format');
-
-    $replacements = array('!o' => '', '!w'=> '');
-    if (is_numeric(strpos($display_format, '!o'))) {
-      $label = $this->getOwnerLabel();
-      $replacements['!o'] = ($linked && $this->getOwner()->access('view')) ?
-        l($label, $this->getOwnerPath()) :
-        $label;
-    }
-
-    if (is_numeric(strpos($display_format, '!w'))) {
-      $label = $this->get('name')->value;
-      if ($linked && $this->access('view')) {
-        $uri = $this->uri();
-        $replacements['!w'] = l($label, $uri['path']);
+  public function label($langcode = NULL, $full = TRUE) {
+    $output = '';
+    //we need to decide whether / when to display the owner and when the wallet name
+    if ($full) {
+      if ($this->owner) {
+        $output = $this->owner->label();
       }
       else {
-        $replacements['!w'] = ($label);
+        $output = t('System');
       }
+      $output .= ": ";
     }
-    return strtr($display_format, $replacements);
 
+    $val = $this->get('name')->value;
+    if ($val == '_intertrade') {
+      $output .= t('Import/Export');
+    }
+    elseif ($val) {
+      $output .= $val;
+    }
+    else $output .= t('Wallet #@num', array('@num' => $this->get('wid')->value));
+
+    return $output;
   }
 
-  private function getOwnerLabel() {
-    if ($this->owner) {
-      return $this->owner->label();
-    }
-    else {
-      return t('System');
-    }
-  }
+
   private function getOwnerPath() {
     if ($this->owner) {
       $uri = $this->owner->uri();
@@ -150,11 +124,10 @@ class Wallet extends ContentEntityBase {
       $parent_type = $wallet->get('entity_type')->value;
       //they could all have different parent entity types, so we have to load them separately
       if ($parent_type == '') {
-        $wallet->owner = NULL;// new \Drupal\mcapi\Entity\Bank;
+        $wallet->owner = NULL;
       }
       else {
-        //@todo remove this array syntax
-        $wallet->owner = entity_load('user', $wallet->get('pid')->value);
+        $wallet->owner = entity_load($parent_type, $wallet->get('pid')->value);
       }
       $wallet->stats = $transaction_storage->summaryData($wallet->id());
     }
@@ -240,8 +213,12 @@ class Wallet extends ContentEntityBase {
   }
   /**
    * get a list of all the currencies in this wallet's scope
+   * wallet 1 is special and can access all currencies
    */
   function currencies_available() {
+    if ($this->wid == 1) {
+      return entity_load_multiple('mcapi_currency');
+    }
     return exchange_currencies($this->in_exchanges());
   }
 

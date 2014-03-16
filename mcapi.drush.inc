@@ -38,9 +38,6 @@ function mcapi_drush_help($section) {
  *   An associative array describing your command(s).
  */
 function mcapi_drush_command() {
-  print_r(\Drupal\Core\Entity\EntityManagerInterface::getDefinitions('mcapi_transactions'));
-  //drush isn't working yet, but when it is, we only show wipeslate if the transaction controller is Drupal\mcapi\TransactionStorageController
-
   $items['mcapi-wipeslate'] = array(
     //'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Trucate the transactions table and fieldAPI fields. USE WITH CARE.'),

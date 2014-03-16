@@ -35,8 +35,13 @@ class WalletLimitOverride extends FormBase {
     //this is tricky. We need to know all the currency that could go in the wallet.
     //to do that we have to know all the currencies in the all the exchanges the wallets parent is in.
     $owner = $this->wallet->getOwner();
-    if (!$owner) return; //system wallet is currently in no exchanges
-    $exchanges = referenced_exchanges($parent);
+    $exchanges = referenced_exchanges($owner);
+    if (empty($exchanges)) {
+      echo "drupal_set_message isn't showing in alpha 7";
+      drupal_set_message('This wallet presently has no owner');
+      return $form;
+    }
+
     foreach (exchange_currencies($exchanges) as $currcode => $currency) {
       if (property_exists($currency, 'limits_settings') && is_array($currency->limits_settings) && isset($currency->limits_settings['override'])) {
         $currency_defaults = $currency->limits_settings;

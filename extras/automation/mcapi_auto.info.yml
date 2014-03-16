@@ -1,0 +1,10 @@
+name: Automated transactions
+description: Set up periodic or per-transaction payments for each currency
+package: Community Accounting
+core: 8.x
+type: module
+
+configure: admin/accounting/automation
+
+dependencies:
+  - mcapi

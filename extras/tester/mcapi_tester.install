@@ -12,8 +12,10 @@ function mcapi_tester_install() {
   $exchanges = array(
   	array(
   	  'name' => 'second exchange',
+  	  'short_name' => 'second exchange',
   	  'uid' => 6,
   	  'open' => 1,
+  	  'active' => 1,
   	  'visibility' => 'restricted',
   	  'langcode' => 'und',
   	  'field_currencies' => array(
@@ -22,8 +24,10 @@ function mcapi_tester_install() {
     ),
   	array(
   	  'name' => 'third exchange',
+  	  'short_name' => 'third exchange',
   	  'uid' => 1,
   	  'open' => 1,
+  	  'active' => 1,
   	  'visibility' => 'private',
   	  'langcode' => 'und',
   	  'field_currencies' => array(
@@ -31,13 +35,7 @@ function mcapi_tester_install() {
       )
     )
   );
-  $wallet = array('name' => 'Shared wallet', 'entity_type' => 'mcapi_exchange');
-  foreach($exchanges as $values) {
-    $exchange = entity_create('mcapi_exchange', $values);
-    $exchange->save();
-    $wallet['pid'] = $exchange->id();
-    entity_create('mcapi_wallet', $wallet)->save();
-  }
+  //intertrading wallets should be created automatically for each exchange
 
   $users = array(
     array(

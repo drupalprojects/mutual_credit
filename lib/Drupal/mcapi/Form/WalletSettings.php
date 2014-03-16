@@ -58,37 +58,13 @@ class WalletSettings extends ConfigFormBase {
         );
       }
     }
-    $form['unique_names'] = array(
-      '#title' => t('Unique wallet names'),
-      '#description' => t('New user wallets must be added manually and every wallet must have a unique name.'),
+    $form['autoadd'] = array(
+      '#title' => t('Auto-create a wallet for every new user'),
+      '#description' => t('This is not retrospective'),
       '#type' => 'checkbox',
-      '#default_value' => $config->get('unique_names'),
-      '#weight' => 2
-    );
-    $form['autoadd_name'] = array(
-      '#title' => t('Name of auto-added wallet'),
-      '#description' => t('Name of new wallet created automatically for each new user, or leave blank not to create.'),
-      '#type' => 'textfield',
-      '#placeholder' => t('My wallet'),
-      '#default_value' => $config->get('autoadd_name'),
+      '#default_value' => $config->get('autoadd'),
       '#weight' => 3,
-      '#states' => array(
-    	  'visible' => array(
-      	  ':input[name=unique_names]' => array('checked' => FALSE)
-        )
-      )
     );
-    /* actually this is set automatically
-    $form['display_format'] = array(
-      '#title' => t('Display format'),
-      '#description' => t('Use tokens !o for the wallet owner and !w for the wallet name.') .' '.
-        t("If wallet names are not unique, the owner's name should be included"),
-      '#type' => 'textfield',
-      '#placeholder' => '!o: !w',
-      '#default_value' => $config->get('display_format'),
-      '#weight' => 4,
-    );
-    */
 
     foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
       $wallet_access_plugins[$def['id']] = $def['label'];
@@ -144,9 +120,6 @@ class WalletSettings extends ConfigFormBase {
    */
   public function submitForm(array &$form, array &$form_state) {
     $vals = &$form_state['values'];
-    if ($vals['unique_names']) $display_format = '!w';
-    elseif($vals['autoadd_name']) $display_format = '!o';
-    else $display_format = '!o: !w';
 
     $this->configFactory->get('mcapi.wallets')
       ->set('entity_types', $vals['entity_types'])
@@ -154,9 +127,7 @@ class WalletSettings extends ConfigFormBase {
       //->set('payers', $vals['payees'])
       //->set('payees', $vals['viewers'])
       //->set('access_personalised', $vals['access_personalised'])
-      ->set('unique_names', $vals['unique_names'])
-      ->set('display_format', $display_format)
-      ->set('autoadd_name', $vals['autoadd_name'])
+      ->set('autoadd', $vals['autoadd'])
       ->save();
 
     parent::submitForm($form, $form_state);

@@ -69,7 +69,9 @@ function mcapi_limits_mcapi_wallet_load($entities) {
  */
 function wallet_get_limit(EntityInterface $wallet, CurrencyInterface $currency) {
   $currcode = $currency->id();
-  $override = $currency->limits_settings['limits_override'];
+  $override = array_key_exists('limits_override', $currency->limits_settings) && $currency->limits_settings['limits_override'];
+
+  //property 'limits' doesn't exist
   foreach (array('min', 'max') as $limit) {
     if ($override && isset($wallet->limits_override) && array_key_exists($currcode, $wallet->limits_override)) {
       $result[$limit] = $wallet->limits_override[$currcode][$limit];
@@ -276,3 +278,4 @@ function mcapi_limits_process_minmax(&$element) {
   );
   return $element;
 }
+

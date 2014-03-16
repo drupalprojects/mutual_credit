@@ -9,30 +9,29 @@
  *     calling format_date()
  * - payer: The formatted username of the payer
  * - payee: The formatted username of the payee
- * - worths: The formatted currency quantities
+ * - worth: The formatted currency quantities
  * - state: The name of the transaction state
  * - type: The transaction type
  * - description: The one line description
  * - created: Formatted creation date
  * - attributes
  * -   attributes.class
- * From the signatures module (if enabled)
  * - mcapi_signatures
- * if the mcapi_limits module is enabled:
+ *     From the signatures module (if enabled)
  * - pending
- * extra fieldAPI fields must be named specifically e.g
+ *     if the mcapi_limits module is enabled:
  * - field_example
- * child transactions, rendered as sentences
+ *     extra fieldAPI fields must be named specifically e.g
  * - children
+ *     child transactions, rendered as sentences
 #}
 {% if mcapi_signatures %}{{ mcapi_signatures }}{% endif %}
 <center>
 On {{ created }}, <br />
 {{ payer }} paid {{ payee }} <br />
 the sum of <br />
-<font size=6>{{ worths }}</font><br />
+<font size=6>{{ worth }}</font><br />
 for: "<em>{{ description }}</em>"
-{% if links %}{{ links }}{% endif %}
 </center>
 
 <br />{% if children %}

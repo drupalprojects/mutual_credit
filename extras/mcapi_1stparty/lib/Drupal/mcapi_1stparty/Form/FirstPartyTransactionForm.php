@@ -112,6 +112,27 @@ class FirstPartyTransactionForm extends TransactionForm {
   	//handle the description
   	$form['description']['#placeholder'] = $config->description['placeholder'];
 
+  	//TODO put this in the base transaction form,
+  	//where the one checkbox can enable both payer and payee to be selected from any exchange
+    if (strpos($config->experience['twig'], '{{ intertrade }}') && can_intertrade($account)) {
+    	//this checkbox flips between partner_choosers
+    	$form['intertrade'] = array(
+    		'#title' => t('Intertrade'),
+    	  '#description' => t('Trade with someone outside your exchange'),
+    	  '#type' => 'checkbox',
+    	  '#default_value' => 0,
+    	);
+    	//make a second partner widget and switch between them
+    	$form['partner']['#states'] = array(
+    	  'visible' => array(
+          ':input[name="intertrade"]' => array('checked' => FALSE)
+        )
+    	);
+    	$form['partner_all'] = $form['partner'];
+    	$form['partner_all']['#local'] = FALSE;
+    	$form['partner_all']['#states']['visible'][':input[name="intertrade"]']['checked'] = TRUE;
+    }
+
   	//hide the state, type
   	$form['state']['#type'] = 'value';
   	//TODO get the first state of this workflow
@@ -162,19 +183,21 @@ class FirstPartyTransactionForm extends TransactionForm {
    * convert the firstparty, 3rdparty and direction fields into payer and payee.
    */
   public function validate(array $form, array &$form_state) {
-
     $my_wallet_id = array_key_exists('mywallet_value', $form_state['values']) ?
       $form_state['values']['mywallet_value'] :
       $form_state['values']['mywallet'];
+    $partner_wallet_id = $form_state['values']['intertrade'] ?
+      $form_state['values']['partner_all'] :
+      $form_state['values']['partner'];
 
     if ($form_state['values']['direction'] == 'outgoing') {
       //$element is only needed for the parents
-      \Drupal::formBuilder()->setValue($form_state['complete_form']['payee'], $form_state['values']['partner'], $form_state);
-      \Drupal::formBuilder()->setValue($form_state['complete_form']['payer'], $my_wallet_id, $form_state);
+      \Drupal::formBuilder()->setValue($form['payee'], $partner_wallet_id, $form_state);
+      \Drupal::formBuilder()->setValue($form['payer'], $my_wallet_id, $form_state);
     }
     else {
-      \Drupal::formBuilder()->setValue($form_state['complete_form']['payer'], $form_state['values']['partner'], $form_state);
-      \Drupal::formBuilder()->setValue($form_state['complete_form']['payee'], $my_wallet_id, $form_state);
+      \Drupal::formBuilder()->setValue($form['payer'], $partner_wallet_id, $form_state);
+      \Drupal::formBuilder()->setValue($form['payee'], $my_wallet_id, $form_state);
     }
 
     parent::validate($form, $form_state);
@@ -196,6 +219,9 @@ class FirstPartyTransactionForm extends TransactionForm {
   	return $actions;
   }
 
+  /**
+   * work out the default values, if any
+   */
   function prepareTransaction() {
     //the partner is either the owner of the current page, under certain circumstances
     //or is taken from the form preset.
@@ -211,9 +237,13 @@ class FirstPartyTransactionForm extends TransactionForm {
     //prepare a transaction using the defaults here
     $vars = array('type' => $this->config->type);
     foreach (mcapi_1stparty_transaction_tokens() as $prop) {
-      if (property_exists($this->config, $prop) && array_key_exists('preset', $this->config->{$prop})) {
-        if (is_null($this->config->{$prop}['preset'])){
-          $vars[$prop] = $this->config->{$prop}['preset'];
+      if (property_exists($this->config, $prop)) {
+        if (is_array($this->config->$prop)) {
+          if (array_key_exists('preset', $this->config->{$prop})) {
+            if (!is_null($this->config->{$prop}['preset'])){
+              $vars[$prop] = $this->config->{$prop}['preset'];
+            }
+          }
         }
       }
     }
@@ -226,12 +256,9 @@ class FirstPartyTransactionForm extends TransactionForm {
       $vars['payer'] = \Drupal::currentUser()->id();
       $vars['payee'] = $partner;
     }
-
     //at this point we might want to override some values based on input from the url
     //this means the form can be populated using fields shared with another entity.
 
     $this->entity = \Drupal::entityManager()->getStorageController('mcapi_transaction')->create($vars);
   }
 }
-
-
