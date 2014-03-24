@@ -40,6 +40,11 @@ class WalletViewBuilder extends EntityViewBuilder {
         '#weight' => 5
       );
       // the following are then managed by the entity_display
+      $owner = $wallet->getOwner();
+      $wallet->content['owner'] = array(
+        //todo make a title or heading for this
+        '#markup' => l($owner->label(), $owner->uri())
+      );
       $wallet->content['wallet_balance'] = show_wallet_summaries($wallet);
       $wallet->content['wallet_history'] = show_wallet_histories($wallet);
       $wallet->content['wallet_balance_bars'] = show_wallet_balance_bars($wallet);

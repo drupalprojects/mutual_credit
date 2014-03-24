@@ -190,7 +190,9 @@ class Exchange extends ContentEntityBase {
    */
   function deletable(EntityInterface $exchange) {
     if ($exchange->get('active')->value) return FALSE;
-    if (\Drupal::config('mcapi.misc')->get('indelible'))return FALSE;
+    if (\Drupal::config('mcapi.misc')->get('indelible')) {
+      return user_access('manage mcapi');
+    }
     return TRUE;
   }
 

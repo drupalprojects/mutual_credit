@@ -30,13 +30,15 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
         )
       );
     }
-    //the transactionSerialConverter provided the parent and children
-    //now they are all fully loaded, we put the children under the parents
+
+    //into each of the parents, load the children
     foreach ($queried_entities as $xid => $transaction) {
-      if ($parent_xid = $transaction->get('parent')->value) {
-        //the serial numbers of parent and child should be the same, so we needn't check
-        $queried_entities[$parent_xid]->children[$xid] = $transaction;
-        unset($queried_entities[$xid]);
+      $parent_xid = $transaction->get('parent')->value;
+      if (!$parent_xid) {
+        $queried_entities[$xid]->children = entity_load_multiple_by_properties('mcapi_transaction', array('parent' => $xid));
+        foreach ($queried_entities[$parent_xid]->children as $xid => $entity) {
+          unset($queried_entities[$xid]);
+        }
       }
     }
   }
@@ -46,7 +48,12 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
    * Would be very easy to make another storage controller where delete either deletes the entity
    * Or even creates another transaction going in the opposite direction
    */
-  public function delete(array $transactions) {
+  public function delete(array $transactions, $hard = FALSE) {
+    if ($hard) {
+      parent::delete($transactions);
+      //assumes the transactions array is keyed by xid;
+      db_delete('mcapi_transactions_worths')->condition('xid', array_keys($transactions));
+    }
     foreach ($transactions as $transaction) {
       $transaction->set('state', TRANSACTION_STATE_UNDONE);
       try{
@@ -59,16 +66,15 @@ class TransactionStorageController extends FieldableDatabaseStorageController im
     }
     //TODO need to run a hook here
   }
+
+  public function wipeslate() {
+    $this->database->delete('mcapi_transactions_worths')->execute();
+    //and the index table
+    $this->database->delete('mcapi_transactions_index')->execute();
+  }
   /*
    * How to delete the whole entity.
-      $this->database->delete('mcapi_transactions_worths')
-      ->condition('xid', $transaction->id())
-      ->execute();
-      //and the index table
-      $this->database->delete('mcapi_transactions_index')
-      ->condition('xid', $transaction->id())
-      ->execute();
-    }
+
     *
     *How to create another transaction going in the opposite direction
     *This gets messy... and the below is incomplete

@@ -41,7 +41,7 @@ class WalletController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(EntityInterface $mcapi_wallet) {
-    return t("History of wallet '!wallet'", array('!wallet' => String::checkPlain($mcapi_wallet->label())));
+    return String::checkPlain($mcapi_wallet->label()));
   }
 
 }

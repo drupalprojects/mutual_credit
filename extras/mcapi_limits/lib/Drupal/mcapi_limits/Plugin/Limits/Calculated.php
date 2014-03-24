@@ -110,6 +110,7 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    */
   private function parse($string, $values) {
     $tokens = array('@in', '@out', '@num', '@ptn');
+    if (empty($values)) return '';
     $replacements = array(
       $values['gross_in'] ? : 0,
       $values['gross_out'] ? : 0,

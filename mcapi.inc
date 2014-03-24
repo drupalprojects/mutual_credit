@@ -77,7 +77,12 @@ function _mcapi_field_extra_fields() {
     'description' => t('3 pieces of data clumped together'),
     'weight' => 1,
   );
-
+  //wallets
+  $extra['mcapi_wallet']['mcapi_wallet']['display']['owner'] = array(
+    'label' => t('Owner'),
+    'description' => t('Link to the url of the wallets owner entity'),
+    'weight' => 1,
+  );
   $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_balance_bars'] = array(
     'label' => t('Balance bar charts'),
     'description' => t('One barchart per currency showing incoming and outgoing volumes'),
@@ -98,12 +103,6 @@ function _mcapi_field_extra_fields() {
   	'description' => t('Grid showing trading stats for all currencies'),
     'weight' => 4
   );
-  /* we have a page for this - it's not really part of entity_display
-  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_transactions'] = array(
-    'label' => t('Transaction Log'),
-  	'description' => t('A view showing all the transactions')
-  );
-  */
   return $extra;
 }
 
@@ -358,6 +357,7 @@ function template_preprocess_mcapi_transaction(&$vars) {
 	if (!strpos($element['#view_mode'], ' ')) {
 	  $vars['attributes']['class'][] = $element['#view_mode'];
   }
+  $vars['links'] = \Drupal::Entitymanager()->getViewBuilder('mcapi_transaction')->renderlinks($transaction, $element['#view_mode']);
 }
 
 

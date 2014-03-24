@@ -75,15 +75,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
     return $build;
   }
 
-  public function viewMultiple(array $entities = array(), $view_mode = 'certificate', $langcode = NULL) {
-    $build = parent::viewMultiple($entities, $view_mode, $langcode);
-    //add the links to each transaction
-    foreach ($entities as $key => $transaction) {
-      $renderable[$key][] = $this->renderLinks($transaction, $view_mode);
-    }
-    return $build;
-  }
-
   /**
    *
    * @param TransactionInterface $transaction
@@ -94,7 +85,8 @@ class TransactionViewBuilder extends EntityViewBuilder {
    */
   function renderLinks(TransactionInterface $transaction, $view_mode = 'certificate') {
     $renderable = array();
-    if ($transaction->get('serial')->value) {
+    //child transactions and unsaved transactions never show links
+    if (!$transaction->get('parent')->value && $transaction->get('serial')->value) {
       $view_link = $view_mode != 'certificate';
       foreach (show_transaction_operations($view_link) as $op => $plugin) {
         if ($transaction->access($op)) {

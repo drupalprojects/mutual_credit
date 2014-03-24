@@ -5,3 +5,11 @@ mcapi.switch.user:
     _title: 'Switch user'
   requirements:
     _permission: 'access content'
+
+mcapi.generate:
+  path: '/admin/accounting/generate'
+  defaults:
+    _form: 'Drupal\mcapi_tester\Controller\Generate'
+    _title: 'Generate test data'
+  requirements:
+    _permission: 'configure mcapi'

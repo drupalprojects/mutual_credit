@@ -146,6 +146,15 @@ class Wallet extends ContentEntityBase {
     );
   }
 
+  public function save() {
+    //check the name length
+    if (strlen($this->name) > 32) {
+      $this->name = substr($this->name, 0, 32);
+      drupal_set_message(t('Wallet name was truncated to 32 characters: !name', array('!name' => $this->name)), 'warning');
+    }
+    parent::save();
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -216,7 +225,7 @@ class Wallet extends ContentEntityBase {
    * wallet 1 is special and can access all currencies
    */
   function currencies_available() {
-    if ($this->wid == 1) {
+    if ($this->get('wid')->value == 1) {
       return entity_load_multiple('mcapi_currency');
     }
     return exchange_currencies($this->in_exchanges());

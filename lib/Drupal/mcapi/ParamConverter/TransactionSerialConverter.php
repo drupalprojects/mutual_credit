@@ -44,13 +44,10 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
       return $entity;
     }
     else {
-      $entity = $this->entityManager
-        ->getStorageController('mcapi_transaction')
-        ->loadByProperties(array('serial' => $value));
-      if (!empty($entity)) {
-        return reset($entity);
-      }
+      $entities = entity_load_multiple_by_properties('mcapi_transaction', array('serial' => $value, 'parent' => 0));
+      $entity = reset($entities);
     }
+    return $entity;
   }
 
   /**

@@ -15,7 +15,7 @@ interface TransactionStorageControllerInterface extends FieldableEntityStorageCo
   /**
    * {inheritdoc}
    */
-  public function delete(array $transactions);
+  public function delete(array $transactions, $hard = FALSE);
 
   /**
    *  write 2 rows to the transaction index table, one for the payee, one for the payer

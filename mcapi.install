@@ -17,24 +17,6 @@ function mcapi_install() {
   //this helps ensure this module runs before all the stuff that might depend on it
   module_set_weight('mcapi', -1);
   //create default content entities.
-  //2 wallets, one for the system, and one for user 1.
-  entity_create('mcapi_wallet', array(
-    'name' => 'default',
-    'entity_type' => '',
-    'pid' => 0,
-    'viewers' => 'dunno',
-    'payees' => 'dunno',
-    'payers' => 'dunno',
-  ))->save();
-
-  entity_create('mcapi_wallet', array(
-    'name' => 'default',
-    'entity_type' => 'user',
-    'pid' => 1,
-    'viewers' => 'dunno',
-    'payees' => 'dunno',
-    'payers' => 'dunno',
-  ))->save();
 
   //default exchange
   entity_create('mcapi_exchange', array(
@@ -52,6 +34,19 @@ function mcapi_install() {
   $account = user_load(1);
   $account->set('field_exchanges', array(1));
   $account->save();
+  //this will autocreate a wallet for the exchange according to the default settings!
+
+  //Create a wallet for user 1, which was created before this module was installed.
+  $props = array(
+    //'name' => '',
+    'entity_type' => 'user',
+    'pid' => 1,
+    'viewers' => 'dunno',
+    'payees' => 'dunno',
+    'payers' => 'dunno',
+  );
+  entity_create('mcapi_wallet', $props)->save();
+
 }
 
 /**

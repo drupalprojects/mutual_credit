@@ -65,17 +65,10 @@ function mcapi_menu() {
     'route_name' => 'mcapi.admin',
     'position' => 'right',
   );
-  $items['admin/accounting/config'] = array(
-    'title' => 'Other configuration',
-    'description' => 'Miscellaneous settings which effect the system globally.',
-    'route_name' => 'mcapi.admin_misc',
-    'weight' => 20,
-  );
   $items['admin/accounting/wallets'] = array(
     'title' => 'Wallets',
     'description' => 'Ownership, access control and auto-creation.',
     'route_name' => 'mcapi.admin_wallets',
-    'weight' => 10,
   );
   $items['admin/accounting/currencies'] = array(
     'title' => 'Currencies',
@@ -108,6 +101,19 @@ function mcapi_menu() {
     'title' => 'Record transaction',
     'description' => 'Log a transaction in the database',
     'route_name' => 'mcapi.transaction_admin',
+  );
+  //this router path is created by a saved view
+  $items['admin/accounting/leger'] = array(
+    'title' => 'General ledger',
+    'description' => 'All transactions',
+    'route_name' => 'view.mcapi_transactions.page_2',
+    'weight' => 3,
+  );
+  $items['admin/accounting/config'] = array(
+    'title' => 'Other configuration',
+    'description' => 'Miscellaneous settings which effect the system globally.',
+    'route_name' => 'mcapi.admin_misc',
+    'weight' => 20,
   );
 
   return $items;
@@ -393,12 +399,21 @@ function referenced_exchanges($entity = NULL) {
 /**
  * get all the currencies from (common to) the given exchanges, sorted
  * @param array $exchanges
+ * @param boolean $ticks
+ *   whether to count exchanges with no exchange rate
+ * @return array
+ *   the filtered currencies
  */
-function exchange_currencies(array $exchanges) {
+function exchange_currencies(array $exchanges, $ticks = FALSE) {
+  $currencies = array();
   foreach ($exchanges as $exchange) {
     foreach ($exchange->get('field_currencies')->getValue() as $item) {
       $currency = mcapi_currency_load($item['target_id']);
-      if ($currency->status) $currencies[$item['target_id']] = $currency;
+      if ($currency->status) {
+        if (!$ticks || $currency->get('ticks')) {
+          $currencies[$item['target_id']] = $currency;
+        }
+      }
     }
   }
   $info = \Drupal::entityManager()->getDefinition('mcapi_currency');
@@ -754,6 +769,7 @@ function local_wallet_validate_id(&$element, &$form_state) {
   if (!entity_load('mcapi_wallet', $element['#value'])) {
    \Drupal::formBuilder()->setError($element, $form_state, t('Invalid wallet id: @value', array('@value' => $element['#value'])));
   }
+  die('wallet checked');
 }
 /**
  * element_prerender callback for select_wallet
@@ -814,7 +830,7 @@ function mcapi_entity_delete($entity) {
       //change the wallet names and change the parent to this entity's exchange
       $new_name = t(
         "Formerly !name's wallet: !label",
-        array('!name' => $entity->label(), '!label' => $wallet->label())
+        array('!name' => $entity->label(), '!label' => $wallet->label(NULL, FALSE))
       );
       $wallet->set('name', $new_name);
       $wallet->set('entity_type', 'mcapi_exchange');
@@ -925,30 +941,28 @@ function mcapi_default_currency_id($entity, $field_definition, $langcode) {
  */
 function mcapi_entity_insert($entity) {
   $type = $entity->entityType();
-  if (!in_array($type, array('mcapi_wallet', 'user'))) return;
-  $name = '';
-  if ($type == 'user'){
-    if (!\Drupal::config('mcapi.wallets')->get('autoadd')) return;
-  }
-  elseif ($type == 'mcapi_exchange') {
-    //wallet name could be a mcapi.wallets variable...
-    $name = '_intertrading';
-  }
+  if (!\Drupal::config('mcapi.wallets')->get('autoadd')) return;
+  $entity_bundle = $type .':'. $entity->bundle();
+  $max = \Drupal::config('mcapi.wallets')->get('entity_types.'.$entity_bundle);
+  if (!$max) return;
+  //no need to check what the max is, since this is the first wallet created for this entity
   $wallet = array(
-    'name' => $name,
-    'entity_type' => $entity->entityType(),
+    'name' => $type == 'mcapi_exchange' ? '_intertrading' : '',
+    'entity_type' => $type,
     'pid' => $entity->id(),
-    'access_view' => 'dunno',
-    'access_payee' => 'dunno',
-    'access_payer' => 'dunno',
+    'viewers' => 'dunno',
+    'payers' => 'dunno',
+    'payees' => 'dunno',
   );
-  entity_create('mcapi_wallet', $wallet)->save();
+  $wallet = entity_create('mcapi_wallet', $wallet);
+  $wallet->save();
 }
 
-//find out if a user is a member of an 'open' exchange
+//find out if an entity is a member of an open, active exchange
+//used in the 1stparty module only, so far
 function can_intertrade(EntityInterface $entity) {
   foreach (referenced_exchanges($entity) as $exchange) {
-    if ($exchange->get('open')->value) return TRUE;
+    if ($exchange->get('open')->value && $exchange->get('active')->value) return TRUE;
   }
   return FALSE;
 }
@@ -1010,8 +1024,13 @@ function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
 function mcapi_get_links($transaction, $view_link = FALSE) {
   static $transactionViewBuilder;
   if (!$transactionViewBuilder) {
-    $transactionViewBuilder = \Drupal::EntityManager('mcapi_transaction')->getViewBuilder();
+    $transactionViewBuilder = \Drupal::EntityManager()->getViewBuilder('mcapi_transaction');
   }
-  return $this->transactionViewBuilder->renderLinks($transaction, 'sentence');
+  return $transactionViewBuilder->renderLinks($transaction, 'sentence');
+}
 
+function mcapi_wipeslate() {
+  $controller = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+  $entities = $controller->loadMultiple();
+  $controller->delete($entities, TRUE);
 }

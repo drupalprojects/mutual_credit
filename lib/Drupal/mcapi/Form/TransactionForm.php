@@ -120,7 +120,9 @@ class TransactionForm extends ContentEntityFormController {
     else $form_state['mcapi_validated'] = TRUE;
 
     //this might throw errors
-    $messages = $transaction->validate($form_state['values']['intertrade']);
+    //messages may be errors from child transactions
+    $messages = $transaction->validate();
+
     //this is how we show all the messages.
     //setErrorByName can only be set once per form
     foreach ($transaction->exceptions as $e) {

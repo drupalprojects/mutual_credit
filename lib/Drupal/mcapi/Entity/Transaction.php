@@ -78,14 +78,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * @see \Drupal\mcapi\TransactionInterface::validate()
    */
-  public function validate($intertrade = 0) {
+  public function validate() {
     //currently this isn't being used
     \Drupal::moduleHandler()->alter('mcapi_transaction_pre_validate', $this);
     $this->exceptions = array();
     list($payer, $payee) = $this->endpoints();
     //check that the payer and payee are not the same wallet
-    if ($payer->id() ==
-    $payee->id()) {
+    if ($payer->id() == $payee->id()) {
       $this->exceptions[] = new McapiTransactionException(
           '',
           t('A wallet cannot pay itself.')
@@ -133,7 +132,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
     //there might be a use-case when things are done out of order, so this is intended as a temp flag
     $this->validated = TRUE;
-
     //on the parent transaction only, validate it and then pass it round to get child candidates
     if ($this->get('parent')->value == 0) {
 
@@ -146,15 +144,41 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       \Drupal::moduleHandler()->alter('mcapi_transaction_children', $this->children, $clone);
       //how the children have been created but before they are validated, we to the intertrading split
 
-      if ($intertrade) {
-        $this->split();
+      //We determine the exchange by finding one in common and checking it supports the required currency.
+      //<<groan>> there has to be a better way to get the entities out of the entity_reference field
+      $payer_exchanges = referenced_exchanges($this->get('payer')->entity->getOwner());
+      $payee_exchanges = referenced_exchanges($this->get('payee')->entity->getOwner());
+
+      //reformat the worths so we can work with them
+      foreach($this->get('worths')->getValue() as $delta => $worth) {
+        //Should be able to just pull them out of the worths field as this array
+        $worth = current($worth);
+        $transaction_worths[$worth['currcode']] = $worth['value'];
       }
-      else {
-        //determine which exchange to use, based on the payer, the payee and the currency(s).
-        $this->set('exchange', $this->derive_exchange());
+      $allowed_currcodes = exchange_currencies($exchanges);
+      foreach (array_intersect_key($payer_exchanges, $payee_exchanges) as $id => $exchange) {
+        $access = TRUE;
+        $allowed_currencies = exchange_currencies(array($exchange));
+        $leftover = array_diff_key($transaction_worths, $allowed_currencies);
+        if ($leftover) continue; //try another exchange
+        $this->set('exchange', $exchange);
+        break;
+      }
+      //with no exchange/currency combination available, we now try intertrading
+      if (!$this->get('exchange')->value) {
+        if ($child = $this->intertrade_child($payer_exchanges, $payee_exchanges)) {
+          //$this->exchange has now been set
+          $this->children[] = $child;
+        }
+      }
+      $messages = array();
+      //with no exchange/currency combination available, we now try intertrading
+      if (!$this->get('exchange')->value) {
+        $this->set('exchange', reset(referenced_exchanges()));
+        //put this transaction in the current users' first exchange, just to make it valid
+        $this->exceptions[] = new McapiTransactionException ('exchange', t('The payer and payee have no exchanges in common'));
       }
 
-      $messages = array();
       //validate the child candidates
       foreach ($this->children as $child) {
         $child->set('parent', -1);//temp value. prevents recursion here but for some reason isn't there in presave
@@ -172,7 +196,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
           }
           $replacements = array(
             '!messages' => implode(' ', $messages),
-            '!dump' => print_r($this, 1)
+            //'!dump' => print_r($this, TRUE)//TODO for some reason print_r is printing not returning
           );
           if ($child_errors['watchdog']){
           	watchdog(
@@ -186,8 +210,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
             //should this be done using the drupal mail system?
             //my life is too short for that rigmarole
           	mail(
-          	  entity_load('user', 1)->mail,
-          	  t('Child transaction error on !site', array('!site' => me\Drupal::config('system.site')->get('name'))),
+          	  user_load(1)->mail,
+          	  t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
           	  $replacements['!messages'] ."\n\n". $replacements['!dump']
             );
           }
@@ -328,47 +352,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $properties;
   }
 
-  /**
-   * work out an exchange that this transaction can be in, based on the participants and the currency
-   * @return integer
-   *   the exchange entity
-   */
-  private function derive_exchange() {
-    $exchanges = array_intersect_key(
-      referenced_exchanges($this->get('payer')->entity->getOwner()),
-      referenced_exchanges($this->get('payee')->entity->getOwner())
-    );
-
-    if (empty($exchanges)) {
-      //we can't choose a fieldname here because we know the 1stparty module doesn't display payer and payee fields
-      throw new McapiTransactionException (
-        '',
-        t(
-          'Wallets @num1 & @num2 do not have an exchange in common.',
-          array('@num1' => $this->get('payer')->value, '@num2' => $this->get('payee')->value)
-        )
-      );
-    }
-
-    foreach($this->get('worths')->getValue() as $delta => $worth) {
-      //Should be able to just pull them out of the worths field as this array
-      $worth = current($worth);
-      $transaction_worths[$worth['currcode']] = $worth['value'];
-    }
-    $allowed_currcodes = exchange_currencies($exchanges);
-    foreach ($exchanges as $id => $exchange) {
-      $access = TRUE;
-      $allowed_currencies = exchange_currencies(array($exchange));
-      $leftover = array_diff_key($transaction_worths, $allowed_currencies);
-      if ($leftover) continue; //try another exchange
-      return $exchange;//the first exchange which has all the needed currencies available
-    }
-    throw new McapiTransactionException ('', t(
-      "Currency '!name' is not available to both wallets",
-      array('!name' => entity_load('mcapi_currency', key($leftover))->label())
-    ));
-  }
-
   //@todo Gordon I can't believe this is the simplest way
   //to retrieve a value from an entity single reference field.
   //hideous!
@@ -377,30 +360,74 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $payer = $this->get('payer')->getValue(true);
     $payee = $this->get('payee')->getValue(true);
     return array($payer[0]['entity'], $payee[0]['entity']);
-
   }
+
   /*
    * Split one transaction into 2, going between exchanges and currencies
-   * does this belong in this object?
+   * the payer intertrading transaction is the 'main' transaction while
+   * the payee intertrading transaction is the child transaction
+   *
+   * in order to intertrade we need to test that...
+   * each wallet owner is in an open exchange
+   * the currency of the main transaction has a ticks value
+   * which currency to pay the remote user in
+   *
+   * does this function belong in this object?
    */
-  function split() {
-    //for intertrading set the exchange of the main transaction to the payer's (first) exchange
-    //<<groan>> there has to be a better way to get the entities out of the entity_reference field
-    $payer_exchange = current(referenced_exchanges($this->get('payer')->getIterator()->current()->entity->getOwner()));
-    $this->set('exchange', $payer_exchange);
-    //ensure we're not splitting a transaction into 2 which have the same exchange.
-    $payee_exchange = current(referenced_exchanges($this->get('payee')->getIterator()->current()->entity->getOwner()));
-    if ($payer_exchange == $payee_exchange) return;
+  private function intertrade_child($payer_exchanges, $payee_exchanges) {
+    //remove nonopen & nonactive exchanges
+    foreach(array('payer_exchanges', 'payee_exchanges') as $exchanges) {
+      foreach ($$exchanges as $key => $ex) {
+        if ($ex->get('open')->value && $ex->get('active')->value) continue;
+        unset($$exchanges[$key]);
+      }
+      if (empty($$exchanges)) return;
+    }
+
+    if (empty($payer_currs) || empty($payee_currs)) return;
+    $payer_currs = exchange_currencies($payer_exchanges, TRUE);//if this doesn't contain all the currencies of this transaction, something is wrong
+    $payee_currs = exchange_currencies($payee_exchanges, TRUE);
+
+    //which of these valid currencies will the partner receive?
+    $shared_currs = array_intersect_key($payer_currs, $payee_currs);//likely to be backed currencies, available in both exchanges
+
+    $partner_curr = reset(array_diff_key($payee_currs, $payer_currs));
+    //if there is more than one payee_curr, how do we decide what is the intertrading currency?
+    //if more than one exchange is available with the required currencies, how do we decide which?
+    //generally, pick the first using reset()
+    $this->set('exchange', reset($payer_exchanges));
 
     $child = clone($this);
     $child->set('uuid', \Drupal::service('uuid')->generate());
-    $child->set('exchange', $payee_exchange);
+    $child->set('exchange', reset($payee_exchanges));
     //its not obvious how to update an entity_reference field and reload the referenced entity, but this works for now
-    unset($this->payee, $child->payer);
-    $this->payee->setValue($payer_exchange->intertrading_wallet(), TRUE);
-    $child->payer->setValue($payee_exchange->intertrading_wallet(), TRUE);
-    //TODO the exchange rate!!!
+    unset($this->payee);
+    $this->payee->setValue(reset($payer_exchanges)->intertrading_wallet(), TRUE);
+    unset($child->payer);
+    $child->payer->setValue(reset($payee_exchanges)->intertrading_wallet(), TRUE);
+    unset($child->worths);
+    $payee_currency = reset($payee_currs);
+    $payer_currency = reset($payer_currs);
+    foreach ($this->worths as $worth) {
+      $val = current($worth->getValue());
+      if (isset($shared_currs[$val['currcode']])) {
+        //simply copy the worth value
+        $child->worths[] = $worth;
+      }
+      else {//this assumes that only ONE of the source worths will be converted to target currency
+        $new_worth = current($worth->getValue());
+        $child->worths[] = array(
+          $partner_curr->id() => array(
+        	  'currcode' => $partner_curr->id(),
+            'value' => intval($new_worth['value'] * $payer_currency->get('ticks') / $payee_currency->get('ticks'))//don't worry about rounding
+          )
+        );
+      }
+    }
+    return $child;
+  }
 
-    $this->children[] = $child;
+  function worth_convert($worth, $dest_currency) {
+    return $worth;
   }
 }

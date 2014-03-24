@@ -93,9 +93,10 @@ class FirstPartyTransactionForm extends TransactionForm {
   	  );
   	  unset($form['mywallet']);
   	}
-
-  	$form['partner']['#element_validate'] = (array)$form['partner']['#element_validate'];
-  	array_unshift($form['partner']['#element_validate'], array($this, 'firstparty_convert_direction'));
+  	$form['partner']['#element_validate'] = array(
+  	  array($this, 'firstparty_convert_direction'),
+  	  'local_wallet_validate_id'
+  	);
 
   	if ($config->partner['preset']) {
     	$form['partner']['#default_value'] = $config->partner['preset'];
