@@ -210,7 +210,15 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
       if ($entity_type == 'node' && $field_name = variable_get('transaction_description_field')) {
         $defaults[$field_name][LANGUAGE_NONE][0]['value'] = $entity->title;
       }
-    }
+    }/* not tested - infer the node from the node/% url
+    elseif (arg(1) == 'node') {
+       $node = node_load(arg(2));
+       $defaults['payer'] = $GLOBALS['user']->uid;
+       $defaults['payee'] = $node->uid;
+       //$defaults['worth'] = $node->worth['und']); something like that
+      $description = field_get_items('node', $node, 'description');
+      $defaults['description'] = $description[0]->value;
+    }*/
     $transaction = entity_create('transaction', $defaults);
     //now we have to carefully
     if ($settings['perspective'] == 1) {

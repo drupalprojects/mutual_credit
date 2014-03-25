@@ -1108,9 +1108,9 @@ function mcapi_update_7023() {
   }
 }
 /**
- * API change: trigger 'transaction_state' becomes 'transaction_update'
- * Correct and filter operation permissions for each currency
- * rename block settings variables
+ * API change: trigger 'transaction_state' becomes 'transaction_update'.
+ * Correct and filter operation permissions for each currency.
+ * rename block settings variables.
  */
 function mcapi_update_7024() {
   if (db_query("SHOW TABLES LIKE '{trigger_assignments}'")->fetch()) {
@@ -1119,31 +1119,29 @@ function mcapi_update_7024() {
      ->condition('hook', 'transaction_state')
      ->execute();
   }
-  /*
-  $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
-  foreach ($datas as $currcode => $data) {
-    $currency = unserialize($data);
-    unset($currency->access_operations['sign']);
-    foreach ($currency->access_operations as $key => $permissions) {
-      $newkey = 'mcapi_'.$key;
-      $currency->access_operations[$newkey] = array_filter($permissions);
-      unset($currency->access_operations[$key]);
-    }
-    db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
+  db_query("UPDATE {actions} SET type = 'transactions' WHERE type = 'transaction'");
+
+  $actions = db_query("SELECT aid, parameters FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchAllKeyed();
+  foreach ($actions as $aid => $action) {
+    $info = unserialize($action);
+    $info['state'] = TRANSACTION_STATE_FINISHED;
+    db_update('actions')
+      ->condition('aid', $aid)
+      ->fields(array('parameters' => serialize($info)))
+      ->execute();
   }
-  */
   //change the names of the block settings variables - this was a bug
+  if (!module_exists('block')) return;
   $deltas = db_query("SELECT delta FROM {block} WHERE module LIKE 'mcap%'")->fetchcol();
   foreach ($deltas as $delta) {
-    db_query(
-      'UPDATE {variable} SET name = :new where name = :old',
-      array(
-        ':new' => 'mcapiblock_'.$delta,
-        ':old' => 'block_'.$delta
-      )
-    );
+    $oldvar = 'block_'.$delta;
+    $newvar = 'mcapiblock_'.$delta;
+    //if the old exists, set the new to the old
+    if (!is_null($oldval = variable_get($oldvar, NULL)) && is_null($newval = variable_get($newvar, NULL))) {
+      $variable_set($newvar, $oldval);
+    }
+    variable_del($oldvar);
   }
-
   cache_clear_all('currencies', 'cache');
 }
 

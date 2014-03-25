@@ -80,7 +80,7 @@ function mcapi_forms_token_info() {
     ),
     'created' => array(
       'name' => t('Created date'),
-      'description' => t("A popup field for choosing the date"),
+      'description' => t("Changing the date of the transaction from now"),
     ),
   );
 

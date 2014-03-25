@@ -140,7 +140,7 @@ function accountant_ui_mail($key, &$message, $params) {
 }
 
 function mcapi_mass_pay_insert($form_state, $really) {
-  $values = &$form_state['values'];
+  $values = $form_state['values'];
   unset($values['subject'], $values['body']);
 
   $payers = (array)$values['payers'];

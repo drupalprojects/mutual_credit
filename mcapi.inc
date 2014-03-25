@@ -260,11 +260,9 @@ function transaction_operation_form_submit($form, &$form_state) {
 function mcapi_submit_op_form($operation, $transaction, $values = array()) {
   $result = array();
   $old_state = $transaction->state;
-  //if (array_key_exists('submit callback', $operation)) {
-    $function = $operation['submit callback'];
-    //this changes the $transaction
-    $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
-  //}
+  $function = $operation['submit callback'];
+  //this changes the $transaction
+  $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
   //and invoke trigger and rules using the changed transaction
   transaction_update($transaction, $old_state);
   return $result;
@@ -287,30 +285,11 @@ function transaction_op_undo_access($op, $transaction, $currency) {
   return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 function transaction_op_undo_form($op, $transaction) {
-  if (variable_get('mcapi_undo_notification', array())) {
-    return array('notify' => array(
-      '#title' => t('Notify participants'),
-      '#type' => 'checkbox',
-      '#weight' => 3
-    ));
-  }
   return array();
 }
 function transaction_op_undo($operation, $transaction, $values) {
   transaction_undo($transaction->serial);
-  $message = t('The transaction is undone.') .' ';
-  if ($values['notify']) {
-    $params = array('transaction' => $transaction) + variable_get('mcapi_undo_notification', array());
-    if ($params['subject']) {
-      $payer = user_load($transaction->payer);
-      $payee = user_load($transaction->payer);
-      drupal_mail('mcapi', 'undo', $payer->mail, user_preferred_language($payer), $params);
-      drupal_mail('mcapi', 'undo', $payee->mail, user_preferred_language($payee), $params);
-      $message .= t('The participants have been notified');
-    }
-    else $message .= t('Mail template not configured. See !link', array('!link' => l("Misc settings", 'admin/accounting/misc')));
-  }
-  return array('#markup' => $message);
+  return array('#markup' => t('The transaction is undone.') .' ');
 }
 /*
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
@@ -352,9 +331,8 @@ function transaction_access_callback_creator($transaction) {
  * with other transactions and other payees / payers
  */
 function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
-  //pending transaction notifications are handled by the signatures module
-  if ($transaction->state != TRANSACTION_STATE_FINISHED) return;
-  //the actions settings allow to filter by transaction type
+  //the actions settings allow to filter by transaction type and state
+  if ($transaction->state != $settings['state']) return;
   if (empty($settings['transaction_types'][$transaction->type])) return;
 
   $params = $settings + array('transaction' => $transaction);
@@ -652,6 +630,49 @@ function _worths_element_process($element, &$form_state) {
     $element[$delta]['#preset'] = @$element['#preset'];
   }
   return $element;
+}
+
+/*
+ * implements form_type_ELEMENT_NAME_value
+ * default value_callback for worths
+ * this function is included because the worths process callback includes mcapi.inc
+ */
+function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
+  if ($edit == FALSE) return;
+  $value = array();
+
+  foreach ($edit as $delta => $item) {
+    $value[$delta]['currcode'] = $item['currcode'];
+
+    if (!strlen($item['main_quant']) && empty($item['div_quant'])) {
+      $value[$delta]['quantity'] = '';
+    }
+    elseif (is_numeric($item['main_quant']) || empty($item['main_quant'])) {
+      $value[$delta]['quantity'] = floatval($item['main_quant']);
+      if (!empty($item['div_quant'])) {
+        $value[$delta]['quantity'] += ($item['div_quant'] + 0) / 100;
+      }
+    }
+    elseif ($element['#calc']) {
+      $value[$delta]['quantity'] = $item['main_quant'];
+    }
+
+    //set the value to zero if the field is empty and the currency allows it
+    $currency = currency_load($item['currcode']);
+    //we can remove the @ when everybody has upgraded to RC6
+    if (empty($value[$delta]['quantity']) && @$currency->display['zero']) {
+      $value[$delta]['quantity'] = '0';
+    }
+    elseif(empty($value[$delta]['quantity']) && empty($element['#preset'])) {
+      unset($value[$delta]);
+    }
+  }
+  //renumber the items or field_API will break!
+  $value = array_values($value);
+  //we have to set the form_state[values] here because they have probably already been set by the parent element
+  //they are only set automatically if they haven't been set at all
+  //drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], @$value);
+  return $value;
 }
 
 

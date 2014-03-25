@@ -758,6 +758,14 @@ function mcapi_currency_form_submit($form, &$form_state) {
   cache_clear_all('currencies', 'cache');
 }
 
+function _mcapi_trigger_info() {
+  $triggers['mcapi']['transaction_cluster_alter']['label'] = t('Create dependent transactions before inserting.');
+  $triggers['mcapi']['transaction_undo']['label'] = t('Respond to transaction deletion.');
+  $triggers['mcapi']['transaction_update']['label'] = t('Respond to transaction changing.');
+  $triggers['mcapi']['transaction_post_insert']['label'] = t('Respond to a new transaction.');
+  return $triggers;
+}
+
 function _mcapi_action_info() {
   return array(
     'mcapi_dependent_transaction_action' => array(
@@ -768,10 +776,10 @@ function _mcapi_action_info() {
     ),
     'mcapi_transaction_mail_action' => array(
       'type' => 'transactions',
-      'label' => t('Completed transaction notification'),
-      'description' => t('Mail sent to the participants when the transaction completes'),
+      'label' => t('Mail all transaction participants.'),
+      'description' => t('Mail the payer and payee, but not the current user.'),
       'configurable' => TRUE,
-      'triggers' => array('transaction_state'),
+      'triggers' => array('transaction_post_insert', 'transaction_update', 'transaction_undo'),
     ),
     'mcapi_transaction_entity_uid' => array(
       'type' => 'transactions',
@@ -833,6 +841,13 @@ function mcapi_transaction_mail_action_form($context = array()) {
   $form['transaction_types'] = _transaction_type_selector($def_types, TRUE, array('mass', 'child'));
   $form['transaction_types']['#description'] = t('Only send for these transaction types.');
   unset($form['transaction_types']['#options']['auto'], $form['transaction_types']['#options']['undo']);
+  $form['state'] = array(
+    '#title' => t('State'),
+    '#description' => t('If the transaction is in this state'),
+    '#type' => 'radios',
+    '#options' => mcapi_get_states(),
+    '#default_value' => $context['state']
+  );
   return $form;
 }
 
@@ -1162,7 +1177,7 @@ function mcapi_transaction_operations() {
       'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
     'access callback' => 'transaction_op_undo_access',
     'submit callback' => 'transaction_op_undo',
-    'form callback' => 'transaction_op_undo_form',
+    //'form callback' => 'transaction_op_undo_form',
     'redirect' => 'user',
     'weight' => 10,
   );

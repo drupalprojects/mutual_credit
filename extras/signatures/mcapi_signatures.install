@@ -96,7 +96,7 @@ function mcapi_signatures_update_dependencies() {
  * update the signatures table
  */
 function mcapi_signatures_update_7000() {
-  if (db_query("SHOW TABLES LIKE '%mc_unsigned'")->fetch()) {
+  if (db_query("SHOW TABLES LIKE '{mc_unsigned}'")->fetch()) {
     db_rename_table('mc_unsigned', 'mcapi_signatures');
   }
   $tables = mcapi_signatures_schema();
@@ -111,24 +111,25 @@ function mcapi_signatures_update_7000() {
 function mcapi_signatures_update_7001() {
   $pending = db_query("SELECT xid, payer, payee, s.uid, s.serial
     FROM {mcapi_signatures} s
-    LEFT JOIN {mcapi_transactions} t
+    JOIN {mcapi_transactions} t
     ON t.xid = s.serial
     WHERE t.state = :state
     ORDER BY s.serial DESC", array(':state' => TRANSACTION_STATE_PENDING))->fetchAll();
+  db_truncate('mcapi_signatures')->execute();
 
   foreach ($pending as $transaction) {
-    //change the serial number, coz it used to be the xid, converted from the nid in the existing row
-    db_update('mcapi_signatures')
-      ->fields(array('serial' => $transaction-serial, 'pending' => 1))
-      ->condition('serial', $transaction->xid)
-      ->execute();
+    $values = array(
+      'serial' => $transaction->serial,
+      'uid' => $transaction->payer == $transaction->uid ? $transaction->payer : $transaction->payee,
+      'pending' => 1
+    );
+    db_insert('mcapi_signatures')->fields($values)->execute();
     //make a new row for the user who already signed, to be consistent with future data
     $values = array(
       'serial' => $transaction->serial,
       'uid' => $transaction->payer == $transaction->uid ? $transaction->payee : $transaction->payer,
       'pending' => 0
     );
-    drupal_set_message(print_r($values, 1));
     db_insert('mcapi_signatures')->fields($values)->execute();
   }
   signature_integrity_check();
@@ -144,16 +145,6 @@ function mcapi_signatures_update_7005() {
     ->execute();
   db_query("UPDATE {block} SET delta = 'sig_blocks-my_sig_needed' WHERE delta = 'signature_blocks-block_1'");
   db_query("UPDATE {block} SET delta = 'sig_blocks-anybodys_sig_needed' WHERE delta = 'signature_blocks-block_2'");
-
-  module_load_install('mcapi');
-  variable_set('mcapi_sign_notify_template', array(
-    'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_subject')),
-    'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_notification_body')),
-  ));
-  variable_set('mcapi_signed_off_notify_template', array(
-    'subject' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_subject')),
-    'body' => mcapi_update_7000_tokens(variable_get('mc_signatures_signoff_body')),
-  ));
 
   variable_del('mcapi_sign_notify_template');
   variable_del('mcapi_signed_off_notify_template');

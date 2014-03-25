@@ -373,7 +373,7 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
  * delete all pending transactions and remove all signatures
  */
 function mcapi_signatures_user_delete($account) {
-  $serials = array_unique(mcapi_filter(array('state' => TRANSACTION_STATE_PENDING)));
+  $serials = array_unique(transaction_filter(array('state' => TRANSACTION_STATE_PENDING)));
   foreach ($serials as $serial) {
     transaction_undo($serial, MCAPI_CURRENCY_UNDO_DELETE);
   }

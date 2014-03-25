@@ -114,10 +114,18 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
     }
     if (strpos($settings['experience']['template'], 'created]')) {
-      $form['created'] = array(
-        '#type' => 'date',
-        '#element_validate' => array('mcapi_date_validate')
-      );
+      if (module_exists('date_popup')) {
+        $form['created'] = array(
+          '#type' => 'date_popup',
+          '#date_type' => DATE_UNIX
+        );
+      }
+      else {
+        $form['created'] = array(
+          '#type' => 'date',
+          '#element_validate' => array('mcapi_date_validate')
+        );
+      }
     }
     if ($form['#settings']['experience']['sure_title']) {
       $form['buttons']['submit']['#value'] = t('Preview');
@@ -167,6 +175,9 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     }
     else {
       $form['buttons']['submit']['#value'] = $settings['submission']['button'];
+    }
+    if (form_get_errors()) {
+      unset($form['buttons']['submit']);
     }
   }
   //if we just put the strip at the top level of each element,

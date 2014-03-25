@@ -821,6 +821,7 @@ function mcapi_transaction_access_callbacks() {
 
 /**
  * implements hook_mail().
+ * builds the mail for the action.
  */
 function mcapi_mail($key, &$message, $params) {
   if ($key == 'transaction_mail_action') {
@@ -829,12 +830,6 @@ function mcapi_mail($key, &$message, $params) {
     $options = array('language' => $message['language'], 'sanitize' => FALSE);
     $message['subject'] =  token_replace($params['subject'], $params, $options);
     $message['body'][] =  token_replace($params['body'], $params, $options);
-  }
-  elseif ($key == 'undo') {
-    $options = array('language' => $message['language'], 'sanitize' => FALSE);
-    $conf = variable_get('mcapi_undo_notification', array());
-    $message['subject'] =  token_replace($conf['subject'], $params, $options);
-    $message['body'][] =  token_replace($conf['body'], $params, $options);
   }
 }
 
@@ -1049,11 +1044,8 @@ function transaction_operations($localize = '1', $all = '0') {
  * we need a trigger for each transaction_operation
  */
 function mcapi_trigger_info() {
-  $triggers['mcapi']['transaction_cluster_alter']['label'] = t('Create dependent transactions before inserting.');
-  $triggers['mcapi']['transaction_undo']['label'] = t('Respond to transaction deletion.');
-  $triggers['mcapi']['transaction_update']['label'] = t('Respond to transaction changing.');
-  $triggers['mcapi']['transaction_post_insert']['label'] = t('Respond to a new transaction.');
-  return $triggers;
+  module_load_include('admin.inc', 'mcapi');
+  return _mcapi_trigger_info();
 }
 
 /*
@@ -1076,6 +1068,7 @@ function trigger_transaction_cluster_alter(&$cluster) {
 
 /*
  * pull trigger transaction_update().
+ * will only fire if the trigger module is enabled
  * if the $old_state is set, that indicates this was a workflow operation
  */
 function trigger_transaction_update($transaction, $old_state = NULL) {
@@ -1086,6 +1079,7 @@ function trigger_transaction_update($transaction, $old_state = NULL) {
 
 /*
  * pull trigger transaction_undo().
+ * will only fire if the trigger module is enabled
  * if the $old_state is set, that indicates this was a workflow operation
  */
 function trigger_transaction_undo($serial) {
@@ -1096,6 +1090,7 @@ function trigger_transaction_undo($serial) {
 
 /*
  * pull trigger transaction_post_insert().
+ * will only fire if the trigger module is enabled
  */
 function trigger_transaction_post_insert($serial) {
   foreach (trigger_get_assigned_actions('transaction_post_insert') as $aid => $info) {
@@ -1239,48 +1234,6 @@ function worth_element_process($element, &$form_state) {
 function worths_element_process($element, &$form_state) {
   form_load_include($form_state, 'inc', 'mcapi');
   return _worths_element_process($element, $form_state);
-}
-
-/*
- * implements form_type_ELEMENT_NAME_value
- * default value_callback for worths
- */
-function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
-  if ($edit == FALSE) return;
-  $value = array();
-
-  foreach ($edit as $delta => $item) {
-    $value[$delta]['currcode'] = $item['currcode'];
-
-    if (!strlen($item['main_quant']) && empty($item['div_quant'])) {
-      $value[$delta]['quantity'] = '';
-    }
-    elseif (is_numeric($item['main_quant']) || empty($item['main_quant'])) {
-      $value[$delta]['quantity'] = floatval($item['main_quant']);
-      if (!empty($item['div_quant'])) {
-        $value[$delta]['quantity'] += ($item['div_quant'] + 0) / 100;
-      }
-    }
-    elseif ($element['#calc']) {
-      $value[$delta]['quantity'] = $item['main_quant'];
-    }
-
-    //set the value to zero if the field is empty and the currency allows it
-    $currency = currency_load($item['currcode']);
-    //we can remove the @ when everybody has upgraded to RC6
-    if (empty($value[$delta]['quantity']) && @$currency->display['zero']) {
-      $value[$delta]['quantity'] = '0';
-    }
-    elseif(empty($value[$delta]['quantity']) && empty($element['#preset'])) {
-      unset($value[$delta]);
-    }
-  }
-  //renumber the items or field_API will break!
-  $value = array_values($value);
-  //we have to set the form_state[values] here because they have probably already been set by the parent element
-  //they are only set automatically if they haven't been set at all
-  //drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], @$value);
-  return $value;
 }
 
 

@@ -42,7 +42,7 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
       'title' => t('Payer'),
       'help' => t('The user who gave currency in the transaction.'),
       'field' => array(
-        'handler' => 'views_handler_field',
+        'handler' => 'views_handler_field_user_name',
       ),
       'filter' => array(
         'handler' => 'views_handler_filter_numeric',
@@ -61,7 +61,7 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
       'title' => t('Payee'),
       'help' => t('The user who gave currency in the transaction.'),
       'field' => array(
-        'handler' => 'views_handler_field',
+        'handler' => 'views_handler_field_user_name',
       ),
       'filter' => array(
         'handler' => 'views_handler_filter_numeric',

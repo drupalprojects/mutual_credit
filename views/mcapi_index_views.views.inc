@@ -43,7 +43,7 @@ function mcapi_index_views_views_data() {
     'title' => t('1st user'), // The item it appears as on the UI,
     'help' => t('The transactor, whose perspective we are looking from'),
     'field' => array(
-      'handler' => 'views_handler_field',
+      'handler' => 'views_handler_field_user_name',
     ),
     'filter' => array(
       'handler' => 'views_handler_filter_numeric'
@@ -63,7 +63,7 @@ function mcapi_index_views_views_data() {
     'title' => t('2nd user'),
     'help' => t("The transactee"),
     'field' => array(
-      'handler' => 'views_handler_field',
+      'handler' => 'views_handler_field_user_name',
     ),
     //can't 'think of a use case for a filter here
     'argument' => array(
@@ -175,22 +175,21 @@ function mcapi_index_views_views_data() {
   );
   currencies_load();//because mcapi_init hasn't run yet
   $currencies = currencies_load();
-  if (count($currencies) > 1) {
-    $data['mcapi_index']['currcode'] = array(
-      'title' => t('Currency'),
-      'help' => t("The currency ID"),
-      'field' => array(
-        'handler' => 'views_handler_field_mcapi_index_currcode',
-        'click sortable' => TRUE,
-      ),
-      'filter' => array(
-         'handler' => 'views_handler_filter_mcapi_currency'
-      ),
-      'argument' => array(
-        'handler' => 'views_handler_argument',
-      ),
-    );
-  }
+  $data['mcapi_index']['currcode'] = array(
+    'title' => t('Currency'),
+    'help' => t("The currency ID"),
+    'field' => array(
+      'handler' => 'views_handler_field_mcapi_index_currcode',
+      'click sortable' => TRUE,
+    ),
+    'filter' => array(
+       'handler' => 'views_handler_filter_mcapi_currency'
+    ),
+    'argument' => array(
+      'handler' => 'views_handler_argument',
+    ),
+  );
+  
   $data['mcapi_index']['operations'] = array(
     'title' => t('Operations'),
     'help' => t("What the user can do to the transaction"),

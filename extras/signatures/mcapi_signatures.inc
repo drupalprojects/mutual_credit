@@ -95,8 +95,9 @@ function transaction_op_undo_pending_access($op, $transaction, $currency) {
 
 function mcapi_signall($form, $form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
-  $transactions = entity_load('transaction', transaction_filter(array('serial' => $serials)));
-  $form['preview'] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()));
+  $transactions = entity_load('transaction', array_keys(transaction_filter(array('serial' => $serials))));
+  $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()));
+  $form['preview'] = transaction_view($transactions, $sentence);
   $form['uid'] = array(
     '#type' => 'hidden',
     '#value' => $account->uid
@@ -143,8 +144,7 @@ function list_pending_for_uid($uid, $currcodes = array()) {
   if (count($waiting_on) ||count($waiting_not_on)) {
     return array(
       '#prefix' => '<div class = "user-pending">',
-      'waiting on' => $waiting_on,
-      'waiting_not_on' => $waiting_not_on,
+      'pending' => $waiting_on + $waiting_not_on,
       '#suffix' => '</div>'
     );
   }
@@ -184,6 +184,7 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
   $serials = transaction_filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
   $transactions = transaction_load(array_unique($serials));
   foreach ($transactions as $serial => $transaction) {
+    if (!transaction_operation_access('view', $transaction)) continue;
     $signatures = $transaction->pending_signatures;
     unset($signatures[$uid]);
     $waiting_on = array_filter($signatures);
@@ -376,7 +377,7 @@ function signature_send_initial_notification($transaction, $config) {
   if (empty($config['notify'])) return;
   $params = array(
     'transaction' => $transaction,
-    'mail_template' => variable_get('mcapi_sign_notify_template', array()),
+    'mail_template' => variable_get('mcapi_sign_notify_template', array('subject' => '', 'body' => '')),
   );
   $recipients = array_keys(array_filter($transaction->pending_signatures));
   //send the mail, using the module settings for this transaction
