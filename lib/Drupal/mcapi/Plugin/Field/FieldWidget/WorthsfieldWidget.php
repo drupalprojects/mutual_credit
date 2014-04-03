@@ -38,8 +38,8 @@ class WorthsfieldWidget extends WidgetBase {
   public function settingsSummary() {
     $summary = array();
 
-    $summary[] = t('Textfield size: !size', array('!size' => $this->getSetting('size')));
-    $placeholder = $this->getSetting('placeholder');
+    $summary[] = t('Textfield size: !size', array('!size' => $this->getFieldSetting('size')));
+    $placeholder = $this->getFieldSetting('placeholder');
     if (!empty($placeholder)) {
       $summary[] = t('Placeholder: @placeholder', array('@placeholder' => $placeholder));
     }

@@ -43,12 +43,42 @@ class AccountingMiscForm extends ConfigFormBase {
       '#weight' => 2
     );
 
+    $form['editable'] = array(
+      '#title' => t('Allow transaction records to be edited'),
+      '#description' => t("This will create a new permission, and allow new 'edit' operation"),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('editable'),
+      '#weight' => 3
+    );
+    $form['editable_fields'] = array(
+      '#title' => t('Editable fields'),
+      '#description' => '',
+      '#type' => 'fieldset',
+      '#weight' => 4,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="editable"]' => array('checked' => TRUE)
+        )
+      ),
+      'fields' => array(
+        //'#title' => t('Fields'),
+        '#type' => 'checkboxes',
+        '#options' => array(
+          'participants' => t('Participants'),
+          'description' => t('Description'),
+          'worth' => t('Worth'),
+          'type' => t('Type'),
+          'fieldapi' => t('Field API fields'),
+        ),
+        '#default_value' => $config->get('fields'),
+      )
+    );
     $form['mix_mode'] = array(
       '#title' => t('Restrict transactions to one currency'),
       '#description' => t('Applies only when more than one currency is available'),
       '#type' => 'checkbox',
       '#default_value' => !$config->get('mix_mode'),
-      '#weight' => 4
+      '#weight' => 5
     );
     $form['indelible'] = array(
       '#title' => t('Indelible accounting'),
@@ -128,6 +158,8 @@ class AccountingMiscForm extends ConfigFormBase {
       ->set('sentence_template', $form_state['values']['sentence_template'])
       //careful the mix_mode flag is inverted!!
       ->set('mix_mode', !$form_state['values']['mix_mode'])
+      ->set('editable', $form_state['values']['editable'])
+      ->set('fields', $form_state['values']['fields'])
       ->set('exchange_menu', !$form_state['values']['exchange_menu'])
       ->set('ticks_name', $form_state['values']['ticks_name'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])

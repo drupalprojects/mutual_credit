@@ -118,7 +118,7 @@ class Wallet extends ContentEntityBase {
    * @param EntityStorageControllerInterface $storage_controller
    * @param array $entities
    */
-  public static function postLoad(EntityStorageControllerInterface $storage_controller, array &$entities) {
+  public static function postLoad(EntityStorageControllerInterface $storage_controller, array $entities) {
     $transaction_storage = \Drupal::EntityManager()->getStorageController('mcapi_transaction');
     foreach ($entities as $wallet) {
       $parent_type = $wallet->get('entity_type')->value;
@@ -148,7 +148,7 @@ class Wallet extends ContentEntityBase {
 
   public function save() {
     //check the name length
-    if (strlen($this->name) > 32) {
+    if (property_exists($this, 'name') && strlen($this->name) > 32) {
       $this->name = substr($this->name, 0, 32);
       drupal_set_message(t('Wallet name was truncated to 32 characters: !name', array('!name' => $this->name)), 'warning');
     }
@@ -159,28 +159,52 @@ class Wallet extends ContentEntityBase {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions($entity_type) {
-    $properties['wid'] = FieldDefinition::create('integer')
-      ->setLabel('Wallet ID')
-      ->setDescription('the unique wallet ID')
-      ->setRequired(TRUE)
-      ->setReadOnly(TRUE);
-    $properties['uuid'] = FieldDefinition::create('uuid')
-      ->setLabel('UUID')
-      ->setDescription('The wallet UUID.')
-      ->setRequired(TRUE)
-      ->setReadOnly(TRUE);
-    $properties['entity_type'] = FieldDefinition::create('string')
-      ->setLabel('Parent entity type')
-      ->setDescription("The parent entity's type")
-      ->setRequired(TRUE);
+    $properties['wid'] = array(
+      'type' => 'integer_field',
+      'label' => t('Wallet ID'),
+      'description' => t('The unique wallet ID'),
+      'readonly' => TRUE,
+      'required' => TRUE
+    );
+    $properties['uuid'] = array(
+      'label' => t('UUID'),
+      'description' => t('The wallet UUID.'),
+      'type' => 'uuid_field',
+      'read-only' => TRUE,
+      'required' => TRUE
+    );
+
     //as I understand, we can only use the entity reference field for a known entity type.
-    $properties['pid'] = FieldDefinition::create('integer')
-      ->setLabel('Parent entity ID')
-      ->setRequired(TRUE);
-    $properties['name'] = FieldDefinition::create('string')
-      ->setLabel('Name')
-      ->setDescription("The owner's name for this wallet")
-      ->setRequired(TRUE);
+    //so we have to use 2 fields here to refer to the owner entity
+    $properties['entity_type'] = array(
+      'label' => t('Owner entity type'),
+      //'description' => t("The owner entity's type"),
+      'type' => 'string_field',
+      'settings' => array(
+        'default_value' => 'restricted',
+      ),
+      'property_constraints' => array(
+        'value' => array('Length' => array('max' => 16)),
+      ),
+      'required' => TRUE,
+    );
+    $properties['pid'] = array(
+      'type' => 'integer_field',
+      'label' => t('Owner entity ID'),
+      //'description' => t('The unique exchange ID'),
+      'required' => TRUE
+    );
+    $properties['name'] = array(
+      'label' => t('Name'),
+      'description' => t("The owner's name for this wallet"),
+      'type' => 'string_field',
+      'required' => TRUE,
+      'property_constraints' => array(
+        'value' => array('Length' => array('max' => 32)),//TODO set the form input to max 32
+      ),
+      'translatable' => FALSE,
+    );
+    /*
     $properties['viewers'] = FieldDefinition::create('string')
       ->setLabel('Access controller')
       ->setDescription("The class which controls view access to this wallet")
@@ -193,7 +217,7 @@ class Wallet extends ContentEntityBase {
       ->setLabel('Access controller')
       ->setDescription("The class which controls payee access to this wallet")
       ->setRequired(TRUE);
-
+*/
     //+ a field to store the access control settings may be needed.
     return $properties;
   }

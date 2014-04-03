@@ -10,7 +10,7 @@ use Drupal\mcapi\TransactionInterface;
  */
 function _workflow_help() {
   //TODO lay this page out more attractively
-  //TODO include operations
+  //TODO move this from help to the top of the page
   $renderable['states'] = array(
     '#theme' => 'table',
     '#attributes' => array('class' => array('help')),
@@ -576,8 +576,8 @@ function get_exchange_entity_fieldnames($type = '') {
     if (in_array('entity_type', array('mcapi_exchange', 'mcapi_transaction', 'mcapi_wallet'))) continue;
     foreach ($data1 as $bundle => $fields) {
       foreach ($fields as $fieldname => $fieldInfo) {
-        if ($fieldInfo->getType() == 'entity_reference') {
-          if ($fieldInfo->getSetting('target_type') == 'mcapi_exchange') {
+        if ($fieldInfo->getFieldType() == 'entity_reference') {
+          if ($fieldInfo->getFieldSetting('target_type') == 'mcapi_exchange') {
             $types[$entity_type] = $fieldname;
             continue 3;
           }

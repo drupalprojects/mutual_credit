@@ -40,8 +40,9 @@ class WalletForm extends EntityFormController {
       '#type' => 'textfield',
       '#title' => t('Name or purpose of wallet'),
       '#default_value' => $wallet->name->value,
-      '#placeholder' => t('Auto-name'),
-      '#required' => FALSE
+      '#placeholder' => t('My excellent wallet'),
+      '#required' => FALSE,
+      '#max_length' => 32//TODO check this is the right syntax
     );
     $form['entity_type'] = array(
     	'#type' => 'value',

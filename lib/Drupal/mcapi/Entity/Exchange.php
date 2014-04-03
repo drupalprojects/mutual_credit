@@ -97,41 +97,68 @@ class Exchange extends ContentEntityBase {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions($entity_type) {
-
-    $properties['id'] = FieldDefinition::create('integer')
-      ->setLabel('Exchange ID')
-      ->setDescription('the unique exchange ID')
-      ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
-    $properties['uuid'] = FieldDefinition::create('uuid')
-      ->setLabel('UUID')
-      ->setDescription('The transaction UUID.')
-      ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
-    $properties['name'] = FieldDefinition::create('string')
-      ->setLabel('Full name')
-      ->setDescription('The full name of the exchange')
-      ->setPropertyConstraints('value', array('Length' => array('max' => 64)))
-      ->setRequired(TRUE);
-    $properties['uid'] = FieldDefinition::create('entity_reference')
-      ->setLabel('Manager of the exchange')
-      ->setDescription('The one user responsible for administration')
-      ->setSettings(array('target_type' => 'user'))
-      ->setRequired(TRUE);
-    $properties['active'] = FieldDefinition::create('boolean')
-      ->setLabel('Active')
-      ->setDescription('TRUE if the exchange is current and working')
-      ->setSetting('default_value', TRUE);
-    $properties['visibility'] = FieldDefinition::create('string')
-      ->setLabel('Visibility')
-      ->setDescription('Visibility of impersonal data in the exchange')
-      ->setSetting('default_value', 'restricted');
-    $properties['open'] = FieldDefinition::create('boolean')
-      ->setLabel('Open')
-      ->setDescription('Open to trade with other exchanges')
-      ->setSetting('default_value', 1);
-    //plus don't forget there is an entityreference field api field and instance called exchange_currencies
-
+    $properties['id'] = array(
+      'type' => 'integer_field',
+    	'label' => t('Exchange ID'),
+      'description' => t('The unique exchange ID'),
+      'readonly' => TRUE,
+      'required' => TRUE
+    );
+    $properties['uuid'] = array(
+      'label' => t('UUID'),
+      'description' => t('The exchange UUID.'),
+      'type' => 'uuid_field',
+      'read-only' => TRUE,
+      'required' => TRUE
+    );
+    $properties['name'] = array(
+      'label' => t('Full name'),
+      'description' => t('The full name of the exchange.'),
+      'type' => 'string_field',
+      'required' => TRUE,
+      'property_constraints' => array(
+        'value' => array('Length' => array('max' => 64)),
+      ),
+      'translatable' => FALSE,
+    );
+    $properties['uid'] = array(
+      'label' => t('Manager of the exchange'),
+      //'description' => t('The one user responsible for administration'),
+      'type' => 'entity_reference_field',
+      'settings' => array(
+        'target_type' => 'user',
+        'default_value' => 0,
+      ),
+      'required' => TRUE,
+    );
+    $properties['active'] = array(
+      'label' => t('Active'),
+      'description' => t('TRUE if the exchange is current and working.'),
+      'type' => 'boolean_field',
+      'settings' => array(
+        'default_value' => TRUE,
+      ),
+    );
+    $properties['open'] = array(
+      'label' => t('Open'),
+      'description' => t('TRUE if the exchange can trade with other exchanges'),
+      'type' => 'boolean_field',
+      'settings' => array(
+        'default_value' => TRUE,
+      ),
+    );
+    $properties['visibility'] = array(
+      'label' => t('Visibility'),
+      'description' => t('Visibility of impersonal data in the exchange'),
+      'type' => 'string_field',
+      'settings' => array(
+        'default_value' => 'restricted',
+      ),
+      'property_constraints' => array(
+        'value' => array('Length' => array('max' => 16)),
+      ),
+      'required' => TRUE,
+    );
     return $properties;
   }
   /**

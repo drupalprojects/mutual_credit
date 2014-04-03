@@ -32,8 +32,15 @@ function mcapi_install() {
   ))->save();
   //put user 1 in the default exchange
   $account = user_load(1);
-  $account->set('field_exchanges', array(1));
-  $account->save();
+  if (property_exists($account, 'field_exchanges')) {
+    //does this even work with fieldAPI fields?
+    $account->set('field_exchanges', array(1));
+    $account->save();
+  }
+  else {
+    echo  "wasn't able to put user 1 in exchange 1";
+    print_r($account);
+  }
   //this will autocreate a wallet for the exchange according to the default settings!
 
   //Create a wallet for user 1, which was created before this module was installed.

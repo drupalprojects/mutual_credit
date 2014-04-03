@@ -24,7 +24,7 @@ abstract class CurrencySingleWidgetBase extends WidgetBase {
     $element['placeholder'] = array(
       '#type' => 'textfield',
       '#title' => t('Placeholder'),
-      '#default_value' => $this->getSetting('placeholder'),
+      '#default_value' => $this->getFieldSetting('placeholder'),
       '#description' => t('Text that will be shown inside the field until a value is entered. This hint is usually a sample value or a brief description of the expected format.'),
     );
     return $element;
@@ -36,7 +36,7 @@ abstract class CurrencySingleWidgetBase extends WidgetBase {
   public function settingsSummary() {
     $summary = array();
 
-    $placeholder = $this->getSetting('placeholder');
+    $placeholder = $this->getFieldSetting('placeholder');
     if (!empty($placeholder)) {
       $summary[] = t('Placeholder: @placeholder', array('@placeholder' => $placeholder));
     }
@@ -54,7 +54,7 @@ abstract class CurrencySingleWidgetBase extends WidgetBase {
     $element += array(
       '#title' => $this->t('Value'),
       '#default_value' => $this->renderValue($items[$delta]->value),
-      '#placeholder' => $this->getSetting('placeholder'),
+      '#placeholder' => $this->getFieldSetting('placeholder'),
     );
     //@todo Gordon should this element check the resulting numeric value > 0?
     return $element;

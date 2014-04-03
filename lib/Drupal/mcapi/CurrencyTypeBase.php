@@ -42,7 +42,7 @@ abstract class CurrencyTypeBase extends PluginBase implements CurrencyTypeInterf
   }
 
   /**
-   * Implements Drupal\field\Plugin\PluginSettingsInterface::getSettings().
+   * Implements Drupal\field\PluginSettingsInterface::getSettings().
    */
   public function getSettings() {
     // Merge defaults before returning the array.
@@ -53,7 +53,7 @@ abstract class CurrencyTypeBase extends PluginBase implements CurrencyTypeInterf
   }
 
   /**
-   * Implements Drupal\field\Plugin\PluginSettingsInterface::getSetting().
+   * Implements Drupal\field\PluginSettingsInterface::getSetting().
    */
   public function getSetting($key) {
     // Merge defaults if we have no value for the key.
@@ -72,7 +72,7 @@ abstract class CurrencyTypeBase extends PluginBase implements CurrencyTypeInterf
   }
 
   /**
-   * Implements Drupal\field\Plugin\PluginSettingsInterface::getDefaultSettings().
+   * Implements Drupal\field\PluginSettingsInterface::getDefaultSettings().
    */
   public function getDefaultSettings() {
     $definition = $this->getPluginDefinition();

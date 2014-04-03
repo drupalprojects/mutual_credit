@@ -5,6 +5,28 @@ mcapi.misc:
     sentence_template:
       type: text
       label: Transaction sentence template
+    editable:
+      type: boolean
+      label: Allow transaction records to be edited
+    fields:
+      type: mapping
+      label: Fields
+      mapping:
+        participants: 
+          type: boolean
+          label: Participants
+        description: 
+          type: boolean
+          label: Description
+        worth: 
+          type: boolean
+          label: Worth
+        type: 
+          type: boolean
+          label: Type
+        fieldapi: 
+          type: boolean
+          label: Field API
     mix_mode:
       type: boolean
       label: Allow more than one currency in transactions

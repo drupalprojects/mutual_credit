@@ -78,11 +78,10 @@ class WalletAutocompleteController {
         }
       }
       //we know that user is is one of the entities in this query
-      $query->condition('user.status', 1)
-      ->condition($namelike);
+      $query->condition('user.status', 1)->condition($namelike);
+
       $wids = $query->range(0, 10)->execute()->fetchcol();
     }
-
     foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
       $json[] = array(
         'value' => _mcapi_wallet_autocomplete_value($wallet),

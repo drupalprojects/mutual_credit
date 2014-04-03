@@ -48,7 +48,7 @@ class CurrencyTimeSelectWidget extends WidgetBase {
     $element['interval'] = array(
       '#type' => 'select',
       '#title' => $this->t('Time interval'),
-      '#default_value' => $this->getSetting('interval'),
+      '#default_value' => $this->getFieldSetting('interval'),
       '#options' => $options,
       '#required' => TRUE,
       '#description' => $this->t('Number of minutes per time interval. Time interval must be divisible by 60 minutes.')
@@ -63,7 +63,7 @@ class CurrencyTimeSelectWidget extends WidgetBase {
   public function settingsSummary() {
     $summary = parent::settingsSummary();
 
-    $summary[] = t('Interval: !interval minutes', array('!interval' => $this->getSetting('interval')));
+    $summary[] = t('Interval: !interval minutes', array('!interval' => $this->getFieldSetting('interval')));
 
     return $summary;
   }

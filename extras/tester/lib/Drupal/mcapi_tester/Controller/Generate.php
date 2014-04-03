@@ -183,7 +183,6 @@ class Generate extends ConfigFormBase {
         'created' => REQUEST_TIME - rand(1, 25*3600*100)
         //'exchange' => $exchange->id(),determined during validation
       );
-//      print_r($t);
       $transaction = entity_create('mcapi_transaction', $t);
       $transaction->validate();
       $transaction->save();

@@ -1,5 +1,9 @@
 sentence_template: '[mcapi:payer] paid [mcapi:payee] [mcapi:worth] for [mcapi:description].'
 mix_mode: true
+editable: false
+fields:
+  description: true
+  participants: true
 exchange_menu: 'tools'
 ticks_name: Seconds
 worths_delimiter: '|'

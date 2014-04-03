@@ -282,7 +282,7 @@ function mcapi_get_state_descriptions() {
  * implements mcapi hook_mcapi_info_drupal_permissions().
  */
 function mcapi_mcapi_info_drupal_permissions() {
-  return array(
+  $perms = array(
     'create own wallets' => array(
       'title' => t('Create own wallets'),
       'description' => t('Users can have as many wallets as they like.')
@@ -304,6 +304,13 @@ function mcapi_mcapi_info_drupal_permissions() {
       'description' => t('Suitable for accountants')
     )
   );
+  if (\Drupal::config('mcapi.misc')->get('editable')) {
+    $perms['edit transactions'] = array(
+    	'title' => t('Edit transactions'),
+      'description' => t('Use the Edit operation on transactions in your exchange. See config for details.')
+    );
+  }
+  return $perms;
 }
 
 /**

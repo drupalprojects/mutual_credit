@@ -38,7 +38,7 @@ class CurrencyDecimalSingleWidget extends CurrencySingleWidgetBase {
       '#min' => 0,
       '#step' => 'any',
       '#size' => 10,
-      '#placeholder' => $this->getSetting('placeholder'),
+      '#placeholder' => $this->getFieldSetting('placeholder'),
     );
 
     return $element;
