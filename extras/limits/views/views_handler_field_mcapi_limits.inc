@@ -31,13 +31,20 @@ class views_handler_field_mcapi_limits extends views_handler_field {
   //returns a render array
   function render($values) {
     $currcodes = is_array($this->options['currcode']) ? $this->options['currcode'] : array($this->options['currcode']);
+    $currcode = current($currcodes);
     if ($this->options['excess']) {
-      $currcode = current($currcodes);
       if ($q = balance_limits_view_excess($values->uid, $currcode)) {
-        $renderable = array('#theme' => 'worth_item', '#currcode' => $currcode, 'quantity' => $q);
-        return $renderable;
+        return array(
+          '#theme' => 'worth_item',
+          '#currcode' => $currcode,
+          '#quantity' => $q
+        );
       }
     }
-    else return balance_limits_view($values->uid, $currcodes);
+    else return array(
+    	'#type' => 'wallet',
+      '#uid' => $values->uid,
+      '#currcode' => $currcode
+    );
   }
 }

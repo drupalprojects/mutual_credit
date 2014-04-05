@@ -64,7 +64,9 @@ function transaction_op_sign_access($op, $transaction, $currency) {
   if ($transaction->state == TRANSACTION_STATE_PENDING &&
     property_exists($transaction, 'pending_signatures') &&
     array_key_exists($GLOBALS['user']->uid, $transaction->pending_signatures) &&
-    $transaction->pending_signatures[$GLOBALS['user']->uid]) return TRUE;
+    $transaction->pending_signatures[$GLOBALS['user']->uid]) {
+    return TRUE;
+  }
 }
 
 /*
@@ -372,7 +374,7 @@ function mcapi_sig_transaction_create($transaction, $really = 0) {
   }
 }
 
-//send the mail notifying users they have a mail to sign
+//send a mail to each signatory notifying users their signature is needed
 function signature_send_initial_notification($transaction, $config) {
   if (empty($config['notify'])) return;
   $params = array(

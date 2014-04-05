@@ -255,7 +255,7 @@ function import_transactions_form_submit($form, $form_state) {
       foreach($earliest as $uid => $times) {
         db_query(
           "UPDATE {users} SET created = :created WHERE uid = :uid",
-          array(':created' => min($times), ':uid' => mcapi_import_get_uid($user_id, 0))
+          array(':created' => min($times), ':uid' => mcapi_import_get_account($user_id)->uid)
         );
       }
     }
@@ -308,7 +308,6 @@ function mcapi_import_batch_create_transaction($csv, $settings, &$context) {
 }
 
 function _mcapi_import_generate_transactions($rows, &$settings) {
-  $reservoir = currency_load($settings['currcode'])->reservoir;
   list($field_info, $vocab) = mcapi_import_detect_categories();
   $instances = field_info_instances('transaction', 'transaction');
   unset($instances['worth']);
@@ -320,8 +319,8 @@ function _mcapi_import_generate_transactions($rows, &$settings) {
   }
   foreach ($rows as $row) {
     $props = array(
-      'payer' => mcapi_import_get_uid($row['payer'], $reservoir),
-      'payee' => mcapi_import_get_uid($row['payee'], $reservoir),
+      'payer' => mcapi_import_get_account($row['payer'], $settings['currcode'])->uid,
+      'payee' => mcapi_import_get_account($row['payee'], $settings['currcode'])->uid,
       'quantity' => trim($row['quantity']),
       'currcode' => $settings['currcode'],
       'state' => $settings['state'],
@@ -383,20 +382,20 @@ function import_balances_form_validate($form, &$form_state) {
   if ($err = array_intersect($user_ids, $traded)) {
     form_set_error('data', t('The following users already have transactions: @users', array('@users' => implode(', ', $err))));
   }
-  if (form_get_errors()) return;
-
-  foreach ($rows as $rownum => $row) {
-    //check integrity of balances, the second field
-    if (!is_numeric($row['balance'])) {
-      form_set_error('data', t("Balance (second item) on row @num is not numeric: @val", array('@num' => $rownum +1, '@val' => $row['Balance'])));
-    }
-    //check integrity of gross income, the optional third field
-    if (!empty($row['gross_income'])){
-      $quant = trim($row['gross_income']) + 0;
-      if (!is_numeric($quant)) {
-        form_set_error('data', t("Gross income (third item) on row @rownum is not numeric: @val", array('@rownum' => $rownum + 1, '@val' => $quant)));
-      } elseif ($quant < 0) {
-        form_set_error('data', t("gross income (third item) on row @rownum cannot be less than 0: @val", array('@rownum' => $rownum + 1, '@val' => $quant)));
+  if (!form_get_errors()) {
+    foreach ($rows as $rownum => $row) {
+      //check integrity of balances, the second field
+      if (!is_numeric($row['balance'])) {
+        form_set_error('data', t("Balance (second item) on row @num is not numeric: @val", array('@num' => $rownum +1, '@val' => $row['Balance'])));
+      }
+      //check integrity of gross income, the optional third field
+      if (!empty($row['gross_income'])){
+        $quant = trim($row['gross_income']) + 0;
+        if (!is_numeric($quant)) {
+          form_set_error('data', t("Gross income (third item) on row @rownum is not numeric: @val", array('@rownum' => $rownum + 1, '@val' => $quant)));
+        } elseif ($quant < 0) {
+          form_set_error('data', t("gross income (third item) on row @rownum cannot be less than 0: @val", array('@rownum' => $rownum + 1, '@val' => $quant)));
+        }
       }
     }
   }
@@ -406,13 +405,14 @@ function import_balances_form_submit($form, &$form_state) {
   $rows = mcapi_parse_getcsv($form_state['values']['data']);
   foreach ($rows as $key => $stats) {
     mcapi_import_balances_member(
-      mcapi_import_get_uid($stats['user'], currency_load($form_state['values']['currcode'])->reservoir),
+      mcapi_import_get_account($stats['user'], $form_state['values']['currcode'])->uid,
       $form_state['values']['currcode'],
       $form_state['values']['transaction_type'],
       $stats['balance'],
       @$stats['gross_income']
     );
   }
+  drupal_set_message(t('imported balance for member @uid', array('@uid' => $stats['user'])));
 }
 
 
@@ -478,12 +478,7 @@ function check_users($user_ids) {
   $user_ids = array_unique($user_ids);
   $unknown = array();
   foreach ($user_ids as $user_id){
-    if (!is_numeric($user_id)) {
-      if (valid_email_address($user_id)) {
-        $account = user_load_by_mail($user_id);
-      }
-    }
-    else ($account = user_load($user_id));
+    $account = mcapi_import_get_account($user_id);
     if (!is_object($account) || $account->uid == 0) {
       $unknown[] = $user_id;
     }
@@ -491,19 +486,25 @@ function check_users($user_ids) {
   return $unknown;
 }
 
-function mcapi_import_get_uid($string, $default) {
+/*
+ * get an account from the uid or email, or failing that return the currencies reservoir account,
+ */
+function mcapi_import_get_account($string, $currcode = 'credunit') {
   if (is_numeric($string)) {
     $account = user_load($string);
   }
-  else $account = user_load_by_mail($string);
+  elseif (valid_email_address($string)) {
+    $account = user_load_by_mail($string);
+  }
+  else return FALSE;
 
-  if (is_object($account) && $account->uid) return $account->uid;
-  else return $default;
+  if (is_object($account) && $account->uid) return $account;
+  else return user_load(currency_load($currcode)->reservoir);
 }
 
 
 function mcapi_parse_getcsv($csv) {
-  $lines = explode("\n", $csv);
+  $lines = array_filter(explode("\n", $csv));
   $firstline = array_shift($lines);
   $firstrow = str_getcsv($firstline);
   foreach ($firstrow as &$field) {
@@ -512,7 +513,17 @@ function mcapi_parse_getcsv($csv) {
   foreach($lines as $key => &$line) {
     $row = str_getcsv($line);
     if (count($row) != count($firstrow)) {
-      form_set_error('data', t('Number of fields does not match header in row @num',  array('@num' => $key + 1)));
+      form_set_error(
+        'data',
+        t(
+          'There are @num fields in header, but row @rownum has @rowfields fields',
+          array(
+            '@num' => count($firstrow),
+            '@rownum' => $key + 1,
+            '@rowfields' => count($row),
+          )
+        )
+      );
       continue;
     }
     $row = array_combine($firstrow, $row);

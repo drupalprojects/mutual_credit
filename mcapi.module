@@ -488,7 +488,7 @@ function mcapi_user_view($account, $mode, $language) {
  */
 function mcapi_block_info() {
   $blocks = array();
-  if (variable_get('mcapi_show_balances', 0)) {
+   if (variable_get('mcapi_show_balances', 0)) {
     $blocks['balances'] = array('info' => 'MC '. t("Balances"));
   }
   return $blocks;
@@ -744,7 +744,10 @@ function mcapi_get_states($return_mode = '#options') {
   }
   return $states;
 }
-//returns the available transaction types in an associative array
+
+/**
+ * returns the available transaction types in an associative array
+ */
 function mcapi_get_types() {
   foreach (module_invoke_all('mcapi_info_types') as $type) {
     $types[$type] = $type;
@@ -778,7 +781,7 @@ function mcapi_mcapi_info_drupal_permissions() {
   );
 }
 
-/*
+/**
  * entity_access callback (needs to be in .module) also used directly in mcapi_menu
  * Grant access to a transaction for an operation
  * this is slightly crude, since the callbacks can't know know what to do with all possible operations
@@ -828,8 +831,8 @@ function mcapi_mail($key, &$message, $params) {
     // We do not sanitize the token replacement, since the output of this
     // replacement is intended for an e-mail message, not a web browser.
     $options = array('language' => $message['language'], 'sanitize' => FALSE);
-    $message['subject'] =  token_replace($params['subject'], $params, $options);
-    $message['body'][] =  token_replace($params['body'], $params, $options);
+    $message['subject'] = token_replace($params['subject'], $params, $options);
+    $message['body'][] = token_replace($params['body'], $params, $options);
   }
 }
 
@@ -878,8 +881,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
   global $language;
   //special case for the 'are you sure' form where the transaction was test written and deleted
   //that means the fieldAPI data cannot be retrieved the normal way
-  $transaction = &current($transactions);
-  if (!property_exists($transaction, 'serial') || empty($transaction->serial)) {
+  if (!property_exists(current($transactions), 'serial') || empty(current($transactions)->serial)) {
     foreach ($transactions as $transaction) {
       $variables['classes_array'][] = 'preview';
       //remove all fieldAPI fields because the entity isn't in the database yet and doesn't have an entity_id
@@ -1186,7 +1188,7 @@ function mcapi_element_info() {
       '#theme' => 'transaction_totals',
       '#pre_render' => array('mcapi_prerender_wallet'),
       '#uid' => 0,
-      '#currcode' => array('credunit'),
+      '#currcode' => 'credunit',
       '#totals' =>array()
     ),
   );

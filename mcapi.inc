@@ -488,8 +488,8 @@ function _transactions_diff($transaction) {
  */
 function template_preprocess_certificate(&$vars) {
   $transaction = &$vars['object'];
-  $vars['payer'] = format_username(user_load($transaction->payer));
-  $vars['payee'] = format_username(user_load($transaction->payee));
+  $vars['payer'] = theme('username', array('account' => user_load($transaction->payer)));
+  $vars['payee'] = theme('username', array('account' => user_load($transaction->payee)));
   $vars['state'] = $transaction->state;
   $vars['recorded'] = format_date($transaction->created, 'medium');
   $vars['type'] = $transaction->type;

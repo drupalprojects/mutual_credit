@@ -4,4 +4,7 @@ description = A google charts implementation showing the account balance over ti
 package = Community Accounting
 core = 7.x
 
+files[] = views_handler_field_mcapi_balance_history.inc
+files[] = mcapi_balance_history.views.inc
+files[] = mcapi_balance_history.views_templates.inc
 dependencies[] = mcapi_index_views

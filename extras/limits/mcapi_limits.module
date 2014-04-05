@@ -16,12 +16,12 @@ function limits_get($currcode, $uid){
     $account = user_load($uid);
     $limits = array_filter((array)@$account->data['limits_personal'][$currcode], 'is_numeric');
   }
-  if (count(array_filter($limits)) == 2) return $limits;
-
-  //now we fill the blanks with currency limits
-  if (isset($currency->limits['limits_callback'])) {
-    $callback = $currency->limits['limits_callback'];
-    $limits += array_filter($callback($currency, $uid), 'is_numeric');
+  if (count(array_filter($limits)) != 2) {
+    //now we fill the blanks with the limits defined in the currency
+    if (isset($currency->limits['limits_callback'])) {
+      $callback = $currency->limits['limits_callback'];
+      $limits += array_filter($callback($currency, $uid), 'is_numeric');
+    }
   }
   return $limits;
 }
@@ -375,14 +375,14 @@ function mcapi_limits_variable_info() {
   }
   return $vars;
 }
-/* 
+/*
  * implements hook_element_info_alter
  */
 function mcapi_limits_element_info_alter(&$elements) {
   $elements['wallet']['#pre_render'][] = 'mcapi_limits_pre_render_wallet';
 }
 
-/* 
+/*
  * prerender callback for element 'wallet'
  * show the balance limits
  */
@@ -449,6 +449,10 @@ function mcapi_limits_form_mcapi_misc_options_form_alter(&$form, &$form_state) {
 function balance_limits_view_excess($uid, $currcode) {
   $balance = transaction_totals($uid, $currcode)->balance;
   $limits = limits_get($currcode, $uid);
-  if ($balance > $limits['max']) return '+'.$balance - $limits['max']; // '+10' is numeric
-  elseif ($balance < $limits['min']) return $balance - $limits['min'];
+  if ($balance > $limits['max']) {
+    return '+'.$balance - $limits['max']; // '+10' is numeric
+  }
+  elseif ($balance < $limits['min']) {
+    return $balance - $limits['min'];
+  }
 }

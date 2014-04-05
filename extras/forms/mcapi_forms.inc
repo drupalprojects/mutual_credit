@@ -96,6 +96,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $form['secondperson']['#required'] = TRUE;
       $form['secondperson']['#multiple'] = FALSE;
       $form['secondperson']['#exclude'] = array($GLOBALS['user']->uid);
+      $form['secondperson']['#default_value'] = $settings['secondperson']['preset'];
       $type = $settings['direction']['widget'] ? $settings['direction']['widget'] : 'select';
       $options = ($type == 'select' && empty($settings['direction']['preset'])) ? array(t('Please choose...')) : array();
       $form['direction'] = array(
@@ -116,16 +117,16 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     if (strpos($settings['experience']['template'], 'created]')) {
       if (module_exists('date_popup')) {
         $form['created'] = array(
-          '#type' => 'date_popup',
+          '#type' => 'date_popup',//this doens't work
           '#date_type' => DATE_UNIX
         );
       }
-      else {
+      //else {
         $form['created'] = array(
           '#type' => 'date',
           '#element_validate' => array('mcapi_date_validate')
         );
-      }
+      //}
     }
     if ($form['#settings']['experience']['sure_title']) {
       $form['buttons']['submit']['#value'] = t('Preview');
@@ -213,7 +214,8 @@ function theme_mcapi_form($variables) {
   //render the visible stuff first
   if ($form['#step'] == 1) {
     foreach (element_children($form) as $fieldname) {
-      if (in_array($fieldname, array('payer', 'payee', 'secondperson', 'direction', 'actions'))) {
+      $properties = array('payer', 'payee', 'secondperson', 'direction', 'actions');
+      if (in_array($fieldname, $properties)) {
         if (isset($form[$fieldname]['#strip']) && $form[$fieldname]['#strip'] || $fieldname == 'buttons') {
           unset($form[$fieldname]['#theme_wrappers']);
           unset($form[$fieldname]['#title']);
@@ -232,10 +234,9 @@ function theme_mcapi_form($variables) {
             unset($form[$fieldname][LANGUAGE_NONE]['#description']);
           }
           //compared to normal fields
-          elseif(isset($form[$fieldname][LANGUAGE_NONE][0]['#entity'])) {
+          elseif(isset($form[$fieldname][LANGUAGE_NONE][0]['#entity']) || isset($form[$fieldname][LANGUAGE_NONE][0]['tid']['#entity'])) {
             mcapi_unset_recursive($form[$fieldname], '#theme_wrappers');
           }
-//          else drupal_set_message('Cannot strip field: '.$fieldname);
         }
       }
     }

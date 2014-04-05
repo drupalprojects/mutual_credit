@@ -17,7 +17,9 @@
  *     '$unixtime' => $balance
  *     etc...
  *   )
- * );
+ * )
+ * $width
+ * $height
  *
  * https://developers.google.com/chart/interactive/docs/gallery/linechart
  */
@@ -40,7 +42,6 @@ foreach ($timeline as $timestamp => $balances) {
   $timeline[$timestamp] = $vals;
   $prev = $timeline[$timestamp];
 }
-$height = intval(5*$width/4);
 
 if (count($histories) == 1) $title = t('!currency history', array('!currency' => currency_load($currcode)->human_name));
 else $title = t('Balance history');
@@ -62,8 +63,8 @@ function drawBalanceHistory() {
     width: <?php print $width; ?>,
     height: <?php print $height; ?>,
     colors: [<?php print implode(', ', $colors);?>],
-    legend: {position: 'none'}
-    title: '<?php print $title ?>'
+    legend: {position: 'none'},
+    title: "<?php print $title ?>"
   }
   new google.visualization.LineChart(document.getElementById('<?php print $id; ?>')).draw(data, options);
 }

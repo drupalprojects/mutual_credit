@@ -1130,6 +1130,7 @@ function mcapi_update_7024() {
       ->fields(array('parameters' => serialize($info)))
       ->execute();
   }
+  cache_clear_all('currencies', 'cache');
   //change the names of the block settings variables - this was a bug
   if (!module_exists('block')) return;
   $deltas = db_query("SELECT delta FROM {block} WHERE module LIKE 'mcap%'")->fetchcol();
@@ -1142,19 +1143,4 @@ function mcapi_update_7024() {
     }
     variable_del($oldvar);
   }
-  cache_clear_all('currencies', 'cache');
 }
-
-/* I think this turned out to be not necessary and also broke things
-  $worth_db_field = array(
-    'description' => 'Price',
-    'type' => 'numeric',
-    'size' => 'normal',
-    'precision' => 8,
-    'scale' => 2,
-    'not null' => TRUE,
-    'default' => '0'
-  );
-  db_change_field('field_data_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
-  db_change_field('field_revision_worth', 'worth_quantity', 'worth_quantity', $worth_db_field);
-*/

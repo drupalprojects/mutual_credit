@@ -162,17 +162,13 @@ function _edit_mcapi_form(&$form, &$form_state) {
         $default_items = &$settings[$fieldname];
         $empty_field = $transaction_widgets[$fieldname][LANGUAGE_NONE];
         $form[$fieldname] = _mcapi_form_config_fieldset($default_items, $empty_field, $fieldname);
-        if ($instance['widget']['module'] == 'hs_taxonomy') {
-          $form[$fieldname]['preset']['#disabled'] = TRUE;
-          $form[$fieldname]['preset']['#description'] = t('Hierarchical select widget cannot remember default values placed here');
-        }
     }
   }
   $form['worth']['preset']['#preset'] = TRUE;
   $currencies = currencies_load();
   if (count($currencies) > 1) {
     $help = array(
-      t('Use zero to include a currency as an option on the form.'),
+      t("Use '0' to include a currency as an option on the form."),
       t('Leave blank to exclude the currency.'),
       t('Numeric values are also valid')
     );
@@ -319,8 +315,11 @@ function _mcapi_form_config_fieldset($field_defaults, array $empty_element, $fie
   if (isset($empty_element['#entity'])) {//this is for fieldAPI worth checkboxes and radio buttons
     if (isset($preset)) {
       if ($fieldname == 'worth' && count($preset)) {
+        $currencies = currencies_load();
         foreach ($preset as $item) {
-          $element['preset']['#default_value'][$item['currcode']] = $item['quantity'];
+          if (isset($currencies[$item['currcode']])) {//in case it has been disabled since.
+            $element['preset']['#default_value'][$item['currcode']] = $item['quantity'];
+          }
         }
       }
       else {
@@ -402,7 +401,7 @@ function mcapi_edit_mcapi_form_validate($form, &$form_state) {
     }
   }
   if (variable_get('mcapi_mixed_transactions', TRUE) && empty($values['worth']['preset'])) {
-    form_error($form['worth']['preset'], t("Use zero in the worth field"));
+    form_error($form['worth']['preset'], t("Use '0' in the worth field"));
   }
 }
 

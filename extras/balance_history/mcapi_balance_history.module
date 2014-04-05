@@ -63,6 +63,7 @@ function mcapi_balance_history_theme() {
         'account' => NULL,
         'histories' => array(),
         'width' => 250,
+        'height' => 0,
         'resample' => 'simple'
         //also curvetype is added by template_process_balance_history
       )
@@ -73,6 +74,7 @@ function mcapi_balance_history_theme() {
 //modify the history points for aesthetic reasons, or to save resources
 function template_process_balance_history(&$vars) {
   $vars['curvetype'] = 'none';
+  if (!$vars['height']) $vars['height'] = intval(5*$vars['width']/4);
   foreach ($vars['histories'] as $currcode => &$history) {
     $point_count = count($history);
     if ($point_count < $vars['width'] / 3) {//step method, for a small number of points
@@ -107,3 +109,13 @@ function template_process_balance_history(&$vars) {
   }
 }
 
+
+/*
+ * Implements views hook_views_api
+*/
+function mcapi_balance_history_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'mcapi_balance_history'),
+  );
+}

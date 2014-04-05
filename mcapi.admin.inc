@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  * this is called by the hook mcapi_entity_info
  */
 function _mcapi_entity_info() {
@@ -71,7 +71,7 @@ function _mcapi_entity_info() {
   return $entities;
 }
 
-
+//contents of hook_menu
 function _mcapi_menu() {
   $items['admin/accounting'] = array(
     'title' => "Accounting",
@@ -181,14 +181,15 @@ function _mcapi_menu() {
   return $items;
 }
 
-/*
+/**
  * implements hook_menu_alter
+ * I guess this isn't being used since it is not in .module file
  */
 function mcapi_menu_alter(&$items) {
   $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
 }
 
-/*
+/**
  * menu_callback top level config page for mcapi
  */
 function mcapi_accounting() {
@@ -196,7 +197,7 @@ function mcapi_accounting() {
   return system_admin_menu_block_page();
 }
 
-/*
+/**
  * drupal_get_form callback for menu item admin/accounting/misc
  */
 function mcapi_misc_options_form($form_state) {
@@ -277,8 +278,11 @@ function mcapi_misc_options_form($form_state) {
   );
   return system_settings_form($form);
 }
+
 function mcapi_workflow_help() {}
 //menu callback. there is hook_help for this
+
+
 function mcapi_workflow() {
   drupal_add_css('table.help{float:left;margin-right:1em;} ul.admin-list{clear:both;}', array('type' => 'inline'));
   $renderable = array(
@@ -320,7 +324,7 @@ function mcapi_workflow() {
   $renderable['items']['#markup'] = system_admin_menu_block_page();
   return $renderable;
 }
-/*
+/**
  * ctools plugin callback for editing a currency, determined by the ctools export_plugin
  * The form_id is actually ctools_export_ui_edit_item_form
  */
@@ -639,9 +643,11 @@ function mcapi_currency_validate_format(&$element, $form_state) {
   }
 }
 
-//currency form validate callback
-//deconstruct, validate, reconstruct and set_value
-//this sorts out any leading zeros on the centiles
+/**
+ * currency form validate callback
+ * deconstruct, validate, reconstruct and set_value
+ * this sorts out any leading zeros on the centiles
+ */
 function mcapi_currency_validate_divisions(&$element, &$form_state) {
   if ($form_state['values']['display']['divisions'] != CURRENCY_DIVISION_MODE_CUSTOM) return;
   $validated = array();
@@ -671,7 +677,7 @@ function mcapi_currency_validate_divisions(&$element, &$form_state) {
   form_set_value($element, trim($element_value), $form_state);
 }
 
-/*
+/**
  * Validate callback for transaction form 'currcode' element
  */
 function mcapi_validate_currcode(&$element, $form_state) {
@@ -682,14 +688,16 @@ function mcapi_validate_currcode(&$element, $form_state) {
     }
   }
 }
-/*
+
+/**
  * menu access callback
  * access to the ctools currency edit page
  */
 function currency_edit_access($currency) {
   return user_access('configure all currencies') || $currency->uid == $GLOBALS['user']->uid;
 }
-/*
+
+/**
  * load the currencies from ctools and alter them before they get used
  */
 function currencies_load_all() {
@@ -727,7 +735,7 @@ function currencies_load_all() {
   return $currencies;
 }
 
-/*
+/**
  * Validate callback for mcapi_currency_form
  * declared in plugins/export/mcapi_ui
  * set the $form_state['item'] for ctools to save
@@ -741,7 +749,7 @@ function mcapi_currency_form_validate($form, &$form_state) {
   }
 }
 
-/*
+/**
  * Submit callback for mcapi_currency_form
  * declared in plugins/export/mcapi_ui
  * set the $form_state['item'] for ctools to save
@@ -766,6 +774,7 @@ function _mcapi_trigger_info() {
   return $triggers;
 }
 
+//contents of hook_action_info
 function _mcapi_action_info() {
   return array(
     'mcapi_dependent_transaction_action' => array(
@@ -823,7 +832,7 @@ function mcapi_mixed_transactions_submit($form, &$form_state) {
 }
 
 
-/*
+/**
  * settings form callback for action mcapi_transaction_mail_action
  */
 function mcapi_transaction_mail_action_form($context = array()) {
@@ -851,7 +860,7 @@ function mcapi_transaction_mail_action_form($context = array()) {
   return $form;
 }
 
-/*
+/**
  * retrieve a form fieldset which allows a mail to be configured.
  * $key is either a variable name prefix or an array containing the defaults subject and body and optionallly cc
  *
@@ -909,7 +918,7 @@ function mcapi_transaction_mail_action_submit($form, $form_state) {
   return $form_state['values'];
 }
 
-/*
+/**
  * Settings form callback for action mcapi_transaction_entity_uid
  */
 function mcapi_transaction_entity_uid_form($context) {
@@ -974,7 +983,7 @@ function mcapi_transaction_entity_uid_submit($form, $form_state) {
 }
 
 
-/*
+/**
  * Settings form callback for mcapi_pay_someone_action
  * odd that form_state isn't passed
  * this means we can't do form_load_include
@@ -1075,7 +1084,7 @@ function mcapi_dependent_transaction_action_form($context) {
   return $form;
 }
 
-/*
+/**
  * configuration action submit callback
  */
 function mcapi_dependent_transaction_action_submit($form, $form_state) {
@@ -1139,7 +1148,7 @@ function _transaction_operations() {
 }
 
 
-/*
+/**
  * implements hook_transaction_operations().
  * returns an array of operation infos keyed by the operation key
  * see transaction.api.php for more info
