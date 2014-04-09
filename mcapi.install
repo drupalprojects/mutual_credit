@@ -1144,3 +1144,14 @@ function mcapi_update_7024() {
     variable_del($oldvar);
   }
 }
+
+
+/**
+ * Reverse delete mode replaced with erase. It never worked, so we shouldn't need to alter the database
+ */
+function mcapi_update_7025() {
+  define('MCAPI_CURRENCY_UNDO_REVERSE', 2);
+  if (variable_get('mcapi_controller_delete_mode', '') == MCAPI_CURRENCY_UNDO_REVERSE) {
+    variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
+  }
+}

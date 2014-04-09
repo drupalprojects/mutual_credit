@@ -173,6 +173,7 @@ function mcapi_index_views_views_data() {
       'fieldname' => 'created'
     ),
   );
+  drupal_load('module','mcapi');
   currencies_load();//because mcapi_init hasn't run yet
   $currencies = currencies_load();
   $data['mcapi_index']['currcode'] = array(
@@ -189,7 +190,7 @@ function mcapi_index_views_views_data() {
       'handler' => 'views_handler_argument',
     ),
   );
-  
+
   $data['mcapi_index']['operations'] = array(
     'title' => t('Operations'),
     'help' => t("What the user can do to the transaction"),

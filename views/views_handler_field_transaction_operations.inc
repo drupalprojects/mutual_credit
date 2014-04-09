@@ -16,7 +16,8 @@ class views_handler_field_transaction_operations extends views_handler_field_tra
     foreach (transaction_get_links($transaction, '', TRUE) as $link) {
       $links[] = drupal_render($link);
     }
-    return drupal_render(transaction_get_links($transaction, FALSE, TRUE));
+    $renderable = transaction_get_links($transaction, FALSE, TRUE);
+    return drupal_render($renderable);
   }
 
 }

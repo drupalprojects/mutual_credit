@@ -4,7 +4,7 @@
 if (class_exists('EntityAPIController')) {
 class mcapiEntityController extends EntityAPIController {
 
-  /*
+  /**
    * Loads the transaction entity and its children
    */
   public function load($xids = array(), $reset = FALSE) {
@@ -52,7 +52,7 @@ class mcapiEntityController extends EntityAPIController {
   }
 
 
-  /*
+  /**
    * creates a transaction-shaped object using the passed values
    * the transaction would fail its own validation without being populated though
    * PRIOR to writing in the database
@@ -194,7 +194,6 @@ class mcapiEntityController extends EntityAPIController {
   //undoes the db_transaction if $really is FALSE
   //this can be called from outside if necessary
   public function insert($transaction) {
-    //$result = drupal_write_record('mcapi_transactions', $this->raw());
     $result = drupal_write_record('mcapi_transactions', $transaction);
     if($result != SAVED_NEW) {
       throw new Exception(
@@ -205,16 +204,19 @@ class mcapiEntityController extends EntityAPIController {
     module_invoke_all('entity_insert', $transaction, 'transaction');
   }
 
-  /*
+  /**
    * change the state of a transaction and its dependents
    */
   public function update($transaction, $new_state) {
     $t = db_transaction();
     try{
       $this->invoke('presave', $transaction);
-      //drupal_write_record($this->entityInfo['base table'], $this->raw(), 'xid');
-      drupal_write_record($this->entityInfo['base table'], $transaction, 'xid');
-      $this->resetCache(array($transaction->xid));
+      db_update($this->entityInfo['base table'])
+        ->fields(array('state' => $new_state))
+        ->condition('serial', $transaction->serial)
+        ->execute();
+      $xids = array_keys(transaction_filter(array('serial' => $transaction->serial)));
+      $this->resetCache($xids);
       $this->invoke('update', $transaction);
     }
     catch (Exception $e) {
@@ -225,7 +227,7 @@ class mcapiEntityController extends EntityAPIController {
     module_invoke_all('entity_update', $transaction, 'transaction');
   }
 
-  /*
+  /**
    * get some stats by adding up the transactions for a given user
    * this is currently used for the limits module and for the views handler per-row
    * caching running balances is dangerous because they would all need recalculating any time a transaction changed state
@@ -262,7 +264,7 @@ class mcapiEntityController extends EntityAPIController {
     }
   }
 
-  /*
+  /**
    * Get a list of xids and serial numbers
    * see transaction.api.php for arguments
    */

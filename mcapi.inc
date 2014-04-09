@@ -23,13 +23,13 @@ class transaction extends Entity {
 }
 
 
-/*
+/**
  * transaction entity definition 'label callback'
  */
 function transaction_label($transaction){
   return t('Transaction #@serial', array('@serial' => $transaction->serial));
 }
-/*
+/**
  * transaction entity definition 'uri callback'
  */
 function transaction_uri($transaction) {
@@ -99,7 +99,7 @@ function _transaction_form(&$form, &$form_state) {
   );
 }
 
-/*
+/**
  * standard form-level validation callback for ALL transaction forms
  * fields have already been validated individually
  * By this time each of the form values should be well enough validated not to fail on writing to db
@@ -130,7 +130,7 @@ function transaction_form_validate($form, &$form_state) {
 }
 
 
-/*
+/**
  * form submit callback from the base transaction form, hence USED BY ALL forms
  * this is what actually saves the data
  */
@@ -161,7 +161,7 @@ function transaction_form_submit($form, &$form_state) {
   $form_state['values']['serial'] = $transaction->serial;
 }
 
-/*
+/**
  * form element validation callback functions
  */
 function mcapi_validate_title(&$element, $form_state) {
@@ -169,7 +169,7 @@ function mcapi_validate_title(&$element, $form_state) {
   $form_state['values']['title'] = check_plain($element['#value']);
 }
 
-/*
+/**
  * Validate callback for transaction form 'state' element
  * as a form element validation callback, this is assumed to happen BEFORE transactions_validate is called
  */
@@ -179,22 +179,26 @@ function mcapi_validate_state(&$element, &$form_state) {
     form_error($element, t('Invalid transaction state: @value.', array('@value' => $element['@value'])));
   }
 }
-/*
+
+/**
  * menu page callback
  * builds 'are you sure' operations form for both ajax and nojs
  */
 function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
   drupal_add_js('misc/ajax.js', array('type' => 'file'));
   $operations = transaction_operations();
-  if (array_key_exists('form callback', $operations[$op])) {
+  if (!empty($operations[$op]['form callback'])) {
     $form = drupal_get_form('transaction_operation_form', $op, $transaction);
     //this form will sumit and expect ajax
     $form['actions']['submit']['#attributes']['class'][] = 'use-ajax-submit';
     drupal_add_js('misc/jquery.form.js');
     drupal_add_js('misc/ajax.js', array('type' => 'file'));
   }
+  else {
+    $form = mcapi_submit_op_form($operations[$op], $transaction);
+  }
   //return normally, or via ajax if called via ajax
-  if ($mode == 'nojs') {//return a render array for delivery as a page
+  if ($mode == 'nojs' ) {//return a render array for delivery as a page
     //return an 'are you sure form'
     if (isset($form)) {
       return $form;
@@ -212,10 +216,9 @@ function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
       '#commands' => $commands
     );
   }
-
 }
 
-/*
+/**
  * default form callback for all transaction operations
  */
 function transaction_operation_form($form, &$form_state, $op, $transaction) {
@@ -263,20 +266,18 @@ function mcapi_submit_op_form($operation, $transaction, $values = array()) {
   $function = $operation['submit callback'];
   //this changes the $transaction
   $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
-  //and invoke trigger and rules using the changed transaction
-  transaction_update($transaction, $old_state);
   return $result;
 }
 
-/*
+/**
  *  access callback for transaction operation 'view'
  */
 function mcapi_view_access($op, $transaction, $currency) {
   return _transaction_check_access_callbacks($currency->view_transaction_states[$transaction->state], $transaction);
 }
 
-/*
- *  access callback for transaction operation 'undo'
+/**
+ * access callback for transaction operation 'undo'
  * Undo is the only 'exposed' operation in this module
  */
 function transaction_op_undo_access($op, $transaction, $currency) {
@@ -291,7 +292,8 @@ function transaction_op_undo($operation, $transaction, $values) {
   transaction_undo($transaction->serial);
   return array('#markup' => t('The transaction is undone.') .' ');
 }
-/*
+
+/**
  * helper function to run through all the access callbacks after the operation's own access callback has done its tests
  */
 function _transaction_check_access_callbacks($callbacks, $transaction) {
@@ -301,7 +303,7 @@ function _transaction_check_access_callbacks($callbacks, $transaction) {
   return FALSE;
 }
 
-/*
+/**
  * transaction_access callbacks
  * $ops are determined in hook_transaction_operations
  */
@@ -324,7 +326,7 @@ function transaction_access_callback_creator($transaction) {
   return $GLOBALS['user']->uid == $transaction->creator;
 }
 
-/*
+/**
  * action callback
  * mail the transaction participants, and cc
  * NB Ignored here, but note that $transaction may have ->dependents property
@@ -351,7 +353,7 @@ function _mcapi_validate_mail_element($element, $form_state) {
   }
 }
 
-/*
+/**
  * action callback for hook_transaction_cluster_alter
  * Alters the original transaction and/or returns a dependent
  */
@@ -401,7 +403,7 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
 }
 
 
-/*
+/**
  * calculate a transaction quantity based on a provided formala and input quantity
  * $formula can be
  * number => returns the number as a quantity, regardless of $base_quant
@@ -425,7 +427,7 @@ function _mcapi_calc($formula, $base_value) {
 //Parse error: syntax error, unexpected '/' in /var/www/drupal7/sites/all/modules/matslats/mutual_credit/mcapi.inc(853) : eval()'d code on line 1
 
 
-/*
+/**
  * helper to get block settings and load whichever user we like
  * may return nothing if no user is determined
  * the possible values of user_source should be made into php constants
@@ -456,7 +458,7 @@ function _mcapiblock_settings($delta, $currency_access_mode) {
 }
 
 
-/*
+/**
  * Calculate the balance changes that this transaction proposes
  * by convention, if the transaction state < 0 it is NOT COUNTED
  * this is only used in tokens, so far, and in mcapi_limits module
@@ -480,7 +482,7 @@ function _transactions_diff($transaction) {
   return $diff;
 }
 
-/*
+/**
  * theme implementation of template_preprocess_HOOK
  * make the transaction variables into something which can be nicely themed
  * $variables['transaction'] may have ->dependents from transaction_load
@@ -568,7 +570,7 @@ function worth_element_validate(&$element, &$form_state, $form) {
   }
 }
 
-/*
+/**
  * default worths element validator
  * and check required
  * clear the $items which are empty
@@ -632,7 +634,7 @@ function _worths_element_process($element, &$form_state) {
   return $element;
 }
 
-/*
+/**
  * implements form_type_ELEMENT_NAME_value
  * default value_callback for worths
  * this function is included because the worths process callback includes mcapi.inc
@@ -745,7 +747,7 @@ function _worth_element_process($element, &$form_state) {
 }
 
 
-/*
+/**
  * Default implementation of theme 'worth_field'
  * Converts the quantity into tokens and replaces them into the currency display format
  * $variables should have keys
@@ -773,7 +775,7 @@ function theme_worth_item(&$variables) {
   return $minus . str_replace('[quantity]', $quantity, $currency->display['format']);
 }
 
-/*
+/**
  * default theme implementation for callback 'worth_element'
  * called once per $item
  */
@@ -846,7 +848,7 @@ function currency_explode($number) {
   return array($number, 0);
 }
 
-/*
+/**
  * rounds a transaction quantity up or down, according to currency settings
  */
 function mcapi_round($quant, $currcode, $up = FALSE) {
@@ -893,7 +895,7 @@ function currency_picker_element(array $currcodes, $default = NULL, $multiple = 
   }
 }
 
-/*
+/**
  * menu callback
  * build the most basic possible transaction form
  */
@@ -904,8 +906,6 @@ function transaction_default_form($form, &$form_state) {
   $form['creator']['#type'] = 'value';
   return $form;
 }
-
-
 
 //this is called via mcapi_dependent_transaction_action_form
 //where we don't have the opportunity to form_load_include because it is called through the action system
@@ -918,7 +918,8 @@ function mcapi_configure_worth_accept_formula($element) {
   }
   return $element;
 }
-/*
+
+/**
  * element validate callback
  * ensures that the formula for calculating a quantity works
  */

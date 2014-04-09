@@ -4,7 +4,6 @@
 //delete modes
 define('MCAPI_CURRENCY_UNDO_DELETE', 0);
 define('MCAPI_CURRENCY_UNDO_ERASE', 1);
-define('MCAPI_CURRENCY_UNDO_REVERSE', 2);
 
 define('CURRENCY_DIVISION_MODE_NONE', 0);
 define('CURRENCY_DIVISION_MODE_CENTS_INLINE', 1);
@@ -57,12 +56,17 @@ function transaction_cluster_create(stdclass $transaction, $really = TRUE) {
  * all will be given the SAME serial number, which is what makes them a cluster
  * return the serial number if $really is TRUE
  * this should always be inside a try!!!
+ * @param array $cluster
+ *   an array of transactions
+ * @param boolean $really
+ *   TRUE if the transaction should remain written
+ * @return array
+ *   the transaction cluster, with serial number and xids
  */
 function transaction_cluster_write(array $cluster, $really = TRUE) {
   if (!empty(current($cluster)->serial)) {
     throw new Exception ('Cannot insert transactions which already have a serial numbers: '.$transaction->serial);
   }
-
   //put all the transactions side by side ready for the entity controller to validate and insert
   module_invoke_all('accounting_validate', $cluster);
 
@@ -117,7 +121,7 @@ function transaction_update($transaction, $old_state = NULL) {
   field_attach_update('transaction', $transaction);
   module_invoke_all('transaction_update', $transaction, $old_state);
 
-/*
+  /*
   //this is a bit of a shortcut past normal rules invocation - possibly bad practice
   if (module_exists('rules') && $event = rules_get_cache('event_' . $hook)) {
     //because the rules integration only understands the type entity:transaction
@@ -126,7 +130,7 @@ function transaction_update($transaction, $old_state = NULL) {
   */
 }
 
-/*
+/**
  * Community Accounting API function, see transaction.api.php
  * Undo according to the appropriate delete mode.
  * NB No accounting checks take place before deletings.
@@ -139,8 +143,7 @@ function transaction_undo($serial, $mode = NULL) {
   switch($mode) {
     case MCAPI_CURRENCY_UNDO_ERASE:
       $transaction = current($transactions);
-      $old_state = $transaction->state;
-      $transaction->state = TRANSACTION_STATE_UNDONE;
+      entity_get_controller('transaction')->update($transaction, TRANSACTION_STATE_UNDONE);
       break;
 
     case MCAPI_CURRENCY_UNDO_DELETE:
@@ -151,31 +154,8 @@ function transaction_undo($serial, $mode = NULL) {
       entity_get_controller('transaction')->delete($xids);
       entity_delete_multiple('transaction', $xids);
       break;
-
-    case MCAPI_CURRENCY_UNDO_REVERSE:
-      foreach($transactions as $transaction) {
-        $reversed = clone $transaction;
-        unset($reversed->created, $reversed->xid);
-        $reversed->xid = NULL;
-        $reversed->payer = $transaction->payee;
-        $reversed->payee = $transaction->payer;
-        $reversed->type = 'reversal';
-        if ($field = variable_get('transaction_description_field', '')) {
-          $entity = entity_get_info('transaction');
-          $reversed->{$field}[LANGUAGE_NONE][0]['value'] = t('Reversal of @label', array('@label' => entity_label('transaction', $transaction)));
-        }
-        $reverseds[] = $reversed;
-      }
-      try{
-        //this is basically the same as in transaction_cluster_write, but without invoking accounting_validate
-        entity_metadata_wrapper('transaction', $reversed)->insert(TRUE);
-        field_attach_insert('transaction', $reversed);
-      }
-      catch (Exception $e){
-        drupal_set_message(t('Failed to reverse transaction: @message', array('@message' => $e->getMessage())));
-      }
-      break;
   }
+
   module_invoke_all('transaction_undo', $serial);
   //once even one transaction has been deleted, the undo_mode cannot be changed
   variable_del('change_undo_mode');
@@ -466,7 +446,7 @@ function mcapi_update_index() {
     search_index($serial, 'mcapi', implode(' ', $text));
   }
 }
-/*
+/**
  * implement hook_user_view().
  */
 function mcapi_user_view($account, $mode, $language) {
@@ -481,6 +461,25 @@ function mcapi_user_view($account, $mode, $language) {
       }
     }
   }
+}
+
+/**
+ * implements hook_field_extra_fields().
+ */
+function mcapi_field_extra_fields() {
+  return array(
+    'user' => array(
+      'user' => array(
+        'display' => array(
+          'wallet' => array(
+            'label' => t('Wallet'),
+            'description' => t('Balances in each currency'),
+            'weight' => 3,
+          ),
+        )
+      )
+    )
+  );
 }
 
 /**
@@ -682,7 +681,7 @@ function mcapi_mcapi_info_states() {
       'default_access_callbacks' => array('mcapi_access_authenticated')
     ),
   );
-  $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE);
+  $deletemode = variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
   //don't attempt to liven the link coz this function can run while bootstrapping and that means trouble
   $description = t("See 'delete mode' settings for more info, !link", array('!link' => 'admin/accounting/misc'));
   if ($deletemode != MCAPI_CURRENCY_UNDO_DELETE) {
@@ -705,16 +704,11 @@ function mcapi_field_display_transaction_alter(&$display, $context) {
   }
 }
 
-
 /**
  * implements mcapi hook_info_types().
  */
 function mcapi_mcapi_info_types() {
-  $types = array('default', 'dependent', 'auto');
-  if (variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_REVERSE) {
-    $types[] = 'reversal';
-  }
-  return $types;
+  return array('default', 'dependent', 'auto');
 }
 
 /**
@@ -1052,7 +1046,6 @@ function mcapi_trigger_info() {
 
 /*
  * pull trigger transaction_cluster_alter().
- * will only fire if the trigger module is enabled
  * sends the volitional transaction to the action callbacks where it can be changed.
  * Action callbacks may return a new transaction to be added to the $transactions
  */

@@ -224,7 +224,6 @@ function mcapi_misc_options_form($form_state) {
     '#options' => array(
       MCAPI_CURRENCY_UNDO_DELETE => t('Wipe slate - remove transactions from database'),
       MCAPI_CURRENCY_UNDO_ERASE => t('Scratch - use deleted transaction state'),
-      MCAPI_CURRENCY_UNDO_REVERSE => t('Reverse - create an equal and opposite transaction'),
     ),
     '#default_value' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE),
     '#disabled' => !variable_get('change_undo_mode', FALSE)
@@ -1181,7 +1180,7 @@ function mcapi_transaction_operations() {
   $operations['undo'] = array(
     'title' => 'Undo',
     'description' => 'Undo a finished transaction, and its dependents',
-    'sure' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_REVERSE) == MCAPI_CURRENCY_UNDO_DELETE ?
+    'sure' => variable_get('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE) == MCAPI_CURRENCY_UNDO_DELETE ?
       'Are you sure you want to undo? This transaction will disappear without a trace (apart from site backups)' :
       'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
     'access callback' => 'transaction_op_undo_access',

@@ -94,6 +94,14 @@ function mcapi_balance_history_views_templates() {
   $handler->display->display_options['header']['area']['content'] = '<h3>Need help earning...</h3>';
   $handler->display->display_options['header']['area']['format'] = 'editor_filtered_html';
   $handler->display->display_options['path'] = 'nudgeneeders';
+  $handler->display->display_options['defaults']['sorts'] = FALSE;
+  /* Critère de tri: SUM(Index d'échanges : Changer dans le solde) */
+  $handler->display->display_options['sorts']['diff']['id'] = 'diff';
+  $handler->display->display_options['sorts']['diff']['table'] = 'mcapi_index';
+  $handler->display->display_options['sorts']['diff']['field'] = 'diff';
+  $handler->display->display_options['sorts']['diff']['group_type'] = 'sum';
+  $handler->display->display_options['sorts']['diff']['order'] = 'ASC';
+  $handler->display->display_options['path'] = 'nudgeneeders';
 
   /* Display: Attachment */
   $handler = $view->new_display('attachment', 'Attachment', 'attachment_1');
