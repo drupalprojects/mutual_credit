@@ -354,6 +354,7 @@ function mcapi_sig_transaction_create($transaction, $really = 0) {
   $config = _signature_settings_default($transaction->type);
   $uid = &$GLOBALS['user']->uid;
   if ($transaction->state == TRANSACTION_STATE_PENDING) {
+    $transaction->pending_signatures = array();
     //put the signatures in the transaction object,
     if ($config['participants']) {
       $transaction->pending_signatures[$transaction->payer] = $uid == $transaction->payer ? 0 : 1;

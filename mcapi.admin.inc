@@ -1186,7 +1186,7 @@ function mcapi_transaction_operations() {
     'access callback' => 'transaction_op_undo_access',
     'submit callback' => 'transaction_op_undo',
     //'form callback' => 'transaction_op_undo_form',
-    'redirect' => 'user',
+    'redirect' => 'transaction/%transaction',
     'weight' => 10,
   );
   return $operations;

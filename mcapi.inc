@@ -185,32 +185,32 @@ function mcapi_validate_state(&$element, &$form_state) {
  * builds 'are you sure' operations form for both ajax and nojs
  */
 function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
-  drupal_add_js('misc/ajax.js', array('type' => 'file'));
   $operations = transaction_operations();
-  if (!empty($operations[$op]['form callback'])) {
-    $form = drupal_get_form('transaction_operation_form', $op, $transaction);
-    //this form will sumit and expect ajax
-    $form['actions']['submit']['#attributes']['class'][] = 'use-ajax-submit';
-    drupal_add_js('misc/jquery.form.js');
-    drupal_add_js('misc/ajax.js', array('type' => 'file'));
+  $operation = &$operations[$op];
+  $operated = FALSE;
+  if (!empty($operation['form callback'])) {
+    $renderable = drupal_get_form('transaction_operation_form', $op, $transaction);
   }
   else {
-    $form = mcapi_submit_op_form($operations[$op], $transaction);
+    //do the form submission without showing the form
+    $renderable = mcapi_submit_op_form($operation, $transaction);
+    $operated = TRUE;
   }
-  //return normally, or via ajax if called via ajax
-  if ($mode == 'nojs' ) {//return a render array for delivery as a page
-    //return an 'are you sure form'
-    if (isset($form)) {
-      return $form;
+
+  if ($mode == 'nojs') {//return a render array for delivery as a page
+    if ($operated && array_key_exists('redirect', $operation)) {
+      drupal_set_message(strip_tags(drupal_render($renderable)));
+      drupal_goto(mcapi_operation_redirect_path($operation, $transaction));
     }
-    //do the operation directly, without a form, and return the render array
-    else {
-      return mcapi_submit_op_form($operations[$op], $transaction);
-    }
+    else return $renderable;
   }
   elseif ($mode == 'ajax') {//return ajax commands
+    //this form will sumit and expect ajax
+    $renderable['actions']['submit']['#attributes']['class'][] = 'use-ajax-submit';
+    drupal_add_js('misc/jquery.form.js');
+    drupal_add_js('misc/ajax.js', array('type' => 'file'));
     //when the button is clicked replace the whole transaction div with the results.
-    $commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($form));
+    $commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($renderable));
     return array(
       '#type' => 'ajax',
       '#commands' => $commands
@@ -234,29 +234,44 @@ function transaction_operation_form($form, &$form_state, $op, $transaction) {
     $form += $info['form callback']($op, $transaction);
   }
   $form['certificate'] = transaction_view($transaction, 'certificate', TRUE);
-  //we might want to write something a bit cleaner than this
+  //we might want to write something a bit cleaner than drupal's confirm form
   $form = confirm_form(
     $form,
     entity_label('transaction', $transaction),//this page title stays in place throughout the ajax operation
-    isset($info['redirect']) ? $info['redirect'] : 'transaction/'. $transaction->serial,
+    'transaction/'.$transaction->serial,
     $info['sure'],
     $info['title'],
     t('Not so sure'),
     $op
   );
+  //todo, I don't why the $form_state[redirect] doesn't survive to submission....
+  $form_state['redirect1'] = mcapi_operation_redirect_path($info, $transaction);
   return $form;
 }
-//this is only called from the are you sure form, and always from ajax
+
+/**
+ * Form submission for the generic operation form
+ */
 function transaction_operation_form_submit($form, &$form_state) {
+  $operation = $form_state['transaction_operation'];
   $transaction = transaction_load($form_state['values']['serial']);
-  $renderable = mcapi_submit_op_form($form_state['transaction_operation'], $transaction, $form_state['values']);
+  $renderable = mcapi_submit_op_form($operation, $transaction, $form_state['values']);
+  $renderable = 'hello';
+  if ($form_state['redirect1']) {
+    drupal_set_message(strip_tags(drupal_render($renderable)));
+    //todo what is overwriting the redirect?
+    $form_state['redirect'] = $form_state['redirect1'];
+    return;
+  }
   //if this is ajax we return the result, otherwise redirect the form
   $commands[] = ajax_command_replace('#transaction-operation-form', drupal_render($renderable));
   ajax_deliver(array(
     '#type' => 'ajax',
     '#commands' => $commands
   ));
+  //not possible to redirect here
   exit();
+
 }
 
 //this is called in operation form submission OR ajax
@@ -267,6 +282,14 @@ function mcapi_submit_op_form($operation, $transaction, $values = array()) {
   //this changes the $transaction
   $result = $function($operation, $transaction, $values) or 'operation returned nothing renderable';
   return $result;
+}
+
+//utility
+function mcapi_operation_redirect_path($operation, $transaction) {
+  $path = empty($operation['redirect']) ? 'transaction/%transaction' : $operation['redirect'];
+  $path = str_replace('%user', $GLOBALS['user']->uid, $path);
+  $path = str_replace('%transaction', $transaction->serial, $path);
+  return $path;
 }
 
 /**
@@ -821,13 +844,16 @@ function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
   $base = 'transaction/'. $transaction->serial;
   foreach ($operations as $op => $info) {
     if (!$view && $op == 'view') continue;
+    $ajaxop = $ajax && empty($info['redirect']);
     if (transaction_operation_access($op, $transaction)) {
       $renderable['#links'][$op] = array(
         'title' => $info['title'],
         'href' =>  $base,
-        'attributes' => $ajax ? array('class' => array('use-ajax')) : array()
+        //we can't redirect in an ajax form
+        'attributes' => $ajaxop ? array('class' => array('use-ajax')) : array()
       );
       if ($op != 'view') {
+        //nojs will be replaced by js when the page is loaded
         $renderable['#links'][$op]['href'] .= '/nojs/'. $op;
       }
     }
