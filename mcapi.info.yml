@@ -1,6 +1,6 @@
-name: 'Community Accounting API'
-description: "Build a complete exchange network with the echanges, currencies, and wallets"
-package: "Community Accounting"
+name: Community Accounting
+description: Build a complete exchange network with the echanges, currencies, and wallets
+package: Community Accounting
 configure: mcapi.admin
 core: 8.x
 type: module

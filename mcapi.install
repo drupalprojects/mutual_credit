@@ -1,10 +1,5 @@
 <?php
 
-//TEMP until drupal works out installation dependencies
-if (!module_exists('entity_reference')){
-  \Drupal::moduleHandler()->install(array('entity_reference'));
-}
-
 /**
  * @file
  * Install, update and uninstall functions for the transactions module.
@@ -21,27 +16,24 @@ function mcapi_install() {
   //default exchange
   entity_create('mcapi_exchange', array(
     'name' => t(
-      '!sitename exchange 1',
+      'First !sitename exchange',
       array('!sitename' => \Drupal::config('system.site')->get('name'))
     ),
     'uid' => '1',
-    'visibility' => 'public',
+    'visibility' => EXCHANGE_VISIBILITY_RESTRICTED,
     'open' => TRUE,
     'active' => TRUE,
     'field_currencies' => array('credunit')
   ))->save();
+  //add the field_exchanges entity_reference instance to the user entity
+
+
   //put user 1 in the default exchange
   $account = user_load(1);
-  if (property_exists($account, 'field_exchanges')) {
-    //does this even work with fieldAPI fields?
-    $account->set('field_exchanges', array(1));
-    $account->save();
-  }
-  else {
-    echo  "wasn't able to put user 1 in exchange 1";
-    print_r($account);
-  }
-  //this will autocreate a wallet for the exchange according to the default settings!
+  $account->set('field_exchanges', array(1));
+  $account->save();
+
+  //according to the default settings this will have autocreated a wallet for the exchange !
 
   //Create a wallet for user 1, which was created before this module was installed.
   $props = array(

@@ -37,9 +37,10 @@ function _workflow_help() {
 }
 
 
-function _mcapi_field_extra_fields() {
+function _mcapi_entity_extra_field_info() {
   //go through all the bundles which are configured to hold wallets
-  foreach (\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_bundle => $max) {
+  $types = \Drupal::config('mcapi.wallets')->get('entity_types');
+  foreach((array)$types as $entity_bundle => $max) {
     //if (!$max) continue; //don't show wallets on bundles with maximum of 0 wallets
     list($entity_type, $bundle) = explode(':', $entity_bundle);
     $extra[$entity_type] = array(
@@ -54,7 +55,7 @@ function _mcapi_field_extra_fields() {
       )
     );
   }
-  $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
+  $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
   $fields = array('payer', 'payee', 'worths', 'description');
   foreach ($fields as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
@@ -271,7 +272,7 @@ function mcapi_view_wallets_summaries($entity) {
     'mcapi_wallet',
     array(
       'pid' => $entity->id(),
-      'entity_type' => $entity->entityType()
+      'entity_type' => $entity->getEntityTypeId()
     )
   );
   foreach ($wallets as $wallet) {
@@ -408,10 +409,8 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
   $v['state'] = $states[$transaction->state->value];
   $v['type'] = $types[$transaction->type->value]->label;
   $v['serial'] = $transaction->serial->value;
-  $uri = $transaction->payer->entity->uri();
-  $v['payer'] = l($transaction->payer->entity->label(), $uri['path']);
-  $uri = $transaction->payee->entity->uri();
-  $v['payee'] = l($transaction->payee->entity->label(), $uri['path']);
+  $v['payer'] = l($transaction->payer->entity->label(), $transaction->payer->entity->url());
+  $v['payee'] = l($transaction->payee->entity->label(), $transaction->payee->entity->url());
   $v['creator'] = $transaction->creator->entity->label();
   $v['description'] = $transaction->description->value;
   $v['worth'] = $transaction->get('worths')->getString();
@@ -421,8 +420,7 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
   $exchange_field = ($transaction->get('exchange')->getValue(TRUE));
   $v['exchange'] = $exchange_field[0]['entity']->label();
   //the token service lets you pass url options, but this function doesn't
-  $uri = $transaction->uri();
-  $v['url'] = url($uri['path'], array('absolute' => TRUE));
+  $v['url'] = $transaction->url();//@todo how to make this absolute?
   //only store it if the transaction has a database key
 
   $vars += $v;
@@ -573,11 +571,11 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
 function get_exchange_entity_fieldnames($type = '') {
   $types = array('mcapi_exchange' => NULL);
   foreach (Field::FieldInfo()->getInstances() as $entity_type => $data1) {
-    if (in_array('entity_type', array('mcapi_exchange', 'mcapi_transaction', 'mcapi_wallet'))) continue;
+    if (in_array($entity_type, array('mcapi_exchange', 'mcapi_transaction', 'mcapi_wallet'))) continue;
     foreach ($data1 as $bundle => $fields) {
       foreach ($fields as $fieldname => $fieldInfo) {
-        if ($fieldInfo->getFieldType() == 'entity_reference') {
-          if ($fieldInfo->getFieldSetting('target_type') == 'mcapi_exchange') {
+        if ($fieldInfo->getType() == 'entity_reference') {
+          if ($fieldInfo->getSetting('target_type') == 'mcapi_exchange') {
             $types[$entity_type] = $fieldname;
             continue 3;
           }

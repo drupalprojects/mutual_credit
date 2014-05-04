@@ -62,6 +62,7 @@ mcapi.misc:
 mcapi.wallets:
   type: mapping
   label: Wallet settings
+  mapping:
     wallet_access:
       type: mapping
       label: Default wallet access setting

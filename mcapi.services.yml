@@ -1,23 +1,23 @@
 services:
   plugin.manager.mcapi.currency_type:
     class: Drupal\mcapi\Plugin\CurrencyTypePluginManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler]
 
   plugin.manager.mcapi.currency_field:
     class: Drupal\mcapi\Plugin\CurrencyFieldPluginManager
-    arguments: ['@container.namespaces', '@cache.field', '@language_manager', '@module_handler', '@plugin.manager.mcapi.currency_type']
+    arguments: ['@container.namespaces', '@cache.discovery', '@language_manager', '@module_handler', '@plugin.manager.mcapi.currency_type']
 
   plugin.manager.mcapi.currency_widget:
     class: Drupal\mcapi\Plugin\CurrencyWidgetManager
-    arguments: ['@container.namespaces', '@cache.field', '@module_handler', '@language_manager', '@plugin.manager.mcapi.currency_field']
+    arguments: ['@container.namespaces', '@cache.discovery', '@module_handler', '@language_manager', '@plugin.manager.mcapi.currency_field']
 
   plugin.manager.mcapi.transaction_operation:
     class: Drupal\mcapi\Plugin\OperationManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler]
 
   plugin.manager.mcapi.wallet_access:
     class: Drupal\mcapi\Plugin\WalletAccessPluginManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager']
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler]
 
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter

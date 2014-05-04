@@ -33,7 +33,7 @@ function mcapi_greco_theme() {
  * Dividing the sum of all the debit balances by the average daily sales gives us the sales performance ratio for the system.
  */
 function mcapi_index_views_cron() {
-  $manager = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+  $manager = \Drupal::entityManager()->getStorage('mcapi_transaction');
   foreach (entity_load_multiple('mcai_currencies') as $currcode => $currency) {
     if ($currency->issuance != CURRENCY_TYPE_EXCHANGE) continue;
     $sum_of_all_debit_balances = 0;
@@ -62,7 +62,8 @@ function mcapi_index_views_cron() {
     else {
       $indicator = NULL;
     }
-    drupal_write_record('mcapi_greco', array('currcode' => $currcode, 'timestamp' => REQUEST_TIME, 'value' => $indicator));
+    $row = array('currcode' => $currcode, 'timestamp' => REQUEST_TIME, 'value' => $indicator);
+    drupal_write_record('mcapi_greco', $row);
   }
 }
 

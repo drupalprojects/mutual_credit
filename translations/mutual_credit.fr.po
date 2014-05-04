@@ -620,7 +620,7 @@ msgid "Register exchanges with other members, subject each currency's permission
 msgstr "Enregistrer des échanges avec d'autres membres, soumettre les permissions de chaque unité d'échange"
 
 #: mcapi.module:723;780
-msgid "Manage all transactions"
+msgid "Configure community accounting"
 msgstr "Gérer tous les échanges"
 
 #: mcapi.module:724

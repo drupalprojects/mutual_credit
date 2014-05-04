@@ -43,7 +43,7 @@ function mcapi_requirements($phase) {
       'title' => t('Transaction index table'),
     );
     //check that the index table is integral
-    if (\Drupal::entityManager()->getStorageController('mcapi_transaction')->indexCheck()) {
+    if (\Drupal::entityManager()->getStorage('mcapi_transaction')->indexCheck()) {
       $result['severity'] = REQUIREMENT_OK;
       $result['description'] = t('Index table adds up');
     }
@@ -155,11 +155,13 @@ function mcapi_help($path, $arg) {
 
 /**
  * get a transaction operation plugin or array of all plugins
+ * N.B. operations are NOT configurable entities, but plugins with a settings file each
  *
  * @param string $op_name
  *   the plugin id of the operation
  * @return $plugin or array of plugins
  *   depending on whether an op_name was passed
+ * @todo rename operations to transitions because d8 now has entity operations which are not configurable and not very extensible.
  */
 function transaction_operations($op_name = NULL) {
   //TODO when to use drupal_static and when to use drupal_static_fast?
@@ -173,6 +175,7 @@ function transaction_operations($op_name = NULL) {
   if ($op_name) return $plugins[$op_name];
   else return $plugins;
 }
+
 //shows the most common operations
 function show_transaction_operations($view = TRUE) {
   $ops = transaction_operations();
@@ -202,13 +205,13 @@ function mcapi_theme($existing, $type, $theme, $path) {
  * implements hook_entity_view().
  * add a wallet summary view to wallet-enabled entities
  */
-function mcapi_entity_view($entity, $mode, $language) {
+function mcapi_entity_view(&$build, $entity, $mode, $language) {
   //check the entity is of a type which can own a wallet.
   $quants = \Drupal::config('mcapi.wallets')->get('entity_types');
-  $key = $entity->entityType() .':'. $entity->bundle();
+  $key = $entity->getEntityTypeId() .':'. $entity->bundle();
   if (array_key_exists($key, $quants) && $quants[$key]) {
     module_load_include('inc', 'mcapi');
-    $entity->content['wallet_balances'] = mcapi_view_wallets_summaries($entity);
+    $build['wallet_balances'] = mcapi_view_wallets_summaries($entity);
   }
 }
 
@@ -326,12 +329,12 @@ function mcapi_mail($key, &$message, $params) {
 }
 
 
-/*
- * implements hook_field_extra_fields().
+/**
+ * implements hook_entity_extra_field_info().
  */
-function mcapi_field_extra_fields() {
+function mcapi_entity_extra_field_info() {
   module_load_include('inc', 'mcapi');
-  return _mcapi_field_extra_fields();
+  return _mcapi_entity_extra_field_info();
 }
 
 /**
@@ -384,12 +387,13 @@ function referenced_exchanges($entity = NULL) {
     $entity = entity_load('user', \Drupal::currentUser()->id());
   }
   if ($entity) {
-    if ($entity->entityType() == 'user') {
+    $entity_type = $entity->getEntityTypeId();
+    if ($entity_type == 'user') {
       $fieldname = 'field_exchanges';
     }
     else {
       module_load_include('inc', 'mcapi');
-      $fieldname = get_exchange_entity_fieldnames($entity->entityType());
+      $fieldname = get_exchange_entity_fieldnames($entity_type);
     }
     if ($fieldname) {
       foreach($entity->get($fieldname)->getValue() as $item) {
@@ -714,7 +718,7 @@ function mcapi_process_types($element) {
  */
 function mcapi_process_currcodes($element) {
   if (empty($element['#options']) && !empty($element['#currcodes'])) {
-    $element['#options'] = array_intersect_key(mcapi_currency_list(), drupal_map_assoc($element['#currcodes']));
+    $element['#options'] = array_intersect_key(mcapi_currency_list(), array_combine($element['#currcodes'], $element['#currcodes']));
   }
   elseif (empty($element['#options'])) {
     $element['#options'] = $element['#options'] = mcapi_currency_list();
@@ -832,7 +836,7 @@ function _mcapi_conceal_user_exchanges(&$form, $form_state) {
 function mcapi_entity_delete($entity) {
   if ($exchanges = referenced_exchanges($entity)) {
     $exchange = current($exchanges);//if the parent was in more than one exchange, this will effectively pick a random one.
-    $wids = \Drupal::Entitymanager()->getStorageController('mcapi_wallet')->getWalletIds($entity);
+    $wids = \Drupal::Entitymanager()->getStorage('mcapi_wallet')->getWalletIds($entity);
     foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
       //change the wallet names and change the parent to this entity's exchange
       $new_name = t(
@@ -846,7 +850,7 @@ function mcapi_entity_delete($entity) {
     }
     drupal_set_message(t(
       "!name's wallets have been orphaned to exchange !exchange",
-      array('!name' => $entity->label(), '!exchange' => l($exchange->label(), $exchange->uri()))
+      array('!name' => $entity->label(), '!exchange' => l($exchange->label(), $exchange->url()))
     ));
   }
 }
@@ -870,13 +874,14 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
   }
 }
 
-/*
+/**
  * implements hook_toolbar
  * adds the 'balances' icon
+ * @todo put this somewhere that doesn't involve invoking _drupal_add_css directly
  */
 function mcapi_toolbar() {
   if (\Drupal::currentUser()->hasPermission('configure mcapi')) {
-    drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
+    _drupal_add_css(drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css');
   }
 }
 
@@ -947,7 +952,7 @@ function mcapi_default_currency_id($entity, $field_definition, $langcode) {
  * give a new wallet to every user, and every new exchange
  */
 function mcapi_entity_insert($entity) {
-  $type = $entity->entityType();
+  $type = $entity->getEntityTypeId();
   if (!\Drupal::config('mcapi.wallets')->get('autoadd')) return;
   $entity_bundle = $type .':'. $entity->bundle();
   $max = \Drupal::config('mcapi.wallets')->get('entity_types.'.$entity_bundle);
@@ -995,7 +1000,7 @@ function mcapi_request_get_entity($request) {
  *   wallet ids belonging to the passed entity
  */
 function mcapi_get_wallet_ids(EntityInterface $entity) {
-  return \Drupal::EntityManager()->getStorageController('mcapi_wallet')->getWalletIds($entity);
+  return \Drupal::EntityManager()->getStorage('mcapi_wallet')->getWalletIds($entity);
 }
 /*
  * implements hook_block_view_BLOCK_BASE_ID_alter
@@ -1011,11 +1016,10 @@ function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
     }
     foreach (referenced_exchanges() as $exchange) {
       //does a menu link really require all of these properties
-      $uri = $exchange->uri();
       $renderable = array(
       	'#theme' => 'menu_link',
         '#title' => $exchange->label(),
-        '#href' => $uri['path'],
+        '#href' => $exchange->url(),
         '#weight' => -100,
         '#localized_options' => array(),
         '#below' => array(),
@@ -1037,7 +1041,7 @@ function mcapi_get_links($transaction, $view_link = FALSE) {
 }
 
 function mcapi_wipeslate() {
-  $controller = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+  $controller = \Drupal::entityManager()->getStorage('mcapi_transaction');
   $entities = $controller->loadMultiple();
   $controller->delete($entities, TRUE);
 }

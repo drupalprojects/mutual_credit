@@ -1140,7 +1140,7 @@ msgstr ""
 "νομίσματος"
 
 #: mcapi.module:723;777
-msgid "Manage all transactions"
+msgid "Configure community accounting"
 msgstr "Διαχείριση όλων των συναλλαγών"
 
 #: mcapi.module:724

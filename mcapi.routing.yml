@@ -5,6 +5,8 @@ mcapi.admin:
     _title: 'Accounting'
   requirements:
     _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE
 
 mcapi.admin_misc:
   path: '/admin/accounting/config'
@@ -13,6 +15,8 @@ mcapi.admin_misc:
     _title: 'Other configuration'
   requirements:
     _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
 
 #currencies
 mcapi.admin_currency_list:
@@ -22,6 +26,8 @@ mcapi.admin_currency_list:
     _title: Currencies
   requirements:
     _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.admin_currency_edit:
   path: '/admin/accounting/currencies/{mcapi_currency}'
@@ -30,6 +36,8 @@ mcapi.admin_currency_edit:
     _title: 'Editing currency'
   requirements:
     _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.admin_currency_delete:
   path: '/admin/accounting/currencies/{mcapi_currency}/delete'
@@ -37,6 +45,8 @@ mcapi.admin_currency_delete:
     _entity_form: 'mcapi_currency.delete'
   requirements:
     _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.admin_currency_disable:
   path: '/admin/accounting/currencies/{mcapi_currency}/disable'
@@ -44,6 +54,8 @@ mcapi.admin_currency_disable:
     _entity_form: 'mcapi_currency.disable'
   requirements:
     _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.admin_currency_enable:
   path: '/admin/accounting/currencies/{mcapi_currency}/enable'
@@ -51,6 +63,8 @@ mcapi.admin_currency_enable:
     _entity_form: 'mcapi_currency.enable'
   requirements:
     _entity_access: 'mcapi_currency.edit'
+  options:
+    _admin_route: TRUE
 
 #transactions
 mcapi.admin.transactions:
@@ -68,6 +82,8 @@ mcapi.transaction_admin:
     _title: 'Log transaction'
   requirements:
     _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.transaction_view:
   path: '/transaction/{mcapi_transaction}'
@@ -89,6 +105,7 @@ mcapi.admin_mass:
   requirements:
     _permission: 'manage mcapi'
 
+#The other three in the local tasks
 mcapi.admin_mass.many2one:
   path: 'transact/mass/{vector}'
   defaults:
@@ -116,6 +133,8 @@ mcapi.admin.transactions.operations:
     _title: 'Configure workflow'
   requirements:
     _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE
 
 mcapi.workflow_settings:
   path: '/admin/accounting/transactions/workflow/{op}'
@@ -124,6 +143,8 @@ mcapi.workflow_settings:
     _title: 'Configure transaction operation'
   requirements:
     _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
 
 #wallets
 mcapi.wallet_view:
@@ -172,6 +193,8 @@ mcapi.admin_exchange_list:
     _title: Exchanges
   requirements:
     _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.exchange.view:
   path: '/exchange/{mcapi_exchange}'
@@ -188,6 +211,8 @@ mcapi.exchange.add:
     _title: Create exchange
   requirements:
     _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.exchange.edit:
   path: '/exchange/{mcapi_exchange}/edit'
@@ -203,6 +228,8 @@ mcapi.exchange.delete_confirm:
     _entity_form: 'mcapi_exchange.delete'
   requirements:
     _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.exchange.activate_confirm:
   path: '/exchange/{mcapi_exchange}/activate'
@@ -210,6 +237,8 @@ mcapi.exchange.activate_confirm:
     _entity_form: 'mcapi_exchange.activate'
   requirements:
     _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
 
 mcapi.exchange.deactivate_confirm:
   path: '/exchange/{mcapi_exchange}/deactivate'
@@ -217,3 +246,5 @@ mcapi.exchange.deactivate_confirm:
     _entity_form: 'mcapi_exchange.deactivate'
   requirements:
     _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE

@@ -82,7 +82,7 @@ function drush_mcapi_wipeslate() {
 }
 //delete transactions by serials
 function drush_mcapi_delete() {
-	$storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+	$storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
 	foreach(func_get_args() as $serial) {
     mcapi_transaction_load($serial)->delete();
 	}

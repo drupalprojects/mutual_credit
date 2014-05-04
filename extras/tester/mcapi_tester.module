@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * implements hook_menu().
+ */
 function mcapi_tester_menu() {
   return array(
   	'admin/accounting/generate' => array(
@@ -10,7 +12,10 @@ function mcapi_tester_menu() {
   );
 }
 
-function mcapi_tester_exchange_field_extra_fields() {
+/**
+ * implements hook_entity_extra_field_info()
+ */
+function mcapi_tester_entity_extra_field_info() {
   $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions_link'] = array(
     'label' => t('List of transactions'),
     'weight' => 11,

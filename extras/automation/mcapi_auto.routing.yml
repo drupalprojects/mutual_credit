@@ -6,6 +6,8 @@ mcapi.currency.automation_settings:
     _title: 'Automation'
   requirements:
     _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
 
 #currency per-transaction payments
 mcapi.admin_currency.auto_spot:
@@ -15,6 +17,8 @@ mcapi.admin_currency.auto_spot:
     _title: Spot Payments
   requirements:
     _entity_access: 'mcapi_currency.update'
+  options:
+    _admin_route: TRUE
 
 #currency periodic payments
 mcapi.admin_currency.auto_periodic:
@@ -24,4 +28,6 @@ mcapi.admin_currency.auto_periodic:
     _title: Spot Payments
   requirements:
     _entity_access: 'mcapi_currency.update'
+  options:
+    _admin_route: TRUE
 

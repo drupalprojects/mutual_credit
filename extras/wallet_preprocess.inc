@@ -9,7 +9,7 @@
  * @param array $vars
  */
 function template_preprocess_wallet_history(&$vars) {
-  $storage = \Drupal::entityManager()->getStorageController('mcapi_transaction');
+  $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
   if ($history = $storage->timesBalances($vars['wallet']->id(), $vars['currency']->id())) {
     //add a final point showing the balance at this moment
     $history[REQUEST_TIME] = end($history);
@@ -158,8 +158,8 @@ function template_preprocess_wallet_balance_bars(&$vars) {
 function template_preprocess_wallet_virgin(&$vars) {
   $vars['name'] = $vars['wallet']->label();
   if ($vars['wallet']->access('edit')) {
-    $uri = $vars['wallet']->uri();
-    $vars['edit'] = url($uri['path'] . '/edit');
+    //there isn't a url in the entity object for editing or a method for retrieving it, I think
+    $vars['edit'] = $vars['wallet']->url() . '/edit';
   }
 }
 

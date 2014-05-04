@@ -1029,7 +1029,7 @@ msgid "Register exchanges with other members, subject each currency's permission
 msgstr ""
 
 #: mcapi.module:723;777
-msgid "Manage all transactions"
+msgid "Configure community accounting"
 msgstr ""
 
 #: mcapi.module:724
