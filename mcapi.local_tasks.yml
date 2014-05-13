@@ -1,23 +1,25 @@
 #sits next to the transaction field ui tabs
 mcapi.admin_tab:
   route_name: mcapi.admin.transactions
-  title: Transactions
-  tab_root_id: mcapi.admin_tab
+  title: Setings menu
+  base_route: mcapi.admin.transactions
   weight: 0
 
 #sits next to the wallet field ui tabs
 mcapi.admin_wallet_tab:
   route_name: mcapi.admin_wallets
   title: Settings
-  tab_root_id: mcapi.admin_wallet_tab
+  base_route: route: mcapi.admin_wallets
   weight: 0
 
-#4 types of mass transaction
+#default tab if field API tasks are showing on the exchanges page
 mcapi.admin_exchanges_tab:
   route_name: mcapi.admin_exchange_list
   title: List
-  tab_root_id: mcapi.admin_exchanges_tab
+  base_route: mcapi.admin_exchange_list
   weight: 0
+
+# the first of 4 types of mass transaction
 mcapi.admin_mass.many2one_tab:
   route_name: mcapi.admin_mass
   title: Many to one

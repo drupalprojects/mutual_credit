@@ -14,7 +14,8 @@ class MassPay extends FormBase {
   private $payees;
 
   function __construct() {
-    list($this->payers, $this->payees) = explode('2', \Drupal::request()->attributes->get('vector'));
+    $vector = \Drupal::request()->attributes->get('vector') ? : 'many2one';
+    list($this->payers, $this->payees) = explode('2', $vector);
   }
 
   public function getFormId() {

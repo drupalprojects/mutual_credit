@@ -31,8 +31,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *
    * @return integer.
    */
-  public function transactions(array $conditions, $serial = FALSE);
-
+  public function transactions(array $conditions = array(), $serial = FALSE);
 
   /**
    * return the sum of all transactions, in all states
@@ -43,58 +42,38 @@ interface CurrencyInterface extends ConfigEntityInterface {
    * @return integer
    *   raw quantity which should be formatted using currency->format($value);
    */
-  public function volume(array $conditions);
-
+  public function volume(array $conditions = array());
 
   /**
    * check that a currency has no transactions and if so, call the parent delete method
    */
   public function delete();
 
+  /**
+   * Format the database integer value according to the formatting string in $currency->format.
+   *
+   * @param integer $raw_num
+   *   the value stored in the worth field 'value' column
+   *
+   * @return string
+   *   #markup containing the formatted value
+   */
+  public function format($raw_num);
 
   /**
    * Format the value as a decimal which resembles the formatted value
+   * This was created for google charts which wouldn't understand 'CC1.23' as a number
    *
-   * @var integer
-   */
-  public function format_decimal($value);
-
-
-  /**
-   * apply the currency's own formatting to the quantity.
-   * note that the raw value may bear little resemblance to the final value
-   *
-   * @var integer
-   */
-  public function format($value);
-
-
-  /**
-   * Get the Currency Type Plugin
-   * @return object plugin
-   */
-  public function getPlugin();
-
-  /**
-   * Get the currencies widget plugin
-   * Likely to be just once per page, so no need for saving the manager or the plugin
-   *
-   * @return object
-   */
-  public function getWidgetPlugin();
-
-  /**
-   * Fetch the Currency Type.
+   * @param integer $raw_num
+   *   the value stored in the worth field 'value' column
    *
    * @return string
-   *  The plugin Id for the Currency Type.
+   *   plaintext #markup containing the formatted value. Hopefully 90 mins, normally formatted
+   *   say as '1 1/2 hours' would come out of this function '1.30'. This is good for display, but
+   *   will produce unexpected results if used in client side calculations. Try to avoid
+   *   calculating with formatted strings in base 60 on the client side.
    */
-  public function getCurrencyType();
-  /*
-   * //TODO I don't know if hook implementations should be part of the interface
-   */
-  //public static function preCreate(EntityStorageInterface $storage_controller, array &$values);
-  //public function __construct(array $values, $entity_type);
-  //public static function postDelete(EntityStorageInterface $storage_controller, array $entities);
-  //public static function postDelete(EntityStorageInterface $storage_controller, array $entities);
+  public function format_numeric($raw_num);
+
+
 }

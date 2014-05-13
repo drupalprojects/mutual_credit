@@ -15,7 +15,7 @@ use Drupal\Component\Annotation\PluginID;
  *
  * @ingroup views_filter_handlers
  *
- * @PluginID("mcapi_state")
+ * @ViewsFilter("mcapi_state")
  */
 class State extends InOperator {
 

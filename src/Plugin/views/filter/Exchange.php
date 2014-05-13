@@ -15,7 +15,7 @@ use Drupal\views\Plugin\views\filter\FilterPluginBase;
  *
  * @ingroup views_filter_handlers
  *
- * @PluginID("mcapi_current_exchange")
+ * @ViewsFilter("mcapi_current_exchange")
  */
 class Exchange extends FilterPluginBase {
 

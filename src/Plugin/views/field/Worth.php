@@ -25,7 +25,7 @@ use Drupal\views\Plugin\views\field\Standard;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("worth")
+ * @ViewsField("worth")
  */
 class Worth extends FieldPluginBase {
 
@@ -33,6 +33,7 @@ class Worth extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
+    debug($this->getValue($values));
     //@todo how do we get the alias for currcode field, which was added as an 'additional field'
     //or even load up the currency as a
     return mcapi_currency_load($values->mcapi_transactions_index_currcode)

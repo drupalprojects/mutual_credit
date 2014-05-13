@@ -3,6 +3,7 @@
 function mcapi_greco_schema() {
   return array(
   	'mcapi_greco' => array(
+    'description' => 'log of greco values over time',
   	  'fields' => array(
         'timestamp' => array(
           'description' => 'Unixtime that the stat was logged',
@@ -25,7 +26,10 @@ function mcapi_greco_schema() {
     	    'default' => 0
     	  )
   	  )
-    )
+    ),
+    'unique keys' => array(
+      'uuid' => array('timestamp', 'currcode')
+    ),
   );
 }
 

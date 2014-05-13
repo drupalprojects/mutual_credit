@@ -19,6 +19,14 @@ mcapi.admin_misc:
     _admin_route: TRUE
 
 #currencies
+mcapi.currency:
+  path: '/currency/{mcapi_currency}'
+  defaults:
+    _entity_view: 'mcapi_currency.activity'
+    _title_callback: 'Drupal\mcapi\Controller\CurrencyController::pageTitle'
+  requirements:
+    _permission: 'access content'
+  
 mcapi.admin_currency_list:
   path: '/admin/accounting/currencies'
   defaults:
@@ -62,7 +70,7 @@ mcapi.admin_currency_enable:
   defaults:
     _entity_form: 'mcapi_currency.enable'
   requirements:
-    _entity_access: 'mcapi_currency.edit'
+    _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
 

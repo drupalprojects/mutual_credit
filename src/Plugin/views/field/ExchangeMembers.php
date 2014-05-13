@@ -17,7 +17,7 @@ use Drupal\Component\Annotation\PluginID;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("exchange_members")
+ * @ViewsField("exchange_members")
  */
 class ExchangeMembers extends FieldPluginBase {
 

@@ -20,14 +20,13 @@ use Drupal\Core\Entity\EntityTypeInterface;
 /**
  * Defines the Transaction entity.
  *
- * @EntityType(
+ * @ContentEntityType(
  *   id = "mcapi_transaction",
  *   label = @Translation("Transaction"),
- *   module = "mcapi",
  *   controllers = {
- *     "storage" = "Drupal\mcapi\TransactionStorage",
- *     "view_builder" = "Drupal\mcapi\TransactionViewBuilder",
- *     "access" = "Drupal\mcapi\TransactionAccessController",
+ *     "storage" = "Drupal\mcapi\Storage\TransactionStorage",
+ *     "view_builder" = "Drupal\mcapi\ViewBuilder\TransactionViewBuilder",
+ *     "access" = "Drupal\mcapi\Access\TransactionAccessController",
  *     "form" = {
  *       "operation" = "Drupal\mcapi\Form\OperationForm",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
@@ -42,7 +41,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   },
  *   fieldable = TRUE,
  *   translatable = FALSE,
- *   route_base_path = "admin/accounting",
+ *   route_base_path = "admin/accounting/transactions",
  *   links = {
  *     "canonical" = "/transaction/{mcapi_transaction}",
  *     "admin-form" = "mcapi.admin.transactions"
@@ -71,8 +70,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * {@inheritdoc}
    * @todo update this in line with https://drupal.org/node/2221879
+   * actually can this be removed?
    */
   public function uri($rel = 'canonical') {
+    debug('This function is still used!!');
     $renderable = parent::uri($rel);
     $renderable['path'] = 'transaction/'. $this->get('serial')->value;
     return $renderable;
@@ -96,20 +97,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
           '',
           t('A wallet cannot pay itself.')
       );
-    }
-    /*
-     * @TODO GORDON I can't spend any more time trying to figure out the worths object.
-     * foreach ($this->get('worths') gives us an array of worths it makes no sense.
-     * I don't want to interrogate each $worth object, I just want an array of values keyed by currcode.
-     * what about $this->get('worths') ?
-     */
-    foreach ($this->worths[0] as $worth) {
-      if ($worth->value <= 0) {
-        $this->exceptions[] = new McapiTransactionWorthException(
-          $worth->currency,
-          t('A transaction must be worth more than 0')
-        );
-      }
     }
     //check that the state and type are congruent
     $types = mcapi_get_types();
@@ -148,6 +135,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $this->children = array();//ONLY parent transactions have this property
       //previous the children's parent was set to temp, but is that necessary?
       $this->children = \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', array($clone));
+
+      //moduleHandler was not passed to the ContentEntity constructor
       \Drupal::moduleHandler()->alter('mcapi_transaction_children', $this->children, $clone);
       //how the children have been created but before they are validated, we to the intertrading split
 
@@ -156,17 +145,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $payer_exchanges = referenced_exchanges($this->get('payer')->entity->getOwner());
       $payee_exchanges = referenced_exchanges($this->get('payee')->entity->getOwner());
 
-      //reformat the worths so we can work with them
-      foreach($this->get('worths')->getValue() as $delta => $worth) {
-        //Should be able to just pull them out of the worths field as this array
-        $worth = current($worth);
-        $transaction_worths[$worth['currcode']] = $worth['value'];
-      }
-      $allowed_currcodes = exchange_currencies($exchanges);
       foreach (array_intersect_key($payer_exchanges, $payee_exchanges) as $id => $exchange) {
         $access = TRUE;
         $allowed_currencies = exchange_currencies(array($exchange));
-        $leftover = array_diff_key($transaction_worths, $allowed_currencies);
+        $leftover = array_diff_key($this->get('field_worth')->getValue(), $allowed_currencies);
         if ($leftover) continue; //try another exchange
         $this->set('exchange', $exchange);
         break;
@@ -181,7 +163,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $messages = array();
       //with no exchange/currency combination available, we now try intertrading
       if (!$this->get('exchange')->value) {
-        $this->set('exchange', reset(referenced_exchanges()));
+        $exchanges = referenced_exchanges();
+        $this->set('exchange', reset($exchanges));
         //put this transaction in the current users' first exchange, just to make it valid
         $this->exceptions[] = new McapiTransactionException ('exchange', t('The payer and payee have no exchanges in common'));
       }
@@ -263,9 +246,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $transaction->save();
     }
 
-
     parent::postSave($storage_controller, $update);
-    $storage_controller->saveWorths($this);
+//    $storage_controller->saveWorths($this);
     $storage_controller->addIndex($this);
 
     //TODO clear the entity cache of all wallets involved in this transaction and its children
@@ -274,28 +256,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * @see \Drupal\mcapi\TransactionInterface::preCreate()
-   */
-  public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    parent::preCreate($storage_controller, $values);
-    //@todo this is where we ensure that $values['currcode'] and $values['value'] are in a proper worth field
-    $values += array(
-      'description' => '',
-      'parent' => 0,
-      'payer' => NULL,
-      'payee' => NULL,
-      'creator' => \Drupal::currentUser()->id(),
-      'type' => 'default',
-      'extra' => array(),
-      'worths' => array(),
-      'exchange' => 0
-    );
-  }
-
-  /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
+    //note that the worth field is field API because we can't define multiple cardinality fields in this entity.
     $fields['xid'] = FieldDefinition::create('integer')
       ->setLabel(t('Transaction ID'))
       ->setDescription(t('The unique transaction ID.'))
@@ -318,7 +282,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         array('label' => 'hidden', 'type' => 'string', 'weight' => -5)
       );
 
-    $fields['xid'] = FieldDefinition::create('integer')
+    $fields['serial'] = FieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
       ->setDescription(t('Grouping of related transactions.'))
       ->setReadOnly(TRUE);
@@ -329,11 +293,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setSetting('target_type', 'mcapi_transaction')
       ->setSetting('default_value', 0)
       ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
-
-    $fields['worths'] = FieldDefinition::create('worths_field')
-      ->setlabel(t('Worths'))
-      ->setlabel(t('Value of this transaction'))
       ->setRequired(TRUE);
 
     $fields['payer'] = FieldDefinition::create('entity_reference')
@@ -438,13 +397,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $this->payee->setValue(reset($payer_exchanges)->intertrading_wallet(), TRUE);
     unset($child->payer);
     $child->payer->setValue(reset($payee_exchanges)->intertrading_wallet(), TRUE);
-    unset($child->worths);
+//    unset($child->worths);
     $payee_currency = reset($payee_currs);
     $payer_currency = reset($payer_currs);
     foreach ($this->worths as $worth) {
       $val = current($worth->getValue());
       if (isset($shared_currs[$val['currcode']])) {
         //simply copy the worth value
+//TODO use the proper field API way to set the value of the field
         $child->worths[] = $worth;
       }
       else {//this assumes that only ONE of the source worths will be converted to target currency
@@ -460,7 +420,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $child;
   }
 
-  function worth_convert($worth, $dest_currency) {
-    return $worth;
+  /**
+   * {@inheritdoc}
+   */
+  //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
+  //Is is assumed that every entity has an edit-form link? Any case this overrides it
+  public function urlInfo($rel = 'canonical') {
+    return parent::urlInfo($rel);
   }
 }

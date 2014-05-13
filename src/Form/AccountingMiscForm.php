@@ -2,22 +2,9 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Field\FieldDefinition;
 
 class AccountingMiscForm extends ConfigFormBase {
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('config.factory'),
-      $container->get('config.context.free')
-    );
-  }
 
   /**
    * {@inheritdoc}
@@ -73,13 +60,6 @@ class AccountingMiscForm extends ConfigFormBase {
         '#default_value' => $config->get('fields'),
       )
     );
-    $form['mix_mode'] = array(
-      '#title' => t('Restrict transactions to one currency'),
-      '#description' => t('Applies only when more than one currency is available'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('mix_mode'),
-      '#weight' => 5
-    );
     $form['indelible'] = array(
       '#title' => t('Indelible accounting'),
       '#description' => t('Ensure that transactions, exchanges and currencies are not deleted.'),
@@ -124,11 +104,6 @@ class AccountingMiscForm extends ConfigFormBase {
       '#weight' => 12,
       '#size' => 10,
       '#maxlength' => 10,
-      '#states' => array(
-    	  'visible' => array(
-    	    ':input[name="mix_mode"]' => array('checked' => FALSE)
-        )
-      )
     );
     $form['rebuild_mcapi_index'] = array(
       '#title' => t('Rebuild index'),
@@ -144,20 +119,16 @@ class AccountingMiscForm extends ConfigFormBase {
   }
 
   public function validateForm(array &$form, array &$form_state) {
-    if (!$form_state['values']['mix_mode'] && empty($form_state['values']['worths_delimiter'])) {
-      \Drupal::formBuilder()->setErrorByName('worths_delimiter', $form_state, $this->t('Delimiter is required'));
-    }
+
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
-
     $this->configFactory->get('mcapi.misc')
       ->set('sentence_template', $form_state['values']['sentence_template'])
       //careful the mix_mode flag is inverted!!
-      ->set('mix_mode', !$form_state['values']['mix_mode'])
       ->set('editable', $form_state['values']['editable'])
       ->set('fields', $form_state['values']['fields'])
       ->set('exchange_menu', !$form_state['values']['exchange_menu'])

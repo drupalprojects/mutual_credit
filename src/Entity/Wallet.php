@@ -18,14 +18,14 @@ use Drupal\Core\Entity\EntityTypeInterface;
  * Wallets can only belong to content entities.
  * NB the canonical link is actually a 'views' page
  *
- * @EntityType(
+ * @ContentEntityType(
  *   id = "mcapi_wallet",
  *   label = @Translation("Wallet"),
  *   module = "mcapi",
  *   controllers = {
- *     "view_builder" = "Drupal\mcapi\WalletViewBuilder",
- *     "storage" = "Drupal\mcapi\WalletStorage",
- *     "access" = "Drupal\mcapi\WalletAccessController",
+ *     "view_builder" = "Drupal\mcapi\ViewBuilder\WalletViewBuilder",
+ *     "storage" = "Drupal\mcapi\Storage\WalletStorage",
+ *     "access" = "Drupal\mcapi\Access\WalletAccessController",
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",
  *     },
@@ -254,5 +254,13 @@ class Wallet extends ContentEntityBase {
       else return array();
     }
     return $this->stats;
+  }
+  /**
+   * {@inheritdoc}
+   */
+  //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
+  //Is is assumed that every entity has an edit-form link? Any case this overrides it
+  public function urlInfo($rel = 'canonical') {
+    return parent::urlInfo($rel);
   }
 }

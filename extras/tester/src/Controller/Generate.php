@@ -111,7 +111,7 @@ class Generate extends ConfigFormBase {
         'open' => 1,
         'active' => 1,
         'langcode' => 'und',
-        'field_currencies' => array(
+        'currencies' => array(
           array('target_id' => $currencies ? array_shift($currencies) : 'credunit')
         )
       );
@@ -139,7 +139,7 @@ class Generate extends ConfigFormBase {
           'mail' => (REQUEST_TIME -$i) .'@mutualcredit.org',
           'roles' => array(),
           'created' => strtotime("-$i days"),
-          'field_exchanges' => array(
+          'exchanges' => array(
             array('target_id' => next($exchanges) ? : reset($exchanges))
           )
         );
@@ -148,7 +148,7 @@ class Generate extends ConfigFormBase {
         $new_uids[] = $account->id();
         //make the user the owner of their exchange, so in the end only the last created user owns the exchange they are in.
         db_query(
-          "UPDATE {mcapi_exchanges} SET uid = :uid WHERE id = ".$props['field_exchanges'][0]['target_id'],
+          "UPDATE {mcapi_exchanges} SET uid = :uid WHERE id = ".$props['exchanges'][0]['target_id'],
           array(':uid' => $account->id())
         );
       }

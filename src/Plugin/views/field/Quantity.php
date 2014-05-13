@@ -17,7 +17,7 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("quantity")
+ * @ViewsField("quantity")
  */
 class Quantity extends FieldPluginBase {
 

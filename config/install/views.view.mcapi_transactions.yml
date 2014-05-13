@@ -21,11 +21,11 @@ display:
           group_type: group
           admin_label: ''
           operator: '='
-          value: '0'
-          group: '1'
+          value: false
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -44,7 +44,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -59,10 +59,10 @@ display:
           admin_label: ''
           operator: '='
           value: ''
-          group: '1'
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -81,7 +81,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -103,7 +103,7 @@ display:
       access:
         type: perm
         options:
-          perm: 'configure mcapi'
+          perm: 'manage mcapi'
       cache:
         type: none
         options: {  }
@@ -113,7 +113,7 @@ display:
           disable_sql_rewrite: false
           distinct: false
           slave: false
-          query_comment: ''
+          query_comment: false
           query_tags: {  }
       exposed_form:
         type: basic
@@ -128,33 +128,33 @@ display:
       pager:
         type: full
         options:
-          items_per_page: '25'
-          offset: '0'
-          id: '0'
-          total_pages: ''
+          items_per_page: 25
+          offset: 0
+          id: 0
+          total_pages: null
           tags:
             previous: '‹ previous'
             next: 'next ›'
             first: '« first'
             last: 'last »'
           expose:
-            items_per_page: 0
+            items_per_page: false
             items_per_page_label: 'Items per page'
             items_per_page_options: '5, 10, 20, 40, 60'
-            items_per_page_options_all: 0
+            items_per_page_options_all: false
             items_per_page_options_all_label: '- All -'
-            offset: 0
+            offset: false
             offset_label: Offset
-          quantity: '9'
+          quantity: 9
       style:
         type: table
         options:
           grouping: {  }
           row_class: ''
-          default_row_class: 1
-          row_class_special: 1
-          override: 1
-          sticky: 0
+          default_row_class: true
+          row_class_special: true
+          override: true
+          sticky: false
           caption: ''
           summary: ''
           description: ''
@@ -162,14 +162,14 @@ display:
             xid: xid
           info:
             xid:
-              sortable: 0
+              sortable: false
               default_sort_order: asc
               align: ''
               separator: ''
-              empty_column: 0
+              empty_column: false
               responsive: ''
           default: '-1'
-          empty_table: 0
+          empty_table: false
       row:
         type: fields
         options:
@@ -186,46 +186,46 @@ display:
           group_type: group
           admin_label: ''
           label: Created
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           date_format: html_date
           custom_date_format: ''
           timezone: ''
@@ -239,50 +239,50 @@ display:
           group_type: group
           admin_label: ''
           label: Payer
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          link_to_user: 1
-          overwrite_anonymous: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          link_to_user: true
+          overwrite_anonymous: true
           anonymous_text: ''
-          format_username: 1
+          format_username: true
           plugin_id: user_name
           provider: user
         name:
@@ -293,50 +293,50 @@ display:
           group_type: group
           admin_label: ''
           label: Payee
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          link_to_user: 1
-          overwrite_anonymous: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          link_to_user: true
+          overwrite_anonymous: true
           anonymous_text: ''
-          format_username: 1
+          format_username: true
           plugin_id: user_name
           provider: user
         description:
@@ -347,46 +347,46 @@ display:
           group_type: group
           admin_label: ''
           label: Description
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: 'transaction/[serial]'
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           link: 1
           plugin_id: standard
           provider: views
@@ -398,46 +398,46 @@ display:
           group_type: group
           admin_label: ''
           label: Amounts
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           separator: ''
           plugin_id: worths
           provider: mcapi
@@ -449,46 +449,46 @@ display:
           group_type: group
           admin_label: ''
           label: Operations
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           mode: page
           plugin_id: transaction_operations
           provider: mcapi
@@ -501,11 +501,11 @@ display:
           group_type: group
           admin_label: ''
           operator: '='
-          value: '0'
-          group: '1'
+          value: false
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -524,7 +524,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -539,10 +539,10 @@ display:
           admin_label: ''
           operator: '='
           value: ''
-          group: '1'
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -561,7 +561,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -592,7 +592,7 @@ display:
           relationship: none
           group_type: group
           admin_label: Payee
-          required: 1
+          required: true
           plugin_id: standard
           provider: views
         payer:
@@ -602,7 +602,20 @@ display:
           relationship: none
           group_type: group
           admin_label: Payer
-          required: 1
+          required: true
+          plugin_id: standard
+          provider: views
+        creator:
+          id: creator
+          table: mcapi_transactions
+          field: creator
+          relationship: none
+          group_type: group
+          admin_label: Creator
+          dependencies:
+            module:
+              - views
+          required: true
           plugin_id: standard
           provider: views
       arguments:
@@ -616,45 +629,45 @@ display:
           default_action: ignore
           exception:
             value: all
-            title_enable: 0
+            title_enable: false
             title: All
-          title_enable: 0
+          title_enable: false
           title: ''
           breadcrumb_enable: 0
           breadcrumb: ''
           default_argument_type: fixed
           default_argument_options:
             argument: ''
-          default_argument_skip_url: 0
+          default_argument_skip_url: false
           summary_options:
             base_path: ''
-            count: '1'
-            items_per_page: '25'
-            override: 0
+            count: true
+            items_per_page: 25
+            override: false
           summary:
             sort_order: asc
-            number_of_records: '0'
+            number_of_records: 0
             format: default_summary
-          specify_validation: 0
+          specify_validation: false
           validate:
             type: none
             fail: 'not found'
           validate_options: {  }
-          glossary: 0
-          limit: '0'
+          glossary: false
+          limit: 0
           case: none
           path_case: none
-          transform_dash: 0
-          break_phrase: 0
+          transform_dash: false
+          break_phrase: false
           plugin_id: string
           provider: views
       filter_groups:
         operator: AND
         groups: {  }
       title: 'Finished transactions'
-  page_2:
+  accountant:
     display_plugin: page
-    id: page_2
+    id: accountant
     display_title: Administer
     position: 2
     display_options:
@@ -668,46 +681,46 @@ display:
           group_type: group
           admin_label: ''
           label: Created
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           date_format: html_date
           custom_date_format: ''
           timezone: ''
@@ -721,50 +734,50 @@ display:
           group_type: group
           admin_label: ''
           label: Payer
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          link_to_user: 1
-          overwrite_anonymous: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          link_to_user: true
+          overwrite_anonymous: true
           anonymous_text: ''
-          format_username: 1
+          format_username: true
           plugin_id: user_name
           provider: user
         name:
@@ -775,50 +788,50 @@ display:
           group_type: group
           admin_label: ''
           label: Payee
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          link_to_user: 1
-          overwrite_anonymous: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          link_to_user: true
+          overwrite_anonymous: true
           anonymous_text: ''
-          format_username: 1
+          format_username: true
           plugin_id: user_name
           provider: user
         description:
@@ -829,46 +842,46 @@ display:
           group_type: group
           admin_label: ''
           label: Description
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 1
+            make_link: true
             path: 'transaction/[serial]'
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           plugin_id: standard
           provider: views
         worths:
@@ -879,46 +892,46 @@ display:
           group_type: group
           admin_label: ''
           label: Amounts
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           separator: ''
           plugin_id: worths
           provider: mcapi
@@ -930,46 +943,46 @@ display:
           group_type: group
           admin_label: ''
           label: Type
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           plugin_id: standard
           provider: views
         state:
@@ -980,46 +993,46 @@ display:
           group_type: group
           admin_label: ''
           label: State
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           plugin_id: mcapi_state
           provider: mcapi
         operations:
@@ -1030,46 +1043,46 @@ display:
           group_type: group
           admin_label: ''
           label: Operations
-          exclude: 0
+          exclude: false
           alter:
-            alter_text: 0
+            alter_text: false
             text: ''
-            make_link: 0
+            make_link: false
             path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
+            absolute: false
+            external: false
+            replace_spaces: false
             path_case: none
-            trim_whitespace: 0
+            trim_whitespace: false
             alt: ''
             rel: ''
             link_class: ''
             prefix: ''
             suffix: ''
             target: ''
-            nl2br: 0
+            nl2br: false
             max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
             more_link_text: ''
             more_link_path: ''
-            strip_tags: 0
-            trim: 0
+            strip_tags: false
+            trim: false
             preserve_tags: ''
-            html: 0
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: 1
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: 1
+          element_default_classes: true
           empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
           mode: page
           plugin_id: transaction_operations
           provider: mcapi
@@ -1077,14 +1090,14 @@ display:
         fields: false
         filters: false
         filter_groups: false
-      path: admin/accounting/ledger
+      path: admin/accounting/transactions/ledger
       menu:
         type: normal
         title: Ledger
         description: 'All transactions, with exposed filters'
-        name: navigation
-        weight: '5'
-        context: 0
+        name: admin
+        weight: 5
+        context: '0'
       filters:
         parent:
           id: parent
@@ -1094,11 +1107,11 @@ display:
           group_type: group
           admin_label: ''
           operator: '='
-          value: '0'
-          group: '1'
+          value: false
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -1117,7 +1130,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1134,10 +1147,10 @@ display:
           value:
             credunit: credunit
             escro: escro
-          group: '1'
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -1157,7 +1170,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1172,10 +1185,10 @@ display:
           admin_label: ''
           operator: contains
           value: ''
-          group: '1'
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -1194,7 +1207,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1208,11 +1221,11 @@ display:
           group_type: group
           admin_label: ''
           operator: '='
-          value: '0'
-          group: '1'
+          value: false
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -1231,7 +1244,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1246,10 +1259,10 @@ display:
           admin_label: ''
           operator: in
           value: ''
-          group: '1'
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -1269,7 +1282,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1284,10 +1297,10 @@ display:
           admin_label: ''
           operator: in
           value: ''
-          group: '1'
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -1307,7 +1320,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1325,7 +1338,7 @@ display:
             1: '1'
             0: '0'
             -1: '-1'
-          group: '1'
+          group: 1
           exposed: false
           expose:
             operator_id: state_op
@@ -1348,7 +1361,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1367,10 +1380,10 @@ display:
             auto: auto
             mass: mass
             signed: signed
-          group: '1'
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -1390,7 +1403,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -1406,3 +1419,8 @@ id: mcapi_transactions
 tag: 'Community Accounting'
 uuid: 7ba3bb18-3608-44e3-a418-240b11424ab6
 langcode: en
+dependencies:
+  module:
+    - mcapi
+    - user
+

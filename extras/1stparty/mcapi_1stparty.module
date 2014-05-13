@@ -52,9 +52,14 @@ function mcapi_1stparty_theme() {
 /**
  * implements hook_entity_info_alter().
  * adds a form controller to the transaction entity
+ * slighly clumsy, but I think this is the proper way
  */
-function mcapi_1stparty_entity_info_alter(&$data) {
-  $data['mcapi_transaction']['controllers']['form']['1stparty'] = 'Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm';
+function mcapi_1stparty_entity_type_alter(array &$entity_types) {
+  $classes = $entity_types['mcapi_transaction']->getControllerClasses();
+  $form_classes = array(
+    '1stparty' => 'Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm'
+  ) + $classes['form'];
+  $entity_types['mcapi_transaction']->setControllerClass('form', $form_classes);
 }
 
 function template_preprocess_1stpartyform(&$vars) {
@@ -77,9 +82,9 @@ function theme_1stpartyform($vars) {
 	  //stripping the theme_wrappers is cleaner but prevents the #states from working.
     $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
 
-		if (empty($form[$fieldname['#required']]) && $form[$fieldname['#default_value']] == '') {
+		if (empty($form[$fieldname]['#required']) && $form[$fieldname]['#default_value'] == '') {
 		  //field does not occur in the form
-		  //unset($form[$fieldname]);this doesn't seem right
+		  //unset($form[$fieldname]);//TODO something better than this.
 		}
 		else {
 		  if (\Drupal::currentUser()->hasPermission('design 1stparty forms')) {
@@ -139,7 +144,7 @@ function mcapi_1stparty_transaction_tokens() {
 }
 
 /**
- * check whether the current user can access a given 1stparty form
+ * Check whether the current user can access a given 1stparty form.
  * used by the router and by the block controller
  *
  * @param unknown $editform

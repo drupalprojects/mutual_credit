@@ -5,6 +5,8 @@
  * Provide views data and handlers for transaction.module.
  *
  * @ingroup views_module_handlers
+ *
+ * @todo Should we be implementing hook_field_views_data for the worth field?
  */
 
 
@@ -71,12 +73,12 @@ function mcapi_views_data() {
 
   $data['mcapi_transactions']['payer'] = array(
     'title' => t('Payer'),
-    'help' => t('The user who gave currency in the transaction.'),
+    'help' => t('The giving wallet'),
     //the relationship is now to the wallet table, not the user table
     'relationship' => array(
       'id' => 'standard',
-      'base' => 'users',
-      'field' => 'uid',
+      'base' => 'mcapi_wallets',
+      'field' => 'wid',
       'label' => t('Payer'),
       'relationship field' => 'payer'
     ),
@@ -92,12 +94,12 @@ function mcapi_views_data() {
   );
   $data['mcapi_transactions']['payee'] = array(
     'title' => t('Payee'),
-    'help' => t('The user who received currency in the transaction.'),
+    'help' => t('The receiving wallet'),
     //the relationship is now to the wallet table, not the user table
     'relationship' => array(
       'id' => 'standard',
-      'base' => 'users',
-      'field' => 'uid',
+      'base' => 'mcapi_wallets',
+      'field' => 'wid',
       'label' => t('Payee'),
       'relationship field' => 'payee'
     ),
@@ -632,7 +634,7 @@ function mcapi_views_data_alter(&$data) {
   );
 
   //return;
-  //now make a filter for every entity that uses the field_exchanges
+  //now make a filter for every entity that uses the field 'exchanges'
   //EG for when a node is 'in' an exchange
   module_load_include('inc', 'mcapi');
   foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {

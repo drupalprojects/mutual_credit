@@ -16,7 +16,7 @@ use Drupal\views\Plugin\views\argument\Numeric;
  *
  * @ingroup views_argument_handlers
  *
- * @PluginID("entity_exchanges")
+ * @ViewsArgument("entity_exchanges")
  */
 class EntityExchanges extends Numeric {
 

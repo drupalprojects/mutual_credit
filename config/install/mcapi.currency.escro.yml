@@ -4,11 +4,11 @@ name: Euro
 status: false
 uid: 1
 issuance: commodity
-type: decimal
-settings:
-  scale: '2'
-prefix: €
-suffix: ''
+format: 
+  0: €
+  1: 0
+  2: :
+  3: 99
 zero: ''
 color: '#00ff00'
 widget: currency_decimal_single

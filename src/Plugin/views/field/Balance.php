@@ -23,7 +23,7 @@ use Drupal\Component\Annotation\PluginID;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("balance")
+ * @ViewsField("balance")
  */
 class Balance extends FieldPluginBase {
 

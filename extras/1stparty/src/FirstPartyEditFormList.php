@@ -6,7 +6,7 @@
 
 namespace Drupal\mcapi_1stparty;
 
-use Drupal\Core\Config\Entity\ConfigEntityListController;
+use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal;
 use Drupal\Core\Form\FormInterface;
@@ -14,7 +14,7 @@ use Drupal\Core\Form\FormInterface;
 /**
  * Provides a listing of contact categories.
  */
-class FirstPartyEditFormList extends ConfigEntityListController  implements FormInterface{
+class FirstPartyEditFormList extends ConfigEntityListBuilder  implements FormInterface{
 
   /**
    * Overrides Drupal\Core\Entity\EntityListController::buildHeader().
@@ -63,7 +63,7 @@ class FirstPartyEditFormList extends ConfigEntityListController  implements Form
   /**
    * {@inheritdoc}
    */
-  public function render() {
+  public function __render() {
     // @todo make this list filter by exchange, like on admin/structure/views
     // views has its own javascript though, so maybe not so simple
     $build['list'] = array(

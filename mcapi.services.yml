@@ -1,16 +1,4 @@
 services:
-  plugin.manager.mcapi.currency_type:
-    class: Drupal\mcapi\Plugin\CurrencyTypePluginManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler]
-
-  plugin.manager.mcapi.currency_field:
-    class: Drupal\mcapi\Plugin\CurrencyFieldPluginManager
-    arguments: ['@container.namespaces', '@cache.discovery', '@language_manager', '@module_handler', '@plugin.manager.mcapi.currency_type']
-
-  plugin.manager.mcapi.currency_widget:
-    class: Drupal\mcapi\Plugin\CurrencyWidgetManager
-    arguments: ['@container.namespaces', '@cache.discovery', '@module_handler', '@language_manager', '@plugin.manager.mcapi.currency_field']
-
   plugin.manager.mcapi.transaction_operation:
     class: Drupal\mcapi\Plugin\OperationManager
     arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler]
@@ -32,6 +20,6 @@ services:
      - { name: event_subscriber }
 
   access_check.add_wallet:
-    class: Drupal\mcapi\WalletAddAccessController
+    class: Drupal\mcapi\Access\WalletAddAccessController
     tags:
       - { name: access_check }

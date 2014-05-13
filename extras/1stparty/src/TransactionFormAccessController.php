@@ -23,9 +23,9 @@ class TransactionFormAccessController implements AccessCheckInterface {
   /**
    * @inheritDoc
    */
+  //this is cached...
   public function applies(Route $route) {
-    return array();//TODO do this properly
-    return '_transaction_editform_access';
+    return array('_transaction_editform_access');
   }
 
   /**

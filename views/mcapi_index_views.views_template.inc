@@ -92,7 +92,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['fields']['worth']['field'] = 'worth';
     $handler->display->display_options['fields']['worth']['label'] = 'Value';
     $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
-    $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
+    $handler->display->display_options['fields']['worth']['type'] = 'worth';
 
     $handler->display->display_options['fields']['description']['id'] = 'description';
     $handler->display->display_options['fields']['description']['table'] = 'mcapi_transactions';
@@ -166,7 +166,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['fields']['worth']['alter']['alter_text'] = TRUE;
     $handler->display->display_options['fields']['worth']['alter']['text'] = '-[worth]';
     $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
-    $handler->display->display_options['fields']['worth']['type'] = 'worth_field';
+    $handler->display->display_options['fields']['worth']['type'] = 'worth';
     /* Field: Transaction: Description */
     $handler->display->display_options['fields']['description']['id'] = 'description';
     $handler->display->display_options['fields']['description']['table'] = 'mcapi_transactions';
@@ -323,7 +323,16 @@ function mcapi_index_views_views_templates() {
   $handler->display->display_options['block_description'] = 'User transactions summary per currency';
   $views[$view->name] = $view;
 
-
+  $translatables = array(
+    t('Offset'),
+    t('Promiscuity'),
+    t('Gross expenditure'),
+    t('Gross income'),
+    t('Trades'),
+    t('Currency'),
+    t('Balance'),
+    t('Running balance'),
+  );
 
   $view = new view;
   $view->name = 'user_rankings';
@@ -607,13 +616,4 @@ function mcapi_index_views_views_templates() {
 }
 
 
-  $translatables['user_transactions_summaries'] = array(
-    t('Offset'),
-    t('Promiscuity'),
-    t('Gross expenditure'),
-    t('Gross income'),
-    t('Trades'),
-    t('Currency'),
-    t('Balance'),
-    t('Running balance'),
-  );
+

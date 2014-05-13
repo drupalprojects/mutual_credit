@@ -71,7 +71,7 @@ function mcapi_token_info() {
       )
     )
   );
-  $definitions = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
+  $definitions = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
   //chance to remove some tokens here using unset($definitions['uuid']).
 
   //this really should be more automated in core

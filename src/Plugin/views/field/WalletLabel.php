@@ -18,7 +18,7 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("mcapi_wallet_label")
+ * @ViewsField("mcapi_wallet_label")
  */
 class WalletLabel extends Standard {
 

@@ -192,10 +192,10 @@ class FirstPartyEditFormController extends EntityFormController {
     /*
      * This won't work until I know how to prepopulate a worths field using form API
     //worths can be preset for any or all of the currencies available in this exchange
-    //@todo = get the currencies elegantly out of entity_reference $exchange->field_currencies
+    //@todo = get the currencies elegantly out of entity_reference $exchange->currencies
     if ($exchange) {
-      $currcodes = db_select('mcapi_exchange__field_currencies', 'c')
-        ->fields('c', array('field_currencies_target_id'))
+      $currcodes = db_select('mcapi_exchange__currencies', 'c')
+        ->fields('c', array('currencies_target_id'))
         ->condition('entity_id', $exchange->id())
         ->execute()->fetchCol();
       $form['worths']['preset'] = array(

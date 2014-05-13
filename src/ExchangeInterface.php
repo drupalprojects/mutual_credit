@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\comment\ExchangeInterface.
+ * Contains \Drupal\mcapi\ExchangeInterface.
  */
 
 namespace Drupal\mcapi;
@@ -24,9 +24,11 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
 
   /**
    * get the number of transactions in this exchange's history
+   * @param integer $period
+   *   unixtime to count transactions from
    * @return integer
    */
-  function transactions($period);
+  function transactions($period = 0);
 
   /**
    * Check if a (content) entity is a member of this exchange
@@ -38,27 +40,9 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
   public function member(ContentEntityInterface $entity);
 
   /**
-   * check if an exchange, and all the transactions in it can be deleted, which means both:
-   * the exchange is already disabled (closed)
-   * the delete mode allows its transactions to be deleted.
-   *
-   * @param EntityInterface $exchange
-   * @return Boolean
-   */
-  function deletable(EntityInterface $exchange);
-
-  /**
-   * check if an exchange can be deactivated, which means that it is not the only active exchange
-   *
-   * @param EntityInterface $exchange
-   * @return Boolean
-   */
-  function deactivatable($exchange);
-
-  /**
-   * get the wid of the this exchange'sintertrading wallet
+   * get the wid of the this exchange's intertrading wallet
    * @return integer
    */
-  function intertrading_wallet()
+  function intertrading_wallet();
 
 }

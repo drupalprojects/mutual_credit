@@ -9,6 +9,7 @@
 namespace Drupal\mcapi_1stparty\Form;
 
 use Drupal\mcapi\Form\TransactionForm;
+use Drupal\Core\Entity\EntityManagerInterface;
 
 
 class FirstPartyTransactionForm extends TransactionForm {
@@ -54,7 +55,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     $config = $this->config;
 
     //TODO caching according to $config->get('cache')
-
     $form = parent::form($form, $form_state);
 
   	//sort out the payer and payee, for the secondparty and direction
@@ -72,7 +72,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 
   	$account = user_load(\Drupal::currentuser()->id());
   	//use this method because i still don't know how to iterate
-  	//through the $account->field_exchanges entity_reference field.
+  	//through the $account->exchanges entity_reference field.
   	foreach (mcapi_get_wallet_ids($account) as $wid) {
   	  $my_wallets[$wid] = entity_load('mcapi_wallet', $wid)->label();
   	}
@@ -104,6 +104,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   	if ($config->partner['preset']) {
     	$form['partner']['#default_value'] = $config->partner['preset'];
   	}
+
   	$form['direction'] = array(
   		'#type' => $config->direction['widget'],
   		'#default_value' => $config->direction['preset'],

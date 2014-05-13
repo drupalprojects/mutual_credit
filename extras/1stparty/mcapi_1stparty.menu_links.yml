@@ -1,0 +1,6 @@
+mcapi.admin_1stparty_editform_list:
+  title: Forms
+  description: Design your own transaction forms from the logged in user's perspective.
+  route_name: mcapi.admin_1stparty_editform_list
+  parent: mcapi.admin.transactions
+  weight: 5

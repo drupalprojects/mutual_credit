@@ -89,9 +89,7 @@ class WalletLimitOverride extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, array &$form_state) {
-    //if (!$form_state['values']['mix_mode'] && empty($form_state['values']['worths_delimiter'])) {
-    //  \Drupal::formBuilder()->setErrorByName('worths_delimiter', $form_state, $this->t('Delimiter is required'));
-    //}
+
   }
 
   /**

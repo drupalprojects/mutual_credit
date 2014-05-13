@@ -11,6 +11,7 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\system\SystemManager;
+use Symfony\Cmf\Component\Routing\RouteObjectInterface;
 
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow
@@ -19,14 +20,6 @@ class Workflow extends ControllerBase {//what is the ControllerBase for? are we 
 
   function summaryPage() {
   	$renderable = array();
-
-    $renderable[] = array(
-    	'#theme' => 'admin_block_content',
-      //TODO check this works when the menu system settles down
-    	'#content' => \Drupal::service('system.manager')->getAdminBlock($request->attributes->get(RouteObjectInterface::ROUTE_OBJECT)),
-    	'#attributes' => array('style' => 'clear:both')
-    );
-
 
     //TODO ideally these ops should be in a draggable list
     //but I don't yhink it is worth the effort just for user 1 to change the display

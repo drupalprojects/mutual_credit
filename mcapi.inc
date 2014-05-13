@@ -56,7 +56,7 @@ function _mcapi_entity_extra_field_info() {
     );
   }
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  $fields = array('payer', 'payee', 'worths', 'description');
+  $fields = array('payer', 'payee', 'description');
   foreach ($fields as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
       'label' => $props[$fieldname]['label'],
@@ -128,9 +128,7 @@ function _mcapi_theme() {
     ),
     'file' => 'mcapi.inc'
   );
-  $items['worth_element'] = array(
-    'render element' => 'element',
-  );
+
   //TODO
   $items['wallet_balance_bars'] = array(
     'template' => 'wallet_balance_bars',
@@ -185,29 +183,9 @@ function _mcapi_theme() {
 
 function _mcapi_element_info() {
   return array(
-    // this is used by the field API for mixed transaction forms
-    'worths' => array(
-      '#title' => t('Worth'),
-      '#input' => TRUE,
-      '#title_display' => 'before',
-      '#element_validate' => array('mcapi_worths_element_validate'),
-      '#theme_wrappers' => array('form_element'),
-      '#process' => array('mcapi_worths_element_process'),
-      '#tree' => TRUE,
-      '#attached' => array(
-        'css' => array(
-          drupal_get_path('module', 'mcapi') . '/css/worths-element.css',
-        )
-      ),
-      // custom properties, used for configuration
-      '#mixed_mode' => \Drupal::config('mcapi.misc')->get('mix_mode'),
-      '#preset' => FALSE, //ensures all currencies are showing
-      '#calc' => FALSE, //allow a formula
-    ),
-    // this one is used internally only,
-    // although you could probably use it to build a form if you wanted to ignore all multicurrency functionality
     'worth' => array(
       '#input' => TRUE,
+      '#tree' => TRUE,
       '#title_display' => 'attribute',
       '#process' => array('mcapi_worth_element_process'),
       '#value_callback' => 'mcapi_form_type_worth_value',
@@ -218,8 +196,6 @@ function _mcapi_element_info() {
           drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
         )
       ),
-      // custom properties, used for configuration
-      '#calc' => FALSE,
     ),
     'mcapi_states' => array(
       '#input' => TRUE,
@@ -237,10 +213,9 @@ function _mcapi_element_info() {
     ),
     'mcapi_currcodes' => array(
       '#input' => TRUE,
-      '#title_display' => 'invisible',
       '#process' => array('mcapi_process_currcodes','ajax_process_form'),
       '#theme_wrappers' => array('form_element'),
-      '#multiple' => TRUE,
+      '#multiple' => FALSE,
       '#options' => array(),//array of currcodes and currency names
     ),
     //local means 'in the same exchanges as the current user'
@@ -251,7 +226,7 @@ function _mcapi_element_info() {
       '#size' => 60,
       '#maxlength' => 128,
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
-      '#process' => array('mcapi_process_wallet_select', 'form_process_autocomplete', 'ajax_process_form'),
+      '#process' => array('mcapi_process_select_wallet', 'form_process_autocomplete', 'ajax_process_form'),
       '#pre_render' => array('form_pre_render_textfield', 'mcapi_prerender_wallet_field'),
       '#theme' => 'input__textfield',
       '#theme_wrappers' => array('form_element'),
@@ -264,6 +239,40 @@ function _mcapi_element_info() {
       '#attributes' => array('style' => 'width:100%')
     )
   );
+}
+
+function _mcapi_worth_element_process($element, $currency) {
+  $element['#currency'] = $currency;
+  $parts = $currency->formatted_parts($element['#default_value']);
+  foreach ($currency->format as $i => $snippet) {
+    if ($i % 2) {//Snippet is an integer. render a widget to enter part of the amount
+      $size = $i == 1 ? 5 : strlen($snippet);
+      if (array_key_exists($i, $parts) && $parts[$i]+0) {
+        $def = $parts[$i];
+      }
+      elseif ($i == 1) $def = '0';
+      else $def = '';
+
+      $element['components'][$i] = array(
+        '#type' => 'number',
+        '#default_value' => $def,
+        '#placeholder' => $i == 1 ? '' : str_pad('', $size, '0'),
+        '#weight' => $i,
+        '#size' => $size,//no effect in opera
+        '#max_length' => $size,
+        '#min' => 0,
+        '#max' => ($i == 1) ?  NULL : $snippet,
+        '#attributes' => array('style' => "width:{$size}em;")
+      );
+    }
+    else {//copy this string part of the widget verbatim
+      $element['components'][$i] = array(
+        '#markup' => $snippet,
+        '#weight' => $i
+      );
+    }
+  }
+  return $element;
 }
 
 function mcapi_view_wallets_summaries($entity) {
@@ -550,7 +559,7 @@ function mcapi_workflow_help() {
  *   names of replacable elements in the transaction
  */
 function mcapi_transaction_list_tokens($include_virtual = FALSE) {
-  $tokens = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction');
+  $tokens = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
   //looks like fieldmap isn't needed at all, which will simplify this function
   unset($tokens['uuid'], $tokens['xid'], $tokens['parent'], $tokens['type'], $tokens['children']);
   $tokens = array_keys($tokens);

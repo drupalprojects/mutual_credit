@@ -16,7 +16,7 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("mcapi_userstat")
+ * @ViewsField("mcapi_userstat")
  */
 class UserStats extends FieldPluginBase {
 
@@ -52,6 +52,7 @@ class UserStats extends FieldPluginBase {
     );
     parent::buildOptionsForm($form, $form_state);
   }
+
   /**
    * {@inheritdoc}
    */
@@ -59,13 +60,19 @@ class UserStats extends FieldPluginBase {
     $this->addAdditionalFields();
   }
 
+  /**
+   * {@inheritdoc}
+   */
   function render(ResultRow $values) {
     $account = $this->getEntity($values);
-    $wid = reset(mcapi_get_wallet_ids($account));//shows only the first wallet
+    //shows only the first wallet
+    $wid = reset(mcapi_get_wallet_ids($account));
     $exchanges = referenced_exchanges($account);
-    //this isn't going to work...
+    //TODO stats really belong to wallets, but they might be wanted per user.
+    die("Drupal\mcapi\Plugin\views\field\UserStats needs to be rethought");
+
     //@todo make this work with the right entity_reference syntax
-    $currency = reset($exchanges)->field_currencies->getvalue(TRUE)->entity;
+    $currency = reset($exchanges)->currencies->getvalue(TRUE)->entity;
 
     $stats = entity_load('mcapi_wallet', $wid)->getStats($currency->id());
 

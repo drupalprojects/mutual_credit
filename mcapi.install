@@ -23,14 +23,13 @@ function mcapi_install() {
     'visibility' => EXCHANGE_VISIBILITY_RESTRICTED,
     'open' => TRUE,
     'active' => TRUE,
-    'field_currencies' => array('credunit')
+    'currencies' => array('credunit')
   ))->save();
-  //add the field_exchanges entity_reference instance to the user entity
-
+  //add the field 'exchanges' entity_reference instance to the user entity
 
   //put user 1 in the default exchange
   $account = user_load(1);
-  $account->set('field_exchanges', array(1));
+  $account->set('exchanges', array(1));
   $account->save();
 
   //according to the default settings this will have autocreated a wallet for the exchange !
@@ -50,10 +49,29 @@ function mcapi_install() {
 
 /**
  * Implements hook_uninstall().
- * Remove any tables or variables that the module sets.
+ * @todo Remove the hard coded fieldAPI fields
  */
 function mcapi_uninstall() {
-
+  $instances = array(
+    'mcapi_transaction.mcapi_transaction.mcapi_value',
+    'mcapi_exchange.mcapi_exchange.currencies',
+    'user.user.exchanges'
+  );
+  foreach ($instances as $config) {
+    if ($instance = entity_load('field_instance_config', $config)) {
+      drupal_set_message("deleting field $config");
+      $instance->delete();
+    }
+  }
+  drupal_set_message('purging fields');
+  field_purge_batch(2);
+  //this shouldn't be necessary!!
+  db_drop_table('mcapi_exchange__mcapi_value');
+  db_drop_table('mcapi_exchange_revision__mcapi_value');
+  db_drop_table('mcapi_exchange__currencies');
+  db_drop_table('mcapi_exchange_revision__currencies');
+  db_drop_table('user__exchanges');
+  db_drop_table('user_revision__exchanges');
 }
 
 /**

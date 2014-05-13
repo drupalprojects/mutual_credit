@@ -4,7 +4,7 @@ targetEntityType: user
 bundle: user
 mode: default
 content:
-  field_exchanges:
+  exchanges:
     type: entity_reference_autocomplete
     weight: '0'
     settings:

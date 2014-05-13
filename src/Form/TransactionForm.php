@@ -28,14 +28,12 @@ class TransactionForm extends ContentEntityFormController {
     $form = parent::form($form, $form_state);
     $transaction = $this->entity;
 
-    $exchanges = referenced_exchanges();
-    if (count($exchanges) < 1) {
+    //TODO do this with access control, including the dsm
+    if (count(referenced_exchanges()) < 1) {
       drupal_set_message(t('You are not a member of any exchanges, so you cannot trade with anyone'));
       $form['#disabled'] = TRUE;
     }
 
-    $currencies = exchange_currencies($exchanges);
-    $exchanges = array_pad($exchanges, 2, 0);
     //the actual exchange that the transaction takes place in
     //will be determined automatically, once we know who is involved and what currencies.
     //in most use cases only one will be possible or likely
@@ -49,18 +47,27 @@ class TransactionForm extends ContentEntityFormController {
       '#title' => t('Description'),
       '#default_value' => $transaction->description->value,
       '#weight' => 3,
-      //the empty class is required to prevent an overload error in alpha7
-      '#attributes' => new Attribute(array('style' => "width:100%", 'class' => array()))
+      //the empty class causes an error in alpha11  _form_set_attributes()
+      '#attributes' => new Attribute(
+        array(
+          'style' => "width:100%",
+          'class' => array()
+        )
+      ),
+      //TEMP the old way
+      '#attributes' => array('style' => 'width:100%', 'class' => array())
     );
-    $form['worths'] = array(
-      '#type' => 'worths',
+    /*
+    $form['worth'] = array(
+      '#type' => 'worth',
       '#title' => t('Worth'),
       '#required' => TRUE,
-      '#default_value' => $transaction->worths[0],
+      //this field is an array of raw values, keyed by currencyID
+      '#default_value' => $transaction->get('worth')->value,
       //by default, which this is, all the currencies of the currency exchanges should be included
       '#currencies' => $currencies,
       '#weight' => 5,
-    );
+    );*/
 
     //lists all the wallets in the exchange
     $form['payer'] = array(
@@ -77,13 +84,15 @@ class TransactionForm extends ContentEntityFormController {
       '#default_value' => $transaction->get('payee')->value,
       '#weight' => 9,
     );
-    //TODO how is this field validated? Is it just a positive integer?
-    $form['created'] = array(
-      '#title' => t('Recorded on'),
-      '#type' => 'date',
-      '#default_value' => $transaction->get('created')->value,
-      '#weight' => 15
-    );
+    if (module_exists('datetime')) {
+      //TODO this widget is so bad in alpha 11 that it can't be finished
+      $form['created'] = array(
+        '#title' => t('Recorded on'),
+        '#type' => 'datetime',
+        '#default_value' => $transaction->get('created')->value,
+        '#weight' => 15
+      );
+    }
     $form['type'] = array(
       '#title' => t('Transaction type'),
       '#options' => mcapi_get_types(TRUE),
@@ -112,7 +121,9 @@ class TransactionForm extends ContentEntityFormController {
     $type = $form_state['values']['type'];
     $form_state['values']['state'] = $types[$type]->start_state;
 
+
     $transaction = $this->buildEntity($form, $form_state);
+
     $transaction->set('created', REQUEST_TIME);
     $transaction->set('creator', \Drupal::currentUser()->id());
 

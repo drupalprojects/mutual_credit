@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\EntityInterface;
+use Drupal\mcapi\ExchangeInterface;
 
 /**
  * Returns responses for Exchange routes.
@@ -23,7 +23,7 @@ class ExchangeController extends ControllerBase {
    * @return array
    *  An array suitable for drupal_render().
    */
-  public function page(EntityInterface $mcapi_exchange) {
+  public function page(ExchangeInterface $mcapi_exchange) {
 
     return $this->buildPage($mcapi_exchange);
   }
@@ -36,7 +36,7 @@ class ExchangeController extends ControllerBase {
    * @return string
    *   The page title.
    */
-  public function pageTitle(EntityInterface $mcapi_exchange) {
+  public function pageTitle(ExchangeInterface $mcapi_exchange) {
     return String::checkPlain($mcapi_exchange->label());
   }
 
@@ -48,11 +48,11 @@ class ExchangeController extends ControllerBase {
    * @return array
    *   An array suitable for drupal_render().
    */
-  protected function buildPage(EntityInterface $mcapi_exchange) {
+  protected function buildPage(ExchangeInterface $mcapi_exchange) {
     return array(
-      'exchange' => $this->entityManager()
+      'exchanges' => $this->entityManager()
         ->getViewBuilder('mcapi_exchange')
-        ->view($mcapi_exchange, 'full')
+        ->view($mcapi_exchange)
     );
   }
 }

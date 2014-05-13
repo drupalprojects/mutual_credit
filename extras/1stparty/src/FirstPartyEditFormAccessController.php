@@ -8,6 +8,8 @@
 namespace Drupal\mcapi_1stparty;
 
 use Drupal\Core\Entity\EntityAccessController;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
 
 
 /**
@@ -20,9 +22,9 @@ class FirstPartyEditFormAccessController extends EntityAccessController {
    */
   protected function checkAccess(EntityInterface $entity, $operation, $langcode, AccountInterface $account) {
     //grant access if the user is in this exchange
-
     if ($entity->exchange && in_array($entity->exchange, referenced_exchanges())) return TRUE;
-    return $account->hasPermission('configure mcapi');
+    //or if the user is system-wide admin
+    return $account->hasPermission($this->entityType->getAdminPermission());
   }
 
 }

@@ -13,10 +13,11 @@ use Drupal\views\ResultRow;
 
 /**
  * Field handler for the name of the privacy setting
+ * TODO isn't this just a boolean?
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("exchange_visibility")
+ * @ViewsField("exchange_visibility")
  */
 class ExchangeVisibility extends FieldPluginBase {
 

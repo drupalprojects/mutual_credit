@@ -16,7 +16,7 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("transaction_operations")
+ * @ViewsField("transaction_operations")
  */
 class Operations extends FieldPluginBase {
 

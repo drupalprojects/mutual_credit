@@ -1,5 +1,4 @@
 sentence_template: '[mcapi:payer] paid [mcapi:payee] [mcapi:worth] for [mcapi:description].'
-mix_mode: true
 editable: false
 fields:
   description: true

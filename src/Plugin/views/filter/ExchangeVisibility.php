@@ -15,7 +15,7 @@ use Drupal\Component\Annotation\PluginID;
  *
  * @ingroup views_filter_handlers
  *
- * @PluginID("exchange_visibility")
+ * @ViewsFilter("exchange_visibility")
  */
 class ExchangeVisibility extends FilterPluginBase {
 

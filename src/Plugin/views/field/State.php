@@ -8,7 +8,6 @@
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
-use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
 
@@ -17,12 +16,11 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("mcapi_state")
+ * @ViewsField("mcapi_state")
  */
 class State extends FieldPluginBase {
 
   function render(ResultRow $values) {
-
     $this->states = mcapi_get_states(TRUE);
     return $this->states[$this->getValue($values)];
   }

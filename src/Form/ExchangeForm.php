@@ -17,6 +17,7 @@ class ExchangeForm extends ContentEntityFormController {
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
   public function form(array $form, array &$form_state) {
+    drupal_set_message("NB there is a bug which, after saving and caching the referenced currency entities, then deletes them.", 'warning');
     $form = parent::form($form, $form_state);
 
     $exchange = $this->entity;
@@ -30,6 +31,7 @@ class ExchangeForm extends ContentEntityFormController {
       '#type' => 'textfield',
       '#title' => t('Full name'),
       '#default_value' => $exchange->get('name')->value,
+      '#required' => TRUE,
       '#weight' => 1
     );
     //@todo how to decide who to select exchange managers from?
@@ -42,6 +44,7 @@ class ExchangeForm extends ContentEntityFormController {
       '#type' => 'select',
       '#options' => $managers,
       '#default_value' => $exchange->getOwnerId(),
+      '#required' => TRUE,
       '#weight' => 3
     );
 
@@ -51,6 +54,7 @@ class ExchangeForm extends ContentEntityFormController {
       '#type' => 'radios',
       '#options' => $this->entity->visibility_options(),
       '#default_value' => $exchange->get('visibility')->value,
+      '#required' => TRUE,
       '#weight' => 4
     );
     $form['open'] = array(
@@ -61,8 +65,9 @@ class ExchangeForm extends ContentEntityFormController {
       '#weight' => 5
     );
     //hide the currencies field if only one currency is available
-    if (count(entity_load_multiple_by_properties('mcapi_currency', array('status' => TRUE))) < 2) {
-      $form['field_currencies']['#attributes']['style'] = 'display:none;';
+    if (count(entity_load_multiple_by_properties('mcapi_currency', array('status' => TRUE))) == 1) {
+      //TODO uncomment this when we are sure that the field is populating properly from installation
+//      $form['currencies']['#attributes']['style'] = 'display:none;';
     }
 
     return $form;
@@ -79,8 +84,8 @@ class ExchangeForm extends ContentEntityFormController {
 
 
   protected function actions(array $form, array &$form_state) {
-    $actions = parent::actions();
-    if (!$this->entity->deletable($this->entity)) {
+    $actions = parent::actions($form, $form_state);
+    if (!\Drupal::EntityManager()->getStorage('mcapi_exchange')->deletable($this->entity)) {
       unset($actions['delete']);
     }
     return $actions;

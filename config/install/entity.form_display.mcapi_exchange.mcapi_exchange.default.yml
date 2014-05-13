@@ -4,7 +4,7 @@ targetEntityType: mcapi_exchange
 bundle: mcapi_exchange
 mode: default
 content:
-  field_currencies:
+  currencies:
     type: entity_reference_autocomplete
     weight: '10'
     settings:

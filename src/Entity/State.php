@@ -14,13 +14,13 @@ use Drupal\user\RoleInterface;
 /**
  * Defines the transaction state entity class.
  *
- * @EntityType(
+ * @ConfigEntityType(
  *   id = "mcapi_state",
  *   label = @Translation("State"),
  *   controllers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *   },
- *   config_prefix = "mcapi.state",
+ *   config_prefix = "state",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label",

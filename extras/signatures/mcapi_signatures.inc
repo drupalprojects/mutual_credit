@@ -78,7 +78,8 @@ function list_waiting_on_uid($uid) {
       );
     }
     foreach ($serials as $serial) {
-      $output[] = entity_view(mcapi_transaction_load($serial), 'sentence');
+      $transaction = mcapi_transaction_load($serial);
+      $output[] = entity_view($transaction, 'sentence');
     }
     return $output;
   }
@@ -97,7 +98,8 @@ function list_waiting_not_on_uid($uid) {
     }
   }
   foreach ($waiting_on as $serial) {
-    $output[] = entity_view(mcapi_transaction_load($serial), 'sentence');
+    $transaction = mcapi_transaction_load($serial);
+    $output[] = entity_view($transaction, 'sentence');
   }
   return $output;
 }

@@ -27,9 +27,6 @@ mcapi.misc:
         fieldapi: 
           type: boolean
           label: Field API
-    mix_mode:
-      type: boolean
-      label: Allow more than one currency in transactions
     exchange_menu:
       type: string
       label: Menu
@@ -136,27 +133,10 @@ mcapi.currency.*:
     isuance:
       type: string
       label: 'Basis of issuance'
-    type:
-      type: string
-      label: 'Type'
-    settings:
-      type: mcapi.currency.settings.[%parent.type]
-    widget:
-      type: string
-      label: 'Widget'
-    widget_settings:
-      type: mcapi.currency.widget.[%parent.widget]
-    formatter:
-      type: string
-      label: 'Formatter'
-    formatter_settings:
-      type: mcapi.currency.formatter.[%parent.formatter]
-    prefix:
-      type: string
-      label: 'Prefix'
-    suffix:
-      type: string
-      label: 'Suffix'
+    format:
+      type: mapping
+      label: Format
+      mapping: {}
     zero:
       type: string
       label: 'Zero value display'

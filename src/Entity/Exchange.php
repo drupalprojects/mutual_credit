@@ -3,7 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Entity\Exchange.
- * //TODO implement the EntityOwnerInterface https://drupal.org/node/2188299
  */
 
 namespace Drupal\mcapi\Entity;
@@ -15,10 +14,7 @@ use Drupal\Core\Field\FieldDefinition;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\user\UserInterface;
-//use Drupal\mcapi\CurrencyInterface;
-//use Drupal\Core\Entity\Annotation\EntityType;
-//use Drupal\Core\Annotation\Translation;
-//use Drupal\mcapi\Plugin\Field\FieldType\Worth;
+use Drupal\mcapi\ExchangeInterface;
 
 define('EXCHANGE_VISIBILITY_PRIVATE', 0);
 define('EXCHANGE_VISIBILITY_RESTRICTED', 1);
@@ -27,14 +23,13 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
 /**
  * Defines the Exchange entity.
  *
- * @EntityType(
+ * @ContentEntityType(
  *   id = "mcapi_exchange",
  *   label = @Translation("Exchange"),
- *   module = "mcapi",
  *   controllers = {
- *     "storage" = "Drupal\mcapi\ExchangeStorage",
- *     "view_builder" = "Drupal\mcapi\ExchangeViewBuilder",
- *     "access" = "Drupal\mcapi\ExchangeAccessController",
+ *     "storage" = "Drupal\mcapi\Storage\ExchangeStorage",
+ *     "view_builder" = "Drupal\mcapi\ViewBuilder\ExchangeViewBuilder",
+ *     "access" = "Drupal\mcapi\Access\ExchangeAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi\Form\ExchangeForm",
  *       "edit" = "Drupal\mcapi\Form\ExchangeForm",
@@ -42,7 +37,7 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *       "activate" = "Drupal\mcapi\Form\ExchangeOpenConfirm",
  *       "deactivate" = "Drupal\mcapi\Form\ExchangeCloseConfirm",
  *     },
- *     "list" = "Drupal\mcapi\ExchangeListBuilder",
+ *     "list_builder" = "Drupal\mcapi\ListBuilder\ExchangeListBuilder",
  *   },
  *   admin_permission = "configure mcapi",
  *   fieldable = TRUE,
@@ -63,7 +58,7 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *   }
  * )
  */
-class Exchange extends ContentEntityBase implements EntityOwnerInterface {
+class Exchange extends ContentEntityBase implements EntityOwnerInterface, ExchangeInterface{
 
   /**
    * {@inheritdoc}
@@ -75,18 +70,18 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface {
 
     //this more direct solution belongs really in the storage controller
     //@todo how the hell does countQuery work?
-    return count(db_select("user__field_exchanges", 'e')
+    return count(db_select("user__exchanges", 'e')
       ->fields('e', array('entity_id'))
-      ->condition('field_exchanges_target_id', $this->id())
+      ->condition('exchanges_target_id', $this->id())
       ->execute()->fetchCol());
   }
 
   /**
    * {@inheritdoc}
    */
-  function transactions($period) {
-    //@todo is it worth making a new more efficient function in the storage controller for this?
-    $conditions = array('exchange' => $this->get('id')->value, $since = strtotime($period));
+  function transactions($period = 0) {
+    //TODO is it worth making a new more efficient function in the storage controller for this?
+    $conditions = array('exchange' => $this->get('id')->value, 'since' => strtotime($period));
     $serials = \Drupal::EntityManager()->getStorage('mcapi_transaction')->filter($conditions);
     return count(array_unique($serials));
   }
@@ -99,10 +94,10 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface {
   public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
     //ensure the manager of the exchange is actually a member.
     $exchange_manager = user_load($this->get('uid')->value);
-    //TODO GORDON I can't see how to do this
-    return;
-    $exchange_manager->get('field_exchanges')->insert($this->id());
-    $exchange_manager->save();
+    //TODO I can't see how to ensure the owner is actually a member
+    //should be done in form validation of course
+    //tricky entity_reference handling
+    //throw an error if the owner is not already a member
   }
 
   /**
@@ -158,7 +153,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface {
   /**
    * {@inheritdoc}
    */
-  public function member(ContentEntityInterface $entity) {
+  public function member(ContententityInterface $entity) {
     $entity_type = $entity->getEntityTypeId();
     if ($entity_type == 'mcapi_wallet') {
       if ($entity->owner) {
@@ -190,34 +185,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface {
   /**
    * {@inheritdoc}
    */
-  function deletable(EntityInterface $exchange) {
-    if ($exchange->get('active')->value) return FALSE;
-    if (\Drupal::config('mcapi.misc')->get('indelible')) {
-      return user_access('manage mcapi');
-    }
-    return TRUE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  function deactivatable($exchange) {
-    static $active_exchange_ids = array();
-    if (!$active_exchange_ids) {
-      //get the names of all the open exchanges
-      foreach (entity_load_multiple('mcapi_exchange') as $entity) {
-        if ($exchange->get('open')->value) {
-          $active_exchange_ids[] = $entity->id();
-        }
-      }
-    }
-    if (count($active_exchange_ids) > 1)return TRUE;
-    return FALSE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   function intertrading_wallet() {
     $wallets = entity_load_multiple_by_properties('mcapi_wallet', array('name' => '_intertrade', 'pid' => $this->id()));
     if (wallets)return current($wallets);
@@ -228,9 +195,9 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface {
   //utility function not in the interface
   public function visibility_options($val = NULL) {
     $options = array(
-        'private' => t('Private'),
-        'restricted' => t('Restricted'),
-        'public' => t('Public')
+      EXCHANGE_VISIBILITY_PRIVATE => t('Private except to members'),
+      EXCHANGE_VISIBILITY_RESTRICTED => t('Restricted to members of this site'),
+      EXCHANGE_VISIBILITY_TRANSPARENT => t('Transparent to the public')
     );
     if ($val) return $options[$val];
     return $options;
@@ -265,6 +232,15 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface {
   public function setOwner(UserInterface $account) {
     $this->set('uid', $account->id());
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
+  //Is is assumed that every entity has an edit-form link? Any case this overrides it
+  public function urlInfo($rel = 'canonical') {
+    return parent::urlInfo($rel);
   }
 
 }

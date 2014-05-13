@@ -1,0 +1,14 @@
+id: mcapi_exchange.currencies
+uuid: 537ffa88-ea0c-41d9-ac00-cfe5e23b7dd3
+status: true
+langcode: en
+name: currencies
+entity_type: mcapi_exchange
+type: entity_reference
+settings:
+  target_type: mcapi_currency
+module: entity_reference
+locked: true
+cardinality: '-1'
+translatable: false
+indexes: {  }

@@ -18,7 +18,7 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("mcapi_owner_type")
+ * @ViewsField("mcapi_owner_type")
  */
 class OwnerType extends Standard {
 

@@ -16,12 +16,10 @@ use Drupal\Core\Annotation\Translation;
 /**
  * Defines the 1stparty_form entity.
  *
- * @EntityType(
+ * @ConfigEntityType(
  *   id = "1stparty_editform",
  *   label = @Translation("Designed transaction form"),
- *   module = "mcapi",
  *   controllers = {
- *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *     "access" = "Drupal\mcapi_1stparty\FirstPartyEditFormAccessController",
  *     "form" = {
  *       "add" = "Drupal\mcapi_1stparty\FirstPartyEditFormController",
@@ -30,17 +28,20 @@ use Drupal\Core\Annotation\Translation;
  *       "enable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormEnableConfirm",
  *       "disable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDisableConfirm"
  *     },
- *     "list" = "Drupal\mcapi_1stparty\FirstPartyEditFormList",
+ *     "list_builder" = "Drupal\mcapi_1stparty\FirstPartyEditFormList",
  *   },
  *   admin_permission = "configure mcapi",
- *   config_prefix = "mcapi.1stparty",
+ *   config_prefix = "editform",
  *   entity_keys = {
  *     "id" = "id",
+ *     "uuid" = "uuid",
  *     "label" = "name",
  *     "status" = "status"
  *   },
  *   links = {
- *     "edit-form" = "mcapi.admin_1stparty_editform_edit"
+ *     "edit-form" = "mcapi.admin_1stparty_editform_edit",
+ *     "enable" = "mcapi.admin.1stparty_editform.enable_confirm",
+ *     "disable" = "mcapi.admin.1stparty_editform.disable_confirm"
  *   }
  * )
  */
@@ -61,7 +62,7 @@ class FirstPartyEditForm extends ConfigEntityBase {
   public $other;
   public $experience;
   public $message;
-  public $cache;//TODO
+  public $cache;//TODO cache by user,
 
   /**
    * {@inheritdoc}

@@ -15,7 +15,7 @@ use Drupal\Component\Annotation\PluginID;
  *
  * @ingroup views_filter_handlers
  *
- * @PluginID("currcode")
+ * @ViewsFilter("currcode")
  */
 class Currency extends InOperator {
 

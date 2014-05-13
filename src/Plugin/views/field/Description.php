@@ -7,18 +7,18 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
-use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\Plugin\views\field\Standard;
-use Drupal\views\Plugin\views\display\DisplayPluginBase;
-use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
+//use Drupal\views\Plugin\views\display\DisplayPluginBase;
+//use Drupal\Component\Annotation\PluginID;
+//use Drupal\views\Plugin\views\field\FieldPluginBase;
 
 /**
  * Field handler to link the transaction description to the transaction itself
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("mcapi_description")
+ * @ViewsField("mcapi_description")
  */
 class Description extends Standard {
 

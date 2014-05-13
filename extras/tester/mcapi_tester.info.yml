@@ -1,5 +1,5 @@
 name: 'Tester data & config'
-description: 'INSTALL TAXONOMY MODULE FIRST Prebuilt user testing environment. With exchanges, users, currencies, and basic blocks and views'
+description: Prebuilt user testing environment. With exchanges, users, currencies, wallets, couple of blocks and views
 core: 8.x
 package: Community Accounting
 type: module

@@ -12,16 +12,6 @@ class WalletSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('config.factory'),
-      $container->get('config.context.free')
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getFormID() {
     return 'mcapi_wallet_settings_form';
   }
@@ -35,18 +25,18 @@ class WalletSettings extends ConfigFormBase {
     //OR to an exchange entity itself
     $form['entity_types'] = array(
     	'#title' => t('Entity types'),
-    	'#description' => t('Put the maximum number of wallets that entities of each type can hold.') .' '.
-        t('Only bundles with entity reference fields to Exchanges are shown.'),
+    	'#description' => t('Any content entity type which references exchanges can own wallets.') .' '.
+        t('Put the maximum number of wallets per entity type.'),
       '#type' => 'details',
       '#tree' => TRUE
     );
     module_load_include('inc', 'mcapi');
     foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
-      $entity_info = \Drupal::entityManager()->getDefinition($entity_type, TRUE);
+      $label = \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLabel();
       foreach (entity_get_bundles($entity_type) as $bundle => $bundle_info) {
-        $title = $entity_definition['label'] == $bundle_info['label'] ?
-          $entity_definition['label'] : //don't know if this is translated or translatable!
-          $entity_definition['label'] .':'. $bundle_info['label'];
+        $title = $label == $bundle_info['label'] ?
+          $label : //don't know if this is translated or translatable!
+          $label .':'. $bundle_info['label'];
 
         $form['entity_types']["$entity_type:$bundle"] = array(
         	'#title' => $title,
@@ -107,12 +97,7 @@ class WalletSettings extends ConfigFormBase {
   }
 
   public function validateForm(array &$form, array &$form_state) {
-    drupal_set_message('check setErrorByName of this form after D8 alpha5', 'warning');return;
-    //documentation differs from code in alpha5
-    //https://api.drupal.org/api/drupal/core!lib!Drupal!Core!Form!FormBuilder.php/function/FormBuilder%3A%3AsetErrorByName/8
-    if (!$form_state['values']['mix_mode'] && empty($form_state['values']['worths_delimiter'])) {
-      \Drupal::formBuilder()->setErrorByName('worths_delimiter', $form_state, $this->t('Delimiter is required'));
-    }
+
   }
 
   /**
