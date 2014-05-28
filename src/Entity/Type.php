@@ -56,4 +56,9 @@ class Type extends ConfigEntityBase {
    * @var integer
    */
   public $start_state;
+
+  public function getStartState() {
+    return $this->start_state;
+  }
+
 }

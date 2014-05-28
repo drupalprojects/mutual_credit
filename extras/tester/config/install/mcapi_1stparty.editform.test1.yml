@@ -16,8 +16,8 @@ description:
   placeholder: 'What was this payment for?'
 worths:
   preset:
-    credunit:
-      currcode: credunit
+    1:
+      curr_id: 1
       value: 0
 created:
   show: false

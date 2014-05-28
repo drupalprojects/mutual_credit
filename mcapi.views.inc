@@ -223,11 +223,11 @@ function mcapi_views_data() {
   );
 
   //virtual fields
-  $data['mcapi_transactions']['operations'] = array(
-    'title' => t('Operations'),
+  $data['mcapi_transactions']['transitions'] = array(
+    'title' => t('Transitions'),
     'help' => t('What the user can do to the transaction'),
     'field' => array(
-      'id' => 'transaction_operations',
+      'id' => 'transaction_transitions',
     )
   );
   $data['mcapi_transactions']['worths'] = array(
@@ -238,15 +238,15 @@ function mcapi_views_data() {
     )
   );
   //working with raw values directly from the worths table
-  $data['mcapi_transactions_worths']['currcode'] = array(
+  $data['mcapi_transactions_worths']['curr_id'] = array(
     'title' => t('Currency'),
     'field' => array(
       'help' => t('Show the currency only'),
-      'id' => 'currcode',
+      'id' => 'curr_id',
     ),
     'filter' => array(
       'help' => t('Transactions using specific currencies'),
-      'id' => 'currcode',
+      'id' => 'curr_id',
     ),
     'argument' => array(
       'help' => t('Transactions using specific currencies'),
@@ -406,7 +406,7 @@ function mcapi_views_data() {
     'field' => array(
       'id' => 'worth',
   		'additional fields' => array(
-  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
   		)
     ),
     'filter' => array(
@@ -419,7 +419,7 @@ function mcapi_views_data() {
     'field' => array(
       'id' => 'worth',
   		'additional fields' => array(
-  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
   		)
     ),
     'filter' => array(
@@ -432,7 +432,7 @@ function mcapi_views_data() {
     'field' => array(
       'id' => 'worth',
   		'additional fields' => array(
-  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
   		)
     ),
     'filter' => array(
@@ -445,14 +445,14 @@ function mcapi_views_data() {
     'field' => array(
       'id' => 'worth',
   		'additional fields' => array(
-  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
   		)
     ),
     'filter' => array(
       'id' => 'numeric',
     ),
   );
-  $data['mcapi_transactions_index']['currcode'] = array(
+  $data['mcapi_transactions_index']['curr_id'] = array(
     'title' => t('Currency'),
     'help' => t('The currency'),
     'field' => array(
@@ -487,15 +487,15 @@ function mcapi_views_data() {
     'field' => array(
       'id' => 'balance',
   		'additional fields' => array(
-  		  'currcode' => array('table' => 'mcapi_transactions_index', 'field' => 'currcode')
+  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
   		)
     ),
   );
-  $data['mcapi_transactions_index']['operations'] = array(
-  	'title' => t('Operations'),
+  $data['mcapi_transactions_index']['transitions'] = array(
+  	'title' => t('Transitions'),
   	'help' => t('What the user can do to the transaction'),
   	'field' => array(
-  		'id' => 'transaction_operations',
+  		'id' => 'transaction_transitions',
   	)
   );
 
@@ -636,7 +636,6 @@ function mcapi_views_data_alter(&$data) {
   //return;
   //now make a filter for every entity that uses the field 'exchanges'
   //EG for when a node is 'in' an exchange
-  module_load_include('inc', 'mcapi');
   foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
     if (!$fieldname) continue;
     $argument = &$data[$entity_type .'__'. $fieldname][$fieldname .'_target_id']['argument'];

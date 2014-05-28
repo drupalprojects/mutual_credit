@@ -8,11 +8,11 @@
 namespace Drupal\mcapi_limits;
 
 use \Drupal\Core\Entity\EntityInterface;
-use \Drupal\mcapi\CurrencyInterface;
+use \Drupal\mcapi\Entity\CurrencyInterface;
 use \Drupal\Core\Config\Entity\ConfigEntityBase;
 
 /**
- * Base class for Operations for default methods.
+ * Base class for Transitions for default methods.
  */
 abstract class McapiLimitsBase extends ConfigEntityBase implements McapiLimitsInterface {
 

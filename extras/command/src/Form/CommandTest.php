@@ -15,7 +15,7 @@ class CommandTest extends ConfigFormBase {
 	 * {@inheritdoc}
 	 */
 	public function getFormID() {
-		return 'mcapi_operation_settings_form';
+		return 'mcapi_transition_settings_form';
 	}
 
 	public function buildform(array $form, array &$form_state) {

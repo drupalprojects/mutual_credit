@@ -1,8 +1,8 @@
 <?php
 
 use Drupal\Core\Template\Attribute;
-use Drupal\mcapi\TransactionInterface;
-use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
 
 /**
  * implements hook_mcapi_transaction_validate().
@@ -49,10 +49,10 @@ function mcapi_limits_mcapi_wallet_load($entities) {
     ->condition('wid', array_keys($entities))
     ->execute()->fetchAll();
   foreach($limits as $limit) {
-    $entities[$limit->wid]->limits_override[$limit->currcode] = (array)$limit;
+    $entities[$limit->wid]->limits_override[$limit->curr_id] = (array)$limit;
     //remove superfluous properties, if that's not against the Tao of Drupal
-    unset($entities[$limit->wid]->limits_override[$limit->currcode]['currcode']);
-    unset($entities[$limit->wid]->limits_override[$limit->currcode]['wid']);
+    unset($entities[$limit->wid]->limits_override[$limit->curr_id]['curr_id']);
+    unset($entities[$limit->wid]->limits_override[$limit->curr_id]['wid']);
   }
   //now go through every wallet and every currency and put the currency default limits
   foreach ($entities as $wallet) {
@@ -65,22 +65,22 @@ function mcapi_limits_mcapi_wallet_load($entities) {
 /**
  * retrive the limits for each wallet, whether from the plugin or overridden
  * @param EntityInterface $wallet
- * @param CurrencyInterface $currcode
+ * @param CurrencyInterface $curr_id
  * @return array
  *   native values or NULLs, keyed by min and/or max
  */
 function wallet_get_limit(EntityInterface $wallet, CurrencyInterface $currency) {
-  $currcode = $currency->id();
+  $curr_id = $currency->id();
   $override = array_key_exists('limits_override', @$currency->limits_settings)
     && $currency->limits_settings['limits_override'];
 
   //property 'limits' doesn't exist
   foreach (array('min', 'max') as $limit) {
-    if ($override && isset($wallet->limits_override) && array_key_exists($currcode, $wallet->limits_override)) {
-      $result[$limit] = $wallet->limits_override[$currcode][$limit];
+    if ($override && isset($wallet->limits_override) && array_key_exists($curr_id, $wallet->limits_override)) {
+      $result[$limit] = $wallet->limits_override[$curr_id][$limit];
     }
-    elseif(array_key_exists($currcode, $wallet->limits)) {
-      $result[$limit] = $wallet->limits[$currcode][$limit];
+    elseif(array_key_exists($curr_id, $wallet->limits)) {
+      $result[$limit] = $wallet->limits[$curr_id][$limit];
     }
     else $result[$limit] = NULL;
   }
@@ -93,7 +93,7 @@ function wallet_get_limit(EntityInterface $wallet, CurrencyInterface $currency) 
  */
 function mcapi_limits_mcapi_wallet_update(EntityInterface $wallet) {
   if (isset($wallet->limits_override)) {
-    foreach ($wallet->limits_override as $currcode => $minmax) {
+    foreach ($wallet->limits_override as $curr_id => $minmax) {
       if (array_filter($minmax)) {//note this would not catch a value of array('min' => 0);
         $row = array(
           'min' => $minmax['min'],
@@ -104,7 +104,7 @@ function mcapi_limits_mcapi_wallet_update(EntityInterface $wallet) {
         //TODO would it be better to use drupal_write record?
         //we would have to determine if we were inserting or updating.
         db_merge('mcapi_wallets_limits')
-          ->keys(array('wid' => $wallet->id(), 'currcode' => $currcode))
+          ->keys(array('wid' => $wallet->id(), 'curr_id' => $curr_id))
           ->fields($row)->execute();
       }
     }
@@ -244,7 +244,7 @@ function mcapi_view_limits($wallet, $relative = FALSE) {
 function mcapi_limits_element_info() {
   return array(
     'minmax' => array(
-      //'#currcode' is required
+      //'#curr_id' is required
   	  '#input' => TRUE,
       '#tree' => TRUE,
       '#process' => array('mcapi_limits_process_minmax'),
@@ -256,7 +256,7 @@ function mcapi_limits_element_info() {
  * processor for minmax element
  */
 function mcapi_limits_process_minmax(&$element) {
-  $currcode = $element['#currcode'];
+  $curr_id = $element['#curr_id'];
   //@todo need to know how to make a worth field properly
   $element['min'] = array(
     '#title' => t('Minimum balance'),

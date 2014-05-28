@@ -47,6 +47,16 @@ mcapi.admin_currency_edit:
   options:
     _admin_route: TRUE
 
+mcapi.admin_currency_add:
+  path: '/admin/accounting/currencies/add'
+  defaults:
+    _entity_form: 'mcapi_currency.edit'
+    _title: 'Editing currency'
+  requirements:
+    _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
+
 mcapi.admin_currency_delete:
   path: '/admin/accounting/currencies/{mcapi_currency}/delete'
   defaults:
@@ -122,11 +132,11 @@ mcapi.admin_mass.many2one:
   requirements:
     _permission: 'manage mcapi'
 
-#operations
+#transitions
 mcapi.transaction.op:
   path: '/transaction/{mcapi_transaction}/{op}'
   defaults:
-    _entity_form: 'mcapi_transaction.operation'
+    _entity_form: 'mcapi_transaction.transition'
   requirements:
     _entity_access: 'mcapi_transaction.op'
   options:
@@ -134,10 +144,10 @@ mcapi.transaction.op:
       mcapi_transaction:
         serial: true
 
-mcapi.admin.transactions.operations:
-  path: '/admin/accounting/transactions/workflow'
+mcapi.admin.workflow:
+  path: '/admin/accounting/workflow'
   defaults:
-    _content: '\Drupal\mcapi\Controller\Workflow::summaryPage'
+    _content: '\Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
     _title: 'Configure workflow'
   requirements:
     _permission: 'access administration pages'
@@ -147,8 +157,8 @@ mcapi.admin.transactions.operations:
 mcapi.workflow_settings:
   path: '/admin/accounting/transactions/workflow/{op}'
   defaults:
-    _form: 'Drupal\mcapi\Form\OperationSettingsForm'
-    _title: 'Configure transaction operation'
+    _form: 'Drupal\mcapi\Form\TransitionSettingsForm'
+    _title: 'Configure transaction transition'
   requirements:
     _permission: 'configure mcapi'
   options:

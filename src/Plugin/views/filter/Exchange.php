@@ -23,7 +23,7 @@ class Exchange extends FilterPluginBase {
   public function query($use_groupby = FALSE) {
 
     $table = $this->ensureMyTable();
-    $this->query->addWhere(0, "$table.exchange", array_keys(referenced_exchanges()));
+    $this->query->addWhere(0, "$table.exchange", array_keys(referenced_exchanges(NULL, TRUE)));
   }
 
   //there is nothing to expose

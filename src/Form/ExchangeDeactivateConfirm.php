@@ -41,15 +41,7 @@ class ExchangeDeactivateConfirm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submit(array $form, array &$form_state) {
-
-    //remove all references to this exchange in entity_reference
-    module_load_include('inc', 'mcapi');
-    foreach (get_exchange_entity_fieldnames() as $entity_type => $field_name) {
-      //@todo Delete the references to this entity
-      drupal_set_message('Any references to this exchange have not been changed. This may produce warning messages', 'warning');
-    }
-
-    $this->entity->set('active', FALSE);
+    $this->entity->set('status', FALSE);
     $this->entity->save();
 
     drupal_set_message(t("Exchange '%label' is deactivated.", array('%label' => $this->entity->label())));

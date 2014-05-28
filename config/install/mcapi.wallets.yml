@@ -1,6 +1,6 @@
 entity_types:
   'user:user': 1
-  'mcapi_exchange:mcapi_exchange': 10
+add_link_location: both
 viewers: role:authenticated
 payees: role:authenticated
 payers: role:authenticated

@@ -18,7 +18,7 @@ mcapi.admin_currency_list:
   weight: 3
 mcapi.admin.transactions:
   title: Transactions
-  description: Configuration around transaction states, types and operations
+  description: Configuration around transaction states, types and transitions
   route_name: mcapi.admin.transactions
   parent: mcapi.admin
   weight: 6
@@ -28,10 +28,10 @@ mcapi.admin_wallets:
   route_name: mcapi.admin_wallets
   parent: mcapi.admin
   weight: 12
-mcapi.admin.transactions.operations:
+mcapi.admin.workflow:
   title: Workflow
-  description: Configure workflow and user experience for each transaction operation
-  route_name: mcapi.admin.transactions.operations
+  description: Configure workflow and user experience for each transaction transition
+  route_name: mcapi.admin.workflow
   parent: mcapi.admin
   weight: 15
 mcapi.admin_misc:

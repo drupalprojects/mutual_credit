@@ -4,21 +4,25 @@ targetEntityType: user
 bundle: user
 mode: default
 content:
+  account:
+    weight: 0
   exchanges:
     type: entity_reference_autocomplete
-    weight: '0'
+    weight: 2
     settings:
       match_operator: CONTAINS
       size: 60
-      autocomplete_type: single
+      autocomplete_type: tags
       placeholder: ''
-  account:
-    weight: '-10'
-    visible: true
+hidden:
   language:
-    weight: '0'
-    visible: true
+    weight: 1
   timezone:
-    weight: '6'
-    visible: true
+    weight: 3
 status: true
+dependencies:
+  entity:
+    - field.instance.user.user.exchanges
+  module:
+    - entity_reference
+

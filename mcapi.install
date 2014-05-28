@@ -11,63 +11,65 @@
 function mcapi_install() {
   //this helps ensure this module runs before all the stuff that might depend on it
   module_set_weight('mcapi', -1);
-  //create default content entities.
 
   //default exchange
-  entity_create('mcapi_exchange', array(
-    'name' => t(
-      'First !sitename exchange',
-      array('!sitename' => \Drupal::config('system.site')->get('name'))
-    ),
-    'uid' => '1',
-    'visibility' => EXCHANGE_VISIBILITY_RESTRICTED,
-    'open' => TRUE,
-    'active' => TRUE,
-    'currencies' => array('credunit')
-  ))->save();
-  //add the field 'exchanges' entity_reference instance to the user entity
-
-  //put user 1 in the default exchange
-  $account = user_load(1);
-  $account->set('exchanges', array(1));
-  $account->save();
-
   //according to the default settings this will have autocreated a wallet for the exchange !
+  $ex = entity_create('mcapi_exchange');
+  $ex->set('name', t(
+    'First !sitename exchange',
+    array('!sitename' => \Drupal::config('system.site')->get('name'))
+  ));
+  $ex->set('uid', 1);
+  $ex->set('currencies', array(1));
+  $ex->save();
 
-  //Create a wallet for user 1, which was created before this module was installed.
-  $props = array(
-    //'name' => '',
-    'entity_type' => 'user',
-    'pid' => 1,
-    'viewers' => 'dunno',
-    'payees' => 'dunno',
-    'payers' => 'dunno',
-  );
-  entity_create('mcapi_wallet', $props)->save();
+  //we need to deal with existing users, especially user 1
+  //in accordance with the default wallet settings
+  //-put every user in the default exchange
+  //-give every user a wallet
+  foreach (entity_load_multiple('user') as $account) {
+    if ($account->id() == 0) continue;
+    $account->set('exchanges', array($ex->id()));
+    $account->save();
 
+    $values = array('entity_type' => $account->getEntityTypeId(), 'pid' => $account->id());
+    $w = entity_create('mcapi_wallet', $values);
+    $w->set('name', t("@name's default wallet", array('@name' => $account->label())));
+    $w->save();
+  }
+  //set the path of the zero image in currency 1
+  $currency1 = mcapi_currency_load(1);
+  $path = url(drupal_get_path('module', 'mcapi') . '/templates/present.png');
+  $currency1->set('zero', '<img src = ". $path ." width = "31" />');
+  $currency1->save();
 }
 
 /**
  * Implements hook_uninstall().
  * @todo Remove the hard coded fieldAPI fields
+ * need to do this in devel/php before uninstalling:
+ *
+  entity_load('field_config', 'mcapi_transaction.worth')->delete();
+  field_purge_batch(1);
  */
 function mcapi_uninstall() {
   $instances = array(
-    'mcapi_transaction.mcapi_transaction.mcapi_value',
-    'mcapi_exchange.mcapi_exchange.currencies',
-    'user.user.exchanges'
+    'mcapi_transaction.worth',
+    'mcapi_exchange.currencies',
+    'user.exchanges'
   );
   foreach ($instances as $config) {
-    if ($instance = entity_load('field_instance_config', $config)) {
+    if ($instance = entity_load('field_config', $config)) {
       drupal_set_message("deleting field $config");
       $instance->delete();
     }
   }
-  drupal_set_message('purging fields');
-  field_purge_batch(2);
+  field_purge_batch(3);
+  return;
+  drupal_set_message('now run cron to clear the fieldAPI');
   //this shouldn't be necessary!!
-  db_drop_table('mcapi_exchange__mcapi_value');
-  db_drop_table('mcapi_exchange_revision__mcapi_value');
+  db_drop_table('mcapi_exchange__worth');
+  db_drop_table('mcapi_exchange_revision__worth');
   db_drop_table('mcapi_exchange__currencies');
   db_drop_table('mcapi_exchange_revision__currencies');
   db_drop_table('user__exchanges');
@@ -137,13 +139,6 @@ function mcapi_schema() {
         'length' => '32',
         'not null' => TRUE,
       ),
-      'exchange' => array(
-        'description' => 'The exchange in which this transaction happened',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
       'state' => array(
         'description' => 'Completed, pending, disputed, etc',
         'type' => 'int',
@@ -188,37 +183,6 @@ function mcapi_schema() {
         'columns' => array('uid' => 'uid'),
       )
     )
-  );
-
-  $schema['mcapi_transactions_worths'] = array(
-    'description' => 'Transaction worth amounts.',
-    'fields' => array(
-      'xid' => array(
-        'description' => 'the unique transaction ID',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'currcode' => array(
-        'description' => 'The currency ID',
-        'type' => 'varchar',
-        'length' => '32',
-      ),
-      'value' => array(
-        'description' => 'Value',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0
-      ),
-    ),
-    'primary key' => array('xid', 'currcode'),
-    'foreign keys' => array(
-      'mcapi_transactions' => array(
-        'table' => 'mcapi_transactions',
-        'columns' => array('xid' => 'xid'),
-      ),
-    ),
   );
 
   $schema['mcapi_transactions_index'] = array(
@@ -267,10 +231,10 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => TRUE,
       ),
-      'currcode' => array(
+      'curr_id' => array(
         'description' => 'The currency ID',
-        'type' => 'varchar',
-        'length' => '32',
+        'type' => 'int',
+        'size' => 'small',
       ),
       'incoming' => array(
         'description' => 'Income',
@@ -300,13 +264,6 @@ function mcapi_schema() {
         'not null' => TRUE,
         'default' => 0
       ),
-      'exchange' => array(
-        'description' => 'The exchange in which this transaction happened',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
       'child' => array(
         'description' => 'whether this transaction is a child',
         'type' => 'int',
@@ -314,7 +271,7 @@ function mcapi_schema() {
         'not null' => TRUE,
       ),
     ),
-    'primary key' => array('xid', 'wallet_id', 'partner_id', 'currcode'),
+    'primary key' => array('xid', 'wallet_id', 'curr_id'),
     'indexes' => array(
       'wallet_id' => array('wallet_id'),
       'partner_id' => array('partner_id'),
@@ -349,7 +306,14 @@ function mcapi_schema() {
       'name' => array(
         'description' => "The owner's name for this wallet",
         'type' => 'varchar',
-        'length' => '32',
+        'length' => '64',
+      ),
+      'orphaned' => array(
+        'description' => "TRUE if the wallet's parents no longer exist",
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'default' => 0
       ),
       'viewers' => array(
         'description' => "The wallet's view access controller",
@@ -417,7 +381,7 @@ function mcapi_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
-      'active' => array(
+      'status' => array(
         'description' => 'TRUE if the exchange is current and working',
         'type' => 'int',
         'size' => 'normal',
@@ -442,6 +406,27 @@ function mcapi_schema() {
       'name' => array('name'),
     )
   );
+  $schema['mcapi_wallet_exchanges_index'] = array(
+    'description' => "Index to look up wallets parents' exchanges",
+    'fields' => array(
+      'wid' => array(
+        'description' => 'the wallet ID',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'exid' => array(
+        'description' => 'the exchange ID',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      )
+    ),
+    'unique keys' => array(
+      'wid_exit' => array('wid', 'exid'),
+    )
+  );
+
   return $schema;
 }
 

@@ -1,11 +1,11 @@
 services:
-  plugin.manager.mcapi.transaction_operation:
-    class: Drupal\mcapi\Plugin\OperationManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler]
+  plugin.manager.mcapi.transaction_transition:
+    class: Drupal\mcapi\Plugin\TransitionManager
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler, @config.factory]
 
   plugin.manager.mcapi.wallet_access:
     class: Drupal\mcapi\Plugin\WalletAccessPluginManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler]
+    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler, @current_user]
 
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
@@ -20,6 +20,7 @@ services:
      - { name: event_subscriber }
 
   access_check.add_wallet:
-    class: Drupal\mcapi\Access\WalletAddAccessController
+    class: Drupal\mcapi\Access\WalletAddAccessCheck
     tags:
-      - { name: access_check }
+      - { name: access_check, applies_to: _wallet_add_access  }
+

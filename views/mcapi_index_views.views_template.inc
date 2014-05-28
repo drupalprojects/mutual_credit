@@ -91,7 +91,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['fields']['worth']['table'] = 'field_data_worth';
     $handler->display->display_options['fields']['worth']['field'] = 'worth';
     $handler->display->display_options['fields']['worth']['label'] = 'Value';
-    $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
+    $handler->display->display_options['fields']['worth']['click_sort_column'] = 'curr_id';
     $handler->display->display_options['fields']['worth']['type'] = 'worth';
 
     $handler->display->display_options['fields']['description']['id'] = 'description';
@@ -165,7 +165,7 @@ function mcapi_index_views_views_templates() {
     $handler->display->display_options['fields']['worth']['label'] = 'Value';
     $handler->display->display_options['fields']['worth']['alter']['alter_text'] = TRUE;
     $handler->display->display_options['fields']['worth']['alter']['text'] = '-[worth]';
-    $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
+    $handler->display->display_options['fields']['worth']['click_sort_column'] = 'curr_id';
     $handler->display->display_options['fields']['worth']['type'] = 'worth';
     /* Field: Transaction: Description */
     $handler->display->display_options['fields']['description']['id'] = 'description';
@@ -230,28 +230,28 @@ function mcapi_index_views_views_templates() {
   $handler->display->display_options['row_plugin'] = 'fields';
   if ($multicurrencies) {
     /* Field: Transaction index: Currency */
-    $handler->display->display_options['fields']['currcode']['id'] = 'currcode';
-    $handler->display->display_options['fields']['currcode']['table'] = 'mcapi_index';
-    $handler->display->display_options['fields']['currcode']['field'] = 'currcode';
-    $handler->display->display_options['fields']['currcode']['label'] = '';
-    $handler->display->display_options['fields']['currcode']['alter']['alter_text'] = 1;
-    $handler->display->display_options['fields']['currcode']['alter']['text'] = '<strong>[currcode]</strong>';
-    $handler->display->display_options['fields']['currcode']['alter']['make_link'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['absolute'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['external'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['replace_spaces'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['trim_whitespace'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['nl2br'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['word_boundary'] = 1;
-    $handler->display->display_options['fields']['currcode']['alter']['ellipsis'] = 1;
-    $handler->display->display_options['fields']['currcode']['alter']['strip_tags'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['trim'] = 0;
-    $handler->display->display_options['fields']['currcode']['alter']['html'] = 0;
-    $handler->display->display_options['fields']['currcode']['element_label_colon'] = FALSE;
-    $handler->display->display_options['fields']['currcode']['element_default_classes'] = 1;
-    $handler->display->display_options['fields']['currcode']['hide_empty'] = 0;
-    $handler->display->display_options['fields']['currcode']['empty_zero'] = 0;
-    $handler->display->display_options['fields']['currcode']['hide_alter_empty'] = 0;
+    $handler->display->display_options['fields']['curr_id']['id'] = 'curr_id';
+    $handler->display->display_options['fields']['curr_id']['table'] = 'mcapi_index';
+    $handler->display->display_options['fields']['curr_id']['field'] = 'curr_id';
+    $handler->display->display_options['fields']['curr_id']['label'] = '';
+    $handler->display->display_options['fields']['curr_id']['alter']['alter_text'] = 1;
+    $handler->display->display_options['fields']['curr_id']['alter']['text'] = '<strong>[curr_id]</strong>';
+    $handler->display->display_options['fields']['curr_id']['alter']['make_link'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['absolute'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['external'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['replace_spaces'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['trim_whitespace'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['nl2br'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['word_boundary'] = 1;
+    $handler->display->display_options['fields']['curr_id']['alter']['ellipsis'] = 1;
+    $handler->display->display_options['fields']['curr_id']['alter']['strip_tags'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['trim'] = 0;
+    $handler->display->display_options['fields']['curr_id']['alter']['html'] = 0;
+    $handler->display->display_options['fields']['curr_id']['element_label_colon'] = FALSE;
+    $handler->display->display_options['fields']['curr_id']['element_default_classes'] = 1;
+    $handler->display->display_options['fields']['curr_id']['hide_empty'] = 0;
+    $handler->display->display_options['fields']['curr_id']['empty_zero'] = 0;
+    $handler->display->display_options['fields']['curr_id']['hide_alter_empty'] = 0;
   }
   /* Field: SUM(Transaction index: Value) */
   $handler->display->display_options['fields']['diff']['id'] = 'diff';
@@ -376,16 +376,16 @@ function mcapi_index_views_views_templates() {
   $handler->display->display_options['relationships']['uid2']['required'] = 1;
   if ($multicurrencies > 1) {
     /* Contextual filter: Transaction index: Currency */
-    $handler->display->display_options['arguments']['currcode']['id'] = 'currcode';
-    $handler->display->display_options['arguments']['currcode']['table'] = 'mcapi_index';
-    $handler->display->display_options['arguments']['currcode']['field'] = 'currcode';
-    $handler->display->display_options['arguments']['currcode']['default_action'] = 'default';
-    $handler->display->display_options['arguments']['currcode']['default_argument_type'] = 'php';
-    $handler->display->display_options['arguments']['currcode']['default_argument_options']['code'] = '$currencies = &drupal_static("currencies");return array_shift(array_keys($currencies));';
-    $handler->display->display_options['arguments']['currcode']['default_argument_skip_url'] = 0;
-    $handler->display->display_options['arguments']['currcode']['summary']['number_of_records'] = '0';
-    $handler->display->display_options['arguments']['currcode']['summary']['format'] = 'default_summary';
-    $handler->display->display_options['arguments']['currcode']['summary_options']['items_per_page'] = '25';
+    $handler->display->display_options['arguments']['curr_id']['id'] = 'curr_id';
+    $handler->display->display_options['arguments']['curr_id']['table'] = 'mcapi_index';
+    $handler->display->display_options['arguments']['curr_id']['field'] = 'curr_id';
+    $handler->display->display_options['arguments']['curr_id']['default_action'] = 'default';
+    $handler->display->display_options['arguments']['curr_id']['default_argument_type'] = 'php';
+    $handler->display->display_options['arguments']['curr_id']['default_argument_options']['code'] = '$currencies = &drupal_static("currencies");return array_shift(array_keys($currencies));';
+    $handler->display->display_options['arguments']['curr_id']['default_argument_skip_url'] = 0;
+    $handler->display->display_options['arguments']['curr_id']['summary']['number_of_records'] = '0';
+    $handler->display->display_options['arguments']['curr_id']['summary']['format'] = 'default_summary';
+    $handler->display->display_options['arguments']['curr_id']['summary_options']['items_per_page'] = '25';
   }
 
   /* Display: Promiscuity */

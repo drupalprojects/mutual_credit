@@ -57,10 +57,10 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['fields']['worth']['label'] = '';
   $handler->display->display_options['fields']['worth']['element_label_colon'] = FALSE;
   /* Field: Transaction: Actions */
-  $handler->display->display_options['fields']['operations']['id'] = 'operations';
-  $handler->display->display_options['fields']['operations']['table'] = 'mcapi_transactions';
-  $handler->display->display_options['fields']['operations']['field'] = 'operations';
-  $handler->display->display_options['fields']['operations']['link_to_transaction'] = 0;
+  $handler->display->display_options['fields']['transitions']['id'] = 'transitions';
+  $handler->display->display_options['fields']['transitions']['table'] = 'mcapi_transactions';
+  $handler->display->display_options['fields']['transitions']['field'] = 'transitions';
+  $handler->display->display_options['fields']['transitions']['link_to_transaction'] = 0;
   /* Sort criterion: Transaction: Créé */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'mcapi_transactions';
@@ -186,7 +186,7 @@ function mcapi_signatures_views_default_views() {
   $handler->display->display_options['fields']['worth']['hide_empty'] = 0;
   $handler->display->display_options['fields']['worth']['empty_zero'] = 0;
   $handler->display->display_options['fields']['worth']['hide_alter_empty'] = 1;
-  $handler->display->display_options['fields']['worth']['click_sort_column'] = 'currcode';
+  $handler->display->display_options['fields']['worth']['click_sort_column'] = 'curr_id';
   $handler->display->display_options['fields']['worth']['type'] = 'worth';
   $handler->display->display_options['fields']['worth']['field_api_classes'] = 0;
   /* Field: Signatures: Sign */

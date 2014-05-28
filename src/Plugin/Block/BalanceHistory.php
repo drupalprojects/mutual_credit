@@ -54,7 +54,7 @@ class BalanceHistory extends McapiBlockBase {
       //this isn't working
       '#attached' =>array('library' => array('http://www.google.com/jsapi')),//how to put this in the theme layer
       '#account' => $this->account,
-      '#currcodes' => $this->configuration['currcodes'],
+      '#curr_ids' => $this->configuration['curr_ids'],
       '#width' => $this->configuration['width']
     );
   }

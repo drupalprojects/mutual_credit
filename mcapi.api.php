@@ -48,11 +48,11 @@ function hook_mapi_transaction_children($transaction){}
 function hook_mapi_transaction_children_alter($children, $cloned_transaction){}
 
 /**
- * Let other modules respond to a transaction operation
+ * Let other modules respond to a transaction transition
  *
  * @param $transaction
  * @param $context
- *   an array consisting of op: the operation plugin name; old_state: the state before the operation happened; config: the plugin configuration;
+ *   an array consisting of op: the transition plugin name; old_state: the state before the transition happened; config: the plugin configuration;
  * @return array
  *   permission array as in hook_permission
  */
@@ -74,7 +74,7 @@ function hook_mapi_transaction_operated($transaction, $context){
  * payer integer or array($uids)
  * payee integer or array($uids)
  * involving integer or array($uids)
- * currcode string or array($currcodes)
+ * curr_id string or array($curr_ids)
  * type string or array($types)
  * no pager is provided in this function
  * views is much better
@@ -132,52 +132,31 @@ entity_view($transaction, 'sentence');//defaults to the saved variable mcapi.mis
 entity_view($transaction, 'some arbitrary twig {{ payee }}');
 
 /**
- * Transaction operations: See lib/Drupal/mcapi/Plugin/Operation
- * User stories are built up using transaction operations to make a workflow.
- * Operations allow transactions to be modified in a very controlled way, such as changing the state, or adding a comment
- * The experience of each operation can be configured precisely
- * Each operation triggers a transaction update event
+ * Transaction transitions: See lib/Drupal/mcapi/Plugin/Transition
+ * User stories are built up using transaction transitions to make a workflow.
+ * Transitions allow transactions to be modified in a very controlled way, such as changing the state, or adding a comment
+ * The experience of each transition can be configured precisely
+ * Each transition triggers a transaction update event
  */
 
 /*
- * Worths & Worth field
+ * Worth datatype
  * A new field type is created to store the quantity of the transaction and the currency together
  * It is commonly used as an array so that the application natively handles transactions with multiple currencies (mixed transactions)
- * EVERY transaction has a property called 'worths'
- * One 'worths' instance cannot store more than one flow in one currency
- * Worth values are not themed, but taken from the object
- * NB for now the worths array is found INSIDE $worths[0] Hopefully this will change in d8 Core.
+ * This datatype is hard coded to the transaction as an FieldAPI ItemList, allowing many values in one entity.
  */
-$worths[0]->__toString();//give something like "1H 00mins; $4.22"
-foreach ($worths[0] as $worth) {
-  $string = $worth->__toString();
-  $currencyObject = $worth->currency;
-  $numeric = $worth->value;//this is the stored integer value
-}
+
+array $transaction->get('worth')->value;
+//is the same as
+array $transaction->worth->value;
+echo $transaction->worth;
+
+
 //when building a form:
-$element['worth'] = array(
+$element['my_worth_setting'] = array(
   '#type' => 'worth',
   '$default_value' => array(
-    'currcode' => 'credunit',
+    'curr_id' => 1,
     'value' => 3600
   )
 );
-//or
-$element['worths'] = array(
-  '#type' => 'worths',
-  '$default_value' => array(
-    'credunit' => 3600,
-    'escro' => 4.22
-  ),
-);
-
-/*
- * Currency Types
- * All worth values are stored as integers,
- * The currency type plugin controls how the user interacts with those numbers
- * both for entering values with widgets and rendering values.
- * Are they seconds while the user can only trade hours?
- * Or are they cents?
- */
- $currency->render(3600);//might return "1h" or $36.00
- $transaction->worths[0]->__to_string();

@@ -15,17 +15,17 @@ use Drupal\Component\Annotation\PluginID;
  *
  * @ingroup views_filter_handlers
  *
- * @ViewsFilter("currcode")
+ * @ViewsFilter("curr_id")
  */
 class Currency extends InOperator {
 
   public function getValueOptions() {
-    $this->value_options = mcapi_currency_list(TRUE);
+    $this->value_options = mcapi_entity_label_list(entity_load_multiple_by_property('mcapi_currency', array('status' => TRUE)));
   }
 
 
   public function query($use_groupby = FALSE) {
     $table = $this->ensureMyTable();
-    $this->query->addWhere(0, "$table.currcode", $this->options['value']);
+    $this->query->addWhere(0, "$table.curr_id", $this->options['value']);
   }
 }

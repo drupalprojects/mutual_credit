@@ -21,7 +21,7 @@ function process_mcapi_command($message, $sender_account = NULL, $really = FALSE
   //this has no idea whether the transaction is pending.
   if ($really) {
   	$storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
-  	$stats = $wallet->getStats(\Drupal::config('mcapi.command')->get('currcode'));
+  	$stats = $wallet->getStats(\Drupal::config('mcapi.command')->get('curr_id'));
 
     return t('Transaction created.').' '.
       t('Your current balance is @num', array('@num' => $stats['balance']));//no need the format this
@@ -38,7 +38,7 @@ function mcapi_command_execute($message, $sender_account, $really = FALSE) {
   $props = mcapi_parse_command($message);//would throw an error
   if (!$props) return;
 
-  $props['currcode'] = \Drupal::config('mcapi.command')->get('currcode');
+  $props['curr_id'] = \Drupal::config('mcapi.command')->get('curr_id');
   $props['creator'] = $sender_account->uid;
   //need to parse the user IDs, and substitute the payer or payee
   //assume that either payer or payee is in the string
@@ -125,8 +125,8 @@ function mcapi_command_get_uid($string) {
   $query->condition($or);
   $wid = $query->execute()->fetchField();
 
-  $currcode = $config->get('commands_currcode');
-  $currency = mcapi_currency_load($currcode);
+  $curr_id = $config->get('commands_currcode');
+  $currency = mcapi_currency_load($curr_id);
   if (!$wid) {
     throw new Exception(t('Unknown wallet: @string', array('@string' => $string)));
   }
@@ -161,10 +161,10 @@ function mcapi_command_sms_incoming($op, $number, $message) {
   $langcode = user_preferred_language($sender)->language;
   if ($transaction->state == TRANSACTION_STATE_COMPLETED) {
   	$message = \Drupal::config('mcapi.command')->get('syntax_error');
-  	$currcode = \Drupal::config('mcapi.command')->get('commands_currcode ');
+  	$curr_id = \Drupal::config('mcapi.command')->get('commands_currcode ');
 
-  	$stats = $wallet->getStats($currcode);
-  	$currency = mcapi_currency_load($currcode);
+  	$stats = $wallet->getStats($curr_id);
+  	$currency = mcapi_currency_load($curr_id);
 
     $response = t(
       "Transaction created. Your new balance is @num",
@@ -173,7 +173,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     );
   }
   else {
-    $states = mcapi_get_states(TRUE);
+    $states = curr_id);
     $response = t(
       "Transaction created into state '@state'",
       array('@state' => $states[$transaction->state]),

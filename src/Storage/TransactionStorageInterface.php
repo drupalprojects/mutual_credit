@@ -8,19 +8,15 @@
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\FieldableEntityStorageInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 
 interface TransactionStorageInterface extends FieldableEntityStorageInterface {
-
-  /**
-   * {inheritdoc}
-   */
-  public function delete(array $transactions, $hard = FALSE);
 
   /**
    *  write 2 rows to the transaction index table, one for the payee, one for the payer
    *  @param TransactionInterface $transaction
    */
-  public function addIndex(TransactionInterface $transaction);
+  public function addIndex(\stdClass $record, array $worths);
 
   /**
    * truncate and rebuild the index table
@@ -37,17 +33,16 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
 
   /**
    * When a transaction is deleted, remove it from the index table
-   * @param integer $serial
+   * @param array $serials
    */
-  public function indexDrop($serial);
+  public function indexDrop($serials);
 
   /**
    * Populates the top level transaction with the next unused serial number
-   * @param TransactionInterface $transaction
    *
    * @return integer
    */
-  public function nextSerial(TransactionInterface $transaction);
+  public function nextSerial();
 
   /**
    * Filter by any field in the table; returns an array of serials keyed by xid
@@ -57,6 +52,7 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    *   keyed by transaction entity properties, values must match.
    *   Except in the case of state. If state is NULL, no filter will be applied,
    *   if state is not in the $conditions, a filter for positive states will be added.
+   *   note that 'value' refers to the raw value of the worth field.
    * @param number $offset
    * @param number $limit
    *
@@ -84,7 +80,7 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
   /**
    * count the number of transactions that meet the given conditions
    *
-   * @param string $currcode
+   * @param integer $curr_id
    * @param array $conditions
    *   keyed by transaction entity properties, values must match.
    *   Except in the case of state. If state is NULL, no filter will be applied,
@@ -94,12 +90,12 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    *
    * return integer
    */
-  public function count($currcode = '', $conditions = array(), $serial = FALSE);
+  public function count($curr_id = '', $conditions = array(), $serial = FALSE);
 
   /**
    * get the total transaction volume of a currency
    *
-   * @param unknown $currcode
+   * @param integer $curr_id
    * @param array $conditions
    *   keyed by transaction entity properties, values must match.
    *   Except in the case of state. If state is NULL, no filter will be applied,
@@ -107,22 +103,22 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    * @return integerstring
    *   ready for formatting with $currency->format
    */
-  public function volume($currcode, $conditions = array());
+  public function volume($curr_id, $conditions = array());
 
   /**
    * Retrieve the full balance history
    * N.B if caching running balances remember to clear the cache whenever a transaction changes state or is deleted.
    *
    * @param integer $wallet_id
-   * @param string $currcode
+   * @param integer $curr_id
    * @param integer $since
    *   A unixtime before which to exclude the transactions.
-   *   Note that all transactions will have to be loaded in order to calculate the first shown balance
+   *   Note that whole history needs to be loaded in order to calculate a running balance
    *
    * @return array
-   *   keyed by timestamp and balance from that moment
+   *   Balances keyed by timestamp
    */
-  public function timesBalances($wallet_id, $currcode, $since);
+  public function timesBalances($wallet_id, $curr_id, $since);
 
 
   //public function saveWorths(TransactionInterface $transaction);

@@ -31,6 +31,9 @@ class State extends ConfigEntityBase {
 
   /**
    * Identifier for the current State
+   * Must be an integer
+   * Positive values count towards the user balance
+   * 0 is reserved for the Deleted state
    *
    * @var string
    */
@@ -49,14 +52,5 @@ class State extends ConfigEntityBase {
    * @var string
    */
   public $description;
-
-  /**
-   * The constant value which is stored in the database.
-   * Positive values count towards the user balance
-   * 0 is reserved for the Deleted state
-   *
-   * @var string
-   */
-  public $value;
 
 }

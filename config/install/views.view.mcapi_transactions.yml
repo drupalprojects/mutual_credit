@@ -441,14 +441,14 @@ display:
           separator: ''
           plugin_id: worths
           provider: mcapi
-        operations:
-          id: operations
+        transitions:
+          id: transitions
           table: mcapi_transactions
-          field: operations
+          field: transitions
           relationship: none
           group_type: group
           admin_label: ''
-          label: Operations
+          label: Transitions
           exclude: false
           alter:
             alter_text: false
@@ -490,7 +490,7 @@ display:
           empty_zero: false
           hide_alter_empty: true
           mode: page
-          plugin_id: transaction_operations
+          plugin_id: transaction_transitions
           provider: mcapi
       filters:
         parent:
@@ -619,10 +619,10 @@ display:
           plugin_id: standard
           provider: views
       arguments:
-        currcode:
-          id: currcode
+        curr_id:
+          id: curr_id
           table: mcapi_transactions_worths
-          field: currcode
+          field: curr_id
           relationship: none
           group_type: group
           admin_label: ''
@@ -1035,14 +1035,14 @@ display:
           hide_alter_empty: true
           plugin_id: mcapi_state
           provider: mcapi
-        operations:
-          id: operations
+        transitions:
+          id: transitions
           table: mcapi_transactions
-          field: operations
+          field: transitions
           relationship: none
           group_type: group
           admin_label: ''
-          label: Operations
+          label: Transitions
           exclude: false
           alter:
             alter_text: false
@@ -1084,7 +1084,7 @@ display:
           empty_zero: false
           hide_alter_empty: true
           mode: page
-          plugin_id: transaction_operations
+          plugin_id: transaction_transitions
           provider: mcapi
       defaults:
         fields: false
@@ -1136,10 +1136,10 @@ display:
             group_items: {  }
           plugin_id: boolean
           provider: views
-        currcode:
-          id: currcode
+        curr_id:
+          id: curr_id
           table: mcapi_transactions_worths
-          field: currcode
+          field: curr_id
           relationship: none
           group_type: group
           admin_label: ''
@@ -1174,7 +1174,7 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
-          plugin_id: currcode
+          plugin_id: curr_id
           provider: mcapi
         description:
           id: description

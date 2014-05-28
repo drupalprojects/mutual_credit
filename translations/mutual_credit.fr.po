@@ -264,7 +264,7 @@ msgid "What should happen when a user or admin deletes a transaction.?"
 msgstr "Que doit-il arriver quand un membre ou un administrateur supprime un échange?"
 
 #: mcapi.admin.inc:236
-msgid "Some system operations may 'scratch' transactions"
+msgid "Some system transitions may 'scratch' transactions"
 msgstr "Des opérations système pourraient 'biffer' les transactions"
 
 #: mcapi.admin.inc:237
@@ -1128,7 +1128,7 @@ msgid "Storage"
 msgstr "Stockage"
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:96
-msgid "Operations"
+msgid "Transitions"
 msgstr "Actions"
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.inc:29
@@ -2642,7 +2642,7 @@ msgid "Transactions in state '@state'"
 msgstr "Échanges en phase: '@state'"
 
 #: mcapi.admin.inc:541;644
-msgid "Transaction operations"
+msgid "Transaction transitions"
 msgstr "Opérations sur l'échange"
 
 #: mcapi.admin.inc:542
@@ -2702,7 +2702,7 @@ msgid "Links"
 msgstr "Liens"
 
 #: mcapi.tokens.inc:120
-msgid "Links to transaction operations"
+msgid "Links to transaction transitions"
 msgstr "Liens vers les opérations sur l'échange"
 
 #: mcapi.module:547

@@ -156,10 +156,10 @@ function mcapi_1stparty_access($editform) {
   $account = entity_load('user', \Drupal::currentUser()->id());
   if ($exchange_id = $editform->get('exchange')) {
     $exchange = entity_load('mcapi_exchange', $exchange_id);
-    if (is_object($exchange) && $exchange->member($account)) {
+    if (is_object($exchange) && $exchange->is_member($account)) {
       return TRUE;
     }
   }
   //user can access the form if they are in at least one exchange
-  else return count(referenced_exchanges($account)) != 0;
+  else return count(referenced_exchanges($account, TRUE)) != 0;
 }

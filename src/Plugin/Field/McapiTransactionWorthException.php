@@ -17,11 +17,15 @@ use Drupal\mcapi\McapiTransactionException;
  */
 class McapiTransactionWorthException extends McapiTransactionException {
 
-  protected $currency; //any of the fields in the mcapi_transactions table, or 'worths'
+  protected $currency;
 
-  public function __construct($currency, $message = 'Unknown error on worths field') {
-    $this->currency = $currency;
-    $this->field = 'worths]['.$currency->id();
+  public function __construct($curr_id = 0, $message = 'Unknown error on worths field') {
+
+    $this->field = 'worths';
+    if ($curr_id) {
+      $this->currency = entity_load('mcapi_currency', $curr_id);
+      $this->field .= ']['.$this->currency->id();
+    }
     $this->message = $message;
   }
 

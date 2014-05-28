@@ -68,21 +68,24 @@ class WalletLocalAction  implements ContainerDerivativeInterface {
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
     $this->derivatives = array();
-    $types = \Drupal::config('mcapi.wallets')->get('entity_types');
-    foreach((array)$types as $entity_bundle => $max) {
-      list($entity_type, $bundle) = explode(':', $entity_bundle);
-      //assumes that bundle names are unique
-      $this->derivatives["mcapi.wallet.add.".$bundle.'.action'] = array(
-        'id' => "mcapi.wallet.add.".$bundle.'.action',
-        'route_name' => "mcapi.wallet.add.$bundle",//taken from the routesubscriber
-        'title' => t('Add Wallet'),
-        'appears_on' => array(
-          \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLinkTemplate('canonical')
-        ),
-      );
-    }
-    foreach ($this->derivatives as &$entry) {
-      $entry += $base_plugin_definition;
+    $config = \Drupal::config('mcapi.wallets');
+    if ($config->get('add_link_location') != 'summaries') {
+      $types = $config->get('entity_types');
+      foreach((array)$types as $entity_bundle => $max) {
+        list($entity_type, $bundle) = explode(':', $entity_bundle);
+        //assumes that bundle names are unique
+        $this->derivatives["mcapi.wallet.add.".$bundle.'.action'] = array(
+          'id' => "mcapi.wallet.add.".$bundle.'.action',
+          'route_name' => "mcapi.wallet.add.$bundle",//taken from the routesubscriber
+          'title' => t('Add Wallet'),
+          'appears_on' => array(
+            \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLinkTemplate('canonical')
+          ),
+        );
+      }
+      foreach ($this->derivatives as &$entry) {
+        $entry += $base_plugin_definition;
+      }
     }
     return $this->derivatives;
   }

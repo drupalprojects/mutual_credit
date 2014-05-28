@@ -69,10 +69,10 @@ function mcapi_index_views_views_default_views() {
 
   /* Filter criterion: Transaction index: Currency */
   //just do this for the default currency - as an exposed filter it doesn't seem to work
-  $handler->display->display_options['filters']['currcode']['id'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['table'] = 'mcapi_index';
-  $handler->display->display_options['filters']['currcode']['field'] = 'currcode';
-  $handler->display->display_options['filters']['currcode']['value'] = array(key($currencies));
+  $handler->display->display_options['filters']['curr_id']['id'] = 'curr_id';
+  $handler->display->display_options['filters']['curr_id']['table'] = 'mcapi_index';
+  $handler->display->display_options['filters']['curr_id']['field'] = 'curr_id';
+  $handler->display->display_options['filters']['curr_id']['value'] = array(key($currencies));
 
   /* Filter criterion: Transaction index: Value */
   $handler->display->display_options['filters']['diff']['id'] = 'diff';

@@ -39,9 +39,9 @@ class BalanceLimits extends McapiBlockBase {
   public function blockForm($form, &$form_state) {
     $form = parent::blockForm($form, $form_state);
     //reduce the list of currencies to those which don't have the 'none' plugin
-    foreach ($form['currcodes']['#options'] as $currcode => $currname) {
-      if (mcapi_currency_load($currcode)->limits_plugin == 'none') {
-        unset($form['currcodes']['#options'][$currcode]);
+    foreach ($form['curr_ids']['#options'] as $curr_id => $currname) {
+      if (mcapi_currency_load($curr_id)->limits_plugin == 'none') {
+        unset($form['curr_ids']['#options'][$curr_id]);
       }
     }
     $form['absolute'] = array(

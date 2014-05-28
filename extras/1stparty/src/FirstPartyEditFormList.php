@@ -31,7 +31,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder  implements FormInt
    */
   public function buildRow(EntityInterface $entity) {
     if (\Drupal::currentUser()->hasPermission('configure mcapi') ||
-      entity_load('mcapi_exchange', $entity->exchange)->member() ) {
+      entity_load('mcapi_exchange', $entity->exchange)->is_member() ) {
     	$style = array('style' => $entity->status ? '' : 'color:#999');
     	//$class = array('style' => $entity->status ? 'enabled' : 'disabled');
     	//TODO make a link out of this

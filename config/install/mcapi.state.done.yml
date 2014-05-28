@@ -1,4 +1,3 @@
-id: done
+id: 1
 label: Done
 description: The final state of the default workflow
-value: 1

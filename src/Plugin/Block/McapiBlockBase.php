@@ -20,7 +20,7 @@ class McapiBlockBase extends BlockBase {
    */
   public function defaultConfiguration() {
     return array(
-      'currcodes' => array(),
+      'curr_ids' => array(),
       'user_source' => 0,
     );
   }
@@ -47,13 +47,13 @@ class McapiBlockBase extends BlockBase {
    */
   public function blockForm($form, &$form_state) {
     parent::blockForm($form, $form_state);
-    $form['currcodes'] = array(
+    $form['curr_ids'] = array(
       '#title' => t('Currencies'),
       '#description' => t('Select none to select all'),//there must be a string in Drupal that says that already?
       '#title_display' => 'before',
-      '#type' => 'mcapi_currcodes',
-      '#default_value' => $this->configuration['currcodes'],
-      '#options' => mcapi_currency_list(TRUE),//ALL the currencies are listed
+      '#type' => 'mcapi_currency_select',
+      '#default_value' => $this->configuration['curr_ids'],
+      '#options' => mcapi_entity_label_list(entity_load_multiple_by_property('mcapi_currency', array('status' => TRUE))),
       '#multiple' => TRUE
     );
     $form['user_source'] = array(
@@ -79,19 +79,19 @@ class McapiBlockBase extends BlockBase {
   }
 
   public function build() {
-    $currcodes = array_filter($this->configuration['currcodes']);
+    $curr_ids = array_filter($this->configuration['curr_ids']);
     //current user can only see the currencies which are in the same exchanges as him
-    if (empty($currcodes)) {
+    if (empty($curr_ids)) {
       $otheruser = ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account;
       //show only the currency which can be seen by the current user AND the profiled user
       $this->currencies = array_intersect_key(
-      	mcapi_currencies_for_user(\Drupal::currentUser()),
-        mcapi_currencies_for_user($otheruser)
+      	mcapi_currencies_for_user(\Drupal::currentUser(), TRUE),
+        mcapi_currencies_for_user($otheruser, TRUE)
       );
     }
     else{
-      foreach ($currencies as $currcode) {
-        $this->currencies[$currcode] = mcapi_currency_load($currcode);
+      foreach ($currencies as $curr_id) {
+        $this->currencies[$curr_id] = mcapi_currency_load($curr_id);
       }
     }
   }

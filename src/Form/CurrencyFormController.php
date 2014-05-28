@@ -138,9 +138,9 @@ class CurrencyFormController extends EntityFormController {
     $form['ticks'] = array(
     	'#title' => t('Currency value, expressed in @units', array('@units' => $unit_name)),
       '#description' => implode(' ', array(
-          t('Exchange rates are not determined by a free market, but negotiated and fixed.'),
-          t('@units are the base units used to convert between currencies.', array('@units' => $unit_name)),
-          t('Leave blank if this currency cannot be intertraded.'))),
+        t('Exchange rates are not determined by a free market, but negotiated and fixed.'),
+        t('@units are the base units used to convert between currencies.', array('@units' => $unit_name)),
+        t('Leave blank if this currency cannot be intertraded.'))),
       '#type' => 'number',
       '#min' => 0,
       '#default_value' => $currency->ticks,
@@ -152,17 +152,20 @@ class CurrencyFormController extends EntityFormController {
       '#collapsible' => TRUE,
       '#weight' => 8,
     );
+    $help[] = t('E.g. for Hours, Minutes put Hr00:60/4mins , for dollars and cents put $0.00; for loaves put 0 loaves.');
+    $help[] = t('The first number is always a string of zeros showing the number of characters (powers of ten) the widget will allow.');
+    $help[] = t('The optional /n at the end will render the final number widget as a dropdown field showing intervals, in the example, of 15 mins.');
     $form['display']['format'] = array(
       '#title' => t('Format'),
-      '#description' => t('E.g. for Hours, Minutes & seconds put Hr0:60:60, for dollars and cents put $0.00; for loaves put 0 loaves.'),
+      '#description' => implode(' ', $help),
       '#type' => 'textfield',
       '#default_value' => implode('', $currency->format),
-      '#element_validate' => array($this, 'validate_format'),
-      '#max_length' => 6,
-      '#size' => 6,
+      '#element_validate' => array(array($this, 'validate_format')),
+      '#max_length' => 16,
+      '#size' => 10,
     );
 
-    $serials = $this->entity->transactions(array('currcode' => $currency->id(), 'value' => 0));
+    $serials = $this->entity->transactions(array('curr_id' => $currency->id(), 'value' => 0));
     $form['display']['zero'] = array(
       '#title' => t('Zero value display'),
       '#description' => t('Use html.') .' ',
@@ -182,12 +185,6 @@ class CurrencyFormController extends EntityFormController {
     	'#description' => t('Colour may be used in visualisations'),
     	'#type' => 'color',
     	'#default_value' => $currency->color,
-    );
-
-    $form['#attached'] = array(
-      'css' => array(
-        drupal_get_path('module', 'mcapi') . '/css/admin_currency.css',
-      ),
     );
 
     return $form;
@@ -247,18 +244,22 @@ class CurrencyFormController extends EntityFormController {
    *   with values alternating string / number / string / number etc.
    */
   function submit_format($string) {
-    preg_match_all('/[0-9]+/', $string, $matches);
+    //a better regular expression would make this function much shorter
+    //(everything until the first number) | ([numbers] | [not numbers])+ | (slash number)? | (not numbers) ?
+    preg_match_all('/[0-9\/]+/', $string, $matches);
     $numbers = $matches[0];
-    preg_match_all('/[^0-9]+/', $string, $matches);
+    preg_match_all('/[^0-9\/]+/', $string, $matches);
     $chars = $matches[0];
     //Ensure the first value of the result array corresponds to a template string, not a numeric string
-    if (is_numeric(substr($string), 0, 1)) {//if the format string started with a number
+    if (is_numeric(substr($string, 0, 1))) {//if the format string started with a number
       array_unshift($chars, '');
     }
     foreach ($chars as $snippet) {
       $combo[] = $snippet;
       $combo[] = array_shift($numbers);
     }
+    //of the last value of $combo is empty remove it.
+    if (end($combo) == '')array_pop($combo);
     return $combo;
   }
 }

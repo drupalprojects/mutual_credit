@@ -71,7 +71,7 @@ display:
             created: created
             partner_id: partner_id
             balance: balance
-            operations: operations
+            transitions: transitions
             outgoing: outgoing
             incoming: incoming
           info:
@@ -103,7 +103,7 @@ display:
               separator: ''
               empty_column: 0
               responsive: ''
-            operations:
+            transitions:
               sortable: 0
               default_sort_order: asc
               align: ''
@@ -298,14 +298,14 @@ display:
           field: balance
           plugin_id: balance
           provider: mcapi
-        operations:
-          id: operations
+        transitions:
+          id: transitions
           table: mcapi_transactions_index
-          field: operations
+          field: transitions
           relationship: none
           group_type: group
           admin_label: ''
-          label: Operations
+          label: Transitions
           exclude: 0
           alter:
             alter_text: 0
@@ -348,7 +348,7 @@ display:
           hide_alter_empty: 1
           mode: ajax
           view: 1
-          plugin_id: transaction_operations
+          plugin_id: transaction_transitions
           provider: mcapi
       filters:
         child:

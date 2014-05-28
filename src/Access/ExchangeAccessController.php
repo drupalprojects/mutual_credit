@@ -29,7 +29,7 @@ class ExchangeAccessController extends EntityAccessController {
       $account->hasPermission('configure mcapi') ||
       $visib == 'public' ||
       ($visib == 'restricted' && $account->id()) ||
-      ($visib == 'private' && $exchange->member(user_load($account->id())))
+      ($visib == 'private' && $exchange->is_member(user_load($account->id())))
       ) {
       return TRUE;
     }

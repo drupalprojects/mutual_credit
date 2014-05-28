@@ -29,6 +29,6 @@ class TransactionAccessController extends EntityAccessController {
     if (empty($account)) {
       $account = \Drupal::currentUser();
     }
-    return transaction_operations($op)->opAccess($transaction, $account);
+    return transaction_transitions($op)->opAccess($transaction, $account);
   }
 }

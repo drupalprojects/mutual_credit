@@ -11,13 +11,14 @@ use Drupal\user\Plugin\views\field\LinkEdit;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\views\ResultRow;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Session\AccountInterface;
 
 /**
  * Field handler to present a link to user edit.
  *
  * @ingroup views_field_handlers
  *
- * @PluginID("admin_link_edit")
+ * @ViewsField("admin_link_edit")
  */
 class AdminLinkEdit extends LinkEdit {
 
@@ -51,8 +52,8 @@ class AdminLinkEdit extends LinkEdit {
     return $options;
   }
 
-  public function access() {
-    return user_access($this->options['permission']);
+  public function access(AccountInterface $account) {
+    return user_access($this->options['permission'], $account);
   }
 
 }

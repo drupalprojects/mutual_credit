@@ -110,7 +110,7 @@ class FirstPartyEditFormController extends EntityFormController {
     $form['partner']['preset'] = array('#markup' => 'Partner preset not available yet');
     //@todo when entity reference widget is behaving
     /*
-    if ($exchange && $exchange->member($user)) {
+    if ($exchange && $exchange->is_member($user)) {
     	$form['partner']['preset'] = array(
     		'#title' => t('Preset field to'),
         '#type' => 'local_wallets',
@@ -194,7 +194,7 @@ class FirstPartyEditFormController extends EntityFormController {
     //worths can be preset for any or all of the currencies available in this exchange
     //@todo = get the currencies elegantly out of entity_reference $exchange->currencies
     if ($exchange) {
-      $currcodes = db_select('mcapi_exchange__currencies', 'c')
+      $curr_ids = db_select('mcapi_exchange__currencies', 'c')
         ->fields('c', array('currencies_target_id'))
         ->condition('entity_id', $exchange->id())
         ->execute()->fetchCol();
@@ -202,7 +202,7 @@ class FirstPartyEditFormController extends EntityFormController {
    			'#title' => t('Preset field to'),
    			'#description' => t('Choose one currency and optionally a value'),
    			'#type' => 'worths',
-   		  '#currencies' => $currcodes,
+   		  '#currencies' => $curr_ids,
    			'#default_value' => $configEntity->worths['preset'],
      );
     }
@@ -328,7 +328,7 @@ class FirstPartyEditFormController extends EntityFormController {
     	'#weight' => 20,
     );
     $form['#suffix'] = t(
-  	  "The user will then proceed to the 'create' operation page to confirm the transaction, which is configured at !link",
+  	  "The user will then proceed to the 'create' transition page to confirm the transaction, which is configured at !link",
       array('!link' => l('admin/accounting/transactions/workflow/create', 'admin/accounting/transactions/workflow/create'))
     );
     return $form;

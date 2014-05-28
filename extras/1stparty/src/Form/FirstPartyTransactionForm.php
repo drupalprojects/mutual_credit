@@ -119,7 +119,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 
   	//TODO put this in the base transaction form,
   	//where the one checkbox can enable both payer and payee to be selected from any exchange
-    if (strpos($config->experience['twig'], '{{ intertrade }}') && can_intertrade($account)) {
+    if (strpos($config->experience['twig'], '{{ intertrade }}') && referenced_exchanges($account, TRUE, TRUE)) {
     	//this checkbox flips between partner_choosers
     	$form['intertrade'] = array(
     		'#title' => t('Intertrade'),

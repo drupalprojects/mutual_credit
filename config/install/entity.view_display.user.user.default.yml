@@ -1,0 +1,23 @@
+id: user.user.default
+uuid: 42a2fb87-40be-4066-a757-873432120366
+targetEntityType: user
+bundle: user
+mode: default
+content:
+  wallets_summaries:
+    weight: 0
+  exchanges:
+    type: entity_reference_label
+    weight: 1
+    settings:
+      link: true
+    label: above
+hidden:
+  member_for: true
+status: true
+dependencies:
+  entity:
+    - field.instance.user.user.exchanges
+  module:
+    - entity_reference
+

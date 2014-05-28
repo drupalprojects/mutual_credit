@@ -15,7 +15,7 @@ class CommandSettings extends ConfigFormBase {
 	 * {@inheritdoc}
 	 */
 	public function getFormID() {
-		return 'mcapi_operation_settings_form';
+		return 'mcapi_transition_settings_form';
 	}
 
 	public function buildform(array $form, array &$form_state) {
@@ -61,11 +61,11 @@ class CommandSettings extends ConfigFormBase {
 		  $form['requests']['match_fields']['#options']['owner'] = t("Wallet owner's name");
 		}
 
-		$form['currcode'] = array(
+		$form['curr_id'] = array(
 			'#title' => t('Currency'),
 			'#description' => t('Currently the commands will only work with one currency, in order to keep the user interface simple.'),
 			'#type' => 'mcapi_currencies',
-			'#default_value' => $config->get('currcode')
+			'#default_value' => $config->get('curr_id')
 		);
 
 		$form['responses'] = array(

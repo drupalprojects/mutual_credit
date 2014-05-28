@@ -14,7 +14,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 class LimitsPluginManager extends DefaultPluginManager {
 
   /**
-   * Constructs the OperationManager object
+   * Constructs the TransitionManager object
    * really I've got no idea what this function does
    *
    * @param \Traversable $namespaces

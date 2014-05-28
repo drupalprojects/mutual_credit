@@ -14,7 +14,6 @@ use Drupal\Core\Field\FieldDefinition;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\user\UserInterface;
-use Drupal\mcapi\ExchangeInterface;
 
 define('EXCHANGE_VISIBILITY_PRIVATE', 0);
 define('EXCHANGE_VISIBILITY_RESTRICTED', 1);
@@ -43,7 +42,6 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *   fieldable = TRUE,
  *   translatable = FALSE,
  *   base_table = "mcapi_exchanges",
- *   route_base_path = "admin/accounting/exchanges",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",
@@ -60,16 +58,59 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  */
 class Exchange extends ContentEntityBase implements EntityOwnerInterface, ExchangeInterface{
 
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
+    $account = \Drupal::currentUser();
+    $values += array(
+      //'name' => t("!name's exchange", array('!name' => $account->getlabel())),
+      'uid' => $account->id(),
+      'status' => TRUE,
+      'open' => TRUE,
+      'visibility' => TRUE,
+      'currencies' => key(entity_load_multiple('mcapi_currency'))
+    );
+  }
+
+  /**
+   * check that the exchange has no wallets or it can't be deleted
+   * that means
+   */
+  public static function preDelete(EntityStorageInterface $storage_controller, array $entities) {
+    return;
+    foreach ($entities as $exchange) {
+      if (!$storage_controller->deletable($exchange)) {
+        throw new \Exception(
+          t('Exchange @label is not deletable: @reason', array('@label' => $exchange->label(), '@reason' => $exchange->reason ))
+        );
+      }
+    }
+  }
+
+  /**
+   * Create the _intertrading wallet
+   */
+
+  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
+    //add the manager user to the exchange if it is not a member
+    $exchange_manager = user_load($this->get('uid')->value);
+    debug(
+      $exchange_manager->exchanges->getValue(),
+      'the exchange manager, ', $exchange_manager->label() .' is in these exchanges'
+    );
+
+    if ($update)return;
+    $wallet = entity_create('mcapi_wallet', array('entity_type' => 'mcapi_exchange', 'pid' => $this->id()));
+    $wallet->name->setValue('_intertrading');
+    $wallet->save();
+  }
+
   /**
    * {@inheritdoc}
    */
   function members() {
-    //@todo
-    //entity_load_by_properties seems expensive and I don't know how to make it work
-    //return entity_load_multiple_by_properties('user', array('field_exchanges' => $this->id()));
-
-    //this more direct solution belongs really in the storage controller
-    //@todo how the hell does countQuery work?
     return count(db_select("user__exchanges", 'e')
       ->fields('e', array('entity_id'))
       ->condition('exchanges_target_id', $this->id())
@@ -84,20 +125,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $conditions = array('exchange' => $this->get('id')->value, 'since' => strtotime($period));
     $serials = \Drupal::EntityManager()->getStorage('mcapi_transaction')->filter($conditions);
     return count(array_unique($serials));
-  }
-
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
-    //ensure the manager of the exchange is actually a member.
-    $exchange_manager = user_load($this->get('uid')->value);
-    //TODO I can't see how to ensure the owner is actually a member
-    //should be done in form validation of course
-    //tricky entity_reference handling
-    //throw an error if the owner is not already a member
   }
 
   /**
@@ -131,7 +158,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->setSetting('target_type', 'user')
       ->setRequired(TRUE);
 
-    $fields['active'] = FieldDefinition::create('boolean')
+    $fields['status'] = FieldDefinition::create('boolean')
       ->setLabel(t('Active'))
       ->setDescription(t('TRUE if the exchange is current and working.'))
       ->setSettings(array('default_value' => TRUE));
@@ -153,23 +180,19 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  public function member(ContententityInterface $entity) {
+  public function is_member(ContententityInterface $entity) {
     $entity_type = $entity->getEntityTypeId();
     if ($entity_type == 'mcapi_wallet') {
-      if ($entity->owner) {
-        $entity = $entity->owner;
-      }
-      else return FALSE;
+      $entity = $entity->getOwner();
     }
-    module_load_include('inc', 'mcapi');
-    $fieldname = get_exchange_entity_fieldnames($entity_type);
-    //@todo I can't work out how to do this with the entity_reference property api
-    //so just using the database for now.
-    return db_select($entity_type .'__'.$fieldname, 'f')
-      ->fields('f', array('entity_id'))
-      ->condition($fieldname.'_target_id', $this->id())
-      ->condition('entity_id', $entity->id())
-      ->execute()->fetchField();
+
+    $fieldnames = get_exchange_entity_fieldnames();
+    $id = $entity->id();
+    echo 'Exchange::is_member'; print_r($this->{$fieldname}->getValue(FALSE));die();
+    foreach ($this->{$fieldnames[$entity_type]}->getValue(FALSE) as $item) {
+      if ($item['target_id'] == $id) return TRUE;
+    }
+    return FALSE;
   }
 
   /**
@@ -186,21 +209,27 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   function intertrading_wallet() {
-    $wallets = entity_load_multiple_by_properties('mcapi_wallet', array('name' => '_intertrade', 'pid' => $this->id()));
-    if (wallets)return current($wallets);
-    throw new Exception('no _intertrade wallet for Exchange '.$this->id());
+    return current(entity_load_multiple_by_properties(
+      'mcapi_wallet',
+      array('name' => '_intertrading', 'pid' => $this->id())
+    ));
   }
 
 
-  //utility function not in the interface
-  public function visibility_options($val = NULL) {
+  /**
+   * get one or all of the visibililty types with friendly names
+   * @param integer $constant
+   * @return mixed
+   *   an array of visibility type names, keyed by integer constants or just one name
+   */
+  public function visibility_options($constant = NULL) {
     $options = array(
       EXCHANGE_VISIBILITY_PRIVATE => t('Private except to members'),
       EXCHANGE_VISIBILITY_RESTRICTED => t('Restricted to members of this site'),
       EXCHANGE_VISIBILITY_TRANSPARENT => t('Transparent to the public')
     );
-    if ($val) return $options[$val];
-    return $options;
+    if (is_null($constant))return $options;
+    return $options[$constant];
   }
 
 

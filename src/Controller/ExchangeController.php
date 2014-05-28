@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mcapi\ExchangeInterface;
+use Drupal\mcapi\Entity\ExchangeInterface;
 
 /**
  * Returns responses for Exchange routes.

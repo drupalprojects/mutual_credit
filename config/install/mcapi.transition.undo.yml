@@ -1,0 +1,24 @@
+title: Undo
+tooltip: The administrator will still be able to access the transaction
+page_title: 'Are you sure?'
+format: certificate
+twig: ''
+button: 'Yes I''m sure'
+cancel_button: Cancel
+format2: certificate
+redirect: user
+twig2: ''
+message: 'The transaction has been deleted'
+send: 1
+subject: 'Transaction [mcapi:serial] was deleted'
+body: "Dear [user:name],\r\n"
+cc: carboncopy@drupal.org
+access:
+  1:
+    admin: admin
+    payer: 0
+    payee: 0
+    manager: 0
+    helper: 0
+status: true
+weight: 5

@@ -9,7 +9,7 @@ namespace Drupal\mcapi_1stparty\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\Annotation\EntityType;
 use Drupal\Core\Annotation\Translation;
 
@@ -91,7 +91,7 @@ class FirstPartyEditForm extends ConfigEntityBase {
       ),
         //this needs to be a worths field, but I don't know how to make such an object
       'worths' => array(
-    	  'preset' => array('credunit' => array('currcode' => 'credunit', 'value' => 0))
+    	  'preset' => array('credunit' => array('curr_id' => 'credunit', 'value' => 0))
       ),
       'other' => array(
         'intertrade' => FALSE

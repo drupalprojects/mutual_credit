@@ -1,12 +1,14 @@
 <?php
 
 
-//TEMP until drupal works out installation dependencies
-if (!module_exists('taxonomy')){
-  \Drupal::moduleHandler()->install(array('taxonomy', 'help'));
-}
-
 function mcapi_tester_install() {
+
+  //clear the entity cache because for some reasont user 1 has lost the contents of the exchanges field
+  //I don't know the best way to do this yet, or whether the entity cache or field cache is effected
+  //or whether this is because of a bug in alpha 11
+  //drupal_flush_all_caches();
+  //has no effect so I have prevented wallet 2 from being used when transactions are made
+
   $terms = array('Transport', 'Food', 'Care', 'Learning', 'Home', 'Leisure');
   foreach ($terms as $term) {
     entity_create('taxonomy_term', array(
@@ -14,16 +16,144 @@ function mcapi_tester_install() {
       'name' => $term,
     ))->save();
   }
+  $exchange_ids = mcapi_tester_make_exchanges('Venus', 'Mars', 'Jupiter', 'Mercury');
+  //now
+  mcapi_tester_make_users(26);
+  //make some transactions within the exchanges.
+  mcapi_tester_make_transactions(200);
+  //make some intertrading transactions
+  mcapi_tester_make_transactions(25, TRUE);
+
+  //close the last exchange and disable its currency
+  $last_exchange = entity_load('mcapi_exchange', end($exchange_ids));
+  $last_exchange->set('status', 0);
+  $last_exchange->save();
+
 }
 
+/**
+ * implements hook_uninstall().
+ */
 function mcapi_tester_uninstall() {
-  $terms = entity_load_multiple_by_properties(
-    'taxonomy_term',
-    array('name', array('Transport', 'Food', 'Care', 'Learning', 'Home', 'Leisure'))
-  );
-  foreach ($terms as $term) {
+  //to delete properly we have to temporarily change the delete mode
+  $misc_conf = \Drupal::config('mcapi.misc');
+  $indelible = $misc_conf->get('indelible');
+  $misc_conf->set('indelible', 0)->save();
+
+  if ($field = entity_load('field_instance_config', 'mcapi_transaction.mcapi_transaction.field_categories')) {
+    $field->delete();
+  }
+
+  //remove the categories
+  foreach (entity_load_multiple_by_properties('taxonomy_term', array('vid' => 'categories')) as $term) {
     $term->delete();
   }
+  //delete test transactions
+  $transaction_storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
+  $serials = array_unique($transaction_storage->filter(array('type' => 'test')));
+  if ($serials) {
+    $transaction_storage->doDelete(mcapi_transaction_load_by_serial($serials));
+  }
+  //delete test users
+  foreach (entity_load_multiple('user') as $user) {
+    if ($user->id() < 2) continue;
+    $user->delete();//all users' wallets are now 'unused' so will be deleted also
+  }
+  //delete all exchanges except the first
+  foreach (entity_load_multiple('mcapi_exchange') as $exchange) {
+    if ($exchange->id() == 1)continue;
+    $exchange->status->setValue(FALSE);
+    $exchange->save();
+    $exchange->delete();//their intertrading wallets should go automatically
+  }
+  foreach (entity_load_multiple('mcapi_currency') as $currency) {
+    if ($currency->id() == 1) continue;
+    $currency->delete();
+  }
+  $misc_conf->set('indelible', $indelible);
+  field_purge_batch(5);
+}
+
+/**
+ * create some exchanges with different names, each with ONE currency
+ * each argument is the name of an exchange.
+ * N.B. each exchange will have its own intertrading wallet
+ *
+ * @param string
+ *   the name of the first exchange
+ * @return array
+ *   the ids of the newly created exchanges
+ */
+function mcapi_tester_make_exchanges() {
+
+  $w = 4;
+  foreach (func_get_args() as $name) {
+    $c = entity_create('mcapi_currency');
+    $c->set('id', $w);
+    $c->set('name', $name . 'Credits');
+    $c->set('issuance', CURRENCY_TYPE_EXCHANGE);
+    $c->set('format', array(substr($name, 0, 1), '0', ':', '99'));
+    $c->set('weight', $w);
+    $c->set('ticks', 10*rand(1, 6));
+    $c->save();
+    $w++;
+
+    $e = entity_create('mcapi_exchange');
+    $e->set('name', $name);
+    $e->get('currencies')->setValue(array($c->id()));
+    $e->save();
+
+    //for the purposes of testing we put user 1 in every exchange
+    $account = user_load(1);
+    $vals = $account->exchanges->getValue(FALSE);
+    $vals = array_merge($vals, array(array('target_id' => $e->id())));
+    $account->set('exchanges', $vals);
+    $account->save();
+    $ids[] = $e->id();
+  }
+  return $ids;
+}
+
+/**
+ * Create up to 26 users and put them EACH IN ONE exchange
+ * Note that users will have a wallet created automatically according to the wallet settings
+ *
+ * @param integer $num
+ *   the number of users to create, max 26
+ * @param array $exchange_ids
+ *   the ids of exchanges the new members can join.
+ * @return array
+ *   the $account->id()s created
+ */
+function mcapi_tester_make_users($num = 26) {
+  $manager_role = entity_load('user_role', 'manager');
+  $helper_role = entity_load('user_role', 'helper');
+  $all_exchange_ids = array_keys(entity_load_multiple('mcapi_exchange'));
+
+  //create users
+  $first = array('Adam', 'Barry', 'Carry', 'Dave', 'Elizabeth', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Rosy', 'Sly', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
+  $last = array('Adams', 'Bastock', 'Critchley', 'Dearthart', 'Epstein', 'Fox', 'Guilder', 'Hornby', 'Ingrams', 'Johnson', 'Kant', 'Loafer', 'Meadows', 'Norfolk', 'Orwell', 'Philipps', 'Quarkson', 'Rottenbottom', 'Smith', 'Trotter', 'Underwood', 'Vernon', 'Wishart', 'X', 'Ypres', 'Zenithson');
+  shuffle($last);
+  $usersperexchange = ceil(26/count(entity_load_multiple('mcapi_exchange')));
+  for ($i = 0; $i < $num; $i++) {
+    $u = entity_create('user');
+    $u->set('name', $first[$i] .' '. $last[$i]);
+    $u->set('mail', strtolower($first[$i]).'@mutualcreditmodule.matslats.net');
+    $u->set('pass', 'a');
+    $u->set('status', 1);
+    //give the first user in each exchange the manager role and the second the helper
+    $memnum = ($i+1) % $usersperexchange;
+    if ($memnum == 0) $u->addRole($manager_role->id());
+    elseif ($memnum == 1) $u->addRole($helper_role->id());
+    //we'll put the users sequentially into the exchanges so that its easy to guess where they are
+    //assume the exchange ids are sequential, starting at 1
+
+    $exchange_id = $all_exchange_ids[intval(floor(($i)/$usersperexchange))];
+    $u->get('exchanges')->setValue(array($exchange_id));
+    $u->save();
+    $uids[] = $u->id();
+  }
+  return $uids;
 }
 
 

@@ -10,7 +10,7 @@ define ('TRANSACTION_STATE_PENDING', -1);
  * Pending transactions require at least one signature
  * Required signatures are stored in a db table with the date of signing
  * Its possible both to sign a transaction 'off' thus 'finishing' it
- * There is also a 'cancel' operation for pending transactions, permissions defined in the currency.
+ * There is also a 'cancel' transition for pending transactions, permissions defined in the currency.
  */
 
 
@@ -54,7 +54,7 @@ function mcapi_signatures_mcapi_transaction_load($entities) {
 
 /**
  * implement mcapi hook_ENTITY_delete
- * this doesn't happen with the undo operation, which merely changes the state.
+ * this doesn't happen with the undo transition, which merely changes the state.
  * ensures that signatures for undone transactions are not left pending.
  */
 function mcapi_signatures_mcapi_transaction_delete(TransactionInterface $transaction) {
@@ -69,7 +69,7 @@ function mcapi_signatures_mcapi_transaction_delete(TransactionInterface $transac
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
   if (isset($transaction->signatures)) {
-    $config = transaction_operations('sign')->config->get('special');
+    $config = transaction_transitions('sign')->config->get('special');
     $signatories = array_merge($config['countersignatories'], array(
         $transaction->payee->value,
         $transaction->payer->value
@@ -151,7 +151,7 @@ function mcapi_signatures_mcapi_transaction_view_alter(&$build) {
  * implements template_preprocess_THEMEHOOK
  */
 function template_preprocess_mcapi_signatures(&$vars) {
-  $plugin = transaction_operations('sign');
+  $plugin = transaction_transitions('sign');
   foreach ($vars['transaction']->signatures as $uid => $signed) {
     $account = user_load($uid);
     $vars['signatures'][$uid] = array(
@@ -168,13 +168,13 @@ function template_preprocess_mcapi_signatures(&$vars) {
  */
 function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
   //todo, loop these coz they are the same
-  foreach ($currencies as $currcode => $currency) {
+  foreach ($currencies as $curr_id => $currency) {
     $callbacks = array(
       'transaction_access_callback_signatory',
       'transaction_access_callback_perm_manage_all'
     );
-    $currencies[$currcode]->data->access_view[TRANSACTION_STATE_PENDING] = array_combine($callbacks, $callbacks);
-    $currencies[$currcode]->data->undo_states[TRANSACTION_STATE_PENDING] = array_combine($callbacks, $callbacks);
+    $currencies[$curr_id]->data->access_view[TRANSACTION_STATE_PENDING] = array_combine($callbacks, $callbacks);
+    $currencies[$curr_id]->data->undo_states[TRANSACTION_STATE_PENDING] = array_combine($callbacks, $callbacks);
   }
 }
 

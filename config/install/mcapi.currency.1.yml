@@ -1,0 +1,14 @@
+id: 1
+uuid: 4450dc37-0564-480e-8800-a3d78c18f12d
+name: 'Community Coins'
+uid: 1
+issuance: exchange
+format: 
+  0: CC
+  1: 0000
+zero: '<img src = "present.png" width="31" />'
+color: '#00ff00'
+weight: '1'
+limits_plugin: none
+limits_settings: 
+ticks: 10

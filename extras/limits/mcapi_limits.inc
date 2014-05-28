@@ -17,27 +17,27 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
   //compare the resulting balances for each wallet with its limits
   foreach (_transactions_diff($cluster) as $wid => $percurrency) {
     $wallet = entity_load('mcapi_wallet', $wid);
-    foreach ($percurrency as $currcode => $diffs) {
+    foreach ($percurrency as $curr_id => $diffs) {
       //check to see if any of the skips apply.
-      $currency = entity_load('mcapi_currency', $currcode);
+      $currency = entity_load('mcapi_currency', $curr_id);
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
       if ($skips['user1'] && \Drupal::currentUser()->id() == 1) {
-        $messages[$currcode] = t(
+        $messages[$curr_id] = t(
           "Skipped @currency balance limit check because you are user 1.",
           array('@currency' => $currency->name)
         );
         continue;
       }
       elseif ($skips['owner'] && \Drupal::currentUser()->id() == $currency->uid) {
-        $messages[$currcode] = t(
+        $messages[$curr_id] = t(
             "Skipped @currency balance limit check because you are the currency owner.",
             array('@currency' => $currency->name)
         );
         continue;
       }
       elseif ($skips['auto'] && current($cluster)->type == 'auto') {
-        $messages[$currcode] = t(
+        $messages[$curr_id] = t(
             "Skipped balance limit checks for automated transactions with @currency.",
             array('@currency' => $currency->name)
         );
@@ -79,7 +79,7 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
     }
   }
   if (count($messages) && \Drupal::currentUser()->hasPermission('configure mcapi')) {
-    foreach ($messages as $currcode => $message) {
+    foreach ($messages as $curr_id => $message) {
       drupal_set_message($message, 'warning', FALSE);
     }
   }
@@ -219,11 +219,11 @@ function _transactions_diff(array $cluster) {
   $diff = array();
   foreach ($cluster as $transaction) {
     //this throws an error sometimes
-    foreach ($transaction->worths[0] as $currcode => $worth) {
+    foreach ($transaction->worths[0] as $curr_id => $worth) {
       //we can't prepare the array in advance with zeros so += and -= throws notices
       //instead we just build up an array and add them up when we need them
-      $diff[$transaction->payer->value][$currcode][] = -$worth->value;
-      $diff[$transaction->payee->value][$currcode][] = $worth->value;
+      $diff[$transaction->payer->value][$curr_id][] = -$worth->value;
+      $diff[$transaction->payee->value][$curr_id][] = $worth->value;
     }
   }
   return $diff;

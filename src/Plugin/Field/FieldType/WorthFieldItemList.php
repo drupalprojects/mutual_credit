@@ -43,6 +43,19 @@ class WorthFieldItemList extends FieldItemList {
   }
 
   /**
+   * We have to override this because the default behaviour is to create
+   * the list with an empty item keyed 0, then to set the value of that default item
+   * Because we are using the key as the currency id we can't create a worth item without it
+   */
+  public function __set($property_name, $value) {
+    list($key, $quant) = each($value);
+    $this->list[$key] = $this->createItem($key, $quant);
+ //   ->__set($property_name, $value);
+
+    //$this->first()->__set($property_name, $value);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function defaultValuesForm(array &$form, array &$form_state) {
@@ -89,26 +102,33 @@ class WorthFieldItemList extends FieldItemList {
    * {@inheritdoc}
    */
   public function setValue($values, $notify = true) {
-    foreach ($values as $item) {
-      extract($item);
-      if (!$value) continue;
-      if (!isset($this->list[$currcode])) {
-        $this->list[$currcode] = $this->createItem($currcode, $item);
+    // Clear the values of properties for which no value or a value of 0 has been passed
+    $this->list = array_intersect_key($this->list, array_filter($values));
+    //We are constrained in that the db expects delta to be a number
+    foreach ($values as $curr_id => $value) {
+      $item = compact('curr_id', 'value');
+      if (!isset($this->list[$curr_id])) {
+        $this->list[$curr_id] = $this->createItem($curr_id, $item);
       }
       else {
-        $this->list[$currcode]->setValue($value, FALSE);
+        $this->list[$curr_id]->setValue($item, FALSE);
       }
     }
+    // Notify the parent of any changes.
+    if ($notify && isset($this->parent)) {
+      $this->parent->onChange($this->name);
+    }
   }
+
 
   /**
    * {@inheritdoc}
    */
   public function getValue($include_computed = FALSE) {
     $values = array();
-    foreach ($this->list as $currcode => $item) {
+    foreach ($this->list as $item) {
       $val = $item->getValue($include_computed);
-      $values[$currcode] = $val['value'];
+      $values[$val['curr_id']] = $val['value'];
     }
     return $values;
   }
@@ -119,8 +139,8 @@ class WorthFieldItemList extends FieldItemList {
    * @return string
    */
   public function getValueFormatted($separator = ", ") {
-    foreach ($this->getValue() as $currcode => $value) {
-      $values[] = mcapi_currency_load($currcode)->format($value);
+    foreach ($this->getValue() as $curr_id => $value) {
+      $values[] = mcapi_currency_load($curr_id)->format($value);
     }
     return implode($separator, $values);
   }
@@ -129,7 +149,7 @@ class WorthFieldItemList extends FieldItemList {
    * {@inheritdoc}
    */
   public function filterEmptyItems() {
-    //do nothing
+    //do nothing because the items are filtered as they are set
   }
 
   /**
@@ -137,5 +157,9 @@ class WorthFieldItemList extends FieldItemList {
    */
   public function isEmpty() {
     return !array_filter($this->list);
+  }
+
+  public function __toString() {
+    return $this->getValueFormatted();
   }
 }

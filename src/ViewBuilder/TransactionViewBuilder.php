@@ -9,8 +9,9 @@ namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
-use Drupal\entity\Entity\EntityDisplay;
 use Drupal\Core\Template\Attribute;
+use Drupal\Component\Utility\NestedArray;
+use Drupal\mcapi\Entity\TransactionInterface;
 
 /**
  * Render controller for transactions.
@@ -33,11 +34,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
   protected function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
     $build = array(
       '#theme_wrappers' => array('mcapi_transaction'),
-      '#langcode' => $langcode
+      '#langcode' => $langcode,
+      '#mcapi_transaction' => $entity,
+      '#cache' => array(
+        'tags' =>  NestedArray::mergeDeep($this->getCacheTag(), $entity->getCacheTag()),
+      ),
     );
     switch($view_mode) {
     	case 'certificate':
-    	case 'operation':
         $build['#theme'] = 'certificate';
         //css helps rendering the default certificate
         $build['#attached'] = array(
@@ -56,23 +60,25 @@ class TransactionViewBuilder extends EntityViewBuilder {
         echo "is it possible to get rid of this view mode by using mcapi_render_twig_transaction directly?";
         if (module_exists('devel'))ddebug_backtrace();
         $build['#theme'] = 'mcapi_twig';
-        $build['#twig'] = $view_mode;
+        $build['#twig'] = $view_mode;//this is a twig string here - bit of a hacky way to send an arbitrary string
         $view_mode == 'twig';
     }
 
-    if ($this->viewModesInfo[$view_mode]['cache'] && !$entity->isNew() && !isset($entity->in_preview) && $this->entityInfo['render_cache']) {
-      $entity_type = $this->getEntityTypeId();
-      $return['#cache'] = array(
-        'keys' => array('entity_view', $entity_type, $entity->id(), $view_mode),
-        'granularity' => DRUPAL_CACHE_PER_ROLE,
-        'bin' => $this->cacheBin,
-        'tags' => array(
-          $entity_type . '_view' => TRUE,
-          $entity_type => array($entity->id()),
+    // Cache the rendered output if permitted by the view mode and global entity
+    // type configuration.
+    if ($this->isViewModeCacheable($view_mode) && !$entity->isNew() && $entity->isDefaultRevision() && $this->entityType->isRenderCacheable()) {
+      $build['#cache'] += array(
+        'keys' => array(
+          'entity_view',
+          $this->entityTypeId,
+          $entity->id(),
+          $view_mode,
+          'cache_context.theme',
+          'cache_context.user.roles',
         ),
+        'bin' => $this->cacheBin,
       );
     }
-    $build['#mcapi_transaction'] = $entity;
     return $build;
   }
 
@@ -80,16 +86,18 @@ class TransactionViewBuilder extends EntityViewBuilder {
    *
    * @param TransactionInterface $transaction
    * @param string $view_mode
+   * @param string $dest_type
+   *   whether the links should go to a new page, a modal box, or an ajax refresh
    *
    * @return array
    *   An array that can be processed by drupal_pre_render_links().
    */
-  function renderLinks(TransactionInterface $transaction, $view_mode = 'certificate') {
+  function renderLinks(TransactionInterface $transaction, $view_mode = 'certificate', $dest_type = NULL) {
     $renderable = array();
     //child transactions and unsaved transactions never show links
     if (!$transaction->get('parent')->value && $transaction->get('serial')->value) {
       $view_link = $view_mode != 'certificate';
-      foreach (show_transaction_operations($view_link) as $op => $plugin) {
+      foreach (show_transaction_transitions($view_link) as $op => $plugin) {
         if ($transaction->access($op)) {
           $renderable['#links'][$op] = array(
             'title' => $plugin->label,
@@ -99,11 +107,11 @@ class TransactionViewBuilder extends EntityViewBuilder {
               'op' => $op
             )
           );
-          if ($mode == 'modal') {
+          if ($dest_type == 'modal') {
             $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
             $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
           }
-          elseif($mode == 'ajax') {
+          elseif($dest_type == 'ajax') {
             //I think we need a new router path for this...
             $renderable['#attached']['js'][] = 'core/misc/ajax.js';
             //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
@@ -116,12 +124,12 @@ class TransactionViewBuilder extends EntityViewBuilder {
       if (array_key_exists('#links', $renderable)) {
         $renderable += array(
           '#theme' => 'links',
-          //'#heading' => t('Operations'),
+          //'#heading' => t('Transitions'),
           '#attached' => array(
             'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
           ),
           //Attribute class not found
-          '#attributes' => new Attribute(array('class' => array('transaction-operations'))),
+          '#attributes' => new Attribute(array('class' => array('transaction-transitions'))),
         );
       }
     }

@@ -26,7 +26,7 @@ class Exchange extends ArgumentDefaultPluginBase {
    * Return the default argument.
    */
   public function getArgument() {
-    return key(referenced_exchanges());
+    return key(referenced_exchanges(NULL, TRUE));
   }
 
 }

@@ -15,11 +15,11 @@ use Drupal\Core\ParamConverter\ParamConverterInterface;
 use Drupal\mcapi\McapiTransactionException;
 
 /**
- * Provides upcasting for a view entity to be used in the Views UI.
+ * Provides upcasting for a transaction entity to be used in the Views UI.
  *
  * Example:
  *
- * pattern: '/some/{transaction_serial}'
+ * pattern: '/transaction/{transaction_serial}'
  * options:
  *   parameters:
  *     transaction_serial:
@@ -37,17 +37,11 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
    * {@inheritdoc}
    */
   public function convert($value, $definition, $name, array $defaults, Request $request) {
-    if ($value == '0') {
-      //transaction hasn't been created yet,
-      //we're loading the create operation, and the transaction from the tempstore
-      $entity = \Drupal::service('user.tempstore')->get('TransactionForm')->get('entity');
-      return $entity;
-    }
-    else {
-      $entities = entity_load_multiple_by_properties('mcapi_transaction', array('serial' => $value, 'parent' => 0));
-      $entity = reset($entities);
-    }
-    return $entity;
+    //a $value of zero means that this is the are-you-sure page before the transaction has been saved
+    //the transaction is retrieved therefore not in the normal way from the database but from the tempstore
+    return $value ?
+      mcapi_transaction_load_by_serial($value) :
+      \Drupal::service('user.tempstore')->get('TransactionForm')->get('entity');
   }
 
   /**

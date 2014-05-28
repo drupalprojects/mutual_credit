@@ -1,3 +1,4 @@
+id: exchanges
 base_field: id
 base_table: mcapi_exchanges
 core: 8.x

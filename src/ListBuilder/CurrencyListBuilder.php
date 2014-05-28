@@ -27,15 +27,18 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $header['transactions'] = t('Uses');
     $header['volume'] = t('Volume');
     $header['issuance'] = t('Issuance');
+    $header['exchanges'] = t('Used in');
     return $header + parent::buildHeader();
   }
 
   /**
    * Overrides Drupal\Core\Entity\EntityListBuilder::buildRow().
-   * @todo Check access on all currencies
+   * @todo we might want to somehow filter the currencies before they get here, if there are large number
    */
   public function buildRow(EntityInterface $entity) {
-    if (!$entity->access('update')) return;//check that exchange administrator can see only the right currency
+    $actions = parent::buildRow($entity);
+    if (empty($actions)) continue;
+
     $row['title'] = array(
       '#markup' => $this->getLabel($entity),
     );
@@ -46,7 +49,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
     );
     $type = $entity->issuance ? $entity->issuance : CURRENCY_TYPE_ACKNOWLEDGEMENT;
 
-    $count = $entity->transactions(array('currcode' => $entity->id()));
+    $count = $entity->transactions(array('curr_id' => $entity->id()));
     //this includes deleted transactions
     $row['transactions'] = array(
       '#markup' => $count
@@ -59,10 +62,13 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $row['issuance'] = array(
       '#markup' => $type_names[$type],
     );
-    //TODO load mcapi.css somehow. Also see the McapiForm list controller.
-    $row['#attributes']['style'] = $entity->status ? '' : 'color:#999';
-    //$row['#attributes']['class'][] = $entity->status ? 'enabled' : 'disabled';
-    $actions = parent::buildRow($entity);
+    $names = array();
+    foreach (entity_load_multiple('mcapi_exchange', $entity->used_in()) as $e) {
+      $names[] = l($e->label(), $e->url());
+    }
+    $row['exchanges'] = array(
+    	'#markup' => implode(', ', $names)
+    );
 
     //make sure that a currency with transactions in the database can't be deleted.
     if ($count) {
@@ -79,106 +85,13 @@ class CurrencyListBuilder extends DraggableListBuilder {
    */
   public function getOperations(EntityInterface $entity) {
   	$operations = parent::getOperations($entity);
-    //rename the links
-    if (array_key_exists('disable', $operations)) {
-  	  $operations['disable']['title'] = t('Retire');
-    }
-  	else {
-      $operations['enable']['title'] = t('Restore');
-  	}
-    //add more links specific to the currency
+
+    //you can only delete disabled currencies (and only then if 'indelible accounting' setting is disabled)
   	if (!$this->storage->deletable($entity)) {
   	  unset($operations['delete']);
   	}
-  	if (!$this->storage->disablable($entity)) {
-  	  unset($operations['disable']);
-  	}
+
   	return $operations;
-  }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public function buildForm(array $form, array &$form_state) {
-    $form = parent::buildForm($form, $form_state);
-
-    $form['entities']['new'] = array(
-      '#weight' => 99,
-    );
-    $form['entities']['new']['title'] = array(
-      '#type' => 'textfield',
-      '#title_display' => 'invisible',
-      '#title' => t('Name of currency'),
-      '#size' => 15,
-      '#prefix' => '<div class="label-input"><div class="add-new-placeholder">' . $this->t('Add new currency') .'</div>',
-    );
-
-    $form['entities']['new']['id'] = array(
-      '#type' => 'machine_name',
-      '#required' => FALSE,
-      '#size' => 15,
-      '#maxlength' => 32,
-      '#machine_name' => array(
-        'exists' => 'mcapi_currency_load',
-        'source' => array('entities', 'new', 'title'),
-        'standalone' => TRUE,
-      ),
-      '#prefix' => '<div class="add-new-placeholder">&nbsp;</div>',
-      '#required' => TRUE
-    );
-
-    $form['entities']['new']['issuance'] = array(
-      '#markup' => '',
-    );
-
-    $form['entities']['new']['weight'] = array(
-      '#type' => 'hidden',
-      '#attributes' => array('class' => array('weight')),
-      '#default_value' => 99,
-    );
-
-    $form['actions']['submit']['#value'] = t('Continue');
-    return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, array &$form_state) {
-    $new = $form_state['values']['entities']['new'];
-    if ($new['id']) {
-      if (!$new['title']) {
-        \Drupal::formBuilder()->setError(
-          $form['entities']['new']['title'],
-          $form_state,
-          $this->t('@title is required.', array('@title' => $form['entities']['new']['title']['#title']))
-        );
-      }
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitForm(array &$form, array &$form_state) {
-    parent::submitForm($form, $form_state);
-
-    $new = $form_state['values']['entities']['new'];
-    if ($new['id']) {
-      $values = array(
-        'id' => $new['id'],
-        'name' => $new['title'],
-        'type' => $new['type'],
-      );
-
-      $currency = entity_create('mcapi_currency', $values);
-      $currency->save();
-      $form_state['redirect_route'] = array(
-        'route_name' => 'mcapi.admin_currency_edit',
-        'route_parameters' => array('mcapi_currency' => $currency->id())
-      );
-    }
   }
 
 }

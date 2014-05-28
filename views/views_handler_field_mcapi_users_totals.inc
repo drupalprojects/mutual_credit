@@ -17,7 +17,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
 
   function option_definition() {
     $options = parent::option_definition();
-    $options['currcode'] = array('default' => array());
+    $options['curr_id'] = array('default' => array());
     $options['total'] = array('default' => 'balance');
     $options['strip'] = array('default' => FALSE);
     return $options;
@@ -26,7 +26,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   function options_form(&$form, &$form_state) {
     $currencies = currencies_load();
     module_load_include('inc', 'mcapi');
-    $form['currcode'] = currency_picker_element(array_keys($currencies), $this->options['currcode'], TRUE);
+    $form['curr_id'] = currency_picker_element(array_keys($currencies), $this->options['curr_id'], TRUE);
     $form['strip'] = array(
       '#title' => t('Strip formatting'),
       '#description' => t('Just show the unformatted quantity (best with only one currency)'),
@@ -51,26 +51,26 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
 
   function render($values) {
     $uid = &$values->uid;
-    //the settings imply there is only one currcode, but actually many can be rendered
-    $currcodes = empty($this->options['currcode']) ? array_keys(currencies_load(user_load($uid))): (array)$this->options['currcode'];
+    //the settings imply there is only one curr_id, but actually many can be rendered
+    $curr_ids = empty($this->options['curr_id']) ? array_keys(currencies_load(user_load($uid))): (array)$this->options['curr_id'];
     $elements = array();
-    foreach ($currcodes as $currcode) {
-      if (empty($this->fetched[$uid][$currcode])) {
-        $this->fetched[$uid][$currcode] = transaction_totals($uid, $currcode);
+    foreach ($curr_ids as $curr_id) {
+      if (empty($this->fetched[$uid][$curr_id])) {
+        $this->fetched[$uid][$curr_id] = transaction_totals($uid, $curr_id);
       }
-      $quant = $this->fetched[$uid][$currcode]->{$this->options['total']};
+      $quant = $this->fetched[$uid][$curr_id]->{$this->options['total']};
       if ($this->options['strip']) {
-        $elements[$currcode][] = array('#type' => 'markup', '#markup' => $quant);
+        $elements[$curr_id][] = array('#type' => 'markup', '#markup' => $quant);
       }
       else {
-        $elements[$currcode] = array(
+        $elements[$curr_id] = array(
           '#theme' => 'worth_item',
           '#quantity' => $quant,
-          '#currcode' => $currcode
+          '#curr_id' => $curr_id
         );
       }
     }
-      drupal_set_message($elements[$currcode]['#markup']);
+      drupal_set_message($elements[$curr_id]['#markup']);
     return $elements;
   }
 }

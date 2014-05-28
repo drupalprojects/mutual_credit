@@ -28,7 +28,7 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
   public function settingsForm() {
     $form['minmax'] =  array(
     	'#type' => 'minmax',
-      '#currcode' => $this->currency->id(),
+      '#curr_id' => $this->currency->id(),
       '#default_value' => $this->limits_settings['minmax']
     );
     $form += parent::settingsForm();

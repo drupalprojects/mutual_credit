@@ -54,6 +54,7 @@ class RouteSubscriber extends RouteSubscriberBase {
           '_form' => '\Drupal\mcapi\Form\WalletAddForm',
         ),
         array(
+          //connects via the access_check.add_wallet service to the accessCheck controller
           '_wallet_add_access' => 'TRUE'
         )
       );

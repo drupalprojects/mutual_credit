@@ -21,35 +21,50 @@ class WalletSettings extends ConfigFormBase {
    */
   public function buildForm(array $form, array &$form_state) {
     $config = $this->configFactory->get('mcapi.wallets');
+    $form['creation'] = array(
+    	'#title' => t('Wallet creation'),
+      '#type' => 'fieldset',
+      '#collapsed' => FALSE
+    );
+    $form['creation']['add_link_location'] = array(
+      '#title' => t("Location of 'new wallet' link"),
+      '#type' => 'radios',
+      '#options' => array(
+    	  'local_action' => t('As a local action on the entity display page'),
+        'summaries' => t('In the wallet summaries block'),
+        'both' => t('Both')
+      ),
+      '#default_value' => $config->get('add_link_location'),
+      '#weight' => 1,
+    );
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
     //OR to an exchange entity itself
-    $form['entity_types'] = array(
+    $form['creation']['entity_types'] = array(
     	'#title' => t('Entity types'),
     	'#description' => t('Any content entity type which references exchanges can own wallets.') .' '.
         t('Put the maximum number of wallets per entity type.'),
-      '#type' => 'details',
+      '#type' => 'fieldset',
+      '#weight' => 2,
       '#tree' => TRUE
     );
     module_load_include('inc', 'mcapi');
-    foreach (get_exchange_entity_fieldnames() as $entity_type => $fieldname) {
-      $label = \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLabel();
-      foreach (entity_get_bundles($entity_type) as $bundle => $bundle_info) {
-        $title = $label == $bundle_info['label'] ?
-          $label : //don't know if this is translated or translatable!
-          $label .':'. $bundle_info['label'];
-
-        $form['entity_types']["$entity_type:$bundle"] = array(
-        	'#title' => $title,
+    foreach (bundles_in_exchanges() as $entity_type => $bundles) {
+      $entity_label = (count($bundles) > 1)
+        ? \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLabel() .': '
+        : '';
+      foreach ($bundles as $bundle_name => $bundle_info) {
+        $form['creation']['entity_types']["$entity_type:$bundle_name"] = array(
+        	'#title' => $entity_label.$bundle_info['label'],
           '#type' => 'number',
           '#min' => 0,
-          '#default_value' => $config->get("entity_types.$entity_type:$bundle"),
+          '#default_value' => $config->get("entity_types.$entity_type:$bundle_name"),
           '#size' => 2,
           '#max_length' => 2
         );
       }
     }
-    $form['autoadd'] = array(
-      '#title' => t('Auto-create a wallet for every new user'),
+    $form['creation']['autoadd'] = array(
+      '#title' => t('Auto-create a wallet for every new eligible entity'),
       '#description' => t('This is not retrospective'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('autoadd'),
@@ -108,6 +123,7 @@ class WalletSettings extends ConfigFormBase {
 
     $this->configFactory->get('mcapi.wallets')
       ->set('entity_types', $vals['entity_types'])
+      ->set('add_link_location', $vals['add_link_location'])
       //->set('viewers', $vals['viewers'])
       //->set('payers', $vals['payees'])
       //->set('payees', $vals['viewers'])

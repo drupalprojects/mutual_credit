@@ -20,35 +20,34 @@ A badly managed money system can cause people to lose out and create bad feeling
 
 ENABLE MODULES
 Enable Community Accounting API, Firstparty, Views, and possibly rules
-Optionally enable the other modules in the Complementary Currencies Section.
+Optionally enable the other modules in the Community Accounting Section.
 
 On admin/accounting are the major architectural elements
-A small system will comprise one exchange, one currency, and one wallet per user.
+A small system such as a LETS or timebank will comprise one exchange, one currency, and one wallet per user.
 In a larger system a user can be in many exchanges and exchanges can contain many currencies.
-Transactions reference both exchanges and currencies.
-Any bundle which has an entity_reference field referencing exchanges (like the user entity) can own wallets 
-Because of these relationships it can problematic to disable or delete exchanges and currencies.
-Wallets cannot be deleted, and transactions can only be (with the default storage controller) erased.
+Any entity which has an entity_reference field referencing exchanges (like the user entity) can own wallets
+Wallets which have transacted cannot be deleted, but if the owner entity is deleted, ownership can be transferred to the owner entity's exchange
 
 Visit admin/accounting/currencies and configure your first currency. 
 The currency 'type' refers to how the integers in the database are converted and displayed.
 
 Visit admin/accounting/transactions
-Here you can access a full transaction form and enter a raw transaction. Normal users should never do this.
+Here you can access a full transaction form and enter a raw transaction. 
+Normal users should always enter transactions using a more appropriate form, such as provided by the 1stparty module.
 Notice that transaction entity is fieldable
 Its possible to add a description, or a date, or an image or categories to your transaction object
 You can see the 'states' and 'types' which comprise the workflow map
 The transaction 'type' determines the 'start state' and hence the workflow path.
-When you 'configure workflow' you can see the 'operations' which are the workflow vectors.
-Each operation is fully configurable for you to decide the user experience.
-If you have the 1stparty_forms module enabled, which you should, you can design forms for users to use under different circumstances.
+When you 'configure workflow' you can see the 'transitions' which are the workflow vectors.
+Each transition is fully configurable for you to decide the user experience.
+Use the 1stparty_forms module to design forms for users to use under different circumstances.
 
 Explore admin/accounting/misc
-Note that by default the site runs in mixed_mode which means transactions can contain multiple currencies.
 
 Limits
 Most projects require that accounts have 'overdraft' limits and, in mutual credit, positive balance limits.
-Enable the limits module and edit the currency and choose how you want the limits to be determined.
+The limits module provides a new section on the currency settings page
+Also if personal overrides are enabled, those are configured on the user profile.
 
 Views
 The extra views module creates a transaction index table which is good for producing transaction summaries.
@@ -56,15 +55,44 @@ Some default views are provided with many helpful displays.
 Be careful not to mix the handlers of the main transaction table with the index table
 More display plugins would help to make these more attractive.
 Integration with Google Charts or equivalent is needed.
-Note that there isn't access control on this table as individual transactions are not meant to be shown. it is more intended for aggregting for aggregating.
-This module does not provide special access control for transactions to be aggregated. However the view access control should be adequate
-The previous version of the module contained a cache table containing balances and suchlike, but here it is all dynamic,
-or at least drupal/views caching needs to be used, especially on large systems
+Note that there isn't row-level access control on the index table. 
+Views should either show aggregated data which tends to be less sensitive, or manage access per display.
 
 Now you can start assembling the pieces according to the needs of your site.
 The first level of architecture is in menus, blocks, views, mcapi_forms
 For more ideas visit demo.communityforge.net
-The cforge_custom installation profile which makes the demo module, is available her http://code.google.com/p/cforge-custom/
+
+Internal Intertrading.
+Intertrading is the name used to describe what happens when one exchange extends credit to another to facilitate payment between members of different exchanges.
+CES and hOurWorld both intertrade amongst their own exchanges. I call this internal intertrading.
+External intertrading is more complex and requires a REST API - this is another project.
+Here I describe how internal intertrading works in this module.
+Any entity which is in an exchange can own a wallet....
+The 1stparty transaction form 'partner' widget offers the user a list of currencies and a list of wallets to trade with, filtered according to whether intertrading is enabled for that form.
+It is possible, but only the most complex configurations would allow, to choose a partner wallet and currency which are not compatible.
+The transaction validation first decides which exchange is the 'source' of the transaction.
+It compares the currencies in the transaction with the currencies of all the exchanges of which the wallet owner is a member.
+If the partner wallet's parent is not in that echange, then it will try to split the transaction into 2.
+From the source wallet to the source exchange's _intertrading wallet, and a payment in a different currency from another exchanges _intertrading wallet to the destination wallet.
+So in a similar way it searches through destination wallet's exchanges to find one with an 'open' currency, that is, one with a exchange rate specified.
+If the transaction has many currencies, it will be reject if more than one currency needs to be converted - that scenario would have pushed me over the edge of sanity.
+So it should be possible for me in England to pay another friend in England in 3 currencies like this:
+1 hour
+1 virtual pound
+10 Community Coins
+and for my friend to receive:
+1 hour
+1 virtual pound
+20 Double Dinars
+But not to pay my friend in France because the system has no way of knowing that $virtual map to EURvirtual while CC maps DD.
+This could be implemented however by adding a 'type' field to the currency.
+This approach to exchange is quite complex but should work in wide range of configurations.
+An exchange can allow many currencies
+A wallet owner can be in many exchanges
+A wallet owner can have many wallets
+A transaction can consist of many currencies
+Currencies can be confined to certain exchanges or set free.
+
 
 ***********************
 **  ADVANCED TIPS    **
@@ -80,12 +108,12 @@ Intended for Drupal developers
 1. Transaction processing hooks
 
 2. Transaction workflow.
-There is no built in way to 'edit' transactions, since such operations should be strictly controlled.
-There is a hook system for defining transaction states and defining the permission callbacks for the operations to move between states.
-By default, transactions are created in FINISHED state, and the 'undo' operation is visible only to permitted users.
-The signatures module shows how a transaction workflow can be created using operations, states, and $transaction->type
-It declares another state, 'pending', and 2 operations, 'sign' and 'sign off' (plus various other logic & config).
-Operations show on the transaction as a field, and work through ajax. Each operation defined in hook_transaction_operations specifies the strings and callbacks needed. Each one determines under what circumstances it should appear and has an opportunity to inject elements into the confirm_form.
+There is no built in way to 'edit' transactions, since such transitions should be strictly controlled.
+There is a hook system for defining transaction states and defining the permission callbacks for the transitions to move between states.
+By default, transactions are created in FINISHED state, and the 'undo' transition is visible only to permitted users.
+The signatures module shows how a transaction workflow can be created using transitions, states, and $transaction->type
+It declares another state, 'pending', and 2 transitions, 'sign' and 'sign off' (plus various other logic & config).
+Transitions show on the transaction as a field, and work through ajax. Each transition defined in hook_transaction_operations specifies the strings and callbacks needed. Each one determines under what circumstances it should appear and has an opportunity to inject elements into the confirm_form.
 
 3. Firstparty forms
 Of course you can build your own forms using modules for creating transactions, but this powerful form builder is provided. Each form has its own address in the menu system, access control, and can be available as a block also.

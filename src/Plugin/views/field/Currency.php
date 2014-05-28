@@ -18,7 +18,7 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("currcode")
+ * @ViewsField("curr_id")
  */
 class Currency extends FieldPluginBase {
 
@@ -46,7 +46,7 @@ class Currency extends FieldPluginBase {
 
   public function query($use_groupby = FALSE) {
     $table_alias = $this->ensureMyTable();
-    $this->query->addField($table_alias, 'currcode', 'mcapi_transactions_worths_currcode');
+    $this->query->addField($table_alias, 'curr_id', 'mcapi_transactions_worths_currcode');
   }
 
   function render(ResultRow $values) {

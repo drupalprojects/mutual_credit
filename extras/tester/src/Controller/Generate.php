@@ -83,7 +83,7 @@ class Generate extends ConfigFormBase {
     }
 
     foreach (entity_load_multiple('mcapi_currency') as $currency) {
-      if ($currency->id() <> 'credunit')$currency->delete();
+      if ($currency->id() <> 1)$currency->delete();
     }
 
     $currencies = array();
@@ -112,7 +112,7 @@ class Generate extends ConfigFormBase {
         'active' => 1,
         'langcode' => 'und',
         'currencies' => array(
-          array('target_id' => $currencies ? array_shift($currencies) : 'credunit')
+          array('target_id' => $currencies ? array_shift($currencies) : 1)
         )
       );
       $exchange = entity_create('mcapi_exchange', $props);
@@ -174,8 +174,8 @@ class Generate extends ConfigFormBase {
         'payer' => reset($wids),
         'payee' => next($wids),
         'worths' => array(
-          'credunit' => array(
-            'currcode' => $currencies[0]->id(),
+          1 => array(
+            'curr_id' => 1,
             'value' => rand(100, 5000)
           )
         ),

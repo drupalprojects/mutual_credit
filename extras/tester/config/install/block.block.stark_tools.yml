@@ -9,7 +9,9 @@ settings:
   label: Tools
   module: system
   label_display: visible
-  cache: '-1'
+cache:
+  max_age: 0
+  contexts: { }
 visibility:
   path:
     visibility: '0'

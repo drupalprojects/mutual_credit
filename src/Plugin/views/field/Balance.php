@@ -52,7 +52,7 @@ class Balance extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
 
-    $currcode = &$values->{$this->aliases['currcode']};
+    $curr_id = &$values->{$this->aliases['curr_id']};
 
     $transaction = $this->getEntity($values);
     //the running balance depends the order of the transactions
@@ -63,16 +63,16 @@ class Balance extends FieldPluginBase {
         WHERE wallet_id = :wallet_id
         AND created <= :created
         AND xid <= :xid
-        AND currcode = :currcode",
+        AND curr_id = :curr_id",
       array(
         ':created' => $transaction->created->value,
         ':wallet_id' => $this->wallet_id,
         ':xid' => $transaction->xid->value,
-        ':currcode' => $currcode
+        ':curr_id' => $curr_id
       )
     )->fetchField();
     //TODO I'm not sure how this is supposed to work...
-    return entity_load('mcapi_currency', $currcode)->format($quantity);
+    return entity_load('mcapi_currency', $curr_id)->format($quantity);
   }
 
 }

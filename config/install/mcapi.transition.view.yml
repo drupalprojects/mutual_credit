@@ -1,0 +1,9 @@
+title: View
+tooltip: The transaction certificate
+sure:
+  page_title: 'Transaction certificate'
+  format: certificate
+  twig: ''
+status: true
+weight: 1
+#this special transition doesn't  need many of the properties

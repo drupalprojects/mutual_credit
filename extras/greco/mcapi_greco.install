@@ -11,7 +11,7 @@ function mcapi_greco_schema() {
           'size' => 'normal',
           'not null' => TRUE,
         ),
-    	  'currcode' => array(
+    	  'curr_id' => array(
           'description' => 'The currency ID',
           'type' => 'varchar',
           'length' => '32',
@@ -28,7 +28,7 @@ function mcapi_greco_schema() {
   	  )
     ),
     'unique keys' => array(
-      'uuid' => array('timestamp', 'currcode')
+      'uuid' => array('timestamp', 'curr_id')
     ),
   );
 }

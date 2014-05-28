@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Entity\Wallet.
+ * @todo make a walletInterface
  */
 
 namespace Drupal\mcapi\Entity;
@@ -10,8 +11,9 @@ namespace Drupal\mcapi\Entity;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinition;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
  * Defines the wallet entity.
@@ -38,14 +40,13 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   },
  *   fieldable = TRUE,
  *   translatable = FALSE,
- *   route_base_path = "admin/accounting/wallets",
  *   links = {
  *     "canonical" = "mcapi.wallet_view",
  *     "admin-form" = "mcapi.admin_wallets"
  *   }
  * )
  */
-class Wallet extends ContentEntityBase {
+class Wallet extends ContentEntityBase implements WalletInterface{
 
   private $owner;
   private $stats;
@@ -68,11 +69,10 @@ class Wallet extends ContentEntityBase {
   }
 
   /**
-   * return the parent entity if there is one, otherwise return the wallet itself
+   *
    */
   public function getOwner() {
-    if ($this->owner) return $this->owner;
-    else return $this;//wallets owned by the system own themselves
+    return $this->owner;
   }
 
   /**
@@ -103,34 +103,16 @@ class Wallet extends ContentEntityBase {
     return $output;
   }
 
-
-  private function getOwnerPath() {
-    if ($this->owner) {
-      $uri = $this->owner->uri();
-    }
-    else {
-      $uri = $this->uri();
-    }
-    return $uri['path'];
-  }
-
   /**
    * Whenever a wallet is loaded, prepare the owner entity, and the trading statistics
    *
-   * @param EntityStorageInterface $storage_controller
+   * @param WalletStorageInterface $storage_controller
    * @param array $entities
    */
   public static function postLoad(EntityStorageInterface $storage_controller, array &$entities) {
     $transaction_storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
     foreach ($entities as $wallet) {
-      $parent_type = $wallet->get('entity_type')->value;
-      //they could all have different parent entity types, so we have to load them separately
-      if ($parent_type == '') {
-        $wallet->owner = NULL;
-      }
-      else {
-        $wallet->owner = entity_load($parent_type, $wallet->get('pid')->value);
-      }
+      $wallet->loadOwner($wallet->get('entity_type')->value, $wallet->get('pid')->value);
       $wallet->stats = $transaction_storage->summaryData($wallet->id());
     }
   }
@@ -139,13 +121,24 @@ class Wallet extends ContentEntityBase {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-
-    parent::preCreate($storage_controller, $values);
-    $values += array(
-      'viewers' => 'inherit',
-      'payers' => 'autheticated',
-      'payees' => 'current'
-    );
+    if (array_key_exists('pid', $values) && array_key_exists('entity_type', $values)) {
+      return;
+    }
+    throw new Exception("new wallets must have an entity_type and a parent entity_id (pid)");
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public function postCreate(EntityStorageInterface $storage) {
+    $this->loadOwner($this->get('entity_type')->value, $this->get('pid')->value);
+  }
+  public function loadOwner($entity_type, $pid) {
+    if ($entity_type) {
+      $this->owner = entity_load($entity_type, $pid);
+    }
+    if (empty($this->owner)){
+      echo 'wallet has no owner';
+    }
   }
 
   public function save() {
@@ -177,10 +170,13 @@ class Wallet extends ContentEntityBase {
     //so we have to use 2 fields here to refer to the owner entity
 
     $fields['entity_type'] = FieldDefinition::create('string')
-      ->setLabel(t('Owner entity type'))
-      ->setDescription(t('The timezone of this user.'))
-      ->setSetting('max_length', 32)
-      ->setRequired(TRUE);
+    ->setLabel(t('Owner entity type'))
+    ->setDescription(t('The timezone of this user.'))
+    ->setSetting('max_length', 32)
+    ->setRequired(TRUE);
+
+    $fields['orphaned'] = FieldDefinition::create('boolean')
+      ->setLabel(t('Orphaned'));
 
     $fields['pid'] = FieldDefinition::create('integer')
       ->setLabel(t('Owner entity ID'));
@@ -188,7 +184,7 @@ class Wallet extends ContentEntityBase {
     $fields['name'] = FieldDefinition::create('string')
       ->setLabel(t('Name'))
       ->setDescription(t("The owner's name for this wallet"))
-      ->setSettings(array('default_value' => '', 'max_length' => 32))
+      ->addConstraint('max_length', 64)
       ->setDisplayOptions(
         'view',
         array('label' => 'hidden', 'type' => 'string', 'weight' => -5)
@@ -234,27 +230,27 @@ class Wallet extends ContentEntityBase {
     }
     return $this->currencies;
   }
+
   /**
    * get a list of all the currencies in this wallet's scope
-   * wallet 1 is special and can access all currencies
    */
   function currencies_available() {
-    if ($this->get('wid')->value == 1) {
-      return entity_load_multiple('mcapi_currency');
-    }
+    //echo "<br />wallet ".$this->id()." is in exchanges ".implode(', ', array_keys($this->in_exchanges()));
+    //echo " and can use currencies ".implode(', ', array_keys(exchange_currencies($this->in_exchanges())));
     return exchange_currencies($this->in_exchanges());
   }
 
-  /*
-   *
+  /**
+   * {@inheritDoc}
    */
-  function getStats($currcode = NULL) {
-    if ($currcode) {
-      if (array_key_exists($currcode, $this->stats)) return $this->stats[$currcode];
+  function getStats($curr_id = NULL) {
+    if ($curr_id) {
+      if (array_key_exists($curr_id, $this->stats)) return $this->stats[$curr_id];
       else return array();
     }
     return $this->stats;
   }
+
   /**
    * {@inheritdoc}
    */
@@ -263,4 +259,64 @@ class Wallet extends ContentEntityBase {
   public function urlInfo($rel = 'canonical') {
     return parent::urlInfo($rel);
   }
+
+  /**
+   *
+   * @return array
+   *   all transactions between the times given
+   */
+  public function history($from = 0, $to = 0) {
+    $conditions = array(
+    	'involving' => $this->id()
+    );
+    if ($from) {
+      $conditions['from'] = $from;
+    }
+    if ($to) {
+      $conditions['to'] = $to;
+    }
+    return \Drupal::entitymanager()->getStorage('mcapi_transaction')->filter($conditions);
+  }
+
+  //todo put this in the interface
+  public function orphan(ExchangeInterface $exchange = NULL) {
+    //Delete the wallet if it has no transaction history
+    //otherwise ownership moves to the given exchange
+    //if no exchange given, the wallet has no parents.
+    $transactions = \Drupal::Entitymanager()
+      ->getStorage('mcapi_transaction')
+      ->filter(array('involving' => $this->id()));
+    if (!$transactions) {
+      $this->delete();
+      drupal_set_message('Deleted wallet '.$this->id());
+    }
+    else {
+      $new_name = t(
+        "Formerly !name's wallet: !label",
+        array('!name' => $entity->label(), '!label' => $this->label(NULL, FALSE))
+      );
+      $this->set('name', $new_name);
+      $this->set('entity_type', 'mcapi_exchange');
+      $this->set('pid', $exchange->id());
+      //TODO make the number of wallets an exchange can own to be unlimited.
+      drupal_set_message(t(
+        "!name's wallets are now owned by exchange !exchange",
+        array('!name' => $entity->label(), '!exchange' => l($exchange->label(), $exchange->url()))
+      ));
+      $wallet->save();
+    }
+  }
+
+
+  /**
+   * update the wallet exchange index table
+   */
+  public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
+    $storage_controller->updateIndex($this);
+  }
+
+  public static function postDelete(EntityStorageInterface $storage_controller, array $entities) {
+    $storage_controller->dropIndex($entities);
+  }
+
 }

@@ -67,7 +67,7 @@ class UserStats extends FieldPluginBase {
     $account = $this->getEntity($values);
     //shows only the first wallet
     $wid = reset(mcapi_get_wallet_ids($account));
-    $exchanges = referenced_exchanges($account);
+    $exchanges = referenced_exchanges($account, TRUE);
     //TODO stats really belong to wallets, but they might be wanted per user.
     die("Drupal\mcapi\Plugin\views\field\UserStats needs to be rethought");
 

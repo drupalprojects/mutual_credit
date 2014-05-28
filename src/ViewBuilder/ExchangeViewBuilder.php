@@ -26,35 +26,18 @@ class ExchangeViewBuilder extends EntityViewBuilder {
         '#title' => t('People'),
         '#weight' => 4,
         'members' => array(
-            '#prefix' => '<br />',
-            '#markup' =>  l(t('@count members', array('@count' => $exchange->members())), 'members/'.$exchange->id())
+          '#prefix' => '<br />',
+          '#markup' =>  l(
+            t('@count members', array('@count' => $exchange->members())),
+            'exchange/'.$exchange->id().'/members'
+          )
         ),
         'admin' => array(
-            '#prefix' => '<br />',
-            //@todo what's the best way to show this username linked?
-            '#markup' => t('Administrator: !name', array('!name' => entity_load('user', $exchange->get('uid')->value)->getUsername()))
+          '#prefix' => '<br />',
+          //@todo what's the best way to show this username linked?
+          '#markup' => t('Administrator: !name', array('!name' => entity_load('user', $exchange->get('uid')->value)->getUsername()))
         )
       );
-
-      if ($roles = user_role_names(TRUE, 'exchange helper')) {
-        $helpernames = array();
-        //get all the helper users in this exchange
-        $query = db_select('users_roles', 'ur')->fields('ur', array('uid'));
-        $query->join('user__exchanges', 'f', 'f.entity_id = ur.uid');
-        $query->condition('ur.rid', array_keys($roles))
-          ->condition('f.exchanges_target_id', $exchange->id());
-
-        foreach (entity_load_multiple('user', $query->execute()) as $account) {
-          $helpernames[] = theme('username', array('account' => $account));
-        }
-        if (empty($helpernames)) {
-          $helpernames = array(t('None'));
-        }
-        $exchange->content['people']['helpers'] = array(
-          '#prefix' => '<br />',
-          '#markup' => t('Helpers: !names', array('!names' => implode(', ', $helpernames)))
-        );
-      }
       //TEMP!!!
       $exchange->content['placeholder_text'] = array(
         '#weight' => -1,

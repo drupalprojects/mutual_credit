@@ -1,3 +1,4 @@
+id: exchange_members
 base_field: uid
 base_table: users
 core: 8.x
@@ -10,7 +11,7 @@ display:
     display_title: Page
     position: 1
     display_options:
-      path: members
+      path: exchange/%/members
       display_comment: 'This is a very special view using 3 handlers not in Drupal Core. It support local exchange managers to see and edit blocked and active users while giving everyone else a normal looking list. Use this as a starting point for your own member-per-exchange view.'
   default:
     display_plugin: default

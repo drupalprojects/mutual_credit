@@ -13,3 +13,5 @@ dependencies:
   - dblog
   - taxonomy
   - help
+  - config
+  - devel

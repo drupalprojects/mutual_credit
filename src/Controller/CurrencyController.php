@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
 
 /**
  * Returns responses for Exchange routes.

@@ -9,7 +9,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\EntityFormController;
-use Drupal\mcapi\TransactionViewBuilder;
+use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\action\Plugin\Action;
 

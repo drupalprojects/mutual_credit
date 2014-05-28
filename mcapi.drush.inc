@@ -53,78 +53,23 @@ function mcapi_drush_command() {
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
-  if (function_exists('devel_generate_drush_command')) {
-    $items['generate-transactions'] = array(
-      //'callback' => 'drush_mcapi_purge',
-      'description' => dt('Generate (10) transactions, random users, types, states, dates, currencies, quantities'),
-      'drupal dependencies' => array('mcapi'),
-      'arguments' => array(
-        'num_transactions' => dt('Number of transactions to create. Defaults to 10.'),
-      ),
-      'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
-    );
-  }
   return $items;
 }
 
-//trncate transactions
+//truncate transactions
 function drush_mcapi_wipeslate() {
-  db_truncate('mcapi_transactions')->execute();
-  db_truncate('mcapi_transactions_worths')->execute();
-  db_truncate('mcapi_transactions_index')->execute();
-  foreach (field_info_instances('mcapi_transaction', 'mcapi_transaction') as $fieldname => $info) {
-    print_r($info);//find out what table to truncate.
-  }
+  $storage = \Drupal::entityManager()->getStorage('mcapi_transaction')->wipeslate();
   //how to do "are you sure?" messages in drush!
   //this should be protected with the user 1 password
   drush_print(dt("@purged transactions purged", array('@purged' => count($serials))));
   field_cache_clear();
 }
-//delete transactions by serials
+
+//delete specific transactions by serials
 function drush_mcapi_delete() {
 	$storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
 	foreach(func_get_args() as $serial) {
-    mcapi_transaction_load($serial)->delete();
+    entity_load('mcapi_transaction', $serial)->delete();
 	}
   drush_print(dt('Deleted'));
 }
-
-
-//TODO rewrite this for D8
-function drush_devel_generate_transactions($num_transactions = 10) {
-  //get all the possible variables
-  $transact_uids = db_query(
-    "SELECT uid from {users_roles} WHERE rid IN (:roles)",
-    array(':roles' => array_keys(user_roles(FALSE, 'transact')))
-  )->fetchCol();
-  $transact_uids = array_flip($transact_uids);
-  unset($transact_uids[0], $transact_uids[1], $transact_uids[variable_get('intertrading_uid', 0)]);
-  $transact_uids = array_flip($transact_uids);
-
-  drush_print('Available users are: '.implode($transact_uids));
-  $states = array_keys(mcapi_get_states(TRUE));
-  $types = array('default');
-  $currencies = currencies_load();
-  unset($types['mass'], $types['dependent']);
-
-  for ($i = 0; $i < $num_transactions; $i++) {
-    $uids = $transact_uids;//make sure we don't pick the same uid for payer and payee
-    shuffle($uids);
-    $props = array(
-      'payer' => array_pop($uids),
-      'payee' => array_pop($uids),
-      'type' => array_rand($types),
-      'state' => array_rand($states),
-      'quantity' => rand(1, 10),
-      'currcode' => array_rand($currencies),
-      'created' => rand(strtotime('-1 month'), REQUEST_TIME),
-      'description' => 'randomly generated transaction'
-    );
-    $cluster = array(entity_create('mcapi_transaction', $props));
-    $serial = transaction_cluster_write($cluster, TRUE);
-    $transaction = mcapi_transaction_load($serial);
-    $renderable = transaction_view($transaction, \Drupal::config('mcapi.misc')->get('sentence_template'));
-    drush_print(strip_tags(drupal_render($renderable)));
-  }
-}
-

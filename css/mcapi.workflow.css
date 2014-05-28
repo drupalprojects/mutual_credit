@@ -3,7 +3,7 @@
   margin-right: 1em;
 }
 #mcapi-workflow-container .mcapi-workflow-states,
-#mcapi-workflow-container .mcapi-workflow-operations {
+#mcapi-workflow-container .mcapi-workflow-transitions {
   width: 39%;
 }
 #mcapi-workflow-container .mcapi-workflow-types {

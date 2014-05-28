@@ -13,16 +13,18 @@ use Drupal\Core\Session\AccountInterface;
 
 
 /**
- * Defines a default implementation for entity access controllers.
+ * Default access control for first party transaction forms.
+ * Grants access if the user is in any active exchange
+ *
  */
 class FirstPartyEditFormAccessController extends EntityAccessController {
 
   /**
    * {@inheritdoc}
    */
-  protected function checkAccess(EntityInterface $entity, $operation, $langcode, AccountInterface $account) {
+  protected function checkAccess(EntityInterface $entity, $transition, $langcode, AccountInterface $account) {
     //grant access if the user is in this exchange
-    if ($entity->exchange && in_array($entity->exchange, referenced_exchanges())) return TRUE;
+    if(referenced_exchanges(NULL, TRUE)) return TRUE;
     //or if the user is system-wide admin
     return $account->hasPermission($this->entityType->getAdminPermission());
   }

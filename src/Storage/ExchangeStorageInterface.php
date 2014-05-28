@@ -31,4 +31,12 @@ interface ExchangeStorageInterface extends FieldableEntityStorageInterface {
    */
   function deactivatable($exchange);
 
+  /**
+   * identify the exchanges using the given currency
+   * @param CurrencyInterface $currency
+   * @return array
+   *   ids of the exchanges
+   */
+  function using_currency(CurrencyInterface $currency);
+
 }

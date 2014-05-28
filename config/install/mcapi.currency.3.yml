@@ -1,0 +1,14 @@
+id: 3
+uuid: 1b93baa9-95b9-4f05-8900-b13ccc9657cd
+name: Human Hours
+uid: 1
+issuance: acknowledgement
+format: 
+  0: Hr
+  1: 0
+  2: :
+  3: 59/4
+zero: ''
+color: '#008888'
+weight: '3'
+ticks: 60

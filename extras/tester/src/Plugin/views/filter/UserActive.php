@@ -13,7 +13,7 @@ use Drupal\views\Plugin\views\filter\FilterPluginBase;
  *
  * @ingroup views_filter_handlers
  *
- * @PluginID("user_active")
+ * @ViewsFilter("user_active")
  */
 class UserActive extends FilterPluginBase {
 

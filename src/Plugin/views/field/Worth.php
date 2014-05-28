@@ -34,7 +34,7 @@ class Worth extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     debug($this->getValue($values));
-    //@todo how do we get the alias for currcode field, which was added as an 'additional field'
+    //@todo how do we get the alias for curr_id field, which was added as an 'additional field'
     //or even load up the currency as a
     return mcapi_currency_load($values->mcapi_transactions_index_currcode)
       ->format($this->getValue($values));

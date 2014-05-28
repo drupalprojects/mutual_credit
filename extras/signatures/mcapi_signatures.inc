@@ -21,7 +21,7 @@ function mcapi_signall($form, $form_state, $account) {
 function mcapi_signall_submit($form, &$form_state) {
   $account = $form_state['values']['account'];
   foreach (transactions_needing_sig_of_user($account) as $serial) {
-    $message = transaction_sign(mcapi_transaction_load($serial), $account);
+    $message = transaction_sign(entity_load('mcapi_transaction', $serial), $account);
   }
   drupal_set_message($message);
   $form_state['redirect_route'] = array(
@@ -78,7 +78,7 @@ function list_waiting_on_uid($uid) {
       );
     }
     foreach ($serials as $serial) {
-      $transaction = mcapi_transaction_load($serial);
+      $transaction = entity_load('mcapi_transaction', $serial);
       $output[] = entity_view($transaction, 'sentence');
     }
     return $output;
@@ -91,14 +91,14 @@ function list_waiting_not_on_uid($uid) {
   ->getStorage('mcapi_transaction')
   ->filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
   foreach ($serials as $serial) {
-    foreach (mcapi_transaction_load($serial)->signatures as $uid => $signed) {
+    foreach (entity_load('mcapi_transaction', $serial)->signatures as $uid => $signed) {
       if ($signed) continue;
       if ($uid == \Drupal::currentUser()->id())continue;
       $waiting_on[] = $serial;
     }
   }
   foreach ($waiting_on as $serial) {
-    $transaction = mcapi_transaction_load($serial);
+    $transaction = entity_load('mcapi_transaction', $serial);
     $output[] = entity_view($transaction, 'sentence');
   }
   return $output;

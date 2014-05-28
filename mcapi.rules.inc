@@ -54,7 +54,7 @@ class TransactionRulesController extends EntityDefaultRulesController{
           break;
         case 'transaction_delete':
         case 'transaction_view':
-        default://these include the transaction_operations
+        default://these include the transaction_transitions
           $variables = array(
             'transaction' => array(
               'type' => 'transaction',
@@ -104,7 +104,7 @@ class RulesDataUIWorth extends RulesDataUI implements RulesDataDirectInputFormIn
     //I don't know how to invoke this or test it
     $renderable = array(
       '#theme' => 'worth_item',
-      '#currcode' => $value['currcode'],
+      '#curr_id' => $value['curr_id'],
       '#quantity' => $value['quantity']
     );
     return $renderable;

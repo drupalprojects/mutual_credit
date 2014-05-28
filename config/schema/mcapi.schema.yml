@@ -82,34 +82,9 @@ mcapi.wallets:
     autoadd:
       type: boolean
       label: 'Auto-create a wallet for every new user'
-
-mcapi.currency.settings.decimal:
-  type: mapping
-  label: Decimal Currency Settings
-  mapping:
-    scale:
-      type: integer
-      label: Number of Decimals
-
-mcapi.currency.settings.time:
-  type: mapping
-  label: Time Currency Settings
-
-mcapi.currency.widget.currency_time_single:
-  type: mapping
-  label: Single Time Widget Settings
-  mapping:
-    placeholder:
+    add_link_location:
       type: string
-      label: Placeholder for the text field.
-
-mcapi.currency.widget.currency_decimal_single:
-  type: mapping
-  label: Single Decimal Widget Settings
-  mapping:
-    placeholder:
-      type: string
-      label: Placeholder for the text field.
+      label: 'Location of the link to create new wallets under an entity'
 
 mcapi.currency.*:
   type: mapping
@@ -124,9 +99,6 @@ mcapi.currency.*:
     name:
       type: label
       label: 'Currency Name'
-    status:
-      type: boolean
-      label: Enabled
     uid:
       type: integer
       label: Comptroller
@@ -146,43 +118,23 @@ mcapi.currency.*:
     weight:
       type: integer
       label: 'Weight'
-    limits_plugin:
-      type: string
-      label: Plugin
-    limits_settings:
-      type: type: mcapi.currency.limits.[%parent.formatter]
-      label: Settings
     ticks:
       type: float
       label: Ticks
-
-mcapi.operation.*:
-  type: mapping
-  label: 'Currency configuration'
-  mapping:
-    subject:
-      type: string
-      label: Subject
-    body:
-      type: text
-      label: Body
-    cc:
-      type: string
-      label: Copy to
 
 mcapi.state.*:
   type: mapping
   label: Transaction workflow state
   mapping:
+    id:
+      type: integer
+      label: State ID
     label:
       type: string
       label: Label
     description:
       type: string
       label: Description
-    value:
-      type: string
-      label: enumerated value
 
 mcapi.type.*:
   type: mapping
@@ -195,6 +147,44 @@ mcapi.type.*:
       type: string
       label: Description
     start_state:
-      type: string
+      type: integer
       label: Initial workflow state
 
+mcapi.transition.*:
+  type: mapping
+  label: Transition settings
+  mapping: 
+    title:
+      'type': string
+      'label': Title
+    tooltip:
+      'type': string
+      'label': Tooltip
+    page_title:
+      'type': string
+      'label': Page title
+    format:
+      'type': string
+      'label': Transaction display
+    twig:
+      'type': string
+      'label': Template
+    button:
+      'type': string
+      'label': Button text
+    cancel_button:
+      'type': string
+      'label': Cancel button text
+    format2:
+      'type': string
+      'label': Confirm form transaction display
+    redirect:
+      'type': string
+      'label': Redirect path
+    twig2:
+      'type': string
+      'label': Template
+    message:
+      'type': string
+      'label': Success message
+#haven't bothered with the notifications because they really belong elsewhere

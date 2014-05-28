@@ -4,9 +4,27 @@
 
 .form-type-worth , .form-type-worth > .form-item {
   margin-top: 0;
-  margin-bottom: 0;
+  margin-bottom: 0;"css/wallets.css"
 }
 
-.form-type-worth > .form-item {
+.form-type-worth{
+  display:inline-block;
+}
+.form-type-worth > div{
+  text-align: right;
+} 
+
+.form-type-worth .form-item {
   display: inline-block;
+  color:red;
+}
+
+/* get rid of the spinners */
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+   display: none;
+   -webkit-appearance: none;
+   margin: 0;
+}
+input[type='number'] {
+    -moz-appearance:textfield;
 }

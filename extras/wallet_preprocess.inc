@@ -60,7 +60,7 @@ function mcapi_preprocess_wallet_history(&$vars) {
   $vars['height'] = $vars['width']*3/4;
   $vars['functionname'] = 'drawHistory'.$vars['currency']->id();
 
-  $vars['id'] = 'wallet-'.$vars['wallet']->id().'-'.$vars['currcode'];
+  $vars['id'] = 'wallet-'.$vars['wallet']->id().'-'.$vars['curr_id'];
   list($min, $middle, $max) = _mcapi_history_axes($vars['history']);
   $vars['vaxislabels'] = array(
     array('value' => $min, 'label' => $vars['currency']->format($min)),
@@ -91,15 +91,15 @@ function mcapi_preprocess_wallet_history(&$vars) {
  * @param array $vars
  */
 function template_preprocess_wallet_stats(&$vars) {
-  foreach ($vars['wallet']->getStats() as $currcode => $data) {
-    $currency = mcapi_currency_load($currcode);
-    $vars['currdata'][$currcode]['label'] = $currency->label();
-    $vars['currdata'][$currcode]['gross_in'] = $currency->format($data['gross_in']);
-    $vars['currdata'][$currcode]['gross_out'] = $currency->format($data['gross_out']);
-    $vars['currdata'][$currcode]['volume'] = $currency->format($data['volume']);
-    $vars['currdata'][$currcode]['balance'] = $currency->format($data['balance']);
-    $vars['currdata'][$currcode]['partners'] = $data['partners'];
-    $vars['currdata'][$currcode]['trades'] = $data['trades'];
+  foreach ($vars['wallet']->getStats() as $curr_id => $data) {
+    $currency = mcapi_currency_load($curr_id);
+    $vars['currdata'][$curr_id]['label'] = $currency->label();
+    $vars['currdata'][$curr_id]['gross_in'] = $currency->format($data['gross_in']);
+    $vars['currdata'][$curr_id]['gross_out'] = $currency->format($data['gross_out']);
+    $vars['currdata'][$curr_id]['volume'] = $currency->format($data['volume']);
+    $vars['currdata'][$curr_id]['balance'] = $currency->format($data['balance']);
+    $vars['currdata'][$curr_id]['partners'] = $data['partners'];
+    $vars['currdata'][$curr_id]['trades'] = $data['trades'];
   }
   $vars['url'] = url('wallet/'.$vars['wallet']->id());
   $vars['name'] = $vars['wallet']->get('name')->value;
@@ -110,7 +110,6 @@ function template_preprocess_wallet_stats(&$vars) {
  * theme preprocessor for 'wallet_summary'
  * show the most basic stats for one currency
  * @todo this theme callback is cached - when to clear the cache and what cache is it?
- * @param array $vars
  */
 function template_preprocess_wallet_summary(&$vars) {
   $data = $vars['wallet']->getStats($vars['currency']->id());

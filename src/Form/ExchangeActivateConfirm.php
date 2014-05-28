@@ -42,14 +42,7 @@ class ExchangeActivateConfirm extends ContentEntityConfirmFormBase {
    */
   public function submit(array $form, array &$form_state) {
 
-    //remove all references to this exchange in entity_reference
-    module_load_include('inc', 'mcapi');
-    foreach (get_exchange_entity_fieldnames() as $entity_type => $field_name) {
-      //@todo Delete the references to this entity
-      drupal_set_message('Any references to this exchange have not been changed.', 'warning');
-    }
-
-    $this->entity->set('active', TRUE);
+    $this->entity->set('status', TRUE);
     $this->entity->save();
 
     drupal_set_message(t("Exchange '%label' is now active.", array('%label' => $this->entity->label())));

@@ -22,7 +22,7 @@ class WalletAccessController extends EntityAccessController {
   private $pluginManager;
 
   function __construct() {
-    $this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access');
+    //$this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access');
   }
 
   /**
@@ -41,7 +41,7 @@ class WalletAccessController extends EntityAccessController {
 
     //TEMP FIX. This means any user can view, edit pay or request from any wallet they share an exchange with
     if ($account->id() == 1) return TRUE;
-    return array_intersect_key($wallet->in_exchanges(), referenced_exchanges());
+    return array_intersect_key($wallet->in_exchanges(), referenced_exchanges(NULL, TRUE));
 
     //something like this will be needed
     return $this->pluginManager

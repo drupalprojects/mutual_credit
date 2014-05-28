@@ -43,23 +43,6 @@ class MassPay extends FormBase {
 
     if (empty($form_state['confirmed'])) {
 
-      $exchanges = referenced_exchanges();
-      if ($exchanges < 2) {
-        $form['exchange'] = array(
-          '#type' => 'value',
-          '#value' => key($exchanges)
-        );
-      }
-      else {
-        $form['exchange'] = array(
-          '#title' => t('Exchange'),
-          '#description' => t('Which of these exchanges is this transaction for?'),
-        	'#type' => 'select',
-          '#options' => $exchanges,
-          '#weight' => -1
-        );
-      }
-
       $one = array(
         '#description' => t('A username, email, or user ID'),
         '#type' => 'mcapi_wallets',
@@ -103,18 +86,30 @@ drupal_set_message("This form isn't working yet. there is currently no way to mu
         '#default_value' => ''
       );
       //
-      $form['worths'] = array(
-        '#type' => 'worths',
+      $form['worth'] = array(
+        '#type' => 'worth',
         '#title' => t('Worth'),
         '#required' => TRUE,
         //all the currencies this user has access to
         //unless we do some ajax here, its possible to select a currency incompatible with the exchange
-        '#currencies' => mcapi_currency_list()
+        '#currencies' => mcapi_entity_label_list(entity_load_multiple_by_property('mcapi_currencies', array('status' => TRUE)))
       );
 
       $form['type'] = array(
         '#type'=> 'value',
         '#value' => 'mass'
+      );
+
+      $form['fail_mode'] = array(
+      	'#title' => t('On failure'),
+        '#description' => t('What to do if a transaction fails'),
+        '#type' => 'radios',
+        '#options' => array(
+      	  'revert' => t('Show an error in this form'),
+          'warn' => t('Report after saving.'),
+        ),
+        '#default_value' => 'revert',
+        '#weight' => 19
       );
       $form['submit'] = array(
       	'#type' => 'submit',
@@ -199,6 +194,8 @@ drupal_set_message("This form isn't working yet. there is currently no way to mu
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state, $op = NULL) {
+    //TODO implement failure mode
+    debug('Failure mode not yet implemented');
     $main_transaction = array_shift($form_state['validated_transactions']);
     foreach ($form_state['validated_transactions'] as $transaction) {
       $main_transaction->children[] = $transaction;

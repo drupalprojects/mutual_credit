@@ -4,6 +4,8 @@
  * @file
  * Contains Drupal\mcapi_limits\Form\WalletLimitOverride
  *
+ * Allow an administrator to set the per-wallet limits
+ *
  * @todo would be more elegant if the overrides min and max were
  * wallet properties themselves then this build form would be more automatic
  */
@@ -37,35 +39,34 @@ class WalletLimitOverride extends FormBase {
     $owner = $this->wallet->getOwner();
     $exchanges = referenced_exchanges($owner);
     if (empty($exchanges)) {
-      echo "drupal_set_message isn't showing in alpha 7";
-      drupal_set_message('This wallet presently has no owner');
+      drupal_set_message(t("!name is not currently in any active exchange"), array('!name' => $owner->getlabel()));
       return $form;
     }
 
-    foreach (exchange_currencies($exchanges) as $currcode => $currency) {
+    foreach (exchange_currencies($exchanges) as $curr_id => $currency) {
       if (property_exists($currency, 'limits_settings') && is_array($currency->limits_settings) && isset($currency->limits_settings['override'])) {
         $currency_defaults = $currency->limits_settings;
       }
       else continue;
       //for now the per-wallet override allows admin to declare absolute min and max per user.
       //the next thing would be for the override to support different plugins and settings per user.
-      $form[$currcode] = array(
+      $form[$curr_id] = array(
         '#type' => 'fieldset',
         '#title' => $currency->label(),
         '#tree' => TRUE,
         '#description' => t('Default values min: !min, max: !max', array(
-          '!min' => $currency->format($this->wallet->limits[$currcode]['max']),
-          '!max' => $currency->format($this->wallet->limits[$currcode]['min']),
+          '!min' => $currency->format($this->wallet->limits[$curr_id]['max']),
+          '!max' => $currency->format($this->wallet->limits[$curr_id]['min']),
         )),
       );
       //this should be in the plugin
-      $form[$currcode]['override'] = array(
+      $form[$curr_id]['override'] = array(
         '#title' => t('Values for this wallet'),
-        '#currcode' => $currcode,
+        '#curr_id' => $curr_id,
       	'#type' => 'minmax',
         '#default_value' => array(
-          'min' => $this->wallet->limits_override[$currcode]['min'],
-          'max' => $this->wallet->limits_override[$currcode]['max']
+          'min' => $this->wallet->limits_override[$curr_id]['min'],
+          'max' => $this->wallet->limits_override[$curr_id]['max']
         )
       );
     }
@@ -97,8 +98,8 @@ class WalletLimitOverride extends FormBase {
    */
   public function submitForm(array &$form, array &$form_state) {
     form_state_values_clean($form_state);
-    foreach ($form_state['values'] as $currcode => $minmax) {
-      $this->wallet->limits_override[$currcode] = array(
+    foreach ($form_state['values'] as $curr_id => $minmax) {
+      $this->wallet->limits_override[$curr_id] = array(
         'min' => $minmax['override']['min']['value'],
         'max' => $minmax['override']['max']['value']
       );

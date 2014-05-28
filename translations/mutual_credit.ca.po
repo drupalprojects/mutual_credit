@@ -166,7 +166,7 @@ msgid "What should happen when a user or admin deletes a transaction.?"
 msgstr ""
 
 #: mcapi.admin.inc:235
-msgid "Some system operations may 'scratch' transactions"
+msgid "Some system transitions may 'scratch' transactions"
 msgstr ""
 
 #: mcapi.admin.inc:236
@@ -413,7 +413,7 @@ msgid "Transactions in state '@state'"
 msgstr ""
 
 #: mcapi.admin.inc:539;642
-msgid "Transaction operations"
+msgid "Transaction transitions"
 msgstr ""
 
 #: mcapi.admin.inc:540
@@ -877,7 +877,7 @@ msgid "Links"
 msgstr ""
 
 #: mcapi.tokens.inc:120
-msgid "Links to transaction operations"
+msgid "Links to transaction transitions"
 msgstr ""
 
 #: mcapi.tokens.inc:127
@@ -2005,7 +2005,7 @@ msgid "Storage"
 msgstr "Emmagatzemament"
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:96 plugins/export_ui/mcapi_ui.class.php:108 views/mcapi.views.inc:133 views/mcapi_index_views.views.inc:195
-msgid "Operations"
+msgid "Transitions"
 msgstr "Operacions"
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.inc:29

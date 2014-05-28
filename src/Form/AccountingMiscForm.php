@@ -32,7 +32,7 @@ class AccountingMiscForm extends ConfigFormBase {
 
     $form['editable'] = array(
       '#title' => t('Allow transaction records to be edited'),
-      '#description' => t("This will create a new permission, and allow new 'edit' operation"),
+      '#description' => t("This will create a new permission, and allow new 'edit' transition"),
       '#type' => 'checkbox',
       '#default_value' => $config->get('editable'),
       '#weight' => 3

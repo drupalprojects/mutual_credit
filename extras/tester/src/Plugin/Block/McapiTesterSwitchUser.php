@@ -59,6 +59,7 @@ class McapiTesterSwitchUser extends BlockBase {
     $query->addField('u', 'access');
     $query->distinct();
     $query->condition('u.uid', 0, '>');
+    $query->condition('u.uid', \Drupal::currentUser()->id(), '<>');
     $query->condition('u.status', 0, '>');
     $query->orderBy('u.access', 'DESC');
     $query->range(0, 10);
@@ -67,7 +68,7 @@ class McapiTesterSwitchUser extends BlockBase {
 
     foreach ($accounts as $account) {
       $path = 'switch/' . $account->name->value;
-      $belongs_to = current(referenced_exchanges($account));
+      $belongs_to = current(referenced_exchanges($account, TRUE));
       $links[$account->id()] = array(
         'title' => user_format_name($account) .(is_object($belongs_to) ? ' ('.$belongs_to->id() .')' : ''),
         'href' => $path,

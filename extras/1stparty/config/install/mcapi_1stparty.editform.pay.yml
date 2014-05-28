@@ -13,8 +13,8 @@ direction:
   outgoing: 'Outgoing'
 worths:
   preset:
-    credunit:
-      currcode: credunit
+    1:
+      curr_id: 1
       value: 0
 description:
   preset: ''

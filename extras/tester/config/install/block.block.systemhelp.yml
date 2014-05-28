@@ -1,0 +1,24 @@
+id: systemhelp
+uuid: 288f8ade-bac9-4306-9800-de407e37773e
+weight: null
+status: true
+langcode: en
+theme: stark
+region: content
+plugin: system_help_block
+settings:
+  label: 'System Help'
+  module: system
+  label_display: 0
+cache:
+  max_age: 0
+  contexts: { }
+visibility:
+  path:
+    visibility: '0'
+    pages: ''
+  role:
+    roles: {  }
+  node_type:
+    types: {  }
+  visibility__active_tab: edit-visibility-path

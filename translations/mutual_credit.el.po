@@ -174,7 +174,7 @@ msgstr ""
 "χρήστης ακυρώσει μια συναλλαγή;"
 
 #: mcapi.admin.inc:235
-msgid "Some system operations may 'scratch' transactions"
+msgid "Some system transitions may 'scratch' transactions"
 msgstr ""
 "Μερικές λειτουργίες συστήματος "
 "μπορεί να διαγράψουν συναλλαγές"
@@ -443,7 +443,7 @@ msgid "Transactions in state '@state'"
 msgstr ""
 
 #: mcapi.admin.inc:539;642
-msgid "Transaction operations"
+msgid "Transaction transitions"
 msgstr ""
 
 #: mcapi.admin.inc:540
@@ -966,7 +966,7 @@ msgid "Links"
 msgstr "Σύνδεσμοι"
 
 #: mcapi.tokens.inc:120
-msgid "Links to transaction operations"
+msgid "Links to transaction transitions"
 msgstr ""
 "Συνδέσεις με τις εργασίες των "
 "συναλλαγών"
@@ -2232,7 +2232,7 @@ msgid "Storage"
 msgstr "Χώρος αποθήκευσης"
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.class.php:96 plugins/export_ui/mcapi_ui.class.php:108 views/mcapi.views.inc:133 views/mcapi_index_views.views.inc:195
-msgid "Operations"
+msgid "Transitions"
 msgstr "Λειτουργίες"
 
 #: extras/forms/plugins/export_ui/mcapi_forms_ui.inc:29

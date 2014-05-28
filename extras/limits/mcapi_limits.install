@@ -18,7 +18,7 @@ function mcapi_limits_schema() {
 		      'size' => 'normal',
 		      'not null' => TRUE,
   	    ),
-  		  'currcode' => array(
+  		  'curr_id' => array(
           'description' => 'The currency ID',
           'type' => 'varchar',
           'length' => '32',
@@ -51,7 +51,7 @@ function mcapi_limits_schema() {
         )
   	  ),
   	  'unique_keys' => array(
-        'wid_cur' => array('wid', 'currcode')
+        'wid_cur' => array('wid', 'curr_id')
       )
     )
   );

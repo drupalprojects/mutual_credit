@@ -1,0 +1,29 @@
+id: mcapi_transaction.mcapi_transaction.default
+uuid: 155d715f-d1e4-4f88-b305-5c17027d9038
+targetEntityType: mcapi_transaction
+bundle: mcapi_transaction
+mode: default
+content:
+  payer:
+    weight: 0
+  payee:
+    weight: 1
+  description:
+    weight: 2
+  worths:
+    weight: 2
+    visible: true
+  worth:
+    type: worth
+    weight: 3
+    settings: {  }
+hidden:
+  field_categories: true
+status: true
+dependencies:
+  entity:
+    - field.instance.mcapi_transaction.mcapi_transaction.field_categories
+    - field.instance.mcapi_transaction.mcapi_transaction.worth
+  module:
+    - mcapi
+

@@ -4,11 +4,6 @@ targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
 mode: default
 content:
-  field_categories:
-    type: taxonomy_term_reference_link
-    weight: '6'
-    settings: {  }
-    label: above
   payer:
     weight: '0'
     visible: true
@@ -27,4 +22,9 @@ content:
   type:
     weight: '5'
     visible: true
+  field_categories:
+    type: taxonomy_term_reference_link
+    weight: '6'
+    settings: {  }
+    label: above
 status: true
