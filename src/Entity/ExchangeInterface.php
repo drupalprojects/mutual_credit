@@ -21,15 +21,6 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
    */
   function members();
 
-
-  /**
-   * get the number of transactions in this exchange's history
-   * @param integer $period
-   *   unixtime to count transactions from
-   * @return integer
-   */
-  function transactions($period = 0);
-
   /**
    * Check if a (content) entity is a member of this exchange
    * the entity must have an entity reference instance set to $this EntityType
@@ -46,4 +37,13 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
    */
   function intertrading_wallet();
 
+  /**
+   * act on a new entity joining the exchange
+   */
+  function hello(ContentEntityInterface $entity);
+
+  /**
+   * act on an entity leaving the exchange
+   */
+  function goodbye(ContentEntityInterface $entity);
 }

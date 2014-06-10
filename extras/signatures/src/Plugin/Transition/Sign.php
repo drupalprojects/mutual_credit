@@ -62,7 +62,7 @@ class Sign extends TransitionBase {
   /*
    * {@inheritdoc}
   */
-  public function settingsForm(array &$form) {
+  public function buildConfigurationForm(array $form, array &$form_state) {
 
     $form['countersignatories'] = array(
       '#title' => t('Counter-signatories'),
@@ -82,7 +82,7 @@ class Sign extends TransitionBase {
         )
       )
     );
-    parent::settingsForm($form);
+    parent::buildConfigurationForm($form);
     return $form;
   }
 }

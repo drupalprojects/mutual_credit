@@ -2,10 +2,9 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Config\ConfigFactory;
+
 use Drupal\Core\Entity\EntityConfirmFormBase;
-use Drupal\Core\Entity\EntityManager;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Url;
 
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
 class TransitionForm extends EntityConfirmFormBase {
@@ -17,8 +16,8 @@ class TransitionForm extends EntityConfirmFormBase {
 
   function __construct() {
     $request = \Drupal::request();
-    $this->op = $request->attributes->get('op') ? : 'view';
-    $this->configuration = $this->config('mcapi.transition.'.$this->op);
+    $this->transition = $request->attributes->get('transition') ? : 'view';
+    $this->configuration = $this->config('mcapi.transition.'.$this->transition);
 
     if ($path = $this->configuration->get('redirect')) {
       $this->destination = $path;
@@ -51,20 +50,13 @@ class TransitionForm extends EntityConfirmFormBase {
    * How do we go back
    */
   public function getCancelRoute() {
-    //@todo GORDON
-    //on the 'create' transition we can't very well go 'back' to step 1 can we?
-    //we don't even know the previous page.
-    if ($serial = $this->entity->get('serial')->value) {
-      return array(
-        'route_name' => 'mcapi.transaction_view',
-        'route_parameters' => array('mcapi_transaction' => $serial)
-      );
+    if ($this->transition == 'create') {//the transaction hasn't been created yet
+      //we really want to go back the populated transaction form using the back button in the browser
+      //failing that we want to go back to whatever form it was, fresh
+      //failing that we go to the user page user.page
+      return new Url('user.page');
     }
-    else {
-      return array(
-        'route_name' => 'user.page',
-      );
-    }
+    return $this->entity->urlInfo('canonical');
   }
 
   /**
@@ -78,6 +70,7 @@ class TransitionForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getDescription() {
+    //$this->entity->noLinks = FALSE;//this is a flag which ONLY speaks to template_preprocess_mcapi_transaction
     //this provides the transaction_view part of the form as defined in the transition settings
     switch($this->configuration->get('format')) {
     	case 'twig':
@@ -102,11 +95,13 @@ class TransitionForm extends EntityConfirmFormBase {
     }
 
     //add any extra form elements as defined in the transition plugin.
-    $form += transaction_transitions($this->op)->form($this->entity, $this->configuration);
-    if ($this->op == 'view') {
+    $form += transaction_transitions($this->transition)->form($this->entity, $this->configuration);
+    if ($this->transition == 'view') {
       unset($form['actions']);
     }
+
     return $form;
+
 
     //this form will submit and expect ajax
     //TODO this doesn't work in D8
@@ -127,6 +122,10 @@ class TransitionForm extends EntityConfirmFormBase {
     return $form;
   }
 
+  public function validate(array $form, array &$form_state) {
+
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -136,25 +135,32 @@ class TransitionForm extends EntityConfirmFormBase {
     //the op might have injected values into the form, so it needs to be able to access them
     form_state_values_clean($form_state);
     try {
-      $renderable = $transaction->operate($this->op, $form_state['values']);
+      $renderable = $transaction->transition($this->transition, $form_state['values']);
     }
     catch (\Exception $e) {
-      $error_message = t("Failed to save transaction: @message", array('@message' => $e->getMessage()));
-      //TODO inject the form builder
-      $this->setFormError('actions', $form_state, $error_message);
+      throw new \Exception("An error occurred in performing the transition:".$e->getMessage());
     }
     if ($message = $this->configuration->get('message')) {
       //TODO put tokens in the message
-      drupal_set_message($message);
+      $tokens = array(
+      	'user' => \Drupal::currentUser()->id(),
+        'mcapi_transaction' => $transaction
+      );
+      drupal_set_message(\Drupal::token()->replace($message, $tokens));
     }
-    //@todo all the three ways of showing the form, and how each one moves to the next.
 
-    //if ($this->configuration->get('format2') == 'redirect') {
-    if ($path = $this->destination) {
-      $form_state['redirect'] = $path;
+    //@todo all the three ways of showing the form, and how each one moves to the next.
+    if ($redirect = $this->redirect) {
+      $path = strtr($redirect, array(
+        '[uid]' => \Drupal::currentUser()->id(),
+        '[serial]' => $transaction->serial->value
+      ));
+      $form_state['redirect'] = array(
+        $path,
+        $options,
+      );
     }
-    else {//default is to redirect to the transaction itself
-      //might not be a good idea for undone transactions
+    else {
       $form_state['redirect_route'] = array(
         'route_name' => 'mcapi.transaction_view',
         'route_parameters' => array('mcapi_transaction' => $transaction->get('serial')->value)

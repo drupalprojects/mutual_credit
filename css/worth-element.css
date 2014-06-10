@@ -4,13 +4,11 @@
 
 .form-type-worth , .form-type-worth > .form-item {
   margin-top: 0;
-  margin-bottom: 0;"css/wallets.css"
-}
-
-.form-type-worth{
+  margin-bottom: 0;
   display:inline-block;
 }
-.form-type-worth > div{
+
+.form-type-worth > div.multiple{
   text-align: right;
 } 
 

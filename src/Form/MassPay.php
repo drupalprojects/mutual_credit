@@ -92,7 +92,7 @@ drupal_set_message("This form isn't working yet. there is currently no way to mu
         '#required' => TRUE,
         //all the currencies this user has access to
         //unless we do some ajax here, its possible to select a currency incompatible with the exchange
-        '#currencies' => mcapi_entity_label_list(entity_load_multiple_by_property('mcapi_currencies', array('status' => TRUE)))
+        '#currencies' => mcapi_entity_label_list('mcapi_currency', array('status' => TRUE))
       );
 
       $form['type'] = array(

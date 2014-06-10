@@ -61,7 +61,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
   public function format($raw_num);
 
   /**
-   * Format the value as a decimal which resembles the formatted value
+   * Format the value in some other way
    * This was created for google charts which wouldn't understand 'CC1.23' as a number
    *
    * @param integer $raw_num
@@ -73,7 +73,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *   will produce unexpected results if used in client side calculations. Try to avoid
    *   calculating with formatted strings in base 60 on the client side.
    */
-  public function format_numeric($raw_num);
+  public function faux_format($raw_num, $format = array());
 
 
 }

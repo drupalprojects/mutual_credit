@@ -7,11 +7,11 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\EntityFormController;
+use Drupal\Core\Entity\EntityForm;
 use Drupal\Component\Plugin\PluginManagerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class CurrencyFormController extends EntityFormController {
+class CurrencyForm extends EntityForm {
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
@@ -32,14 +32,8 @@ class CurrencyFormController extends EntityFormController {
     );
 
     $form['id'] = array(
-    	'#type' => 'machine_name',
-    	'#default_value' => $currency->id(),
-    	'#machine_name' => array(
-    		'exists' => 'mcapi_currency_load',
-    		'source' => array('name'),
-    	),
-    	'#disabled' => !$currency->isNew(),
-      '#weight' => 1,
+      '#type' => 'value',
+      '#value' => $currency->id()
     );
 
     //get all users in the exchanges that this currency is in.
@@ -71,7 +65,9 @@ class CurrencyFormController extends EntityFormController {
       '#options' => $options,
       '#default_value' => $currency->getOwnerId()
     );
-
+    $form['css'] = array(
+    	'#markup' => '<style>#edit-acknowledgement, #edit-exchange, #edit-commodity{float:right;width:50%;margin-left:1em;}</style>'
+    );
     $form['acknowledgement'] = array(
       '#type' => 'container',
       '#children' => implode("\n<br /><br />\n", array(
@@ -191,18 +187,6 @@ class CurrencyFormController extends EntityFormController {
   }
 
   /**
-   * {@inherit}
-   */
-  protected function actions(array $form, array &$form_state) {
-    $actions = parent::actions($form, $form_state);
-    $storage = \Drupal::EntityManager()->getStorage('mcapi_currency');
-    if (!$storage->deletable($this->entity)) {
-      unset($actions['delete']);
-    }
-    return $actions;
-  }
-
-  /**
    * Overrides Drupal\Core\Entity\EntityFormController::validate().
    */
   public function validate(array $form, array &$form_state) {
@@ -213,6 +197,12 @@ class CurrencyFormController extends EntityFormController {
    */
   public function save(array $form, array &$form_state) {
     $currency = $this->entity;
+    //find the next numerical id if this is a new currency
+    if (empty($currency->id())) {
+      $id = max(array_keys(entity_load_multiple('mcapi_currency'))) + 1;
+      $currency->set('id', $id);
+    }
+    //save the currency format in a that is easier to process at runtime.
     $currency->format = $this->submit_format($currency->format);
     $status = $currency->save();
 
@@ -227,7 +217,8 @@ class CurrencyFormController extends EntityFormController {
       'route_name' => 'mcapi.admin_currency_list'
     );
   }
-  /*
+
+  /**
    * element validation callback
    */
   function validate_format(&$element, &$form_state) {
@@ -236,10 +227,13 @@ class CurrencyFormController extends EntityFormController {
       $this->errorHandler()->setErrorByName($element['#name'], $form_state, t('Bad Format'));
     }
   }
+
   /**
    * helper to explode the format string into an array of alternating numbers and template chunks
+   *
    * @param string $string
    *   the input from the currency form 'format' field
+   *
    * @return array
    *   with values alternating string / number / string / number etc.
    */

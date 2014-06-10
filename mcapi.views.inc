@@ -33,7 +33,7 @@ function mcapi_views_data() {
   //TODO
   //This isn't working to join the table to all transaction entity queries
   //I've no idea how it is supposed to work, especially as this is a one-to-many relationship
-  $data['mcapi_transactions_worths']['table'] = array(
+  $data['mcapi_transaction_worth']['table'] = array(
     'entity type' => 'mcapi_transaction',
     'group' => t('Transaction'),
     'join' => array(
@@ -42,7 +42,7 @@ function mcapi_views_data() {
         'field' => 'xid',
         'type' => 'LEFT'//not sure about this
       ),
-      'mcapi_transactions_worths' => array(
+      'mcapi_transaction_worth' => array(
         'left_field' => 'xid',
         'field' => 'xid',
         'type' => 'LEFT'//not sure about this
@@ -230,15 +230,9 @@ function mcapi_views_data() {
       'id' => 'transaction_transitions',
     )
   );
-  $data['mcapi_transactions']['worths'] = array(
-    'title' => t('Amounts'),
-    'help' => t('Currency flows per transaction'),
-    'field' => array(
-      'id' => 'worths',
-    )
-  );
   //working with raw values directly from the worths table
-  $data['mcapi_transactions_worths']['curr_id'] = array(
+  /*
+  $data['mcapi_transactions_worth']['curr_id'] = array(
     'title' => t('Currency'),
     'field' => array(
       'help' => t('Show the currency only'),
@@ -253,7 +247,7 @@ function mcapi_views_data() {
       'id' => 'string',
     )
   );
-  $data['mcapi_transactions_worths']['value'] = array(
+  $data['mcapi_transactions_worth']['value'] = array(
     'title' => t('Quantity'),
     'help' => t('The raw numerical value of the transaction'),
     'field' => array(
@@ -266,7 +260,7 @@ function mcapi_views_data() {
       'id' => 'standard',
     )
   );
-
+*/
   $data['mcapi_transactions_index']['table'] = array(
   	'group'  => t('Transaction index'),
   	'entity type' => 'mcapi_transaction',

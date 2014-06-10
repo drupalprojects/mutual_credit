@@ -63,12 +63,16 @@ class CurrencyListBuilder extends DraggableListBuilder {
       '#markup' => $type_names[$type],
     );
     $names = array();
-    foreach (entity_load_multiple('mcapi_exchange', $entity->used_in()) as $e) {
-      $names[] = l($e->label(), $e->url());
+    $used_in = $entity->used_in();
+    if (count($used_in) > 1) {
+      $row['exchanges']['#markup'] = $this->t('@count exchanges', array(count($used_in)));
     }
-    $row['exchanges'] = array(
-    	'#markup' => implode(', ', $names)
-    );
+    else {
+      foreach (entity_load_multiple('mcapi_exchange', $used_in) as $e) {
+        $names[] = l($e->label(), $e->url());
+      }
+      $row['exchanges']['#markup'] = implode(', ', $names);
+    }
 
     //make sure that a currency with transactions in the database can't be deleted.
     if ($count) {
@@ -76,22 +80,6 @@ class CurrencyListBuilder extends DraggableListBuilder {
     }
 
     return $row + $actions;
-  }
-
-
-  /**
-   * {@inheritdoc}
-	 * ensure that the last currency can't be switched off or disabled
-   */
-  public function getOperations(EntityInterface $entity) {
-  	$operations = parent::getOperations($entity);
-
-    //you can only delete disabled currencies (and only then if 'indelible accounting' setting is disabled)
-  	if (!$this->storage->deletable($entity)) {
-  	  unset($operations['delete']);
-  	}
-
-  	return $operations;
   }
 
 }

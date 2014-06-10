@@ -39,7 +39,8 @@ class RouteSubscriber extends RouteSubscriberBase {
   /**
    * {@inheritdoc}
    */
-  protected function alterRoutes(RouteCollection $collection, $provider) {
+  protected function alterRoutes(RouteCollection $collection) {
+    //add a route to add a wallet to each entity type
     $types = \Drupal::config('mcapi.wallets')->get('entity_types');
     foreach((array)$types as $entity_type_bundle => $max) {
       list($entity_type, $bundle) = explode(':', $entity_type_bundle);
@@ -61,6 +62,7 @@ class RouteSubscriber extends RouteSubscriberBase {
       //see Plugin/Derivative/WalletLocalAction...
       $collection->add("mcapi.wallet.add.$entity_type", $route);
     }
+    //remove the routes which point non-editable transaction entity displays
   }
 
   /**

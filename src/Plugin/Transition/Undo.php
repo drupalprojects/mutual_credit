@@ -27,11 +27,11 @@ use Drupal\mcapi\Entity\CurrencyInterface;
 class Undo extends TransitionBase {
 
   /**
-   * @see \Drupal\mcapi\TransitionBase::settingsForm()
+   * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()
    */
-  public function settingsForm(array &$form) {
-    parent::settingsForm($form);
-    //@todo check the form hasn't changed in Drupal\mcapi\TransitionBase::settingsForm()
+  public function buildConfigurationForm(array $form, array &$form_state) {
+    $form = parent::buildConfigurationForm($form, $form_state);
+    //@todo check the form hasn't changed in Drupal\mcapi\TransitionBase::buildConfigurationForm()
     unset(
       $form['feedback']['format2'],
       $form['feedback']['twig2'],
@@ -61,10 +61,11 @@ class Undo extends TransitionBase {
           'helper' => t('An exchange helper'),
           'admin' => t('The super admin')
         ),
-        '#default_value' => $this->settings['access'][$state->id],
-        '#weight' => $this->settings['weight']
+        '#default_value' => $this->configuration['access'][$state->id],
+        '#weight' => $this->configuration['weight']
       );
     }
+    return $form;
   }
   /**
    *  access callback for transaction transition 'view'
@@ -72,7 +73,7 @@ class Undo extends TransitionBase {
   public function opAccess(TransactionInterface $transaction) {
     if ($transaction->get('state')->value != TRANSACTION_STATE_UNDONE) {
       $account = \Drupal::currentUser();
-      $options = array_filter($this->settings['access']);
+      $options = array_filter($this->configuration['access']);
       foreach ($options[$transaction->get('state')->value] as $option) {
         switch ($option) {
         	case 'helper':

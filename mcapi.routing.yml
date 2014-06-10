@@ -9,9 +9,9 @@ mcapi.admin:
     _admin_route: TRUE
 
 mcapi.admin_misc:
-  path: '/admin/accounting/config'
+  path: '/admin/accounting/misc'
   defaults:
-    _form: 'Drupal\mcapi\Form\AccountingMiscForm'
+    _form: 'Drupal\mcapi\Form\MiscForm'
     _title: 'Other configuration'
   requirements:
     _permission: 'configure mcapi'
@@ -66,24 +66,6 @@ mcapi.admin_currency_delete:
   options:
     _admin_route: TRUE
 
-mcapi.admin_currency_disable:
-  path: '/admin/accounting/currencies/{mcapi_currency}/disable'
-  defaults:
-    _entity_form: 'mcapi_currency.disable'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
-
-mcapi.admin_currency_enable:
-  path: '/admin/accounting/currencies/{mcapi_currency}/enable'
-  defaults:
-    _entity_form: 'mcapi_currency.enable'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
-
 #transactions
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'
@@ -94,7 +76,7 @@ mcapi.admin.transactions:
     _permission: 'access administration pages'
 
 mcapi.transaction_admin:
-  path: '/admin/accounting/transact'
+  path: '/admin/accounting/transaction/add'
   defaults:
     _entity_form: 'mcapi_transaction.admin'
     _title: 'Log transaction'
@@ -106,7 +88,7 @@ mcapi.transaction_admin:
 mcapi.transaction_view:
   path: '/transaction/{mcapi_transaction}'
   defaults:
-    _entity_view: 'mcapi_transaction.certificate'
+    _entity_view: 'mcapi_transaction.full' #full means defer to the view transition settings
     _title_callback: 'Drupal\mcapi\Controller\TransactionController::pageTitle'
   requirements:
     _entity_access: 'mcapi_transaction.view'
@@ -134,11 +116,11 @@ mcapi.admin_mass.many2one:
 
 #transitions
 mcapi.transaction.op:
-  path: '/transaction/{mcapi_transaction}/{op}'
+  path: '/transaction/{mcapi_transaction}/{transition}'
   defaults:
     _entity_form: 'mcapi_transaction.transition'
   requirements:
-    _entity_access: 'mcapi_transaction.op'
+    _entity_access: 'mcapi_transaction.transition'
   options:
     parameters:
       mcapi_transaction:
@@ -148,7 +130,7 @@ mcapi.admin.workflow:
   path: '/admin/accounting/workflow'
   defaults:
     _content: '\Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
-    _title: 'Configure workflow'
+    _title: 'Workflow transitions'
   requirements:
     _permission: 'access administration pages'
   options:
@@ -168,7 +150,7 @@ mcapi.workflow_settings:
 mcapi.wallet_view:
   path: '/wallet/{mcapi_wallet}'
   defaults:
-    _content: '\Drupal\mcapi\Controller\WalletController::page'
+    _entity_view: 'mcapi_wallet.full'
     _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.view'
@@ -249,19 +231,19 @@ mcapi.exchange.delete_confirm:
   options:
     _admin_route: TRUE
 
-mcapi.exchange.activate_confirm:
-  path: '/exchange/{mcapi_exchange}/activate'
+mcapi.exchange.enable_confirm:
+  path: '/exchange/{mcapi_exchange}/enable'
   defaults:
-    _entity_form: 'mcapi_exchange.activate'
+    _entity_form: 'mcapi_exchange.enable'
   requirements:
     _permission: 'manage mcapi'
   options:
     _admin_route: TRUE
 
-mcapi.exchange.deactivate_confirm:
-  path: '/exchange/{mcapi_exchange}/deactivate'
+mcapi.exchange.disable_confirm:
+  path: '/exchange/{mcapi_exchange}/disable'
   defaults:
-    _entity_form: 'mcapi_exchange.deactivate'
+    _entity_form: 'mcapi_exchange.disable'
   requirements:
     _permission: 'manage mcapi'
   options:

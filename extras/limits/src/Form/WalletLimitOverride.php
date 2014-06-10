@@ -35,28 +35,34 @@ class WalletLimitOverride extends FormBase {
    */
   public function buildForm(array $form, array &$form_state) {
     //this is tricky. We need to know all the currency that could go in the wallet.
-    //to do that we have to know all the currencies in the all the exchanges the wallets parent is in.
-    $owner = $this->wallet->getOwner();
+    //to do that we have to know all the currencies in the all the active exchanges the wallets parent is in.
+    $wallet = $this->wallet;
+    $owner = $wallet->getOwner();
     $exchanges = referenced_exchanges($owner);
     if (empty($exchanges)) {
       drupal_set_message(t("!name is not currently in any active exchange"), array('!name' => $owner->getlabel()));
       return $form;
     }
 
+    $form['help'] = array('#markup' => t("Leave blank to use the currencies' own settings"));
+
+    //TODO the limits are no longer stored in the currency
     foreach (exchange_currencies($exchanges) as $curr_id => $currency) {
-      if (property_exists($currency, 'limits_settings') && is_array($currency->limits_settings) && isset($currency->limits_settings['override'])) {
-        $currency_defaults = $currency->limits_settings;
+      $config = mcapi_limits_saved_plugin($currency)->getConfiguration();
+      if (!empty($config['override'])) {
+        $defaults = mcapi_limits($wallet)->default_limits($currency);
+        $overridden = mcapi_limits($wallet)->limits($curr_id);
       }
       else continue;
       //for now the per-wallet override allows admin to declare absolute min and max per user.
       //the next thing would be for the override to support different plugins and settings per user.
       $form[$curr_id] = array(
         '#type' => 'fieldset',
-        '#title' => $currency->label(),
         '#tree' => TRUE,
+        '#title' => $currency->label(),
         '#description' => t('Default values min: !min, max: !max', array(
-          '!min' => $currency->format($this->wallet->limits[$curr_id]['max']),
-          '!max' => $currency->format($this->wallet->limits[$curr_id]['min']),
+          '!min' => $currency->format($defaults['max']),
+          '!max' => $currency->format($defaults['min']),
         )),
       );
       //this should be in the plugin
@@ -65,8 +71,8 @@ class WalletLimitOverride extends FormBase {
         '#curr_id' => $curr_id,
       	'#type' => 'minmax',
         '#default_value' => array(
-          'min' => $this->wallet->limits_override[$curr_id]['min'],
-          'max' => $this->wallet->limits_override[$curr_id]['max']
+          'min' => $overridden['min'],
+          'max' => $overridden['max']
         )
       );
     }
@@ -98,13 +104,31 @@ class WalletLimitOverride extends FormBase {
    */
   public function submitForm(array &$form, array &$form_state) {
     form_state_values_clean($form_state);
-    foreach ($form_state['values'] as $curr_id => $minmax) {
-      $this->wallet->limits_override[$curr_id] = array(
-        'min' => $minmax['override']['min']['value'],
-        'max' => $minmax['override']['max']['value']
-      );
+    $wid = $this->wallet->id();
+    //clear db and rewrite
+    try {
+      $t = db_transaction();
+      db_delete('mcapi_wallets_limits')->condition('wid', $wid)->execute();
+      $q = db_insert('mcapi_wallets_limits')->fields(array('wid', 'curr_id', 'min', 'max', 'editor', 'date'));
+      foreach ($form_state['values'] as $curr_id => $values) {
+        $q->values(array(
+          'wid' => $wid,
+          'curr_id' => $curr_id,
+          'min' => $values['override']['min'],
+          'max' => $values['override']['max'],
+          'editor' => \Drupal::CurrentUser()->id(),
+          'date' => REQUEST_TIME
+        ));
+      }
+      $q->execute();
     }
-    $this->wallet->save();
+    catch (\Exception $e) {
+      $t->rollback();
+      //are there security concerns about showing the user this message?
+      drupal_set_message('Failed to save limit overrides: '.$e->getMessage());
+    }
+
+    //TODO clear the wallet cache???
     $form_state['redirect_route'] = array(
     	'route_name' => 'mcapi.wallet_view',
       'route_parameters' => array('mcapi_wallet' => $this->wallet->id())

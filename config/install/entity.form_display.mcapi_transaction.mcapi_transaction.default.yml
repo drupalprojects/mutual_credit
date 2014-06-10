@@ -10,9 +10,6 @@ content:
     weight: 1
   description:
     weight: 2
-  worths:
-    weight: 2
-    visible: true
   worth:
     type: worth
     weight: 3

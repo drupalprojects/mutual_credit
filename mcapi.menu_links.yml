@@ -40,12 +40,6 @@ mcapi.admin_misc:
   route_name: mcapi.admin_misc
   parent: mcapi.admin
   weight: 18
-mcapi.transaction_admin:
-  title: Record transaction
-  description: Log a transaction in the database
-  route_name: mcapi.transaction_admin
-  parent: mcapi.admin.transactions
-  weight: 0
 mcapi.admin_mass:
   title: Mass payments
   description: Pay between one account and many

@@ -27,6 +27,8 @@ class WalletController extends ControllerBase {
    *
    * @return array
    *  An array suitable for drupal_render().
+   *
+   *  **********NOT IN USE
    */
   public function page(EntityInterface $mcapi_wallet) {
     return views_embed_view('wallet_statement', 'embed_1', $mcapi_wallet->id());

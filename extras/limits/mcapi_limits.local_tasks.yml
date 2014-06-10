@@ -1,5 +1,6 @@
 mcapi.wallet.admin_limits.tab:
   route_name: mcapi.wallet.admin_limits
-  title: Limits
-  tab_root_id: mcapi.wallet_view
+  title: 'Limits'
+  base_route: mcapi.wallet_view
   weight: 5
+

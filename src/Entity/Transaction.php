@@ -117,7 +117,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       [8] => getInvalidValue
       [9] => getCode
       (*/
-      $violation_messages[] = (string)$violation;
+      $violation_messages[] = $violation[1];//TODO this is temp really we want (string)$violation
     }
     //TODO after alpha11 how can the checkintegrity function return violations?
     //then this function needs to return violations
@@ -143,7 +143,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
       //on the parent transaction only, validate it and then pass it round to get child candidates
       if ($this->parent->value == 0) {
-        $this->validateMakeChildren();//includes intertrading
+        $violations += $this->validateMakeChildren();//includes intertrading
 
         //validate the child candidates
         foreach ($this->children as $child) {
@@ -152,8 +152,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
           $child->violations = $child->validateNew();
         }
         //note that this validation cannot change the original transaction because a clone of it is passed
-        $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', mcapi_transaction_flatten($this));
-
+        $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(mcapi_transaction_flatten($this)));
         //process the errors in the children.
         $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
         foreach ($this->children as $key => $child) {
@@ -166,12 +165,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
                 '!messages' => implode(' ', $warnings),
                 //'!dump' => print_r($this, TRUE)//TODO for some reason print_r is printing not returning
             );
-            if ($child_errors['watchdog']){
-              watchdog(
-              'mcapi_children',
-              "transaction failed validation with the following messages: !messages<pre>\n!dump</pre>",
-              $replacements,
-              WATCHDOG_ERROR
+            if ($child_errors['log']){
+              \Drupal::logger('mcapi')->error(
+                t("transaction failed validation with the following messages: !messages", array('!messages' => $message))
               );
             }
             if ($child_errors['mail_user1']){
@@ -260,7 +256,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
   }
 
-  public function operate($op, array $values) {
+  public function transition($transition_name, array $values) {
 
     $context = array(
       'values' => $values,
@@ -268,15 +264,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'config' => $this->configuration,
     );
 
-    $config = \Drupal::config('mcapi.transition.'.$this->op);
+    $config = \Drupal::config('mcapi.transition.'.$this->transition);
     //any problems need to be thrown
-    $renderable = transaction_transitions($op)->execute($this, $context)
+    $renderable = transaction_transitions($transition_name)->execute($this, $context)
       or $renderable = 'transition returned nothing renderable';
 
+    //notify other modules, especially rules.
     //should we send a clone of the transaction?
     //Should we rely on hook_mcapi_transaction_update and  for this?
     //perhaps not because we need the context...
-    $renderable += \Drupal::moduleHandler()->invokeAll('mcapi_transaction_operated', this, $context);
+
+    $renderable += \Drupal::moduleHandler()->invokeAll('mcapi_transaction_operated', array($this, $context));
     return $renderable;
   }
 
@@ -397,7 +395,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
     $this->payer_currencies_available = array_keys($this->payer->entity->currencies_available());
     $this->payee_currencies_available = array_keys($this->payer->entity->currencies_available());
-    $this->curr_ids_required = array_keys(array_filter($this->get('worth')->getValue()));
+    foreach ($this->get('worth')->getValue() as $item) {
+      $this->curr_ids_required[] = $item['curr_id'];
+    }
     //to determine the given currencies are shared between both users
     $this->common_curr_ids = array_intersect($this->payer_currencies_available, $this->payee_currencies_available);
 
@@ -414,6 +414,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       //$this->source_participant //the property name of the participant in the source exchange; either payer or payee
       //$this->dest_participant) //the property name of the participant in the source exchange; either payee or payer
       $violations += intertrading_transaction_validate($this);
+      if ($violations) return $violations;
       //we might want to abstract this into a plugin or something to allow
       //different mechanisms for taking a commission. We would need much
       //better separation between validation and generation
@@ -433,7 +434,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $this->children[] = $new_transaction;
     }
     else {
-      return;
+      return $violations;
       echo ('<br />Normal transaction - no intertrading...');
       echo '<br />traders: '.$this->get('payer')->value.', '.$this->get('payee')->value;
       echo '<br />payer_currencies_available '; print_r($this->payer_currencies_available);

@@ -48,19 +48,29 @@ class WalletAutocompleteController {
       $conditions['wid'] = array($string);
     }
     else {
-      $conditions['fagment'] = $string;
+      $conditions['fragment'] = $string;
     }
     if ($exchanges) {
       $conditions['exchanges'] = $exchanges;
     }
 
     $wids = $this->walletStorage->filter($conditions);
-
-    foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
-      $json[] = array(
-        'value' => _mcapi_wallet_autocomplete_value($wallet),
-        'label' => $wallet->label()
+    if (empty($wids)) {
+      $json = array(
+        array(
+          'value' => '',
+          'label' => '['.t('No matches'.']')
+        )
       );
+    }
+    else {
+      foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+        $json[] = array(
+          'value' => $wallet->label(NULL, FALSE),//maybe shorter
+          'label' => $wallet->label(NULL, TRUE)
+          //both values should end in the hash which is needed for parsing later
+        );
+      }
     }
     return new JsonResponse($json);
   }

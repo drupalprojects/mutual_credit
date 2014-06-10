@@ -46,7 +46,7 @@ mcapi.misc:
         allow:
           type: string
           label: Allow the parent transaction
-        watchdog:
+        log:
           type: string
           label: Log a warning
         show_messages:

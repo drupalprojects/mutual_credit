@@ -22,7 +22,6 @@ class ExchangeListBuilder extends EntityListBuilder {
     $header['name'] = t('Name');
     $header['access'] = t('Access');
     $header['members'] = t('Members');
-    $header['transactions'] = t('Transactions');
     $header['admin'] = t('Administrator');
     return $header + parent::buildHeader();
   }
@@ -31,29 +30,18 @@ class ExchangeListBuilder extends EntityListBuilder {
    * Overrides Drupal\Core\Entity\EntityListBuilder::buildRow().
    */
   public function buildRow(EntityInterface $entity) {
-    // @todo I don't understand this
-    //Strict warning: Non-static method Drupal\Core\Utility\LinkGenerator::generate() should not be called statically, assuming $this from incompatible context in ExchangeListBuilder->buildRow()
-    /*
-    $row['title'] = LinkGenerator::generate(
-      $entity->label(),
-      'mcapi.exchange.view',
-      array('mcapi_exchange' => $entity->id())
-    );*/
+    $row['class'][] = $entity->status->value ? 'enabled' : 'disabled';
+    $row['title'][] = $entity->label();
 
-    $row['title'] = l($entity->label(), 'exchange/'.$entity->id());
-    $row['access'] = $entity->get('open')->value ? t('Open') : t('Closed');
-
-    //this includes deleted transactions
-    $row['members'] = $entity->members();
-    //this includes deleted transactions
-    $row['transactions'] = $entity->transactions();
-
-    $row['administrator']['data'] = array(
+    $row['data']['title'] = l($entity->label(), 'exchange/'.$entity->id());
+    $row['data']['access'] = $entity->get('status')->value ? t('Open') : t('Closed');
+    $row['data']['members'] = $entity->members();
+    $row['data']['administrator']['data'] = array(
       '#theme' => 'username',
       '#account' => user_load($entity->get('uid')->value)
     );
 
-    $row += parent::buildRow($entity);
+    $row['data'] += parent::buildRow($entity);
     return $row;
   }
 
@@ -62,34 +50,63 @@ class ExchangeListBuilder extends EntityListBuilder {
    */
   public function getOperations(EntityInterface $entity) {
     $operations = parent::getOperations($entity);
-    //TODO get the links in the new way
-    $url = $entity->url();
-
     // Ensure the edit operation exists since it is access controlled.
     if (isset($operations['edit'])) {
       $operations['edit']['query'] = drupal_get_destination();
     }
 
     if ($this->storage->deactivatable($entity)) {
-      $operations['deactivate'] = array(
+      $operations['disable'] = array(
         'title' => t('Deactivate'),
-        'href' => $url . '/deactivate',
-        'options' => array(),
         'weight' => 40,
-      );
+        //'href' => $url . '/disable'
+      ) + $entity->urlInfo('enable')->toArray();
     }
-    elseif (!$entity->get('open')->value) {
-      $operations['activate'] = array(
+    elseif (!$entity->get('status')->value) {
+      $operations['enable'] = array(
         'title' => t('Activate'),
-        'href' => $url . '/activate',
-        'options' => array(),
         'weight' => -10,
-      );
+        //'href' => $url . '/enable'
+      ) + $entity->urlInfo('enable')->toArray();
     }
-    if (!$this->storage->deletable($entity)) {
-      unset($operations['delete']);
-    }
-
     return $operations;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function load() {
+    $entities = array(
+      'enabled' => array(),
+      'disabled' => array(),
+    );
+    foreach (parent::load() as $entity) {
+      if ($entity->status->value) {
+        $entities['enabled'][] = $entity;
+      }
+      else {
+        $entities['disabled'][] = $entity;
+      }
+    }
+    return $entities;
+  }
+
+  public function render() {
+    $entities = $this->load();
+    $list['table'] = array(
+      '#type' => 'table',
+      '#attributes' => array(
+        'class' => array('exchanges-listing-table'),
+      ),
+      '#header' => $this->buildHeader(),
+      '#rows' => array(),
+    );
+    foreach (array('enabled', 'disabled') as $status) {
+      foreach ($entities[$status] as $entity) {
+        $list['table']['#rows'][$entity->id()] = $this->buildRow($entity);
+      }
+    }
+    _drupal_add_css('table.exchanges-listing-table tr.disabled{color:#999;}', array('type' => 'inline'));
+    return $list;
   }
 }

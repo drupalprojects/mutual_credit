@@ -17,7 +17,8 @@ use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
  * Defines the wallet entity.
- * Wallets can only belong to content entities.
+ * NB This does not implement the ownerInterface because
+ * wallets can belong to ANY content entities.
  * NB the canonical link is actually a 'views' page
  *
  * @ContentEntityType(
@@ -49,7 +50,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 class Wallet extends ContentEntityBase implements WalletInterface{
 
   private $owner;
-  private $stats;
+  private $stats = array();
 
   /**
    * {@inheritdoc}
@@ -62,16 +63,17 @@ class Wallet extends ContentEntityBase implements WalletInterface{
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public function id() {
-    return $this->get('wid')->value;
-  }
-
-  /**
-   *
+   * get the wallet's owner, as determined by the wallet's own properties.
    */
   public function getOwner() {
+    if (!isset($this->owner)) {
+      $this->owner = entity_load($this->entity_type->value, $this->pid->value);
+      if (!$this->owner) {
+        drupal_set_message('Wallet '.$this->id() .'had no owner.');
+        $this->owner = entity_load('mcapi_exchange', 1);
+      }
+    }
+    //if for some reason there isn't an owner, return exchange 1 so as not to break things
     return $this->owner;
   }
 
@@ -79,43 +81,25 @@ class Wallet extends ContentEntityBase implements WalletInterface{
    * {@inheritdoc}
    */
   public function label($langcode = NULL, $full = TRUE) {
+    //normally you would display the $full name to all users and the wallet->name only to the owner.
     $output = '';
     //we need to decide whether / when to display the owner and when the wallet name
-    if ($full) {
-      if ($this->owner) {
-        $output = $this->owner->label();
-      }
-      else {
-        $output = t('System');
-      }
-      $output .= ": ";
-    }
 
-    $val = $this->get('name')->value;
-    if ($val == '_intertrade') {
+    $name = $this->name->value;
+    if ($full || !$name) {
+      $output = $this->getOwner()->label() .": ";
+    }
+    if ($name == '_intertrade') {
       $output .= t('Import/Export');
     }
-    elseif ($val) {
-      $output .= $val;
+    elseif ($name) {
+      $output .= $name;
     }
-    else $output .= t('Wallet #@num', array('@num' => $this->get('wid')->value));
 
-    return $output;
+    return $output.' #'.$this->wid->value;
   }
 
-  /**
-   * Whenever a wallet is loaded, prepare the owner entity, and the trading statistics
-   *
-   * @param WalletStorageInterface $storage_controller
-   * @param array $entities
-   */
-  public static function postLoad(EntityStorageInterface $storage_controller, array &$entities) {
-    $transaction_storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
-    foreach ($entities as $wallet) {
-      $wallet->loadOwner($wallet->get('entity_type')->value, $wallet->get('pid')->value);
-      $wallet->stats = $transaction_storage->summaryData($wallet->id());
-    }
-  }
+
 
   /**
    * {@inheritdoc}
@@ -126,26 +110,21 @@ class Wallet extends ContentEntityBase implements WalletInterface{
     }
     throw new Exception("new wallets must have an entity_type and a parent entity_id (pid)");
   }
+
   /**
    * {@inheritdoc}
    */
   public function postCreate(EntityStorageInterface $storage) {
-    $this->loadOwner($this->get('entity_type')->value, $this->get('pid')->value);
+    //TODO i think we don't need to load the owner automatically any more
+//    $this->getOwner();
   }
-  public function loadOwner($entity_type, $pid) {
-    if ($entity_type) {
-      $this->owner = entity_load($entity_type, $pid);
-    }
-    if (empty($this->owner)){
-      echo 'wallet has no owner';
-    }
-  }
+
 
   public function save() {
     //check the name length
-    if (property_exists($this, 'name') && strlen($this->name) > 32) {
-      $this->name = substr($this->name, 0, 32);
-      drupal_set_message(t('Wallet name was truncated to 32 characters: !name', array('!name' => $this->name)), 'warning');
+    if (strlen($this->name->value) > 64) {
+      $this->name->value = substr($this->name->value, 0, 64);
+      drupal_set_message(t('Wallet name was truncated to 32 characters: !name', array('!name' => $this->name->value)), 'warning');
     }
     parent::save();
   }
@@ -166,14 +145,11 @@ class Wallet extends ContentEntityBase implements WalletInterface{
       ->setDescription(t('The wallet UUID.'))
       ->setReadOnly(TRUE);
 
-    //as I understand, we can only use the entity reference field for a known entity type.
-    //so we have to use 2 fields here to refer to the owner entity
-
     $fields['entity_type'] = FieldDefinition::create('string')
-    ->setLabel(t('Owner entity type'))
-    ->setDescription(t('The timezone of this user.'))
-    ->setSetting('max_length', 32)
-    ->setRequired(TRUE);
+      ->setLabel(t('Owner entity type'))
+      ->setDescription(t('The timezone of this user.'))
+      ->setSetting('max_length', 32)
+      ->setRequired(TRUE);
 
     $fields['orphaned'] = FieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'));
@@ -214,42 +190,66 @@ class Wallet extends ContentEntityBase implements WalletInterface{
    *   exchange entities, keyed by id
    */
   function in_exchanges() {
-    if (!$this->owner) return array();
-    if ($this->owner->getEntityTypeId() == 'mcapi_exchange') {
-      return array($this->owner->id() => $this->owner);
+    $owner = $this->getOwner();
+    if ($owner->getEntityTypeId() == 'mcapi_exchange') {
+      return array($owner->id() => $owner);
     }
-    return referenced_exchanges($this->owner);
+    return referenced_exchanges($owner);
+  }
+  /**
+   * get a list of all the currencies used and available to the wallet.
+   */
+  function currencies_all() {
+    //that means unused currencies should appear last
+    return $this->currencies_used() + $this->currencies_available();
   }
 
   /**
    * get a list of the currencies held in the wallet
    */
-  function currencies() {
-    if (!$this->currencies) {
-      $this->currencies = entity_load_multiple('mcapi_currency', array_keys($this->getStats()));
+  function currencies_used() {
+    if (!$this->currencies_used) {
+      foreach (entity_load_multiple('mcapi_currency', array_keys($this->getSummaries())) as $currency) {
+        $this->currencies_used[$currency->id()] = $currency;
+      }
     }
-    return $this->currencies;
+    return $this->currencies_used;
   }
 
   /**
    * get a list of all the currencies in this wallet's scope
    */
   function currencies_available() {
-    //echo "<br />wallet ".$this->id()." is in exchanges ".implode(', ', array_keys($this->in_exchanges()));
-    //echo " and can use currencies ".implode(', ', array_keys(exchange_currencies($this->in_exchanges())));
-    return exchange_currencies($this->in_exchanges());
+    if (!isset($this->currencies_available)) {
+      foreach (exchange_currencies($this->in_exchanges()) as $currency) {
+        $this->currencies_available[$currency->id()] = $currency;
+      }
+    }
+    return $this->currencies_available;
   }
 
   /**
    * {@inheritDoc}
    */
-  function getStats($curr_id = NULL) {
-    if ($curr_id) {
-      if (array_key_exists($curr_id, $this->stats)) return $this->stats[$curr_id];
-      else return array();
+  function getSummaries() {
+    if (!$this->stats) {
+      $this->stats = \Drupal::Entitymanager()->getStorage('mcapi_transaction')->summaryData($this->id());
     }
     return $this->stats;
   }
+
+  //todo this is not documented in the interface
+  function getStats($curr_id) {
+    $summaries = $this->getSummaries();
+    if (array_key_exists($curr_id, $summaries)) return $summaries[$curr_id];
+    //else return NULL
+  }
+  function getStat($curr_id, $stat) {
+    $stats = getStats($curr_id);
+    if (array_key_exists($curr_id, $stats)) return $stats[$curr_id];
+    //else return NULL
+  }
+
 
   /**
    * {@inheritdoc}
@@ -278,11 +278,11 @@ class Wallet extends ContentEntityBase implements WalletInterface{
     return \Drupal::entitymanager()->getStorage('mcapi_transaction')->filter($conditions);
   }
 
-  //todo put this in the interface
+  /**
+   * (non-PHPdoc)
+   * @see \Drupal\mcapi\Entity\WalletInterface::orphan()
+   */
   public function orphan(ExchangeInterface $exchange = NULL) {
-    //Delete the wallet if it has no transaction history
-    //otherwise ownership moves to the given exchange
-    //if no exchange given, the wallet has no parents.
     $transactions = \Drupal::Entitymanager()
       ->getStorage('mcapi_transaction')
       ->filter(array('involving' => $this->id()));
@@ -293,7 +293,7 @@ class Wallet extends ContentEntityBase implements WalletInterface{
     else {
       $new_name = t(
         "Formerly !name's wallet: !label",
-        array('!name' => $entity->label(), '!label' => $this->label(NULL, FALSE))
+        array('!name' => $this->label(), '!label' => $this->label(NULL, FALSE))
       );
       $this->set('name', $new_name);
       $this->set('entity_type', 'mcapi_exchange');
@@ -301,9 +301,9 @@ class Wallet extends ContentEntityBase implements WalletInterface{
       //TODO make the number of wallets an exchange can own to be unlimited.
       drupal_set_message(t(
         "!name's wallets are now owned by exchange !exchange",
-        array('!name' => $entity->label(), '!exchange' => l($exchange->label(), $exchange->url()))
+        array('!name' => $this->label(), '!exchange' => l($exchange->label(), $exchange->url()))
       ));
-      $wallet->save();
+      $this->save();
     }
   }
 
@@ -316,7 +316,10 @@ class Wallet extends ContentEntityBase implements WalletInterface{
   }
 
   public static function postDelete(EntityStorageInterface $storage_controller, array $entities) {
-    $storage_controller->dropIndex($entities);
+    foreach ($entities as $wallet) {
+      $wids[] = $wallet->wid;
+    }
+    $storage_controller->dropIndex($wids);
   }
 
 }

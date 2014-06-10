@@ -56,9 +56,5 @@ class SignOff extends TransitionBase {
     }
   }
 
-  public function settingsForm(array &$form) {
-    parent::settingsForm($form);
-
-  }
 
 }

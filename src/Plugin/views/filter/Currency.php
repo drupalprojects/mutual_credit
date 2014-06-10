@@ -20,7 +20,7 @@ use Drupal\Component\Annotation\PluginID;
 class Currency extends InOperator {
 
   public function getValueOptions() {
-    $this->value_options = mcapi_entity_label_list(entity_load_multiple_by_property('mcapi_currency', array('status' => TRUE)));
+    $this->value_options = mcapi_entity_label_list('mcapi_currency', array('status' => TRUE));
   }
 
 

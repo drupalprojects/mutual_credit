@@ -33,8 +33,8 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *       "add" = "Drupal\mcapi\Form\ExchangeForm",
  *       "edit" = "Drupal\mcapi\Form\ExchangeForm",
  *       "delete" = "Drupal\mcapi\Form\ExchangeDeleteConfirm",
- *       "activate" = "Drupal\mcapi\Form\ExchangeOpenConfirm",
- *       "deactivate" = "Drupal\mcapi\Form\ExchangeCloseConfirm",
+ *       "enable" = "Drupal\mcapi\Form\ExchangeEnableConfirm",
+ *       "disable" = "Drupal\mcapi\Form\ExchangeDisableConfirm",
  *     },
  *     "list_builder" = "Drupal\mcapi\ListBuilder\ExchangeListBuilder",
  *   },
@@ -52,7 +52,10 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *   links = {
  *     "canonical" = "mcapi.exchange.view",
  *     "edit-form" = "mcapi.exchange.edit",
- *     "admin-form" = "mcapi.admin_exchange_list"
+ *     "admin-form" = "mcapi.admin_exchange_list",
+ *     "delete-form" = "mcapi.exchange.delete_confirm",
+ *     "enable" = "mcapi.exchange.enable_confirm",
+ *     "disable" = "mcapi.exchange.disable_confirm"
  *   }
  * )
  */
@@ -66,7 +69,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $account = \Drupal::currentUser();
     $values += array(
       //'name' => t("!name's exchange", array('!name' => $account->getlabel())),
-      'uid' => $account->id(),
+      'uid' => $account->id() ? : 1,//drush is user 0
       'status' => TRUE,
       'open' => TRUE,
       'visibility' => TRUE,
@@ -75,36 +78,19 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   }
 
   /**
-   * check that the exchange has no wallets or it can't be deleted
-   * that means
-   */
-  public static function preDelete(EntityStorageInterface $storage_controller, array $entities) {
-    return;
-    foreach ($entities as $exchange) {
-      if (!$storage_controller->deletable($exchange)) {
-        throw new \Exception(
-          t('Exchange @label is not deletable: @reason', array('@label' => $exchange->label(), '@reason' => $exchange->reason ))
-        );
-      }
-    }
-  }
-
-  /**
    * Create the _intertrading wallet
    */
 
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     //add the manager user to the exchange if it is not a member
-    $exchange_manager = user_load($this->get('uid')->value);
-    debug(
-      $exchange_manager->exchanges->getValue(),
-      'the exchange manager, ', $exchange_manager->label() .' is in these exchanges'
-    );
+    //$exchange_manager = user_load($this->get('uid')->value);
 
-    if ($update)return;
-    $wallet = entity_create('mcapi_wallet', array('entity_type' => 'mcapi_exchange', 'pid' => $this->id()));
-    $wallet->name->setValue('_intertrading');
-    $wallet->save();
+    //create a new wallet for new exchanges
+    if (!$update) {
+      $wallet = entity_create('mcapi_wallet', array('entity_type' => 'mcapi_exchange', 'pid' => $this->id()));
+      $wallet->name->setValue('_intertrading');
+      $wallet->save();
+    }
   }
 
   /**
@@ -115,16 +101,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->fields('e', array('entity_id'))
       ->condition('exchanges_target_id', $this->id())
       ->execute()->fetchCol());
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  function transactions($period = 0) {
-    //TODO is it worth making a new more efficient function in the storage controller for this?
-    $conditions = array('exchange' => $this->get('id')->value, 'since' => strtotime($period));
-    $serials = \Drupal::EntityManager()->getStorage('mcapi_transaction')->filter($conditions);
-    return count(array_unique($serials));
   }
 
   /**
@@ -181,15 +157,16 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   public function is_member(ContententityInterface $entity) {
-    $entity_type = $entity->getEntityTypeId();
     if ($entity_type == 'mcapi_wallet') {
       $entity = $entity->getOwner();
     }
-
-    $fieldnames = get_exchange_entity_fieldnames();
+    $entity_type = $entity->getEntityTypeId();
     $id = $entity->id();
-    echo 'Exchange::is_member'; print_r($this->{$fieldname}->getValue(FALSE));die();
-    foreach ($this->{$fieldnames[$entity_type]}->getValue(FALSE) as $item) {
+    $fieldnames = get_exchange_entity_fieldnames();
+    $members = $this->{$fieldnames[$entity_type]}->getValue(FALSE);
+
+    echo 'Exchange::is_member'; print_r($members);die();
+    foreach ($members as $item) {
       if ($item['target_id'] == $id) return TRUE;
     }
     return FALSE;
@@ -268,9 +245,29 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    */
   //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
   //Is is assumed that every entity has an edit-form link? Any case this overrides it
-  public function urlInfo($rel = 'canonical') {
+  public function _____urlInfo($rel = 'canonical') {
     return parent::urlInfo($rel);
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function hello(ContentEntityInterface $entity) {
+    $moduleHandler = \Drupal::moduleHandler();
+    drupal_set_message('User !name joined exchange !exchange,');
+    $moduleHandler->invokeAll('exchange_join', array($entity, $left));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function goodbye(ContentEntityInterface $entity) {
+    $moduleHandler = \Drupal::moduleHandler();
+    drupal_set_message('User !name left exchange !exchange.');
+    $moduleHandler->invokeAll('exchange_leave', array($entity, $left));
+  }
+
+
 
 }
 

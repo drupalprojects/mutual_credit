@@ -21,12 +21,11 @@ use Drupal\user\UserInterface;
  *   id = "mcapi_currency",
  *   label = @Translation("Currency"),
  *   controllers = {
- *     "storage" = "Drupal\mcapi\Storage\CurrencyStorage",
  *     "access" = "Drupal\mcapi\Access\CurrencyAccessController",
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\CurrencyViewBuilder",
  *     "form" = {
- *       "add" = "Drupal\mcapi\Form\CurrencyFormController",
- *       "edit" = "Drupal\mcapi\Form\CurrencyFormController",
+ *       "add" = "Drupal\mcapi\Form\CurrencyForm",
+ *       "edit" = "Drupal\mcapi\Form\CurrencyForm",
  *       "delete" = "Drupal\mcapi\Form\CurrencyDeleteConfirm",
  *       "enable" = "Drupal\mcapi\Form\CurrencyEnableConfirm",
  *       "disable" = "Drupal\mcapi\Form\CurrencyDisableConfirm"
@@ -62,8 +61,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public $weight;
   public $ticks; //exchange rate, expressed in ticks.
 
-  function __construct($values, $entity_type) {
-    parent::__construct($values, $entity_type);
+  function __construct($values) {
+    parent::__construct($values, 'mcapi_currency');
     $this->preformat();
   }
 
@@ -171,9 +170,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * @see \Drupal\mcapi\Entity\CurrencyInterface::format()
    */
-  function format($raw_num) {
+  function format($raw_num, $plain_zero = FALSE) {
     //return the zero value if required
-    if ($raw_num === 0 && $this->zero) {
+    if ($raw_num === 0 && $this->zero && !$plain_zero) {
       return $this->zero;//which is a string or url
     }
     //if there is a minus sign this needs to go before everything
@@ -191,37 +190,43 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * break a raw value from the database into sections which can be dropped into the parts
    */
   public function formatted_parts($raw_num) {
-    if (!is_numeric($raw_num))mtrace();
     $first = TRUE;
     foreach (array_reverse($this->format_nums, TRUE) as $key => $subunits) {//e.g 59
       //remove the divisor of the subunits, which is only for widgets
-
       if ($first && ($pos = strpos($subunits, '/'))) {
         $subunits = substr($subunits, 0, $pos);
       }
       $first = FALSE;
       if ($subunits != 0) {
-         $subunits++;//e.g. becomes 60
+        $chars = strlen($subunits);
+        $subunits++;//e.g. becomes 60
         //store the remainder when divided by the $divisor
-        $parts[$key] = str_pad($raw_num % $subunits, strlen($subunits), '0', STR_PAD_LEFT);
+        $parts[$key] = str_pad($raw_num % $subunits, $chars, '0', STR_PAD_LEFT);
         $raw_num = floor($raw_num / $subunits);
       }
     }
     $parts[$key] = $raw_num;
     return array_reverse($parts, TRUE);
   }
-//  $c = mcapi_currency_load(4);
-//  echo $c->format(12345);
 
   /**
-   * @see \Drupal\mcapi\Entity\CurrencyInterface::format_numeric()
+   * @see \Drupal\mcapi\Entity\CurrencyInterface::faux_format()
    */
-  public function format_numeric($raw_num, $format = array('', 0, '.', 99)) {
+  public function faux_format($raw_num, $format = array()) {
     //this is a wrapper around $this->format which temporarily changes the configured
-    //formatter setting, $this->format, and formats the $raw num witih the passed setting instead
+    //by default it removes
     $temp = $this->format;
     //put the passed formatter into the currency object
     $this->format = $format;
+    //work out a suitable format
+    if (!$this->format) {
+      //make a simple temp format using the first and second numbers separated by a point
+      $this->format = array('', $temp[1]);
+      if (array_key_exists(3, $temp)) {
+        $this->format[2] = '.';
+        $this->format[3] = $temp[3];
+      }
+    }
     //reset the preformatter with the new format
     $this->preformat(TRUE);
     //get the formatted value, with the temp markup
@@ -265,16 +270,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       $raw += $parts[$key] * ($divisor + 1);
       $divisor = $value;
     }
-    if ($raw)echo "raw: ".$raw;
-
     $raw += $parts[1] * ($divisor);
-    if ($raw) {
-//      echo "<br />format:"; print_r($format);
-//      echo "<br />parts:"; print_r($parts);
-//      echo "<br />divisor: $divisor";
-//      echo "<br />final: $raw";
-//      die();
-    }
     return $raw;
   }
 
@@ -287,7 +283,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     //this is a reverse lookup on another entityType.
     //so I wrote a special function just this once.
     return \Drupal::EntityManager()->getStorage('mcapi_exchange')->using_currency($this);
-
   }
 
 }

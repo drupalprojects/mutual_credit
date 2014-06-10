@@ -41,7 +41,7 @@ class Edit extends TransitionBase {
     if ($transaction->state->value == TRANSACTION_STATE_UNDONE) {
       return FALSE;
     }
-    $days = @$this->settings['window'];
+    $days = @$this->configuration['window'];
     if ($transaction->created->value + 86400*$days < REQUEST_TIME) {
       return FALSE;
     }
@@ -60,7 +60,7 @@ class Edit extends TransitionBase {
    * {inheritdoc}
    */
   public function form(TransactionInterface $transaction) {
-    foreach (array_filter($this->settings['fields']) as $fieldname) {
+    foreach (array_filter($this->configuration['fields']) as $fieldname) {
       //TODO retrieve the field instances from the transaction entity
       //allow the user to fill them in.
     }
@@ -69,23 +69,24 @@ class Edit extends TransitionBase {
   /**
    * {inheritdoc}
    */
-  public function settingsForm(array &$form) {
-    parent::settingsForm($form);
+  public function buildConfigurationForm(array $form, array &$form_state) {
+    $form = parent::buildConfigurationForm($form, $form_state);
     module_load_include('inc', 'mcapi');
     $form['fields'] = array(
   	  '#title' => t('Editable fields'),
   	  '#description' => t('select the fields which can be edited'),
   	  '#type' => 'checkboxes',
       '#options' => mcapi_transaction_list_tokens(),
-  	  '#default_values' => $this->settings['fields']
+  	  '#default_values' => $this->configuration['fields']
     );
     $form['window'] = array(
     	'#title' => t('Editable window'),
       '#description' => t('Number of days after creation that the transaction can be edited'),
       '#type' => 'number',
-  	  '#default_values' => $this->settings['window'],
+  	  '#default_values' => $this->configuration['window'],
       '#min' => 0
     );
+    return $form;
   }
   /**
    * {@inheritdoc}

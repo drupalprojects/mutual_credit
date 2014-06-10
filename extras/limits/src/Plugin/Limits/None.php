@@ -8,9 +8,7 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi_limits\McapiLimitsBase;
-use \Drupal\mcapi_limits\McapiLimitsInterface;
-use \Drupal\Core\Entity\EntityInterface;
+use \Drupal\mcapi\Entity\WalletInterface;
 
 /**
  * No balance limits
@@ -23,25 +21,33 @@ use \Drupal\Core\Entity\EntityInterface;
  */
 class None extends McapiLimitsBase implements McapiLimitsInterface {
 
-  public function settingsForm() {
-    //$conf = $config->get('blah');
-    //parent::settingsForm($form, $config);
+  /**
+   * {@inheritdoc}
+   */
+  public function buildConfigurationForm(array $form, array &$form_state) {
     return array('empty' => array(
     	'#markup' => t('There are no settings for this plugin')
     ));
   }
+  /**
+   * (non-PHPdoc)
+   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkLimits()
+   */
+  public function checkLimits(WalletInterface $wallet, $diff){
+  	return TRUE;
+  }
 
-  public function checkPayer(EntityInterface $wallet, $diff){}
-  public function checkPayee(EntityInterface $wallet, $diff){}
-
-  public function getBaseLimits(EntityInterface $wallet){
+  public function getBaseLimits(WalletInterface $wallet){
   	return array('min' => NULL, 'max' => NULL);
   }
 
-  public function getLimits(EntityInterface $wallet){
+  public function getLimits(WalletInterface $wallet){
     return array(
     	'min' => NULL,
       'max' => NULL
     );
+  }
+  public function defaultConfiguration() {
+    return array();
   }
 }

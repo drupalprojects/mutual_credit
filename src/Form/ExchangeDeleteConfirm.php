@@ -26,9 +26,7 @@ class ExchangeDeleteConfirm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelRoute() {
-    return array(
-      'route_name' => 'mcapi.admin_exchange_list',
-    );
+    return $this->url('mcapi.admin_exchange_list');
   }
 
   /**

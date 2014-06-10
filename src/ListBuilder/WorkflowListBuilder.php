@@ -18,37 +18,41 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
 
   public function buildHeader() {
     return array(
-      'weight' => t('Weight'),
       'name' => t('Name'),
       'description' => t('Description'),
-      'settings' => t('Link')
+      'operations' => t('Link'),
+      'weight' => t('Weight'),
     );
   }
 
   public function render() {
-    return $this->formBuilder()->getForm($this);
+    return array(
+      $this->visualise(),
+      $this->formBuilder()->getForm($this)
+    );
   }
 
   public function buildRow($transition) {
-    $id = $transition->definition['id'];
-    if ($id == 'edit')return array();
+    $id = $transition->getPluginId();
+
+    $config = $transition->getConfiguration();
     return array(
-      '#weight' => $transition->settings['weight'],
+      '#weight' => $config['weight'],
       '#attributes' => array('class' => array('draggable')),
       'name' => array(
-        '#markup' => $transition->label
+        '#markup' => $config['title']
       ),
       'description' => array(
-        '#markup' => $transition->definition['description']
+        '#markup' => $transition->description
       ),
-      'settings' => array(
+      'operations' => array(
         '#markup' => $this->l($this->t('Settings'), 'mcapi.workflow_settings', array('op' => $id))
       ),
       'weight' => array(
         '#type' => 'weight',
         '#title' => t('Weight for @title', array('@title' => $transition->label)),
         '#title_display' => 'invisible',
-        '#default_value' => $transition->settings['weight'],
+        '#default_value' => $config['weight'],
         '#attributes' => array('class' => array('weight')),
       ),
     );
@@ -68,11 +72,11 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
       ),
     );
     foreach (transaction_transitions() as $id => $plugin) {
-      //TODO instead of settings get transitions edit, enable, disable like in the EntityListBuilder
+      //TODO remove edit from this OR make the edit plugin work
+      if ($id == 'create' || $id == 'edit') continue;//empty rows break the tabledrag.js
       $form['plugins'][$id] = $this->buildRow($plugin);
     }
     uasort($form['plugins'], array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
-
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(
       '#type' => 'submit',
@@ -100,5 +104,22 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
 
   public function getFormId() {
     return 'workflow_draggable_plugin_list';
+  }
+
+  private function visualise() {
+    $output = "\n<h4>".t('States')."</h4>\n";
+    foreach (entity_load_multiple('mcapi_state') as $id => $info) {
+      $states[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
+    }
+    $output .= "\n<dl>".implode("\n", $states) . "</dl>\n";
+
+    $output .= "\n<h4>".t('Types')."</h4>\n";
+    foreach (entity_load_multiple('mcapi_type') as $type => $info) {
+      $types[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
+    }
+    $output .= "\n<dl>".implode("\n", $types) . "</dl>\n";
+
+    $output .= "\n<h4>".t('Transitions')."</h4>\n";
+    return array('#markup' => $output);
   }
 }

@@ -4,7 +4,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 
-class AccountingMiscForm extends ConfigFormBase {
+class MiscForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
@@ -90,7 +90,7 @@ class AccountingMiscForm extends ConfigFormBase {
       '#options' => array(
     	  'mail_user1' => t('Send diagnostics to user 1 by mail'),
         'allow' => t('Allow the parent transaction'),
-        'watchdog' => t('Log a warning'),
+        'log' => t('Log a warning'),
         'show_messages' => t('Show warning messages to user')
       ),
       '#default_value' => $config->get('child_errors'),

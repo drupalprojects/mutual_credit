@@ -2,7 +2,7 @@
 
 /*
  * @file
- * Definition of Drupal\mcapi\McapiException.
+ * Definition of Drupal\mcapi\McapiTransactionException.
  */
 
 namespace Drupal\mcapi;

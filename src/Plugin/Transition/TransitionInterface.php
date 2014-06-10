@@ -8,11 +8,11 @@
 namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\CurrencyInterface;
-use Drupal\Core\Config\ConfigFactory;
 use Drupal\mcapi\McapiTransactionException;
+use Drupal\Component\Plugin\ConfigurablePluginInterface;
+use Drupal\Core\Plugin\PluginFormInterface;
 
-interface TransitionInterface {
+interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInterface {
 
   /**
    * inject something into the transition form
@@ -54,17 +54,6 @@ interface TransitionInterface {
    */
   public function execute(TransactionInterface $transaction, array $context);
 
-  /**
-   * transition settings form which individual transitions can alter
-   * as distinct from the TransitionBase::access_form()
-   *
-   * @param CurrencyInterface $currency
-   *   a currency configuration entity
-   *
-   * @return array $element
-   *   FormAPI $elements
-   */
-  public function settingsForm(array &$form);
 
   /**
    * Execute ajax submission of the transition form, delivering ajax commands to the browser.

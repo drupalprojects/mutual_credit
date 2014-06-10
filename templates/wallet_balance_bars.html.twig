@@ -6,8 +6,6 @@
  *
  * id           #the unique id of the chart
  * functionname #the unique function name
- * width        #in pixels
- * height       #in pixels
  * incoming     #raw incoming value
  * outgoing     #raw outgoing value
  * show_in      #formatted incoming value
@@ -43,4 +41,4 @@ function {{ functionname }}() {
   new google.visualization.ColumnChart(document.getElementById('{{ id }}')).draw(data, options);
 }
 </script>
-<span id="{{ id }}" style="width:{{ width }}px; height:{{ height }}px;"></span>
+<div class = "givengotten" id = "{{ id }}" style = "width:120px;"></div>

@@ -48,10 +48,11 @@ class TransactionController extends ControllerBase {
    *   An array suitable for drupal_render().
    */
   protected function buildPage(TransactionInterface $transaction) {
+    //we look to the 'view' operation to get the display settings.
     return array(
       'transaction' => $this->entityManager()
         ->getViewBuilder('mcapi_transaction')
-        ->view($transaction, 'certificate')
+        ->view($transaction)
     );
   }
 }

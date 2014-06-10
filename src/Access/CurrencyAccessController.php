@@ -27,7 +27,7 @@ class CurrencyAccessController extends EntityAccessController {
     	  return TRUE;
     	case 'create':
   	  case 'delete':
-    	  return $account->hasPermission('manage mcapi') && !$entity->transactions();
+    	  return $account->hasPermission('manage mcapi') && $this->deletable($entity);
     	case 'update':
     	//case 'edit':
     	  return $account->hasPermission('configure mcapi') || $account->id() == $entity->getOwnerId();
@@ -36,6 +36,16 @@ class CurrencyAccessController extends EntityAccessController {
     	  echo $operation;
         drupal_set_message('unknown currency operation: '.$operation, 'error');
     };
+  }
+
+  function deletable($mcapi_currency) {
+
+    if (\Drupal::config('mcapi.misc')->get('indelible'))return FALSE;
+
+    $all_transactions = $mcapi_currency->transactions(array('state' => 0));
+    $deleted_transactions = $mcapi_currency->transactions(array('state' => 0));
+
+    return $all_transactions == $deleted_transactions;
   }
 
 }

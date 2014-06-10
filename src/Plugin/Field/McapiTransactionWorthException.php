@@ -19,11 +19,11 @@ class McapiTransactionWorthException extends McapiTransactionException {
 
   protected $currency;
 
-  public function __construct($curr_id = 0, $message = 'Unknown error on worths field') {
+  public function __construct($currency = NULL, $message = 'Unknown error on worths field') {
 
     $this->field = 'worths';
-    if ($curr_id) {
-      $this->currency = entity_load('mcapi_currency', $curr_id);
+    if ($currency) {
+      $this->currency = $currency;
       $this->field .= ']['.$this->currency->id();
     }
     $this->message = $message;

@@ -13,7 +13,7 @@ direction:
 description:
   preset: ''
   placeholder: ''
-worths:
+worth:
   preset:
     1:
       curr_id: 1
@@ -21,7 +21,7 @@ worths:
 created:
   show: false
 experience:
-  twig: "my wallet {{ mywallet }}\r\ndescription {{ description }}\r\nworths {{ worths }}\r\npartner {{ partner }}\r\ndirection {{ direction }}\r\ncreated {{ created }}\r\ncategories {{ field_categories }}"
+  twig: "my wallet {{ mywallet }}\r\ndescription {{ description }}\r\nworths {{ worth }}\r\npartner {{ partner }}\r\ndirection {{ direction }}\r\ncreated {{ created }}\r\ncategories {{ field_categories }}"
   button: 'do it now!'
   preview: modal
 message: 'You did it!'

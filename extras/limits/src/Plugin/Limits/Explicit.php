@@ -8,9 +8,7 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi_limits\McapiLimitsBase;
-use \Drupal\mcapi_limits\McapiLimitsInterface;
-use \Drupal\Core\Entity\EntityInterface;
+use \Drupal\mcapi\Entity\WalletInterface;
 
 /**
  * No balance limits
@@ -20,45 +18,39 @@ use \Drupal\Core\Entity\EntityInterface;
  *   label = @Translation("Explicit"),
  *   description = @Translation("Explicit limits")
  * )
+ *
  */
 class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
+
   /**
-   * @see \Drupal\mcapi_limits\McapiLimitsBase::settingsForm()
+   * {@inheritdoc}
    */
-  public function settingsForm() {
-    $form['minmax'] =  array(
+  public function buildConfigurationForm(array $form, array &$form_state) {
+    $subform['minmax'] =  array(
     	'#type' => 'minmax',
-      '#curr_id' => $this->currency->id(),
-      '#default_value' => $this->limits_settings['minmax']
+      '#default_value' => $this->configuration['minmax']
     );
-    $form += parent::settingsForm();
-    return $form;
+    $subform += parent::buildConfigurationForm($form, $form_state);
+    return $subform;
   }
 
-  /**
-   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayer()
-   */
-  public function checkPayer(EntityInterface $wallet, $diff) {
-    $limits = $this->getLimits($account);
-    return TRUE;
-  }
-
-  /**
-   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayee()
-   */
-  public function checkPayee(EntityInterface $wallet, $diff) {
-    $limits = $this->getLimits($account);
-    return TRUE;
-  }
   /**
    * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits()
    */
-  public function getLimits(EntityInterface $wallet) {
-    $limits = array(
-      'min' => $this->limits_settings['minmax']['min']['value'],
-      'max' => $this->limits_settings['minmax']['max']['value']
+  public function getLimits(WalletInterface $wallet) {
+    return $this->configuration['minmax'];
+  }
+
+
+  /**
+   * (non-PHPdoc)
+   * @see \Drupal\mcapi_limits\Plugin\Limits\McapiLimitsBase::defaultConfiguration()
+   */
+  public function defaultConfiguration() {
+    $defaults = parent::defaultConfiguration();
+    return $defaults+ array(
+      'minmax' => array('min' => -1000, 'max' => 1000)
     );
-    return $limits;
   }
 
 }

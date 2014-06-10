@@ -9,8 +9,9 @@
  * Implements hook_install().
  */
 function mcapi_install() {
-  //this helps ensure this module runs before all the stuff that might depend on it
-  module_set_weight('mcapi', -1);
+  module_set_weight('field_ui', -1);
+  //module_set_weight('mcapi', 1);//has to be after field_ui for mcapi_local_tasks_alter
+  //see field_ui_local_tasks_alter() where $local_task->alterLocalTasks($local_tasks); replaces some tasks already passed
 
   //default exchange
   //according to the default settings this will have autocreated a wallet for the exchange !
@@ -40,7 +41,7 @@ function mcapi_install() {
   //set the path of the zero image in currency 1
   $currency1 = mcapi_currency_load(1);
   $path = url(drupal_get_path('module', 'mcapi') . '/templates/present.png');
-  $currency1->set('zero', '<img src = ". $path ." width = "31" />');
+  $currency1->set('zero', '<img src = "'. $path .'" width = "31" />');
   $currency1->save();
 }
 
@@ -54,7 +55,6 @@ function mcapi_install() {
  */
 function mcapi_uninstall() {
   $instances = array(
-    'mcapi_transaction.worth',
     'mcapi_exchange.currencies',
     'user.exchanges'
   );
@@ -65,7 +65,6 @@ function mcapi_uninstall() {
     }
   }
   field_purge_batch(3);
-  return;
   drupal_set_message('now run cron to clear the fieldAPI');
   //this shouldn't be necessary!!
   db_drop_table('mcapi_exchange__worth');
@@ -342,7 +341,8 @@ function mcapi_schema() {
     'primary key' => array('wid'),
     //TODO Gordon is this about right?
     'unique keys' => array(
-  	  'unique' => array('name', 'entity_type', 'pid')
+      //this is causing some problems with repeated uninstalls of the tester module
+  	  //'uniqueWalletNamesPerOwner' => array('name', 'entity_type', 'pid')
     ),
     'foreign keys' => array(
       'mcapi_transactions_payee' => array(

@@ -12,17 +12,6 @@ use Drupal\Core\Entity\EntityInterface;
 
 interface ExchangeStorageInterface extends FieldableEntityStorageInterface {
 
-
-  /**
-   * check if an exchange, and all the transactions in it can be deleted, which means both:
-   * the exchange is already disabled (closed)
-   * the delete mode allows its transactions to be deleted.
-   *
-   * @param EntityInterface $exchange
-   * @return Boolean
-   */
-  function deletable(EntityInterface $exchange);
-
   /**
    * check if an exchange can be deactivated, which means that it is not the only active exchange
    *

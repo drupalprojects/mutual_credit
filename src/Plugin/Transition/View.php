@@ -35,12 +35,19 @@ class View extends TransitionBase {//does it go without saying that this impleme
     || $transaction->get('payee')->entity->access('view');
   }
 
+
   /*
    * {@inheritdoc}
   */
-  public function settingsForm(array &$form) {
-    parent::settingsForm($form);
+  public function buildConfigurationForm(array $form, array &$form_state) {
+    parent::buildConfigurationForm($form, $form_state);
     unset($form['sure']['button'], $form['sure']['cancel_button'], $form['notify'], $form['feedback']);
     $form['sure']['#title'] = t('Display page');
+    return $form;
   }
+
+  public function submitConfigurationForm(array &$form, array &$form_state) {
+    //TODO Clear the transaction entity display cache
+  }
+
 }

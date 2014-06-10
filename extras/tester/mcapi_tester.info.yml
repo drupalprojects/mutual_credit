@@ -9,7 +9,7 @@ dependencies:
   - views_ui
   - field_ui
   - contextual
-  - mcapi_1stparty
+#  - mcapi_1stparty
   - dblog
   - taxonomy
   - help

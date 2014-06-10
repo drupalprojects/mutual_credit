@@ -3,19 +3,20 @@
 /**
  * @file
  * mcapi.module
- * @todo We need events, or triggers for when a user joins an exchange (and leaves)
  */
 
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Template\Attribute;
-use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Field\FieldItemList;
-use Drupal\mcapi\Plugin\Field\FieldType\Worth;
+//use Drupal\Core\Cache\CacheBackendInterface;
+//use Drupal\Core\Field\FieldItemList;
+//use Drupal\mcapi\Plugin\Field\FieldType\Worth;//needed?
 use Drupal\Core\Utility\Token;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\field\Field;
+use \Drupal\field\Entity\FieldInstanceConfig;
+use Symfony\Component\HttpFoundation\Request; //for hook_help
+use Drupal\mcapi\Entity\WalletInterface;
 
 define('CURRENCY_WIDGET_SINGLEFIELD', 1);
 define('CURRENCY_WIDGET_TEXT', 2);
@@ -92,28 +93,20 @@ function mcapi_transaction_load_by_serial($serials) {
  * implements hook_help()
  * TODO shouldn't there be some in each page controller to inject help?
  */
-function mcapi_help($path, $arg) {
-  switch ($path) {
-    case 'admin/accounting':
+function mcapi_help($route_name, Request $request) {
+//  debug($route_name);
+  switch ($route_name) {
+    case 'mcapi.admin':
       return t('The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.');
-    case 'admin/accounting/currencies':
+    case 'mcapi.admin_currency_list':
       return implode(' ', array(
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
         t('Retired currencies can no longer be used, but transactions are still visible.'),
       ));
-      //@todo when hook_menu is removed take this out of help and put it on the page somehow
-    case 'admin/accounting/transactions':
-      //TODO how do we make this show at the top of a menu page without help module?
-      module_load_include('inc', 'mcapi');
-      $renderable = _workflow_help();
-      return drupal_render($renderable);
+    case 'mcapi.admin.workflow':
       return implode(' ', array(
-        t('Different transaction user stories can be configured here, although the actual structure has to be defined in code.')
-      ));
-    case 'admin/accounting/transactions/workflow':
-      return implode(' ', array(
-        t('The workflow is about moving transactions between states. This is always done through a form.'),
-        t('The confirm forms are configured on this page.')
+        t('Workflow transitions move transactions between states.'),
+        t('Each transition presents the user with confirmation form, which is configured on this page')
       ));
   }
 }
@@ -169,14 +162,13 @@ function mcapi_theme($existing, $type, $theme, $path) {
  * implements hook_entity_view().
  * add a wallet summary view to wallet-enabled entities
  */
-function mcapi_entity_view($entity, $mode, $language) {
-  $build = array();
+function mcapi_entity_view(&$build, $entity, $mode, $language) {
   //check the entity is of a type which can own a wallet.
   $quants = \Drupal::config('mcapi.wallets')->get('entity_types');
   $key = $entity->getEntityTypeId() .':'. $entity->bundle();
   if (array_key_exists($key, $quants) && $quants[$key]) {
     module_load_include('inc', 'mcapi');
-    $entity->content['wallets_summaries'] = mcapi_view_wallets_summaries($entity);
+    $build['wallets_summaries'] = mcapi_view_wallets_summaries($entity);
   }
 }
 
@@ -187,7 +179,7 @@ function mcapi_entity_view($entity, $mode, $language) {
  * Form_alter is rather a blunt instrument but it is the best available.
  * Would be better to use hook_entity_presave or postsave but the old values aren't available there
  */
-function mcapi_form_alter(&$form, &$form_state) {
+function mcapi_form_alter(&$form, &$form_state, $form_id) {
   if (array_key_exists('controller', $form_state) && $form_state['controller'] instanceof \Drupal\Core\Entity\ContentEntityFormController) {
     $entity = $form_state['controller']->getEntity();
     module_load_include('inc', 'mcapi');
@@ -196,7 +188,6 @@ function mcapi_form_alter(&$form, &$form_state) {
     if (array_key_exists($entity_type, $lookup)) {
       if (array_key_exists($entity->bundle(), $lookup[$entity_type])) {
         form_load_include($form_state, 'inc', 'mcapi');
-        //
         array_unshift($form['actions']['submit']['#submit'], 'mcapi_exchanges_changed_submit');
       }
     }
@@ -301,12 +292,26 @@ function mcapi_currency_load($id) {
   return entity_load('mcapi_currency', $id);
 }
 
-
-function mcapi_entity_label_list($entities, $entity_type = '') {
-  if (!is_object(reset($entities))) {
-    $entities = empty($entities) ?
-      entity_load_multiple($entity_type) :
-      entity_load_multiple($entity_type, $entities);
+/**
+ * Helper function to populate a form widget's options with entity names
+ *
+ * @param string $entity_type_id
+ *
+ * @param array $data
+ *   either entities of the given type, entity ids, or $conditions for entity_load_multiple_by_properties
+ *
+ * @return array
+ *   The entity names, keyed by entity id
+ */
+function mcapi_entity_label_list($entity_type_id, array $data = array()) {
+  if (empty($entities)) {
+    $entities = entity_load_multiple($entity_type_id);
+  }
+  elseif(is_string(key($entities))) {
+    $entities = entity_load_multiple_by_properties($entity_type_id, $data);
+  }
+  elseif(is_integer(reset($entities))) {
+    $entities = entity_load_multiple($entity_type_id, $entities);
   }
   $list = array();
   foreach ($entities as $entity) {
@@ -338,7 +343,7 @@ function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = 
   }
   else{
     $fieldnames = get_exchange_entity_fieldnames();
-    if ($fieldname = $fieldnames[$entity_type]) {
+    if ($fieldname = @$fieldnames[$entity_type]) {
       foreach($entity->get($fieldname)->getValue(TRUE) as $item) {
         if ($item['entity']) {//an empty $item means the exchangeItemList is empty
           if ($enabled && !$item['entity']->status->value) continue;
@@ -362,20 +367,15 @@ function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = 
  *   field or the fieldname for the given entitytype
  *
  * @todo cache and static this. cache should be cleared whenever fieldInfo changes
+ *
+ * for every bundle get the name of any entity reference field linked to mcapi_exchanges
  */
 function get_exchange_entity_fieldnames() {
   $types = array();
-  foreach (Field::FieldInfo()->getInstances() as $entity_type => $data1) {
-    if (in_array($entity_type, array('mcapi_exchange', 'mcapi_transaction', 'mcapi_wallet'))) continue;
-    foreach ($data1 as $bundle => $fields) {
-      foreach ($fields as $fieldname => $fieldInfo) {
-        if ($fieldInfo->getType() == 'entity_reference') {
-          if ($fieldInfo->getSetting('target_type') == 'mcapi_exchange') {
-            $types[$entity_type] = $fieldname;
-            continue 3;
-          }
-        }
-      }
+  //get all the instances of these fields
+  foreach (entity_load_multiple_by_properties('field_config', array('type' => 'entity_reference')) as $field) {
+    if ($field->settings['target_type'] == 'mcapi_exchange') {
+      $types[$field->entity_type] = $field->name;
     }
   }
   return $types;
@@ -450,43 +450,6 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
   return _mcapi_worth_element_process($element, $form_state, $form);
 }
 
-/**
- * value callback for worth element
- * expects $input structured thus:
- * array(curr_id => array(subelement1 => n, subelement2 => n))
- * needs to output a worths array thus
- * array(curr_id => n) where n is the raw database value
- *
- * SHIT this is being overwritten by the widget children
- * the $element being passed is BEFORE it was processed
- */
-function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
-  if ($input === FALSE) return;
-  foreach ($input as $curr_id => $parts) {
-    $currency = mcapi_currency_load($curr_id);
-    unset($element[$curr_id]);//this prevents the children values overwriting the output of this function
-    $quant = $currency->unformat($parts);
-    if (!$quant && empty($currency->zero))continue;
-    $output[$curr_id] = $quant;
-  }
-  //this prevents the element being processed again, generating children
-  //and the children overwriting the value we just made.
-  //I'd be very interested to know what the reccommended way is
-  $element['#default_value'] = array();
-  return $output;
-}
-
-/**
- * element_validate callback for worth field
- *
- * @param array $element
- * @param array $form_state
- */
-function mcapi_worth_element_validate($element, &$form_state) {
-  if ($element['#value'] < 0) {
-    \Drupal::formBuilder()->setError($element, $form_state, t('Negative amounts not allowed'));
-  }
-}
 
 /**
  * process callback for mcapi_state form element
@@ -497,7 +460,7 @@ function mcapi_worth_element_validate($element, &$form_state) {
  *   the processed $element
  */
 function mcapi_process_states($element) {
-  $element['#options'] = mcapi_entity_label_list(array(), 'mcapi_state');
+  $element['#options'] = mcapi_entity_label_list('mcapi_state');
   $element = form_process_radios($element);
   return $element;
 }
@@ -511,7 +474,7 @@ function mcapi_process_states($element) {
  *   the processed $element
  */
 function mcapi_process_types($element) {
-  $element['#options'] = mcapi_entity_label_list(array(), 'mcapi_type');
+  $element['#options'] = mcapi_entity_label_list('mcapi_type');
   return $element;
 }
 
@@ -525,20 +488,21 @@ function mcapi_process_types($element) {
  */
 function mcapi_process_currcodes($element) {
   $conditions = array();
-  if ($element['#status']) $conditions['status'] = TRUE;
+  if ($element['#status']) {
+    $conditions['status'] = TRUE;
+  }
   if (empty($element['#options']) && !empty($element['#curr_ids'])) {
     //shows the intersection of all currencies and currencies provided
     $element['#options'] = array_intersect_key(
-      mcapi_entity_label_list($element['#curr_ids'], 'mcapi_currency'),
+      mcapi_entity_label_list('mcapi_currency', $element['#curr_ids']),
       entity_load_multiple_by_property('mcapi_currency', $conditions)
     );
   }
   elseif (empty($element['#options'])) {
-    $currencies = entity_load_multiple('mcapi_currencies', $conditions);
-    $element['#options'] = $element['#options'] = mcapi_entity_label_list($currencies);
+    $element['#options'] = $element['#options'] = mcapi_entity_label_list('mcapi_currency', $conditions);
   }
   elseif ($element['#options'] == 'all') {
-    $element['#options'] = mcapi_entity_label_list(entity_load_multiple('mcapi_currencies'));
+    $element['#options'] = mcapi_entity_label_list('mcapi_currency');
   }
 
   if (count($element['#options']) == 1) {
@@ -581,9 +545,8 @@ function form_type_select_wallet_value(&$element, $input, &$form_state) {
   if (is_numeric($input) && is_integer($input + 0)) {
     return $input;
   }
-  //get the number from between the brackets
-  preg_match('/.*\(([0-9]+)\)/', $input, $matches);
-  return intval(array_pop($matches));
+  //get the number after the last hash
+  return substr($input, strrpos($input, '#')+1);
 }
 
 /**
@@ -591,8 +554,10 @@ function form_type_select_wallet_value(&$element, $input, &$form_state) {
  * ensure the passed value is a wallet id
  */
 function local_wallet_validate_id(&$element, &$form_state) {
-  if (!entity_load('mcapi_wallet', $element['#value'])) {
-   \Drupal::formBuilder()->setError($element, $form_state, t('Invalid wallet id: @value', array('@value' => $element['#value'])));
+  if ($element['#value']) {
+    if (!entity_load('mcapi_wallet', $element['#value'])) {
+     \Drupal::formBuilder()->setError($element, $form_state, t('Invalid wallet id: @value', array('@value' => $element['#value'])));
+    }
   }
 }
 
@@ -604,30 +569,21 @@ function local_wallet_validate_id(&$element, &$form_state) {
 function mcapi_prerender_wallet_field($element) {
   if (is_numeric($element['#default_value'])) {
     $wallet = entity_load('mcapi_wallet', $element['#default_value']);
-    $element['#default_value'] = _mcapi_wallet_autocomplete_value($wallet);
+    if ($wallet) {
+      //this label contains the #id which is picked up by the value callback
+      $element['#default_value'] = $wallet->label(NULL, FALSE);
+    }
+    else {
+      drupal_set_message(t("Wallet preset '@num' does not exist", array('@num' => $element['#default_value'])), 'warning');
+    }
   }
   return $element;
 }
 
 /**
- * Helper function to create a human/machine readable wallet name
- * the wallet id is included in brackets at the end of the human name
- * @param EntityInterface $wallet
- * @return string
- */
-function _mcapi_wallet_autocomplete_value(ContentEntityInterface $wallet) {
-  //the brackets are used to identify the wallet id at the other end
-  return $wallet->getLabel() .' ('.$wallet->id().')';
-}
-
-
-/**
  * implements alter hook_form_user_cancel_confirm_form().
  * if they have already traded, users can only be blocked, not deleted
  * TODO test this
- *
- * @param array $form
- * @param array $form_state
  */
 function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
   $traded = db_query(
@@ -653,16 +609,18 @@ function mcapi_element_info_alter(&$items) {
  * when creating a new user, populate the exchanges field
  * with the currentuser's values.
  * N.B. in FieldItemList::setValue
+ * @param ContentEntityInterface $entity,
+ * @param array $field_definition,
+ * @param string $langcode
  * @return string
  *   The uuid of the exchange
  * //TODO an array of uuids whose keys I haven't understood yet
  */
-function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
+function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition, $langcode) {
   $output = array();
   foreach (referenced_exchanges($entity, TRUE) as $exchange) {
     $output[]['target_uuid'] = $exchange->get('uuid')->value;
   }
-  drupal_set_message('a bug in alpha11 prevents more than one default entityreference field widget value from showing.');
   return $output;
 }
 
@@ -672,21 +630,23 @@ function mcapi_default_exchange_id($entity, $field_definition, $langcode) {
  * when creating a new exchange, populate the currencies field
  * with the currentuser's values.
  * N.B. in FieldItemList::setValue
+ *
+ * @param ExchangeInterface $entity,
+ * @param array $field_definition,
+ * @param string $langcode
  * @return
  *   an array of uuids whose keys I haven't understood yet
  */
-function mcapi_default_currency_id($entity, $field_definition, $langcode) {
+function mcapi_default_currency_id(ExchangeInterface $entity, $field_definition, $langcode) {
   $output = array();
   //temporary until we work out what the default should be.
   $output[]['target_uuid'] = entity_load('mcapi_currency', 1)->get('uuid');
-
-  drupal_set_message('a bug in alpha11 prevents more than one default entityreference field widget value from showing.');
   return $output;
 }
 
 /**
  * implements hook_entity_insert()
- * give a new wallet to every user, and every new exchange, if the settings require
+ * give a new wallet to new entities, if the settings require
  */
 function mcapi_entity_insert($entity) {
   $type = $entity->getEntityTypeId();
@@ -717,7 +677,6 @@ function mcapi_entity_delete($entity) {
   if ($entity instanceof ContentEntityInterface && $exchanges = referenced_exchanges($entity)) {
     $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
     $wids = \Drupal::Entitymanager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity);
-    drupal_set_message($entity->getEntityTypeId() . $entity->id() .' owns wallets '. implode(', ', $wids));
     foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
       $wallet->orphan($exchange);
     }
@@ -786,6 +745,41 @@ function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
     //@todo exchange admins links to their currency(s) OR a link to admin/accounting/currencies
   }
 }
+
+/**
+ * implements hook_local_tasks_alter().
+ * prevent the three fixed transaction display modes from being edited
+ * this function will fail if mcapi is not heavier than field_ui module
+ */
+function mcapi_local_tasks_alter(&$tasks) {
+  $names = array('certificate_mcapi_transaction', 'twig_mcapi_transaction', 'sentence_mcapi_transaction');
+  foreach ($names as $name) {
+    unset($tasks['field_ui.fields:field_display_'.$name]);
+  }
+}
+
+/**
+ * implements hook_entity_operation_alter();
+ * prevent the transaction view modes from being tampered with
+ */
+function mcapi_entity_operation_alter(&$operations, $entity) {
+  $ids = array(
+    'mcapi_transaction.certificate',
+    'mcapi_transaction.twig',
+    'mcapi_transaction.sentence'
+  );
+  if (in_array($entity->id(), $ids)) $operations = array();
+}
+/**
+ * Implements hook_field_formatter_info_alter();
+ * gives the worth field a default formatter
+ */
+function mcapi_field_formatter_info_alter(array &$info) {
+  // Let a new field type re-use an existing formatter.
+  $info['string']['field_types'][] = 'worth';
+}
+
+
 /**
  * get the Transition links for a transaction
  * @param Transaction $transaction
@@ -801,6 +795,7 @@ function mcapi_get_links(Transaction $transaction, $view_link = FALSE) {
   }
   return $transactionViewBuilder->renderLinks($transaction, 'sentence');
 }
+
 /**
  * Delete all transaction entities
  * For development only!

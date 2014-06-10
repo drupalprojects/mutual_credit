@@ -6,37 +6,7 @@ use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
-
-/*
- * implements hook_help().
- */
-function _workflow_help() {
-  //TODO lay this page out more attractively
-  //TODO move this from help to the top of the page
-  $renderable['states'] = array(
-    '#theme' => 'table',
-    '#attributes' => array('class' => array('help')),
-    '#caption' => t('States'),
-    '#header' => array(t('Label'), t('Description')),
-  );
-  foreach (entity_load_multiple('mcapi_state') as $id => $info) {
-    $renderable['states']['#rows'][$id] = array($info->label, $info->description);
-  }
-  $renderable['types'] = array(
-    '#theme' => 'table',
-    '#attributes' => array('class' => array('help')),
-    '#caption' => t('Types'),
-    '#header' => array(t('Label'), t('Description')),
-  );
-
-  foreach (entity_load_multiple('mcapi_type') as $type => $info) {
-    $renderable['types']['#rows'][$type] = array($info->label, $info->description);
-  }
-  //TODO Tidy up the preceding tables
-  //I can't see how to inject a bit of css into the top of the page since drupal_add_css is deprecated
-  $renderable['#prefix'] = "<style>table.help{margin-bottom:2em;}.help td{background-color:#efefef;}</style>";
-  return $renderable;
-}
+use Drupal\Core\Render\Element;
 
 
 function _mcapi_entity_extra_field_info() {
@@ -57,16 +27,42 @@ function _mcapi_entity_extra_field_info() {
       )
     );
   }
+  //wallet diplays
+  $extra['mcapi_wallet']['mcapi_wallet']['display'] = array(
+    'owner' => array(
+      'label' => t('Owner'),
+      'description' => t('Link to the url of the wallets owner entity'),
+      'weight' => 1,
+    ),
+    'stats' => array(
+      'label' => t('Trading stats'),
+    	'description' => t('Grid showing trading stats for all currencies'),
+      'weight' => 2
+    ),
+    'balance_bars' => array(
+      'label' => t('Balance bar charts'),
+      'description' => t('One barchart per currency showing incoming and outgoing volumes'),
+      'weight' => 3,
+    ),
+    'histories' => array(
+      'label' => t('History chart(s)'),
+    	'description' => t('One line chart per currency showing balance over time.'),
+      'weight' => 4
+    ),
+    'summaries' => array(
+      'label' => t('Balance(s)'),
+    	'description' => t('Small thingy showing balances of all currencies'),
+      'weight' => 5
+    ),
+    'links' => array(
+      'label' => t('Links(s)'),
+    	'description' => t('Links to the wallets transactions / summary / edit pages, if permissions allow'),
+      'weight' => 6
+    ),
+  );
+
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  $fields = array('payer', 'payee', 'description');
-  foreach ($fields as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['form'][$fieldname] = array(
-      'label' => $props[$fieldname]['label'],
-      'description' => $props[$fieldname]['description'],
-      'weight' => $weight,
-    );
-  }
-  $fields = array_merge($fields, array('state', 'type'));
+  $fields = array('payer', 'payee', 'description', 'state', 'type');
   foreach ($fields as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
       'label' => $props[$fieldname]['label'],
@@ -74,37 +70,16 @@ function _mcapi_entity_extra_field_info() {
       'weight' => $weight,
     );
   }
+  $extra['mcapi_transaction']['mcapi_transaction']['display']['transitions'] = array(
+    'label' => t('Transitions'),
+    'description' => t('Links to transitions between workflow states'),
+    'weight' => 20,
+  );
   //exchanges
   $extra['mcapi_exchange']['mcapi_exchange']['display']['people'] = array(
     'label' => t('People'),
     'description' => t('People involved in the exchange'),
     'weight' => 1,
-  );
-  //wallets
-  $extra['mcapi_wallet']['mcapi_wallet']['display']['owner'] = array(
-    'label' => t('Owner'),
-    'description' => t('Link to the url of the wallets owner entity'),
-    'weight' => 1,
-  );
-  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_balance_bars'] = array(
-    'label' => t('Balance bar charts'),
-    'description' => t('One barchart per currency showing incoming and outgoing volumes'),
-    'weight' => 1,
-  );
-  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_histories'] = array(
-    'label' => t('History chart(s)'),
-  	'description' => t('One line chart per currency showing balance over time.'),
-    'weight' => 2
-  );
-  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_summaries'] = array(
-    'label' => t('Balance(s)'),
-  	'description' => t('Small thingy showing balances of all currencies'),
-    'weight' => 3
-  );
-  $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_stats'] = array(
-    'label' => t('Trading stats'),
-  	'description' => t('Grid showing trading stats for all currencies'),
-    'weight' => 4
   );
   return $extra;
 }
@@ -126,12 +101,10 @@ function _mcapi_theme() {
   $items['mcapi_twig'] = array(
     'variables' => array(
       'mcapi_transaction' => NULL,
-      'twig' => '',
+      'twig_template' => '',
     ),
     'file' => 'mcapi.inc'
   );
-
-  //TODO
   $items['wallet_balance_bars'] = array(
     'template' => 'wallet_balance_bars',
     'variables' => array(
@@ -188,7 +161,6 @@ function _mcapi_element_info() {
     'worth' => array(
       '#input' => TRUE,
       '#tree' => TRUE,
-      '#title_display' => 'attribute',
       '#process' => array('mcapi_worth_element_process'),
       '#value_callback' => 'mcapi_form_type_worth_value',
       '#element_validate' => array('mcapi_worth_element_validate'),
@@ -198,6 +170,8 @@ function _mcapi_element_info() {
           drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
         )
       ),
+      '#minus' => FALSE,
+      '#config' => FALSE,
     ),
     'mcapi_states' => array(
       '#input' => TRUE,
@@ -235,6 +209,7 @@ function _mcapi_element_info() {
       '#theme_wrappers' => array('form_element'),
       '#value_callback' => 'form_type_select_wallet_value',
       '#element_validate' => array('local_wallet_validate_id'),
+      '#required' => TRUE,
       //TODO I'm not sure how best to put in default css
       //the empty class is required to prevent an overload error in alpha7
       //TODO enable this when _form_set_attributes no longer attempts to merge this attribute object with an actual array
@@ -244,15 +219,29 @@ function _mcapi_element_info() {
   );
 }
 
-
+/**
+ * form element processor callback for 'worth'
+ * takes the raw #default_values and makes child widgets according to the currency format.
+ *
+ * @return array
+ *   The processed $element, including children
+ */
 function _mcapi_worth_element_process($element, &$form_state, $form) {
   //build up the widget
+  if (empty($element['#default_value'])) {
+    //in the rare occaision that defaults have not been provided, we show ALL the currencies
+    foreach (entity_load_multiple('mcapi_currency') as $currency) {
+      $element['#default_value'][$currency->id] = 0;
+    }
+  }
+  $cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
   foreach ($element['#default_value'] as $curr_id => $value) {
     $currency = mcapi_currency_load($curr_id);
-    $parts = $currency->formatted_parts($value);
+    if ($element['#config'] && $value === '') $parts = array();
+    else $parts = $currency->formatted_parts(abs(intval($value)));
     $element[$curr_id] = array(
-      '#prefix' => '<div>',
-      '#suffix' => '</div>'
+      '#prefix' => '<div class = "'.$cardinality.'">',
+      '#suffix' => '</div>',
     );
     foreach ($currency->format as $i => $component) {
       if ($i % 2) { //an odd number so render a field
@@ -268,7 +257,7 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
         }
         $element[$curr_id][$i] = array(
           '#weight' => $i,
-          '#default_value' => $parts[$i],
+          '#default_value' => @$parts[$i],//in config mode $parts is empty
           '#theme_wrappers' => array()
         );
         //if a preset value isn't in the $options
@@ -282,9 +271,9 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
         else {
           $size = strlen($component);
           $element[$curr_id][$i] += array(
-            '#type' => 'number',//TODO this is rendering horribly but the #max and #min are important
+            '#type' => $element['#config'] ? 'textfield' : 'number',
             '#placeholder' => $i == 2 ? '' : str_pad('', $size, '0'),
-            '#max' => intval($component) ? $component : 10*strlen($component)-1,
+            '#max' => $i == 1 ? pow(10, strlen($component))-1 : $component,//first component matters only for the num of digits
             '#min' => 0,
             '#step' => $step,
             '#size' => $size,//no effect in opera
@@ -302,9 +291,68 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
         );
       }
     }
+    if ($element['#minus']) {
+      $element[$curr_id][0]['#markup'] = '-'.$element[$curr_id][0]['#markup'];
+      $element[$curr_id][$i]['#suffix'] = '('.t('minus').')';
+    }
+  }
+  //single values can inherit max and min from the top level of the element
+  if (count($element['#default_value']) == 1) {
+    if (array_key_exists('#max', $element)) $element[$curr_id][1]['#max'] = $element['#max'];
+    if (array_key_exists('#min', $element)) $element[$curr_id][1]['#min'] = $element['#min'];
   }
   return $element;
 }
+
+/**
+ * value callback for worth element
+ * expects $input structured thus:
+ * array(curr_id => array(subelement1 => n, subelement2 => n))
+ * needs to output a worths array thus
+ * array(curr_id => n) where n is the raw database value
+ */
+
+function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
+  if ($input === FALSE) return;
+  $output = array();
+  foreach ($input as $curr_id => $parts) {
+    $currency = mcapi_currency_load($curr_id);
+    if ($element['#config'] && reset($parts) === '')continue;
+    $quant = $currency->unformat($parts);
+    if ($quant == 0 && !$element['#config']) {
+      //zero values are only accepted if the currency allows and if there is only one currency in the field
+      if (empty($currency->zero) || count($input) > 1){
+        continue;//don't add this value to the $output
+      }
+    }
+    if ($element['#minus']) $quant = -$quant;
+    $output[$curr_id] = $quant;
+  }
+  //HACK somehow this prevents the children, which are calculated afterwards, from overwriting this with an array
+  //but only sometimes
+//  $element['#default_value'] = array();
+  $element['#processed'] = TRUE;
+//  unset($form_state['input']['worth']);
+  return $output;
+}
+
+/**
+ * element_validate callback for worth field
+ *
+ * @param array $element
+ * @param array $form_state
+ */
+function mcapi_worth_element_validate($element, &$form_state) {
+  if ($element['#config']) return;
+  foreach ($element['#value'] as $curr_id => $value) {
+    if ($value < 0) {
+      //TODO check this
+      $form_state['controller']->setError($element, $form_state, t('Negative amounts not allowed'));
+      \Drupal::formBuilder()->setError($element, $form_state, t('Negative amounts not allowed'));
+    }
+  }
+}
+
 /**
  *
  * @param ContentEntityInterface $entity
@@ -347,7 +395,7 @@ function mcapi_view_wallets_summaries(ContentEntityInterface $entity) {
 }
 
 //I've got a strong feeling there is another function for this.
-function wallets_owned_by($entity) {
+function wallets_owned_by(ContentEntityInterface $entity) {
   return entity_load_multiple_by_properties(
     'mcapi_wallet',
     array(
@@ -356,12 +404,28 @@ function wallets_owned_by($entity) {
     )
   );
 }
-
+/**
+ * Get the wallet owner's name.
+ * Might be more useful to get the wallet's full name instead.
+ * @param WalletInterface $wallet
+ * @return array
+ *   a render array
+ */
+function show_wallet_owner(WalletInterface $wallet) {
+  $entity = $wallet->getowner();
+  return array(
+  	'#markup' => '<div class = "wallet-owner">'. $entity->label() .'</div>'
+  );
+}
 /*
  * get a renderable array of all the currency balances in one wallet
  */
-function show_wallet_summaries($wallet) {
-  foreach ($wallet->currencies() as $curr_id => $currency) {
+function show_wallet_summaries(WalletInterface $wallet) {
+  $renderable = array(
+    '#prefix' => '<div class = "wallet-summaries">',
+    '#suffix' => '</div>'
+  );
+  foreach ($wallet->currencies_used() as $curr_id => $currency) {
     $renderable[$curr_id] = array(
       '#theme' => 'wallet_summary',
       '#wallet' => $wallet,
@@ -376,13 +440,41 @@ function show_wallet_summaries($wallet) {
   }
   return $renderable;
 }
+/**
+ * show the wallets 'local_tasks' as links, in case
+ */
+function show_wallet_links(WalletInterface $wallet) {
+  $links= array();
+  $tree = \Drupal::service('plugin.manager.menu.local_task')->getLocalTasksForRoute('mcapi.wallet_view');
+  $access_manager = \Drupal::service('access_manager');
+  //which is all very well but getTasksBuild assumes we are on the current route
+  foreach($tree[0] as $child){
+    $route_name = $child->getRouteName();
+    $route_parameters = array('mcapi_wallet' => $wallet->id());
+    $access = $access_manager->checkNamedRoute($route_name, $route_parameters, \Drupal::currentUser());
+    if ($access) {
+      $links[$route_name] = array(
+        'title' => $child->getTitle(),
+        'route_name' => $route_name,
+        'route_parameters' => $route_parameters
+      );
+    }
+  }
+  return array(
+  	'#theme' => 'links',
+    '#links' => $links,
+  );
+}
 
 /*
  * get a renderable array of all the trading histories in one wallet
  */
-function show_wallet_histories($wallet) {
-  $renderable = array();
-  foreach ($wallet->currencies() as $curr_id => $currency) {
+function show_wallet_histories(WalletInterface $wallet) {
+  $renderable = array(
+  	'#prefix' => '<div class = "wallet-histories">',
+    '#suffix' => '</div>'
+  );
+  foreach ($wallet->currencies_used() as $curr_id => $currency) {
     $renderable[$curr_id] = array(
       '#theme' => 'wallet_history',
       '#wallet' => $wallet,
@@ -396,17 +488,28 @@ function show_wallet_histories($wallet) {
 /*
  * get a renderable array of all the balance bar charts in one wallet
 */
-function show_wallet_balance_bars($wallet) {
-  $renderable = array();
-  foreach ($wallet->currencies() as $curr_id => $currency) {
+function show_wallet_balance_bars(WalletInterface $wallet) {
+  $renderable = array(
+  	'#prefix' => '<div class = "balance-bars">',
+    '#suffix' => '</div>'
+  );
+  foreach ($wallet->getSummaries() as $curr_id => $data) {
     $renderable[$curr_id] = array(
       '#theme' => 'wallet_balance_bars',
       '#wallet' => $wallet,
-      '#currency' => $currency,
-      '#data' => $wallet->getStats($curr_id),
+      '#currency' => mcapi_currency_load($curr_id),
+      '#data' => $data,
     );
   }
   return $renderable;
+}
+
+function show_wallet_stats(WalletInterface $wallet) {
+  return array(
+    '#theme' => 'wallet_stats',//this renders as css block (table) so doesn't sit well with the histories
+    '#wallet' => $wallet,
+    '#weight' => 5
+  );
 }
 
 /**
@@ -429,7 +532,9 @@ function template_preprocess_mcapi_transaction(&$vars) {
 	if (!strpos($element['#view_mode'], ' ')) {
 	  $vars['attributes']['class'][] = $element['#view_mode'];
   }
-  $vars['links'] = \Drupal::Entitymanager()->getViewBuilder('mcapi_transaction')->renderlinks($transaction, $element['#view_mode']);
+  if ($transaction->noLinks) {
+    $vars['links'] = \Drupal::Entitymanager()->getViewBuilder('mcapi_transaction')->renderlinks($transaction, $element['#view_mode']);
+  }
 }
 
 
@@ -474,19 +579,18 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
   $static = drupal_static(__FUNCTION__, array());
   $xid = $transaction->get('xid')->value;
 
-  $stateItem = $transaction->state->getValue(TRUE);
-  $typeItem = $transaction->type->getValue(TRUE);
-  $v['state'] = $stateItem[0]['entity']->label;
-  $v['type'] = $typeItem[0]['entity']->label;
+  $v['state'] = $transaction->state->entity->label;
+  $v['type'] = $transaction->type->entity->label;
   $v['serial'] = $transaction->serial->value;
   $payer_wallet_owner = $transaction->payer->entity->getOwner();
   $payee_wallet_owner = $transaction->payee->entity->getOwner();
   $v['payer'] = l($payer_wallet_owner->label(), $payer_wallet_owner->url());
   $v['payee'] = l($payee_wallet_owner->label(), $payee_wallet_owner->url());
   $v['creator'] = $transaction->creator->entity->label();
+  //TODO where do all the divs around descriptiion come from?
   $v['description'] = $transaction->description->value;
 
-  $v['worth'] = $transaction->get('worth');
+  $v['worth'] = $transaction->worth->view();
   //TODO LEAVE THIS TILL AFTER alpha 11
   //$v['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
   $v['created'] = 'T.B.D.';
@@ -507,7 +611,7 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
  */
 function theme_mcapi_twig($vars) {
   return mcapi_render_twig_transaction(
-    $vars['twig'],
+    $vars['twig_template'],
     $vars['mcapi_transaction']
   );
 }
@@ -522,7 +626,7 @@ function theme_mcapi_twig($vars) {
  * http://twig.sensiolabs.org/doc/functions/template_from_string.html
  * New in Twig version 1.11
  */
-function mcapi_render_twig_transaction(string $template, TransactionInterface $transaction) {
+function mcapi_render_twig_transaction($template, TransactionInterface $transaction) {
   $vars = array();
   $xid = $transaction->id();
   //Here we have to get all the fieldAPI fields rendered and in $vars
@@ -531,7 +635,7 @@ function mcapi_render_twig_transaction(string $template, TransactionInterface $t
     ->getViewBuilder('mcapi_transaction')
     ->viewMultiple($entities, 'certificate');
   mcapi_transaction_process_vars($vars, $transaction);
-  //hide the fieldAPi labels
+  //hide the labels from the standard field rendering
   foreach(element_children($build[$xid]) as $sub) {
     if ($build[$xid][$sub]['#theme'] == 'field') {
       $build[$xid][$sub]['#label_display'] = 'hidden';
@@ -553,7 +657,7 @@ function mcapi_render_twig_transaction(string $template, TransactionInterface $t
  * @return string
  *   HTML
  */
-function mcapi_render_twig(string $template, array $tokens) {
+function mcapi_render_twig($template, array $tokens) {
   //first validate that everything in the template is available as a key in the $tokens
   $matches = array();
   preg_match('/\{\{ (.+) \}\}/', $template,  $matches);
@@ -568,12 +672,12 @@ function mcapi_render_twig(string $template, array $tokens) {
 
   //this is a bogus name of the nearest file, to keep twig happy
   $name = 'README.txt';
-  $renderer = drupal_container()->get('twig');
-  $cls = $renderer->getTemplateClass($name, NULL);
+  $twig_service = \Drupal::service('twig');
+  $cls = $twig_service->getTemplateClass($name, NULL);
   if (!class_exists($cls)) {
-    eval('?' . '>' . $renderer->compileSource($template, $name));
+    eval('?' . '>' . $twig_service->compileSource($template, $name));
   }
-  $twig = new $cls($renderer);
+  $twig = new $cls($twig_service);
   return $twig->render($tokens);
 }
 
@@ -616,10 +720,12 @@ function mcapi_workflow_help() {
  * helper function to get the token names for helptext token service and twig
  * get the entity properties from mcapi_token_info, then the fieldapi fields
  * this function would be handy for any entity_type, so something equivalent may exist already
+ *
  * @param boolean
  *   if TRUE the result will include tokens to non-fields, such as the transition links
+ *
  * @return array
- *   names of replacable elements in the transaction
+ *   names of replicable elements in the transaction
  */
 function mcapi_transaction_list_tokens($include_virtual = FALSE) {
   $tokens = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
@@ -670,16 +776,15 @@ function mcapi_exchanges_changed_submit($form, &$form_state) {
   sort($new);
   sort($saved);
   if ($new == $saved) return;
-  //the module handler in the form controller is private
+  //we cant use the module handler in the form controller
   $moduleHandler = \Drupal::moduleHandler();
-  //TODO declare these hooks to rules / triggers whatever
-  if ($left = array_diff($saved, $new)) {
-    drupal_set_message('User left exchange but what hook to fire?');
-    $moduleHandler->invokeAll('left_exchange', array($entity, $left));
+  $left = entity_load_multiple('mcapi_exchange', array_diff($saved, $new));
+  foreach ($left as $exchange) {
+    $exchange->goodbye($entity);
   }
-  if ($joined = array_diff($new, $saved) ) {
-    drupal_set_message('User joined exchange but what hook to fire?');
-    $moduleHandler->invokeAll('joined_exchange', array($entity, $joined));
+  $joined = entity_load_multiple('mcapi_exchange', array_diff($new, $saved));
+  foreach ($joined as $exchange) {
+    $exchange->hello($entity);
   }
 }
 
@@ -708,7 +813,8 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
       $transaction->dest_participant = 'payer';
     }
     else {
-      echo "payer wid: ".$transaction->get('payer')->value;
+      echo "unable to get source and dest participants";
+      echo "<br />payer wid: ".$transaction->get('payer')->value;
       echo "<br />payee wid: ".$transaction->get('payee')->value;
       echo '<br />curr_ids_required: '; print_R($transaction->curr_ids_required);
       echo '<br />payee_currencies_available: '; print_R($transaction->payee_currencies_available);

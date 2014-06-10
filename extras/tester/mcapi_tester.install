@@ -152,6 +152,12 @@ function mcapi_tester_make_users($num = 26) {
     $u->get('exchanges')->setValue(array($exchange_id));
     $u->save();
     $uids[] = $u->id();
+
+    if ($memnum == 0) {//tell the exchange that it is owned by the manager
+      $exchange = entity_load('mcapi_exchange', $exchange_id);
+      $exchange->uid->value = $u->id();
+      $exchange->save();
+    }
   }
   return $uids;
 }

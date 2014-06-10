@@ -12,21 +12,20 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\ContentEntityFormController;
+use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\action\Plugin\Action;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Datetime\DrupalDateTime;
 
-class TransactionForm extends ContentEntityFormController {
+class TransactionForm extends ContentEntityForm {
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
   public function form(array $form, array &$form_state) {
 
-    $form = parent::form($form, $form_state);
     $transaction = $this->entity;
 
     //TODO do this with access control, including the dsm
@@ -103,12 +102,13 @@ class TransactionForm extends ContentEntityFormController {
     }
     $form['type'] = array(
       '#title' => t('Transaction type'),
-      '#options' => mcapi_entity_label_list(array(), 'mcapi_type'),
+      '#options' => mcapi_entity_label_list('mcapi_type'),
       '#type' => 'mcapi_types',
       '#default_value' => $transaction->get('type')->value,
       '#required' => TRUE,
       '#weight' => 18,
     );
+    $form = parent::form($form, $form_state);
     return $form;
   }
 
@@ -156,8 +156,10 @@ class TransactionForm extends ContentEntityFormController {
     try {
       //curiously, I can't find an instance of the entity->validate() being called. I think it might be new in alpha 11
       if ($violations = $transaction->validate()) {
-        print_r($violations);
-        die('violations in TransactionForm::validate');
+        //TEMP this throws just one
+        foreach ($violations as $field => $message) {
+          throw new McapiTransactionException($field, $message);
+        }
       }
       $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
       foreach ($transaction->warnings as $message) {
@@ -173,7 +175,8 @@ class TransactionForm extends ContentEntityFormController {
     }
     catch (McapiTransactionException $e) {
       //The Exception message may have several error messages joined together
-      $this->setErrorByName($e->getField(), $form_state, $e->getMessage());
+
+      $this->setFormError($e->getField(), $form_state, $e->getMessage());
     }
   }
 
@@ -186,26 +189,6 @@ class TransactionForm extends ContentEntityFormController {
 
     //now we divert to the transition confirm form
     $form_state['redirect'] = 'transaction/0/create';
-  }
-
-
-  /**
-   * Returns an array of supported actions for the current entity form.
-   */
-  protected function actions(array $form, array &$form_state) {
-    if (\Drupal::formBuilder()->getErrors($form_state)) return;
-    $actions = array(
-      'save' => array(
-        '#value' => $this->t('Save'),
-        '#validate' => array(
-          array($this, 'validate'),
-        ),
-        '#submit' => array(
-          array($this, 'submit'),
-        ),
-      ),
-    );
-    return $actions;
   }
 
 }

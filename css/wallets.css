@@ -7,4 +7,17 @@ div.all-wallets{
 div.wallet-summary{
   margin:2px;
 	background-color: rgb(238, 238, 238);
+  display:inline-block;
+}
+div.balance-bars div.givengotten, 
+div.wallet-histories div.history-chart{
+  float:left;
+}
+div.balance-bars, div.wallet-histories, div.wallet-summaries, table.display-wallet{
+	clear:both;
+}
+
+table.display-wallet td, 
+table.display-wallet th{
+	font-size:70%;
 }

@@ -53,7 +53,7 @@ class McapiBlockBase extends BlockBase {
       '#title_display' => 'before',
       '#type' => 'mcapi_currency_select',
       '#default_value' => $this->configuration['curr_ids'],
-      '#options' => mcapi_entity_label_list(entity_load_multiple_by_property('mcapi_currency', array('status' => TRUE))),
+      '#options' => mcapi_entity_label_list('mcapi_currency', array('status' => TRUE)),
       '#multiple' => TRUE
     );
     $form['user_source'] = array(

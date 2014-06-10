@@ -78,13 +78,16 @@ class WorthItem extends FieldItemBase {
     die('WorthItem getItemDefinition');
   }
 
-
   /**
    * {@inheritdoc}
    */
   public function setValue($value, $notify = true) {
     $this->set('value', $value['value']);
     $this->set('curr_id', $value['curr_id']);
+    // Notify the parent of any changes.
+    if ($notify && isset($this->parent)) {
+      $this->parent->onChange($this->name);
+    }
   }
 
   /**
@@ -92,6 +95,11 @@ class WorthItem extends FieldItemBase {
    */
   public function isEmpty() {
     return empty($this->get('value'));
+  }
+
+  public function view($display_mode = array()) {
+    extract($this->getValue(FALSE));
+    return mcapi_currency_load($curr_id)->format($value);
   }
 
 }

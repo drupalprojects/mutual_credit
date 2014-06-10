@@ -32,21 +32,17 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * @return array
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
-    $build = array(
-      '#theme_wrappers' => array('mcapi_transaction'),
-      '#langcode' => $langcode,
-      '#mcapi_transaction' => $entity,
-      '#cache' => array(
-        'tags' =>  NestedArray::mergeDeep($this->getCacheTag(), $entity->getCacheTag()),
-      ),
-    );
+    //if the view_mode is 'full' that means nothing was specified, which is the norm.
+    //so we turn to the 'view' transition where the view mode is a configuration.
+    if ($view_mode == 'full') {
+      $view_config = \Drupal::config('mcapi.transition.view');
+      $view_mode = $view_config->get('format');
+    }
+
+    $build = array();
     switch($view_mode) {
     	case 'certificate':
         $build['#theme'] = 'certificate';
-        //css helps rendering the default certificate
-        $build['#attached'] = array(
-          'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
-        );
         break;
     	case 'sentence':
         $template = \Drupal::config('mcapi.misc')->get('sentence_template');
@@ -57,12 +53,23 @@ class TransactionViewBuilder extends EntityViewBuilder {
         );
         break;
     	default:
-        echo "is it possible to get rid of this view mode by using mcapi_render_twig_transaction directly?";
-        if (module_exists('devel'))ddebug_backtrace();
         $build['#theme'] = 'mcapi_twig';
-        $build['#twig'] = $view_mode;//this is a twig string here - bit of a hacky way to send an arbitrary string
+        $build['#twig_template'] = $view_config->get('twig');
         $view_mode == 'twig';
     }
+
+    $build += array(
+      '#view_mode' => $view_mode,
+      '#theme_wrappers' => array('mcapi_transaction'),
+      '#langcode' => $langcode,
+      '#mcapi_transaction' => $entity,
+      '#attached' => array(
+    	  'css' => array(drupal_get_path('module', 'mcapi') .'/css/transaction.css')
+      ),
+      '#cache' => array(
+        'tags' =>  NestedArray::mergeDeep($this->getCacheTag(), $entity->getCacheTag()),
+      ),
+    );
 
     // Cache the rendered output if permitted by the view mode and global entity
     // type configuration.
@@ -70,13 +77,13 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $build['#cache'] += array(
         'keys' => array(
           'entity_view',
-          $this->entityTypeId,
+          'mcapi_transaction',
           $entity->id(),
           $view_mode,
           'cache_context.theme',
           'cache_context.user.roles',
         ),
-        'bin' => $this->cacheBin,
+        'bin' => 'render',//hardcoded for speed,
       );
     }
     return $build;

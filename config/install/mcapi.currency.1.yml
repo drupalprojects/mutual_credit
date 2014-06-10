@@ -5,7 +5,7 @@ uid: 1
 issuance: exchange
 format: 
   0: CC
-  1: 0000
+  1: '0000'
 zero: '<img src = "present.png" width="31" />'
 color: '#00ff00'
 weight: '1'

@@ -14,7 +14,7 @@ direction:
 description:
   preset: 'Something that happened in exchange 1!'
   placeholder: 'What was this payment for?'
-worths:
+worth:
   preset:
     1:
       curr_id: 1
@@ -22,7 +22,7 @@ worths:
 created:
   show: false
 experience:
-  twig: "Description {{ description }}\r\nValue {{ worths }}\r\n{{ direction }} \r\nPartner {{ partner }}\r\n{{ field_categories }}"
+  twig: "Description {{ description }}\r\nValue {{ worth }}\r\n{{ direction }} \r\nPartner {{ partner }}\r\n{{ field_categories }}"
   button: 'Log transaction'
   preview: page
 message: 'Transaction Logged'

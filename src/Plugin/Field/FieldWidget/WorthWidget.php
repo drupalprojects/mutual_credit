@@ -41,13 +41,13 @@ class WorthWidget extends WidgetBase {
     //we get all the available currencies (to the current user)
     //and if any have been passed in the items, limit selection to those
     $all_available = exchange_currencies(referenced_exchanges(NULL, TRUE));
-    if ($passed_worths && $limit_worth_to_passed) {
-      $all_available = array_intersect_key($passed_worths, $all_available);
-      if (count($all_available) < count($passed_worths)) {
-        $diff = mcapi_entity_label_list(array_diff_key($passed_worths, $all_available));
-        $message = t('User !name cannot handle !names', array('!names' => implode(', ', $diff)));
-        throw new mcapiTransactionException('worth', $message);
-      }
+    if ($passed_worths && $limit_worth_to_passed) {//this never happens while $limit_worth_to_passed = FALSE;
+//      $all_available = array_intersect_key($passed_worths, $all_available);
+//      if (count($all_available) < count($passed_worths)) {
+//        $diff = mcapi_entity_label_list('mcapi_currency', array_diff_key($passed_worths, $all_available));
+//        $message = t('User !name cannot handle !names', array('!names' => implode(', ', $diff)));
+//        throw new mcapiTransactionException('worth', $message);
+//      }
     }
     else {
       //change the all_available array to a worths value array populated by zeros
@@ -62,6 +62,12 @@ class WorthWidget extends WidgetBase {
     ) + $element;
   }
 
+  function massageFormValues(array $values, array $form, array &$form_state) {
+    foreach ($values as $curr_id => $value){
+      $list[] = array('curr_id' => $curr_id, 'value' => $value);
+    }
+    return $list;
+  }
 
   /**
    * {@inheritdoc}

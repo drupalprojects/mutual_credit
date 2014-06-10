@@ -3,6 +3,9 @@
 use Drupal\Core\Template\Attribute;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi_limits\WalletLimits;
+use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
 /**
  * implements hook_mcapi_transaction_validate().
@@ -14,101 +17,41 @@ use Drupal\mcapi\Entity\CurrencyInterface;
  */
 function mcapi_limits_mcapi_transaction_validate(array $cluster) {
   module_load_include('inc', 'mcapi_limits');
-  _mcapi_limits_mcapi_transaction_validate($cluster);
+  return _mcapi_limits_mcapi_transaction_validate($cluster);
 }
+
 /**
- * implements hook_help().
+ * add the limits decorator to the wallet class
+ * in fact its not a proper decorator class coz I couldn't get my head around it
+ *
+ * @return \Drupal\mcapi_limits\WalletLimitsDecorator
+ *
+ * @todo consider putting this in the inc file
  */
-function mcapi_limits_help($path, $args) {
-  if ($args[2] == 'limits') {
-    return t("Leave blank to use the currencies' own settings");
-  }
+function mcapi_limits($wallet) {
+  return new WalletLimits($wallet);
 }
 
 /**
  * get the plugin for the given currency
+ *
  * @param CurrencyInterface $currency
+ * @param string $name
+ *   the plugin to load, if not the currency's saved plugin.
+ *
+ * @todo expand this function to keep the Plugins in static
  */
-function mcapi_limits_plugin(CurrencyInterface $currency) {
-  //TODO be a good idea to expand this function to keep the Plugins in static
-  //as some times it is needed more than once
-  $plugin = $currency->get('limits_plugin');
-  $plugin = empty($plugin) ? 'none' : $plugin;
-  //the second arg of createInstance has to be an array, although it was allowing the currency object sometimes??
-  $config = array('currency' => $currency);
-  return \Drupal::service('plugin.manager.mcapi_limits')->createInstance($plugin, $config);
-}
-
-/**
- * implements hook_ENTITY_TYPE_load().
- * put the limits into each wallet object
- */
-function mcapi_limits_mcapi_wallet_load($entities) {
-  //get the overrides first
-  $limits = db_select('mcapi_wallets_limits', 'l')->fields('l')
-    ->condition('wid', array_keys($entities))
-    ->execute()->fetchAll();
-  foreach($limits as $limit) {
-    $entities[$limit->wid]->limits_override[$limit->curr_id] = (array)$limit;
-    //remove superfluous properties, if that's not against the Tao of Drupal
-    unset($entities[$limit->wid]->limits_override[$limit->curr_id]['curr_id']);
-    unset($entities[$limit->wid]->limits_override[$limit->curr_id]['wid']);
-  }
-  //now go through every wallet and every currency and put the currency default limits
-  foreach ($entities as $wallet) {
-    foreach ($wallet->currencies_available() as $currency) {
-      $wallet->limits[$currency->id()] = mcapi_limits_plugin($currency)->getLimits($wallet);
-    }
-  }
-}
-
-/**
- * retrive the limits for each wallet, whether from the plugin or overridden
- * @param EntityInterface $wallet
- * @param CurrencyInterface $curr_id
- * @return array
- *   native values or NULLs, keyed by min and/or max
- */
-function wallet_get_limit(EntityInterface $wallet, CurrencyInterface $currency) {
+function mcapi_limits_saved_plugin(CurrencyInterface $currency, $name = '') {
+  $plugins = &drupal_static(__FUNCTION__, array());
   $curr_id = $currency->id();
-  $override = array_key_exists('limits_override', @$currency->limits_settings)
-    && $currency->limits_settings['limits_override'];
-
-  //property 'limits' doesn't exist
-  foreach (array('min', 'max') as $limit) {
-    if ($override && isset($wallet->limits_override) && array_key_exists($curr_id, $wallet->limits_override)) {
-      $result[$limit] = $wallet->limits_override[$curr_id][$limit];
-    }
-    elseif(array_key_exists($curr_id, $wallet->limits)) {
-      $result[$limit] = $wallet->limits[$curr_id][$limit];
-    }
-    else $result[$limit] = NULL;
+  if (!array_key_exists($curr_id, $plugins)) {
+    $config = \Drupal::config('mcapi.limits.'.$currency->id());
+    $name = ($name ? : $config->get('plugin'));
+    $settings = array('currency' => $currency);
+    $plugins[$curr_id] = \Drupal::service('plugin.manager.mcapi_limits')
+      ->createInstance($name ? : 'none', $settings);
   }
-  return $result;
-}
-
-/**
- * implements hook_ENTITY_TYPE_load().
- * put the limits into each wallet object
- */
-function mcapi_limits_mcapi_wallet_update(EntityInterface $wallet) {
-  if (isset($wallet->limits_override)) {
-    foreach ($wallet->limits_override as $curr_id => $minmax) {
-      if (array_filter($minmax)) {//note this would not catch a value of array('min' => 0);
-        $row = array(
-          'min' => $minmax['min'],
-          'max' => $minmax['max'],
-          'editor' => \Drupal::currentUser()->id(),
-          'date' => REQUEST_TIME
-        );
-        //TODO would it be better to use drupal_write record?
-        //we would have to determine if we were inserting or updating.
-        db_merge('mcapi_wallets_limits')
-          ->keys(array('wid' => $wallet->id(), 'curr_id' => $curr_id))
-          ->fields($row)->execute();
-      }
-    }
-  }
+  return $plugins[$curr_id];
 }
 
 /**
@@ -116,16 +59,9 @@ function mcapi_limits_mcapi_wallet_update(EntityInterface $wallet) {
  * Add the limits section to the currency form
  * @todo clear the wallet entity cache of all wallets that might be holding this currency
  */
-function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
-  module_load_include('inc', 'mcapi_limits');
+function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, &$form_state) {
+  form_load_include($form_state, 'inc', 'mcapi_limits');
   _mcapi_limits_form_mcapi_currency_edit_form_alter($form, $form_state);
-}
-
-/**
- * ajax callback
- */
-function limits_settings_subform($form, $form_state) {
-  return $form['limits']['limits_settings'];
 }
 
 
@@ -197,42 +133,53 @@ function mcapi_limits_entity_extra_field_info() {
 
 /**
  * implement hook_ENTITY_TYPE_view().
- * add the limits to the wallet view
+ * adds the extra_fields to the wallet view
 */
-function mcapi_limits_mcapi_wallet_view($wallet, $mode, $language) {
-  module_load_include('inc', 'mcapi');
-  $wallet->content += mcapi_view_limits($wallet, TRUE);
-  $wallet->content += mcapi_view_limits($wallet, FALSE);
+function mcapi_limits_mcapi_wallet_view(&$build, WalletInterface $wallet, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+  //module_load_include('inc', 'mcapi') is already included
+  if ($display->getComponent('mcapi_limits_absolute')) {
+    $build += mcapi_view_limits($wallet, TRUE);
+  }
+  //showing both would be confusing
+  elseif ($display->getComponent('mcapi_limits_absolute')) {
+    $build += mcapi_view_limits($wallet, FALSE);
+  }
 }
 
 /**
  * callback to build a render array
- * used in user_view, block and the view field
+ * used in hook_wallet_view, views, & blocks
+ *
+ * @param WalletInterface $wallet
+ *
+ * $param boolean $relative
  */
-function mcapi_view_limits($wallet, $relative = FALSE) {
+function mcapi_view_limits(WalletInterface $wallet) {
   $renderable = array();
-  //get a render array for each applicable currency
-  foreach ($wallet->currencies() as $currency) {
-    if ($currency->limits_plugin == 'none') continue;
-    if ($relative) {
-      $renderable['mcapi_limits_relative'] = array(
-        '#theme' => 'mcapi_limits_relative',
-        '#wallet' => $wallet,
-        '#currency' => $currency,
-      );
+  foreach ($wallet->currencies_all() as $currency) {
+    $curr_id = $currency->id();
+    $limits_config = mcapi_limits_saved_plugin($currency);
+    if ($limits_config->id == 'none') continue;
+    //TODO check later if \Drupal\Component\Plugin\ConfigurablePluginInterface has been expanded to allow getting just one config key
+    $config = $limits_config->getConfiguration();
+    if ($config['display_relative'] == 'relative') {
+      $theme = 'mcapi_limits_relative';
     }
     else {
-      $limit = wallet_get_limit($wallet, $currency);
-      $renderable['mcapi_limits'] = array(
-        '#theme' => 'mcapi_limits_absolute',
-        '#wallet' => $wallet,
-        '#currency' => $currency,
-      );
+      $limits = mcapi_limits($wallet)->limits($currency->id());
       //special opportunity to show an alternative display when +ve & -ve limits are balanced
-      if ($limit['max'] && $limit['max'] == -$limit['min']) {
-        $renderable['mcapi_limits']['#theme'] = 'mcapi_limits_balanced';
+      if ($limits['max'] && $limits['max'] == -$limits['min']) {
+        $theme = 'mcapi_limits_balanced';
+      }
+      else {
+        $theme = 'mcapi_limits_absolute';
       }
     }
+    $renderable[$curr_id]['mcapi_limits'] = array(
+      '#theme' => $theme,
+      '#wallet' => $wallet,
+      '#currency' => $currency,
+    );
   }
   return $renderable;
 }
@@ -244,10 +191,11 @@ function mcapi_view_limits($wallet, $relative = FALSE) {
 function mcapi_limits_element_info() {
   return array(
     'minmax' => array(
-      //'#curr_id' is required
   	  '#input' => TRUE,
       '#tree' => TRUE,
       '#process' => array('mcapi_limits_process_minmax'),
+      '#value_callback' => 'mcapi_limits_form_type_minmax_value',
+      '#minus' => FALSE
     )
   );
 }
@@ -256,29 +204,35 @@ function mcapi_limits_element_info() {
  * processor for minmax element
  */
 function mcapi_limits_process_minmax(&$element) {
-  $curr_id = $element['#curr_id'];
-  //@todo need to know how to make a worth field properly
+  $default = (array)$element['#default_value'] + array('min' => array(), 'max' => array());
   $element['min'] = array(
     '#title' => t('Minimum balance'),
     '#description' => t('Must be less than or equal to zero'),
     '#type' => 'worth',
-    '#default_value' => $element['#default_value']['min'],
-    '#size' => 7,
-    '#maxlength' => 7,
-    '#attributes' => array('style' => 'width:inherit;'),
-    '#max' => 0,
+    '#default_value' => $default['min'],
+    '#minus' => TRUE
   );
   $element['max'] = array(
     '#title' => t('Maximum balance'),
     '#description' => t('Must be greater than 1.'),
     '#type' => 'worth',
-    '#default_value' => $element['#default_value']['max'],
-    '#size' => 6,
-    '#maxlength' => 6,
+    '#default_value' => $default['max'],
     '#weight' => 1,
-    '#attributes' => array('style' => 'width:inherit;'),
-    '#min' => 1,
+    '#min' => 1
   );
   return $element;
 }
 
+/**
+ * value callback for minmax
+ * take the two single worth fields above and represent them as
+ * array($curr_id => array($min, $max));
+ */
+//Why is this function running BEFORE the worth has been calculated? What an ugly hack. McNasty.
+function mcapi_limits_form_type_minmax_value(&$element, $input = FALSE, &$form_state) {
+  if ($input === FALSE) return;
+  $element = mcapi_limits_process_minmax($element);//why was the element sent through partuly unprocessed?
+  $output['min'] = mcapi_form_type_worth_value($element['min'], $input['min'], $form_state);
+  $output['max'] = mcapi_form_type_worth_value($element['max'], $input['max'], $form_state);
+  return $output;
+}

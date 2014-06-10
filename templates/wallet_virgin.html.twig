@@ -5,13 +5,11 @@
  * Wallets are currency-independent, so we can't quite show zeros for the currency that _should_ be in there
  * variables:
  * - name
- * - edit
  */
 #}
 <div class = "wallet-summary">
   <div class = "wallet-title">Wallet: {{ name }}</div>
   <div class = "wallet-data">
     This wallet has never been used.
-    {% if edit %}<a href="{{ edit }}">Edit</a>{% endif %}
   </div>
 </div><!--/wallet-summary-->

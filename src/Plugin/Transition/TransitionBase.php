@@ -7,39 +7,44 @@
 namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\Core\Plugin\PluginBase;
 
 /**
  * Base class for Transitions for default methods.
  */
-abstract class TransitionBase implements TransitionInterface {
+abstract class TransitionBase extends PluginBase implements TransitionInterface {
 
-  public $definition;
-  public $settings;
+  public $label;
+  public $description; //
 
   /**
    *
-   * @param array $config
-   *   the settings for this transition
-   * @param string $op
+   * @param array $configuration
+   *   the configuration for this transition
+   * @param string $plugin_id
    *   the id of this transition
    * @param array $plugin_definition
    *   the definition of this transition
    */
-  function __construct(array $settings, $op, array $plugin_definition) {
-    $this->definition = $plugin_definition;
-    $this->settings = $settings;
+  function __construct(array $configuration, $plugin_id, array $plugin_definition) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->configuration += $this->defaultConfiguration();
+    $this->label = $this->configuration['title'] ? : $this->pluginDefinition['label'];
+    $this->description = @$this->configuration['tooltip'] ? : $this->pluginDefinition['description'];
   }
 
+
   /**
-   * @see \Drupal\mcapi\TransitionInterface::opAccess($transaction)
+   * {@inheritdoc}
    */
   abstract public function opAccess(TransactionInterface $transaction);
 
+
+
   /**
-   * @see \Drupal\mcapi\TransitionInterface::settingsForm($form)
+   * {@inheritdoc}
    */
-  public function settingsForm(array &$form) {
+  public function buildConfigurationForm(array $form, array &$form_state) {
     //gives array keyed page_title, twig, format, button, cancel_button
     module_load_include ('inc', 'mcapi');
     $tokens = implode(', ', mcapi_transaction_list_tokens (FALSE));
@@ -54,8 +59,8 @@ abstract class TransitionBase implements TransitionInterface {
       '#title' => t('Link text'),
       '#description' => t('A one word title for this transition'),
       '#type' => 'textfield',
-      '#default_value' => @$this->settings['title'],
-      '#placeholder' => $this->definition['label'],
+      '#default_value' => $this->label,
+      '#placeholder' => $this->pluginDefinition['label'],
       '#size' => 15,
       '#maxlength' => 15,
       '#weight' => 1,
@@ -64,8 +69,8 @@ abstract class TransitionBase implements TransitionInterface {
       '#title' => t('Short description'),
       '#description' => t('A few words suitable for a tooltop'),
       '#type' => 'textfield',
-      '#default_value' => @$this->settings['tooltip'],
-      '#placeholder' => $this->definition['description'],
+      '#default_value' => @$this->configuration['tooltip'],
+      '#placeholder' => $this->pluginDefinition['description'],
       '#size' => 64,
       '#maxlength' => 128,
       '#weight' => 2,
@@ -81,7 +86,7 @@ abstract class TransitionBase implements TransitionInterface {
       '#title' => t('Page title'),
       '#description' => t ("Page title for the transition's page") . ' TODO, make this use the serial number and description tokens or twig. Twig would make more sense, in this context.',
       '#type' => 'textfield',
-      '#default_value' => $this->settings['page_title'],
+      '#default_value' => $this->configuration['page_title'],
       '#placeholder' => t('Are you sure?'),
       '#weight' => 4,
       '#required' => TRUE
@@ -94,7 +99,7 @@ abstract class TransitionBase implements TransitionInterface {
         'certificate' => t('Certificate (can be themed per-currency)'),
         'twig' => t('Custom twig template')
       ),
-      '#default_value' => $this->settings['format'],
+      '#default_value' => $this->configuration['format'],
       '#required' => TRUE,
       '#weight' => 6
     );
@@ -102,7 +107,7 @@ abstract class TransitionBase implements TransitionInterface {
       '#title' => t('Template'),
       '#description' => $help,
       '#type' => 'textarea',
-      '#default_value' => @$this->settings['twig'],
+      '#default_value' => @$this->configuration['twig'],
       '#states' => array(
         'visible' => array(
           ':input[name="format"]' => array(
@@ -116,7 +121,7 @@ abstract class TransitionBase implements TransitionInterface {
       '#title' => t('Button text'),
       '#description' => t('The text that appears on the button'),
       '#type' => 'textfield',
-      '#default_value' => @$this->settings['button'],
+      '#default_value' => @$this->configuration['button'],
       '#placeholder' => t ("I'm sure!"),
       '#weight' => 10,
       '#size' => 15,
@@ -128,7 +133,7 @@ abstract class TransitionBase implements TransitionInterface {
       '#title' => t('Cancel button text'),
       '#description' => t('The text that appears on the cancel button'),
       '#type' => 'textfield',
-      '#default_value' => @$this->settings['cancel_button'],
+      '#default_value' => @$this->configuration['cancel_button'],
       '#placeholder' => t('Cancel'),
       '#weight' => 12,
       '#size' => 15,
@@ -150,15 +155,19 @@ abstract class TransitionBase implements TransitionInterface {
         'twig' => t('Twig template'),
         'redirect' => t('Redirect to path') ." TODO this isn't working yet"
       ),
-      '#default_value' => @$this->settings['format2'],
+      '#default_value' => @$this->configuration['format2'],
       '#required' => TRUE,
       '#weight' => 14
    );
     $form['feedback']['redirect'] = array(
       '#title' => t('Redirect path'),
-      '#description' => t('Enter a path from the Drupal root, without leading slash.'),
+      '#description' => implode(' ', array(
+        t('Enter a path from the Drupal root, without leading slash. Use replacements.') . '<br />',
+        t('@token for the current user id', array('@token' => '[uid]')),
+        t('@token for the current transaction serial', array('@token' => '[serial]'))
+      )),
       '#type' => 'textfield',
-      '#default_value' => @$this->settings['redirect'],
+      '#default_value' => @$this->configuration['redirect'],
       '#states' => array(
         'visible' => array(
           ':input[name="format2"]' => array(
@@ -172,7 +181,7 @@ abstract class TransitionBase implements TransitionInterface {
       '#title' => t('Template'),
       '#description' => $help,
       '#type' => 'textarea',
-      '#default_value' => @$this->settings['twig2'],
+      '#default_value' => @$this->configuration['twig2'],
       '#states' => array(
         'visible' => array(
           ':input[name="format2"]' => array(
@@ -184,68 +193,33 @@ abstract class TransitionBase implements TransitionInterface {
     );
     $form['feedback']['message']= array(
       '#title' => t('Success message'),
-      '#description' => t('Appears in the message box along with the reloaded transaction certificate'),
+      '#description' => t('Appears in the message box along with the reloaded transaction certificate.') . 'TODO: put help for user and mcapi_transaction tokens, which should be working',
       '#type' => 'textfield',
-      '#default_value' => @$this->settings['message'],
-      '#weight' => 18,
-      '#placeholder' => t('The transition was successful')
+      '#default_value' => @$this->configuration['message'],
+      '#placeholder' => t('The transition was successful'),
+      '#weight' => 18
     );
+    return $form;
+  }
 
-    $tokens = mcapi_transaction_list_tokens(TRUE);
-    unset($tokens[array_search('links', $tokens)]);
-    $form['notify'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Notification'),
-      '#description' => t(
-        'Customise the subject and body of the mail with the following tokens: @tokens',
-        array('@tokens' => '[mcapi:'. implode('], [mcapi:', $tokens) .']')
-    ),
-      '#weight' => 0
-    );
-    $form['notify']['send'] = array(
-      '#title' => t('Mail the transactees, (but not the current user)'),
-      '#type' => 'checkbox',
-      '#default_value' => $this->settings['send'],
-      '#weight' =>  0
-    );
-    $form['notify']['subject'] = array(
-      '#title' => t('Mail subject'),
-      '#description' => '',
-      '#type' => 'textfield',
-      '#default_value' => $this->settings['subject'],
-      '#weight' =>  1,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="send"]' => array('checked' => TRUE)
-        )
-      )
-    );
-    $form['notify']['body'] = array(
-      '#title' => t('Mail body'),
-      '#type' => 'textarea',
-      '#default_value' => $this->settings['body'],
-      '#weight' => 2,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="send"]' => array('checked' => TRUE)
-        )
-      )
-    );
-    $form['notify']['cc'] = array(
-      '#title' => t('Carbon copy to'),
-      '#description' => 'A valid email address',
-      '#type' => 'email',
-      '#default_value' => $this->settings['cc'],
-      '#weight' => 3,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="send"]' => array('checked' => TRUE)
-        )
-      )
-    );
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateConfigurationForm(array &$form, array &$form_state){
+
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function submitConfigurationForm(array &$form, array &$form_state){
+    //form_state[values] was already cleaned
+    $this->setConfiguration($form_state['values']);
+  }
+
+  /**
+   * this method is for view and create plugins which don't have a form
    * @see \Drupal\mcapi\TransitionInterface::form($transaction)
    */
   public function form(TransactionInterface $transaction) {
@@ -253,7 +227,40 @@ abstract class TransitionBase implements TransitionInterface {
   }
 
   /**
-   * @see \Drupal\mcapi\TransitionInterface::ajax_submit($form_state_values)
+   * {@inheritdoc}
+   */
+  public function getConfiguration() {
+    return $this->configuration;
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public function setConfiguration(array $configuration) {
+    $this->configuration = $configuration;
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultConfiguration() {
+    //this will prevent the config form showing blanks
+    return array(
+      'title' => '',
+      'tooltop' => '',
+      'page_title' => '',
+      'format' => '',
+      'twig' => '',
+      'button' => '',
+      'cancel_button' => '',
+      'format2' => '',
+      'redirect' => '',
+      'twig2' => '',
+      'message' => ''
+    );
+  }
+
+
+  /**
+   * {@inheritdoc}
    */
   function ajax_submit(array $form_state_values) {
     $transaction = entity_load('mcapi_transaction', $form_state['values']['serial']);
@@ -267,30 +274,39 @@ abstract class TransitionBase implements TransitionInterface {
     exit();
   }
 
+
   /**
-   * @see \Drupal\mcapi\TransitionInterface::execute($transaction, array $context)
+   * {@inheritdoc}
    */
   public function execute(TransactionInterface $transaction, array $context) {
 
     drupal_set_message('TODO: finish making the mail work in Transitionbase::execute - it might work already!');
 
-    if ($this->settings['send']) {
-      $subject = $this->settings['subject'];
-      $body = $this->settings['body'];
+    if ($this->configuration['send']) {
+      $subject = $this->configuration['subject'];
+      $body = $this->configuration['body'];
       if (!$subject || !$body) continue;
 
-      //here we are just sending one mail at a time, in the recipient's language
+      //send one mail at a time, to the owner responsible for each wallet.
+      //There is nothing that says the entity owning each wallet has to be connected to a user.
+      //Although we could require that all wallet owners themselves should implement ownerInterface
       global $language;
-      $to = implode(user_load($transaction->payer)->mail, user_load($transaction->payee)->mail);
+
       $params['transaction'] = $transaction;
       $params['config'] = array(
       	'subject' => $subject,
         'body' => $body,
-        'cc' => $this->settings['cc']
+        'cc' => $this->configuration['cc']
         //bcc is not supported! This is not some cloak and dagger thing!
       );
       drupal_mail('mcapi', 'transition', $to, $language->language, $params);
     }
+  }
+
+  public function calculateDependencies() {
+    return array(
+    	'module' => array('mcapi')
+    );
   }
 }
 

@@ -9,6 +9,6 @@ worths_delimiter: '|'
 child_errors:
   mail_user1: mail_user1
   allow: 0
-  watchdog: watchdog
+  log: log
   show_messages: show_messages
 indelible: true

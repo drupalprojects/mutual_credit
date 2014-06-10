@@ -1,10 +1,6 @@
 <?php
 
-
-define ('TRANSACTION_STATE_PENDING', -1);
-
 /**
- * TODO put all this in hook_help
  * Introduces a new transaction state, 'pending', and
  * modifies existing default transaction forms to create pending transactions
  * Pending transactions require at least one signature
@@ -13,6 +9,7 @@ define ('TRANSACTION_STATE_PENDING', -1);
  * There is also a 'cancel' transition for pending transactions, permissions defined in the currency.
  */
 
+define ('TRANSACTION_STATE_PENDING', -1);
 
 /**
  * implements hook_menu()
@@ -94,7 +91,10 @@ function mcapi_signatures_mcapi_transaction_update($transaction) {
   if (isset($transaction->signatures)) {
     foreach ($transaction->signatures as $uid => $signed) {
       db_merge('mcapi_signatures')
-      ->keys(array('serial' => $transaction->serial->value, 'uid' => $uid))
+      ->keys(array(
+        'serial' => $transaction->serial->value,
+        'uid' => $uid
+      ))
       ->fields(array('signed' => $signed))->execute();
     }
   }

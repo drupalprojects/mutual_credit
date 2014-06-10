@@ -8,9 +8,7 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi_limits\McapiLimitsBase;
-use \Drupal\mcapi_limits\McapiLimitsInterface;
-use \Drupal\Core\Entity\EntityInterface;
+use \Drupal\mcapi\Entity\WalletInterface;
 
 
 /**
@@ -25,29 +23,13 @@ use \Drupal\Core\Entity\EntityInterface;
 class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
 
   /**
-   * @see \Drupal\mcapi_limits\McapiLimitsBase::settingsForm()
+   * {@inheritdoc}
    */
-  public function settingsForm() {
-    $form['liquidity'] =  $this->widget($this->limits_settings['liquidity']);
-    $form += parent::settingsForm();
-    return $form;
-  }
-
-  /**
-   * (non-PHPdoc)
-   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayer()
-   */
-  public function checkPayer(EntityInterface $wallet, $diff) {
-    $limits = $this->getLimits($account);
-    return TRUE;
-  }
-
-  /**
-   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkPayee()
-   */
-  public function checkPayee(EntityInterface $wallet, $diff) {
-    $limits = $this->getLimits($account);
-    return TRUE;
+  public function buildConfigurationForm(array $form, array &$form_state) {
+    //the order seemes to matter more than the weight
+    $subform['liquidity'] = $this->widget($this->configuration['liquidity']);
+    $subform += parent::buildConfigurationForm($form, $form_state);
+    return $subform;
   }
 
   /**
@@ -55,8 +37,10 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
    * @return array
    *   'min' and 'max' native values
    */
-  public function getLimits(EntityInterface $wallet){
-    $val = $this->limits_settings['liquidity']['value'];
+  public function getLimits(WalletInterface $wallet){
+    //the stored value is a 1 item array keyed by curr_id
+    //we don't need to lookup the curr_id, we can just get the first value
+    $val = reset($this->configuration['liquidity']);
     $limits = array(
       'min' => -$val,
       'max' => $val
@@ -65,18 +49,31 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
   }
 
   /**
+   * Does this need to be a separate function? It is used on the currency form and on the everride form
    *
-   * @param unknown $default
-   * @return multitype:string number unknown NULL
+   * @param array $default
+   * @return array
+   *   a form element
    */
   public function widget($default) {
     return array(
       '#title' => t('Liquidity per user'),
       '#description' => t('The distance from zero a user can trade'),
       '#type' => 'worth',
-      //'#curr_ids' => array($this->currency->id()),
       '#default_value' => $default,
       '#min' => 0,
+    );
+  }
+
+  /**
+   * (non-PHPdoc)
+   * @see \Drupal\mcapi_limits\Plugin\Limits\McapiLimitsBase::defaultConfiguration()
+   */
+  public function defaultConfiguration() {
+    $defaults = parent::defaultConfiguration();
+    return $defaults+ array(
+      //this is the format the worth widget expects
+      'liquidity' => array($this->currency->id() => 1000),
     );
   }
 

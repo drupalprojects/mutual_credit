@@ -21,14 +21,17 @@ class TransactionAccessController extends EntityAccessController {
   /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $transaction, $op, $langcode = Language::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
-    if ($op == 'op') {
+  public function access(EntityInterface $transaction, $transition, $langcode = Language::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
+    if ($transition == 'transition') {
       //there is probably a better way of writing the router so the op is passed as a variable
-      $op = \Drupal::request()->attributes->get('op');
+      $transition = \Drupal::request()->attributes->get('transition');
     }
     if (empty($account)) {
       $account = \Drupal::currentUser();
     }
-    return transaction_transitions($op)->opAccess($transaction, $account);
+    if ($transition = transaction_transitions($transition)) {
+      return $transition->opAccess($transaction, $account);
+    }
+    return FALSE;
   }
 }

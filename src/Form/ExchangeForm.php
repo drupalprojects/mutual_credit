@@ -9,12 +9,12 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\ContentEntityFormController;
+use Drupal\Core\Entity\ContentEntityForm;
 
-class ExchangeForm extends ContentEntityFormController {
+class ExchangeForm extends ContentEntityForm {
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::form().
+   * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, array &$form_state) {
     drupal_set_message("NB there is a bug which, after saving and caching the referenced currency entities, then deletes them.", 'warning');
@@ -82,15 +82,6 @@ class ExchangeForm extends ContentEntityFormController {
     }
   }
 
-
-  protected function actions(array $form, array &$form_state) {
-    $actions = parent::actions($form, $form_state);
-    if (!\Drupal::EntityManager()->getStorage('mcapi_exchange')->deletable($this->entity)) {
-      unset($actions['delete']);
-    }
-    return $actions;
-  }
-
   /**
    * {@inheritdoc}
    */
@@ -104,29 +95,6 @@ class ExchangeForm extends ContentEntityFormController {
       'route_parameters' => array('mcapi_exchange' => $entity->id())
     );
   }
-
-  /**
-   * Overrides Drupal\Core\Entity\EntityFormController::delete().
-   * Borrowed from NodeFormController
-   */
-  public function delete(array $form, array &$form_state) {
-    $destination = array();
-    $query = \Drupal::request()->query;
-    if ($query->has('destination')) {
-      $destination = drupal_get_destination();
-      $query->remove('destination');
-    }
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.exchange.delete_confirm',
-      'route_parameters' => array(
-        'mcapi_exchange' => $this->entity->id(),
-      ),
-      'options' => array(
-         'query' => $destination,
-      ),
-    );
-  }
-
 
 }
 

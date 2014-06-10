@@ -16,36 +16,6 @@ class ExchangeStorage extends ContentEntityDatabaseStorage {
   /**
    * {@inheritdoc}
    */
-  function deletable(ExchangeInterface $exchange) {
-    if ($exchange->get('status')->value) {
-      $exchange->reason = t('Exchange must be disabled');
-      return FALSE;
-    }
-    if (\Drupal::config('mcapi.misc')->get('indelible')) {
-      $exchange->reason = t("Indelible Accounting flag is enabled.");
-      return FALSE;
-    }
-    if (count($exchange->intertrading_wallet()->history())) {
-      $exchange->reason = t('Exchange intertrading wallet has transactions');
-      return FALSE;
-    }
-    //if the exchange has wallets, even orphaned wallets, it can't be deleted.
-    $conditions = array('exchanges' => $exchange->id());
-    $wallet_ids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->filter($conditions);
-    if (count($wallet_ids > 1)){
-      $exchange->reason = t('The exchange still owns wallets: @nums', array('@nums' => implode(', ', $wallet_ids)));
-      return FALSE;
-    }
-    if (!user_access('manage mcapi')) {
-      $exchange->reason = t('You do not have permission');
-      return FALSE;
-    }
-    return TRUE;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   function deactivatable(ExchangeInterface $exchange) {
     static $active_exchange_ids = array();
     if (!$active_exchange_ids) {
@@ -56,7 +26,7 @@ class ExchangeStorage extends ContentEntityDatabaseStorage {
         }
       }
     }
-    if (count($active_exchange_ids) > 1)return TRUE;
+    if ($exchange->get('status')->value && count($active_exchange_ids) > 1)return TRUE;
     return FALSE;
   }
 

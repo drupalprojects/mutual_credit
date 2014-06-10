@@ -1,26 +1,32 @@
 
 #this doesn't include per-plugin settings
-mcapi.currency.limits.*:
-  personal:
-    type: boolean
-    label: Personal
-  skip:
-    type: mapping
-    label: When to skip balance checks
-    mapping:
-      auto: 
-        type: boolean
-        label: Automated transactions
-      mass: 
-        type: boolean
-        label: Mass transactions
-      user1: 
-        type: boolean
-        label: User has permission to 'Configure community accounting'
-      owner: 
-        type: boolean
-        label: User is currency owner
-      reservoir: 
-        type: boolean
-        label: Reservoir account
+mcapi.limits.*:
+  type: mapping
+  label: 'Limits settings'
+  mapping:
+    personal:
+      type: boolean
+      label: Personal
+    skip:
+      type: mapping
+      label: When to skip balance checks
+      mapping:
+        auto: 
+          type: boolean
+          label: Automated transactions
+        mass: 
+          type: boolean
+          label: Mass transactions
+        user1: 
+          type: boolean
+          label: User has permission to 'Configure community accounting'
+        owner: 
+          type: boolean
+          label: User is currency owner
+        reservoir: 
+          type: boolean
+          label: Reservoir account
+    display_relative:
+      type: boolean
+      label: Display perspective
 

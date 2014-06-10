@@ -8,7 +8,7 @@
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\ContentEntityDatabaseStorage;
-use Drupal\Core\Entity\ContentEntityInterface;//TODO make a wallet interface
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\Entity\WalletInterface;
 
 /**
@@ -57,7 +57,6 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
       $namelike->condition('w.name', $string, 'LIKE');
       $like = TRUE;
     }
-
     if (array_key_exists('exchanges', $conditions)) {
       //get all the wallets in all the exchanges mentioned, and then just filter on them
       //this means we don't have to attempt to join to all the exchange fieldAPI tables
@@ -79,49 +78,50 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
 
     if (array_key_exists('entity_types', $conditions)) {
       $query->condition('w.entity_type', $conditions['entity_types']);
+    }
 
-      if ($string) {
-        //remember that it is only possible to match against owner names
-        //if each of the owner types can have no more than one wallet.
-        //TODO inject the wallet config to $this->$entity_wallets so we
-        //don't have to call the global scope here
-        $types = $conditions['entity_types'];
-        $entity_wallets = \Drupal::config('mcapi.wallets')->get('entity_types');
-        $nocando = FALSE;
-        foreach ($types as $type) {
-          if ($entity_wallets[$type] == 1) continue;
-          $nocando = TRUE; break;
+    if (isset($string)) {//this is an autocomplete string filter
+      //remember that it is only possible to match against owner names
+      //if each of the owner types can have no more than one wallet.
+      $entity_wallets = \Drupal::config('mcapi.wallets')->get('entity_types');
+      $nocando = FALSE;
+      //which entitytypes are we considering? if none were passed, then all of them
+      if (empty($conditions['entity_types'])) {
+        foreach(array_keys($entity_wallets) as $entity_type_bundle) {
+          $conditions['entity_types'][] = substr($entity_type_bundle, 0, strpos($entity_type_bundle, ':'));
         }
-        //
-        if (!$nocando) {
-          //we need to identify the base table and 'name' field for each entity type we are searching against
-          $fieldnames = get_exchange_entity_fieldnames();
-          foreach ($types as $entity_type_id) {
-            //might be better practice to get the EntityType object than the Definition
-            $entity_info = \Drupal::entityManager()->getDefinition($entity_type_id, TRUE);
-            //we need to make a different alias for every entity type we join to
-            $alias = $entity_type_id;
-            $entity_table = @$entity_info['data_table'] ? : $entity_info['base_table'];
-            $query->leftjoin($entity_table, $alias, "w.pid = $alias.uid");
-            if (array_key_exists('label', $entity_info['entity_keys'])) {
-              //or use entityType->getKey('label')
-              $namelike->condition($alias.'.'.$entity_info['entity_keys']['label'], $string, 'LIKE');
-            }
-            //We are joining both to the entity table and to its exchanges reference
-            //and to the exchanges table itself to check the exchange is enabled.
-            //or use entityType->getKey('id')
-            $key = $entity_info['entity_keys']['id'];//id is a required key
-            $ref_table = $entity_type.'__'.$fieldname;//the entity reference field table name
-            $ref_alias = "x{$alias}";//an alias for the entity reference field table
-            $query->leftjoin($ref_table, $ref_alias, "$ref_alias.entity_id = {$alias}.{$key}");
-            //and ANOTHER join to ensure that the referenced exchange is enabled.
-            $ex_alias = "mcapi_exchanges_".$entity_type;
-            $query->leftjoin('mcapi_exchanges', $ex_alias, "$ref_alias.{$fieldname}_target_id = mcapi_exchanges.id");
-            $query->condition("$ex_alias.active", 1);
+      }
+      //we need to identify the base table and 'name' field for each entity type we are searching against
+      $field_names = get_exchange_entity_fieldnames();
+      foreach ($conditions['entity_types'] as $entity_type_id) {
+        $field_name = $field_names[$entity_type_id];
+        //might be better practice to get the EntityType object from the entity than the Definition from the entityManager
+        $entity_info = \Drupal::entityManager()->getDefinition($entity_type_id, TRUE);
+        //we need to make a different alias for every entity type we join to
+        $alias = $entity_type_id;
+        $entity_table = $entity_info->getDataTable() ? : $entity_info->getBaseTable();
 
-          }
+        $query->leftjoin($entity_table, $alias, "w.pid = $alias.uid");
+        if ($entity_type_id == 'user') {
+          //\Drupal\user\UserAutocomplete the the query checks against the entity table 'name' field.
+          //so we'll do the same here, even though 'name' isn't the official label key for the user entity
+          $namelike->condition('user.name', $string, 'LIKE');
         }
-
+        elseif ($label_key = $entity_info->getKey('label')) {
+          //or use entityType->getKey('label')
+          $namelike->condition($alias.'.'.$label_key, $string, 'LIKE');
+        }
+        //We are joining both to the entity table and to its exchanges reference
+        //and to the exchanges table itself to check the exchange is enabled.
+        $ref_table = $entity_type_id.'__'.$field_name;//the entity reference field table name
+        $ref_alias = "x{$alias}";//an alias for the entity reference field table
+        $join_clause = "$ref_alias.entity_id = $alias.". $entity_info->getKey('id');
+        $query->leftjoin($ref_table, $ref_alias, $join_clause);
+        //and ANOTHER join to ensure that the referenced exchange is enabled.
+        $ex_alias = "mcapi_exchanges_".$entity_type_id;
+       // echo $ex_alias;
+        $query->leftjoin('mcapi_exchanges', $ex_alias, "$ref_alias.{$field_name}_target_id = {$ex_alias}.id");
+        $query->condition("$ex_alias.status", 1);
       }
     }
     if (!$intertrading) {
@@ -161,19 +161,17 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
 
   //when user joins an exchange this must be updated
   function updateIndex(WalletInterface $wallet) {
-    $this->dropIndex(array($wallet));
+    $wid = $wallet->id();
+    $this->dropIndex(array($id));
     $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
-    foreach (array_keys(referenced_exchanges($wallet->getOwner())) as $id) {
-      $query->values(array('wid' => $wallet->id(), 'exid' => $id));
+    foreach (array_keys(referenced_exchanges($wallet->getOwner())) as $exid) {
+      $query->values(array('wid' => $wid, 'exid' => $exid));
     }
     $query->execute();
   }
 
   //TODO when a user leaves an exchange, this must be updated
-  function dropIndex(array $wallets) {
-    foreach ($wallets as $wallet) {
-      $wids[] = $wallet->id();
-    }
+  function dropIndex(array $wids) {
     db_delete('mcapi_wallet_exchanges_index')->condition('wid', $wids)->execute();
   }
 

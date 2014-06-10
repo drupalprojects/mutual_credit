@@ -1,6 +1,6 @@
-id: mcapi_transaction.custom
+id: mcapi_transaction.twig
 uuid: faa8c4b0-64a5-458e-8e03-3ae4b4daee5w
-label: DIY Twig
+label: Twig template
 status: '0'
 cache: '1'
 targetEntityType: mcapi_transaction

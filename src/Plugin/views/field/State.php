@@ -21,7 +21,7 @@ use Drupal\views\ResultRow;
 class State extends FieldPluginBase {
 
   function render(ResultRow $values) {
-    $this->states = mcapi_entity_label_list(array(), 'mcapi_state');
+    $this->states = mcapi_entity_label_list('mcapi_state');
     return $this->states[$this->getValue($values)];
   }
 

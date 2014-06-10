@@ -59,13 +59,14 @@ class Create extends TransitionBase {
   /**
    * {@inheritdoc}
   */
-  public function settingsForm(array &$form) {
-    parent::settingsForm($form);
+  public function buildConfigurationForm(array $form, array &$form_state) {
+    $form = parent::buildConfigurationForm($form, $form_state);
     unset(
       $form['sure']['button'],
       $form['sure']['cancel_button'],
       $form['title']
     );
+    return $form;
   }
 
 }

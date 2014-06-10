@@ -8,12 +8,9 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\EntityFormController;
-use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
-use Drupal\mcapi\McapiTransactionException;
-use Drupal\action\Plugin\Action;
+use Drupal\Core\Entity\ContentEntityForm;
 
-class WalletForm extends EntityFormController {
+class WalletForm extends ContentEntityForm {
 
   public function getFormId() {
     return 'wallet_form';
@@ -21,7 +18,7 @@ class WalletForm extends EntityFormController {
 
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::form().
+   * Overrides Drupal\Core\Entity\ContentEntityForm::form().
    */
   public function form(array $form, array &$form_state) {
 
@@ -84,7 +81,8 @@ class WalletForm extends EntityFormController {
   /**
    * {@inheritdoc}
    */
-  //@todo see what parent::save is doing, It is empty right now.
+  //@todo see what parent::save is doing after alpha12
+  //It is empty right now but probably it will do all the below
   function save(array $form, array &$form_state) {
     form_state_values_clean($form_state);
     foreach ($form_state['values'] as $key => $val) {

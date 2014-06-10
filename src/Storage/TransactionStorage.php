@@ -67,10 +67,11 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
         // Reset general caches, but keep caches specific to certain entities.
         $cache_ids = array();
       }
+
       $this->invokeFieldMethod($is_new ? 'insert' : 'update', $transaction);
       $this->saveFieldItems($transaction, !$is_new);
       $this->resetCache($cache_ids);
-      $this->addIndex($record, $transaction->get('worth')->getValue());
+      $this->addIndex($record, $transaction->worth->getValue());
     }
 
     return $return;
@@ -141,18 +142,18 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     $query = $this->database->insert('mcapi_transactions_index')
       ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
 
-    foreach ($worths as $curr_id => $value) {
+    foreach ($worths as $worth) {
       $query->values(array(
         'xid' => $record->xid,
         'serial' => $record->serial,
         'wallet_id' => $record->payer,
         'partner_id' => $record->payee,
         'state' => $record->state,
-        'curr_id' => $curr_id,
-        'volume' => $value,
+        'curr_id' => $worth['curr_id'],
+        'volume' => $worth['value'],
         'incoming' => 0,
-        'outgoing' => $value,
-        'diff' => -$value,
+        'outgoing' => $worth['value'],
+        'diff' => -$worth['value'],
         'type' => $record->type,
         'created' => $record->created,
         //could this be more elegant?
@@ -164,11 +165,11 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
         'wallet_id' => $record->payee,
         'partner_id' => $record->payer,
         'state' => $record->state,
-        'curr_id' => $curr_id,
-        'volume' => $value,
-        'incoming' => $value,
+        'curr_id' => $worth['curr_id'],
+        'volume' => $worth['value'],
+        'incoming' => $worth['value'],
         'outgoing' => 0,
-        'diff' => $value,
+        'diff' => $worth['value'],
         'type' => $record->type,
         'created' => $record->created,
       	'child' => intval((bool)$record->parent)
@@ -224,7 +225,7 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
   public function indexCheck() {
     if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
       $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
-      $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transactions_worths} w ON t.xid = w.xid AND t.state > 0")->fetchField();
+      $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transaction_worth} w ON t.xid = w.xid AND t.state > 0")->fetchField();
       if ($volume_index == $volume) return TRUE;
     }
     return FALSE;

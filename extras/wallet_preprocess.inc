@@ -1,12 +1,11 @@
 <?php
 
+_drupal_add_css(drupal_get_path('module', 'mcapi').'/css/wallets.css');
 
 /**
  * implements template_preprocess_THEME
  * modify the history points for aesthetic reasons, or to save resources
  * @todo could these long functions go in another file?
- *
- * @param array $vars
  */
 function template_preprocess_wallet_history(&$vars) {
   $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
@@ -52,32 +51,31 @@ function template_preprocess_wallet_history(&$vars) {
  * implements hook_preprocess_THEMEHOOK for wallet_history
  * generates the javascript for the gchart from the user's history of each currency
  * TODO cache this and clear the cache
- *
- * @param array $vars
  */
 function mcapi_preprocess_wallet_history(&$vars) {
   mcapi_add_gchart_js('corechart');
+  $currency = $vars['currency'];
   $vars['height'] = $vars['width']*3/4;
-  $vars['functionname'] = 'drawHistory'.$vars['currency']->id();
+  $vars['functionname'] = 'drawHistory'.$currency->id();
 
-  $vars['id'] = 'wallet-'.$vars['wallet']->id().'-'.$vars['curr_id'];
+  $vars['id'] = 'wallet-'.$vars['wallet']->id().'-'.$currency->id();
   list($min, $middle, $max) = _mcapi_history_axes($vars['history']);
   $vars['vaxislabels'] = array(
-    array('value' => $min, 'label' => $vars['currency']->format($min)),
-    array('value' => $middle, 'label' => $vars['currency']->format($middle)),
-    array('value' => $max, 'label' => $vars['currency']->format($max))
+    array('value' => $min, 'label' => $currency->format($min, TRUE)),
+    array('value' => $middle, 'label' => $currency->format($middle, TRUE)),
+    array('value' => $max, 'label' => $currency->format($max, TRUE))
   );
 
   //set up the javascript data object
   $vars['data'] = "
   var data = new google.visualization.DataTable();
   data.addColumn('date', 'Date');
-  data.addColumn('number', '".$vars['currency']->label()."')
+  data.addColumn('number', '".$currency->label()."')
   data.addColumn({type:'string', role:'tooltip'})";
 
   //populate the javascript data object
   foreach ($vars['history'] as $timestamp => $balance) {
-    $balance .= ', "'.$vars['currency']->format($balance) .'"';
+    $balance .= ', "'.$currency->format($balance, TRUE) .'"';
     //this has a resolution of one day, not very satisfying perhaps
     $date = date('m/d/Y', $timestamp);
     $vars['data'] .= "\n  data.addRow([new Date('$date'), $balance]);";//note that $balance is actually 2 items in the row
@@ -88,16 +86,15 @@ function mcapi_preprocess_wallet_history(&$vars) {
 /**
  * theme preprocessor for 'wallet_stats'
  * @todo this theme callback is cached - when to clear the cache and what cache is it?
- * @param array $vars
  */
 function template_preprocess_wallet_stats(&$vars) {
-  foreach ($vars['wallet']->getStats() as $curr_id => $data) {
+  foreach ($vars['wallet']->getSummaries() as $curr_id => $data) {
     $currency = mcapi_currency_load($curr_id);
     $vars['currdata'][$curr_id]['label'] = $currency->label();
-    $vars['currdata'][$curr_id]['gross_in'] = $currency->format($data['gross_in']);
-    $vars['currdata'][$curr_id]['gross_out'] = $currency->format($data['gross_out']);
-    $vars['currdata'][$curr_id]['volume'] = $currency->format($data['volume']);
-    $vars['currdata'][$curr_id]['balance'] = $currency->format($data['balance']);
+    $vars['currdata'][$curr_id]['gross_in'] = $currency->format($data['gross_in'], TRUE);
+    $vars['currdata'][$curr_id]['gross_out'] = $currency->format($data['gross_out'], TRUE);
+    $vars['currdata'][$curr_id]['volume'] = $currency->format($data['volume'], TRUE);
+    $vars['currdata'][$curr_id]['balance'] = $currency->format($data['balance'], TRUE);
     $vars['currdata'][$curr_id]['partners'] = $data['partners'];
     $vars['currdata'][$curr_id]['trades'] = $data['trades'];
   }
@@ -113,13 +110,13 @@ function template_preprocess_wallet_stats(&$vars) {
  */
 function template_preprocess_wallet_summary(&$vars) {
   $data = $vars['wallet']->getStats($vars['currency']->id());
-  $vars['balance'] = $vars['currency']->format($data['balance']);
+  $vars['balance'] = $vars['currency']->format($data['balance'], TRUE);
   $vars['trades'] = $data['trades'];
   $vars['url'] = url('wallet/'.$vars['wallet']->id());
   $vars['name'] = $vars['wallet']->get('name')->value;
 }
 
-/*
+/**
  * theme implementation function for wallet_summaries
  */
 function template_preprocess_wallets(&$vars) {
@@ -134,19 +131,20 @@ function template_preprocess_wallets(&$vars) {
  */
 function template_preprocess_wallet_balance_bars(&$vars) {
   $data = $vars['data'];
+  $currency = $vars['currency'];
   //if ($vars['data']['gross_in'] == 0 && $vars['data']['gross_out']) return;
-  $vars['id'] = "given-gotten-".$vars['currency']->id().'-'.$vars['wallet']->id();
+  $vars['id'] = "given-gotten-".$currency->id().'-'.$vars['wallet']->id();
   $vars['functionname'] = str_replace('-', '_', $vars['id']);
   $vars['incoming'] = $data['gross_in'];
   $vars['outgoing'] = $data['gross_out'];
-  $vars['show_in'] = $vars['currency']->format($data['gross_in']);
-  $vars['show_out'] = $vars['currency']->format($data['gross_out']);
+  $vars['show_in'] = $currency->format($data['gross_in'], TRUE);
+  $vars['show_out'] = $currency->format($data['gross_out'], TRUE);
   $max = _mcapi_get_axis_max(max($data['gross_in'], $data['gross_out']));
   $vars['max'] = $max;
   $vars['vaxislabels'] = array(
-    array('value' => 0, 'label' => $vars['currency']->format(0)),
-    array('value' => $max/2, 'label' => $vars['currency']->format($max/2)),
-    array('value' => $max, 'label' => $vars['currency']->format($max))
+    array('value' => 0, 'label' => $currency->format(0, TRUE)),
+    array('value' => $max/2, 'label' => $currency->format($max/2, TRUE)),
+    array('value' => $max, 'label' => $currency->format($max), TRUE)
   );
   mcapi_add_gchart_js('corechart');
 }
@@ -156,19 +154,19 @@ function template_preprocess_wallet_balance_bars(&$vars) {
  */
 function template_preprocess_wallet_virgin(&$vars) {
   $vars['name'] = $vars['wallet']->label();
-  if ($vars['wallet']->access('edit')) {
-    //there isn't a url in the entity object for editing or a method for retrieving it, I think
-    $vars['edit'] = $vars['wallet']->url() . '/edit';
-  }
 }
 
+/**
+ * add the gchart libs, but only once
+ * @param string $lib
+ */
 function mcapi_add_gchart_js($lib) {
   static $done = array();
   if (!count($done)) {
-    drupal_add_js('http://www.google.com/jsapi');
+    _drupal_add_js('http://www.google.com/jsapi');
   }
   if (!array_search($lib, $done)) {
-    drupal_add_js("google.load('visualization', '1', {packages: ['$lib']});", 'inline');
+    _drupal_add_js("google.load('visualization', '1', {packages: ['$lib']});", 'inline');
     $done[] = $lib;
   }
 }
@@ -188,6 +186,8 @@ function _mcapi_history_axes($vals) {
     return array(-_mcapi_get_axis_max(abs($min)), 0, mcapi_get_axis_max($max));
   }
 }
+
+
 function _mcapi_get_axis_max($val) {
   $scale = array(1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 10000, 25000, 50000, 100000, 250000, 500000, 1000000);
   $scale[] = $val;
