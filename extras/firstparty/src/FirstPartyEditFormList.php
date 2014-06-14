@@ -14,7 +14,7 @@ use Drupal\Core\Form\FormInterface;
 /**
  * Provides a listing of contact categories.
  */
-class FirstPartyEditFormList extends ConfigEntityListBuilder  implements FormInterface{
+class FirstPartyEditFormList extends ConfigEntityListBuilder{
 
   /**
    * Overrides Drupal\Core\Entity\EntityListController::buildHeader().
@@ -90,6 +90,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder  implements FormInt
     return 'exchanges_list';
   }
 
+  //this is no longer a form controller
   public function buildForm(array $form, array &$form_state) {
     //$form = parent::buildForm($form, $form_state);
     $form['title'] = array(
@@ -144,7 +145,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder  implements FormInt
     $editform = entity_create('1stparty_editform', $form_state['values']);
     $editform->save();
     $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_1stparty_editform_edit',
+      'route_name' => 'mcapi.admin_1stparty_editform.edit',
       'route_parameters' => array('1stparty_editform' => $editform->id())
     );
   }

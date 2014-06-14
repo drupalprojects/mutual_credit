@@ -8,7 +8,17 @@ mcapi.admin_1stparty_editform_list:
   options:
     _admin_route: TRUE
 
-mcapi.admin_1stparty_editform_edit:
+mcapi.admin_1stparty_editform.add:
+  path: '/admin/accounting/transactions/forms/create'
+  defaults:
+    _entity_form: '1stparty_editform.add'
+    _title: 'Transaction form designer'
+  requirements:
+    _permission: 'design 1stparty forms'
+  options:
+    _admin_route: TRUE
+
+mcapi.admin_1stparty_editform.edit:
   path: '/admin/accounting/transactions/forms/{1stparty_editform}'
   defaults:
     _entity_form: '1stparty_editform.edit'

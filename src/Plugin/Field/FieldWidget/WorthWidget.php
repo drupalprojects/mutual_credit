@@ -34,32 +34,15 @@ class WorthWidget extends WidgetBase {
    * @see \Drupal\Core\Field\WidgetInterface
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, array &$form_state) {
-    $passed_worths = $items->getValue();
-    $limit_worth_to_passed = FALSE;
-
-    //determine the currencies to show...
-    //we get all the available currencies (to the current user)
-    //and if any have been passed in the items, limit selection to those
-    $all_available = exchange_currencies(referenced_exchanges(NULL, TRUE));
-    if ($passed_worths && $limit_worth_to_passed) {//this never happens while $limit_worth_to_passed = FALSE;
-//      $all_available = array_intersect_key($passed_worths, $all_available);
-//      if (count($all_available) < count($passed_worths)) {
-//        $diff = mcapi_entity_label_list('mcapi_currency', array_diff_key($passed_worths, $all_available));
-//        $message = t('User !name cannot handle !names', array('!names' => implode(', ', $diff)));
-//        throw new mcapiTransactionException('worth', $message);
-//      }
-    }
-    else {
-      //change the all_available array to a worths value array populated by zeros
-      foreach ($all_available as &$currency)$currency = 0;
-    }
-    return array(
+    //element may already contain #allowed_curr_ids
+    return $element + array(
       '#title' => String::checkPlain($this->fieldDefinition->getLabel()),
       '#title_display' => 'attribute',
       '#type' => 'worth',
-      '#default_value' => $all_available,
+      '#default_value' => $items->getValue(),
+      '#allowed_curr_ids' => array_keys(exchange_currencies(referenced_exchanges(NULL, TRUE))),
       '#theme_wrappers' => array('form_element'),
-    ) + $element;
+    );
   }
 
   function massageFormValues(array $values, array $form, array &$form_state) {

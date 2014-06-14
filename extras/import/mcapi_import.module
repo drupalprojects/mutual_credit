@@ -102,7 +102,7 @@ function import_transactions_form($form, $form_state) {
     '#title' => t('Fallback transaction type'),
     '#description' => t('If no valid transaction type is provided, use this.'),
     '#type' => 'select',
-    '#options' => mcapi_entity_label_list(array(), 'mcapi_type'),
+    '#options' => mcapi_entity_label_list('mcapi_type'),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['transaction_type'] : 'default',
     '#required' => TRUE,
     '#weight' => 1
@@ -111,7 +111,7 @@ function import_transactions_form($form, $form_state) {
     '#title' => t('Fallback transaction state'),
     '#description' => t('If no valid transaction state is provided, use this.'),
     '#type' => 'radios',
-    '#options' => mcapi_entity_label_list(array(), 'mcapi_state'),
+    '#options' => mcapi_entity_label_list('mcapi_state'),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['state'] : 1,
     '#required' => TRUE,
     '#weight' => 1
@@ -166,9 +166,9 @@ function import_transactions_form_validate(&$form, &$form_state) {
   $user_ids = array_unique($user_ids);
   if ($form_state['values']['test']) {
     //test for any other field_api fields.
-    foreach (field_info_instances('transaction', 'transaction') as $instance) {
+    foreach (FieldInstanceConfig::loadByName('mcapi_transaction', 'mcapi_transaction') as $instance) {
       if (array_key_exists($instance['field_name'], $row)) {
-        $field_info = field_info_field($instance['field_name']);
+        $field_info = FieldConfig::loadByName('mcapi_transaction', $instance['field_name']);
         if ($field_info['module'] == 'taxonomy') continue;
         if (array_key_exists('value', $field_info['columns'])) {
           drupal_set_message(t('Field @fieldname will be imported.', array('@fieldname' => $instance['field_name'])));
@@ -309,7 +309,7 @@ function mcapi_import_batch_create_transaction($csv, $settings, &$context) {
 function _mcapi_import_generate_transactions($rows, &$settings) {
   $reservoir = entity_load('mcapi_currency', $settings['curr_id'])->reservoir;
   list($field_info, $vocab) = mcapi_import_detect_categories();
-  $instances = field_info_instances('transaction', 'transaction');
+  $instances = FieldInstanceConfig::loadByName('mcapi_transaction', 'mcapi_transaction');
   if (array_key_exists($field_info['field_name'], $instances)) {
     unset($instances[$fieldname]);
   }
@@ -341,7 +341,7 @@ function import_balances_form($form, &$form_state) {
   $form['transaction_type'] = array(
     '#title' => t('Transaction type for imported transactions'),
     '#type' => 'select',
-    '#options' => mcapi_entity_label_list(array(), 'mcapi_type'),
+    '#options' => mcapi_entity_label_list('mcapi_type'),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['transaction_type'] : 'default',
     '#required' => TRUE
   );
@@ -598,8 +598,8 @@ function mcapi_import_check_terms($rows, $create) {
 
 //this returns the field_info for the first taxonomy field instance it finds on the transaction entity
 function mcapi_import_detect_categories() {
-  foreach (field_info_instances('transaction', 'transaction') as $field_name => $instance) {
-    $field_info = field_info_field($field_name);
+  foreach (FieldInstanceConfig::loadByName('mcapi_transaction', 'mcapi_transaction') as $field_name => $instance) {
+    $field_info = FieldConfig::loadByName('mcapi_transaction', $instance['field_name']);
     if ($field_info['module'] == 'taxonomy') {
       return array($field_info, $vocab = taxonomy_vocabulary_machine_name_load($field_info['settings']['allowed_values'][0]['vocabulary']));
     }

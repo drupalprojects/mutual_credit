@@ -65,7 +65,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $names = array();
     $used_in = $entity->used_in();
     if (count($used_in) > 1) {
-      $row['exchanges']['#markup'] = $this->t('@count exchanges', array(count($used_in)));
+      $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($used_in)));
     }
     else {
       foreach (entity_load_multiple('mcapi_exchange', $used_in) as $e) {

@@ -35,14 +35,30 @@ class TransactionFormAccessController implements AccessCheckInterface {
    * @param Route $route
    * @param Request $request
    * @param AccountInterface $account
+   *
    * @return AccessInterface constant
    *   a constant either ALLOW, DENY, or KILL
    */
   public function access(Route $route, Request $request, AccountInterface $account) {
-    //the route name is also the name of the config item!
-    return mcapi_1stparty_access(\Drupal::config($request->attributes->get('_route')))
-      ? AccessInterface::ALLOW
-      : AccessInterface::DENY;
+    //hack alert!
+    //when this is called the second time by the breadcrumb manager, the $request seems not to have been upcast
+    //so we'll cach the first result
+    //TODO what are the chances of this being called for more than one form?
+    static $result;
+    if (!isset($result)) {
+      if (!($account instanceOf Drupal\user\UserInterface)) {
+        $account = user_load($account->id());
+      }
+      if ($account->hasPermission('configure mcapi')) {
+        $result = AccessInterface::ALLOW;
+      }
+      else {
+        $result = mcapi_1stparty_access($request->attributes->get('1stparty_editform'), $account)
+          ? AccessInterface::ALLOW
+          : AccessInterface::DENY;
+      }
+    }
+    return $result;
   }
 
 }

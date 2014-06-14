@@ -13,3 +13,10 @@ mcapi.generate:
     _title: 'Generate test data'
   requirements:
     _permission: 'configure mcapi'
+
+mcapi.tester.dashboard:
+  path: '/testerdashboard'
+  defaults: 
+    _content: '\Drupal\mcapi_tester\Controller\TesterDashboard::page'
+    _title: 'Tester dashboard'
+  

@@ -17,6 +17,16 @@ mcapi.1stparty.*:
     type:
       type: string
       label: 'Transaction type'
+    mywallet:
+      type: mapping
+      label: 'My Wallet'
+      mapping:
+        widget:
+          type: string
+          label: 'Widget'
+        unused:
+          type: string
+          label: 'Unused behaviour'
     partner:
       type: mapping
       label: 'Settings for partner field'
@@ -44,13 +54,9 @@ mcapi.1stparty.*:
         placeholder:
           type: string
           label: 'Placeholder'
-    worths:
+    fieldapi_presets:
       type: mapping
-      label: 'Quantity of payment'
-      mapping:
-        preset:
-          type: array
-          label: 'Preset quantity'
+      label: 'Other presets'
     experience:
       type: mapping
       label: 'Experience'

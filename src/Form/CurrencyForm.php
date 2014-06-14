@@ -8,13 +8,11 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Component\Plugin\PluginManagerBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CurrencyForm extends EntityForm {
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::form().
+   * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, array &$form_state) {
     $form = parent::form($form, $form_state);
@@ -187,13 +185,13 @@ class CurrencyForm extends EntityForm {
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::validate().
+   * Overrides Drupal\Core\Entity\EntityForm::validate().
    */
   public function validate(array $form, array &$form_state) {
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::save().
+   * Overrides Drupal\Core\Entity\EntityForm::save().
    */
   public function save(array $form, array &$form_state) {
     $currency = $this->entity;

@@ -4,10 +4,12 @@
  * @file
  * Definition of Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm.
  * Generate a Transaction form using the FirstParty_editform entity.
+ * We have to override all references to the EntityFormDisplay
  */
 
-namespace Drupal\mcapi_1stparty\Form;
+namespace Drupal\mcapi_1stparty;
 
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDisplay;
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 
@@ -18,7 +20,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 
 	function __construct(EntityManagerInterface $entity_manager, $form_name = NULL) {
 	  parent::__construct($entity_manager);
-	  //in alpha7 this prop is declared in Drupal\Core\Form\FormBuilder but never populated
+	  //in alpha12 this protected $moduleHandler is declared in Drupal\Core\Form\FormBuilder but never populated
 	  $this->moduleHandler = \Drupal::moduleHandler();
 
 		if (!$form_name) {
@@ -26,14 +28,9 @@ class FirstPartyTransactionForm extends TransactionForm {
     	//this is the only way I know how to get the args. Could it be more elegant?
       $form_name = $options['parameters']['editform_id'];
 		}
-		//Not sure when it is appropriate to use entity_load and when to use config
-		//I guess it depends on whether you need all the methods
-		//don't know which uses least resources.
-		//$this->config = \Drupal::config('mcapi.1stparty.'.$form_id);
 		$this->config = entity_load('1stparty_editform', $form_name);
     //makes $this->entity;
 		$this->prepareTransaction();
-
 	}
 
 	/**
@@ -50,56 +47,56 @@ class FirstPartyTransactionForm extends TransactionForm {
   public function form(array $form, array &$form_state) {
     //@todo we need to be able to pass in an entity here from the context
     //and generate $this->entity from it before building the base transaction form.
-    //have to wait and see how panels works in d8
+    //have to wait and how that might work in panels & blocks in d8
 
+    //borrowed from unused ancestors
+    //$form['#process'][] = array($this, 'processForm');
     $config = $this->config;
 
     //TODO caching according to $config->get('cache')
     $form = parent::form($form, $form_state);
 
+    //TODO consider putting all the below code the display object
+    $form_display = entity_load('entity_form_display', 'mcapi_transaction.mcapi_transaction.default');
+    //$form_display->buildForm($this->entity, $form, $form_state);
+
+
   	//sort out the payer and payee, for the secondparty and direction
   	//the #title and #description will get stripped later
     if ($config->get('direction.preset') == 'incoming') {
       $form['partner'] = $form['payer'];
-      $form['mywallet'] = $form['payee'];
     }
     else {
       $form['partner'] = $form['payee'];
-      $form['mywallet'] = $form['payer'];
     }
-  	unset($form['payer'], $form['payee']);
-
-
+  	$form['payer']['#access'] = FALSE;
+  	$form['payee']['#access'] = FALSE;
   	$account = user_load(\Drupal::currentuser()->id());
   	//use this method because i still don't know how to iterate
   	//through the $account->exchanges entity_reference field.
   	foreach (mcapi_get_wallet_ids($account) as $wid) {
   	  $my_wallets[$wid] = entity_load('mcapi_wallet', $wid)->label();
   	}
-  	//because you can't render a form element as #markup while it still carries a value, AFAIK
-  	//we create another element mywallet_value which takes precedence in the validate function, below
+  	$form['mywallet'] = array(
+  		'#title' => t('My wallet')
+  	);
+  	//if I only have one wallet, we'll put a bogus disabled chooser
+  	//however disabled widgets don't return a value, so we'll store the value we need in a helper element
   	if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
-  	  if (count($my_wallets) > 1) {
-    	  $form['mywallet']['#type'] = 'select';
-    	  $form['mywallet']['#options'] = $my_wallets;
-  	  }
-  	  else {
-  	    $form['mywallet']['#type'] = 'markup';
-  	    $form['mywallet']['#markup'] = current($my_wallets);
-  	    $form['mywallet']['#default_value'] = key($my_wallets);
-  	  }
-  	}
+  	  $form['mywallet']['#type'] = $config->mywallet['widget'];
+  	  $form['mywallet']['#options'] = $my_wallets;
+  	  $form['mywallet']['#weight'] = -1;//ensure this is processed before the direction
+    }
   	if (count($my_wallets) < 2) {
+  	  $form['mywallet']['#disabled'] = TRUE;
+  	  $form['mywallet']['#default_value'] = reset($my_wallets);
+  	  //this will be used to populate mywallet in the validation
   	  $form['mywallet_value'] = array(
   	  	'#type' => 'value',
   	    '#value' => key($my_wallets)
   	  );
-  	  unset($form['mywallet']);
   	}
-  	$form['partner']['#element_validate'] = array(
-  	  array($this, 'firstparty_convert_direction'),
-  	  'local_wallet_validate_id'
-  	);
+  	$form['partner']['#element_validate'] = array('local_wallet_validate_id');
 
   	if ($config->partner['preset']) {
     	$form['partner']['#default_value'] = $config->partner['preset'];
@@ -112,10 +109,30 @@ class FirstPartyTransactionForm extends TransactionForm {
   		  'incoming' => $config->direction['incoming'],
   		  'outgoing' => $config->direction['outgoing'],
   	  ),
+  	  '#element_validate' => array(array($this, 'firstparty_convert_direction'))
   	);
-
   	//handle the description
-  	$form['description']['#placeholder'] = $config->description['placeholder'];
+  	//dunno why $config->get('description.placeholder') isn't working
+  	$des = $config->get('description');
+  	$form['description']['#placeholder'] = $des['placeholder'];
+
+  	//the fieldAPI fields are in place already, but we need to add the default values from the Designed form.
+  	$fieldapi_presets = $config->get('fieldapi_presets');
+  	foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {
+      $form[$field_name]['widget']['#default_value'] = $fieldapi_presets[$field_name];
+  	}
+
+    //worth field needs special treatment.
+    //The allowed_curr_ids provided by the widget need to be overwritten
+    //by the curr_ids in the designed form, if any.
+  	$curr_ids = array();
+    foreach ($config->fieldapi_presets['worth'] as $item) {
+      if ($item['value'] == '')continue;
+      $curr_ids[] = $item['curr_id'];
+    }
+    if ($curr_ids) {//overwrite the previous set of allowed currencies
+      $form['worth']['widget']['#allowed_curr_ids'] = $curr_ids;
+    }
 
   	//TODO put this in the base transaction form,
   	//where the one checkbox can enable both payer and payee to be selected from any exchange
@@ -160,7 +177,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 
 /*
     $form['#attributes']['class'][] = 'contextual-region';
-    //@todo contextual links
+    //@todo contextual links would be nice to jump straight to the edit form
     //pretty hard because it is designed to work only with templated themes, not theme functions
     //instead we'll probably just put a link in the menu
     $form['#title_suffix']['links'] = array(
@@ -181,6 +198,25 @@ class FirstPartyTransactionForm extends TransactionForm {
       '#markup' => '<br />'.l('edit', 'admin/accounting/transactions/forms/'.$config->id),
     );
     return $form;
+  }
+
+  /**
+   * element validator for 'partner'
+   * set the payer and payee from the mywallet, partner and direction
+   */
+
+  function firstparty_convert_direction(&$element, $form_state) {
+    $form_builder = \Drupal::service('form_builder');
+    $values = &$form_state['values'];
+    $form = &$form_state['original_form'];
+    if ($form_state['values']['direction'] == 'outgoing') {
+      $form_builder->setValue($form['payer'], $values['partner'], $form_state);
+      $form_builder->setValue($form['payee'], $values['mywallet_value'], $form_state);
+    }
+    else {
+      $form_builder->setValue($form['payee'], $values['partner'], $form_state);
+      $form_builder->setValue($form['payer'], $values['mywallet_value'], $form_state);
+    }
   }
 
   /*
@@ -225,7 +261,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   }
 
   /**
-   * work out the default values, if any
+   * make the default transaction from the given settings
    */
   function prepareTransaction() {
     //the partner is either the owner of the current page, under certain circumstances

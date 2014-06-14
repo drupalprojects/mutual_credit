@@ -39,7 +39,7 @@ class WorthFieldItemList extends FieldItemList {
    */
   public function first() {
     echo "WorthFieldItemList:first should never be called.";
-    mtrace();
+    die();
   }
 
   /**
@@ -115,7 +115,7 @@ class WorthFieldItemList extends FieldItemList {
   private function worthSet($val) {
     $key = 0;
     foreach ($this->list as $key => $item) {
-      if ($item->get('curr_id') == $val['curr_id']) {
+      if ($item->curr_id == $val['curr_id']) {
         $this->list[$key]->setValue($val, FALSE);
         return;
       }

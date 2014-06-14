@@ -165,7 +165,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $fieldnames = get_exchange_entity_fieldnames();
     $members = $this->{$fieldnames[$entity_type]}->getValue(FALSE);
 
-    echo 'Exchange::is_member'; print_r($members);die();
+    //echo 'Exchange::is_member'; print_r($members);die();
     foreach ($members as $item) {
       if ($item['target_id'] == $id) return TRUE;
     }

@@ -1,10 +1,17 @@
 <?php
 
+
+
+use Symfony\Component\HttpFoundation\Request; //for hook_help
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use Drupal\user\UserInterface;
+use Drupal\field\Entity\FieldInstanceConfig;
+
 /**
  * implements hook_help().
  */
-function mcapi_1stparty_help($path, $args) {
-  if ($path == 'admin/help/#mcapi_1stparty' || $path == 'admin/accounting/workflow/forms') {
+function mcapi_1stparty_help($route_name, Request $request) {
+  if ($route_name == 'mcapi.admin_1stparty_editform_list') {
     $help[] = t('Design your own forms for users to start transactions on their workflow paths.');
     $help[] = t('Each form has access control and can be presented as a block, page or panel.');
     $help[] = t('Each form can have presets and hidden fields.');
@@ -14,27 +21,25 @@ function mcapi_1stparty_help($path, $args) {
 }
 
 /**
- * implements hook_menu().
- * makes menu links for all the transaction forms
+ * implements hook_entity_info_alter().
+ * adds a form controller to the transaction entity
+ * slighly clumsy, but I think this is the proper way
  */
-function mcapi_1stparty_menu() {
-  foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
-    if ($editform->path) {//it is a required field right now
-      $items[$editform->path] = array(
-        'title' => $editform->title,
-        'description' => 'Custom transaction form',
-        'route_name' => "mcapi.1stparty.$id",
-        'weight' => 5,
-      );
-    }
-  }
-  $items['admin/accounting/workflow/forms'] = array(
-    'title' => 'Transaction form designer',
-    'description' => "Design your own transaction forms from the logged in user's perspective.",
-    'weight' => 4,
-    'route_name' => 'mcapi.admin_1stparty_editform_list',
+function mcapi_1stparty_entity_type_alter(array &$entity_types) {
+  $classes = $entity_types['mcapi_transaction']->getControllerClasses();
+  $form_classes = array(
+      '1stparty' => 'Drupal\mcapi_1stparty\FirstPartyTransactionForm'
+  ) + $classes['form'];
+  $entity_types['mcapi_transaction']->setControllerClass('form', $form_classes);
+}
+
+function mcapi_1stparty_mcapi_info_drupal_permissions() {
+  return array(
+  	'design 1stparty forms' => array(
+  	  'title' => t('Design first-party forms'),
+  	  'description' => t('Create transaction forms for specific purposes, exchanges or currencies')
+    )
   );
-  return $items;
 }
 
 /**
@@ -50,18 +55,8 @@ function mcapi_1stparty_theme() {
 }
 
 /**
- * implements hook_entity_info_alter().
- * adds a form controller to the transaction entity
- * slighly clumsy, but I think this is the proper way
+ * theme preprocessor
  */
-function mcapi_1stparty_entity_type_alter(array &$entity_types) {
-  $classes = $entity_types['mcapi_transaction']->getControllerClasses();
-  $form_classes = array(
-    '1stparty' => 'Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm'
-  ) + $classes['form'];
-  $entity_types['mcapi_transaction']->setControllerClass('form', $form_classes);
-}
-
 function template_preprocess_1stpartyform(&$vars) {
   $form = &$vars['element'];
 	//add the buttons if they weren't  in the twig template already
@@ -81,7 +76,8 @@ function theme_1stpartyform($vars) {
 	  //transaction property or field API field
 	  //stripping the theme_wrappers is cleaner but prevents the #states from working.
     $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
-
+    /*
+    if (!isset($form[$fieldname]['#default_value']))echo "$fieldname has no default value";
 		if (empty($form[$fieldname]['#required']) && $form[$fieldname]['#default_value'] == '') {
 		  //field does not occur in the form
 		  //unset($form[$fieldname]);//TODO something better than this.
@@ -91,6 +87,7 @@ function theme_1stpartyform($vars) {
 		    //drupal_set_message("Warning! Software limitation means there may be a problem hiding field '$fieldname', which has a preset value and is hidden.");
 		  }
 		}
+		*/
 	}
 	//adjustments for intertrade mode
 	if ($tokens['intertrade']) {
@@ -105,6 +102,11 @@ function theme_1stpartyform($vars) {
   return mcapi_render_twig($form['#twig'], $tokens);
 }
 
+/**
+ * callback to render form elements without their theme_wrappers
+ * @param unknown $element
+ * @return string
+ */
 function mcapi_render_stripped(&$element) {
   if (in_array($element['#type'], array('checkbox', 'checkboxes', 'radios', 'actions'))) {
     return drupal_render($element);
@@ -115,7 +117,10 @@ function mcapi_render_stripped(&$element) {
   }
 }
 
-
+/**
+ * machine_name callback
+ * @param unknown $id
+ */
 function mcapi_editform_load($id) {
   return entity_load('1stparty_editform', $id);
 }
@@ -128,17 +133,15 @@ function mcapi_editform_load($id) {
 function mcapi_1stparty_transaction_tokens() {
   module_load_include ('inc', 'mcapi');
   $tokens = array();
-  if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {
-    $tokens[-1] = 'mywallet';
-  }
   $tokens += mcapi_transaction_list_tokens(FALSE);
+
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
-  unset($tokens[array_search('exchange', $tokens)]);
   unset($tokens[array_search('creator', $tokens)]);
   //replace payer and payee with partner and direction
   $tokens[array_search('payer', $tokens)] = 'partner';
-  $tokens[array_search('payee', $tokens)] = 'direction';
+  $tokens[array_search('payee', $tokens)] = 'mywallet';
+  $tokens[] = 'direction';
   $tokens[] = 'intertrade';
   return $tokens;
 }
@@ -147,13 +150,17 @@ function mcapi_1stparty_transaction_tokens() {
  * Check whether the current user can access a given 1stparty form.
  * used by the router and by the block controller
  *
- * @param unknown $editform
+ * @param Entity $editform
  *   the configuration object
+ *
+ * @param AccountInterface $account
+ *   ensure that the fieldAPI fields are loaded
+ *
  * @return boolean
  *   TRUE if the current user can access the given form
  */
-function mcapi_1stparty_access($editform) {
-  $account = entity_load('user', \Drupal::currentUser()->id());
+function mcapi_1stparty_access(FirstPartyFormDesign $editform, UserInterface $account) {
+  //reload the $account because we need the fieldAPI fields to check access
   if ($exchange_id = $editform->get('exchange')) {
     $exchange = entity_load('mcapi_exchange', $exchange_id);
     if (is_object($exchange) && $exchange->is_member($account)) {
@@ -162,4 +169,54 @@ function mcapi_1stparty_access($editform) {
   }
   //user can access the form if they are in at least one exchange
   else return count(referenced_exchanges($account, TRUE)) != 0;
+}
+/**
+ * Make a transaction entity loaded up with the defaults from the Designed form
+ * @param object $configEntity
+ * @return mcapi_transaction
+ *   a partially populated transaction entity
+ */
+function mcapi_1stparty_make_template($configEntity) {
+  $props = array();
+  $props['type'] = $configEntity->get('type');
+  $props['description'] = $configEntity->get('description.preset');
+  //we can't set a default for mywallet because it is differnet for every user
+  if ($configEntity->get('direction.preset') == 'outgoing') {
+    $props['payee'] = $configEntity->get('partner.preset');
+  }
+  else {
+    $props['payer'] = $configEntity->get('partner.preset');
+  }
+
+  foreach ($configEntity->get('fieldapi_presets') as $fieldname => $value) {
+    $props[$fieldname] = $value;
+  }
+  //so the worth defaults have been copied right out of the saved entity
+  return entity_create('mcapi_transaction', $props);
+}
+
+/**
+ * return the visible field definitions for any transaction field API fields according to the default transaction entity_form_display
+ * including worth, or course
+ *
+ * @return an array of data keyed by field name
+ */
+function mcapi_1stparty_fieldAPI() {
+  //we need this to get the widgets for entering the defaults
+  $entity_display = entity_load('entity_form_display', 'mcapi_transaction.mcapi_transaction.default');
+  $fieldAPI = array();
+  //get the field api fields showing according to the the default display
+  //and filter out the entity properties
+  //the entity_form_display does this more elegantly but function is protected
+  foreach(\Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction') as $field_name => $definition) {
+    if ($definition instanceOf FieldInstanceConfig) {
+      if ($widget = $entity_display->getRenderer($field_name)) {
+        $fieldAPI[$field_name] = array(
+          'definition' => $definition,
+          'widget' => $widget
+        );
+      }
+    }
+  }
+  return $fieldAPI;
 }

@@ -173,7 +173,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     );
   }
   else {
-    $states = curr_id);
+    $states =  mcapi_entity_label_list('mcapi_state');
     $response = t(
       "Transaction created into state '@state'",
       array('@state' => $states[$transaction->state]),
@@ -210,11 +210,10 @@ function mcapi_command_twitter_status_save($status) {
   catch (Exception $e) {
     if ($e->getMessage() != \Drupal::config('mcapi.command')->get('syntax_error')) {
       //we don't publish syntax error messages, but we do log non-syntax error message
-      watchdog(
-        'mcapi command',
-        'Failed to execute twitter command: @message',
+      \Drupal::logger('mcapi')->error(
+        t('Failed to execute twitter command: @message',
         array('@message' => "$status->text :". $e->getMessage())
-      );
+      ));
       $response = $e->getMessage();
     }
   }

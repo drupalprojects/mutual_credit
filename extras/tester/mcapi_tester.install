@@ -92,12 +92,12 @@ function mcapi_tester_make_exchanges() {
     $c->set('id', $w);
     $c->set('name', $name . 'Credits');
     $c->set('issuance', CURRENCY_TYPE_EXCHANGE);
-    $c->set('format', array(substr($name, 0, 1), '0', ':', '99'));
+    $c->set('format', array(substr($name, 0, 1), '000', ':', '99'));
     $c->set('weight', $w);
     $c->set('ticks', 10*rand(1, 6));
     $c->save();
     $w++;
-
+echo $c->get('format');
     $e = entity_create('mcapi_exchange');
     $e->set('name', $name);
     $e->get('currencies')->setValue(array($c->id()));

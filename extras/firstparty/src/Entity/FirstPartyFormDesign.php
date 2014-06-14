@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi_1stparty\Entity\FirstPartyEditForm.
+ * Contains \Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign.
  */
 
 namespace Drupal\mcapi_1stparty\Entity;
@@ -22,8 +22,8 @@ use Drupal\Core\Annotation\Translation;
  *   controllers = {
  *     "access" = "Drupal\mcapi_1stparty\FirstPartyEditFormAccessController",
  *     "form" = {
- *       "add" = "Drupal\mcapi_1stparty\FirstPartyEditFormController",
- *       "edit" = "Drupal\mcapi_1stparty\FirstPartyEditFormController",
+ *       "add" = "Drupal\mcapi_1stparty\Form\FirstPartyFormDesigner",
+ *       "edit" = "Drupal\mcapi_1stparty\Form\FirstPartyFormDesigner",
  *       "delete" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDeleteConfirm",
  *       "enable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormEnableConfirm",
  *       "disable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDisableConfirm"
@@ -35,17 +35,20 @@ use Drupal\Core\Annotation\Translation;
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
- *     "label" = "name",
+ *     "label" = "title",
  *     "status" = "status"
  *   },
  *   links = {
- *     "edit-form" = "mcapi.admin_1stparty_editform_edit",
+ *     "edit-form" = "mcapi.admin_1stparty_editform.edit",
  *     "enable" = "mcapi.admin.1stparty_editform.enable_confirm",
- *     "disable" = "mcapi.admin.1stparty_editform.disable_confirm"
+ *     "disable" = "mcapi.admin.1stparty_editform.disable_confirm",
+ *     "admin-form" = "mcapi.admin_1stparty_editform_list",
+ *     "delete-form" = "mcapi.admin.1stparty_editform.delete_confirm",
  *   }
  * )
  */
-class FirstPartyEditForm extends ConfigEntityBase {
+
+class FirstPartyFormDesign extends ConfigEntityBase {
 
   public $id;
   public $exchange;
@@ -55,14 +58,15 @@ class FirstPartyEditForm extends ConfigEntityBase {
   public $type;
   //might group all of these into one array of presets
   //especially because we need to include unknown field API fields as well
+  public $mywallet;
   public $partner;
   public $direction;
   public $description;
-  public $worths;
+  public $fieldapi_presets;
   public $other;
   public $experience;
   public $message;
-  public $cache;//TODO cache by user,
+  public $cache;//TODO per-user cache
 
   /**
    * {@inheritdoc}
@@ -89,9 +93,8 @@ class FirstPartyEditForm extends ConfigEntityBase {
     	  'preset' => '',
     	  'placeholder' => ''
       ),
-        //this needs to be a worths field, but I don't know how to make such an object
-      'worths' => array(
-    	  'preset' => array('credunit' => array('curr_id' => 'credunit', 'value' => 0))
+      'fieldapi_presets' => array(
+        'worth' => array(),//and there are likely others
       ),
       'other' => array(
         'intertrade' => FALSE
@@ -117,7 +120,14 @@ Direction: [mcapiform:direction]
 
   }
 
-  public function label($langcode = NULL) {
-  	return $this->title;
+  /**
+   * Gets the configuration dependency name (ConfigEntityInterface)
+   *
+   * @return string
+   *   The configuration dependency name.
+   */
+  function getConfigDependencyName() {
+    return 'mcapi';//don't know what this means
   }
+
 }

@@ -142,7 +142,8 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
       $transaction->save();
     }
     catch (McapiTransactionException $e) {
-      mdump($e);
+      //todo
+
     }
     catch(EntityStorageException $e) {
       //all errors will be entityStorage exceptions because save() catches and rethrows them

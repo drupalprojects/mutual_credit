@@ -25,17 +25,17 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
       if ($plugin->id == 'none') continue;
       //upgraded sites need to check for the presence of the skip property
       $replacements = array('@currency' => $currency->name);
-      $skips = $plugin->configuration['skip'];
-      if ($skips['user1'] && \Drupal::currentUser()->id() == 1) {
+      $config = $plugin->getConfiguration();
+      if ($config['skip']['user1'] && \Drupal::currentUser()->id() == 1) {
         $messages[$curr_id] = t("Skipped @currency balance limit check because you are user 1.", $replacements);
       }
-      elseif ($skips['owner'] && \Drupal::currentUser()->id() == $currency->uid) {
+      elseif ($config['skip']['owner'] && \Drupal::currentUser()->id() == $currency->uid) {
         $messages[$curr_id] = t("Skipped @currency balance limit check because you are the currency owner.", $replacements);
       }
-      elseif ($skips['auto'] && current($cluster)->type == 'auto') {
+      elseif ($config['skip']['auto'] && current($cluster)->type == 'auto') {
         $messages[$curr_id] = t("Skipped balance limit checks for @currency.", $replacements);
       }
-      elseif ($skips['mass'] && current($cluster)->type == 'mass') {
+      elseif ($config['skip']['mass'] && current($cluster)->type == 'mass') {
         $messages[$curr_id] = t("Skipped balance limit checks for @currency.", $replacements);
       }
       if ($messages) continue;

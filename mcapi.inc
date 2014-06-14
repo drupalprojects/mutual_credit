@@ -161,17 +161,20 @@ function _mcapi_element_info() {
     'worth' => array(
       '#input' => TRUE,
       '#tree' => TRUE,
-      '#process' => array('mcapi_worth_element_process'),
+      '#process' => array('mcapi_worth_element_process_defaults', 'mcapi_worth_element_process'),
       '#value_callback' => 'mcapi_form_type_worth_value',
       '#element_validate' => array('mcapi_worth_element_validate'),
       '#theme_wrappers' => array('form_element'),
       '#attached' => array(
         'css' => array(
-          drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
+         drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
         )
       ),
       '#minus' => FALSE,
       '#config' => FALSE,
+      //if this is empty it will be ignored
+      //otherwise currencies not in #default values will appear in the form
+      '#allowed_curr_ids' => array(),
     ),
     'mcapi_states' => array(
       '#input' => TRUE,
@@ -227,22 +230,21 @@ function _mcapi_element_info() {
  *   The processed $element, including children
  */
 function _mcapi_worth_element_process($element, &$form_state, $form) {
-  //build up the widget
-  if (empty($element['#default_value'])) {
-    //in the rare occaision that defaults have not been provided, we show ALL the currencies
-    foreach (entity_load_multiple('mcapi_currency') as $currency) {
-      $element['#default_value'][$currency->id] = 0;
-    }
-  }
-  $cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
-  foreach ($element['#default_value'] as $curr_id => $value) {
+  //we might need to filter #default_value not in config mode
+  $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
+  foreach ($element['#default_value'] as $item) {
+    //i want a div around each currency widget
+    extract($item);//creates $curr_id and $value
+
     $currency = mcapi_currency_load($curr_id);
     if ($element['#config'] && $value === '') $parts = array();
     else $parts = $currency->formatted_parts(abs(intval($value)));
-    $element[$curr_id] = array(
-      '#prefix' => '<div class = "'.$cardinality.'">',
-      '#suffix' => '</div>',
-    );
+
+    $element[$curr_id]['#type'] = 'container';
+    $element[$curr_id]['#prefix'] = "<div class = \"$worth_cardinality\">";
+    $element[$curr_id]['#suffix'] = '</div>';
+
+
     foreach ($currency->format as $i => $component) {
       if ($i % 2) { //an odd number so render a field
         $step = 1;
@@ -257,7 +259,7 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
         }
         $element[$curr_id][$i] = array(
           '#weight' => $i,
-          '#default_value' => @$parts[$i],//in config mode $parts is empty
+          '#value' => @$parts[$i],//in config mode $parts is empty
           '#theme_wrappers' => array()
         );
         //if a preset value isn't in the $options
@@ -305,6 +307,44 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
 }
 
 /**
+ * helper function to ensure the worth field is showing the right currencies
+ * the #default_value is supplemented by the #allowed_curr_ids, with error checking
+ *
+ * @param array $element
+ *   a formapi worth element
+ * @return array
+ *   the same element, but with perhaps more #default_values
+ */
+function mcapi_worth_element_process_defaults($element) {
+  $blank = $element['#config'] ? '' : 0;
+  //change the all_available array to a worths value array populated by zeros
+  if ($allowed_curr_ids = $element['#allowed_curr_ids']) {
+    $existing_curr_ids = array();
+    foreach ($element['#default_value'] as &$item) {
+      $existing_curr_ids[] = $item['curr_id'];
+    }
+    if ($not_allowed = array_diff($existing_curr_ids, $allowed_curr_ids)) {
+      //only shows the FIRST not allowed currency
+      $currency = entity_load('mcapi_currency', reset($not_allowed));
+      drupal_set_message(t(
+        'Passed default @currency is not one of the allowed currencies',
+        array('@currency' => $currency->label())),
+        'warning'
+      );
+    }
+    foreach ($add = array_diff($allowed_curr_ids, $existing_curr_ids) as $curr_id) {
+      $element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
+    }
+  }
+
+  if (empty($element['#default_value'])) {
+    drupal_set_message('No currencies have been specified in the worth field.', 'error');
+  }
+  //sort the currencies by weight.
+  return $element;
+}
+
+/**
  * value callback for worth element
  * expects $input structured thus:
  * array(curr_id => array(subelement1 => n, subelement2 => n))
@@ -316,8 +356,11 @@ function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
   if ($input === FALSE) return;
   $output = array();
   foreach ($input as $curr_id => $parts) {
+    if ($element['#config'] && reset($parts) === ''){
+      //leaving the main value component blank in config mode means ignore the currency
+      continue;
+    }
     $currency = mcapi_currency_load($curr_id);
-    if ($element['#config'] && reset($parts) === '')continue;
     $quant = $currency->unformat($parts);
     if ($quant == 0 && !$element['#config']) {
       //zero values are only accepted if the currency allows and if there is only one currency in the field
@@ -326,13 +369,9 @@ function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
       }
     }
     if ($element['#minus']) $quant = -$quant;
-    $output[$curr_id] = $quant;
+    $output[] = array('curr_id' => $curr_id, 'value' => $quant);
   }
-  //HACK somehow this prevents the children, which are calculated afterwards, from overwriting this with an array
-  //but only sometimes
-//  $element['#default_value'] = array();
-  $element['#processed'] = TRUE;
-//  unset($form_state['input']['worth']);
+  //be aware that the child widgets will add to this and then be cleaned up in mcapi_worth_element_validate
   return $output;
 }
 
@@ -343,14 +382,33 @@ function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
  * @param array $form_state
  */
 function mcapi_worth_element_validate($element, &$form_state) {
-  if ($element['#config']) return;
-  foreach ($element['#value'] as $curr_id => $value) {
-    if ($value < 0) {
-      //TODO check this
-      $form_state['controller']->setError($element, $form_state, t('Negative amounts not allowed'));
-      \Drupal::formBuilder()->setError($element, $form_state, t('Negative amounts not allowed'));
+
+  //tidy up the detritus from the worth value callback
+  foreach ($element['#value'] as $delta => $item) {
+    if (!isset($item['curr_id'])) {
+      unset($element['#value'][$delta]);
+      continue;
+    }
+    foreach ($item as $key => $value) {
+      if (is_numeric($key)) unset($element['#value'][$delta][$key]);
     }
   }
+  //todo form_set_value is deprecated
+  form_set_value($element, $element['#value'], $form_state);
+  //can't remember how to do this properly
+  //$form_state['controller']->formBuilder->setValue($element, $element['#value'], $form_state);
+
+  //ensure the value is positive
+  if (!$element['#config']) {
+    foreach ($element['#value'] as $curr_id => $value) {
+      if ($value < 0) {
+        //TODO check this
+        $form_state['controller']->setError($element, $form_state, t('Negative amounts not allowed'));
+        $form_state['controller']->errorHandler()->setError($element, $form_state, t('Negative amounts not allowed'));
+      }
+    }
+  }
+
 }
 
 /**
