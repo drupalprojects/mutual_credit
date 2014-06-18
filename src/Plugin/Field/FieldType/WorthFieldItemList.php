@@ -25,6 +25,7 @@ class WorthFieldItemList extends FieldItemList {
     $this->definition = $definition;
     $this->parent = $parent;
     $this->name = $name;
+    $this->list = array();
   }
 
   /**

@@ -36,6 +36,9 @@ mcapi.misc:
     worths_delimiter:
       type: string
       label: Delimiter
+    zero_snippet:
+      type: string
+      label: Zero snippet
     child_errors:
       type: mapping
       label: Invalid child transactions
@@ -110,8 +113,8 @@ mcapi.currency.*:
       label: Format
       mapping: {}
     zero:
-      type: string
-      label: 'Zero value display'
+      type: boolean
+      label: 'Allow zero transactions'
     color:
       type: string
       label: 'Colour'

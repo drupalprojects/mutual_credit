@@ -74,7 +74,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $values += array(
       'issuance' => 'acknowledgement',
       'format' => array('$', 0, '.', '99'),
-      'zero' => '',
+      'zero' => FALSE,
       'color' => '000',
       'ticks' => 1,
       'weight' => 0,
@@ -170,10 +170,10 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * @see \Drupal\mcapi\Entity\CurrencyInterface::format()
    */
-  function format($raw_num, $plain_zero = FALSE) {
-    //return the zero value if required
-    if ($raw_num === 0 && $this->zero && !$plain_zero) {
-      return $this->zero;//which is a string or url
+  function format($raw_num) {
+    if (!is_numeric($raw_num) || !is_integer($raw_num + 0)) {
+      //TODO log an error
+      return '';
     }
     //if there is a minus sign this needs to go before everything
     $minus_sign = $raw_num < 0 ? '-' : '';

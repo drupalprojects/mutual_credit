@@ -73,9 +73,11 @@ function theme_1stpartyform($vars) {
 	$form = $vars['element'];
 	$tokens = array();
 	foreach ($form['#twig_tokens'] as $fieldname) {
-	  //transaction property or field API field
-	  //stripping the theme_wrappers is cleaner but prevents the #states from working.
-    $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
+	  if (strpos($form['#twig'], '{{ '.$fieldname.' }}') !== FALSE) {
+  	  //transaction property or field API field
+	    //stripping the theme_wrappers is cleaner but prevents the #states from working.
+      $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
+	  }
     /*
     if (!isset($form[$fieldname]['#default_value']))echo "$fieldname has no default value";
 		if (empty($form[$fieldname]['#required']) && $form[$fieldname]['#default_value'] == '') {
@@ -89,16 +91,22 @@ function theme_1stpartyform($vars) {
 		}
 		*/
 	}
+	$last = key($tokens);
 	//adjustments for intertrade mode
-	if ($tokens['intertrade']) {
-	  $tokens['partner'] .= mcapi_render_stripped($form['partner_all']);
+	if (array_key_exists('intertrade', $tokens)) {
+	  $checkbox = mcapi_render_stripped($form['partner_all']);
+	  if (array_key_exists('partner', $tokens)) {
+	    $tokens['partner'] .= $checkbox;
+	  }
+	  else {
+	    $tokens[$last] .= $checkbox;
+	  }
 	}
 
-	$last = drupal_render($form);
+  //appent everything not rendered onto the last rendered thing.
+  $tokens[$last] .= drupal_render($form);
 
-  //add everything not rendered onto the last rendered thing.
-  $tokens[$fieldname] .= $last;
-  module_load_include('inc', 'mcapi');
+  //mcapi.inc must already be included to process the worth field.
   return mcapi_render_twig($form['#twig'], $tokens);
 }
 
@@ -108,13 +116,16 @@ function theme_1stpartyform($vars) {
  * @return string
  */
 function mcapi_render_stripped(&$element) {
-  if (in_array($element['#type'], array('checkbox', 'checkboxes', 'radios', 'actions'))) {
-    return drupal_render($element);
+  if (array_key_exists('#type',  $element)) {
+    if (!in_array($element['#type'], array('checkbox', 'checkboxes', 'radios', 'actions'))) {
+      if ($element['#type'] != array('value')) {
+        $element['#prefix'] = '<span class = "form-item">';
+        $element['#suffix'] = '</span>';
+        unset($element['#theme_wrappers']);
+      }
+    }
   }
-  elseif ($element['#type'] != array('value')) {
-    unset($element['#theme_wrappers']);
-    return '<span class = "form-item">'.drupal_render($element).'</span>';
-  }
+  return drupal_render($element);
 }
 
 /**

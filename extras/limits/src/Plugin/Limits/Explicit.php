@@ -38,7 +38,10 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
    * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits()
    */
   public function getLimits(WalletInterface $wallet) {
-    return $this->configuration['minmax'];
+    return array(
+      'min' => reset($this->configuration['minmax']['min']),
+      'max' => reset($this->configuration['minmax']['max'])
+    );
   }
 
 

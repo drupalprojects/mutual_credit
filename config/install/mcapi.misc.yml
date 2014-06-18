@@ -6,6 +6,7 @@ fields:
 exchange_menu: 'tools'
 ticks_name: Seconds
 worths_delimiter: '|'
+zero: '<img src = "present.png" width="31" />'
 child_errors:
   mail_user1: mail_user1
   allow: 0

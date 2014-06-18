@@ -5,11 +5,12 @@
  * Contains \Drupal\mcapi_tester\Controller\DashboardController.
  */
 
-namespace Drupal\mcapi\Controller;
+namespace Drupal\mcapi_tester\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcapi\Entity\ExchangeInterface;
+use Drupal\mcapi\Storage\WalletStorage;
 
 /**
  * Returns responses for Exchange routes.
@@ -36,8 +37,8 @@ class DashboardController extends ControllerBase {
    * @return string
    *   The page title.
    */
-  public function pageTitle(ExchangeInterface $mcapi_exchange) {
-    return String::checkPlain($mcapi_exchange->label());
+  public function pageTitle() {
+
   }
 
   /**
@@ -46,20 +47,49 @@ class DashboardController extends ControllerBase {
    * every exchange has a list of properties, currencies and wallets
    * every wallet shows its owner, balance and limits.
    */
-  protected function buildPage(ExchangeInterface $mcapi_exchange) {
+  protected function buildPage() {
+    $header = array('#', 'Name', 'Balance', 'Mins', 'Maxes');
     foreach (entity_load_multiple('mcapi_exchange') as $exchange) {
-      $page[$exchange->id()] = array(
+      $id = $exchange->id();
+      $page[$id] = array(
         '#title' => 'Exchange: '.$exchange->label(),
-        '#description' => ($exchange->status ? 'open' : 'closed') . ' Managed by '.user_load($exchange->manager->value)->name,
+        '#description' => ($exchange->status ? 'Open' : 'Closed') . ' Managed by '.($exchange->getOwner()->label()),
         '#type' => 'details',
+        '#open' => TRUE,
         'currencies' => array(),
         'wallets' => array()
       );
+      $currnames = array();
       foreach ($exchange->currencies->getValue(TRUE) as $item) {
-        $currency = $item->entity;
-        $page[$exchange->id()]['currencies'] = $currency->label();
-        //enough for now
+        $currnames[] = $item['entity']->label();
       }
+      $page[$id]['currencies'] = array('#markup' => implode(', ', $currnames));
+      $wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->walletsInExchanges(array($id));
+      $tbody = array();
+      foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+        $limits = mcapi_limits($wallet);
+        $mins = $maxes = $balances = array();
+        foreach ($wallet->getSummaries() as $curr_id => $summary) {
+          $mins = $limits->mins(TRUE);
+          $maxes = $limits->maxes(TRUE);
+          $currency = entity_load('mcapi_currency', $curr_id);
+          $balances[] = $currency->format($summary['balance']);
+        }
+
+        $tbody[$wallet->id()] = array(
+        	'id' => l('#'.$wallet->id(), 'wallet/'.$wallet->id()),
+          'name' => $wallet->label(),
+          'balances' => implode('<br />', $balances),
+          'mins' => implode('<br />', $mins),
+          'maxes' => implode('<br />', $maxes)
+        );
+      }
+      $page[$id]['wallets'] = array(
+      	'#theme' => 'table',
+        '#header' => $header,
+        '#rows' => $tbody,
+        '#attributes' => array('border' => 1)
+      );
     }
     return $page;
   }

@@ -88,7 +88,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //Don't know how to include the worth field in that
     $violations = array();
     $warnings = array();
-
     if ($this->isNew()) {
       $type = $this->type->getValue(TRUE);
       $this->state->setValue($type[0]['entity']->start_state);
@@ -144,40 +143,42 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       //on the parent transaction only, validate it and then pass it round to get child candidates
       if ($this->parent->value == 0) {
         $violations += $this->validateMakeChildren();//includes intertrading
+        if (empty($violations)) {
+          //note that this validation cannot change the original transaction because a clone of it is passed
+          $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(mcapi_transaction_flatten($this)));
 
-        //validate the child candidates
-        foreach ($this->children as $child) {
-          //ensure the child transactions aren't mistaken for parents during validation
-          $child->parent->value = -1;
-          $child->violations = $child->validateNew();
-        }
-        //note that this validation cannot change the original transaction because a clone of it is passed
-        $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(mcapi_transaction_flatten($this)));
-        //process the errors in the children.
-        $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-        foreach ($this->children as $key => $child) {
-          $child->validate();
-          if ($child->mcapiExceptions) {
-            foreach ($child->mcapiExceptions as $warning) {
-              $warnings[] = $warning;
-            }
-            $replacements = array(
-                '!messages' => implode(' ', $warnings),
-                //'!dump' => print_r($this, TRUE)//TODO for some reason print_r is printing not returning
-            );
-            if ($child_errors['log']){
-              \Drupal::logger('mcapi')->error(
-                t("transaction failed validation with the following messages: !messages", array('!messages' => $message))
+          //validate the child candidates
+          foreach ($this->children as $child) {
+            //ensure the child transactions aren't mistaken for parents during validation
+            $child->parent->value = -1;
+            $child->violations = $child->validateNew();
+          }
+          //process the errors in the children.
+          $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
+          foreach ($this->children as $key => $child) {
+            $child->validate();
+            if ($child->mcapiExceptions) {
+              foreach ($child->mcapiExceptions as $warning) {
+                $warnings[] = $warning;
+              }
+              $replacements = array(
+                  '!messages' => implode(' ', $warnings),
+                  //'!dump' => print_r($this, TRUE)//TODO for some reason print_r is printing not returning
               );
-            }
-            if ($child_errors['mail_user1']){
-              //should this be done using the drupal mail system?
-              //my life is too short for that rigmarole
-              mail(
-              user_load(1)->mail,
-              t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
-              $replacements['!messages'] ."\n\n". $replacements['!dump']
-              );
+              if ($child_errors['log']){
+                \Drupal::logger('mcapi')->error(
+                  t("transaction failed validation with the following messages: !messages", array('!messages' => $message))
+                );
+              }
+              if ($child_errors['mail_user1']){
+                //should this be done using the drupal mail system?
+                //my life is too short for that rigmarole
+                mail(
+                user_load(1)->mail,
+                t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
+                $replacements['!messages'] ."\n\n". $replacements['!dump']
+                );
+              }
             }
           }
         }
@@ -395,6 +396,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
     $this->payer_currencies_available = array_keys($this->payer->entity->currencies_available());
     $this->payee_currencies_available = array_keys($this->payer->entity->currencies_available());
+
     foreach ($this->get('worth')->getValue() as $item) {
       $this->curr_ids_required[] = $item['curr_id'];
     }

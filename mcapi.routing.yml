@@ -140,7 +140,7 @@ mcapi.workflow_settings:
   path: '/admin/accounting/transactions/workflow/{op}'
   defaults:
     _form: 'Drupal\mcapi\Form\TransitionSettingsForm'
-    _title: 'Configure transaction transition'
+    _title: 'Transition settings'
   requirements:
     _permission: 'configure mcapi'
   options:

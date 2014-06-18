@@ -140,15 +140,16 @@ class TransactionForm extends ContentEntityForm {
     if (array_key_exists('mcapi_validated', $form_state)){'running form validation twice';return;}
     else $form_state['mcapi_validated'] = TRUE;
 
-    //this is the only bit we are re-using from the overridden function.
-    //but actually the transaction entity isn't designed to use Drupal 'form displays'
-    //Seems odd, if the the form display returns null what happens to validateFormValues()
-    if ($display = $this->getFormDisplay($form_state)) {
-      $display->validateFormValues($transaction, $form, $form_state);
+//    print_r($transaction->worth);die();
+
+    //validate the fieldAPI widgets
+    $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
+
+    //TODO take this out of the global scope
+    if (\Drupal::formBuilder()->getErrors($form_state)) {
+      return;
     }
-    else {
-      drupal_set_message('Need to check that the form values are validated in TransactionForm::validate');
-    }
+
 
     //node_form controller runs a hook for validating the node
     //however we do it here IN the transaction entity validation which is less form-dependent

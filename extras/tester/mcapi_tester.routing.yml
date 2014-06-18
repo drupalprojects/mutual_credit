@@ -17,6 +17,6 @@ mcapi.generate:
 mcapi.tester.dashboard:
   path: '/testerdashboard'
   defaults: 
-    _content: '\Drupal\mcapi_tester\Controller\TesterDashboard::page'
+    _content: '\Drupal\mcapi_tester\Controller\DashboardController::page'
     _title: 'Tester dashboard'
   

@@ -6,7 +6,7 @@ issuance: exchange
 format: 
   0: CC
   1: '0000'
-zero: '<img src = "present.png" width="31" />'
+zero: 1
 color: '#00ff00'
 weight: '1'
 limits_plugin: none

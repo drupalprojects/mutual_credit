@@ -29,7 +29,8 @@ class MiscForm extends ConfigFormBase {
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
     );
-
+/* This might belong in another module
+ * in any case the edit transition needs to be prepared
     $form['editable'] = array(
       '#title' => t('Allow transaction records to be edited'),
       '#description' => t("This will create a new permission, and allow new 'edit' transition"),
@@ -60,6 +61,7 @@ class MiscForm extends ConfigFormBase {
         '#default_value' => $config->get('fields'),
       )
     );
+    */
     $form['indelible'] = array(
       '#title' => t('Indelible accounting'),
       '#description' => t('Ensure that transactions, exchanges and currencies are not deleted.'),
@@ -105,6 +107,15 @@ class MiscForm extends ConfigFormBase {
       '#size' => 10,
       '#maxlength' => 10,
     );
+    $form['zero_snippet'] = array(
+      '#title' => t('Zero snippet'),
+      '#description' => t("string to replace '0:00' when the currency allows zero transactions"),
+      '#type' => 'textfield',
+      '#default_value' => $config->get('zero_snippet'),
+      '#weight' => 13,
+      '#size' => 20,
+      '#maxlength' => 128,
+    );
     $form['rebuild_mcapi_index'] = array(
       '#title' => t('Rebuild index'),
       '#description' => t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
@@ -133,6 +144,7 @@ class MiscForm extends ConfigFormBase {
       ->set('fields', $form_state['values']['fields'])
       ->set('exchange_menu', !$form_state['values']['exchange_menu'])
       ->set('ticks_name', $form_state['values']['ticks_name'])
+      ->set('zero_snippet', $form_state['values']['zero_snippet'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
       ->set('indelible', $form_state['values']['indelible'])

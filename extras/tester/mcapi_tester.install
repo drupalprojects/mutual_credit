@@ -131,8 +131,8 @@ function mcapi_tester_make_users($num = 26) {
   $all_exchange_ids = array_keys(entity_load_multiple('mcapi_exchange'));
 
   //create users
-  $first = array('Adam', 'Barry', 'Carry', 'Dave', 'Elizabeth', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Rosy', 'Sly', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
-  $last = array('Adams', 'Bastock', 'Critchley', 'Dearthart', 'Epstein', 'Fox', 'Guilder', 'Hornby', 'Ingrams', 'Johnson', 'Kant', 'Loafer', 'Meadows', 'Norfolk', 'Orwell', 'Philipps', 'Quarkson', 'Rottenbottom', 'Smith', 'Trotter', 'Underwood', 'Vernon', 'Wishart', 'X', 'Ypres', 'Zenithson');
+  $first = array('Alice', 'Bob', 'Carry', 'Dave', 'Ebeneezer', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Rosy', 'Sly', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
+  $last = array('Adams', 'Bastock', 'Critchley', 'Dearthart', 'Epstein', 'Farquar', 'Guilder', 'Hornby', 'Ingrams', 'Johnson', 'Kant', 'Loafer', 'Meadows', 'Norfolk', 'Orwell', 'Philipps', 'Quarkson', 'Rhodes', 'Smith', 'Trotter', 'Underwood', 'Vernon', 'Wellington', 'X', 'Ypres', 'Zenithson');
   shuffle($last);
   $usersperexchange = ceil(26/count(entity_load_multiple('mcapi_exchange')));
   for ($i = 0; $i < $num; $i++) {

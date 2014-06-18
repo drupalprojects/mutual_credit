@@ -14,8 +14,16 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
  * against the balance limits for each affected account,
  * NB. the accounting_validate hook is only run when a transaction is inserted:
  * It only checks against transactions in a POSITIVE state i.e. counted transactions.
+ *
+ * @param TransactionInterface[] $cluster
+ *
+ * @return ViolationInterface[]
  */
 function mcapi_limits_mcapi_transaction_validate(array $cluster) {
+  //only validate if there are no fatal errors yet
+  //i.e. no exceptions on the first transaction in the cluster
+  //print_R(reset($cluster)->mcapiExceptions);die('mcapi_limits_mcapi_transaction_validate should show violations');
+  if (reset($cluster)->mcapiExceptions) return;
   module_load_include('inc', 'mcapi_limits');
   return _mcapi_limits_mcapi_transaction_validate($cluster);
 }
@@ -168,7 +176,8 @@ function mcapi_view_limits(WalletInterface $wallet) {
     else {
       $limits = mcapi_limits($wallet)->limits($currency->id());
       //special opportunity to show an alternative display when +ve & -ve limits are balanced
-      if ($limits['max'] && $limits['max'] == -$limits['min']) {
+//      print_r($limits);
+      if ($limits['max'] && ($limits['max'] == -$limits['min'])) {
         $theme = 'mcapi_limits_balanced';
       }
       else {
@@ -209,14 +218,26 @@ function mcapi_limits_process_minmax(&$element) {
     '#title' => t('Minimum balance'),
     '#description' => t('Must be less than or equal to zero'),
     '#type' => 'worth',
-    '#default_value' => $default['min'],
+    '#config' => TRUE,
+    '#default_value' => array(
+      0 => array('curr_id' => $element['#curr_id'], 'value' => $default['min']),
+    ),
+    '#placeholder' => array(
+      0 => $element['#placeholder']['min']
+    ),
     '#minus' => TRUE
   );
   $element['max'] = array(
     '#title' => t('Maximum balance'),
     '#description' => t('Must be greater than 1.'),
     '#type' => 'worth',
-    '#default_value' => $default['max'],
+    '#config' => TRUE,
+    '#default_value' => array(
+      0 => array('curr_id' => $element['#curr_id'], 'value' => $default['max']),
+    ),
+    '#placeholder' => array(
+      0 => $element['#placeholder']['max']
+    ),
     '#weight' => 1,
     '#min' => 1
   );

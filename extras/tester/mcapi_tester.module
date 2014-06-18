@@ -98,41 +98,34 @@ function mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
 
 
 function mcapi_tester_make_transactions($num, $inter = FALSE) {
+  $all_exchanges = entity_load_multiple('mcapi_exchange');
   //pick a random wallet (not _intertrading);
   //quicker to access db directly than try to use the storage-neutral API
   $wallet_storage = \Drupal::EntityManager()->getStorage('mcapi_wallet');
-  $all_wallet_ids = $wallet_storage->filter(array(), 0, 0, FALSE);
 
-  //remove wallet 2, belonging to user 1, because of a caching problem - very uncomfortable hack
-  $pos = array_search('2', $all_wallet_ids);
-  unset($all_wallet_ids[$pos]);
+  if ($inter) {
+    $wids = $wallet_storage->filter(array(), 0, 0, FALSE);
+    //remove wallet 2, belonging to user 1, because of a caching problem - very uncomfortable hack
+    $pos = array_search('2', $all_wallet_ids);
+    unset($all_wallet_ids[$pos]);
+  }
 
   for ($i = 1; $i <= $num; $i++) {
-    //get two random different wallets - the first one...
-    $temp = $all_wallet_ids;
-    shuffle($temp);
-    $rand_wallet = entity_load('mcapi_wallet', array_pop($temp));
-    //get another wallet either within or not necessarily within the same exchange.
-    $exchanges = referenced_exchanges($rand_wallet->getOwner(), TRUE);//mcapi_tester settings will return 1 exchange
-    if (empty(current($exchanges))) continue;//the random wallet was in a disabled exchange
-    $conditions = array();
-    if (!$inter && $exchanges) {
-      $conditions['exchanges'] = array_keys($exchanges);
+    if (!$inter) {
+      $exchange = array_rand($all_exchanges);
+      $wids = db_query("select wid from {mcapi_wallet_exchange_index} WHERE exid = ".$exchange->id())->fetchCol();
     }
-    //remove the first wallet from the list of possible second wallets
-    unset($temp[array_search($rand_wallet->id(), $temp)]);
-    //re-key the list so its easy to get a random value
-    $temp = array_values($temp);
-    //choose a random second wallet
-    $partner_wid = $temp[rand(0, count($temp)-1)];
+    //get two random different wallets - the first one...
+    $temp = $wids;
+    shuffle($temp);
 
     $transaction = entity_create('mcapi_transaction');
-    $transaction->payer->setValue($rand_wallet->id());
-    $transaction->payee->setValue($partner_wid);
+    $transaction->payer->setValue(array_pop($temp));
+    $transaction->payee->setValue(array_pop($temp));
     $transaction->type->setValue('test');
     $worth = array(
       array(
-        'curr_id' => current($exchanges)->currencies->value,
+        'curr_id' => $exchange->currencies->value,
         'value' => rand(5, 100)*10)
     );
     $transaction->worth->setValue($worth);
@@ -155,3 +148,5 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
     if ($num == 1)drupal_set_message(l('Created transaction', $transaction->url('canonical')));
   }
 }
+
+

@@ -160,13 +160,12 @@ class CurrencyForm extends EntityForm {
     );
 
     $serials = $this->entity->transactions(array('curr_id' => $currency->id(), 'value' => 0));
-    $form['display']['zero'] = array(
-      '#title' => t('Zero value display'),
-      '#description' => t('Use html.') .' ',
-      '#type' => 'textfield',
+    $form['zero'] = array(
+      '#title' => t('Allow zero transactions'),
+      '#type' => 'checkbox',
       '#default_value' => $currency->zero,
       //this is required if any existing transactions have zero value
-      '#required' => $serials
+      '#required' => !empty($serials)
     );
     if ($form['display']['zero']['#required']) {
       $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");

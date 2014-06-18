@@ -232,12 +232,12 @@ function _mcapi_element_info() {
 function _mcapi_worth_element_process($element, &$form_state, $form) {
   //we might need to filter #default_value not in config mode
   $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
-  foreach ($element['#default_value'] as $item) {
+  foreach ($element['#default_value'] as $delta => $item) {
     //i want a div around each currency widget
     extract($item);//creates $curr_id and $value
 
     $currency = mcapi_currency_load($curr_id);
-    if ($element['#config'] && $value === '') $parts = array();
+    if ($element['#config'] && !is_numeric($value)) $parts = array();
     else $parts = $currency->formatted_parts(abs(intval($value)));
 
     $element[$curr_id]['#type'] = 'container';
@@ -274,7 +274,6 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
           $size = strlen($component);
           $element[$curr_id][$i] += array(
             '#type' => $element['#config'] ? 'textfield' : 'number',
-            '#placeholder' => $i == 2 ? '' : str_pad('', $size, '0'),
             '#max' => $i == 1 ? pow(10, strlen($component))-1 : $component,//first component matters only for the num of digits
             '#min' => 0,
             '#step' => $step,
@@ -284,6 +283,17 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
             //TODO find out what's going on with the browsers. We want the number field for its validation but the spinners are really bad
             '#attributes' => array('style' => 'width:'. ($size) .'em;'),
           );
+          if ($element['#config']) {
+            if (array_key_exists('#placeholder', $element)) {
+              $placeholder_val = $element['#placeholder'][$delta];
+              $p_parts = $currency->formatted_parts(abs(intval($placeholder_val)));
+              $element[$curr_id][$i]['#placeholder'] = $p_parts[$i];
+            }
+          }
+          else {
+            //leave the main value field empty, and put zero placeholders in other fields
+            $element[$curr_id][$i]['#placeholder'] = $i == 2 ? '' : str_pad('', $size, '0');
+          }
         }
       }
       else {//an even number so render it as markup
@@ -345,11 +355,17 @@ function mcapi_worth_element_process_defaults($element) {
 }
 
 /**
- * value callback for worth element
+ * value callback for 'worth' element
+ *
  * expects $input structured thus:
- * array(curr_id => array(subelement1 => n, subelement2 => n))
- * needs to output a worths array thus
- * array(curr_id => n) where n is the raw database value
+ * @param array $element
+ *   a form element
+ * @param $input
+ *   the data from the widget e.g. array(curr_id => array(subelement1 => n, subelement2 => n))
+ * @param array $form_state
+ *
+ * @return array
+ *   array(curr_id => n) where n is the raw database value
  */
 
 function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
@@ -377,11 +393,14 @@ function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
 
 /**
  * element_validate callback for worth field
+ * empty callback runs after this
  *
  * @param array $element
  * @param array $form_state
  */
 function mcapi_worth_element_validate($element, &$form_state) {
+
+//echo 'mcapi_worth_element_validate: ';print_r($element);die();
 
   //tidy up the detritus from the worth value callback
   foreach ($element['#value'] as $delta => $item) {
@@ -393,12 +412,12 @@ function mcapi_worth_element_validate($element, &$form_state) {
       if (is_numeric($key)) unset($element['#value'][$delta][$key]);
     }
   }
-  //todo form_set_value is deprecated
+  //TODO form_set_value is deprecated. see datetime_datetime_validate() after alpha12
   form_set_value($element, $element['#value'], $form_state);
   //can't remember how to do this properly
-  //$form_state['controller']->formBuilder->setValue($element, $element['#value'], $form_state);
+  //$form_state['controller']->setValue($element, $element['#value'], $form_state);
 
-  //ensure the value is positive
+  //ensure the value is not negative
   if (!$element['#config']) {
     foreach ($element['#value'] as $curr_id => $value) {
       if ($value < 0) {
@@ -408,7 +427,6 @@ function mcapi_worth_element_validate($element, &$form_state) {
       }
     }
   }
-
 }
 
 /**
@@ -871,7 +889,7 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
       $transaction->dest_participant = 'payer';
     }
     else {
-      echo "unable to get source and dest participants";
+      echo "unable to get source and dest participants or intertrade";
       echo "<br />payer wid: ".$transaction->get('payer')->value;
       echo "<br />payee wid: ".$transaction->get('payee')->value;
       echo '<br />curr_ids_required: '; print_R($transaction->curr_ids_required);

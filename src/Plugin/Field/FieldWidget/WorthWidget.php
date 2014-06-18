@@ -45,16 +45,10 @@ class WorthWidget extends WidgetBase {
     );
   }
 
-  function massageFormValues(array $values, array $form, array &$form_state) {
-    foreach ($values as $curr_id => $value){
-      $list[] = array('curr_id' => $curr_id, 'value' => $value);
-    }
-    return $list;
-  }
-
   /**
    * {@inheritdoc}
    */
+  /*
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, array &$form_state) {
     echo "error element hasn't been written yet";
     if ($violation->arrayPropertyPath == array('format') && isset($element['format']['#access']) && !$element['format']['#access']) {
@@ -64,5 +58,5 @@ class WorthWidget extends WidgetBase {
     }
     return $element;
   }
-
+  */
 }

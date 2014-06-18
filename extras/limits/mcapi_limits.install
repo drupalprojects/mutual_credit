@@ -27,15 +27,15 @@ function mcapi_limits_schema() {
   		  	'description' => 'The minimum, in native units',
           'type' => 'int',
           'size' => 'normal',
-          'not null' => TRUE,
-          'default' => 0
+          'not null' => FALSE,
+          'default' => NULL
   		  ),
   	    'max' => array(
   		  	'description' => 'The maximum, in native units',
           'type' => 'int',
           'size' => 'normal',
-          'not null' => TRUE,
-          'default' => 0
+          'not null' => FALSE,
+          'default' => NULL
   		  ),
         'editor' => array(
           'description' => 'the id of the user who saved this',
@@ -53,6 +53,7 @@ function mcapi_limits_schema() {
   	  'unique_keys' => array(
         'wid_cur' => array('wid', 'curr_id')
       )
+  	  //phpmyadmin says 'no index defined' - is an index so necessary?
     )
   );
 

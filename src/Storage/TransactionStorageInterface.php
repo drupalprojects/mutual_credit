@@ -73,7 +73,9 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    * @param array $filters
    *
    * @return array
-   *   keyed by property or empty if there were no transactions
+   *   keys are trades, gross_in, gross_out, balance, volume, partners
+   *
+   * @see \Drupal\mcapi\Entity\WalletInterface::getSummaries()
    */
   public function summaryData($wallet_id, array $filters);
 

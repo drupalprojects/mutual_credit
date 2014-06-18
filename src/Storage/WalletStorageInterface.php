@@ -57,4 +57,16 @@ interface WalletStorageInterface extends FieldableEntityStorageInterface {
    */
   public function filter(array $conditions, $offset = 0, $limit = NULL, $intertrading = FALSE);
 
+  /**
+   * Get all the wallet ids in given exchanges.
+   * this can also be done with filter() but is quicker
+   * maybe not worth it if this is only used once, in any case the index table is needed for views
+   * Each wallet owner has a required entity reference field pointing to exchanges
+   * @todo put this in the interface
+   *
+   * @param array $exchange_ids
+   * @return array
+   *   the non-orphaned wallet ids from the given exchanges
+   */
+  static function walletsInExchanges(array $exchange_ids);
 }

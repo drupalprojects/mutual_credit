@@ -46,14 +46,14 @@ class WalletLimitOverride extends FormBase {
 
     $form['help'] = array('#markup' => t("Leave blank to use the currencies' own settings"));
 
+    $overridden = mcapi_limits($wallet)->saved_overrides();
     //TODO the limits are no longer stored in the currency
-    foreach (exchange_currencies($exchanges) as $curr_id => $currency) {
+    foreach ($wallet->currencies_available() as $curr_id => $currency) {
       $config = mcapi_limits_saved_plugin($currency)->getConfiguration();
-      if (!empty($config['override'])) {
-        $defaults = mcapi_limits($wallet)->default_limits($currency);
-        $overridden = mcapi_limits($wallet)->limits($curr_id);
-      }
-      else continue;
+      if (empty($config['override'])) continue;
+
+      $defaults = mcapi_limits($wallet)->default_limits($currency);
+
       //for now the per-wallet override allows admin to declare absolute min and max per user.
       //the next thing would be for the override to support different plugins and settings per user.
       $form[$curr_id] = array(
@@ -71,8 +71,12 @@ class WalletLimitOverride extends FormBase {
         '#curr_id' => $curr_id,
       	'#type' => 'minmax',
         '#default_value' => array(
-          'min' => $overridden['min'],
-          'max' => $overridden['max']
+          'min' => @$overridden[$curr_id]['min'],
+          'max' => @$overridden[$curr_id]['max']
+        ),
+        '#placeholder' => array(
+        	'min' => $defaults['min'],
+          'max' => $defaults['max']
         )
       );
     }
@@ -111,16 +115,18 @@ class WalletLimitOverride extends FormBase {
       db_delete('mcapi_wallets_limits')->condition('wid', $wid)->execute();
       $q = db_insert('mcapi_wallets_limits')->fields(array('wid', 'curr_id', 'min', 'max', 'editor', 'date'));
       foreach ($form_state['values'] as $curr_id => $values) {
-        $q->values(array(
-          'wid' => $wid,
-          'curr_id' => $curr_id,
-          'min' => $values['override']['min'],
-          'max' => $values['override']['max'],
-          'editor' => \Drupal::CurrentUser()->id(),
-          'date' => REQUEST_TIME
-        ));
+        if ($values['override']['min'][0]['value'] || $values['override']['max'][0]['value']) {
+          $q->values(array(
+            'wid' => $wid,
+            'curr_id' => $curr_id,
+            'min' => $values['override']['min'][0]['value'],
+            'max' => $values['override']['max'][0]['value'],
+            'editor' => \Drupal::CurrentUser()->id(),
+            'date' => REQUEST_TIME
+          ));
+        }
+        $q->execute();
       }
-      $q->execute();
     }
     catch (\Exception $e) {
       $t->rollback();

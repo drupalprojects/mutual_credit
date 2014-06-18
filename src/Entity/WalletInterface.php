@@ -56,9 +56,10 @@ interface WalletInterface extends ContentEntityInterface {
   function currencies_all();
 
   /**
-   * get the trading stats for all currencies used so far
+   * get the trading stats for all currencies allowed or used in the wallet
    * @return array
    * @see $this->getStat()
+   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData().
    */
   function getSummaries();
 

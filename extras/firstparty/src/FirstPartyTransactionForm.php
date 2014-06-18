@@ -56,11 +56,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     //TODO caching according to $config->get('cache')
     $form = parent::form($form, $form_state);
 
-    //TODO consider putting all the below code the display object
-    $form_display = entity_load('entity_form_display', 'mcapi_transaction.mcapi_transaction.default');
-    //$form_display->buildForm($this->entity, $form, $form_state);
-
-
   	//sort out the payer and payee, for the secondparty and direction
   	//the #title and #description will get stripped later
     if ($config->get('direction.preset') == 'incoming') {
@@ -194,9 +189,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     );
     */
 
-    $form['suffix'] = array(
-      '#markup' => '<br />'.l('edit', 'admin/accounting/transactions/forms/'.$config->id),
-    );
     return $form;
   }
 
@@ -208,7 +200,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   function firstparty_convert_direction(&$element, $form_state) {
     $form_builder = \Drupal::service('form_builder');
     $values = &$form_state['values'];
-    $form = &$form_state['original_form'];
+    $form = &$form_state['complete_form'];
     if ($form_state['values']['direction'] == 'outgoing') {
       $form_builder->setValue($form['payer'], $values['partner'], $form_state);
       $form_builder->setValue($form['payee'], $values['mywallet_value'], $form_state);

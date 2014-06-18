@@ -209,10 +209,12 @@ class Wallet extends ContentEntityBase implements WalletInterface{
    */
   function currencies_used() {
     if (!$this->currencies_used) {
+      $this->currencies_used = array();
       foreach (entity_load_multiple('mcapi_currency', array_keys($this->getSummaries())) as $currency) {
         $this->currencies_used[$currency->id()] = $currency;
       }
     }
+
     return $this->currencies_used;
   }
 
@@ -234,6 +236,18 @@ class Wallet extends ContentEntityBase implements WalletInterface{
   function getSummaries() {
     if (!$this->stats) {
       $this->stats = \Drupal::Entitymanager()->getStorage('mcapi_transaction')->summaryData($this->id());
+      foreach ($this->currencies_available() as $curr_id => $currency) {
+        if (!array_key_exists($curr_id, $this->stats)) {
+          $this->stats[$curr_id] = array(
+            'balance' => 0,
+          	'trades' => 0,
+            'volume' => 0,
+            'gross_in' => 0,
+            'gross_out' => 0,
+            'partners' => 0
+          );
+        }
+      }
     }
     return $this->stats;
   }

@@ -59,7 +59,14 @@ function mcapi_preprocess_wallet_history(&$vars) {
   $vars['functionname'] = 'drawHistory'.$currency->id();
 
   $vars['id'] = 'wallet-'.$vars['wallet']->id().'-'.$currency->id();
-  list($min, $middle, $max) = _mcapi_history_axes($vars['history']);
+  if ($vars['history']) {
+    list($min, $middle, $max) = _mcapi_history_axes($vars['history']);
+  }
+  else {
+    $min = -100;
+    $middle = 0;
+    $max = 100;
+  }
   $vars['vaxislabels'] = array(
     array('value' => $min, 'label' => $currency->format($min, TRUE)),
     array('value' => $middle, 'label' => $currency->format($middle, TRUE)),

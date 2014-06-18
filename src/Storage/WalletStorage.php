@@ -150,7 +150,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
    * @return array
    *   the non-orphaned wallet ids from the given exchanges
    */
-  function walletsInExchanges($exchange_ids) {
+  static function walletsInExchanges(array $exchange_ids) {
     $query = db_select('mcapi_wallet_exchanges_index', 'w')
       ->fields('w', array('wid'));
     if ($exchange_ids) {
@@ -159,7 +159,10 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     return $query->execute()->fetchCol();
   }
 
-  //when user joins an exchange this must be updated
+  /*
+   * when an entity joins an exchange this must be updated
+   * Does this belong in the WalletStorageInterface?
+   */
   function updateIndex(WalletInterface $wallet) {
     $wid = $wallet->id();
     $this->dropIndex(array($id));
@@ -170,7 +173,10 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     $query->execute();
   }
 
-  //TODO when a user leaves an exchange, this must be updated
+    /*
+   * when an entity joins an exchange this must be updated
+   * Does this belong in the WalletStorageInterface?
+   */
   function dropIndex(array $wids) {
     db_delete('mcapi_wallet_exchanges_index')->condition('wid', $wids)->execute();
   }

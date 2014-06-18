@@ -8,7 +8,7 @@ format:
   1: '000'
   2: :
   3: 99
-zero: ''
+zero: 0
 color: '#0000ff'
 weight: '2'
 ticks: 0

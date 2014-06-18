@@ -320,11 +320,11 @@ class FirstPartyFormDesigner extends EntityForm {
   public function validate_twig_template(array $element, array &$form_state) {
     $txt = $element['#value'];
     $errors = array();
-    if (strpos($txt, "{{ mywallet }}") == NULL) {
+    if (strpos($txt, "{{ mywallet }}") === NULL) {
       $this->errorHandler()->setError($element, $form_state, t('@token token is required in template', array('@token' => '{{ mywallet }}')));
     }
     //the essential transaction fields must be either present in the template or populated
-    if ((strpos($txt, "{{ partner }}") == NULL) && !$form_state['values']['partner']['preset']) {
+    if ((strpos($txt, "{{ partner }}") === NULL) && !$form_state['values']['partner']['preset']) {
       $errors[] = 'partner';
     }
 

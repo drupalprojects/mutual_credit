@@ -98,9 +98,23 @@ class WorthItem extends FieldItemBase {
     return empty($this->get('value'));
   }
 
+
+  /**
+   * {@inheritdoc}
+   */
   public function view($display_mode = array()) {
     extract($this->getValue(FALSE));
-    return mcapi_currency_load($curr_id)->format($value);
+    $currency = entity_load('mcapi_currency', $curr_id);
+    if ($value) {
+      return $currency->format($value);
+    }
+    elseif ($currency->zero) {
+      return \Drupal::config('mcapi.misc')->get('zero_snippet');
+    }
+    //TODO log an error:
+    //Zero worth not allowed in currency !currency->id()
+    //while we're developing, we throw the error
+    throw new \Exception('Zero worth not allowed in currency '.$currency->id());
   }
 
 }
