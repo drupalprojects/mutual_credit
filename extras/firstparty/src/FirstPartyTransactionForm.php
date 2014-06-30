@@ -16,29 +16,29 @@ use Drupal\Core\Entity\EntityManagerInterface;
 
 class FirstPartyTransactionForm extends TransactionForm {
 
-	var $config;//the settings as a configuration object
+  var $config;//the settings as a configuration object
 
-	function __construct(EntityManagerInterface $entity_manager, $form_name = NULL) {
-	  parent::__construct($entity_manager);
-	  //in alpha12 this protected $moduleHandler is declared in Drupal\Core\Form\FormBuilder but never populated
-	  $this->moduleHandler = \Drupal::moduleHandler();
+  function __construct(EntityManagerInterface $entity_manager, $form_name = NULL) {
+    parent::__construct($entity_manager);
+    //in alpha12 this protected $moduleHandler is declared in Drupal\Core\Form\FormBuilder but never populated
+    $this->moduleHandler = \Drupal::moduleHandler();
 
-		if (!$form_name) {
+    if (!$form_name) {
       $options = \Drupal::request()->attributes->get('_route_object')->getOptions();
-    	//this is the only way I know how to get the args. Could it be more elegant?
+      //this is the only way I know how to get the args. Could it be more elegant?
       $form_name = $options['parameters']['editform_id'];
-		}
-		$this->config = entity_load('1stparty_editform', $form_name);
+    }
+    $this->config = entity_load('1stparty_editform', $form_name);
     //makes $this->entity;
-		$this->prepareTransaction();
-	}
+    $this->prepareTransaction();
+  }
 
-	/**
-	 * Symfony routing callback
-	 */
-	public function title() {
-	  return $this->config->title;
-	}
+  /**
+   * Symfony routing callback
+   */
+  public function title() {
+    return $this->config->title;
+  }
 
   /**
    * Get the original transaction form and alter it according to
@@ -56,71 +56,73 @@ class FirstPartyTransactionForm extends TransactionForm {
     //TODO caching according to $config->get('cache')
     $form = parent::form($form, $form_state);
 
-  	//sort out the payer and payee, for the secondparty and direction
-  	//the #title and #description will get stripped later
+    //sort out the payer and payee, for the secondparty and direction
+    //the #title and #description will get stripped later
     if ($config->get('direction.preset') == 'incoming') {
       $form['partner'] = $form['payer'];
     }
     else {
       $form['partner'] = $form['payee'];
     }
-  	$form['payer']['#access'] = FALSE;
-  	$form['payee']['#access'] = FALSE;
-  	$account = user_load(\Drupal::currentuser()->id());
-  	//use this method because i still don't know how to iterate
-  	//through the $account->exchanges entity_reference field.
-  	foreach (mcapi_get_wallet_ids($account) as $wid) {
-  	  $my_wallets[$wid] = entity_load('mcapi_wallet', $wid)->label();
-  	}
-  	$form['mywallet'] = array(
-  		'#title' => t('My wallet')
-  	);
-  	//if I only have one wallet, we'll put a bogus disabled chooser
-  	//however disabled widgets don't return a value, so we'll store the value we need in a helper element
-  	if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
-  	  $form['mywallet']['#type'] = $config->mywallet['widget'];
-  	  $form['mywallet']['#options'] = $my_wallets;
-  	  $form['mywallet']['#weight'] = -1;//ensure this is processed before the direction
+    $form['payer']['#access'] = FALSE;
+    $form['payee']['#access'] = FALSE;
+    $account = user_load(\Drupal::currentuser()->id());
+    //use this method because i still don't know how to iterate
+    //through the $account->exchanges entity_reference field.
+    foreach (mcapi_get_wallet_ids($account) as $wid) {
+      $my_wallets[$wid] = entity_load('mcapi_wallet', $wid)->label();
     }
-  	if (count($my_wallets) < 2) {
-  	  $form['mywallet']['#disabled'] = TRUE;
-  	  $form['mywallet']['#default_value'] = reset($my_wallets);
-  	  //this will be used to populate mywallet in the validation
-  	  $form['mywallet_value'] = array(
-  	  	'#type' => 'value',
-  	    '#value' => key($my_wallets)
-  	  );
-  	}
-  	$form['partner']['#element_validate'] = array('local_wallet_validate_id');
+    $form['mywallet'] = array(
+      '#title' => t('My wallet')
+    );
+    //if I only have one wallet, we'll put a bogus disabled chooser
+    //however disabled widgets don't return a value, so we'll store the value we need in a helper element
+    if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
+      $form['mywallet']['#type'] = $config->mywallet['widget'];
+      $form['mywallet']['#options'] = $my_wallets;
+      $form['mywallet']['#weight'] = -1;//ensure this is processed before the direction
+    }
+    if (count($my_wallets) < 2) {
+      $form['mywallet']['#disabled'] = TRUE;
+      $form['mywallet']['#default_value'] = reset($my_wallets);
+      //this will be used to populate mywallet in the validation
+      $form['mywallet_value'] = array(
+        '#type' => 'value',
+        '#value' => key($my_wallets)
+      );
+    }
+    $form['partner']['#element_validate'] = array('local_wallet_validate_id');
 
-  	if ($config->partner['preset']) {
-    	$form['partner']['#default_value'] = $config->partner['preset'];
-  	}
+    if ($config->partner['preset']) {
+      $form['partner']['#default_value'] = $config->partner['preset'];
+    }
 
-  	$form['direction'] = array(
-  		'#type' => $config->direction['widget'],
-  		'#default_value' => $config->direction['preset'],
-  		'#options' => array(
-  		  'incoming' => $config->direction['incoming'],
-  		  'outgoing' => $config->direction['outgoing'],
-  	  ),
-  	  '#element_validate' => array(array($this, 'firstparty_convert_direction'))
-  	);
-  	//handle the description
-  	//dunno why $config->get('description.placeholder') isn't working
-  	$des = $config->get('description');
-  	$form['description']['#placeholder'] = $des['placeholder'];
+    $form['direction'] = array(
+      '#type' => $config->direction['widget'],
+      '#default_value' => $config->direction['preset'],
+      '#options' => array(
+        'incoming' => $config->direction['incoming'],
+        'outgoing' => $config->direction['outgoing'],
+      ),
+      '#element_validate' => array(array($this, 'firstparty_convert_direction'))
+    );
+    //handle the description
+    //dunno why $config->get('description.placeholder') isn't working
+    $des = $config->get('description');
+    $form['description']['#placeholder'] = $des['placeholder'];
 
-  	//the fieldAPI fields are in place already, but we need to add the default values from the Designed form.
-  	$fieldapi_presets = $config->get('fieldapi_presets');
-  	foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {
-      $form[$field_name]['widget']['#default_value'] = $fieldapi_presets[$field_name];
-  	}
+    //the fieldAPI fields are in place already, but we need to add the default values from the Designed form.
+    $fieldapi_presets = $config->get('fieldapi_presets');
+    foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {//visible fields according to the default view mode
+      if (array_key_exists($field_name, $fieldapi_presets)) {
+        $form[$field_name]['widget']['#default_value'] = $fieldapi_presets[$field_name];
+      }
+    }
 
     //worth field needs special treatment.
     //The allowed_curr_ids provided by the widget need to be overwritten
     //by the curr_ids in the designed form, if any.
-  	$curr_ids = array();
+    $curr_ids = array();
     foreach ($config->fieldapi_presets['worth'] as $item) {
       if ($item['value'] == '')continue;
       $curr_ids[] = $item['curr_id'];
@@ -129,45 +131,46 @@ class FirstPartyTransactionForm extends TransactionForm {
       $form['worth']['widget']['#allowed_curr_ids'] = $curr_ids;
     }
 
-  	//TODO put this in the base transaction form,
-  	//where the one checkbox can enable both payer and payee to be selected from any exchange
+    //TODO put this in the base transaction form,
+    //where the one checkbox can enable both payer and payee to be selected from any exchange
     if (strpos($config->experience['twig'], '{{ intertrade }}') && referenced_exchanges($account, TRUE, TRUE)) {
-    	//this checkbox flips between partner_choosers
-    	$form['intertrade'] = array(
-    		'#title' => t('Intertrade'),
-    	  '#description' => t('Trade with someone outside your exchange'),
-    	  '#type' => 'checkbox',
-    	  '#default_value' => 0,
-    	);
-    	//make a second partner widget and switch between them
-    	$form['partner']['#states'] = array(
-    	  'visible' => array(
+      //this checkbox flips between partner_choosers
+      $form['intertrade'] = array(
+        '#title' => t('Intertrade'),
+        '#description' => t('Trade with someone outside your exchange'),
+        '#type' => 'checkbox',
+        '#default_value' => 0,
+      );
+      //make a second partner widget and switch between them
+      $form['partner']['#states'] = array(
+        'visible' => array(
           ':input[name="intertrade"]' => array('checked' => FALSE)
         )
-    	);
-    	$form['partner_all'] = $form['partner'];
-    	$form['partner_all']['#local'] = FALSE;
-    	$form['partner_all']['#states']['visible'][':input[name="intertrade"]']['checked'] = TRUE;
+      );
+      $form['partner_all'] = $form['partner'];
+      $form['partner_all']['#local'] = FALSE;
+      $form['partner_all']['#states']['visible'][':input[name="intertrade"]']['checked'] = TRUE;
     }
 
-  	//hide the state, type
-  	$form['state']['#type'] = 'value';
-  	//TODO get the first state of this workflow
-  	$form['state']['#value'] = TRANSACTION_STATE_FINISHED;
-  	$form['type']['#type'] = 'value';
+    //hide the state, type
+    $form['state']['#type'] = 'value';
+    //TODO get the first state of this workflow
+    $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
+    $form['type']['#type'] = 'value';
+    $form['type']['#default_value'] = $config->type;
 
-  	//handle the field API
-  	$form['#twig'] = $config->experience['twig'];
+    //handle the field API
+    $form['#twig'] = $config->experience['twig'];
 
     //make hidden any fields that do not occur in the template
     $form['#twig_tokens'] = mcapi_1stparty_transaction_tokens();
 
     foreach ($form['#twig_tokens'] as $token) {
-     	if (strpos($config->experience['twig'], $token) === FALSE) {
-  	    $form[$token]['#type'] = 'value';
-     	}
-  	}
-  	$form['#twig_tokens'][] = 'actions';
+       if (strpos($config->experience['twig'], $token) === FALSE) {
+        $form[$token]['#type'] = 'value';
+       }
+    }
+    $form['#twig_tokens'][] = 'actions';
     $form['#theme'] = '1stpartyform';
 
 /*
@@ -241,15 +244,15 @@ class FirstPartyTransactionForm extends TransactionForm {
    * //TODO Might be ok to delete this now
    */
   protected function actions(array $form, array &$form_state) {
-  	$actions = parent::actions($form, $form_state);
-		if ($this->config->experience['preview'] == 'ajax') {
-			//this isn't working at all...
-			$actions['save']['#attributes']['class'][] = 'use-ajax';
-			$actions['save']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
-		}
-		$actions['save']['#value'] = $this->config->experience['button'];
+    $actions = parent::actions($form, $form_state);
+    if ($this->config->experience['preview'] == 'ajax') {
+      //this isn't working at all...
+      $actions['save']['#attributes']['class'][] = 'use-ajax';
+      $actions['save']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
+    }
+    $actions['save']['#value'] = $this->config->experience['button'];
 
-  	return $actions;
+    return $actions;
   }
 
   /**

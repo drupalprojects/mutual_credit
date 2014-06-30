@@ -55,3 +55,9 @@ mcapi.admin.1stparty_editform.enable_confirm:
   options:
     _admin_route: TRUE
 
+#copied from views alpha12. don't know how it works
+route_callbacks:
+  - 'mcapi_1stparty.route_subscriber:routes'
+
+
+

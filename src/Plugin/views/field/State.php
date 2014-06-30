@@ -20,8 +20,12 @@ use Drupal\views\ResultRow;
  */
 class State extends FieldPluginBase {
 
-  function render(ResultRow $values) {
+  function query() {
+    parent::query();
     $this->states = mcapi_entity_label_list('mcapi_state');
+  }
+
+  function render(ResultRow $values) {
     return $this->states[$this->getValue($values)];
   }
 

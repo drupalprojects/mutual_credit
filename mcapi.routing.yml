@@ -137,7 +137,7 @@ mcapi.admin.workflow:
     _admin_route: TRUE
 
 mcapi.workflow_settings:
-  path: '/admin/accounting/transactions/workflow/{op}'
+  path: '/admin/accounting/workflow/{transition}'
   defaults:
     _form: 'Drupal\mcapi\Form\TransitionSettingsForm'
     _title: 'Transition settings'
@@ -151,7 +151,7 @@ mcapi.wallet_view:
   path: '/wallet/{mcapi_wallet}'
   defaults:
     _entity_view: 'mcapi_wallet.full'
-    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
+#    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.view'
 
@@ -221,6 +221,25 @@ mcapi.exchange.edit:
     _title: 'Edit exchange'
   requirements:
     _entity_access: 'mcapi_exchange.update'
+
+#TEMP
+mcapi.wallet.log:
+  path: '/wallet/{mcapi_wallet}/log'
+  defaults:
+    #_entity_view: \Drupal\mcapi\Controller\WalletController::page
+    _entity_view: mcapi_wallet.log
+    _title: Wallet history
+  requirements:
+    _entity_access: 'mcapi_wallet.view'
+
+#TODO not sure the best way to make a tab on the exchanges page which shows the wallet log for its _intertrading wallet
+#mcapi.exchange.wallet:
+#  path: '/exchange/{mcapi_exchange}/intertrading'
+#  defaults:
+ #   _content: \Drupal\mcapi\Controller\WalletController::page
+ #   _title_callback: \Drupal\mcapi\Controller\WalletController::pageTitle'
+#  requirements:
+ #   _entity_access: 'mcapi_exchange.update'
 
 mcapi.exchange.delete_confirm:
   path: '/exchange/{mcapi_exchange}/delete'

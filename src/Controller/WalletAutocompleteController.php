@@ -47,13 +47,16 @@ class WalletAutocompleteController {
     if (is_numeric($string)) {
       $conditions['wid'] = array($string);
     }
+    //deal with the case where a wid has been entered with a hash
+    elseif (substr($string, 0, 1) == '#' && is_numeric($num = substr($string, 1))) {
+      $conditions['wid'] = $num;
+    }
     else {
       $conditions['fragment'] = $string;
     }
     if ($exchanges) {
       $conditions['exchanges'] = $exchanges;
     }
-
     $wids = $this->walletStorage->filter($conditions);
     if (empty($wids)) {
       $json = array(

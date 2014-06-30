@@ -27,7 +27,7 @@ use Drupal\Component\Annotation\PluginID;
  */
 class Balance extends FieldPluginBase {
 
-  var $wallet_id;
+  private $wallet_id;
 
   /**
    * {@inheritdoc}

@@ -14,16 +14,16 @@ use Drupal\Core\Entity\EntityTypeInterface;
 interface TransactionInterface extends ContentEntityInterface {
 
   /**
-   * Validate a transaction, and generate the children by calling hook_transaction_children,
-   * and validate the children
-   * todo - I'm not sure this technically needs to be in the interface
+   * Perform a transition on the transaction
    *
-   * @throws McapiTransactionException
-   *   when the parent transaction has errors
+   * @param string $transition_name
    *
-   * @return array $messages
-   *   a flat list of non-fatal exceptions from the parent and fatal exceptions in the child transactions
+   * @param array $values
+   *   the form state values from the transition form
+   *
+   * @return array
+   *   a renderable array
    */
-  public function validateNew();
+  public function transition($transition_name, array $values);
 
 }

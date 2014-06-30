@@ -16,7 +16,7 @@ use Drupal\user\RoleInterface;
  *
  * @ConfigEntityType(
  *   id = "mcapi_state",
- *   label = @Translation("State"),
+ *   label = @Translation("Transaction state"),
  *   controllers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *   },
@@ -53,4 +53,35 @@ class State extends ConfigEntityBase {
    */
   public $description;
 
+  /**
+   * The module which provides this plugin
+   *
+   * @var string
+   */
+  public $module;
+
+  /**
+   * Whether or not transactions in this state counts towards the transaction stats
+   * N.B. This can overridden by user 1 on the misc settings page
+   *
+   * @var boolean
+   */
+  public $counted;
+
+  /**
+   * testing....
+   */
+  function calculateDependencies() {
+    $this->dependencies = array();
+    $conditions = array('state' => $this->id);
+    if (\Drupal::EntityManager()->getStorage('mcapi_transaction')->filter($conditions, 0, 1)) {
+      $this->dependencies = array('module' => array($this->module));
+    }
+    //todo - the same for mcapi_type!
+    return $this->dependencies;
+  }
+
+  function __toString() {
+    return $this->id;
+  }
 }

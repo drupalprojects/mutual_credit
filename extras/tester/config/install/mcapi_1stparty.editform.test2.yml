@@ -15,13 +15,13 @@ description:
   placeholder: ''
 worth:
   preset:
-    1:
-      curr_id: 1
+    0:
+      curr_id: veur
       value: 0
 created:
   show: false
 experience:
-  twig: "my wallet {{ mywallet }}\r\ndescription {{ description }}\r\nworths {{ worth }}\r\npartner {{ partner }}\r\ndirection {{ direction }}\r\ncreated {{ created }}\r\ncategories {{ field_categories }}"
+  twig: "my wallet {{ mywallet }}\r\ndescription {{ description }}\r\nworths {{ worth }}\r\npartner {{ partner }}\r\ndirection {{ direction }}\r\ncreated {{ created }}\r\ncategories {{ field_categories }}\r\ndefault categories are Transport, Food, Care, Learning, Home, Leisure"
   button: 'do it now!'
   preview: modal
 message: 'You did it!'

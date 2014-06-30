@@ -1,15 +1,15 @@
 <?php
 
-use \Drupal\field\Field;
-
 /*
  * implements hook_tokens().
  */
 function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) return array();
+  if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) {
+    return array();
+  }
+
   $replacements = $replaced = array();
   $transaction = $data['mcapi'];
-
   if (array_key_exists('sentence', $tokens)) {
     $template = \Drupal::config('mcapi.misc')->get('sentence_template');
     $replacements[$tokens['sentence']] = \Drupal::Token()->replace($template, $data, $options);

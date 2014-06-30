@@ -1,0 +1,17 @@
+override: 0
+skip:
+  auto: true
+  mass: true
+  user1: false
+  owner: false
+display_relative: false
+minmax:
+  min:
+    -
+      curr_id: cc
+      value: -72000
+  max:
+    -
+      curr_id: cc
+      value: 72000
+plugin: explicit

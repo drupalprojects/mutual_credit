@@ -9,10 +9,17 @@ settings:
   allowed_values:
     -
       vocabulary: categories
-      parent: '0'
+      parent: 0
   options_list_callback: null
+  target_type: taxonomy_term
+  target_bundle: null
 module: taxonomy
 locked: false
-cardinality: '1'
+cardinality: 1
 translatable: false
 indexes: {  }
+dependencies:
+  module:
+    - mcapi
+    - taxonomy
+

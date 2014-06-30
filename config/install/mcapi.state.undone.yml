@@ -1,3 +1,5 @@
-id: 0
-label: Deleted
-description: Erased & Discounted
+id: undone
+label: Undone
+description: Erased or deleted, according to the 'indelible' setting.
+module: mcapi
+counted: false

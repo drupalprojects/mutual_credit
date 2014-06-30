@@ -48,22 +48,27 @@ class DashboardController extends ControllerBase {
    * every wallet shows its owner, balance and limits.
    */
   protected function buildPage() {
-    $header = array('#', 'Name', 'Balance', 'Mins', 'Maxes');
+    $page['#prefix'] = 'Leave this tab open for reference<br />';
+    $header = array('Wallet', 'Name', 'Balance', 'Mins', 'Maxes', 'edit');
     foreach (entity_load_multiple('mcapi_exchange') as $exchange) {
       $id = $exchange->id();
       $page[$id] = array(
-        '#title' => 'Exchange: '.$exchange->label(),
-        '#description' => ($exchange->status ? 'Open' : 'Closed') . ' Managed by '.($exchange->getOwner()->label()),
+        '#title' => 'Exchange: '.$exchange->label() .($exchange->status ? ' (Open)' : ' (Closed)'),
         '#type' => 'details',
-        '#open' => TRUE,
-        'currencies' => array(),
+        '#open' => $exchange->status,
+        'manager' => array(
+      	  '#markup' => 'Managed by '.l(($exchange->getOwner()->label()),$exchange->getOwner()->url())
+        ),
+        'currencies' => array(
+          '#prefix' => '<br />'
+        ),
         'wallets' => array()
       );
       $currnames = array();
       foreach ($exchange->currencies->getValue(TRUE) as $item) {
-        $currnames[] = $item['entity']->label();
+        $currnames[] = l($item['entity']->label(), 'admin/accounting/currencies/'.$item['entity']->id);
       }
-      $page[$id]['currencies'] = array('#markup' => implode(', ', $currnames));
+      $page[$id]['currencies']['#markup'] = 'Currencies: '.implode(', ', $currnames);
       $wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->walletsInExchanges(array($id));
       $tbody = array();
       foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
@@ -75,13 +80,13 @@ class DashboardController extends ControllerBase {
           $currency = entity_load('mcapi_currency', $curr_id);
           $balances[] = $currency->format($summary['balance']);
         }
-
         $tbody[$wallet->id()] = array(
-        	'id' => l('#'.$wallet->id(), 'wallet/'.$wallet->id()),
-          'name' => $wallet->label(),
+          'id' => l('#'.$wallet->id(), 'wallet/'.$wallet->id()),
+          'name' => l($wallet->getOwner()->label(), $wallet->getOwner()->url()),
           'balances' => implode('<br />', $balances),
           'mins' => implode('<br />', $mins),
-          'maxes' => implode('<br />', $maxes)
+          'maxes' => implode('<br />', $maxes),
+          'edit' => l('edit', 'wallet/'.$wallet->id().'/limits'),
         );
       }
       $page[$id]['wallets'] = array(
@@ -90,6 +95,14 @@ class DashboardController extends ControllerBase {
         '#rows' => $tbody,
         '#attributes' => array('border' => 1)
       );
+      //show a list of forms which will work in this or all exchanges
+      $forms = array();
+      foreach (entity_load_multiple('1stparty_editform') as $editform) {
+        if ($editform->exchange == $id || empty($editform->exchange)) {
+          $forms[] = l($editform->label(), $editform->path);
+        }
+      }
+      $page[$id]['forms'] = array('#markup' => 'Create transaction: '.implode(', ', $forms));
     }
     return $page;
   }

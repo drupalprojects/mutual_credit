@@ -29,8 +29,12 @@ function mcapi_signatures_modules_installed($modules) {
 }
 /*
  * implements hook_uninstall
+ * @todo ideally we would prevent this module from uninstalling if ANY transactions
+ * were in pending state. Ideally any module providing a transaction state in use
+ * would not be uninstallable.
  */
 function mcapi_signatures_uninstall() {
+  drupal_set_message("This uninstall shouldn't be possible if any transactions are pending");
   //presumably the signature views would disappear without this?
   if (module_exists('views')) {
     $view = views_get_view('signatures');
@@ -38,6 +42,13 @@ function mcapi_signatures_uninstall() {
       views_delete_view($view);
     }
   }
+  return;
+  //TODO
+  //if I delete these they don't come back when I reinstall
+  \Drupal::config('mcapi.state.-1')->delete();
+  \Drupal::config('mcapi.type.signatures')->delete();
+  \Drupal::config('mcapi.transition.sign')->delete();
+  \Drupal::config('mcapi.transition.sign_off')->delete();
 }
 /**
  * Implementation of hook_schema)().

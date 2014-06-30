@@ -22,6 +22,12 @@ interface WalletInterface extends ContentEntityInterface {
    */
   public function getOwner();
 
+  /**
+   * Identify the user who controls this wallet, which may be different to the entity which owns this wallet
+   * @return integer
+   *   the user id.
+   */
+  public function user_id();
 
   /**
    * get the exchanges which this wallet can be used in.

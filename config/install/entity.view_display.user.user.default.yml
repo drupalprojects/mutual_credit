@@ -4,11 +4,13 @@ targetEntityType: user
 bundle: user
 mode: default
 content:
-  wallets_summaries:
+  mcapi_signatures:
     weight: 0
+  wallets_summaries:
+    weight: 1
   exchanges:
     type: entity_reference_label
-    weight: 1
+    weight: 2
     settings:
       link: true
     label: above
@@ -20,4 +22,5 @@ dependencies:
     - field.instance.user.user.exchanges
   module:
     - entity_reference
+    - user
 

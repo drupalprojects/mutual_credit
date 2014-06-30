@@ -9,7 +9,6 @@ namespace Drupal\mcapi_tester\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\user\UserInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Returns responses for devel module routes.
@@ -25,29 +24,17 @@ class McapiTesterSwitchuser extends ControllerBase {
    *   The username to switch to, or NULL to log out.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *
+   * @todo replace this with the devel block when it starts working!
    */
   public function switchUser($name = NULL) {
-    global $user;
-    $module_handler = $this->moduleHandler();
-
-    if ($uid = $this->currentUser()->id()) {
-      $module_handler->invokeAll('user_logout', array($user));
-    }
-    if (isset($name) && $account = user_load_by_name($name)) {
-      $old_uid = $uid;
-      $user = $account;
-      $user->timestamp = time() - 9999;
-      if (!$old_uid) {
-        // Switch from anonymous to authorized.
-        drupal_session_regenerate();
-      }
-      $module_handler->invokeAll('user_login', array($user));
-    }
-    elseif ($uid) {
-      session_destroy();
+    user_logout();
+    if ($account = user_load_by_name($name)) {
+      user_login_finalize($account);
     }
     $destination = drupal_get_destination();
-    $url = $this->urlGenerator()->generateFromPath($destination['destination'], array('absolute' => TRUE));
+    $url = $this->urlGenerator()
+      ->generateFromPath($destination['destination'], array('absolute' => TRUE));
 
     return new RedirectResponse($url);
   }

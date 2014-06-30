@@ -176,7 +176,6 @@ function mcapi_view_limits(WalletInterface $wallet) {
     else {
       $limits = mcapi_limits($wallet)->limits($currency->id());
       //special opportunity to show an alternative display when +ve & -ve limits are balanced
-//      print_r($limits);
       if ($limits['max'] && ($limits['max'] == -$limits['min'])) {
         $theme = 'mcapi_limits_balanced';
       }
@@ -204,6 +203,7 @@ function mcapi_limits_element_info() {
       '#tree' => TRUE,
       '#process' => array('mcapi_limits_process_minmax'),
       '#value_callback' => 'mcapi_limits_form_type_minmax_value',
+      '#element_validate' => 'mcapi_limits_minmax_validate',
       '#minus' => FALSE
     )
   );
@@ -213,17 +213,26 @@ function mcapi_limits_element_info() {
  * processor for minmax element
  */
 function mcapi_limits_process_minmax(&$element) {
-  $default = (array)$element['#default_value'] + array('min' => array(), 'max' => array());
+  foreach (array('min', 'max') as $limit) {
+    if (empty($element['#default_value'][$limit])) {
+      $element['#default_value'][$limit] = 0;
+      //array(
+        //array(
+          //'curr_id' => $element['#curr_id'],
+         // 'value' => 0
+       // )
+      //);
+    }
+  }
   $element['min'] = array(
     '#title' => t('Minimum balance'),
     '#description' => t('Must be less than or equal to zero'),
     '#type' => 'worth',
     '#config' => TRUE,
     '#default_value' => array(
-      0 => array('curr_id' => $element['#curr_id'], 'value' => $default['min']),
+      array('curr_id' => $element['#curr_id'], 'value' => $element['#default_value']['min'])
     ),
-    '#placeholder' => array(
-      0 => $element['#placeholder']['min']
+    '#placeholder' => array(@$element['#placeholder']['min']
     ),
     '#minus' => TRUE
   );
@@ -232,16 +241,20 @@ function mcapi_limits_process_minmax(&$element) {
     '#description' => t('Must be greater than 1.'),
     '#type' => 'worth',
     '#config' => TRUE,
+    //we key the default value with the curr_id to make the saved settings easier to read
     '#default_value' => array(
-      0 => array('curr_id' => $element['#curr_id'], 'value' => $default['max']),
+      array('curr_id' => $element['#curr_id'], 'value' => $element['#default_value']['max'])
     ),
-    '#placeholder' => array(
-      0 => $element['#placeholder']['max']
-    ),
+    '#placeholder' => array(@$element['#placeholder']['max']),
     '#weight' => 1,
     '#min' => 1
   );
   return $element;
+}
+
+function mcapi_limits_minmax_validate(&$element, &$form_state) {
+  echo 'mcapi_limits_minmax_validate';
+  print_r($element['#value']);die();
 }
 
 /**

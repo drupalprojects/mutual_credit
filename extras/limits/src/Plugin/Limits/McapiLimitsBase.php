@@ -89,7 +89,6 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
 	  //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
 	  $subform['display_relative'] = array(
       '#title' => t('Display perspective'),
-      '#description' => t('Settings on the user profiles override these general limits.'),
       '#type' => 'radios',
 	    '#options' => array(
 	      0 => t('Show absolute balance limits'),

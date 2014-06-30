@@ -27,7 +27,7 @@ class WalletOwner extends Standard {
    * {@inheritdoc}
    */
   public function query() {
-    $this->addAdditionalFields();
+    //$this->addAdditionalFields();
   }
 
   /**

@@ -20,13 +20,13 @@ class TransitionSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state, $op = NULL) {
-    $this->plugin = transaction_transitions($op);
+  public function buildForm(array $form, array &$form_state, $transition = NULL) {
+    $this->plugin = transaction_transitions($transition);
 
   	$form = $this->plugin->buildConfigurationForm($form, $form_state);
 
   	//TODO move the following to an action when rules is readier
-  	if ($op != 'view' && 0) {
+  	if ($transition != 'view' && 0) {
     	$form['rules'] = array(
   	    '#markup' => t('Use the rules module to send notifications'),
   	    '#weight' => 20
@@ -93,15 +93,13 @@ class TransitionSettingsForm extends ConfigFormBase {
 
   public function validateForm(array &$form, array &$form_state) {
     parent::validateForm($form, $form_state);
-
     $this->plugin->validateConfigurationForm($form, $form_state);
-
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state, $op = NULL) {
+  public function submitForm(array &$form, array &$form_state, $transition = NULL) {
   	form_state_values_clean($form_state);
 
   	$this->plugin->submitConfigurationForm($form, $form_state);

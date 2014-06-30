@@ -8,8 +8,13 @@ entity_type: mcapi_transaction
 bundle: mcapi_transaction
 label: Categories
 description: ''
-required: 0
+required: false
 default_value: {  }
 default_value_function: ''
-settings: {  }
+settings:
+  handler: default
+dependencies:
+  entity:
+    - field.field.mcapi_transaction.field_categories
 field_type: taxonomy_term_reference
+

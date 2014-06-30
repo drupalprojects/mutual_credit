@@ -39,51 +39,7 @@ class WorthFieldItemList extends FieldItemList {
    * {@inheritdoc}
    */
   public function first() {
-    echo "WorthFieldItemList:first should never be called.";
-    die();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function defaultValuesForm(array &$form, array &$form_state) {
-    die('WorthFieldItemList::defaultValuesForm');
-    if (empty($this->getFieldDefinition()->default_value_function)) {
-      $default_value = $this->getFieldDefinition()->default_value;
-      $element = array();
-      return $element;
-    }
-    return array();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function defaultValuesFormValidate(array $element, array &$form, array &$form_state) { }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function defaultValuesFormSubmit(array $element, array &$form, array &$form_state) {
-    //return the interesting values from the form
-    debug($form_state['values']);
-    return array();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  //TODO remove this because there is no default value, I think
-  //lets wait until I've played with configuring the fields
-  public function _______getDefaultValue() {
-    //seems to be called on submission of the settings form
-    //this is what the parent function does
-    return $this->getSetting('default_value');
-    //but what we need is an array of currency => $raw value pairs
-
-    $default_value = parent::getDefaultValue();
-    //debug($default_value, 'default value from parent in WorthFieldItemList');
-    return $default_value;
+    die("WorthFieldItemList:first should never be called.");
   }
 
 
@@ -92,38 +48,17 @@ class WorthFieldItemList extends FieldItemList {
    * the list with an empty item keyed 0, then to set the value of that default item
    * Because we are using the currency id as the list key, we can't create a worth item without it
    */
-  public function set($property_name, $value) {//TODO make this work
-    $this->worthSet($value);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  //$values needs to be array(array('curr_id' => 1, 'value' => 100))
-  public function setValue($values, $notify = true) {
-    // Clear the values of properties for which no value or a value of 0 has been passed
-    $this->list = array_intersect_key($this->list, array_filter($values));
-    //We are constrained in that the db expects delta to be a number
-    foreach ($values as $value) {
-      $this->worthSet($value);
-    }
-  }
-
-  /**
-   * set the value, ensuring that no two curr_ids are the same
-   * @param unknown $val
-   */
-  private function worthSet($val) {
+  public function set($property_name, $value) {
     $key = 0;
     foreach ($this->list as $key => $item) {
-      if ($item->curr_id == $val['curr_id']) {
-        $this->list[$key]->setValue($val, FALSE);
+      if ($item->curr_id == $value['curr_id']) {
+        $this->list[$key]->setValue($value, FALSE);
         return;
       }
       $key++;
     }
-    $this->list[$key] = $this->createItem($key, $val);//or $item???
-
+    //if we didn't override anything then create a new item
+    $this->list[$key] = $this->createItem($key, $value);//or $item???
   }
 
   /**
@@ -144,11 +79,6 @@ class WorthFieldItemList extends FieldItemList {
     return $this->view();
   }
 
-  //this is how the default widget, StringFormatter get the text out
-  public function value() {
-    return $this->view();
-  }
-
   /**
    * {@inheritdoc}
    */
@@ -160,4 +90,24 @@ class WorthFieldItemList extends FieldItemList {
     return implode($separator, $values);
   }
 
+  /**
+   * undocumented
+   * used in function intertrading_new_worths()
+   */
+  public function curr_ids() {
+    foreach ($this->list as $item) {
+      $curr_ids[] = $item->curr_id;
+    }
+    return $curr_ids;
+  }
+  /**
+   * undocumented
+   * used in function intertrading_new_worths()
+   */
+  public function val($curr_id) {
+    foreach ($this->list as $item) {
+      if ($item->curr_id == $curr_id) return $item->value;
+    }
+    return 0;
+  }
 }

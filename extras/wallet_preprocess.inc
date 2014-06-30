@@ -116,11 +116,17 @@ function template_preprocess_wallet_stats(&$vars) {
  * @todo this theme callback is cached - when to clear the cache and what cache is it?
  */
 function template_preprocess_wallet_summary(&$vars) {
-  $data = $vars['wallet']->getStats($vars['currency']->id());
-  $vars['balance'] = $vars['currency']->format($data['balance'], TRUE);
-  $vars['trades'] = $data['trades'];
   $vars['url'] = url('wallet/'.$vars['wallet']->id());
   $vars['name'] = $vars['wallet']->get('name')->value;
+  //TODO would be nice to sort the $vars['currencies'] in order of the number of trades
+  //however can't do that because the currencies haven't been preprocessed yet
+  //would need a quite different approach
+}
+
+function template_preprocess_wallet_summary_currency(&$vars) {
+  $vars['url'] = url('wallet/'.$vars['wallet']->id().'/'.$vars['currency']->id());
+  $vars += $vars['wallet']->getStats($vars['currency']->id());
+  $vars['balance'] = $vars['currency']->format($vars['balance'], TRUE);
 }
 
 /**
@@ -156,12 +162,6 @@ function template_preprocess_wallet_balance_bars(&$vars) {
   mcapi_add_gchart_js('corechart');
 }
 
-/**
- * theme preprocessor for wallet_virgin
- */
-function template_preprocess_wallet_virgin(&$vars) {
-  $vars['name'] = $vars['wallet']->label();
-}
 
 /**
  * add the gchart libs, but only once

@@ -39,6 +39,9 @@ mcapi.misc:
     zero_snippet:
       type: string
       label: Zero snippet
+    counted:
+      type: map
+      label: Counted transaction states
     child_errors:
       type: mapping
       label: Invalid child transactions
@@ -130,7 +133,7 @@ mcapi.state.*:
   label: Transaction workflow state
   mapping:
     id:
-      type: integer
+      type: string
       label: State ID
     label:
       type: string
@@ -138,6 +141,9 @@ mcapi.state.*:
     description:
       type: string
       label: Description
+    counted:
+      type: boolean
+      label: Counted
 
 mcapi.type.*:
   type: mapping
@@ -150,7 +156,7 @@ mcapi.type.*:
       type: string
       label: Description
     start_state:
-      type: integer
+      type: string
       label: Initial workflow state
 
 mcapi.transition.*:

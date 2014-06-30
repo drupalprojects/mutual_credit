@@ -26,9 +26,14 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, array &$form_state) {
+    $args = func_get_args();
     $subform['minmax'] =  array(
     	'#type' => 'minmax',
-      '#default_value' => $this->configuration['minmax']
+      '#default_value' => array(
+        'min' => $this->configuration['minmax']['min'][0]['value'],
+        'max' => $this->configuration['minmax']['max'][0]['value']
+      ),
+      '#curr_id' => array_pop($args)->id()
     );
     $subform += parent::buildConfigurationForm($form, $form_state);
     return $subform;
@@ -38,9 +43,14 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
    * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits()
    */
   public function getLimits(WalletInterface $wallet) {
+    $curr_id = $this->currency->id();
+    //TODO this assumes that both values are set
+    //the format is a bit inelegant because it is saved directly from the minmax widget
+    $min_item = reset($this->configuration['minmax']['min']);
+    $max_item = reset($this->configuration['minmax']['max']);
     return array(
-      'min' => reset($this->configuration['minmax']['min']),
-      'max' => reset($this->configuration['minmax']['max'])
+      'min' => $min_item['value'],
+      'max' => $max_item['value']
     );
   }
 

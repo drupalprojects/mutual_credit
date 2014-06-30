@@ -21,7 +21,7 @@ function mcapi_install() {
     array('!sitename' => \Drupal::config('system.site')->get('name'))
   ));
   $ex->set('uid', 1);
-  $ex->set('currencies', array(1));
+  $ex->set('currencies', array('cc'));
   $ex->save();
 
   //we need to deal with existing users, especially user 1
@@ -39,10 +39,10 @@ function mcapi_install() {
     $w->save();
   }
   //set the path of the zero image in currency 1
-  $currency1 = mcapi_currency_load(1);
+  $config = \Drupal::config('mcapi.misc');
   $path = url(drupal_get_path('module', 'mcapi') . '/templates/present.png');
-  $currency1->set('zero', '<img src = "'. $path .'" width = "31" />');
-  $currency1->save();
+  $config->set('zero', '<img src = "'. $path .'" width = "31" />');
+  $config->save();
 }
 
 /**
@@ -140,10 +140,10 @@ function mcapi_schema() {
       ),
       'state' => array(
         'description' => 'Completed, pending, disputed, etc',
-        'type' => 'int',
-        'size' => 'normal',
+        'type' => 'varchar',
+        'length' => '16',
         'not null' => TRUE,
-        'default' => 0
+        'default' => TRANSACTION_STATE_FINISHED
       ),
       'data' => array(
         'description' => 'nonessential info not fitting into existing fields',
@@ -212,11 +212,11 @@ function mcapi_schema() {
         'not null' => TRUE,
       ),
       'state' => array(
-        'description' => 'completed, pending, disputed, etc',
-        'type' => 'int',
-        'size' => 'normal',
+        'description' => 'Completed, pending, disputed, etc',
+        'type' => 'varchar',
+        'length' => '16',
         'not null' => TRUE,
-        'default' => 0
+        'default' => TRANSACTION_STATE_FINISHED
       ),
       'type' => array(
         'description' => 'The type of transaction, types are provided by modules',
@@ -232,8 +232,8 @@ function mcapi_schema() {
       ),
       'curr_id' => array(
         'description' => 'The currency ID',
-        'type' => 'int',
-        'size' => 'small',
+        'type' => 'varchar',//when to use varchar and when string?
+        'length' => '8',
       ),
       'incoming' => array(
         'description' => 'Income',

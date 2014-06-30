@@ -1,4 +1,5 @@
 id: mass
 label: Mass
 description: Between one account and many accounts
-start_state: 1
+start_state: done
+module: mcapi

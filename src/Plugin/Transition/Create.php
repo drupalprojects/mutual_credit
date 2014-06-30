@@ -53,7 +53,7 @@ class Create extends TransitionBase {
       throw new McapiTransactionException('', t('Failed to save transaction'));
     }
 
-    return array(t('Transaction Created'));
+    return array(t('Transaction created'));
   }
 
   /**

@@ -79,6 +79,13 @@ class Edit extends TransitionBase {
       '#options' => mcapi_transaction_list_tokens(),
   	  '#default_values' => $this->configuration['fields']
     );
+    /*
+    'participants' => t('Participants'),
+    'description' => t('Description'),
+    'worth' => t('Worth'),
+    'type' => t('Type'),
+    'fieldapi' => t('Field API fields'),
+    */
     $form['window'] = array(
     	'#title' => t('Editable window'),
       '#description' => t('Number of days after creation that the transaction can be edited'),
@@ -88,6 +95,9 @@ class Edit extends TransitionBase {
     );
     return $form;
   }
+
+
+
   /**
    * {@inheritdoc}
   */

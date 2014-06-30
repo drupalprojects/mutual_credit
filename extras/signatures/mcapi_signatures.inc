@@ -1,5 +1,51 @@
 <?php
 
+use \Drupal\mcapi\Entity\WalletInterface;
+use \Drupal\mcapi\Entity\TransactionInterface;
+use \Drupal\Core\Session\AccountInterface;
+
+
+/**
+ * sign a transaction
+ * change the state if no more signatures are left
+ * would be nice if this was in a decorator class so $transaction->sign($account) is possible
+ * @param TransactionInterface $transaction
+ * @param AccountInterface $account
+ * @return TransactionInterface
+ */
+function transaction_sign(TransactionInterface $transaction, AccountInterface $account) {
+  if (array_key_exists($account->id(), $transaction->signatures)) {
+    $transaction->signatures[$account->id()] = REQUEST_TIME;
+    //set the state to finished if there are no outstanding signatures
+    if (array_search(0, $transaction->signatures) === FALSE) {
+      $transaction->set('state', TRANSACTION_STATE_FINISHED);
+    }
+  }
+  return $transaction;
+}
+
+/*
+ * get all the pending transactions for one wallet or Wallet Owner
+ *
+ * @param ContentEntityInterface $entity
+ *   the wallet or wallet or wallet owner entity
+ *
+ * @return array
+ *   the serial numbers of the pending transactions
+ */
+function list_pending(Drupal\Core\Entity\ContentEntityInterface $entity) {
+  $conditions = array('state' => TRANSACTION_STATE_PENDING);
+  if ($entity instanceOf WalletInterface) {
+    $conditions['involving'] = array($entity->id());
+  }
+  else {
+    $conditions['involving'] = \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity);
+  }
+  $serials = \Drupal::EntityManager()
+  ->getStorage('mcapi_transaction')
+  ->filter($conditions);
+  return array_unique($serials);
+}
 
 function mcapi_signall($form, $form_state, $account) {
   $serials = transactions_needing_sig_of_user($account);
@@ -29,36 +75,6 @@ function mcapi_signall_submit($form, &$form_state) {
   );
 }
 
-
-function list_pending($account = NULL) {
-  if (is_null($account)) {
-    $account = \Drupal::currentUser();
-  }
-  $output = array();
-  if ($mixed) {
-    $serials = transaction_filter(array('state' => TRANSACTION_STATE_PENDING, 'involving' => $account->id()));
-    return mcapi_view_sentences($serials);
-  }
-  else {
-    //couldn't be bothered with a theme callback for this
-    $waiting_on = list_waiting_on_uid($account->id());
-    if ($waiting_on) {
-      $waiting_on['#prefix'] = '<strong>'.t('Waiting on you:').'</strong><br />';
-    }
-    $waiting_not_on = list_waiting_not_on_uid($account->id());
-    if ($waiting_not_on) {
-      $waiting_not_on['#prefix'] = '<br /><strong>'.t('Waiting on partner:').'</strong><br />';
-    }
-    if (count($waiting_on || count($waiting_not_on))) {
-      return array(
-        '#prefix' => '<div class = "user-pending">',
-        'waiting on' => $waiting_on,
-        'waiting_not_on' => $waiting_not_on,
-        '#suffix' => '</div>'
-      );
-    }
-  }
-}
 
 function list_waiting_on_uid($uid) {
   $output = array();
@@ -114,6 +130,23 @@ function transactions_needing_sig_of_user($uid) {
     ->execute()
     ->fetchCol();
 }
+
+
+/**
+ * implements template_preprocess_THEMEHOOK
+ */
+function template_preprocess_mcapi_signatures(&$vars) {
+  $plugin = transaction_transitions('sign');
+  foreach ($vars['transaction']->signatures as $uid => $signed) {
+    $account = user_load($uid);
+    $vars['signatures'][$uid] = array(
+        'account' => $account,
+        'class' => 'signature '. (empty($signed) ? 'pending' : 'signed'),
+        'name' =>  $account->getUsername(),
+    );
+  }
+}
+
 
 //send the mail notifying users they have a mail to sign
 function signature_send_initial_notification($transaction, $config) {

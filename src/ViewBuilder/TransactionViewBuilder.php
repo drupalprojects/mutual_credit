@@ -12,6 +12,7 @@ use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Template\Attribute;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\Core\Render\Element;
 
 /**
  * Render controller for transactions.
@@ -45,12 +46,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         $build['#theme'] = 'certificate';
         break;
     	case 'sentence':
-        $template = \Drupal::config('mcapi.misc')->get('sentence_template');
-        $build['#markup'] = \Drupal::Token()->replace(
-          $template,
-          array('mcapi' => $entity),
-          array('sanitize' => TRUE)
-        );
+    	  $build['#theme'] = 'sentence';
         break;
     	default:
         $build['#theme'] = 'mcapi_twig';
@@ -102,21 +98,21 @@ class TransactionViewBuilder extends EntityViewBuilder {
   function renderLinks(TransactionInterface $transaction, $view_mode = 'certificate', $dest_type = NULL) {
     $renderable = array();
     //child transactions and unsaved transactions never show links
-    if (!$transaction->get('parent')->value && $transaction->get('serial')->value) {
+    if (!$transaction->parent->value && $transaction->serial->value) {
       $view_link = $view_mode != 'certificate';
-      foreach (show_transaction_transitions($view_link) as $op => $plugin) {
-        if ($transaction->access($op)) {
-          $renderable['#links'][$op] = array(
+      foreach (show_transaction_transitions($view_link) as $transition => $plugin) {
+        if ($transaction->access($transition)) {
+          $renderable['#links'][$transition] = array(
             'title' => $plugin->label,
-            'route_name' => $op == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op',
+            'route_name' => $transition == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op',
             'route_parameters' => array(
               'mcapi_transaction' => $transaction->serial->value,
-              'op' => $op
+              'transition' => $transition,
             )
           );
           if ($dest_type == 'modal') {
-            $renderable['#links'][$op]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
-            $renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+            $renderable['#links'][$transition]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
+            $renderable['#links'][$transition]['attributes']['class'][] = 'use-ajax';
           }
           elseif($dest_type == 'ajax') {
             //I think we need a new router path for this...
@@ -124,7 +120,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
             //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
           }
           else{
-            $renderable['#links'][$op]['query'] = drupal_get_destination();
+            $renderable['#links'][$transition]['query'] = drupal_get_destination();
           }
         }
       }

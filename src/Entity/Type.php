@@ -16,7 +16,7 @@ use Drupal\user\RoleInterface;
  *
  * @ConfigEntityType(
  *   id = "mcapi_type",
- *   label = @Translation("Type"),
+ *   label = @Translation("Transaction type"),
  *   controllers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *   },
@@ -57,8 +57,27 @@ class Type extends ConfigEntityBase {
    */
   public $start_state;
 
+  /**
+   * The module which provides this plugin
+   *
+   * @var string
+   */
+  //public $module;
+
+
+  function calculateDependencies() {
+    $this->dependencies = array();
+    $conditions = array('type' => $this->id);
+    if (\Drupal::EntityManager()->getStorage('mcapi_transaction')->filter($conditions, 0, 1)) {
+      $this->dependencies = array('module' => array($this->module));
+    }
+    //todo - the same for mcapi_type!
+    return $this->dependencies;
+  }
+
   public function getStartState() {
-    return $this->start_state;
+    $state = entity_load('mcapi_state', $this->start_state);
+    return $state->value;
   }
 
 }

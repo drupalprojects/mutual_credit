@@ -71,6 +71,7 @@ class TransitionForm extends EntityConfirmFormBase {
    */
   public function getDescription() {
     //$this->entity->noLinks = FALSE;//this is a flag which ONLY speaks to template_preprocess_mcapi_transaction
+    $this->entity->noLinks = TRUE;
     //this provides the transaction_view part of the form as defined in the transition settings
     switch($this->configuration->get('format')) {
     	case 'twig':
@@ -149,15 +150,15 @@ class TransitionForm extends EntityConfirmFormBase {
       drupal_set_message(\Drupal::token()->replace($message, $tokens));
     }
 
-    //@todo all the three ways of showing the form, and how each one moves to the next.
-    if ($redirect = $this->redirect) {
+    //TODO all the three ways of showing the form, and how each one moves to the next.
+    if ($redirect = $this->configuration->get('redirect')) {
       $path = strtr($redirect, array(
         '[uid]' => \Drupal::currentUser()->id(),
         '[serial]' => $transaction->serial->value
       ));
       $form_state['redirect'] = array(
         $path,
-        $options,
+        array(),//$options to be passed to url(), I think
       );
     }
     else {
@@ -166,7 +167,6 @@ class TransitionForm extends EntityConfirmFormBase {
         'route_parameters' => array('mcapi_transaction' => $transaction->get('serial')->value)
       );
     }
-    //}
 
     //but since rules isn't written yet, we're going to use the transition settings to send a notification.
     if ($this->configuration->get('send')) {
@@ -184,20 +184,22 @@ class TransitionForm extends EntityConfirmFormBase {
           $recipients[] = $walletowner->getowner()->get('mail')->value;
         }
       }
-    }
-    if ($recipients) {
-      drupal_mail(
-        'mcapi',
-        'transition',
-        implode(',', $recipients),
-        entity_load('mcapi_exchange', $transaction->get('exchange')->value)->getlangcode,
-        array(
-        	'mcapi' => $transaction,
-        	'cc' => $this->configuration->get('cc'),
-        	'subject' => $this->configuration->get('subject'),
-        	'body' => $this->configuration->get('body')
-        )
-      );
+      //with multiple recipients we have to choose one language
+      //just English for now bcoz rules will sort this out
+      if ($recipients) {
+        drupal_mail(
+          'mcapi',
+          'transition',
+          implode(',', $recipients),
+          'en',
+          array(
+          	'mcapi' => $transaction,
+          	'cc' => $this->configuration->get('cc'),
+          	'subject' => $this->configuration->get('subject'),
+          	'body' => $this->configuration->get('body')
+          )
+        );
+      }
     }
 
     return $renderable;

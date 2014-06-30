@@ -2,10 +2,7 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Field\FieldDefinition;
 
 class WalletSettings extends ConfigFormBase {
 
@@ -20,7 +17,7 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state) {
-    $config = $this->configFactory->get('mcapi.wallets');
+    $config = $this->config('mcapi.wallets');
     $form['creation'] = array(
     	'#title' => t('Wallet creation'),
       '#type' => 'fieldset',
@@ -40,32 +37,34 @@ class WalletSettings extends ConfigFormBase {
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
     //OR to an exchange entity itself
     $form['creation']['entity_types'] = array(
-    	'#title' => t('Entity types'),
-    	'#description' => t('Any content entity type which references exchanges can own wallets.') .' '.
-        t('Put the maximum number of wallets per entity type.'),
+    	'#title' => t('Max number of wallets'),
+    	'#description' => t("Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.", array('!interface' => l('EntityOwnerInterface', 'https://api.drupal.org/api/drupal/core!modules!user!src!EntityOwnerInterface.php/interface/EntityOwnerInterface/8'))),
       '#type' => 'fieldset',
       '#weight' => 2,
       '#tree' => TRUE
     );
     module_load_include('inc', 'mcapi');
     foreach (bundles_in_exchanges() as $entity_type => $bundles) {
-      $entity_label = (count($bundles) > 1)
-        ? \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLabel() .': '
-        : '';
-      foreach ($bundles as $bundle_name => $bundle_info) {
-        $form['creation']['entity_types']["$entity_type:$bundle_name"] = array(
-        	'#title' => $entity_label.$bundle_info['label'],
-          '#type' => 'number',
-          '#min' => 0,
-          '#default_value' => $config->get("entity_types.$entity_type:$bundle_name"),
-          '#size' => 2,
-          '#max_length' => 2
-        );
+      if (entity_create($entity_type) instanceOf Drupal\user\EntityOwnerInterface || $entity_type == 'user') {
+        $entity_label = (count($bundles) > 1)
+          ? \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLabel() .': '
+          : '';
+        foreach ($bundles as $bundle_name => $bundle_info) {
+          $form['creation']['entity_types']["$entity_type:$bundle_name"] = array(
+          	'#title' => $entity_label.$bundle_info['label'],
+            '#description' => t('The maximum number of wallets for a @type.', array('@type' => $bundle_info['label'])),
+            '#type' => 'number',
+            '#min' => 0,
+            '#default_value' => $config->get("entity_types.$entity_type:$bundle_name"),
+            '#size' => 2,
+            '#max_length' => 2
+          );
+        }
       }
     }
     $form['creation']['autoadd'] = array(
-      '#title' => t('Auto-create a wallet for every new eligible entity'),
-      '#description' => t('This is not retrospective'),
+      '#title' => t('Auto-create'),
+      '#description' => t('One new wallet for each entity type above.') .' '.t('This is not retrospective'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('autoadd'),
       '#weight' => 3,

@@ -20,17 +20,6 @@ use Drupal\mcapi\Entity\TransactionInterface;
 class TransactionStorage extends ContentEntityDatabaseStorage implements TransactionStorageInterface {
 
   /**
-   *
-   */
-  public function postLoad(array &$entities) {
-    foreach ($entities as $transaction) {
-      if ($transaction->parent->value == 0) {
-        $transaction->children = array();
-      }
-    }
-  }
-
-  /**
    * {@inheritdoc}
    */
   protected function doSave($id, EntityInterface $entity) {
@@ -82,7 +71,6 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
    * This storage controller deletes transactions according to settings.
    * Either by changing their state, thus retaining a record, or removing
    * the data completely
-   * //TODO buid in an optional HARD delete, ei
    */
   public function doDelete($entities) {
     $indelible = \Drupal::config('mcapi.misc')->get('indelible');
@@ -114,16 +102,18 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
   public function wipeslate($curr_id = NULL) {
     //save loading all transactions into memory at the same time
     //I don't know a more elegant way...
-    $serials = db_select("mcapi_transactions_index", 't')
-      ->fields('t', array('serial'))
-      ->condition('curr_id', $curr_id)
-      ->execute();
-    $this->delete($serials->fetchCol(), TRUE);
-    if (is_null($curr_id)) {
+    if ($curr_id) {
+      $serials = db_select("mcapi_transactions_index", 't')
+        ->fields('t', array('serial'))
+        ->condition('curr_id', $curr_id)
+        ->execute();
+      $this->delete($serials->fetchCol(), TRUE);
+    }
+    else {
       //this will reset the xid autoincremented field
-      $this->database->delete('mcapi_transactions')->execute();
+      $this->database->truncate('mcapi_transactions')->execute();
       //and the index table
-      $this->database->delete('mcapi_transactions_index')->execute();
+      $this->database->truncate('mcapi_transactions_index')->execute();
     }
   }
 
@@ -135,10 +125,10 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     $this->database->delete('mcapi_transactions_index')
       ->condition('xid', $record->xid)
       ->execute();
-    // we only index transactions with positive state values
-    if ($record->state < 1) {
-      return;
-    };
+    $counted_states = $this->counted_states();
+    // we only index transactions in states which are 'counted'
+    if (!array_key_exists($record->state, mcapi_states_counted(TRUE)))return;
+
     $query = $this->database->insert('mcapi_transactions_index')
       ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
 
@@ -181,42 +171,49 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexRebuild()
    */
   public function indexRebuild() {
+    $states = $this->counted_states();
     $this->database->truncate('mcapi_transactions_index')->execute();
-    $this->database->query("INSERT INTO {mcapi_transactions_index} (SELECT
-        t.xid,
-    		t.serial,
-        t.payer AS wallet_id,
-        t.payee AS partner_id,
-        t.state,
-        t.type,
-        t.created,
-        worth_curr_id,
-        0 AS incoming,
-        worth_value AS outgoing,
-        - worth_value AS diff,
-        worth_value AS volume,
-    		t.parent as child
-      FROM {mcapi_transactions} t
-      RIGHT JOIN {mcapi_transaction__worth} ON t.xid = w.xid
-      WHERE state > 0) "
+    $this->database->query("
+      INSERT INTO {mcapi_transactions_index} (
+        SELECT
+          t.xid,
+        	t.serial,
+          t.payer AS wallet_id,
+          t.payee AS partner_id,
+          t.state,
+          t.type,
+          t.created,
+          worth_curr_id,
+          0 AS incoming,
+          worth_value AS outgoing,
+          - worth_value AS diff,
+          worth_value AS volume,
+      	  t.parent as child
+        FROM {mcapi_transactions} t
+        RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id
+        WHERE state IN ($states)
+      )"
     );
-    $this->database->query("INSERT INTO {mcapi_transactions_index} (SELECT
-        t.xid,
-    		t.serial,
-        t.payee AS wallet_id,
-        t.payer AS partner_id,
-        t.state,
-        t.type,
-        t.created,
-        worth_curr_id,
-        worth_value AS incoming,
-        0 AS outgoing,
-        worth_value AS diff,
-        worth_value AS volume,
-    		t.parent as child
-      FROM {mcapi_transactions} t
-      RIGHT JOIN {mcapi_transaction__worth} ON t.xid = w.xid
-      WHERE state > 0) "
+    $this->database->query(
+      "INSERT INTO {mcapi_transactions_index} (
+        SELECT
+          t.xid,
+      		t.serial,
+          t.payee AS wallet_id,
+          t.payer AS partner_id,
+          t.state,
+          t.type,
+          t.created,
+          worth_curr_id,
+          worth_value AS incoming,
+          0 AS outgoing,
+          worth_value AS diff,
+          worth_value AS volume,
+      		t.parent as child
+        FROM {mcapi_transactions} t
+        RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id
+        WHERE state IN ($states)
+      ) "
     );
   }
   /**
@@ -224,8 +221,12 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
    */
   public function indexCheck() {
     if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
+      $states = $this->counted_states();
       $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
-      $volume = db_query("SELECT sum(value) FROM {mcapi_transactions} t LEFT JOIN {mcapi_transaction_worth} w ON t.xid = w.xid AND t.state > 0")->fetchField();
+      $volume = db_query("SELECT sum(w.worth_value)
+        FROM {mcapi_transactions} t
+        LEFT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id AND t.state IN ($states)"
+      )->fetchField();
       if ($volume_index == $volume) return TRUE;
     }
     return FALSE;
@@ -397,5 +398,17 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     if (!in_array('state', $conditions) || !is_null($conditions['state'])) {
       $query->conditions('state', '0', '>');
     }
+  }
+
+  /**
+   * helper function to filter queries by counted states only
+   * @return string
+   *   a comma separated list of state ids, in quote marks
+   */
+  private function counted_states() {
+    foreach (array_keys(mcapi_states_counted(TRUE)) as $state_id) {
+      $counted_states[] = "'".$state_id."'";
+    }
+    return implode(', ', $counted_states);
   }
 }

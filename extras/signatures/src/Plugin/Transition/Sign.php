@@ -2,13 +2,13 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\Transitions\Sign
+ *  Contains Drupal\mcapi_signatures\Plugin\Transition\Sign
  *
  */
 
 namespace Drupal\mcapi_signatures\Plugin\Transition;
 
-use Drupal\mcapi\TransitionBase;
+use Drupal\mcapi\Plugin\Transition\TransitionBase;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
 
@@ -19,6 +19,7 @@ use Drupal\mcapi\Entity\CurrencyInterface;
  *   id = "sign",
  *   label = @Translation("Sign"),
  *   description = @Translation("Sign a pending transaction"),
+ *   module = "mcapi_sgnatures",
  *   settings = {
  *     "weight" = "2",
  *     "sure" = "Are you sure you want to sign?"
@@ -31,17 +32,22 @@ class Sign extends TransitionBase {
    * {@inheritdoc}
   */
   public function execute(TransactionInterface $transaction, array $values) {
-
-    transaction_sign($serial, $uid);
+    module_load_include('inc', 'mcapi_signatures');
+    transaction_sign($transaction, \Drupal::currentUser());
 
     if ($transaction->state->value == TRANSACTION_STATE_FINISHED) {
       $message = t('@transaction is signed off', array('@transaction' => $transaction->label()));
     }
     else{
-      $message = \Drupal::TranslationManager()->format_plural($num, '1 signature remaining', '@count signatures remaining');
+      $num = 0;
+      foreach ($transaction->signatures as $timestamp) {
+        if (!$timestamp) $num++;
+      }
+      $message = \Drupal::Translation()->formatPlural($num, '1 signature remaining', '@count signatures remaining');
     }
 
     parent::execute($transaction, $values);
+    $transaction->save();
 
     return array('#markup' => $message);
   }
@@ -50,39 +56,13 @@ class Sign extends TransitionBase {
    * {@inheritdoc}
   */
   public function opAccess(TransactionInterface $transaction) {
-    if ($transaction->state->value == TRANSACTION_STATE_PENDING
-      && array_key_exists('signatures', $transaction)
-      && is_array($transaction->signatures)
-      && array_key_exists(\Drupal::currentUser()->id(), $transaction->signatures)
-      && $transaction->signatures[\Drupal::currentUser()->id()] == ''
+    //Only the designated users can sign transactions, and
+    if ($transaction->state->value == TRANSACTION_STATE_PENDING //the transaction is pending
+      && isset($transaction->signatures) && is_array($transaction->signatures)// signatures property is populated
+      && array_key_exists(\Drupal::currentUser()->id(), $transaction->signatures)//the current user is a signatory
+      && $transaction->signatures[\Drupal::currentUser()->id()] == 0//the curreny user hasn't signed
     ) return TRUE;
     return FALSE;
   }
 
-  /*
-   * {@inheritdoc}
-  */
-  public function buildConfigurationForm(array $form, array &$form_state) {
-
-    $form['countersignatories'] = array(
-      '#title' => t('Counter-signatories'),
-      '#description' => 'Other users required to sign the transaction',
-      '#type' => 'entity_reference',
-      //@todo this is really hard to do per-exchange.
-      //would be nice to be able to save transition settings per-exchange...
-      //in the mean time countersignatories should be chosen from all people with 'manage mcapi' permission
-      '#options' => array(),
-      '#default_value' => $this->config->get('countersignatories'),
-      '#weight' => 3,
-      '#multiple' => TRUE,
-      '#required' => FALSE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="special[send]"]' => array('checked' => TRUE)
-        )
-      )
-    );
-    parent::buildConfigurationForm($form);
-    return $form;
-  }
 }
