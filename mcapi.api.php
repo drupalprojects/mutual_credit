@@ -140,23 +140,45 @@ entity_view($transaction, 'some arbitrary twig {{ payee }}');
  */
 
 /*
- * Worth datatype
- * A new field type is created to store the quantity of the transaction and the currency together
+ * Worth element
+ * a drupal element #type => worth contains MANY transaction flows in different currencies.
+ * for an
+ */
+$element['max'] = array(
+  '#title' => t('Maximum balance'),
+  '#description' => t('Must be greater than 1.'),
+  '#type' => 'worth',
+  //we key the default value with the curr_id to make the saved settings easier to read
+  '#default_value' => array(
+    0 => array(
+      'curr_id' => 'cc',
+      'value' => 999
+    ),
+    1 => array(
+      'curr_id' => 'veur',
+      'value' => 101
+    )
+  ),
+  '#placeholder' => array(0 => 99, 1 => 10),//curr ids not needed here
+  '#weight' => 1,
+  '#min' => 1
+);
+//returns a value like
+array(
+  0 => array(
+    'curr_id' => 'cc',
+    'value' => 999
+  ),
+  1 => array(
+    'curr_id' => 'veur',
+    'value' => 101
+  )
+);
+
+/*
+ * Worth fieldType
  * It is commonly used as an array so that the application natively handles transactions with multiple currencies (mixed transactions)
  * This datatype is hard coded to the transaction as an FieldAPI ItemList, allowing many values in one entity.
  */
-
-array $transaction->get('worth')->value;
-//is the same as
-array $transaction->worth->value;
-echo $transaction->worth;
-
-
-//when building a form:
-$element['my_worth_setting'] = array(
-  '#type' => 'worth',
-  '$default_value' => array(
-    'curr_id' => 1,
-    'value' => 3600
-  )
-);
+$contentEntity->get('worth')->value;//gets an array of worth arrays as above
+$contentEntity->worth->value;//gets an array of worth arrays as above

@@ -2,14 +2,13 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\Transition\SignOff
+ *  Contains Drupal\mcapi_signatures\Plugin\Transition\SignOff
  *  @todo This needs to be finished. Might want to inherit some things from the Sign transition
- *
  */
 
 namespace Drupal\mcapi_signatures\Plugin\Transition;
 
-use Drupal\mcapi\TransitionBase;
+use Drupal\mcapi\Plugin\Transition\TransitionBase;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
 
@@ -20,6 +19,7 @@ use Drupal\mcapi\Entity\CurrencyInterface;
  *   id = "sign_off",
  *   label = @Translation("Sign off"),
  *   description = @Translation("Sign a pending transaction on behalf of all pending signatories"),
+ *   module = "mcapi_sgnatures",
  *   settings = {
  *     "weight" = "2",
  *     "sure" = "Are you sure you want to finalise this transaction?"
@@ -49,7 +49,7 @@ class SignOff extends TransitionBase {
    * {@inheritdoc}
    */
   public function opAccess(TransactionInterface $transaction) {
-    //@todo this transition needs some settings...
+    //@todo this transition needs some permission settings...
     return FALSE;
     if ($transaction->get('state')->value == TRANSACTION_STATE_PENDING) {
 

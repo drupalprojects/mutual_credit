@@ -1,4 +1,6 @@
-label: Sign off
+id: sign_off
+title: Sign off
+tooltip: Sign on behalf of all remaining signatories
 page_title: 'Are you sure you want to complete this transaction?'
 format: certificate
 twig: ''
@@ -12,3 +14,6 @@ send: 1
 subject: 'Transaction was completed'
 body: 'Tokens will be needed for this mail!'
 cc: ''
+status: true
+weight: 2
+

@@ -62,7 +62,6 @@ class RouteSubscriber extends RouteSubscriberBase {
       //see Plugin/Derivative/WalletLocalAction...
       $collection->add("mcapi.wallet.add.$entity_type", $route);
     }
-    //remove the routes which point non-editable transaction entity displays
   }
 
   /**

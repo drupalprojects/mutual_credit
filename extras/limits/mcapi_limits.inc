@@ -203,7 +203,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, &$form_state)
   );
 
   //depending on which plugin is selected, show the options form
-  $form['limits']['limits_settings'] = $form_state['limits_plugin']->buildConfigurationForm($form, $form_state);
+  $form['limits']['limits_settings'] = $form_state['limits_plugin']->buildConfigurationForm($form, $form_state, $currency);
 
   //this is the ajax wrapper
   $form['limits']['limits_settings']['#prefix'] = '<div id="limits-settings">';
@@ -247,7 +247,6 @@ function mcapi_limits_submit(&$form, &$form_state) {
 function _transactions_diff(array $cluster) {
   $diff = array();
   foreach ($cluster as $transaction) {
-    //this throws an error sometimes
     foreach ($transaction->worth->getValue() as $worth) {
       extract($worth); //makes variables $value and $curr_id
       //we can't prepare the array in advance with zeros so += and -= throws notices

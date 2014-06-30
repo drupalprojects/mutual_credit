@@ -80,6 +80,16 @@ class Wallet extends ContentEntityBase implements WalletInterface{
   /**
    * {@inheritdoc}
    */
+  public function user_id() {
+    $owner = $this->getOwner();
+    if ($owner instanceof \Drupal\user\UserInterface) return $owner->id();
+    //because all wallet owners, whatever entity type, implement OwnerInterface
+    else return $owner->getOwnerId();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function label($langcode = NULL, $full = TRUE) {
     //normally you would display the $full name to all users and the wallet->name only to the owner.
     $output = '';
@@ -330,10 +340,7 @@ class Wallet extends ContentEntityBase implements WalletInterface{
   }
 
   public static function postDelete(EntityStorageInterface $storage_controller, array $entities) {
-    foreach ($entities as $wallet) {
-      $wids[] = $wallet->wid;
-    }
-    $storage_controller->dropIndex($wids);
+    $storage_controller->dropIndex(array_keys($entities));
   }
 
 }

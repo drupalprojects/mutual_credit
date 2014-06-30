@@ -67,7 +67,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     );
     $form['tooltip'] = array(
       '#title' => t('Short description'),
-      '#description' => t('A few words suitable for a tooltop'),
+      '#description' => t('A few words suitable for a tooltip'),
       '#type' => 'textfield',
       '#default_value' => @$this->configuration['tooltip'],
       '#placeholder' => $this->pluginDefinition['description'],
@@ -245,7 +245,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     //this will prevent the config form showing blanks
     return array(
       'title' => '',
-      'tooltop' => '',
+      'tooltip' => '',
       'page_title' => '',
       'format' => '',
       'twig' => '',
@@ -282,6 +282,9 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
 
     drupal_set_message('TODO: finish making the mail work in Transitionbase::execute - it might work already!');
 
+    //TODO who are we actually notifying here
+    $to = '???';
+    return;
     if ($this->configuration['send']) {
       $subject = $this->configuration['subject'];
       $body = $this->configuration['body'];
@@ -293,7 +296,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       global $language;
 
       $params['transaction'] = $transaction;
-      $params['config'] = array(
+      $params += array(
       	'subject' => $subject,
         'body' => $body,
         'cc' => $this->configuration['cc']

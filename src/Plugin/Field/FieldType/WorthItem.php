@@ -42,8 +42,8 @@ class WorthItem extends FieldItemBase {
       'columns' => array(
         'curr_id' => array(
           'description' => 'The currency ID',
-          'type' => 'int',
-          'size' => 'small',
+          'type' => 'varchar',//when to use varchar and when string?
+          'length' => '8',
         ),
         'value' => array(
           'description' => 'Value',
@@ -97,7 +97,6 @@ class WorthItem extends FieldItemBase {
   public function isEmpty() {
     return empty($this->get('value'));
   }
-
 
   /**
    * {@inheritdoc}

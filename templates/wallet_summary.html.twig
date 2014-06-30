@@ -4,17 +4,13 @@
  * Default theme implementation to display a (summary of a) wallet.
  * Variables:
  *   name //of the wallet
- *   url #to the wallet transaction listing
- *   currency (data object)
- *   balance (formatted)
- *   trades (number of)
+ *   url //to the wallet transaction listing
+ *   currencies //list
  */
 #}
 <div class = "wallet-summary">
-  <div class = "wallet-title">{{ name }}</div>
-  <div class = "wallet-data">
-  <a href="{{ url }}" title = "Show transactions" style = "font-size: 200%">{{ balance }}</a>
-  <br />
-  in {{ trades }} trades.
-  </div>
+  <a class = "wallet-title" href="{{ url }}" title="Show stats">{{ name }}</a><br />
+  {% for curr_sum in currencies %}
+    {{curr_sum}}
+  {% endfor %}
 </div><!--/wallet-summary-->

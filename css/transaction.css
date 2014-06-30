@@ -7,7 +7,7 @@ div.transaction.certificate span.quantity {
   font-size: 250%;
   line-height: 1.1em;
 }
-div.transaction.state-0{
+div.transaction.state-undone{
   opacity: 0.3;
 }
 div.transaction.certificate ul.transaction-transitions{
@@ -23,11 +23,13 @@ div.transaction.certificate#dependent-transactions {
 
 ul.transaction-transitions{
   display:inline;
+  padding:0;
 }
 /* these separators aren't very flexible I'm afraid but there's no way I can see to do it in php */
 ul.transaction-transitions li{
   display: inline;
-  padding: 0 0.5em;
+  padding: 0 0.5em !important;
+  margin: 0 !important;
   border-right: thin solid grey;
 }
 ul.transaction-transitions li:last-child{
@@ -40,4 +42,6 @@ ul.transaction-transitions li a{
 div.sentence .link {
   padding: 0 0 0 1em;
 }
-
+div.transaction.certificate div.field, div.transaction.certificate div.field div{
+	display:inline;
+}

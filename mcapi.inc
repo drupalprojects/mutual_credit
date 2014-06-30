@@ -5,6 +5,7 @@ use Drupal\Core\Template\Attribute;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Render\Element;
 
@@ -81,6 +82,12 @@ function _mcapi_entity_extra_field_info() {
     'description' => t('People involved in the exchange'),
     'weight' => 1,
   );
+  //exchanges
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions'] = array(
+    'label' => t('Intertrading'),
+    'description' => t('Link to the wallets special intertrading wallet'),
+    'weight' => 2,
+  );
   return $extra;
 }
 
@@ -98,9 +105,13 @@ function _mcapi_theme() {
     'pattern' => 'certificate__',
     'file' => 'mcapi.inc'
   );
+  $items['sentence'] = array(
+    'render element' => 'transaction',
+    'file' => 'mcapi.inc'
+  );
   $items['mcapi_twig'] = array(
     'variables' => array(
-      'mcapi_transaction' => NULL,
+      'transaction' => NULL,
       'twig_template' => '',
     ),
     'file' => 'mcapi.inc'
@@ -127,6 +138,14 @@ function _mcapi_theme() {
     'template' => 'wallet_summary',
     'variables' => array(
       'wallet' => NULL,
+      'currencies' => array()
+    ),
+    'file' => 'extras/wallet_preprocess.inc'
+  );
+  $items['wallet_summary_currency'] = array(
+    'template' => 'wallet_summary_currency',
+    'variables' => array(
+      'wallet' => NULL,
       'currency' => NULL,
     ),
     'file' => 'extras/wallet_preprocess.inc'
@@ -143,13 +162,6 @@ function _mcapi_theme() {
     'variables' => array(
       'wallet' => NULL,
       'currency' => NULL
-    ),
-    'file' => 'extras/wallet_preprocess.inc'
-  );
-  $items['wallet_virgin'] = array(
-    'template' => 'wallet_virgin',
-    'variables' => array(
-      'wallet' => NULL,
     ),
     'file' => 'extras/wallet_preprocess.inc'
   );
@@ -232,6 +244,7 @@ function _mcapi_element_info() {
 function _mcapi_worth_element_process($element, &$form_state, $form) {
   //we might need to filter #default_value not in config mode
   $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
+
   foreach ($element['#default_value'] as $delta => $item) {
     //i want a div around each currency widget
     extract($item);//creates $curr_id and $value
@@ -264,7 +277,7 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
         );
         //if a preset value isn't in the $options
         //then we ignore the options and use the numeric sub-widget
-        if (isset($options) && array_key_exists($parts[$i], $options)) {
+        if (isset($options) && array_key_exists(@$parts[$i], $options)) {
           $element[$curr_id][$i] += array(
           	'#type' => 'select',
             '#options' => $options
@@ -384,7 +397,7 @@ function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
         continue;//don't add this value to the $output
       }
     }
-    if ($element['#minus']) $quant = -$quant;
+    if (!empty($element['#minus'])) $quant = -$quant;
     $output[] = array('curr_id' => $curr_id, 'value' => $quant);
   }
   //be aware that the child widgets will add to this and then be cleaned up in mcapi_worth_element_validate
@@ -399,8 +412,6 @@ function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
  * @param array $form_state
  */
 function mcapi_worth_element_validate($element, &$form_state) {
-
-//echo 'mcapi_worth_element_validate: ';print_r($element);die();
 
   //tidy up the detritus from the worth value callback
   foreach ($element['#value'] as $delta => $item) {
@@ -437,14 +448,16 @@ function mcapi_worth_element_validate($element, &$form_state) {
  */
 function mcapi_view_wallets_summaries(ContentEntityInterface $entity) {
   $renderable = array();
-  foreach (wallets_owned_by($entity) as $wallet) {
+  $owned_wallet_ids = \Drupal::EntityManager()
+    ->getStorage('mcapi_wallet')
+    ->getOwnedWalletIds($entity);
+  foreach (entity_load_multiple('mcapi_wallet', $owned_wallet_ids) as $wallet) {
     if ($wallet->access('view')) {
-      $renderable['wallets']['#wallets'][] = show_wallet_summaries($wallet);
+      $renderable['wallets']['#wallets'][] = view_wallet_summary($wallet);
     }
   }
   $renderable['wallets']['#theme'] = 'wallets';
   $renderable['wallets']['#weight'] = '0';
-  $renderable['wallets']['#attached']['css'][] = drupal_get_path('module', 'mcapi') . '/css/wallets.css';
   //show the add new wallet link
   if (\Drupal::config('mcapi.wallets')->get('add_link_location') != 'local_action') {
     $route_name = 'mcapi.wallet.add.'.$entity->getEntityTypeId();
@@ -470,16 +483,29 @@ function mcapi_view_wallets_summaries(ContentEntityInterface $entity) {
   return $renderable;
 }
 
-//I've got a strong feeling there is another function for this.
-function wallets_owned_by(ContentEntityInterface $entity) {
-  return entity_load_multiple_by_properties(
-    'mcapi_wallet',
-    array(
-      'pid' => $entity->id(),
-      'entity_type' => $entity->getEntityTypeId()
-    )
+/*
+ * get a renderable array of all the currency balances in one wallet
+ */
+function view_wallet_summary(WalletInterface $wallet) {
+  $renderable = array(
+  	'#theme' => 'wallet_summary',
+    '#wallet' => $wallet,
+    '#attached' => array('css' => array(drupal_get_path('module', 'mcapi') . '/css/wallets.css'))
+  );
+  foreach ($wallet->currencies_used() as $curr_id => $currency) {
+    $renderable['#currencies'][$curr_id] = view_wallet_summary_currency($wallet, $currency);
+  }
+  return $renderable;
+}
+
+function view_wallet_summary_currency(WalletInterface $wallet, CurrencyInterface $currency) {
+  return array(
+    '#theme' => 'wallet_summary_currency',
+    '#wallet' => $wallet,
+    '#currency' => $currency,
   );
 }
+
 /**
  * Get the wallet owner's name.
  * Might be more useful to get the wallet's full name instead.
@@ -490,32 +516,10 @@ function wallets_owned_by(ContentEntityInterface $entity) {
 function show_wallet_owner(WalletInterface $wallet) {
   $entity = $wallet->getowner();
   return array(
-  	'#markup' => '<div class = "wallet-owner">'. $entity->label() .'</div>'
+      '#markup' => '<div class = "wallet-owner">'. $entity->label() .'</div>'
   );
 }
-/*
- * get a renderable array of all the currency balances in one wallet
- */
-function show_wallet_summaries(WalletInterface $wallet) {
-  $renderable = array(
-    '#prefix' => '<div class = "wallet-summaries">',
-    '#suffix' => '</div>'
-  );
-  foreach ($wallet->currencies_used() as $curr_id => $currency) {
-    $renderable[$curr_id] = array(
-      '#theme' => 'wallet_summary',
-      '#wallet' => $wallet,
-      '#currency' => $currency,
-    );
-  }
-  if (!isset($renderable)) {
-    $renderable['wallet_virgin'] = array(
-    	'#theme' => 'wallet_virgin',
-      '#wallet' => $wallet
-    );
-  }
-  return $renderable;
-}
+
 /**
  * show the wallets 'local_tasks' as links, in case
  */
@@ -526,9 +530,12 @@ function show_wallet_links(WalletInterface $wallet) {
   //which is all very well but getTasksBuild assumes we are on the current route
   foreach($tree[0] as $child){
     $route_name = $child->getRouteName();
-    $route_parameters = array('mcapi_wallet' => $wallet->id());
-    $access = $access_manager->checkNamedRoute($route_name, $route_parameters, \Drupal::currentUser());
-    if ($access) {
+    $route_parameters = array(
+      //TODO arg_0 can be removed when views args are working with the symfony router
+      'arg_0' => $wallet->id(),//this is for view.wallet_statement.page_1
+      'mcapi_wallet' => $wallet->id()
+    );
+    if ($access_manager->checkNamedRoute($route_name, $route_parameters, \Drupal::currentUser())) {
       $links[$route_name] = array(
         'title' => $child->getTitle(),
         'route_name' => $route_name,
@@ -548,7 +555,10 @@ function show_wallet_links(WalletInterface $wallet) {
 function show_wallet_histories(WalletInterface $wallet) {
   $renderable = array(
   	'#prefix' => '<div class = "wallet-histories">',
-    '#suffix' => '</div>'
+    '#suffix' => '</div>',
+    '#attached' => array(
+      'css' => array(drupal_get_path('module', 'mcapi') . '/css/wallets.css')
+    )
   );
   foreach ($wallet->currencies_used() as $curr_id => $currency) {
     $renderable[$curr_id] = array(
@@ -567,7 +577,10 @@ function show_wallet_histories(WalletInterface $wallet) {
 function show_wallet_balance_bars(WalletInterface $wallet) {
   $renderable = array(
   	'#prefix' => '<div class = "balance-bars">',
-    '#suffix' => '</div>'
+    '#suffix' => '</div>',
+    '#attached' => array(
+      'css' => array(drupal_get_path('module', 'mcapi') . '/css/wallets.css')
+    )
   );
   foreach ($wallet->getSummaries() as $curr_id => $data) {
     $renderable[$curr_id] = array(
@@ -585,6 +598,7 @@ function show_wallet_stats(WalletInterface $wallet) {
     '#theme' => 'wallet_stats',//this renders as css block (table) so doesn't sit well with the histories
     '#wallet' => $wallet,
     '#weight' => 5
+    //no default css used
   );
 }
 
@@ -603,16 +617,15 @@ function template_preprocess_mcapi_transaction(&$vars) {
 	$vars['attributes']['class'] = array(
 		'transaction',
 		$transaction->get('type')->value,
-		'state-'.$transaction->get('state')->value
+		'state-'.$transaction->state->target_id
 	);
-	if (!strpos($element['#view_mode'], ' ')) {
+	if (!strpos($element['#view_mode'], ' ')) {//why would there be a space in the view mode and why would that affect its use as a class?
 	  $vars['attributes']['class'][] = $element['#view_mode'];
   }
-  if ($transaction->noLinks) {
+  if (!$transaction->noLinks) {
     $vars['links'] = \Drupal::Entitymanager()->getViewBuilder('mcapi_transaction')->renderlinks($transaction, $element['#view_mode']);
   }
 }
-
 
 /**
  * implements template_preprocess_THEMEHOOK for theme callback 'certificate'
@@ -635,27 +648,28 @@ function template_preprocess_certificate(&$vars) {
 	$vars['children'] = array();
 	if (isset($transaction->children)) {
 	  foreach($transaction->children as $child) {
-  	  $vars['children'][] = entity_view($child, 'sentence');
+  	  $vars['children'][$child->id()] = entity_view($child, 'sentence');
+  	  //TODO there's something nasty happening with #pre_render being added here
+  	  //pre_render connects to the display modes, which we don't want
+  	  unset($vars['children'][$child->id()]['#pre_render']);
 	  }
 	}
+
 	//choose the transaction theme template based on the first currency of the transaction
 	//not sure if this is worth the processing power at the moment
-
 	$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
 }
 
 /**
  * Helper for theming transactions
  *
- * @param array $vars
+ * @param array &$vars
+ *
  * @param TransactionInterface $transaction
- *   TRUE if the 'links' variable is required
  */
 function mcapi_transaction_process_vars(array &$vars, TransactionInterface $transaction) {
-  $static = drupal_static(__FUNCTION__, array());
   $xid = $transaction->get('xid')->value;
-
-  $v['state'] = $transaction->state->entity->label;
+  $v['state'] = entity_load('mcapi_state', $transaction->type->entity->start_state)->label;
   $v['type'] = $transaction->type->entity->label;
   $v['serial'] = $transaction->serial->value;
   $payer_wallet_owner = $transaction->payer->entity->getOwner();
@@ -663,32 +677,47 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
   $v['payer'] = l($payer_wallet_owner->label(), $payer_wallet_owner->url());
   $v['payee'] = l($payee_wallet_owner->label(), $payee_wallet_owner->url());
   $v['creator'] = $transaction->creator->entity->label();
-  //TODO where do all the divs around descriptiion come from?
-  $v['description'] = $transaction->description->value;
+  //TODO we've avoided rendering the field with its 3 nested divs, but do we have a security issue now?
+  $v['description'] = $transaction->description->getString();
 
+  //NB the transaction certificate, which uses entity_view_display overwrites field with display options, i.e. this one!
+  //but this is needed for the sentence display
   $v['worth'] = $transaction->worth->view();
+
   //TODO LEAVE THIS TILL AFTER alpha 11
   //$v['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
   $v['created'] = 'T.B.D.';
 
   //the token service lets you pass url options, but this function doesn't
-  $v['url'] = $transaction->url();//@todo how to make this absolute?
-  //only store it if the transaction has a database key
-
+  $v['url'] = $transaction->url('canonical');
   $vars += $v;
 }
 
-
+/**
+ * theme implementation for callback 'sentence'
+ * to show the transaction in one line.
+ */
+function theme_sentence(&$vars) {
+  $element = $vars['transaction'];
+  return \Drupal::Token()->replace(
+    \Drupal::config('mcapi.misc')->get('sentence_template'),
+    array('mcapi' => $element['#mcapi_transaction']),
+    array('sanitize' => TRUE)
+  );
+}
 
 /**
- * theme implementation for callback twig
+ * theme implementation for callback 'twig'
+ *
  * @todo convert this theme function to use
  * http://twig.sensiolabs.org/doc/functions/template_from_string.html
  */
 function theme_mcapi_twig($vars) {
+  echo 'theme_mcapi_twig vars:';
+  print_r(array_keys($vars));//need incoming 'transaction' as with certificate and sentence view modes
   return mcapi_render_twig_transaction(
     $vars['twig_template'],
-    $vars['mcapi_transaction']
+    $vars['transaction']
   );
 }
 
@@ -699,8 +728,8 @@ function theme_mcapi_twig($vars) {
  * @param TransactionInterface $transaction
  *
  * @todo perhaps convert this theme function to use
- * http://twig.sensiolabs.org/doc/functions/template_from_string.html
- * New in Twig version 1.11
+ * https://api.drupal.org/api/drupal/core!vendor!twig!twig!lib!Twig!Extension!StringLoader.php/function/twig_template_from_string/8
+ * New in D8 alpha12
  */
 function mcapi_render_twig_transaction($template, TransactionInterface $transaction) {
   $vars = array();
@@ -818,6 +847,7 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
 
 /**
  * get all the bundles which have the exchange field attached
+ * which is to say all the entity types which can own wallets
  * @return array
  *   arrays of bundles with bundleInfo keyed by entityTypeId
  */
@@ -890,11 +920,11 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
     }
     else {
       echo "unable to get source and dest participants or intertrade";
-      echo "<br />payer wid: ".$transaction->get('payer')->value;
-      echo "<br />payee wid: ".$transaction->get('payee')->value;
-      echo '<br />curr_ids_required: '; print_R($transaction->curr_ids_required);
-      echo '<br />payee_currencies_available: '; print_R($transaction->payee_currencies_available);
-      echo '<br />payer_currencies_available: '; print_R($transaction->payer_currencies_available);
+      echo "\n<br />payer wid: ".$transaction->get('payer')->value;
+      echo "\n<br />payee wid: ".$transaction->get('payee')->value;
+      echo '\n<br />curr_ids_required: '; print_R($transaction->curr_ids_required);
+      echo '\n<br />payee_currencies_available: '; print_R($transaction->payee_currencies_available);
+      echo '\n<br />payer_currencies_available: '; print_R($transaction->payer_currencies_available);
       //this should be a violation
       return array(
         key($transaction->curr_ids_required),
@@ -906,12 +936,16 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
   //ALL the currencies in $transaction->worth
   $found = FALSE;
   $source_wallet_field = $transaction->get($transaction->source_participant)->getValue(TRUE);//entity reference array
-  //echo "<br />The transaction has currencies: ".implode(', ', array_keys($transaction->get('worth')->getValue()));
+  foreach ($transaction->worth->getValue() as $item) {
+    $curr_ids[] = $item['curr_id'];
+  }
+echo "<br />The transaction has currencies: ".implode(', ', $curr_ids);
+
   foreach($source_wallet_field[0]['entity']->in_exchanges() as $exchange) {
-    //echo "<br />The leading wallet is in exchange ".$exchange->id();
-    //echo " which has currencies ".implode(', ', get_entity_reference_targets($exchange->get('currencies')));
-    if (array_diff_key($transaction->get('worth')->getValue(), get_entity_reference_targets($exchange->get('currencies')))) continue;
-    //echo "which is good enough for this transaction...";
+    echo "\n<br />The leading wallet is in exchange ".$exchange->id();
+    echo " which has currencies ".implode(', ', get_entity_reference_targets($exchange->get('currencies')));
+    if (array_diff_key(array_flip($curr_ids), get_entity_reference_targets($exchange->get('currencies')))) continue;
+    echo "which is good enough for this transaction...";
     $found = TRUE;
   }
   $transaction->source_exchange = $exchange;
@@ -921,7 +955,10 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
     return array(
       key($transaction->curr_ids_required),
       //this string is identical to another in intertrading_new_worths
-      t('Wallet !wallet is not a member of an exchange that can intertrade with this combination of currencies', array('!wallet' => $source_wallet_field[0]['entity']->label()))
+      t(
+        'Wallet !wallet is not a member of an exchange that can intertrade with currencies @currs',
+        array('!wallet' => $source_wallet_field[0]['entity']->label(), '@currs' => implode())
+      )
     );
   }
   return array();
@@ -937,14 +974,14 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
  *   violation, keyed by fieldname
  */
 function intertrading_new_worths(TransactionInterface $transaction, WalletInterface $dest_wallet) {
-  $new_worths = $transaction->get('worth')->getValue();
+  $source_curr_ids = $transaction->get('worth')->curr_ids();
 
   //We need to identify a dest exchange whose intertrading wallet can be used
   //which of the $dest_wallet's parent's exchanges is most suitable, if any?
   //it must contain all the worth's currencies bar one.
   foreach ($dest_wallet->in_exchanges() as $dest_exchange) {
     $dest_exchange_currencies = exchange_currencies(array($dest_exchange));
-    $diff = array_diff_key($new_worths, $dest_exchange_currencies);
+    $diff = array_diff_key(array_flip($source_curr_ids), $dest_exchange_currencies);
     //diff is the currencies in worth which are not in the dest exchange
     //if there is no diff, we shouldn't be intertrading but doing a straight transaction
     if (!$diff) {
@@ -954,7 +991,7 @@ function intertrading_new_worths(TransactionInterface $transaction, WalletInterf
       continue;//we won't attempt to convert more than one currency in a transaction
     }
     $source_currency_id = key($diff);
-    $source_ticks = entity_load('mcapi_currency', $source_currency_id)->get('ticks');
+    $source_ticks = entity_load('mcapi_currency', $source_currency_id)->ticks;
     if (!$source_ticks) {//the one diff currency in this exchange is not intertradable
       continue;
     }
@@ -985,12 +1022,13 @@ function intertrading_new_worths(TransactionInterface $transaction, WalletInterf
     );
   }
 
-  //the new worths is a copy of the old, so we remove the source value
-  unset($new_worths[$source_currency_id]);
   //now add the dest value
   //conversion may not be exact
-  $new_worths[$dest_currency->id()] = floor($dest_currency->ticks / $source_ticks * $worths[$source_currency_id]);
-  $transaction->dest_worths = $new_worths;
+  $dest_worths[] = array(
+    'curr_id' => $dest_currency->id(),
+    'value' => floor($dest_currency->ticks / $source_ticks * $transaction->worth->val($source_currency_id))
+  );
+  $transaction->dest_worths = $dest_worths;
   return array();//no problems
 }
 

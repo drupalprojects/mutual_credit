@@ -36,12 +36,20 @@ class McapiTesterSwitchUser extends BlockBase {
    */
   public function build() {
     $links = $this->switchUserList();
+    $username = \Drupal::CurrentUser()->getUsername();
     if (!empty($links)) {
-      //drupal_add_css(drupal_get_path('module', 'devel') . '/css/devel.css');
       $build = array(
-        'help' => array('#markup' => 'Username (exchange id)'),
-        'devel_links' => array('#theme' => 'links', '#links' => $links),
+        'current' => array('#markup' => "Currently: $username<br/>"),
       );
+      if (\Drupal::currentUser()->id()) {
+        $path = 'switch/' . $username;
+        $dest = drupal_get_destination();
+        $build['help'] = array('#markup' => "Switch user in one click isn't working:");
+        $build['logout'] = array('#markup' => l('Log out', $path, array('query' => $dest + array('token' => drupal_get_token($path . '|' . $dest['destination'])))));
+      }
+      else {
+        $build['devel_links'] = array('#theme' => 'links', '#links' => $links);
+      }
       return $build;
     }
   }
@@ -53,7 +61,6 @@ class McapiTesterSwitchUser extends BlockBase {
     global $user;
 
     $links = array();
-    $dest = drupal_get_destination();
     $query = db_select('users', 'u');
     $query->addField('u', 'uid');
     $query->addField('u', 'access');
@@ -62,24 +69,21 @@ class McapiTesterSwitchUser extends BlockBase {
     $query->condition('u.uid', \Drupal::currentUser()->id(), '<>');
     $query->condition('u.status', 0, '>');
     $query->orderBy('u.access', 'DESC');
-    $query->range(0, 10);
+    //$query->range(0, 10);
     $uids = $query->execute()->fetchCol();
     $accounts = user_load_multiple($uids);
 
+    $dest = drupal_get_destination();
     foreach ($accounts as $account) {
       $path = 'switch/' . $account->name->value;
       $belongs_to = current(referenced_exchanges($account, TRUE));
       $links[$account->id()] = array(
-        'title' => user_format_name($account) .(is_object($belongs_to) ? ' ('.$belongs_to->id() .')' : ''),
+        'title' => user_format_name($account),
         'href' => $path,
         'query' => $dest + array('token' => drupal_get_token($path . '|' . $dest['destination'])),
         'html' => TRUE,
         'last_access' => $account->access->value,
       );
-    }
-
-    if (array_key_exists($uid = $user->id(), $links)) {
-      $links[$uid]['title'] = '<strong>' . $links[$uid]['title'] . '</strong>';
     }
     return $links;
   }

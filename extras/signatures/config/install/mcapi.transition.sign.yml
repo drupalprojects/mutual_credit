@@ -1,4 +1,6 @@
-label: Sign
+id: sign
+title: Sign
+tooltip: Add your signature to this transaction
 page_title: 'Are you sure you want to sign?'
 format: certificate
 twig: ''
@@ -12,3 +14,5 @@ send: 1
 subject: 'A transaction was signed'
 body: 'Tokens will be needed for this mail'
 cc: ''
+status: true
+weight: 2

@@ -158,7 +158,7 @@ class FirstPartyFormDesigner extends EntityForm {
   			'#type' => $configEntity->direction['widget'],
     	  //ideally these options labels would be live updated from the fields below
   			'#options' => array(
-  				'none' => t('Neither'),
+  				'' => t('Neither'),
   				'incoming' => empty($configEntity->direction['incoming']) ? t('Incoming') : $configEntity->direction['incoming'],
   				'outgoing' => empty($configEntity->direction['outgoing']) ? t('Outgoing') : $configEntity->direction['outgoing'],
   			),

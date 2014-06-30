@@ -66,8 +66,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @todo update this in line with https://drupal.org/node/2221879
    * actually can this be removed? Is it deprecated in favour of this->url
    */
-  public function uri($rel = 'canonical') {
-    debug('This function is still used!!');
+  public function ___uri($rel = 'canonical') {
     $renderable = parent::uri($rel);
     $renderable['path'] = 'transaction/'. $this->get('serial')->value;
     die('uri');
@@ -90,7 +89,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $warnings = array();
     if ($this->isNew()) {
       $type = $this->type->getValue(TRUE);
-      $this->state->setValue($type[0]['entity']->start_state);
+      $start_state = entity_load('mcapi_state', $type[0]['entity']->start_state);
+      $this->state->setValue($start_state);
       $violations += $this->validateNew();
       //for transactions created in code, this is the best place to throw
       if ($warnings) {
@@ -121,14 +121,22 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //TODO after alpha11 how can the checkintegrity function return violations?
     //then this function needs to return violations
     $violation_messages += $this->checkIntegrity();
+    //TODO check that transaction limit violations highlight the right currency field
 
     return $violation_messages; //temp need to tidy this up
   }
 
   /**
-   * @see \Drupal\mcapi\Entity\TransactionInterface::validateNew()
+   * Validate a transaction, and generate the children by calling hook_transaction_children,
+   * and validate the children
+   *
+   * @return array $messages
+   *   a flat list of non-fatal exceptions from the parent and fatal exceptions in the child transactions
+   *
+   * @throws McapiTransactionException
+   *   when the parent transaction has errors
    */
-  public function validateNew() {
+  private function validateNew() {
     //any thrown messages here are caught and shown to the user as a list of problems with the transaction.
     $warnings = array();
     $violations = array();
@@ -199,7 +207,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * transactions may be new or updated, and may not have been through the formAPI
    * @return an array of violations
    */
-  function checkIntegrity() {
+  private function checkIntegrity() {
     //we need to be throwing violations here
     return $this->checkDifferentWallets();
     //is it worth checking whether all the entity properties and fields are actually fieldItemLists?
@@ -209,10 +217,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
 
   /**
-   * @see \Drupal\mcapi\Entity\TransactionInterface::preCreate($storage_controller)
-   *
-   * @param EntityStorageInterface $storage
-   * @param array $values
+   * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $values += array(
@@ -229,7 +234,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * In the case of transactions made by code, not through the form interface,
    * validation is done as part of saving.
-   * This is because there is no entity-level validation in drupal.
+   * This is because there is no entity-level validation in drupal, at least yet
    *
    * @throws McapiTransactionException
    *
@@ -242,10 +247,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * save the child transactions, which refer to the saved parent
+   *
+   * @todo clear the entity cache of all wallets involved in this transaction and its children
+   *   because the wallet entity cache contains the balance limits and the summary stats
    */
   public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
-    //TODO clear the entity cache of all wallets involved in this transaction and its children
-    //because the wallet entity cache contains the balance limits and the summary stats
+    parent::postSave($storage_controller, $update);
     $wids = array($this->payer->value, $this->payee->value);
     drupal_set_message ('todo: clear wallet cache for wallet ids '.implode(' & ', $wids));
 
@@ -257,8 +264,21 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
   }
 
-  public function transition($transition_name, array $values) {
+  /**
+   * Ensure parent transactions have a 'children' property if it is a parent
+   */
+  public static function postLoad(EntityStorageInterface $storage_controller, array &$entities) {
+    foreach ($entities as $transaction) {
+      if ($transaction->parent->value == 0) {
+        $transaction->children = array();
+      }
+    }
+  }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function transition($transition_name, array $values) {
     $context = array(
       'values' => $values,
       'old_state' => $this->get('state')->value,
@@ -300,11 +320,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
-      ->setSettings(array('default_value' => '', 'max_length' => 255))
-      ->setDisplayOptions(
-        'view',
-        array('label' => 'hidden', 'type' => 'string', 'weight' => -5)
-      );
+      ->setSettings(array('default_value' => '', 'max_length' => 255));
 
     $fields['serial'] = FieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
@@ -370,7 +386,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $violations;
   }
 
-  function checkUniqueUuid() {
+  private function checkUniqueUuid() {
     $violations = array();
     //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
     //TODO return a violation
@@ -395,14 +411,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //how the children have been created but before they are validated, we do the intertrading
 
     $this->payer_currencies_available = array_keys($this->payer->entity->currencies_available());
-    $this->payee_currencies_available = array_keys($this->payer->entity->currencies_available());
+    $this->payee_currencies_available = array_keys($this->payee->entity->currencies_available());
 
     foreach ($this->get('worth')->getValue() as $item) {
       $this->curr_ids_required[] = $item['curr_id'];
     }
     //to determine the given currencies are shared between both users
     $this->common_curr_ids = array_intersect($this->payer_currencies_available, $this->payee_currencies_available);
-
     if (array_diff($this->curr_ids_required, $this->common_curr_ids)) {
       module_load_include('inc', 'mcapi');
       //GENERATE AN INTERTRADING CHILD TRANSACTION
@@ -427,12 +442,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       if ($warnings) {
         return $warnings;
       }
-
       $new_transaction = clone($this);//since it hasn't been save there is no xid or serial number yet
       $new_transaction->uuid->setValue(\Drupal::service('uuid')->generate());
       $this->set($this->dest_participant, $this->source_exchange->intertrading_wallet()->id());
       $new_transaction->set($this->source_participant, $this->dest_exchange->intertrading_wallet()->id());
-      $new_transaction->set('worth', $this->dest_worths);
+      $new_transaction->worth->setValue($this->dest_worths);
       $this->children[] = $new_transaction;
     }
     else {
@@ -447,5 +461,21 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $violations;
   }
 
+
+  function exchanges() {
+    foreach (mcapi_transaction_flatten($transaction) as $t) {
+      $payer_exchanges = $this->payer->entity->in_exchanges();
+      $payee_exchanges = $this->payee->entity->in_exchanges();
+      if ($common = array_intersect_key($payer_exchanges, $payee_exchanges)) {
+        $exchange = reset($common);
+        //generally we only need one, so take the first
+        $exchanges[$exchange->id()] = $exchange;
+      }
+      else {
+        drupal_set_message('Data integrity question - there appears not to be an exchange in common between accounts:'.implode(', ', array($t->payer->target_id, $t->payee->target_id)));
+      }
+    }
+    return $exchanges;
+  }
 
 }

@@ -74,26 +74,12 @@ function theme_1stpartyform($vars) {
 	$tokens = array();
 	foreach ($form['#twig_tokens'] as $fieldname) {
 	  if (strpos($form['#twig'], '{{ '.$fieldname.' }}') !== FALSE) {
-  	  //transaction property or field API field
-	    //stripping the theme_wrappers is cleaner but prevents the #states from working.
       $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
 	  }
-    /*
-    if (!isset($form[$fieldname]['#default_value']))echo "$fieldname has no default value";
-		if (empty($form[$fieldname]['#required']) && $form[$fieldname]['#default_value'] == '') {
-		  //field does not occur in the form
-		  //unset($form[$fieldname]);//TODO something better than this.
-		}
-		else {
-		  if (\Drupal::currentUser()->hasPermission('design 1stparty forms')) {
-		    //drupal_set_message("Warning! Software limitation means there may be a problem hiding field '$fieldname', which has a preset value and is hidden.");
-		  }
-		}
-		*/
 	}
 	$last = key($tokens);
 	//adjustments for intertrade mode
-	if (array_key_exists('intertrade', $tokens)) {
+	if (array_key_exists('intertrade', $tokens)) {// && array_key_exists('partner_all', $form)) {
 	  $checkbox = mcapi_render_stripped($form['partner_all']);
 	  if (array_key_exists('partner', $tokens)) {
 	    $tokens['partner'] .= $checkbox;
@@ -103,17 +89,21 @@ function theme_1stpartyform($vars) {
 	  }
 	}
 
-  //appent everything not rendered onto the last rendered thing.
+  //append everything not rendered onto the last rendered thing.
   $tokens[$last] .= drupal_render($form);
 
-  //mcapi.inc must already be included to process the worth field.
+  //mcapi.inc must have been already included to process the worth field.
   return mcapi_render_twig($form['#twig'], $tokens);
 }
 
 /**
  * callback to render form elements without their theme_wrappers
- * @param unknown $element
+ * simply stripping the theme_wrappers is cleaner but prevents the #states from working.
+ *
+ * @param array $element
+ *
  * @return string
+ *   HTML
  */
 function mcapi_render_stripped(&$element) {
   if (array_key_exists('#type',  $element)) {
@@ -161,11 +151,9 @@ function mcapi_1stparty_transaction_tokens() {
  * Check whether the current user can access a given 1stparty form.
  * used by the router and by the block controller
  *
- * @param Entity $editform
- *   the configuration object
+ * @param FirstPartyFormDesign $editform
  *
- * @param AccountInterface $account
- *   ensure that the fieldAPI fields are loaded
+ * @param UserInterface $account
  *
  * @return boolean
  *   TRUE if the current user can access the given form
@@ -230,4 +218,9 @@ function mcapi_1stparty_fieldAPI() {
     }
   }
   return $fieldAPI;
+}
+
+
+function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, &$form_state) {
+  $form['#suffix'] = t('N.B. Disabled fields may cause problems with the transaction form editor');
 }

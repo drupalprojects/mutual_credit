@@ -1,23 +1,27 @@
 id: mcapi_transaction.mcapi_transaction.default
-uuid: 155d715f-d1e4-4f88-b305-5c17027d9038
+uuid: 1cff88e4-bc7c-4591-984f-7994a47b4119
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
 mode: default
 content:
-  field_categories:
-    type: options_select
-    weight: '4'
+  worth:
+    type: worth
+    weight: 0
     settings: {  }
-  payer:
-    weight: '0'
-    visible: true
-  payee:
-    weight: '1'
-    visible: true
-  worths:
-    weight: '2'
-    visible: true
-  description:
-    weight: '3'
-    visible: true
+  field_categories:
+    type: taxonomy_autocomplete
+    weight: 1
+    settings:
+      size: 60
+      autocomplete_route_name: taxonomy.autocomplete
+      placeholder: 'Categories, comma separated'
+hidden: {}
 status: true
+dependencies:
+  entity:
+    - field.instance.mcapi_transaction.mcapi_transaction.field_categories
+    - field.instance.mcapi_transaction.mcapi_transaction.worth
+  module:
+    - mcapi
+    - taxonomy
+

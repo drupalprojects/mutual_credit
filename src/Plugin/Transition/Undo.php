@@ -49,6 +49,7 @@ class Undo extends TransitionBase {
       '#open' => FALSE,
       '#weight' => 8,
     );
+    //TODO would be really nice if this was in a grid
     foreach (entity_load_multiple('mcapi_state') as $state) {
       if ($state->id == 'undone') continue;
       $form['access'][$state->id] = array (
@@ -58,8 +59,10 @@ class Undo extends TransitionBase {
         '#options' => array(
       	  'payer' => t('Owner of payer wallet'),
           'payee' => t('Owner of payee wallet'),
+          'creator' => t('Creator of the transaction'),
           'helper' => t('An exchange helper'),
           'admin' => t('The super admin')
+          //its not elegant for other modules to add options
         ),
         '#default_value' => $this->configuration['access'][$state->id],
         '#weight' => $this->configuration['weight']
@@ -69,12 +72,24 @@ class Undo extends TransitionBase {
   }
   /**
    *  access callback for transaction transition 'view'
+   *  @return boolean
   */
   public function opAccess(TransactionInterface $transaction) {
     if ($transaction->get('state')->value != TRANSACTION_STATE_UNDONE) {
       $account = \Drupal::currentUser();
       $options = array_filter($this->configuration['access']);
-      foreach ($options[$transaction->get('state')->value] as $option) {
+      if (!array_key_exists($transaction->state->target_id, $options)) {
+        //this means the op hasn't been configured since a new state was added.
+        //TODO review the idea that undo access should be according to state.
+        if (\Drupal::currentUser()->id() == 1) {
+          drupal_set_message(
+            t('Please resave the undo op, paying attention to access controls: !link', array('!link' => l('admin/accounting/workflow/undo', 'admin/accounting/workflow/undo'))),
+            'warning'
+          );
+        }
+        return FALSE;
+      }
+      foreach ($options[$transaction->state->target_id] as $option) {
         switch ($option) {
         	case 'helper':
         	  if ($account->hasPermission('exchange helper')) return TRUE;
@@ -84,9 +99,14 @@ class Undo extends TransitionBase {
         	  continue;
         	case 'payer':
         	case 'payee':
-        	  $parent = $transaction->get($option)->getValue(TRUE)->getparent();
-        	  if ($parent && $parent->get('pid')->value == $account->id && $parent->getEntityTypeId() == 'user') return TRUE;
+        	  $wallet = $transaction->{$option}->entity;
+        	  $parent = $$wallet->getOwner();
+        	  if ($parent && $wallet->pid->value == $account->id() && $parent->getEntityTypeId() == 'user') {
+        	    return TRUE;
+        	  }
         	  continue;
+        	case 'creator':
+        	  return $transaction->creator->target_id == $account->id();
         }
       }
     }

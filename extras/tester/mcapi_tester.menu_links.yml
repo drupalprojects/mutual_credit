@@ -3,4 +3,4 @@ mcapi.tester.dashboard:
   description: View all the wallets with all the balances in all the exchanges
   route_name: mcapi.tester.dashboard
   parent: mcapi.admin
-  weight: 1
+  weight: -1

@@ -27,4 +27,5 @@ content:
     weight: '6'
     settings: {  }
     label: above
+hidden: {}
 status: true

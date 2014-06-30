@@ -6,3 +6,10 @@ mcapi.signall:
   requirements:
     _permission: 'access administration pages'
 
+mcapi.admin.signatures:
+  path: /admin/accounting/transactions/signatures
+  defaults:
+    _form: 'Drupal\mcapi_signatures\Form\Settings'
+    _title: 'Signatures'
+  requirements:
+    _permission: 'configure mcapi'

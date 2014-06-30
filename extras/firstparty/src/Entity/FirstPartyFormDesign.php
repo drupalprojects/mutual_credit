@@ -78,6 +78,7 @@ class FirstPartyFormDesign extends ConfigEntityBase {
       'path' => '',
     	'status' => 1,
       'type' => 'default',
+      'exchange' => '0',
       'partner' => array(
         //@todo fill in the selection with something the entity_reference widget would understand
     	  'selection' => '',

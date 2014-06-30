@@ -7,7 +7,7 @@ type: default
 partner:
   preset: 5
 direction:
-  preset: none
+  preset: ''
   widget: radios
   incoming: Request
   outgoing: Pay
@@ -16,13 +16,13 @@ description:
   placeholder: 'What was this payment for?'
 worth:
   preset:
-    1:
-      curr_id: 1
+    0:
+      curr_id: cc
       value: 0
 created:
   show: false
 experience:
-  twig: "Description {{ description }}\r\nValue {{ worth }}\r\n{{ direction }} \r\nPartner {{ partner }}\r\n{{ field_categories }}"
+  twig: "Description {{ description }}\r\nValue {{ worth }}\r\n{{ direction }} \r\nPartner {{ partner }}\r\n{{ field_categories }}\r\ndefault categories are Transport, Food, Care, Learning, Home, Leisure"
   button: 'Log transaction'
   preview: page
 message: 'Transaction Logged'

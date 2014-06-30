@@ -55,7 +55,6 @@ class CurrencyForm extends EntityForm {
         $options[$account->id()] = $account->label();
       }
     }
-
     $form['uid'] = array(
     	'#title' => t('Comptroller'),
       '#description' => t('The one user who can edit this currency'),
@@ -167,11 +166,11 @@ class CurrencyForm extends EntityForm {
       //this is required if any existing transactions have zero value
       '#required' => !empty($serials)
     );
-    if ($form['display']['zero']['#required']) {
-      $form['display']['zero']['#description'] = t("Zero transaction already exist so this field is required");
+    if ($form['zero']['#required']) {
+      $form['zero']['#description'] = t("Zero transaction already exist so this field is required");
     }
     else {
-      $form['display']['zero']['#description'] = t("Leave blank to disallow zero value transactions");
+      $form['zero']['#description'] = t("Leave blank to disallow zero value transactions");
     }
     $form['display']['color'] = array(
     	'#title' => t('Colour'),
@@ -179,7 +178,6 @@ class CurrencyForm extends EntityForm {
     	'#type' => 'color',
     	'#default_value' => $currency->color,
     );
-
     return $form;
   }
 

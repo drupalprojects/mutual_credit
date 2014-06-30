@@ -17,18 +17,28 @@ use Drupal\mcapi\Entity\WalletInterface;
  * method work very differently, putting NULL in all database fields
  */
 class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorageInterface {
+
   /**
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::getOwnedWalletIds()
    * @todo probably useful to have a flag for excluding _intertrading wallets
    */
-  function getOwnedWalletIds(ContentEntityInterface $entity) {
+  static function getOwnedWalletIds(ContentEntityInterface $entity) {
     return db_select('mcapi_wallets', 'w')
       ->fields('w', array('wid'))
       ->condition('entity_type', $entity->getEntityTypeId())
       ->condition('pid', $entity->id())
       ->condition('orphaned', 0)
       ->execute()->fetchCol();
+    /*N.B. the above is functionality equivalent to, but faster than
+    return entity_load_multiple_by_properties('mcapi_wallet',
+      array(
+        'pid' => $entity->id(),
+        'entity_type' => $entity->getEntityTypeId(),
+        'orphaned' => FALSE
+      )
+    );*/
   }
+
 
   /**
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::spare()
@@ -46,7 +56,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::filter()
    *
    */
-  function filter(array $conditions, $offset = 0, $limit = NULL, $intertrading = FALSE) {
+  static function filter(array $conditions, $offset = 0, $limit = NULL, $intertrading = FALSE) {
 
     $query = db_select('mcapi_wallets', 'w')->fields('w', array('wid'));
     $namelike = db_or();
@@ -58,13 +68,18 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
       $like = TRUE;
     }
     if (array_key_exists('exchanges', $conditions)) {
-      //get all the wallets in all the exchanges mentioned, and then just filter on them
-      //this means we don't have to attempt to join to all the exchange fieldAPI tables
-      $conditions['wids'] = $this->walletsInExchanges($conditions['exchanges']);
+      //get all the wallets in all the exchanges mentioned
+      //this is easier than trying to join with all the wallet owner base entity tables
+      //static function means we have to call up this object again
+      $conditions['wids'] = \Drupal::EntityManager()
+        ->getStorage('mcapi_wallet')
+        ->walletsInExchanges($conditions['exchanges']);
     }
-
     if (array_key_exists('wids', $conditions)) {
       $query->condition('w.wid', $conditions['wids']);
+    }
+    if (array_key_exists('wid', $conditions)) {
+      $query->condition('w.wid', $conditions['wid']);
     }
 
     if (array_key_exists('orphaned', $conditions)) {
@@ -165,7 +180,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
    */
   function updateIndex(WalletInterface $wallet) {
     $wid = $wallet->id();
-    $this->dropIndex(array($id));
+    $this->dropIndex(array($wid));
     $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
     foreach (array_keys(referenced_exchanges($wallet->getOwner())) as $exid) {
       $query->values(array('wid' => $wid, 'exid' => $exid));
@@ -173,11 +188,10 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     $query->execute();
   }
 
-    /*
-   * when an entity joins an exchange this must be updated
-   * Does this belong in the WalletStorageInterface?
+  /*
+   *
    */
-  function dropIndex(array $wids) {
+  static function dropIndex(array $wids) {
     db_delete('mcapi_wallet_exchanges_index')->condition('wid', $wids)->execute();
   }
 

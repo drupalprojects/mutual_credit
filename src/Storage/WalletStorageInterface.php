@@ -22,7 +22,7 @@ interface WalletStorageInterface extends FieldableEntityStorageInterface {
    *
    * @todo REPLACE this with $this->filter()
    */
-  public function getOwnedWalletIds(ContentEntityInterface $entity);
+  public static function getOwnedWalletIds(ContentEntityInterface $entity);
 
   /**
    * check if the max number of wallets has been reached for that entity
@@ -55,7 +55,7 @@ interface WalletStorageInterface extends FieldableEntityStorageInterface {
    * @return array
    *   The wallet ids
    */
-  public function filter(array $conditions, $offset = 0, $limit = NULL, $intertrading = FALSE);
+  public static function filter(array $conditions, $offset = 0, $limit = NULL, $intertrading = FALSE);
 
   /**
    * Get all the wallet ids in given exchanges.

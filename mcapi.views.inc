@@ -30,25 +30,7 @@ function mcapi_views_data() {
     ),
   	'wizard_id'=> 'transactions',//this links it to the wizard plugin
   );
-  //TODO
-  //This isn't working to join the table to all transaction entity queries
-  //I've no idea how it is supposed to work, especially as this is a one-to-many relationship
-  $data['mcapi_transaction_worth']['table'] = array(
-    'entity type' => 'mcapi_transaction',
-    'group' => t('Transaction'),
-    'join' => array(
-      'mcapi_transactions' => array(
-        'left_field' => 'xid',
-        'field' => 'xid',
-        'type' => 'LEFT'//not sure about this
-      ),
-      'mcapi_transaction_worth' => array(
-        'left_field' => 'xid',
-        'field' => 'xid',
-        'type' => 'LEFT'//not sure about this
-      ),
-    )
-  );
+
 
   $data['mcapi_transactions']['serial'] = array(
     'title' => t('Serial'), // The item it appears as on the UI,
@@ -230,37 +212,7 @@ function mcapi_views_data() {
       'id' => 'transaction_transitions',
     )
   );
-  //working with raw values directly from the worths table
-  /*
-  $data['mcapi_transactions_worth']['curr_id'] = array(
-    'title' => t('Currency'),
-    'field' => array(
-      'help' => t('Show the currency only'),
-      'id' => 'curr_id',
-    ),
-    'filter' => array(
-      'help' => t('Transactions using specific currencies'),
-      'id' => 'curr_id',
-    ),
-    'argument' => array(
-      'help' => t('Transactions using specific currencies'),
-      'id' => 'string',
-    )
-  );
-  $data['mcapi_transactions_worth']['value'] = array(
-    'title' => t('Quantity'),
-    'help' => t('The raw numerical value of the transaction'),
-    'field' => array(
-      'id' => 'numeric',
-    ),
-    'filter' => array(
-      'id' => 'numeric',
-    ),
-    'sort' => array(
-      'id' => 'standard',
-    )
-  );
-*/
+
   $data['mcapi_transactions_index']['table'] = array(
   	'group'  => t('Transaction index'),
   	'entity type' => 'mcapi_transaction',
@@ -399,9 +351,7 @@ function mcapi_views_data() {
     'help' => t('The income from the transaction; positive or zero'),
     'field' => array(
       'id' => 'worth',
-  		'additional fields' => array(
-  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
-  		)
+  		'additional fields' => array('curr_id')
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -412,9 +362,7 @@ function mcapi_views_data() {
     'help' => t('The outgoing quantity of the transaction; positive or zero'),
     'field' => array(
       'id' => 'worth',
-  		'additional fields' => array(
-  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
-  		)
+  		'additional fields' => array('curr_id')
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -425,9 +373,7 @@ function mcapi_views_data() {
     'help' => t('The difference to the balance; positive or negative'),
     'field' => array(
       'id' => 'worth',
-  		'additional fields' => array(
-  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
-  		)
+  		'additional fields' => array('curr_id')
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -438,9 +384,7 @@ function mcapi_views_data() {
     'help' => t('The quantity of the transaction; always positive'),
     'field' => array(
       'id' => 'worth',
-  		'additional fields' => array(
-  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
-  		)
+  		'additional fields' => array('curr_id')
     ),
     'filter' => array(
       'id' => 'numeric',
@@ -452,16 +396,6 @@ function mcapi_views_data() {
     'field' => array(
       'id' => 'standard',
     ),
-      /* this won't work because currencies are config entities
-       * if we can get it to work somehow, we won't have to do mcapi_currency load in the worth field plugin
-  	'relationship' => array(
-  		'id' => 'standard',
-  		'base' => 'mcapi_currencies',
-  		'field' => 'uid',
-  		'label' => t('2nd party'),
-  		'relationship field' => 'partner_id'
-  	),
-  	*/
   );
   $data['mcapi_transactions_index']['child'] = array(
     'title' => t('Is a child'),
@@ -480,9 +414,7 @@ function mcapi_views_data() {
     'help' => t("The sum of the wallet's previous transactions."),
     'field' => array(
       'id' => 'balance',
-  		'additional fields' => array(
-  		  'curr_id' => array('table' => 'mcapi_transactions_index', 'field' => 'curr_id')
-  		)
+  		'additional fields' => array('curr_id')
     ),
   );
   $data['mcapi_transactions_index']['transitions'] = array(
@@ -557,13 +489,24 @@ function mcapi_views_data() {
   	'field' => array(
   	  //for now we'll make a link by rewriting the field.
   	  //But surely I don't have to create a field handler just to link to the entity
-  	  //EntityLabel is so useless - its designed only for the file entity.
+  	  //views/field/EntityLabel.php is so useless - only works with the file entity.
   		'id' => 'standard',
+  	)
+  );
+  $data['mcapi_exchanges']['status'] = array(
+  	'title' => t('Active'),
+  	'help' => t("Active or disabled"),
+  	'field' => array(
+  		'id' => 'boolean',
+  	),
+  	'filter' => array(
+  		'id' => 'boolean_operator',
   	)
   );
   $data['mcapi_exchanges']['visibility'] = array(
   	'title' => t('Visibility'),
   	'help' => t("See, private, restricted and public exchanges, according to current user's access"),
+    //TODO can't we use booleans for this?
   	'field' => array(
   		'id' => 'exchange_visibility',
   	),
@@ -586,9 +529,7 @@ function mcapi_views_data() {
   	'help' => t("The number of 'active' users in the exchange"),
   	'field' => array(
   		'id' => 'exchange_members',
-  	  'additional fields' => array(
-  	    'id' => array('table' => 'mcapi_exchanges', 'field' => 'id')
-  	  )
+  	  'additional fields' => array('id')
   	)
   );
   // this might not be worth it, especially since we can't sort with it
@@ -599,9 +540,7 @@ function mcapi_views_data() {
   	'help' => t('The number of transactions in a given period'),
   	'field' => array(
   		'id' => 'exchange_transactions',
-  	  'additional fields' => array(
-  	    'id' => array('table' => 'mcapi_exchanges', 'field' => 'id')
-  	  )
+  	  'additional fields' => array('id')
   	)
   );
   return $data;

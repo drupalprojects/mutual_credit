@@ -5,22 +5,36 @@
  */
 function mcapi_signatures_views_data() {
 
-  $data['mcapi_signatures']['table']['group']  = t('Signatures');
-  $data['mcapi_signatures']['table']['base'] = array(
-    'field' => 'serial',
-    'title' => t('Signatures'),
-    'help' => t('Signatures needed on pending transactions'),
-    'access query tag' => 'transaction_access_views',
-    'defaults' => array(
+  //TODO in alpha12, judging by node revisions, I don't see a way for secondary table to conjure up entities, except as a field
+  $data['mcapi_signatures']['table'] = array(
+    'group'  => t('Signatures'),
+    //'entity type' => 'mcapi_transaction',//This adds xid to the field list for the current table, so we don't want it
+    'access query tag' => 'mcapi_views_access',
+    'base' => array(
       'field' => 'serial',
+      'title' => t('Signatures'),
+      'help' => t('Signatures needed on pending transactions'),
+      'defaults' => array(
+        'field' => 'serial',
+      ),
     ),
+    'join' => array(
+      'mcapi_transactions' => array(
+        'left_field' => 'serial',
+        'field' => 'serial',
+      ),
+    )
   );
-  $data['mcapi_signatures']['table']['join'] = array(
-    'mcapi_transactions' => array(
-      'left_field' => 'serial',
-      'field' => 'serial',
-      'type' => 'LEFT',
+
+  $data['mcapi_signatures']['serial'] = array(
+    'title' => t('Serial'),
+    'help' => t("The serial number of the transaction"),
+    'field' => array(
+      'id' => 'standard'
     ),
+    'argument' => array(
+      'id' => 'standard',
+    )
   );
 
   //some of these are a bit confused - need more time!
@@ -59,6 +73,15 @@ function mcapi_signatures_views_data() {
     'filter' => array(
       'id' => 'date',
     ),
+  );
+
+  //TODO this is temp I hope until we can reference the transaction entity sentence display mode via the view style
+  $data['mcapi_signatures']['entity'] = array(
+    'title' => t('Transaction sentence (workaround)'),
+    'help' => t('Virtual field to render a transaction sentence from the serial number'),
+    'field' => array(
+      'id' => 'sentence',
+    )
   );
   return $data;
 }

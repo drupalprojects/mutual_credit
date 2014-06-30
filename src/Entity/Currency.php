@@ -78,7 +78,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'color' => '000',
       'ticks' => 1,
       'weight' => 0,
-      'uid' => \Drupal::CurrentUser()->id()
+      'uid' => \Drupal::CurrentUser()->id() ? : 1
     );
   }
 

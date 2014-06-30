@@ -18,32 +18,17 @@ use \Drupal\field\Entity\FieldInstanceConfig;
 use Symfony\Component\HttpFoundation\Request; //for hook_help
 use Drupal\mcapi\Entity\WalletInterface;
 
-define('CURRENCY_WIDGET_SINGLEFIELD', 1);
-define('CURRENCY_WIDGET_TEXT', 2);
-define('CURRENCY_WIDGET_SELECT', 3);
-
+//we could maybe do without these
 define('CURRENCY_TYPE_ACKNOWLEDGEMENT', 'acknowledgement');
 define('CURRENCY_TYPE_EXCHANGE', 'exchange');
 define('CURRENCY_TYPE_COMMODITY', 'commodity');
 
 //states are mutually exclusive
-//the convention is that states > 0 are counted (but sometimes you might want to count pending (-1) as well)
-define('TRANSACTION_STATE_FINISHED', 1);
-//There's a convention that says transactions are 'counted' towards the balance when their state is > 0
-//when the delete mode is to write another transaction reversing the first,
-//we don't actually want to discount the deleted transaction
-//so its state constant will be > 0
-//
-
-define('TRANSACTION_STATE_UNDONE', 0);
-
-//the transaction form expects args in $form_state[build_info]
-//This constant and another in the forms module ensures the argument position is not determined by chance
-define('TRANSACTION_BUILD_INFO_ARG', 0);
+define('TRANSACTION_STATE_FINISHED', 'done');
+define('TRANSACTION_STATE_UNDONE', 'undone');
 
 function mcapi_requirements($phase) {
   if ($phase == 'runtime') {
-
     $result = array(
       'title' => t('Transaction index table'),
     );
@@ -67,6 +52,8 @@ function mcapi_requirements($phase) {
  *   a serial number or array of serial numbers
  * @return mixed
  *   an array of transaction entities or one transaction entity, depending on the input
+ *
+ * @todo this is only used twice so far is it really needed?
  */
 function mcapi_transaction_load_by_serial($serials) {
   $transactions = array();
@@ -120,6 +107,7 @@ function mcapi_help($route_name, Request $request) {
  * @return $plugin or array of plugins
  *   depending on whether an op_name was passed
  * @todo allow transitions to be disabled to save processing.
+ * @todo perhaps this function shoul be in the plugin manager?
  * @todo rename transitions to transitions because d8 now has entity transitions which are not configurable and not very extensible.
  */
 function transaction_transitions($op_name = NULL) {
@@ -176,6 +164,7 @@ function mcapi_entity_view(&$build, $entity, $mode, $language) {
 /**
  * Implements hook_form_alter();
  * Add a submit callback to ContentEntityForms for contentTypes which reference exchanges
+ * to check for entities joining and leaving exchanges
  * Form_alter is rather a blunt instrument but it is the best available.
  * Would be better to use hook_entity_presave or postsave but the old values aren't available there
  */
@@ -206,10 +195,11 @@ function mcapi_form_alter(&$form, &$form_state, $form_id) {
 function mcapi_transaction_flatten(TransactionInterface $transaction) {
   $clone = clone($transaction);
   $flatarray = array($clone);
-  foreach ($clone->children as $child) {
-    $flatarray[] = $child;
+  if (!empty($clone->children)) {
+    foreach ($clone->children as $child) {
+      $flatarray[] = $child;
+    }
   }
-  unset($clone->children);
   return $flatarray;
 }
 
@@ -261,10 +251,12 @@ function mcapi_mcapi_info_drupal_permissions() {
 
 /**
  * implements hook_mail().
+ * @todo remove this when we have rules
  */
 function mcapi_mail($key, &$message, $params) {
   if ($key == 'transition') {
-    $options = array('language' => $message['language'], 'sanitize' => FALSE);
+//    echo 'mcapi_mail seems to have no language';print_r(array_keys($message));print_r(array_keys($params));
+    $options = array('language' => $message['langcode'], 'sanitize' => FALSE);
     $message['subject'] =  \Drupal::Token()->replace($params['subject'], $params, $options);
     $message['body'][] =  \Drupal::Token()->replace($params['body'], $params, $options);
     $message['headers']['cc'] = $params['cc'];
@@ -287,6 +279,8 @@ function mcapi_entity_extra_field_info() {
  * @param string $id
  *
  * @returns CurrencyInterface
+ *
+ * @todo is this still needed?
  */
 function mcapi_currency_load($id) {
   return entity_load('mcapi_currency', $id);
@@ -344,6 +338,7 @@ function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = 
   else{
     $fieldnames = get_exchange_entity_fieldnames();
     if ($fieldname = @$fieldnames[$entity_type]) {
+      //TODO I wouldn't be surprised if there was a better way to iterate through these
       foreach($entity->get($fieldname)->getValue(TRUE) as $item) {
         if ($item['entity']) {//an empty $item means the exchangeItemList is empty
           if ($enabled && !$item['entity']->status->value) continue;
@@ -394,10 +389,11 @@ function get_exchange_entity_fieldnames() {
 function exchange_currencies(array $exchanges, $ticks = FALSE) {
   $currencies = array();
   foreach ($exchanges as $exchange) {
-    foreach ($exchange->get('currencies')->getValue() as $item) {
+    //TODO is there a shorter way to iterate through these referenced entities
+    foreach ($exchange->get('currencies')->getValue(TRUE) as $item) {
       if (empty($item))continue;//this should never happen because an exchange can't have no currencies
-      $currency = mcapi_currency_load($item['target_id']);
-      if ($ticks && !$currency->get('ticks')) continue;
+      $currency = $item['entity'];
+      if ($ticks && !$currency->ticks) continue;
       $currencies[$item['target_id']] = $currency;
     }
   }
@@ -551,13 +547,21 @@ function form_type_select_wallet_value(&$element, $input, &$form_state) {
 
 /**
  * element_validate callback for select_wallet
- * ensure the passed value is a wallet id
+ * ensure the passed value is a wallet id, not of an intertrading wallet
  */
 function local_wallet_validate_id(&$element, &$form_state) {
-  if ($element['#value']) {
-    if (!entity_load('mcapi_wallet', $element['#value'])) {
-     \Drupal::formBuilder()->setError($element, $form_state, t('Invalid wallet id: @value', array('@value' => $element['#value'])));
+  $message = '';
+  if (is_numeric($element['#value'])) {
+    $wallet = entity_load('mcapi_wallet', $element['#value']);
+    if (!$wallet) {
+      $message = t('Invalid wallet id: @value', array('@value' => $element['#value']));
     }
+    elseif($wallet->name->value == '_intertrading') {
+      $message = t('You cannot trade with wallet #@value directly', array('@value' => $element['#value']));
+    }
+  }
+  if ($message) {
+    \Drupal::formBuilder()->setError($element, $form_state, $message);
   }
 }
 
@@ -594,6 +598,29 @@ function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
     unset($form['user_cancel_method']['user_cancel_reassign']);
     unset($form['user_cancel_method']['user_cancel_delete']);
   }
+}
+
+/*
+ * load the transaction states and filter them according to the misc settings
+ * @todo later we might want to provide a fuller interface for editing states
+ * and types, esp the name and description e.g. admin/accounting/workflow/states
+ */
+function mcapi_states_counted($counted = TRUE) {
+  $counted_states = \Drupal::config('mcapi.misc')->get('counted');
+  $states = entity_load_multiple('mcapi_state');
+  foreach ($states as $state) {
+    if (array_key_exists($state->id, $counted_states)) {
+      if ($counted_states[$state->id] == $counted) {
+        $result[$state->id] = $state;
+      }
+    }
+    else {
+      if ($state->counted == $counted) {
+        $result[$state->id] = $state;
+      }
+    }
+  }
+  return $result;
 }
 
 /**
@@ -683,14 +710,6 @@ function mcapi_entity_delete($entity) {
   }
 }
 
-//fetch an entity reference computed entity value
-//TODO decide whether to delete this
-function _mcapi_fetch_ref(ContentEntityInterface $entity, $fieldname, $calculated = FALSE) {
-  $val = $entity->get($fieldname)->getValue($calculated);
-  if ($calculated) return $val[0]['entity'];
-  else return $val[0]['target_id'];
-}
-
 /**
  * get the entity from a Request object, whatever the entitytype
  * this is quite hacky
@@ -711,7 +730,6 @@ function mcapi_request_get_entity($request) {
  * @return array
  *   wallet ids belonging to the passed entity
  */
-//TODO this is
 function mcapi_get_wallet_ids(ContentEntityInterface $entity) {
   return \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity);
 }
@@ -770,25 +788,16 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
   );
   if (in_array($entity->id(), $ids)) $operations = array();
 }
-/**
- * Implements hook_field_formatter_info_alter();
- * gives the worth field a default formatter
- */
-function mcapi_field_formatter_info_alter(array &$info) {
-  // Let a new field type re-use an existing formatter.
-  $info['string']['field_types'][] = 'worth';
-}
-
 
 /**
  * get the Transition links for a transaction
- * @param Transaction $transaction
+ * @param TransactionInterface $transaction
  * @param boolean $view_link
  *
  * @return array
  *   a renderable array
  */
-function mcapi_get_links(Transaction $transaction, $view_link = FALSE) {
+function mcapi_get_links(TransactionInterface $transaction, $view_link = FALSE) {
   static $transactionViewBuilder;
   if (!$transactionViewBuilder) {
     $transactionViewBuilder = \Drupal::EntityManager()->getViewBuilder('mcapi_transaction');
@@ -799,9 +808,14 @@ function mcapi_get_links(Transaction $transaction, $view_link = FALSE) {
 /**
  * Delete all transaction entities
  * For development only!
+ * @TODO move this to be a drush command
  */
 function mcapi_wipeslate() {
+  $conf = \Drupal::config('mcapi.misc');
+  $indelible = $conf->get('indelible');
+  $conf->set('indelible', TRUE)->save();
   $controller = \Drupal::entityManager()->getStorage('mcapi_transaction');
   $entities = $controller->loadMultiple();
   $controller->delete($entities, TRUE);
+  $conf->set('indelible', $indelible)->save();
 }

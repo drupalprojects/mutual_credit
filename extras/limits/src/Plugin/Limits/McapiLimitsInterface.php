@@ -22,4 +22,8 @@ interface McapiLimitsInterface extends ConfigurablePluginInterface, PluginFormIn
    */
   public function getLimits(WalletInterface $wallet);
 
+
+  //NB this function receives an extra hidden argument, mcapiCurrency $currency
+  //public function buildConfigurationForm(array $form, array &$form_state);
+
 }

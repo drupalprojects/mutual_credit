@@ -23,6 +23,12 @@ mcapi.wallet.edit.tab:
   route_name: mcapi.wallet_edit
   title: 'Edit'
   base_route: mcapi.wallet_view
+  weight: 5
+
+mcapi.wallet.log.tab:
+  route_name: mcapi.wallet.log
+  title: 'Log'
+  base_route: mcapi.wallet_view
   weight: 2
 
 #default tab if field API tasks are showing on the exchanges page
@@ -56,6 +62,13 @@ mcapi.exchange.edit.tab:
   title: Edit
   base_route: mcapi.exchange.view
   weight: 1
+
+#TODO sort this out when views path arguments work
+#mcapi.exchange.edit.tab:
+#  route_name: mcapi.exchange.statement
+#  title: Edit
+#  base_route: mcapi.exchange.view
+#  weight: 1
 
 #a default tab for editing a currency, lest more should be needed
 mcapi.currency.edit.tab:

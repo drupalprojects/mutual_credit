@@ -3,8 +3,16 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Config\ConfigFactoryInterface;
 
 class MiscForm extends ConfigFormBase {
+
+private $settings;
+
+function __construct(ConfigFactoryInterface $config_factory) {
+  parent::__construct($config_factory);
+  $this->settings = $config_factory->get('mcapi.misc');
+}
 
   /**
    * {@inheritdoc}
@@ -17,7 +25,7 @@ class MiscForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state) {
-    $config = $this->configFactory->get('mcapi.misc');
+    $config = $this->settings;
     module_load_include('inc', 'mcapi');
     foreach (mcapi_transaction_list_tokens(TRUE) as $token) {
       $tokens[] = "[mcapi:$token]";
@@ -29,39 +37,7 @@ class MiscForm extends ConfigFormBase {
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
     );
-/* This might belong in another module
- * in any case the edit transition needs to be prepared
-    $form['editable'] = array(
-      '#title' => t('Allow transaction records to be edited'),
-      '#description' => t("This will create a new permission, and allow new 'edit' transition"),
-      '#type' => 'checkbox',
-      '#default_value' => $config->get('editable'),
-      '#weight' => 3
-    );
-    $form['editable_fields'] = array(
-      '#title' => t('Editable fields'),
-      '#description' => '',
-      '#type' => 'fieldset',
-      '#weight' => 4,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="editable"]' => array('checked' => TRUE)
-        )
-      ),
-      'fields' => array(
-        //'#title' => t('Fields'),
-        '#type' => 'checkboxes',
-        '#options' => array(
-          'participants' => t('Participants'),
-          'description' => t('Description'),
-          'worth' => t('Worth'),
-          'type' => t('Type'),
-          'fieldapi' => t('Field API fields'),
-        ),
-        '#default_value' => $config->get('fields'),
-      )
-    );
-    */
+
     $form['indelible'] = array(
       '#title' => t('Indelible accounting'),
       '#description' => t('Ensure that transactions, exchanges and currencies are not deleted.'),
@@ -116,6 +92,25 @@ class MiscForm extends ConfigFormBase {
       '#size' => 20,
       '#maxlength' => 128,
     );
+    //NB Instead of this, 'counted' could be a property of each transaction state
+    //however at the moment that would involve user 1 editing the yaml files
+    //because transaction states have no ui to edit them
+    $form['counted'] = array(
+    	'#title' => t('Counted transaction states'),
+      '#description' => t('The user balance is comprised of transactions in which states?'),
+      '#type' => 'checkboxes',
+      '#options' => mcapi_entity_label_list('mcapi_state'),
+      '#default_value' => $config->get('counted'),
+      '#weight' => 14,
+      'done' => array(
+    	  '#disabled' => TRUE,
+        '#value' => TRUE,
+      ),
+      'undone' => array(
+    	  '#disabled' => TRUE,
+        '#value' => FALSE,
+      )
+    );
     $form['rebuild_mcapi_index'] = array(
       '#title' => t('Rebuild index'),
       '#description' => t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
@@ -137,22 +132,23 @@ class MiscForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
-    $this->configFactory->get('mcapi.misc')
+    $indexRebuild = $this->settings->counted != $form_state['values']['counted'];
+
+    $this->settings
       ->set('sentence_template', $form_state['values']['sentence_template'])
       //careful the mix_mode flag is inverted!!
-      ->set('editable', $form_state['values']['editable'])
-      ->set('fields', $form_state['values']['fields'])
       ->set('exchange_menu', !$form_state['values']['exchange_menu'])
       ->set('ticks_name', $form_state['values']['ticks_name'])
       ->set('zero_snippet', $form_state['values']['zero_snippet'])
       ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
       ->set('child_errors', $form_state['values']['child_errors'])
+      ->set('counted', $form_state['values']['counted'])
       ->set('indelible', $form_state['values']['indelible'])
       ->save();
 
     parent::submitForm($form, $form_state);
 
-    if($form_state['triggering_element']['#value'] == 'rebuild_mcapi_index') {
+    if($indexRebuild || $form_state['triggering_element']['#value'] == 'rebuild_mcapi_index') {
       //not sure where to put this function
        \Drupal::entityManager()->getStorage('mcapi_transaction')->indexRebuild();
        drupal_set_message("Index table is rebuilt");

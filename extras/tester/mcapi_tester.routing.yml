@@ -19,4 +19,6 @@ mcapi.tester.dashboard:
   defaults: 
     _content: '\Drupal\mcapi_tester\Controller\DashboardController::page'
     _title: 'Tester dashboard'
+  requirements:
+    _permission: 'access content'
   

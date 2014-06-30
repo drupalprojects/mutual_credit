@@ -1,4 +1,5 @@
 id: default
 label: Default
 description: Simplest transaction type
-start_state: 1
+start_state: done
+module: mcapi

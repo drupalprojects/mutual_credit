@@ -6,6 +6,7 @@ div.all-wallets{
 }
 div.wallet-summary{
   margin:2px;
+  padding:5px;
 	background-color: rgb(238, 238, 238);
   display:inline-block;
 }

@@ -13,7 +13,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldDefinition;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\user\UserInterface;
+use Drupal\Core\Session\AccountInterface;
 
 define('EXCHANGE_VISIBILITY_PRIVATE', 0);
 define('EXCHANGE_VISIBILITY_RESTRICTED', 1);
@@ -66,10 +66,9 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    $account = \Drupal::currentUser();
     $values += array(
       //'name' => t("!name's exchange", array('!name' => $account->getlabel())),
-      'uid' => $account->id() ? : 1,//drush is user 0
+      'uid' => \Drupal::currentUser()->id() ? : 1,//drush is user 0
       'status' => TRUE,
       'open' => TRUE,
       'visibility' => TRUE,
@@ -145,10 +144,10 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->setSettings(array('default_value' => TRUE));
 
     $fields['visibility'] = FieldDefinition::create('integer')
-      ->setLabel(t('Visibility'))
-      ->setDescription(t('Visibility of impersonal data in the exchange'))
-      ->setRequired(TRUE)
-      ->setSetting('default_value', EXCHANGE_VISIBILITY_RESTRICTED);
+    ->setLabel(t('Visibility'))
+    ->setDescription(t('Visibility of impersonal data in the exchange'))
+    ->setRequired(TRUE)
+    ->setSetting('default_value', EXCHANGE_VISIBILITY_RESTRICTED);
 
     return $fields;
   }
@@ -160,10 +159,9 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     if ($entity_type == 'mcapi_wallet') {
       $entity = $entity->getOwner();
     }
-    $entity_type = $entity->getEntityTypeId();
     $id = $entity->id();
     $fieldnames = get_exchange_entity_fieldnames();
-    $members = $this->{$fieldnames[$entity_type]}->getValue(FALSE);
+    $members = $this->{$fieldnames[$entity->getEntityTypeId()]}->getValue(FALSE);
 
     //echo 'Exchange::is_member'; print_r($members);die();
     foreach ($members as $item) {
@@ -179,7 +177,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     if (is_null($account)) {
       $account = \Drupal::currentUser();
     }
-    return $account->id() == $this->get('uid')->value;
+    return $account->id() == $this->uid->value;
   }
 
   /**
@@ -235,7 +233,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  public function setOwner(UserInterface $account) {
+  public function setOwner(AccountInterface $account) {
     $this->set('uid', $account->id());
     return $this;
   }

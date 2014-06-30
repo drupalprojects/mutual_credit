@@ -16,7 +16,13 @@ function mcapi_tester_install() {
       'name' => $term,
     ))->save();
   }
-  $exchange_ids = mcapi_tester_make_exchanges('Venus', 'Mars', 'Jupiter', 'Mercury');
+  $names = array(
+    'Pluto' => 'Pluto Pesos',
+    'Mars' => 'Martian Moolah',
+    'Saturn' => 'Saturnine Schillings',
+    'Jupiter' => 'Jovial Jewels'
+  );
+  $exchange_ids = mcapi_tester_make_exchanges($names);
   //now
   mcapi_tester_make_users(26);
   //make some transactions within the exchanges.
@@ -26,6 +32,7 @@ function mcapi_tester_install() {
 
   //close the last exchange and disable its currency
   $last_exchange = entity_load('mcapi_exchange', end($exchange_ids));
+  drupal_set_message('Closing the last exchange: '.$last_exchange);
   $last_exchange->set('status', 0);
   $last_exchange->save();
 
@@ -40,13 +47,13 @@ function mcapi_tester_uninstall() {
   $indelible = $misc_conf->get('indelible');
   $misc_conf->set('indelible', 0)->save();
 
-  if ($field = entity_load('field_instance_config', 'mcapi_transaction.mcapi_transaction.field_categories')) {
-    $field->delete();
+  if ($instance = entity_load('field_instance_config', 'mcapi_transaction.mcapi_transaction.field_categories')) {
+    //$instance->delete();
   }
 
   //remove the categories
   foreach (entity_load_multiple_by_properties('taxonomy_term', array('vid' => 'categories')) as $term) {
-    $term->delete();
+    //$term->delete();
   }
   //delete test transactions
   $transaction_storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
@@ -67,8 +74,9 @@ function mcapi_tester_uninstall() {
     $exchange->delete();//their intertrading wallets should go automatically
   }
   foreach (entity_load_multiple('mcapi_currency') as $currency) {
-    if ($currency->id() == 1) continue;
-    $currency->delete();
+    if ($currency->weight > 3) {
+      $currency->delete();
+    }
   }
   $misc_conf->set('indelible', $indelible);
   field_purge_batch(5);
@@ -84,22 +92,26 @@ function mcapi_tester_uninstall() {
  * @return array
  *   the ids of the newly created exchanges
  */
-function mcapi_tester_make_exchanges() {
+function mcapi_tester_make_exchanges($names) {
 
-  $w = 4;
-  foreach (func_get_args() as $name) {
+  $w = 4;//because 3 currencies are already provided
+  //this is less code and less maintainance than providing config files
+  foreach ($names as $exchange_name => $currname) {
+
+    $first = substr($currname, 0, 1);
     $c = entity_create('mcapi_currency');
-    $c->set('id', $w);
-    $c->set('name', $name . 'Credits');
+    $c->set('id', strtoLower($first.$first));
+    $c->set('name', $currname);
+    $c->set('zero', rand(0, 1));
     $c->set('issuance', CURRENCY_TYPE_EXCHANGE);
-    $c->set('format', array(substr($name, 0, 1), '000', ':', '99'));
+    $c->set('format', array($first.$first, '000', ':', '99'));
     $c->set('weight', $w);
     $c->set('ticks', 10*rand(1, 6));
     $c->save();
     $w++;
-echo $c->get('format');
+
     $e = entity_create('mcapi_exchange');
-    $e->set('name', $name);
+    $e->set('name', $exchange_name);
     $e->get('currencies')->setValue(array($c->id()));
     $e->save();
 
@@ -131,8 +143,8 @@ function mcapi_tester_make_users($num = 26) {
   $all_exchange_ids = array_keys(entity_load_multiple('mcapi_exchange'));
 
   //create users
-  $first = array('Alice', 'Bob', 'Carry', 'Dave', 'Ebeneezer', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Rosy', 'Sly', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
-  $last = array('Adams', 'Bastock', 'Critchley', 'Dearthart', 'Epstein', 'Farquar', 'Guilder', 'Hornby', 'Ingrams', 'Johnson', 'Kant', 'Loafer', 'Meadows', 'Norfolk', 'Orwell', 'Philipps', 'Quarkson', 'Rhodes', 'Smith', 'Trotter', 'Underwood', 'Vernon', 'Wellington', 'X', 'Ypres', 'Zenithson');
+  $first = array('Alice', 'Bobby', 'Carry', 'Dave', 'Ebeneezer', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Ruby', 'Sylvester', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
+  $last = array('Arachnid', 'Boulder', 'Castaway', 'Deathwish', 'Emerald', 'Frogleg', 'Golden', 'Handiman', 'Indignado', 'Janitor', 'Kant', 'Landrover', 'Mandrake', 'Nakomoto', 'Orwell', 'Python', 'Quarkson', 'Rhodes', 'Smythe', 'Trenchfoot', 'Ustinov', 'Victor', 'Wellington', 'X', 'Ypres', 'Zenithson');
   shuffle($last);
   $usersperexchange = ceil(26/count(entity_load_multiple('mcapi_exchange')));
   for ($i = 0; $i < $num; $i++) {
@@ -153,7 +165,7 @@ function mcapi_tester_make_users($num = 26) {
     $u->save();
     $uids[] = $u->id();
 
-    if ($memnum == 0) {//tell the exchange that it is owned by the manager
+    if ($memnum == 1) {//tell the exchange that it is owned by the manager
       $exchange = entity_load('mcapi_exchange', $exchange_id);
       $exchange->uid->value = $u->id();
       $exchange->save();

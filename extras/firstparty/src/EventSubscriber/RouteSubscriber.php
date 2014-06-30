@@ -2,26 +2,26 @@
 
 /**
  * @file
- * Contains Drupal\mcapi_1stparty\Routing\CustomFormRoutes.
+ * Contains Drupal\mcapi_1stparty\EventSubscriber\RouteSubscriber.
  * see services.yml
  */
 
-namespace Drupal\mcapi_1stparty\Routing;
+namespace Drupal\mcapi_1stparty\EventSubscriber;
 
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Symfony\Component\Routing\RouteCollection;
-use Drupal\Core\Routing\RoutingEvents;
 use Symfony\Component\Routing\Route;
 
 /**
  * Subscriber for 1stparty form routes.
  */
-class CustomFormRoutes extends RouteSubscriberBase {
+class RouteSubscriber extends RouteSubscriberBase {
 
   /**
    * {@inheritdoc}
    */
-  protected function alterRoutes(RouteCollection $collection) {
+  public function routes() {
+    $collection = new RouteCollection();
     foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
       if (empty($editform->path)) continue;//although right now 'path' is a required field
       $route = new Route(
@@ -35,12 +35,21 @@ class CustomFormRoutes extends RouteSubscriberBase {
         ),
         array(
           'parameters' => array(
-      	    'editform_id' => $id
+            'editform_id' => $id
           )
         )
       );
       $collection->add("mcapi.1stparty.$id", $route);
     }
+    return $collection;
+  }
+
+  /*
+   * {@inheritdoc}
+   * @todo why is this required to be implemented? check after alpha12
+   */
+  protected function alterRoutes(RouteCollection $collection) {
+
   }
 
 }

@@ -46,7 +46,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         '#markup' => $transition->description
       ),
       'operations' => array(
-        '#markup' => $this->l($this->t('Settings'), 'mcapi.workflow_settings', array('op' => $id))
+        '#markup' => $this->l($this->t('Settings'), 'mcapi.workflow_settings', array('transition' => $id))
       ),
       'weight' => array(
         '#type' => 'weight',
