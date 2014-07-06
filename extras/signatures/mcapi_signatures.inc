@@ -48,9 +48,8 @@ function list_pending(Drupal\Core\Entity\ContentEntityInterface $entity) {
 }
 
 function mcapi_signall($form, $form_state, $account) {
-  $serials = transactions_needing_sig_of_user($account);
   $form['preview'] = transaction_view(
-    entity_load('mcapi_transaction', transaction_filter(array('serial' => $serials))),
+    mcapi_transaction_load_by_serial(transactions_needing_sig_of_user($account)),
     \Drupal::config('mcapi.misc')->get('sentence_template')
   );
   $form['account'] = array(

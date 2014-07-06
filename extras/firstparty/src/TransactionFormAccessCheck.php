@@ -24,7 +24,7 @@ class TransactionFormAccessCheck implements AccessCheckInterface {
    */
   //not too many examples of this in core to work with
   public function applies(Route $route) {
-    if (in_array('editform_id', $route->getOptions())) return TRUE;
+    return array_key_exists('_transaction_editform_access', $route->getRequirements());
   }
 
   /**

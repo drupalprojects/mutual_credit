@@ -26,6 +26,7 @@ class MassPay extends FormBase {
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
   public function buildForm(array $form, array &$form_state) {
+    drupal_set_message('Not implemented yet');
     if (empty($form_state['validated_transactions'])) {
       $form = $this->step_1($form, $form_state);
       $form['#validate'][] = array($this, 'step_1_validate');
@@ -223,7 +224,7 @@ drupal_set_message("This form isn't working yet. there is currently no way to mu
     if (strlen($params['subject']) && strlen($params['body'])) {
       $mailto = count($form_state['values']['payees']) > 1 ? 'payee' : 'payer';
       global $language;
-      $xids = array_keys(transaction_filter(array('serial' => $serial)));
+      $xids = array_keys(\Drupal\mcapi\Storage\TransactionStorage::filter(array('serial' => $serial)));
       //TODO batch this
       foreach (entity_load('mcapi_transaction', $xids) as $transaction) {
         $params['transaction'] = $transaction;

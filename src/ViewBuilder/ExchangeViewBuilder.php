@@ -29,7 +29,7 @@ class ExchangeViewBuilder extends EntityViewBuilder {
       'members' => array(
         '#prefix' => '<br />',
         '#markup' =>  l(
-          t('@count members', array('@count' => $entity->members())),
+          t('@count members', array('@count' => $entity->users())),
           'exchange/'.$entity->id().'/members'
         )
       ),

@@ -32,7 +32,7 @@ class ExchangeMembers extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    return $this->getEntity($values)->members();
+    return $this->getEntity($values)->users();
   }
 
 }

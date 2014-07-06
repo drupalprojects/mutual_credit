@@ -19,7 +19,7 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
    * get the number of users in this exchange
    * @return integer
    */
-  function members();
+  function users();
 
   /**
    * Check if a (content) entity is a member of this exchange

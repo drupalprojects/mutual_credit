@@ -17,7 +17,6 @@ class ExchangeForm extends ContentEntityForm {
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, array &$form_state) {
-    drupal_set_message("NB there is a bug which, after saving and caching the referenced currency entities, then deletes them.", 'warning');
     $form = parent::form($form, $form_state);
 
     $exchange = $this->entity;

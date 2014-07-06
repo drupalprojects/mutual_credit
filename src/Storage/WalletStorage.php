@@ -18,6 +18,31 @@ use Drupal\mcapi\Entity\WalletInterface;
  */
 class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorageInterface {
 
+  function loadMultiple(array $ids = NULL) {
+    $wallets = parent::loadMultiple($ids);
+    //add the access settings
+    $q = db_select('mcapi_wallets_access', 'a')
+    ->fields('a', array('wid', 'operation', 'uid'));
+    if ($ids) {
+      $q->condition('wid', $ids);
+    }
+
+    $ops = \Drupal\mcapi\Entity\Wallet::ops();
+    foreach ($wallets as $wallet) {
+      foreach($ops as $op) {
+        //the zero values will be replaced by an array of user ids from the access table.
+        //if all goes according to plan...
+//        if ($wallet->{$op} == 0) $wallet->access[$op] = array();
+        $wallet->access[$op] = $wallet->{$op}->value ? : array();
+      }
+    }
+    //now populate the arrays where specific users have been specified
+    foreach ($q->execute() as $row) {
+      $wallets[$row->wid]->access[$row->operation][] = $row->uid;
+    }
+    return $wallets;
+  }
+
   /**
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::getOwnedWalletIds()
    * @todo probably useful to have a flag for excluding _intertrading wallets
@@ -54,7 +79,6 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
   /**
    * (non-PHPdoc)
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::filter()
-   *
    */
   static function filter(array $conditions, $offset = 0, $limit = NULL, $intertrading = FALSE) {
 
@@ -179,6 +203,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
    * Does this belong in the WalletStorageInterface?
    */
   function updateIndex(WalletInterface $wallet) {
+    //update the exchanges index
     $wid = $wallet->id();
     $this->dropIndex(array($wid));
     $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
@@ -186,13 +211,34 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
       $query->values(array('wid' => $wid, 'exid' => $exid));
     }
     $query->execute();
+
+    //update the access settings
+    //I couldn't get merge to work with multiple rows, so removed the table key and doing it manually
+    db_delete('mcapi_wallets_access')->condition('wid', $wallet->wid->value)->execute();
+    $q = db_insert('mcapi_wallets_access')->fields(array('wid', 'permission', 'value'));
+    foreach ($wallet->ops() as $op) {
+      if (is_array($wallet->{$op})) {
+        foreach ($wallet->$op as $value) {
+          $value = array(
+            'wid' => $wallet->wid->value,
+            'permission' => $op,
+            'value' => $value
+          );
+          $q->values();
+          $execute = TRUE;
+        }
+      }
+    }
+    if (isset($execute))$q->execute();
   }
+
 
   /*
    *
    */
   static function dropIndex(array $wids) {
     db_delete('mcapi_wallet_exchanges_index')->condition('wid', $wids)->execute();
+    db_delete('mcapi_wallets_access')->condition('wid', $wids);
   }
 
 }

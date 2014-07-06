@@ -25,8 +25,9 @@ mcapi.wallet.edit.tab:
   base_route: mcapi.wallet_view
   weight: 5
 
+#this could be done by views 
 mcapi.wallet.log.tab:
-  route_name: mcapi.wallet.log
+  route_name: mcapi.wallet_log
   title: 'Log'
   base_route: mcapi.wallet_view
   weight: 2

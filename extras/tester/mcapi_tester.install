@@ -24,7 +24,7 @@ function mcapi_tester_install() {
   );
   $exchange_ids = mcapi_tester_make_exchanges($names);
   //now
-  mcapi_tester_make_users(26);
+  mcapi_tester_make_users(26);//should make wallets as well
   //make some transactions within the exchanges.
   mcapi_tester_make_transactions(200);
   //make some intertrading transactions
@@ -57,9 +57,9 @@ function mcapi_tester_uninstall() {
   }
   //delete test transactions
   $transaction_storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
-  $serials = array_unique($transaction_storage->filter(array('type' => 'test')));
-  if ($serials) {
-    $transaction_storage->doDelete(mcapi_transaction_load_by_serial($serials));
+  $transactions = array_keys($transaction_storage->filter(array('type' => 'test')));
+  if ($transactions) {
+    $transaction_storage->delete(entity_load_multiple('mcapi_transaction', $transactions));
   }
   //delete test users
   foreach (entity_load_multiple('user') as $user) {

@@ -3,10 +3,6 @@ services:
     class: Drupal\mcapi\Plugin\TransitionManager
     arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler, @config.factory]
 
-  plugin.manager.mcapi.wallet_access:
-    class: Drupal\mcapi\Plugin\WalletAccessPluginManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler, @current_user]
-
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
     arguments: ['@entity.manager']
@@ -23,6 +19,10 @@ services:
     class: Drupal\mcapi\Access\WalletAddAccessCheck
     tags:
       - { name: access_check, applies_to: _wallet_add_access  }
+
+  plugin.manager.mcapi.wallet_access:
+    class: Drupal\mcapi\Plugin\WalletAccess\WalletAccessManager
+    arguments: [@container.namespaces, @module_handler, @current_user]
 
 #  mcapi_logger:
  #   class: Drupal\mcapi\McapiLogger

@@ -116,6 +116,12 @@ function _mcapi_theme() {
     ),
     'file' => 'mcapi.inc'
   );
+
+  $items['mcapi_wallet'] = array(
+    'render element' => 'mcapi_wallet',
+    'template' => 'wallet',
+    'file' => 'extras/wallet_preprocess.inc'
+  );
   $items['wallet_balance_bars'] = array(
     'template' => 'wallet_balance_bars',
     'variables' => array(
@@ -343,15 +349,14 @@ function mcapi_worth_element_process_defaults($element) {
   //change the all_available array to a worths value array populated by zeros
   if ($allowed_curr_ids = $element['#allowed_curr_ids']) {
     $existing_curr_ids = array();
-    foreach ($element['#default_value'] as &$item) {
+    foreach ((array)$element['#default_value'] as $item) {
       $existing_curr_ids[] = $item['curr_id'];
     }
     if ($not_allowed = array_diff($existing_curr_ids, $allowed_curr_ids)) {
       //only shows the FIRST not allowed currency
-      $currency = entity_load('mcapi_currency', reset($not_allowed));
       drupal_set_message(t(
         'Passed default @currency is not one of the allowed currencies',
-        array('@currency' => $currency->label())),
+        array('@currency' => entity_load('mcapi_currency', reset($not_allowed))->label())),
         'warning'
       );
     }
@@ -453,7 +458,7 @@ function mcapi_view_wallets_summaries(ContentEntityInterface $entity) {
     ->getOwnedWalletIds($entity);
   foreach (entity_load_multiple('mcapi_wallet', $owned_wallet_ids) as $wallet) {
     if ($wallet->access('view')) {
-      $renderable['wallets']['#wallets'][] = view_wallet_summary($wallet);
+      $renderable['wallets']['#wallets'][] = show_wallet_summary($wallet);
     }
   }
   $renderable['wallets']['#theme'] = 'wallets';
@@ -486,19 +491,19 @@ function mcapi_view_wallets_summaries(ContentEntityInterface $entity) {
 /*
  * get a renderable array of all the currency balances in one wallet
  */
-function view_wallet_summary(WalletInterface $wallet) {
+function show_wallet_summary(WalletInterface $wallet) {
   $renderable = array(
   	'#theme' => 'wallet_summary',
     '#wallet' => $wallet,
     '#attached' => array('css' => array(drupal_get_path('module', 'mcapi') . '/css/wallets.css'))
   );
   foreach ($wallet->currencies_used() as $curr_id => $currency) {
-    $renderable['#currencies'][$curr_id] = view_wallet_summary_currency($wallet, $currency);
+    $renderable['#currencies'][$curr_id] = show_wallet_summary_currency($wallet, $currency);
   }
   return $renderable;
 }
 
-function view_wallet_summary_currency(WalletInterface $wallet, CurrencyInterface $currency) {
+function show_wallet_summary_currency(WalletInterface $wallet, CurrencyInterface $currency) {
   return array(
     '#theme' => 'wallet_summary_currency',
     '#wallet' => $wallet,
@@ -516,7 +521,7 @@ function view_wallet_summary_currency(WalletInterface $wallet, CurrencyInterface
 function show_wallet_owner(WalletInterface $wallet) {
   $entity = $wallet->getowner();
   return array(
-      '#markup' => '<div class = "wallet-owner">'. $entity->label() .'</div>'
+    '#markup' => '<div class = "wallet-owner">'. $entity->label() .'</div>'
   );
 }
 
@@ -713,8 +718,8 @@ function theme_sentence(&$vars) {
  * http://twig.sensiolabs.org/doc/functions/template_from_string.html
  */
 function theme_mcapi_twig($vars) {
-  echo 'theme_mcapi_twig vars:';
-  print_r(array_keys($vars));//need incoming 'transaction' as with certificate and sentence view modes
+  //echo 'theme_mcapi_twig vars:';
+  //print_r(array_keys($vars));//need incoming 'transaction' as with certificate and sentence view modes
   return mcapi_render_twig_transaction(
     $vars['twig_template'],
     $vars['transaction']

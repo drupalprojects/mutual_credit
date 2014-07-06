@@ -58,20 +58,19 @@ function mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
       '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
     )
   );
-
-  drupal_set_message('find a way to list the transactions of all wallets whose parents are in this exchange using the mcapi_wallet_exchanges_index table');
-  $count = db_select("mcapi_transactions", 't')->fields('t', array('xid'))->distinct()
-  ->countQuery()->execute()->fetchField();
-
+  //get all the wallets in this exchange
+  $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
+  //get all the transactions in those wallets
+  $serials = \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids));
 
   $build['transactions_link'] = array(
     '#type' => 'item',
-    '#title' => t('@count members', array('@count'=> $count)),
+    '#title' => t('@count transactions', array('@count'=> count(array_unique($serials)))),
     'link' => array(
       '#type' => 'link',
       '#title' => t('Show transactions'),
       '#href' => 'exchange/'.$entity->id().'/transactions',
-      //maybe instead put a view with the last five members here
+      //TODO maybe instead put a view with the last five members here
       '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
     )
   );
@@ -99,16 +98,16 @@ function mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
 
 function mcapi_tester_make_transactions($num, $inter = FALSE) {
   $all_exchanges = entity_load_multiple('mcapi_exchange');
-  //pick a random wallet (not _intertrading);
-  //quicker to access db directly than try to use the storage-neutral API
-  $wallet_storage = \Drupal::EntityManager()->getStorage('mcapi_wallet');
 
   if ($inter) {
     //get a list of all wids
-    $wids = $wallet_storage->filter(array(), 0, 0, FALSE);
+    //pick a random wallet (not _intertrading);
+    $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array(), 0, 0);
+
     //remove wallet 2, belonging to user 1, because of a caching problem - very uncomfortable hack
     $pos = array_search('2', $wids);
     unset($wids[$pos]);
+    if (empty($wids))die('NO wallets for intertrading');
   }
   for ($i = 1; $i <= $num; $i++) {
     if (!$inter) {
@@ -119,17 +118,20 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
         ->condition('exid', $exchange->id())
         ->execute()->fetchCol();
     }
+    if ($wids < 2) throw new \Exception('Not enough wallets to trade');
     //get two random different wallets - the first one...
     $temp = $wids;
     shuffle($temp);
 
     $transaction = entity_create('mcapi_transaction');
     $payer = array_pop($temp);
+    $payee = array_pop($temp);
     $transaction->payer->setValue($payer);
-    $transaction->payee->setValue(array_pop($temp));
+    $transaction->payee->setValue($payee);
     $transaction->type->setValue('test');
     $worth = array(0 => array('value' => rand(5, 100)*10));
     if ($inter) {
+      echo "\nusing wallets $payer and $payee";
       //get an exchange the payer is in, and an open currency in that exchange
       foreach (referenced_exchanges(entity_load('mcapi_wallet', $payer)->getOwner()) as $exchange) {
         $items = $exchange->currencies->getValue(TRUE);

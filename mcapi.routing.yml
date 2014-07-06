@@ -150,10 +150,18 @@ mcapi.workflow_settings:
 mcapi.wallet_view:
   path: '/wallet/{mcapi_wallet}'
   defaults:
-    _entity_view: 'mcapi_wallet.full'
+    _entity_view: 'mcapi_wallet.summary'
 #    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
-    _entity_access: 'mcapi_wallet.view'
+    _entity_access: 'mcapi_wallet.summary'
+
+mcapi.wallet_log:
+  path: '/wallet/{mcapi_wallet}/list'
+  defaults:
+    _entity_view: 'mcapi_wallet.list'
+#    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
+  requirements:
+    _entity_access: 'mcapi_wallet.details'
 
 mcapi.wallet_edit:
   path: '/wallet/{mcapi_wallet}/edit'

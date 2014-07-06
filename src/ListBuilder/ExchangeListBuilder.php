@@ -35,7 +35,7 @@ class ExchangeListBuilder extends EntityListBuilder {
 
     $row['data']['title'] = l($entity->label(), 'exchange/'.$entity->id());
     $row['data']['access'] = $entity->get('status')->value ? t('Open') : t('Closed');
-    $row['data']['members'] = $entity->members();
+    $row['data']['members'] = $entity->users();
     $row['data']['administrator']['data'] = array(
       '#theme' => 'username',
       '#account' => user_load($entity->get('uid')->value)

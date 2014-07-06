@@ -60,45 +60,6 @@ function hook_mapi_transaction_operated($transaction, $context){
 
 }
 
-
-/*
- * filter transactions
- * returns an array of serial numbers keyed by xid
- *
- * arguments, in any order can be
- * serial, integer or array
- * from // unixtime
- * to //unixtime
- * state integer or array
- * creator integer or array($uids)
- * payer integer or array($uids)
- * payee integer or array($uids)
- * involving integer or array($uids)
- * curr_id string or array($curr_ids)
- * type string or array($types)
- * no pager is provided in this function
- * views is much better
- * this hasn't been used yet
- */
-$conditions = array('serial' => array('AB123', 'AB124'));
-//or
-$conditions = array('involving' => array(234, 567));
-
-/*
- * this is a substitute for views
- * arguments:
- *  $conditions - an array of transaction properties, each with a value or array of values to filter for
- *  $offset - used for paging
- *  $limit - used for paging
- *  $fieldapi_conditions - more conditions for testing against loaded transactions.
- *   NB this could be expensive in memory
- *   NB paging is ignored
- *   NB in multiple cardinality fields, only the first value is filtered for
- */
-$array  = transaction_filter($conditions, $offset, $limit);
-
-
-
 /*
  *
  * Retrieves transaction summary data for a user in a given currency

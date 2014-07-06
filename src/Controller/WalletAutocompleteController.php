@@ -20,12 +20,6 @@ use Drupal\Core\Controller\ExceptionController;
  */
 class WalletAutocompleteController {
 
-  private $walletStorage;
-
-  function __construct() {
-    $this->walletStorage = \Drupal::entityManager()->getStorage('mcapi_wallet');
-  }
-
   /*
    * get a list of all wallets in exchanges which the the current user is a member of
    *
@@ -57,7 +51,8 @@ class WalletAutocompleteController {
     if ($exchanges) {
       $conditions['exchanges'] = $exchanges;
     }
-    $wids = $this->walletStorage->filter($conditions);
+    $wids = \Drupal\mcapi\Storage\WalletStorage::filter($conditions);
+
     if (empty($wids)) {
       $json = array(
         array(

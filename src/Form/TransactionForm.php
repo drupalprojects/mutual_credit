@@ -140,8 +140,6 @@ class TransactionForm extends ContentEntityForm {
     if (array_key_exists('mcapi_validated', $form_state)){'running form validation twice';return;}
     else $form_state['mcapi_validated'] = TRUE;
 
-//    print_r($transaction->worth);die();
-
     //validate the fieldAPI widgets
     $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
 

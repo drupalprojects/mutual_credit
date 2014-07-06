@@ -1,4 +1,4 @@
-override: 0
+override: 1
 skip:
   auto: true
   mass: true
@@ -9,9 +9,9 @@ minmax:
   min:
     -
       curr_id: cc
-      value: -72000
+      value: -100
   max:
     -
       curr_id: cc
-      value: 72000
+      value: 150
 plugin: explicit

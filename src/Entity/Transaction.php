@@ -91,6 +91,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $type = $this->type->getValue(TRUE);
       $start_state = entity_load('mcapi_state', $type[0]['entity']->start_state);
       $this->state->setValue($start_state);
+
       $violations += $this->validateNew();
       //for transactions created in code, this is the best place to throw
       if ($warnings) {
@@ -151,6 +152,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       //on the parent transaction only, validate it and then pass it round to get child candidates
       if ($this->parent->value == 0) {
         $violations += $this->validateMakeChildren();//includes intertrading
+
         if (empty($violations)) {
           //note that this validation cannot change the original transaction because a clone of it is passed
           $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(mcapi_transaction_flatten($this)));
@@ -406,6 +408,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $this->children = array();//ONLY parent transactions have this property
     //previous the children's parent was set to temp, but is that necessary?
     $this->children = $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone));
+
     //TODO how does the addition of children here affect intertrading? badly I suspect
     $this->moduleHandler->alter('mcapi_transaction_children', $this->children, $clone);
     //how the children have been created but before they are validated, we do the intertrading

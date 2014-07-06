@@ -170,7 +170,9 @@ function template_preprocess_wallet_balance_bars(&$vars) {
 function mcapi_add_gchart_js($lib) {
   static $done = array();
   if (!count($done)) {
-    _drupal_add_js('http://www.google.com/jsapi');
+    //this breaks things really badly if localhost is offline
+    //TODO what's the best way to check before adding?
+    _drupal_add_js('http://www.google.com/jsapi', 'external');
   }
   if (!array_search($lib, $done)) {
     _drupal_add_js("google.load('visualization', '1', {packages: ['$lib']});", 'inline');

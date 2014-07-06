@@ -22,17 +22,11 @@ class WalletForm extends ContentEntityForm {
    */
   public function form(array $form, array &$form_state) {
 
-    $raw = \Drupal::request()->attributes->get('_raw_variables');
-
     $form = parent::form($form, $form_state);
     $wallet = $this->entity;
 
     unset($form['langcode']); // No language so we remove it.
 
-    $form['wid'] = array(
-      '#type' => 'value',
-      '#value' => property_exists($wallet, 'wid') ? $wallet: NULL,
-    );
     $form['name'] = array(
       '#type' => 'textfield',
       '#title' => t('Name or purpose of wallet'),
@@ -41,38 +35,36 @@ class WalletForm extends ContentEntityForm {
       '#required' => FALSE,
       '#max_length' => 32//TODO check this is the right syntax
     );
-    $form['entity_type'] = array(
-    	'#type' => 'value',
-      '#value' => $raw->get('entity_type'),
-    );
-    $form['pid'] = array(
-    	'#type' => 'value',
-      '#value' => $raw->get('pid')
-    );
-    $pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access');
 
-    foreach ($pluginManager->getDefinitions() as $def) {
-      $plugins[$def['id']] = $def['label'];
+    $this->permissions = $this->entity->permissions();
+    $this->permissions['owner'] = t('The owner');
+
+    $this->default_wallet_access = \Drupal::config('mcapi.wallets');
+
+    $this->accessElement($form, 'details', t('View transaction details'), t('View individual transactions this wallet was involved in'), $this->entity->access['details']);
+    $this->accessElement($form, 'summary', t('View summary'), t('The balance, number of transactions etc.'), $this->entity->access['summary']);
+    //anon users cannot pay in or out of wallets
+    unset($this->permissions[WALLET_ACCESS_ANY]);
+    $this->accessElement($form, 'payin', t('Pay in'), t('Create payments into this wallet'), $this->entity->access['payin']);
+    $this->accessElement($form, 'payout', t('Pay out'), t('Create payments out of this wallet'), $this->entity->access['payout']);
+
+    if (array_key_exists('access', $form)) {
+      $form['access'] += array(
+        '#title' => t('Acccess settings'),
+        '#description' => t('Which users can do the following to this wallet?'),
+        '#type' => 'details',
+        '#open' => TRUE,
+        '#collapsible' => TRUE,
+      );
     }
 
-    $form['access'] = array(
-      '#title' => t('Acccess settings'),
+    $form['transfer'] = array(
+    	'#title' => t('Change ownership'),
       '#type' => 'details',
-      '#collapsible' => TRUE,
-      'viewers' => array(
-    	  '#title' => t('Who can view?'),
-        '#type' => 'select',
-        '#options' => $plugins
-      ),
-      'payees' => array(
-    	  '#title' => t('Who can request from this wallet?'),
-        '#type' => 'select',
-        '#options' => $plugins
-      ),
-      'payers' => array(
-    	  '#title' => t('Who can contribute to this wallet?'),
-        '#type' => 'select',
-        '#options' => $plugins
+      'newowner' => array(
+    	  '#title' => t('New owner'),
+        '#type' => 'textfield',
+        '#placeholder' => 'not implemented yet'
       )
     );
     return $form;
@@ -85,11 +77,74 @@ class WalletForm extends ContentEntityForm {
   //It is empty right now but probably it will do all the below
   function save(array $form, array &$form_state) {
     form_state_values_clean($form_state);
-    foreach ($form_state['values'] as $key => $val) {
-      $this->entity->{$key} = $val;
+    foreach ($this->entity->ops() as $op_name) {
+      if ($form_state['values'][$op_name] == WALLET_ACCESS_OWNER) {
+        $form_state['values'][$op_name] = WALLET_ACCESS_USERS;
+        $form_state['values'][$op_name.'_users'] = $this->entity->getOwner()->getUsername();
+drupal_set_message('replaced owner with user '.$this->entity->getOwner()->getUsername());
+      }
+      if ($form_state['values'][$op_name] == WALLET_ACCESS_USERS) {
+        //TODO isn't there a function for getting the user objects out of the user autocomplete multiple?
+        //or at least for exploding tags
+        $usernames = explode(',', $form_state['values'][$op_name.'_users']);
+        $users = entity_load_multiple_by_properties('user', array('name' => $usernames));
+        $this->entity->access[$op_name] = array_keys($users);
+      }
+      else $this->entity->access['$op_name'] = $form_state['values'][$op_name];
     }
     $this->entity->save();
+    $form_state['redirect_route'] = array(
+      'route_name' => 'mcapi.wallet_view',
+      'route_parameters' => array('mcapi_wallet' => $this->entity->id())
+    );
   }
 
+
+  private function accessElement(&$form, $op_name, $title, $description, $saved) {
+    static $weight = 0;
+    $system_default = array_filter($this->default_wallet_access->get($op_name));
+    if (count($system_default) > 1) {
+      $form['access'][$op_name] = array(
+        '#title' => $title,
+        '#description' => $description,
+        '#type' => 'select',
+        '#options' => array_intersect_key($this->permissions, $system_default),
+        '#default_value' => is_array($saved) ? WALLET_ACCESS_USERS : $saved,
+        '#weight' => $weight++
+      );
+      $form['access'][$op_name.'_users'] = array(
+        '#title' => t('Named users'),
+        '#type' => 'textfield',
+        '#autocomplete_route_name' => 'user.autocomplete',
+        '#multiple' => TRUE,
+        '#default_value' => is_array($saved) ? $this->getUsernames($saved) : '',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="'.$op_name.'"]' => array('value' => WALLET_ACCESS_USERS)
+          )
+        ),
+        '#weight' => $weight++
+      );
+    }
+    else {
+      $form[$op_name] = array(
+        '#type' => 'value',
+        '#value' => current($system_default)
+      );
+    }
+  }
+
+  /**
+   *
+   * @param array $uids
+   * @return string
+   *   comma separated usernames
+   */
+  private function getUsernames($uids) {
+    foreach (entity_load_multiple('user', $uids) as $account) {
+      $names[] = $account->getUsername();
+    }
+    return implode(', ', $names);
+  }
 }
 

@@ -10,44 +10,36 @@ namespace Drupal\mcapi\Access;
 use Drupal\Core\Entity\EntityAccessController;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
-//use Symfony\Component\HttpFoundation\Request;
-use Drupal\Core\Language\Language;
-
 
 /**
  * Defines an access controller option for the mcapi_wallet entity.
  */
 class WalletAccessController extends EntityAccessController {
 
-  private $pluginManager;
-
-  function __construct() {
-    //$this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access');
-  }
-
   /**
    * {@inheritdoc}
+   * $ops are list, summary, pay, charge
    */
-  //@todo define which $ops are possible. I think they will be view, pay & demand
-  public function checkAccess(EntityInterface $wallet, $op, $langcode, AccountInterface $account) {
+  public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
+    //disabled for testing
+    if ($account->hasPermission('manage mcapi')) return TRUE;
+    //edit isn't a configurable operation. Only the owner can do it
     if ($op == 'edit') {
-      //the wallet owner or site manager
-      if (($owner = $wallet->getOwner()) && $owner->getEntityTypeId() == 'user' && $account->id() == $owner->id()) {
-        return TRUE;
-      }
-      else return $account->hasPermission('manage mcapi');
+      $entity->access['edit'] = array($entity->user_id());
     }
-
-
-    //TEMP FIX. This means any user can view, edit pay or request from any wallet they share an exchange with
-    if ($account->id() == 1) return TRUE;
-    return array_intersect_key($wallet->in_exchanges(), referenced_exchanges(NULL, TRUE));
-
-    //something like this will be needed
-    return $this->pluginManager
-      ->getInstance($wallet->access, $wallet->settings)
-      ->check($op, $account);
+    if (is_array($entity->access[$op])) {//designated users
+      return in_array($account->id(), $entity->access[$op]);
+    }
+    switch ($entity->access[$op]) {
+    	case WALLET_ACCESS_EXCHANGE:
+    	  return array_intersect_key($entity->in_exchanges(), referenced_exchanges(NULL, TRUE));
+    	case WALLET_ACCESS_AUTH:
+    	  return $account->id();
+    	case WALLET_ACCESS_ANY:
+    	  return TRUE;
+    	default:
+    	  throw new \Exception('WalletAccessController::checkAccess() does not know op: '.$op);
+    }
   }
-
 
 }

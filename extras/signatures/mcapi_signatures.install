@@ -34,21 +34,8 @@ function mcapi_signatures_modules_installed($modules) {
  * would not be uninstallable.
  */
 function mcapi_signatures_uninstall() {
-  drupal_set_message("This uninstall shouldn't be possible if any transactions are pending");
-  //presumably the signature views would disappear without this?
-  if (module_exists('views')) {
-    $view = views_get_view('signatures');
-    if($view) {
-      views_delete_view($view);
-    }
-  }
-  return;
-  //TODO
-  //if I delete these they don't come back when I reinstall
-  \Drupal::config('mcapi.state.-1')->delete();
-  \Drupal::config('mcapi.type.signatures')->delete();
-  \Drupal::config('mcapi.transition.sign')->delete();
-  \Drupal::config('mcapi.transition.sign_off')->delete();
+  drupal_set_message("This uninstall shouldn't have been possible if any transactions are pending");
+
 }
 /**
  * Implementation of hook_schema)().

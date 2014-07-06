@@ -91,7 +91,6 @@ class WalletLimitOverride extends FormBase {
         );
       }
     }
-    echo 'placeholder'; print_r($defaults);
     //TODO the currencies could be sorted by weight; v low priority!
 
     if (element_children($form)) {

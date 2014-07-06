@@ -216,12 +216,6 @@ function mcapi_limits_process_minmax(&$element) {
   foreach (array('min', 'max') as $limit) {
     if (empty($element['#default_value'][$limit])) {
       $element['#default_value'][$limit] = 0;
-      //array(
-        //array(
-          //'curr_id' => $element['#curr_id'],
-         // 'value' => 0
-       // )
-      //);
     }
   }
   $element['min'] = array(
@@ -252,9 +246,12 @@ function mcapi_limits_process_minmax(&$element) {
   return $element;
 }
 
+/**
+ * element validate callback for 'minmax'
+ */
 function mcapi_limits_minmax_validate(&$element, &$form_state) {
   echo 'mcapi_limits_minmax_validate';
-  print_r($element['#value']);die();
+  print_r($element['#value']);
 }
 
 /**

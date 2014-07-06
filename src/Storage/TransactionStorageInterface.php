@@ -59,7 +59,7 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    * @return array
    *   an array keyed by xid with serial numbers as values
    */
-  public function filter(array $conditions = array(), $offset = 0, $limit = 25);
+  public static function filter(array $conditions = array(), $offset = 0, $limit = 25);
 
   /**
    * Get some gerneral purpose stats by adding up the transactions for a given wallet

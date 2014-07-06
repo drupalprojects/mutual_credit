@@ -123,7 +123,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     //The allowed_curr_ids provided by the widget need to be overwritten
     //by the curr_ids in the designed form, if any.
     $curr_ids = array();
-    foreach ($config->fieldapi_presets['worth'] as $item) {
+    foreach ((array)$config->get('fieldapi_presets.worth') as $item) {
       if ($item['value'] == '')continue;
       $curr_ids[] = $item['curr_id'];
     }

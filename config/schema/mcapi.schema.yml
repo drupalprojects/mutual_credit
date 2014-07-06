@@ -91,6 +91,18 @@ mcapi.wallets:
     add_link_location:
       type: string
       label: 'Location of the link to create new wallets under an entity'
+    details:
+      type: map
+      label: 'View transaction details'
+    summary:
+      type: map
+      label: 'View summary'
+    payin:
+      type: map
+      label: 'Create payments into this wallet'
+    payout:
+      type: map
+      label: 'Create payments out of this wallet'
 
 mcapi.currency.*:
   type: mapping

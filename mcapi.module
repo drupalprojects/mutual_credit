@@ -27,6 +27,13 @@ define('CURRENCY_TYPE_COMMODITY', 'commodity');
 define('TRANSACTION_STATE_FINISHED', 'done');
 define('TRANSACTION_STATE_UNDONE', 'undone');
 
+//negative numbers are used here, and positive numbers represetn uids in the db
+define('WALLET_ACCESS_OWNER', 'o');//this is replaced with a named user
+define('WALLET_ACCESS_EXCHANGE', 'e');
+define('WALLET_ACCESS_AUTH', '2');
+define('WALLET_ACCESS_ANY', '1');
+define('WALLET_ACCESS_USERS', 'u');
+
 function mcapi_requirements($phase) {
   if ($phase == 'runtime') {
     $result = array(
@@ -73,6 +80,7 @@ function mcapi_transaction_load_by_serial($serials) {
       $transactions[$transaction->serial->value] = $transaction;
     }
   }
+
   if (is_array($serials)) return $transactions;
   else return reset($transactions);
 }
@@ -584,26 +592,19 @@ function mcapi_prerender_wallet_field($element) {
   return $element;
 }
 
-/**
- * implements alter hook_form_user_cancel_confirm_form().
- * if they have already traded, users can only be blocked, not deleted
- * TODO test this
- */
-function mcapi_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
-  $traded = db_query(
-    "SELECT xid FROM {mcapi_transactions} WHERE (payer = :uid OR payee = :uid) AND state > 0",
-    array(':uid' => $form['uid']['#value'])
-  )->fetchfield();
-  if ($traded) {
-    unset($form['user_cancel_method']['user_cancel_reassign']);
-    unset($form['user_cancel_method']['user_cancel_delete']);
-  }
-}
 
-/*
+/**
  * load the transaction states and filter them according to the misc settings
+ *
+ * @param boolean $counted
+ *
+ * @return Drupal\Core\Config\Entity\ConfigEntityInterface[]
+ *
  * @todo later we might want to provide a fuller interface for editing states
  * and types, esp the name and description e.g. admin/accounting/workflow/states
+ *
+ * @todo cache this
+ *
  */
 function mcapi_states_counted($counted = TRUE) {
   $counted_states = \Drupal::config('mcapi.misc')->get('counted');
@@ -683,13 +684,19 @@ function mcapi_entity_insert($entity) {
   if (!$max) return;
   //no need to check what the max is, since this is the first wallet created for this entity
   $wallet = array(
-    'name' => $type == 'mcapi_exchange' ? '_intertrading' : '',
     'entity_type' => $type,
     'pid' => $entity->id(),
     'viewers' => 'dunno',
     'payers' => 'dunno',
     'payees' => 'dunno',
   );
+  if ($type == 'mcapi_exchange') {
+    $wallet['name'] = '_intertrading';
+    $wallet['details'] = WALLET_ACCESS_AUTH;
+    $wallet['summary'] = WALLET_ACCESS_AUTH;
+    $wallet['payin'] = WALLET_ACCESS_AUTH;
+    $wallet['payout'] = WALLET_ACCESS_AUTH;
+  }
   $wallet = entity_create('mcapi_wallet', $wallet);
   $wallet->save();
 }
@@ -703,9 +710,10 @@ function mcapi_entity_delete($entity) {
   //see Exchange::preDelete();
   if ($entity instanceof ContentEntityInterface && $exchanges = referenced_exchanges($entity)) {
     $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
-    $wids = \Drupal::Entitymanager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity);
-    foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
-      $wallet->orphan($exchange);
+    if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($entity)) {
+      foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+        $wallet->orphan($exchange);
+      }
     }
   }
 }

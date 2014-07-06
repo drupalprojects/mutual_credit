@@ -31,8 +31,8 @@ class View extends TransitionBase {//does it go without saying that this impleme
    */
   public function opAccess(TransactionInterface $transaction) {
     //you can view a transaction if you can view either the payer or payee wallets
-    return $transaction->get('payer')->entity->access('view')
-    || $transaction->get('payee')->entity->access('view');
+    return $transaction->get('payer')->entity->access('details')
+    || $transaction->get('payee')->entity->access('details');
   }
 
 

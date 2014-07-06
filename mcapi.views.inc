@@ -6,9 +6,7 @@
  *
  * @ingroup views_module_handlers
  *
- * @todo Should we be implementing hook_field_views_data for the worth field?
  */
-
 
 /**
  * Defines the result for hook_views_data().
@@ -589,3 +587,4 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
 }
+

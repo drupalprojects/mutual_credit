@@ -19,9 +19,6 @@ description:
   placeholder: ''
 fieldapi_presets:
   worth:
-    -
-      curr_id: 1
-      value: 0
 other:
   intertrade: false
 experience:

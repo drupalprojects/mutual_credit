@@ -17,7 +17,7 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state) {
-    $config = $this->config('mcapi.wallets');
+    $config = $this->configFactory()->get('mcapi.wallets');
     $form['creation'] = array(
     	'#title' => t('Wallet creation'),
       '#type' => 'fieldset',
@@ -71,47 +71,63 @@ class WalletSettings extends ConfigFormBase {
     );
 
     foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
-      $wallet_access_plugins[$def['id']] = $def['label'];
+      //$wallet_access_plugins[$def['id']] = $def['label'];
     }
+    $permissions = \Drupal\mcapi\Entity\Wallet::permissions();
+
     $form['wallet_access'] = array(
     	'#title' => t('Default access of users to wallets'),
-      '#description' => t('Determine which users can see, pay and pay from wallets by default, and which users can override their own wallets.') .
-        ' ACCESS CONTROL HAS NOT BEEN IMPLEMENTED YET - ALL WALLETS ARE TOTALLY VISIBLE',
+      '#description' => t('Determine which users can see, pay and charge from wallets by default.') .' '.
+        t("If more than one box is checked, the first one will be the default for new wallets, and the owner of the wallet will be allowed to configure on their wallet 'edit tab'."),
       '#type' => 'details',
       '#weight' => 5
     );
-    //TODO the following elements might need to be moved to somewhere where they can be re-used by the wallet's own config form.
-/*    $form['wallet_access']['viewers'] = array(
-      '#title' => t('Visible to'),
-      '#description' => t('Who can see the balance and history of this wallet?'),
-      '#default_value' => $config->get('viewers'),
+    $form['wallet_access']['details'] = array(
+      '#title' => t('View transaction details'),
+      '#description' => t('View individual transactions this wallet was involved in'),
+      '#type' => 'checkboxes',
+      '#options' => $permissions,
+      '#default_value' => $config->get('details'),
       '#weight' => 1,
     );
-    $form['wallet_access']['payees'] = array(
-      '#title' => t('Default payees'),
-      '#description' => t('Who can create transactions out of this wallet?'),
-      '#default_value' => $config->get('payees'),
+    $form['wallet_access']['summary'] = array(
+      '#title' => t('View summary'),
+      '#description' => t('The balance, number of transactions etc.'),
+      '#type' => 'checkboxes',
+      '#options' => $permissions,
+      '#default_value' => $config->get('summary'),
       '#weight' => 2,
     );
-    $form['wallet_access']['payers'] = array(
-      '#title' => t('Default payers'),
-      '#description' => t('Who can create transactions into this wallet?'),
-      '#default_value' => $config->get('payers'),
+    unset($permissions[WALLET_ACCESS_ANY]);
+    $form['wallet_access']['payin'] = array(
+      '#title' => t('Create payments into this wallet'),
+      '#type' => 'checkboxes',
+      '#options' => $permissions,
+      '#default_value' => $config->get('payin'),
       '#weight' => 3,
     );
-    $form['wallet_access']['access_personalised'] = array(
-      '#title' => t('Personalised wallet access'),
-      '#description' => t('Users can adjust these settings, for every wallet'),
-      '#type' => 'checkbox',
-      '#default_value' => !$config->get('wallet_access_personalised'),
+    $form['wallet_access']['payout'] = array(
+      '#title' => t('Create payments out of this wallet'),
+      '#type' => 'checkboxes',
+      '#options' => $permissions,
+      '#default_value' => $config->get('payout'),
       '#weight' => 5
-    );*/
-
+    );
     return parent::buildForm($form, $form_state);
   }
 
-  public function validateForm(array &$form, array &$form_state) {
 
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, array &$form_state) {
+    //TODO check that none of the access is set to 'users' only
+    //this would be very awkward for new wallets
+    foreach (\Drupal\mcapi\Entity\Wallet::ops() as $op_name) {
+      if (array_filter($form_state['values'][$op_name]) == array('WALLET_ACCESS_USERS' => 'WALLET_ACCESS_USERS')) {
+        $this->errorHandler()->setErrorByName($op_name, $form_state, t("'Named users' cannot be selected by itself"));
+      }
+    }
   }
 
   /**
@@ -120,17 +136,20 @@ class WalletSettings extends ConfigFormBase {
   public function submitForm(array &$form, array &$form_state) {
     $vals = &$form_state['values'];
 
-    $this->configFactory->get('mcapi.wallets')
+    $this->configFactory()->get('mcapi.wallets')
       ->set('entity_types', $vals['entity_types'])
       ->set('add_link_location', $vals['add_link_location'])
-      //->set('viewers', $vals['viewers'])
-      //->set('payers', $vals['payees'])
-      //->set('payees', $vals['viewers'])
-      //->set('access_personalised', $vals['access_personalised'])
       ->set('autoadd', $vals['autoadd'])
+      ->set('details', array_filter($vals['details']))
+      ->set('summary', array_filter($vals['summary']))
+      ->set('payin', array_filter($vals['payin']))
+      ->set('payout', array_filter($vals['payout']))
       ->save();
 
     parent::submitForm($form, $form_state);
+
+    //TODO
+    //Clear the FieldDefinitions cache for wallet entity, which uses these values as defaults
 
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin'

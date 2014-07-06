@@ -96,7 +96,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  function members() {
+  function users() {
     return count(db_select("user__exchanges", 'e')
       ->fields('e', array('entity_id'))
       ->condition('exchanges_target_id', $this->id())

@@ -27,11 +27,14 @@ class WalletAccess extends DataType {
    * The default human-readable name of the field type.
    *
    * @ingroup plugin_translatable
-   *
-   * @var \Drupal\Core\Annotation\Translation
    */
   public $label;
 
+  /**
+   * The default human-readable name of the field type.
+   *
+   * @ingroup plugin_translatable
+   */
   public $description;
 
 }
