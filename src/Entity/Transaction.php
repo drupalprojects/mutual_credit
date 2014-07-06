@@ -14,6 +14,7 @@ use Drupal\Core\Field\FieldDefinition;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\mcapi\Access\WalletAccessController;
 
 /**
  * Defines the Transaction entity.
@@ -211,7 +212,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   private function checkIntegrity() {
     //we need to be throwing violations here
-    return $this->checkDifferentWallets();
+    return $this->checkWalletAccess();
     //is it worth checking whether all the entity properties and fields are actually fieldItemLists?
     //check that the description string isn't too long?
     //check that the payer and payee wallets are in the same exchange?
@@ -378,12 +379,22 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $fields;
   }
 
-  private function checkDifferentWallets() {
+  private function checkWalletAccess() {
     //check that the payer and payee are not the same wallet
     $violations = array();
     //TODO return a violation
     if ($this->payer->value == $this->payee->value) {
       $violations['payee'] = t('Wallet @wid is attempting to pay itself.', array('@wid' => $this->payer->value));
+    }
+    //check that the current user is permitted to pay out and in according to the wallet permissions
+    else{
+      $walletAccess = \Drupal::Entitymanager()->getAccessController('mcapi_wallet');
+      if ($walletAccess->checkAccess($this->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
+        $violations['payer'] = t('You are not allowed to make payments from this wallet');
+      }
+      if ($walletAccess->checkAccess($this->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
+        $violations['payee'] = t('You are not allowed to pay into this wallet');
+      }
     }
     return $violations;
   }

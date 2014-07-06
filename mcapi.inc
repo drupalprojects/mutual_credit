@@ -940,20 +940,21 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
   //now find which of the leading wallet's parents' exchanges can access
   //ALL the currencies in $transaction->worth
   $found = FALSE;
-  $source_wallet_field = $transaction->get($transaction->source_participant)->getValue(TRUE);//entity reference array
+  $source_wallet = $transaction->{$transaction->source_participant}->entity;//entity reference array
   foreach ($transaction->worth->getValue() as $item) {
     $curr_ids[] = $item['curr_id'];
   }
-echo "<br />The transaction has currencies: ".implode(', ', $curr_ids);
+//echo "<br />The transaction has currencies: ".implode(', ', $curr_ids);
 
-  foreach($source_wallet_field[0]['entity']->in_exchanges() as $exchange) {
-    echo "\n<br />The leading wallet is in exchange ".$exchange->id();
-    echo " which has currencies ".implode(', ', get_entity_reference_targets($exchange->get('currencies')));
-    if (array_diff_key(array_flip($curr_ids), get_entity_reference_targets($exchange->get('currencies')))) continue;
-    echo "which is good enough for this transaction...";
+  foreach($source_wallet->in_exchanges() as $exchange) {
+    //echo "\n<br />The leading wallet is in exchange ".$exchange->id();
+    //echo " which has currencies ".implode(', ', _get_entity_reference_targets($exchange->get('currencies')));
+    if (array_diff_key(array_flip($curr_ids), _get_entity_reference_targets($exchange->get('currencies')))) continue;
+    //echo "which is good enough for this transaction...";
     $found = TRUE;
+    $transaction->source_exchange = $exchange;
+    break;
   }
-  $transaction->source_exchange = $exchange;
 
   if (!$found) {
     //this should be a violation
@@ -961,8 +962,8 @@ echo "<br />The transaction has currencies: ".implode(', ', $curr_ids);
       key($transaction->curr_ids_required),
       //this string is identical to another in intertrading_new_worths
       t(
-        'Wallet !wallet is not a member of an exchange that can intertrade with currencies @currs',
-        array('!wallet' => $source_wallet_field[0]['entity']->label(), '@currs' => implode())
+        'Wallet !wallet is not a member of an exchange that can intertrade with the requested currencies',
+        array('!wallet' => $source_wallet->label())
       )
     );
   }
@@ -1037,7 +1038,13 @@ function intertrading_new_worths(TransactionInterface $transaction, WalletInterf
   return array();//no problems
 }
 
-function get_entity_reference_targets($field) {
+/**
+ * helper to get all the entity references as an array of ids
+ * @param FieldInterface $field
+ * @return integer[]
+ * @todo after alpha12 check the entityreference fieldtype for a similar function. Nobrainer if you as me.
+ */
+function _get_entity_reference_targets($field) {
   foreach ($field->getValue() as $ref) {
     $dests[$ref['target_id']] = $ref['target_id'];
   }
