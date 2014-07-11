@@ -97,6 +97,7 @@ function mcapi_signatures_update_dependencies() {
  */
 function mcapi_signatures_update_7000() {
   if (db_query("SHOW TABLES LIKE '{mc_unsigned}'")->fetch()) {
+    if ($q = db_drop_table('mcapi_signatures'))$q->execute();
     db_rename_table('mc_unsigned', 'mcapi_signatures');
   }
   $tables = mcapi_signatures_schema();
@@ -160,7 +161,7 @@ function mcapi_signatures_update_7009() {
     $varname = 'mcapi_signatures_'.$type;
     $var = variable_get('mcapi_signatures_'.$type, array());
     if (empty($var)) continue;
-    $var['notify'] = $var['complete'];
+    $var['notify'] = @$var['complete'];
     unset($var['complete']);
     variable_set($varname, $var);
   }

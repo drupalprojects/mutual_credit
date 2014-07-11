@@ -11,7 +11,9 @@ class views_handler_filter_mcapi_currency extends views_handler_filter_in_operat
     module_load_include('inc', 'mcapi');
     $currencies = currencies_load();
     $field = currency_picker_element(array_keys($currencies));
-    $this->value_options = $field['#options'];
+    if (array_key_exists('#options', $field)) {
+      $this->value_options = $field['#options'];
+    }
   }
 
   function value_form(&$form, &$form_state) {

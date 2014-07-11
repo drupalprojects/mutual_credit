@@ -224,7 +224,8 @@ function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
 function transaction_operation_form($form, &$form_state, $op, $transaction) {
   $operations = transaction_operations(TRUE, FALSE);
   $info = $operations[$op];
-  mcapi_hide_tabs();
+  //quickfix to https://drupal.org/node/2118869
+  if (module_exists('mcapi_forms'))mcapi_hide_tabs();
   $form['serial'] = array(
     '#type' => 'hidden',
     '#value' => $transaction->serial
@@ -684,8 +685,7 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
 
     //set the value to zero if the field is empty and the currency allows it
     $currency = currency_load($item['currcode']);
-    //we can remove the @ when everybody has upgraded to RC6
-    if (empty($value[$delta]['quantity']) && @$currency->display['zero']) {
+    if (empty($value[$delta]['quantity']) && $currency->display['zero']) {
       $value[$delta]['quantity'] = '0';
     }
     elseif(empty($value[$delta]['quantity']) && empty($element['#preset'])) {
@@ -789,8 +789,8 @@ function theme_worth_item(&$variables) {
       $subdivision = str_pad($cents, 2, STR_PAD_LEFT);
       break;
   }
-  //I don't know how to account for different languages in number format
-  $quantity = number_format(floatval($integer));
+  //I don't know how to account for different languages in number_format()
+  $quantity = floatval($integer);
   if (isset($subdivision)) {
     $quantity .= $currency->display['delimiter'] . $subdivision;
   }

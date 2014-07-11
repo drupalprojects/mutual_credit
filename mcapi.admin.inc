@@ -973,7 +973,7 @@ function mcapi_transaction_entity_uid_form($context) {
   }
   return $form;
 }
-/*
+/**
  * configuration action submit callback
  */
 function mcapi_transaction_entity_uid_submit($form, $form_state) {

@@ -425,7 +425,8 @@ function mcapi_update_7000() {
   db_update('system')
     ->fields(array(
         'name' => 'mcapi_signatures',
-        'filename' => drupal_get_path('module', 'mcapi_signatures').'/mcapi_signatures.info'
+        'filename' => drupal_get_path('module', 'mcapi_signatures').'/mcapi_signatures.info',
+        'schema_version' => 6999
     ))
     ->condition('name', 'mc_signatures')
     ->execute();  //rename and update the table
@@ -1139,7 +1140,7 @@ function mcapi_update_7024() {
     $newvar = 'mcapiblock_'.$delta;
     //if the old exists, set the new to the old
     if (!is_null($oldval = variable_get($oldvar, NULL)) && is_null($newval = variable_get($newvar, NULL))) {
-      $variable_set($newvar, $oldval);
+      variable_set($newvar, $oldval);
     }
     variable_del($oldvar);
   }
@@ -1154,4 +1155,5 @@ function mcapi_update_7025() {
   if (variable_get('mcapi_controller_delete_mode', '') == MCAPI_CURRENCY_UNDO_REVERSE) {
     variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
   }
+  cache_clear_all();
 }

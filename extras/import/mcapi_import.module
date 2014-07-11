@@ -96,6 +96,7 @@ function import_transactions_form($form, $form_state) {
 
   module_load_include('inc', 'mcapi');
   $currencies = currencies_load();
+  if (empty($currencies))$currencies = array('credunit' => 1);
   $form['currcode'] = currency_picker_element(array_keys($currencies), $default = 'credunit', 0);
   unset($form['currcode']['#title_display']);
   $form['transaction_type'] = array(
@@ -426,7 +427,7 @@ function mcapi_import_balances_member($uid, $currcode, $type, $balance, $gross_i
     'state' => TRANSACTION_STATE_FINISHED,
     'currcode' => $currcode
   );
-
+  $cluster = array();
   if ($gross_income) {
     $gross_expenditure = $gross_income - $balance;
     $in = $values;
@@ -540,6 +541,7 @@ function mcapi_parse_getcsv($csv) {
  */
 function mcapi_import_uif_supported_fields() {
   $currencies = currencies_load();
+  $currcode = empty($currencies) ? 'credunit' : key($currencies);
   $items = array(
     'balance' => array(
       'type' => 'mcapi',
@@ -551,7 +553,7 @@ function mcapi_import_uif_supported_fields() {
     ),
     'currcode' => array(
       'type' => 'mcapi',
-      'description' => 'currcode - ' . t('The currency code (optional, default is @currcode)', array('@currcode' => key($currencies))),
+      'description' => 'currcode - ' . t('The currency code (optional, default is @currcode)', array('@currcode' => $currcode)),
     )
   );
   return $items;

@@ -199,8 +199,8 @@ function transaction_load($serial = NULL) {
   $serials = (array)$serial;
   foreach ($serials as $serial_num) {
     if (empty($loaded[$serial_num])) {
-      $serials = transaction_filter(array('serial' => $serial_num));
-      $transactions = entity_load('transaction', array_keys($serials));
+      $filtered = transaction_filter(array('serial' => $serial_num));
+      $transactions = entity_load('transaction', array_keys($filtered));
       if (empty($transactions)) {
         throw new Exception(t('Unable to load transaction @serial', array('@serial' => $serial_num)));
       }
@@ -264,7 +264,8 @@ function mcapi_help($section, $arg) {
       $currencies = currencies_load();
       if (count($currencies) > 1) {
         module_load_include('admin.inc', 'mcapi');
-        return drupal_render(drupal_get_form('mcapi_mixed_transactions'));
+        $renderable = drupal_get_form('mcapi_mixed_transactions');
+        return drupal_render($renderable);
       }
     case 'admin/accounting/misc':
       return implode(' ', array(
@@ -1437,7 +1438,7 @@ function _worthitems_to_worths(array $worthitems) {
   $worths = array();
   foreach ($worthitems as $worth_item) {
     if (isset($currencies[$worth_item['currcode']])) {
-      $worths[$worth_item['currcode']] = $worth_item['quantity'];
+      $worths[$worth_item['currcode']] = @$worth_item['quantity'];
     }
   }
   return $worths;

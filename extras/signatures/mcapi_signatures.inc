@@ -1,6 +1,8 @@
 <?php
 
-
+/**
+ * taking hook_transaction_operations out of the .module file
+ */
 function _mcapi_signatures_transaction_operations() {
   //note that strings are given in English and translated elsewhere, as in the menu system
   return array(
@@ -49,14 +51,14 @@ function _mcapi_signatures_transaction_operations() {
   t('Are you sure you want to cancel this pending transaction?');
 }
 
-/*
+/**
  * operation callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_sign($op, $transaction) {
   $message = transaction_sign($transaction, $GLOBALS['user']->uid);
   return transaction_view($transaction);
 }
-/*
+/**
  * operation access callback from mcapi_signatures_transaction_operations
  * this doesn't rely on user settings at all.
  */
@@ -69,7 +71,7 @@ function transaction_op_sign_access($op, $transaction, $currency) {
   }
 }
 
-/*
+/**
  * operation callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_signoff($op, $transaction) {
@@ -79,7 +81,7 @@ function transaction_op_signoff($op, $transaction) {
   }
   return transaction_view($transaction, 'certificate');
 }
-/*
+/**
  * operation access callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_signoff_access($op, $transaction, $currency) {
@@ -210,7 +212,7 @@ function transactions_needing_sig_of_user($uid) {
     ->execute()
     ->fetchCol();
 }
-/*
+/**
  * transaction operation submit callback
  * unmarks a signature as pending
  * resaves signatories from the transaction object and changes state if all are signed
@@ -237,7 +239,7 @@ function transaction_sign($transaction, $uid) {
 }
 
 
-/*
+/**
  * write the signature for each transaction to the database and change the state of the transaction
  * $transaction->pending signatures is an array
  * array(
@@ -390,8 +392,8 @@ function signature_send_initial_notification($transaction, $config) {
   }
 }
 
-/*
- * implements hook_mail
+/**
+ * implements hook_mail().
  */
 function mcapi_signatures_mail($key, &$message, $params) {
   $options = array('language' => $message['language'], 'sanitize' => FALSE);
