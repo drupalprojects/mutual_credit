@@ -33,6 +33,7 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *     "form" = {
  *       "add" = "Drupal\mcapi\Form\ExchangeForm",
  *       "edit" = "Drupal\mcapi\Form\ExchangeForm",
+ *       "masspay" = "Drupal\mcapi\Form\MassPay",
  *       "delete" = "Drupal\mcapi\Form\ExchangeDeleteConfirm",
  *       "enable" = "Drupal\mcapi\Form\ExchangeEnableConfirm",
  *       "disable" = "Drupal\mcapi\Form\ExchangeDisableConfirm",
@@ -266,7 +267,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $moduleHandler->invokeAll('exchange_leave', array($entity, $left));
   }
 
-
-
 }
+
 

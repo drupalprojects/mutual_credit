@@ -31,6 +31,7 @@ use Drupal\mcapi\Access\WalletAccessController;
  *     "access" = "Drupal\mcapi\Access\TransactionAccessController",
  *     "form" = {
  *       "transition" = "Drupal\mcapi\Form\TransitionForm",
+ *       "mass" = "Drupal\mcapi\Form\MassPay",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm",
  *     },
@@ -124,7 +125,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //then this function needs to return violations
     $violation_messages += $this->checkIntegrity();
     //TODO check that transaction limit violations highlight the right currency field
-
     return $violation_messages; //temp need to tidy this up
   }
 
@@ -157,7 +157,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         if (empty($violations)) {
           //note that this validation cannot change the original transaction because a clone of it is passed
           $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(mcapi_transaction_flatten($this)));
-
           //validate the child candidates
           foreach ($this->children as $child) {
             //ensure the child transactions aren't mistaken for parents during validation
@@ -389,10 +388,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //check that the current user is permitted to pay out and in according to the wallet permissions
     else{
       $walletAccess = \Drupal::Entitymanager()->getAccessController('mcapi_wallet');
-      if ($walletAccess->checkAccess($this->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
+      if (!$walletAccess->checkAccess($this->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
         $violations['payer'] = t('You are not allowed to make payments from this wallet');
       }
-      if ($walletAccess->checkAccess($this->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
+      if (!$walletAccess->checkAccess($this->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
         $violations['payee'] = t('You are not allowed to pay into this wallet');
       }
     }

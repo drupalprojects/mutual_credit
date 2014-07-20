@@ -1,215 +1,190 @@
 <?php
 
+/**
+ * @file
+ * Definition of Drupal\mcapi\Form\MassPay.
+ * Create an array of transactions, based on a single entity form
+ */
+
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Form\FormBase;
-use Drupal\Core\Entity\EntityManager;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Request;
+use Drupal\entity\Entity\EntityFormDisplay;
 
-
-class MassPay extends FormBase {
+class MassPay extends TransactionForm {
 
   private $payers;
   private $payees;
-
-  function __construct() {
-    $vector = \Drupal::request()->attributes->get('vector') ? : 'many2one';
-    list($this->payers, $this->payees) = explode('2', $vector);
-  }
+  private $exchange_id;
+  //$this->entity refers to the Exchange
 
   public function getFormId() {
     return 'mcapi_mass_payment';
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::form().
+   * Overrides Drupal\mcapi\Form\TransactionForm::form().
    */
-  public function buildForm(array $form, array &$form_state) {
-    drupal_set_message('Not implemented yet');
+  public function form(array $form, array &$form_state) {
+
     if (empty($form_state['validated_transactions'])) {
-      $form = $this->step_1($form, $form_state);
-      $form['#validate'][] = array($this, 'step_1_validate');
-      $form['#submit'][] = array($this, 'step_1_submit');
+      $this->exchange_id = $this->entity;
+
+      //we have to mimic some part of the normal entity form preparation.
+      //TODO on the rebuilt form we need to make a default entity.
+      //But how to get the submitted values from $form_state
+      //$form_state['input'] means before processing and
+      //$form_state['values'] hasn't been calculated yet
+      $this->entity = entity_create('mcapi_transaction', array());
+
+      $form_display = EntityFormDisplay::collectRenderDisplay($this->entity, 'mass');
+      $this->setFormDisplay($form_display, $form_state);
+
+      $form = parent::form($form, $form_state);
+      $this->step_1($form, $form_state);
     }
     else {
-      $this->step_2($form, $form_state);
-      $form['#validate'][] = array($this, 'step_2_validate');
-      $form['#submit'][] = array($this, 'step_2_submit');
+      foreach ($form_state['validated_transactions'] as $transaction) {
+        $form['preview'][] = entity_view($transaction, 'sentence');
+      }
     }
     return $form;
   }
 
-  public function step_1(array $form, array &$form_state) {
+  public function step_1(array &$form, array &$form_state) {
 
     if (empty($form_state['confirmed'])) {
-
-      $one = array(
-        '#description' => t('A username, email, or user ID'),
-        '#type' => 'mcapi_wallets',
-        '#multiple' => FALSE,
-      );
-      $few = array(
-        '#type' => 'mcapi_wallets',
-        '#multiple' => TRUE,
-      );
-      $many = array(
-        '#type' => 'mcapi_wallets',
-        '#args' => array()
-      );
-drupal_set_message("This form isn't working yet. there is currently no way to multiselect wallets");
-/*
-      if ($this->payers == 'one') {
-        $form['payers'] = array(
-          '#title' => t('Payer'),
-          '#weight' => 1
-        ) + $one;
-        $form['payees'] = array(
-          '#title' => t('Payees'),
-          '#weight' => 2
-        )+ $$this->payees;
+      $types = \Drupal::config('mcapi.wallets')->get('entity_types');
+      if ($types['user:user'] == 1) {
+        $mode_options = array(
+          t('Only the users below'),
+      	  t("All users' except the below"),
+        );
       }
-      elseif ($this->payees == 'one') {
-        $form['payees'] = array(
-          '#title' => t('Payee'),
-          '#weight' => 1
-        ) + $one;
-        $form['payers'] = array(
-          '#title' => t('Payers'),
-          '#weight' => 2
-        )+ ${$this->payers};
+      else {
+        $mode_options = array(
+          t('Only the wallets below'),
+          t("All wallets' except the below"),
+        );
       }
-*/
-      //all these fields like on a normal transaction form
-      $form['description'] = array(
-        '#title' => t('Description'),
-        '#type' => 'textfield',
-        '#default_value' => ''
-      );
-      //
-      $form['worth'] = array(
-        '#type' => 'worth',
-        '#title' => t('Worth'),
-        '#required' => TRUE,
-        //all the currencies this user has access to
-        //unless we do some ajax here, its possible to select a currency incompatible with the exchange
-        '#currencies' => mcapi_entity_label_list('mcapi_currency', array('status' => TRUE))
-      );
-
-      $form['type'] = array(
-        '#type'=> 'value',
-        '#value' => 'mass'
-      );
-
-      $form['fail_mode'] = array(
-      	'#title' => t('On failure'),
-        '#description' => t('What to do if a transaction fails'),
+      $form['mode'] = array(
+      	'#title' => t('Mode'),
+        '#description' => t('Determine how this form will work'),
         '#type' => 'radios',
+        //TODO start with nothing selected to force the user to choose something.
+        '#options' => $mode_options,
+      );
+      $form['one'] = $form['payer'];
+      $form['payer']['#access'] = FALSE;
+      $form['one']['#title'] = t('The one wallet');
+      $form['direction'] = array(
+        '#title' => t('Direction'),
+        '#type' => 'radios',
+        //TODO start with nothing selected to force the user to choose something.
         '#options' => array(
-      	  'revert' => t('Show an error in this form'),
-          'warn' => t('Report after saving.'),
+          'one2many' => t('One wallet pays many wallets'),
+          'many2one' => t('One wallet charges many wallets')
         ),
-        '#default_value' => 'revert',
-        '#weight' => 19
-      );
-      $form['submit'] = array(
-      	'#type' => 'submit',
-        '#value' => $this->t('Preview'),
-        '#weight' => 20
       );
 
-      //add the remaining fieldAPI fields
+      $form['worth']['#required'] = TRUE;
 
-      $entity = entity_create('mcapi_transaction', array());
-      //TODO field attach form is deprecated although
-      //public function EntityFormController::form still calls it
-      //advice means nothing to me: "as of Drupal 8.0. Use the entity system instead."
-      //so replace this...
-      //field_attach_form($entity, $form, $form_state, $entity->language()->id);
+      $form['many'] = $form['payee'];
+      $form['payee']['#access'] = FALSE;
+      $form['many']['#title'] = t('The many wallets');
+      //modify the widget to return multiple values
+      $form['many']['#value_callback'] = array($this, 'form_type_select_wallets_value');
+      $form['mode']['#weight'] = 7;
+      $form['one']['#weight'] = 8;
+      $form['direction']['#weight'] = 9;
+      $form['many']['#weight'] = 10;
+
+      $form['type']['#type'] = 'value';
+      $form['type']['#value'] = 'mass';
 
       //TODO
-      //Some way to optionally send mail
-      /*    $form['mail']['#description'] = t('Do not use payer and payee tokens because all will receive the same mail.');
-       $form['mail']['token_tree'] = array(
-           '#theme' => 'token_tree',
-           '#token_types' => array('transaction'),
-           '#global_types' => FALSE,
-           '#weight' => 3,
-       );*/
+      /*
+      $form['mail']['#description'] = t('Do not use payer and payee tokens because all will receive the same mail.');
+      //this presumes the existence of the token module in d7
+      $form['mail']['token_tree'] = array(
+        '#theme' => 'token_tree',
+        '#token_types' => array('mcapi'),
+        '#global_types' => FALSE,
+        '#weight' => 3,
+      );
+      */
     }
-    return $form;
   }
 
-  /*
-   * create the transaction entities and validate them
-   */
-  public function step_1_validate(array $form, array &$form_state) {
-    form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
-    $values = &$form_state['values'];
+  public function validate(array $form, array &$form_state) {
+    if ($this->errorHandler()->getErrors($form_state)) return;
+    //only validate step 1
+    if (empty($form_state['validated_transactions'])) {
+      $uuid_service = \Drupal::service('uuid');
+      form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
+      $values = &$form_state['values'];
 
-    $values['creator'] = \Drupal::currentUser()->id();
-    $values['type'] = 'mass';
-
-    $payers = (array)$values['payers'];
-    $payees = (array)$values['payees'];
-    unset($values['payers'], $values['payees']);
-    $template = entity_create('mcapi_transaction', $values);
-    foreach ($payers as $payer) {
-      foreach ($payees as $payee) {
-        if ($payer == $payee) continue;
-        $template->payer = $payer;
-        $template->payee = $payee;
-        $transactions[] = clone $template;
+      $values['creator'] = \Drupal::currentUser()->id();
+      $values['type'] = 'mass';
+      if ($values['direction'] == 'one2many') {
+        $payers = array($values['one']);
+        $payees = $values['many'];
       }
-    }
-    foreach ($transactions as $transaction) {
-      $transaction->validate();
-      if (!empty($transaction->exceptions)) {
-        $this->setErrorByName('Blah error');
+      else {
+        $payers = $values['many'];
+        $payees = array($values['one']);
       }
+      $template = entity_create('mcapi_transaction', $values);
+      foreach ($payers as $payer) {
+        foreach ($payees as $payee) {
+          if ($payer == $payee) continue;
+          $next = clone $template;
+          $next->payer = $payer;
+          $next->payee = $payee;
+          $next->uuid = $uuid_service->generate();
+          $transactions[] = $next;
+        }
+      }
+      //TODO after alpha12: handle transaction violations
+      foreach ($transactions as $transaction) {
+        $violations = $transaction->validate();
+        foreach ($violations as $field => $message) {
+          $this->errorHandler()->setErrorByName($field, $form_state, $message);
+        }
+      }
+      //TODO update to d8
+      //drupal_set_title(t('Are you sure?'));
+      //TODO Should these / do these go in the temp store?
+      $form_state['validated_transactions'] = $transactions;
     }
-
-    drupal_set_title(t('Are you sure?'));
-    //Should these be a form property rather than being shoved in form_state?
-    //What's best for memory management?
-    //What if there are 2000 transactions?
-    $form_state['validated_transactions'] = $transactions;
-  }
-  public function step_1_submit(array $form, array &$form_state) {
-    $form_state['rebuild'] = TRUE;
   }
 
-  public function step_2(&$form, $form_state) {
-    //we have to preview these separately to see them all
-    foreach ($form_state['validated_transactions'] as $transaction) {
-      $form['preview'][]['#markup'] = $transaction->tokenised();
+
+  public function submit(array $form, array &$form_state) {
+    if (!array_key_exists('op', $form_state['values'])) {
+      $form_state['rebuild'] = TRUE;
     }
-    $form['submit'] = array(
-    	'#type' => 'submit',
-      '#value' => $this->t('Confirm'),
-      '#weight' => 20
-    );
+    else {
+      $main_transaction = array_shift($form_state['validated_transactions']);
+      foreach ($form_state['validated_transactions'] as $transaction) {
+        $main_transaction->children[] = $transaction;
+      }
+      $main_transaction->save();
+
+      $form_state['redirect_route'] = array(
+        //might not be a good idea for undone transactions
+        'route_name' => 'mcapi.transaction_view',
+        'route_parameters' => array(
+          'mcapi_transaction' => $main_transaction->serial->value
+        )
+      );
+    }
   }
+
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state, $op = NULL) {
-    //TODO implement failure mode
-    debug('Failure mode not yet implemented');
-    $main_transaction = array_shift($form_state['validated_transactions']);
-    foreach ($form_state['validated_transactions'] as $transaction) {
-      $main_transaction->children[] = $transaction;
-    }
-    $main_transaction->save();
-
-    //redirect to the single user's page.
-    //$uri = $main_transaction->uri();
-    $form_state['redirect_route'] = array(
-      //might not be a good idea for undone transactions
-    	'route_name' => 'mcapi.transaction_view',
-      'route_parameters' => array('mcapi_transaction' => $main_transaction->get('serial')->value)
-    );
 
 
     //store the mail so we can bring it up as a default next time
@@ -234,4 +209,13 @@ drupal_set_message("This form isn't working yet. there is currently no way to mu
     }
     */
   }
+
+  function form_type_select_wallets_value(&$element, $input, &$form_state) {
+    if (empty($input)) return;
+    foreach (explode(', ', $input) as $val) {
+      $values[] = form_type_select_wallet_value($element, $val, $form_state);
+    }
+    return $values;
+  }
+
 }

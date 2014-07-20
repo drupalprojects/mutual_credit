@@ -21,7 +21,7 @@ use Drupal\Core\Controller\ExceptionController;
 class WalletAutocompleteController {
 
   /*
-   * get a list of all wallets in exchanges which the the current user is a member of
+   * get a list of all wallets in exchanges of which the the current user is a member.
    *
    */
   function autocomplete(Request $request) {
@@ -38,6 +38,8 @@ class WalletAutocompleteController {
     $string = $request->query->get('q');
     $conditions = array();
 
+    //there is no need to handle multiple values because the javascript of the widget
+    //handles all stuff before the last comma.
     if (is_numeric($string)) {
       $conditions['wid'] = array($string);
     }
@@ -57,7 +59,7 @@ class WalletAutocompleteController {
       $json = array(
         array(
           'value' => '',
-          'label' => '['.t('No matches'.']')
+          'label' => '--'.t('No matches').'--'
         )
       );
     }

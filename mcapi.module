@@ -540,9 +540,10 @@ function mcapi_process_select_wallet($element, &$form_state) {
     : 'mcapi.wallets.autocomplete_all';
   return $element;
 }
+
 /**
- * value callback
- * takes from the autocomplete select_wallet field and returns an integer candidtate wallet id.
+ * value callback for wallet widget
+ * takes from the autocomplete select_wallet field and returns an integer candidate wallet id.
  */
 function form_type_select_wallet_value(&$element, $input, &$form_state) {
   if (empty($input)) return;
@@ -601,7 +602,7 @@ function mcapi_prerender_wallet_field($element) {
  * @return Drupal\Core\Config\Entity\ConfigEntityInterface[]
  *
  * @todo later we might want to provide a fuller interface for editing states
- * and types, esp the name and description e.g. admin/accounting/workflow/states
+ * types, esp the name and description e.g. admin/accounting/workflow/states
  *
  * @todo cache this
  *

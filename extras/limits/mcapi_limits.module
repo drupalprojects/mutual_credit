@@ -9,7 +9,7 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
 /**
  * implements hook_mcapi_transaction_validate().
- * runs only on transaction insertion
+ * called only for new transactions
  * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
  * against the balance limits for each affected account,
  * NB. the accounting_validate hook is only run when a transaction is inserted:

@@ -1,0 +1,11 @@
+id: mcapi_transaction.1stparty
+label: 1st party designed form
+targetEntityType: mcapi_transaction
+status: true
+cache: true
+uuid: a6a3634c-0ee2-4778-823e-62e1398eab63
+langcode: en
+dependencies:
+  module:
+    - mcapi_1stparty
+

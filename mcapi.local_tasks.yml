@@ -39,30 +39,22 @@ mcapi.admin_exchanges_tab:
   base_route: mcapi.admin_exchange_list
   weight: 0
 
-# the first of 4 types of mass transaction
-mcapi.admin_mass.many2one_tab:
-  route_name: mcapi.admin_mass
-  title: Many to one
-  base_route: mcapi.admin_mass.many2one_tab
-  weight: 0
-
-mcapi.admin_mass.one2many_tab:
-  route_name: mcapi.admin_mass.one2many
-  title: One to many
-  base_route: mcapi.admin_mass.one2many_tab
-  weight: 0
-
 #view/edit tabs on exchange entity
 mcapi.exchange.view.tab:
   route_name: mcapi.exchange.view
   title: View
   base_route: mcapi.exchange.view
   weight: 0
+mcapi.exchange.mass.tab:
+  route_name: mcapi.exchange.masspay
+  title: Mass payment
+  base_route: mcapi.exchange.view
+  weight: 1
 mcapi.exchange.edit.tab:
   route_name: mcapi.exchange.edit
   title: Edit
   base_route: mcapi.exchange.view
-  weight: 1
+  weight: 2
 
 #TODO sort this out when views path arguments work
 #mcapi.exchange.edit.tab:

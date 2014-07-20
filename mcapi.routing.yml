@@ -97,23 +97,6 @@ mcapi.transaction_view:
       mcapi_transaction:
         serial: true
 
-mcapi.admin_mass:
-  path: '/admin/accounting/transactions/mass'
-  defaults:
-    _form: 'Drupal\mcapi\Form\MassPay'
-    _title: 'Mass payments'
-  requirements:
-    _permission: 'manage mcapi'
-
-#The other three in the local tasks
-mcapi.admin_mass.many2one:
-  path: 'transact/mass/{vector}'
-  defaults:
-    _form: 'Drupal\mcapi\Form\MassPay'
-    _title: 'Mass payments'
-  requirements:
-    _permission: 'manage mcapi'
-
 #transitions
 mcapi.transaction.op:
   path: '/transaction/{mcapi_transaction}/{transition}'
@@ -229,6 +212,14 @@ mcapi.exchange.edit:
     _title: 'Edit exchange'
   requirements:
     _entity_access: 'mcapi_exchange.update'
+
+mcapi.exchange.masspay:
+  path: '/exchange/{mcapi_exchange}/masspay'
+  defaults:
+    _entity_form: 'mcapi_exchange.masspay'
+    _title: 'Mass payment'
+  requirements:
+    _entity_access: 'mcapi_exchange.manage'
 
 #TEMP
 mcapi.wallet.log:

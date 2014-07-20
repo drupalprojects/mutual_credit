@@ -26,7 +26,11 @@ class TransactionForm extends ContentEntityForm {
    */
   public function form(array $form, array &$form_state) {
 
-    $transaction = $this->entity;
+    //the masspay form doesn't provide a transaction via the router or the paramConverter
+    $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
+      ? $this->entity
+      : entity_create('mcapi_transaction');
+
 
     //TODO do this with access control, including the dsm
     if (count(referenced_exchanges(NULL, TRUE)) < 1) {
@@ -120,6 +124,7 @@ class TransactionForm extends ContentEntityForm {
    * this is unusual because normally build a temp object
    */
   public function validate(array $form, array &$form_state) {
+
     form_state_values_clean($form_state);//without this, buildentity fails, but not so in nodeFormController
 
     $transaction = $this->buildEntity($form, $form_state);

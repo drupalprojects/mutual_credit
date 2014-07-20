@@ -222,7 +222,6 @@ function _mcapi_element_info() {
       '#input' => TRUE,
       '#local' => TRUE,
       '#size' => 60,
-      '#maxlength' => 128,
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
       '#process' => array('mcapi_process_select_wallet', 'form_process_autocomplete', 'ajax_process_form'),
       '#pre_render' => array('form_pre_render_textfield', 'mcapi_prerender_wallet_field'),
@@ -231,6 +230,7 @@ function _mcapi_element_info() {
       '#value_callback' => 'form_type_select_wallet_value',
       '#element_validate' => array('local_wallet_validate_id'),
       '#required' => TRUE,
+      '#multiple' => FALSE,
       //TODO I'm not sure how best to put in default css
       //the empty class is required to prevent an overload error in alpha7
       //TODO enable this when _form_set_attributes no longer attempts to merge this attribute object with an actual array

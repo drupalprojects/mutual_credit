@@ -1,0 +1,11 @@
+id: mcapi_transaction.mass
+label: mass
+targetEntityType: mcapi_transaction
+status: true
+cache: true
+uuid: a6a3634c-0ee2-4778-803e-62e1398eab63
+langcode: en
+dependencies:
+  module:
+    - mcapi
+

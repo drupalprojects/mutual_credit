@@ -40,12 +40,13 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
       }
       if ($messages) continue;
       $summary = $wallet->getStats($curr_id);
-      $projected = $summary['balance'] + array_sum($diffs);
+      $diff = array_sum($diffs);
+      $projected = $summary['balance'] + $diff;
       $limits = mcapi_limits($wallet)->limits($curr_id);//TODO consider making this call more elegant
       extract ($limits);//produces $min and $max
       //we could send 'worth' values to the exception, but they are hard to work with
       //instead we'll send the currency and the quantities
-      if ($projected > 0 && $max && $projected > $max) {
+      if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
         $errors[$wid][] = array(
           'currency' => $currency,
           'limit' => $max,
@@ -54,7 +55,7 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
           'wallet' => $wallet
         );
       }
-      elseif ($projected < 0 && is_numeric($min) && $projected < $min) {
+      elseif ($diff < 0 && $projected < 0 && is_numeric($min) && $projected < $min) {
         $errors[$wid][] = array(
           'currency' => $currency,
           'limit' => $min,

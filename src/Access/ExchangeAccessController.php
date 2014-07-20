@@ -43,6 +43,9 @@ class ExchangeAccessController extends EntityAccessController {
     elseif($op == 'update') {
       return user_access('manage mcapi') || $exchange->is_manager();
     }
+    elseif($op == 'manage') {
+      return user_access('manage mcapi') || $exchange->is_manager();
+    }
   }
 
 
