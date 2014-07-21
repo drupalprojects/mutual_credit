@@ -66,9 +66,9 @@ class ExchangeAccessController extends EntityAccessController {
       return FALSE;
     }
     //if the exchange has wallets, even orphaned wallets, it can't be deleted.
-    $conditions = array('exchanges' => $exchange->id());
+    $conditions = array('exchanges' => array($exchange->id()));
     $wallet_ids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->filter($conditions);
-    if (count($wallet_ids > 1)){
+    if (count($wallet_ids) > 1){
       $exchange->reason = t('The exchange still owns wallets: @nums', array('@nums' => implode(', ', $wallet_ids)));
       return FALSE;
     }

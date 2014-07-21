@@ -28,6 +28,11 @@ class CurrencyForm extends EntityForm {
       '#required' => TRUE,
       '#weight' => 0,
     );
+    if (!$this->entity->id()) {
+      //only check validate new currency names for uniqueness
+      //How bad would it be if currency names weren't unique?
+      $form['name']['#element_validate'] = array(array($this, 'currency_name_unique'));
+    }
 
     $form['id'] = array(
       '#type' => 'value',
@@ -182,21 +187,10 @@ class CurrencyForm extends EntityForm {
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityForm::validate().
-   */
-  public function validate(array $form, array &$form_state) {
-  }
-
-  /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */
   public function save(array $form, array &$form_state) {
     $currency = $this->entity;
-    //find the next numerical id if this is a new currency
-    if (empty($currency->id())) {
-      $id = max(array_keys(entity_load_multiple('mcapi_currency'))) + 1;
-      $currency->set('id', $id);
-    }
     //save the currency format in a that is easier to process at runtime.
     $currency->format = $this->submit_format($currency->format);
     $status = $currency->save();
@@ -247,8 +241,19 @@ class CurrencyForm extends EntityForm {
       $combo[] = $snippet;
       $combo[] = array_shift($numbers);
     }
-    //of the last value of $combo is empty remove it.
-    if (end($combo) == '')array_pop($combo);
+    //if the last value of $combo is empty remove it.
+    if (end($combo) == '') {
+      array_pop($combo);
+    }
     return $combo;
+  }
+
+  /**
+   * element validation callback for 'name'
+   */
+  function currency_name_unique(&$element, &$form_state) {
+    if ($currency = entity_load_multiple_by_properties('mcapi_currency', array('name' => $element['#value']))) {
+      $this->errorHandler()->setErrorByName('name', $form_state, $this->t('Currency name already used'));
+    }
   }
 }

@@ -89,7 +89,6 @@ function mcapi_transaction_load_by_serial($serials) {
  * TODO shouldn't there be some in each page controller to inject help?
  */
 function mcapi_help($route_name, Request $request) {
-//  debug($route_name);
   switch ($route_name) {
     case 'mcapi.admin':
       return t('The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.');

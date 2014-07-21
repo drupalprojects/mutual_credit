@@ -26,7 +26,7 @@ class ExchangeEnableConfirm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelRoute() {
-    return $this->url('mcapi.admin_exchange_list');
+    return new Url('mcapi.admin_exchange_list');
   }
 
   /**

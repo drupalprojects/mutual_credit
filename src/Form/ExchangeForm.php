@@ -31,11 +31,13 @@ class ExchangeForm extends ContentEntityForm {
       '#title' => t('Full name'),
       '#default_value' => $exchange->get('name')->value,
       '#required' => TRUE,
-      '#weight' => 1
+      '#weight' => 0
     );
-    //@todo how to decide who to select exchange managers from?
+    //TODO how to decide who to select exchange managers from?
     //really it could be any user IN that exchange, although the exchange has no members right now....
-    foreach (entity_load_multiple('user') as $account) $managers[$account->id()] = $account->label();
+    foreach (entity_load_multiple('user') as $account) {
+      $managers[$account->id()] = $account->label();
+    }
     unset($managers[0]);
     $form['uid'] = array(
       '#title' => t('Manager of the exchange'),
@@ -54,14 +56,14 @@ class ExchangeForm extends ContentEntityForm {
       '#options' => $this->entity->visibility_options(),
       '#default_value' => $exchange->get('visibility')->value,
       '#required' => TRUE,
-      '#weight' => 4
+      '#weight' => 6
     );
     $form['open'] = array(
       '#title' => t('Open'),
       '#description' => t('Is this exchange open to trade with other exchanges?'),
       '#type' => 'checkbox',
       '#default_value' => $exchange->get('open')->value,
-      '#weight' => 5
+      '#weight' => 9
     );
     //hide the currencies field if only one currency is available
     if (count(entity_load_multiple_by_properties('mcapi_currency', array('status' => TRUE))) == 1) {
@@ -85,14 +87,14 @@ class ExchangeForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, array &$form_state) {
-    $entity = $this->entity;
-    $status = $entity->save();
-    //either SAVED_UPDATED or SAVED_NEW
+    $status = $this->entity->save();
 
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.exchange.view',
-      'route_parameters' => array('mcapi_exchange' => $entity->id())
+      'route_parameters' => array('mcapi_exchange' => $this->entity->id())
     );
+    //either SAVED_UPDATED or SAVED_NEW
+    return $status;
   }
 
 }

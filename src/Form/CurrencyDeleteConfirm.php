@@ -27,7 +27,7 @@ class CurrencyDeleteConfirm extends EntityConfirmFormBase {
    */
   public function getCancelRoute() {
     //want to go back to the list builder but its not normal to put the list in the entity->links property
-    return $this->url('mcapi.admin_currency_list');
+    return new Url('mcapi.admin_currency_list');
   }
 
   /**

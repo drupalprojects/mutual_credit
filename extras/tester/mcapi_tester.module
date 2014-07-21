@@ -61,7 +61,9 @@ function mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
   //get all the wallets in this exchange
   $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
   //get all the transactions in those wallets
-  $serials = \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids));
+  $serials = $wids ?
+    \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) :
+    array();
 
   $build['transactions_link'] = array(
     '#type' => 'item',

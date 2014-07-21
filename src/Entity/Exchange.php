@@ -31,7 +31,7 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\ExchangeViewBuilder",
  *     "access" = "Drupal\mcapi\Access\ExchangeAccessController",
  *     "form" = {
- *       "add" = "Drupal\mcapi\Form\ExchangeForm",
+ *       "add" = "Drupal\mcapi\Form\ExchangeWizard",
  *       "edit" = "Drupal\mcapi\Form\ExchangeForm",
  *       "masspay" = "Drupal\mcapi\Form\MassPay",
  *       "delete" = "Drupal\mcapi\Form\ExchangeDeleteConfirm",

@@ -247,14 +247,6 @@ function mcapi_limits_process_minmax(&$element) {
 }
 
 /**
- * element validate callback for 'minmax'
- */
-function mcapi_limits_minmax_validate(&$element, &$form_state) {
-  echo 'mcapi_limits_minmax_validate';
-  print_r($element['#value']);
-}
-
-/**
  * value callback for minmax
  * take the two single worth fields above and represent them as
  * array($curr_id => array($min, $max));

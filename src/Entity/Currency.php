@@ -83,6 +83,30 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
+   * {@inheritdoc}
+   * make a numerical currency id for new currencies
+   */
+  public function save() {
+    if (empty($this->id())) {
+      $this->set('id', max(array_keys(entity_load_multiple('mcapi_currency'))) + 1);
+    }
+    parent::save();
+  }
+
+  /**
+   * Check that the entity name isn't taken
+   */
+  public function validate() {
+    //TODO sort out the violations after d8-alpha12
+    $violations = array();
+    $results = entity_load_multiple_by_properties('mcapi_currency', array('name', $this->name));
+    if (count($results) && current($results)->id() != $this->id()) {
+      $violations[] = array();
+    }
+    return $violations;
+  }
+
+  /**
    * @see \Drupal\mcapi\Entity\CurrencyInterface::label()
    */
   public function label($langcode = NULL) {

@@ -132,7 +132,7 @@ function __construct(ConfigFactoryInterface $config_factory) {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
-    $indexRebuild = $this->settings->counted != $form_state['values']['counted'];
+    $indexRebuild = $this->settings->get('counted') != $form_state['values']['counted'];
 
     $this->settings
       ->set('sentence_template', $form_state['values']['sentence_template'])

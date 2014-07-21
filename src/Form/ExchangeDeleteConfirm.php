@@ -8,7 +8,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
-use Drupal\field\Field;
+use Drupal\Core\Url;
 
 /**
  * Builds the form to delete a currency
@@ -26,7 +26,7 @@ class ExchangeDeleteConfirm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelRoute() {
-    return $this->url('mcapi.admin_exchange_list');
+    return new Url('mcapi.admin_exchange_list');
   }
 
   /**

@@ -198,7 +198,7 @@ mcapi.exchange.view:
 mcapi.exchange.add:
   path: '/exchange/add'
   defaults:
-    _entity_form: 'mcapi_exchange.edit'
+    _entity_form: 'mcapi_exchange.add'
     _title: Create exchange
   requirements:
     _permission: 'manage mcapi'

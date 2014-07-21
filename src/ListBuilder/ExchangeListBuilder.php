@@ -60,7 +60,7 @@ class ExchangeListBuilder extends EntityListBuilder {
         'title' => t('Deactivate'),
         'weight' => 40,
         //'href' => $url . '/disable'
-      ) + $entity->urlInfo('enable')->toArray();
+      ) + $entity->urlInfo('disable')->toArray();
     }
     elseif (!$entity->get('status')->value) {
       $operations['enable'] = array(
