@@ -1,5 +1,5 @@
 base_field: wid
-base_table: mcapi_wallets
+base_table: mcapi_wallet
 core: 8.x
 description: ''
 status: true
@@ -112,7 +112,7 @@ display:
       fields:
         owner:
           id: owner
-          table: mcapi_wallets
+          table: mcapi_wallet
           field: owner
           relationship: none
           group_type: group
@@ -162,7 +162,7 @@ display:
           provider: mcapi
         wallet_label:
           id: wallet_label
-          table: mcapi_wallets
+          table: mcapi_wallet
           field: wallet_label
           relationship: none
           group_type: group
@@ -212,7 +212,7 @@ display:
           provider: mcapi
         entity_type:
           id: entity_type
-          table: mcapi_wallets
+          table: mcapi_wallet
           field: entity_type
           relationship: none
           group_type: group

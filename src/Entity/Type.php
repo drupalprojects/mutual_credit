@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\user\RoleInterface;
-
+use Drupal\mcapi\Entity\State;
 /**
  * Defines the transaction state entity class.
  *
@@ -57,27 +57,10 @@ class Type extends ConfigEntityBase {
    */
   public $start_state;
 
-  /**
-   * The module which provides this plugin
-   *
-   * @var string
-   */
-  //public $module;
-
-
-  function calculateDependencies() {
-    $this->dependencies = array();
-    $conditions = array('type' => $this->id);
-    if (\Drupal::EntityManager()->getStorage('mcapi_transaction')->filter($conditions, 0, 1)) {
-      $this->dependencies = array('module' => array($this->module));
-    }
-    //todo - the same for mcapi_type!
-    return $this->dependencies;
-  }
-
   public function getStartState() {
-    $state = entity_load('mcapi_state', $this->start_state);
+    $state = State::load($this->start_state);
     return $state->value;
   }
+
 
 }

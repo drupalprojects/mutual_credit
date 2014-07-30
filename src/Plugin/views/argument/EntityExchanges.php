@@ -7,9 +7,8 @@
 
 namespace Drupal\mcapi\Plugin\views\argument;
 
-//use Drupal\Component\Utility\String;
 use Drupal\views\Plugin\views\argument\Numeric;
-//use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\mcapi\Entity\Exchange;
 
 /**
  * Argument handler to accept a user id.
@@ -21,6 +20,6 @@ use Drupal\views\Plugin\views\argument\Numeric;
 class EntityExchanges extends Numeric {
 
   public function getTitle() {
-     return entity_load('mcapi_exchange', $this->getValue())->label();
+    return Exchange::load($this->getValue())->label();
   }
 }

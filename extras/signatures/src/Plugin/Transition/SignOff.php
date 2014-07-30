@@ -11,6 +11,7 @@ namespace Drupal\mcapi_signatures\Plugin\Transition;
 use Drupal\mcapi\Plugin\Transition\TransitionBase;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\user\Entity\User;
 
 /**
  * Sign Off transition
@@ -35,7 +36,7 @@ class SignOff extends TransitionBase {
 
     foreach ($transaction->signatures as $uid => $signed) {
       if ($signed) continue;
-      transaction_sign($transaction, user_load($uid));
+      transaction_sign($transaction, User::load($uid));
     }
     return array(
       '#markup' => t(

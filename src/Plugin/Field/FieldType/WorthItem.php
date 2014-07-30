@@ -11,6 +11,7 @@ use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\field\FieldInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\mcapi\Entity\Currency;
 
 /**
  * Plugin implementation of the 'worth' field type.
@@ -59,15 +60,15 @@ class WorthItem extends FieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function settingsForm(array $form, array &$form_state, $has_data) {
-    return array();
+  public function __settingsForm(array &$form, array &$form_state, $has_data) {
+    //return array();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function instanceSettingsForm(array $form, array &$form_state) {
-    return array();
+  public function __instanceSettingsForm(array $form, array &$form_state) {
+    return $form;
   }
 
 
@@ -103,7 +104,7 @@ class WorthItem extends FieldItemBase {
    */
   public function view($display_mode = array()) {
     extract($this->getValue(FALSE));
-    $currency = entity_load('mcapi_currency', $curr_id);
+    $currency = Currency::load($curr_id);
     if ($value) {
       return $currency->format($value);
     }

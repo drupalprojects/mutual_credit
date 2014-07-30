@@ -12,6 +12,7 @@ namespace Drupal\mcapi_1stparty;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDisplay;
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\user\Entity\User;
 
 
 class FirstPartyTransactionForm extends TransactionForm {
@@ -66,7 +67,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     }
     $form['payer']['#access'] = FALSE;
     $form['payee']['#access'] = FALSE;
-    $account = user_load(\Drupal::currentuser()->id());
+    $account = User::load(\Drupal::currentuser()->id());
     //use this method because i still don't know how to iterate
     //through the $account->exchanges entity_reference field.
     foreach (mcapi_get_wallet_ids($account) as $wid) {

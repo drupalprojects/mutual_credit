@@ -15,6 +15,8 @@ use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\user\UserInterface;
+use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Wallet;
 
 define('EXCHANGE_VISIBILITY_PRIVATE', 0);
 define('EXCHANGE_VISIBILITY_RESTRICTED', 1);
@@ -26,6 +28,7 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  * @ContentEntityType(
  *   id = "mcapi_exchange",
  *   label = @Translation("Exchange"),
+ *   base_table = "mcapi_exchange",
  *   controllers = {
  *     "storage" = "Drupal\mcapi\Storage\ExchangeStorage",
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\ExchangeViewBuilder",
@@ -43,7 +46,6 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *   admin_permission = "configure mcapi",
  *   fieldable = TRUE,
  *   translatable = FALSE,
- *   base_table = "mcapi_exchanges",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",
@@ -74,23 +76,25 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       'status' => TRUE,
       'open' => TRUE,
       'visibility' => TRUE,
-      'currencies' => key(entity_load_multiple('mcapi_currency'))
     );
   }
 
   /**
    * Create the _intertrading wallet
    */
-
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     //add the manager user to the exchange if it is not a member
-    //$exchange_manager = user_load($this->get('uid')->value);
+    //$exchange_manager = User::load($this->get('uid')->value);
 
     //create a new wallet for new exchanges
     if (!$update) {
-      $wallet = entity_create('mcapi_wallet', array('entity_type' => 'mcapi_exchange', 'pid' => $this->id()));
-      $wallet->name->setValue('_intertrading');
-      $wallet->save();
+      $props = array(
+        'entity_type' => 'mcapi_exchange',
+        'pid' => $this->id(),
+        'name' => '_intertrading'
+      );
+      $wallet = Wallet::create($props);
+//      $wallet->save();
     }
   }
 
@@ -108,7 +112,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-
     $fields['id'] = FieldDefinition::create('integer')
       ->setLabel(t('Exchange ID'))
       ->setDescription(t('The unique exchange ID.'))

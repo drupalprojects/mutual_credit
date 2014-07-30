@@ -8,6 +8,9 @@
 
 namespace Drupal\mcapi\Form;
 
+use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Currency;
+
 
 class ExchangeWizard extends ExchangeForm {
 
@@ -146,12 +149,12 @@ class ExchangeWizard extends ExchangeForm {
 //TODO we need a role configured to be the exchange manager
         'roles' => array()
       );
-      $this->manager = entity_create('user', $defaults);
+      $this->manager = User::Create($defaults);
 
       //TODO how now to validate the user entity? $this->manager->validate() coming after alpha12?
     }
     else {
-      $this->manager = entity_load('user', $form_state['values']['uid']);
+      $this->manager = User::load($form_state['values']['uid']);
     }
     if (!$this->manager->hasPermission('manage own exchanges') && !$this->manager->hasPermission('manage mcapi')) {
       $this->getErrorHandler()->setErrorByName('uid', $form_state, $this->t('Exchange manager does not have permission'));
@@ -160,7 +163,7 @@ class ExchangeWizard extends ExchangeForm {
       'name' => $form_state['values']['currency_name'],
       'ticks' => $form_state['values']['ticks']
     );
-    $this->currency = entity_create('mcapi_currency', $defaults);
+    $this->currency = Currency::create($defaults);
     //TODO handle violations
     foreach ($this->currency->validate() as $field => $violation) {
       $this->getErrorHandler()->setErrorByName($field, $form_state, (string) $violation);

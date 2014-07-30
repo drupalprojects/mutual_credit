@@ -38,7 +38,7 @@ class ExchangeListBuilder extends EntityListBuilder {
     $row['data']['members'] = $entity->users();
     $row['data']['administrator']['data'] = array(
       '#theme' => 'username',
-      '#account' => user_load($entity->get('uid')->value)
+      '#account' => $entity->get('uid')->entity
     );
 
     $row['data'] += parent::buildRow($entity);

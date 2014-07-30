@@ -10,6 +10,8 @@
 namespace Drupal\mcapi\ListBuilder;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Form\FormInterface;
+use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Entity\State;
 
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow
@@ -108,13 +110,13 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
 
   private function visualise() {
     $output = "\n<h4>".t('States')."</h4>\n";
-    foreach (entity_load_multiple('mcapi_state') as $id => $info) {
+    foreach (State::loadMultiple() as $id => $info) {
       $states[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
     }
     $output .= "\n<dl>".implode("\n", $states) . "</dl>\n";
 
     $output .= "\n<h4>".t('Types')."</h4>\n";
-    foreach (entity_load_multiple('mcapi_type') as $type => $info) {
+    foreach (Type::loadMultiple() as $type => $info) {
       $types[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
     }
     $output .= "\n<dl>".implode("\n", $types) . "</dl>\n";

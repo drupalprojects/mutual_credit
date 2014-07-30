@@ -1,5 +1,9 @@
 <?php
 
+
+use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Transaction;
+
 /*
  * implements hook_perm
  */
@@ -16,7 +20,7 @@ function mcapi_command_mcapi_info_drupal_permissions() {
  * returns a message
  */
 function process_mcapi_command($message, $sender_account = NULL, $really = FALSE) {
-  if (!$sender_account) $sender_account = user_load(\Drupal::currentUser()->id());
+  if (!$sender_account) $sender_account = User::load(\Drupal::currentUser()->id());
   $transaction = mcapi_command_execute($message, $sender_account);
   //this has no idea whether the transaction is pending.
   if ($really) {
@@ -52,7 +56,7 @@ function mcapi_command_execute($message, $sender_account, $really = FALSE) {
     $props['payee'] = mcapi_command_get_uid($props['payee']);
   }
 
-  $transaction = entity_create('mcapi_transaction', $props);
+  $transaction = Transaction::Create($props);
   transaction_cluster_create($transaction, $really);//thrown errors will be caught elsewhere
   //if we are still here, that means the transaction was created
   return $transaction;
@@ -147,7 +151,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     if (!$sender_uid) {
       throw new Exception('Your number is not registered at @sitename', array('@sitename' => variable_get('site_name', '')));
     }
-    $sender = user_load($sender_uid);
+    $sender = User::load($sender_uid);
     $transaction = mcapi_command_execute($message, $sender, TRUE);
     if (!$transaction) {
     	$message = \Drupal::config('mcapi.command')->get('syntax_error');
@@ -202,7 +206,7 @@ function mcapi_command_twitter_status_save($status) {
 
   try {
     $uid = db_query("SELECT uid FROM twitter_account WHERE twitter_uid = ".$status->user->id)->fetchfield();
-    $transaction = mcapi_command_execute($message, user_load($uid), TRUE);
+    $transaction = mcapi_command_execute($message, User::load($uid), TRUE);
     //could use a variable instead of transaction completed.
     $response = t('Transaction completed');
     if (!$transaction) return;//that means there was a syntax error.

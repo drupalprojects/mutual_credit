@@ -12,6 +12,7 @@ use Drupal\views\Plugin\views\field\Standard;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * Field handler to link the transaction description to the transaction itself
@@ -35,7 +36,7 @@ class WalletLabel extends Standard {
    */
   function render(ResultRow $values) {
     $wid = $this->getValue($values);
-    return entity_load('mcapi_wallet', $wid)->label();
+    return Wallet::load($wid)->label();
   }
 
 }

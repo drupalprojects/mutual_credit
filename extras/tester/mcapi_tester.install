@@ -1,6 +1,14 @@
 <?php
 
 
+use Drupal\user\Entity\User;
+use Drupal\user\Entity\Role;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Currency;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\field\Entity\FieldInstanceConfig;
+
 function mcapi_tester_install() {
 
   //clear the entity cache because for some reasont user 1 has lost the contents of the exchanges field
@@ -10,12 +18,13 @@ function mcapi_tester_install() {
   //has no effect so I have prevented wallet 2 from being used when transactions are made
 
   $terms = array('Transport', 'Food', 'Care', 'Learning', 'Home', 'Leisure');
-  foreach ($terms as $term) {
-    entity_create('taxonomy_term', array(
+  foreach ($terms as $term_name) {
+    Term::create(array(
       'vid' => 'categories',
-      'name' => $term,
+      'name' => $term_name,
     ))->save();
   }
+  echo "Created taxonomy terms";
   $names = array(
     'Pluto' => 'Pluto Pesos',
     'Mars' => 'Martian Moolah',
@@ -23,15 +32,19 @@ function mcapi_tester_install() {
     'Jupiter' => 'Jovial Jewels'
   );
   $exchange_ids = mcapi_tester_make_exchanges($names);
+  echo "\nCreated exchanges";
   //now
   mcapi_tester_make_users(26);//should make wallets as well
+  echo "\nCreated users";
   //make some transactions within the exchanges.
   mcapi_tester_make_transactions(200);
+  echo "\n200 transactions created";
   //make some intertrading transactions
   mcapi_tester_make_transactions(25, TRUE);
+  echo "\n200 intertrading transactions created";
 
   //close the last exchange and disable its currency
-  $last_exchange = entity_load('mcapi_exchange', end($exchange_ids));
+  $last_exchange = Exchange::load(end($exchange_ids));
   drupal_set_message('Closing the last exchange: '.$last_exchange);
   $last_exchange->set('status', 0);
   $last_exchange->save();
@@ -47,33 +60,34 @@ function mcapi_tester_uninstall() {
   $indelible = $misc_conf->get('indelible');
   $misc_conf->set('indelible', 0)->save();
 
-  if ($instance = entity_load('field_instance_config', 'mcapi_transaction.mcapi_transaction.field_categories')) {
+  if ($instance = FieldInstanceConfig::load('mcapi_transaction.mcapi_transaction.field_categories')) {
     //$instance->delete();
   }
 
   //remove the categories
-  foreach (entity_load_multiple_by_properties('taxonomy_term', array('vid' => 'categories')) as $term) {
+  //TODO why isn't taxonomy_term recognised as an entity type?
+  //foreach (entity_load_multiple_by_properties('taxonomy_term', array('vid' => 'categories')) as $term) {
     //$term->delete();
-  }
+  //}
   //delete test transactions
   $transaction_storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
-  $transactions = array_keys($transaction_storage->filter(array('type' => 'test')));
-  if ($transactions) {
-    $transaction_storage->delete(entity_load_multiple('mcapi_transaction', $transactions));
+  $xids = array_keys($transaction_storage->filter(array('type' => 'test')));
+  if ($xids) {
+    $transaction_storage->delete(Transaction::loadMultiple($xids));
   }
   //delete test users
-  foreach (entity_load_multiple('user') as $user) {
+  foreach (User::loadMultiple() as $user) {
     if ($user->id() < 2) continue;
     $user->delete();//all users' wallets are now 'unused' so will be deleted also
   }
   //delete all exchanges except the first
-  foreach (entity_load_multiple('mcapi_exchange') as $exchange) {
+  foreach (Exchange::loadMultiple() as $exchange) {
     if ($exchange->id() == 1)continue;
     $exchange->status->setValue(FALSE);
     $exchange->save();
     $exchange->delete();//their intertrading wallets should go automatically
   }
-  foreach (entity_load_multiple('mcapi_currency') as $currency) {
+  foreach (Currency::loadMultiple() as $currency) {
     if ($currency->weight > 3) {
       $currency->delete();
     }
@@ -99,24 +113,28 @@ function mcapi_tester_make_exchanges($names) {
   foreach ($names as $exchange_name => $currname) {
 
     $first = substr($currname, 0, 1);
-    $c = entity_create('mcapi_currency');
-    $c->set('id', strtoLower($first.$first));
-    $c->set('name', $currname);
-    $c->set('zero', rand(0, 1));
-    $c->set('issuance', CURRENCY_TYPE_EXCHANGE);
-    $c->set('format', array($first.$first, '000', ':', '99'));
-    $c->set('weight', $w);
-    $c->set('ticks', 10*rand(1, 6));
+    $props = array(
+    	'id' => strtoLower($first.$first),
+      'name' => $currname,
+      'zero' => rand(0, 1),
+      'issuance' => CURRENCY_TYPE_EXCHANGE,
+      'format' => array($first.$first, '000', ':', '99'),
+      'weight' => $w,
+      'ticks' => 10*rand(1, 6)
+    );
+    $c = Currency::create($props);
     $c->save();
     $w++;
 
-    $e = entity_create('mcapi_exchange');
-    $e->set('name', $exchange_name);
-    $e->get('currencies')->setValue(array($c->id()));
+    $props = array(
+    	'name' => $exchange_name,
+      'currencies' => array($c->id())
+    );
+    $e = Exchange::create($props);
     $e->save();
 
     //for the purposes of testing we put user 1 in every exchange
-    $account = user_load(1);
+    $account = User::load(1);
     $vals = $account->exchanges->getValue(FALSE);
     $vals = array_merge($vals, array(array('target_id' => $e->id())));
     $account->set('exchanges', $vals);
@@ -138,21 +156,23 @@ function mcapi_tester_make_exchanges($names) {
  *   the $account->id()s created
  */
 function mcapi_tester_make_users($num = 26) {
-  $manager_role = entity_load('user_role', 'manager');
-  $helper_role = entity_load('user_role', 'helper');
-  $all_exchange_ids = array_keys(entity_load_multiple('mcapi_exchange'));
+  $manager_role = Role::load('manager');
+  $helper_role = Role::load('helper');
+  $all_exchange_ids = array_keys(Exchange::loadMultiple());
 
   //create users
   $first = array('Alice', 'Bobby', 'Carry', 'Dave', 'Ebeneezer', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Ruby', 'Sylvester', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
   $last = array('Arachnid', 'Boulder', 'Castaway', 'Deathwish', 'Emerald', 'Frogleg', 'Golden', 'Handiman', 'Indignado', 'Janitor', 'Kant', 'Landrover', 'Mandrake', 'Nakomoto', 'Orwell', 'Python', 'Quarkson', 'Rhodes', 'Smythe', 'Trenchfoot', 'Ustinov', 'Victor', 'Wellington', 'X', 'Ypres', 'Zenithson');
   shuffle($last);
-  $usersperexchange = ceil(26/count(entity_load_multiple('mcapi_exchange')));
+  $usersperexchange = ceil(26/count(Exchange::loadMultiple()));
   for ($i = 0; $i < $num; $i++) {
-    $u = entity_create('user');
-    $u->set('name', $first[$i] .' '. $last[$i]);
-    $u->set('mail', strtolower($first[$i]).'@mutualcreditmodule.matslats.net');
-    $u->set('pass', 'a');
-    $u->set('status', 1);
+    $props = array(
+    	'name' => $first[$i] .' '. $last[$i],
+      'mail' => strtolower($first[$i]).'@mutualcreditmodule.matslats.net',
+      'pass' => 'a',
+      'status' => 1
+    );
+    $u = User::create($props);
     //give the first user in each exchange the manager role and the second the helper
     $memnum = ($i+1) % $usersperexchange;
     if ($memnum == 0) $u->addRole($manager_role->id());
@@ -166,7 +186,7 @@ function mcapi_tester_make_users($num = 26) {
     $uids[] = $u->id();
 
     if ($memnum == 1) {//tell the exchange that it is owned by the manager
-      $exchange = entity_load('mcapi_exchange', $exchange_id);
+      $exchange = Exchange::load($exchange_id);
       $exchange->uid->value = $u->id();
       $exchange->save();
     }

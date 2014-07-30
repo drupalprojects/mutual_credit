@@ -149,8 +149,7 @@ class TransitionForm extends EntityConfirmFormBase {
       );
       drupal_set_message(\Drupal::token()->replace($message, $tokens));
     }
-
-    //TODO all the three ways of showing the form, and how each one moves to the next.
+    //if there is no redirect then the link to this form should have a destination
     if ($redirect = $this->configuration->get('redirect')) {
       $path = strtr($redirect, array(
         '[uid]' => \Drupal::currentUser()->id(),
@@ -161,20 +160,13 @@ class TransitionForm extends EntityConfirmFormBase {
         array(),//$options to be passed to url(), I think
       );
     }
-    else {
-      $form_state['redirect_route'] = array(
-        'route_name' => 'mcapi.transaction_view',
-        'route_parameters' => array('mcapi_transaction' => $transaction->get('serial')->value)
-      );
-    }
 
     //but since rules isn't written yet, we're going to use the transition settings to send a notification.
     if ($this->configuration->get('send')) {
       $recipients = array();
       //mail is sent to the user owners of wallets, and to cc'd people
       foreach (array('payer', 'payee') as $participant) {
-        $field = $transaction->payer->getValue(TRUE);
-        $walletowner = $field[0]['entity']->getOwner();
+        $walletowner = $transaction->payer->entity->getOwner();
         //note that a wallet owner can be any contentEntity, and is nothing to do with EntityOwnerInterface.
         //
         if ($walletowner->getEntityTypeId() == 'user') {

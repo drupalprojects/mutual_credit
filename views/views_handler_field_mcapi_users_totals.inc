@@ -1,6 +1,8 @@
 <?php
 
 
+use Drupal\user\Entity\User;
+
 /**
  * @file
  * Given the user, this shows the balance.
@@ -52,7 +54,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
   function render($values) {
     $uid = &$values->uid;
     //the settings imply there is only one curr_id, but actually many can be rendered
-    $curr_ids = empty($this->options['curr_id']) ? array_keys(currencies_load(user_load($uid))): (array)$this->options['curr_id'];
+    $curr_ids = empty($this->options['curr_id']) ? array_keys(currencies_load(User::load($uid))): (array)$this->options['curr_id'];
     $elements = array();
     foreach ($curr_ids as $curr_id) {
       if (empty($this->fetched[$uid][$curr_id])) {

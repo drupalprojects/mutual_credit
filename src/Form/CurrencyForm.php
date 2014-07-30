@@ -8,6 +8,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\EntityForm;
+use Drupal\user\Entity\User;
 
 class CurrencyForm extends EntityForm {
 
@@ -48,7 +49,7 @@ class CurrencyForm extends EntityForm {
     //now get all the members of those exchanges who have manage permission
     //would be great if we could somehow just feed into a entity_reference widget here
     $roles = user_roles(TRUE, 'manage own exchanges');
-    $options = array(1 => user_load(1)->label());
+    $options = array(1 => User::load(1)->label());
     if ($roles) {
       $query = db_select('users', 'u')->fields('u', array('uid'));
       $query->join('users_roles', 'ur', 'ur.uid = u.uid');
@@ -56,7 +57,7 @@ class CurrencyForm extends EntityForm {
       $uids = $query->condition('ur.rid', array_keys($roles))
         ->execute()->fetchCol();
       //wow this is getting long-winded
-      foreach (entity_load_multiple('user', $uids) as $account) {
+      foreach (User::loadMultiple($uids) as $account) {
         $options[$account->id()] = $account->label();
       }
     }

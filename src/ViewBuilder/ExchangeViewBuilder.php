@@ -9,6 +9,7 @@ namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\user\Entity\User;
 
 /**
  * Base class for entity view controllers.
@@ -36,7 +37,7 @@ class ExchangeViewBuilder extends EntityViewBuilder {
       'admin' => array(
         '#prefix' => '<br />',
         //@todo what's the best way to show this username linked?
-        '#markup' => t('Administrator: !name', array('!name' => entity_load('user', $entity->get('uid')->value)->getUsername()))
+        '#markup' => t('Administrator: !name', array('!name' => $entity->get('uid')->entity->getUsername()))
       )
     );
     //TODO how do we allow any display or extra_field of the wallet to be viewed as a field in the exchange?

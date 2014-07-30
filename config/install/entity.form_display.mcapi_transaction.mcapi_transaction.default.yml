@@ -1,15 +1,15 @@
-uuid: a6a3634c-0ee2-4778-823e-62e1398cab63
+uuid: a6a6634c-0ee2-4778-823e-62e1398cab63
 langcode: en
 status: true
 dependencies:
   entity:
     - field.instance.mcapi_transaction.mcapi_transaction.worth
   module:
-    - mcapi_1stparty
-id: mcapi_transaction.mcapi_transaction.1stparty
+    - mcapi
+id: mcapi_transaction.mcapi_transaction.default
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
-mode: 1stparty
+mode: default
 content: 
   worth:
     type: worth

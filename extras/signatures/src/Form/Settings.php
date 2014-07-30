@@ -9,6 +9,7 @@ namespace Drupal\mcapi_signatures\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use \Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\mcapi\Entity\Type;
 
 class Settings extends ConfigFormBase {
 
@@ -38,7 +39,7 @@ class Settings extends ConfigFormBase {
       t("This form overrides that initial state and puts new transactions into pending state while signatures are required."),
       t("When the last signature is gathered the transaction moves automatically into 'finished' state.")
     ));
-    foreach (entity_load_multiple('mcapi_type') as $type) {
+    foreach (Type::loadMultiple() as $type) {
       $form[$type->id()] = array(
     	  '#title' => t('Who must approve transactions of type @name?', array('@name' => $type->label)),
         '#description' => $type->description,

@@ -9,6 +9,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\user\Entity\User;
 
 class WalletForm extends ContentEntityForm {
 
@@ -40,7 +41,7 @@ class WalletForm extends ContentEntityForm {
     $this->permissions['owner'] = t('The owner');
 
     $this->default_wallet_access = \Drupal::config('mcapi.wallets');
-
+print_r($this->entity->access);
     $this->accessElement($form, 'details', t('View transaction details'), t('View individual transactions this wallet was involved in'), $this->entity->access['details']);
     $this->accessElement($form, 'summary', t('View summary'), t('The balance, number of transactions etc.'), $this->entity->access['summary']);
     //anon users cannot pay in or out of wallets
@@ -141,7 +142,8 @@ drupal_set_message('replaced owner with user '.$this->entity->getOwner()->getUse
    *   comma separated usernames
    */
   private function getUsernames($uids) {
-    foreach (entity_load_multiple('user', $uids) as $account) {
+    $names = array();
+    foreach (User::loadMultiple($uids) as $account) {
       $names[] = $account->getUsername();
     }
     return implode(', ', $names);

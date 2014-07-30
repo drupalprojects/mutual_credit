@@ -8,8 +8,9 @@ namespace Drupal\mcapi_1stparty;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal;
 use Drupal\Core\Form\FormInterface;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 /**
  * Provides a listing of contact categories.
@@ -31,7 +32,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
    */
   public function buildRow(EntityInterface $entity) {
     if (\Drupal::currentUser()->hasPermission('configure mcapi') ||
-      entity_load('mcapi_exchange', $entity->exchange)->is_member() ) {
+      Exchange::load($entity->exchange)->is_member() ) {
     	$style = array('style' => $entity->status ? '' : 'color:#999');
     	//$class = array('style' => $entity->status ? 'enabled' : 'disabled');
     	//TODO make a link out of this
@@ -42,7 +43,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
       	  '#route_name' => 'mcapi.1stparty.' .$entity->id()
       	)
       );
-      $exchange = $entity->exchange ? entity_load('mcapi_exchange', $entity->exchange) : NULL;
+      $exchange = $entity->exchange ? Exchange::load($entity->exchange) : NULL;
       $row['exchange'] = $style + array(
       	'data' => array(
       	  '#markup' => $exchange ? $exchange->label() : t('- All -')
@@ -79,7 +80,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
       }
     }
     //get the form and put it in the final row of the table
-    $build['form'] = Drupal::formBuilder()->getForm($this);
+    $build['form'] = \Drupal::formBuilder()->getForm($this);
     return $build;
   }
 
@@ -101,7 +102,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
       '#prefix' => '<div class="label-input"><div class="add-new-placeholder">' . $this->t('Add new currency') .'</div>',
     );
     //I can't help but think there's a better way to get a list of entity labels, keyed by entity id
-    foreach (entity_load_multiple('mcapi_exchange') as $id => $exchange) {
+    foreach (Exchange::loadMultiple() as $id => $exchange) {
       $options[$id] = $exchange->label();
     }
     $form['id'] = array(
@@ -142,7 +143,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
-    $editform = entity_create('1stparty_editform', $form_state['values']);
+    $editform = FirstPartyFormDesign::create($form_state['values']);
     $editform->save();
     $form_state['redirect_route'] = array(
       'route_name' => 'mcapi.admin_1stparty_editform.edit',

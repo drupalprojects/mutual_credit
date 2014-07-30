@@ -11,7 +11,8 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessCheckInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\HttpFoundation\Request;
-use \Drupal\Core\Access\AccessInterface;
+use Drupal\Core\Access\AccessInterface;
+use Drupal\user\Entity\User;
 
 
 /**
@@ -41,7 +42,7 @@ class TransactionFormAccessCheck implements AccessCheckInterface {
   public function access(AccountInterface $account) {
 return AccessInterface::ALLOW;
       if (!($account instanceOf Drupal\user\UserInterface)) {
-        $account = user_load($account->id());
+        $account = User::load($account->id());
       }
       if ($account->hasPermission('configure mcapi')) {
         return AccessInterface::ALLOW;

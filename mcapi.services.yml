@@ -1,7 +1,7 @@
 services:
   plugin.manager.mcapi.transaction_transition:
     class: Drupal\mcapi\Plugin\TransitionManager
-    arguments: ['@container.namespaces', '@cache.entity', '@language_manager', @module_handler, @config.factory]
+    arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory]
 
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
@@ -24,8 +24,8 @@ services:
     class: Drupal\mcapi\Plugin\WalletAccess\WalletAccessManager
     arguments: [@container.namespaces, @module_handler, @current_user]
 
-#  mcapi_logger:
- #   class: Drupal\mcapi\McapiLogger
- #   arguments: ['@logger.factory']
- #   tags:
- #    - { name: logger }
+#  logger.mcapi:
+#    class: Drupal\mcapi\McapiLogger
+#    #  arguments: ['@logger.factory']
+#    tags:
+#     - { name: logger }

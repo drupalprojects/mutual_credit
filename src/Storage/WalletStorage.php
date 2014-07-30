@@ -10,6 +10,8 @@ namespace Drupal\mcapi\Storage;
 use Drupal\Core\Entity\ContentEntityDatabaseStorage;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * This is an unfieldable content entity. But if we extend the EntityDatabaseStorage
@@ -18,29 +20,34 @@ use Drupal\mcapi\Entity\WalletInterface;
  */
 class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorageInterface {
 
-  function loadMultiple(array $ids = NULL) {
-    $wallets = parent::loadMultiple($ids);
-    //add the access settings
+  /**
+   * {@inheritdoc}
+   * add the access setting to each wallet
+   * @see Drupal\user\UserStorage::mapFromStorageRecords
+   */
+  function mapFromStorageRecords(array $records) {
+    //add the access settings to each wallet
     $q = db_select('mcapi_wallets_access', 'a')
-    ->fields('a', array('wid', 'operation', 'uid'));
-    if ($ids) {
-      $q->condition('wid', $ids);
-    }
+      ->fields('a', array('wid', 'operation', 'uid'))
+      ->condition('wid', array_keys($records));
 
-    $ops = \Drupal\mcapi\Entity\Wallet::ops();
-    foreach ($wallets as $wallet) {
-      foreach($ops as $op) {
+    foreach(Wallet::ops() as $op) {
+      foreach ($records as $key => $record) {
         //the zero values will be replaced by an array of user ids from the access table.
         //if all goes according to plan...
-//        if ($wallet->{$op} == 0) $wallet->access[$op] = array();
-        $wallet->access[$op] = $wallet->{$op}->value ? : array();
+        $accesses[$key][$op] = $record->{$op} ? : array();
       }
     }
+    $entities = parent::mapFromStorageRecords($records);
     //now populate the arrays where specific users have been specified
-    foreach ($q->execute() as $row) {
-      $wallets[$row->wid]->access[$row->operation][] = $row->uid;
+    foreach ($accesses as $key => $ops) {
+      $entities[$key]->access = $ops;
     }
-    return $wallets;
+
+    foreach ($q->execute() as $row) {
+      $entities[$row->wid]->access[$row->operation][] = $row->uid;
+    }
+    return $entities;
   }
 
   /**
@@ -48,7 +55,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
    * @todo probably useful to have a flag for excluding _intertrading wallets
    */
   static function getOwnedWalletIds(ContentEntityInterface $entity) {
-    return db_select('mcapi_wallets', 'w')
+    return db_select('mcapi_wallet', 'w')
       ->fields('w', array('wid'))
       ->condition('entity_type', $entity->getEntityTypeId())
       ->condition('pid', $entity->id())
@@ -64,7 +71,6 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     );*/
   }
 
-
   /**
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::spare()
    */
@@ -76,13 +82,13 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     if (count($wids) < $max) return TRUE;
     return FALSE;
   }
+
   /**
    * (non-PHPdoc)
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::filter()
    */
   static function filter(array $conditions, $offset = 0, $limit = NULL, $intertrading = FALSE) {
-
-    $query = db_select('mcapi_wallets', 'w')->fields('w', array('wid'));
+    $query = db_select('mcapi_wallet', 'w')->fields('w', array('wid'));
     $namelike = db_or();
     $like = FALSE;
 
@@ -198,14 +204,16 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     return $query->execute()->fetchCol();
   }
 
-  /*
-   * when an entity joins an exchange this must be updated
-   * Does this belong in the WalletStorageInterface?
+  /**
+   * write the wallet's access settings and the index table
+   * @todo this must also run when an entity joins an exchange
    */
-  function updateIndex(WalletInterface $wallet) {
-    //update the exchanges index
-    $wid = $wallet->id();
+  function doSave($wid, EntityInterface $wallet) {
+    parent::doSave($wid, $wallet);
+    $wid = $wallet->id();//in case it was new
     $this->dropIndex(array($wid));
+
+    //update the exchanges index
     $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
     foreach (array_keys(referenced_exchanges($wallet->getOwner())) as $exid) {
       $query->values(array('wid' => $wid, 'exid' => $exid));
@@ -214,7 +222,6 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
 
     //update the access settings
     //I couldn't get merge to work with multiple rows, so removed the table key and doing it manually
-    db_delete('mcapi_wallets_access')->condition('wid', $wallet->wid->value)->execute();
     $q = db_insert('mcapi_wallets_access')->fields(array('wid', 'permission', 'value'));
     foreach ($wallet->ops() as $op) {
       if (is_array($wallet->{$op})) {
@@ -225,20 +232,67 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
             'value' => $value
           );
           $q->values();
-          $execute = TRUE;
         }
       }
     }
-    if (isset($execute))$q->execute();
+    if (isset($value))$q->execute();
   }
 
-
-  /*
-   *
+  /**
+   * {@inheritdoc}
+   * why isn't this static?
    */
-  static function dropIndex(array $wids) {
+  function doDelete($entities) {
+    parent::doDelete($entities);
+    $this->dropIndex(array_keys($entities));
+  }
+
+  private function dropindex($wids) {
     db_delete('mcapi_wallet_exchanges_index')->condition('wid', $wids)->execute();
     db_delete('mcapi_wallets_access')->condition('wid', $wids);
+
+  }
+
+  function getSchema() {
+    $schema = parent::getSchema();
+    $schema['mcapi_wallet'] += array(
+      'foreign keys' => array(
+        'mcapi_transactions_payee' => array(
+          'table' => 'mcapi_transactions',
+          'columns' => array('wid' => 'payee'),
+        ),
+        'mcapi_transactions_payer' => array(
+          'table' => 'mcapi_transactions',
+          'columns' => array('wid' => 'payer'),
+        ),
+      ),
+    );
+    $schema['mcapi_wallets_access'] = array(
+      'description' => "Access settings for wallet's operations",
+      'fields' => array(
+        'wid' => array(
+          'description' => 'the unique wallet ID',
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'operation' => array(
+          'description' => 'One of list, summary, payin, payout, edit',
+          'type' => 'varchar',
+          'length' => '8',
+        ),
+        'uid' => array(
+          'description' => 'A permitted user id',
+          'type' => 'int',
+          'length' => '8',
+        )
+      ),
+      'unique keys' => array(
+        'walletUserPerm' => array('wid', 'operation', 'uid'),
+      ),
+      //this table has no keys
+    );
+    return $schema;
   }
 
 }

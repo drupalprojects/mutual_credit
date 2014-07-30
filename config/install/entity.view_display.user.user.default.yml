@@ -1,5 +1,14 @@
-id: user.user.default
 uuid: 42a2fb87-40be-4066-a757-873432120366
+langcode: en
+status: true
+dependencies:
+  entity:
+    - field.instance.user.user.exchanges
+  module:
+    - entity_reference
+    - user
+id: user.user.default
+label: null
 targetEntityType: user
 bundle: user
 mode: default
@@ -13,14 +22,8 @@ content:
     weight: 2
     settings:
       link: true
+    third_party_settings: {  }
     label: above
 hidden:
   member_for: true
-status: true
-dependencies:
-  entity:
-    - field.instance.user.user.exchanges
-  module:
-    - entity_reference
-    - user
 

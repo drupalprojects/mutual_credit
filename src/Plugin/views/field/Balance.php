@@ -14,6 +14,7 @@ use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 use Drupal\Component\Annotation\PluginID;
+use Drupal\mcapi\Entity\Currency;
 
 /**
  * Field handler to provide running balance for a given transaction
@@ -72,7 +73,7 @@ class Balance extends FieldPluginBase {
       )
     )->fetchField();
     //TODO I'm not sure how this is supposed to work...
-    return entity_load('mcapi_currency', $curr_id)->format($quantity);
+    return Currency::load($curr_id)->format($quantity);
   }
 
 }

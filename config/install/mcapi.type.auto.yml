@@ -2,4 +2,3 @@ id: auto
 label: Automated
 description: Created automatically
 start_state: done
-module: mcapi

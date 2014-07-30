@@ -14,6 +14,7 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm;
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 
 /**
@@ -40,7 +41,7 @@ class FirstParty extends BlockBase {
    * {@inheritdoc}
    */
   public function access(AccountInterface $account) {
-    $this->editform = entity_load('1stparty_editform', $this->configuration['editform_id']);
+    $this->editform = FirstPartyFormDesign::load($this->configuration['editform_id']);
 
     //TODO get the route name from \Drupal::route() instead
     $route_name = \Drupal::request()->attributes->get('_route');
@@ -67,7 +68,7 @@ class FirstParty extends BlockBase {
     $options = array();
     //entity_load_multiple_by_properties doesn't seem to work on empty values
     //do we'll have to iterate though
-    foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
+    foreach (FirstPartyFormDesign::loadMultiple() as $id => $editform) {
       if ($editform->exchange) continue;
       $options[$id] = $editform->label();
     }

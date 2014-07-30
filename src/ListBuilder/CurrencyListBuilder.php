@@ -8,6 +8,7 @@ namespace Drupal\mcapi\ListBuilder;
 
 use Drupal\Core\Config\Entity\DraggableListBuilder;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\mcapi\Entity\Exchange;
 
 /**
  * Provides a listing of currencies
@@ -68,7 +69,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
       $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($used_in)));
     }
     else {
-      foreach (entity_load_multiple('mcapi_exchange', $used_in) as $e) {
+      foreach (Exchange::loadMultiple($used_in) as $e) {
         $names[] = l($e->label(), $e->url());
       }
       $row['exchanges']['#markup'] = implode(', ', $names);

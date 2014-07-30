@@ -1,13 +1,30 @@
-id: mcapi_exchange.mcapi_exchange.default
 uuid: a0a4680f-e7a8-4be8-8e00-f927e4797960
+langcode: en
+status: true
+dependencies:
+  entity:
+    - field.instance.mcapi_exchange.mcapi_exchange.currencies
+  module:
+    - entity_reference
+    - mcapi
+id: mcapi_exchange.default
+label: null
 targetEntityType: mcapi_exchange
 bundle: mcapi_exchange
 mode: default
 content:
+  people:
+    weight: 1
+  transactions:
+    weight: 2
   currencies:
     type: entity_reference_label
-    weight: '5'
+    weight: 5
     settings:
-      link: 0
+      link: false
+    third_party_settings: {  }
     label: above
-status: true
+  transactions_link:
+    weight: 11
+hidden: {  }
+

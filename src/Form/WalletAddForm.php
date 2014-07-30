@@ -8,7 +8,8 @@
 
 namespace Drupal\mcapi\Form;
 
-use \Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormBase;
+use Drupal\mcapi\Entity\Wallet;
 
 class WalletAddForm extends Formbase {
 
@@ -18,8 +19,9 @@ class WalletAddForm extends Formbase {
 
 
   public function buildForm(array $form, array &$form_state) {
-    //its a bloody hassle to get the params out when it is all protected variables and no methods to access them
-    $owner = mcapi_request_get_entity(\Drupal::request());
+    $params = RouteMatch::createFromRequest($request)->getParameters()->all();
+    list($entity_type, $id) = each($params);
+    $owner = \Drupal::EntityManager()->getStorage($entity_type)->load($id);
 
     drupal_set_title(t("New wallet for '!title'", array('!title' => $owner->label())));
 
@@ -76,7 +78,7 @@ class WalletAddForm extends Formbase {
   function validateForm(array &$form, array &$form_state) {
     //just check that the name isn't the same
     //if there was a wallet storage controller this unique checking would happen there.
-    $query = db_select('mcapi_wallets', 'w')
+    $query = db_select('mcapi_wallet', 'w')
     ->fields('w', array('wid'))
     ->condition('name', $form_state['values']['name']);
 
@@ -94,10 +96,13 @@ class WalletAddForm extends Formbase {
    */
   function submitForm(array &$form, array &$form_state) {
     form_state_values_clean($form_state);
-    $wallet = entity_create('mcapi_wallet', $form_state['values']);
+    $wallet = Wallet::create($form_state['values']);
     $wallet->save();
     $pid = $wallet->get('pid')->value;
-    $info = entity_load($wallet->get('entity_type')->value, $pid)->entityInfo();
+    $info = \Drupal::entityManager()
+      ->getStorage($wallet->get('entity_type')->value)
+      ->load($pid)
+      ->entityInfo();
     $form_state['redirect_route'] = array(
       'route_name' => $info['links']['canonical'],
       'route_parameters' => array($info['id'] => $pid)

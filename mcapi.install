@@ -5,44 +5,68 @@
  * Install, update and uninstall functions for the transactions module.
  */
 
+
+use Drupal\user\Entity\User;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Wallet;
+
 /**
  * Implements hook_install().
  */
 function mcapi_install() {
-  module_set_weight('field_ui', -1);
-  //module_set_weight('mcapi', 1);//has to be after field_ui for mcapi_local_tasks_alter
+  module_set_weight('field_ui', -1);//mcapi has to be after field_ui for mcapi_local_tasks_alter
   //see field_ui_local_tasks_alter() where $local_task->alterLocalTasks($local_tasks); replaces some tasks already passed
+}
 
-  //default exchange
-  //according to the default settings this will have autocreated a wallet for the exchange !
-  $ex = entity_create('mcapi_exchange');
-  $ex->set('name', t(
-    'First !sitename exchange',
-    array('!sitename' => \Drupal::config('system.site')->get('name'))
-  ));
-  $ex->set('uid', 1);
-  $ex->set('currencies', array('cc'));
-  $ex->save();
-
-  //we need to deal with existing users, especially user 1
-  //in accordance with the default wallet settings
-  //-put every user in the default exchange
-  //-give every user a wallet
-  foreach (entity_load_multiple('user') as $account) {
-    if ($account->id() == 0) continue;
-    $account->set('exchanges', array($ex->id()));
-    $account->save();
-
-    $values = array('entity_type' => $account->getEntityTypeId(), 'pid' => $account->id());
-    $w = entity_create('mcapi_wallet', $values);
-    $w->set('name', t("@name's default wallet", array('@name' => $account->label())));
-    $w->save();
-  }
+/**
+ * implements hook_modules_installed().
+ * continue setting up the module, but after the config has been enabled
+ */
+function mcapi_modules_installed($modules) {
+  if (!in_array('mcapi', $modules)) return;
+  //for the rest of this we need the config files
   //set the path of the zero image in currency 1
   $config = \Drupal::config('mcapi.misc');
   $path = url(drupal_get_path('module', 'mcapi') . '/templates/present.png');
   $config->set('zero', '<img src = "'. $path .'" width = "31" />');
   $config->save();
+
+  //default exchange
+  //according to the default settings this will have autocreated a wallet for the exchange !
+  $props = array(
+  	'name' => t(
+      'First !sitename exchange',
+      array('!sitename' => \Drupal::config('system.site')->get('name'))
+    ),
+    'uid' => 1,
+    'currencies' => array('cc')
+  );
+  $ex = Exchange::create($props);
+  $ex->save();
+  drupal_set_message(t('First exchange created.'));
+  //we need to deal with existing users, especially user 1
+  //in accordance with the default wallet settings
+  //-put every user in the default exchange
+  $users = User::loadMultiple();
+  foreach ($users as $account) {
+    if ($account->id() == 0) continue;
+    $account->set('exchanges', array($ex->id()));
+    $account->save();
+
+    //give every user a wallet
+    $values = array('entity_type' => $account->getEntityTypeId(), 'pid' => $account->id());
+    $w = Wallet::create($values);
+    $w->set('name', t("@name's default wallet", array('@name' => $account->label())));
+    $w->save();
+  }
+  $count = count($users)-1;
+
+  drupal_set_message(format_plural(
+    count($users)-1,
+    'User 1 was added to the exchange',
+    'All @count members were added to the exchange.'
+  ));
 }
 
 /**
@@ -50,7 +74,8 @@ function mcapi_install() {
  * @todo Remove the hard coded fieldAPI fields
  * need to do this in devel/php before uninstalling:
  *
-  entity_load('field_config', 'mcapi_transaction.worth')->delete();
+  use Drupal\field\Entity\FieldConfig;
+  FieldConfig::load('mcapi_transaction.worth')->delete();
   field_purge_batch(1);
  */
 function mcapi_uninstall() {
@@ -59,7 +84,7 @@ function mcapi_uninstall() {
     'user.exchanges'
   );
   foreach ($instances as $config) {
-    if ($instance = entity_load('field_config', $config)) {
+    if ($instance = FieldConfig::load($config)) {
       drupal_set_message("deleting field $config");
       $instance->delete();
     }
@@ -76,359 +101,10 @@ function mcapi_uninstall() {
 }
 
 /**
- * Implements of hook_schema)()
+ * Implements hook_schema().
  */
 function mcapi_schema() {
-  $numeric = array(
-    'type' => 'numeric',
-    'size' => 'normal',
-    'precision' => 8,
-    'scale' => 2
-  );
-  $schema['mcapi_transactions'] = array(
-    'description' => 'currency transactions between users',
-    'fields' => array(
-      'xid' => array(
-        'description' => 'the unique transaction ID',
-        'type' => 'serial',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'uuid' => array(
-        'description' => 'Unique Key: Universally unique identifier for this entity.',
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => FALSE,
-      ),
-      'description' => array(
-        'description' => 'Description of the Transaction.',
-        'type' => 'varchar',
-        'length' => 256,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'serial' => array(
-        'description' => 'serial number (integer)',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ),
-      'parent' => array(
-        'description' => 'Xid of the parent transaction',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'payer' => array(
-        'description' => 'Wallet id id of the payer',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-      'payee' => array(
-        'description' => 'Wallet id id of the payee',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-      'type' => array(
-        'description' => 'The type of transaction, types are provided by modules',
-        'type' => 'varchar',
-        'length' => '32',
-        'not null' => TRUE,
-      ),
-      'state' => array(
-        'description' => 'Completed, pending, disputed, etc',
-        'type' => 'varchar',
-        'length' => '16',
-        'not null' => TRUE,
-        'default' => TRANSACTION_STATE_FINISHED
-      ),
-      'data' => array(
-        'description' => 'nonessential info not fitting into existing fields',
-        'type' => 'text',
-        'size' => 'small',
-        'serialize' => TRUE,
-      ),
-      'creator' => array(
-        'description' => 'the user id of the creator',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-      'created' => array(
-        'description' => 'Unixtime that the transaction was recorded',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array('xid'),
-    'unique keys' => array(
-      'uuid' => array('uuid')
-    ),
-    'indexes' => array(
-      'parent' => array('parent'),
-    ),
-    //drupal doesn't actually do anything with these
-    'foreign keys' => array(
-      'payer' => array(
-        'table' => 'users',
-        'columns' => array('uid' => 'uid'),
-      ),
-      'payee' => array(
-        'table' => 'users',
-        'columns' => array('uid' => 'uid'),
-      )
-    )
-  );
-
-  $schema['mcapi_transactions_index'] = array(
-    'description' => 'currency transactions between users',
-    'fields' => array(
-      'xid' => array(
-        'description' => 'the unique transaction ID',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'serial' => array(
-        'description' => 'serial number (integer)',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ),
-      'wallet_id' => array(
-        'description' => 'the id of the wallet we are viewing',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-      'partner_id' => array(
-        'description' => 'the id of the 2nd wallet in the transaction',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-      'state' => array(
-        'description' => 'Completed, pending, disputed, etc',
-        'type' => 'varchar',
-        'length' => '16',
-        'not null' => TRUE,
-        'default' => TRANSACTION_STATE_FINISHED
-      ),
-      'type' => array(
-        'description' => 'The type of transaction, types are provided by modules',
-        'type' => 'varchar',
-        'length' => '32',
-        'not null' => TRUE,
-      ),
-      'created' => array(
-        'description' => 'Unixtime that the transaction was recorded',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'curr_id' => array(
-        'description' => 'The currency ID',
-        'type' => 'varchar',//when to use varchar and when string?
-        'length' => '8',
-      ),
-      'incoming' => array(
-        'description' => 'Income',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0
-      ),
-      'outgoing' => array(
-        'description' => 'Outgoing',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0
-      ),
-      'diff' => array(
-        'description' => 'Change in balance',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0
-      ),
-      'volume' => array(
-        'description' => 'Volume',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0
-      ),
-      'child' => array(
-        'description' => 'whether this transaction is a child',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array('xid', 'wallet_id', 'curr_id'),
-    'indexes' => array(
-      'wallet_id' => array('wallet_id'),
-      'partner_id' => array('partner_id'),
-    ),
-  );
-  $schema['mcapi_wallets'] = array(
-    'description' => 'Wallets',
-    'fields' => array(
-      'wid' => array(
-        'description' => 'the unique wallet ID',
-        'type' => 'serial',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'uuid' => array(
-        'description' => 'Unique Key: Universally unique identifier for this entity.',
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => FALSE,
-      ),
-      'entity_type' => array(
-        'description' => 'The parent entity_type',
-        'type' => 'varchar',
-        'length' => '32',
-      ),
-      'pid' => array(
-        'description' => 'The parent entity_id',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ),
-      'name' => array(
-        'description' => "The owner's name for this wallet",
-        'type' => 'varchar',
-        'length' => '64',
-        'not null' => TRUE,
-        'default' => ''
-      ),
-      'details' => array(
-        'description' => "Permission to see the transactions (enum)",
-        'type' => 'varchar',
-        'length' => '1',
-      ),
-      'summary' => array(
-        'description' => "Permission to see the wallet activity stats (enum)",
-        'type' => 'varchar',
-        'length' => '1',
-      ),
-      'payin' => array(
-        'description' => "Permission to pay in (enum)",
-        'type' => 'varchar',
-        'length' => '1',
-      ),
-      'payout' => array(
-        'description' => "Permission to pay out (enum)",
-        'type' => 'varchar',
-        'length' => '1',
-      ),
-      'orphaned' => array(
-        'description' => "TRUE if the wallet's parents no longer exist",
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-        'default' => 0
-      ),
-    ),
-    'primary key' => array('wid'),
-    'unique keys' => array(
-  	  'uniqueWalletNamesPerOwner' => array('name', 'entity_type', 'pid'),
-      'uuid' => array('uuid')
-    ),
-    'foreign keys' => array(
-      'mcapi_transactions_payee' => array(
-        'table' => 'mcapi_transactions',
-        'columns' => array('wid' => 'payee'),
-      ),
-      'mcapi_transactions_payer' => array(
-        'table' => 'mcapi_transactions',
-        'columns' => array('wid' => 'payer'),
-      ),
-    ),
-  );
-  $schema['mcapi_wallets_access'] = array(
-    'description' => "Access settings for wallet's operations",
-    'fields' => array(
-      'wid' => array(
-        'description' => 'the unique wallet ID',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'operation' => array(
-        'description' => 'One of list, summary, payin, payout, edit',
-        'type' => 'varchar',
-        'length' => '8',
-      ),
-      'uid' => array(
-        'description' => 'A permitted user id',
-        'type' => 'int',
-        'length' => '8',
-      )
-    ),
-    'unique keys' => array(
-  	  'walletUserPerm' => array('wid', 'operation', 'uid'),
-    ),
-    //this table has no keys
-  );
-  $schema['mcapi_exchanges'] = array(
-    'description' => 'Exchanges, or marketplaces',
-    'fields' => array(
-      'id' => array(
-        'description' => 'the unique exchange ID',
-        'type' => 'serial',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'uuid' => array(
-        'description' => 'Unique Key: Universally unique identifier for this entity.',
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => FALSE,
-      ),
-      'name' => array(
-        'description' => "The full name of the exchange",
-        'type' => 'varchar',
-        'length' => '32',
-      ),
-      'uid' => array(
-        'description' => 'The one user responsible for administration',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ),
-      'status' => array(
-        'description' => 'TRUE if the exchange is current and working',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ),
-      'open' => array(
-        'description' => 'TRUE if the exchange is open to outside trade',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ),
-      'visibility' => array(
-        'description' => 'Visibility of impersonal data in the exchange',
-        'type' => 'varchar',
-        'length' => 12,
-        'not null' => TRUE,
-        'default' => 'restricted'
-      ),
-    ),
-    'primary key' => array('id'),
-    'unique keys' => array(
-      'name' => array('name'),
-    )
-  );
+  //not sure whether this belongs in the wallet or in the Exchange storage controller
   $schema['mcapi_wallet_exchanges_index'] = array(
     'description' => "Index to look up wallets parents' exchanges",
     'fields' => array(
@@ -449,26 +125,26 @@ function mcapi_schema() {
       'wid_exit' => array('wid', 'exid'),
     )
   );
-
   return $schema;
 }
 
 /*
- * change the database tabless
+ * change the database tables
  */
 function mcapi_update_8000() {
+  //put the transaction description data into the entity table
+  db_query('DROP VIEW mcapi_index');
   //change the mcapi_transactions table
   //change the field_data_worth table into mcapi_transaction_data
   //create the mcapi_index table
   $tables = mcapi_schema();
   db_create_table('mcapi_transactions_index', $tables['mcapi_transactions_index']);
 }
+
 /*
  * migrate any other data around
  */
-function mcapi_update_8001() {
-  //put the transaction description data into the entity table
-  mcapi_index_rebuild();
+function __mcapi_update_8001() {
 
   update_variables_to_config('node.misc', array(
     // 'old_variable' => 'new_config.sub_key'
@@ -480,8 +156,7 @@ function mcapi_update_8001() {
 /*
  * remove unneeded data
  */
-function mcapi_update_8002() {
-  db_query('DROP VIEW mcapi_index');
+function __mcapi_update_8002() {
   //deleted the field_data_worth field and tables (if not used elsewhere)
   //delete the transaction description field and tables if not used elsewhere
 

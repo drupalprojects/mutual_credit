@@ -31,9 +31,6 @@ class State extends ConfigEntityBase {
 
   /**
    * Identifier for the current State
-   * Must be an integer
-   * Positive values count towards the user balance
-   * 0 is reserved for the Deleted state
    *
    * @var string
    */
@@ -67,19 +64,6 @@ class State extends ConfigEntityBase {
    * @var boolean
    */
   public $counted;
-
-  /**
-   * testing....
-   */
-  function calculateDependencies() {
-    $this->dependencies = array();
-    $conditions = array('state' => $this->id);
-    if (\Drupal::EntityManager()->getStorage('mcapi_transaction')->filter($conditions, 0, 1)) {
-      $this->dependencies = array('module' => array($this->module));
-    }
-    //todo - the same for mcapi_type!
-    return $this->dependencies;
-  }
 
   function __toString() {
     return $this->id;

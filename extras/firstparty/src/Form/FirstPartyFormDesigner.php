@@ -96,6 +96,7 @@ class FirstPartyFormDesigner extends EntityForm {
     //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
     $form['steps'] = array(
     	'#title' => t('Field settings'),
+    	'#description' => t('Missing fields?'),
     	'#type' => 'vertical_tabs',
     	'#weight' => $w++,
       '#attributes' => array('id' => array('field-display-overview-wrapper'))
@@ -103,7 +104,7 @@ class FirstPartyFormDesigner extends EntityForm {
 
     $form['mywallet'] = array(
     	'#title' => t('My wallets settings'),
-      '#description' => t('Choose from the current users many wallets.'),
+      '#description' => t("Choose from the current user's wallets."),
       '#type' => 'details',
       '#group' => 'steps',
       '#weight' => $w++

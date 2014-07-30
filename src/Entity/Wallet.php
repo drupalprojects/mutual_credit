@@ -3,17 +3,17 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Entity\Wallet.
- * @todo make a walletInterface
  */
 
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinition;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
  * Defines the wallet entity.
@@ -25,6 +25,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *   id = "mcapi_wallet",
  *   label = @Translation("Wallet"),
  *   module = "mcapi",
+ *   base_table = "mcapi_wallet",
  *   controllers = {
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\WalletViewBuilder",
  *     "storage" = "Drupal\mcapi\Storage\WalletStorage",
@@ -34,7 +35,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     },
  *   },
  *   admin_permission = "configure mcapi",
- *   base_table = "mcapi_wallets",
  *   entity_keys = {
  *     "id" = "wid",
  *     "uuid" = "uuid"
@@ -47,14 +47,12 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *   }
  * )
  */
-class Wallet extends ContentEntityBase implements WalletInterface{
+class Wallet extends ContentEntityBase  implements WalletInterface{
 
   private $owner;
   private $stats = array();
   //access settings
   private $access;
-
-
 
   /**
    * {@inheritdoc}
@@ -71,10 +69,12 @@ class Wallet extends ContentEntityBase implements WalletInterface{
    */
   public function getOwner() {
     if (!isset($this->owner)) {
-      $this->owner = entity_load($this->entity_type->value, $this->pid->value);
+      $this->owner = \Drupal::entityManager()
+        ->getStorage($this->entity_type->value)
+        ->load($this->pid->value);
       if (!$this->owner) {
         drupal_set_message('Wallet '.$this->id() .'had no owner.');
-        $this->owner = entity_load('mcapi_exchange', 1);
+        $this->owner = Exchange::load(1);
       }
     }
     //if for some reason there isn't an owner, return exchange 1 so as not to break things
@@ -125,39 +125,28 @@ class Wallet extends ContentEntityBase implements WalletInterface{
     //put the default values for the access here
     $access_settings = \Drupal::config('mcapi.wallets')->getRawData();
     foreach (Wallet::ops() as $op) {
-      //$values[$op] = key(array_filter($access_settings[$op]));
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   * make the access settings a bit readier to use
-   */
-  public static function postLoad(EntityStorageInterface $storage, array &$entities) {
-    foreach (Wallet::ops() as $op) {
-      foreach ($entities as $entity) {
-        $entity->access[$op] = $entity->{$op}->value;
-      }
+      $values[$op] = key(array_filter($access_settings[$op]));
     }
   }
 
   /**
    * {@inheritdoc}
    */
-  public function save() {
+  function doSave($id, EntityInterface $entity) {
     //check the name length
     if (strlen($this->name->value) > 64) {
       $this->name->value = substr($this->name->value, 0, 64);
-      drupal_set_message(t('Wallet name was truncated to 64 characters: !name', array('!name' => $this->name->value)), 'warning');
+      drupal_set_message(t(
+        'Wallet name was truncated to 64 characters: !name',
+        array('!name' => $this->name->value))
+      , 'warning');
     }
-    parent::save();
   }
 
   /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-
     $fields['wid'] = FieldDefinition::create('integer')
       ->setLabel(t('Wallet ID'))
       ->setDescription(t('The unique wallet ID.'))
@@ -187,26 +176,23 @@ class Wallet extends ContentEntityBase implements WalletInterface{
     $fields['pid'] = FieldDefinition::create('integer')
       ->setLabel(t('Owner entity ID'));
 
-    $access_settings = \Drupal::config('mcapi.wallets');
-    $fields['details'] = FieldDefinition::create('integer')
-      ->setLabel(t('Details'))
-      ->setDescription(t('Access code for viewing transaction details'))
-      ->setSetting('default_value', array(0 => key(array_filter($access_settings->get('details')))));
-
-    $fields['summary'] = FieldDefinition::create('integer')
-      ->setLabel(t('Summary'))
-      ->setDescription(t('Access code for viewing wallet summary'))
-      ->setSetting('default_value', array(0 => key(array_filter($access_settings->get('summary')))));
-
-    $fields['payin'] = FieldDefinition::create('integer')
-      ->setLabel(t('Pay in'))
-      ->setDescription(t('Access code for paying in'))
-      ->setSetting('default_value', array(0 => key(array_filter($access_settings->get('payin')))));
-
-    $fields['payout'] = FieldDefinition::create('integer')
-      ->setLabel(t('Pay out'))
-      ->setDescription(t('Access code for paying out'))
-      ->setSetting('default_value', array(0 => key(array_filter($access_settings->get('payout')))));
+    $defaults = array(
+      'details' => array(t('Details'), t('Access code for viewing transaction details'), 'e'),
+      'summary' => array(t('Details'), t('Access code for viewing wallet summary'), '2'),
+      'payout' => array(t('Details'), t('Access code for paying in'), 'o'),
+      'payin' => array(t('Details'), t('Access code for paying out'), 'e')
+    );
+    if ($access_settings = \Drupal::config('mcapi.wallets')->getRawData()) {
+      foreach (array_keys($defaults) as $key) {
+        $defaults[$key][2] = current(array_filter($access_settings[$key]));
+      }
+    }
+    foreach ($defaults as $key => $info) {
+      $fields[$key] = FieldDefinition::create('integer')
+        ->setLabel($info[0])
+        ->setDescription($info[1])
+        ->setSetting('default_value', array($defaults[$key][2]));
+    }
 
     $fields['orphaned'] = FieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'));
@@ -240,7 +226,7 @@ class Wallet extends ContentEntityBase implements WalletInterface{
   function currencies_used() {
     if (!$this->currencies_used) {
       $this->currencies_used = array();
-      foreach (entity_load_multiple('mcapi_currency', array_keys($this->getSummaries())) as $currency) {
+      foreach (Currency::loadMultiple(array_keys($this->getSummaries())) as $currency) {
         $this->currencies_used[$currency->id()] = $currency;
       }
     }
@@ -354,18 +340,6 @@ class Wallet extends ContentEntityBase implements WalletInterface{
     else {
       $this->delete();
     }
-  }
-
-
-  /**
-   * update the wallet exchange index table
-   */
-  public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
-    $storage_controller->updateIndex($this);
-  }
-
-  public static function postDelete(EntityStorageInterface $storage_controller, array $entities) {
-    $storage_controller->dropIndex(array_keys($entities));
   }
 
   //TODO put permissions and ops in the WalletInterface

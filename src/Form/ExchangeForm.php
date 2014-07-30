@@ -10,6 +10,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\user\Entity\User;
 
 class ExchangeForm extends ContentEntityForm {
 
@@ -35,7 +36,7 @@ class ExchangeForm extends ContentEntityForm {
     );
     //TODO how to decide who to select exchange managers from?
     //really it could be any user IN that exchange, although the exchange has no members right now....
-    foreach (entity_load_multiple('user') as $account) {
+    foreach (User::loadMultiple() as $account) {
       $managers[$account->id()] = $account->label();
     }
     unset($managers[0]);

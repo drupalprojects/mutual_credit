@@ -161,6 +161,9 @@ mcapi.type.*:
   type: mapping
   label: Transaction workflow
   mapping:
+    id:
+      type: string
+      label: Type ID
     label:
       type: string
       label: Label

@@ -213,11 +213,6 @@ function mcapi_limits_element_info() {
  * processor for minmax element
  */
 function mcapi_limits_process_minmax(&$element) {
-  foreach (array('min', 'max') as $limit) {
-    if (empty($element['#default_value'][$limit])) {
-      $element['#default_value'][$limit] = 0;
-    }
-  }
   $element['min'] = array(
     '#title' => t('Minimum balance'),
     '#description' => t('Must be less than or equal to zero'),

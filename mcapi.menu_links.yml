@@ -4,48 +4,49 @@ mcapi.admin:
   route_name: mcapi.admin
   parent: system.admin
   weight: 4
+
 mcapi.admin_exchange_list:
   title: Exchanges
   description: The groups, communities or marketplaces where transactions happen
   route_name: mcapi.admin_exchange_list
   parent: mcapi.admin
   weight: 0
+
 mcapi.admin_currency_list:
   title: Currencies
   description: Each currency implies a set of values and a community of users who economic fortunes are intertwined
   route_name: mcapi.admin_currency_list
   parent: mcapi.admin
   weight: 3
+
 mcapi.admin.transactions:
   title: Transactions
   description: Configuration around transaction states, types and transitions
   route_name: mcapi.admin.transactions
   parent: mcapi.admin
   weight: 6
+
 mcapi.admin_wallets:
   title: Wallets
   description: Ownership, access control and auto-creation
   route_name: mcapi.admin_wallets
   parent: mcapi.admin
   weight: 12
+
 mcapi.admin.workflow:
   title: Workflow
   description: Configure workflow and user experience for each transaction transition
   route_name: mcapi.admin.workflow
   parent: mcapi.admin
   weight: 15
+
 mcapi.admin_misc:
   title: Other configuration
   description: Miscellaneous settings which effect the system globally
   route_name: mcapi.admin_misc
   parent: mcapi.admin
   weight: 18
-mcapi.admin_mass:
-  title: Mass payments
-  description: Pay between one account and many
-  route_name: mcapi.admin_mass
-  parent: mcapi.admin.transactions
-  weight: 2
+
 #for some reasons views doesn't make this show as a menu link in alpha11
 #TODO route_name is wrong. Check if the view provides its own route anyhow
 #view.mcapi_transactions.accountant:

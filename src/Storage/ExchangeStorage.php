@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Storage\ExchangeStorage.
+ * @todo make an interface for this
  */
 
 namespace Drupal\mcapi\Storage;
@@ -10,6 +11,7 @@ namespace Drupal\mcapi\Storage;
 use Drupal\Core\Entity\ContentEntityDatabaseStorage;
 use Drupal\mcapi\Entity\ExchangeInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\Entity\Exchange;
 
 class ExchangeStorage extends ContentEntityDatabaseStorage {
 
@@ -20,7 +22,7 @@ class ExchangeStorage extends ContentEntityDatabaseStorage {
     static $active_exchange_ids = array();
     if (!$active_exchange_ids) {
       //get the names of all the open exchanges
-      foreach (entity_load_multiple('mcapi_exchange') as $entity) {
+      foreach (Exchange::loadMultiple() as $entity) {
         if ($exchange->get('status')->value) {
           $active_exchange_ids[] = $exchange->id();
         }

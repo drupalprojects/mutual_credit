@@ -12,6 +12,8 @@ use Drupal\Core\Access\AccessCheckInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\Access\AccessInterface;
+use Drupal\user\Entity\User;
+use Drupal\Core\Routing\RouteMatch;
 
 
 /**
@@ -53,17 +55,17 @@ class WalletAddAccessCheck implements AccessCheckInterface {
    */
   public function access(Route $route, Request $request, AccountInterface $account) {
     $config = \Drupal::config('mcapi.wallets');
-    module_load_include('inc', 'mcapi');
     //this fetches the entity we are viewing - the would-be owner of the wallet we would add
-    $owner = mcapi_request_get_entity($request);
-    $type = $owner->getEntityTypeId();
+    $params = RouteMatch::createFromRequest($request)->getParameters()->all();
+    list($entity_type, $id) = each($params);
+    $owner = \Drupal::EntityManager()->getStorage($entity_type)->load($id);
 
     //quick check first for this common scenario
-    if ($type == 'user' && $config->get('entity_types.user') == 1 && $config->get('autoadd_name')) {
+    if ($entity_type == 'user' && $config->get('entity_types.user') == 1 && $config->get('autoadd_name')) {
       return AccessInterface::DENY;
     }
     //for users to add their own wallets
-    if ($account->hasPermission('create own wallets') && $type == 'user' && $account->id() == $owner->id) {
+    if ($account->hasPermission('create own wallets') && $entity_type == 'user' && $account->id() == $owner->id) {
       $access = TRUE;
     }
     //for exchange managers to add wallets to any entity of that exchange
@@ -71,11 +73,11 @@ class WalletAddAccessCheck implements AccessCheckInterface {
       //is there a better way to
       if(!is_a($account, 'Drupal\user\Entity\User')) {
         //that means we've been passed a userSession object, which has no field API
-        $user = user_load($account->id());
+        $user = User::load($account->id());
       }
       else ($user == $account);
       $my_exchanges = referenced_exchanges($user, TRUE);
-      if ($type == 'mcapi_exchange') {
+      if ($entity_type == 'mcapi_exchange') {
         $exchanges = array($owner);
       }
       else {

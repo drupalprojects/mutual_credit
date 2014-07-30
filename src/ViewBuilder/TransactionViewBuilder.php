@@ -107,7 +107,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
             'route_name' => $transition == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op',
             'route_parameters' => array(
               'mcapi_transaction' => $transaction->serial->value,
-              'transition' => $transition,
+              'transition' => $transition
             )
           );
           if ($dest_type == 'modal') {
@@ -119,7 +119,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
             $renderable['#attached']['js'][] = 'core/misc/ajax.js';
             //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
           }
-          else{
+          elseif(!$plugin->getConfiguration('redirect')){
             $renderable['#links'][$transition]['query'] = drupal_get_destination();
           }
         }

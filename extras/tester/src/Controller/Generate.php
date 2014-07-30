@@ -9,6 +9,11 @@ namespace Drupal\mcapi_tester\Controller;
 
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Currency;
 
 class Generate extends ConfigFormBase {
 
@@ -69,20 +74,20 @@ class Generate extends ConfigFormBase {
    */
   public function submitForm(array &$form, array &$form_state) {
     $values = &$form_state['values'];
-    foreach (entity_load_multiple('mcapi_transaction') as $t) {
+    foreach (Transaction::loadMultiple() as $t) {
       mcapi_wipeslate();
     }
-    foreach (entity_load_multiple('mcapi_wallet') as $wallet) {
+    foreach (Wallet::loadMultiple() as $wallet) {
       $wallet->delete();
     }
-    foreach (entity_load_multiple('user') as $account) {
+    foreach (User::loadMultiple() as $account) {
       if ($account->id() > 1)$account->delete();
     }
-    foreach (entity_load_multiple('mcapi_exchange') as $exchange) {
+    foreach (Exchange::loadMultiple() as $exchange) {
       if ($exchange->id() > 1)$exchange->delete();
     }
 
-    foreach (entity_load_multiple('mcapi_currency') as $currency) {
+    foreach (currency::loadMultiple() as $currency) {
       if ($currency->id() <> 1)$currency->delete();
     }
 
@@ -96,7 +101,7 @@ class Generate extends ConfigFormBase {
         'widget' => 'currency_time_single',
         'ticks' => $i
       );
-      $currency = entity_create('mcapi_currency', $props);
+      $currency = Currency::create($props);
       $currency->save();
       $currencies[$currency->id()] = $currency;
     }
@@ -115,7 +120,7 @@ class Generate extends ConfigFormBase {
           array('target_id' => $currencies ? array_shift($currencies) : 1)
         )
       );
-      $exchange = entity_create('mcapi_exchange', $props);
+      $exchange = Exchange::create($props);
       $exchange->save();
       $newexchanges[$exchange->id()] = $exchange;
     }
@@ -131,7 +136,7 @@ class Generate extends ConfigFormBase {
         }
       }
       else {
-        $exchanges = array_keys(entity_load_multiple('mcapi_exchange'));
+        $exchanges = array_keys(Exchange::loadMultiple());
       }
       for ($i = 2; $i < $values['users'] + 2; $i++) {
         $props = array(
@@ -143,7 +148,7 @@ class Generate extends ConfigFormBase {
             array('target_id' => next($exchanges) ? : reset($exchanges))
           )
         );
-        $account = entity_create('user', $props);
+        $account = User::create($props);
         $account->save();
         $new_uids[] = $account->id();
         //make the user the owner of their exchange, so in the end only the last created user owns the exchange they are in.
@@ -156,7 +161,7 @@ class Generate extends ConfigFormBase {
     }
     if (!$values['transactions']) return;
 
-    $wallet_query = db_select('mcapi_wallets', 'w')
+    $wallet_query = db_select('mcapi_wallet', 'w')
     ->fields('w', array('wid'))
     ->condition('entity_type', 'user');
     if (count($new_uids)) {
@@ -166,11 +171,11 @@ class Generate extends ConfigFormBase {
 
     for ($i = 0; $i < $values['transactions']; $i++) {
       if (!count($currencies)) {
-        $currencies = entity_load_multiple('mcapi_currency');
+        $currencies = Currency::loadMultiple();
       }
       shuffle($currencies);//this loses the keys
       shuffle($wids);
-      $t = array(
+      $props = array(
         'payer' => reset($wids),
         'payee' => next($wids),
         'worths' => array(
@@ -183,7 +188,7 @@ class Generate extends ConfigFormBase {
         'created' => REQUEST_TIME - rand(1, 25*3600*100)
         //'exchange' => $exchange->id(),determined during validation
       );
-      $transaction = entity_create('mcapi_transaction', $t);
+      $transaction = Transaction::create($props);
       $transaction->validate();
       $transaction->save();
     }

@@ -14,13 +14,14 @@ namespace Drupal\mcapi_limits\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Field\FieldDefinition;
+use Drupal\mcapi\Entity\Wallet;
 
 class WalletLimitOverride extends FormBase {
 
   function __construct() {
-    $request = \Drupal::request();
-    //TODO this is surely not the official way to to retieve the entity from the route
-    $this->wallet = mcapi_request_get_entity($request);
+    //TODO really this is an entity form, in which the wallet just appears as this->entity
+    $wid = \Drupal::routeMatch()->getParameter('mcapi_wallet');
+    if ($wid) $this->wallet = Wallet::load($wid);
   }
 
   /**

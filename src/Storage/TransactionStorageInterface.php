@@ -13,12 +13,6 @@ use Drupal\mcapi\Entity\TransactionInterface;
 interface TransactionStorageInterface extends FieldableEntityStorageInterface {
 
   /**
-   *  write 2 rows to the transaction index table, one for the payee, one for the payer
-   *  @param TransactionInterface $transaction
-   */
-  public function addIndex(\stdClass $record, array $worths);
-
-  /**
    * truncate and rebuild the index table
    */
   public function indexRebuild();
@@ -36,13 +30,6 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    * @param array $serials
    */
   public function indexDrop($serials);
-
-  /**
-   * Populates the top level transaction with the next unused serial number
-   *
-   * @return integer
-   */
-  public function nextSerial();
 
   /**
    * Filter by any field in the table; returns an array of serials keyed by xid

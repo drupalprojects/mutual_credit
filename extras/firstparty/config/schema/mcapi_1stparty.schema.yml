@@ -1,6 +1,6 @@
-mcapi.1stparty.*:
+mcapi_1stparty.editform.*:
   type: mapping
-  label: 'Mcapi form configuration'
+  label: 'Designed transaction form'
   mapping:
     id:
       type: string
@@ -11,6 +11,9 @@ mcapi.1stparty.*:
     title:
       type: label
       label: 'Form title'
+    path:
+      type: string
+      label: 'Path'
     status:
       type: boolean
       label: Enabled

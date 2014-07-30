@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\user\Plugin\entity_reference\selection\UserByExchange.
+ * @todo NOT TESTED
  */
 
 namespace Drupal\user\Plugin\entity_reference\selection;
@@ -13,6 +14,7 @@ use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\entity_reference\Annotation\EntityReferenceSelection;
 use Drupal\entity_reference\Plugin\entity_reference\selection\SelectionBase;
+use Drupal\user\Entity\User;
 
 /**
  * Provides specific access control for the user entity type.
@@ -74,7 +76,7 @@ class UserByExchange extends SelectionBase {
           $value_part->condition('anonymous_name', $condition['value'], $condition['operator']);
           $value_part->compile(Database::getConnection(), $query);
           $or->condition(db_and()
-            ->where(str_replace('anonymous_name', ':anonymous_name', (string) $value_part), $value_part->arguments() + array(':anonymous_name' => user_format_name(user_load(0))))
+            ->where(str_replace('anonymous_name', ':anonymous_name', (string) $value_part), $value_part->arguments() + array(':anonymous_name' => user_format_name(User::load(0))))
             ->condition('users.uid', 0)
           );
           $query->condition($or);

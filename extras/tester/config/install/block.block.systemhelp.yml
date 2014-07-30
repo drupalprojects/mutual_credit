@@ -1,24 +1,25 @@
-id: systemhelp
 uuid: 288f8ade-bac9-4306-9800-de407e37773e
-weight: null
-status: true
 langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - stark
+id: systemhelp
 theme: stark
 region: content
+weight: null
+provider: null
 plugin: system_help_block
 settings:
+  visibility: {  }
+  id: system_help_block
   label: 'System Help'
+  provider: system
+  label_display: '0'
+  cache:
+    max_age: -1
+    contexts: {  }
   module: system
-  label_display: 0
-cache:
-  max_age: 0
-  contexts: { }
-visibility:
-  path:
-    visibility: '0'
-    pages: ''
-  role:
-    roles: {  }
-  node_type:
-    types: {  }
-  visibility__active_tab: edit-visibility-path
+

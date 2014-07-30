@@ -1,0 +1,27 @@
+id: mcapi_wallet.default
+label: Wallet
+uuid: 1cfec855-ea27-42f8-bd00-c69e96645499
+targetEntityType: mcapi_wallet
+bundle: mcapi_wallet
+mode: default
+content:
+  balance_bars:
+    weight: 1
+  histories:
+    weight: 2
+  mcapi_limits_absolute:
+    weight: 3
+  summaries:
+    weight: 4
+  stats:
+    weight: 5
+  links:
+    weight: 6
+hidden:
+  owner: true
+  mcapi_limits_relative: true
+status: true
+dependencies:
+  module:
+    - mcapi
+

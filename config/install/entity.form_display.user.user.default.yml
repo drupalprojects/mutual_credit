@@ -12,6 +12,7 @@ content:
       size: 60
       autocomplete_type: tags
       placeholder: 'Name of exchange'
+    third_party_settings: {  }
   account:
     weight: 0
 hidden:

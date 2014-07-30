@@ -3,6 +3,7 @@
 use \Drupal\mcapi\Entity\WalletInterface;
 use \Drupal\mcapi\Entity\TransactionInterface;
 use \Drupal\Core\Session\AccountInterface;
+use Drupal\mcapi\Entity\Transaction;
 
 
 /**
@@ -66,7 +67,7 @@ function mcapi_signall($form, $form_state, $account) {
 function mcapi_signall_submit($form, &$form_state) {
   $account = $form_state['values']['account'];
   foreach (transactions_needing_sig_of_user($account) as $serial) {
-    $message = transaction_sign(entity_load('mcapi_transaction', $serial), $account);
+    $message = transaction_sign(Transaction::load($serial), $account);
   }
   drupal_set_message($message);
   $form_state['redirect_route'] = array(
@@ -93,7 +94,7 @@ function list_waiting_on_uid($uid) {
       );
     }
     foreach ($serials as $serial) {
-      $transaction = entity_load('mcapi_transaction', $serial);
+      $transaction = Transaction::load($serial);
       $output[] = entity_view($transaction, 'sentence');
     }
     return $output;
@@ -106,14 +107,14 @@ function list_waiting_not_on_uid($uid) {
   ->getStorage('mcapi_transaction')
   ->filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
   foreach ($serials as $serial) {
-    foreach (entity_load('mcapi_transaction', $serial)->signatures as $uid => $signed) {
+    foreach (Transaction::load($serial)->signatures as $uid => $signed) {
       if ($signed) continue;
       if ($uid == \Drupal::currentUser()->id())continue;
       $waiting_on[] = $serial;
     }
   }
   foreach ($waiting_on as $serial) {
-    $transaction = entity_load('mcapi_transaction', $serial);
+    $transaction = Transaction::load($serial);
     $output[] = entity_view($transaction, 'sentence');
   }
   return $output;
@@ -137,7 +138,7 @@ function transactions_needing_sig_of_user($uid) {
 function template_preprocess_mcapi_signatures(&$vars) {
   $plugin = transaction_transitions('sign');
   foreach ($vars['transaction']->signatures as $uid => $signed) {
-    $account = user_load($uid);
+    $account = User::load($uid);
     $vars['signatures'][$uid] = array(
         'account' => $account,
         'class' => 'signature '. (empty($signed) ? 'pending' : 'signed'),
@@ -156,7 +157,7 @@ function signature_send_initial_notification($transaction, $config) {
   );
   $recipients = array_keys(array_filter($transaction->signatures));
   //send the mail, using the module settings for this transaction
-  foreach(user_load_multiple($recipients) as $account) {
+  foreach(User::loadMultiple($recipients) as $account) {
     $params['user'] = $account;
     drupal_mail('mcapi_signatures', 'blah', $account->mail, user_preferred_language($account), $params);
   }

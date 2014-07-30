@@ -11,6 +11,10 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcapi\Entity\ExchangeInterface;
 use Drupal\mcapi\Storage\WalletStorage;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 /**
  * Returns responses for Exchange routes.
@@ -50,7 +54,7 @@ class DashboardController extends ControllerBase {
   protected function buildPage() {
     $page['#prefix'] = 'Leave this tab open for reference<br />';
     $header = array('Wallet', 'Name', 'Balance', 'Mins', 'Maxes', 'edit');
-    foreach (entity_load_multiple('mcapi_exchange') as $exchange) {
+    foreach (Exchange::loadMultiple() as $exchange) {
       $id = $exchange->id();
       $page[$id] = array(
         '#title' => 'Exchange: '.$exchange->label() .($exchange->status ? ' (Open)' : ' (Closed)'),
@@ -71,13 +75,13 @@ class DashboardController extends ControllerBase {
       $page[$id]['currencies']['#markup'] = 'Currencies: '.implode(', ', $currnames);
       $wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->walletsInExchanges(array($id));
       $tbody = array();
-      foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+      foreach (Wallet::loadMultiple($wids) as $wallet) {
         $limits = mcapi_limits($wallet);
         $mins = $maxes = $balances = array();
         foreach ($wallet->getSummaries() as $curr_id => $summary) {
           $mins = $limits->mins(TRUE);
           $maxes = $limits->maxes(TRUE);
-          $currency = entity_load('mcapi_currency', $curr_id);
+          $currency = Currency::load($curr_id);
           $balances[] = $currency->format($summary['balance']);
         }
         $tbody[$wallet->id()] = array(
@@ -97,7 +101,7 @@ class DashboardController extends ControllerBase {
       );
       //show a list of forms which will work in this or all exchanges
       $forms = array();
-      foreach (entity_load_multiple('1stparty_editform') as $editform) {
+      foreach (FirstPartyFormDesign::loadMultiple() as $editform) {
         if ($editform->exchange == $id || empty($editform->exchange)) {
           $forms[] = l($editform->label(), $editform->path);
         }

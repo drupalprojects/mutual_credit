@@ -1,5 +1,5 @@
 base_field: xid
-base_table: mcapi_transactions
+base_table: mcapi_transaction
 core: 8.x
 description: 'A starter view for Community Accounting'
 status: true

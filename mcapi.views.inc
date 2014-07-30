@@ -57,7 +57,7 @@ function mcapi_views_data() {
     //the relationship is now to the wallet table, not the user table
     'relationship' => array(
       'id' => 'standard',
-      'base' => 'mcapi_wallets',
+      'base' => 'mcapi_wallet',
       'field' => 'wid',
       'label' => t('Payer'),
       'relationship field' => 'payer'
@@ -78,7 +78,7 @@ function mcapi_views_data() {
     //the relationship is now to the wallet table, not the user table
     'relationship' => array(
       'id' => 'standard',
-      'base' => 'mcapi_wallets',
+      'base' => 'mcapi_wallet',
       'field' => 'wid',
       'label' => t('Payee'),
       'relationship field' => 'payee'
@@ -423,7 +423,7 @@ function mcapi_views_data() {
   	)
   );
 
-  $data['mcapi_wallets']['table'] = array(
+  $data['mcapi_wallet']['table'] = array(
     'group'  => t('Wallets'),
     'entity type' => 'mcapi_wallet',
     'base' => array(
@@ -436,21 +436,21 @@ function mcapi_views_data() {
       )
     ),
   );
-  $data['mcapi_wallets']['wallet_label'] = array(
+  $data['mcapi_wallet']['wallet_label'] = array(
   	'title' => t('Label'),
   	'help' => t('the name of the wallet'),
   	'field' => array(
   		'id' => 'mcapi_wallet_label',
   	)
   );
-  $data['mcapi_wallets']['owner'] = array(
+  $data['mcapi_wallet']['owner'] = array(
   	'title' => t('Owner'),
   	'help' => t('The owner of the wallet'),
   	'field' => array(
   		'id' => 'mcapi_wallet_owner',
   	)
   );
-  $data['mcapi_wallets']['entity_type'] = array(
+  $data['mcapi_wallet']['entity_type'] = array(
   	'title' => t('Owner type'),
   	'help' => t('The entity type of the wallet owner. good for grouping by'),
   	'field' => array(

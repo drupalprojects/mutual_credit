@@ -15,6 +15,8 @@ use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\mcapi\Access\WalletAccessController;
+use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\State;
 
 /**
  * Defines the Transaction entity.
@@ -25,6 +27,7 @@ use Drupal\mcapi\Access\WalletAccessController;
  * @ContentEntityType(
  *   id = "mcapi_transaction",
  *   label = @Translation("Transaction"),
+ *   base_table = "mcapi_transaction",
  *   controllers = {
  *     "storage" = "Drupal\mcapi\Storage\TransactionStorage",
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\TransactionViewBuilder",
@@ -37,7 +40,6 @@ use Drupal\mcapi\Access\WalletAccessController;
  *     },
  *   },
  *   admin_permission = "configure mcapi",
- *   base_table = "mcapi_transactions",
  *   entity_keys = {
  *     "id" = "xid",
  *     "uuid" = "uuid",
@@ -65,18 +67,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * {@inheritdoc}
-   * @todo update this in line with https://drupal.org/node/2221879
-   * actually can this be removed? Is it deprecated in favour of this->url
    */
-  public function ___uri($rel = 'canonical') {
-    $renderable = parent::uri($rel);
-    $renderable['path'] = 'transaction/'. $this->get('serial')->value;
-    die('uri');
-    return $renderable;
-  }
-
   protected function urlRouteParameters($rel) {
-    return array('mcapi_transaction' => $this->get('serial')->value);
+    return array(
+      'mcapi_transaction' => $this->get('serial')->value
+    );
   }
 
   /**
@@ -90,9 +85,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $violations = array();
     $warnings = array();
     if ($this->isNew()) {
-      $type = $this->type->getValue(TRUE);
-      $start_state = entity_load('mcapi_state', $type[0]['entity']->start_state);
-      $this->state->setValue($start_state);
+      $this->state->setValue($this->type->entity->start_state);
 
       $violations += $this->validateNew();
       //for transactions created in code, this is the best place to throw
@@ -157,6 +150,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         if (empty($violations)) {
           //note that this validation cannot change the original transaction because a clone of it is passed
           $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(mcapi_transaction_flatten($this)));
+
           //validate the child candidates
           foreach ($this->children as $child) {
             //ensure the child transactions aren't mistaken for parents during validation
@@ -172,8 +166,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
                 $warnings[] = $warning;
               }
               $replacements = array(
-                  '!messages' => implode(' ', $warnings),
-                  //'!dump' => print_r($this, TRUE)//TODO for some reason print_r is printing not returning
+                '!messages' => implode(' ', $warnings),
+                //'!dump' => print_r($this, TRUE)//TODO for some reason print_r is printing not returning
               );
               if ($child_errors['log']){
                 \Drupal::logger('mcapi')->error(
@@ -184,9 +178,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
                 //should this be done using the drupal mail system?
                 //my life is too short for that rigmarole
                 mail(
-                user_load(1)->mail,
-                t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
-                $replacements['!messages'] ."\n\n". $replacements['!dump']
+                  User::load(1)->mail,
+                  t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
+                  $replacements['!messages'] ."\n\n". $replacements['!dump']
                 );
               }
             }
@@ -257,17 +251,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     parent::postSave($storage_controller, $update);
     $wids = array($this->payer->value, $this->payee->value);
     drupal_set_message ('todo: clear wallet cache for wallet ids '.implode(' & ', $wids));
-
-    //this is especially for invoking rules
-    if(property_exists($this, 'context')) {
-      //context is an array with keys: op_plugin_id, old_state, config. see TransitionForm::Submit
-      //TODO populate the $context when
-      $this->moduleHandler->invokeAll('mcapi_transaction_operated', array($this, $this->context));
-    }
   }
 
   /**
-   * Ensure parent transactions have a 'children' property if it is a parent
+   * Ensure parent transactions have a 'children' property
    */
   public static function postLoad(EntityStorageInterface $storage_controller, array &$entities) {
     foreach ($entities as $transaction) {
@@ -293,8 +280,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       or $renderable = 'transition returned nothing renderable';
 
     //notify other modules, especially rules.
-    //should we send a clone of the transaction?
-    //Should we rely on hook_mcapi_transaction_update and  for this?
+    //should we send a clone of $this?
     //perhaps not because we need the context...
 
     $renderable += \Drupal::moduleHandler()->invokeAll('mcapi_transaction_operated', array($this, $context));
@@ -398,6 +384,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $violations;
   }
 
+  /**
+   * This helps prevent double-click double submissions
+   */
   private function checkUniqueUuid() {
     $violations = array();
     //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
@@ -418,11 +407,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $this->children = array();//ONLY parent transactions have this property
     //previous the children's parent was set to temp, but is that necessary?
     $this->children = $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone));
-
     //TODO how does the addition of children here affect intertrading? badly I suspect
     $this->moduleHandler->alter('mcapi_transaction_children', $this->children, $clone);
     //how the children have been created but before they are validated, we do the intertrading
-
     $this->payer_currencies_available = array_keys($this->payer->entity->currencies_available());
     $this->payee_currencies_available = array_keys($this->payee->entity->currencies_available());
 
@@ -432,8 +419,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //to determine the given currencies are shared between both users
     $this->common_curr_ids = array_intersect($this->payer_currencies_available, $this->payee_currencies_available);
     if (array_diff($this->curr_ids_required, $this->common_curr_ids)) {
-      module_load_include('inc', 'mcapi');
       //GENERATE AN INTERTRADING CHILD TRANSACTION
+      module_load_include('inc', 'mcapi');
       //this means there is at least one currency in the transaction not common to both wallets' exchanges
       //so the only way to do this transaction is with intertrading.
       //That means we create a transaction between each wallet and its exchange's _intertrading wallet
@@ -474,7 +461,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $violations;
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   function exchanges() {
     foreach (mcapi_transaction_flatten($transaction) as $t) {
       $payer_exchanges = $this->payer->entity->in_exchanges();

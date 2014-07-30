@@ -28,9 +28,9 @@ class TransitionManager extends DefaultPluginManager {
    * @param LanguageManager $language_manager
    * @param ModuleHandlerInterface $module_Handler
    */
-  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, LanguageManager $language_manager, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory) {
+  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory) {
     parent::__construct('Plugin/Transition', $namespaces, $module_handler, '\Drupal\mcapi\Annotation\Transition');
-    $this->setCacheBackend($cache_backend, $language_manager, 'transaction_transition');
+    $this->setCacheBackend($cache_backend, 'transaction_transition');
     $this->config_factory = $config_factory;
   }
 

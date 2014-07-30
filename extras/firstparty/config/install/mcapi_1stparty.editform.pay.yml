@@ -1,6 +1,6 @@
 id: pay
 exchange: ''
-path: transact/pay
+path: 'transact/pay'
 title: 'Pay someone'
 status: 1
 type: default

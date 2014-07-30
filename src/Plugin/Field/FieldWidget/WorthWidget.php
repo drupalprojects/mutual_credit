@@ -48,9 +48,10 @@ class WorthWidget extends WidgetBase {
   /**
    * {@inheritdoc}
    */
-  /*
+
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, array &$form_state) {
-    echo "error element hasn't been written yet";
+    echo "\Drupal\mcapi\Plugin\Field\FieldWidget\WorthWidget::errorElement hasn't been written yet";
+    mdump($violation);
     if ($violation->arrayPropertyPath == array('format') && isset($element['format']['#access']) && !$element['format']['#access']) {
       // Ignore validation errors for formats if formats may not be changed,
       // i.e. when existing formats become invalid. See filter_process_format().
@@ -58,5 +59,5 @@ class WorthWidget extends WidgetBase {
     }
     return $element;
   }
-  */
+
 }

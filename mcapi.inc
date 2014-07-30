@@ -8,6 +8,11 @@ use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Render\Element;
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\State;
 
 
 function _mcapi_entity_extra_field_info() {
@@ -263,7 +268,6 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
     $element[$curr_id]['#prefix'] = "<div class = \"$worth_cardinality\">";
     $element[$curr_id]['#suffix'] = '</div>';
 
-
     foreach ($currency->format as $i => $component) {
       if ($i % 2) { //an odd number so render a field
         $step = 1;
@@ -273,7 +277,7 @@ function _mcapi_worth_element_process($element, &$form_state, $form) {
           $step = $base / $divisor;
           for ($j=0; $j < $divisor; $j++) {
             $v = $j* $step;
-            $options[$v] = $v;
+            $options[intval($v)] = $v;
           }
         }
         $element[$curr_id][$i] = array(
@@ -356,7 +360,7 @@ function mcapi_worth_element_process_defaults($element) {
       //only shows the FIRST not allowed currency
       drupal_set_message(t(
         'Passed default @currency is not one of the allowed currencies',
-        array('@currency' => entity_load('mcapi_currency', reset($not_allowed))->label())),
+        array('@currency' => Currency::load(reset($not_allowed))->label())),
         'warning'
       );
     }
@@ -456,7 +460,7 @@ function mcapi_view_wallets_summaries(ContentEntityInterface $entity) {
   $owned_wallet_ids = \Drupal::EntityManager()
     ->getStorage('mcapi_wallet')
     ->getOwnedWalletIds($entity);
-  foreach (entity_load_multiple('mcapi_wallet', $owned_wallet_ids) as $wallet) {
+  foreach (Wallet::loadMultiple($owned_wallet_ids) as $wallet) {
     if ($wallet->access('view')) {
       $renderable['wallets']['#wallets'][] = show_wallet_summary($wallet);
     }
@@ -674,7 +678,7 @@ function template_preprocess_certificate(&$vars) {
  */
 function mcapi_transaction_process_vars(array &$vars, TransactionInterface $transaction) {
   $xid = $transaction->get('xid')->value;
-  $v['state'] = entity_load('mcapi_state', $transaction->type->entity->start_state)->label;
+  $v['state'] = State::load($transaction->type->entity->start_state)->label;
   $v['type'] = $transaction->type->entity->label;
   $v['serial'] = $transaction->serial->value;
   $payer_wallet_owner = $transaction->payer->entity->getOwner();
@@ -814,11 +818,11 @@ function mcapi_workflow_help() {
       '#attributes' => array('class' => array('help'))
     ),
   );
-  foreach (entity_load_multiple('mcapi_state') as $info) {
+  foreach (State::loadMultiple() as $info) {
     $renderable['states']['#rows'][$info->value]['name'] = $info->label;
     $renderable['states']['#rows'][$info->value]['description'] = $info->description;
   }
-  foreach (entity_load_multiple('mcapi_type') as $type) {
+  foreach (Type::loadMultiple() as $type) {
     $renderable['types']['#rows'][$type->id]['name'] = $type->label;
     $renderable['types']['#rows'][$type->id]['description'] = $type->description;
   }
@@ -889,11 +893,11 @@ function mcapi_exchanges_changed_submit($form, &$form_state) {
   if ($new == $saved) return;
   //we cant use the module handler in the form controller
   $moduleHandler = \Drupal::moduleHandler();
-  $left = entity_load_multiple('mcapi_exchange', array_diff($saved, $new));
+  $left = Exchange::loadMultiple(array_diff($saved, $new));
   foreach ($left as $exchange) {
     $exchange->goodbye($entity);
   }
-  $joined = entity_load_multiple('mcapi_exchange', array_diff($new, $saved));
+  $joined = Exchange::loadMultiple(array_diff($new, $saved));
   foreach ($joined as $exchange) {
     $exchange->hello($entity);
   }
@@ -929,7 +933,6 @@ function intertrading_transaction_validate(TransactionInterface $transaction) {
       echo "\n<br />payee wid: ".$transaction->get('payee')->value;
       echo '\n<br />curr_ids_required: '; print_R($transaction->curr_ids_required);
       echo '\n<br />payee_currencies_available: '; print_R($transaction->payee_currencies_available);
-      echo '\n<br />payer_currencies_available: '; print_R($transaction->payer_currencies_available);
       //this should be a violation
       return array(
         key($transaction->curr_ids_required),
@@ -997,7 +1000,7 @@ function intertrading_new_worths(TransactionInterface $transaction, WalletInterf
       continue;//we won't attempt to convert more than one currency in a transaction
     }
     $source_currency_id = key($diff);
-    $source_ticks = entity_load('mcapi_currency', $source_currency_id)->ticks;
+    $source_ticks = Currency::load($source_currency_id)->ticks;
     if (!$source_ticks) {//the one diff currency in this exchange is not intertradable
       continue;
     }

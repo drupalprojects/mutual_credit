@@ -12,4 +12,5 @@ content:
       size: '60'
       placeholder: 'Currency name'
       autocomplete_type: single
+    third_party_settings: {  }
 status: true

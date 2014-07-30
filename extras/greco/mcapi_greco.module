@@ -4,6 +4,7 @@
 
 
 define('GRECO_SAMPLE_PERIOD_DAYS', '90');
+use Drupal\mcapi\Entity\Currency;
 
 function mcapi_greco_gchart() {
   return array(
@@ -34,7 +35,7 @@ function mcapi_greco_theme() {
  */
 function mcapi_index_views_cron() {
   $manager = \Drupal::entityManager()->getStorage('mcapi_transaction');
-  foreach (entity_load_multiple('mcai_currencies') as $curr_id => $currency) {
+  foreach (Currency::loadMultiple() as $curr_id => $currency) {
     if ($currency->issuance != CURRENCY_TYPE_EXCHANGE) continue;
     $sum_of_all_debit_balances = 0;
     //get the sum of all debit balances (in this currency) of all wallets

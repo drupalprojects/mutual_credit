@@ -9,6 +9,7 @@ namespace Drupal\mcapi_limits;
 
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\Currency;
 
 
 /**
@@ -29,16 +30,14 @@ class WalletLimits {//couldn't be bothered to make an interface for this
   public function max($curr_id, $formatted = FALSE){
     $val = $this->limits[$curr_id]['max'];
     if ($formatted && is_numeric($val)) {
-      $currency = entity_load('mcapi_currency', $curr_id);
-      return $currency->format($val);
+      return Currency::load($curr_id)->format($val);
     }
     return $val;
   }
   public function min($curr_id, $formatted = FALSE){
     $val = $this->limits[$curr_id]['min'];
     if ($formatted && is_numeric($val)) {
-      $currency = entity_load('mcapi_currency', $curr_id);
-      return $currency->format($val);
+      return Currency::load($curr_id)->format($val);
     }
     return $val;
   }

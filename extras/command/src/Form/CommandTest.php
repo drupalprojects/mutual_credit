@@ -5,6 +5,7 @@ namespace Drupal\mcapi_command\Form;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\user\Entity\User;
 
 class CommandTest extends ConfigFormBase {
 
@@ -56,7 +57,7 @@ class CommandTest extends ConfigFormBase {
 			drupal_set_message('TESTING ONLY: '. $form_state['values']['input'], 'status', FALSE);
 			$response = process_mcapi_command(
 				$form_state['values']['input'],
-				user_load($form_state['values']['sender']),
+				User::load($form_state['values']['sender']),
 				FALSE
 			);
 		}

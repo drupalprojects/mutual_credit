@@ -13,6 +13,7 @@ use Drupal\Core\Session\AccountInterface;
 //use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\Language\Language;
 use Drupal\mcapi\Entity\ExchangeInterface;
+use Drupal\user\Entity\User;
 
 
 /**
@@ -31,7 +32,7 @@ class ExchangeAccessController extends EntityAccessController {
         $account->hasPermission('configure mcapi') ||
         $visib == 'public' ||
         ($visib == 'restricted' && $account->id()) ||
-        ($visib == 'private' && $exchange->is_member(user_load($account->id())))
+        ($visib == 'private' && $exchange->is_member(User::load($account->id())))
         ) {
         return TRUE;
       }

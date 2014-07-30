@@ -8,6 +8,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Plugin\PluginBase;
+use Drupal\mcapi\Entity\Transaction;
 
 /**
  * Base class for Transitions for default methods.
@@ -229,7 +230,10 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   /**
    * {@inheritdoc}
    */
-  public function getConfiguration() {
+  public function getConfiguration($key = NULL) {
+    if ($key) {
+      return $this->configuration[$key];
+    }
     return $this->configuration;
   }
   /**
@@ -263,7 +267,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   function ajax_submit(array $form_state_values) {
-    $transaction = entity_load('mcapi_transaction', $form_state['values']['serial']);
+    $transaction = Transaction::load($form_state['values']['serial']);
     $renderable = $this->execute ($form_state['transaction_transition'], $transaction, $form_state['values']);
     // if this is ajax we return the result, otherwise redirect the form
     $commands[]= ajax_command_replace ('#transaction-transition-form', drupal_render ($renderable));

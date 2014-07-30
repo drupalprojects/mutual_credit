@@ -7,16 +7,22 @@
 
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Template\Attribute;
-//use Drupal\Core\Cache\CacheBackendInterface;
-//use Drupal\Core\Field\FieldItemList;
-//use Drupal\mcapi\Plugin\Field\FieldType\Worth;//needed?
 use Drupal\Core\Utility\Token;
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\mcapi\Entity\TransactionInterface;
-use \Drupal\field\Entity\FieldInstanceConfig;
-use Symfony\Component\HttpFoundation\Request; //for hook_help
 use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\ExchangeInterface;
+use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\State;
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldInstanceConfig;
+use Drupal\user\EntityOwnerInterface;
+use Drupal\user\Entity\User;
 
 //we could maybe do without these
 define('CURRENCY_TYPE_ACKNOWLEDGEMENT', 'acknowledgement');
@@ -34,6 +40,9 @@ define('WALLET_ACCESS_AUTH', '2');
 define('WALLET_ACCESS_ANY', '1');
 define('WALLET_ACCESS_USERS', 'u');
 
+/**
+ * implements hook_requirements().
+ */
 function mcapi_requirements($phase) {
   if ($phase == 'runtime') {
     $result = array(
@@ -88,7 +97,7 @@ function mcapi_transaction_load_by_serial($serials) {
  * implements hook_help()
  * TODO shouldn't there be some in each page controller to inject help?
  */
-function mcapi_help($route_name, Request $request) {
+function mcapi_help($route_name) {
   switch ($route_name) {
     case 'mcapi.admin':
       return t('The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.');
@@ -159,12 +168,14 @@ function mcapi_theme($existing, $type, $theme, $path) {
  */
 function mcapi_entity_view(&$build, $entity, $mode, $language) {
   //check the entity is of a type which can own a wallet.
-  $quants = \Drupal::config('mcapi.wallets')->get('entity_types');
-  $key = $entity->getEntityTypeId() .':'. $entity->bundle();
-  if (array_key_exists($key, $quants) && $quants[$key]) {
-    module_load_include('inc', 'mcapi');
-    $build['wallets_summaries'] = mcapi_view_wallets_summaries($entity);
+  if ($quants = \Drupal::config('mcapi.wallets')->get('entity_types')) {
+    $key = $entity->getEntityTypeId() .':'. $entity->bundle();
+    if (array_key_exists($key, $quants) && $quants[$key]) {
+      module_load_include('inc', 'mcapi');
+      $build['wallets_summaries'] = mcapi_view_wallets_summaries($entity);
+    }
   }
+  else drupal_set_message('config mcapi.wallets is empty');
 }
 
 
@@ -217,7 +228,7 @@ function mcapi_transaction_flatten(TransactionInterface $transaction) {
  * NOT CURRENTLY USED
  */
 function mcapi_get_state_descriptions() {
-  foreach (entity_load_multiple('mcapi_state') as $state) {
+  foreach (State::loadMultiple() as $state) {
     //we'll save the translators the effort...
     $desc[] = $state->label .' - '. $state->description .'.';
   }
@@ -290,7 +301,7 @@ function mcapi_entity_extra_field_info() {
  * @todo is this still needed?
  */
 function mcapi_currency_load($id) {
-  return entity_load('mcapi_currency', $id);
+  return Currency::load($id);
 }
 
 /**
@@ -306,13 +317,13 @@ function mcapi_currency_load($id) {
  */
 function mcapi_entity_label_list($entity_type_id, array $data = array()) {
   if (empty($entities)) {
-    $entities = entity_load_multiple($entity_type_id);
+    $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple();
   }
   elseif(is_string(key($entities))) {
     $entities = entity_load_multiple_by_properties($entity_type_id, $data);
   }
   elseif(is_integer(reset($entities))) {
-    $entities = entity_load_multiple($entity_type_id, $entities);
+    $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple($entities);
   }
   $list = array();
   foreach ($entities as $entity) {
@@ -335,7 +346,7 @@ function mcapi_entity_label_list($entity_type_id, array $data = array()) {
 function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = FALSE, $open = FALSE) {
   $exchanges = array();
   if (is_null($entity)) {
-    $entity = entity_load('user', \Drupal::currentUser()->id());
+    $entity = User::load(\Drupal::currentUser()->id());
   }
   $entity_type = $entity->getEntityTypeId();
   if ($entity_type == 'mcapi_exchange') {
@@ -348,8 +359,10 @@ function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = 
       //TODO I wouldn't be surprised if there was a better way to iterate through these
       foreach($entity->get($fieldname)->getValue(TRUE) as $item) {
         if ($item['entity']) {//an empty $item means the exchangeItemList is empty
-          if ($enabled && !$item['entity']->status->value) continue;
-          if ($open && !$item['entity']->open->value) continue;
+          if (($enabled && !$item['entity']->status->value) ||
+            ($open && !$item['entity']->open->value)) {
+              continue;
+          }
           $exchanges[$item['target_id']] = $item['entity'];
         }
       }
@@ -498,7 +511,7 @@ function mcapi_process_currcodes($element) {
     //shows the intersection of all currencies and currencies provided
     $element['#options'] = array_intersect_key(
       mcapi_entity_label_list('mcapi_currency', $element['#curr_ids']),
-      entity_load_multiple_by_property('mcapi_currency', $conditions)
+      entity_load_multiple_by_properties('mcapi_currency', $conditions)
     );
   }
   elseif (empty($element['#options'])) {
@@ -560,7 +573,7 @@ function form_type_select_wallet_value(&$element, $input, &$form_state) {
 function local_wallet_validate_id(&$element, &$form_state) {
   $message = '';
   if (is_numeric($element['#value'])) {
-    $wallet = entity_load('mcapi_wallet', $element['#value']);
+    $wallet = Wallet::load($element['#value']);
     if (!$wallet) {
       $message = t('Invalid wallet id: @value', array('@value' => $element['#value']));
     }
@@ -580,7 +593,7 @@ function local_wallet_validate_id(&$element, &$form_state) {
  */
 function mcapi_prerender_wallet_field($element) {
   if (is_numeric($element['#default_value'])) {
-    $wallet = entity_load('mcapi_wallet', $element['#default_value']);
+    $wallet = Wallet::load($element['#default_value']);
     if ($wallet) {
       //this label contains the #id which is picked up by the value callback
       $element['#default_value'] = $wallet->label(NULL, FALSE);
@@ -608,7 +621,7 @@ function mcapi_prerender_wallet_field($element) {
  */
 function mcapi_states_counted($counted = TRUE) {
   $counted_states = \Drupal::config('mcapi.misc')->get('counted');
-  $states = entity_load_multiple('mcapi_state');
+  $states = State::loadMultiple();
   foreach ($states as $state) {
     if (array_key_exists($state->id, $counted_states)) {
       if ($counted_states[$state->id] == $counted) {
@@ -639,12 +652,13 @@ function mcapi_element_info_alter(&$items) {
  * N.B. in FieldItemList::setValue
  * @param ContentEntityInterface $entity,
  * @param array $field_definition,
- * @param string $langcode
- * @return string
- *   The uuid of the exchange
+ *
+ * @return array
+ *   The uuids of the exchanges of which the passed Entity is a member
+ *
  * //TODO an array of uuids whose keys I haven't understood yet
  */
-function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition, $langcode) {
+function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition) {
   $output = array();
   foreach (referenced_exchanges($entity, TRUE) as $exchange) {
     $output[]['target_uuid'] = $exchange->get('uuid')->value;
@@ -662,13 +676,14 @@ function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_defini
  * @param ExchangeInterface $entity,
  * @param array $field_definition,
  * @param string $langcode
- * @return
- *   an array of uuids whose keys I haven't understood yet
+ *
+ * @return array
+ *   uuids whose keys I haven't understood yet
  */
-function mcapi_default_currency_id(ExchangeInterface $entity, $field_definition, $langcode) {
+function mcapi_default_currency_id(ExchangeInterface $entity, $field_definition) {
   $output = array();
   //temporary until we work out what the default should be.
-  $output[]['target_uuid'] = entity_load('mcapi_currency', 1)->get('uuid');
+  $output[]['target_uuid'] = Currency::load('cc')->get('uuid');
   return $output;
 }
 
@@ -697,8 +712,7 @@ function mcapi_entity_insert($entity) {
     $wallet['payin'] = WALLET_ACCESS_AUTH;
     $wallet['payout'] = WALLET_ACCESS_AUTH;
   }
-  $wallet = entity_create('mcapi_wallet', $wallet);
-  $wallet->save();
+  $wallet = Wallet::create($wallet)->save();
 }
 
 /**
@@ -711,26 +725,13 @@ function mcapi_entity_delete($entity) {
   if ($entity instanceof ContentEntityInterface && $exchanges = referenced_exchanges($entity)) {
     $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
     if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($entity)) {
-      foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+      foreach (Wallet::loadMultiple($wids) as $wallet) {
         $wallet->orphan($exchange);
       }
     }
   }
 }
 
-/**
- * get the entity from a Request object, whatever the entitytype
- * this is quite hacky
- *
- * @param Request $request
- * @return ContentEntityInterface object
- */
-function mcapi_request_get_entity($request) {
-  foreach ($request->attributes->get('_route_params') as $key => $value) {
-    if (substr($key, 0, 1) == '_')continue;
-    return $value;
-  }
-}
 
 /**
  * developer-friendly wrapper around the wallet storage controller function, getOwnedWalletIds().

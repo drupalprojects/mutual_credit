@@ -70,7 +70,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    //I don't how these defaults are used
     $values += array(
       'issuance' => 'acknowledgement',
       'format' => array('$', 0, '.', '99'),
@@ -88,7 +87,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   public function save() {
     if (empty($this->id())) {
-      $this->set('id', max(array_keys(entity_load_multiple('mcapi_currency'))) + 1);
+      $this->set('id', max(array_keys($this->loadMultiple())) + 1);
     }
     parent::save();
   }
@@ -229,7 +228,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
         $raw_num = floor($raw_num / $subunits);
       }
     }
-    $parts[$key] = $raw_num;
+    $parts[$key] = intval($raw_num);
     return array_reverse($parts, TRUE);
   }
 
@@ -267,7 +266,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * not very elegant way to get the odd-keyed values from an arbitrary length array
    */
-  function preformat($reset = FALSE) {
+  private function preformat($reset = FALSE) {
     if (property_exists($this, 'format_nums') && !$reset)return;
     $this->format_nums = array();
     foreach ($this->format as $i => $val) {

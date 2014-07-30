@@ -3,6 +3,7 @@
 use Drupal\mcapi_limits\McapiLimitsException;
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * transferred implementation of hook_mcapi_transaction_validate().
@@ -17,7 +18,7 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each wallet with its limits
   foreach (_transactions_diff($cluster) as $wid => $percurrency) {
-    $wallet = entity_load('mcapi_wallet', $wid);
+    $wallet = Wallet::load($wid);
     foreach ($percurrency as $curr_id => $diffs) {
       //check to see if any of the skips apply.
       $currency = mcapi_currency_load($curr_id);
@@ -252,8 +253,8 @@ function _transactions_diff(array $cluster) {
       extract($worth); //makes variables $value and $curr_id
       //we can't prepare the array in advance with zeros so += and -= throws notices
       //instead we just build up an array and add them up later
-      $diff[$transaction->payer->value][$curr_id][] = -$value;
-      $diff[$transaction->payee->value][$curr_id][] = $value;
+      $diff[$transaction->payer->target_id][$curr_id][] = -$value;
+      $diff[$transaction->payee->target_id][$curr_id][] = $value;
     }
   }
   return $diff;

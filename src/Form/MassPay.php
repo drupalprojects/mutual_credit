@@ -9,6 +9,8 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\entity\Entity\EntityFormDisplay;
+use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Transaction;
 
 class MassPay extends TransactionForm {
 
@@ -34,7 +36,7 @@ class MassPay extends TransactionForm {
       //But how to get the submitted values from $form_state
       //$form_state['input'] means before processing and
       //$form_state['values'] hasn't been calculated yet
-      $this->entity = entity_create('mcapi_transaction', array());
+      $this->entity = Transaction::create(array());
 
       $form_display = EntityFormDisplay::collectRenderDisplay($this->entity, 'mass');
       $this->setFormDisplay($form_display, $form_state);
@@ -133,7 +135,7 @@ class MassPay extends TransactionForm {
         $payers = $values['many'];
         $payees = array($values['one']);
       }
-      $template = entity_create('mcapi_transaction', $values);
+      $template = Transaction::create($values);
       foreach ($payers as $payer) {
         foreach ($payees as $payee) {
           if ($payer == $payee) continue;
@@ -203,7 +205,7 @@ class MassPay extends TransactionForm {
       //TODO batch this
       foreach (entity_load('mcapi_transaction', $xids) as $transaction) {
         $params['transaction'] = $transaction;
-        $account = user_load($transaction->$mailto);
+        $account = User::load($transaction->$mailto);
         drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);
       }
     }

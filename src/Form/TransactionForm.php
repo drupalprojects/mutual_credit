@@ -18,6 +18,7 @@ use Drupal\mcapi\McapiTransactionException;
 use Drupal\action\Plugin\Action;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\mcapi\Entity\Transaction;
 
 class TransactionForm extends ContentEntityForm {
 
@@ -29,7 +30,7 @@ class TransactionForm extends ContentEntityForm {
     //the masspay form doesn't provide a transaction via the router or the paramConverter
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
       ? $this->entity
-      : entity_create('mcapi_transaction');
+      : Transaction::Create();
 
 
     //TODO do this with access control, including the dsm

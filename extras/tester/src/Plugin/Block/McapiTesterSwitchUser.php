@@ -9,9 +9,8 @@
 namespace Drupal\mcapi_tester\Plugin\Block;
 
 use Drupal\block\BlockBase;
-use Drupal\block\Annotation\Block;
-use Drupal\Core\Annotation\Translation;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\user\Entity\User;
 
 /**
  * Provides a block for switching users.
@@ -27,7 +26,7 @@ class McapiTesterSwitchUser extends BlockBase {
   /**
    * {@inheritdoc}
    */
-  public function access(AccountInterface $account) {
+  public function blockAccess(AccountInterface $account) {
     return TRUE;
   }
 
@@ -71,7 +70,7 @@ class McapiTesterSwitchUser extends BlockBase {
     $query->orderBy('u.access', 'DESC');
     //$query->range(0, 10);
     $uids = $query->execute()->fetchCol();
-    $accounts = user_load_multiple($uids);
+    $accounts = User::loadMultiple($uids);
 
     $dest = drupal_get_destination();
     foreach ($accounts as $account) {

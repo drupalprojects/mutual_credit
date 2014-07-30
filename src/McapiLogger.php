@@ -1,29 +1,24 @@
 <?php
 
-/*
+/**
  * @file
  * Definition of Drupal\mcapi\McapiLogger.
- * I'm totally confused about whether we need a logger in this module and how, in code to log errors if the dblog
+ * @todo I'm totally confused about whether we need a logger in this module and how, in code to log errors if the dblog
  */
 
 namespace Drupal\mcapi;
 
-//use Psr\Log\LoggerInterface;
-//use Psr\Log\LoggerTrait;
+use Psr\Log\LoggerTrait;
 use \Drupal\dblog\Logger\DbLog;
+use Psr\Log\LoggerInterface;
 
 /**
  * Blog standard logging channel
  * NB the guidance in the https://drupal.org/list-changes talks about creating my own logger
  * but no example exists in core of DbLog being extended.
  */
-class McapiLogger extends DbLog {
-  //use LoggerTrait;//dunno what this is for
-
-  //public function __construct($factory) {
-  //  $this->loggerFactory = $factory;
-  //  mdump($this);
-  //}
+class McapiLogger implements LoggerInterface {
+  use LoggerTrait;//dunno what this is for
 
   /**
    * {@inheritdoc}

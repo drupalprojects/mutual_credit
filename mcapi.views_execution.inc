@@ -32,7 +32,7 @@ function mcapi_views_query_alter(Drupal\views\ViewExecutable $view, Drupal\views
 
     foreach ($wallet_fields as $db_field_name) {
       $wallet_join = array(
-        'table' => 'mcapi_wallets',
+        'table' => 'mcapi_wallet',
         'field' => 'wid',
         'left_table' => $base,
         'left_field' => $db_field_name,
@@ -118,7 +118,7 @@ function mcapi_views_query_alter(Drupal\views\ViewExecutable $view, Drupal\views
 /*
 SELECT *
 FROM mcapi_transactions_index
-LEFT JOIN mcapi_wallets mcapi_wallet_wallet_id //join to payer wallet
+LEFT JOIN mcapi_wallet mcapi_wallet_wallet_id //join to payer wallet
   ON mcapi_transactions_index.wallet_id = mcapi_wallet_wallet_id.wid
 LEFT JOIN mcapi_wallets_access mcapi_wallet_access_designated //join payer wallet to access table
   ON mcapi_transactions_index.wallet_id = mcapi_wallet_access_designated.wid
@@ -126,7 +126,7 @@ LEFT JOIN mcapi_wallets_access mcapi_wallet_access_designated //join payer walle
 LEFT JOIN mcapi_wallet_exchanges_index mcapi_wallet_exchanges //join payer wallet to exchanges table
   ON mcapi_transactions_index.wallet_id = mcapi_wallet_exchanges.wid
     AND mcapi_wallet_exchanges.exid IN ( '1', '2', '3', '4', '5' ) //the current user is in these exchanges
-LEFT JOIN mcapi_wallets mcapi_wallet_partner_id //join to payee wallet
+LEFT JOIN mcapi_wallet mcapi_wallet_partner_id //join to payee wallet
   ON mcapi_transactions_index.partner_id = mcapi_wallet_partner_id.wid
 LEFT JOIN mcapi_wallets_access mcapi_wallet_access_designated_1 //join payee wallet to access table
   ON mcapi_transactions_index.partner_id = mcapi_wallet_access_designated_1.wid

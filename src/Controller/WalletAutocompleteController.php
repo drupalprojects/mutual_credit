@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Controller\ExceptionController;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * Returns responses for Transaction routes.
@@ -64,7 +65,7 @@ class WalletAutocompleteController {
       );
     }
     else {
-      foreach (entity_load_multiple('mcapi_wallet', $wids) as $wallet) {
+      foreach (Wallet::loadMultiple($wids) as $wallet) {
         $json[] = array(
           'value' => $wallet->label(NULL, FALSE),//maybe shorter
           'label' => $wallet->label(NULL, TRUE)

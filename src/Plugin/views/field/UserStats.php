@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * Field handler to present trading stats for the user
@@ -74,7 +75,7 @@ class UserStats extends FieldPluginBase {
     //@todo make this work with the right entity_reference syntax
     $currency = reset($exchanges)->currencies->getvalue(TRUE)->entity;
 
-    $stats = entity_load('mcapi_wallet', $wid)->getStats($currency->id());
+    $stats = Wallet::load($wid)->getStats($currency->id());
 
 
     if (in_array($this->options['stat'], array('trades', 'partners'))) {

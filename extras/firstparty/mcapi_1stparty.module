@@ -6,11 +6,14 @@ use Symfony\Component\HttpFoundation\Request; //for hook_help
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 use Drupal\user\UserInterface;
 use Drupal\field\Entity\FieldInstanceConfig;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\entity\Entity\EntityFormDisplay;
+use Drupal\mcapi\Entity\Transaction;
 
 /**
  * implements hook_help().
  */
-function mcapi_1stparty_help($route_name, Request $request) {
+function mcapi_1stparty_help($route_name) {
   if ($route_name == 'mcapi.admin_1stparty_editform_list') {
     $help[] = t('Design your own forms for users to start transactions on their workflow paths.');
     $help[] = t('Each form has access control and can be presented as a block, page or panel.');
@@ -123,7 +126,7 @@ function mcapi_render_stripped(&$element) {
  * @param unknown $id
  */
 function mcapi_editform_load($id) {
-  return entity_load('1stparty_editform', $id);
+  return FirstPartyFormDesign::load($id);
 }
 
 /**
@@ -161,7 +164,7 @@ function mcapi_1stparty_transaction_tokens() {
 function mcapi_1stparty_access(FirstPartyFormDesign $editform, UserInterface $account) {
   //reload the $account because we need the fieldAPI fields to check access
   if ($exchange_id = $editform->get('exchange')) {
-    $exchange = entity_load('mcapi_exchange', $exchange_id);
+    $exchange = Exchange::load($exchange_id);
     if (is_object($exchange) && $exchange->is_member($account)) {
       return TRUE;
     }
@@ -191,20 +194,22 @@ function mcapi_1stparty_make_template($configEntity) {
     $props[$fieldname] = $value;
   }
   //so the worth defaults have been copied right out of the saved entity
-  return entity_create('mcapi_transaction', $props);
+  return Transaction::Create($props);
 }
 
 /**
- * return the visible field definitions for any transaction field API fields according to the default transaction entity_form_display
+ * return the visible field definitions for any transaction field API fields
+ * according to the default transaction entity_form_display
  * including worth, or course
  *
- * @return an array of data keyed by field name
+ * @return array
+ *   field definitions and widgets keyed by field name
  */
 function mcapi_1stparty_fieldAPI() {
   //we need this to get the widgets for entering the defaults
-  $entity_display = entity_load('entity_form_display', 'mcapi_transaction.mcapi_transaction.default');
+  $entity_display = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.1stparty');
   $fieldAPI = array();
-  //get the field api fields showing according to the the default display
+  //get the field API fields showing according to the the default display
   //and filter out the entity properties
   //the entity_form_display does this more elegantly but function is protected
   foreach(\Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction') as $field_name => $definition) {

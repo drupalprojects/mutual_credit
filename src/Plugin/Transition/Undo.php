@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\Entity\State;
 
 /**
  * Undo transition
@@ -50,7 +51,7 @@ class Undo extends TransitionBase {
       '#weight' => 8,
     );
     //TODO would be really nice if this was in a grid
-    foreach (entity_load_multiple('mcapi_state') as $state) {
+    foreach (State::loadMultiple() as $state) {
       if ($state->id == 'undone') continue;
       $form['access'][$state->id] = array (
         '#title' => $state->label,
