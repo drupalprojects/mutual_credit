@@ -79,7 +79,6 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
       db_delete('mcapi_transactions_index')
         ->condition('xid', $insert_id)
         ->execute();
-      $counted_states = $this->counted_states();
       // we only index transactions in states which are 'counted'
       if (!array_key_exists($record->state, mcapi_states_counted(TRUE)))return;
 
@@ -556,4 +555,36 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     );
     return $schema;
   }
+}
+
+
+/**
+ * load the transaction states and filter them according to the misc settings
+ *
+ * @param boolean $counted
+ *
+ * @return Drupal\Core\Config\Entity\ConfigEntityInterface[]
+ *
+ * @todo later we might want to provide a fuller interface for editing states
+ * types, esp the name and description e.g. admin/accounting/workflow/states
+ *
+ * @todo cache this
+ *
+ */
+function mcapi_states_counted($counted = TRUE) {
+  $counted_states = \Drupal::config('mcapi.misc')->get('counted');
+  foreach (State::loadMultiple() as $state) {
+    if (array_key_exists($state->id, $counted_states)) {
+      if ($counted_states[$state->id] == $counted) {
+        $result[] = $state->id;
+      }
+    }
+    else {
+      //look at the state entities own setting if it hasn't been saved
+      if ($state->counted == $counted) {
+        $result[] = $state->id;
+      }
+    }
+  }
+  return $result;
 }

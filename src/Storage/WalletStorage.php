@@ -26,6 +26,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
    * @see Drupal\user\UserStorage::mapFromStorageRecords
    */
   function mapFromStorageRecords(array $records) {
+    //if (!$records) return array();
     //add the access settings to each wallet
     $q = db_select('mcapi_wallets_access', 'a')
       ->fields('a', array('wid', 'operation', 'uid'))

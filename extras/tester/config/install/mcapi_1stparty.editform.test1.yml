@@ -5,7 +5,7 @@ title: 'Add transaction in exchange 1'
 status: 1
 type: default
 partner:
-  preset: 5
+  preset: 
 direction:
   preset: ''
   widget: radios
