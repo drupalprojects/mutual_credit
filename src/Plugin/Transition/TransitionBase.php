@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Base class for Transitions for default methods.
@@ -45,7 +46,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   /**
    * {@inheritdoc}
    */
-  public function buildConfigurationForm(array $form, array &$form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     //gives array keyed page_title, twig, format, button, cancel_button
     module_load_include ('inc', 'mcapi');
     $tokens = implode(', ', mcapi_transaction_list_tokens (FALSE));
@@ -207,16 +208,16 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   /**
    * {@inheritdoc}
    */
-  public function validateConfigurationForm(array &$form, array &$form_state){
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state){
 
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitConfigurationForm(array &$form, array &$form_state){
-    //form_state[values] was already cleaned
-    $this->setConfiguration($form_state['values']);
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state){
+    //form_state->values was already cleaned
+    $this->setConfiguration($form_state->getValues());
   }
 
   /**
@@ -267,8 +268,9 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   function ajax_submit(array $form_state_values) {
-    $transaction = Transaction::load($form_state['values']['serial']);
-    $renderable = $this->execute ($form_state['transaction_transition'], $transaction, $form_state['values']);
+    $values = $form_state->getValues();
+    $transaction = Transaction::load($values['serial']);
+    $renderable = $this->execute($form_state->get('transaction_transition'), $transaction, $form_state['values']);
     // if this is ajax we return the result, otherwise redirect the form
     $commands[]= ajax_command_replace ('#transaction-transition-form', drupal_render ($renderable));
     ajax_deliver (array(

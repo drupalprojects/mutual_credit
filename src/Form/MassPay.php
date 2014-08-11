@@ -11,6 +11,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\Core\Form\FormStateInterface;
 
 class MassPay extends TransactionForm {
 
@@ -26,14 +27,14 @@ class MassPay extends TransactionForm {
   /**
    * Overrides Drupal\mcapi\Form\TransactionForm::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
 
-    if (empty($form_state['validated_transactions'])) {
+    if (empty($form_state->get('validated_transactions'))) {
       $this->exchange_id = $this->entity;
 
       //we have to mimic some part of the normal entity form preparation.
       //TODO on the rebuilt form we need to make a default entity.
-      //But how to get the submitted values from $form_state
+      //But how to get the submitted values from $form_state?
       //$form_state['input'] means before processing and
       //$form_state['values'] hasn't been calculated yet
       $this->entity = Transaction::create(array());
@@ -45,16 +46,16 @@ class MassPay extends TransactionForm {
       $this->step_1($form, $form_state);
     }
     else {
-      foreach ($form_state['validated_transactions'] as $transaction) {
+      foreach ($form_state->get('validated_transactions') as $transaction) {
         $form['preview'][] = entity_view($transaction, 'sentence');
       }
     }
     return $form;
   }
 
-  public function step_1(array &$form, array &$form_state) {
+  public function step_1(array &$form, FormStateInterface $form_state) {
 
-    if (empty($form_state['confirmed'])) {
+    if (empty($form_state->get('confirmed'))) {
       $types = \Drupal::config('mcapi.wallets')->get('entity_types');
       if ($types['user:user'] == 1) {
         $mode_options = array(
@@ -117,16 +118,15 @@ class MassPay extends TransactionForm {
     }
   }
 
-  public function validate(array $form, array &$form_state) {
-    if ($this->errorHandler()->getErrors($form_state)) return;
+  public function validate(array $form, FormStateInterface $form_state) {
+    if ($form_state->getErrors()) return;
     //only validate step 1
-    if (empty($form_state['validated_transactions'])) {
-      $uuid_service = \Drupal::service('uuid');
+    if (empty($form_state->get('validated_transactions'))) {
       form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
-      $values = &$form_state['values'];
 
-      $values['creator'] = \Drupal::currentUser()->id();
-      $values['type'] = 'mass';
+      $form_state->addValue('creator', \Drupal::currentUser()->id());
+      $form_state->addValue('type', 'mass');
+      $values = $form_state->getValues();
       if ($values['direction'] == 'one2many') {
         $payers = array($values['one']);
         $payees = $values['many'];
@@ -135,7 +135,9 @@ class MassPay extends TransactionForm {
         $payers = $values['many'];
         $payees = array($values['one']);
       }
+
       $template = Transaction::create($values);
+      $uuid_service = \Drupal::service('uuid');
       foreach ($payers as $payer) {
         foreach ($payees as $payee) {
           if ($payer == $payee) continue;
@@ -150,32 +152,31 @@ class MassPay extends TransactionForm {
       foreach ($transactions as $transaction) {
         $violations = $transaction->validate();
         foreach ($violations as $field => $message) {
-          $this->errorHandler()->setErrorByName($field, $form_state, $message);
+          $form_state->setErrorByName($field, $message);
         }
       }
       //TODO update to d8
       //drupal_set_title(t('Are you sure?'));
       //TODO Should these / do these go in the temp store?
-      $form_state['validated_transactions'] = $transactions;
+      $form_state->set('validated_transactions', $transactions);
     }
   }
 
 
-  public function submit(array $form, array &$form_state) {
-    if (!array_key_exists('op', $form_state['values'])) {
-      $form_state['rebuild'] = TRUE;
+  public function submit(array $form, FormStateInterface $form_state) {
+    if (!array_key_exists('op', $form_state->getValues('values'))) {
+      $form_state->setRebuild(TRUE);
     }
     else {
-      $main_transaction = array_shift($form_state['validated_transactions']);
-      foreach ($form_state['validated_transactions'] as $transaction) {
+      $main_transaction = array_shift($form_state->get('validated_transactions'));
+      foreach ($form_state->get('validated_transactions') as $transaction) {
         $main_transaction->children[] = $transaction;
       }
       $main_transaction->save();
 
-      $form_state['redirect_route'] = array(
-        //might not be a good idea for undone transactions
-        'route_name' => 'mcapi.transaction_view',
-        'route_parameters' => array(
+      $form_state->setRedirect(
+        'mcapi.transaction_view',
+        array(
           'mcapi_transaction' => $main_transaction->serial->value
         )
       );
@@ -186,7 +187,7 @@ class MassPay extends TransactionForm {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state, $op = NULL) {
+  public function submitForm(array &$form, FormStateInterface $form_state, $op = NULL) {
 
 
     //store the mail so we can bring it up as a default next time
@@ -212,7 +213,7 @@ class MassPay extends TransactionForm {
     */
   }
 
-  function form_type_select_wallets_value(&$element, $input, &$form_state) {
+  function form_type_select_wallets_value(&$element, $input, FormStateInterface $form_state) {
     if (empty($input)) return;
     foreach (explode(', ', $input) as $val) {
       $values[] = form_type_select_wallet_value($element, $val, $form_state);

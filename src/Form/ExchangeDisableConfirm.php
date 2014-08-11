@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 use Drupal\Core\Url;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Builds the form to delete a currency
@@ -39,14 +40,12 @@ class ExchangeDisableConfirm extends ContentEntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, array &$form_state) {
+  public function submit(array $form, FormStateInterface $form_state) {
     $this->entity->set('status', FALSE);
     $this->entity->save();
 
     drupal_set_message(t("Exchange '%label' is deactivated.", array('%label' => $this->entity->label())));
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_exchange_list'
-    );
+    $form_state->setRedirect('mcapi.admin_exchange_list');
   }
 
 }

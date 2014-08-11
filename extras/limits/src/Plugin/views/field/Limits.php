@@ -32,7 +32,7 @@ class Limits extends FieldPluginBase {
     return $options;
   }
 
-  public function buildOptionsForm(&$form, &$form_state) {
+  public function buildOptionsForm(&$form, $form_state) {
     $form['currencies'] = array(
       '#title' => t('Currencies'),
       '#title_display' => '#before',

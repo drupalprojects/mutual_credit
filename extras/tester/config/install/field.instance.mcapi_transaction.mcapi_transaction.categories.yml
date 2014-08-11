@@ -1,9 +1,9 @@
-id: mcapi_transaction.mcapi_transaction.field_categories
+id: mcapi_transaction.mcapi_transaction.categories
 uuid: 0152ea07-a6ee-465e-a10d-133a81f7cf83
 status: true
 langcode: en
 field_uuid: d9c2e85c-4479-4ba3-9c00-ad7ea2f0b246
-field_name: field_categories
+field_name: categories
 entity_type: mcapi_transaction
 bundle: mcapi_transaction
 label: Categories
@@ -15,6 +15,6 @@ settings:
   handler: default
 dependencies:
   entity:
-    - field.field.mcapi_transaction.field_categories
+    - field.storage.mcapi_transaction.categories
 field_type: taxonomy_term_reference
 

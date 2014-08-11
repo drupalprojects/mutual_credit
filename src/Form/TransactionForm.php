@@ -13,19 +13,21 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
-use Drupal\mcapi\McapiTransactionException;
-use Drupal\action\Plugin\Action;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
+use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\action\Plugin\Action;
 
 class TransactionForm extends ContentEntityForm {
 
   /**
    * Overrides Drupal\Core\Entity\EntityFormController::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
 
     //the masspay form doesn't provide a transaction via the router or the paramConverter
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
@@ -124,7 +126,7 @@ class TransactionForm extends ContentEntityForm {
    *
    * this is unusual because normally build a temp object
    */
-  public function validate(array $form, array &$form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
 
     form_state_values_clean($form_state);//without this, buildentity fails, but not so in nodeFormController
 
@@ -144,7 +146,7 @@ class TransactionForm extends ContentEntityForm {
 
     //make sure we're not running this twice
     if (array_key_exists('mcapi_validated', $form_state)){'running form validation twice';return;}
-    else $form_state['mcapi_validated'] = TRUE;
+    else $form_state->get('mcapi_validated') = TRUE;
 
     //validate the fieldAPI widgets
     $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
@@ -185,7 +187,7 @@ class TransactionForm extends ContentEntityForm {
     }
   }
 
-  public function submit(array $form, array &$form_state) {
+  public function submit(array $form, FormStateInterface $form_state) {
     $tempStore = \Drupal::service('user.tempstore');
     $tempStore->get('TransactionForm')->set('entity', $this->entity);
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
@@ -193,7 +195,7 @@ class TransactionForm extends ContentEntityForm {
     //Drupal\mcapi\Plugin\Transition\Create
 
     //now we divert to the transition confirm form
-    $form_state['redirect'] = 'transaction/0/create';
+    $form_state->setRedirect('transaction/0/create');
   }
 
 }

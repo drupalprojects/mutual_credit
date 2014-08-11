@@ -160,19 +160,19 @@ function limits_get_adjusted(CurrencyInterface $currency, ContentEntityInterface
  * implement hook_form_MCAPI_CURRENCY_EDIT_FORM_alter
  * add the limits settings to the currency form
  */
-function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, &$form_state) {
+function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
   foreach(\Drupal::service('plugin.manager.mcapi_limits')->getDefinitions() as $name => $plugin) {
     $options[$name] = $plugin['label'];
   }
-  $currency = $form_state['controller']->getEntity();
-  if (isset($form_state['values'])) {
+  $currency = $form_state->get('controller')->getEntity();
+  if ($values = $form_state->getValues()) {
     //get the plugin from the last form submission
-    $plugin_id = $form_state['values']['plugin'];
-    $form_state['limits_plugin'] = mcapi_limits_saved_plugin($currency, $plugin_id);
+    $plugin_id = $values['plugin'];
+    $form_state->set('limits_plugin', mcapi_limits_saved_plugin($currency, $plugin_id));
   }
   else {
-    $form_state['limits_plugin'] = mcapi_limits_saved_plugin($currency);
-    $plugin_id = $form_state['limits_plugin']->id;//bit awkward
+    $form_state->set('limits_plugin', mcapi_limits_saved_plugin($currency));
+    $plugin_id = $form_state->get('limits_plugin')->id;//bit awkward
   }
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
   $warning[] = t("With great power comes great responsibility!");
@@ -205,7 +205,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, &$form_state)
   );
 
   //depending on which plugin is selected, show the options form
-  $form['limits']['limits_settings'] = $form_state['limits_plugin']->buildConfigurationForm($form, $form_state, $currency);
+  $form['limits']['limits_settings'] = $form_state->get('limits_plugin')->buildConfigurationForm($form, $form_state, $currency);
 
   //this is the ajax wrapper
   $form['limits']['limits_settings']['#prefix'] = '<div id="limits-settings">';
@@ -219,24 +219,25 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, &$form_state)
 /**
  * ajax callback
  */
-function mcapi_limits_validate(&$form, &$form_state) {
-  $form_state['limits_plugin']->validateConfigurationForm($form, $form_state);
+function mcapi_limits_validate(&$form, $form_state) {
+  $form_state->get('limits_plugin')->validateConfigurationForm($form, $form_state);
 }
 
 /**
  * form submission callback on the submit button
  * save the plugin settings as config.
  */
-function mcapi_limits_submit(&$form, &$form_state) {
-  $form_state['limits_plugin']->submitConfigurationForm($form, $form_state);
+function mcapi_limits_submit(&$form, $form_state) {
+  $form_state->get('limits_plugin')->submitConfigurationForm($form, $form_state);
 
   //load the plugin settings AS CONFIG
-  $config = \Drupal::config('mcapi.limits.'. $form_state['controller']->getEntity()->id());
-  foreach ($form_state['limits_plugin']->getConfiguration() as $key => $val) {
+  $config = \Drupal::config('mcapi.limits.'. $form_state->get('controller')->getEntity()->id());
+  foreach ($form_state->get('limits_plugin')->getConfiguration() as $key => $val) {
     $config->set($key, $val);
   }
+  $values = $form_state->getValues();
   //this has to go after the plugin has set the values
-  $config->set('plugin', $form_state['values']['plugin']);
+  $config->set('plugin', $values['plugin']);
   $config->save();
 }
 

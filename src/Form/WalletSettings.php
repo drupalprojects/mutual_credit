@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 class WalletSettings extends ConfigFormBase {
 
@@ -16,7 +17,7 @@ class WalletSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('mcapi.wallets');
     $form['creation'] = array(
     	'#title' => t('Wallet creation'),
@@ -70,9 +71,6 @@ class WalletSettings extends ConfigFormBase {
       '#weight' => 3,
     );
 
-    foreach ($this->pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access')->getDefinitions() as $def) {
-      //$wallet_access_plugins[$def['id']] = $def['label'];
-    }
     $permissions = \Drupal\mcapi\Entity\Wallet::permissions();
 
     $form['wallet_access'] = array(
@@ -120,12 +118,13 @@ class WalletSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     //TODO check that none of the access is set to 'users' only
     //this would be very awkward for new wallets
+    $values = $form_state->getValues();
     foreach (\Drupal\mcapi\Entity\Wallet::ops() as $op_name) {
-      if (array_filter($form_state['values'][$op_name]) == array('WALLET_ACCESS_USERS' => 'WALLET_ACCESS_USERS')) {
-        $this->errorHandler()->setErrorByName($op_name, $form_state, t("'Named users' cannot be selected by itself"));
+      if (array_filter($values[$op_name]) == array('WALLET_ACCESS_USERS' => 'WALLET_ACCESS_USERS')) {
+        $form_state->setErrorByName($op_name, t("'Named users' cannot be selected by itself"));
       }
     }
   }
@@ -133,8 +132,8 @@ class WalletSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
-    $vals = &$form_state['values'];
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $vals = $form_state->getValues('values');
 
     $this->configFactory()->get('mcapi.wallets')
       ->set('entity_types', $vals['entity_types'])
@@ -151,9 +150,7 @@ class WalletSettings extends ConfigFormBase {
     //TODO
     //Clear the FieldDefinitions cache for wallet entity, which uses these values as defaults
 
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin'
-    );
+    $form_state->setRedirect('mcapi.admin');
   }
 }
 

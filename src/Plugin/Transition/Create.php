@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\McapiTransactionException;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Create transition
@@ -36,16 +37,8 @@ class Create extends TransitionBase {
   }
 
   /**
-   * Save the transaction
-  *
-  * @param TransactionInterface $transaction
-  *   A transaction entity object
-  * @param array $values
-  *   the contents of $form_state['values']
-  *
-  * @return string
-  *   an html snippet for the new page, or which in ajax mode replaces the form
-  */
+   * {@inheritdoc}
+   */
   public function execute(TransactionInterface $transaction, array $context) {
     //this transaction came from the tempstore and was validated in step one
     $status = $transaction->save();
@@ -59,7 +52,7 @@ class Create extends TransitionBase {
   /**
    * {@inheritdoc}
   */
-  public function buildConfigurationForm(array $form, array &$form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
     unset(
       $form['sure']['button'],

@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Edit transition
@@ -69,7 +70,7 @@ class Edit extends TransitionBase {
   /**
    * {inheritdoc}
    */
-  public function buildConfigurationForm(array $form, array &$form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
     module_load_include('inc', 'mcapi');
     $form['fields'] = array(

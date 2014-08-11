@@ -6,6 +6,7 @@ use Drupal\block\BlockBase;
 use Drupal\block\Annotation\Block;
 use Drupal\Core\Annotation\Translation;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 define('MCAPIBLOCK_USER_MODE_CURRENT', 1);
 define('MCAPIBLOCK_USER_MODE_PROFILE', 0);
@@ -45,7 +46,7 @@ class McapiBlockBase extends BlockBase {
   /**
    * Overrides \Drupal\block\BlockBase::blockForm().
    */
-  public function blockForm($form, &$form_state) {
+  public function blockForm($form, FormStateInterface $form_state) {
     parent::blockForm($form, $form_state);
     $form['curr_ids'] = array(
       '#title' => t('Currencies'),
@@ -71,9 +72,10 @@ class McapiBlockBase extends BlockBase {
   /**
    * Overrides \Drupal\block\BlockBase::blockSubmit().
    */
-  public function blockSubmit($form, &$form_state) {
+  public function blockSubmit($form, FormStateInterface $form_state) {
     parent::blockSubmit($form, $form_state);
-    foreach ($form_state['values'] as $key => $val) {
+    $values = $form_state->getValues();
+    foreach ($values as $key => $val) {
       $this->configuration[$key] = $val;
     }
   }

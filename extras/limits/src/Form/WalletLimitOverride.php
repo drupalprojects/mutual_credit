@@ -14,6 +14,7 @@ namespace Drupal\mcapi_limits\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Field\FieldDefinition;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Wallet;
 
 class WalletLimitOverride extends FormBase {
@@ -34,7 +35,7 @@ class WalletLimitOverride extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     //this is tricky. We need to know all the currency that could go in the wallet.
     //to do that we have to know all the currencies in the all the active exchanges the wallets parent is in.
     $wallet = $this->wallet;
@@ -114,14 +115,14 @@ class WalletLimitOverride extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
 
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     form_state_values_clean($form_state);
     $wid = $this->wallet->id();
     //clear db and rewrite
@@ -130,7 +131,7 @@ class WalletLimitOverride extends FormBase {
       db_delete('mcapi_wallets_limits')->condition('wid', $wid)->execute();
       $q = db_insert('mcapi_wallets_limits')->fields(array('wid', 'curr_id', 'min', 'max', 'editor', 'date'));
       $insert = FALSE;
-      foreach ($form_state['values'] as $curr_id => $values) {
+      foreach ($form_state->getValues() as $curr_id => $values) {
         if (empty($values['override']['min']) && empty($values['override']['max'])) continue;
         $q->values(array(
           'wid' => $wid,
@@ -151,10 +152,7 @@ class WalletLimitOverride extends FormBase {
       drupal_set_message('Failed to save limit overrides: '.$e->getMessage());
     }
     //TODO clear the wallet cache???
-    $form_state['redirect_route'] = array(
-    	'route_name' => 'mcapi.wallet_view',
-      'route_parameters' => array('mcapi_wallet' => $this->wallet->id())
-    );
+    $form_state->setRedirect('mcapi.wallet_view', array('mcapi_wallet' => $this->wallet->id()));
 
   }
 

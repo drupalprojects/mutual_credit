@@ -8,6 +8,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 
 class CurrencyForm extends EntityForm {
@@ -15,7 +16,7 @@ class CurrencyForm extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
     $currency = $this->entity;
 
@@ -190,7 +191,7 @@ class CurrencyForm extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     $currency = $this->entity;
     //save the currency format in a that is easier to process at runtime.
     $currency->format = $this->submit_format($currency->format);
@@ -203,15 +204,13 @@ class CurrencyForm extends EntityForm {
       drupal_set_message(t('Currency %label has been added.', array('%label' => $currency->label())));
     }
 
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_currency_list'
-    );
+    $form_state->setRedirect('mcapi.admin_currency_list');
   }
 
   /**
    * element validation callback
    */
-  function validate_format(&$element, &$form_state) {
+  function validate_format(&$element, FormStateInterface $form_state) {
     $nums = preg_match_all('/[0-9]+/', $element['#value'], $chars);
     if (!is_array($this->submit_format($element['#value'])) || $nums[0] != 0) {
       $this->errorHandler()->setErrorByName($element['#name'], $form_state, t('Bad Format'));
@@ -252,9 +251,9 @@ class CurrencyForm extends EntityForm {
   /**
    * element validation callback for 'name'
    */
-  function currency_name_unique(&$element, &$form_state) {
+  function currency_name_unique(&$element, FormStateInterface $form_state) {
     if ($currency = entity_load_multiple_by_properties('mcapi_currency', array('name' => $element['#value']))) {
-      $this->errorHandler()->setErrorByName('name', $form_state, $this->t('Currency name already used'));
+      $form_state->setErrorByName('name', $this->t('Currency name already used'));
     }
   }
 }

@@ -8,7 +8,8 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 
 /**
@@ -25,7 +26,7 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
   /**
    * {@inheritdoc}
    */
-  public function buildConfigurationForm(array $form, array &$form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     //the order seemes to matter more than the weight
     $subform['liquidity'] = $this->widget($this->configuration['liquidity']);
     $subform += parent::buildConfigurationForm($form, $form_state);

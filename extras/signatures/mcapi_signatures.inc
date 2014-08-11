@@ -64,15 +64,13 @@ function mcapi_signall($form, $form_state, $account) {
   return $form;
 }
 
-function mcapi_signall_submit($form, &$form_state) {
-  $account = $form_state['values']['account'];
-  foreach (transactions_needing_sig_of_user($account) as $serial) {
-    $message = transaction_sign(Transaction::load($serial), $account);
+function mcapi_signall_submit($form, $form_state) {
+  $values = $form_state->getValues();
+  foreach (transactions_needing_sig_of_user($values['account']) as $serial) {
+    $message = transaction_sign(Transaction::load($serial), $values['account']);
   }
   drupal_set_message($message);
-  $form_state['redirect_route'] = array(
-  	'route_name' => 'user.page'
-  );
+  $form_state->setRedirect('user.page');
 }
 
 

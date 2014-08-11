@@ -1,8 +1,8 @@
-id: mcapi_transaction.field_categories
+id: mcapi_transaction.categories
 uuid: d9c2e85c-4479-4ba3-9c00-ad7ea2f0b246
 status: true
 langcode: en
-name: field_categories
+name: categories
 entity_type: mcapi_transaction
 type: taxonomy_term_reference
 settings:
@@ -13,13 +13,13 @@ settings:
   options_list_callback: null
   target_type: taxonomy_term
   target_bundle: null
-module: taxonomy
+module: mcapi_tester
 locked: false
 cardinality: 1
 translatable: false
 indexes: {  }
 dependencies:
   module:
-    - mcapi
+    - mcapi_tester
     - taxonomy
 

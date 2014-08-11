@@ -92,7 +92,7 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
   }
 
   //this is no longer a form controller
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, $form_state) {
     //$form = parent::buildForm($form, $form_state);
     $form['title'] = array(
       '#type' => 'textfield',
@@ -135,20 +135,17 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, $form_state) {
     // No validation.
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
-    $editform = FirstPartyFormDesign::create($form_state['values']);
+  public function submitForm(array &$form, $form_state) {
+    $editform = FirstPartyFormDesign::create($form_state->getValues());
     $editform->save();
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_1stparty_editform.edit',
-      'route_parameters' => array('1stparty_editform' => $editform->id())
-    );
+    $form_state->setRedirect('mcapi.admin_1stparty_editform.edit', array('1stparty_editform' => $editform->id()));
   }
 
 }

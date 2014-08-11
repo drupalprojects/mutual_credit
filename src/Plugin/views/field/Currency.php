@@ -11,7 +11,7 @@ use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
-//use Drupal\Core\Database\Query\Select;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Field handler to show the currency of the transaction
@@ -33,7 +33,7 @@ class Currency extends FieldPluginBase {
   /**
    * Provide machine_name option for currency display.
    */
-  public function buildOptionsForm(&$form, &$form_state) {
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
 
     $form['machine_name'] = array(

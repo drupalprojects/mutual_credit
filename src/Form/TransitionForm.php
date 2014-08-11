@@ -5,6 +5,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
+use Drupal\Core\Form\FormStateInterface;
 
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
 class TransitionForm extends EntityConfirmFormBase {
@@ -86,7 +87,7 @@ class TransitionForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
     //this may be an entity form but we don't want the FieldAPI fields showing up.
     foreach (element_children($form) as $fieldname) {
@@ -123,14 +124,14 @@ class TransitionForm extends EntityConfirmFormBase {
     return $form;
   }
 
-  public function validate(array $form, array &$form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
 
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, array &$form_state) {
+  public function submit(array $form, FormStateInterface $form_state) {
     $transaction = $this->entity;
 
     //the op might have injected values into the form, so it needs to be able to access them

@@ -11,6 +11,7 @@ use Drupal\views\Plugin\views\area\Result;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Component\Annotation\PluginID;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Field handler to get the transaction count from the exchange entity
@@ -31,7 +32,7 @@ class ExchangeTransactions extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function buildOptionsForm(&$form, &$form_state) {
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     $form['since'] = array(
       '#title' => t('Time period'),
       '#title' => t('Relative time. PhP strtotime format. E.g. -365 days'),

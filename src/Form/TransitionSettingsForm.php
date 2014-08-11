@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransitionSettingsForm extends ConfigFormBase {
@@ -20,7 +21,7 @@ class TransitionSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state, $transition = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $transition = NULL) {
     $this->plugin = transaction_transitions($transition);
 
   	$form = $this->plugin->buildConfigurationForm($form, $form_state);
@@ -91,7 +92,7 @@ class TransitionSettingsForm extends ConfigFormBase {
     return parent::buildForm($form, $form_state);
   }
 
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $this->plugin->validateConfigurationForm($form, $form_state);
   }
@@ -99,7 +100,7 @@ class TransitionSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state, $transition = NULL) {
+  public function submitForm(array &$form, FormStateInterface $form_state, $transition = NULL) {
   	form_state_values_clean($form_state);
 
   	$this->plugin->submitConfigurationForm($form, $form_state);
@@ -111,9 +112,7 @@ class TransitionSettingsForm extends ConfigFormBase {
     $config->save();
     parent::submitForm($form, $form_state);
 
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin.workflow'
-    );
+    $form_state->setRedirect('mcapi.admin.workflow');
   }
 }
 

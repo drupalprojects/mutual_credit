@@ -5,6 +5,7 @@ use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * implements hook_menu().
@@ -137,9 +138,8 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
     $transaction = Transaction::create($props);
 
     if ($inter) {
-      echo "\nusing wallets $payer and $payee";
       //get an exchange the payer is in, and an open currency in that exchange
-      foreach (referenced_exchanges(Wallet::load($payer)->getOwner()) as $exchange) {
+      foreach (referenced_exchanges($transaction->payer->entity->getOwner()) as $exchange) {
         $items = $exchange->currencies->getValue(TRUE);
         if ($items[0]['entity']->ticks) continue;
       }

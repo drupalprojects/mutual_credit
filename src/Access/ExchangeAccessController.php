@@ -39,13 +39,13 @@ class ExchangeAccessController extends EntityAccessController {
       return FALSE;
     }
     elseif ($op == 'delete') {
-      return (user_access('manage mcapi') && $this->deletable($exchange));
+      return ($account->hasPermission('manage mcapi') && $this->deletable($exchange));
     }
     elseif($op == 'update') {
-      return user_access('manage mcapi') || $exchange->is_manager();
+      return $account->hasPermission('manage mcapi') || $exchange->is_manager();
     }
     elseif($op == 'manage') {
-      return user_access('manage mcapi') || $exchange->is_manager();
+      return $account->hasPermission('manage mcapi') || $exchange->is_manager();
     }
   }
 

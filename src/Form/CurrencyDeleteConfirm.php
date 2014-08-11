@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Builds the form to delete a currency
@@ -40,13 +41,11 @@ class CurrencyDeleteConfirm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, array &$form_state) {
+  public function submit(array $form, FormStateInterface $form_state) {
     \Drupal::EntityManager()->getStorage('mcapi_transaction')->wipeslate($this->entity->id());
     $this->entity->delete();
     drupal_set_message(t('Currency %label has been deleted.', array('%label' => $this->entity->label())));
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_currency_list'
-    );
+    $form_state->setRedirect('mcapi.admin_currency_list');
   }
 
 }

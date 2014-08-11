@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\Form\FormStateInterface;
 
 
 class ExchangeWizard extends ExchangeForm {
@@ -17,7 +18,7 @@ class ExchangeWizard extends ExchangeForm {
   /**
    * Overrides Drupal\Core\Entity\ExchangeForm::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     //this is a default exchange object
     //it references user 1 as manager and cc as currency
     $exchange = $this->entity;
@@ -119,7 +120,7 @@ class ExchangeWizard extends ExchangeForm {
     return $form;
   }
 
-  public function validate(array $form, array &$form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
     //check that the new name is unique
     parent::validate($form, $form_state);
     //validate the new user, if required
@@ -173,7 +174,7 @@ class ExchangeWizard extends ExchangeForm {
   /**
    * {@inheritdoc}
    */
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     if (isset($this->manager)) {
       $this->manager->save();
       if ($form_state['values']['manager_new']['notify']) {

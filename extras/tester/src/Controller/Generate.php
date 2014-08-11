@@ -14,6 +14,7 @@ use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\Form\FormStateInterface;
 
 class Generate extends ConfigFormBase {
 
@@ -29,7 +30,7 @@ class Generate extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
 
     $this->autoadd = \Drupal::config('mcapi.wallets')->get('autoadd');
 
@@ -72,8 +73,8 @@ class Generate extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
-    $values = &$form_state['values'];
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $values = $form_state->getvalues();
     foreach (Transaction::loadMultiple() as $t) {
       mcapi_wipeslate();
     }

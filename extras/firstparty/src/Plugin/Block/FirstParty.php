@@ -64,7 +64,7 @@ class FirstParty extends BlockBase {
    * @return array
    *   the form elements
    */
-  function blockForm($form, &$form_state) {
+  function blockForm($form, $form_state) {
     $options = array();
     //entity_load_multiple_by_properties doesn't seem to work on empty values
     //do we'll have to iterate though
@@ -92,9 +92,10 @@ class FirstParty extends BlockBase {
   /**
    * Overrides \Drupal\block\BlockBase::blockSubmit().
    */
-  public function blockSubmit($form, &$form_state) {
+  public function blockSubmit($form, $form_state) {
     parent::blockSubmit($form, $form_state);
-    $this->configuration['editform_id'] = $form_state['values']['editform_id'];
+    $values = $form_state->getValues();
+    $this->configuration['editform_id'] = $values['editform_id'];
   }
 
 }

@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Field handler to show transaction transitions according to context
@@ -29,7 +30,7 @@ class Transitions extends FieldPluginBase {
   /**
    * Provide link to taxonomy option
    */
-  public function buildOptionsForm(&$form, &$form_state) {
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
      $form['mode'] = array(
       '#title' => t('Link mode'),
       '#type' => 'radios',

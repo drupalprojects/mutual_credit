@@ -10,6 +10,8 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\user\Entity\User;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Component\Utility\Tags;
 
 class WalletForm extends ContentEntityForm {
 
@@ -21,27 +23,29 @@ class WalletForm extends ContentEntityForm {
   /**
    * Overrides Drupal\Core\Entity\ContentEntityForm::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
 
     $form = parent::form($form, $form_state);
     $wallet = $this->entity;
 
     unset($form['langcode']); // No language so we remove it.
 
-    $form['name'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Name or purpose of wallet'),
-      '#default_value' => $wallet->name->value,
-      '#placeholder' => t('My excellent wallet'),
-      '#required' => FALSE,
-      '#max_length' => 32//TODO check this is the right syntax
-    );
+    if ($wallet->name->value != '_intertrading') {
+      $form['name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Name or purpose of wallet'),
+        '#default_value' => $wallet->name->value,
+        '#placeholder' => t('My excellent wallet'),
+        '#required' => FALSE,
+        '#max_length' => 32//TODO check this is the right syntax
+      );
+    }
 
     $this->permissions = $this->entity->permissions();
     $this->permissions['owner'] = t('The owner');
 
     $this->default_wallet_access = \Drupal::config('mcapi.wallets');
-print_r($this->entity->access);
+
     $this->accessElement($form, 'details', t('View transaction details'), t('View individual transactions this wallet was involved in'), $this->entity->access['details']);
     $this->accessElement($form, 'summary', t('View summary'), t('The balance, number of transactions etc.'), $this->entity->access['summary']);
     //anon users cannot pay in or out of wallets
@@ -76,28 +80,26 @@ print_r($this->entity->access);
    */
   //@todo see what parent::save is doing after alpha12
   //It is empty right now but probably it will do all the below
-  function save(array $form, array &$form_state) {
+  function save(array $form, FormStateInterface $form_state) {
     form_state_values_clean($form_state);
+    $values = $form_state->getValues();
     foreach ($this->entity->ops() as $op_name) {
-      if ($form_state['values'][$op_name] == WALLET_ACCESS_OWNER) {
-        $form_state['values'][$op_name] = WALLET_ACCESS_USERS;
-        $form_state['values'][$op_name.'_users'] = $this->entity->getOwner()->getUsername();
-drupal_set_message('replaced owner with user '.$this->entity->getOwner()->getUsername());
+      if ($values[$op_name] == WALLET_ACCESS_OWNER) {
+        $values[$op_name] = WALLET_ACCESS_USERS;
+        $values[$op_name.'_users'] = $this->entity->getOwner()->getOwner()->getUsername();
+        drupal_set_message('replaced owner with user '.$this->entity->getOwner()->getOwner()->getUsername());
       }
-      if ($form_state['values'][$op_name] == WALLET_ACCESS_USERS) {
+      if ($values[$op_name] == WALLET_ACCESS_USERS) {
         //TODO isn't there a function for getting the user objects out of the user autocomplete multiple?
         //or at least for exploding tags
-        $usernames = explode(',', $form_state['values'][$op_name.'_users']);
+        $usernames = Tags::explode($values[$op_name.'_users']);
         $users = entity_load_multiple_by_properties('user', array('name' => $usernames));
         $this->entity->access[$op_name] = array_keys($users);
       }
-      else $this->entity->access['$op_name'] = $form_state['values'][$op_name];
+      else $this->entity->access[$op_name] = $values[$op_name];
     }
     $this->entity->save();
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.wallet_view',
-      'route_parameters' => array('mcapi_wallet' => $this->entity->id())
-    );
+    $form_state->setRedirect('mcapi.wallet_view', array('mcapi_wallet' => $this->entity->id()));
   }
 
 

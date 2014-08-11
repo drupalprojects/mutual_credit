@@ -20,10 +20,6 @@ services:
     tags:
       - { name: access_check, applies_to: _wallet_add_access  }
 
-  plugin.manager.mcapi.wallet_access:
-    class: Drupal\mcapi\Plugin\WalletAccess\WalletAccessManager
-    arguments: [@container.namespaces, @module_handler, @current_user]
-
 #  logger.mcapi:
 #    class: Drupal\mcapi\McapiLogger
 #    #  arguments: ['@logger.factory']

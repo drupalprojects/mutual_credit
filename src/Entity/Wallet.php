@@ -72,9 +72,9 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       $this->owner = \Drupal::entityManager()
         ->getStorage($this->entity_type->value)
         ->load($this->pid->value);
+      //in the impossible event that there is no owner, set
       if (!$this->owner) {
-        drupal_set_message('Wallet '.$this->id() .'had no owner.');
-        $this->owner = Exchange::load(1);
+        throw new \Exception('Wallet has no owner: '.$this->entity_type->value .' '.$this->pid->value);
       }
     }
     //if for some reason there isn't an owner, return exchange 1 so as not to break things
@@ -122,10 +122,13 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     if (!array_key_exists('pid', $values) && array_key_exists('entity_type', $values)) {
       throw new Exception("new wallets must have an entity_type and a parent entity_id (pid)");
     }
+    $values += array('name' => '');
     //put the default values for the access here
     $access_settings = \Drupal::config('mcapi.wallets')->getRawData();
     foreach (Wallet::ops() as $op) {
-      $values[$op] = key(array_filter($access_settings[$op]));
+      if (!array_key_exists($op, $values)) {
+        $values[$op] = key(array_filter($access_settings[$op]));
+      }
     }
   }
 

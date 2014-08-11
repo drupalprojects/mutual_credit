@@ -18,7 +18,7 @@ class CommandSettings extends ConfigFormBase {
 		return 'mcapi_transition_settings_form';
 	}
 
-	public function buildform(array $form, array &$form_state) {
+	public function buildform(array $form, $form_state) {
 		$tokens = array('[transaction:payer] OR [transaction:payee]', '[transaction:quantity]', '[transaction:description]');
     $config = $this->configFactory->get('mcapi.command');
 		$form['requests'] = array(
@@ -104,10 +104,10 @@ class CommandSettings extends ConfigFormBase {
 	/**
 	 * {@inheritdoc}
 	 */
-	public function submitForm(array &$form, array &$form_state, $op = NULL) {
+	public function submitForm(array &$form, $form_state, $op = NULL) {
 		//do we need to clean form_state['values']?
 		$config = $this->configFactory->get('mcapi.command');
-		foreach ($form_state['values'] as $key => $val) {
+		foreach ($form_state->getValues() as $key => $val) {
 			$config->set($key, $val);
 		}
 		$config->save();
@@ -119,7 +119,7 @@ class CommandSettings extends ConfigFormBase {
 	 * element validate callback
 	* ensures that command syntax contains the critical tokens
 	*/
-	function validate_commands_syntax(&$element, &$form_state) {
+	function validate_commands_syntax(&$element, $form_state) {
 		$templates = explode("\n", $element['#value']);
 		foreach($templates as $template) {
 			//check it has quantity in it

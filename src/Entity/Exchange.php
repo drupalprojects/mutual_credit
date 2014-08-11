@@ -80,10 +80,10 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   }
 
   /**
-   * Create the _intertrading wallet
+   * Create the _intertrading wallet and ensure the manager user is in the exchange
    */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
-    //add the manager user to the exchange if it is not a member
+    //TODO add the manager user to the exchange if it is not a member
     //$exchange_manager = User::load($this->get('uid')->value);
 
     //create a new wallet for new exchanges
@@ -91,10 +91,14 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       $props = array(
         'entity_type' => 'mcapi_exchange',
         'pid' => $this->id(),
-        'name' => '_intertrading'
+        'name' => '_intertrading',
+        'details' => WALLET_ACCESS_AUTH,
+        'summary' => WALLET_ACCESS_AUTH,
+        'payin' => WALLET_ACCESS_AUTH,
+        'payout' => WALLET_ACCESS_AUTH
       );
       $wallet = Wallet::create($props);
-//      $wallet->save();
+      $wallet->save();
     }
   }
 

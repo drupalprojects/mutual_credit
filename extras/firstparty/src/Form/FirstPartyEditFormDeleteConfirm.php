@@ -8,6 +8,7 @@
 namespace Drupal\mcapi_1stparty\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Builds the form to delete a contact category.
@@ -40,12 +41,10 @@ class FirstPartyEditFormDeleteConfirm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, array &$form_state) {
+  public function submit(array $form, FormStateInterface $form_state) {
     $this->entity->delete();
     drupal_set_message(t('"%label" has been deleted.', array('%label' => $this->entity->label())));
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_1stparty_editform_list'
-    );
+    $form_state->setRedirect = array('mcapi.admin_1stparty_editform_list');
   }
 
 }

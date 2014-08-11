@@ -26,7 +26,7 @@ class AdminLinkEdit extends LinkEdit {
   /**
    * {@inheritdoc}
    */
-  public function buildOptionsForm(&$form, &$form_state) {
+  public function buildOptionsForm(&$form, $form_state) {
     parent::buildOptionsForm($form, $form_state);
     // Get list of permissions
     foreach (\Drupal::moduleHandler()->getImplementations('permission') as $module) {

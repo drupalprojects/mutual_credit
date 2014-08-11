@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Links to the transaction certificate
@@ -39,7 +40,7 @@ class View extends TransitionBase {//does it go without saying that this impleme
   /*
    * {@inheritdoc}
   */
-  public function buildConfigurationForm(array $form, array &$form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
     unset($form['sure']['button'], $form['sure']['cancel_button'], $form['notify'], $form['feedback']);
     $form['sure']['#title'] = t('Display page');

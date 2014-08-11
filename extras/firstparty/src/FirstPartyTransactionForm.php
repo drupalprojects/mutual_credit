@@ -45,7 +45,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * Get the original transaction form and alter it according to
    * the 1stparty form saved in $this->config.
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, $form_state) {
     //@todo we need to be able to pass in an entity here from the context
     //and generate $this->entity from it before building the base transaction form.
     //have to wait and how that might work in panels & blocks in d8
@@ -202,10 +202,11 @@ class FirstPartyTransactionForm extends TransactionForm {
    */
 
   function firstparty_convert_direction(&$element, $form_state) {
+    debug('check whether we should get the form_builder service in order to set values in $form_state');
     $form_builder = \Drupal::service('form_builder');
-    $values = &$form_state['values'];
-    $form = &$form_state['complete_form'];
-    if ($form_state['values']['direction'] == 'outgoing') {
+    $values = $form_state->getValues();
+    $form = $form_state->getCompleteForm();
+    if ($values['direction'] == 'outgoing') {
       $form_builder->setValue($form['payer'], $values['partner'], $form_state);
       $form_builder->setValue($form['payee'], $values['mywallet_value'], $form_state);
     }
@@ -218,16 +219,18 @@ class FirstPartyTransactionForm extends TransactionForm {
   /*
    * element validation callback
    * convert the firstparty, 3rdparty and direction fields into payer and payee.
+   * @todo check the best way to setValue after alpha 14
    */
-  public function validate(array $form, array &$form_state) {
-    $my_wallet_id = array_key_exists('mywallet_value', $form_state['values']) ?
-      $form_state['values']['mywallet_value'] :
-      $form_state['values']['mywallet'];
-    $partner_wallet_id = $form_state['values']['intertrade'] ?
-      $form_state['values']['partner_all'] :
-      $form_state['values']['partner'];
+  public function validate(array $form, $form_state) {
+    $values = $form_state->getValues();
+    $my_wallet_id = array_key_exists('mywallet_value', $values) ?
+      $values['mywallet_value'] :
+      $values['mywallet'];
+    $partner_wallet_id = $values['intertrade'] ?
+      $values['partner_all'] :
+      $values['partner'];
 
-    if ($form_state['values']['direction'] == 'outgoing') {
+    if ($values['direction'] == 'outgoing') {
       //$element is only needed for the parents
       \Drupal::formBuilder()->setValue($form['payee'], $partner_wallet_id, $form_state);
       \Drupal::formBuilder()->setValue($form['payer'], $my_wallet_id, $form_state);
@@ -244,7 +247,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * Returns an array of supported actions for the current entity form.
    * //TODO Might be ok to delete this now
    */
-  protected function actions(array $form, array &$form_state) {
+  protected function actions(array $form, $form_state) {
     $actions = parent::actions($form, $form_state);
     if ($this->config->experience['preview'] == 'ajax') {
       //this isn't working at all...

@@ -40,7 +40,7 @@ class views_handler_filter_mcapi_index_diff extends views_handler_filter_numeric
     $this->query->add_where($this->options['group'], "$this->table_alias.diff", 0, $this->operator);
   }
 
-  function exposed_form(&$form, &$form_state) {
+  function exposed_form(&$form, $form_state) {
     parent::exposed_form($form, $form_state);
     $form['diff_op']['#type'] = 'radios';
     unset($form['diff']);

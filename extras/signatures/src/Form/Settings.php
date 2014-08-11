@@ -8,7 +8,8 @@
 namespace Drupal\mcapi_signatures\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
-use \Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Type;
 
 class Settings extends ConfigFormBase {
@@ -31,7 +32,7 @@ class Settings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     //TODO This would look really tidy in a grid - but forms in tables are tricky
     //this prefix could go in hook_help, but is quite important to understand in more complex setups
     $form['#prefix'] = implode(' ', array(
@@ -58,16 +59,16 @@ class Settings extends ConfigFormBase {
     return parent::buildForm($form, $form_state);
   }
 
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
 
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     form_state_values_clean($form_state);
-    foreach ($form_state['values'] as $type_name => $vals) {
+    foreach ($form_state->getValues() as $type_name => $vals) {
       //go to some extra effort to save booleans in the config
       $this->settings->set($type_name.'.both', !empty($vals['both']));
       $this->settings->set($type_name.'.exman', !empty($vals['exman']));
@@ -76,9 +77,7 @@ class Settings extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
 
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin.transactions'
-    );
+    $form_state->setRedirect('mcapi.admin.transactions');
   }
 }
 

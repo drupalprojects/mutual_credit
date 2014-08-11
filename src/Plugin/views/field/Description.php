@@ -9,9 +9,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\Standard;
 use Drupal\views\ResultRow;
-//use Drupal\views\Plugin\views\display\DisplayPluginBase;
-//use Drupal\Component\Annotation\PluginID;
-//use Drupal\views\Plugin\views\field\FieldPluginBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Field handler to link the transaction description to the transaction itself
@@ -34,7 +32,7 @@ class Description extends Standard {
   /**
    * {@inheritdoc}
    */
-  public function buildOptionsForm(&$form, &$form_state) {
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     $form['link'] = array(
       '#title' => t('Link to the transaction'),
       '#type' => 'checkbox',

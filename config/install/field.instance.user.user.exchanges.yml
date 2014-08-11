@@ -20,6 +20,6 @@ settings:
       direction: ASC
 dependencies:
   entity:
-    - field.field.user.exchanges
+    - field.storage.user.exchanges
 field_type: entity_reference
 

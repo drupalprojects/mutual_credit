@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\Core\Form\FormStateInterface;
 
 class WalletAddForm extends Formbase {
 
@@ -18,7 +19,7 @@ class WalletAddForm extends Formbase {
   }
 
 
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $params = RouteMatch::createFromRequest($request)->getParameters()->all();
     list($entity_type, $id) = each($params);
     $owner = \Drupal::EntityManager()->getStorage($entity_type)->load($id);
@@ -75,38 +76,42 @@ class WalletAddForm extends Formbase {
     return $form;
   }
 
-  function validateForm(array &$form, array &$form_state) {
+  function validateForm(array &$form, FormStateInterface $form_state) {
     //just check that the name isn't the same
     //if there was a wallet storage controller this unique checking would happen there.
+    $values = $form_state->getValues();
     $query = db_select('mcapi_wallet', 'w')
     ->fields('w', array('wid'))
-    ->condition('name', $form_state['values']['name']);
+    ->condition('name', $values['name']);
 
     if (!\Drupal::config('mcapi.wallets')->get('unique_names')) {
-      $query->condition('pid', $form_state['values']['pid']);
-      $query->condition('entity_type', $form_state['values']['entity_type']);
+      $query->condition('pid', $values['pid']);
+      $query->condition('entity_type', $values['entity_type']);
     }
     if ($query->execute()->fetchField()) {
-      $this->setFormError('name', $form_state, t("The wallet name '!name' is already used.", array('!name' => $form_state['values']['name'])));
+      $form_state->setFormError(
+        'name',
+        t("The wallet name '!name' is already used.", array('!name' => $values['name']))
+      );
     }
   }
 
   /**
    * {@inheritdoc}
    */
-  function submitForm(array &$form, array &$form_state) {
+  function submitForm(array &$form, FormStateInterface $form_state) {
     form_state_values_clean($form_state);
-    $wallet = Wallet::create($form_state['values']);
+    $wallet = Wallet::create($form_state->getValues());
     $wallet->save();
     $pid = $wallet->get('pid')->value;
-    $info = \Drupal::entityManager()
-      ->getStorage($wallet->get('entity_type')->value)
+    $entity_type = $wallet->get('entity_type')->value;
+    $route = \Drupal::entityManager()
+      ->getStorage($entity_type)
       ->load($pid)
-      ->entityInfo();
-    $form_state['redirect_route'] = array(
-      'route_name' => $info['links']['canonical'],
-      'route_parameters' => array($info['id'] => $pid)
-    );
+      ->getLinkTemplate('canonical');
+    debug("redirecting to route $route");
+
+    $form_state->setRedirect($route, array($entity_type => $pid));
   }
 
 }

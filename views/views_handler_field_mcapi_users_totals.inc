@@ -25,7 +25,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
     return $options;
   }
 
-  function options_form(&$form, &$form_state) {
+  function options_form(&$form, $form_state) {
     $currencies = currencies_load();
     module_load_include('inc', 'mcapi');
     $form['curr_id'] = currency_picker_element(array_keys($currencies), $this->options['curr_id'], TRUE);

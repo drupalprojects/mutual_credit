@@ -11,13 +11,14 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\user\Entity\User;
+use Drupal\Core\Form\FormStateInterface;
 
 class ExchangeForm extends ContentEntityForm {
 
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
     $exchange = $this->entity;
@@ -75,11 +76,13 @@ class ExchangeForm extends ContentEntityForm {
     return $form;
   }
 
-  public function validate(array $form, array &$form_state) {
-    $samename = entity_load_multiple_by_properties('mcapi_exchange', array('name' => $form_state['values']['name']));
+  public function validate(array $form, FormStateInterface $form_state) {
+    $values = $form_state->getValues();
+    $samename = entity_load_multiple_by_properties('mcapi_exchange', array('name' => $values['name']));
+    $values = $form_state->getValues();
     foreach ($samename as $exchange) {
-      if ($exchange->id() != $form_state['values']['id']) {
-        $this->errorHandler()->setErrorByName('name', $form_state, t('Another exchange already has that name'));
+      if ($exchange->id() != $values['id']) {
+        $form_state->setErrorByName('name', t('Another exchange already has that name'));
       }
     }
   }
@@ -87,13 +90,9 @@ class ExchangeForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     $status = $this->entity->save();
-
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.exchange.view',
-      'route_parameters' => array('mcapi_exchange' => $this->entity->id())
-    );
+    $form_state->setRedirect('mcapi.exchange.view', array('mcapi_exchange' => $this->entity->id()));
     //either SAVED_UPDATED or SAVED_NEW
     return $status;
   }

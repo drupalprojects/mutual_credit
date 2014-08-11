@@ -18,6 +18,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Database\Database;
 use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\Entity\State;
 
 
 class TransactionStorage extends ContentEntityDatabaseStorage implements TransactionStorageInterface {

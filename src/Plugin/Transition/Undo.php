@@ -8,6 +8,7 @@
 
 namespace Drupal\mcapi\Plugin\Transition;
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\State;
@@ -30,7 +31,7 @@ class Undo extends TransitionBase {
   /**
    * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()
    */
-  public function buildConfigurationForm(array $form, array &$form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
     //@todo check the form hasn't changed in Drupal\mcapi\TransitionBase::buildConfigurationForm()
     unset(

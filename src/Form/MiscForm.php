@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 class MiscForm extends ConfigFormBase {
 
@@ -24,7 +25,7 @@ function __construct(ConfigFactoryInterface $config_factory) {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->settings;
     module_load_include('inc', 'mcapi');
     foreach (mcapi_transaction_list_tokens(TRUE) as $token) {
@@ -52,7 +53,9 @@ function __construct(ConfigFactoryInterface $config_factory) {
       '#default_value' => $config->get('ticks_name'),
       '#weight' => 7
     );
-    $menu_options = module_exists('menu') ? menu_get_menus() : menu_list_system_menus();
+    $menu_options = \Drupal::moduleHandler()->moduleExists('menu')
+      ? menu_get_menus()
+      : menu_list_system_menus();
     $form['exchange_menu'] = array(
       '#title' => t('Menu'),
       '#description' => t("Menu containing dynamic menu links to user's exchange(s)"),
@@ -124,26 +127,27 @@ function __construct(ConfigFactoryInterface $config_factory) {
     return parent::buildForm($form, $form_state);
   }
 
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
 
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
-    $indexRebuild = $this->settings->get('counted') != $form_state['values']['counted'];
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $values = $form_state->getValues();
+    $indexRebuild = $this->settings->get('counted') != $values['counted'];
 
     $this->settings
-      ->set('sentence_template', $form_state['values']['sentence_template'])
+      ->set('sentence_template', $values['sentence_template'])
       //careful the mix_mode flag is inverted!!
-      ->set('exchange_menu', !$form_state['values']['exchange_menu'])
-      ->set('ticks_name', $form_state['values']['ticks_name'])
-      ->set('zero_snippet', $form_state['values']['zero_snippet'])
-      ->set('worths_delimiter', $form_state['values']['worths_delimiter'])
-      ->set('child_errors', $form_state['values']['child_errors'])
-      ->set('counted', $form_state['values']['counted'])
-      ->set('indelible', $form_state['values']['indelible'])
+      ->set('exchange_menu', !$values['exchange_menu'])
+      ->set('ticks_name', $values['ticks_name'])
+      ->set('zero_snippet', $values['zero_snippet'])
+      ->set('worths_delimiter', $values['worths_delimiter'])
+      ->set('child_errors', $values['child_errors'])
+      ->set('counted', $values['counted'])
+      ->set('indelible', $values['indelible'])
       ->save();
 
     parent::submitForm($form, $form_state);
@@ -152,10 +156,7 @@ function __construct(ConfigFactoryInterface $config_factory) {
       //not sure where to put this function
        \Drupal::entityManager()->getStorage('mcapi_transaction')->indexRebuild();
        drupal_set_message("Index table is rebuilt");
-
-       $form_state['redirect_route'] = array(
-       	 'route_name' => 'system.status'
-       );
+       $form_state->setRedirect('system.status');
     }
   }
 }

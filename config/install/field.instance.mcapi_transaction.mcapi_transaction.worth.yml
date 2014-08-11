@@ -14,6 +14,6 @@ default_value_function: ''
 settings: {  }
 dependencies:
   entity:
-    - field.field.mcapi_transaction.worth
+    - field.storage.mcapi_transaction.worth
 field_type: worth
 

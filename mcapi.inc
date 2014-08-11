@@ -252,7 +252,7 @@ function _mcapi_element_info() {
  * @return array
  *   The processed $element, including children
  */
-function _mcapi_worth_element_process($element, &$form_state, $form) {
+function _mcapi_worth_element_process($element, FormStateInterface $form_state, $form) {
   //we might need to filter #default_value not in config mode
   $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
 
@@ -390,7 +390,7 @@ function mcapi_worth_element_process_defaults($element) {
  *   array(curr_id => n) where n is the raw database value
  */
 
-function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
+function mcapi_form_type_worth_value(&$element, $input = FALSE, FormStateInterface $form_state) {
   if ($input === FALSE) return;
   $output = array();
   foreach ($input as $curr_id => $parts) {
@@ -416,11 +416,8 @@ function mcapi_form_type_worth_value(&$element, $input = FALSE, &$form_state) {
 /**
  * element_validate callback for worth field
  * empty callback runs after this
- *
- * @param array $element
- * @param array $form_state
  */
-function mcapi_worth_element_validate($element, &$form_state) {
+function mcapi_worth_element_validate($element, FormStateInterface $form_state) {
 
   //tidy up the detritus from the worth value callback
   foreach ($element['#value'] as $delta => $item) {
@@ -435,15 +432,14 @@ function mcapi_worth_element_validate($element, &$form_state) {
   //TODO form_set_value is deprecated. see datetime_datetime_validate() after alpha12
   form_set_value($element, $element['#value'], $form_state);
   //can't remember how to do this properly
-  //$form_state['controller']->setValue($element, $element['#value'], $form_state);
+  //$form_state->get('controller')->setValue($element, $element['#value'], $form_state);
 
   //ensure the value is not negative
   if (!$element['#config']) {
     foreach ($element['#value'] as $curr_id => $value) {
       if ($value < 0) {
         //TODO check this
-        $form_state['controller']->setError($element, $form_state, t('Negative amounts not allowed'));
-        $form_state['controller']->errorHandler()->setError($element, $form_state, t('Negative amounts not allowed'));
+        $form_state->setError($element, t('Negative amounts not allowed'));
       }
     }
   }
@@ -873,16 +869,17 @@ function bundles_in_exchanges() {
  * Alert the system if the user is joining or leaving an exchange
  * it's too bad this can't be done with entity_presave rather than with form_submit
  */
-function mcapi_exchanges_changed_submit($form, &$form_state) {
+function mcapi_exchanges_changed_submit($form, FormStateInterface $form_state) {
   //check if the exchanges are different in the stored entity and the form values
   //the stored entity isn't updated.
-  $entity = $form_state['controller']->getEntity();
+  $entity = $form_state->get('controller')->getEntity();
   //lookup the name of the exchanges field.
   $fieldnames = get_exchange_entity_fieldnames();
   $fieldname = $fieldnames[$entity->getEntityTypeId()];
   $new = $saved = array();
   //compare the saved entity with the submitted values
-  foreach ($form_state['values'][$fieldname] as $item) {
+  $values = $form_state->getValues();
+  foreach ($values[$fieldname] as $item) {
     $new[] = $item['target_id'];
   }
   foreach ($entity->{$fieldname}->getValue(FALSE) as $item) {

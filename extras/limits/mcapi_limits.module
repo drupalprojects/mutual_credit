@@ -67,7 +67,7 @@ function mcapi_limits_saved_plugin(CurrencyInterface $currency, $name = '') {
  * Add the limits section to the currency form
  * @todo clear the wallet entity cache of all wallets that might be holding this currency
  */
-function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, &$form_state) {
+function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
   form_load_include($form_state, 'inc', 'mcapi_limits');
   _mcapi_limits_form_mcapi_currency_edit_form_alter($form, $form_state);
 }
@@ -247,7 +247,7 @@ function mcapi_limits_process_minmax(&$element) {
  * array($curr_id => array($min, $max));
  */
 //Why is this function running BEFORE the worth has been calculated? What an ugly hack. McNasty.
-function mcapi_limits_form_type_minmax_value(&$element, $input = FALSE, &$form_state) {
+function mcapi_limits_form_type_minmax_value(&$element, $input = FALSE, $form_state) {
   if ($input === FALSE) return;
   $element = mcapi_limits_process_minmax($element);//why was the element sent through partuly unprocessed?
   $output['min'] = mcapi_form_type_worth_value($element['min'], $input['min'], $form_state);

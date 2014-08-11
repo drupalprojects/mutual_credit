@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Drupal\Component\Utility\String;
 
@@ -33,7 +34,7 @@ class WorthWidget extends WidgetBase {
    *
    * @see \Drupal\Core\Field\WidgetInterface
    */
-  public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, array &$form_state) {
+  public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     //element may already contain #allowed_curr_ids
     return $element + array(
       '#title' => String::checkPlain($this->fieldDefinition->getLabel()),
@@ -49,7 +50,7 @@ class WorthWidget extends WidgetBase {
    * {@inheritdoc}
    */
 
-  public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, array &$form_state) {
+  public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
     echo "\Drupal\mcapi\Plugin\Field\FieldWidget\WorthWidget::errorElement hasn't been written yet";
     mdump($violation);
     if ($violation->arrayPropertyPath == array('format') && isset($element['format']['#access']) && !$element['format']['#access']) {

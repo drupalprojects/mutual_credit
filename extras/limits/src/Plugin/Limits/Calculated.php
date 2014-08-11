@@ -8,7 +8,8 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Calculate the balance limits
@@ -24,7 +25,7 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
   /**
    * {@inheritdoc}
    */
-  public function buildConfigurationForm(array $form, array &$form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $subform = parent::buildConfigurationForm($form, $form_state);
     $subform['max_formula'] = array(
       '#prefix' => t('N.B Result values are measured in native units, which might be cents, or seconds'),
@@ -73,7 +74,7 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    * @param unknown $element
    * @param unknown $form_state
    */
-  public function validate_formula($element, &$form_state) {
+  public function validate_formula($element, $form_state) {
     if (!strlen($element['#value'])) return;
     $test_values = array('gross_in' => 110, 'gross_out' => 90, 'trades' => 10, 'partners' => 5);
     $value = $this->parse($element['#value'], $test_values);

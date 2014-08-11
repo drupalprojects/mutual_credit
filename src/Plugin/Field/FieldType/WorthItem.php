@@ -60,14 +60,14 @@ class WorthItem extends FieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function __settingsForm(array &$form, array &$form_state, $has_data) {
+  public function __settingsForm(array &$form, $form_state, $has_data) {
     //return array();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function __instanceSettingsForm(array $form, array &$form_state) {
+  public function __instanceSettingsForm(array $form, $form_state) {
     return $form;
   }
 

@@ -24,6 +24,6 @@ interface McapiLimitsInterface extends ConfigurablePluginInterface, PluginFormIn
 
 
   //NB this function receives an extra hidden argument, mcapiCurrency $currency
-  //public function buildConfigurationForm(array $form, array &$form_state);
+  //public function buildConfigurationForm(array $form, $form_state);
 
 }

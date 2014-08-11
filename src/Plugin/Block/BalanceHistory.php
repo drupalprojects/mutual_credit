@@ -8,6 +8,7 @@ namespace Drupal\mcapi\Plugin\Block;
  */
 
 use Drupal\mcapi\Plugin\Block\McapiBlockBase;
+use Drupal\Core\Form\FormStateInterface;
 
 
 /**
@@ -26,7 +27,7 @@ class BalanceHistory extends McapiBlockBase {
     return $conf += array('width' => 250);
   }
 
-  public function blockForm($form, &$form_state) {
+  public function blockForm($form, FormStateInterface $form_state) {
     $form = parent::blockForm($form, $form_state);
     $form['width'] = array(
       '#title' => t('Width in pixels'),

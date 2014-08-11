@@ -45,10 +45,10 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    *   A transaction entity object
    *
    * @param array $context
-   *   the $form_state 'values', the plugin 'config', the transation 'old_state'
+   *   the $form_state->values, the plugin 'config', the transation 'old_state'
    *
-   * @return string
-   *   an html snippet for the new page, or which in ajax mode replaces the form
+   * @return array
+   *   a renderable array
    *
    * @throws McapiTransactionException
    */
@@ -60,7 +60,7 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * then the function exits;
    *
    * @param array $form_state_values
-   *   the contents of $form_state['values']
+   *   the result of $form_state->getValues()
    */
   public function ajax_submit(array $form_state_values);
 

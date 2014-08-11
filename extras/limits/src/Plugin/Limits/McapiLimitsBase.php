@@ -7,8 +7,9 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi\Entity\CurrencyInterface;
-use \Drupal\Core\Form\ConfigFormBase;
+use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Base class for Transitions for default methods.
@@ -51,7 +52,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   /**
    * {@inheritdoc}
    */
-	public function buildConfigurationForm(array $form, array &$form_state) {
+	public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
 
 	  //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
 	  $subform['override'] = array(
@@ -100,12 +101,13 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
     return $subform;
 	}
 
-	public function validateConfigurationForm(array &$form, array &$form_state) {
+	public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
 
 	}
 
-	public function submitConfigurationForm(array &$form, array &$form_state) {
-	  foreach ($form_state['values']['limits_settings'] as $key => $value) {
+	public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+	  $values = $form_state->getvalues();
+	  foreach ($values['limits_settings'] as $key => $value) {
       $this->configuration[$key] = $value;
 	  }
 	}

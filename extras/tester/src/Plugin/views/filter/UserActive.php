@@ -17,7 +17,7 @@ use Drupal\views\Plugin\views\filter\FilterPluginBase;
  */
 class UserActive extends FilterPluginBase {
 
-  protected function valueForm(&$form, &$form_state) {
+  protected function valueForm(&$form, $form_state) {
     // Get list of permissions
     foreach (\Drupal::moduleHandler()->getImplementations('permission') as $module) {
       $permissions = module_invoke($module, 'permission');

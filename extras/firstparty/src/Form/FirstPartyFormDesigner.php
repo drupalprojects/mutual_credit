@@ -9,6 +9,7 @@
 namespace Drupal\mcapi_1stparty\Form;
 
 use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Form\FormStateInterface;
 
 class FirstPartyFormDesigner extends EntityForm {
 
@@ -16,7 +17,7 @@ class FirstPartyFormDesigner extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
     //widgetBase::Form expects this
     $form['#parents'] = array();
@@ -314,25 +315,29 @@ class FirstPartyFormDesigner extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::validate().
    */
-  public function validate(array $form, array &$form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
   }
 
-  public function validate_twig_template(array $element, array &$form_state) {
+  public function validate_twig_template(array $element, $form_state) {
     $txt = $element['#value'];
     $errors = array();
     if (strpos($txt, "{{ mywallet }}") === NULL) {
-      $this->errorHandler()->setError($element, $form_state, t('@token token is required in template', array('@token' => '{{ mywallet }}')));
+      $form_state->setError(
+        $element,
+        t('@token token is required in template', array('@token' => '{{ mywallet }}'))
+      );
     }
+    $values = $form_state->getValues();
     //the essential transaction fields must be either present in the template or populated
-    if ((strpos($txt, "{{ partner }}") === NULL) && !$form_state['values']['partner']['preset']) {
+    if ((strpos($txt, "{{ partner }}") === NULL) && !$values['partner']['preset']) {
       $errors[] = 'partner';
     }
 
     //and the same for worth
     if (strpos($txt, '{{ worth }}') == NULL) {
       $empty = TRUE;
-      foreach ($form_state['values']['fieldapi_presets']['worth']['preset'] as $item) {
+      foreach ($values['fieldapi_presets']['worth']['preset'] as $item) {
         if ($item['value']) {
           $empty = FALSE;
           break;
@@ -341,9 +346,8 @@ class FirstPartyFormDesigner extends EntityForm {
       $errors[] = 'worth';
     }
     foreach ($errors as $field_name) {
-      $this->errorHandler()->setError(
+      $form_state->setError(
         $element,
-        $form_state,
         t(
           'Field @fieldname neither appears in the form, nor has a preset value',
           array('@fieldname' => $field_name)
@@ -355,17 +359,21 @@ class FirstPartyFormDesigner extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     form_state_values_clean($form_state);
+    $values = $form_state->getValues();
     //now save the firstparty_editform settings
 
     //we need to alter the structure a bit for the fieldAPI fields
-    foreach ($form_state['values']['fieldapi_presets'] as $field_name => $data) {
-      $form_state['values']['fieldapi_presets'][$field_name] = $data['preset'];
+    foreach ($values['fieldapi_presets'] as $field_name => $data) {
+      $values['fieldapi_presets'][$field_name] = $data['preset'];
     }
-    foreach ($form_state['values'] as $name => $value) {
-      if (in_array($value, array('actions', 'langcode')));
-      $this->entity->set($name, $value);
+    $form_state->addValue('fieldapi_presets', $values['fieldapi_presets']);
+
+    foreach ($values as $name => $value) {
+      if (!in_array($value, array('actions', 'langcode'))) {
+        $this->entity->set($name, $value);
+      }
     }
     $status = $this->entity->save();
 
@@ -377,19 +385,18 @@ class FirstPartyFormDesigner extends EntityForm {
     else {
       drupal_set_message(t("Form '%label' has been added.", array('%label' => $this->entity->get('title'))));
     }
-    $form_state['redirect_route'] = array(
-      'route_name' => 'mcapi.admin_1stparty_editform_list'
-    );
+    $form_state->setRedirect('mcapi.admin_1stparty_editform_list');
   }
 
   //is called from the form validator, so must be public
-  public function unique_path(&$element, &$form_state) {
+  public function unique_path(&$element, FormStateInterface $form_state) {
+    $values = $form_state->getValues();
     $dupe = db_select('router', 'r')
       ->fields('r', array('name'))
-      ->condition('name', 'mcapi.1stparty.'.$form_state['values']['id'], '<>')
-      ->condition('path', $form_state['values']['path'])
+      ->condition('name', 'mcapi.1stparty.'.$values['id'], '<>')
+      ->condition('path', $values['path'])
       ->execute()->fetchField();
-    if ($dupe) \Drupal::formBuilder()->setError('path', $form_state, t('Path is already used.'));
+    if ($dupe) $form_state->setError('path', t('Path is already used.'));
   }
 
 

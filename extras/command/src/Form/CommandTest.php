@@ -19,7 +19,7 @@ class CommandTest extends ConfigFormBase {
 		return 'mcapi_transition_settings_form';
 	}
 
-	public function buildform(array $form, array &$form_state) {
+	public function buildform(array $form, $form_state) {
 		$form['command'] = array(
 	    '#title' => t('Command line interface'),
 	    '#type' => 'fieldset',
@@ -51,13 +51,14 @@ class CommandTest extends ConfigFormBase {
 	/**
 	 * {@inheritdoc}
 	 */
-	public function submitForm(array &$form, array &$form_state) {
+	public function submitForm(array &$form, $form_state) {
 		parent::submitForm($form, $form_state);
+		$values = $form_state->getValues();
 		try {
-			drupal_set_message('TESTING ONLY: '. $form_state['values']['input'], 'status', FALSE);
+			drupal_set_message('TESTING ONLY: '. $values['input'], 'status', FALSE);
 			$response = process_mcapi_command(
-				$form_state['values']['input'],
-				User::load($form_state['values']['sender']),
+				$values['input'],
+				User::load($values['sender']),
 				FALSE
 			);
 		}

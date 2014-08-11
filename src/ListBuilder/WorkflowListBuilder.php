@@ -8,8 +8,10 @@
  */
 
 namespace Drupal\mcapi\ListBuilder;
+
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Form\FormInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\State;
 
@@ -60,7 +62,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     );
   }
 
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $form = array();
     $form['plugins'] = array(
       '#type' => 'table',
@@ -88,16 +90,17 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     return $form;
   }
 
-  function validateForm(array &$form, array &$form_state) {
+  function validateForm(array &$form, FormStateInterface $form_state) {
 
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $plugins = transaction_transitions();
-    foreach ($form_state['values']['plugins'] as $id => $value) {
+    $values = $form_state->getValues();
+    foreach ($values['plugins'] as $id => $value) {
       \Drupal::config('mcapi.transition.'.$id)
         ->set('weight', $value['weight'])
         ->save();

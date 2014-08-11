@@ -7,7 +7,7 @@
 
 
 use Drupal\user\Entity\User;
-use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldInstanceConfig;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Wallet;
 
@@ -16,8 +16,10 @@ use Drupal\mcapi\Entity\Wallet;
  */
 function mcapi_install() {
   module_set_weight('field_ui', -1);//mcapi has to be after field_ui for mcapi_local_tasks_alter
-  //see field_ui_local_tasks_alter() where $local_task->alterLocalTasks($local_tasks); replaces some tasks already passed
+  //see field_ui_local_tasks_alter() where
+  //$local_task->alterLocalTasks($local_tasks); replaces some tasks already passed
 }
+
 
 /**
  * implements hook_modules_installed().
@@ -25,6 +27,7 @@ function mcapi_install() {
  */
 function mcapi_modules_installed($modules) {
   if (!in_array('mcapi', $modules)) return;
+
   //for the rest of this we need the config files
   //set the path of the zero image in currency 1
   $config = \Drupal::config('mcapi.misc');
@@ -45,6 +48,7 @@ function mcapi_modules_installed($modules) {
   $ex = Exchange::create($props);
   $ex->save();
   drupal_set_message(t('First exchange created.'));
+
   //we need to deal with existing users, especially user 1
   //in accordance with the default wallet settings
   //-put every user in the default exchange
@@ -54,7 +58,7 @@ function mcapi_modules_installed($modules) {
     $account->set('exchanges', array($ex->id()));
     $account->save();
 
-    //give every user a wallet
+    //give every existing user a wallet
     $values = array('entity_type' => $account->getEntityTypeId(), 'pid' => $account->id());
     $w = Wallet::create($values);
     $w->set('name', t("@name's default wallet", array('@name' => $account->label())));
@@ -74,9 +78,11 @@ function mcapi_modules_installed($modules) {
  * @todo Remove the hard coded fieldAPI fields
  * need to do this in devel/php before uninstalling:
  *
-  use Drupal\field\Entity\FieldConfig;
-  FieldConfig::load('mcapi_transaction.worth')->delete();
-  field_purge_batch(1);
+  use Drupal\field\Entity\FieldStorageConfig;
+  FieldStorageConfig::load('mcapi_transaction.worth')->delete();
+  FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
+  FieldStorageConfig::load('user.exchanged')->delete();
+  field_purge_batch(3);
  */
 function mcapi_uninstall() {
   $instances = array(
@@ -84,18 +90,15 @@ function mcapi_uninstall() {
     'user.exchanges'
   );
   foreach ($instances as $config) {
-    if ($instance = FieldConfig::load($config)) {
+    if ($instance = FieldInstanceConfig::load($config)) {
       drupal_set_message("deleting field $config");
       $instance->delete();
     }
   }
   field_purge_batch(3);
   drupal_set_message('now run cron to clear the fieldAPI');
+  return;
   //this shouldn't be necessary!!
-  db_drop_table('mcapi_exchange__worth');
-  db_drop_table('mcapi_exchange_revision__worth');
-  db_drop_table('mcapi_exchange__currencies');
-  db_drop_table('mcapi_exchange_revision__currencies');
   db_drop_table('user__exchanges');
   db_drop_table('user_revision__exchanges');
 }
@@ -130,6 +133,7 @@ function mcapi_schema() {
 
 /*
  * change the database tables
+ * DOES HOOK_UPDATE_N EXIST ANY MORE?
  */
 function mcapi_update_8000() {
   //put the transaction description data into the entity table

@@ -17,5 +17,5 @@ settings:
     target_bundles: {  }
 dependencies:
   entity:
-    - field.field.mcapi_exchange.currencies
+    - field.storage.mcapi_exchange.currencies
 field_type: entity_reference

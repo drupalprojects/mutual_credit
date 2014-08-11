@@ -11,6 +11,7 @@ use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Field handler to present trading stats for the user
@@ -31,7 +32,7 @@ class UserStats extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function buildOptionsForm(&$form, &$form_state) {
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     $form['separator'] = array(
       '#title' => t('Separator between different stats'),
       '#type' => 'textfield',

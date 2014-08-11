@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Plugin\views\filter;
 
 use Drupal\views\Plugin\views\filter\FilterPluginBase;
 use Drupal\Component\Annotation\PluginID;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Filter by the exchange's privacy setting
@@ -37,5 +38,5 @@ class ExchangeVisibility extends FilterPluginBase {
   }
 
   //there is nothing to expose
-  public function showExposeButton(&$form, &$form_state) {}
+  public function showExposeButton(&$form, FormStateInterface $form_state) {}
 }

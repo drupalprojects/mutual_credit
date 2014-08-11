@@ -9,7 +9,11 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Utility\Token;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldInstanceConfig;
+use Drupal\user\EntityOwnerInterface;
+use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Entity\ExchangeInterface;
@@ -19,10 +23,7 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\Exchange;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Entity\FieldInstanceConfig;
-use Drupal\user\EntityOwnerInterface;
-use Drupal\user\Entity\User;
+use Drupal\Component\Utility\NestedArray;
 
 //we could maybe do without these
 define('CURRENCY_TYPE_ACKNOWLEDGEMENT', 'acknowledgement');
@@ -186,15 +187,14 @@ function mcapi_entity_view(&$build, $entity, $mode, $language) {
  * Form_alter is rather a blunt instrument but it is the best available.
  * Would be better to use hook_entity_presave or postsave but the old values aren't available there
  */
-function mcapi_form_alter(&$form, &$form_state, $form_id) {
-  if (array_key_exists('controller', $form_state) && $form_state['controller'] instanceof \Drupal\Core\Entity\ContentEntityFormController) {
-    $entity = $form_state['controller']->getEntity();
-    module_load_include('inc', 'mcapi');
+function mcapi_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if (array_key_exists('controller', $form_state) && $form_state->get('controller') instanceof \Drupal\Core\Entity\ContentEntityFormController) {
+    $entity = $form_state->get('controller')->getEntity();
+    form_load_include($form_state, 'inc', 'mcapi');
     $lookup = bundles_in_exchanges();
     $entity_type = $entity->getEntityTypeId();
     if (array_key_exists($entity_type, $lookup)) {
       if (array_key_exists($entity->bundle(), $lookup[$entity_type])) {
-        form_load_include($form_state, 'inc', 'mcapi');
         array_unshift($form['actions']['submit']['#submit'], 'mcapi_exchanges_changed_submit');
       }
     }
@@ -388,7 +388,7 @@ function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = 
 function get_exchange_entity_fieldnames() {
   $types = array();
   //get all the instances of these fields
-  foreach (entity_load_multiple_by_properties('field_config', array('type' => 'entity_reference')) as $field) {
+  foreach (entity_load_multiple_by_properties('field_storage_config', array('type' => 'entity_reference')) as $field) {
     if ($field->settings['target_type'] == 'mcapi_exchange') {
       $types[$field->entity_type] = $field->name;
     }
@@ -461,7 +461,7 @@ function mcapi_element_info() {
  * process callback for worth form element
  * This single element processes multiple currencies as one value, like the checkboxes widget
  */
-function mcapi_worth_element_process($element, &$form_state, $form) {
+function mcapi_worth_element_process($element, FormStateInterface $form_state, $form) {
   form_load_include($form_state, 'inc', 'mcapi');
   return _mcapi_worth_element_process($element, $form_state, $form);
 }
@@ -470,8 +470,6 @@ function mcapi_worth_element_process($element, &$form_state, $form) {
 /**
  * process callback for mcapi_state form element
  *
- * @param array $element
- * @param array $form_state
  * @return array
  *   the processed $element
  */
@@ -484,8 +482,6 @@ function mcapi_process_states($element) {
 /**
  * process callback for mcapi_types form element
  *
- * @param array $element
- * @param array $form_state
  * @return array
  *   the processed $element
  */
@@ -497,8 +493,6 @@ function mcapi_process_types($element) {
 /**
  * process callback for mcapi_currency_select form element
  *
- * @param array $element
- * @param array $form_state
  * @return array
  *   the processed $element
  */
@@ -546,7 +540,7 @@ function mcapi_process_currcodes($element) {
 /**
  * process callback for wallet_select element
  */
-function mcapi_process_select_wallet($element, &$form_state) {
+function mcapi_process_select_wallet($element, FormStateInterface $form_state) {
   $element['#autocomplete_route_name'] = $element['#local']
     ? 'mcapi.wallets.autocomplete'
     : 'mcapi.wallets.autocomplete_all';
@@ -557,7 +551,7 @@ function mcapi_process_select_wallet($element, &$form_state) {
  * value callback for wallet widget
  * takes from the autocomplete select_wallet field and returns an integer candidate wallet id.
  */
-function form_type_select_wallet_value(&$element, $input, &$form_state) {
+function form_type_select_wallet_value(&$element, $input, FormStateInterface $form_state) {
   if (empty($input)) return;
   if (is_numeric($input) && is_integer($input + 0)) {
     return $input;
@@ -570,7 +564,7 @@ function form_type_select_wallet_value(&$element, $input, &$form_state) {
  * element_validate callback for select_wallet
  * ensure the passed value is a wallet id, not of an intertrading wallet
  */
-function local_wallet_validate_id(&$element, &$form_state) {
+function local_wallet_validate_id(&$element, FormStateInterface $form_state) {
   $message = '';
   if (is_numeric($element['#value'])) {
     $wallet = Wallet::load($element['#value']);
@@ -661,27 +655,20 @@ function mcapi_default_currency_id(ExchangeInterface $entity, $field_definition)
  * give a new wallet to new entities, if the settings require
  */
 function mcapi_entity_insert($entity) {
-  $type = $entity->getEntityTypeId();
-  if (!\Drupal::config('mcapi.wallets')->get('autoadd')) return;
-  $entity_bundle = $type .':'. $entity->bundle();
-  $max = \Drupal::config('mcapi.wallets')->get('entity_types.'.$entity_bundle);
-  if (!$max) return;
-  //no need to check what the max is, since this is the first wallet created for this entity
-  $wallet = array(
-    'entity_type' => $type,
-    'pid' => $entity->id(),
-    'viewers' => 'dunno',
-    'payers' => 'dunno',
-    'payees' => 'dunno',
-  );
-  if ($type == 'mcapi_exchange') {
-    $wallet['name'] = '_intertrading';
-    $wallet['details'] = WALLET_ACCESS_AUTH;
-    $wallet['summary'] = WALLET_ACCESS_AUTH;
-    $wallet['payin'] = WALLET_ACCESS_AUTH;
-    $wallet['payout'] = WALLET_ACCESS_AUTH;
+  //note that intertrading wallets are created in Exchange::postSave
+  if (\Drupal::config('mcapi.wallets')->get('autoadd')) {
+    $type = $entity->getEntityTypeId();
+    //NB autoadd applies to ALL entity types or to none
+    $maxes = \Drupal::config('mcapi.wallets')->get('entity_types');
+    if ($max = @$maxes[$type .':'. $entity->bundle()]) {
+      //no need to check what the max is, since this is the first wallet created for this entity
+      Wallet::create(array(
+        'entity_type' => $type,
+        'pid' => $entity->id(),
+        //default access controls are set automatically
+      ))->save();
+    }
   }
-  $wallet = Wallet::create($wallet)->save();
 }
 
 /**
@@ -739,7 +726,7 @@ function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
       );
       array_unshift($build['content'], $renderable);
     }
-    //@todo exchange admins links to their currency(s) OR a link to admin/accounting/currencies
+    //TODO exchange admins links to their currency(s) OR a link to admin/accounting/currencies
   }
 }
 
