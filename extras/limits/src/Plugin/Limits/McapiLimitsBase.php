@@ -106,9 +106,11 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
 	}
 
 	public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-	  $values = $form_state->getvalues();
-	  foreach ($values['limits_settings'] as $key => $value) {
-      $this->configuration[$key] = $value;
+	  $values = $form_state->getValues();
+	  if ($values['plugin'] != 'none') {
+  	  foreach (@$values['limits_settings'] as $key => $value) {
+        $this->configuration[$key] = $value;
+	    }
 	  }
 	}
 

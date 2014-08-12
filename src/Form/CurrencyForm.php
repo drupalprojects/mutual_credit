@@ -30,16 +30,24 @@ class CurrencyForm extends EntityForm {
       '#required' => TRUE,
       '#weight' => 0,
     );
-    if (!$this->entity->id()) {
-      //only check validate new currency names for uniqueness
-      //How bad would it be if currency names weren't unique?
-      $form['name']['#element_validate'] = array(array($this, 'currency_name_unique'));
-    }
 
-    $form['id'] = array(
-      '#type' => 'value',
-      '#value' => $currency->id()
-    );
+    if ($currency->id()) {
+      $form['id'] = array(
+        '#type' => 'value',
+        '#value' => $currency->id()
+      );
+    }
+    else {
+      $form['id'] = array(
+        '#type' => 'machine_name',
+        '#maxlength' => 128,
+        '#machine_name' => array(
+          'exists' => '\Drupal\mcapi\Entity\Currency::load',
+          'source' => array('name'),
+        ),
+        '#description' => $this->t('A unique machine-readable name for this Currency. It must only contain lowercase letters, numbers, and underscores.'),
+      );
+    }
 
     //get all users in the exchanges that this currency is in.
     //which exchanges reference this currency?
@@ -130,9 +138,9 @@ class CurrencyForm extends EntityForm {
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
       '#disabled' => (bool)$this->entity->transactions(),
+      '#required' => TRUE,
       '#weight' => 4,
     );
-
 
     $unit_name = \Drupal::config('mcapi.misc')->get('ticks_name');
     $form['ticks'] = array(
@@ -248,12 +256,4 @@ class CurrencyForm extends EntityForm {
     return $combo;
   }
 
-  /**
-   * element validation callback for 'name'
-   */
-  function currency_name_unique(&$element, FormStateInterface $form_state) {
-    if ($currency = entity_load_multiple_by_properties('mcapi_currency', array('name' => $element['#value']))) {
-      $form_state->setErrorByName('name', $this->t('Currency name already used'));
-    }
-  }
 }

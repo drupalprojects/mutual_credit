@@ -203,7 +203,6 @@ function mcapi_limits_element_info() {
       '#tree' => TRUE,
       '#process' => array('mcapi_limits_process_minmax'),
       '#value_callback' => 'mcapi_limits_form_type_minmax_value',
-      '#element_validate' => 'mcapi_limits_minmax_validate',
       '#minus' => FALSE
     )
   );

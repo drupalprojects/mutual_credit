@@ -45,8 +45,6 @@ function template_preprocess_wallet_history(&$vars) {
   $vars['history'] = $history;
 }
 
-
-
 /**
  * implements hook_preprocess_THEMEHOOK for wallet_history
  * generates the javascript for the gchart from the user's history of each currency
@@ -89,7 +87,6 @@ function mcapi_preprocess_wallet_history(&$vars) {
   }
 }
 
-
 /**
  * theme preprocessor for 'wallet_stats'
  * @todo this theme callback is cached - when to clear the cache and what cache is it?
@@ -108,7 +105,6 @@ function template_preprocess_wallet_stats(&$vars) {
   $vars['url'] = url('wallet/'.$vars['wallet']->id());
   $vars['name'] = $vars['wallet']->get('name')->value;
 }
-
 
 /**
  * theme preprocessor for 'wallet_summary'

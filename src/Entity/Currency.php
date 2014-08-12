@@ -93,19 +93,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * Check that the entity name isn't taken
-   */
-  public function validate() {
-    //TODO sort out the violations after d8-alpha12
-    $violations = array();
-    $results = entity_load_multiple_by_properties('mcapi_currency', array('name', $this->name));
-    if (count($results) && current($results)->id() != $this->id()) {
-      $violations[] = array();
-    }
-    return $violations;
-  }
-
-  /**
    * @see \Drupal\mcapi\Entity\CurrencyInterface::label()
    */
   public function label($langcode = NULL) {
@@ -118,6 +105,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * @see \Drupal\mcapi\Entity\CurrencyInterface::transactions()
    */
   public function transactions(array $conditions = array(), $serial = FALSE) {
+    $conditions += array('curr_id' => $this->id());
     $serials = \Drupal::entityManager()
       ->getStorage('mcapi_transaction')
       ->filter($conditions);

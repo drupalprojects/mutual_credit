@@ -120,7 +120,7 @@ mcapi.currency.*:
     uid:
       type: integer
       label: Comptroller
-    isuance:
+    issuance:
       type: string
       label: 'Basis of issuance'
     format:
