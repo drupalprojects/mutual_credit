@@ -451,6 +451,7 @@ function mcapi_mcapi_transaction_operated($transaction, $context) {
 
 /**
  * implements_hook_element_info().
+ * //TODO remove this
  */
 function mcapi_element_info() {
   module_load_include('inc', 'mcapi');

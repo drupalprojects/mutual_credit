@@ -18,7 +18,7 @@ class MassPay extends TransactionForm {
   private $payers;
   private $payees;
   private $exchange_id;
-  //$this->entity refers to the Exchange
+  //$this->entity refers to the Exchange until is changed in $this->form()
 
   public function getFormId() {
     return 'mcapi_mass_payment';
@@ -105,16 +105,24 @@ class MassPay extends TransactionForm {
       $form['type']['#value'] = 'mass';
 
       //TODO
-      /*
-      $form['mail']['#description'] = t('Do not use payer and payee tokens because all will receive the same mail.');
-      //this presumes the existence of the token module in d7
-      $form['mail']['token_tree'] = array(
-        '#theme' => 'token_tree',
-        '#token_types' => array('mcapi'),
-        '#global_types' => FALSE,
-        '#weight' => 3,
+      $form['notification'] = array(
+        '#title' => 'Notify everybody',
+        //TODO decide whether to put rules in a different module
+        '#description' => \Drupal::moduleHandler()->moduleExists('rules') ?
+          $this->t('Ensure this mail does not clash with mails sent by the rules module.') : '',
+      	'#type' => 'fieldset',
+        '#open' => TRUE,
+        '#weight' => 20,
+        'body' => array(
+      	  '#title' => $this->t('Message'),
+          //TODO the tokens?
+          //'#description' => $this->t('The following tokens are available:') .' [user:name]',
+          '#type' => 'textarea',
+          //this needs to be stored per-exchange. What's the best way?
+          '#default_value' => \Drupal::service('user_data')->get('mcapi', \Drupal::currentUser()->id(), 'masspay')
+        )
       );
-      */
+
     }
   }
 
@@ -164,7 +172,11 @@ class MassPay extends TransactionForm {
 
 
   public function submit(array $form, FormStateInterface $form_state) {
-    if (!array_key_exists('op', $form_state->getValues('values'))) {
+    $values = $form_state->getValues();
+    //TODO how do we inject stuff into forms?
+    \Drupal::service('user_data')->set('mcapi', \Drupal::currentUser()->id(), 'masspay', $values['notification']['body']);
+
+    if (!array_key_exists('op', $values)) {
       $form_state->setRebuild(TRUE);
     }
     else {

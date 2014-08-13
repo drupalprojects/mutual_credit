@@ -94,7 +94,7 @@ class CommandSettings extends ConfigFormBase {
 			'#default_value' => $config->get('twitter_response', ''),
 			'#weight' => 0
 		);
-		if (module_exists('twitter')) {
+		if (\Drupal::moduleHandler()->moduleExists('twitter')) {
 			//option for sending a return tweet: mcapi_command_twitter_response
 		}
 		$form['submit'] = array('#type' => 'submit', '#value' => t('Submit'));

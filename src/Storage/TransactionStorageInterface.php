@@ -110,5 +110,4 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
   public function timesBalances($wallet_id, $curr_id, $since);
 
 
-  //public function saveWorths(TransactionInterface $transaction);
 }

@@ -16,7 +16,6 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Datetime\DrupalDateTime;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Entity\Transaction;
@@ -101,9 +100,9 @@ class TransactionForm extends ContentEntityForm {
           )
         ),
       '#default_value' => !empty($transaction->date) ? $transaction->date : '',
-      '#access' => user_access('manage own exchanges'),
+      '#access' => \Drupal::currentUser()->hasPermission('manage own exchanges'),
     );
-    if (module_exists('datetime')) {
+    if (\Drupal::moduleHandler()->moduleExists('datetime')) {
       //improve the date widget, which by a startling coincidence is called 'created' in the node form as well.
       //datetime_form_node_form_alter($form, $form_state, NULL);
     }
@@ -145,8 +144,11 @@ class TransactionForm extends ContentEntityForm {
     }
 
     //make sure we're not running this twice
-    if (array_key_exists('mcapi_validated', $form_state)){'running form validation twice';return;}
-    else $form_state->get('mcapi_validated') = TRUE;
+    if (array_key_exists('mcapi_validated', $form_state)){
+      debug('running form validation twice');
+      return;
+    }
+    else $form_state->set('mcapi_validated', TRUE);
 
     //validate the fieldAPI widgets
     $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);

@@ -89,7 +89,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     if (empty($this->id())) {
       $this->set('id', max(array_keys($this->loadMultiple())) + 1);
     }
-    parent::save();
+    return parent::save();
   }
 
   /**

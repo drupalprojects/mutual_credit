@@ -25,7 +25,7 @@ function mcapi_import_help($path) {
 
       break;
     case 'admin/accounting/import/transactions' :
-      if (module_exists('mcapi_limits')) {
+      if (\Drupal::moduleHandler()->moduleExists('mcapi_limits')) {
         $help[] = '<strong>'.t('Ensure your balance limits settings will not conflict with the import. Consider temporarily disabling the limits module').'</strong>';
       }
       $currencies = currencies_load();

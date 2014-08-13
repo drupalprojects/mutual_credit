@@ -92,8 +92,13 @@ class ExchangeForm extends ContentEntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $status = $this->entity->save();
+    if ($status == SAVED_UPDATED) {
+      drupal_set_message(t('Currency %label has been updated.', array('%label' => $currency->label())));
+    }
+    else {
+      drupal_set_message(t('Currency %label has been added.', array('%label' => $currency->label())));
+    }
     $form_state->setRedirect('mcapi.exchange.view', array('mcapi_exchange' => $this->entity->id()));
-    //either SAVED_UPDATED or SAVED_NEW
     return $status;
   }
 

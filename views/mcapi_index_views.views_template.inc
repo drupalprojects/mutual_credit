@@ -9,7 +9,7 @@ function mcapi_index_views_views_templates() {
   $currencies = currencies_load();
   $multicurrencies = count($currencies) > 1;
 
-  if (module_exists('date_views')) {
+  if (\Drupal::moduleHandler()->moduleExists('date_views')) {
     $view = new view();
     $view->name = 'income_expenditure';
     $view->description = 'two displays showing a users transactions in each direction, by period';
