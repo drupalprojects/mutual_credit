@@ -42,7 +42,7 @@ class Create extends TransitionBase {
   public function execute(TransactionInterface $transaction, array $context) {
     //this transaction came from the tempstore and was validated in step one
     $status = $transaction->save();
-    if (!$status) {
+    if ($status != SAVED_NEW) {
       throw new McapiTransactionException('', t('Failed to save transaction'));
     }
 

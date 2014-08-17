@@ -5,17 +5,12 @@
  * mcapi.module
  */
 
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Utility\Token;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Entity\FieldInstanceConfig;
-use Drupal\user\EntityOwnerInterface;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Entity\ExchangeInterface;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\State;
@@ -62,38 +57,6 @@ function mcapi_requirements($phase) {
   }
 }
 
-/**
- * wrapper around entity_load_multiple
- * load many transactions and key them by serial number instead of xid
- * @param mixed
- *   a serial number or array of serial numbers
- * @return mixed
- *   an array of transaction entities or one transaction entity, depending on the input
- *
- * @todo this is only used twice so far is it really needed?
- */
-function mcapi_transaction_load_by_serial($serials) {
-  $transactions = array();
-  if ($serials) {
-    $results = entity_load_multiple_by_properties('mcapi_transaction', array('serial' => (array)$serials));
-    //put all the transaction children under the parents
-    foreach ($results as $xid => $transaction) {
-      if ($pxid = $transaction->get('parent')->value) {
-        $results[$pxid]->children[] = $transaction;
-        unset($results[$xid]);
-      }
-    }
-    //I had a problem on uninstalling the tester module that all the parents were somehow deleted already
-    //which rather screwed up this function.
-    //change the array keys for the serial numbers
-    foreach ($results as $transaction) {
-      $transactions[$transaction->serial->value] = $transaction;
-    }
-  }
-
-  if (is_array($serials)) return $transactions;
-  else return reset($transactions);
-}
 /**
  * implements hook_help()
  * TODO shouldn't there be some in each page controller to inject help?
@@ -290,6 +253,46 @@ function mcapi_entity_extra_field_info() {
   return _mcapi_entity_extra_field_info();
 }
 
+
+/**
+ * implements hook_mcapi_exchange_view()
+ * adds extra_fields to the exchange
+ */
+function mcapi_exchange_view(&$build, $entity, $mode, $language) {
+
+  $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
+  ->condition('exchanges_target_id', $entity->id())
+  ->countQuery()->execute()->fetchField();
+  $build['members_link'] = array(
+    '#type' => 'item',
+    '#title' => t('@count members', array('@count'=> $count)),
+    'link' => array(
+      '#type' => 'link',
+      '#title' => t('Show members'),
+      '#href' => 'exchange/'.$entity->id().'/members',
+      //maybe instead put a view with the last five members here
+      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+    )
+  );
+  //get all the wallets in this exchange
+  $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
+  //get all the transactions in those wallets
+  $serials = $wids ?
+  \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) : array();
+
+  $build['transactions_link'] = array(
+    '#type' => 'item',
+    '#title' => t('@count transactions', array('@count'=> count(array_unique($serials)))),
+    'link' => array(
+      '#type' => 'link',
+      '#title' => t('Show transactions'),
+      '#href' => 'exchange/'.$entity->id().'/transactions',
+      //TODO maybe instead put a view with the last five members here
+      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+    )
+  );
+}
+
 /**
  * Machine name callback
  * Load a currency, from its id
@@ -334,109 +337,7 @@ function mcapi_entity_label_list($entity_type_id, array $data = array()) {
 }
 
 /**
- * return a list of exchanges from an entity_reference field in an entity
- * If an exchange is passed, it returns itself
- *
- * @param ContentEntityInterface $entity
- *   any Content Entity which has a reference field pointing towards mcapi_exchange entities
- * @return array
- *   of entities, keyed by exchange id
- * @todo cache this
- */
-function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = FALSE, $open = FALSE) {
-  $exchanges = array();
-  if (is_null($entity)) {
-    $entity = User::load(\Drupal::currentUser()->id());
-  }
-  $entity_type = $entity->getEntityTypeId();
-  if ($entity_type == 'mcapi_exchange') {
-    //an exchange references itself only
-    $exchanges[$entity->id()] = $entity;
-  }
-  else{
-    $fieldnames = get_exchange_entity_fieldnames();
-    if ($fieldname = @$fieldnames[$entity_type]) {
-      //TODO I wouldn't be surprised if there was a better way to iterate through these
-      foreach($entity->get($fieldname)->getValue(TRUE) as $item) {
-        if ($item['entity']) {//an empty $item means the exchangeItemList is empty
-          if (($enabled && !$item['entity']->status->value) ||
-            ($open && !$item['entity']->open->value)) {
-              continue;
-          }
-          $exchanges[$item['target_id']] = $item['entity'];
-        }
-      }
-    }
-  }
-  return $exchanges;
-}
-
-/**
- * get a list of all the entity types which have an entity reference field pointing to mcapi_exchange
- *
- * @param string $type
- *   (optional) the name of the entity type
- *
- * @return array
- *   a mapping of entityTypeId to the name of the exchanges entity_reference
- *   field or the fieldname for the given entitytype
- *
- * @todo cache and static this. cache should be cleared whenever fieldInfo changes
- *
- * for every bundle get the name of any entity reference field linked to mcapi_exchanges
- */
-function get_exchange_entity_fieldnames() {
-  $types = array();
-  //get all the instances of these fields
-  foreach (entity_load_multiple_by_properties('field_storage_config', array('type' => 'entity_reference')) as $field) {
-    if ($field->settings['target_type'] == 'mcapi_exchange') {
-      $types[$field->entity_type] = $field->name;
-    }
-  }
-  return $types;
-}
-
-/**
- * get all the currencies from (common to) the given exchanges, sorted
- * @param array $exchanges
- * @param boolean $ticks
- *   filter out currencies with no exchange rate
- * @param boolean $status
- *   filter out disabled currencies
- * @return array
- *   the filtered currencies
- */
-function exchange_currencies(array $exchanges, $ticks = FALSE) {
-  $currencies = array();
-  foreach ($exchanges as $exchange) {
-    //TODO is there a shorter way to iterate through these referenced entities
-    foreach ($exchange->get('currencies')->getValue(TRUE) as $item) {
-      if (empty($item))continue;//this should never happen because an exchange can't have no currencies
-      $currency = $item['entity'];
-      if ($ticks && !$currency->ticks) continue;
-      $currencies[$item['target_id']] = $currency;
-    }
-  }
-  uasort($currencies, array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
-  return $currencies;
-}
-
-/**
- * Load currencies for a given wallet, or common to 2 given users
- * A list of all the currencies in the marketplaces of which the user is a member.
- *
- * @param AccountInterface $account
- *   an entity which might be in an exchange
- * @return array
- *   of currencies
- * @todo move this to where it is needed
- */
-function mcapi_currencies_for_user(AccountInterface $account = NULL, $status = FALSE, $ticks = FALSE) {
-  return exchange_currencies(referenced_exchanges($account, $status), $ticks);
-}
-
-/**
- * implements hook_mcapi_transaction_operated().
+ * example implementation of hook_mcapi_transaction_operated().
  * This invokes rules, if installed, but can be used by any module
  *
  * @param TransactionInterface $transaction
@@ -445,13 +346,12 @@ function mcapi_currencies_for_user(AccountInterface $account = NULL, $status = F
  */
 function mcapi_mcapi_transaction_operated($transaction, $context) {
   //TODO invoke rules hook
-  //make a note that the proper way to trigger mails is via each transitions' settings
-  drupal_set_message('Ran hook_transaction_operated');
+  if (\Drupal::currentUser()->id() == 1) drupal_set_message('Ran hook_transaction_operated');
 }
 
 /**
  * implements_hook_element_info().
- * //TODO remove this
+ * @todo remove this
  */
 function mcapi_element_info() {
   module_load_include('inc', 'mcapi');
@@ -542,9 +442,8 @@ function mcapi_process_currcodes($element) {
  * process callback for wallet_select element
  */
 function mcapi_process_select_wallet($element, FormStateInterface $form_state) {
-  $element['#autocomplete_route_name'] = $element['#local']
-    ? 'mcapi.wallets.autocomplete'
-    : 'mcapi.wallets.autocomplete_all';
+  $exchanges = array_keys(Exchange::referenced_exchanges());
+  $element['#autocomplete_route_parameters'] = array('exchanges' => implode(',', $exchanges));
   return $element;
 }
 
@@ -624,7 +523,7 @@ function mcapi_element_info_alter(&$items) {
  */
 function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition) {
   $output = array();
-  foreach (referenced_exchanges($entity, TRUE) as $exchange) {
+  foreach (Exchange::referenced_exchanges($entity, TRUE) as $exchange) {
     $output[]['target_uuid'] = $exchange->get('uuid')->value;
   }
   return $output;
@@ -670,6 +569,24 @@ function mcapi_entity_insert($entity) {
       ))->save();
     }
   }
+  if ($entity->getEntityTypeId() == 'mcapi_wallet') {
+    mcapi_save_wallet_index($entity);
+  }
+}
+
+function mcapi_entity_update($entity) {
+  if ($entity->getEntityTypeId() == 'mcapi_wallet') {
+    mcapi_save_wallet_index($entity);
+  }
+}
+
+function mcapi_save_wallet_index($wallet) {
+  //update the exchanges index
+  $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
+  foreach (array_keys(Exchange::referenced_exchanges($wallet->getOwner())) as $exid) {
+    $query->values(array('wid' => $wallet->id(), 'exid' => $exid));
+  }
+  $query->execute();
 }
 
 /**
@@ -679,7 +596,7 @@ function mcapi_entity_insert($entity) {
  */
 function mcapi_entity_delete($entity) {
   //see Exchange::preDelete();
-  if ($entity instanceof ContentEntityInterface && $exchanges = referenced_exchanges($entity)) {
+  if ($entity instanceof ContentEntityInterface && $exchanges = Exchange::referenced_exchanges($entity)) {
     $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
     if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($entity)) {
       foreach (Wallet::loadMultiple($wids) as $wallet) {
@@ -687,14 +604,74 @@ function mcapi_entity_delete($entity) {
       }
     }
   }
+  elseif($entity->getEntityTypeId() == 'mcapi_wallet') {
+    db_delete('mcapi_wallet_exchanges_index')->condition('wid', $entity->id())->execute();
+  }
+}
+
+
+
+/**
+ * get a list of all the entity types which have an entity reference field pointing to mcapi_exchange
+ *
+ * @param string $type
+ *   (optional) the name of the entity type
+ *
+ * @return array
+ *   a mapping of entityTypeId to the name of the exchanges entity_reference
+ *   field or the fieldname for the given entitytype
+ *
+ * @todo cache and static this. cache should be cleared whenever fieldInfo changes
+ */
+function get_exchange_entity_fieldnames() {
+  $types = array();
+  //get all the instances of these fields
+  foreach (entity_load_multiple_by_properties('field_storage_config', array('type' => 'entity_reference')) as $field) {
+    if ($field->settings['target_type'] == 'mcapi_exchange') {
+      $types[$field->entity_type] = $field->name;
+    }
+  }
+  return $types;
+}
+
+/**
+ * get all the currencies from (common to) the given exchanges, sorted
+ * @param array $exchanges
+ *
+ * @param boolean $ticks
+ *   filter out currencies with no exchange rate
+ *
+ * @param boolean $status
+ *   filter out disabled currencies
+ *
+ * @return array
+ *   the filtered currencies
+ */
+function exchange_currencies(array $exchanges, $ticks = FALSE) {
+  $currencies = array();
+  foreach ($exchanges as $exchange) {
+    //TODO is there a shorter way to iterate through these referenced entities
+    foreach ($exchange->get('currencies')->getValue(TRUE) as $item) {
+      if (empty($item))continue;//this should never happen because an exchange can't have no currencies
+      $currency = $item['entity'];
+      if ($ticks && !$currency->ticks) continue;
+      $currencies[$item['target_id']] = $currency;
+    }
+  }
+  uasort($currencies, array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
+  return $currencies;
 }
 
 
 /**
  * developer-friendly wrapper around the wallet storage controller function, getOwnedWalletIds().
+ *
  * @param Drupal\Core\Entity\ContentEntityInterface $entity
+ *
  * @return array
  *   wallet ids belonging to the passed entity
+ *
+ * @todo put this as a static function in the Wallet
  */
 function mcapi_get_wallet_ids(ContentEntityInterface $entity) {
   return \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity);
@@ -713,7 +690,7 @@ function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
     if (!array_key_exists('content', $build)) {
       $build['content'] = array();
     }
-    foreach (referenced_exchanges(NULL, TRUE) as $exchange) {
+    foreach (Exchange::referenced_exchanges(NULL, TRUE) as $exchange) {
       //does a menu link really require all of these properties
       $renderable = array(
       	'#theme' => 'menu_link',
@@ -770,6 +747,28 @@ function mcapi_get_links(TransactionInterface $transaction, $view_link = FALSE) 
     $transactionViewBuilder = \Drupal::EntityManager()->getViewBuilder('mcapi_transaction');
   }
   return $transactionViewBuilder->renderLinks($transaction, 'sentence');
+}
+
+
+/**
+ * Get all the wallet ids in given exchanges.
+ * this can also be done with Wallet::filter() but is quicker.
+ * maybe not worth it if this is only used once, in any case the index table is needed for views.
+ * Each wallet owner has a required entity reference field pointing to exchanges.
+ * The mcapi_wallet_exchanges_index is maintained by the WalletStorage entity
+ *
+ * @param array $exchange_ids
+ *
+ * @return array
+ *   the non-orphaned wallet ids from the given exchanges
+ */
+function mcapi_wallets_in_exchanges(array $exchange_ids) {
+  $query = db_select('mcapi_wallet_exchanges_index', 'w')
+  ->fields('w', array('wid'));
+  if ($exchange_ids) {
+    $query->condition('exid', $exchange_ids);
+  }
+  return $query->execute()->fetchCol();
 }
 
 /**

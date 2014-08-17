@@ -46,4 +46,28 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
    * act on an entity leaving the exchange
    */
   function goodbye(ContentEntityInterface $entity);
+
+  /**
+   * get the number of transactions in this exchange
+   *
+   * @param boolean $inclusive
+   *   TRUE means count transactions in all states, and transactions where one wallet is not in the exchange
+   *
+   * @return integer
+   */
+  function transactions($inclusive = TRUE);
+
+  /**
+   * return a list of exchanges from an entity_reference field in an entity
+   * If an exchange is passed, it returns itself
+   *
+   * @param ContentEntityInterface $entity
+   *   any Content Entity which has a reference field pointing towards mcapi_exchange entities
+   *
+   * @return array
+   *   of entities, keyed by exchange id
+   */
+  static function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = FALSE, $open = FALSE);
+
+
 }

@@ -3,10 +3,9 @@
 namespace Drupal\mcapi\Plugin\Block;
 
 use Drupal\block\BlockBase;
-use Drupal\block\Annotation\Block;
-use Drupal\Core\Annotation\Translation;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\Entity\Currency;
 
 define('MCAPIBLOCK_USER_MODE_CURRENT', 1);
 define('MCAPIBLOCK_USER_MODE_PROFILE', 0);
@@ -87,8 +86,8 @@ class McapiBlockBase extends BlockBase {
       $otheruser = ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account;
       //show only the currency which can be seen by the current user AND the profiled user
       $this->currencies = array_intersect_key(
-      	mcapi_currencies_for_user(\Drupal::currentUser(), TRUE),
-        mcapi_currencies_for_user($otheruser, TRUE)
+      	Currency::user(\Drupal::currentUser()),
+        Currency::user($otheruser)
       );
     }
     else{

@@ -12,7 +12,7 @@
  * Defines the result for hook_views_data().
  */
 function mcapi_views_data() {
-  $data['mcapi_transactions']['table'] = array(
+  $data['mcapi_transaction']['table'] = array(
     'group'  => t('Transaction'),
     'entity type' => 'mcapi_transaction',
     'access query tag' => 'mcapi_views_access',
@@ -30,7 +30,7 @@ function mcapi_views_data() {
   );
 
 
-  $data['mcapi_transactions']['serial'] = array(
+  $data['mcapi_transaction']['serial'] = array(
     'title' => t('Serial'), // The item it appears as on the UI,
     'help' => t('The serial number of the transaction and dependents'),
     'field' => array(
@@ -40,7 +40,7 @@ function mcapi_views_data() {
       'id' => 'standard',
     ),
   );
-  $data['mcapi_transactions']['xid'] = array(
+  $data['mcapi_transaction']['xid'] = array(
     'title' => t('Transaction id'), // The item it appears as on the UI,
     'help' => t('The unique database key of the transaction'),
     'field' => array(
@@ -51,7 +51,7 @@ function mcapi_views_data() {
     ),
   );
 
-  $data['mcapi_transactions']['payer'] = array(
+  $data['mcapi_transaction']['payer'] = array(
     'title' => t('Payer'),
     'help' => t('The giving wallet'),
     //the relationship is now to the wallet table, not the user table
@@ -63,16 +63,16 @@ function mcapi_views_data() {
       'relationship field' => 'payer'
     ),
     'filter' => array(
-      'id' => 'user_name',
+      'id' => 'standard',
     ),
     'argument' => array(
       'id' => 'standard',
     ),
     'field' => array(
-      'id' => 'wallet',
+      'id' => 'standard',
     ),
   );
-  $data['mcapi_transactions']['payee'] = array(
+  $data['mcapi_transaction']['payee'] = array(
     'title' => t('Payee'),
     'help' => t('The receiving wallet'),
     //the relationship is now to the wallet table, not the user table
@@ -84,16 +84,16 @@ function mcapi_views_data() {
       'relationship field' => 'payee'
     ),
     'filter' => array(
-      'id' => 'user_name',
+      'id' => 'standard',
     ),
     'argument' => array(
       'id' => 'standard',
     ),
     'field' => array(
-      'id' => 'wallet',
+      'id' => 'standard',
     ),
   );
-  $data['mcapi_transactions']['description'] = array(
+  $data['mcapi_transaction']['description'] = array(
     'title' => t('Description'),
     'help' =>  t('A one line description of what was exchanged.'),
     'filter' => array(
@@ -107,7 +107,7 @@ function mcapi_views_data() {
     ),
   );
 
-  $data['mcapi_transactions']['state'] = array(
+  $data['mcapi_transaction']['state'] = array(
     'title' => t('State'),
     'help' => t('The name of the workflow state of the transaction'),
     'field' => array(
@@ -121,7 +121,7 @@ function mcapi_views_data() {
     ),
   );
 
-  $data['mcapi_transactions']['type'] = array(
+  $data['mcapi_transaction']['type'] = array(
     'title' => t('Type'),
     'help' => t('Which form or module which created the transaction'),
     'field' => array(
@@ -134,7 +134,7 @@ function mcapi_views_data() {
       'id' => 'standard',
     ),
   );
-  $data['mcapi_transactions']['creator'] = array(
+  $data['mcapi_transaction']['creator'] = array(
     'title' => t('Creator'),
     'help' => t('The user who first created the transaction.'),
     'relationship' => array(
@@ -154,7 +154,7 @@ function mcapi_views_data() {
       'id' => 'standard',
     ),
   );
-  $data['mcapi_transactions']['parent'] = array(
+  $data['mcapi_transaction']['parent'] = array(
     'title' => t('Parent'),
     'help' => t('Whether the transaction has a parent.'),
     'field' => array(
@@ -164,7 +164,7 @@ function mcapi_views_data() {
       'id' => 'boolean',
     ),
   );
-  $data['mcapi_transactions']['created'] = array(
+  $data['mcapi_transaction']['created'] = array(
     'title' => t('Created'),
     'help' => t('The second the transaction was created.'),
     'field' => array(
@@ -177,7 +177,7 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
-  $data['mcapi_transactions']['created_year_month'] = array(
+  $data['mcapi_transaction']['created_year_month'] = array(
     'title' => t('Created year + month'),
     'help' => t('Date in the form of YYYYMM.'),
     'argument' => array(
@@ -186,15 +186,15 @@ function mcapi_views_data() {
     ),
   );
 
-  $data['mcapi_transactions']['created_year'] = array(
+  $data['mcapi_transaction']['created_year'] = array(
       'title' => t('Created year'),
       'help' => t('Date in the form of YYYY.'),
       'argument' => array(
-          'field' => 'created',
-          'id' => 'date_year',
+        'field' => 'created',
+        'id' => 'date_year',
       ),
   );
-  $data['mcapi_transactions']['exchange'] = array(
+  $data['mcapi_transaction']['exchange'] = array(
     'title' => t('Current Exchange'),
     'help' => t('Any of the exchanges the current user is a member of'),
     'filter' => array(
@@ -203,11 +203,18 @@ function mcapi_views_data() {
   );
 
   //virtual fields
-  $data['mcapi_transactions']['transitions'] = array(
+  $data['mcapi_transaction']['transitions'] = array(
     'title' => t('Transitions'),
     'help' => t('What the user can do to the transaction'),
     'field' => array(
       'id' => 'transaction_transitions',
+    )
+  );
+  $data['mcapi_transaction']['exchange'] = array(
+    'title' => t('Exchange'),
+    'help' => t('The exchange in which the transaction happened'),
+    'argument' => array(
+      'id' => 'transaction_exchange',
     )
   );
 
@@ -253,30 +260,35 @@ function mcapi_views_data() {
   $data['mcapi_transactions_index']['wallet_id'] = array(
   	'title' => t('Wallet ID'),
   	'help' => t('The wallet we are looking at'),
-    //is there a use-case for this relationship?
-  	'relationship' => array(
-  		'id' => 'standard',
-  		'base' => 'users',
-  		'field' => 'uid',
-  		'label' => t('1st party'),
-  		'relationship field' => 'wallet_id'
-  	),
+    'relationship' => array(
+      'id' => 'standard',
+      'base' => 'mcapi_wallet',
+      'field' => 'wid',
+      'label' => t('1st wallet'),
+      'relationship field' => 'wallet_id'
+    ),
   	'argument' => array(
       'id' => 'standard',
+  	),
+  	'sort' => array(
+  		'id' => 'standard',
   	),
   );
   $data['mcapi_transactions_index']['partner_id'] = array(
   	'title' => t('Partner wallet ID'),
-  	'help' => t('The user the 1st user traded with'),
-  	'relationship' => array(
-  		'id' => 'standard',
-  		'base' => 'users',
-  		'field' => 'uid',
-  		'label' => t('2nd party'),
-  		'relationship field' => 'partner_id'
-  	),
+  	'help' => t('The wallet the 1st user traded with'),
+    'relationship' => array(
+      'id' => 'standard',
+      'base' => 'mcapi_wallet',
+      'field' => 'wid',
+      'label' => t('1st wallet'),
+      'relationship field' => 'partner_id'
+    ),
   	'field' => array(
   		'id' => 'mcapi_wallet_label',
+  	),
+  	'sort' => array(
+  		'id' => 'standard',
   	),
   );
 
@@ -354,6 +366,9 @@ function mcapi_views_data() {
     'filter' => array(
       'id' => 'numeric',
     ),
+    'sort' => array(
+      'id' => 'numeric',
+    ),
   );
   $data['mcapi_transactions_index']['outgoing'] = array(
     'title' => t('Expenditure'),
@@ -363,6 +378,9 @@ function mcapi_views_data() {
   		'additional fields' => array('curr_id')
     ),
     'filter' => array(
+      'id' => 'numeric',
+    ),
+    'sort' => array(
       'id' => 'numeric',
     ),
   );
@@ -376,9 +394,12 @@ function mcapi_views_data() {
     'filter' => array(
       'id' => 'numeric',
     ),
+    'sort' => array(
+      'id' => 'numeric',
+    ),
   );
   $data['mcapi_transactions_index']['volume'] = array(
-    'title' => t('Transaction volume'),
+    'title' => t('Volume'),
     'help' => t('The quantity of the transaction; always positive'),
     'field' => array(
       'id' => 'worth',
@@ -387,11 +408,20 @@ function mcapi_views_data() {
     'filter' => array(
       'id' => 'numeric',
     ),
+    'sort' => array(
+      'id' => 'numeric',
+    ),
   );
   $data['mcapi_transactions_index']['curr_id'] = array(
     'title' => t('Currency'),
     'help' => t('The currency'),
     'field' => array(
+      'id' => 'standard',
+    ),
+    'filter' => array(
+      'id' => 'standard',
+    ),
+    'argument' => array(
       'id' => 'standard',
     ),
   );
@@ -436,6 +466,16 @@ function mcapi_views_data() {
       )
     ),
   );
+  $data['mcapi_wallet']['wid'] = array(
+  	'title' => t('Wallet ID'),
+  	'help' => t('the unique id of the wallet'),
+  	'field' => array(
+  		'id' => 'standard',
+  	),
+  	'argument' => array(
+  		'id' => 'standard',
+  	)
+  );
   $data['mcapi_wallet']['wallet_label'] = array(
   	'title' => t('Label'),
   	'help' => t('the name of the wallet'),
@@ -461,7 +501,7 @@ function mcapi_views_data() {
   	)
   );
 
-  $data['mcapi_exchanges']['table'] = array(
+  $data['mcapi_exchange']['table'] = array(
     'group'  => t('Exchanges'),
     'entity type' => 'mcapi_exchange',
     'base' => array(
@@ -474,14 +514,14 @@ function mcapi_views_data() {
       )
     ),
   );
-  $data['mcapi_exchanges']['id'] = array(
+  $data['mcapi_exchange']['id'] = array(
     'title' => t('Unique id'), // The item it appears as on the UI,
     'help' => t('The unique database key of the exchange'),
     'field' => array(
       'id' => 'standard',
     ),
   );
-  $data['mcapi_exchanges']['name'] = array(
+  $data['mcapi_exchange']['name'] = array(
   	'title' => t('Name'),
   	'help' => t('The name of the exchange'),
   	'field' => array(
@@ -491,7 +531,7 @@ function mcapi_views_data() {
   		'id' => 'standard',
   	)
   );
-  $data['mcapi_exchanges']['status'] = array(
+  $data['mcapi_exchange']['status'] = array(
   	'title' => t('Active'),
   	'help' => t("Active or disabled"),
   	'field' => array(
@@ -501,7 +541,7 @@ function mcapi_views_data() {
   		'id' => 'boolean_operator',
   	)
   );
-  $data['mcapi_exchanges']['visibility'] = array(
+  $data['mcapi_exchange']['visibility'] = array(
   	'title' => t('Visibility'),
   	'help' => t("See, private, restricted and public exchanges, according to current user's access"),
     //TODO can't we use booleans for this?
@@ -512,7 +552,7 @@ function mcapi_views_data() {
   		'id' => 'exchange_visibility',
   	)
   );
-  $data['mcapi_exchanges']['open'] = array(
+  $data['mcapi_exchange']['open'] = array(
   	'title' => t('Open'),
   	'help' => t("Whether the exchange is open to outside trade"),
   	'field' => array(
@@ -522,7 +562,7 @@ function mcapi_views_data() {
   		'id' => 'boolean_operator',
   	)
   );
-  $data['mcapi_exchanges']['membership'] = array(
+  $data['mcapi_exchange']['membership'] = array(
   	'title' => t('Member count'),
   	'help' => t("The number of 'active' users in the exchange"),
   	'field' => array(
@@ -533,7 +573,7 @@ function mcapi_views_data() {
   // this might not be worth it, especially since we can't sort with it
   //if we wanted to sort we would
   //make a GROUP view on transaction_index and make a relationship to exchanges
-  $data['mcapi_exchanges']['transactions'] = array(
+  $data['mcapi_exchange']['transactions'] = array(
   	'title' => t('Transaction count'),
   	'help' => t('The number of transactions in a given period'),
   	'field' => array(

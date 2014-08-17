@@ -6,6 +6,7 @@ use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\user\Entity\User;
 
 /**
  * implements hook_menu().
@@ -32,54 +33,10 @@ function mcapi_tester_permissions() {
 }
 
 /**
- * implements hook_entity_extra_field_info()
- */
-function mcapi_tester_entity_extra_field_info() {
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions_link'] = array(
-    'label' => t('List of transactions'),
-    'weight' => 11,
-  );
-  return $extra;
-}
-
-/**
  * implements hook_mcapi_exchange_view()
- * adds the members link and transactions link to the exchanges view
+ * adds extra_fields
  */
 function mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
-
-  $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
-  ->condition('exchanges_target_id', $entity->id())
-  ->countQuery()->execute()->fetchField();
-  $build['members_link'] = array(
-    '#type' => 'item',
-    '#title' => t('@count members', array('@count'=> $count)),
-    'link' => array(
-      '#type' => 'link',
-      '#title' => t('Show members'),
-      '#href' => 'exchange/'.$entity->id().'/members',
-      //maybe instead put a view with the last five members here
-      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
-    )
-  );
-  //get all the wallets in this exchange
-  $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
-  //get all the transactions in those wallets
-  $serials = $wids ?
-    \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) :
-    array();
-
-  $build['transactions_link'] = array(
-    '#type' => 'item',
-    '#title' => t('@count transactions', array('@count'=> count(array_unique($serials)))),
-    'link' => array(
-      '#type' => 'link',
-      '#title' => t('Show transactions'),
-      '#href' => 'exchange/'.$entity->id().'/transactions',
-      //TODO maybe instead put a view with the last five members here
-      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
-    )
-  );
   if ($roles = user_role_names(TRUE, 'exchange helper')) {
     $helpernames = array();
     //get all the helper users in this exchange
@@ -133,13 +90,14 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
     $props = array(
       'payer' => array_pop($temp),
       'payee' => array_pop($temp),
-      'type' => 'test'
+      'type' => 'test',
+      'creator' => 1
     );
     $transaction = Transaction::create($props);
 
     if ($inter) {
       //get an exchange the payer is in, and an open currency in that exchange
-      foreach (referenced_exchanges($transaction->payer->entity->getOwner()) as $exchange) {
+      foreach (Exchange::referenced_exchanges($transaction->payer->entity->getOwner()) as $exchange) {
         $items = $exchange->currencies->getValue(TRUE);
         if ($items[0]['entity']->ticks) continue;
       }

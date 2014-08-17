@@ -78,19 +78,18 @@ class Undo extends TransitionBase {
   */
   public function opAccess(TransactionInterface $transaction) {
     if ($transaction->get('state')->value != TRANSACTION_STATE_UNDONE) {
-      $account = \Drupal::currentUser();
       $options = array_filter($this->configuration['access']);
       if (!array_key_exists($transaction->state->target_id, $options)) {
-        //this means the op hasn't been configured since a new state was added.
-        //TODO review the idea that undo access should be according to state.
-        if (\Drupal::currentUser()->id() == 1) {
-          drupal_set_message(
-            t('Please resave the undo op, paying attention to access controls: !link', array('!link' => l('admin/accounting/workflow/undo', 'admin/accounting/workflow/undo'))),
-            'warning'
-          );
-        }
-        return FALSE;
+        drupal_set_message(
+          t(
+            "Please resave the undo op, paying attention to access control for the unconfigured new '@statename' state:",
+            array('@statename' => $transaction->state->target_id)
+            ) . ' '.l('admin/accounting/workflow/undo', 'admin/accounting/workflow/undo'),
+          'warning',
+          FALSE
+        );
       }
+      $account = \Drupal::currentUser();
       foreach ($options[$transaction->state->target_id] as $option) {
         switch ($option) {
         	case 'helper':

@@ -1,5 +1,7 @@
 <?php
 
+use \Drupal\mcapi\Entity\Transaction;
+
 /**
  * Implementation of hook_drush_help().
  *
@@ -69,7 +71,7 @@ function drush_mcapi_wipeslate() {
 function drush_mcapi_delete() {
 	$storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
 	foreach(func_get_args() as $serial) {
-    mcapi_transaction_load_by_serial(array($serial))->delete();
+    Transaction::loadBySerials(array($serial))->delete();
 	}
   drush_print(dt('Deleted'));
 }

@@ -7,11 +7,11 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
-use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\Entity\Exchange;
 
 /**
  * Field handler to present trading stats for the user
@@ -69,7 +69,7 @@ class UserStats extends FieldPluginBase {
     $account = $this->getEntity($values);
     //shows only the first wallet
     $wid = reset(mcapi_get_wallet_ids($account));
-    $exchanges = referenced_exchanges($account, TRUE);
+    $exchanges = Exchange::referenced_exchanges($account, TRUE);
     //TODO stats really belong to wallets, but they might be wanted per user.
     die("Drupal\mcapi\Plugin\views\field\UserStats needs to be rethought");
 

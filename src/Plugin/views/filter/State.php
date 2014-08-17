@@ -23,4 +23,12 @@ class State extends InOperator {
     $this->value_options = mcapi_entity_label_list('mcapi_state');
   }
 
+  public function defineOptions() {
+    $options = parent::defineOptions();
+    foreach (\Drupal::config('mcapi.misc')->get('counted') as $key => $val) {
+      if ($val) $options['value']['default'][$key] = $key;
+    }
+    return $options;
+  }
+
 }

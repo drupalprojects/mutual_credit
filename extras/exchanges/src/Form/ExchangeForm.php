@@ -2,12 +2,11 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Form\ExchangeForm.
+ * Definition of Drupal\mcapi_exchanges\Form\ExchangeForm.
  * Edit all the fields on an exchange
- *
  */
 
-namespace Drupal\mcapi\Form;
+namespace Drupal\mcapi_exchanges\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\user\Entity\User;

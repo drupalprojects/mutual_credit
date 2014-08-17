@@ -3,7 +3,9 @@
 /**
  * @file
  * Definition of Drupal\mcapi\Form\MassPay.
- * Create an array of transactions, based on a single entity form
+ * Create an cluster of transactions, based on a single entity form
+ * N.B. This could be an entity form for Transaction OR Exchange.
+ * If the latter, it will be appropriately populated.
  */
 
 namespace Drupal\mcapi\Form;
@@ -11,13 +13,14 @@ namespace Drupal\mcapi\Form;
 use Drupal\entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Form\FormStateInterface;
 
 class MassPay extends TransactionForm {
 
   private $payers;
   private $payees;
-  private $exchange_id;
+  //private $exchange_id;
   //$this->entity refers to the Exchange until is changed in $this->form()
 
   public function getFormId() {
@@ -30,7 +33,7 @@ class MassPay extends TransactionForm {
   public function form(array $form, FormStateInterface $form_state) {
 
     if (empty($form_state->get('validated_transactions'))) {
-      $this->exchange_id = $this->entity;
+      //$this->exchange_id = $this->entity;
 
       //we have to mimic some part of the normal entity form preparation.
       //TODO on the rebuilt form we need to make a default entity.
@@ -119,7 +122,7 @@ class MassPay extends TransactionForm {
           //'#description' => $this->t('The following tokens are available:') .' [user:name]',
           '#type' => 'textarea',
           //this needs to be stored per-exchange. What's the best way?
-          '#default_value' => \Drupal::service('user_data')->get('mcapi', \Drupal::currentUser()->id(), 'masspay')
+          '#default_value' => \Drupal::service('user.data')->get('mcapi', \Drupal::currentUser()->id(), 'masspay')
         )
       );
 
@@ -148,7 +151,9 @@ class MassPay extends TransactionForm {
       $uuid_service = \Drupal::service('uuid');
       foreach ($payers as $payer) {
         foreach ($payees as $payee) {
-          if ($payer == $payee) continue;
+          if ($payer == $payee) {
+            continue;
+          }
           $next = clone $template;
           $next->payer = $payer;
           $next->payee = $payee;
@@ -167,6 +172,7 @@ class MassPay extends TransactionForm {
       //drupal_set_title(t('Are you sure?'));
       //TODO Should these / do these go in the temp store?
       $form_state->set('validated_transactions', $transactions);
+      $form_state->set('wallets', array_unique(array_merge($payers, $payees)));
     }
   }
 
@@ -174,7 +180,7 @@ class MassPay extends TransactionForm {
   public function submit(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     //TODO how do we inject stuff into forms?
-    \Drupal::service('user_data')->set('mcapi', \Drupal::currentUser()->id(), 'masspay', $values['notification']['body']);
+    \Drupal::service('user.data')->set('mcapi', \Drupal::currentUser()->id(), 'masspay', $values['notification']['body']);
 
     if (!array_key_exists('op', $values)) {
       $form_state->setRebuild(TRUE);
@@ -186,6 +192,18 @@ class MassPay extends TransactionForm {
       }
       $main_transaction->save();
 
+      //mail the owners of all the wallets involved.
+      foreach (Wallet::loadMultiple($form_state->get('wallets')) as $wallet) {
+        $uids[] = $wallet->user_id();
+      }
+      foreach (User::loadMultiple(array_unique($uids)) as $account) {
+        $to[] = $account->getEmail();
+      }
+      //TODO make sure this is queueing
+      //the mail body has been saved against the currentUser
+      \Drupal::service('plugin.manager.mail')->mail('mcapi', 'mass', $to);
+
+      //go to the transaction certificate
       $form_state->setRedirect(
         'mcapi.transaction_view',
         array(
@@ -193,36 +211,6 @@ class MassPay extends TransactionForm {
         )
       );
     }
-  }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitForm(array &$form, FormStateInterface $form_state, $op = NULL) {
-
-
-    //store the mail so we can bring it up as a default next time
-    //if there was an $op called 'create' we could store this mail in the op settings.
-    /*
-    variable_set('mcapi_accounting_masspay_mail', array(
-    'subject' => $form_state['storage']['mcapi_accounting_masspay_subject'],
-    'body' => $form_state['storage']['mcapi_accounting_masspay_body'],
-    ));
-    $params = variable_get('mcapi_accounting_masspay_mail');
-
-    if (strlen($params['subject']) && strlen($params['body'])) {
-      $mailto = count($form_state['values']['payees']) > 1 ? 'payee' : 'payer';
-      global $language;
-      $xids = array_keys(\Drupal\mcapi\Storage\TransactionStorage::filter(array('serial' => $serial)));
-      //TODO batch this
-      foreach (entity_load('mcapi_transaction', $xids) as $transaction) {
-        $params['transaction'] = $transaction;
-        $account = User::load($transaction->$mailto);
-        drupal_mail('accountant_ui', 'mass', $account->mail, user_preferred_language($account, $language), $params);
-      }
-    }
-    */
   }
 
   function form_type_select_wallets_value(&$element, $input, FormStateInterface $form_state) {

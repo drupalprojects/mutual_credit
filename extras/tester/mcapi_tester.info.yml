@@ -16,3 +16,4 @@ dependencies:
   - devel
   - mcapi_limits
   - mcapi_1stparty
+  - mcapi_signatures

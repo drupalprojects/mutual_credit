@@ -45,7 +45,7 @@ function mcapi_tester_install() {
 
   //close the last exchange and disable its currency
   $last_exchange = Exchange::load(end($exchange_ids));
-  drupal_set_message('Closing the last exchange: '.$last_exchange);
+  drupal_set_message('Closing the last exchange: '.$last_exchange->label());
   $last_exchange->set('status', 0);
   $last_exchange->save();
 

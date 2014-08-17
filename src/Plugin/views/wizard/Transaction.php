@@ -17,7 +17,7 @@ use Drupal\Core\Annotation\Translation;
  * @ViewsWizard(
  *   id = "transaction",
  *   module = "mcapi",
- *   base_table = "mcapi_transactions",
+ *   base_table = "mcapi_transaction",
  *   title = @Translation("Transactions")
  * )
  */

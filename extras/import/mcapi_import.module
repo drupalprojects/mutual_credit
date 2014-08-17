@@ -382,7 +382,7 @@ function import_balances_form_validate($form, $form_state) {
   if ($unknown = check_users($user_ids)) {
     form_set_error('data', t('The following users are unknown to this site: @users', array('@users' => implode(', ', $unknown))));
   }
-  $traded = array_unique(db_query("SELECT DISTINCT payee FROM mcapi_transactions UNION SELECT DISTINCT payer FROM mcapi_transactions")->fetchCol());
+  $traded = array_unique(db_query("SELECT DISTINCT payee FROM mcapi_transaction UNION SELECT DISTINCT payer FROM mcapi_transaction")->fetchCol());
   if ($err = array_intersect($user_ids, $traded)) {
     form_set_error('data', t('The following users already have transactions: @users', array('@users' => implode(', ', $err))));
   }

@@ -7,13 +7,9 @@
 
 namespace Drupal\mcapi_limits\Plugin\views\field;
 
-//TODO which of these are actually needed?
-use Drupal\views\Plugin\views\area\Result;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
-use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
-use Drupal\views\ViewExecutable;
-use Drupal\Component\Annotation\PluginID;
+use Drupal\mcapi\Entity\Currency;
 
 /**
  * Field handler to show a user's balance limits
@@ -67,7 +63,7 @@ class Limits extends FieldPluginBase {
   public function render(ResultRow $values) {
     $account = $this->getEntity($values);
     if (empty($this->options['currencies'])) {
-      $this->options['currencies'] = mcapi_currencies_for_user($account, TRUE);
+      $this->options['currencies'] = Currency::user($account);
     }
     drupal_set_message('check Drupal\mcapi_limits\Plugin\views\field\Limits.');
     return mcapi_view_limits(

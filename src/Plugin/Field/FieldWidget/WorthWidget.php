@@ -13,6 +13,7 @@ use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Drupal\Component\Utility\String;
+use Drupal\mcapi\Entity\Exchange;
 
 /**
  * Plugin implementation of the 'worth' widget.
@@ -41,7 +42,7 @@ class WorthWidget extends WidgetBase {
       '#title_display' => 'attribute',
       '#type' => 'worth',
       '#default_value' => $items->getValue(),
-      '#allowed_curr_ids' => array_keys(exchange_currencies(referenced_exchanges(NULL, TRUE))),
+      '#allowed_curr_ids' => array_keys(exchange_currencies(Exchange::referenced_exchanges(NULL, TRUE))),
       '#theme_wrappers' => array('form_element'),
     );
   }

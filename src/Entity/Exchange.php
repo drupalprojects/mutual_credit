@@ -31,17 +31,6 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *   base_table = "mcapi_exchange",
  *   controllers = {
  *     "storage" = "Drupal\mcapi\Storage\ExchangeStorage",
- *     "view_builder" = "Drupal\mcapi\ViewBuilder\ExchangeViewBuilder",
- *     "access" = "Drupal\mcapi\Access\ExchangeAccessController",
- *     "form" = {
- *       "add" = "Drupal\mcapi\Form\ExchangeWizard",
- *       "edit" = "Drupal\mcapi\Form\ExchangeForm",
- *       "masspay" = "Drupal\mcapi\Form\MassPay",
- *       "delete" = "Drupal\mcapi\Form\ExchangeDeleteConfirm",
- *       "enable" = "Drupal\mcapi\Form\ExchangeEnableConfirm",
- *       "disable" = "Drupal\mcapi\Form\ExchangeDisableConfirm",
- *     },
- *     "list_builder" = "Drupal\mcapi\ListBuilder\ExchangeListBuilder",
  *   },
  *   admin_permission = "configure mcapi",
  *   fieldable = TRUE,
@@ -272,6 +261,58 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $moduleHandler = \Drupal::moduleHandler();
     drupal_set_message('User !name left exchange !exchange.');
     $moduleHandler->invokeAll('exchange_leave', array($entity, $left));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function transactions($inclusive = TRUE) {
+    //get all the wallets in this exchange
+    $wids = mcapi_wallets_in_exchanges(array($this->id()));
+    $conditions = array();
+    //get all the transactions involving these wallets
+    if ($inclusive) {
+      $conditions['including'] = $wids;
+      $conditions['states'] = \Drupal::config('mcapi.misc')->get('counted');
+    }
+    else {
+      $conditions['involving'] = $wids;
+    }
+    $serials = $this->entityManager()->getStorage('mcapi_transaction')->filter($conditions);
+    if ($inclusive) $serials = array_unique($serials);
+    return count($serials);
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  static function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = FALSE, $open = FALSE) {
+    $exchanges = array();
+    if (is_null($entity)) {
+      $entity = User::load(\Drupal::currentUser()->id());
+    }
+    $entity_type = $entity->getEntityTypeId();
+    if ($entity_type == 'mcapi_exchange') {
+      //an exchange references itself only
+      $exchanges[$entity->id()] = $entity;
+    }
+    else{
+      $fieldnames = get_exchange_entity_fieldnames();
+      if ($fieldname = @$fieldnames[$entity_type]) {
+        //TODO I wouldn't be surprised if there was a better way to iterate through these
+        foreach($entity->get($fieldname)->getValue(TRUE) as $item) {
+          if ($item['entity']) {//an empty $item means the exchangeItemList is empty
+            if (($enabled && !$item['entity']->status->value) ||
+            ($open && !$item['entity']->open->value)) {
+              continue;
+            }
+            $exchanges[$item['target_id']] = $item['entity'];
+          }
+        }
+      }
+    }
+    return $exchanges;
   }
 
 }

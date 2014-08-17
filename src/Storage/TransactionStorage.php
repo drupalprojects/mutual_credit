@@ -35,7 +35,6 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
   public function save(EntityInterface $entity) {
     $entity->preSave($this);
     $this->invokeHook('presave', $entity);
-
     //this $entity is coming from above where it may have $children
     //and in fact be several records
     //NB currently transactions are NOT revisionable
@@ -81,61 +80,61 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
         ->condition('xid', $insert_id)
         ->execute();
       // we only index transactions in states which are 'counted'
-      if (!array_key_exists($record->state, mcapi_states_counted(TRUE)))return;
+      if (array_key_exists($record->state, mcapi_states_counted(TRUE))) {
 
-      $query = db_insert('mcapi_transactions_index')
-        ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
+        $query = db_insert('mcapi_transactions_index')
+          ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
 
-      foreach ($transaction->worth->getValue() as $worth) {
-        $query->values(array(
-          'xid' => $insert_id,
-          'serial' => $record->serial,
-          'wallet_id' => $record->payer,
-          'partner_id' => $record->payee,
-          'state' => $record->state,
-          'curr_id' => $worth['curr_id'],
-          'volume' => $worth['value'],
-          'incoming' => 0,
-          'outgoing' => $worth['value'],
-          'diff' => -$worth['value'],
-          'type' => $record->type,
-          'created' => $record->created,
-          //could this be more elegant?
-          'child' => intval((bool)$record->parent)
-        ));
-        $query->values(array(
-          'xid' => $insert_id,
-          'serial' => $record->serial,
-          'wallet_id' => $record->payee,
-          'partner_id' => $record->payer,
-          'state' => $record->state,
-          'curr_id' => $worth['curr_id'],
-          'volume' => $worth['value'],
-          'incoming' => $worth['value'],
-          'outgoing' => 0,
-          'diff' => $worth['value'],
-          'type' => $record->type,
-          'created' => $record->created,
-          'child' => intval((bool)$record->parent)
-        ));
+        foreach ($transaction->worth->getValue() as $worth) {
+          $query->values(array(
+            'xid' => $insert_id,
+            'serial' => $record->serial,
+            'wallet_id' => $record->payer,
+            'partner_id' => $record->payee,
+            'state' => $record->state,
+            'curr_id' => $worth['curr_id'],
+            'volume' => $worth['value'],
+            'incoming' => 0,
+            'outgoing' => $worth['value'],
+            'diff' => -$worth['value'],
+            'type' => $record->type,
+            'created' => $record->created,
+            //could this be more elegant?
+            'child' => intval((bool)$record->parent)
+          ));
+          $query->values(array(
+            'xid' => $insert_id,
+            'serial' => $record->serial,
+            'wallet_id' => $record->payee,
+            'partner_id' => $record->payer,
+            'state' => $record->state,
+            'curr_id' => $worth['curr_id'],
+            'volume' => $worth['value'],
+            'incoming' => $worth['value'],
+            'outgoing' => 0,
+            'diff' => $worth['value'],
+            'type' => $record->type,
+            'created' => $record->created,
+            'child' => intval((bool)$record->parent)
+          ));
+        }
+        $query->execute();
+
       }
-      $query->execute();
+      // The entity is no longer new.
+      $entity->enforceIsNew(FALSE);
 
+      // Allow code to run after saving.
+      $entity->postSave($this, !$is_new);
+      $this->invokeHook($is_new ? 'insert' : 'update', $entity);
+
+      // After saving, this is now the "original entity", and subsequent saves
+      // will be updates instead of inserts, and updates must always be able to
+      // correctly identify the original entity.
+      $entity->setOriginalId($entity->id());
+
+      unset($entity->original);
     }
-    // The entity is no longer new.
-    $entity->enforceIsNew(FALSE);
-
-    // Allow code to run after saving.
-    $entity->postSave($this, !$is_new);
-    $this->invokeHook($is_new ? 'insert' : 'update', $entity);
-
-    // After saving, this is now the "original entity", and subsequent saves
-    // will be updates instead of inserts, and updates must always be able to
-    // correctly identify the original entity.
-    $entity->setOriginalId($entity->id());
-
-    unset($entity->original);
-
     return $return;
   }
 
@@ -295,11 +294,22 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     if (!array_key_exists('state', $conditions)) {
       $query->condition('state', 0, '>');
     }
-
+    //TODO decide definitively whether 'involving' and 'including' are the same
+    //because transactions can only ever happen within an exchange.
+    //unless wallets change owners or owners move between exchanges
     if (array_key_exists('involving', $conditions)) {
+      $wids = (array)$conditions['involving'];
+      $query->condition(db_and()
+          ->condition('payer', $wids)
+          ->condition('payee', $wids)
+      );
+      unset($conditions['involving']);
+    }
+    if (array_key_exists('including', $conditions)) {
+      $wids = (array)$conditions['including'];
       $query->condition(db_or()
-        ->condition('payer', (array)$conditions['involving'])
-        ->condition('payee', (array)$conditions['involving'])
+        ->condition('payer', $wids)
+        ->condition('payee', $wids)
       );
       unset($conditions['involving']);
     }
@@ -320,7 +330,6 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
         }
       }
     }
-
     if ($limit) {
       //assume that nobody would ask for unlimited offset results
       $query->range($offset, $limit);
@@ -428,7 +437,7 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
       $query->conditions($fieldname, $value);
     }
     if (!in_array('state', $conditions) || !is_null($conditions['state'])) {
-      $query->conditions('state', '0', '>');
+      $query->conditions('state', $this->counted_states());
     }
   }
 
@@ -438,7 +447,7 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
    *   a comma separated list of state ids, in quote marks
    */
   private function counted_states() {
-    foreach (array_keys(mcapi_states_counted(TRUE)) as $state_id) {
+    foreach (mcapi_states_counted(TRUE) as $state_id) {
       $counted_states[] = "'".$state_id."'";
     }
     return implode(', ', $counted_states);

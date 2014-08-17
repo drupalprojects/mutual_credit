@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Controller\ExchangeController.
+ * Contains \Drupal\mcapi_exchanges\ExchangeController.
  */
 
 namespace Drupal\mcapi\Controller;

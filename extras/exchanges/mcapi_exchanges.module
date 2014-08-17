@@ -1,0 +1,27 @@
+<?php
+
+
+/**
+ * implements hook_entity_info_alter().
+ * add new controllers for the Exchange entity
+ */
+function mcapi_exchanges_entity_type_alter(array &$entity_types) {
+  $exchange = $entity_types['mcapi_exchange'];
+  $exchange->setControllerClass('form', array(
+    "add" => "Drupal\mcapi_exchanges\Form\ExchangeWizard",
+    "edit" => "Drupal\mcapi_exchanges\Form\ExchangeForm",
+    "masspay" => "Drupal\mcapi\Form\MassPay",
+    "delete" => "Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm",
+    "enable" => "Drupal\mcapi_exchanges\Form\ExchangeEnableConfirm",
+    "disable" => "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm",
+  ));
+  $exchange->setControllerClass('view_builder', "Drupal\mcapi_exchanges\ExchangeViewBuilder");
+  $exchange->setControllerClass('access', "Drupal\mcapi_exchanges\ExchangeAccessController");
+  $exchange->setControllerClass('list_builder', "Drupal\mcapi_exchanges\ExchangeListBuilder");
+}
+
+
+function mcapi_exchanges_menu_links_discovered_alter(&$definitions) {
+  unset($definitions['mcapi.exchange.masspay']);
+
+}

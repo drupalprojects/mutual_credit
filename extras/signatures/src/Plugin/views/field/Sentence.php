@@ -9,6 +9,7 @@ namespace Drupal\mcapi_signatures\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
+use Drupal\mcapi\Entity\Transaction;
 
 /**
  *
@@ -17,17 +18,15 @@ use Drupal\views\ResultRow;
  */
 class Sentence extends FieldPluginBase {
 
-  function query() {
-    //parent::query();
-    //$this->addAdditionalFields();
-    //$this->ensureMyTable();
-  }
+  function query() {}
 
   /**
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    $transaction = mcapi_transaction_load_by_serial($values->serial);
-    return entity_view($transaction, 'sentence');
+    return entity_view(
+      Transaction::loadBySerials(array($values->serial)),
+      'sentence'
+    );
   }
 }

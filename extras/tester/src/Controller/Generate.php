@@ -154,7 +154,7 @@ class Generate extends ConfigFormBase {
         $new_uids[] = $account->id();
         //make the user the owner of their exchange, so in the end only the last created user owns the exchange they are in.
         db_query(
-          "UPDATE {mcapi_exchanges} SET uid = :uid WHERE id = ".$props['exchanges'][0]['target_id'],
+          "UPDATE {mcapi_exchange} SET uid = :uid WHERE id = ".$props['exchanges'][0]['target_id'],
           array(':uid' => $account->id())
         );
       }

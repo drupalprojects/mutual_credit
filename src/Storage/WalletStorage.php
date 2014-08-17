@@ -102,9 +102,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
       //get all the wallets in all the exchanges mentioned
       //this is easier than trying to join with all the wallet owner base entity tables
       //static function means we have to call up this object again
-      $conditions['wids'] = \Drupal::EntityManager()
-        ->getStorage('mcapi_wallet')
-        ->walletsInExchanges($conditions['exchanges']);
+      $conditions['wids'] = mcapi_wallets_in_exchanges($conditions['exchanges']);
     }
     if (array_key_exists('wids', $conditions)) {
       $query->condition('w.wid', $conditions['wids']);
@@ -164,9 +162,9 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
         $join_clause = "$ref_alias.entity_id = $alias.". $entity_info->getKey('id');
         $query->leftjoin($ref_table, $ref_alias, $join_clause);
         //and ANOTHER join to ensure that the referenced exchange is enabled.
-        $ex_alias = "mcapi_exchanges_".$entity_type_id;
-       // echo $ex_alias;
-        $query->leftjoin('mcapi_exchanges', $ex_alias, "$ref_alias.{$field_name}_target_id = {$ex_alias}.id");
+        $ex_alias = "mcapi_exchange_".$entity_type_id;
+        //NB We are assuming the default entity Storage for the Exchange, which is pretty safe
+        $query->leftjoin('mcapi_exchange', $ex_alias, "$ref_alias.{$field_name}_target_id = {$ex_alias}.id");
         $query->condition("$ex_alias.status", 1);
       }
     }
@@ -186,26 +184,6 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
   }
 
   /**
-   * Get all the wallet ids in given exchanges.
-   * this can also be done with filter() but is quicker
-   * maybe not worth it if this is only used once, in any case the index table is needed for views
-   * Each wallet owner has a required entity reference field pointing to exchanges
-   * @todo put this in the interface
-   *
-   * @param array $exchange_ids
-   * @return array
-   *   the non-orphaned wallet ids from the given exchanges
-   */
-  static function walletsInExchanges(array $exchange_ids) {
-    $query = db_select('mcapi_wallet_exchanges_index', 'w')
-      ->fields('w', array('wid'));
-    if ($exchange_ids) {
-      $query->condition('exid', $exchange_ids);
-    }
-    return $query->execute()->fetchCol();
-  }
-
-  /**
    * write the wallet's access settings and the index table
    * @todo this must also run when an entity joins an exchange
    */
@@ -213,13 +191,6 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     parent::doSave($wid, $wallet);
     $wid = $wallet->id();//in case it was new
     $this->dropIndex(array($wid));
-
-    //update the exchanges index
-    $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
-    foreach (array_keys(referenced_exchanges($wallet->getOwner())) as $exid) {
-      $query->values(array('wid' => $wid, 'exid' => $exid));
-    }
-    $query->execute();
 
     //update the access settings
     //I couldn't get merge to work with multiple rows, so removed the table key and doing it manually
@@ -249,9 +220,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
   }
 
   private function dropindex($wids) {
-    db_delete('mcapi_wallet_exchanges_index')->condition('wid', $wids)->execute();
     db_delete('mcapi_wallets_access')->condition('wid', $wids);
-
   }
 
   function getSchema() {
@@ -259,11 +228,11 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
     $schema['mcapi_wallet'] += array(
       'foreign keys' => array(
         'mcapi_transactions_payee' => array(
-          'table' => 'mcapi_transactions',
+          'table' => 'mcapi_transaction',
           'columns' => array('wid' => 'payee'),
         ),
         'mcapi_transactions_payer' => array(
-          'table' => 'mcapi_transactions',
+          'table' => 'mcapi_transaction',
           'columns' => array('wid' => 'payer'),
         ),
       ),

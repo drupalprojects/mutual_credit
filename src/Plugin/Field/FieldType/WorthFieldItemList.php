@@ -84,10 +84,13 @@ class WorthFieldItemList extends FieldItemList {
    */
   public function view($display_options = array()) {
     foreach ($this->list as $item) {
-      $values[] = $item->view($display_options);
+      $renderable = $item->view($display_options);
+      $values[] = drupal_render($renderable);
     }
     $separator = count($values) > 1 ? \Drupal::config('mcapi.misc')->get('worths_delimiter') : '';
-    return implode($separator, $values);
+    return array(
+      0 => array('#markup' => implode($separator, $values))
+    );
   }
 
   /**

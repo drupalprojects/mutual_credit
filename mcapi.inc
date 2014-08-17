@@ -94,6 +94,10 @@ function _mcapi_entity_extra_field_info() {
     'description' => t('Link to the wallets special intertrading wallet'),
     'weight' => 2,
   );
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions_link'] = array(
+    'label' => t('List of transactions'),
+    'weight' => 11,
+  );
   return $extra;
 }
 
@@ -224,9 +228,8 @@ function _mcapi_element_info() {
     ),
     //local means 'in the same exchanges as the current user'
     'select_wallet' => array(
-      //much of this is borrowed from 'textfield'
       '#input' => TRUE,
-      '#local' => TRUE,
+      '#exchanges' => array(),
       '#size' => 60,
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
       '#process' => array('mcapi_process_select_wallet', 'form_process_autocomplete', 'ajax_process_form'),
@@ -239,8 +242,8 @@ function _mcapi_element_info() {
       '#multiple' => FALSE,
       //TODO I'm not sure how best to put in default css
       //the empty class is required to prevent an overload error in alpha7
-      //TODO enable this when _form_set_attributes no longer attempts to merge this attribute object with an actual array
       //'#attributes' => new Attribute(array('style' => "width:100%", 'class' => array()))
+      //TODO enable this when _form_set_attributes no longer attempts to merge this attribute object with an actual array
       '#attributes' => array('style' => 'width:100%')
     )
   );

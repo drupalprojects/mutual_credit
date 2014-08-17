@@ -23,7 +23,6 @@ class RouteSubscriber extends RouteSubscriberBase {
   public function routes() {
     $collection = new RouteCollection();
     foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
-      if (empty($editform->path)) continue;//although right now 'path' is a required field
       $route = new Route(
         $editform->path,
         array(

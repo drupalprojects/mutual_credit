@@ -52,6 +52,7 @@ class FirstPartyFormDesign extends ConfigEntityBase {
   public $id;
   public $exchange;
   public $path;
+  public $menu;
   public $title;
   public $status;
   public $type;

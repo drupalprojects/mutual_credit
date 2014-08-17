@@ -106,15 +106,16 @@ class WorthItem extends FieldItemBase {
     extract($this->getValue(FALSE));
     $currency = Currency::load($curr_id);
     if ($value) {
-      return $currency->format($value);
+      $markup = $currency->format($value);
     }
     elseif ($currency->zero) {
-      return \Drupal::config('mcapi.misc')->get('zero_snippet');
+      $markup = \Drupal::config('mcapi.misc')->get('zero_snippet');
     }
-    //TODO log an error:
-    //Zero worth not allowed in currency !currency->id()
-    //while we're developing, we throw the error
-    throw new \Exception('Zero worth not allowed in currency '.$currency->id());
+    else {
+      //this should never happen //TODO log this?
+      $markup = '';
+    }
+    return array('#markup' => $markup);
   }
 
 }

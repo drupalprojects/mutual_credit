@@ -27,9 +27,8 @@ class OwnerType extends Standard {
   function __construct() {
     $defs = \Drupal::EntityManager()->getDefinitions();
     foreach ($defs as $id => $def) {
-      $this->labels[$id] = $def['label'];
+      $this->labels[$id] = $def->getLabel();
     }
-    $this->labels['system'] = t('System');
   }
 
   /**

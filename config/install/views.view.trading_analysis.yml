@@ -1,0 +1,638 @@
+uuid: baedf5f0-caa5-4250-a562-989a94b3418f
+langcode: en
+status: true
+dependencies:
+  module:
+    - block
+    - mcapi
+id: trading_analysis
+label: 'Trading analysis'
+module: views
+description: 'per currency transaction summary for individual wallets'
+tag: ''
+base_table: mcapi_transactions_index
+base_field: xid
+core: 8.x
+display:
+  default:
+    display_plugin: default
+    id: default
+    display_title: Master
+    position: 0
+    provider: views
+    display_options:
+      access:
+        type: none
+        options: {  }
+        provider: views
+        dependencies: {  }
+      cache:
+        type: none
+        options: {  }
+        provider: views
+        dependencies: {  }
+      query:
+        type: views_query
+        options:
+          disable_sql_rewrite: false
+          distinct: false
+          replica: false
+          query_comment: false
+          query_tags: {  }
+        provider: views
+        dependencies: {  }
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Apply
+          reset_button: false
+          reset_button_label: Reset
+          exposed_sorts_label: 'Sort by'
+          expose_sort_order: true
+          sort_asc_label: Asc
+          sort_desc_label: Desc
+        provider: views
+        dependencies: {  }
+      pager:
+        type: none
+        options:
+          items_per_page: null
+          offset: 0
+      style:
+        type: default
+      row:
+        type: fields
+      fields:
+        xid:
+          table: mcapi_transactions_index
+          field: xid
+          id: xid
+          plugin_id: numeric
+          provider: views
+          relationship: none
+          group_type: group
+          admin_label: ''
+          dependencies: {  }
+          label: 'Transaction id'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: false
+          format_plural_singular: '1'
+          format_plural_plural: '@count'
+          prefix: ''
+          suffix: ''
+        diff:
+          id: diff
+          table: mcapi_transactions_index
+          field: diff
+          relationship: none
+          group_type: group
+          admin_label: ''
+          dependencies:
+            module:
+              - mcapi
+          label: Balance
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: worth
+          provider: mcapi
+        curr_id:
+          id: curr_id
+          table: mcapi_transactions_index
+          field: curr_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          dependencies:
+            module:
+              - views
+          label: Currency
+          exclude: false
+          alter:
+            alter_text: true
+            text: '<strong>[curr_id]</strong>'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: standard
+          provider: views
+        outgoing:
+          id: outgoing
+          table: mcapi_transactions_index
+          field: outgoing
+          plugin_id: worth
+          provider: mcapi
+        incoming:
+          id: incoming
+          table: mcapi_transactions_index
+          field: incoming
+          plugin_id: worth
+          provider: mcapi
+        partner_id:
+          id: partner_id
+          table: mcapi_transactions_index
+          field: partner_id
+          plugin_id: mcapi_wallet_label
+          provider: mcapi
+        serial:
+          id: serial
+          table: mcapi_transactions_index
+          field: serial
+          plugin_id: standard
+          provider: views
+      filters: {  }
+      sorts: {  }
+      title: 'Trading analysis'
+      header: {  }
+      footer: {  }
+      empty: {  }
+      relationships: {  }
+      arguments:
+        wallet_id:
+          id: wallet_id
+          table: mcapi_transactions_index
+          field: wallet_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          dependencies:
+            module:
+              - views
+          default_action: 'not found'
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          title_enable: false
+          title: ''
+          default_argument_type: fixed
+          default_argument_options:
+            argument: ''
+          default_argument_skip_url: false
+          summary_options:
+            base_path: ''
+            count: true
+            items_per_page: 25
+            override: false
+          summary:
+            sort_order: asc
+            number_of_records: 0
+            format: default_summary
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+          validate_options: {  }
+          plugin_id: standard
+          provider: views
+      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode_add_to_query: null
+      group_by: true
+  wallet_stats:
+    display_plugin: block
+    id: wallet_stats
+    display_title: 'per currency'
+    position: 1
+    provider: block
+    display_options:
+      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode_add_to_query: null
+      fields:
+        curr_id:
+          id: curr_id
+          table: mcapi_transactions_index
+          field: curr_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          dependencies:
+            module:
+              - views
+          label: Currency
+          exclude: false
+          alter:
+            alter_text: true
+            text: '<strong>[curr_id]</strong>'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: standard
+          provider: views
+        diff:
+          id: diff
+          table: mcapi_transactions_index
+          field: diff
+          relationship: none
+          group_type: sum
+          admin_label: ''
+          dependencies:
+            module:
+              - mcapi
+          label: Balance
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: worth
+          provider: mcapi
+        outgoing:
+          id: outgoing
+          table: mcapi_transactions_index
+          field: outgoing
+          relationship: none
+          group_type: sum
+          admin_label: ''
+          dependencies:
+            module:
+              - mcapi
+          label: 'Gross expenditure'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: worth
+          provider: mcapi
+        incoming:
+          id: incoming
+          table: mcapi_transactions_index
+          field: incoming
+          relationship: none
+          group_type: sum
+          admin_label: ''
+          dependencies:
+            module:
+              - mcapi
+          label: 'Gross Income'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: worth
+          provider: mcapi
+        serial:
+          id: serial
+          table: mcapi_transactions_index
+          field: serial
+          relationship: none
+          group_type: count
+          admin_label: ''
+          dependencies:
+            module:
+              - views
+          label: Payments
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: standard
+          provider: views
+        partner_id:
+          id: partner_id
+          table: mcapi_transactions_index
+          field: partner_id
+          relationship: none
+          group_type: count_distinct
+          admin_label: ''
+          dependencies:
+            module:
+              - mcapi
+          label: Promiscuity
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          plugin_id: mcapi_wallet_label
+          provider: mcapi
+      defaults:
+        fields: false
+      display_description: 'transactions summary per currency'
+      block_category: 'Community Accounting'
+      block_description: 'Wallet summary per currency'
+      display_comment: "//TODO sort out the access for this view\nchange the currency name for the default entity label handler"
+

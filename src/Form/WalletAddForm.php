@@ -89,7 +89,7 @@ class WalletAddForm extends Formbase {
       $query->condition('entity_type', $values['entity_type']);
     }
     if ($query->execute()->fetchField()) {
-      $form_state->setFormError(
+      $form_state->setErrorByName(
         'name',
         t("The wallet name '!name' is already used.", array('!name' => $values['name']))
       );
@@ -105,13 +105,13 @@ class WalletAddForm extends Formbase {
     $wallet->save();
     $pid = $wallet->get('pid')->value;
     $entity_type = $wallet->get('entity_type')->value;
-    $route = \Drupal::entityManager()
+    $route_name = \Drupal::entityManager()
       ->getStorage($entity_type)
       ->load($pid)
       ->getLinkTemplate('canonical');
     debug("redirecting to route $route");
 
-    $form_state->setRedirect($route, array($entity_type => $pid));
+    $form_state->setRedirect($route_name, array($entity_type => $pid));
   }
 
 }

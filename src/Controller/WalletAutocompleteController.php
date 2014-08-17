@@ -3,7 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Controller\WalletAutocompleteController.
- *
  */
 
 namespace Drupal\mcapi\Controller;
@@ -30,14 +29,14 @@ class WalletAutocompleteController {
     //because of the different ways that wallet names can be construed
     $results = array();
 
-    //the keys of the exchanges of which the current user is a member
-    $exchanges = array();
-    if ($request->attributes->get('_route') != 'mcapi.wallets.autocomplete_all') {
-      module_load_include('inc', 'mcapi');
-      $exchanges = array_keys(referenced_exchanges());
-    }
-    $string = $request->query->get('q');
     $conditions = array();
+
+    $param = explode(',', \Drupal::routeMatch()->getParameter('exchanges'));
+    if ($exchanges = array_filter($param)) {
+      $conditions['exchanges'] = $exchanges;
+    }
+
+    $string = $request->query->get('q');
 
     //there is no need to handle multiple values because the javascript of the widget
     //handles all stuff before the last comma.
@@ -50,9 +49,6 @@ class WalletAutocompleteController {
     }
     else {
       $conditions['fragment'] = $string;
-    }
-    if ($exchanges) {
-      $conditions['exchanges'] = $exchanges;
     }
     $wids = \Drupal\mcapi\Storage\WalletStorage::filter($conditions);
 

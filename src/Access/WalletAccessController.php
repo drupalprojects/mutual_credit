@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Access;
 use Drupal\Core\Entity\EntityAccessController;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\mcapi\Entity\Exchange;
 
 /**
  * Defines an access controller option for the mcapi_wallet entity.
@@ -21,7 +22,6 @@ class WalletAccessController extends EntityAccessController {
    * $ops are list, summary, pay, charge
    */
   public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
-    //disabled for testing
     if ($account->hasPermission('manage mcapi')) return TRUE;
     //edit isn't a configurable operation. Only the owner can do it
     if ($op == 'edit') {
@@ -32,7 +32,7 @@ class WalletAccessController extends EntityAccessController {
     }
     switch ($entity->access[$op]) {
     	case WALLET_ACCESS_EXCHANGE:
-    	  return array_intersect_key($entity->in_exchanges(), referenced_exchanges(NULL, TRUE));
+    	  return array_intersect_key($entity->in_exchanges(), Exchange::referenced_exchanges(NULL, TRUE));
     	case WALLET_ACCESS_AUTH:
     	  return $account->id();
     	case WALLET_ACCESS_ANY:

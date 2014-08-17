@@ -27,7 +27,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
     $replacements += $token_service->generate(
       'user',
       $payer_tokens,
-      array('user' => $transaction->payer->value),
+      array('user' => $transaction->payer->target_id),
       $options
     );
   }
@@ -35,7 +35,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
     $replacements += $token_service->generate(
       'user',
       $payee_tokens,
-      array('user' => $transaction->payee->value),
+      array('user' => $transaction->payee->target_id),
       $options
     );
   }
@@ -43,7 +43,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
     $replacements += $token_service->generate(
       'user',
       $creator_tokens,
-      array('user' => $transaction->creator->value),
+      array('user' => $transaction->creator->target_id),
       $options
     );
   }

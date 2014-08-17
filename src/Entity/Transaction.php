@@ -21,8 +21,7 @@ use Drupal\mcapi\Entity\State;
 /**
  * Defines the Transaction entity.
  * Transactions are grouped and handled by serial number
- * but the unique database key is the xid. Still not sure how to use the entity_keys
- * to reflect this.
+ * but the unique database key is the xid.
  *
  * @ContentEntityType(
  *   id = "mcapi_transaction",
@@ -34,7 +33,7 @@ use Drupal\mcapi\Entity\State;
  *     "access" = "Drupal\mcapi\Access\TransactionAccessController",
  *     "form" = {
  *       "transition" = "Drupal\mcapi\Form\TransitionForm",
- *       "mass" = "Drupal\mcapi\Form\MassPay",
+ *       "masspay" = "Drupal\mcapi\Form\MassPay",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm",
  *     },
@@ -57,6 +56,35 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   public $warnings = array();
   public $child = array();
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function loadBySerials($serials) {
+    $transactions = array();
+    if ($serials) {
+      //not sure which is faster, this or coding it using $this->filter()
+      $results = \Drupal::entityManager()
+        ->getStorage('mcapi_transaction')
+        ->loadByProperties(array('serial' => (array)$serials));
+      //put all the transaction children under the parents
+      foreach ($results as $xid => $transaction) {
+        if ($pxid = $transaction->get('parent')->value) {
+          $results[$pxid]->children[] = $transaction;
+          unset($results[$xid]);
+        }
+      }
+      //I had a problem on uninstalling the tester module that all the parents were somehow deleted already
+      //which rather screwed up this function.
+      //change the array keys for the serial numbers
+      foreach ($results as $transaction) {
+        $transactions[$transaction->serial->value] = $transaction;
+      }
+    }
+
+    if (is_array($serials)) return $transactions;
+    else return reset($transactions);
+  }
 
   /**
    * {@inheritdoc}
@@ -217,13 +245,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $values += array(
-      'parent' => 0,
-      //'children' => array(),
       'serial' => 0,
       'type' => 'default',
       'description' => '',
       'created' => REQUEST_TIME,
-      'creator' => \Drupal::currentUser()->id()//uid of 0 means drush must have created it
+      'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
+      'parent' => 0,
+      //'children' => array(),
     );
   }
 
@@ -249,7 +277,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
-    $wids = array($this->payer->value, $this->payee->value);
+    $wids = array($this->payer->target_id, $this->payee->target_id);
     drupal_set_message ('todo: clear wallet cache for wallet ids '.implode(' & ', $wids));
   }
 
@@ -271,14 +299,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $context = array(
       'values' => $values,
       'old_state' => $this->get('state')->value,
-      'config' => $this->configuration,
+      'config' => \Drupal::config('mcapi.transition.'.$transition_name),
     );
 
-    $config = \Drupal::config('mcapi.transition.'.$this->transition);
     //any problems need to be thrown
     $renderable = transaction_transitions($transition_name)->execute($this, $context)
       or $renderable = 'transition returned nothing renderable';
-
     //notify other modules, especially rules.
     //should we send a clone of $this?
     //perhaps not because we need the context...
@@ -368,12 +394,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //check that the payer and payee are not the same wallet
     $violations = array();
     //TODO return a violation
-    if ($this->payer->value == $this->payee->value) {
-      $violations['payee'] = t('Wallet @wid is attempting to pay itself.', array('@wid' => $this->payer->value));
+    if ($this->payer->target_id == $this->payee->target_id) {
+      $violations['payee'] = t('Wallet @wid is attempting to pay itself.', array('@wid' => $this->payer->target_id));
     }
     //check that the current user is permitted to pay out and in according to the wallet permissions
     else{
-      $walletAccess = \Drupal::Entitymanager()->getAccessController('mcapi_wallet');
+      $walletAccess = $this->Entitymanager()->getAccessController('mcapi_wallet');
       if (!$walletAccess->checkAccess($this->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
         $violations['payer'] = t('You are not allowed to make payments from this wallet');
       }
@@ -452,7 +478,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     else {
       return $violations;
       echo ('<br />Normal transaction - no intertrading...');
-      echo '<br />traders: '.$this->get('payer')->value.', '.$this->get('payee')->value;
+      echo '<br />traders: '.$this->get('payer')->target_id.', '.$this->get('payee')->target_id;
       echo '<br />payer_currencies_available '; print_r($this->payer_currencies_available);
       echo '<br />payee_currencies_available '; print_r($this->payee_currencies_available);
       echo '<br />required currs '; print_r($this->curr_ids_required);

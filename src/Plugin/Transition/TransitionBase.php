@@ -17,16 +17,10 @@ use Drupal\Core\Form\FormStateInterface;
 abstract class TransitionBase extends PluginBase implements TransitionInterface {
 
   public $label;
-  public $description; //
+  public $description;
 
   /**
-   *
-   * @param array $configuration
-   *   the configuration for this transition
-   * @param string $plugin_id
-   *   the id of this transition
-   * @param array $plugin_definition
-   *   the definition of this transition
+   * {@inheritdoc}
    */
   function __construct(array $configuration, $plugin_id, array $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
@@ -233,7 +227,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    */
   public function getConfiguration($key = NULL) {
     if ($key) {
-      return $this->configuration[$key];
+      return @$this->configuration[$key];
     }
     return $this->configuration;
   }
@@ -317,5 +311,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     	'module' => array('mcapi')
     );
   }
+
 }
 

@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Form\ExchangeWizard.
+ * Definition of Drupal\mcapi_exchanges\Form\ExchangeWizard.
  * Create a new exchange, and possibly the referenced manager (a user) and referenced currency
  */
 
-namespace Drupal\mcapi\Form;
+namespace Drupal\mcapi_exchanges\Form;
 
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
@@ -123,25 +123,27 @@ class ExchangeWizard extends ExchangeForm {
   public function validate(array $form, FormStateInterface $form_state) {
     //check that the new name is unique
     parent::validate($form, $form_state);
+
+    $values = $form_state->getValues();
     //validate the new user, if required
-      $user_values = $form_state['values']['manager_new'];
+      $user_values = $values['manager_new'];
     if ($user_values['username']) {
       if (empty($user_values['pass']) || empty($user_values['mail'])) {
-        $this->errorhandler()->setErrorByName('username', $form_state, $this->t('New user must have mail and password'));
+        $form_state->setErrorByName('username', $this->t('New user must have mail and password'));
       }
       //validate the username
       //would rather have used Accountform::validate()
       if ($error = user_validate_name($user_values['username'])) {
-        $this->setFormError('username', $form_state, $error);
+        $form_state->setErrorByName('username', $error);
       }
       else {
         if (entity_load_multiple_by_properties('user', array('name' => $user_values['username']))) {
-          $this->setFormError('manager_new][username', $form_state, $this->t('The name %name is already taken.', array('%name' => $form_state['values']['username'])));
+          $form_state->setErrorByName('manager_new][username', $this->t('The name %name is already taken.', array('%name' => $form_state['values']['username'])));
         }
       }
 
       if (entity_load_multiple_by_properties('user', array('mail' => $user_values['mail']))) {
-        $this->setFormError('username', $form_state, $this->t('The e-mail address %email is already taken.', array('%email' => $user_values['mail'])));
+        $this->setErrorByName('username', $this->t('The e-mail address %email is already taken.', array('%email' => $user_values['mail'])));
       }
       $defaults = array(
         'name' => $user_values['username'],
@@ -155,19 +157,19 @@ class ExchangeWizard extends ExchangeForm {
       //TODO how now to validate the user entity? $this->manager->validate() coming after alpha12?
     }
     else {
-      $this->manager = User::load($form_state['values']['uid']);
+      $this->manager = User::load($values['uid']);
     }
     if (!$this->manager->hasPermission('manage own exchanges') && !$this->manager->hasPermission('manage mcapi')) {
-      $this->getErrorHandler()->setErrorByName('uid', $form_state, $this->t('Exchange manager does not have permission'));
+      $form_state->setErrorByName('uid', $this->t('Exchange manager does not have permission'));
     }
     $defaults = array(
-      'name' => $form_state['values']['currency_name'],
-      'ticks' => $form_state['values']['ticks']
+      'name' => $values['currency_name'],
+      'ticks' => $values['ticks']
     );
     $this->currency = Currency::create($defaults);
     //TODO handle violations
     foreach ($this->currency->validate() as $field => $violation) {
-      $this->getErrorHandler()->setErrorByName($field, $form_state, (string) $violation);
+      $form_state->setErrorByName($field, (string) $violation);
     }
   }
 
@@ -175,16 +177,17 @@ class ExchangeWizard extends ExchangeForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
+    $values = $form_state->getValues();
     if (isset($this->manager)) {
       $this->manager->save();
-      if ($form_state['values']['manager_new']['notify']) {
+      if ($values['manager_new']['notify']) {
         //see RegisterForm::Save()
         if (_user_mail_notify('register_admin_created', $this->manager)) {
           drupal_set_message($this->t('A welcome message with further instructions has been e-mailed to the new user <a href="@url">%name</a>.', array('@url' => $account->url(), '%name' => $account->getUsername())));
         }
       }
     }
-    foreach ($form_state['values']['currencies'] as $item) {
+    foreach ($values['currencies'] as $item) {
       if ($item['target_id']) {
         $curr_ids[] = $currency;
       }

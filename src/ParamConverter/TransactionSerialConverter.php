@@ -7,12 +7,11 @@
 
 namespace Drupal\mcapi\ParamConverter;
 
-use Drupal\Core\Entity\EntityManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
 use Drupal\Core\ParamConverter\EntityConverter;
 use Drupal\Core\ParamConverter\ParamConverterInterface;
-use Drupal\mcapi\McapiTransactionException;
+use Drupal\mcapi\Entity\Transaction;
 
 /**
  * Provides upcasting for a transaction entity to be used in the Views UI.
@@ -39,9 +38,10 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
   public function convert($value, $definition, $name, array $defaults, Request $request) {
     //a $value of zero means that this is the are-you-sure page before the transaction has been saved
     //the transaction is retrieved therefore not in the normal way from the database but from the tempstore
-    return $value ?
-      mcapi_transaction_load_by_serial($value) :
-      \Drupal::service('user.tempstore')->get('TransactionForm')->get('entity');
+    if ($value) {
+      return Transaction::loadBySerials($value);
+    }
+    return \Drupal::service('user.tempstore')->get('TransactionForm')->get('entity');
   }
 
   /**

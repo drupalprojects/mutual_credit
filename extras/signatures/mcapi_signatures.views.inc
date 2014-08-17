@@ -19,7 +19,7 @@ function mcapi_signatures_views_data() {
       ),
     ),
     'join' => array(
-      'mcapi_transactions' => array(
+      'mcapi_transaction' => array(
         'left_field' => 'serial',
         'field' => 'serial',
       ),
@@ -89,7 +89,7 @@ function mcapi_signatures_views_data() {
 
 function mcapi_signatures_views_data_alter(&$data) {
   // For other base tables, explain how we join
-  $data['mcapi_transactions']['table']['join']['mcapi_signatures'] = array(
+  $data['mcapi_transaction']['table']['join']['mcapi_signatures'] = array(
     'left_table' => 'mcapi_signatures',
     'left_field' => 'serial',
     'field' => 'serial',

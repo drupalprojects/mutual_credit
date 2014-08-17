@@ -1,4 +1,4 @@
-<?php
+lllllllll<?php
 
 /**
  * @file
@@ -14,6 +14,7 @@ use Drupal\views\ResultRow;
 
 /**
  * Field handler to show the quantity of the transaction, without the currency
+ * @todo test this
  *
  * @ingroup views_field_handlers
  *
@@ -23,11 +24,11 @@ class Quantity extends FieldPluginBase {
 
   public function query($use_groupby = FALSE) {
     $table_alias = $this->ensureMyTable();
-    $this->query->addField($table_alias, 'quantity', 'mcapi_transactions_worths_quantity');
+    $this->query->addField($table_alias, 'quantity', 'mcapi_transaction_worth_quantity');
   }
 
   function render(ResultRow $values) {
-    return $values->mcapi_transactions_worths_quantity;
+    return $values->mcapi_transaction_worth_quantity;
   }
 
 }

@@ -22,10 +22,12 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class ExchangeTransactions extends FieldPluginBase {
 
-
+  /**
+   * {@inheritdoc}
+   */
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['since'] = array('default' => '');
+    $options['inclusive'] = array('default' => TRUE);
     return $options;
   }
 
@@ -33,27 +35,22 @@ class ExchangeTransactions extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
-    $form['since'] = array(
-      '#title' => t('Time period'),
-      '#title' => t('Relative time. PhP strtotime format. E.g. -365 days'),
-      '#type' => 'textfield',
-      '#size' => 10,
-      '#default_value' => $this->options['since'],
+    $form['inclusive'] = array(
+      '#title' => t('Include transactions in all states'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->options['link'],
     );
+    parent::buildOptionsForm($form, $form_state);
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function query() {
-    //$this->ensureMyTable();
-  }
+  function query(){}
 
   /**
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    return $this->getEntity($values)->transactions($this->options['since']);
+    $states = \Drupal::config('mcapi.misc')->get('counted');
+    return $this->getEntity($values)->transactions($this->options['inclusive']);
   }
 
 }

@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\ExchangeDeleteConfirm.
+ * Contains \Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm.
  */
 
-namespace Drupal\mcapi\Form;
+namespace Drupal\mcapi_exchanges\Form;
 
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 use Drupal\Core\Url;
@@ -26,7 +26,7 @@ class ExchangeDeleteConfirm extends ContentEntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return new Url('mcapi.admin_exchange_list');
   }
 

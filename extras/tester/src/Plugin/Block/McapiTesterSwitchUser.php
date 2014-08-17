@@ -11,6 +11,7 @@ namespace Drupal\mcapi_tester\Plugin\Block;
 use Drupal\block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Exchange;
 
 /**
  * Provides a block for switching users.
@@ -75,7 +76,7 @@ class McapiTesterSwitchUser extends BlockBase {
     $dest = drupal_get_destination();
     foreach ($accounts as $account) {
       $path = 'switch/' . $account->name->value;
-      $belongs_to = current(referenced_exchanges($account, TRUE));
+      $belongs_to = current(Exchange::referenced_exchanges($account, TRUE));
       $links[$account->id()] = array(
         'title' => user_format_name($account),
         'href' => $path,

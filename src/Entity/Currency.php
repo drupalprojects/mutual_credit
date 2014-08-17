@@ -106,7 +106,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   public function transactions(array $conditions = array(), $serial = FALSE) {
     $conditions += array('curr_id' => $this->id());
-    $serials = \Drupal::entityManager()
+    $serials = $this->entityManager()
       ->getStorage('mcapi_transaction')
       ->filter($conditions);
     if ($serial) {
@@ -120,7 +120,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   public function volume(array $conditions = array()) {
     //get the transaction storage controller
-    return \Drupal::entityManager()
+    return $this->entityManager()
       ->getStorage('mcapi_transaction')
       ->volume($this->id());
   }
@@ -293,7 +293,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   function used_in() {
     //this is a reverse lookup on another entityType.
     //so I wrote a special function just this once.
-    return \Drupal::EntityManager()->getStorage('mcapi_exchange')->using_currency($this);
+    return $this->EntityManager()->getStorage('mcapi_exchange')->using_currency($this);
+  }
+
+
+  static function user(AccountInterface $account = NULL, $status = FALSE, $ticks = FALSE) {
+    return exchange_currencies(Exchange::referenced_exchanges($account, $status), $ticks);
   }
 
 }

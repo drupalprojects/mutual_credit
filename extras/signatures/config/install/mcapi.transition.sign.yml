@@ -16,3 +16,5 @@ body: 'Tokens will be needed for this mail'
 cc: ''
 status: true
 weight: 2
+#has its own access function
+access: {}

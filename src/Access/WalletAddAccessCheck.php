@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\Access\AccessInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Routing\RouteMatch;
+use Drupal\mcapi\Entity\Exchange;
 
 
 /**
@@ -76,12 +77,12 @@ class WalletAddAccessCheck implements AccessCheckInterface {
         $user = User::load($account->id());
       }
       else ($user == $account);
-      $my_exchanges = referenced_exchanges($user, TRUE);
+      $my_exchanges = Exchange::referenced_exchanges($user, TRUE);
       if ($entity_type == 'mcapi_exchange') {
         $exchanges = array($owner);
       }
       else {
-        $exchanges = referenced_exchanges($owner, TRUE);
+        $exchanges = Exchange::referenced_exchanges($owner, TRUE);
       }
       foreach($exchanges as $exchange) {
         foreach ($my_exchanges as $my_exchange) {

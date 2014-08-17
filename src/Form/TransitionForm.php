@@ -50,7 +50,7 @@ class TransitionForm extends EntityConfirmFormBase {
    * although of course users don't know route names so there would be some complexity
    * How do we go back
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     if ($this->transition == 'create') {//the transaction hasn't been created yet
       //we really want to go back the populated transaction form using the back button in the browser
       //failing that we want to go back to whatever form it was, fresh
@@ -156,11 +156,16 @@ class TransitionForm extends EntityConfirmFormBase {
         '[uid]' => \Drupal::currentUser()->id(),
         '[serial]' => $transaction->serial->value
       ));
-      $form_state['redirect'] = array(
-        $path,
-        array(),//$options to be passed to url(), I think
+      $form_state->setRedirectUrl(Url::createFromPath($path));
+    }
+    else {
+      //if it's not set, go to the transaction's own page
+      $form_state->setRedirect(
+        'mcapi.transaction_view',
+        array('mcapi_transaction' => $transaction->serial->value)
       );
     }
+
 
     //but since rules isn't written yet, we're going to use the transition settings to send a notification.
     if ($this->configuration->get('send')) {

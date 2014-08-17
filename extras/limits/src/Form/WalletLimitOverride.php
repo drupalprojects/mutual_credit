@@ -13,9 +13,9 @@
 namespace Drupal\mcapi_limits\Form;
 
 use Drupal\Core\Form\FormBase;
-use Drupal\Core\Field\FieldDefinition;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Exchange;
 
 class WalletLimitOverride extends FormBase {
 
@@ -40,7 +40,7 @@ class WalletLimitOverride extends FormBase {
     //to do that we have to know all the currencies in the all the active exchanges the wallets parent is in.
     $wallet = $this->wallet;
     $owner = $wallet->getOwner();
-    $exchanges = referenced_exchanges($owner);
+    $exchanges = Exchange::referenced_exchanges($owner);
     if (empty($exchanges)) {
       drupal_set_message(t("!name is not currently in any active exchange"), array('!name' => $owner->getlabel()));
       return $form;

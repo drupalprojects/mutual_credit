@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Access\ExchangeAccessController.
+ * Contains \Drupal\mcapi_exchanges\ExchangeAccessController.
  */
 
-namespace Drupal\mcapi\Access;
+namespace Drupal\mcapi_exchanges;
 
 use Drupal\Core\Entity\EntityAccessController;
 use Drupal\Core\Entity\EntityInterface;

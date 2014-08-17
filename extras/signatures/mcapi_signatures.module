@@ -1,17 +1,9 @@
 <?php
 
-/**
- * Introduces a new transaction state, 'pending', and
- * modifies existing default transaction forms to create pending transactions
- * Pending transactions require at least one signature
- * Required signatures are stored in a db table with the date of signing
- * Its possible both to sign a transaction 'off' thus 'finishing' it
- * There is also a 'cancel' transition for pending transactions, permissions defined in the currency.
- */
+use \Drupal\mcapi\Entity\Transaction;
 
 define ('TRANSACTION_STATE_PENDING', 'pending');
 
-use \Drupal\mcapi\Entity\TransactionInterface;
 
 /**
  * implements hook_ENTITY_TYPE_load().
@@ -31,18 +23,17 @@ function mcapi_signatures_mcapi_type_load($entities) {
  */
 function mcapi_signatures_mcapi_transaction_presave($transaction) {
   //the start state has already been set in transaction::validate
-  if (!$transaction->isNew()) return;
-  if ($transaction->state->target_id != 'pending') return;
-  $override = _mcapi_signature_overrides($transaction->type->value);//should always return an array for pending transactions
-  if (!$override) throw new \Exception('Pending state integrity problem');
-  if ($override['both']) {
-    $transaction->signatures[$transaction->payer->entity->user_id()] = 0;
-    $transaction->signatures[$transaction->payee->entity->user_id()] = 0;
-  }
-  elseif($override['exman']) {
-    //this will be max 2 $exchanges, for intertrades
-    foreach ($transaction->exchanges() as $exchange) {
-      $transaction->signatures[$exchange->getOwnerId()] = 0;
+  if ($transaction->isNew() && $transaction->state->target_id != 'pending') {
+    $override = _mcapi_signature_overrides($transaction->type->value);//should always return an array for pending transactions
+    if ($override['both']) {
+      $transaction->signatures[$transaction->payer->entity->user_id()] = 0;
+      $transaction->signatures[$transaction->payee->entity->user_id()] = 0;
+    }
+    elseif($override['exman']) {
+      //this will be max 2 $exchanges, for intertrades
+      foreach ($transaction->exchanges() as $exchange) {
+        $transaction->signatures[$exchange->getOwnerId()] = 0;
+      }
     }
   }
 }
@@ -69,10 +60,11 @@ function mcapi_signatures_mcapi_transaction_load($entities) {
  * delete the signature data when a transaction is deleted
  */
 function mcapi_signatures_mcapi_transaction_delete($transaction) {
-  if (\Drupal::config('mcapi.misc')->get('indelible')) return;
-	db_delete('mcapi_signatures')
-	->condition('serial', $transaction->serial->value)
-	->execute();
+  if (\Drupal::config('mcapi.misc')->get('indelible')) {
+  	db_delete('mcapi_signatures')
+  	->condition('serial', $transaction->serial->value)
+  	->execute();
+  }
 }
 
 /**
@@ -101,15 +93,16 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
  * rewrites the signatures after the transaction is updated
  */
 function mcapi_signatures_mcapi_transaction_update($transaction) {
-  if (!isset($transaction->signatures)) return;
-  foreach ($transaction->signatures as $uid => $signed) {
-    $q = db_merge('mcapi_signatures')
-      ->keys(array(
-        'serial' => $transaction->serial->value,
-        'uid' => $uid
-      ))->fields(array(
-        'signed' => $signed
-      ))->execute();
+  if (isset($transaction->signatures)) {
+    foreach ($transaction->signatures as $uid => $signed) {
+      $q = db_merge('mcapi_signatures')
+        ->keys(array(
+          'serial' => $transaction->serial->value,
+          'uid' => $uid
+        ))->fields(array(
+          'signed' => $signed
+        ))->execute();
+    }
   }
 }
 
@@ -128,11 +121,10 @@ function mcapi_signatures_theme() {
 }
 
 /**
- * implements hook_ENTITY_TYPE_view_alter
+ * implements hook_ENTITY_TYPE_view().
  * show the signatures on the transaction certificate.
- * @todo shouldn't this be in hook_transaction_view and extra_fields?
  */
-function mcapi_signatures_mcapi_transaction_view(array &$build, TransactionInterface $transaction, $display, $view_mode, $langcode) {
+function mcapi_signatures_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode, $langcode) {
   if ($view_mode == 'certificate' && isset($transaction->signatures) && in_array('mcapi_signatures', $display->getComponents())) {
     $build['mcapi_signatures'] = array(
       '#theme' => 'mcapi_signatures',
@@ -178,14 +170,16 @@ function mcapi_signatures_entity_extra_field_info() {
 function mcapi_signatures_user_view(&$build, $mode, $language) {
   module_load_include('inc', 'mcapi_signatures');
   $serials = list_pending($build['#user']);
-  foreach (mcapi_transaction_load_by_serial($serials) as $transaction) {
+  foreach (Transaction::loadBySerials($serials) as $transaction) {
     $build['mcapi_signatures'][] = entity_view($transaction, 'sentence');
   }
 }
 
 /**
  * helper to retrive the signature override settings for a transaction type
+ *
  * @param string $transaction_type
+ *
  * @return array|NULL
  *   array contains exman and partners
  */
@@ -194,6 +188,8 @@ function _mcapi_signature_overrides($transaction_type) {
   if (!$override) {
     $override = array_filter(\Drupal::config('mcapi.signatures')->getRawData());
   }
-  return @$override[$transaction_type];
+  return array_key_exists($transaction_type, $override) ?
+    $override[$transaction_type] :
+    array('both' => FALSE, 'exman' => TRUE);
 }
 

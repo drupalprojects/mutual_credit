@@ -13,7 +13,6 @@ use Drupal\Core\Form\FormStateInterface;
 
 class FirstPartyFormDesigner extends EntityForm {
 
-
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
@@ -55,6 +54,15 @@ class FirstPartyFormDesigner extends EntityForm {
     foreach (entity_load_multiple('mcapi_exchange') as $id => $entity) {
       $options[$id] = $entity->label();
     }
+    $form['path'] = array(
+    	'#title' => t('Path'),
+      '#description' => t('The url path at which this form will appear. Must be unique. E.g. myexchange/payme'),
+      '#type' => 'textfield',
+      '#weight' => $w++,
+      '#element_validate' => array(array($this, 'unique_path')),
+      '#default_value' => $configEntity->path,
+      '#required' => TRUE
+    );
     $form['exchange'] = array(
       '#title' => t('Restricted to exchange:'),
       '#type' => 'select',
@@ -65,15 +73,41 @@ class FirstPartyFormDesigner extends EntityForm {
       '#disabled' => TRUE,
       '#weight' => $w++,
     );
-    $form['path'] = array(
-    	'#title' => t('Path'),
-      '#description' => t('The url path at which this form will appear. Must be unique. E.g. myexchange/payme'),
-      '#type' => 'textfield',
+
+    $form['menu'] = array(
+      '#title' => $this->t('Menu link'),
+    	'#type' => 'details',
       '#weight' => $w++,
-      '#element_validate' => array(array($this, 'unique_path')),
-      '#default_value' => $configEntity->path,
-      '#required' => TRUE
+      'title' => array(
+    	  '#title' => $this->t('Link title'),
+        '#type' => 'textfield',
+        '#default_value' => $configEntity->menu['title'],
+        '#weight' => 1
+      ),
+      'weight' => array(
+        '#title' => $this->t('Weight'),
+        '#type' => 'textfield',
+        '#default_value' => $configEntity->menu['weight'],
+        '#description' => $this->t('In the menu, the heavier links will sink and the lighter links will be positioned nearer the top.'),
+        '#weight' => 2
+      ),
+      '#states' => array(
+      	'visible' => array(
+    	    ':input[name="exchange"]' => array('value' => ''),
+        )
+      )
     );
+    if (\Drupal::moduleHandler()->moduleExists('menu_ui')) {
+      $form['menu']['menu_name'] = array(
+        '#title' => t('Menu'),
+        '#type' => 'select',
+        '#options' => menu_ui_get_menus(),
+        '#required' => FALSE,
+        '#empty_value' => '',
+        '#default_value' => $configEntity->menu['menu_name'],
+        '#weight' => 2
+      );
+    }
 
     $form['type'] =  array(
       '#title' => t('Transaction type'),
@@ -299,7 +333,7 @@ class FirstPartyFormDesigner extends EntityForm {
     	'#weight' => $w++,
     );
     $form['#suffix'] = t(
-  	  "The confirmation page is configured seperately, at !link",
+  	  "N.B The confirmation page is configured separately, at !link",
       array('!link' => l('admin/accounting/transactions/workflow/create', 'admin/accounting/transactions/workflow/create'))
     );
     $form['actions'] = array('#type' => 'actions');
@@ -343,7 +377,7 @@ class FirstPartyFormDesigner extends EntityForm {
           break;
         }
       }
-      $errors[] = 'worth';
+      if ($empty)$errors[] = 'worth';
     }
     foreach ($errors as $field_name) {
       $form_state->setError(

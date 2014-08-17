@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\views\argument\EntityExchanges.
+ * Contains \Drupal\mcapi_exchanges\Plugin\views\argument\EntityExchanges.
  */
 
 namespace Drupal\mcapi\Plugin\views\argument;

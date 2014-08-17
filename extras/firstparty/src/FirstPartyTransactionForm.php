@@ -11,7 +11,9 @@ namespace Drupal\mcapi_1stparty;
 
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDisplay;
 use Drupal\mcapi\Form\TransactionForm;
+use Drupal\mcapi\Entity\Exchange;
 use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 
 
@@ -45,7 +47,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * Get the original transaction form and alter it according to
    * the 1stparty form saved in $this->config.
    */
-  public function form(array $form, $form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     //@todo we need to be able to pass in an entity here from the context
     //and generate $this->entity from it before building the base transaction form.
     //have to wait and how that might work in panels & blocks in d8
@@ -76,6 +78,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['mywallet'] = array(
       '#title' => t('My wallet')
     );
+
     //if I only have one wallet, we'll put a bogus disabled chooser
     //however disabled widgets don't return a value, so we'll store the value we need in a helper element
     if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
@@ -93,6 +96,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       );
     }
     $form['partner']['#element_validate'] = array('local_wallet_validate_id');
+    $form['partner']['#exchanges'] = Exchange::referenced_exchanges();
 
     if ($config->partner['preset']) {
       $form['partner']['#default_value'] = $config->partner['preset'];
@@ -134,7 +138,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 
     //TODO put this in the base transaction form,
     //where the one checkbox can enable both payer and payee to be selected from any exchange
-    if (strpos($config->experience['twig'], '{{ intertrade }}') && referenced_exchanges($account, TRUE, TRUE)) {
+    if (strpos($config->experience['twig'], '{{ intertrade }}') && Exchange::referenced_exchanges($account, TRUE, TRUE)) {
       //this checkbox flips between partner_choosers
       $form['intertrade'] = array(
         '#title' => t('Intertrade'),
@@ -149,11 +153,11 @@ class FirstPartyTransactionForm extends TransactionForm {
         )
       );
       $form['partner_all'] = $form['partner'];
-      $form['partner_all']['#local'] = FALSE;
+      $form['partner_all']['#exchanges'] = array();
       $form['partner_all']['#states']['visible'][':input[name="intertrade"]']['checked'] = TRUE;
     }
 
-    //hide the state, type
+    //hide the state & type
     $form['state']['#type'] = 'value';
     //TODO get the first state of this workflow
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
@@ -167,31 +171,18 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['#twig_tokens'] = mcapi_1stparty_transaction_tokens();
 
     foreach ($form['#twig_tokens'] as $token) {
-       if (strpos($config->experience['twig'], $token) === FALSE) {
-        $form[$token]['#type'] = 'value';
-       }
+      if (strpos($config->experience['twig'], $token) === FALSE) {
+       $form[$token]['#type'] = 'value';
+      }
     }
     $form['#twig_tokens'][] = 'actions';
     $form['#theme'] = '1stpartyform';
 
-/*
-    $form['#attributes']['class'][] = 'contextual-region';
-    //@todo contextual links would be nice to jump straight to the edit form
+
+    //TODO contextual_links would be nice to jump straight to the edit form
     //pretty hard because it is designed to work only with templated themes, not theme functions
     //instead we'll probably just put a link in the menu
-    $form['#title_suffix']['links'] = array(
-      '#type' => 'contextual_links',
-      '#contextual_links' => array(
-        '1stpartyform' => array(
-          'route_parameters' => array('1stpartyform' => $config->id())
-        )
-      )
-    );
-    $form['contextual_links'] = array(
-      '#type' => 'contextual_links_placeholder',
-      '#id' => array('firstparty:1stpartyform='.$config->id().': ')
-    );
-    */
+
 
     return $form;
   }
@@ -201,7 +192,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * set the payer and payee from the mywallet, partner and direction
    */
 
-  function firstparty_convert_direction(&$element, $form_state) {
+  function firstparty_convert_direction(&$element, FormStateInterface $form_state) {
     debug('check whether we should get the form_builder service in order to set values in $form_state');
     $form_builder = \Drupal::service('form_builder');
     $values = $form_state->getValues();
@@ -221,7 +212,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * convert the firstparty, 3rdparty and direction fields into payer and payee.
    * @todo check the best way to setValue after alpha 14
    */
-  public function validate(array $form, $form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $my_wallet_id = array_key_exists('mywallet_value', $values) ?
       $values['mywallet_value'] :
@@ -247,7 +238,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * Returns an array of supported actions for the current entity form.
    * //TODO Might be ok to delete this now
    */
-  protected function actions(array $form, $form_state) {
+  protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
     if ($this->config->experience['preview'] == 'ajax') {
       //this isn't working at all...

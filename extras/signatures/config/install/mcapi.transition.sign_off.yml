@@ -16,4 +16,12 @@ body: 'Tokens will be needed for this mail!'
 cc: ''
 status: true
 weight: 2
-
+access:
+  done: {}
+  pending: 
+    admin: 0
+    payer: 0
+    payee: 0
+    manager: manager
+    helper: helper
+  undone: { }

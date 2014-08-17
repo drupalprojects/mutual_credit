@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Definition of Drupal\mcapi\ListBuilder\ExchangeListBuilder.
+ * Definition of Drupal\mcapi_exchanges.
  */
 
-namespace Drupal\mcapi\ListBuilder;
+namespace Drupal\mcapi_exchanges;
 
 use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
@@ -16,31 +16,39 @@ use Drupal\Core\Utility\LinkGenerator;
 class ExchangeListBuilder extends EntityListBuilder {
 
   /**
-   * Overrides Drupal\Core\Entity\EntityListBuilder::buildHeader().
+   * {@inheritdoc}
    */
   public function buildHeader() {
-    $header['name'] = t('Name');
-    $header['access'] = t('Access');
-    $header['members'] = t('Members');
-    $header['admin'] = t('Administrator');
+    $header = array(
+      'name' => t('Name'),
+      'access' => t('Access'),
+      'members' => t('Members'),
+      'transactions' => t('Transactions'),
+      'admin' => t('Administrator')
+    );
     return $header + parent::buildHeader();
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityListBuilder::buildRow().
+   * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    $row['class'][] = $entity->status->value ? 'enabled' : 'disabled';
-    $row['title'][] = $entity->label();
-
-    $row['data']['title'] = l($entity->label(), 'exchange/'.$entity->id());
-    $row['data']['access'] = $entity->get('status')->value ? t('Open') : t('Closed');
-    $row['data']['members'] = $entity->users();
-    $row['data']['administrator']['data'] = array(
-      '#theme' => 'username',
-      '#account' => $entity->get('uid')->entity
+    $row = array(
+    	'class' => array($entity->status->value ? 'enabled' : 'disabled'),
+      'title' => array($entity->label()),
+      'data' => array(
+    	  'title' => l($entity->label(), 'exchange/'.$entity->id()),
+        'access' => $entity->get('status')->value ? t('Open') : t('Closed'),
+        'members' => $entity->users(),
+        'transactions' => $entity->transactions(TRUE),
+        'administrator' => array(
+       	  'data' => array(
+            '#theme' => 'username',
+             '#account' => $entity->get('uid')->entity
+          )
+        )
+      )
     );
-
     $row['data'] += parent::buildRow($entity);
     return $row;
   }
@@ -91,6 +99,9 @@ class ExchangeListBuilder extends EntityListBuilder {
     return $entities;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function render() {
     $entities = $this->load();
     $list['table'] = array(

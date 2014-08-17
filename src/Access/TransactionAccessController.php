@@ -11,7 +11,7 @@ use Drupal\Core\Entity\EntityAccessController;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Drupal\Core\Language\Language;
+use Drupal\Core\Language\LanguageInterface;
 
 /**
  * Defines an access controller option for the mcapi_transaction entity.
@@ -21,7 +21,7 @@ class TransactionAccessController extends EntityAccessController {
   /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $transaction, $transition, $langcode = Language::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
+  public function access(EntityInterface $transaction, $transition, $langcode = LanguageInterface::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
     if ($transition == 'transition') {
       //there is probably a better way of writing the router so the op is passed as a variable
       $transition = \Drupal::request()->attributes->get('transition');

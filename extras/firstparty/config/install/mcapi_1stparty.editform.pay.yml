@@ -1,6 +1,10 @@
 id: pay
 exchange: ''
 path: 'transact/pay'
+menu:
+  title: 'Pay someone'
+  menu_name: Tools
+  weight: 5
 title: 'Pay someone'
 status: 1
 type: default

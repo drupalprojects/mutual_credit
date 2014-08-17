@@ -25,7 +25,7 @@ class FirstPartyEditFormEnableConfirm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return array(
       'route_name' => 'mcapi.admin_1stparty_editform_list',
     );

@@ -1,5 +1,5 @@
 name: Firstparty form designer
-description: User 1 has complete control over the payment experience 
+description: Design payment forms from the 1st party perspective.
 package: Community Accounting
 core: 8.x
 type: module

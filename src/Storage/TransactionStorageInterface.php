@@ -40,6 +40,9 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    *   Except in the case of state. If state is NULL, no filter will be applied,
    *   if state is not in the $conditions, a filter for positive states will be added.
    *   note that 'value' refers to the raw value of the worth field.
+   *   Also note 'including' and 'involving' conditions will filter inclusively and
+   *   exclusively respectively on the wallet ids passed. Actually I think those are the same
+   *   because wallets can ONLY trade with other wallets in the same exchange, unless they have moved
    * @param number $offset
    * @param number $limit
    *

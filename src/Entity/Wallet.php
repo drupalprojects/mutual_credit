@@ -69,12 +69,12 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   public function getOwner() {
     if (!isset($this->owner)) {
-      $this->owner = \Drupal::entityManager()
+      $this->owner = $this->entityManager()
         ->getStorage($this->entity_type->value)
         ->load($this->pid->value);
       //in the impossible event that there is no owner, set
       if (!$this->owner) {
-        throw new \Exception('Wallet has no owner: '.$this->entity_type->value .' '.$this->pid->value);
+        throw new \Exception('Owner of wallet '. $this->id() .' does not exist: '.$this->entity_type->value .' '.$this->pid->value);
       }
     }
     //if for some reason there isn't an owner, return exchange 1 so as not to break things
@@ -213,7 +213,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     if ($owner->getEntityTypeId() == 'mcapi_exchange') {
       return array($owner->id() => $owner);
     }
-    return referenced_exchanges($owner);
+    return Exchange::referenced_exchanges($owner);
   }
   /**
    * get a list of all the currencies used and available to the wallet.
@@ -254,7 +254,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   function getSummaries() {
     if (!$this->stats) {
-      $this->stats = \Drupal::Entitymanager()->getStorage('mcapi_transaction')->summaryData($this->id());
+      $this->stats = $this->Entitymanager()->getStorage('mcapi_transaction')->summaryData($this->id());
       foreach ($this->currencies_available() as $curr_id => $currency) {
         if (!array_key_exists($curr_id, $this->stats)) {
           $this->stats[$curr_id] = array(
@@ -316,7 +316,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     if ($to) {
       $conditions['to'] = $to;
     }
-    return \Drupal::entitymanager()->getStorage('mcapi_transaction')->filter($conditions);
+    return $this->entitymanager()->getStorage('mcapi_transaction')->filter($conditions);
   }
 
   /**

@@ -76,7 +76,7 @@ function mcapi_signatures_update_8000() {
   //borrows the created date from the transaction table to put some more reasonable signature dates in
   //I suspect there is a quicker way to do this, but is it possible with the drupal dbAPI?
   $createds = db_select('mcapi_signatures', 's')
-    ->leftjoin('mcapi_transactions', 't', 's.serial = t.serial');
+    ->leftjoin('mcapi_transaction', 't', 's.serial = t.serial');
   $createds->fields(array('s.serial', 't.created'))->execute();
   foreach ($createds->fetchAllKeyed(0) as $serial => $created) {
     //this really needs to be faster, or batched
@@ -96,14 +96,14 @@ function mcapi_signatures_update_8000() {
  */
 function signature_integrity_check() {
   //set all pending transactions to completed
-  db_update('mcapi_transactions')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();
+  db_update('mcapi_transaction')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();
   //any transactions with pending signatures should be set back to pending state
   $pending_serials = db_select('mcapi_signatures', 's')
     ->fields('s', array('serial'))
     ->condition('pending', 1)
     ->execute()->fetchCol();
   if (empty($pending_serials)) return;
-  db_update('mcapi_transactions')
+  db_update('mcapi_transaction')
     ->fields(array('state' => TRANSACTION_STATE_PENDING))
     ->condition('serial', $pending_serials)
     ->execute();

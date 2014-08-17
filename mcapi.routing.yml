@@ -163,63 +163,20 @@ mcapi.admin_wallets:
     _permission: 'configure mcapi'
 
 mcapi.wallets.autocomplete:
-  path: '/mcapi/walletcomplete'
-  defaults:
-    _controller: '\Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
-  requirements:
-    _permission: 'access content'
-mcapi.wallets.autocomplete_all:
-  #the same controller as above but a different path, to select outside the exchange.
-  path: '/mcapi/walletcompleteall'
+  path: '/mcapi/walletcomplete/{exchanges}'
   defaults:
     _controller: '\Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:
     _permission: 'access content'
 
-#exchanges
-mcapi.admin_exchange_list:
-  path: '/admin/accounting/exchanges'
+#this is replaced by the mcapi_exchanges module
+mcapi.masspay:
+  path: '/transact/masspay'
   defaults:
-    _entity_list: 'mcapi_exchange'
-    _title: Exchanges
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
-
-mcapi.exchange.view:
-  path: '/exchange/{mcapi_exchange}'
-  defaults:
-    _content: '\Drupal\mcapi\Controller\ExchangeController::page'
-    _title_callback: '\Drupal\mcapi\Controller\ExchangeController::pageTitle'
-  requirements:
-    _entity_access: 'mcapi_exchange.view'
-
-mcapi.exchange.add:
-  path: '/exchange/add'
-  defaults:
-    _entity_form: 'mcapi_exchange.add'
-    _title: Create exchange
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
-
-mcapi.exchange.edit:
-  path: '/exchange/{mcapi_exchange}/edit'
-  defaults:
-    _entity_form: 'mcapi_exchange.edit'
-    _title: 'Edit exchange'
-  requirements:
-    _entity_access: 'mcapi_exchange.update'
-
-mcapi.exchange.masspay:
-  path: '/exchange/{mcapi_exchange}/masspay'
-  defaults:
-    _entity_form: 'mcapi_exchange.masspay'
+    _entity_form: 'mcapi_transaction.masspay'
     _title: 'Mass payment'
   requirements:
-    _entity_access: 'mcapi_exchange.manage'
+    _permission: 'manage mcapi'
 
 #TEMP
 mcapi.wallet.log:

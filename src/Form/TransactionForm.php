@@ -16,10 +16,12 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\action\Plugin\Action;
+use Drupal\user\Entity\User;
 use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\action\Plugin\Action;
+use Drupal\mcapi\Entity\Exchange;
 
 class TransactionForm extends ContentEntityForm {
 
@@ -33,15 +35,15 @@ class TransactionForm extends ContentEntityForm {
       ? $this->entity
       : Transaction::Create();
 
-
     //TODO do this with access control, including the dsm
-    if (count(referenced_exchanges(NULL, TRUE)) < 1) {
+    if (count(Exchange::referenced_exchanges(NULL, TRUE)) < 1) {
       drupal_set_message(t('You are not a member of any exchanges, so you cannot trade with anyone'));
       $form['#disabled'] = TRUE;
     }
 
-    //borrowed from NodeFormController::prepareEntity
+    //borrowed from NodeFormController::prepareEntity in alpha14
     $transaction->date = format_date($transaction->created->value, 'custom', 'Y-m-d H:i:s O');
+    //but this looks better to me
     //$transaction->date = DrupalDateTime::createFromTimestamp($transaction->created->value);
 
     //the actual exchange that the transaction takes place in
@@ -72,18 +74,17 @@ class TransactionForm extends ContentEntityForm {
     $form['payer'] = array(
       '#title' => t('Wallet to be debited'),
       '#type' => 'select_wallet',
-      '#local' => TRUE,
-      '#default_value' => $transaction->get('payer')->value,
+      '#default_value' => $transaction->get('payer')->target_id,
       '#weight' => 9,
     );
     $form['payee'] = array(
       '#title' => t('Wallet to be credited'),
       '#type' => 'select_wallet',
-      '#local' => TRUE,
-      '#default_value' => $transaction->get('payee')->value,
+      '#default_value' => $transaction->get('payee')->target_id,
       '#weight' => 9,
     );
     //direct copy from the node module, but what about the datetime field?
+    //see datetime_form_node_form_alter
     $form['created'] = array(
       '#type' => 'textfield',
       '#title' => t('Entered on'),
@@ -131,22 +132,16 @@ class TransactionForm extends ContentEntityForm {
 
     $transaction = $this->buildEntity($form, $form_state);
 
-    if (!$transaction->created->value) {
-      $transaction->set('created', REQUEST_TIME);
-    }
     // The date element contains the date object.
-    $date = $transaction->created instanceof DrupalDateTime ? $transaction->created : new DrupalDateTime($transaction->created->value);
+    $date = $transaction->created instanceof DrupalDateTime
+      ? $transaction->created->value
+      : new DrupalDateTime($transaction->created->value);
+    //there is a problem creating the date in alpha14
     if ($date->hasErrors()) {
-      $this->setFormError('created', $form_state, $this->t('You have to specify a valid date.'));
+      //$form_state->setErrorByName('created', $this->t('You have to specify a valid date.'));
     }
-    if (!$transaction->creator->value) {
+    if (!$transaction->creator->target_id) {
       $transaction->set('creator', \Drupal::currentUser()->id());
-    }
-
-    //make sure we're not running this twice
-    if (array_key_exists('mcapi_validated', $form_state)){
-      debug('running form validation twice');
-      return;
     }
     else $form_state->set('mcapi_validated', TRUE);
 
@@ -154,7 +149,7 @@ class TransactionForm extends ContentEntityForm {
     $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
 
     //TODO take this out of the global scope
-    if (\Drupal::formBuilder()->getErrors($form_state)) {
+    if ($form_state->getErrors()) {
       return;
     }
 
@@ -173,7 +168,7 @@ class TransactionForm extends ContentEntityForm {
       $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
       foreach ($transaction->warnings as $message) {
         if (!$child_errors['allow']) {
-          $this->setFormError(key($message), $form_state, $message);
+          $form_state->setErrorByName(key($message), $message);
         }
         elseif ($child_errors['show_messages']) {
           drupal_set_message($e->getMessage, 'warning');
@@ -184,8 +179,7 @@ class TransactionForm extends ContentEntityForm {
     }
     catch (McapiTransactionException $e) {
       //The Exception message may have several error messages joined together
-
-      $this->setFormError($e->getField(), $form_state, $e->getMessage());
+      $form_state->setErrorByName($e->getField(), $e->getMessage());
     }
   }
 
@@ -197,7 +191,30 @@ class TransactionForm extends ContentEntityForm {
     //Drupal\mcapi\Plugin\Transition\Create
 
     //now we divert to the transition confirm form
-    $form_state->setRedirect('transaction/0/create');
+    $form_state->setRedirect('mcapi.transaction.op', array('mcapi_transaction' => 0, 'transition' => 'create'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildEntity(array $form, FormStateInterface $form_state) {
+    $entity = parent::buildEntity($form, $form_state);
+    $values = $form_state->getValues();
+    if (array_key_exists('creator', $values) && $account = User::load($values['creator'])) {
+      $entity->creator->target_id = $account->id();
+    }
+    elseif($uid = \Drupal::currentUser()->id()) {
+      $entity->creator->target_id = $uid;
+    }
+    else throw new \Exception('transaction has no creator');
+
+    if (!empty($values['created']) && $values['created'] instanceOf DrupalDateTime) {
+      $entity->set('created', $values['created']->getTimestamp());
+    }
+    else {
+      $entity->set('created', REQUEST_TIME);
+    }
+    return $entity;
   }
 
 }

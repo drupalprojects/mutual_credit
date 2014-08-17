@@ -7,9 +7,9 @@
 
 namespace Drupal\mcapi\Form;
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
-use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Builds the form to delete a currency
@@ -26,7 +26,7 @@ class CurrencyDeleteConfirm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     //want to go back to the list builder but its not normal to put the list in the entity->links property
     return new Url('mcapi.admin_currency_list');
   }

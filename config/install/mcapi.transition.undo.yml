@@ -17,13 +17,13 @@ access:
     payee: 0
     manager: 0
     helper: 0
-  'pending': 
+  pending: 
     admin: admin
     payer: 0
     payee: 0
     manager: 0
     helper: 0
-
+  undone: { }
 status: true
 weight: 5
 

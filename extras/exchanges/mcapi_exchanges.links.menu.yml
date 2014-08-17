@@ -1,0 +1,7 @@
+mcapi.admin_exchange_list:
+  title: Exchanges
+  description: The groups, communities or marketplaces where transactions happen
+  route_name: mcapi.admin_exchange_list
+  parent: mcapi.admin
+  weight: 0
+

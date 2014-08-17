@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Plugin\views\argument_default;
 
 use Drupal\views\Annotation\ViewsArgumentDefault;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * The fixed argument default handler.
@@ -26,7 +27,7 @@ class Exchange extends ArgumentDefaultPluginBase {
    * Return the default argument.
    */
   public function getArgument() {
-    return key(referenced_exchanges(NULL, TRUE));
+    return key(Exchange::referenced_exchanges(NULL, TRUE));
   }
 
 }

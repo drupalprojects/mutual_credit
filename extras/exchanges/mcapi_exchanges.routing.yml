@@ -1,0 +1,53 @@
+
+#exchanges
+mcapi.admin_exchange_list:
+  path: '/admin/accounting/exchanges'
+  defaults:
+    _entity_list: 'mcapi_exchange'
+    _title: Exchanges
+  requirements:
+    _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
+
+mcapi.exchange.view:
+  path: '/exchange/{mcapi_exchange}'
+  defaults:
+    _content: '\Drupal\mcapi_exchanges\ExchangeController::page'
+    _title_callback: '\Drupal\mcapi_exchanges\ExchangeController::pageTitle'
+  requirements:
+    _entity_access: 'mcapi_exchange.view'
+
+mcapi.exchange.add:
+  path: '/exchange/add'
+  defaults:
+    _entity_form: 'mcapi_exchange.add'
+    _title: Create exchange
+  requirements:
+    _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
+
+mcapi.exchange.edit:
+  path: '/exchange/{mcapi_exchange}/edit'
+  defaults:
+    _entity_form: 'mcapi_exchange.edit'
+    _title: 'Edit exchange'
+  requirements:
+    _entity_access: 'mcapi_exchange.update'
+
+mcapi.exchange.masspay:
+  path: '/exchange/{mcapi_exchange}/masspay'
+  defaults:
+    _entity_form: 'mcapi_exchange.masspay'
+    _title: 'Mass payment'
+  requirements:
+    _entity_access: 'mcapi_exchange.manage'
+
+mcapi.exchange.masspay:
+  path: '/exchange/{mcapi_exchange}/masspay'
+  defaults:
+    _entity_form: 'mcapi_exchange.masspay'
+    _title: 'Mass payment'
+  requirements:
+    _entity_access: 'mcapi_exchange.manage'

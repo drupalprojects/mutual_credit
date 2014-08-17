@@ -14,6 +14,19 @@ mcapi_1stparty.editform.*:
     path:
       type: string
       label: 'Path'
+    menu:
+      type: mapping
+      label: 'Menu'
+      mapping:
+        title:
+          type: string
+          label: 'Title'
+        weight:
+          type: integer
+          label: 'Weight'
+        menu_name:
+          type: string
+          label: 'Menu name'
     status:
       type: boolean
       label: Enabled

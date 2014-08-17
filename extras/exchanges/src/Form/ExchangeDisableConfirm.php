@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\ExchangeDisableConfirm.
+ * Contains \Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm.
  */
 
-namespace Drupal\mcapi\Form;
+namespace Drupal\mcapi_exchanges\Form;
 
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 use Drupal\Core\Url;
@@ -26,7 +26,7 @@ class ExchangeDisableConfirm extends ContentEntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return new Url('mcapi.admin_exchange_list');
   }
 

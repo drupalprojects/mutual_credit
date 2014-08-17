@@ -73,7 +73,7 @@ class DashboardController extends ControllerBase {
         $currnames[] = l($item['entity']->label(), 'admin/accounting/currencies/'.$item['entity']->id);
       }
       $page[$id]['currencies']['#markup'] = 'Currencies: '.implode(', ', $currnames);
-      $wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->walletsInExchanges(array($id));
+      $wids = mcapi_wallets_in_exchanges(array($id));
       $tbody = array();
       foreach (Wallet::loadMultiple($wids) as $wallet) {
         $limits = mcapi_limits($wallet);

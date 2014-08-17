@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\ViewBuilder\ExchangeViewBuilder.
+ * Contains \Drupal\mcapi_exchanges\ExchangeViewBuilder.
  */
 
-namespace Drupal\mcapi\ViewBuilder;
+namespace Drupal\mcapi_exchanges;
 
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Entity\EntityInterface;
@@ -42,12 +42,46 @@ class ExchangeViewBuilder extends EntityViewBuilder {
     );
     //TODO how do we allow any display or extra_field of the wallet to be viewed as a field in the exchange?
     //in extra_fields, no options are possible at the moment
-    $build['transactions'] = array(
+    $build['intertrading'] = array(
     	'#type' => 'item',
       '#title' => t('Intertrading wallet'),
       '#weight' => 5,
       '#markup' => l(t('View'), 'wallet/'.$entity->intertrading_wallet()->id())
     );
+
+
+    $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
+    ->condition('exchanges_target_id', $entity->id())
+    ->countQuery()->execute()->fetchField();
+    $build['members_link'] = array(
+      '#type' => 'item',
+      '#title' => t('@count members', array('@count'=> $count)),
+      'link' => array(
+        '#type' => 'link',
+        '#title' => t('Show members'),
+        '#href' => 'exchange/'.$entity->id().'/members',
+        //maybe instead put a view with the last five members here
+        '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+      )
+    );
+    //get all the wallets in this exchange
+    $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
+    //get all the transactions in those wallets
+    $serials = $wids ?
+    \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) : array();
+
+    $build['transactions_link'] = array(
+      '#type' => 'item',
+      '#title' => t('@count transactions', array('@count'=> count(array_unique($serials)))),
+      'link' => array(
+        '#type' => 'link',
+        '#title' => t('Show transactions'),
+        '#href' => 'exchange/'.$entity->id().'/transactions',
+        //TODO maybe instead put a view with the last five members here
+        '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+      )
+    );
+
     //TEMP!!!
     $build['placeholder_text'] = array(
       '#weight' => -1,
