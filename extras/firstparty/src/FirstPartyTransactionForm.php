@@ -183,7 +183,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     //pretty hard because it is designed to work only with templated themes, not theme functions
     //instead we'll probably just put a link in the menu
 
-
     return $form;
   }
 
@@ -193,45 +192,16 @@ class FirstPartyTransactionForm extends TransactionForm {
    */
 
   function firstparty_convert_direction(&$element, FormStateInterface $form_state) {
-    debug('check whether we should get the form_builder service in order to set values in $form_state');
-    $form_builder = \Drupal::service('form_builder');
     $values = $form_state->getValues();
     $form = $form_state->getCompleteForm();
     if ($values['direction'] == 'outgoing') {
-      $form_builder->setValue($form['payer'], $values['partner'], $form_state);
-      $form_builder->setValue($form['payee'], $values['mywallet_value'], $form_state);
+      $form_state->setValueForElement($form['payer'], $values['partner']);
+      $form_state->setValueForElement($form['payee'], $values['mywallet_value']);
     }
     else {
-      $form_builder->setValue($form['payee'], $values['partner'], $form_state);
-      $form_builder->setValue($form['payer'], $values['mywallet_value'], $form_state);
+      $form_state->setValueForElement($form['payee'], $values['partner']);
+      $form_state->setValueForElement($form['payer'], $values['mywallet_value']);
     }
-  }
-
-  /*
-   * element validation callback
-   * convert the firstparty, 3rdparty and direction fields into payer and payee.
-   * @todo check the best way to setValue after alpha 14
-   */
-  public function validate(array $form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    $my_wallet_id = array_key_exists('mywallet_value', $values) ?
-      $values['mywallet_value'] :
-      $values['mywallet'];
-    $partner_wallet_id = $values['intertrade'] ?
-      $values['partner_all'] :
-      $values['partner'];
-
-    if ($values['direction'] == 'outgoing') {
-      //$element is only needed for the parents
-      \Drupal::formBuilder()->setValue($form['payee'], $partner_wallet_id, $form_state);
-      \Drupal::formBuilder()->setValue($form['payer'], $my_wallet_id, $form_state);
-    }
-    else {
-      \Drupal::formBuilder()->setValue($form['payer'], $partner_wallet_id, $form_state);
-      \Drupal::formBuilder()->setValue($form['payee'], $my_wallet_id, $form_state);
-    }
-
-    parent::validate($form, $form_state);
   }
 
   /**
@@ -242,10 +212,10 @@ class FirstPartyTransactionForm extends TransactionForm {
     $actions = parent::actions($form, $form_state);
     if ($this->config->experience['preview'] == 'ajax') {
       //this isn't working at all...
-      $actions['save']['#attributes']['class'][] = 'use-ajax';
-      $actions['save']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
+      $actions['submit']['#attributes']['class'][] = 'use-ajax';
+      $actions['submit']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
     }
-    $actions['save']['#value'] = $this->config->experience['button'];
+    $actions['submit']['#value'] = $this->config->experience['button'];
 
     return $actions;
   }

@@ -1,5 +1,5 @@
-name: 'Tester data & config'
-description: Prebuilt user testing environment. With exchanges, users, currencies, wallets, couple of blocks and views
+name: 'Tester Environment'
+description: Creates users, currencies, wallets, couple of blocks and views. Works with and without 'Multiple exchanges' module
 core: 8.x
 package: Community Accounting
 type: module

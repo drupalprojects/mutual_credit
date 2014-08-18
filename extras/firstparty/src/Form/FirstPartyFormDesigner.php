@@ -292,6 +292,7 @@ class FirstPartyFormDesigner extends EntityForm {
       'http://twig.sensiolabs.org/doc/templates.html',
       array('external' => TRUE)
     );
+    $tokens = ' {{ '. implode(' }}, {{ ', mcapi_1stparty_transaction_tokens()) .' }}';
     //TODO workout what the tokens are and write them in template1['#description']
     $form['experience'] = array(
     	'#title' => t('User experience'),
@@ -299,10 +300,8 @@ class FirstPartyFormDesigner extends EntityForm {
       '#open' => TRUE,
     	'twig' => array(
     		'#title' => t('Main form'),
-    		'#description' => t(
-    		  'Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically. @tokens',
-    		  array('@tokens' => '{{ '.implode(' }}, {{ ',  mcapi_1stparty_transaction_tokens()) .' }}')
-    	  ) .' '. $help,
+    		'#description' => t('Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.')
+    		  . $tokens .' '. $help,
     		'#type' => 'textarea',
     		'#rows' => 6,
     		'#default_value' => $configEntity->experience['twig'],

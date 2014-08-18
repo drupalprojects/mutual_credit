@@ -4,10 +4,6 @@
  * @file
  * Definition of Drupal\mcapi\Form\TransactionForm.
  * Edit all the fields on a transaction
- *
- * We have to start by working out the what exchange this transaction
- * is happening in. This helps us to work out what currencies to show
- * and what users to make available in the user selection widgets
  */
 
 namespace Drupal\mcapi\Form;
@@ -116,6 +112,7 @@ class TransactionForm extends ContentEntityForm {
       '#weight' => 18,
     );
     $form = parent::form($form, $form_state);
+
     return $form;
   }
 

@@ -81,7 +81,7 @@ function mcapi_modules_installed($modules) {
   use Drupal\field\Entity\FieldStorageConfig;
   FieldStorageConfig::load('mcapi_transaction.worth')->delete();
   FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
-  FieldStorageConfig::load('user.exchanged')->delete();
+  FieldStorageConfig::load('user.exchanges')->delete();
   field_purge_batch(3);
  */
 function mcapi_uninstall() {

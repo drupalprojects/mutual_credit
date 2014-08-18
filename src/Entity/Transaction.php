@@ -277,8 +277,20 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
-    $wids = array($this->payer->target_id, $this->payee->target_id);
-    drupal_set_message ('todo: clear wallet cache for wallet ids '.implode(' & ', $wids));
+    $this->clearWalletCache();
+  }
+
+  public function postDelete(EntityStorageInterface $storage_controller) {
+    parent::postDelete($storage_controller, $update);
+    $this->clearWalletCache();
+  }
+
+  //also needs doing when a wallet changes ownership
+  //should this be in the interface??
+  private function clearWalletCache() {
+    $tags[] = $this->payer->entity->getCacheTag();
+    $tags[] = $this->payee->entity->getCacheTag();
+    Cache::invalidateTags($tags);//this isn't tested
   }
 
   /**

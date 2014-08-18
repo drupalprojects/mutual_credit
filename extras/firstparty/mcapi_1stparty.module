@@ -94,8 +94,7 @@ function theme_1stpartyform($vars) {
 
   //append everything not rendered onto the last rendered thing.
   $tokens['hidden_elements'] = $form;
-
-  //mcapi.inc must have been already included to process the worth field.
+  $form['#twig'] .= '{{ hidden_elements }}';
   return mcapi_render_twig($form['#twig'], $tokens);
 }
 
@@ -236,7 +235,7 @@ function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $
  */
 function mcapi_1stparty_menu_links_discovered_alter(&$definitions) {
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $first_party_form) {
-    if (!$first_party_form->menu['menu_name']) continue;
+    if (empty($first_party_form->menu['menu_name'])) continue;
     $route_name = 'mcapi.1stparty.'.$id;
 
     $parent_path = substr($first_party_form->path, 0, strrpos($first_party_form->path, '/'));

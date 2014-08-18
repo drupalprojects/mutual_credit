@@ -10,10 +10,17 @@ id: mcapi_transaction.mcapi_transaction.default
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
 mode: default
-content: 
+content:
   worth:
     type: worth
-    weight: 5
+    weight: 0
     settings: {  }
     third_party_settings: {  }
-hidden: { }
+#categories are included here for the tester module
+  categories:
+    type: options_buttons
+    weight: 1
+    settings: {  }
+    third_party_settings: {  }
+hidden: {  }
+

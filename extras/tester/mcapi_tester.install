@@ -25,30 +25,33 @@ function mcapi_tester_install() {
     ))->save();
   }
   echo "Created taxonomy terms";
-  $names = array(
-    'Pluto' => 'Pluto Pesos',
-    'Mars' => 'Martian Moolah',
-    'Saturn' => 'Saturnine Schillings',
-    'Jupiter' => 'Jovial Jewels'
-  );
-  $exchange_ids = mcapi_tester_make_exchanges($names);
-  echo "\nCreated exchanges";
+  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    $names = array(
+      'Pluto' => 'Pluto Pesos',
+      'Mars' => 'Martian Moolah',
+      'Saturn' => 'Saturnine Schillings',
+      'Jupiter' => 'Jovial Jewels'
+    );
+    $exchange_ids = mcapi_tester_make_exchanges($names);
+    echo "\nCreated exchanges";
+  }
   //now
   mcapi_tester_make_users(26);//should make wallets as well
   echo "\nCreated users";
   //make some transactions within the exchanges.
   mcapi_tester_make_transactions(200);
   echo "\n200 transactions created";
-  //make some intertrading transactions
-  mcapi_tester_make_transactions(25, TRUE);
-  echo "\n200 intertrading transactions created";
 
-  //close the last exchange and disable its currency
-  $last_exchange = Exchange::load(end($exchange_ids));
-  drupal_set_message('Closing the last exchange: '.$last_exchange->label());
-  $last_exchange->set('status', 0);
-  $last_exchange->save();
-
+  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    //make some intertrading transactions
+    mcapi_tester_make_transactions(25, TRUE);
+    echo "\n25 intertrading transactions created";
+    //close the last exchange and disable its currency
+    $last_exchange = Exchange::load(end($exchange_ids));
+    drupal_set_message('Closing the last exchange: '.$last_exchange->label());
+    $last_exchange->set('status', 0);
+    $last_exchange->save();
+  }
 }
 
 /**
@@ -70,11 +73,9 @@ function mcapi_tester_uninstall() {
     //$term->delete();
   //}
   //delete test transactions
-  $transaction_storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
-  $xids = array_keys($transaction_storage->filter(array('type' => 'test')));
-  if ($xids) {
-    $transaction_storage->delete(Transaction::loadMultiple($xids));
-  }
+  $storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
+  $transactions = $storage->loadByProperties(array('type' => 'test'));
+  $storage->delete($transactions);
   //delete test users
   foreach (User::loadMultiple() as $user) {
     if ($user->id() < 2) continue;

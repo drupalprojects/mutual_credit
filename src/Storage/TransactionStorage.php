@@ -292,7 +292,7 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
       }
     }
     if (!array_key_exists('state', $conditions)) {
-      $query->condition('state', 0, '>');
+      $query->condition('state', mcapi_states_counted());
     }
     //TODO decide definitively whether 'involving' and 'including' are the same
     //because transactions can only ever happen within an exchange.
