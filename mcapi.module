@@ -254,44 +254,6 @@ function mcapi_entity_extra_field_info() {
 }
 
 
-/**
- * implements hook_mcapi_exchange_view()
- * adds extra_fields to the exchange
- */
-function mcapi_exchange_view(&$build, $entity, $mode, $language) {
-
-  $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
-  ->condition('exchanges_target_id', $entity->id())
-  ->countQuery()->execute()->fetchField();
-  $build['members_link'] = array(
-    '#type' => 'item',
-    '#title' => t('@count members', array('@count'=> $count)),
-    'link' => array(
-      '#type' => 'link',
-      '#title' => t('Show members'),
-      '#href' => 'exchange/'.$entity->id().'/members',
-      //maybe instead put a view with the last five members here
-      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
-    )
-  );
-  //get all the wallets in this exchange
-  $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
-  //get all the transactions in those wallets
-  $serials = $wids ?
-  \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) : array();
-
-  $build['transactions_link'] = array(
-    '#type' => 'item',
-    '#title' => t('@count transactions', array('@count'=> count(array_unique($serials)))),
-    'link' => array(
-      '#type' => 'link',
-      '#title' => t('Show transactions'),
-      '#href' => 'exchange/'.$entity->id().'/transactions',
-      //TODO maybe instead put a view with the last five members here
-      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
-    )
-  );
-}
 
 /**
  * Machine name callback
@@ -651,6 +613,7 @@ function exchange_currencies(array $exchanges, $ticks = FALSE) {
   $currencies = array();
   foreach ($exchanges as $exchange) {
     //TODO is there a shorter way to iterate through these referenced entities
+    //like $exchange->get('currencies')->entity
     foreach ($exchange->get('currencies')->getValue(TRUE) as $item) {
       if (empty($item))continue;//this should never happen because an exchange can't have no currencies
       $currency = $item['entity'];

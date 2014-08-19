@@ -41,14 +41,6 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *     "uuid" = "uuid",
  *     "weight" = "weight",
  *     "status" = "status"
- *   },
- *   links = {
- *     "canonical" = "mcapi.exchange.view",
- *     "edit-form" = "mcapi.exchange.edit",
- *     "admin-form" = "mcapi.admin_exchange_list",
- *     "delete-form" = "mcapi.exchange.delete_confirm",
- *     "enable" = "mcapi.exchange.enable_confirm",
- *     "disable" = "mcapi.exchange.disable_confirm"
  *   }
  * )
  */

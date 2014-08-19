@@ -6,22 +6,83 @@
  * add new controllers for the Exchange entity
  */
 function mcapi_exchanges_entity_type_alter(array &$entity_types) {
-  $exchange = $entity_types['mcapi_exchange'];
-  $exchange->setControllerClass('form', array(
-    "add" => "Drupal\mcapi_exchanges\Form\ExchangeWizard",
-    "edit" => "Drupal\mcapi_exchanges\Form\ExchangeForm",
-    "masspay" => "Drupal\mcapi\Form\MassPay",
-    "delete" => "Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm",
-    "enable" => "Drupal\mcapi_exchanges\Form\ExchangeEnableConfirm",
-    "disable" => "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm",
-  ));
-  $exchange->setControllerClass('view_builder', "Drupal\mcapi_exchanges\ExchangeViewBuilder");
-  $exchange->setControllerClass('access', "Drupal\mcapi_exchanges\ExchangeAccessController");
-  $exchange->setControllerClass('list_builder', "Drupal\mcapi_exchanges\ExchangeListBuilder");
+  $e = $entity_types['mcapi_exchange'];
+  $e->setFormClass("add", "Drupal\mcapi_exchanges\Form\ExchangeWizard");
+  $e->setFormClass("edit", "Drupal\mcapi_exchanges\Form\ExchangeForm");
+  $e->setFormClass("masspay", "Drupal\mcapi_exchanges\Form\MassPay");
+  $e->setFormClass("delete", "Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm");
+  $e->setFormClass("enable", "Drupal\mcapi_exchanges\Form\ExchangeEnableConfirm");
+  $e->setFormClass("disable", "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm");
+  $e->setLinkClass("canonical", "mcapi.exchange.view");
+  $e->setLinkClass("edit-form", "mcapi.exchange.edit");
+  $e->setLinkClass("admin-form", "mcapi.admin_exchange_list");
+  $e->setLinkClass("delete-form", "mcapi.exchange.delete_confirm");
+  $e->setLinkClass("enable", "mcapi.exchange.enable_confirm");
+  $e->setLinkClass("disable", "mcapi.exchange.disable_confirm");
+
+  $e->setViewBuilderClass('view_builder', "Drupal\mcapi_exchanges\ExchangeViewBuilder");
+  $e->setAccessClass('access', "Drupal\mcapi_exchanges\ExchangeAccessController");
+  $e->setListbuilderClass('list_builder', "Drupal\mcapi_exchanges\ExchangeListBuilder");
 }
 
 
 function mcapi_exchanges_menu_links_discovered_alter(&$definitions) {
   unset($definitions['mcapi.exchange.masspay']);
 
+}
+
+/**
+ * implements hook_entity_extra_field_info().
+ */
+function mcapi_exchanges_entity_extra_field_info() {
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions'] = array(
+    'label' => t('Intertrading'),
+    'description' => t('Link to the wallets special intertrading wallet'),
+    'weight' => 2,
+  );
+  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions_link'] = array(
+    'label' => t('List of transactions'),
+    'weight' => 11
+  );
+  return $extra;
+}
+
+
+/**
+ * implements hook_mcapi_exchange_view()
+ * adds extra_fields to the exchange
+ */
+function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $mode, $language) {
+
+  $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
+  ->condition('exchanges_target_id', $entity->id())
+  ->countQuery()->execute()->fetchField();
+  $build['members_link'] = array(
+      '#type' => 'item',
+      '#title' => t('@count members', array('@count'=> $count)),
+      'link' => array(
+          '#type' => 'link',
+          '#title' => t('Show members'),
+          '#href' => 'exchange/'.$entity->id().'/members',
+          //maybe instead put a view with the last five members here
+          '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+      )
+  );
+  //get all the wallets in this exchange
+  $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
+  //get all the transactions in those wallets
+  $serials = $wids ?
+  \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) : array();
+
+  $build['transactions_link'] = array(
+    '#type' => 'item',
+    '#title' => t('@count transactions', array('@count'=> count(array_unique($serials)))),
+    'link' => array(
+      '#type' => 'link',
+      '#title' => t('Show transactions'),
+      '#href' => 'exchange/'.$entity->id().'/transactions',
+      //TODO maybe instead put a view with the last five members here
+      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+    )
+  );
 }

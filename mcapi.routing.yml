@@ -188,15 +188,6 @@ mcapi.wallet.log:
   requirements:
     _entity_access: 'mcapi_wallet.view'
 
-#TODO not sure the best way to make a tab on the exchanges page which shows the wallet log for its _intertrading wallet
-#mcapi.exchange.wallet:
-#  path: '/exchange/{mcapi_exchange}/intertrading'
-#  defaults:
- #   _content: \Drupal\mcapi\Controller\WalletController::page
- #   _title_callback: \Drupal\mcapi\Controller\WalletController::pageTitle'
-#  requirements:
- #   _entity_access: 'mcapi_exchange.update'
-
 mcapi.exchange.delete_confirm:
   path: '/exchange/{mcapi_exchange}/delete'
   defaults:

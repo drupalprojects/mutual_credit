@@ -484,11 +484,10 @@ function mcapi_views_data() {
   	)
   );
   $data['mcapi_wallet']['owner'] = array(
-  	'title' => t('Owner'),
-  	'help' => t('The owner of the wallet'),
+    'title' => t('The wallet owner'),
   	'field' => array(
   		'id' => 'mcapi_wallet_owner',
-  	)
+  	),
   );
   $data['mcapi_wallet']['entity_type'] = array(
   	'title' => t('Owner type'),

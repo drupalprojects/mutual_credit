@@ -17,13 +17,7 @@ content:
     weight: 0
   wallets_summaries:
     weight: 1
-  exchanges:
-    type: entity_reference_label
-    weight: 2
-    settings:
-      link: true
-    third_party_settings: {  }
-    label: above
 hidden:
   member_for: true
+  exchanges: true
 

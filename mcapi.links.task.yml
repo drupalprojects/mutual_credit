@@ -32,37 +32,6 @@ mcapi.wallet.log.tab:
   base_route: mcapi.wallet_view
   weight: 2
 
-#default tab if field API tasks are showing on the exchanges page
-mcapi.admin_exchanges_tab:
-  route_name: mcapi.admin_exchange_list
-  title: 'List'
-  base_route: mcapi.admin_exchange_list
-  weight: 0
-
-#view/edit tabs on exchange entity
-mcapi.exchange.view.tab:
-  route_name: mcapi.exchange.view
-  title: View
-  base_route: mcapi.exchange.view
-  weight: 0
-mcapi.exchange.mass.tab:
-  route_name: mcapi.exchange.masspay
-  title: Mass payment
-  base_route: mcapi.exchange.view
-  weight: 1
-mcapi.exchange.edit.tab:
-  route_name: mcapi.exchange.edit
-  title: Edit
-  base_route: mcapi.exchange.view
-  weight: 2
-
-#TODO sort this out when views path arguments work
-#mcapi.exchange.edit.tab:
-#  route_name: mcapi.exchange.statement
-#  title: Edit
-#  base_route: mcapi.exchange.view
-#  weight: 1
-
 #a default tab for editing a currency, lest more should be needed
 mcapi.currency.edit.tab:
   route_name: mcapi.admin_currency_edit

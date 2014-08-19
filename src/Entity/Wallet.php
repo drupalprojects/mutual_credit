@@ -277,8 +277,9 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   function getStats($curr_id) {
     $summaries = $this->getSummaries();
-    if (array_key_exists($curr_id, $summaries)) return $summaries[$curr_id];
-    //else return NULL
+    if (array_key_exists($curr_id, $summaries)) {
+      return $summaries[$curr_id];
+    }
   }
 
   /**

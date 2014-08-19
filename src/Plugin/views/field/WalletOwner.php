@@ -35,9 +35,8 @@ class WalletOwner extends Standard {
    */
   function render(ResultRow $values) {
     $owner = $this->getEntity($values)->getOwner();
-    if ($owner->getEntityTypeId() != 'mcapi_wallet') {
-//      $name = $owner->getEntityTypeId();
-      return l($owner->label(), $owner->url());
+    if ($url = $owner->url()) {
+      return l($owner->label(), $url);
     }
     else {
       return \Drupal::Config('system.site')->get('name');

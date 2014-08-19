@@ -88,16 +88,6 @@ function _mcapi_entity_extra_field_info() {
     'description' => t('People involved in the exchange'),
     'weight' => 1,
   );
-  //exchanges
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions'] = array(
-    'label' => t('Intertrading'),
-    'description' => t('Link to the wallets special intertrading wallet'),
-    'weight' => 2,
-  );
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions_link'] = array(
-    'label' => t('List of transactions'),
-    'weight' => 11,
-  );
   return $extra;
 }
 
