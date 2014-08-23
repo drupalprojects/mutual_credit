@@ -386,6 +386,7 @@ function mcapi_update_dependencies() {
  * import po files BEFORE running mcapi updates
  */
 function mcapi_update_6999() {
+  module_enable(array('ctools'));
   $languages = language_list('enabled');
   unset($languages[1]['en']);
   if (!count($languages[1])) return;
@@ -402,7 +403,6 @@ function mcapi_update_6999() {
     );
     drupal_set_message('Imported strings from '.$po_file->uri);
   }
-  module_enable(array('ctools'));
 }
 
 /**

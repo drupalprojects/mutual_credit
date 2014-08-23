@@ -71,7 +71,7 @@ function mcapi_import_menu() {
 /*
  * form called by menu
  */
-function import_transactions_form($form, $form_state) {
+function import_transactions_form($form, &$form_state) {
   $columns = array(
     '"payer*"' => t('uid or email of a user'),
     '"payee*"' => t('uid or email of a user'),
@@ -233,7 +233,7 @@ function mcapi_import_review_transaction_data($success, $results, $operations, $
   );
 }
 
-function import_transactions_form_submit($form, $form_state) {
+function import_transactions_form_submit($form, &$form_state) {
   $csv = mcapi_parse_getcsv($form_state['values']['data']);
   form_state_values_clean($form_state);
   unset($form_state['values']['data']);
@@ -350,8 +350,7 @@ function import_balances_form($form, &$form_state) {
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['transaction_type'] : 'default',
     '#required' => TRUE
   );
-  currencies_load();
-  $currencies = &drupal_static('currencies');
+  $currencies = currencies_load();
   module_load_include('inc', 'mcapi');
   $form['currcode'] = currency_picker_element(array_keys($currencies), $default = 'credunit', 0);
   unset($form['currcode']['#title_display']);
@@ -567,7 +566,7 @@ function mcapi_import_uif_help() {
   $items = array(
     'balance' => 'balance - ' .t('The starting balance of the imported user'),
     'gross_income' => 'gross_income - ' . t('The total income ever of this user.'),
-    'currcode' => 'currcode - ' . t('The currency code (optional, default is @currcode)', array('@currcode' => key($currencies))),
+    'currcode' => 'currcode - ' . t('The currency code (optional)'),
   );
   return '<p>' . t('Importing balance (and gross income) per user is incompatible with importing the transaction history.') . '</p>' . theme('item_list', array('items' => $items));
 }
@@ -576,7 +575,7 @@ function mcapi_import_uif_help() {
  * implements uif hook_uif_post_create()
  * Give users an initial balance, paid from the central account
  */
-function mcapi_import_uif_post_create($account, $user_data, $form_state) {
+function mcapi_import_uif_post_create($account, $user_data, &$form_state) {
   if (isset($user_data['balance'])) {
     if (!isset($user_data['currcode'])) {
       $user_data['currcode'] = 'credunit';

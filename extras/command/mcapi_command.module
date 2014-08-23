@@ -157,7 +157,7 @@ function mcapi_command_input() {
   return $form;
 }
 
-function mcapi_command_input_submit($form, $form_state) {
+function mcapi_command_input_submit($form, &$form_state) {
   try {
     drupal_set_message('TESTING ONLY: '. $form_state['values']['input'], 'status', FALSE);
     $response = process_mcapi_command(

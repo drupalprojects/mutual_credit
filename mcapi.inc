@@ -105,7 +105,7 @@ function _transaction_form(&$form, &$form_state) {
  * By this time each of the form values should be well enough validated not to fail on writing to db
  */
 function transaction_form_validate($form, &$form_state) {
-  $props = $form_state['values'];
+  $props = &$form_state['values'];
 
   //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
   $transaction = entity_create('transaction', $props);
@@ -164,7 +164,7 @@ function transaction_form_submit($form, &$form_state) {
 /**
  * form element validation callback functions
  */
-function mcapi_validate_title(&$element, $form_state) {
+function mcapi_validate_title(&$element, &$form_state) {
   //don't know the max length of 'small' text field. Will be just truncated
   $form_state['values']['title'] = check_plain($element['#value']);
 }
@@ -371,7 +371,7 @@ function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
 }
 
 //this should really be in core...
-function _mcapi_validate_mail_element($element, $form_state) {
+function _mcapi_validate_mail_element($element, &$form_state) {
   if ($element['#value'] && !valid_email_address($element['#value'])) {
     form_error($element, t('That e-mail address is not valid.'));
   }
@@ -722,7 +722,7 @@ function _worth_element_process($element, &$form_state) {
   if (!empty($use_div_subelement)) {
     list($main_quant, $div_quant) = currency_explode($quantity);
   }
-  elseif($currency && $currency->display['divisions']) {
+  elseif(isset($currency) && $currency->display['divisions']) {
     $main_quant = $quantity;
   }
   else{
@@ -949,7 +949,7 @@ function mcapi_configure_worth_accept_formula($element) {
  * element validate callback
  * ensures that the formula for calculating a quantity works
  */
-function validate_mcapi_configure_worth_formula(&$element, $form_state) {
+function validate_mcapi_configure_worth_formula(&$element, &$form_state) {
   if (empty($element['#value'])) return;
   if (!is_numeric(_mcapi_calc($element['#value'], 100))) {
     form_error($element, t('Invalid formula'));

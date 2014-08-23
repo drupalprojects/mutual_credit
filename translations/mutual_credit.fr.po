@@ -365,7 +365,7 @@ msgstr "Code d'unité d'échange"
 msgid "Community Coins"
 msgstr "Monnaie communautaire"
 
-#: (duplicate) mcapi.install:18  mcapi.info:0 extras/accountant_ui/accountant_ui.info:0 extras/ajax_form/mcapi_ajaxform.info:0 extras/balance_history/mcapi_balance_history.info:0 extras/bank_slave/bank_slave.info:0 extras/command/mcapi_command.info:0 extras/forms/mcapi_forms.info:0 extras/import/mcapi_import.info:0 extras/limits/mcapi_limits.info:0 extras/signatures/mcapi_signatures.info:0 views/mcapi_index_views.info:0
+
 msgid "Community Accounting"
 msgstr "Comptabilité de la communauté"
 
@@ -565,7 +565,6 @@ msgstr "Le membre @name ne peut pas utiliser @currency"
 msgid "!name field is required."
 msgstr "Le champ !name est exigé."
 
-#: mcapi.inc:859 views/mcapi_index_views.views.inc:180 views/mcapi_index_views.views_default.inc:122;296 views/mcapi_index_views.views_template.inc:620 views/views_handler_filter_mcapi_currency.inc:41
 msgid "Currency"
 msgstr "Unité d'échange"
 
@@ -1545,7 +1544,6 @@ msgstr "Volume"
 msgid "Absolute value of the trade"
 msgstr "Valeur absolue de l'échange"
 
-#: extras/bank_slave/bank_slave.views_template.inc:169 views/mcapi_index_views.views.inc:150 views/mcapi_index_views.views_default.inc:294 views/mcapi_index_views.views_template.inc:621 views/views_handler_field_mcapi_users_totals.inc:45
 msgid "Balance"
 msgstr "Solde"
 

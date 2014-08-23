@@ -5,7 +5,7 @@
  * when building the initial page, the $currency is passed, AJAX builds use form_state
  * When called via AJAX, the $settings_form should contain '#value' not '#default_value', not sure why
  */
-function limits_settings_subform(&$form, $form_state, $currency) {
+function limits_settings_subform(&$form, &$form_state, $currency) {
   //I'm not very happy about the way the ajax loads are populated by the previous value,
   //but I've been a couple of hours fumbling and we can live with it.
   //the default values are correct even in the form_alter, but on processing,
@@ -153,7 +153,7 @@ function min_max_fields($defaults) {
   );
 }
 
-function mcapi_validate_optional_num(&$element, $form_state) {
+function mcapi_validate_optional_num(&$element, &$form_state) {
   if ($element['#value'] == '-') {//this is the default field value, meaning minus zero
     form_set_value($element, 0, $form_state);
   }
@@ -164,7 +164,7 @@ function mcapi_validate_optional_num(&$element, $form_state) {
 
 //validate callback subsection of currency form (and sometimes user profile form)
 //this could be done in javascript also, on the form
-function mcapi_limits_validate_min(&$element, $form_state) {
+function mcapi_limits_validate_min(&$element, &$form_state) {
   if (!empty($element['#value']) && $element['#value'] > 0) {
     form_error($element, t('Minimum balance must not be larger than 0'));
   }
@@ -172,7 +172,7 @@ function mcapi_limits_validate_min(&$element, $form_state) {
 
 //validate callback subsection of currency form (and sometimes user profile form)
 //this could be done in javascript also, on the form
-function mcapi_limits_validate_max(&$element, $form_state) {
+function mcapi_limits_validate_max(&$element, &$form_state) {
   if (!empty($element['#value']) && $element['#value'] <= 0) {
     form_error($element, t('Maximum balance must be larger than 0'));
   }

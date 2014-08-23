@@ -184,6 +184,28 @@ function mcapi_signatures_update_7010() {
   signature_integrity_check();
 }
 
+/**
+ * delete any leftover trash which will make a mess
+ */
+function mcapi_signatures_update_7011() {
+  db_query(
+    "DELETE FROM mcapi_signatures WHERE serial > :serial", 
+    array(':serial' => db_query("SELECT MAX(serial) from {mcapi_transactions}")->fetchField())
+  );
+}
+
+/**
+ * remove an deprecated access callback
+ * TODO but what was the name of the operation
+ */
+function ____mcapi_update_7012() {
+  $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
+  foreach ($datas as $currcode => $data) {
+    //LOGIC HERE
+    db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
+  }
+}
+
 function signature_integrity_check() {
   //set all pending transactions to completed
   db_update('mcapi_transactions')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();

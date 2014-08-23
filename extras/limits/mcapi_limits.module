@@ -23,7 +23,7 @@ function limits_get($currcode, $uid){
       $limits += array_filter($callback($currency, $uid), 'is_numeric');
     }
   }
-  return $limits;
+  return $limits + array('min' => NULL, 'max' => NULL);
 }
 
 //this shows the amount available to spend or earn, by factoring in the user's balance
@@ -116,7 +116,7 @@ function mcapi_limits_accounting_validate(array $cluster) {
         $errors[$uid][$currcode] = array(
           '@name' => user_load($uid)->name,
           '@projected' => $projected,
-          '@max' => $limits['max'],
+          '@max' => @$limits['max'],
           '@excess' => $projected - $limits['max'],
         );
       }
@@ -124,8 +124,8 @@ function mcapi_limits_accounting_validate(array $cluster) {
         $errors[$uid][$currcode] = array(
           '@name' => user_load($uid)->name,
           '@projected' => $projected,
-          '@min' => $limits['min'],
-          '@excess' => $limits['min'] - $projected,
+          '@min' => @$limits['min'],
+          '@excess' => @$limits['min'] - $projected,
         );
       }
     }

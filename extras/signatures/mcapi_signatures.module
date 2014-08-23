@@ -141,7 +141,7 @@ function mcapi_get_signatories($serial = NULL, $uid = NULL) {
  * implements hook_form_FORM_ID_alter
  * changing state of all transaction forms EXCEPT those made with mcapi_forms module
  */
-function mcapi_signatures_form_transaction_form_alter(&$form, $form_state, $form_id) {
+function mcapi_signatures_form_transaction_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'mcapi_forms_form' || !array_key_exists('type', $form)) return;
   module_load_include('inc', 'mcapi_signatures');
   _set_form_state_to_pending($form, $form_state);
@@ -315,6 +315,7 @@ function mcapi_signatures_transaction_access_callbacks() {
     'transaction_access_callback_signatory' => t('Signatories to the transaction'),
   );
 }
+
 /*
  * callback for transaction_access
  */
@@ -336,21 +337,6 @@ function transaction_access_callback_signatory_views($query, $condition, $state)
   }
   $query->distinct();
   $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);
-}
-
-/*
- * callback for transaction view access for views
- * as above but for unsigned users only
- */
-function transaction_access_callback_pending_signatory_views($query, $condition, $state) {
-  //The join may have been created already by the views schema
-  if (!array_key_exists('mcapi_signatures', $query->gettables())) {
-    $query->addJoin('INNER', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
-  }
-  $query->distinct();
-  //note that this condition applies to the whole query, otherwise we'll get one result for each signature.
-  $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);
-  $condition->condition('mcapi_transactions.state', TRANSACTION_STATE_PENDING);
 }
 
 /*
@@ -384,7 +370,7 @@ function mcapi_signatures_user_delete($account) {
  * implements alter hook_user_cancel_confirm_form_alter().
  * Explain what happens to pending transactions
  */
-function mcapi_signatures_form_user_cancel_confirm_form_alter(&$form, $form_state) {
+function mcapi_signatures_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
   $form['user_cancel_method']['#description'] .= ' '. t('Pending transactions will be completely deleted.');
 }
 

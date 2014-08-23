@@ -636,7 +636,7 @@ function operations_config_default_access($op_info, $currency) {
 }
 
 //currency form validate callback
-function mcapi_currency_validate_format(&$element, $form_state) {
+function mcapi_currency_validate_format(&$element, &$form_state) {
   if (strpos($element['#value'], '[quantity]') === FALSE) {
     form_error($element, t("Currency format must contain token '[quantity]'"));
   }
@@ -679,7 +679,7 @@ function mcapi_currency_validate_divisions(&$element, &$form_state) {
 /**
  * Validate callback for transaction form 'currcode' element
  */
-function mcapi_validate_currcode(&$element, $form_state) {
+function mcapi_validate_currcode(&$element, &$form_state) {
   if (isset($element['#value']) && $element['#value']) {
     $currency = currency_load($element['#value']);
     if (!is_object($currency)) { //you would also check here if the user had permission to use this currency
@@ -912,7 +912,7 @@ function mcapi_mail_config_fieldset($key, $tokens = array('transaction'), $requi
   return $fieldset;
 }
 
-function mcapi_transaction_mail_action_submit($form, $form_state) {
+function mcapi_transaction_mail_action_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   return $form_state['values'];
 }
@@ -976,7 +976,7 @@ function mcapi_transaction_entity_uid_form($context) {
 /**
  * configuration action submit callback
  */
-function mcapi_transaction_entity_uid_submit($form, $form_state) {
+function mcapi_transaction_entity_uid_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   return $form_state['values'];
 }
@@ -1086,12 +1086,12 @@ function mcapi_dependent_transaction_action_form($context) {
 /**
  * configuration action submit callback
  */
-function mcapi_dependent_transaction_action_submit($form, $form_state) {
+function mcapi_dependent_transaction_action_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   return $form_state['values'];
 }
 
-function mcapi_description_field($form, $form_state) {
+function mcapi_description_field($form, &$form_state) {
   $options = array('' => 'none');
   $options += _mcapi_get_text_instances();
   $form['transaction_description_field'] = array(

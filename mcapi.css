@@ -12,8 +12,8 @@ div.sentence .link {
   clear:both;
 }
 div.transaction.certificate {
-	line-height: 3em;
-  padding: 0 3em 1em 3em;
+  line-height: 3em;
+  padding: 0 3em 2em 3em;
   text-align: center;
 }
 div.transaction.certificate span.quantity {
@@ -57,7 +57,7 @@ div.transaction.certificate ul.transaction-operations{
   list-style: none;
   text-align: center;
   margin-top: 1em;
-  clear:both;
+  clear: both;
 }
 
 ul.transaction-operations li{

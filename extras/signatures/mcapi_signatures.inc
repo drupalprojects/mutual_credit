@@ -97,7 +97,7 @@ function transaction_op_undo_pending_access($op, $transaction, $currency) {
   return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
-function mcapi_signall($form, $form_state, $account) {
+function mcapi_signall($form, &$form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
   $transactions = entity_load('transaction', array_keys(transaction_filter(array('serial' => $serials))));
   $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()));
@@ -125,7 +125,7 @@ function mcapi_signall_submit($form, &$form_state) {
 
 //check whether this transaction type needs signatures and change the state accordingly
 //changes the status in the transaction form according to the settings for the transaction_type
-function _set_form_state_to_pending(&$form, $form_state) {
+function _set_form_state_to_pending(&$form, &$form_state) {
    //read the settings and set the $form['state'] hidden widget
   $type = isset($form['type']['#value']) ? $form['type']['#value'] : $form['type']['#default_value'];//yuk
   if (in_array($type, _get_signable_transaction_types())) {
@@ -271,7 +271,7 @@ function mcapi_signatures_write($transaction) {
 
 
 
-function mcapi_signatures_config($form, $form_state) {
+function mcapi_signatures_config($form, &$form_state) {
   module_load_include('inc', 'mcapi');
   $w = 0;
   $form = array('#tree' => TRUE);

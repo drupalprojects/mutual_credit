@@ -219,7 +219,7 @@ function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $quer
  * implements hook_form_FORM_ID_alter
  * renames the exposed filters on views forms
  */
-function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
+function mcapi_form_views_exposed_form_alter(&$form, &$form_state) {
   $description = t('Comma separated usernames');
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
